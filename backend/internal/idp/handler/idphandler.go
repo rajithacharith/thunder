@@ -74,6 +74,45 @@ func (ih *IDPHandler) HandleIDPPostRequest(w http.ResponseWriter, r *http.Reques
 	logger.Debug("IdP POST response sent", log.String("IdP id", idpResponse.ID))
 }
 
+// HandleIDPPostRequest handles the post identity provider request.
+func (ih *IDPHandler) HandleIDPPostRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IDPHandler"))
+
+	createRequest, err := utils.DecodeJSONBody[model.IDP](r)
+	if err != nil {
+		http.Error(w, "Bad Request: The request body is malformed or contains invalid data.", http.StatusBadRequest)
+		return
+	}
+
+	// Create the IdP using the IdP service.
+	idpProvider := idpprovider.NewIDPProvider()
+	idpService := idpProvider.GetIDPService()
+	createdIDP, err := idpService.CreateIdentityProvider(createRequest)
+	if err != nil {
+		if errors.Is(err, model.ErrBadScopesInRequest) {
+			http.Error(w, "Bad Request: The scopes element is malformed or contains invalid data.", http.StatusBadRequest)
+		} else {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	idpResponse := getIDPResponse(*createdIDP)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	err = json.NewEncoder(w).Encode(idpResponse)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Log the IdP creation response.
+	logger.Debug("IdP POST response sent", log.String("IdP id", idpResponse.ID))
+}
+
 // HandleIDPListRequest handles the get identity providers request.
 func (ih *IDPHandler) HandleIDPListRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IDPHandler"))
