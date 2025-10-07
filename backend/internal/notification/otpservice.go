@@ -134,7 +134,8 @@ func (s *otpService) VerifyOTP(otpDTO common.VerifyOTPDTO) (*common.VerifyOTPRes
 	if currentTime > sessionData.ExpiryTime {
 		logger.Debug("OTP has expired")
 		return &common.VerifyOTPResultDTO{
-			Status: common.OTPVerifyStatusInvalid,
+			Status:    common.OTPVerifyStatusInvalid,
+			Recipient: sessionData.Recipient,
 		}, nil
 	}
 
@@ -143,12 +144,14 @@ func (s *otpService) VerifyOTP(otpDTO common.VerifyOTPDTO) (*common.VerifyOTPRes
 	if providedOTPHash != sessionData.OTPValue {
 		logger.Debug("Invalid OTP provided")
 		return &common.VerifyOTPResultDTO{
-			Status: common.OTPVerifyStatusInvalid,
+			Status:    common.OTPVerifyStatusInvalid,
+			Recipient: sessionData.Recipient,
 		}, nil
 	}
 
 	return &common.VerifyOTPResultDTO{
-		Status: common.OTPVerifyStatusVerified,
+		Status:    common.OTPVerifyStatusVerified,
+		Recipient: sessionData.Recipient,
 	}, nil
 }
 
@@ -275,7 +278,7 @@ func (s *otpService) createSessionToken(sessionData common.OTPSessionData) (stri
 	validityPeriod := (sessionData.ExpiryTime - time.Now().UnixMilli()) / 1000
 	jwtConfig := config.GetThunderRuntime().Config.OAuth.JWT
 
-	token, _, err := s.jwtSvc.GenerateJWT("otp", jwtConfig.Issuer, jwtConfig.Issuer, validityPeriod, claims)
+	token, _, err := s.jwtSvc.GenerateJWT("otp-svc", "otp-svc", jwtConfig.Issuer, validityPeriod, claims)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate JWT token: %w", err)
 	}
@@ -286,15 +289,11 @@ func (s *otpService) createSessionToken(sessionData common.OTPSessionData) (stri
 // verifyAndDecodeSessionToken verifies the JWT signature and decodes the session data.
 func (s *otpService) verifyAndDecodeSessionToken(token string, logger *log.Logger) (
 	*common.OTPSessionData, *serviceerror.ServiceError) {
-	publicKey := s.jwtSvc.GetPublicKey()
-	if publicKey == nil {
-		logger.Error("Error verifying session token: JWT public key is not available")
-		return nil, &ErrorInternalServerError
-	}
-
 	// Verify JWT signature
-	err := s.jwtSvc.VerifyJWTSignature(token, publicKey)
+	jwtConfig := config.GetThunderRuntime().Config.OAuth.JWT
+	err := s.jwtSvc.VerifyJWT(token, "otp-svc", jwtConfig.Issuer)
 	if err != nil {
+		logger.Debug("Invalid session token", log.Error(err))
 		return nil, &ErrorInvalidSessionToken
 	}
 

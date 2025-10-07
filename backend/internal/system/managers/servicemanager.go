@@ -101,5 +101,8 @@ func (sm *ServiceManager) RegisterServices() error {
 	// Register the notification sender service.
 	services.NewNotificationSenderService(sm.mux)
 
+	// Register the authentication service.
+	services.NewAuthenticationService(sm.mux)
+
 	return nil
 }
