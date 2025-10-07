@@ -1,0 +1,20 @@
+{
+    "id": "auth_flow_config_basic",
+    "type": "AUTHENTICATION",
+    "nodes": [
+        {
+            "id": "basic_auth",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "BasicAuthExecutor"
+            },
+            "next": [
+                "authenticated"
+            ]
+        },
+        {
+            "id": "authenticated",
+            "type": "AUTHENTICATION_SUCCESS"
+        }
+    ]
+}

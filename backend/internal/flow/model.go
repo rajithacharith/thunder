@@ -16,8 +16,8 @@
  * under the License.
  */
 
-// Package jsonmodel provides the structure for representing a graph definition in JSON format.
-package jsonmodel
+// Package flow provides the structure for representing a graph definition in JSON format.
+package flow
 
 // GraphDefinition represents the direct graph structure from JSON
 type GraphDefinition struct {

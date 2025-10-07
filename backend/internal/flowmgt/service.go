@@ -21,16 +21,13 @@ package flowmgt
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
-	"github.com/asgardeo/thunder/internal/flow/constants"
-	"github.com/asgardeo/thunder/internal/flow/jsonmodel"
-	"github.com/asgardeo/thunder/internal/flow/model"
-	"github.com/asgardeo/thunder/internal/flow/utils"
+	"github.com/asgardeo/thunder/internal/flow"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
@@ -38,36 +35,39 @@ import (
 
 var (
 	flowMgtInstance *FlowMgtService
-	flowMgtOnce     sync.Once
 )
 
 // FlowMgtServiceInterface defines the interface for the flow management service.
 type FlowMgtServiceInterface interface {
-	Init() error
-	RegisterGraph(graphID string, g model.GraphInterface)
-	GetGraph(graphID string) (model.GraphInterface, bool)
+	RegisterGraph(graphID string, g flow.GraphInterface)
+	GetGraph(graphID string) (flow.GraphInterface, bool)
 	IsValidGraphID(graphID string) bool
 }
 
 // FlowMgtService is the implementation of FlowMgtServiceInterface.
 type FlowMgtService struct {
-	graphs map[string]model.GraphInterface
-	mu     sync.Mutex
+	graphs map[string]flow.GraphInterface
 }
 
 // GetFlowMgtService returns a singleton instance of FlowMgtServiceInterface.
-func GetFlowMgtService() FlowMgtServiceInterface {
-	flowMgtOnce.Do(func() {
-		flowMgtInstance = &FlowMgtService{
-			graphs: make(map[string]model.GraphInterface),
-			mu:     sync.Mutex{},
-		}
-	})
-	return flowMgtInstance
+func GetFlowMgtService() (FlowMgtServiceInterface, error) {
+	flowMgtInstance = &FlowMgtService{
+		graphs: make(map[string]flow.GraphInterface),
+	}
+	err := flowMgtInstance.initializeFlowGraph() // Initialize the service (load graphs, etc.)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize FlowMgtService: %w", err)
+	}
+
+	if err := flowMgtInstance.validateDefaultFlowConfigs(); err != nil {
+		return nil, fmt.Errorf("failed to validate default flow configurations: %w", err)
+	}
+
+	return flowMgtInstance, nil
 }
 
 // Init initializes the FlowMgtService by loading graph configurations into runtime.
-func (s *FlowMgtService) Init() error {
+func (s *FlowMgtService) initializeFlowGraph() error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowMgtService"))
 	logger.Debug("Initializing the flow management service")
 
@@ -83,6 +83,7 @@ func (s *FlowMgtService) Init() error {
 	logger.Debug("Loading graphs from config directory", log.String("configDir", configDir))
 
 	files, err := os.ReadDir(configDir)
+	logger.Info("Reading graph configuration files from directory", log.String("configDir", configDir))
 	if err != nil {
 		if os.IsNotExist(err) {
 			logger.Info("Config directory does not exist. No graphs will be loaded.",
@@ -99,7 +100,7 @@ func (s *FlowMgtService) Init() error {
 	logger.Debug("Found graph definition files in the graph directory", log.Int("fileCount", len(files)))
 
 	// Process each JSON file in the directory
-	flowGraphs := make(map[string]model.GraphInterface)
+	flowGraphs := make(map[string]flow.GraphInterface)
 	for _, file := range files {
 		// Skip directories and non-JSON files
 		if file.IsDir() || !strings.HasSuffix(file.Name(), ".json") {
@@ -118,14 +119,14 @@ func (s *FlowMgtService) Init() error {
 		}
 
 		// Parse the JSON into the flow model
-		var jsonGraph jsonmodel.GraphDefinition
+		var jsonGraph flow.GraphDefinition
 		if err := json.Unmarshal(fileContent, &jsonGraph); err != nil {
 			logger.Warn("Failed to parse JSON in file", log.String("filePath", filePath), log.Error(err))
 			continue
 		}
 
 		// Convert the JSON graph definition to the graph model
-		graphModel, err := utils.BuildGraphFromDefinition(&jsonGraph)
+		graphModel, err := flow.BuildGraphFromDefinition(&jsonGraph)
 		if err != nil {
 			logger.Warn("Failed to convert graph definition to graph model",
 				log.String("filePath", filePath), log.Error(err))
@@ -153,7 +154,7 @@ func (s *FlowMgtService) Init() error {
 		// Create and register the equivalent registration graph if not found already.
 		registrationGraphID := s.getRegistrationGraphID(graphID)
 		_, exists := s.graphs[registrationGraphID]
-		if !exists && graph.GetType() == constants.FlowTypeAuthentication {
+		if !exists && graph.GetType() == flow.FlowTypeAuthentication {
 			if err := s.createAndRegisterRegistrationGraph(registrationGraphID, graph, logger); err != nil {
 				logger.Error("Failed creating registration graph", log.String("graphID", graphID), log.Error(err))
 				continue
@@ -165,6 +166,7 @@ func (s *FlowMgtService) Init() error {
 			log.String("graphID", graphID))
 		s.RegisterGraph(graphID, graph)
 	}
+	logger.Info("Flow graphs loaded and registered successfully")
 
 	logger.Debug("Flow management service initialized successfully", log.Int("configuredGraphCount", len(flowGraphs)),
 		log.Int("inferredGraphCount", inferredGraphCount))
@@ -173,12 +175,12 @@ func (s *FlowMgtService) Init() error {
 }
 
 // RegisterGraph registers a graph with the FlowMgtService by its ID.
-func (s *FlowMgtService) RegisterGraph(graphID string, g model.GraphInterface) {
+func (s *FlowMgtService) RegisterGraph(graphID string, g flow.GraphInterface) {
 	s.graphs[graphID] = g
 }
 
 // GetGraph retrieves a graph by its ID
-func (s *FlowMgtService) GetGraph(graphID string) (model.GraphInterface, bool) {
+func (s *FlowMgtService) GetGraph(graphID string) (flow.GraphInterface, bool) {
 	g, ok := s.graphs[graphID]
 	return g, ok
 }
@@ -194,11 +196,11 @@ func (s *FlowMgtService) IsValidGraphID(graphID string) bool {
 
 // getRegistrationGraphID constructs the registration graph ID from the auth graph ID.
 func (s *FlowMgtService) getRegistrationGraphID(authGraphID string) string {
-	return constants.RegistrationFlowGraphPrefix + strings.TrimPrefix(authGraphID, constants.AuthFlowGraphPrefix)
+	return flow.RegistrationFlowGraphPrefix + strings.TrimPrefix(authGraphID, flow.AuthFlowGraphPrefix)
 }
 
 // createAndRegisterRegistrationGraph creates a registration graph from an authentication graph and registers it.
-func (s *FlowMgtService) createAndRegisterRegistrationGraph(registrationGraphID string, authGraph model.GraphInterface,
+func (s *FlowMgtService) createAndRegisterRegistrationGraph(registrationGraphID string, authGraph flow.GraphInterface,
 	logger *log.Logger) error {
 	registrationGraph, err := s.createRegistrationGraph(registrationGraphID, authGraph)
 	if err != nil {
@@ -223,9 +225,9 @@ func (s *FlowMgtService) createAndRegisterRegistrationGraph(registrationGraphID 
 
 // createRegistrationGraph creates a registration graph from an authentication graph.
 func (s *FlowMgtService) createRegistrationGraph(registrationGraphID string,
-	authGraph model.GraphInterface) (model.GraphInterface, error) {
+	authGraph flow.GraphInterface) (flow.GraphInterface, error) {
 	// Create a new graph from the authentication graph
-	registrationGraph := model.NewGraph(registrationGraphID, constants.FlowTypeRegistration)
+	registrationGraph := flow.NewGraph(registrationGraphID, flow.FlowTypeRegistration)
 
 	nodesCopy, err := sysutils.DeepCopyMapOfClonables(authGraph.GetNodes())
 	if err != nil {
@@ -289,10 +291,10 @@ func (s *FlowMgtService) createRegistrationGraph(registrationGraphID string,
 }
 
 // createProvisioningNode creates a provisioning node that leads to the specified auth success node
-func (s *FlowMgtService) createProvisioningNode() (model.NodeInterface, error) {
-	provisioningNode, err := model.NewNode(
+func (s *FlowMgtService) createProvisioningNode() (flow.NodeInterface, error) {
+	provisioningNode, err := flow.NewNode(
 		"provisioning",
-		string(constants.NodeTypeTaskExecution),
+		string(flow.NodeTypeTaskExecution),
 		false,
 		false,
 	)
@@ -300,11 +302,25 @@ func (s *FlowMgtService) createProvisioningNode() (model.NodeInterface, error) {
 		return nil, fmt.Errorf("failed to create provisioning node: %w", err)
 	}
 
-	execConfig := &model.ExecutorConfig{
+	execConfig := &flow.ExecutorConfig{
 		Name:       "ProvisioningExecutor",
 		Properties: make(map[string]string),
 	}
 	provisioningNode.SetExecutorConfig(execConfig)
 
 	return provisioningNode, nil
+}
+
+func (s *FlowMgtService) validateDefaultFlowConfigs() error {
+	flowConfig := config.GetThunderRuntime().Config.Flow
+
+	// Validate auth flow.
+	if flowConfig.Authn.DefaultFlow == "" {
+		return errors.New("default authentication flow is not configured")
+	}
+	if !s.IsValidGraphID(flowConfig.Authn.DefaultFlow) {
+		return errors.New("default authentication flow graph ID is invalid")
+	}
+
+	return nil
 }

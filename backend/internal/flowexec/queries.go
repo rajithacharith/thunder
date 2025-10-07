@@ -17,7 +17,7 @@
  */
 
 // Package store provides the implementation for flow context persistence operations.
-package store
+package flowexec
 
 import (
 	"github.com/asgardeo/thunder/internal/system/database/model"

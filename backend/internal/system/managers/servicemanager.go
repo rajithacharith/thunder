@@ -22,6 +22,11 @@ package managers
 import (
 	"net/http"
 
+	applicationservice "github.com/asgardeo/thunder/internal/application/service"
+	"github.com/asgardeo/thunder/internal/cert"
+	"github.com/asgardeo/thunder/internal/flowexec"
+	"github.com/asgardeo/thunder/internal/flowmgt"
+	"github.com/asgardeo/thunder/internal/system/server"
 	"github.com/asgardeo/thunder/internal/system/services"
 )
 
@@ -77,8 +82,21 @@ func (sm *ServiceManager) RegisterServices() error {
 	// Register the identity provider service.
 	services.NewIDPService(sm.mux)
 
+	serverOperationService := server.NewServerOperationService()
+
+	flowMgtService, err := flowmgt.GetFlowMgtService()
+	if err != nil {
+		return err
+	}
+	certService := cert.NewCertificateService()
+	applicationService := applicationservice.NewApplicationService(flowMgtService, certService)
+	flowEngine := flowexec.NewFlowEngine()
+	flowExecutionService := flowexec.NewFlowExecutionService(applicationService, flowMgtService, flowEngine)
+
+	flowExecutionHandler := flowexec.NewFlowExecutionHandler(flowExecutionService)
+
 	// Register the flow execution service.
-	services.NewFlowExecutionService(sm.mux)
+	services.NewFlowExecutionService(sm.mux, serverOperationService, flowExecutionHandler)
 
 	// Register the notification sender service.
 	services.NewNotificationSenderService(sm.mux)

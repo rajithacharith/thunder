@@ -16,10 +16,9 @@
  * under the License.
  */
 
-package model
+package flow
 
 import (
-	"github.com/asgardeo/thunder/internal/flow/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 )
 
@@ -33,7 +32,7 @@ func NewTaskExecutionNode(id string, isStartNode bool, isFinalNode bool) NodeInt
 	return &TaskExecutionNode{
 		Node: &Node{
 			id:               id,
-			_type:            constants.NodeTypeTaskExecution,
+			_type:            NodeTypeTaskExecution,
 			isStartNode:      isStartNode,
 			isFinalNode:      isFinalNode,
 			nextNodeList:     []string{},
@@ -47,7 +46,7 @@ func NewTaskExecutionNode(id string, isStartNode bool, isFinalNode bool) NodeInt
 // Execute executes the node's executor.
 func (n *TaskExecutionNode) Execute(ctx *NodeContext) (*NodeResponse, *serviceerror.ServiceError) {
 	if n.executorConfig == nil || n.executorConfig.Executor == nil {
-		return nil, &constants.ErrorNodeExecutorNotFound
+		return nil, &ErrorNodeExecutorNotFound
 	}
 
 	execResp, svcErr := n.triggerExecutor(ctx)
@@ -62,12 +61,12 @@ func (n *TaskExecutionNode) Execute(ctx *NodeContext) (*NodeResponse, *serviceer
 func (n *TaskExecutionNode) triggerExecutor(ctx *NodeContext) (*ExecutorResponse, *serviceerror.ServiceError) {
 	execResp, err := n.executorConfig.Executor.Execute(ctx)
 	if err != nil {
-		svcErr := constants.ErrorNodeExecutorExecError
+		svcErr := ErrorNodeExecutorExecError
 		svcErr.ErrorDescription = "Error executing node executor: " + err.Error()
 		return nil, &svcErr
 	}
 	if execResp == nil {
-		return nil, &constants.ErrorNilResponseFromExecutor
+		return nil, &ErrorNilResponseFromExecutor
 	}
 
 	return execResp, nil
@@ -97,23 +96,23 @@ func buildNodeResponse(execResp *ExecutorResponse) *NodeResponse {
 		nodeResp.Actions = make([]Action, 0)
 	}
 
-	if execResp.Status == constants.ExecComplete {
-		nodeResp.Status = constants.NodeStatusComplete
+	if execResp.Status == ExecComplete {
+		nodeResp.Status = NodeStatusComplete
 		nodeResp.Type = ""
-	} else if execResp.Status == constants.ExecUserInputRequired {
-		nodeResp.Status = constants.NodeStatusIncomplete
-		nodeResp.Type = constants.NodeResponseTypeView
-	} else if execResp.Status == constants.ExecExternalRedirection {
-		nodeResp.Status = constants.NodeStatusIncomplete
-		nodeResp.Type = constants.NodeResponseTypeRedirection
-	} else if execResp.Status == constants.ExecRetry {
-		nodeResp.Status = constants.NodeStatusIncomplete
-		nodeResp.Type = constants.NodeResponseTypeRetry
-	} else if execResp.Status == constants.ExecFailure {
-		nodeResp.Status = constants.NodeStatusFailure
+	} else if execResp.Status == ExecUserInputRequired {
+		nodeResp.Status = NodeStatusIncomplete
+		nodeResp.Type = NodeResponseTypeView
+	} else if execResp.Status == ExecExternalRedirection {
+		nodeResp.Status = NodeStatusIncomplete
+		nodeResp.Type = NodeResponseTypeRedirection
+	} else if execResp.Status == ExecRetry {
+		nodeResp.Status = NodeStatusIncomplete
+		nodeResp.Type = NodeResponseTypeRetry
+	} else if execResp.Status == ExecFailure {
+		nodeResp.Status = NodeStatusFailure
 		nodeResp.Type = ""
 	} else {
-		nodeResp.Status = constants.NodeStatusIncomplete
+		nodeResp.Status = NodeStatusIncomplete
 		nodeResp.Type = ""
 	}
 

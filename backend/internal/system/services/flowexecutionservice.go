@@ -21,21 +21,21 @@ package services
 import (
 	"net/http"
 
-	"github.com/asgardeo/thunder/internal/flow/handler"
+	"github.com/asgardeo/thunder/internal/flowexec"
 	"github.com/asgardeo/thunder/internal/system/server"
 )
 
 // FlowExecutionService defines the service for handling flow execution requests.
 type FlowExecutionService struct {
-	ServerOpsService     server.ServerOperationServiceInterface
-	flowExecutionHandler *handler.FlowExecutionHandler
+	serverOpsService     server.ServerOperationServiceInterface
+	flowExecutionHandler *flowexec.FlowExecutionHandler
 }
 
 // NewFlowExecutionService creates a new instance of FlowExecutionService.
-func NewFlowExecutionService(mux *http.ServeMux) ServiceInterface {
+func NewFlowExecutionService(mux *http.ServeMux, serverOperationService server.ServerOperationServiceInterface, flowExecutionHandler *flowexec.FlowExecutionHandler) ServiceInterface {
 	instance := &FlowExecutionService{
-		ServerOpsService:     server.NewServerOperationService(),
-		flowExecutionHandler: handler.NewFlowExecutionHandler(),
+		serverOpsService:     serverOperationService,
+		flowExecutionHandler: flowExecutionHandler,
 	}
 	instance.RegisterRoutes(mux)
 
@@ -53,9 +53,9 @@ func (s *FlowExecutionService) RegisterRoutes(mux *http.ServeMux) {
 			AllowCredentials: true,
 		},
 	}
-	s.ServerOpsService.WrapHandleFunction(mux, "POST /flow/execute", &opts,
+	s.serverOpsService.WrapHandleFunction(mux, "POST /flow/execute", &opts,
 		s.flowExecutionHandler.HandleFlowExecutionRequest)
-	s.ServerOpsService.WrapHandleFunction(mux, "OPTIONS /flow/execute", &opts,
+	s.serverOpsService.WrapHandleFunction(mux, "OPTIONS /flow/execute", &opts,
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		})

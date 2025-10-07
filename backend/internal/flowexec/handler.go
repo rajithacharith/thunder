@@ -17,15 +17,13 @@
  */
 
 // Package handler provides HTTP handlers for managing flow related API requests.
-package handler
+package flowexec
 
 import (
 	"encoding/json"
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/flow"
-	"github.com/asgardeo/thunder/internal/flow/constants"
-	"github.com/asgardeo/thunder/internal/flow/model"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -34,23 +32,27 @@ import (
 )
 
 // FlowExecutionHandler handles flow execution requests.
-type FlowExecutionHandler struct{}
+type FlowExecutionHandler struct {
+	flowExecService FlowExecServiceInterface
+}
 
 // NewFlowExecutionHandler creates a new instance of FlowExecutionHandler.
-func NewFlowExecutionHandler() *FlowExecutionHandler {
-	return &FlowExecutionHandler{}
+func NewFlowExecutionHandler(flowExecutionService FlowExecServiceInterface) *FlowExecutionHandler {
+	return &FlowExecutionHandler{
+		flowExecService: flowExecutionService,
+	}
 }
 
 // HandleFlowExecutionRequest handles the flow execution request.
 func (h *FlowExecutionHandler) HandleFlowExecutionRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowExecutionHandler"))
 
-	flowR, err := sysutils.DecodeJSONBody[model.FlowRequest](r)
+	flowR, err := sysutils.DecodeJSONBody[flow.FlowRequest](r)
 	if err != nil {
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 
-		if err := json.NewEncoder(w).Encode(constants.APIErrorFlowRequestJSONDecodeError); err != nil {
+		if err := json.NewEncoder(w).Encode(flow.APIErrorFlowRequestJSONDecodeError); err != nil {
 			logger.Error("Error encoding error response", log.Error(err))
 			http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
 		}
@@ -65,15 +67,14 @@ func (h *FlowExecutionHandler) HandleFlowExecutionRequest(w http.ResponseWriter,
 	inputs := sysutils.SanitizeStringMap(flowR.Inputs)
 	flowTypeStr := sysutils.SanitizeString(flowR.FlowType)
 
-	svc := flow.GetFlowExecService()
-	flowStep, flowErr := svc.Execute(appID, flowID, actionID, flowTypeStr, inputs)
+	flowStep, flowErr := h.flowExecService.Execute(appID, flowID, actionID, flowTypeStr, inputs)
 
 	if flowErr != nil {
 		handleFlowError(w, logger, flowErr)
 		return
 	}
 
-	flowResp := model.FlowResponse{
+	flowResp := flow.FlowResponse{
 		FlowID:        flowStep.FlowID,
 		StepID:        flowStep.StepID,
 		FlowStatus:    string(flowStep.Status),

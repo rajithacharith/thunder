@@ -17,39 +17,39 @@
  */
 
 // Package store provides the implementation for flow context persistence operations.
-package store
+package flowexec
 
 import (
 	"errors"
 	"fmt"
 
-	"github.com/asgardeo/thunder/internal/flow/model"
+	"github.com/asgardeo/thunder/internal/flow"
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 )
 
 // FlowStoreInterface defines the methods for flow context storage operations.
-type FlowStoreInterface interface {
-	StoreFlowContext(ctx model.EngineContext) error
+type flowStoreInterface interface {
+	StoreFlowContext(ctx flow.EngineContext) error
 	GetFlowContext(flowID string) (*FlowContextWithUserDataDB, error)
-	UpdateFlowContext(ctx model.EngineContext) error
+	UpdateFlowContext(ctx flow.EngineContext) error
 	DeleteFlowContext(flowID string) error
 }
 
-// FlowStore implements the FlowStoreInterface for managing flow contexts.
-type FlowStore struct {
+// flowStore implements the flowStoreInterface for managing flow contexts.
+type flowStore struct {
 	DBProvider provider.DBProviderInterface
 }
 
-// NewFlowStore creates a new instance of FlowStore.
-func NewFlowStore() FlowStoreInterface {
-	return &FlowStore{
+// newFlowStore creates a new instance of FlowStore.
+func newFlowStore() flowStoreInterface {
+	return &flowStore{
 		DBProvider: provider.GetDBProvider(),
 	}
 }
 
 // StoreFlowContext stores the complete flow context in the database.
-func (s *FlowStore) StoreFlowContext(ctx model.EngineContext) error {
+func (s *flowStore) StoreFlowContext(ctx flow.EngineContext) error {
 	// Convert engine context to database model
 	dbModel, err := FromEngineContext(ctx)
 	if err != nil {
@@ -73,7 +73,7 @@ func (s *FlowStore) StoreFlowContext(ctx model.EngineContext) error {
 }
 
 // GetFlowContext retrieves the flow context from the database.
-func (s *FlowStore) GetFlowContext(flowID string) (*FlowContextWithUserDataDB, error) {
+func (s *flowStore) GetFlowContext(flowID string) (*FlowContextWithUserDataDB, error) {
 	dbClient, err := s.DBProvider.GetDBClient("runtime")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
@@ -97,7 +97,7 @@ func (s *FlowStore) GetFlowContext(flowID string) (*FlowContextWithUserDataDB, e
 }
 
 // UpdateFlowContext updates the flow context in the database.
-func (s *FlowStore) UpdateFlowContext(ctx model.EngineContext) error {
+func (s *flowStore) UpdateFlowContext(ctx flow.EngineContext) error {
 	// Convert engine context to database model
 	dbModel, err := FromEngineContext(ctx)
 	if err != nil {
@@ -121,7 +121,7 @@ func (s *FlowStore) UpdateFlowContext(ctx model.EngineContext) error {
 }
 
 // DeleteFlowContext removes the flow context from the database.
-func (s *FlowStore) DeleteFlowContext(flowID string) error {
+func (s *flowStore) DeleteFlowContext(flowID string) error {
 	queries := []func(tx dbmodel.TxInterface) error{
 		func(tx dbmodel.TxInterface) error {
 			_, err := tx.Exec(QueryDeleteFlowUserData.Query, flowID)
@@ -137,7 +137,7 @@ func (s *FlowStore) DeleteFlowContext(flowID string) error {
 }
 
 // executeTransaction is a helper function to handle database transactions.
-func (s *FlowStore) executeTransaction(queries []func(tx dbmodel.TxInterface) error) error {
+func (s *flowStore) executeTransaction(queries []func(tx dbmodel.TxInterface) error) error {
 	dbClient, err := s.DBProvider.GetDBClient("runtime")
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)

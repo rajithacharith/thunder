@@ -17,14 +17,14 @@
  */
 
 // Package store provides the implementation for flow context persistence operations.
-package store
+package flowexec
 
 import (
 	"encoding/json"
 	"time"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/flow/model"
+	"github.com/asgardeo/thunder/internal/flow"
 )
 
 // FlowContextWithUserDataDB represents the combined flow context and user data.
@@ -44,12 +44,12 @@ type FlowContextWithUserDataDB struct {
 }
 
 // ToEngineContext converts the database model to the flow engine context.
-func (f *FlowContextWithUserDataDB) ToEngineContext(graph model.GraphInterface) (model.EngineContext, error) {
+func (f *FlowContextWithUserDataDB) ToEngineContext(graph flow.GraphInterface) (flow.EngineContext, error) {
 	// Parse user input data
 	var userInputData map[string]string
 	if f.UserInputs != nil {
 		if err := json.Unmarshal([]byte(*f.UserInputs), &userInputData); err != nil {
-			return model.EngineContext{}, err
+			return flow.EngineContext{}, err
 		}
 	} else {
 		userInputData = make(map[string]string)
@@ -59,7 +59,7 @@ func (f *FlowContextWithUserDataDB) ToEngineContext(graph model.GraphInterface) 
 	var runtimeData map[string]string
 	if f.RuntimeData != nil {
 		if err := json.Unmarshal([]byte(*f.RuntimeData), &runtimeData); err != nil {
-			return model.EngineContext{}, err
+			return flow.EngineContext{}, err
 		}
 	} else {
 		runtimeData = make(map[string]string)
@@ -69,7 +69,7 @@ func (f *FlowContextWithUserDataDB) ToEngineContext(graph model.GraphInterface) 
 	var userAttributes map[string]interface{}
 	if f.UserAttributes != nil {
 		if err := json.Unmarshal([]byte(*f.UserAttributes), &userAttributes); err != nil {
-			return model.EngineContext{}, err
+			return flow.EngineContext{}, err
 		}
 	} else {
 		userAttributes = make(map[string]interface{})
@@ -86,7 +86,7 @@ func (f *FlowContextWithUserDataDB) ToEngineContext(graph model.GraphInterface) 
 	}
 
 	// Get current node from graph if available
-	var currentNode model.NodeInterface
+	var currentNode flow.NodeInterface
 	if f.CurrentNodeID != nil && graph != nil {
 		if node, exists := graph.GetNode(*f.CurrentNodeID); exists {
 			currentNode = node
@@ -99,7 +99,7 @@ func (f *FlowContextWithUserDataDB) ToEngineContext(graph model.GraphInterface) 
 		currentActionID = *f.CurrentActionID
 	}
 
-	return model.EngineContext{
+	return flow.EngineContext{
 		FlowID:            f.FlowID,
 		FlowType:          graph.GetType(),
 		AppID:             f.AppID,
@@ -113,7 +113,7 @@ func (f *FlowContextWithUserDataDB) ToEngineContext(graph model.GraphInterface) 
 }
 
 // FromEngineContext creates a database model from the flow engine context.
-func FromEngineContext(ctx model.EngineContext) (*FlowContextWithUserDataDB, error) {
+func FromEngineContext(ctx flow.EngineContext) (*FlowContextWithUserDataDB, error) {
 	// Serialize user input data
 	userInputDataJSON, err := json.Marshal(ctx.UserInputData)
 	if err != nil {

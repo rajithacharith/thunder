@@ -29,7 +29,6 @@ import (
 	"time"
 
 	"github.com/asgardeo/thunder/internal/cert"
-	"github.com/asgardeo/thunder/internal/flow"
 	"github.com/asgardeo/thunder/internal/system/cache"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/jwt"
@@ -51,8 +50,6 @@ func main() {
 	if mux == nil {
 		logger.Fatal("Failed to initialize multiplexer")
 	}
-
-	initFlowService(logger)
 
 	if cfg.Server.HTTPOnly {
 		logger.Info("TLS is not enabled, starting server without TLS")
@@ -123,14 +120,6 @@ func initMultiplexer(logger *log.Logger) *http.ServeMux {
 	}
 
 	return mux
-}
-
-// initFlowService initializes the flow service.
-func initFlowService(logger *log.Logger) {
-	svc := flow.GetFlowExecService()
-	if err := svc.Init(); err != nil {
-		logger.Fatal("Failed to initialize flow service", log.Error(err))
-	}
 }
 
 // initCacheManager initializes the cache manager with centralized cleanup.

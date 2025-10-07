@@ -48,8 +48,15 @@ func (suite *TokenHandlerTestSuite) SetupTest() {
 				ValidityPeriod: 3600,
 			},
 		},
+		Flow: config.FlowConfig{
+			GraphDirectory: "../../../../tests/resources/graphs/",
+			Authn: config.FlowAuthnConfig{
+				DefaultFlow: "auth_flow_config_basic",
+			},
+		},
 	}
-	_ = config.InitializeThunderRuntime("test", testConfig)
+	_ = config.InitializeThunderRuntime("", testConfig)
+
 }
 
 func (suite *TokenHandlerTestSuite) TestNewTokenHandler() {

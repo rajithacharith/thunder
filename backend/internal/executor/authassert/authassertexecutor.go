@@ -23,8 +23,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	flowconst "github.com/asgardeo/thunder/internal/flow/constants"
-	flowmodel "github.com/asgardeo/thunder/internal/flow/model"
+	"github.com/asgardeo/thunder/internal/flow"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jwt"
@@ -37,17 +36,17 @@ const loggerComponentName = "AuthAssertExecutor"
 
 // AuthAssertExecutor is an executor that handles authentication assertions in the flow.
 type AuthAssertExecutor struct {
-	internal    flowmodel.Executor
+	internal    flow.Executor
 	JWTService  jwt.JWTServiceInterface
 	UserService userservice.UserServiceInterface
 }
 
-var _ flowmodel.ExecutorInterface = (*AuthAssertExecutor)(nil)
+var _ flow.ExecutorInterface = (*AuthAssertExecutor)(nil)
 
 // NewAuthAssertExecutor creates a new instance of AuthAssertExecutor.
 func NewAuthAssertExecutor(id, name string, properties map[string]string) *AuthAssertExecutor {
 	return &AuthAssertExecutor{
-		internal:    *flowmodel.NewExecutor(id, name, []flowmodel.InputData{}, []flowmodel.InputData{}, properties),
+		internal:    *flow.NewExecutor(id, name, []flow.InputData{}, []flow.InputData{}, properties),
 		JWTService:  jwt.GetJWTService(),
 		UserService: userservice.GetUserService(),
 	}
@@ -64,18 +63,18 @@ func (a *AuthAssertExecutor) GetName() string {
 }
 
 // GetProperties returns the properties of the AuthAssertExecutor.
-func (a *AuthAssertExecutor) GetProperties() flowmodel.ExecutorProperties {
+func (a *AuthAssertExecutor) GetProperties() flow.ExecutorProperties {
 	return a.internal.Properties
 }
 
 // Execute executes the authentication assertion logic.
-func (a *AuthAssertExecutor) Execute(ctx *flowmodel.NodeContext) (*flowmodel.ExecutorResponse, error) {
+func (a *AuthAssertExecutor) Execute(ctx *flow.NodeContext) (*flow.ExecutorResponse, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
 		log.String(log.LoggerKeyExecutorID, a.GetID()),
 		log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Executing authentication assertion executor")
 
-	execResp := &flowmodel.ExecutorResponse{
+	execResp := &flow.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -88,10 +87,10 @@ func (a *AuthAssertExecutor) Execute(ctx *flowmodel.NodeContext) (*flowmodel.Exe
 
 		logger.Debug("Generated JWT token for authentication assertion")
 
-		execResp.Status = flowconst.ExecComplete
+		execResp.Status = flow.ExecComplete
 		execResp.Assertion = token
 	} else {
-		execResp.Status = flowconst.ExecFailure
+		execResp.Status = flow.ExecFailure
 		execResp.FailureReason = "User is not authenticated"
 	}
 
@@ -102,38 +101,38 @@ func (a *AuthAssertExecutor) Execute(ctx *flowmodel.NodeContext) (*flowmodel.Exe
 }
 
 // GetDefaultExecutorInputs returns the default required input data for the AuthAssertExecutor.
-func (a *AuthAssertExecutor) GetDefaultExecutorInputs() []flowmodel.InputData {
+func (a *AuthAssertExecutor) GetDefaultExecutorInputs() []flow.InputData {
 	return a.internal.GetDefaultExecutorInputs()
 }
 
 // GetPrerequisites returns the prerequisites for the AuthAssertExecutor.
-func (a *AuthAssertExecutor) GetPrerequisites() []flowmodel.InputData {
+func (a *AuthAssertExecutor) GetPrerequisites() []flow.InputData {
 	return a.internal.GetPrerequisites()
 }
 
 // CheckInputData checks if the required input data is provided in the context.
-func (a *AuthAssertExecutor) CheckInputData(ctx *flowmodel.NodeContext, execResp *flowmodel.ExecutorResponse) bool {
+func (a *AuthAssertExecutor) CheckInputData(ctx *flow.NodeContext, execResp *flow.ExecutorResponse) bool {
 	return a.internal.CheckInputData(ctx, execResp)
 }
 
 // ValidatePrerequisites validates whether the prerequisites for the AuthAssertExecutor are met.
-func (a *AuthAssertExecutor) ValidatePrerequisites(ctx *flowmodel.NodeContext,
-	execResp *flowmodel.ExecutorResponse) bool {
+func (a *AuthAssertExecutor) ValidatePrerequisites(ctx *flow.NodeContext,
+	execResp *flow.ExecutorResponse) bool {
 	return a.internal.ValidatePrerequisites(ctx, execResp)
 }
 
 // GetUserIDFromContext retrieves the user ID from the context.
-func (a *AuthAssertExecutor) GetUserIDFromContext(ctx *flowmodel.NodeContext) (string, error) {
+func (a *AuthAssertExecutor) GetUserIDFromContext(ctx *flow.NodeContext) (string, error) {
 	return a.internal.GetUserIDFromContext(ctx)
 }
 
 // GetRequiredData returns the required input data for the AuthAssertExecutor.
-func (a *AuthAssertExecutor) GetRequiredData(ctx *flowmodel.NodeContext) []flowmodel.InputData {
+func (a *AuthAssertExecutor) GetRequiredData(ctx *flow.NodeContext) []flow.InputData {
 	return a.internal.GetRequiredData(ctx)
 }
 
 // generateAuthAssertion generates the authentication assertion token.
-func (a *AuthAssertExecutor) generateAuthAssertion(ctx *flowmodel.NodeContext, logger *log.Logger) (string, error) {
+func (a *AuthAssertExecutor) generateAuthAssertion(ctx *flow.NodeContext, logger *log.Logger) (string, error) {
 	tokenSub := ""
 	if ctx.AuthenticatedUser.UserID != "" {
 		tokenSub = ctx.AuthenticatedUser.UserID

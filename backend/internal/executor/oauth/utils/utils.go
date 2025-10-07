@@ -23,7 +23,7 @@ import (
 	"errors"
 	"strings"
 
-	flowmodel "github.com/asgardeo/thunder/internal/flow/model"
+	"github.com/asgardeo/thunder/internal/flow"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -35,7 +35,7 @@ const paramPlaceHolderEnd = "}"
 
 // GetResolvedAdditionalParam resolves the additional parameter value by replacing placeholders
 // with actual values.
-func GetResolvedAdditionalParam(paramName, paramValue string, ctx *flowmodel.NodeContext) (string, error) {
+func GetResolvedAdditionalParam(paramName, paramValue string, ctx *flow.NodeContext) (string, error) {
 	if strings.Contains(paramValue, paramPlaceHolderStart) && strings.Contains(paramValue, paramPlaceHolderEnd) {
 		startIndex := strings.Index(paramValue, paramPlaceHolderStart)
 		endIndex := strings.Index(paramValue, paramPlaceHolderEnd)

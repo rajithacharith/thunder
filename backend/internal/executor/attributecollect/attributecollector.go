@@ -24,8 +24,7 @@ import (
 	"errors"
 	"fmt"
 
-	flowconst "github.com/asgardeo/thunder/internal/flow/constants"
-	flowmodel "github.com/asgardeo/thunder/internal/flow/model"
+	"github.com/asgardeo/thunder/internal/flow"
 	"github.com/asgardeo/thunder/internal/system/log"
 	usermodel "github.com/asgardeo/thunder/internal/user/model"
 	"github.com/asgardeo/thunder/internal/user/service"
@@ -42,15 +41,15 @@ const (
 
 // AttributeCollector is an executor that collects user attributes and updates the user profile.
 type AttributeCollector struct {
-	internal    flowmodel.Executor
+	internal    flow.Executor
 	userService service.UserServiceInterface
 }
 
-var _ flowmodel.ExecutorInterface = (*AttributeCollector)(nil)
+var _ flow.ExecutorInterface = (*AttributeCollector)(nil)
 
 // NewAttributeCollector creates a new instance of AttributeCollector.
 func NewAttributeCollector(id, name string, properties map[string]string) *AttributeCollector {
-	prerequisites := []flowmodel.InputData{
+	prerequisites := []flow.InputData{
 		{
 			Name:     "userID",
 			Type:     "string",
@@ -59,7 +58,7 @@ func NewAttributeCollector(id, name string, properties map[string]string) *Attri
 	}
 
 	return &AttributeCollector{
-		internal:    *flowmodel.NewExecutor(id, name, []flowmodel.InputData{}, prerequisites, properties),
+		internal:    *flow.NewExecutor(id, name, []flow.InputData{}, prerequisites, properties),
 		userService: service.GetUserService(),
 	}
 }
@@ -75,82 +74,82 @@ func (a *AttributeCollector) GetName() string {
 }
 
 // GetProperties returns the properties of the AttributeCollector.
-func (a *AttributeCollector) GetProperties() flowmodel.ExecutorProperties {
+func (a *AttributeCollector) GetProperties() flow.ExecutorProperties {
 	return a.internal.Properties
 }
 
 // Execute executes the attribute collection logic.
-func (a *AttributeCollector) Execute(ctx *flowmodel.NodeContext) (*flowmodel.ExecutorResponse, error) {
+func (a *AttributeCollector) Execute(ctx *flow.NodeContext) (*flow.ExecutorResponse, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
 		log.String(log.LoggerKeyExecutorID, a.GetID()),
 		log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Executing attribute collect executor")
 
-	execResp := &flowmodel.ExecutorResponse{
+	execResp := &flow.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
 
-	if ctx.FlowType == flowconst.FlowTypeRegistration {
+	if ctx.FlowType == flow.FlowTypeRegistration {
 		logger.Debug("Flow type is registration, skipping attribute collection")
-		execResp.Status = flowconst.ExecComplete
+		execResp.Status = flow.ExecComplete
 		return execResp, nil
 	}
 
 	if !ctx.AuthenticatedUser.IsAuthenticated {
 		logger.Debug("User is not authenticated, cannot collect attributes")
-		execResp.Status = flowconst.ExecFailure
+		execResp.Status = flow.ExecFailure
 		execResp.FailureReason = "User is not authenticated"
 		return execResp, nil
 	}
 
 	if !a.ValidatePrerequisites(ctx, execResp) {
 		logger.Debug("Prerequisites validation failed for attribute collector")
-		execResp.Status = flowconst.ExecFailure
+		execResp.Status = flow.ExecFailure
 		execResp.FailureReason = "Prerequisites validation failed for attribute collector"
 		return execResp, nil
 	}
 
 	if a.CheckInputData(ctx, execResp) {
-		if execResp.Status == flowconst.ExecFailure {
+		if execResp.Status == flow.ExecFailure {
 			return execResp, nil
 		}
 
 		logger.Debug("Required input data for attribute collector is not provided")
-		execResp.Status = flowconst.ExecUserInputRequired
+		execResp.Status = flow.ExecUserInputRequired
 		return execResp, nil
 	}
-	if execResp.Status == flowconst.ExecComplete {
+	if execResp.Status == flow.ExecComplete {
 		logger.Debug("Attribute collection is complete, no further action required")
 		return execResp, nil
 	}
 
 	if err := a.updateUserInStore(ctx); err != nil {
 		logger.Error("Failed to update user attributes", log.Error(err))
-		execResp.Status = flowconst.ExecFailure
+		execResp.Status = flow.ExecFailure
 		execResp.FailureReason = "Failed to update user attributes"
 		return execResp, nil
 	}
 
 	logger.Debug("User attributes updated successfully")
-	execResp.Status = flowconst.ExecComplete
+	execResp.Status = flow.ExecComplete
 	return execResp, nil
 }
 
 // GetDefaultExecutorInputs returns the default inputs for the AttributeCollector.
-func (a *AttributeCollector) GetDefaultExecutorInputs() []flowmodel.InputData {
+func (a *AttributeCollector) GetDefaultExecutorInputs() []flow.InputData {
 	return a.internal.GetDefaultExecutorInputs()
 }
 
 // GetPrerequisites returns the prerequisites for the AttributeCollector.
-func (a *AttributeCollector) GetPrerequisites() []flowmodel.InputData {
+func (a *AttributeCollector) GetPrerequisites() []flow.InputData {
 	return a.internal.GetPrerequisites()
 }
 
 // CheckInputData checks if the required input data is provided in the context.
 // If not present, it tries to retrieve user attributes from the user profile.
 // If the attributes are not found, it adds the required data to the executor response.
-func (a *AttributeCollector) CheckInputData(ctx *flowmodel.NodeContext, execResp *flowmodel.ExecutorResponse) bool {
+func (a *AttributeCollector) CheckInputData(ctx *flow.NodeContext, execResp *flow.ExecutorResponse) bool {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
 		log.String(log.LoggerKeyExecutorID, a.GetID()),
 		log.String(log.LoggerKeyFlowID, ctx.FlowID))
@@ -171,7 +170,7 @@ func (a *AttributeCollector) CheckInputData(ctx *flowmodel.NodeContext, execResp
 
 		// Clear the required data in the executor response to avoid duplicates.
 		missingAttributes := execResp.RequiredData
-		execResp.RequiredData = make([]flowmodel.InputData, 0)
+		execResp.RequiredData = make([]flow.InputData, 0)
 		if execResp.RuntimeData == nil {
 			execResp.RuntimeData = make(map[string]string)
 		}
@@ -208,7 +207,7 @@ func (a *AttributeCollector) CheckInputData(ctx *flowmodel.NodeContext, execResp
 	userAttributes, err := a.getUserAttributes(ctx)
 	if err != nil {
 		logger.Error("Failed to retrieve user attributes", log.Error(err))
-		execResp.Status = flowconst.ExecFailure
+		execResp.Status = flow.ExecFailure
 		execResp.FailureReason = "Failed to retrieve user attributes from user profile"
 		return true
 	}
@@ -219,7 +218,7 @@ func (a *AttributeCollector) CheckInputData(ctx *flowmodel.NodeContext, execResp
 
 	// Clear the required data in the executor response to avoid duplicates.
 	missingAttributes := execResp.RequiredData
-	execResp.RequiredData = make([]flowmodel.InputData, 0)
+	execResp.RequiredData = make([]flow.InputData, 0)
 	if execResp.RuntimeData == nil {
 		execResp.RuntimeData = make(map[string]string)
 	}
@@ -257,23 +256,23 @@ func (a *AttributeCollector) CheckInputData(ctx *flowmodel.NodeContext, execResp
 }
 
 // ValidatePrerequisites validates the prerequisites for the AttributeCollector.
-func (a *AttributeCollector) ValidatePrerequisites(ctx *flowmodel.NodeContext,
-	execResp *flowmodel.ExecutorResponse) bool {
+func (a *AttributeCollector) ValidatePrerequisites(ctx *flow.NodeContext,
+	execResp *flow.ExecutorResponse) bool {
 	return a.internal.ValidatePrerequisites(ctx, execResp)
 }
 
 // GetUserIDFromContext retrieves the user ID from the context.
-func (a *AttributeCollector) GetUserIDFromContext(ctx *flowmodel.NodeContext) (string, error) {
+func (a *AttributeCollector) GetUserIDFromContext(ctx *flow.NodeContext) (string, error) {
 	return a.internal.GetUserIDFromContext(ctx)
 }
 
 // GetRequiredData returns the required input data for the AttributeCollector.
-func (a *AttributeCollector) GetRequiredData(ctx *flowmodel.NodeContext) []flowmodel.InputData {
+func (a *AttributeCollector) GetRequiredData(ctx *flow.NodeContext) []flow.InputData {
 	return a.getRequiredData(ctx)
 }
 
 // getUserAttributes retrieves the user attributes from the user profile.
-func (a *AttributeCollector) getUserAttributes(ctx *flowmodel.NodeContext) (map[string]interface{}, error) {
+func (a *AttributeCollector) getUserAttributes(ctx *flow.NodeContext) (map[string]interface{}, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
 		log.String(log.LoggerKeyExecutorID, a.GetID()),
 		log.String(log.LoggerKeyFlowID, ctx.FlowID))
@@ -302,7 +301,7 @@ func (a *AttributeCollector) getUserAttributes(ctx *flowmodel.NodeContext) (map[
 }
 
 // updateUserInStore updates the user profile with the collected attributes.
-func (a *AttributeCollector) updateUserInStore(ctx *flowmodel.NodeContext) error {
+func (a *AttributeCollector) updateUserInStore(ctx *flow.NodeContext) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
 		log.String(log.LoggerKeyExecutorID, a.GetID()),
 		log.String(log.LoggerKeyFlowID, ctx.FlowID))
@@ -338,7 +337,7 @@ func (a *AttributeCollector) updateUserInStore(ctx *flowmodel.NodeContext) error
 }
 
 // getUserFromStore retrieves the user profile from the user store.
-func (a *AttributeCollector) getUserFromStore(ctx *flowmodel.NodeContext) (*usermodel.User, error) {
+func (a *AttributeCollector) getUserFromStore(ctx *flow.NodeContext) (*usermodel.User, error) {
 	userID, err := a.GetUserIDFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve user ID: %w", err)
@@ -356,7 +355,7 @@ func (a *AttributeCollector) getUserFromStore(ctx *flowmodel.NodeContext) (*user
 }
 
 // getUpdatedUserObject creates a new user object with the updated attributes.
-func (a *AttributeCollector) getUpdatedUserObject(ctx *flowmodel.NodeContext,
+func (a *AttributeCollector) getUpdatedUserObject(ctx *flow.NodeContext,
 	user *usermodel.User) (bool, *usermodel.User, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
 		log.String(log.LoggerKeyExecutorID, a.GetID()),
@@ -404,7 +403,7 @@ func (a *AttributeCollector) getUpdatedUserObject(ctx *flowmodel.NodeContext,
 }
 
 // getInputAttributes retrieves the input attributes from the context.
-func (a *AttributeCollector) getInputAttributes(ctx *flowmodel.NodeContext) map[string]interface{} {
+func (a *AttributeCollector) getInputAttributes(ctx *flow.NodeContext) map[string]interface{} {
 	attributesMap := make(map[string]interface{})
 	requiredInputAttrs := a.getRequiredData(ctx)
 
@@ -426,7 +425,7 @@ func (a *AttributeCollector) getInputAttributes(ctx *flowmodel.NodeContext) map[
 }
 
 // getRequiredData returns the required input data for the AttributeCollector.
-func (a *AttributeCollector) getRequiredData(ctx *flowmodel.NodeContext) []flowmodel.InputData {
+func (a *AttributeCollector) getRequiredData(ctx *flow.NodeContext) []flow.InputData {
 	executorReqData := a.GetDefaultExecutorInputs()
 	requiredData := ctx.NodeInputData
 

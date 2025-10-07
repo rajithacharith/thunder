@@ -16,11 +16,10 @@
  * under the License.
  */
 
-package model
+package flow
 
 import (
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/flow/constants"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -30,7 +29,7 @@ const (
 
 // ExecutorResponse represents the response from an executor
 type ExecutorResponse struct {
-	Status            constants.ExecutorStatus  `json:"status"`
+	Status            ExecutorStatus            `json:"status"`
 	RequiredData      []InputData               `json:"required_data,omitempty"`
 	AdditionalData    map[string]string         `json:"additional_data,omitempty"`
 	RedirectURL       string                    `json:"redirect_url,omitempty"`
@@ -165,7 +164,7 @@ func (e *Executor) ValidatePrerequisites(ctx *NodeContext, execResp *ExecutorRes
 		if _, ok := ctx.UserInputData[prerequisite.Name]; !ok {
 			if _, ok := ctx.RuntimeData[prerequisite.Name]; !ok {
 				logger.Debug("Prerequisite not met for the executor", log.String("name", prerequisite.Name))
-				execResp.Status = constants.ExecFailure
+				execResp.Status = ExecFailure
 				execResp.FailureReason = "Prerequisite not met: " + prerequisite.Name
 				return false
 			}

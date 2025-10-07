@@ -16,31 +16,30 @@
  * under the License.
  */
 
-package model
+package flow
 
 import (
 	"errors"
 	"fmt"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/flow/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
 // NodeResponse represents the response from a node execution
 type NodeResponse struct {
-	Status            constants.NodeStatus       `json:"status"`
-	Type              constants.NodeResponseType `json:"type"`
-	FailureReason     string                     `json:"failure_reason,omitempty"`
-	RequiredData      []InputData                `json:"required_data,omitempty"`
-	AdditionalData    map[string]string          `json:"additional_data,omitempty"`
-	RedirectURL       string                     `json:"redirect_url,omitempty"`
-	Actions           []Action                   `json:"actions,omitempty"`
-	NextNodeID        string                     `json:"next_node_id,omitempty"`
-	RuntimeData       map[string]string          `json:"runtime_data,omitempty"`
-	AuthenticatedUser authncm.AuthenticatedUser  `json:"authenticated_user,omitempty"`
-	Assertion         string                     `json:"assertion,omitempty"`
+	Status            NodeStatus                `json:"status"`
+	Type              NodeResponseType          `json:"type"`
+	FailureReason     string                    `json:"failure_reason,omitempty"`
+	RequiredData      []InputData               `json:"required_data,omitempty"`
+	AdditionalData    map[string]string         `json:"additional_data,omitempty"`
+	RedirectURL       string                    `json:"redirect_url,omitempty"`
+	Actions           []Action                  `json:"actions,omitempty"`
+	NextNodeID        string                    `json:"next_node_id,omitempty"`
+	RuntimeData       map[string]string         `json:"runtime_data,omitempty"`
+	AuthenticatedUser authncm.AuthenticatedUser `json:"authenticated_user,omitempty"`
+	Assertion         string                    `json:"assertion,omitempty"`
 }
 
 // NodeInterface defines the interface for nodes in the graph
@@ -48,7 +47,7 @@ type NodeInterface interface {
 	sysutils.ClonableInterface
 	Execute(ctx *NodeContext) (*NodeResponse, *serviceerror.ServiceError)
 	GetID() string
-	GetType() constants.NodeType
+	GetType() NodeType
 	IsStartNode() bool
 	SetAsStartNode()
 	IsFinalNode() bool
@@ -72,7 +71,7 @@ type NodeInterface interface {
 // Node implements the NodeInterface
 type Node struct {
 	id               string
-	_type            constants.NodeType
+	_type            NodeType
 	isStartNode      bool
 	isFinalNode      bool
 	nextNodeList     []string
@@ -85,21 +84,21 @@ var _ NodeInterface = (*Node)(nil)
 
 // NewNode creates a new Node with the given type and properties.
 func NewNode(id string, _type string, isStartNode bool, isFinalNode bool) (NodeInterface, error) {
-	var nodeType constants.NodeType
+	var nodeType NodeType
 	if _type == "" {
 		return nil, errors.New("node type cannot be empty")
 	} else {
-		nodeType = constants.NodeType(_type)
+		nodeType = NodeType(_type)
 	}
 
 	switch nodeType {
-	case constants.NodeTypeTaskExecution:
+	case NodeTypeTaskExecution:
 		return NewTaskExecutionNode(id, isStartNode, isFinalNode), nil
-	case constants.NodeTypeDecision:
+	case NodeTypeDecision:
 		return NewDecisionNode(id, isStartNode, isFinalNode), nil
-	case constants.NodeTypePromptOnly:
+	case NodeTypePromptOnly:
 		return NewPromptOnlyNode(id, isStartNode, isFinalNode), nil
-	case constants.NodeTypeAuthSuccess:
+	case NodeTypeAuthSuccess:
 		return NewTaskExecutionNode(id, isStartNode, isFinalNode), nil
 	default:
 		return nil, errors.New("unsupported node type: " + _type)
@@ -117,7 +116,7 @@ func (n *Node) GetID() string {
 }
 
 // GetType returns the node's type
-func (n *Node) GetType() constants.NodeType {
+func (n *Node) GetType() NodeType {
 	return n._type
 }
 

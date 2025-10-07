@@ -17,18 +17,17 @@
  */
 
 // Package model defines the data structures and interfaces for flow execution and graph representation.
-package model
+package flow
 
 import (
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/flow/constants"
 )
 
 // EngineContext holds the overall context used by the flow engine during execution.
 type EngineContext struct {
 	FlowID        string
-	FlowType      constants.FlowType
+	FlowType      FlowType
 	AppID         string
 	UserInputData map[string]string
 	RuntimeData   map[string]string
@@ -46,7 +45,7 @@ type EngineContext struct {
 // NodeContext holds the context for a specific node in the flow execution.
 type NodeContext struct {
 	FlowID          string
-	FlowType        constants.FlowType
+	FlowType        FlowType
 	AppID           string
 	CurrentActionID string
 
@@ -62,8 +61,8 @@ type NodeContext struct {
 type FlowStep struct {
 	FlowID        string
 	StepID        string
-	Type          constants.FlowStepType
-	Status        constants.FlowStatus
+	Type          FlowStepType
+	Status        FlowStatus
 	Data          FlowData
 	Assertion     string
 	FailureReason string
@@ -86,8 +85,8 @@ type InputData struct {
 
 // Action represents an action to be executed in a flow step
 type Action struct {
-	Type constants.ActionType `json:"type"`
-	ID   string               `json:"id"`
+	Type ActionType `json:"type"`
+	ID   string     `json:"id"`
 	// Executor *ExecutorModel `json:"executor,omitempty"`
 }
 

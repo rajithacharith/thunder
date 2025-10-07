@@ -27,8 +27,7 @@ import (
 	authnoidc "github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/executor/oauth/model"
 	"github.com/asgardeo/thunder/internal/executor/oidcauth"
-	flowconst "github.com/asgardeo/thunder/internal/flow/constants"
-	flowmodel "github.com/asgardeo/thunder/internal/flow/model"
+	"github.com/asgardeo/thunder/internal/flow"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	httpservice "github.com/asgardeo/thunder/internal/system/http"
@@ -43,10 +42,64 @@ type GoogleOIDCAuthExecutor struct {
 	googleAuthService authngoogle.GoogleOIDCAuthnServiceInterface
 }
 
-var _ flowmodel.ExecutorInterface = (*GoogleOIDCAuthExecutor)(nil)
+// CheckInputData implements flow.ExecutorInterface.
+// Subtle: this method shadows the method (*OIDCAuthExecutor).CheckInputData of GoogleOIDCAuthExecutor.OIDCAuthExecutor.
+func (g *GoogleOIDCAuthExecutor) CheckInputData(ctx *flow.NodeContext, execResp *flow.ExecutorResponse) bool {
+	panic("unimplemented")
+}
+
+// GetDefaultExecutorInputs implements flow.ExecutorInterface.
+// Subtle: this method shadows the method (*OIDCAuthExecutor).GetDefaultExecutorInputs of GoogleOIDCAuthExecutor.OIDCAuthExecutor.
+func (g *GoogleOIDCAuthExecutor) GetDefaultExecutorInputs() []flow.InputData {
+	panic("unimplemented")
+}
+
+// GetID implements flow.ExecutorInterface.
+// Subtle: this method shadows the method (*OIDCAuthExecutor).GetID of GoogleOIDCAuthExecutor.OIDCAuthExecutor.
+func (g *GoogleOIDCAuthExecutor) GetID() string {
+	panic("unimplemented")
+}
+
+// GetName implements flow.ExecutorInterface.
+// Subtle: this method shadows the method (*OIDCAuthExecutor).GetName of GoogleOIDCAuthExecutor.OIDCAuthExecutor.
+func (g *GoogleOIDCAuthExecutor) GetName() string {
+	panic("unimplemented")
+}
+
+// GetPrerequisites implements flow.ExecutorInterface.
+// Subtle: this method shadows the method (*OIDCAuthExecutor).GetPrerequisites of GoogleOIDCAuthExecutor.OIDCAuthExecutor.
+func (g *GoogleOIDCAuthExecutor) GetPrerequisites() []flow.InputData {
+	panic("unimplemented")
+}
+
+// GetProperties implements flow.ExecutorInterface.
+// Subtle: this method shadows the method (*OIDCAuthExecutor).GetProperties of GoogleOIDCAuthExecutor.OIDCAuthExecutor.
+func (g *GoogleOIDCAuthExecutor) GetProperties() flow.ExecutorProperties {
+	panic("unimplemented")
+}
+
+// GetRequiredData implements flow.ExecutorInterface.
+// Subtle: this method shadows the method (*OIDCAuthExecutor).GetRequiredData of GoogleOIDCAuthExecutor.OIDCAuthExecutor.
+func (g *GoogleOIDCAuthExecutor) GetRequiredData(ctx *flow.NodeContext) []flow.InputData {
+	panic("unimplemented")
+}
+
+// GetUserIDFromContext implements flow.ExecutorInterface.
+// Subtle: this method shadows the method (*OIDCAuthExecutor).GetUserIDFromContext of GoogleOIDCAuthExecutor.OIDCAuthExecutor.
+func (g *GoogleOIDCAuthExecutor) GetUserIDFromContext(ctx *flow.NodeContext) (string, error) {
+	panic("unimplemented")
+}
+
+// ValidatePrerequisites implements flow.ExecutorInterface.
+// Subtle: this method shadows the method (*OIDCAuthExecutor).ValidatePrerequisites of GoogleOIDCAuthExecutor.OIDCAuthExecutor.
+func (g *GoogleOIDCAuthExecutor) ValidatePrerequisites(ctx *flow.NodeContext, execResp *flow.ExecutorResponse) bool {
+	panic("unimplemented")
+}
+
+var _ flow.ExecutorInterface = (*GoogleOIDCAuthExecutor)(nil)
 
 // NewGoogleOIDCAuthExecutorFromProps creates a new instance of GoogleOIDCAuthExecutor with the provided properties.
-func NewGoogleOIDCAuthExecutorFromProps(execProps flowmodel.ExecutorProperties,
+func NewGoogleOIDCAuthExecutorFromProps(execProps flow.ExecutorProperties,
 	oAuthProps *model.BasicOAuthExecProperties) oidcauth.OIDCAuthExecutorInterface {
 	// Prepare the complete OAuth properties for Google
 	compOAuthProps := &model.OAuthExecProperties{
@@ -66,7 +119,7 @@ func NewGoogleOIDCAuthExecutorFromProps(execProps flowmodel.ExecutorProperties,
 		UserInfoEndpoint:      compOAuthProps.UserInfoEndpoint,
 	}
 
-	defaultInputs := []flowmodel.InputData{
+	defaultInputs := []flow.InputData{
 		{
 			Name:     "code",
 			Type:     "string",
@@ -80,7 +133,7 @@ func NewGoogleOIDCAuthExecutorFromProps(execProps flowmodel.ExecutorProperties,
 	}
 
 	oAuthSvc := authnoauth.NewOAuthAuthnService(
-		httpservice.NewHTTPClientWithTimeout(flowconst.DefaultHTTPTimeout),
+		httpservice.NewHTTPClientWithTimeout(flow.DefaultHTTPTimeout),
 		idp.NewIDPService(),
 		endpoints,
 	)
@@ -121,7 +174,7 @@ func NewGoogleOIDCAuthExecutor(id, name string, properties map[string]string,
 		UserInfoEndpoint:      oAuthProps.UserInfoEndpoint,
 	}
 
-	defaultInputs := []flowmodel.InputData{
+	defaultInputs := []flow.InputData{
 		{
 			Name:     "code",
 			Type:     "string",
@@ -135,7 +188,7 @@ func NewGoogleOIDCAuthExecutor(id, name string, properties map[string]string,
 	}
 
 	oAuthSvc := authnoauth.NewOAuthAuthnService(
-		httpservice.NewHTTPClientWithTimeout(flowconst.DefaultHTTPTimeout),
+		httpservice.NewHTTPClientWithTimeout(flow.DefaultHTTPTimeout),
 		idp.NewIDPService(),
 		endpoints,
 	)
@@ -154,12 +207,12 @@ func NewGoogleOIDCAuthExecutor(id, name string, properties map[string]string,
 }
 
 // Execute executes the Google OIDC authentication flow.
-func (g *GoogleOIDCAuthExecutor) Execute(ctx *flowmodel.NodeContext) (*flowmodel.ExecutorResponse, error) {
+func (g *GoogleOIDCAuthExecutor) Execute(ctx *flow.NodeContext) (*flow.ExecutorResponse, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Executing Google OIDC auth executor",
 		log.String("executorID", g.GetID()), log.String("flowID", ctx.FlowID))
 
-	execResp := &flowmodel.ExecutorResponse{
+	execResp := &flow.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -188,14 +241,14 @@ func (g *GoogleOIDCAuthExecutor) Execute(ctx *flowmodel.NodeContext) (*flowmodel
 }
 
 // ValidateIDToken validates the ID token received from Google.
-func (g *GoogleOIDCAuthExecutor) ValidateIDToken(execResp *flowmodel.ExecutorResponse, idToken string) error {
+func (g *GoogleOIDCAuthExecutor) ValidateIDToken(execResp *flow.ExecutorResponse, idToken string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Validating ID token")
 
 	svcErr := g.googleAuthService.ValidateIDToken(g.GetID(), idToken)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
-			execResp.Status = flowconst.ExecFailure
+			execResp.Status = flow.ExecFailure
 			execResp.FailureReason = svcErr.ErrorDescription
 			return nil
 		}

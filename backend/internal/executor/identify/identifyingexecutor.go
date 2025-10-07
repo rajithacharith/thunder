@@ -22,8 +22,7 @@ package identify
 import (
 	"slices"
 
-	flowconst "github.com/asgardeo/thunder/internal/flow/constants"
-	flowmodel "github.com/asgardeo/thunder/internal/flow/model"
+	"github.com/asgardeo/thunder/internal/flow"
 	"github.com/asgardeo/thunder/internal/system/log"
 	userconst "github.com/asgardeo/thunder/internal/user/constants"
 	"github.com/asgardeo/thunder/internal/user/service"
@@ -35,21 +34,21 @@ var nonSearchableAttributes = []string{"password", "code", "nonce", "otp"}
 
 // IdentifyingExecutor implements the ExecutorInterface for identifying users based on provided attributes.
 type IdentifyingExecutor struct {
-	internal    flowmodel.Executor
+	internal    flow.Executor
 	userService service.UserServiceInterface
 }
 
 // NewIdentifyingExecutor creates a new instance of IdentifyingExecutor.
 func NewIdentifyingExecutor(id, name string, properties map[string]string) *IdentifyingExecutor {
 	return &IdentifyingExecutor{
-		internal:    *flowmodel.NewExecutor(id, name, []flowmodel.InputData{}, []flowmodel.InputData{}, properties),
+		internal:    *flow.NewExecutor(id, name, []flow.InputData{}, []flow.InputData{}, properties),
 		userService: service.GetUserService(),
 	}
 }
 
 // IdentifyUser identifies a user based on the provided attributes.
 func (i *IdentifyingExecutor) IdentifyUser(filters map[string]interface{},
-	execResp *flowmodel.ExecutorResponse) (*string, error) {
+	execResp *flow.ExecutorResponse) (*string, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Identifying user with filters")
 
@@ -65,12 +64,12 @@ func (i *IdentifyingExecutor) IdentifyUser(filters map[string]interface{},
 	if svcErr != nil {
 		if svcErr.Code == userconst.ErrorUserNotFound.Code {
 			logger.Debug("User not found for the provided filters")
-			execResp.Status = flowconst.ExecFailure
+			execResp.Status = flow.ExecFailure
 			execResp.FailureReason = "User not found"
 			return nil, nil
 		} else {
 			logger.Debug("Failed to identify user due to error: " + svcErr.Error)
-			execResp.Status = flowconst.ExecFailure
+			execResp.Status = flow.ExecFailure
 			execResp.FailureReason = "Failed to identify user"
 			return nil, nil
 		}
@@ -78,7 +77,7 @@ func (i *IdentifyingExecutor) IdentifyUser(filters map[string]interface{},
 
 	if userID == nil || *userID == "" {
 		logger.Debug("User not found for the provided filter")
-		execResp.Status = flowconst.ExecFailure
+		execResp.Status = flow.ExecFailure
 		execResp.FailureReason = "User not found"
 		return nil, nil
 	}

@@ -16,10 +16,9 @@
  * under the License.
  */
 
-package model
+package flow
 
 import (
-	"github.com/asgardeo/thunder/internal/flow/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 )
 
@@ -33,7 +32,7 @@ func NewDecisionNode(id string, isStartNode bool, isFinalNode bool) NodeInterfac
 	return &DecisionNode{
 		Node: &Node{
 			id:               id,
-			_type:            constants.NodeTypeDecision,
+			_type:            NodeTypeDecision,
 			isStartNode:      isStartNode,
 			isFinalNode:      isFinalNode,
 			nextNodeList:     []string{},
@@ -60,7 +59,7 @@ func (n *DecisionNode) TriggerAction(ctx *NodeContext, actionID string) (*NodeRe
 	nextNodeIDs := n.GetNextNodeList()
 	if len(nextNodeIDs) == 0 {
 		return &NodeResponse{
-			Status:        constants.NodeStatusFailure,
+			Status:        NodeStatusFailure,
 			Type:          "",
 			FailureReason: "No next nodes defined for the decision node.",
 		}, nil
@@ -75,14 +74,14 @@ func (n *DecisionNode) TriggerAction(ctx *NodeContext, actionID string) (*NodeRe
 	}
 	if nextNodeID == "" {
 		return &NodeResponse{
-			Status:        constants.NodeStatusFailure,
+			Status:        NodeStatusFailure,
 			Type:          "",
 			FailureReason: "No matching next node found for the triggered action ID.",
 		}, nil
 	}
 
 	return &NodeResponse{
-		Status:     constants.NodeStatusComplete,
+		Status:     NodeStatusComplete,
 		Type:       "",
 		NextNodeID: nextNodeID,
 	}, nil
@@ -93,14 +92,14 @@ func (n *DecisionNode) PrepareActionInput(ctx *NodeContext, actionID string) (*N
 	*serviceerror.ServiceError) {
 	actions := n.getActionsList()
 	if len(actions) == 0 {
-		svcErr := constants.ErrorNoActionsDefinedForNode
+		svcErr := ErrorNoActionsDefinedForNode
 		svcErr.ErrorDescription = "No outgoing edges defined for the decision node."
 		return nil, &svcErr
 	}
 
 	return &NodeResponse{
-		Status:         constants.NodeStatusIncomplete,
-		Type:           constants.NodeResponseTypeView,
+		Status:         NodeStatusIncomplete,
+		Type:           NodeResponseTypeView,
 		Actions:        actions,
 		FailureReason:  "",
 		RequiredData:   make([]InputData, 0),
@@ -114,7 +113,7 @@ func (n *DecisionNode) getActionsList() []Action {
 	actions := []Action{}
 	for _, nextNodeID := range n.GetNextNodeList() {
 		action := Action{
-			Type: constants.ActionTypeView,
+			Type: ActionTypeView,
 			ID:   nextNodeID,
 		}
 		actions = append(actions, action)

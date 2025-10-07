@@ -16,10 +16,9 @@
  * under the License.
  */
 
-package model
+package flow
 
 import (
-	"github.com/asgardeo/thunder/internal/flow/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
@@ -36,7 +35,7 @@ func NewPromptOnlyNode(id string, isStartNode bool, isFinalNode bool) NodeInterf
 	return &PromptOnlyNode{
 		Node: &Node{
 			id:               id,
-			_type:            constants.NodeTypePromptOnly,
+			_type:            NodeTypePromptOnly,
 			isStartNode:      isStartNode,
 			isFinalNode:      isFinalNode,
 			nextNodeList:     []string{},
@@ -64,13 +63,13 @@ func (n *PromptOnlyNode) Execute(ctx *NodeContext) (*NodeResponse, *serviceerror
 	if n.checkInputData(ctx, nodeResp) {
 		logger.Debug("Required input data is not available in the context, returning incomplete response",
 			log.Any("requiredData", nodeResp.RequiredData))
-		nodeResp.Status = constants.NodeStatusIncomplete
-		nodeResp.Type = constants.NodeResponseTypeView
+		nodeResp.Status = NodeStatusIncomplete
+		nodeResp.Type = NodeResponseTypeView
 		return nodeResp, nil
 	}
 
 	logger.Debug("All required input data is available in the context, proceeding with next steps")
-	nodeResp.Status = constants.NodeStatusComplete
+	nodeResp.Status = NodeStatusComplete
 	nodeResp.Type = ""
 	return nodeResp, nil
 }

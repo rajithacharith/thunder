@@ -29,7 +29,7 @@ import (
 	"github.com/asgardeo/thunder/internal/cert"
 	certconst "github.com/asgardeo/thunder/internal/cert/constants"
 	certmodel "github.com/asgardeo/thunder/internal/cert/model"
-	"github.com/asgardeo/thunder/internal/flow/flowmgt"
+	"github.com/asgardeo/thunder/internal/flowmgt"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -49,15 +49,29 @@ type ApplicationServiceInterface interface {
 
 // ApplicationService is the default implementation of the ApplicationServiceInterface.
 type ApplicationService struct {
-	AppStore    store.ApplicationStoreInterface
-	CertService cert.CertificateServiceInterface
+	flowMgtService flowmgt.FlowMgtServiceInterface
+	appStore       store.ApplicationStoreInterface
+	certService    cert.CertificateServiceInterface
 }
 
 // GetApplicationService creates a new instance of ApplicationService.
 func GetApplicationService() ApplicationServiceInterface {
+	flowMgtService, err := flowmgt.GetFlowMgtService()
+	if err != nil {
+		panic("Failed to initialize Flow Management Service: " + err.Error())
+	}
 	return &ApplicationService{
-		AppStore:    store.NewCachedBackedApplicationStore(),
-		CertService: cert.NewCertificateService(),
+		flowMgtService: flowMgtService,
+		appStore:       store.NewCachedBackedApplicationStore(),
+		certService:    cert.NewCertificateService(),
+	}
+}
+
+func NewApplicationService(flowMgtService flowmgt.FlowMgtServiceInterface, certService cert.CertificateServiceInterface) ApplicationServiceInterface {
+	return &ApplicationService{
+		flowMgtService: flowMgtService,
+		appStore:       store.NewCachedBackedApplicationStore(),
+		certService:    certService,
 	}
 }
 
@@ -74,7 +88,7 @@ func (as *ApplicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 	}
 
 	// Check if an application with the same name already exists
-	existingApp, appCheckErr := as.AppStore.GetApplicationByName(app.Name)
+	existingApp, appCheckErr := as.appStore.GetApplicationByName(app.Name)
 	if appCheckErr != nil && !errors.Is(appCheckErr, constants.ApplicationNotFoundError) {
 		logger.Error("Failed to check existing application by name", log.Error(appCheckErr),
 			log.String("appName", app.Name))
@@ -84,15 +98,15 @@ func (as *ApplicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 		return nil, &constants.ErrorApplicationAlreadyExistsWithName
 	}
 
-	inboundAuthConfig, svcErr := validateAndProcessInboundAuthConfig(as.AppStore, app, nil, logger)
+	inboundAuthConfig, svcErr := validateAndProcessInboundAuthConfig(as.appStore, app, nil, logger)
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
-	if svcErr := validateAuthFlowGraphID(app); svcErr != nil {
+	if svcErr := as.validateAuthFlowGraphID(app); svcErr != nil {
 		return nil, svcErr
 	}
-	if svcErr := validateRegistrationFlowGraphID(app); svcErr != nil {
+	if svcErr := as.validateRegistrationFlowGraphID(app); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -157,7 +171,7 @@ func (as *ApplicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 	}
 
 	// Create the application.
-	storeErr := as.AppStore.CreateApplication(*processedDTO)
+	storeErr := as.appStore.CreateApplication(*processedDTO)
 	if storeErr != nil {
 		logger.Error("Failed to create application", log.Error(storeErr), log.String("appID", appID))
 
@@ -216,13 +230,13 @@ func (as *ApplicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 func (as *ApplicationService) GetApplicationList() (*model.ApplicationListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
-	totalCount, err := as.AppStore.GetTotalApplicationCount()
+	totalCount, err := as.appStore.GetTotalApplicationCount()
 	if err != nil {
 		logger.Error("Failed to retrieve total application count", log.Error(err))
 		return nil, &constants.ErrorInternalServerError
 	}
 
-	applications, err := as.AppStore.GetApplicationList()
+	applications, err := as.appStore.GetApplicationList()
 	if err != nil {
 		logger.Error("Failed to retrieve application list", log.Error(err))
 		return nil, &constants.ErrorInternalServerError
@@ -263,7 +277,7 @@ func (as *ApplicationService) GetOAuthApplication(clientID string) (*model.OAuth
 	}
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
-	oauthApp, err := as.AppStore.GetOAuthApplication(clientID)
+	oauthApp, err := as.appStore.GetOAuthApplication(clientID)
 	if err != nil {
 		if errors.Is(err, constants.ApplicationNotFoundError) {
 			return nil, &constants.ErrorApplicationNotFound
@@ -287,7 +301,7 @@ func (as *ApplicationService) GetApplication(appID string) (*model.ApplicationPr
 		return nil, &constants.ErrorInvalidApplicationID
 	}
 
-	application, err := as.AppStore.GetApplicationByID(appID)
+	application, err := as.appStore.GetApplicationByID(appID)
 	if err != nil {
 		return nil, as.handleApplicationRetrievalError(err)
 	}
@@ -330,7 +344,7 @@ func (as *ApplicationService) UpdateApplication(appID string, app *model.Applica
 		return nil, &constants.ErrorInvalidApplicationName
 	}
 
-	existingApp, appCheckErr := as.AppStore.GetApplicationByID(appID)
+	existingApp, appCheckErr := as.appStore.GetApplicationByID(appID)
 	if appCheckErr != nil {
 		if errors.Is(appCheckErr, constants.ApplicationNotFoundError) {
 			return nil, &constants.ErrorApplicationNotFound
@@ -345,7 +359,7 @@ func (as *ApplicationService) UpdateApplication(appID string, app *model.Applica
 
 	// If the application name is changed, check if an application with the new name already exists.
 	if existingApp.Name != app.Name {
-		existingAppWithName, appCheckErr := as.AppStore.GetApplicationByName(app.Name)
+		existingAppWithName, appCheckErr := as.appStore.GetApplicationByName(app.Name)
 		if appCheckErr != nil && !errors.Is(appCheckErr, constants.ApplicationNotFoundError) {
 			logger.Error("Failed to check existing application by name", log.Error(appCheckErr),
 				log.String("appName", app.Name))
@@ -356,15 +370,15 @@ func (as *ApplicationService) UpdateApplication(appID string, app *model.Applica
 		}
 	}
 
-	inboundAuthConfig, svcErr := validateAndProcessInboundAuthConfig(as.AppStore, app, existingApp, logger)
+	inboundAuthConfig, svcErr := validateAndProcessInboundAuthConfig(as.appStore, app, existingApp, logger)
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
-	if svcErr := validateAuthFlowGraphID(app); svcErr != nil {
+	if svcErr := as.validateAuthFlowGraphID(app); svcErr != nil {
 		return nil, svcErr
 	}
-	if svcErr := validateRegistrationFlowGraphID(app); svcErr != nil {
+	if svcErr := as.validateRegistrationFlowGraphID(app); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -419,7 +433,7 @@ func (as *ApplicationService) UpdateApplication(appID string, app *model.Applica
 		processedDTO.InboundAuthConfig = []model.InboundAuthConfigProcessedDTO{processedInboundAuthConfig}
 	}
 
-	storeErr := as.AppStore.UpdateApplication(existingApp, processedDTO)
+	storeErr := as.appStore.UpdateApplication(existingApp, processedDTO)
 	if storeErr != nil {
 		logger.Error("Failed to update application", log.Error(storeErr), log.String("appID", appID))
 
@@ -479,7 +493,7 @@ func (as *ApplicationService) DeleteApplication(appID string) *serviceerror.Serv
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
 	// Delete the application from the store
-	appErr := as.AppStore.DeleteApplication(appID)
+	appErr := as.appStore.DeleteApplication(appID)
 	if appErr != nil {
 		if errors.Is(appErr, constants.ApplicationNotFoundError) {
 			logger.Debug("Application not found for the deletion", log.String("appID", appID))
@@ -500,9 +514,9 @@ func (as *ApplicationService) DeleteApplication(appID string) *serviceerror.Serv
 
 // validateAuthFlowGraphID validates the auth flow graph ID for the application.
 // If the graph ID is not provided, it sets the default authentication flow graph ID.
-func validateAuthFlowGraphID(app *model.ApplicationDTO) *serviceerror.ServiceError {
+func (as *ApplicationService) validateAuthFlowGraphID(app *model.ApplicationDTO) *serviceerror.ServiceError {
 	if app.AuthFlowGraphID != "" {
-		isValidFlowGraphID := flowmgt.GetFlowMgtService().IsValidGraphID(app.AuthFlowGraphID)
+		isValidFlowGraphID := as.flowMgtService.IsValidGraphID(app.AuthFlowGraphID)
 		if !isValidFlowGraphID {
 			return &constants.ErrorInvalidAuthFlowGraphID
 		}
@@ -515,9 +529,9 @@ func validateAuthFlowGraphID(app *model.ApplicationDTO) *serviceerror.ServiceErr
 
 // validateRegistrationFlowGraphID validates the registration flow graph ID for the application.
 // If the graph ID is not provided, it attempts to infer it from the auth flow graph ID.
-func validateRegistrationFlowGraphID(app *model.ApplicationDTO) *serviceerror.ServiceError {
+func (as *ApplicationService) validateRegistrationFlowGraphID(app *model.ApplicationDTO) *serviceerror.ServiceError {
 	if app.RegistrationFlowGraphID != "" {
-		isValidFlowGraphID := flowmgt.GetFlowMgtService().IsValidGraphID(app.RegistrationFlowGraphID)
+		isValidFlowGraphID := as.flowMgtService.IsValidGraphID(app.RegistrationFlowGraphID)
 		if !isValidFlowGraphID {
 			return &constants.ErrorInvalidRegistrationFlowGraphID
 		}
@@ -707,7 +721,7 @@ func (as *ApplicationService) createApplicationCertificate(cert *certmodel.Certi
 
 	var returnCert *model.ApplicationCertificate
 	if cert != nil {
-		_, svcErr := as.CertService.CreateCertificate(cert)
+		_, svcErr := as.certService.CreateCertificate(cert)
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ClientErrorType {
 				retErr := serviceerror.ServiceError{
@@ -741,7 +755,7 @@ func (as *ApplicationService) createApplicationCertificate(cert *certmodel.Certi
 func (as *ApplicationService) rollbackAppCertificateCreation(appID string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
-	deleteErr := as.CertService.DeleteCertificateByReference(certconst.CertificateReferenceTypeApplication, appID)
+	deleteErr := as.certService.DeleteCertificateByReference(certconst.CertificateReferenceTypeApplication, appID)
 	if deleteErr != nil {
 		if deleteErr.Type == serviceerror.ClientErrorType {
 			retErr := serviceerror.ServiceError{
@@ -765,7 +779,7 @@ func (as *ApplicationService) rollbackAppCertificateCreation(appID string) *serv
 func (as *ApplicationService) deleteApplicationCertificate(appID string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
-	if certErr := as.CertService.DeleteCertificateByReference(
+	if certErr := as.certService.DeleteCertificateByReference(
 		certconst.CertificateReferenceTypeApplication, appID); certErr != nil {
 		if certErr.Type == serviceerror.ClientErrorType {
 			retErr := serviceerror.ServiceError{
@@ -789,7 +803,7 @@ func (as *ApplicationService) getApplicationCertificate(appID string) (*model.Ap
 	*serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
-	cert, certErr := as.CertService.GetCertificateByReference(
+	cert, certErr := as.certService.GetCertificateByReference(
 		certconst.CertificateReferenceTypeApplication, appID)
 
 	if certErr != nil {
@@ -834,7 +848,7 @@ func (as *ApplicationService) updateApplicationCertificate(app *model.Applicatio
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 	appID := app.ID
 
-	existingCert, certErr := as.CertService.GetCertificateByReference(
+	existingCert, certErr := as.certService.GetCertificateByReference(
 		certconst.CertificateReferenceTypeApplication, appID)
 	if certErr != nil && certErr.Code != certconst.ErrorCertificateNotFound.Code {
 		if certErr.Type == serviceerror.ClientErrorType {
@@ -866,7 +880,7 @@ func (as *ApplicationService) updateApplicationCertificate(app *model.Applicatio
 	var returnCert *model.ApplicationCertificate
 	if updatedCert != nil {
 		if existingCert != nil {
-			_, svcErr := as.CertService.UpdateCertificateByID(existingCert.ID, updatedCert)
+			_, svcErr := as.certService.UpdateCertificateByID(existingCert.ID, updatedCert)
 			if svcErr != nil {
 				if svcErr.Type == serviceerror.ClientErrorType {
 					retErr := serviceerror.ServiceError{
@@ -882,7 +896,7 @@ func (as *ApplicationService) updateApplicationCertificate(app *model.Applicatio
 				return nil, nil, nil, &constants.ErrorCertificateServerError
 			}
 		} else {
-			_, svcErr := as.CertService.CreateCertificate(updatedCert)
+			_, svcErr := as.certService.CreateCertificate(updatedCert)
 			if svcErr != nil {
 				if svcErr.Type == serviceerror.ClientErrorType {
 					retErr := serviceerror.ServiceError{
@@ -906,7 +920,7 @@ func (as *ApplicationService) updateApplicationCertificate(app *model.Applicatio
 	} else {
 		if existingCert != nil {
 			// If no new certificate is provided, delete the existing certificate.
-			deleteErr := as.CertService.DeleteCertificateByReference(
+			deleteErr := as.certService.DeleteCertificateByReference(
 				certconst.CertificateReferenceTypeApplication, appID)
 			if deleteErr != nil {
 				if deleteErr.Type == serviceerror.ClientErrorType {
@@ -941,7 +955,7 @@ func (as *ApplicationService) rollbackApplicationCertificateUpdate(appID string,
 	if updatedCert != nil {
 		if existingCert != nil {
 			// Update to the previously existed certificate.
-			_, svcErr := as.CertService.UpdateCertificateByID(existingCert.ID, existingCert)
+			_, svcErr := as.certService.UpdateCertificateByID(existingCert.ID, existingCert)
 			if svcErr != nil {
 				if svcErr.Type == serviceerror.ClientErrorType {
 					retErr := serviceerror.ServiceError{
@@ -959,7 +973,7 @@ func (as *ApplicationService) rollbackApplicationCertificateUpdate(appID string,
 				return &constants.ErrorCertificateServerError
 			}
 		} else { // Delete the newly created certificate.
-			deleteErr := as.CertService.DeleteCertificateByReference(
+			deleteErr := as.certService.DeleteCertificateByReference(
 				certconst.CertificateReferenceTypeApplication, appID)
 			if deleteErr != nil {
 				if deleteErr.Type == serviceerror.ClientErrorType {
@@ -979,7 +993,7 @@ func (as *ApplicationService) rollbackApplicationCertificateUpdate(appID string,
 		}
 	} else {
 		if existingCert != nil { // Create the previously existed certificate.
-			_, svcErr := as.CertService.CreateCertificate(existingCert)
+			_, svcErr := as.certService.CreateCertificate(existingCert)
 			if svcErr != nil {
 				if svcErr.Type == serviceerror.ClientErrorType {
 					retErr := serviceerror.ServiceError{
