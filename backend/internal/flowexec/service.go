@@ -40,7 +40,7 @@ type FlowExecServiceInterface interface {
 // FlowExecService is the implementation of FlowExecServiceInterface
 type FlowExecService struct {
 	flowMgtService flowmgt.FlowMgtServiceInterface
-	flowStore      flowStoreInterface
+	flowStore      FlowStoreInterface
 	appService     appservice.ApplicationServiceInterface
 	flowEngine     FlowEngineInterface
 }

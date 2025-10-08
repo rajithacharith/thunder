@@ -172,3 +172,11 @@ packages:
       structname: '{{.InterfaceName}}Mock'
       pkgname: servicemock
       filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/flowexec:
+    config:
+      all: true
+      dir: tests/mocks/flowexecmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: flowexecmock
+      filename: "{{.InterfaceName}}_mock.go"

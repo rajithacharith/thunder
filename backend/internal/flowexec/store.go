@@ -29,7 +29,7 @@ import (
 )
 
 // FlowStoreInterface defines the methods for flow context storage operations.
-type flowStoreInterface interface {
+type FlowStoreInterface interface {
 	StoreFlowContext(ctx flow.EngineContext) error
 	GetFlowContext(flowID string) (*FlowContextWithUserDataDB, error)
 	UpdateFlowContext(ctx flow.EngineContext) error
@@ -42,7 +42,7 @@ type flowStore struct {
 }
 
 // newFlowStore creates a new instance of FlowStore.
-func newFlowStore() flowStoreInterface {
+func newFlowStore() FlowStoreInterface {
 	return &flowStore{
 		DBProvider: provider.GetDBProvider(),
 	}
