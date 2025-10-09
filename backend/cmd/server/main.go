@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/asgardeo/thunder/internal/cert"
+	filebackedruntime "github.com/asgardeo/thunder/internal/file_backed_runtime"
 	"github.com/asgardeo/thunder/internal/flow"
 	"github.com/asgardeo/thunder/internal/system/cache"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -106,6 +107,18 @@ func initThunderConfigurations(logger *log.Logger, thunderHome string) *config.C
 	jwtService := jwt.GetJWTService()
 	if err := jwtService.Init(); err != nil {
 		logger.Fatal("Failed to load private key", log.Error(err))
+	}
+
+	if config.GetThunderRuntime().Config.ImmutableGateway.Enabled {
+		logger.Info("Immutable Gateway Configuration", log.Bool("enabled", true))
+		immutableConfigFilePath := path.Join(thunderHome, "repository/conf/immutable_configs/")
+		if _, err := os.Stat(immutableConfigFilePath); os.IsNotExist(err) {
+			logger.Fatal("Immutable gateway configuration file does not exist", log.String("path", immutableConfigFilePath))
+		}
+		fileConfigManager := filebackedruntime.NewFileConfigManager(immutableConfigFilePath)
+		if err := fileConfigManager.LoadConfig(); err != nil {
+			logger.Fatal("Failed to load file-backed runtime configurations", log.Error(err))
+		}
 	}
 
 	return cfg

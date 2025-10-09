@@ -20,6 +20,7 @@ package notification
 
 import (
 	"github.com/asgardeo/thunder/internal/notification/common"
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
@@ -38,11 +39,28 @@ type NotificationSenderMgtSvcInterface interface {
 }
 
 // notificationSenderMgtService implements the NotificationSenderMgtSvcInterface.
-type notificationSenderMgtService struct{}
+type notificationSenderMgtService struct {
+	store notificationStoreInterface
+}
 
 // getNotificationSenderMgtService returns a new instance of NotificationSenderMgtSvcInterface.
 func getNotificationSenderMgtService() NotificationSenderMgtSvcInterface {
-	return &notificationSenderMgtService{}
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationSenderMgtService"))
+	logger.Info("Immutable Gateway Configuration", log.Bool("enabled", config.GetThunderRuntime().Config.ImmutableGateway.Enabled))
+	if config.GetThunderRuntime().Config.ImmutableGateway.Enabled {
+		logger.Info("Using in-memory notification store as immutable gateway is enabled")
+		store := newInMemoryStore()
+		// err := store.initialize()
+		// if err != nil {
+		// 	logger.Fatal("Failed to initialize in-memory notification store", log.Error(err))
+		// }
+		return &notificationSenderMgtService{
+			store: store,
+		}
+	}
+	return &notificationSenderMgtService{
+		store: getNotificationStore(),
+	}
 }
 
 // CreateSender creates a new notification sender.

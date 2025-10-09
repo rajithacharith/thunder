@@ -1,0 +1,13 @@
+id: "google_oauth"
+name: "Google OAuth"
+description: "Authenticate users via Google OAuth 2.0"
+type: "OAUTH"
+properties:
+  - name: "client_id"
+    value: "your-google-client-id.apps.googleusercontent.com"
+  - name: "client_secret"
+    value: "your-google-client-secret"
+  - name: "redirect_uri"
+    value: "https://yourapp.example.com/auth/callback/google"
+  - name: "scopes"
+    value: "openid,email,profile"

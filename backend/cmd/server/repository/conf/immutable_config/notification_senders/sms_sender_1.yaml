@@ -1,0 +1,12 @@
+id: "sms_sender_1"
+name: "Primary SMS Sender"
+description: "Sends SMS notifications via Twilio"
+type: "SMS"
+provider: "TWILIO"
+properties:
+  - name: "account_sid"
+    value: "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  - name: "auth_token"
+    value: "your_auth_token"
+  - name: "from_number"
+    value: "+1234567890"

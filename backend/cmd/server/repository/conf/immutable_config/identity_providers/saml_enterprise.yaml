@@ -1,0 +1,13 @@
+id: "saml_enterprise"
+name: "Enterprise SAML"
+description: "Authenticate users via SAML 2.0"
+type: "SAML"
+properties:
+  - name: "idp_entity_id"
+    value: "https://idp.example.com/entity"
+  - name: "sso_url"
+    value: "https://idp.example.com/sso"
+  - name: "x509_cert"
+    value: "/path/to/idp_cert.pem"
+  - name: "acs_url"
+    value: "https://yourapp.example.com/auth/callback/saml"

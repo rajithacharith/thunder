@@ -138,18 +138,23 @@ type HashConfig struct {
 	Algorithm string `yaml:"algorithm"`
 }
 
+type ImmutableGateway struct {
+	Enabled bool `yaml:"enabled" json:"enabled" default:"true"`
+}
+
 // Config holds the complete configuration details of the server.
 type Config struct {
-	Server     ServerConfig     `yaml:"server" json:"server"`
-	GateClient GateClientConfig `yaml:"gate_client" json:"gate_client"`
-	Security   SecurityConfig   `yaml:"security" json:"security"`
-	Database   DatabaseConfig   `yaml:"database" json:"database"`
-	Cache      CacheConfig      `yaml:"cache" json:"cache"`
-	OAuth      OAuthConfig      `yaml:"oauth" json:"oauth"`
-	Flow       FlowConfig       `yaml:"flow" json:"flow"`
-	Crypto     CryptoConfig     `yaml:"crypto" json:"crypto"`
-	Hash       HashConfig       `yaml:"hash"`
-	CORS       CORSConfig       `yaml:"cors" json:"cors"`
+	Server           ServerConfig     `yaml:"server" json:"server"`
+	GateClient       GateClientConfig `yaml:"gate_client" json:"gate_client"`
+	Security         SecurityConfig   `yaml:"security" json:"security"`
+	Database         DatabaseConfig   `yaml:"database" json:"database"`
+	Cache            CacheConfig      `yaml:"cache" json:"cache"`
+	OAuth            OAuthConfig      `yaml:"oauth" json:"oauth"`
+	Flow             FlowConfig       `yaml:"flow" json:"flow"`
+	Crypto           CryptoConfig     `yaml:"crypto" json:"crypto"`
+	Hash             HashConfig       `yaml:"hash"`
+	CORS             CORSConfig       `yaml:"cors" json:"cors"`
+	ImmutableGateway ImmutableGateway `yaml:"immutable_gateway" json:"immutable_gateway"`
 }
 
 // LoadConfig loads the configurations from the specified YAML file and applies defaults.

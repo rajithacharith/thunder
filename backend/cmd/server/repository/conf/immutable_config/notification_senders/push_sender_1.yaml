@@ -1,0 +1,10 @@
+id: "push_sender_1"
+name: "Push Notification Sender"
+description: "Sends push notifications using Firebase"
+type: "PUSH"
+provider: "FIREBASE"
+properties:
+  - name: "firebase_project_id"
+    value: "my-firebase-project"
+  - name: "service_account_json"
+    value: "/path/to/serviceAccountKey.json"
