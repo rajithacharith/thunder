@@ -30,10 +30,6 @@ const (
 	IDPTypeGoogle IDPType = "GOOGLE"
 	// IDPTypeGitHub represents a GitHub identity provider.
 	IDPTypeGitHub IDPType = "GITHUB"
-	// IDPTypeLDAP represents an LDAP identity provider.
-	IDPTypeLDAP IDPType = "LDAP"
-	// IDPTypeSAML represents a SAML identity provider.
-	IDPTypeSAML IDPType = "SAML"
 )
 
 // supportedIDPTypes lists all the supported identity provider types.
@@ -42,8 +38,6 @@ var supportedIDPTypes = []IDPType{
 	IDPTypeOIDC,
 	IDPTypeGoogle,
 	IDPTypeGitHub,
-	IDPTypeLDAP,
-	IDPTypeSAML,
 }
 
 // supportedIDPProperties lists all the supported identity provider properties.
@@ -58,15 +52,4 @@ var supportedIDPProperties = []string{
 	"logout_endpoint",
 	"jwks_endpoint",
 	"prompt",
-	// LDAP properties
-	"ldap_url",
-	"bind_dn",
-	"bind_password",
-	"user_base_dn",
-	"user_filter",
-	// SAML properties
-	"idp_entity_id",
-	"sso_url",
-	"x509_cert",
-	"acs_url",
 }

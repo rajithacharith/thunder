@@ -28,9 +28,9 @@ import (
 
 // Property represents a generic property with name, value, and isSecret fields.
 type Property struct {
-	name     string `yaml:"name"`
-	value    string `yaml:"value"`
-	isSecret bool   `yaml:"is_secret"`
+	name     string
+	value    string
+	isSecret bool
 }
 
 // PropertyDTO represents a property for API communication.

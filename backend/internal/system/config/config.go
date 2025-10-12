@@ -138,6 +138,7 @@ type HashConfig struct {
 	Algorithm string `yaml:"algorithm"`
 }
 
+// ImmutableGateway holds the configuration details for the immutable gateway.
 type ImmutableGateway struct {
 	Enabled bool `yaml:"enabled" json:"enabled" default:"true"`
 }

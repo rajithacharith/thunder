@@ -125,10 +125,7 @@ func initThunderConfigurations(logger *log.Logger, thunderHome string) *config.C
 		if _, err := os.Stat(immutableConfigFilePath); os.IsNotExist(err) {
 			logger.Fatal("Immutable gateway configuration file does not exist", log.String("path", immutableConfigFilePath))
 		}
-		fileConfigManager := filebackedruntime.NewFileConfigManager(immutableConfigFilePath)
-		if err := fileConfigManager.LoadConfig(); err != nil {
-			logger.Fatal("Failed to load file-backed runtime configurations", log.Error(err))
-		}
+		_ = filebackedruntime.NewFileConfigManager(immutableConfigFilePath)
 	}
 
 	return cfg

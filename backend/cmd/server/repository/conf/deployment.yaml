@@ -65,6 +65,4 @@ cors:
     - "https://localhost:9090"
 
 immutable_gateway:
-  enabled: true
-
-  
+  enabled: false

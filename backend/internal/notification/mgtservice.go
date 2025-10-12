@@ -46,16 +46,10 @@ type notificationSenderMgtService struct {
 // getNotificationSenderMgtService returns a new instance of NotificationSenderMgtSvcInterface.
 func newNotificationSenderMgtService() NotificationSenderMgtSvcInterface {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationSenderMgtService"))
-	logger.Info("Immutable Gateway Configuration", log.Bool("enabled", config.GetThunderRuntime().Config.ImmutableGateway.Enabled))
 	if config.GetThunderRuntime().Config.ImmutableGateway.Enabled {
-		logger.Info("Using in-memory notification store as immutable gateway is enabled")
-		store := newInMemoryStore()
-		// err := store.initialize()
-		// if err != nil {
-		// 	logger.Fatal("Failed to initialize in-memory notification store", log.Error(err))
-		// }
+		logger.Debug("Using in-memory notification store as immutable gateway is enabled")
 		return &notificationSenderMgtService{
-			notificationStore: store,
+			notificationStore: newInMemoryStore(),
 		}
 	}
 	return &notificationSenderMgtService{
