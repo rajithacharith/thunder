@@ -40,11 +40,11 @@ type NotificationSenderMgtSvcInterface interface {
 
 // notificationSenderMgtService implements the NotificationSenderMgtSvcInterface.
 type notificationSenderMgtService struct {
-	store notificationStoreInterface
+	notificationStore notificationStoreInterface
 }
 
 // getNotificationSenderMgtService returns a new instance of NotificationSenderMgtSvcInterface.
-func getNotificationSenderMgtService() NotificationSenderMgtSvcInterface {
+func newNotificationSenderMgtService() NotificationSenderMgtSvcInterface {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationSenderMgtService"))
 	logger.Info("Immutable Gateway Configuration", log.Bool("enabled", config.GetThunderRuntime().Config.ImmutableGateway.Enabled))
 	if config.GetThunderRuntime().Config.ImmutableGateway.Enabled {
@@ -55,11 +55,11 @@ func getNotificationSenderMgtService() NotificationSenderMgtSvcInterface {
 		// 	logger.Fatal("Failed to initialize in-memory notification store", log.Error(err))
 		// }
 		return &notificationSenderMgtService{
-			store: store,
+			notificationStore: store,
 		}
 	}
 	return &notificationSenderMgtService{
-		store: getNotificationStore(),
+		notificationStore: newNotificationStore(),
 	}
 }
 
@@ -72,10 +72,9 @@ func (s *notificationSenderMgtService) CreateSender(
 	if err := validateNotificationSender(sender); err != nil {
 		return nil, err
 	}
-	notificationStore := getNotificationStore()
 
 	// Check if sender with same name already exists
-	senderRetv, err := notificationStore.getSenderByName(sender.Name)
+	senderRetv, err := s.notificationStore.getSenderByName(sender.Name)
 	if err != nil {
 		logger.Error("Failed to retrieve notification sender", log.String("name", sender.Name),
 			log.Error(err))
@@ -91,7 +90,7 @@ func (s *notificationSenderMgtService) CreateSender(
 	sender.ID = id
 
 	// Create the sender
-	err = notificationStore.createSender(sender)
+	err = s.notificationStore.createSender(sender)
 	if err != nil {
 		logger.Error("Failed to create notification sender", log.Error(err))
 		return nil, &ErrorInternalServerError
@@ -113,8 +112,7 @@ func (s *notificationSenderMgtService) ListSenders() ([]common.NotificationSende
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationSenderMgtService"))
 	logger.Debug("Listing all notification senders")
 
-	notificationStore := getNotificationStore()
-	senders, err := notificationStore.listSenders()
+	senders, err := s.notificationStore.listSenders()
 	if err != nil {
 		logger.Error("Failed to list notification senders", log.Error(err))
 		return nil, &ErrorInternalServerError
@@ -133,8 +131,7 @@ func (s *notificationSenderMgtService) GetSender(id string) (*common.Notificatio
 		return nil, &ErrorInvalidSenderID
 	}
 
-	notificationStore := getNotificationStore()
-	sender, err := notificationStore.getSenderByID(id)
+	sender, err := s.notificationStore.getSenderByID(id)
 	if err != nil {
 		logger.Error("Failed to retrieve notification sender", log.String("id", id), log.Error(err))
 		return nil, &ErrorInternalServerError
@@ -153,8 +150,7 @@ func (s *notificationSenderMgtService) GetSenderByName(name string) (*common.Not
 		return nil, &ErrorInvalidSenderName
 	}
 
-	notificationStore := getNotificationStore()
-	sender, err := notificationStore.getSenderByName(name)
+	sender, err := s.notificationStore.getSenderByName(name)
 	if err != nil {
 		logger.Error("Failed to retrieve notification sender", log.String("name", name), log.Error(err))
 		return nil, &ErrorInternalServerError
@@ -176,10 +172,8 @@ func (s *notificationSenderMgtService) UpdateSender(id string,
 		return nil, err
 	}
 
-	notificationStore := getNotificationStore()
-
 	// Check if sender exists
-	senderRetv, err := notificationStore.getSenderByID(id)
+	senderRetv, err := s.notificationStore.getSenderByID(id)
 	if err != nil {
 		logger.Error("Failed to retrieve notification sender", log.String("id", id), log.Error(err))
 		return nil, &ErrorInternalServerError
@@ -191,7 +185,7 @@ func (s *notificationSenderMgtService) UpdateSender(id string,
 
 	// If the name is being updated, check for duplicates
 	if sender.Name != senderRetv.Name {
-		senderWithUpdatedName, err := notificationStore.getSenderByName(sender.Name)
+		senderWithUpdatedName, err := s.notificationStore.getSenderByName(sender.Name)
 		if err != nil {
 			logger.Error("Failed to retrieve notification sender", log.String("name", sender.Name),
 				log.Error(err))
@@ -212,7 +206,7 @@ func (s *notificationSenderMgtService) UpdateSender(id string,
 	}
 
 	// Update the sender
-	if err := notificationStore.updateSender(id, sender); err != nil {
+	if err := s.notificationStore.updateSender(id, sender); err != nil {
 		logger.Error("Failed to update notification sender", log.String("id", id), log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
@@ -236,8 +230,7 @@ func (s *notificationSenderMgtService) DeleteSender(id string) *serviceerror.Ser
 		return &ErrorInvalidSenderID
 	}
 
-	notificationStore := getNotificationStore()
-	if err := notificationStore.deleteSender(id); err != nil {
+	if err := s.notificationStore.deleteSender(id); err != nil {
 		logger.Error("Failed to delete notification sender", log.String("id", id), log.Error(err))
 		return &ErrorInternalServerError
 	}

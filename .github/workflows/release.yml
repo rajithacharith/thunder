@@ -17,6 +17,11 @@ on:
         required: false
         type: boolean
         default: false
+      run_performance_test:
+        description: 'Run performance tests after release'
+        required: false
+        type: boolean
+        default: false
 
 # Add permissions to allow pushing tags and packages
 permissions:
@@ -444,6 +449,8 @@ jobs:
     name: 🚀 Release
     runs-on: ubuntu-latest
     needs: [build-thunder, package-samples-linux, package-samples-macos]
+    outputs:
+      release_tag: ${{ steps.release_info.outputs.release_tag }}
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
@@ -543,6 +550,48 @@ jobs:
           # Handle other 'latest' references
           INTRO=$(echo "$INTRO" | sed "s/latest release of WSO2 Thunder/$RELEASE_VERSION release of WSO2 Thunder/g")
           QUICKSTART=$(echo "$QUICKSTART" | sed "s/latest release of WSO2 Thunder/$RELEASE_VERSION release of WSO2 Thunder/g")
+          
+          # Add direct download links for Thunder server - replace download instruction and example paragraph
+          # Create the Thunder downloads table with proper newlines using printf
+          THUNDER_TABLE=$(printf "%s\n%s\n%s\n%s\n%s\n%s\n%s" \
+            "| OS | Architecture | Download Link |" \
+            "|-------|-------------|-------------|" \
+            "| macOS | ARM64 (Apple Silicon) | [thunder-${RELEASE_VERSION}-macos-arm64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/thunder-${RELEASE_VERSION}-macos-arm64.zip) |" \
+            "| macOS | x64 (Intel) | [thunder-${RELEASE_VERSION}-macos-x64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/thunder-${RELEASE_VERSION}-macos-x64.zip) |" \
+            "| Linux | x64 | [thunder-${RELEASE_VERSION}-linux-x64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/thunder-${RELEASE_VERSION}-linux-x64.zip) |" \
+            "| Linux | ARM64 | [thunder-${RELEASE_VERSION}-linux-arm64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/thunder-${RELEASE_VERSION}-linux-arm64.zip) |" \
+            "| Windows | x64 | [thunder-${RELEASE_VERSION}-win-x64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/thunder-${RELEASE_VERSION}-win-x64.zip) |")
+          
+          # Replace the download instruction with the table using awk for proper handling
+          QUICKSTART=$(echo "$QUICKSTART" | awk -v table="$THUNDER_TABLE" '
+            /Download `thunder-.*-<os>-<arch>\.zip` from the \[.*release\]/ {
+              print table
+              next
+            }
+            { print }
+          ')
+          
+          # Remove the example paragraph that follows (it's now redundant with the table)
+          QUICKSTART=$(echo "$QUICKSTART" | sed '/For example, if you are using a MacOS machine with a Apple Silicon (ARM64) processor, you would download `thunder-'"$RELEASE_VERSION"'-macos-arm64\.zip`\./d')
+          
+          # Create the Sample App downloads table with proper newlines using printf
+          SAMPLE_TABLE=$(printf "%s\n%s\n%s\n%s\n%s\n%s\n%s" \
+            "| OS | Architecture | Download Link |" \
+            "|-------|-------------|-------------|" \
+            "| macOS | ARM64 (Apple Silicon) | [sample-app-${RELEASE_VERSION}-macos-arm64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/sample-app-${RELEASE_VERSION}-macos-arm64.zip) |" \
+            "| macOS | x64 (Intel) | [sample-app-${RELEASE_VERSION}-macos-x64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/sample-app-${RELEASE_VERSION}-macos-x64.zip) |" \
+            "| Linux | x64 | [sample-app-${RELEASE_VERSION}-linux-x64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/sample-app-${RELEASE_VERSION}-linux-x64.zip) |" \
+            "| Linux | ARM64 | [sample-app-${RELEASE_VERSION}-linux-arm64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/sample-app-${RELEASE_VERSION}-linux-arm64.zip) |" \
+            "| Windows | x64 | [sample-app-${RELEASE_VERSION}-win-x64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/sample-app-${RELEASE_VERSION}-win-x64.zip) |")
+          
+          # Replace the sample app download instruction with the table using awk
+          QUICKSTART=$(echo "$QUICKSTART" | awk -v table="$SAMPLE_TABLE" '
+            /Download `sample-app-.*-<os>-<arch>\.zip` from the \[.*release\]/ {
+              print table
+              next
+            }
+            { print }
+          ')
 
           # Get changelog from Release Drafter
           CHANGELOG="${{ steps.changelog.outputs.body }}"
@@ -586,3 +635,57 @@ jobs:
           release-name: ${{ steps.release_info.outputs.release_name }}
           release-tag: ${{ steps.release_info.outputs.release_tag }}
           release-url: ${{ steps.release_info.outputs.release_url }}
+
+  trigger-performance-test:
+    name: 🧪 Trigger Performance Test
+    runs-on: ubuntu-latest
+    needs: release
+    if: ${{ github.event.inputs.run_performance_test == 'true' }}
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚡ Trigger Performance Test Workflows
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.THUNDER_GITHUB_BOT_TOKEN }}
+          script: |
+            // Construct the Thunder pack URL using the release version
+            const releaseTag = '${{ needs.release.outputs.release_tag }}';
+            const thunderPackUrl = `https://github.com/${{ github.repository }}/releases/download/${releaseTag}/thunder-${releaseTag.replace('v', '')}-linux-x64.zip`;
+            
+            // Define CPU core configurations to test
+            const cpuCoreConfigs = ['4', '8'];
+            
+            // Loop through each CPU core configuration and trigger a separate workflow
+            for (const cpuCores of cpuCoreConfigs) {
+              console.log(`🔄 Triggering performance test with ${cpuCores} CPU cores`);
+              
+              try {
+                const result = await github.rest.actions.createWorkflowDispatch({
+                  owner: 'asgardeo',
+                  repo: 'thunder-performance',
+                  workflow_id: 'vm-perf-workflow.yml',
+                  ref: 'main',
+                  inputs: {
+                    THUNDER_PACK_URL: thunderPackUrl,
+                    DEPLOYMENT: 'single-node',
+                    CPU_CORES: cpuCores,
+                    ADDITIONAL_PARAMS_TO_RUN_PERFORMANCE_SCRIPT: '-d 15 -w 5 -x false -y JWT',
+                    PERFORMANCE_REPO: 'https://github.com/asgardeo/thunder-performance',
+                    BRANCH: 'main',
+                    MODE: 'FULL',
+                    USE_DELAYS: 'true',
+                    CONCURRENCY: '50-3000',
+                    DB_TYPE: 'postgres'
+                  }
+                });
+                console.log(`✅ Performance test workflow with ${cpuCores} CPU cores triggered successfully`);
+              } catch (error) {
+                console.error(`❌ Failed to trigger performance test workflow with ${cpuCores} CPU cores:`, error);
+                // Continue with next configuration even if one fails
+              }
+            }
+            
+            // Return success
+            return {success: true};
