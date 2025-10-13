@@ -21,8 +21,8 @@ package notification
 import (
 	"errors"
 
-	filebackedruntime "github.com/asgardeo/thunder/internal/file_backed_runtime"
 	"github.com/asgardeo/thunder/internal/notification/common"
+	filebackedruntime "github.com/asgardeo/thunder/internal/system/file_backed_runtime"
 	"github.com/asgardeo/thunder/internal/system/log"
 
 	"gopkg.in/yaml.v3"
@@ -80,7 +80,10 @@ func (i *inMemoryStore) updateSender(id string, sender common.NotificationSender
 var _ notificationStoreInterface = (*inMemoryStore)(nil)
 
 func newInMemoryStore() *inMemoryStore {
-	fileConfigs := filebackedruntime.GetConfig().NotificationSenders
+	fileConfigs, err := filebackedruntime.GetConfigs("notification_senders")
+	if err != nil {
+		logger.Fatal("Failed to load notification sender configurations from files", log.Error(err))
+	}
 	store := make(map[string]common.NotificationSenderDTO)
 	for idx, fileConfig := range fileConfigs {
 		sender, err := convertFileSenderConfigToDTO(fileConfig)

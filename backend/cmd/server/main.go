@@ -32,7 +32,6 @@ import (
 	"time"
 
 	"github.com/asgardeo/thunder/internal/cert"
-	filebackedruntime "github.com/asgardeo/thunder/internal/file_backed_runtime"
 	"github.com/asgardeo/thunder/internal/system/cache"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
@@ -117,15 +116,6 @@ func initThunderConfigurations(logger *log.Logger, thunderHome string) *config.C
 	// Initialize runtime configurations.
 	if err := config.InitializeThunderRuntime(thunderHome, cfg); err != nil {
 		logger.Fatal("Failed to initialize thunder runtime", log.Error(err))
-	}
-
-	if config.GetThunderRuntime().Config.ImmutableGateway.Enabled {
-		logger.Info("Immutable Gateway Configuration", log.Bool("enabled", true))
-		immutableConfigFilePath := path.Join(thunderHome, "repository/conf/immutable_configs/")
-		if _, err := os.Stat(immutableConfigFilePath); os.IsNotExist(err) {
-			logger.Fatal("Immutable gateway configuration file does not exist", log.String("path", immutableConfigFilePath))
-		}
-		_ = filebackedruntime.NewFileConfigManager(immutableConfigFilePath)
 	}
 
 	return cfg

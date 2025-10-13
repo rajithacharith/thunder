@@ -21,7 +21,7 @@ package idp
 import (
 	"errors"
 
-	filebackedruntime "github.com/asgardeo/thunder/internal/file_backed_runtime"
+	filebackedruntime "github.com/asgardeo/thunder/internal/system/file_backed_runtime"
 	"github.com/asgardeo/thunder/internal/system/log"
 
 	"gopkg.in/yaml.v3"
@@ -82,7 +82,10 @@ func (f *fileBasedStore) UpdateIdentityProvider(idp *IDPDTO) error {
 var _ idpStoreInterface = (*fileBasedStore)(nil)
 
 func newFileBasedStore() *fileBasedStore {
-	fileConfigs := filebackedruntime.GetConfig().IDPs
+	fileConfigs, err := filebackedruntime.GetConfigs("identity_providers")
+	if err != nil {
+		logger.Fatal("Failed to load identity provider configurations from files", log.Error(err))
+	}
 	store := make(map[string]IDPDTO)
 	for idx, fileConfig := range fileConfigs {
 		idp, err := convertFileIDPConfigToDTO(fileConfig)
