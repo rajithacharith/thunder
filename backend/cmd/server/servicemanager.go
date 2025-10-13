@@ -23,11 +23,14 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/flow"
+	"github.com/asgardeo/thunder/internal/group"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
+	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/services"
+	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 // registerServices registers all the services with the provided HTTP multiplexer.
@@ -39,6 +42,10 @@ func registerServices(mux *http.ServeMux) {
 	if err := jwtService.Init(); err != nil { // TODO: Two-Phase Initialization is anti-pattern. Refactor this.
 		logger.Fatal("Failed to load private key", log.Error(err))
 	}
+
+	_ = userschema.Initialize(mux)
+	ouService := ou.Initialize(mux)
+	_ = group.Initialize(mux, ouService)
 
 	_ = idp.Initialize(mux)
 	_ = notification.Initialize(mux, jwtService)
@@ -61,17 +68,8 @@ func registerServices(mux *http.ServeMux) {
 	// Register the introspection service.
 	services.NewIntrospectionAPIService(mux)
 
-	// Register the Organization Unit service.
-	services.NewOrganizationUnitService(mux)
-
 	// Register the User service.
 	services.NewUserService(mux)
-
-	// Register the User Schema service.
-	services.NewUserSchemaService(mux)
-
-	// Register the Group service.
-	services.NewGroupService(mux)
 
 	// Register the Application service.
 	services.NewApplicationService(mux)
