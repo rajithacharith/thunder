@@ -23,6 +23,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sync"
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -41,18 +42,50 @@ func GetConfigs(configDirectoryPath string) ([][]byte, error) {
 	}
 
 	var configs [][]byte
+
+	// Count non-directory files
+	var fileCount int
 	for _, file := range files {
 		if !file.IsDir() {
-			filePath := filepath.Join(absoluteDirectoryPath, file.Name())
-			filePath = filepath.Clean(filePath)
-			// #nosec G304 -- File path is controlled and within a trusted directory
-			fileContent, err := os.ReadFile(filePath)
-			if err != nil {
-				log.GetLogger().Warn("Failed to read configuration file", log.String("filePath", file.Name()), log.Error(err))
-				continue
-			}
-			configs = append(configs, fileContent)
+			fileCount++
 		}
+	}
+
+	if fileCount == 0 {
+		return configs, nil
+	}
+
+	// Use channels to collect results from goroutines
+	configChan := make(chan []byte, fileCount)
+	var wg sync.WaitGroup
+
+	for _, file := range files {
+		if !file.IsDir() {
+			wg.Add(1)
+			go func(fileName string) {
+				defer wg.Done()
+				filePath := filepath.Join(absoluteDirectoryPath, fileName)
+				filePath = filepath.Clean(filePath)
+				// #nosec G304 -- File path is controlled and within a trusted directory
+				fileContent, err := os.ReadFile(filePath)
+				if err != nil {
+					log.GetLogger().Warn("Failed to read configuration file", log.String("filePath", fileName), log.Error(err))
+					return
+				}
+				configChan <- fileContent
+			}(file.Name())
+		}
+	}
+
+	// Wait for all goroutines to complete and close the channel
+	go func() {
+		wg.Wait()
+		close(configChan)
+	}()
+
+	// Collect results from the channel
+	for content := range configChan {
+		configs = append(configs, content)
 	}
 	return configs, nil
 }
