@@ -84,8 +84,8 @@ func registerServices(
 	brandingService := branding.Initialize(mux)
 	applicationService := application.Initialize(mux, certservice, flowMgtService, brandingService, userSchemaService)
 
-	// Initialize export service with application service dependency
-	_ = export.Initialize(mux, applicationService)
+	// Initialize export service with application and IDP service dependencies
+	_ = export.Initialize(mux, applicationService, idpService)
 
 	flowExecService := flowexec.Initialize(mux, flowMgtService, applicationService, execRegistry, observabilitySvc)
 
