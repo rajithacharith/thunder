@@ -57,7 +57,7 @@ func registerServices(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) {
 	authZService := authz.Initialize(roleService)
 
 	idpService := idp.Initialize(mux)
-	_, otpService := notification.Initialize(mux, jwtService)
+	notificationSenderMgtService, otpService := notification.Initialize(mux, jwtService)
 
 	// Initialize authentication services.
 	_, authSvcRegistry := authn.Initialize(mux, idpService, jwtService, userService, otpService)
@@ -75,8 +75,8 @@ func registerServices(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) {
 	brandingService := branding.Initialize(mux)
 	applicationService := application.Initialize(mux, certservice, flowMgtService, brandingService, userSchemaService)
 
-	// Initialize export service with application and IDP service dependencies
-	_ = export.Initialize(mux, applicationService, idpService)
+	// Initialize export service with application, IDP, notification sender, and user schema service dependencies
+	_ = export.Initialize(mux, applicationService, idpService, notificationSenderMgtService, userSchemaService)
 
 	flowExecService := flowexec.Initialize(mux, flowMgtService, applicationService, execRegistry)
 

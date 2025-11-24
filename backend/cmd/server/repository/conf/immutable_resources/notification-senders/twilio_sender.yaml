@@ -1,0 +1,18 @@
+# Twilio SMS Notification Sender Configuration
+# This configuration file defines a Twilio SMS notification sender for immutable resource mode.
+# All properties support parameterization using Go template syntax: {{.VARIABLE_NAME}}
+
+id: "twilio-sms-sender"
+name: "Twilio SMS Sender"
+description: "Production Twilio SMS notification sender"
+provider: "twilio"
+properties:
+  - name: "account_sid"
+    value: "{{.TWILIO_ACCOUNT_SID}}"
+    is_secret: false
+  - name: "auth_token"
+    value: "{{.TWILIO_AUTH_TOKEN}}"
+    is_secret: true
+  - name: "sender_id"
+    value: "{{.TWILIO_FROM_NUMBER}}"
+    is_secret: false
