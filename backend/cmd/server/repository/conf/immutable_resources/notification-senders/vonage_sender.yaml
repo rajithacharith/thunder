@@ -1,0 +1,18 @@
+# Vonage SMS Notification Sender Configuration
+# This configuration file defines a Vonage SMS notification sender for immutable resource mode.
+# All properties support parameterization using Go template syntax: {{.VARIABLE_NAME}}
+
+id: "vonage-sms-sender"
+name: "Vonage SMS Sender"
+description: "Production Vonage SMS notification sender"
+provider: "vonage"
+properties:
+  - name: "api_key"
+    value: "{{.VONAGE_API_KEY}}"
+    is_secret: false
+  - name: "api_secret"
+    value: "{{.VONAGE_API_SECRET}}"
+    is_secret: true
+  - name: "sender_id"
+    value: "{{.VONAGE_FROM_NUMBER}}"
+    is_secret: false

@@ -1,0 +1,32 @@
+id: {{ .USER_SCHEMA_BASIC_ID | default "550e8400-e29b-41d4-a716-446655440001" }}
+name: basic_schema
+organization_unit_id: {{ .OU_ID | default "550e8400-e29b-41d4-a716-446655440000" }}
+allow_self_registration: true
+schema:
+  $schema: http://json-schema.org/draft-07/schema#
+  type: object
+  properties:
+    username:
+      type: string
+      minLength: 3
+      maxLength: 50
+      pattern: ^[a-zA-Z0-9_]+$
+    email:
+      type: string
+      format: email
+    firstName:
+      type: string
+      minLength: 1
+      maxLength: 100
+    lastName:
+      type: string
+      minLength: 1
+      maxLength: 100
+    phoneNumber:
+      type: string
+      pattern: ^\+?[1-9]\d{1,14}$
+  required:
+    - username
+    - email
+    - firstName
+    - lastName

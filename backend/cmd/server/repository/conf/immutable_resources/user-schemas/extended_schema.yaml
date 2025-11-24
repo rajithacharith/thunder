@@ -1,0 +1,76 @@
+id: {{ .USER_SCHEMA_EXTENDED_ID | default "550e8400-e29b-41d4-a716-446655440002" }}
+name: extended_schema
+organization_unit_id: {{ .OU_ID | default "550e8400-e29b-41d4-a716-446655440000" }}
+allow_self_registration: false
+schema:
+  $schema: http://json-schema.org/draft-07/schema#
+  type: object
+  properties:
+    username:
+      type: string
+      minLength: 3
+      maxLength: 50
+      pattern: ^[a-zA-Z0-9_]+$
+    email:
+      type: string
+      format: email
+    firstName:
+      type: string
+      minLength: 1
+      maxLength: 100
+    lastName:
+      type: string
+      minLength: 1
+      maxLength: 100
+    phoneNumber:
+      type: string
+      pattern: ^\+?[1-9]\d{1,14}$
+    dateOfBirth:
+      type: string
+      format: date
+    country:
+      type: string
+      minLength: 2
+      maxLength: 2
+      pattern: ^[A-Z]{2}$
+    address:
+      type: object
+      properties:
+        street:
+          type: string
+          maxLength: 200
+        city:
+          type: string
+          maxLength: 100
+        state:
+          type: string
+          maxLength: 100
+        postalCode:
+          type: string
+          maxLength: 20
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+      required:
+        - city
+        - country
+    preferences:
+      type: object
+      properties:
+        language:
+          type: string
+          enum:
+            - en
+            - es
+            - fr
+            - de
+        timezone:
+          type: string
+        notifications:
+          type: boolean
+  required:
+    - username
+    - email
+    - firstName
+    - lastName
