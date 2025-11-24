@@ -35,6 +35,8 @@ import (
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
+	"github.com/asgardeo/thunder/tests/mocks/notification/notificationmock"
+	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -43,10 +45,12 @@ import (
 // HandlerTestSuite contains comprehensive tests for the export handler functions.
 type HandlerTestSuite struct {
 	suite.Suite
-	mockAppService *applicationmock.ApplicationServiceInterfaceMock
-	mockIDPService *idpmock.IDPServiceInterfaceMock
-	exportService  ExportServiceInterface
-	handler        *exportHandler
+	mockAppService          *applicationmock.ApplicationServiceInterfaceMock
+	mockIDPService          *idpmock.IDPServiceInterfaceMock
+	mockNotificationService *notificationmock.NotificationSenderMgtSvcInterfaceMock
+	mockUserSchemaService   *userschemamock.UserSchemaServiceInterfaceMock
+	exportService           ExportServiceInterface
+	handler                 *exportHandler
 }
 
 func (suite *HandlerTestSuite) SetupTest() {
@@ -63,8 +67,10 @@ func (suite *HandlerTestSuite) SetupTest() {
 	// Setup services and handler
 	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
 	suite.mockIDPService = idpmock.NewIDPServiceInterfaceMock(suite.T())
+	suite.mockNotificationService = notificationmock.NewNotificationSenderMgtSvcInterfaceMock(suite.T())
+	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 	parameterizer := newParameterizer(rules)
-	suite.exportService = newExportService(suite.mockAppService, suite.mockIDPService, parameterizer)
+	suite.exportService = newExportService(suite.mockAppService, suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, parameterizer)
 	suite.handler = newExportHandler(suite.exportService)
 }
 
@@ -346,8 +352,10 @@ func TestGenerateAndSendZipResponse_Standalone(t *testing.T) {
 	// Setup handler
 	mockAppService := applicationmock.NewApplicationServiceInterfaceMock(t)
 	mockIDPService := idpmock.NewIDPServiceInterfaceMock(t)
+	mockNotificationService := notificationmock.NewNotificationSenderMgtSvcInterfaceMock(t)
+	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	parameterizer := newParameterizer(rules)
-	exportService := newExportService(mockAppService, mockIDPService, parameterizer)
+	exportService := newExportService(mockAppService, mockIDPService, mockNotificationService, mockUserSchemaService, parameterizer)
 	handler := newExportHandler(exportService)
 
 	// Test data
@@ -378,8 +386,10 @@ func TestGenerateAndSendZipResponse_Standalone(t *testing.T) {
 func TestNewExportHandler(t *testing.T) {
 	mockAppService := applicationmock.NewApplicationServiceInterfaceMock(t)
 	mockIDPService := idpmock.NewIDPServiceInterfaceMock(t)
+	mockNotificationService := notificationmock.NewNotificationSenderMgtSvcInterfaceMock(t)
+	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	parameterizer := newParameterizer(rules)
-	exportService := newExportService(mockAppService, mockIDPService, parameterizer)
+	exportService := newExportService(mockAppService, mockIDPService, mockNotificationService, mockUserSchemaService, parameterizer)
 
 	handler := newExportHandler(exportService)
 
@@ -796,8 +806,10 @@ func BenchmarkGenerateAndSendZipResponse(b *testing.B) {
 
 	mockAppService := applicationmock.NewApplicationServiceInterfaceMock(b)
 	mockIDPService := idpmock.NewIDPServiceInterfaceMock(b)
+	mockNotificationService := notificationmock.NewNotificationSenderMgtSvcInterfaceMock(b)
+	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(b)
 	parameterizer := newParameterizer(rules)
-	exportService := newExportService(mockAppService, mockIDPService, parameterizer)
+	exportService := newExportService(mockAppService, mockIDPService, mockNotificationService, mockUserSchemaService, parameterizer)
 	handler := newExportHandler(exportService)
 
 	exportResponse := &ExportResponse{
@@ -830,8 +842,10 @@ func setupBenchmarkTest(b *testing.B) (*exportHandler, []byte) {
 
 	mockAppService := applicationmock.NewApplicationServiceInterfaceMock(b)
 	mockIDPService := idpmock.NewIDPServiceInterfaceMock(b)
+	mockNotificationService := notificationmock.NewNotificationSenderMgtSvcInterfaceMock(b)
+	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(b)
 	parameterizer := newParameterizer(rules)
-	exportService := newExportService(mockAppService, mockIDPService, parameterizer)
+	exportService := newExportService(mockAppService, mockIDPService, mockNotificationService, mockUserSchemaService, parameterizer)
 	handler := newExportHandler(exportService)
 
 	// Setup mock expectation

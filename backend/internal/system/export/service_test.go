@@ -33,6 +33,8 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
+	"github.com/asgardeo/thunder/tests/mocks/notification/notificationmock"
+	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -49,9 +51,11 @@ const (
 // ExportServiceTestSuite defines the test suite for the export service.
 type ExportServiceTestSuite struct {
 	suite.Suite
-	appServiceMock *applicationmock.ApplicationServiceInterfaceMock
-	idpServiceMock *idpmock.IDPServiceInterfaceMock
-	exportService  ExportServiceInterface
+	appServiceMock          *applicationmock.ApplicationServiceInterfaceMock
+	idpServiceMock          *idpmock.IDPServiceInterfaceMock
+	mockNotificationService *notificationmock.NotificationSenderMgtSvcInterfaceMock
+	mockUserSchemaService   *userschemamock.UserSchemaServiceInterfaceMock
+	exportService           ExportServiceInterface
 }
 
 // SetupTest sets up the test environment before each test.
@@ -81,11 +85,13 @@ func (suite *ExportServiceTestSuite) SetupTest() {
 
 	suite.appServiceMock = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
 	suite.idpServiceMock = idpmock.NewIDPServiceInterfaceMock(suite.T())
+	suite.mockNotificationService = notificationmock.NewNotificationSenderMgtSvcInterfaceMock(suite.T())
+	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 
 	// Create parameterizer instance
 	parameterizer := newParameterizer(rules)
 
-	suite.exportService = newExportService(suite.appServiceMock, suite.idpServiceMock, parameterizer)
+	suite.exportService = newExportService(suite.appServiceMock, suite.idpServiceMock, suite.mockNotificationService, suite.mockUserSchemaService, parameterizer)
 }
 
 func (suite *ExportServiceTestSuite) TearDownTest() {
@@ -1141,7 +1147,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_TemplateGenerationError
 	}
 
 	// Create a new export service with the mock parameterizer
-	exportServiceWithMock := newExportService(suite.appServiceMock, suite.idpServiceMock, mockParameterizer)
+	exportServiceWithMock := newExportService(suite.appServiceMock, suite.idpServiceMock, suite.mockNotificationService, suite.mockUserSchemaService, mockParameterizer)
 
 	result, err := exportServiceWithMock.ExportResources(request)
 
