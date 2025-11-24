@@ -96,9 +96,6 @@ SAMPLE_APP_SERVER_BINARY_NAME=server
 SAMPLE_APP_VERSION=$(grep -o '"version": *"[^"]*"' samples/apps/oauth/package.json | sed 's/"version": *"\(.*\)"/\1/')
 SAMPLE_APP_FOLDER="sample-app-${SAMPLE_APP_VERSION}-${SAMPLE_PACKAGE_OS}-${SAMPLE_PACKAGE_ARCH}"
 
-# Server ports
-BACKEND_PORT=8090
-
 # Directories
 TARGET_DIR=target
 OUTPUT_DIR=$TARGET_DIR/out
@@ -120,6 +117,75 @@ FRONTEND_DEVELOP_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/thunder-develop
 SAMPLE_BASE_DIR=samples
 SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/oauth
 SAMPLE_APP_SERVER_DIR=$SAMPLE_APP_DIR/server
+
+# ============================================================================
+# Read Configuration from deployment.yaml
+# ============================================================================
+
+CONFIG_FILE="./repository/conf/deployment.yaml"
+
+# Function to read config with fallback
+read_config() {
+    local config_file="$CONFIG_FILE"
+
+    if [ ! -f "$config_file" ]; then
+        # Try alternative path (for packaged distribution)
+        config_file="./backend/cmd/server/repository/conf/deployment.yaml"
+    fi
+
+    if [ ! -f "$config_file" ]; then
+        # Use defaults if config file not found
+        HOSTNAME="localhost"
+        PORT=8090
+        HTTP_ONLY="false"
+        PUBLIC_HOSTNAME=""
+    else
+        # Try yq first (YAML parser)
+        if command -v yq >/dev/null 2>&1; then
+            HOSTNAME=$(yq eval '.server.hostname // "localhost"' "$config_file" 2>/dev/null)
+            PORT=$(yq eval '.server.port // 8090' "$config_file" 2>/dev/null)
+            HTTP_ONLY=$(yq eval '.server.http_only // false' "$config_file" 2>/dev/null)
+            PUBLIC_HOSTNAME=$(yq eval '.server.public_hostname // ""' "$config_file" 2>/dev/null)
+        else
+            # Fallback: basic parsing with grep/awk
+            HOSTNAME=$(grep -E '^\s*hostname:' "$config_file" | awk -F':' '{gsub(/[[:space:]"'\'']/,"",$2); print $2}' | head -1)
+            PORT=$(grep -E '^\s*port:' "$config_file" | awk -F':' '{gsub(/[[:space:]]/,"",$2); print $2}' | head -1)
+            PUBLIC_HOSTNAME=$(grep -E '^\s*public_hostname:' "$config_file" | grep -o '"[^"]*"' | tr -d '"' | head -1)
+
+            # Check for http_only
+            if grep -q 'http_only.*true' "$config_file" 2>/dev/null; then
+                HTTP_ONLY="true"
+            else
+                HTTP_ONLY="false"
+            fi
+
+            # Use defaults if not found
+            HOSTNAME=${HOSTNAME:-localhost}
+            PORT=${PORT:-8090}
+        fi
+    fi
+
+    # Determine protocol
+    if [ "$HTTP_ONLY" = "true" ]; then
+        PROTOCOL="http"
+    else
+        PROTOCOL="https"
+    fi
+    return 0
+}
+
+# Read configuration
+read_config
+
+# Construct base URL (internal API endpoint)
+BASE_URL="${PROTOCOL}://${HOSTNAME}:${PORT}"
+
+# Construct public URL (external/redirect URLs)
+if [ -n "$PUBLIC_HOSTNAME" ]; then
+    PUBLIC_URL="$PUBLIC_HOSTNAME"
+else
+    PUBLIC_URL="$BASE_URL"
+fi
 
 function get_coverage_exclusion_pattern() {
     # Read exclusion patterns (full package paths) from .excludecoverage file
@@ -760,7 +826,7 @@ function run() {
     
     echo "[INFO] Waiting for Thunder server to be ready..."
     while [ $retries -lt $MAX_RETRIES ]; do
-        if curl -k -s -f "https://localhost:$BACKEND_PORT/health/readiness" > /dev/null 2>&1; then
+        if curl -k -s -f "$BASE_URL/health/readiness" > /dev/null 2>&1; then
             echo "✓ Server is ready!"
             break
         fi
@@ -768,7 +834,7 @@ function run() {
         retries=$((retries + 1))
         if [ $retries -ge $MAX_RETRIES ]; then
             echo "❌ Server did not become ready after $MAX_RETRIES attempts"
-            echo "💡 Please ensure the Thunder server is running at https://localhost:$BACKEND_PORT"
+            echo "💡 Please ensure the Thunder server is running at $BASE_URL"
             exit 1
         fi
         
@@ -779,7 +845,7 @@ function run() {
     echo ""
     
     # Run the bootstrap script directly with environment variable and arguments
-    THUNDER_API_BASE="https://localhost:$BACKEND_PORT" \
+    THUNDER_API_BASE="$BASE_URL" \
         "$BACKEND_BASE_DIR/cmd/server/bootstrap/01-default-resources.sh" \
         --develop-redirect-uris "https://localhost:$DEVELOP_APP_DEFAULT_PORT/develop"
 
@@ -801,7 +867,7 @@ function run() {
 
     echo ""
     echo "🚀 Servers running:"
-    echo "  👉 Backend : https://localhost:$BACKEND_PORT"
+    echo "  👉 Backend : $BASE_URL"
     echo "  📱 Frontend :"
     echo "      🚪 Gate (Login/Register): https://localhost:$GATE_APP_DEFAULT_PORT/gate"
     echo "      🛠️  Develop (Admin Console): https://localhost:$DEVELOP_APP_DEFAULT_PORT/develop"
@@ -862,16 +928,16 @@ function start_backend() {
         lsof -ti tcp:$port | xargs kill -9 2>/dev/null || true
     }
 
-    kill_port $BACKEND_PORT
+    kill_port $PORT
 
-    echo "=== Starting backend on https://localhost:$BACKEND_PORT ==="
-    BACKEND_PORT=$BACKEND_PORT go run -C "$BACKEND_DIR" . &
+    echo "=== Starting backend on $BASE_URL ==="
+    go run -C "$BACKEND_DIR" . &
     BACKEND_PID=$!
 
     if [ "$show_final_output" = "true" ]; then
         echo ""
         echo "🚀 Servers running:"
-        echo "👉 Backend : https://localhost:$BACKEND_PORT"
+        echo "👉 Backend : $BASE_URL"
         echo "Press Ctrl+C to stop."
 
         trap 'echo -e "\n🛑 Shutting down backend server..."; kill $BACKEND_PID 2>/dev/null; echo "✅ Backend server stopped successfully."; exit 0' SIGINT
