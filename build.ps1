@@ -366,6 +366,11 @@ function Initialize-Databases {
             if ($LASTEXITCODE -ne 0) {
                 throw "SQLite operation failed with exit code $LASTEXITCODE"
             }
+            Write-Host " - Enabling WAL mode for $db_file"
+            & sqlite3 $db_path "PRAGMA journal_mode=WAL;"
+            if ($LASTEXITCODE -ne 0) {
+                throw "Failed to enable WAL mode with exit code $LASTEXITCODE"
+            }
         }
         else {
             Write-Host " ! Skipping $db_file : SQL script not found at $script_path"

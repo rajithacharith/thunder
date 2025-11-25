@@ -242,6 +242,8 @@ function initialize_databases() {
 
             echo " - Creating $db_file using $script_path"
             sqlite3 "$db_path" < "$script_path"
+            echo " - Enabling WAL mode for $db_file"
+            sqlite3 "$db_path" "PRAGMA journal_mode=WAL;"
         else
             echo " ! Skipping $db_file: SQL script not found at $script_path"
         fi
