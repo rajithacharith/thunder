@@ -74,7 +74,10 @@ export default function CreateUserTypePage() {
   const [enumInput, setEnumInput] = useState<Record<string, string>>({});
   const [validationError, setValidationError] = useState<string | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const organizationUnits = useMemo(() => organizationUnitsResponse?.organizationUnits ?? [], [organizationUnitsResponse]);
+  const organizationUnits = useMemo(
+    () => organizationUnitsResponse?.organizationUnits ?? [],
+    [organizationUnitsResponse],
+  );
   const selectedOrganizationUnit = useMemo(
     () => organizationUnits.find((unit) => unit.id === ouId),
     [organizationUnits, ouId],
@@ -363,10 +366,7 @@ export default function CreateUserTypePage() {
 
           <FormControlLabel
             control={
-              <Checkbox
-                checked={allowSelfRegistration}
-                onChange={(e) => setAllowSelfRegistration(e.target.checked)}
-              />
+              <Checkbox checked={allowSelfRegistration} onChange={(e) => setAllowSelfRegistration(e.target.checked)} />
             }
             label={t('userTypes:allowSelfRegistration')}
             sx={{mb: 2}}
@@ -407,8 +407,6 @@ export default function CreateUserTypePage() {
                     <MenuItem value="number">{t('userTypes:types.number')}</MenuItem>
                     <MenuItem value="boolean">{t('userTypes:types.boolean')}</MenuItem>
                     <MenuItem value="enum">{t('userTypes:types.enum')}</MenuItem>
-                    <MenuItem value="array">{t('userTypes:types.array')}</MenuItem>
-                    <MenuItem value="object">{t('userTypes:types.object')}</MenuItem>
                   </Select>
                 </FormControl>
               </Box>
