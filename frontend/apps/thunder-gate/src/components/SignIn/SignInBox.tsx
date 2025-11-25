@@ -37,7 +37,7 @@ import {
   InputAdornment,
 } from '@wso2/oxygen-ui';
 import {useState} from 'react';
-import {SignIn} from '@asgardeo/react';
+import {SignIn, SignUp} from '@asgardeo/react';
 import {Smartphone, Google, Facebook, GitHub, Eye, EyeClosed} from '@wso2/oxygen-ui-icons-react';
 import {useNavigate, useSearchParams} from 'react-router';
 import ROUTES from '../../constants/routes';
@@ -421,31 +421,42 @@ export default function SignInBox(): JSX.Element {
             </>
           )}
         </SignIn>
-        <Typography sx={{textAlign: 'center', mt: 2}}>
-          Don&apos;t have an account?{' '}
-          <Button
-            variant="text"
-            onClick={() => {
-              const currentParams = searchParams.toString();
-              const createUrl = currentParams ? `${ROUTES.AUTH.SIGN_UP}?${currentParams}` : ROUTES.AUTH.SIGN_UP;
-              // eslint-disable-next-line @typescript-eslint/no-floating-promises
-              navigate(createUrl);
-            }}
-            sx={{
-              p: 0,
-              minWidth: 'auto',
-              textTransform: 'none',
-              color: 'primary.main',
-              textDecoration: 'underline',
-              '&:hover': {
-                textDecoration: 'underline',
-                backgroundColor: 'transparent',
-              },
-            }}
-          >
-            Sign up
-          </Button>
-        </Typography>
+          
+        <SignUp>
+          {({components}) => {
+            if (components && components.length > 0) {
+              return (
+                <Typography sx={{textAlign: 'center', mt: 2}}>
+                  Don&apos;t have an account?{' '}
+                  <Button
+                    variant="text"
+                    onClick={() => {
+                      const currentParams = searchParams.toString();
+                      const createUrl = currentParams ? `${ROUTES.AUTH.SIGN_UP}?${currentParams}` : ROUTES.AUTH.SIGN_UP;
+                      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                      navigate(createUrl);
+                    }}
+                    sx={{
+                      p: 0,
+                      minWidth: 'auto',
+                      textTransform: 'none',
+                      color: 'primary.main',
+                      textDecoration: 'underline',
+                      '&:hover': {
+                        textDecoration: 'underline',
+                        backgroundColor: 'transparent',
+                      },
+                    }}
+                  >
+                    Sign up
+                  </Button>
+                </Typography>
+              );
+            }
+
+            return null;
+          }}
+        </SignUp>
       </StyledPaper>
     </Stack>
   );
