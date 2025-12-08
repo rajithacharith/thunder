@@ -22,6 +22,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/asgardeo/thunder/internal/system/file_based_runtime/entity"
+	"github.com/asgardeo/thunder/internal/system/immutableresource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -34,7 +36,15 @@ type FileBasedStoreTestSuite struct {
 }
 
 func (suite *FileBasedStoreTestSuite) SetupTest() {
-	suite.store = newUserSchemaFileBasedStore()
+	suite.store = newUserSchemaFileBasedStoreForTest()
+}
+
+// newUserSchemaFileBasedStoreForTest creates a test instance
+func newUserSchemaFileBasedStoreForTest() userSchemaStoreInterface {
+	genericStore := immutableresource.NewGenericFileBasedStoreForTest(entity.KeyTypeUserSchema)
+	return &userSchemaFileBasedStore{
+		GenericFileBasedStore: genericStore,
+	}
 }
 
 func TestFileBasedStoreTestSuite(t *testing.T) {
