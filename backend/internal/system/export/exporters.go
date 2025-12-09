@@ -24,6 +24,7 @@ import (
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/notification/common"
+	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/userschema"
@@ -246,4 +247,55 @@ func (e *UserSchemaExporter) ValidateResource(resource interface{}, id string, l
 	}
 
 	return schema.Name, nil
+}
+
+// OUExporter implements ResourceExporter for organizational units.
+type OUExporter struct {
+	service ou.OrganizationUnitServiceInterface
+}
+
+// NewOUExporter creates a new OU exporter.
+func NewOUExporter(service ou.OrganizationUnitServiceInterface) *OUExporter {
+	return &OUExporter{service: service}
+}
+
+func (e *OUExporter) GetResourceType() string {
+	return resourceTypeOrganizationalUnit
+}
+
+func (e *OUExporter) GetParameterizerType() string {
+	return "OrganizationalUnit"
+}
+
+func (e *OUExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
+	response, err := e.service.GetOrganizationUnitList(1000, 0)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(response.OrganizationUnits))
+	for _, ou := range response.OrganizationUnits {
+		ids = append(ids, ou.ID)
+	}
+	return ids, nil
+}
+
+func (e *OUExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
+	ou, err := e.service.GetOrganizationUnit(id)
+	if err != nil {
+		return nil, "", err
+	}
+	return &ou, ou.Name, nil
+}
+
+func (e *OUExporter) ValidateResource(resource interface{}, id string, logger *log.Logger) (string, *ExportError) {
+	ouData, ok := resource.(*ou.OrganizationUnit)
+	if !ok {
+		return "", createTypeError(resourceTypeOrganizationalUnit, id)
+	}
+
+	if err := validateResourceName(ouData.Name, resourceTypeOrganizationalUnit, id, "OU_VALIDATION_ERROR", logger); err != nil {
+		return "", err
+	}
+
+	return ouData.Name, nil
 }

@@ -28,6 +28,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
 	"github.com/asgardeo/thunder/tests/mocks/notification/notificationmock"
+	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 
 	"github.com/stretchr/testify/assert"
@@ -46,6 +47,7 @@ type InitTestSuite struct {
 	mockIDPService          *idpmock.IDPServiceInterfaceMock
 	mockNotificationService *notificationmock.NotificationSenderMgtSvcInterfaceMock
 	mockUserSchemaService   *userschemamock.UserSchemaServiceInterfaceMock
+	mockOUService           *oumock.OrganizationUnitServiceInterfaceMock
 }
 
 func (suite *InitTestSuite) SetupTest() {
@@ -53,6 +55,7 @@ func (suite *InitTestSuite) SetupTest() {
 	suite.mockIDPService = idpmock.NewIDPServiceInterfaceMock(suite.T())
 	suite.mockNotificationService = notificationmock.NewNotificationSenderMgtSvcInterfaceMock(suite.T())
 	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	// Initialize config for CORS middleware
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
@@ -81,7 +84,7 @@ func (suite *InitTestSuite) TestInitialize() {
 
 	// Execute
 	service := Initialize(mux, suite.mockAppService,
-		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService)
+		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, suite.mockOUService)
 
 	// Assert
 	assert.NotNil(suite.T(), service)
@@ -94,7 +97,7 @@ func (suite *InitTestSuite) TestInitialize_ServiceCreation() {
 
 	// Execute
 	service := Initialize(mux, suite.mockAppService,
-		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService)
+		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, suite.mockOUService)
 
 	// Assert
 	assert.NotNil(suite.T(), service)
@@ -107,7 +110,7 @@ func (suite *InitTestSuite) TestInitialize_ServiceCreation() {
 func (suite *InitTestSuite) TestRegisterRoutes() {
 	mux := http.NewServeMux()
 	mockService := newExportService(suite.mockAppService,
-		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, newParameterizer(rules))
+		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, suite.mockOUService, newParameterizer(rules))
 	exportHandler := newExportHandler(mockService)
 
 	// Execute
@@ -120,7 +123,7 @@ func (suite *InitTestSuite) TestRegisterRoutes() {
 func (suite *InitTestSuite) TestRegisterRoutes_YAMLEndpoint() {
 	mux := http.NewServeMux()
 	mockService := newExportService(suite.mockAppService,
-		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, newParameterizer(rules))
+		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, suite.mockOUService, newParameterizer(rules))
 	exportHandler := newExportHandler(mockService)
 
 	registerRoutes(mux, exportHandler)
@@ -141,7 +144,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_YAMLEndpoint() {
 func (suite *InitTestSuite) TestRegisterRoutes_JSONEndpoint() {
 	mux := http.NewServeMux()
 	mockService := newExportService(suite.mockAppService,
-		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, newParameterizer(rules))
+		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, suite.mockOUService, newParameterizer(rules))
 	exportHandler := newExportHandler(mockService)
 
 	registerRoutes(mux, exportHandler)
@@ -161,7 +164,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_JSONEndpoint() {
 func (suite *InitTestSuite) TestRegisterRoutes_ZIPEndpoint() {
 	mux := http.NewServeMux()
 	mockService := newExportService(suite.mockAppService,
-		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, newParameterizer(rules))
+		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, suite.mockOUService, newParameterizer(rules))
 	exportHandler := newExportHandler(mockService)
 
 	registerRoutes(mux, exportHandler)
@@ -181,7 +184,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_ZIPEndpoint() {
 func (suite *InitTestSuite) TestRegisterRoutes_OptionsEndpoint() {
 	mux := http.NewServeMux()
 	mockService := newExportService(suite.mockAppService,
-		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, newParameterizer(rules))
+		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, suite.mockOUService, newParameterizer(rules))
 	exportHandler := newExportHandler(mockService)
 
 	registerRoutes(mux, exportHandler)
@@ -200,7 +203,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_OptionsEndpoint() {
 func (suite *InitTestSuite) TestRegisterRoutes_CORSHeaders() {
 	mux := http.NewServeMux()
 	mockService := newExportService(suite.mockAppService,
-		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, newParameterizer(rules))
+		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, suite.mockOUService, newParameterizer(rules))
 	exportHandler := newExportHandler(mockService)
 
 	registerRoutes(mux, exportHandler)
@@ -224,7 +227,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSHeaders() {
 func (suite *InitTestSuite) TestRegisterRoutes_InvalidMethod() {
 	mux := http.NewServeMux()
 	mockService := newExportService(suite.mockAppService,
-		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, newParameterizer(rules))
+		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, suite.mockOUService, newParameterizer(rules))
 	exportHandler := newExportHandler(mockService)
 
 	registerRoutes(mux, exportHandler)
@@ -243,7 +246,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_InvalidMethod() {
 func (suite *InitTestSuite) TestRegisterRoutes_UnregisteredPath() {
 	mux := http.NewServeMux()
 	mockService := newExportService(suite.mockAppService,
-		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, newParameterizer(rules))
+		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, suite.mockOUService, newParameterizer(rules))
 	exportHandler := newExportHandler(mockService)
 
 	registerRoutes(mux, exportHandler)
@@ -272,7 +275,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_WithNilHandler() {
 func (suite *InitTestSuite) TestRegisterRoutes_PreflightRequest() {
 	mux := http.NewServeMux()
 	mockService := newExportService(suite.mockAppService,
-		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, newParameterizer(rules))
+		suite.mockIDPService, suite.mockNotificationService, suite.mockUserSchemaService, suite.mockOUService, newParameterizer(rules))
 	exportHandler := newExportHandler(mockService)
 
 	registerRoutes(mux, exportHandler)
@@ -303,11 +306,12 @@ func BenchmarkInitialize(b *testing.B) {
 	mockIDPService := idpmock.NewIDPServiceInterfaceMock(b)
 	mockNotificationService := notificationmock.NewNotificationSenderMgtSvcInterfaceMock(b)
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(b)
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(b)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		mux := http.NewServeMux()
-		Initialize(mux, mockAppService, mockIDPService, mockNotificationService, mockUserSchemaService)
+		Initialize(mux, mockAppService, mockIDPService, mockNotificationService, mockUserSchemaService, mockOUService)
 	}
 }
 
@@ -317,8 +321,9 @@ func BenchmarkRegisterRoutes(b *testing.B) {
 	mockIDPService := idpmock.NewIDPServiceInterfaceMock(b)
 	mockNotificationService := notificationmock.NewNotificationSenderMgtSvcInterfaceMock(b)
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(b)
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(b)
 	mockService := newExportService(mockAppService,
-		mockIDPService, mockNotificationService, mockUserSchemaService, newParameterizer(rules))
+		mockIDPService, mockNotificationService, mockUserSchemaService, mockOUService, newParameterizer(rules))
 	exportHandler := newExportHandler(mockService)
 
 	b.ResetTimer()
@@ -347,10 +352,11 @@ func TestInitialize_Standalone(t *testing.T) {
 	mockIDPService := idpmock.NewIDPServiceInterfaceMock(t)
 	mockNotificationService := notificationmock.NewNotificationSenderMgtSvcInterfaceMock(t)
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 	mux := http.NewServeMux()
 
 	// Execute
-	service := Initialize(mux, mockAppService, mockIDPService, mockNotificationService, mockUserSchemaService)
+	service := Initialize(mux, mockAppService, mockIDPService, mockNotificationService, mockUserSchemaService, mockOUService)
 
 	// Assert
 	assert.NotNil(t, service)
@@ -374,8 +380,9 @@ func TestRegisterRoutes_Standalone(t *testing.T) {
 	mockIDPService := idpmock.NewIDPServiceInterfaceMock(t)
 	mockNotificationService := notificationmock.NewNotificationSenderMgtSvcInterfaceMock(t)
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 	mockService := newExportService(mockAppService,
-		mockIDPService, mockNotificationService, mockUserSchemaService, newParameterizer(rules))
+		mockIDPService, mockNotificationService, mockUserSchemaService, mockOUService, newParameterizer(rules))
 	exportHandler := newExportHandler(mockService)
 	mux := http.NewServeMux()
 
@@ -402,8 +409,9 @@ func TestRouteHandling_Standalone(t *testing.T) {
 	mockIDPService := idpmock.NewIDPServiceInterfaceMock(t)
 	mockNotificationService := notificationmock.NewNotificationSenderMgtSvcInterfaceMock(t)
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 	mux := http.NewServeMux()
-	Initialize(mux, mockAppService, mockIDPService, mockNotificationService, mockUserSchemaService)
+	Initialize(mux, mockAppService, mockIDPService, mockNotificationService, mockUserSchemaService, mockOUService)
 
 	// Test that all routes are registered
 	testCases := []struct {
@@ -458,8 +466,9 @@ func TestCORSConfiguration_Standalone(t *testing.T) {
 	mockIDPService := idpmock.NewIDPServiceInterfaceMock(t)
 	mockNotificationService := notificationmock.NewNotificationSenderMgtSvcInterfaceMock(t)
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 	mux := http.NewServeMux()
-	Initialize(mux, mockAppService, mockIDPService, mockNotificationService, mockUserSchemaService)
+	Initialize(mux, mockAppService, mockIDPService, mockNotificationService, mockUserSchemaService, mockOUService)
 
 	// Test CORS on actual request with Origin header
 	req := httptest.NewRequest("OPTIONS", "/export", nil)
