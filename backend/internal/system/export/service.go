@@ -26,6 +26,7 @@ import (
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/notification/common"
+	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/userschema"
@@ -39,6 +40,7 @@ const (
 	resourceTypeIdentityProvider   = "identity_provider"
 	resourceTypeNotificationSender = "notification_sender"
 	resourceTypeUserSchema         = "user_schema"
+	resourceTypeOrganizationalUnit = "organizational_unit"
 )
 
 // ParameterizerInterface defines the interface for template parameterization.
@@ -57,6 +59,7 @@ type exportService struct {
 	idpService                idp.IDPServiceInterface
 	notificationSenderService notification.NotificationSenderMgtSvcInterface
 	userSchemaService         userschema.UserSchemaServiceInterface
+	ouService                 ou.OrganizationUnitServiceInterface
 	parameterizer             ParameterizerInterface
 	registry                  *ResourceExporterRegistry
 	// Future: Add other service dependencies
@@ -69,6 +72,7 @@ func newExportService(appService application.ApplicationServiceInterface,
 	idpService idp.IDPServiceInterface,
 	notificationSenderService notification.NotificationSenderMgtSvcInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
+	ouService ou.OrganizationUnitServiceInterface,
 	param ParameterizerInterface) ExportServiceInterface {
 	// Create registry and register all exporters
 	registry := NewResourceExporterRegistry()
@@ -76,12 +80,14 @@ func newExportService(appService application.ApplicationServiceInterface,
 	registry.Register(NewIDPExporter(idpService))
 	registry.Register(NewNotificationSenderExporter(notificationSenderService))
 	registry.Register(NewUserSchemaExporter(userSchemaService))
+	registry.Register(NewOUExporter(ouService))
 
 	return &exportService{
 		applicationService:        appService,
 		idpService:                idpService,
 		notificationSenderService: notificationSenderService,
 		userSchemaService:         userSchemaService,
+		ouService:                 ouService,
 		parameterizer:             param,
 		registry:                  registry,
 	}
@@ -141,6 +147,14 @@ func (es *exportService) ExportResources(request *ExportRequest) (*ExportRespons
 		exportFiles = append(exportFiles, schemaFiles...)
 		exportErrors = append(exportErrors, schemaErrors...)
 		resourceCounts["user_schemas"] = len(schemaFiles)
+	}
+
+	// Export organizational units if requested
+	if len(request.OrganizationalUnits) > 0 {
+		ouFiles, ouErrors := es.exportResourcesByType(resourceTypeOrganizationalUnit, request.OrganizationalUnits, options)
+		exportFiles = append(exportFiles, ouFiles...)
+		exportErrors = append(exportErrors, ouErrors...)
+		resourceCounts["organizational_units"] = len(ouFiles)
 	}
 
 	if len(exportFiles) == 0 {

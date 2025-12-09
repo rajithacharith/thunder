@@ -24,6 +24,7 @@ type ExportRequest struct {
 	IdentityProviders   []string `json:"identity_providers,omitempty"`
 	NotificationSenders []string `json:"notification_senders,omitempty"`
 	UserSchemas         []string `json:"user_schemas,omitempty"`
+	OrganizationalUnits []string `json:"organizational_units,omitempty"`
 
 	Options *ExportOptions `json:"options,omitempty"`
 }

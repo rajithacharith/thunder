@@ -25,6 +25,7 @@ import (
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
+	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
@@ -33,7 +34,8 @@ import (
 func Initialize(mux *http.ServeMux, appService application.ApplicationServiceInterface,
 	idpService idp.IDPServiceInterface,
 	notificationSenderService notification.NotificationSenderMgtSvcInterface,
-	userSchemaService userschema.UserSchemaServiceInterface) ExportServiceInterface {
+	userSchemaService userschema.UserSchemaServiceInterface,
+	ouService ou.OrganizationUnitServiceInterface) ExportServiceInterface {
 	// Create the export service with dependencies
 
 	// Create parameterizer instance
@@ -41,7 +43,7 @@ func Initialize(mux *http.ServeMux, appService application.ApplicationServiceInt
 
 	// Inject dependencies into export service
 	exportService := newExportService(appService,
-		idpService, notificationSenderService, userSchemaService, parameterizerInstance)
+		idpService, notificationSenderService, userSchemaService, ouService, parameterizerInstance)
 
 	// Create the handler
 	exportHandler := newExportHandler(exportService)

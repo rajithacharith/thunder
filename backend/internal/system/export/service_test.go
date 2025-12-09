@@ -37,6 +37,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
 	"github.com/asgardeo/thunder/tests/mocks/notification/notificationmock"
+	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 
 	"github.com/stretchr/testify/assert"
@@ -58,6 +59,7 @@ type ExportServiceTestSuite struct {
 	idpServiceMock          *idpmock.IDPServiceInterfaceMock
 	mockNotificationService *notificationmock.NotificationSenderMgtSvcInterfaceMock
 	mockUserSchemaService   *userschemamock.UserSchemaServiceInterfaceMock
+	mockOUService           *oumock.OrganizationUnitServiceInterfaceMock
 	exportService           ExportServiceInterface
 }
 
@@ -95,7 +97,7 @@ func (suite *ExportServiceTestSuite) SetupTest() {
 	parameterizer := newParameterizer(rules)
 
 	suite.exportService = newExportService(suite.appServiceMock,
-		suite.idpServiceMock, suite.mockNotificationService, suite.mockUserSchemaService, parameterizer)
+		suite.idpServiceMock, suite.mockNotificationService, suite.mockUserSchemaService, suite.mockOUService, parameterizer)
 }
 
 func (suite *ExportServiceTestSuite) TearDownTest() {
@@ -1146,7 +1148,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_TemplateGenerationError
 
 	// Create a new export service with the mock parameterizer
 	exportServiceWithMock := newExportService(suite.appServiceMock,
-		suite.idpServiceMock, suite.mockNotificationService, suite.mockUserSchemaService, mockParameterizer)
+		suite.idpServiceMock, suite.mockNotificationService, suite.mockUserSchemaService, suite.mockOUService, mockParameterizer)
 
 	result, err := exportServiceWithMock.ExportResources(request)
 
