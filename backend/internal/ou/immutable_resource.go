@@ -22,11 +22,11 @@ import (
 	"fmt"
 	"testing"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
-
-	"gopkg.in/yaml.v3"
 )
 
 const (
