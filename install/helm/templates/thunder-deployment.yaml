@@ -81,20 +81,20 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - nc -z localhost {{ .Values.deployment.container.port }}
+                - nc -z localhost {{ .Values.configuration.server.port }}
             initialDelaySeconds: {{ .Values.deployment.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.deployment.startupProbe.periodSeconds }}
             failureThreshold: {{ .Values.deployment.startupProbe.failureThreshold }}
           livenessProbe:
             httpGet:
               path: /health/liveness
-              port: {{ .Values.deployment.container.port }}
+              port: {{ .Values.configuration.server.port }}
               scheme: HTTPS
             periodSeconds: {{ .Values.deployment.livenessProbe.periodSeconds }}
           readinessProbe:
             httpGet:
               path: /health/readiness
-              port: {{ .Values.deployment.container.port }}
+              port: {{ .Values.configuration.server.port }}
               scheme: HTTPS
             initialDelaySeconds: {{ .Values.deployment.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.deployment.readinessProbe.periodSeconds }}
@@ -116,7 +116,7 @@ spec:
               drop:
                 - all
           ports:
-            - containerPort: {{ .Values.deployment.container.port }}
+            - containerPort: {{ .Values.configuration.server.port }}
               protocol: TCP
           volumeMounts:
             - name: deployment-yaml-volume
