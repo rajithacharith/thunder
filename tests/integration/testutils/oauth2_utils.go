@@ -150,7 +150,7 @@ func CompleteAuthorization(sessionDataKey, assertion string) (*AuthorizationResp
 		return nil, fmt.Errorf("failed to marshal authorization data: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", TestServerURL+"/oauth2/authorize", bytes.NewBuffer(authzJSON))
+	req, err := http.NewRequest("POST", TestServerURL+"/oauth2/authorize/callback", bytes.NewBuffer(authzJSON))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create authorization completion request: %w", err)
 	}
