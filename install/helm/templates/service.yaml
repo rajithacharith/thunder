@@ -26,6 +26,6 @@ spec:
     {{- include "thunder.selectorLabels" . | nindent 4 }}
   ports:
     - name: servlet-https
-      port: {{ .Values.service.port }}
-      targetPort: {{ .Values.deployment.container.port }}
+      port: {{ .Values.configuration.server.port }}
+      targetPort: {{ .Values.configuration.server.port }}
       protocol: TCP

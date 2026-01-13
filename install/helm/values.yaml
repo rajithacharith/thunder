@@ -48,8 +48,6 @@ deployment:
   readinessProbe:
     initialDelaySeconds: 1
     periodSeconds: 10
-  container:
-    port: 8090
   resources:
     limits:
       cpu: 1.5
@@ -75,9 +73,6 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: "thunder-service-account"
   create: true
-
-service:
-  port: 8090
 
 ingress:
   className: "nginx"
