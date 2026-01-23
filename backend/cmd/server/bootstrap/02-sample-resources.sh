@@ -54,29 +54,15 @@ if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
     CUSTOMER_OU_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
 elif [[ "$HTTP_CODE" == "409" ]]; then
     log_warning "Customers organization unit already exists, retrieving ID..."
-    RESPONSE=$(thunder_api_call GET "/organization-units")
+    # Get existing OU ID by handle to ensure we get the correct "customers" OU
+    RESPONSE=$(thunder_api_call GET "/organization-units/tree/${CUSTOMER_OU_HANDLE}")
     HTTP_CODE="${RESPONSE: -3}"
     BODY="${RESPONSE%???}"
 
     if [[ "$HTTP_CODE" == "200" ]]; then
-        CUSTOMER_OU_ID=$(
-            CUSTOMER_OU_HANDLE_VALUE="$CUSTOMER_OU_HANDLE" \
-            BODY_JSON="$BODY" \
-            python3 - <<'PY'
-import json
-import os
-
-body = json.loads(os.environ["BODY_JSON"])
-handle = os.environ["CUSTOMER_OU_HANDLE_VALUE"]
-
-for ou in body.get("organizationUnits", []):
-    if ou.get("handle") == handle:
-        print(ou.get("id", ""), end="")
-        break
-PY
-        )
+        CUSTOMER_OU_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
     else
-        log_error "Failed to fetch organization units (HTTP $HTTP_CODE)"
+        log_error "Failed to fetch organization unit by handle '${CUSTOMER_OU_HANDLE}' (HTTP $HTTP_CODE)"
         echo "Response: $BODY"
         exit 1
     fi

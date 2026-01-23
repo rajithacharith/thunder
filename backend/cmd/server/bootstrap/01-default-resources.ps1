@@ -76,12 +76,12 @@ if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
 }
 elseif ($response.StatusCode -eq 409) {
     Log-Warning "Organization unit already exists, retrieving OU ID..."
-    # Get existing OU ID
-    $response = Invoke-ThunderApi -Method GET -Endpoint "/organization-units"
+    # Get existing OU ID by handle to ensure we get the correct "default" OU
+    $response = Invoke-ThunderApi -Method GET -Endpoint "/organization-units/tree/default"
 
     if ($response.StatusCode -eq 200) {
         $body = $response.Body | ConvertFrom-Json
-        $DEFAULT_OU_ID = $body.organizationUnits[0].id
+        $DEFAULT_OU_ID = $body.id
         if ($DEFAULT_OU_ID) {
             Log-Success "Found OU ID: $DEFAULT_OU_ID"
         }
@@ -91,7 +91,7 @@ elseif ($response.StatusCode -eq 409) {
         }
     }
     else {
-        Log-Error "Failed to fetch organization units (HTTP $($response.StatusCode))"
+        Log-Error "Failed to fetch organization unit by handle 'default' (HTTP $($response.StatusCode))"
         exit 1
     }
 }

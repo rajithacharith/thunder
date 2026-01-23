@@ -67,16 +67,14 @@ if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
 }
 elseif ($response.StatusCode -eq 409) {
     Log-Warning "Customers organization unit already exists, retrieving ID..."
-    $response = Invoke-ThunderApi -Method GET -Endpoint "/organization-units"
+    # Get existing OU ID by handle to ensure we get the correct "customers" OU
+    $response = Invoke-ThunderApi -Method GET -Endpoint "/organization-units/tree/$customerOuHandle"
     if ($response.StatusCode -eq 200) {
         $body = $response.Body | ConvertFrom-Json
-        $customersOu = $body.organizationUnits | Where-Object { $_.handle -eq $customerOuHandle } | Select-Object -First 1
-        if ($customersOu) {
-            $CUSTOMER_OU_ID = $customersOu.id
-        }
+        $CUSTOMER_OU_ID = $body.id
     }
     else {
-        Log-Error "Failed to fetch organization units (HTTP $($response.StatusCode))"
+        Log-Error "Failed to fetch organization unit by handle '$customerOuHandle' (HTTP $($response.StatusCode))"
         Write-Host "Response: $($response.Body)"
         exit 1
     }

@@ -69,8 +69,8 @@ if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
     fi
 elif [[ "$HTTP_CODE" == "409" ]]; then
     log_warning "Organization unit already exists, retrieving OU ID..."
-    # Get existing OU ID
-    RESPONSE=$(thunder_api_call GET "/organization-units")
+    # Get existing OU ID by handle to ensure we get the correct "default" OU
+    RESPONSE=$(thunder_api_call GET "/organization-units/tree/default")
     HTTP_CODE="${RESPONSE: -3}"
     BODY="${RESPONSE%???}"
 
@@ -83,7 +83,7 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
             exit 1
         fi
     else
-        log_error "Failed to fetch organization units (HTTP $HTTP_CODE)"
+        log_error "Failed to fetch organization unit by handle 'default' (HTTP $HTTP_CODE)"
         exit 1
     fi
 else
