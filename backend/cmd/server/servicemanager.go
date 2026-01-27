@@ -162,7 +162,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	oauth.Initialize(mux, applicationService, userService, jwtService, flowExecService, observabilitySvc, pkiService)
 
 	// Initialize MCP server.
-	mcp.Initialize(mux, applicationService, flowMgtService)
+	mcp.Initialize(mux, applicationService, flowMgtService, jwtService)
 
 	// TODO: Legacy way of initializing services. These need to be refactored in the future aligning to the
 	// dependency injection pattern used above.
