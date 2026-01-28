@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -419,7 +420,7 @@ func (s *smsOTPAuthExecutor) resolveUserIDFromAttribute(ctx *core.NodeContext,
 	}
 	if attributeValue != "" {
 		filters := map[string]interface{}{attributeName: attributeValue}
-		userID, svcErr := s.userService.IdentifyUser(filters)
+		userID, svcErr := s.userService.IdentifyUser(context.TODO(), filters)
 		if svcErr != nil {
 			return false, fmt.Errorf("failed to identify user by %s: %s", attributeName, svcErr.Error)
 		}
@@ -452,7 +453,7 @@ func (s *smsOTPAuthExecutor) getUserMobileNumber(userID string, ctx *core.NodeCo
 
 	// Mobile number not in context, fetch from user store
 	logger.Debug("Mobile number not in context, fetching from user store")
-	user, svcErr := s.userService.GetUser(userID)
+	user, svcErr := s.userService.GetUser(context.TODO(), userID)
 	if svcErr != nil {
 		return "", fmt.Errorf("failed to retrieve user details: %s", svcErr.Error)
 	}
@@ -646,7 +647,7 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 
 	// User not available in context, fetch from user store
 	logger.Debug("Fetching user details from user store", log.String("userID", userID))
-	user, svcErr := s.userService.GetUser(userID)
+	user, svcErr := s.userService.GetUser(context.TODO(), userID)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to get user details: %s", svcErr.Error)
 	}
