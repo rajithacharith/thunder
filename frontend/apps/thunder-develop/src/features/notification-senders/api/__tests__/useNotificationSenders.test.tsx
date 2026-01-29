@@ -25,8 +25,8 @@ import type {NotificationSenderListResponse} from '../../models/notification-sen
 // Mock useConfig
 const mockGetServerUrl = vi.fn(() => 'https://api.example.com');
 
-vi.mock('@thunder/commons-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
     useConfig: () => ({

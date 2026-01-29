@@ -38,8 +38,8 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-// Mock @thunder/commons-contexts
-vi.mock('@thunder/commons-contexts', () => ({
+// Mock @thunder/shared-contexts
+vi.mock('@thunder/shared-contexts', () => ({
   useConfig: () => ({
     getServerUrl: () => 'https://localhost:8090',
   }),

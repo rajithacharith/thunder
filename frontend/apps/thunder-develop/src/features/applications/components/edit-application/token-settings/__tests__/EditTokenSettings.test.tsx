@@ -61,8 +61,8 @@ vi.mock('@asgardeo/react', () => ({
 }));
 
 // Mock useConfig
-vi.mock('@thunder/commons-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
     useConfig: () => ({
@@ -105,50 +105,38 @@ describe('EditTokenSettings', () => {
 
   describe.skip('Native Mode (No OAuth2 Config) - SKIPPED: Component hangs due to async operations', () => {
     it('should render without crashing', () => {
-      const {container} = render(
-        <EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />,
-      );
+      const {container} = render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
       expect(container).toBeTruthy();
     });
 
     it('should render shared token user attributes section', () => {
-      render(
-        <EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />,
-      );
+      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
       expect(screen.getByTestId('token-user-attributes-section-shared')).toBeInTheDocument();
     });
 
     it('should render shared token validation section', () => {
-      render(
-        <EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />,
-      );
+      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
       expect(screen.getByTestId('token-validation-section-shared')).toBeInTheDocument();
     });
 
     it('should render token issuer section', () => {
-      render(
-        <EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />,
-      );
+      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
       expect(screen.getByTestId('token-issuer-section')).toBeInTheDocument();
     });
 
     it('should not render access token sections in native mode', () => {
-      render(
-        <EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />,
-      );
+      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
       expect(screen.queryByTestId('token-user-attributes-section-access')).not.toBeInTheDocument();
       expect(screen.queryByTestId('token-validation-section-access')).not.toBeInTheDocument();
     });
 
     it('should not render ID token sections in native mode', () => {
-      render(
-        <EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />,
-      );
+      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
       expect(screen.queryByTestId('token-user-attributes-section-id')).not.toBeInTheDocument();
       expect(screen.queryByTestId('token-validation-section-id')).not.toBeInTheDocument();
@@ -260,9 +248,7 @@ describe('EditTokenSettings', () => {
         token: undefined,
       };
 
-      const {container} = render(
-        <EditTokenSettings application={appWithoutToken} onFieldChange={mockOnFieldChange} />,
-      );
+      const {container} = render(<EditTokenSettings application={appWithoutToken} onFieldChange={mockOnFieldChange} />);
 
       expect(container).toBeTruthy();
     });
@@ -307,9 +293,7 @@ describe('EditTokenSettings', () => {
     });
 
     it('should render all sections for native mode', () => {
-      const {container} = render(
-        <EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />,
-      );
+      const {container} = render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
       expect(container).toBeTruthy();
       expect(screen.getByTestId('token-user-attributes-section-shared')).toBeInTheDocument();

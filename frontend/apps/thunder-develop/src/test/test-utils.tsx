@@ -21,7 +21,7 @@ import {useMemo, type ReactElement, type ReactNode} from 'react';
 import {render, renderHook as rtlRenderHook, type RenderOptions, type RenderHookOptions} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
 import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
-import {ConfigProvider} from '@thunder/commons-contexts';
+import {ConfigProvider} from '@thunder/shared-contexts';
 import {LoggerProvider, LogLevel} from '@thunder/logger';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
@@ -115,9 +115,7 @@ export function renderHook<Result, Props>(
   const {queryClient: providedQueryClient, ...restOptions} = options ?? {};
   const queryClient = providedQueryClient ?? createTestQueryClient();
 
-  const wrapper = ({children}: {children: ReactNode}) => (
-    <Providers queryClient={queryClient}>{children}</Providers>
-  );
+  const wrapper = ({children}: {children: ReactNode}) => <Providers queryClient={queryClient}>{children}</Providers>;
 
   return {
     ...rtlRenderHook(hook, {wrapper, ...restOptions}),

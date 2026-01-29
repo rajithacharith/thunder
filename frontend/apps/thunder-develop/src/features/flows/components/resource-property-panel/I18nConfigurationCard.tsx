@@ -39,7 +39,7 @@ import {
 } from '@wso2/oxygen-ui';
 import {PlusIcon, XIcon} from '@wso2/oxygen-ui-icons-react';
 import {useGetLanguages, useGetTranslations, useUpdateTranslation} from '@thunder/i18n';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import {invalidateI18nCache} from '../../../../i18n/invalidate-i18n-cache';
 import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
 
