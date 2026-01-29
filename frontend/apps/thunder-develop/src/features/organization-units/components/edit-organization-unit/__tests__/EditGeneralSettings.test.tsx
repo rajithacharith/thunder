@@ -57,14 +57,14 @@ describe('EditGeneralSettings', () => {
     renderWithProviders(<EditGeneralSettings organizationUnit={mockOrganizationUnit} />);
 
     expect(screen.getByText('Handle')).toBeInTheDocument();
-    expect(screen.getByText('test-handle')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('test-handle')).toBeInTheDocument();
   });
 
   it('should display organization unit ID', () => {
     renderWithProviders(<EditGeneralSettings organizationUnit={mockOrganizationUnit} />);
 
     expect(screen.getByText('Organization Unit ID')).toBeInTheDocument();
-    expect(screen.getByText('ou-123')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('ou-123')).toBeInTheDocument();
   });
 
   it('should render with different organization unit data', () => {
@@ -78,7 +78,7 @@ describe('EditGeneralSettings', () => {
 
     renderWithProviders(<EditGeneralSettings organizationUnit={differentOU} />);
 
-    expect(screen.getByText('another-handle')).toBeInTheDocument();
-    expect(screen.getByText('ou-456')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('another-handle')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('ou-456')).toBeInTheDocument();
   });
 });

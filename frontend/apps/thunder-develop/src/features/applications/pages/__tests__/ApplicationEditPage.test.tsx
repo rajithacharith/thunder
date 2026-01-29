@@ -16,14 +16,9 @@
  * under the License.
  */
 
-import {render, screen, waitFor} from '@testing-library/react';
+import render, {screen, waitFor} from '@/test/test-utils';
 import userEvent from '@testing-library/user-event';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {BrowserRouter} from 'react-router';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ConfigProvider} from '@thunder/commons-contexts';
-import {LoggerProvider, LogLevel} from '@thunder/logger';
-import type {ReactNode} from 'react';
 import type {UseQueryResult, UseMutationResult} from '@tanstack/react-query';
 import type {Application} from '../../models/application';
 import ApplicationEditPage from '../ApplicationEditPage';
@@ -155,35 +150,9 @@ describe('ApplicationEditPage', () => {
   };
 
   const mockUpdateApplicationMutate = vi.fn();
-  let queryClient: QueryClient;
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    // Setup window.__THUNDER_RUNTIME_CONFIG__ for tests
-    // eslint-disable-next-line no-underscore-dangle
-    if (typeof window !== 'undefined') {
-      // eslint-disable-next-line no-underscore-dangle
-      window.__THUNDER_RUNTIME_CONFIG__ = {
-        client: {
-          base: '/develop',
-          client_id: 'DEVELOP',
-        },
-        server: {
-          hostname: 'localhost',
-          port: 8090,
-          http_only: false,
-        },
-      };
-    }
-
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-        },
-      },
-    });
 
     // Default mock implementations
     mockGetTemplateMetadata.mockReturnValue({
@@ -210,26 +179,7 @@ describe('ApplicationEditPage', () => {
     } as unknown as UseMutationResult<Application, Error, Partial<Application>>);
   });
 
-  const renderComponent = () => {
-    function Wrapper({children}: {children: ReactNode}) {
-      return (
-        <QueryClientProvider client={queryClient}>
-          <ConfigProvider>
-            <LoggerProvider
-              logger={{
-                level: LogLevel.ERROR,
-                transports: [],
-              }}
-            >
-              <BrowserRouter>{children}</BrowserRouter>
-            </LoggerProvider>
-          </ConfigProvider>
-        </QueryClientProvider>
-      );
-    }
-
-    return render(<ApplicationEditPage />, {wrapper: Wrapper});
-  };
+  const renderComponent = () => render(<ApplicationEditPage />);
 
   describe('Loading State', () => {
     it('should display loading state while fetching application', () => {

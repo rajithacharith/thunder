@@ -17,8 +17,21 @@
  */
 
 import type {JSX} from 'react';
+import {useState, useCallback, useRef, useEffect} from 'react';
 import {Link} from 'react-router';
-import {Box, Stack, Typography, Paper, CircularProgress} from '@wso2/oxygen-ui';
+import {
+  Stack,
+  Typography,
+  Paper,
+  CircularProgress,
+  TextField,
+  InputAdornment,
+  Tooltip,
+  IconButton,
+  FormControl,
+  FormLabel,
+} from '@wso2/oxygen-ui';
+import {Copy, Check} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import type {OrganizationUnit, OUNavigationState} from '../../../types/organization-units';
 import useGetOrganizationUnit from '../../../api/useGetOrganizationUnit';
@@ -46,18 +59,45 @@ interface EditGeneralSettingsProps {
  */
 export default function EditGeneralSettings({organizationUnit}: EditGeneralSettingsProps): JSX.Element {
   const {t} = useTranslation();
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {data: parentOU, isLoading: isLoadingParent} = useGetOrganizationUnit(
     organizationUnit.parent ?? undefined,
     Boolean(organizationUnit.parent),
   );
 
+  useEffect(
+    () => () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    },
+    [],
+  );
+
+  const handleCopyToClipboard = useCallback(async (text: string, fieldName: string): Promise<void> => {
+    await navigator.clipboard.writeText(text);
+    setCopiedField(fieldName);
+    if (copyTimeoutRef.current) {
+      clearTimeout(copyTimeoutRef.current);
+    }
+    copyTimeoutRef.current = setTimeout(() => {
+      setCopiedField(null);
+    }, 2000);
+  }, []);
+
   const renderParentInfo = (): JSX.Element => {
     if (!organizationUnit.parent) {
       return (
-        <Typography variant="body2" color="text.secondary">
-          {t('organizationUnits:view.general.noParent')}
-        </Typography>
+        <TextField
+          fullWidth
+          id="parent-ou-input"
+          value={t('organizationUnits:view.general.noParent')}
+          InputProps={{
+            readOnly: true,
+          }}
+        />
       );
     }
 
@@ -98,9 +138,20 @@ export default function EditGeneralSettings({organizationUnit}: EditGeneralSetti
     }
 
     return (
-      <Typography variant="body2" color="text.secondary">
-        {organizationUnit.parent}
-      </Typography>
+      <TextField
+        fullWidth
+        id="parent-ou-input"
+        value={organizationUnit.parent}
+        InputProps={{
+          readOnly: true,
+        }}
+        sx={{
+          '& input': {
+            fontFamily: 'monospace',
+            fontSize: '0.875rem',
+          },
+        }}
+      />
     );
   };
 
@@ -114,30 +165,80 @@ export default function EditGeneralSettings({organizationUnit}: EditGeneralSetti
       </Typography>
 
       <Stack spacing={3}>
-        <Box>
-          <Typography variant="subtitle2" gutterBottom>
-            {t('organizationUnits:form.handle')}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {organizationUnit.handle}
-          </Typography>
-        </Box>
+        <FormControl fullWidth>
+          <FormLabel htmlFor="handle-input">{t('organizationUnits:form.handle')}</FormLabel>
+          <TextField
+            fullWidth
+            id="handle-input"
+            value={organizationUnit.handle}
+            InputProps={{
+              readOnly: true,
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Tooltip title={copiedField === 'handle' ? t('common:actions.copied') : t('common:actions.copy')}>
+                    <IconButton
+                      aria-label={
+                        copiedField === 'handle' ? t('common:actions.copied') : t('common:actions.copy')
+                      }
+                      onClick={() => {
+                        handleCopyToClipboard(organizationUnit.handle, 'handle').catch(() => {});
+                      }}
+                      edge="end"
+                    >
+                      {copiedField === 'handle' ? <Check size={16} /> : <Copy size={16} />}
+                    </IconButton>
+                  </Tooltip>
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              '& input': {
+                fontFamily: 'monospace',
+                fontSize: '0.875rem',
+              },
+            }}
+          />
+        </FormControl>
 
-        <Box>
-          <Typography variant="subtitle2" gutterBottom>
-            {t('organizationUnits:view.general.id')}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {organizationUnit.id}
-          </Typography>
-        </Box>
+        <FormControl fullWidth>
+          <FormLabel htmlFor="ou-id-input">{t('organizationUnits:view.general.id')}</FormLabel>
+          <TextField
+            fullWidth
+            id="ou-id-input"
+            value={organizationUnit.id}
+            InputProps={{
+              readOnly: true,
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Tooltip title={copiedField === 'ou_id' ? t('common:actions.copied') : t('common:actions.copy')}>
+                    <IconButton
+                      aria-label={
+                        copiedField === 'ou_id' ? t('common:actions.copied') : t('common:actions.copy')
+                      }
+                      onClick={() => {
+                        handleCopyToClipboard(organizationUnit.id, 'ou_id').catch(() => {});
+                      }}
+                      edge="end"
+                    >
+                      {copiedField === 'ou_id' ? <Check size={16} /> : <Copy size={16} />}
+                    </IconButton>
+                  </Tooltip>
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              '& input': {
+                fontFamily: 'monospace',
+                fontSize: '0.875rem',
+              },
+            }}
+          />
+        </FormControl>
 
-        <Box>
-          <Typography variant="subtitle2" gutterBottom>
-            {t('organizationUnits:view.general.parent')}
-          </Typography>
+        <FormControl fullWidth>
+          <FormLabel htmlFor="parent-ou-input">{t('organizationUnits:view.general.parent')}</FormLabel>
           {renderParentInfo()}
-        </Box>
+        </FormControl>
       </Stack>
     </Paper>
   );

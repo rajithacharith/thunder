@@ -338,8 +338,8 @@ describe('OrganizationUnitEditPage', () => {
     if (nameEditButton) {
       fireEvent.click(nameEditButton);
 
-      // Type new name
-      const nameInput = screen.getByRole('textbox');
+      // Type new name - get by current display value
+      const nameInput = screen.getByDisplayValue('Test Organization Unit');
       fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
       fireEvent.blur(nameInput);
 
@@ -365,7 +365,7 @@ describe('OrganizationUnitEditPage', () => {
     if (nameEditButton) {
       fireEvent.click(nameEditButton);
 
-      const nameInput = screen.getByRole('textbox');
+      const nameInput = screen.getByDisplayValue('Test Organization Unit');
       fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
       fireEvent.blur(nameInput);
 
@@ -398,13 +398,13 @@ describe('OrganizationUnitEditPage', () => {
     if (descriptionEditButton) {
       fireEvent.click(descriptionEditButton);
 
-      // Should show a textbox for editing
+      // Should show a textbox for editing - get by current display value
       await waitFor(() => {
-        const textbox = screen.getByRole('textbox');
+        const textbox = screen.getByDisplayValue('A test description');
         expect(textbox).toBeInTheDocument();
       });
 
-      const textbox = screen.getByRole('textbox');
+      const textbox = screen.getByDisplayValue('A test description');
       fireEvent.change(textbox, {target: {value: 'Updated description'}});
       fireEvent.blur(textbox);
 
@@ -430,10 +430,10 @@ describe('OrganizationUnitEditPage', () => {
       fireEvent.click(descriptionEditButton);
 
       await waitFor(() => {
-        expect(screen.getByRole('textbox')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('A test description')).toBeInTheDocument();
       });
 
-      const textbox = screen.getByRole('textbox');
+      const textbox = screen.getByDisplayValue('A test description');
       fireEvent.keyDown(textbox, {key: 'Escape'});
 
       await waitFor(() => {
@@ -458,10 +458,10 @@ describe('OrganizationUnitEditPage', () => {
       fireEvent.click(descriptionEditButton);
 
       await waitFor(() => {
-        expect(screen.getByRole('textbox')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('A test description')).toBeInTheDocument();
       });
 
-      const textbox = screen.getByRole('textbox');
+      const textbox = screen.getByDisplayValue('A test description');
       fireEvent.change(textbox, {target: {value: 'New description'}});
       fireEvent.keyDown(textbox, {key: 'Enter', ctrlKey: true});
 
@@ -487,10 +487,10 @@ describe('OrganizationUnitEditPage', () => {
       fireEvent.click(nameEditButton);
 
       await waitFor(() => {
-        expect(screen.getByRole('textbox')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('Test Organization Unit')).toBeInTheDocument();
       });
 
-      const textbox = screen.getByRole('textbox');
+      const textbox = screen.getByDisplayValue('Test Organization Unit');
       fireEvent.keyDown(textbox, {key: 'Escape'});
 
       await waitFor(() => {
@@ -515,10 +515,10 @@ describe('OrganizationUnitEditPage', () => {
       fireEvent.click(nameEditButton);
 
       await waitFor(() => {
-        expect(screen.getByRole('textbox')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('Test Organization Unit')).toBeInTheDocument();
       });
 
-      const textbox = screen.getByRole('textbox');
+      const textbox = screen.getByDisplayValue('Test Organization Unit');
       fireEvent.change(textbox, {target: {value: 'Updated Name'}});
       fireEvent.keyDown(textbox, {key: 'Enter'});
 
@@ -546,7 +546,7 @@ describe('OrganizationUnitEditPage', () => {
     if (nameEditButton) {
       fireEvent.click(nameEditButton);
 
-      const nameInput = screen.getByRole('textbox');
+      const nameInput = screen.getByDisplayValue('Test Organization Unit');
       fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
       fireEvent.blur(nameInput);
 
@@ -588,7 +588,7 @@ describe('OrganizationUnitEditPage', () => {
     if (nameEditButton) {
       fireEvent.click(nameEditButton);
 
-      const nameInput = screen.getByRole('textbox');
+      const nameInput = screen.getByDisplayValue('Test Organization Unit');
       fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
       fireEvent.blur(nameInput);
 
@@ -616,7 +616,7 @@ describe('OrganizationUnitEditPage', () => {
     if (nameEditButton) {
       fireEvent.click(nameEditButton);
 
-      const nameInput = screen.getByRole('textbox');
+      const nameInput = screen.getByDisplayValue('Test Organization Unit');
       fireEvent.change(nameInput, {target: {value: ''}});
       fireEvent.blur(nameInput);
 
