@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import render, {screen, waitFor} from '@/test/test-utils';
+import {render, screen, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
 import type {ApplicationListResponse} from '../../models/responses';
 import ApplicationsList from '../ApplicationsList';

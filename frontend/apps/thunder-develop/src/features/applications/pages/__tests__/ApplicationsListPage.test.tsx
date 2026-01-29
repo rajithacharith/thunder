@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import render, {screen} from '@/test/test-utils';
+import {render, screen} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import userEvent from '@testing-library/user-event';
 import ApplicationsListPage from '../ApplicationsListPage';

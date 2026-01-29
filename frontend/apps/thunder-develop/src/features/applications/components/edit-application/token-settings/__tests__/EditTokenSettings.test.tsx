@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import render, {screen} from '@/test/test-utils';
+import {render, screen} from '@thunder/test-utils';
 import EditTokenSettings from '../EditTokenSettings';
 import type {Application} from '../../../../models/application';
 import type {OAuth2Config} from '../../../../models/oauth';

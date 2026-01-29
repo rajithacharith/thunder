@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor} from '@testing-library/react';
-import {renderHook} from '../../../../test/test-utils';
+import {waitFor, renderHook} from '@thunder/test-utils';
 import useGetOrganizationUnitGroups from '../useGetOrganizationUnitGroups';
 import type {GroupListResponse} from '../../types/organization-units';
 

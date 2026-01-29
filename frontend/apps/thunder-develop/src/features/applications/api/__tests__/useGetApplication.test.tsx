@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@/test/test-utils';
+import {waitFor, renderHook} from '@thunder/test-utils';
 import useGetApplication from '../useGetApplication';
 import type {Application} from '../../models/application';
 import ApplicationQueryKeys from '../../constants/application-query-keys';

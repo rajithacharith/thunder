@@ -17,12 +17,10 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import type {JSX} from 'react';
 import {EmbeddedFlowComponentType, EmbeddedFlowEventType} from '@asgardeo/react';
 import type {InviteUserRenderProps, EmbeddedFlowComponent} from '@asgardeo/react';
-import render from '@/test/test-utils';
 import InviteUserDialog from '../InviteUserDialog';
 
 // Mock InviteUser component

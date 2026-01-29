@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, fireEvent, waitFor} from '@testing-library/react';
-import {renderWithProviders} from '../../../../test/test-utils';
+import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
 import OrganizationUnitEditPage from '../OrganizationUnitEditPage';
 import type {OrganizationUnit} from '../../types/organization-units';
 

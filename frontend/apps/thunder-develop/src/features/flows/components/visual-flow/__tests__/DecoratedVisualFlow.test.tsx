@@ -20,7 +20,7 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import React from 'react';
-import render, {screen, fireEvent, waitFor, cleanup} from '@/test/test-utils';
+import {render, screen, fireEvent, waitFor, cleanup} from '@thunder/test-utils';
 import type {Node, Edge} from '@xyflow/react';
 import DecoratedVisualFlow from '../DecoratedVisualFlow';
 import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';

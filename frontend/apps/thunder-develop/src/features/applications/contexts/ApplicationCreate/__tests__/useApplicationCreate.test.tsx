@@ -17,7 +17,7 @@
  */
 
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import render, {screen} from '@/test/test-utils';
+import {render, screen} from '@thunder/test-utils';
 import React from 'react';
 import useApplicationCreate from '../useApplicationCreate';
 import ApplicationCreateProvider from '../ApplicationCreateProvider';

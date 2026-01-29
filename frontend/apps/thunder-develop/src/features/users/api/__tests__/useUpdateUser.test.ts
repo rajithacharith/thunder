@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {waitFor} from '@testing-library/react';
-import {renderHook} from '../../../../test/test-utils';
+import {waitFor, renderHook} from '@thunder/test-utils';
 import useUpdateUser, {type UpdateUserRequest} from '../useUpdateUser';
 import type {ApiUser} from '../../types/users';
 

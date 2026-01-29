@@ -62,6 +62,24 @@ afterEach(() => {
   cleanup();
 });
 
+// Patch CSSStyleDeclaration.setProperty to handle cssstyle errors with CSS variables in shorthand properties
+// This is a known issue with jsdom/cssstyle when using CSS variables like `var(--rowBorderColor)` in border shorthand
+// eslint-disable-next-line @typescript-eslint/unbound-method
+const originalSetProperty = window.CSSStyleDeclaration.prototype.setProperty;
+// eslint-disable-next-line func-names
+window.CSSStyleDeclaration.prototype.setProperty = function (
+  this: CSSStyleDeclaration,
+  property: string,
+  value: string | null,
+  priority?: string,
+) {
+  try {
+    originalSetProperty.call(this, property, value, priority ?? '');
+  } catch {
+    // Silently ignore cssstyle errors for CSS variables in shorthand properties
+  }
+};
+
 // Mock HTMLMediaElement methods that don't exist in jsdom
 Object.defineProperty(window.HTMLMediaElement.prototype, 'play', {
   configurable: true,
@@ -100,6 +118,11 @@ global.IntersectionObserver = class IntersectionObserver {
 
   unobserve() {
     return this;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  takeRecords() {
+    return [];
   }
 } as unknown as typeof IntersectionObserver;
 

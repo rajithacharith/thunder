@@ -18,11 +18,9 @@
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, no-underscore-dangle */
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import {type ReactNode} from 'react';
 import type * as OxygenUI from '@wso2/oxygen-ui';
-import render from '@/test/test-utils';
 import UserTypesList from '../UserTypesList';
 import type useGetUserTypesHook from '../../api/useGetUserTypes';
 import type useDeleteUserTypeHook from '../../api/useDeleteUserType';
