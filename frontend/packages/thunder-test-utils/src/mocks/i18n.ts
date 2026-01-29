@@ -45,20 +45,4 @@ export const mockUseDataGridLocaleText = () => ({
   noRowsLabel: 'No rows',
   noResultsOverlayLabel: 'No results found.',
   paginationRowsPerPage: 'Rows per page:',
-  // Add other commonly used keys as needed
 });
-
-/**
- * Setup function to mock all i18n hooks before tests
- * Call this in your test setup file or individual test files
- */
-export const setupI18nMocks = () => {
-  vi.mock('@thunder/i18n', () => ({
-    useTranslation: mockUseTranslation,
-    useLanguage: mockUseLanguage,
-  }));
-
-  vi.mock('../../../hooks/useDataGridLocaleText', () => ({
-    default: mockUseDataGridLocaleText,
-  }));
-};

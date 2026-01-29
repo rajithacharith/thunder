@@ -18,17 +18,56 @@
 
 /* eslint-disable react-refresh/only-export-components */
 import {useMemo, type ReactElement, type ReactNode} from 'react';
-import {render, renderHook as rtlRenderHook, type RenderOptions, type RenderHookOptions} from '@testing-library/react';
+import {render, renderHook as rtlRenderHook, type RenderOptions, type RenderHookOptions, type RenderResult} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
 import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
 import {ConfigProvider} from '@thunder/shared-contexts';
 import {LoggerProvider, LogLevel} from '@thunder/logger';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
+/**
+ * Configuration options for Thunder test utilities
+ */
+export interface ThunderTestConfig {
+  /**
+   * Base path for the application (e.g., '/develop', '/gate')
+   */
+  base: string;
+  /**
+   * Client ID for the application
+   */
+  clientId: string;
+  /**
+   * Server hostname
+   * @default 'localhost'
+   */
+  hostname?: string;
+  /**
+   * Server port
+   * @default 8090
+   */
+  port?: number;
+  /**
+   * Whether to use HTTP only
+   * @default false
+   */
+  httpOnly?: boolean;
+}
+
 interface ProvidersProps {
   children: ReactNode;
   queryClient?: QueryClient;
+  config?: ThunderTestConfig;
 }
+
+// Default configuration for thunder-develop (backwards compatibility)
+const defaultConfig: ThunderTestConfig = {
+  base: '/develop',
+  clientId: 'DEVELOP',
+};
+
+// Store the current config
+let currentConfig: ThunderTestConfig = defaultConfig;
 
 // Create a new QueryClient for each test to avoid shared state
 function createTestQueryClient() {
@@ -45,20 +84,22 @@ function createTestQueryClient() {
 }
 
 // Wrapper component with common providers
-function Providers({children, queryClient = undefined}: ProvidersProps) {
+function Providers({children, queryClient = undefined, config = undefined}: ProvidersProps) {
+  const testConfig = config ?? currentConfig;
+
   // Setup window.__THUNDER_RUNTIME_CONFIG__ for tests
   // eslint-disable-next-line no-underscore-dangle
   if (typeof window !== 'undefined' && !window.__THUNDER_RUNTIME_CONFIG__) {
     // eslint-disable-next-line no-underscore-dangle
     window.__THUNDER_RUNTIME_CONFIG__ = {
       client: {
-        base: '/develop',
-        client_id: 'DEVELOP',
+        base: testConfig.base,
+        client_id: testConfig.clientId,
       },
       server: {
-        hostname: 'localhost',
-        port: 8090,
-        http_only: false,
+        hostname: testConfig.hostname ?? 'localhost',
+        port: testConfig.port ?? 8090,
+        http_only: testConfig.httpOnly ?? false,
       },
     };
   }
@@ -85,16 +126,25 @@ function Providers({children, queryClient = undefined}: ProvidersProps) {
   );
 }
 
+/**
+ * Configure the test utilities with app-specific settings
+ * Call this in your test setup file before running tests
+ */
+export function configureTestUtils(config: ThunderTestConfig): void {
+  currentConfig = config;
+}
+
 // Custom render function that includes providers
-function customRender(ui: ReactElement, options?: Omit<RenderOptions, 'wrapper'>) {
-  return render(ui, {wrapper: Providers, ...options});
+function customRender(ui: ReactElement, options?: Omit<RenderOptions, 'wrapper'>): RenderResult {
+  const wrapper = ({children}: {children: ReactNode}) => <Providers config={currentConfig}>{children}</Providers>;
+  return render(ui, {wrapper, ...options});
 }
 
 /**
  * Alternative render function with providers
  * Alias for customRender to support different naming conventions
  */
-export function renderWithProviders(ui: ReactElement, options?: RenderOptions) {
+export function renderWithProviders(ui: ReactElement, options?: RenderOptions): RenderResult {
   return customRender(ui, options ?? {});
 }
 
@@ -133,8 +183,5 @@ export function getByTranslationKey(container: HTMLElement, key: string) {
     Array.from(container.querySelectorAll('*')).find((el) => el.textContent === key)
   );
 }
-
-// Re-export everything from @testing-library/react
-export * from '@testing-library/react';
 
 export default customRender;

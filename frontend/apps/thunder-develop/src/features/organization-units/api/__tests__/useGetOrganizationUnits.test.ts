@@ -18,8 +18,7 @@
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor} from '@testing-library/react';
-import {renderHook} from '../../../../test/test-utils';
+import {waitFor, renderHook} from '@thunder/test-utils';
 import useGetOrganizationUnits from '../useGetOrganizationUnits';
 import type {OrganizationUnitListResponse} from '../../types/organization-units';
 

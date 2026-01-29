@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import render, {screen, fireEvent} from '@/test/test-utils';
+import {render, screen, fireEvent} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
 import ConfigureDesign, {type ConfigureDesignProps} from '../ConfigureDesign';
 

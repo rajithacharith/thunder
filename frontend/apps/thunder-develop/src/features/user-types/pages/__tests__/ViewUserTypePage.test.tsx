@@ -17,9 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, waitFor, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import render from '@/test/test-utils';
+import {render, screen, waitFor, within, userEvent} from '@thunder/test-utils';
 import type {OrganizationUnitListParams} from '@/features/organization-units/types/organization-units';
 import ViewUserTypePage from '../ViewUserTypePage';
 import type {ApiUserSchema, ApiError, UpdateUserSchemaRequest} from '../../types/user-types';

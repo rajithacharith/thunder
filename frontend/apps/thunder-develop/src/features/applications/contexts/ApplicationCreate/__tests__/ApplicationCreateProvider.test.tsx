@@ -17,7 +17,7 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import render, {screen} from '@/test/test-utils';
+import {render, screen} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
 import ApplicationCreateProvider from '../ApplicationCreateProvider';

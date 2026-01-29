@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {renderHook, waitFor} from '@/test/test-utils';
+import {renderHook, waitFor} from '@thunder/test-utils';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
 import useGetFlowById from '../useGetFlowById';

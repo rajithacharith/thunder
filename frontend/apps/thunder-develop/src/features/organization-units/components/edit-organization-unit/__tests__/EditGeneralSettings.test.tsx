@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {screen, fireEvent, act} from '@testing-library/react';
-import {renderWithProviders} from '../../../../../test/test-utils';
+import {screen, renderWithProviders, fireEvent, act} from '@thunder/test-utils';
 import EditGeneralSettings from '../general-settings/EditGeneralSettings';
 import type {OrganizationUnit} from '../../../types/organization-units';
 
@@ -42,9 +41,8 @@ vi.mock('react-i18next', () => ({
 }));
 
 // Mock the API hook
-const mockUseGetOrganizationUnit = vi.fn<
-  (id: string | undefined, enabled: boolean) => {data: OrganizationUnit | undefined; isLoading: boolean}
->();
+const mockUseGetOrganizationUnit =
+  vi.fn<(id: string | undefined, enabled: boolean) => {data: OrganizationUnit | undefined; isLoading: boolean}>();
 vi.mock('../../../api/useGetOrganizationUnit', () => ({
   default: (id: string | undefined, enabled: boolean) => mockUseGetOrganizationUnit(id, enabled),
 }));

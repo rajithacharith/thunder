@@ -85,6 +85,7 @@
     "@testing-library/react": "catalog:",
     "@testing-library/user-event": "catalog:",
     "@thunder/eslint-plugin-thunder": "workspace:^",
+    "@thunder/test-utils": "workspace:^",
     "@thunder/prettier-config": "workspace:^",
     "@types/lodash-es": "catalog:",
     "@types/node": "catalog:",

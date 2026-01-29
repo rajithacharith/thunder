@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import render, {screen, waitFor} from '@/test/test-utils';
+import {render, screen, waitFor} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import userEvent from '@testing-library/user-event';
 import type {Branding} from '@thunder/shared-branding';
