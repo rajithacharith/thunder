@@ -162,7 +162,11 @@ func (ous *organizationUnitService) CreateOrganizationUnit(
 		return OrganizationUnit{}, &ErrorOrganizationUnitHandleConflict
 	}
 
-	ouID := utils.GenerateUUID()
+	ouID, err := utils.GenerateUUIDv7()
+	if err != nil {
+		logger.Error("Failed to generate UUID", log.Error(err))
+		return OrganizationUnit{}, &ErrorInternalServerError
+	}
 
 	ou := OrganizationUnit{
 		ID:          ouID,

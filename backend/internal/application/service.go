@@ -214,7 +214,12 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 
 	appID := app.ID
 	if appID == "" {
-		appID = sysutils.GenerateUUID()
+		var err error
+		appID, err = sysutils.GenerateUUIDv7()
+		if err != nil {
+			logger.Error("Failed to generate UUID", log.Error(err))
+			return nil, nil, &serviceerror.InternalServerError
+		}
 	}
 	rootToken, finalOAuthAccessToken, finalOAuthIDToken, finalOAuthTokenIssuer := processTokenConfiguration(app)
 

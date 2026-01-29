@@ -68,7 +68,11 @@ func (authzRS *authorizationRequestStore) AddRequest(value authRequestContext) s
 		return ""
 	}
 
-	key := utils.GenerateUUID()
+	key, err := utils.GenerateUUIDv7()
+	if err != nil {
+		authzRS.logger.Error("Failed to generate UUID", log.Error(err))
+		return ""
+	}
 	// Calculate expiry based on current time
 	requestInitiatedTime := time.Now()
 	expiryTime := requestInitiatedTime.Add(authzRS.validityPeriod)

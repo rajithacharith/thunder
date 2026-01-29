@@ -127,7 +127,11 @@ func (us *userSchemaService) CreateUserSchema(request CreateUserSchemaRequest) (
 		return nil, logAndReturnServerError(logger, "Failed to check existing user schema", err)
 	}
 
-	id := utils.GenerateUUID()
+	id, err := utils.GenerateUUIDv7()
+	if err != nil {
+		logger.Error("Failed to generate UUID", log.Error(err))
+		return nil, &ErrorInternalServerError
+	}
 
 	userSchema := UserSchema{
 		ID:                    id,

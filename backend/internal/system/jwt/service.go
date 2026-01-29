@@ -182,6 +182,12 @@ func (js *jwtService) GenerateJWT(sub, aud, iss string, validityPeriod int64, cl
 	iat := time.Now()
 	expirationTime := iat.Add(time.Duration(validityPeriod) * time.Second).Unix()
 
+	jti, err := utils.GenerateUUIDv7()
+	if err != nil {
+		js.logger.Error("Failed to generate UUID", log.Error(err))
+		return "", 0, &serviceerror.InternalServerError
+	}
+
 	// Create the JWT payload.
 	payload := map[string]interface{}{
 		"sub": sub,
@@ -190,7 +196,7 @@ func (js *jwtService) GenerateJWT(sub, aud, iss string, validityPeriod int64, cl
 		"exp": expirationTime,
 		"iat": iat.Unix(),
 		"nbf": iat.Unix(),
-		"jti": utils.GenerateUUID(),
+		"jti": jti,
 	}
 
 	// Add custom claims if provided.

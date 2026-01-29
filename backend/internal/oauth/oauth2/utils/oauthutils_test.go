@@ -483,7 +483,8 @@ func (suite *OAuth2UtilsTestSuite) TestOAuth2CredentialsDifferentFromUUID() {
 	assert.NoError(suite.T(), err)
 
 	// Generate UUID for comparison
-	uuid := sysutils.GenerateUUID()
+	uuid, err := sysutils.GenerateUUIDv7()
+	assert.NoError(suite.T(), err)
 
 	// OAuth credentials should have different format than UUID
 	uuidPattern := regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
