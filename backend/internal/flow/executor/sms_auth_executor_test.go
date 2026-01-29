@@ -306,7 +306,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_A
 		Attributes:       attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").Return(userFromStore, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(userFromStore, nil)
 
 	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -352,7 +352,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_P
 		Attributes:       attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").Return(userFromStore, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(userFromStore, nil)
 
 	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -393,7 +393,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetUserMobileNumber_NotFoundInAttribu
 		Attributes:       attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").Return(userFromStore, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(userFromStore, nil)
 
 	mobileNumber, err := suite.executor.getUserMobileNumber("user-123", ctx, execResp)
 
@@ -464,7 +464,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_N
 		Attributes:       attrsJSON, // null JSON
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").Return(userFromStore, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(userFromStore, nil)
 
 	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
