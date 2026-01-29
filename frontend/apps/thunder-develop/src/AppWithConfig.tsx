@@ -37,11 +37,6 @@ export default function AppWithConfig(): JSX.Element {
       afterSignInUrl={getClientUrl() ?? (import.meta.env.VITE_ASGARDEO_AFTER_SIGN_IN_URL as string)}
       scopes={getScopes().length > 0 ? getScopes() : undefined}
       platform="AsgardeoV2"
-      tokenValidation={{
-        idToken: {
-          validate: false,
-        },
-      }}
     >
       <OxygenUIThemeProvider radialBackground>
         <QueryClientProvider client={queryClient}>

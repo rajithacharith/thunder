@@ -211,6 +211,11 @@ const config: Config = {
   themes: ['docusaurus-theme-openapi-docs'],
 
   themeConfig: {
+    announcementBar: {
+      id: 'docs_wip',
+      content: '🚧 WIP: Docs are under active development and may change frequently.',
+      isCloseable: false,
+    },
     image: 'assets/images/thunder-social-card.png',
     colorMode: {
       respectPrefersColorScheme: true,
