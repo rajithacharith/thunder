@@ -172,7 +172,6 @@ createRoot(document.getElementById('root')).render(
       clientId="<your-client-id>"
       baseUrl="https://localhost:8090"
       platform="AsgardeoV2"
-      tokenValidation={{ idToken: { validate: false } }}
     >
       <App />
     </AsgardeoProvider>
@@ -191,7 +190,6 @@ Replace `<your-client-id>` with the Client ID you obtained when creating the app
 | `clientId` | The Client ID from your Thunder application |
 | `baseUrl` | Your Thunder instance URL (e.g., `https://localhost:8090`) |
 | `platform` | Must be set to `"AsgardeoV2"` for Thunder |
-| `tokenValidation` | Disable ID token validation for local development |
 
 ## Add Sign-In and Sign-Out
 
@@ -347,7 +345,7 @@ Ensure any component using `useAsgardeo` hook is a child of `<AsgardeoProvider>`
 
 ### Infinite Redirect Loop
 
-Verify that `baseUrl` and `clientId` are correct. Check the token validation settings.
+Verify that `baseUrl` and `clientId` are correct.
 
 ### CORS Errors
 
