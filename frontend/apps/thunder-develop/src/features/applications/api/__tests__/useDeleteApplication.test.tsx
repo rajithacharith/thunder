@@ -27,8 +27,8 @@ vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
 }));
 
-vi.mock('@thunder/commons-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
     useConfig: vi.fn(),
@@ -36,7 +36,7 @@ vi.mock('@thunder/commons-contexts', async (importOriginal) => {
 });
 
 const {useAsgardeo} = await import('@asgardeo/react');
-const {useConfig} = await import('@thunder/commons-contexts');
+const {useConfig} = await import('@thunder/shared-contexts');
 
 describe('useDeleteApplication', () => {
   let mockHttpRequest: ReturnType<typeof vi.fn>;

@@ -41,7 +41,7 @@ vi.mock('../../utils/generateAppPrimaryColorSuggestions', () => ({
 }));
 
 // Mock useConfig to avoid ConfigProvider requirement
-vi.mock('@thunder/commons-contexts', async (importOriginal) => {
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
   const actual = (await importOriginal()) as Record<string, unknown>;
 

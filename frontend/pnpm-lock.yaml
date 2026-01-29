@@ -309,9 +309,6 @@ importers:
       '@tanstack/react-query-devtools':
         specifier: 'catalog:'
         version: 5.90.2(@tanstack/react-query@5.90.5(react@19.2.3))(react@19.2.3)
-      '@thunder/commons-contexts':
-        specifier: workspace:^
-        version: link:../../packages/thunder-commons-contexts
       '@thunder/i18n':
         specifier: workspace:^
         version: link:../../packages/thunder-i18n
@@ -321,6 +318,9 @@ importers:
       '@thunder/shared-branding':
         specifier: workspace:^
         version: link:../../packages/thunder-shared-branding
+      '@thunder/shared-contexts':
+        specifier: workspace:^
+        version: link:../../packages/thunder-shared-contexts
       '@thunder/shared-hooks':
         specifier: workspace:^
         version: link:../../packages/thunder-shared-hooks
@@ -478,9 +478,6 @@ importers:
       '@tanstack/react-query-devtools':
         specifier: 'catalog:'
         version: 5.90.2(@tanstack/react-query@5.90.5(react@19.2.3))(react@19.2.3)
-      '@thunder/commons-contexts':
-        specifier: workspace:^
-        version: link:../../packages/thunder-commons-contexts
       '@thunder/i18n':
         specifier: workspace:^
         version: link:../../packages/thunder-i18n
@@ -490,6 +487,9 @@ importers:
       '@thunder/shared-branding':
         specifier: workspace:^
         version: link:../../packages/thunder-shared-branding
+      '@thunder/shared-contexts':
+        specifier: workspace:^
+        version: link:../../packages/thunder-shared-contexts
       '@thunder/shared-hooks':
         specifier: workspace:^
         version: link:../../packages/thunder-shared-hooks
@@ -548,61 +548,6 @@ importers:
       vite:
         specifier: npm:rolldown-vite@7.1.14
         version: rolldown-vite@7.1.14(@types/node@24.7.2)(esbuild@0.25.9)(jiti@1.21.7)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.46.0)(yaml@2.8.2)
-      vitest:
-        specifier: 'catalog:'
-        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.7.2)(esbuild@0.25.9)(jiti@1.21.7)(jsdom@27.0.1(postcss@8.5.6))(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.46.0)(yaml@2.8.2)
-
-  packages/thunder-commons-contexts:
-    dependencies:
-      '@emotion/react':
-        specifier: 'catalog:'
-        version: 11.14.0(@types/react@19.2.7)(react@19.2.3)
-      '@emotion/styled':
-        specifier: 'catalog:'
-        version: 11.14.1(@emotion/react@11.14.0(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(react@19.2.3)
-      '@mui/material':
-        specifier: 'catalog:'
-        version: 7.3.4(@emotion/react@11.14.0(@types/react@19.2.7)(react@19.2.3))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      lucide-react:
-        specifier: 'catalog:'
-        version: 0.545.0(react@19.2.3)
-      tslib:
-        specifier: 'catalog:'
-        version: 2.8.1
-    devDependencies:
-      '@thunder/eslint-plugin-thunder':
-        specifier: workspace:^
-        version: link:../thunder-eslint-plugin
-      '@thunder/prettier-config':
-        specifier: workspace:^
-        version: link:../thunder-prettier-config
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.7.2
-      '@types/react':
-        specifier: 'catalog:'
-        version: 19.2.7
-      eslint:
-        specifier: 'catalog:'
-        version: 8.57.1
-      prettier:
-        specifier: 'catalog:'
-        version: 3.6.2
-      react:
-        specifier: 'catalog:'
-        version: 19.2.3
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.2.3(react@19.2.3)
-      rimraf:
-        specifier: 'catalog:'
-        version: 6.0.1
-      rolldown:
-        specifier: 'catalog:'
-        version: 1.0.0-beta.45
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.7.2)(esbuild@0.25.9)(jiti@1.21.7)(jsdom@27.0.1(postcss@8.5.6))(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.46.0)(yaml@2.8.2)
@@ -841,9 +786,9 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.90.5(react@19.2.3)
-      '@thunder/commons-contexts':
+      '@thunder/shared-contexts':
         specifier: workspace:^
-        version: link:../thunder-commons-contexts
+        version: link:../thunder-shared-contexts
       '@wso2/oxygen-ui':
         specifier: 'catalog:'
         version: 0.0.1-alpha.10(e0168aaba1e8acc273a614d5b4d984c8)
@@ -869,6 +814,61 @@ importers:
       '@testing-library/user-event':
         specifier: 'catalog:'
         version: 14.6.1(@testing-library/dom@10.4.1)
+      '@thunder/eslint-plugin-thunder':
+        specifier: workspace:^
+        version: link:../thunder-eslint-plugin
+      '@thunder/prettier-config':
+        specifier: workspace:^
+        version: link:../thunder-prettier-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.7.2
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.7
+      eslint:
+        specifier: 'catalog:'
+        version: 8.57.1
+      prettier:
+        specifier: 'catalog:'
+        version: 3.6.2
+      react:
+        specifier: 'catalog:'
+        version: 19.2.3
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.3(react@19.2.3)
+      rimraf:
+        specifier: 'catalog:'
+        version: 6.0.1
+      rolldown:
+        specifier: 'catalog:'
+        version: 1.0.0-beta.45
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.7.2)(esbuild@0.25.9)(jiti@1.21.7)(jsdom@27.0.1(postcss@8.5.6))(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.46.0)(yaml@2.8.2)
+
+  packages/thunder-shared-contexts:
+    dependencies:
+      '@emotion/react':
+        specifier: 'catalog:'
+        version: 11.14.0(@types/react@19.2.7)(react@19.2.3)
+      '@emotion/styled':
+        specifier: 'catalog:'
+        version: 11.14.1(@emotion/react@11.14.0(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(react@19.2.3)
+      '@mui/material':
+        specifier: 'catalog:'
+        version: 7.3.4(@emotion/react@11.14.0(@types/react@19.2.7)(react@19.2.3))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(react@19.2.3))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      lucide-react:
+        specifier: 'catalog:'
+        version: 0.545.0(react@19.2.3)
+      tslib:
+        specifier: 'catalog:'
+        version: 2.8.1
+    devDependencies:
       '@thunder/eslint-plugin-thunder':
         specifier: workspace:^
         version: link:../thunder-eslint-plugin

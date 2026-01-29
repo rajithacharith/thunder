@@ -19,7 +19,7 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {renderHook, waitFor} from '@/test/test-utils';
 import {useAsgardeo} from '@asgardeo/react';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import useGetFlowById from '../useGetFlowById';
 import type {FlowDefinitionResponse} from '../../models/responses';
 import {FlowType, FlowNodeType} from '../../models/flows';
@@ -29,8 +29,8 @@ vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
 }));
 
-vi.mock('@thunder/commons-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
     useConfig: vi.fn(),

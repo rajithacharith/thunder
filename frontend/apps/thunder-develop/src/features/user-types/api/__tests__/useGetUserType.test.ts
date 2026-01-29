@@ -34,8 +34,8 @@ vi.mock('@asgardeo/react', () => ({
 
 // Mock useConfig
 const mockGetServerUrl = vi.fn<() => string | undefined>(() => 'https://localhost:8090');
-vi.mock('@thunder/commons-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
     useConfig: () => ({

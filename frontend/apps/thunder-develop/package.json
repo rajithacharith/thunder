@@ -53,7 +53,7 @@
     "@mui/material": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-query-devtools": "catalog:",
-    "@thunder/commons-contexts": "workspace:^",
+    "@thunder/shared-contexts": "workspace:^",
     "@thunder/i18n": "workspace:^",
     "@thunder/shared-branding": "workspace:^",
     "@thunder/shared-hooks": "workspace:^",

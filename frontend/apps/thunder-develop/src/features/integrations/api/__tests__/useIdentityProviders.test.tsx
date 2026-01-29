@@ -22,7 +22,7 @@ import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, act, renderHook} from '@/test/test-utils';
 import {QueryClient} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import useIdentityProviders from '../useIdentityProviders';
 import type {IdentityProviderListResponse} from '../../models/responses';
 import {IdentityProviderTypes} from '../../models/identity-provider';
@@ -33,8 +33,8 @@ vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
 }));
 
-vi.mock('@thunder/commons-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
     useConfig: vi.fn(),
