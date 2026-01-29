@@ -37,6 +37,9 @@ function createTestQueryClient() {
       queries: {
         retry: false,
       },
+      mutations: {
+        retry: false,
+      },
     },
   });
 }

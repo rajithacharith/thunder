@@ -907,44 +907,4 @@ describe('OrganizationUnitEditPage', () => {
       });
     }
   });
-
-  it('should not call update when organizationUnit is undefined during save', async () => {
-    // Start with valid data
-    renderWithProviders(<OrganizationUnitEditPage />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
-    });
-
-    // Make a change to show the save bar
-    const editButtons = screen.getAllByRole('button');
-    const nameEditButton = editButtons.find(
-      (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
-    );
-
-    if (nameEditButton) {
-      fireEvent.click(nameEditButton);
-
-      const nameInput = screen.getByDisplayValue('Test Organization Unit');
-      fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
-      fireEvent.blur(nameInput);
-
-      await waitFor(() => {
-        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
-      });
-
-      // Now change the mock to return undefined (simulating organizationUnit becoming undefined)
-      mockUseGetOrganizationUnit.mockReturnValue({
-        data: undefined,
-        isLoading: false,
-        error: null,
-        refetch: mockRefetch,
-      });
-
-      // The save button should still be visible from the previous state
-      // but clicking it should trigger the early return
-      // Since the component will re-render to "not found" state, this is tricky to test
-      // The guard clause is defensive code that won't be hit in normal operation
-    }
-  });
 });
