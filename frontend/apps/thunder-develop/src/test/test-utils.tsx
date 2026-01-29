@@ -17,7 +17,7 @@
  */
 
 /* eslint-disable react-refresh/only-export-components */
-import type {ReactElement, ReactNode} from 'react';
+import {useMemo, type ReactElement, type ReactNode} from 'react';
 import {render, renderHook as rtlRenderHook, type RenderOptions, type RenderHookOptions} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
 import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
@@ -27,6 +27,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 interface ProvidersProps {
   children: ReactNode;
+  queryClient?: QueryClient;
 }
 
 // Create a new QueryClient for each test to avoid shared state
@@ -36,12 +37,15 @@ function createTestQueryClient() {
       queries: {
         retry: false,
       },
+      mutations: {
+        retry: false,
+      },
     },
   });
 }
 
 // Wrapper component with common providers
-function Providers({children}: ProvidersProps) {
+function Providers({children, queryClient = undefined}: ProvidersProps) {
   // Setup window.__THUNDER_RUNTIME_CONFIG__ for tests
   // eslint-disable-next-line no-underscore-dangle
   if (typeof window !== 'undefined' && !window.__THUNDER_RUNTIME_CONFIG__) {
@@ -59,11 +63,13 @@ function Providers({children}: ProvidersProps) {
     };
   }
 
-  const queryClient = createTestQueryClient();
+  // Use useMemo to ensure the default QueryClient is only created once per mount,
+  // preventing cache reset on re-renders when queryClient prop is not provided
+  const client = useMemo(() => queryClient ?? createTestQueryClient(), [queryClient]);
 
   return (
     <MemoryRouter>
-      <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={client}>
         <ConfigProvider>
           <LoggerProvider
             logger={{
@@ -92,15 +98,31 @@ export function renderWithProviders(ui: ReactElement, options?: RenderOptions) {
   return customRender(ui, options ?? {});
 }
 
+interface RenderHookWithQueryClientOptions<Props> extends Omit<RenderHookOptions<Props>, 'wrapper'> {
+  queryClient?: QueryClient;
+}
+
 /**
  * Custom renderHook function that includes providers
  * Wraps hooks with necessary context providers for testing
+ * Optionally accepts a queryClient for tests that need direct access to manipulate cache or spy on methods
+ * Returns the queryClient instance for convenience
  */
 export function renderHook<Result, Props>(
   hook: (props: Props) => Result,
-  options?: Omit<RenderHookOptions<Props>, 'wrapper'>,
+  options?: RenderHookWithQueryClientOptions<Props>,
 ) {
-  return rtlRenderHook(hook, {wrapper: Providers, ...options});
+  const {queryClient: providedQueryClient, ...restOptions} = options ?? {};
+  const queryClient = providedQueryClient ?? createTestQueryClient();
+
+  const wrapper = ({children}: {children: ReactNode}) => (
+    <Providers queryClient={queryClient}>{children}</Providers>
+  );
+
+  return {
+    ...rtlRenderHook(hook, {wrapper, ...restOptions}),
+    queryClient,
+  };
 }
 
 /**

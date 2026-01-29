@@ -226,4 +226,21 @@ describe('EditChildOUs', () => {
 
     expect(screen.getByText('Child Organization Units')).toBeInTheDocument();
   });
+
+  it('should handle null organizationUnits array gracefully', () => {
+    mockUseGetChildOrganizationUnits.mockReturnValue({
+      data: {
+        totalResults: 0,
+        startIndex: 1,
+        count: 0,
+        organizationUnits: null as unknown as [],
+      },
+      isLoading: false,
+    });
+
+    renderWithProviders(<EditChildOUs organizationUnitId="parent-ou" organizationUnitName="Parent OU" />);
+
+    // Should render without errors - nullish coalescing handles null
+    expect(screen.getByText('Child Organization Units')).toBeInTheDocument();
+  });
 });

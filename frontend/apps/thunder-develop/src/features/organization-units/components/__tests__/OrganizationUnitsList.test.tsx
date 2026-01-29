@@ -322,4 +322,212 @@ describe('OrganizationUnitsList', () => {
       expect(screen.getByText('A single OU')).toBeInTheDocument();
     });
   });
+
+  it('should open menu when action button is clicked', async () => {
+    renderWithProviders(<OrganizationUnitsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    // Find and click the action menu button (EllipsisVertical icon button)
+    const actionButtons = screen.getAllByLabelText('Open actions menu');
+    expect(actionButtons.length).toBeGreaterThan(0);
+
+    fireEvent.click(actionButtons[0]);
+
+    // Menu should open with View and Delete options
+    await waitFor(() => {
+      expect(screen.getByText('View')).toBeInTheDocument();
+      expect(screen.getByText('Delete')).toBeInTheDocument();
+    });
+  });
+
+  it('should close menu when clicking outside', async () => {
+    renderWithProviders(<OrganizationUnitsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    const actionButtons = screen.getAllByLabelText('Open actions menu');
+    fireEvent.click(actionButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('View')).toBeInTheDocument();
+    });
+
+    // Click outside to close menu (simulate backdrop click)
+    const backdrop = document.querySelector('.MuiModal-backdrop');
+    if (backdrop) {
+      fireEvent.click(backdrop);
+    }
+
+    await waitFor(() => {
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should navigate when View menu item is clicked', async () => {
+    renderWithProviders(<OrganizationUnitsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    // Open menu for first row
+    const actionButtons = screen.getAllByLabelText('Open actions menu');
+    fireEvent.click(actionButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('View')).toBeInTheDocument();
+    });
+
+    // Click View
+    fireEvent.click(screen.getByText('View'));
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/organization-units/ou-1');
+    });
+  });
+
+  it('should open delete dialog when Delete menu item is clicked', async () => {
+    renderWithProviders(<OrganizationUnitsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    // Open menu for first row
+    const actionButtons = screen.getAllByLabelText('Open actions menu');
+    fireEvent.click(actionButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete')).toBeInTheDocument();
+    });
+
+    // Click Delete
+    fireEvent.click(screen.getByText('Delete'));
+
+    // Delete dialog should open
+    await waitFor(() => {
+      expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+      expect(screen.getByText('Are you sure?')).toBeInTheDocument();
+    });
+  });
+
+  it('should close delete dialog when cancelled', async () => {
+    renderWithProviders(<OrganizationUnitsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    // Open menu and click delete
+    const actionButtons = screen.getAllByLabelText('Open actions menu');
+    fireEvent.click(actionButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Delete'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Are you sure?')).toBeInTheDocument();
+    });
+
+    // Click cancel to close
+    fireEvent.click(screen.getByText('Cancel'));
+
+    await waitFor(() => {
+      expect(screen.queryByText('Are you sure?')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should handle navigation error in View click gracefully', async () => {
+    mockNavigate.mockRejectedValueOnce(new Error('Navigation error'));
+
+    renderWithProviders(<OrganizationUnitsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    // Open menu
+    const actionButtons = screen.getAllByLabelText('Open actions menu');
+    fireEvent.click(actionButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('View')).toBeInTheDocument();
+    });
+
+    // Click View - should not throw
+    fireEvent.click(screen.getByText('View'));
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/organization-units/ou-1');
+    });
+  });
+
+  it('should stop event propagation when menu button is clicked', async () => {
+    renderWithProviders(<OrganizationUnitsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    // Click action button - should not trigger row click navigation
+    const actionButtons = screen.getAllByLabelText('Open actions menu');
+    fireEvent.click(actionButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('View')).toBeInTheDocument();
+    });
+
+    // Menu should be open, navigation should not have happened from row click
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('should open menu for second row when clicked', async () => {
+    renderWithProviders(<OrganizationUnitsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Child Organization')).toBeInTheDocument();
+    });
+
+    // Get the action button for second row
+    const actionButtons = screen.getAllByLabelText('Open actions menu');
+    expect(actionButtons.length).toBe(2);
+
+    fireEvent.click(actionButtons[1]);
+
+    await waitFor(() => {
+      expect(screen.getByText('View')).toBeInTheDocument();
+    });
+
+    // Click View and verify correct ID is used
+    fireEvent.click(screen.getByText('View'));
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/organization-units/ou-2');
+    });
+  });
+
+  it('should handle undefined organizationUnits in response data', async () => {
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: {
+        totalResults: 0,
+        startIndex: 1,
+        count: 0,
+      } as OrganizationUnitListResponse,
+      isLoading: false,
+      error: null,
+    });
+
+    renderWithProviders(<OrganizationUnitsList />);
+
+    // Should render empty grid without errors
+    expect(screen.getByRole('grid')).toBeInTheDocument();
+  });
 });

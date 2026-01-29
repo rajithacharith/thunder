@@ -17,9 +17,8 @@
  */
 
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import render, {screen} from '@/test/test-utils';
 import React from 'react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import useApplicationCreate from '../useApplicationCreate';
 import ApplicationCreateProvider from '../ApplicationCreateProvider';
 
@@ -70,17 +69,9 @@ function TestConsumerWithoutProvider() {
   return <div data-testid="context">{JSON.stringify(context)}</div>;
 }
 
-// Simple test wrapper that provides QueryClient
+// Simple test wrapper that provides all necessary providers
 function TestWrapper({children}: {children: React.ReactNode}) {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-      },
-    },
-  });
-
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return children;
 }
 
 describe('useApplicationCreate', () => {

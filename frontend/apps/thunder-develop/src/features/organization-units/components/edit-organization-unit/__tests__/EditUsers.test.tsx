@@ -153,4 +153,21 @@ describe('EditUsers', () => {
     const avatars = document.querySelectorAll('.MuiAvatar-root');
     expect(avatars.length).toBeGreaterThan(0);
   });
+
+  it('should render with null users array gracefully', async () => {
+    mockUseGetOrganizationUnitUsers.mockReturnValue({
+      data: {
+        totalResults: 0,
+        startIndex: 1,
+        count: 0,
+        users: null as unknown as [],
+      },
+      isLoading: false,
+    });
+
+    renderWithProviders(<EditUsers organizationUnitId="ou-123" />);
+
+    // Should render without errors - nullish coalescing handles null
+    expect(screen.getByText('Users')).toBeInTheDocument();
+  });
 });

@@ -22,14 +22,18 @@ import {renderWithProviders} from '../../../../test/test-utils';
 import OrganizationUnitEditPage from '../OrganizationUnitEditPage';
 import type {OrganizationUnit} from '../../types/organization-units';
 
-// Mock navigate and useParams
+// Mock navigate, useParams, and useLocation
 const mockNavigate = vi.fn();
+const mockUseLocation = vi.fn<
+  () => {state: unknown; pathname: string; search: string; hash: string; key: string}
+>();
 vi.mock('react-router', async () => {
   const actual = await vi.importActual('react-router');
   return {
     ...actual,
     useNavigate: () => mockNavigate,
     useParams: () => ({id: 'ou-123'}),
+    useLocation: () => mockUseLocation(),
   };
 });
 
@@ -65,9 +69,10 @@ vi.mock('../../api/useUpdateOrganizationUnit', () => ({
 }));
 
 // Mock delete hook
+const mockDeleteMutate = vi.fn();
 vi.mock('../../api/useDeleteOrganizationUnit', () => ({
   default: () => ({
-    mutate: vi.fn(),
+    mutate: mockDeleteMutate,
     isPending: false,
   }),
 }));
@@ -105,6 +110,7 @@ vi.mock('react-i18next', () => ({
     t: (key: string) => {
       const translations: Record<string, string> = {
         'organizationUnits:view.back': 'Back',
+        'organizationUnits:view.backToOU': 'Back to Parent OU',
         'organizationUnits:view.error': 'Failed to load organization unit',
         'organizationUnits:view.notFound': 'Organization unit not found',
         'organizationUnits:view.tabs.general': 'General',
@@ -163,6 +169,14 @@ describe('OrganizationUnitEditPage', () => {
     mockNavigate.mockReset();
     mockMutateAsync.mockReset();
     mockRefetch.mockReset();
+    mockDeleteMutate.mockReset();
+    mockUseLocation.mockReturnValue({
+      state: null,
+      pathname: '/organization-units/ou-123',
+      search: '',
+      hash: '',
+      key: 'default',
+    });
     mockUseGetOrganizationUnit.mockReturnValue({
       data: mockOrganizationUnit,
       isLoading: false,
@@ -338,8 +352,8 @@ describe('OrganizationUnitEditPage', () => {
     if (nameEditButton) {
       fireEvent.click(nameEditButton);
 
-      // Type new name
-      const nameInput = screen.getByRole('textbox');
+      // Type new name - get by current display value
+      const nameInput = screen.getByDisplayValue('Test Organization Unit');
       fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
       fireEvent.blur(nameInput);
 
@@ -365,7 +379,7 @@ describe('OrganizationUnitEditPage', () => {
     if (nameEditButton) {
       fireEvent.click(nameEditButton);
 
-      const nameInput = screen.getByRole('textbox');
+      const nameInput = screen.getByDisplayValue('Test Organization Unit');
       fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
       fireEvent.blur(nameInput);
 
@@ -398,13 +412,13 @@ describe('OrganizationUnitEditPage', () => {
     if (descriptionEditButton) {
       fireEvent.click(descriptionEditButton);
 
-      // Should show a textbox for editing
+      // Should show a textbox for editing - get by current display value
       await waitFor(() => {
-        const textbox = screen.getByRole('textbox');
+        const textbox = screen.getByDisplayValue('A test description');
         expect(textbox).toBeInTheDocument();
       });
 
-      const textbox = screen.getByRole('textbox');
+      const textbox = screen.getByDisplayValue('A test description');
       fireEvent.change(textbox, {target: {value: 'Updated description'}});
       fireEvent.blur(textbox);
 
@@ -430,10 +444,10 @@ describe('OrganizationUnitEditPage', () => {
       fireEvent.click(descriptionEditButton);
 
       await waitFor(() => {
-        expect(screen.getByRole('textbox')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('A test description')).toBeInTheDocument();
       });
 
-      const textbox = screen.getByRole('textbox');
+      const textbox = screen.getByDisplayValue('A test description');
       fireEvent.keyDown(textbox, {key: 'Escape'});
 
       await waitFor(() => {
@@ -458,10 +472,10 @@ describe('OrganizationUnitEditPage', () => {
       fireEvent.click(descriptionEditButton);
 
       await waitFor(() => {
-        expect(screen.getByRole('textbox')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('A test description')).toBeInTheDocument();
       });
 
-      const textbox = screen.getByRole('textbox');
+      const textbox = screen.getByDisplayValue('A test description');
       fireEvent.change(textbox, {target: {value: 'New description'}});
       fireEvent.keyDown(textbox, {key: 'Enter', ctrlKey: true});
 
@@ -487,10 +501,10 @@ describe('OrganizationUnitEditPage', () => {
       fireEvent.click(nameEditButton);
 
       await waitFor(() => {
-        expect(screen.getByRole('textbox')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('Test Organization Unit')).toBeInTheDocument();
       });
 
-      const textbox = screen.getByRole('textbox');
+      const textbox = screen.getByDisplayValue('Test Organization Unit');
       fireEvent.keyDown(textbox, {key: 'Escape'});
 
       await waitFor(() => {
@@ -515,10 +529,10 @@ describe('OrganizationUnitEditPage', () => {
       fireEvent.click(nameEditButton);
 
       await waitFor(() => {
-        expect(screen.getByRole('textbox')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('Test Organization Unit')).toBeInTheDocument();
       });
 
-      const textbox = screen.getByRole('textbox');
+      const textbox = screen.getByDisplayValue('Test Organization Unit');
       fireEvent.change(textbox, {target: {value: 'Updated Name'}});
       fireEvent.keyDown(textbox, {key: 'Enter'});
 
@@ -546,7 +560,7 @@ describe('OrganizationUnitEditPage', () => {
     if (nameEditButton) {
       fireEvent.click(nameEditButton);
 
-      const nameInput = screen.getByRole('textbox');
+      const nameInput = screen.getByDisplayValue('Test Organization Unit');
       fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
       fireEvent.blur(nameInput);
 
@@ -588,7 +602,7 @@ describe('OrganizationUnitEditPage', () => {
     if (nameEditButton) {
       fireEvent.click(nameEditButton);
 
-      const nameInput = screen.getByRole('textbox');
+      const nameInput = screen.getByDisplayValue('Test Organization Unit');
       fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
       fireEvent.blur(nameInput);
 
@@ -616,7 +630,7 @@ describe('OrganizationUnitEditPage', () => {
     if (nameEditButton) {
       fireEvent.click(nameEditButton);
 
-      const nameInput = screen.getByRole('textbox');
+      const nameInput = screen.getByDisplayValue('Test Organization Unit');
       fireEvent.change(nameInput, {target: {value: ''}});
       fireEvent.blur(nameInput);
 
@@ -732,5 +746,165 @@ describe('OrganizationUnitEditPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('tab', {name: 'Groups', selected: true})).toBeInTheDocument();
     });
+  });
+
+  it('should navigate back to parent OU when fromOU is provided', async () => {
+    mockUseLocation.mockReturnValue({
+      state: {
+        fromOU: {
+          id: 'parent-ou-id',
+          name: 'Parent OU',
+        },
+      },
+      pathname: '/organization-units/ou-123',
+      search: '',
+      hash: '',
+      key: 'default',
+    });
+
+    renderWithProviders(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+    });
+
+    // Back button should show the parent OU name - find by partial text
+    const backButton = screen.getByText('Back to Parent OU');
+    fireEvent.click(backButton);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/organization-units/parent-ou-id');
+    });
+  });
+
+  it('should handle back navigation error in error state', async () => {
+    mockNavigate.mockRejectedValue(new Error('Navigation failed'));
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error('Network error'),
+      refetch: mockRefetch,
+    });
+
+    renderWithProviders(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Network error')).toBeInTheDocument();
+    });
+
+    // Click back button - should not throw
+    fireEvent.click(screen.getByText('Back'));
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/organization-units');
+    });
+  });
+
+  it('should handle back navigation error in not found state', async () => {
+    mockNavigate.mockRejectedValue(new Error('Navigation failed'));
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      refetch: mockRefetch,
+    });
+
+    renderWithProviders(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Organization unit not found')).toBeInTheDocument();
+    });
+
+    // Click back button - should not throw
+    fireEvent.click(screen.getByText('Back'));
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/organization-units');
+    });
+  });
+
+  it('should handle back navigation error in main view', async () => {
+    mockNavigate.mockRejectedValue(new Error('Navigation failed'));
+
+    renderWithProviders(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+    });
+
+    // Click back button - should not throw
+    fireEvent.click(screen.getByText('Back'));
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/organization-units');
+    });
+  });
+
+  it('should handle delete success and navigate to list', async () => {
+    // Mock delete to trigger onSuccess
+    mockDeleteMutate.mockImplementation((_id: string, options: {onSuccess?: () => void}) => {
+      options.onSuccess?.();
+    });
+
+    renderWithProviders(<OrganizationUnitEditPage />);
+
+    // Navigate to Advanced tab and open delete dialog
+    fireEvent.click(screen.getByText('Advanced'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Delete Organization Unit'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Are you sure?')).toBeInTheDocument();
+    });
+
+    // Find and click the delete confirm button in dialog
+    const deleteButtons = screen.getAllByText('Delete');
+    const confirmDeleteButton = deleteButtons.find((btn) => btn.closest('.MuiDialog-root'));
+    if (confirmDeleteButton) {
+      fireEvent.click(confirmDeleteButton);
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/organization-units');
+      });
+    }
+  });
+
+  it('should handle delete success navigation error gracefully', async () => {
+    mockNavigate.mockRejectedValue(new Error('Navigation failed'));
+    // Mock delete to trigger onSuccess
+    mockDeleteMutate.mockImplementation((_id: string, options: {onSuccess?: () => void}) => {
+      options.onSuccess?.();
+    });
+
+    renderWithProviders(<OrganizationUnitEditPage />);
+
+    fireEvent.click(screen.getByText('Advanced'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+    });
+
+    // Open delete dialog
+    fireEvent.click(screen.getByText('Delete Organization Unit'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Are you sure?')).toBeInTheDocument();
+    });
+
+    // Find and click the delete confirm button in dialog
+    const deleteButtons = screen.getAllByText('Delete');
+    const confirmDeleteButton = deleteButtons.find((btn) => btn.closest('.MuiDialog-root'));
+    if (confirmDeleteButton) {
+      fireEvent.click(confirmDeleteButton);
+
+      // Should not throw - error is logged
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/organization-units');
+      });
+    }
   });
 });

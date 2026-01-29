@@ -153,4 +153,21 @@ describe('EditGroups', () => {
     const avatars = document.querySelectorAll('.MuiAvatar-root');
     expect(avatars.length).toBeGreaterThan(0);
   });
+
+  it('should handle null groups array gracefully', () => {
+    mockUseGetOrganizationUnitGroups.mockReturnValue({
+      data: {
+        totalResults: 0,
+        startIndex: 1,
+        count: 0,
+        groups: null as unknown as [],
+      },
+      isLoading: false,
+    });
+
+    renderWithProviders(<EditGroups organizationUnitId="ou-123" />);
+
+    // Should render without errors - nullish coalescing handles null
+    expect(screen.getByText('Groups')).toBeInTheDocument();
+  });
 });
