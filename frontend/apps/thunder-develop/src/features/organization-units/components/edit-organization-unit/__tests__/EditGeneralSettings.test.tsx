@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {screen} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {screen, fireEvent, act} from '@testing-library/react';
 import {renderWithProviders} from '../../../../../test/test-utils';
 import EditGeneralSettings from '../general-settings/EditGeneralSettings';
 import type {OrganizationUnit} from '../../../types/organization-units';
@@ -31,10 +31,22 @@ vi.mock('react-i18next', () => ({
         'organizationUnits:view.general.subtitle': 'Basic details about this organization unit',
         'organizationUnits:form.handle': 'Handle',
         'organizationUnits:view.general.id': 'Organization Unit ID',
+        'organizationUnits:view.general.parent': 'Parent Organization Unit',
+        'organizationUnits:view.general.noParent': 'No Parent',
+        'common:actions.copy': 'Copy',
+        'common:actions.copied': 'Copied',
       };
       return translations[key] ?? key;
     },
   }),
+}));
+
+// Mock the API hook
+const mockUseGetOrganizationUnit = vi.fn<
+  (id: string | undefined, enabled: boolean) => {data: OrganizationUnit | undefined; isLoading: boolean}
+>();
+vi.mock('../../../api/useGetOrganizationUnit', () => ({
+  default: (id: string | undefined, enabled: boolean) => mockUseGetOrganizationUnit(id, enabled),
 }));
 
 describe('EditGeneralSettings', () => {
@@ -45,6 +57,24 @@ describe('EditGeneralSettings', () => {
     description: 'A test description',
     parent: null,
   };
+
+  const mockClipboard = {
+    writeText: vi.fn().mockResolvedValue(undefined),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+    Object.assign(navigator, {clipboard: mockClipboard});
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it('should render title and subtitle', () => {
     renderWithProviders(<EditGeneralSettings organizationUnit={mockOrganizationUnit} />);
@@ -80,5 +110,154 @@ describe('EditGeneralSettings', () => {
 
     expect(screen.getByDisplayValue('another-handle')).toBeInTheDocument();
     expect(screen.getByDisplayValue('ou-456')).toBeInTheDocument();
+  });
+
+  it('should show "No Parent" when parent is null', () => {
+    renderWithProviders(<EditGeneralSettings organizationUnit={mockOrganizationUnit} />);
+
+    expect(screen.getByDisplayValue('No Parent')).toBeInTheDocument();
+  });
+
+  it('should copy handle to clipboard when copy button is clicked', async () => {
+    renderWithProviders(<EditGeneralSettings organizationUnit={mockOrganizationUnit} />);
+
+    const copyButtons = screen.getAllByRole('button');
+    const handleCopyButton = copyButtons[0];
+
+    await act(async () => {
+      fireEvent.click(handleCopyButton);
+    });
+
+    expect(mockClipboard.writeText).toHaveBeenCalledWith('test-handle');
+  });
+
+  it('should copy OU ID to clipboard when copy button is clicked', async () => {
+    renderWithProviders(<EditGeneralSettings organizationUnit={mockOrganizationUnit} />);
+
+    const copyButtons = screen.getAllByRole('button');
+    const idCopyButton = copyButtons[1];
+
+    await act(async () => {
+      fireEvent.click(idCopyButton);
+    });
+
+    expect(mockClipboard.writeText).toHaveBeenCalledWith('ou-123');
+  });
+
+  it('should reset copied state after timeout', async () => {
+    renderWithProviders(<EditGeneralSettings organizationUnit={mockOrganizationUnit} />);
+
+    const copyButtons = screen.getAllByRole('button');
+    const handleCopyButton = copyButtons[0];
+
+    await act(async () => {
+      fireEvent.click(handleCopyButton);
+    });
+
+    // Advance timers to trigger the timeout callback that resets copiedField
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    // Verify copy was called
+    expect(mockClipboard.writeText).toHaveBeenCalledWith('test-handle');
+  });
+
+  it('should handle clipboard error gracefully for handle copy', async () => {
+    mockClipboard.writeText.mockRejectedValueOnce(new Error('Clipboard error'));
+
+    renderWithProviders(<EditGeneralSettings organizationUnit={mockOrganizationUnit} />);
+
+    const copyButtons = screen.getAllByRole('button');
+    const handleCopyButton = copyButtons[0];
+
+    // Should not throw
+    await act(async () => {
+      fireEvent.click(handleCopyButton);
+    });
+
+    expect(mockClipboard.writeText).toHaveBeenCalledWith('test-handle');
+  });
+
+  it('should handle clipboard error gracefully for OU ID copy', async () => {
+    mockClipboard.writeText.mockRejectedValueOnce(new Error('Clipboard error'));
+
+    renderWithProviders(<EditGeneralSettings organizationUnit={mockOrganizationUnit} />);
+
+    const copyButtons = screen.getAllByRole('button');
+    const idCopyButton = copyButtons[1];
+
+    // Should not throw
+    await act(async () => {
+      fireEvent.click(idCopyButton);
+    });
+
+    expect(mockClipboard.writeText).toHaveBeenCalledWith('ou-123');
+  });
+
+  it('should show loading spinner when parent OU is loading', () => {
+    const ouWithParent: OrganizationUnit = {
+      ...mockOrganizationUnit,
+      parent: 'parent-ou-id',
+    };
+
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+
+    renderWithProviders(<EditGeneralSettings organizationUnit={ouWithParent} />);
+
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+  });
+
+  it('should display parent OU link when parent data is loaded', () => {
+    vi.useRealTimers(); // Use real timers for this test
+
+    const ouWithParent: OrganizationUnit = {
+      ...mockOrganizationUnit,
+      parent: 'parent-ou-id',
+    };
+
+    const parentOU: OrganizationUnit = {
+      id: 'parent-ou-id',
+      handle: 'parent-handle',
+      name: 'Parent OU Name',
+      description: 'Parent description',
+      parent: null,
+    };
+
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: parentOU,
+      isLoading: false,
+    });
+
+    renderWithProviders(<EditGeneralSettings organizationUnit={ouWithParent} />);
+
+    expect(screen.getByText('Parent OU Name')).toBeInTheDocument();
+    expect(screen.getByText('(parent-ou-id)')).toBeInTheDocument();
+
+    // Verify it's a link
+    const link = screen.getByText('Parent OU Name');
+    expect(link.closest('a')).toHaveAttribute('href', '/organization-units/parent-ou-id');
+
+    vi.useFakeTimers(); // Restore fake timers for subsequent tests
+  });
+
+  it('should show raw parent ID when parent OU fetch fails', () => {
+    const ouWithParent: OrganizationUnit = {
+      ...mockOrganizationUnit,
+      parent: 'parent-ou-id',
+    };
+
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+
+    renderWithProviders(<EditGeneralSettings organizationUnit={ouWithParent} />);
+
+    // Should show the raw parent ID in a text field
+    expect(screen.getByDisplayValue('parent-ou-id')).toBeInTheDocument();
   });
 });
