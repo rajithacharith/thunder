@@ -365,8 +365,26 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_WithGroups() {
 	assert.NotNil(s.T(), response)
 	assert.Equal(s.T(), "user123", response["sub"])
 	assert.Equal(s.T(), "John Doe", response["name"])
-	groups, ok := response[constants.UserAttributeGroups].([]string)
-	assert.True(s.T(), ok, "groups should be []string")
+	groupsValue := response[constants.UserAttributeGroups]
+	assert.NotNil(s.T(), groupsValue, "groups should be present")
+	// Groups can be []string or []interface{} depending on JSON unmarshaling
+	var groups []string
+	switch v := groupsValue.(type) {
+	case []string:
+		groups = v
+	case []interface{}:
+		groups = make([]string, 0, len(v))
+		for _, item := range v {
+			if str, ok := item.(string); ok {
+				groups = append(groups, str)
+			}
+		}
+	default:
+		s.T().Fatalf("groups should be []string or []interface{}, got %T", v)
+	}
+	assert.Len(s.T(), groups, 2)
+	assert.Contains(s.T(), groups, "admin")
+	assert.Contains(s.T(), groups, "users")
 	assert.Equal(s.T(), []string{"admin", "users"}, groups)
 	s.mockJWTService.AssertExpectations(s.T())
 	s.mockUserService.AssertExpectations(s.T())
