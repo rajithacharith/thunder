@@ -24,6 +24,7 @@ import (
 	"errors"
 	"slices"
 	"sort"
+	"strings"
 
 	"github.com/asgardeo/thunder/internal/authn/assert"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
@@ -157,9 +158,13 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 		jwtClaims["authorized_permissions"] = permissions
 	}
 
-	// Get user attributes from application assertion config
+	// Get user attributes from required_attributes in runtimeData if present,
+	// otherwise fallback to application token config
 	var userAttributes []string
-	if ctx.Application.Assertion != nil {
+	if requiredAttrs, exists := ctx.RuntimeData["required_attributes"]; exists {
+		userAttributes = strings.Fields(requiredAttrs)
+	} else if ctx.Application.Assertion != nil {
+		// Fallback to application token user attributes
 		userAttributes = ctx.Application.Assertion.UserAttributes
 	}
 
@@ -248,38 +253,55 @@ func (a *authAssertExecutor) extractAuthenticatorReferences(
 // appendUserDetailsToClaims appends user details to the JWT claims.
 func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *core.NodeContext,
 	jwtClaims map[string]interface{}, userAttributes []string) error {
-	if len(userAttributes) > 0 && ctx.AuthenticatedUser.UserID != "" {
-		var user *user.User
-		var attrs map[string]interface{}
+	if len(userAttributes) == 0 {
+		return nil
+	}
 
-		for _, attr := range userAttributes {
-			// Skip attributes that are handled separately
-			if attr == oauth2const.UserAttributeGroups ||
-				attr == oauth2const.ClaimUserType ||
-				attr == oauth2const.ClaimOUID ||
-				attr == oauth2const.ClaimOUName ||
-				attr == oauth2const.ClaimOUHandle {
-				continue
+	var attrs map[string]interface{}
+
+	standardClaims := oauth2const.GetStandardClaims()
+
+	for _, attr := range userAttributes {
+		// Skip attributes that are handled separately
+		if attr == oauth2const.UserAttributeGroups ||
+			attr == oauth2const.ClaimUserType ||
+			attr == oauth2const.ClaimOUID ||
+			attr == oauth2const.ClaimOUName ||
+			attr == oauth2const.ClaimOUHandle {
+			continue
+		}
+
+		// Skip standard JWT claims if present in the user attributes
+		if slices.Contains(standardClaims, attr) {
+			continue
+		}
+
+		// Check for the attribute in authenticated user attributes
+		if val, ok := ctx.AuthenticatedUser.Attributes[attr]; ok {
+			jwtClaims[attr] = val
+			continue
+		}
+
+		// Check runtime data as fallback
+		if val, exists := ctx.RuntimeData[attr]; exists && val != "" {
+			jwtClaims[attr] = val
+			continue
+		}
+
+		// For users with local accounts, fetch from user store
+		if ctx.AuthenticatedUser.UserID != "" && attrs == nil {
+			var err error
+			_, attrs, err = a.getUserAttributes(ctx.AuthenticatedUser.UserID)
+			if err != nil {
+				return err
 			}
+		}
 
-			// check for the attribute in authenticated user attributes
-			if val, ok := ctx.AuthenticatedUser.Attributes[attr]; ok {
-				jwtClaims[attr] = val
-				continue
-			}
-
-			// fetch user details only once
-			if user == nil {
-				var err error
-				user, attrs, err = a.getUserAttributes(ctx.AuthenticatedUser.UserID)
-				if err != nil {
-					return err
-				}
-			}
-
-			// check for the attribute in user store attributes
+		// Check for the attribute in user store attributes
+		if attrs != nil {
 			if val, ok := attrs[attr]; ok {
 				jwtClaims[attr] = val
+				continue
 			}
 		}
 	}
