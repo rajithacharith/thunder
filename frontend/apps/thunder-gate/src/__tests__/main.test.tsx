@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,14 +16,15 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 
 // Mock ReactDOM
 const mockRender = vi.fn();
+const mockCreateRoot = vi.fn(() => ({
+  render: mockRender,
+}));
 vi.mock('react-dom/client', () => ({
-  createRoot: vi.fn(() => ({
-    render: mockRender,
-  })),
+  createRoot: mockCreateRoot,
 }));
 
 // Mock AppWithConfig
@@ -62,6 +63,17 @@ vi.mock('@thunder/i18n/locales/en-US', () => ({
   },
 }));
 
+// Mock @thunder/shared-contexts
+vi.mock('@thunder/shared-contexts', () => ({
+  ConfigProvider: ({children}: {children: React.ReactNode}) => children,
+}));
+
+// Mock @thunder/logger/react
+vi.mock('@thunder/logger/react', () => ({
+  LoggerProvider: ({children}: {children: React.ReactNode}) => children,
+  LogLevel: {DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3},
+}));
+
 // Mock @tanstack/react-query
 vi.mock('@tanstack/react-query', () => ({
   QueryClient: vi.fn().mockImplementation(() => ({})),
@@ -79,14 +91,42 @@ vi.mock('../index.css', () => ({}));
 describe('main', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Clean up any existing root element
+    const existingRoot = document.getElementById('root');
+    if (existingRoot) {
+      existingRoot.remove();
+    }
     // Create a mock root element
     const root = document.createElement('div');
     root.id = 'root';
     document.body.appendChild(root);
   });
 
+  afterEach(() => {
+    // Clean up the root element
+    const root = document.getElementById('root');
+    if (root) {
+      root.remove();
+    }
+  });
+
   it('should have a root element in the document', () => {
     const rootElement = document.getElementById('root');
     expect(rootElement).toBeInTheDocument();
+  });
+
+  it('should call createRoot and render when imported', async () => {
+    // Reset modules to ensure clean test isolation for dynamic imports
+    vi.resetModules();
+
+    // Import main to trigger the render
+    await import('../main');
+
+    // Wait for async operations (i18n init)
+    await vi.waitFor(() => {
+      expect(mockCreateRoot).toHaveBeenCalled();
+    });
+
+    expect(mockRender).toHaveBeenCalled();
   });
 });
