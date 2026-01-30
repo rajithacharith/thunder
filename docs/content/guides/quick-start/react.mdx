@@ -1,11 +1,11 @@
 ---
-title: React
+title: React Quickstart
 sidebar_position: 1
 description: Quick start guide to integrate Thunder with a React application
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
+import CodeGroup from '@site/src/components/CodeGroup';
+import CodeBlock from '@site/src/components/CodeBlock';
 import {
   Boxes,
   Package,
@@ -95,63 +95,47 @@ Note down the **Client ID** from the response. You'll need it to configure your 
 
 Create your new React app using Vite:
 
-<Tabs groupId="package-manager">
-<TabItem value="npm" label="npm">
+<CodeGroup>
+  <CodeBlock lang="bash" label="npm">
+    npm create vite@latest my-react-app -- --template react
+    cd my-react-app
+    npm install
+  </CodeBlock>
 
-```bash
-npm create vite@latest my-react-app -- --template react
-cd my-react-app
-npm install
-```
+  <CodeBlock lang="bash" label="Yarn">
+    yarn create vite my-react-app --template react
+    cd my-react-app
+    yarn install
+  </CodeBlock>
 
-</TabItem>
-<TabItem value="yarn" label="yarn">
-
-```bash
-yarn create vite my-react-app --template react
-cd my-react-app
-yarn install
-```
-
-</TabItem>
-<TabItem value="pnpm" label="pnpm">
-
-```bash
-pnpm create vite my-react-app --template react
-cd my-react-app
-pnpm install
-```
-
-</TabItem>
-</Tabs>
+  <CodeBlock lang="bash" label="pnpm">
+    pnpm create vite my-react-app --template react
+    cd my-react-app
+    pnpm install
+  </CodeBlock>
+</CodeGroup>
 
 ## Install @asgardeo/react
 
 Thunder uses the Asgardeo React SDK for authentication. Install it in your project:
 
-<Tabs groupId="package-manager">
-<TabItem value="npm" label="npm">
+<CodeGroup>
+  <CodeBlock lang="bash" label="npm">
+    npm install @asgardeo/react
+  </CodeBlock>
 
-```bash
-npm install @asgardeo/react
-```
+  <CodeBlock lang="bash" label="Yarn">
+    yarn add @asgardeo/react
+  </CodeBlock>
 
-</TabItem>
-<TabItem value="yarn" label="yarn">
+  <CodeBlock lang="bash" label="pnpm">
+    pnpm add @asgardeo/react
+  </CodeBlock>
 
-```bash
-yarn add @asgardeo/react
-```
-
-</TabItem>
-<TabItem value="pnpm" label="pnpm">
-
-```bash
-pnpm add @asgardeo/react
-```
-
-</TabItem>
-</Tabs>
+  <CodeBlock lang="bash" label="Bun">
+    bun add @asgardeo/react
+  </CodeBlock>
+</CodeGroup>
 
 ## Add AsgardeoProvider to Your App
 
@@ -159,7 +143,7 @@ The `<AsgardeoProvider />` serves as a context provider for the SDK. Integrate i
 
 Update the `main.jsx` file with the following:
 
-```jsx title="src/main.jsx"
+```jsx title="src/main.jsx" showLineNumbers
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { AsgardeoProvider } from '@asgardeo/react'
@@ -197,7 +181,7 @@ The Asgardeo React SDK provides `SignInButton` and `SignOutButton` components al
 
 Replace the content of `App.jsx` with:
 
-```jsx title="src/App.jsx"
+```jsx title="src/App.jsx" showLineNumbers
 import {
   SignedIn,
   SignedOut,
@@ -234,7 +218,7 @@ export default App
 
 Use the `User` component to access and display user profile information:
 
-```jsx title="src/App.jsx" {7}
+```jsx title="src/App.jsx" {7} showLineNumbers
 import {
   SignedIn,
   SignedOut,
@@ -296,29 +280,19 @@ export default App
 
 Start the development server:
 
-<Tabs groupId="package-manager">
-<TabItem value="npm" label="npm">
+<CodeGroup>
+  <CodeBlock lang="bash" label="npm">
+    npm run dev
+  </CodeBlock>
 
-```bash
-npm run dev
-```
+  <CodeBlock lang="bash" label="Yarn">
+    yarn dev
+  </CodeBlock>
 
-</TabItem>
-<TabItem value="yarn" label="yarn">
-
-```bash
-yarn dev
-```
-
-</TabItem>
-<TabItem value="pnpm" label="pnpm">
-
-```bash
-pnpm dev
-```
-
-</TabItem>
-</Tabs>
+  <CodeBlock lang="bash" label="pnpm">
+    pnpm run dev
+  </CodeBlock>
+</CodeGroup>
 
 Visit your app at [http://localhost:5173](http://localhost:5173)
 
@@ -327,30 +301,3 @@ You should now see the sign-in button. Click it to authenticate with Thunder!
 :::
 
 </Stepper>
-
-## Next Steps
-
-Now that you have a basic Thunder authentication setup, you can:
-
-- **[Protect Routes](/guides/authentication/protecting-routes)** - Learn how to protect specific routes
-- **[Access Protected APIs](/guides/authentication/accessing-apis)** - Call Thunder's APIs with authentication
-- **[Customize Login Flow](/guides/authentication/custom-flows)** - Create custom authentication experiences
-- **[Explore SDK Components](https://wso2.com/asgardeo/docs/sdks/react/components/)** - Discover more pre-built components
-
-## Troubleshooting
-
-### Hook Error: "useAsgardeo must be used within AsgardeoProvider"
-
-Ensure any component using `useAsgardeo` hook is a child of `<AsgardeoProvider>`
-
-### Infinite Redirect Loop
-
-Verify that `baseUrl` and `clientId` are correct.
-
-### CORS Errors
-
-Configure CORS settings in Thunder to allow your app's origin (`http://localhost:5173`)
-
-:::info Need Help?
-Check out our [troubleshooting guide](/guides/troubleshooting) or [join our community](/community).
-:::

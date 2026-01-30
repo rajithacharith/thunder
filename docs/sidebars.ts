@@ -16,6 +16,8 @@
  * under the License.
  */
 
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 import applicationApiSidebar from './content/apis/application/sidebar';
 import authenticationApiSidebar from './content/apis/authentication/sidebar';
@@ -32,6 +34,7 @@ import registrationApiSidebar from './content/apis/registration/sidebar';
 import resourceApiSidebar from './content/apis/resource/sidebar';
 import roleApiSidebar from './content/apis/role/sidebar';
 import userApiSidebar from './content/apis/user/sidebar';
+import reactSdkSidebar from './content/sdks/react/sidebar';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
@@ -214,6 +217,7 @@ const sidebars: SidebarsConfig = {
       items: userApiSidebar,
     },
   ],
+  reactSdkSidebar,
   communitySidebar: [
     {
       type: 'category',
