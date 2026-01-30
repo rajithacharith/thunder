@@ -1219,7 +1219,7 @@
               "action": {
                 "type": "EXECUTOR",
                 "executor": {
-                  "name": "IdentityResolver"
+                  "name": "IdentifyingExecutor"
                 },
                 "onSuccess": "{{PASSKEY_CHALLENGE_EXECUTOR_ID}}",
                 "onFailure": "{{PASSKEY_USERNAME_VIEW_ID}}"

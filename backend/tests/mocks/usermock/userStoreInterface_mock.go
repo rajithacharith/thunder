@@ -153,7 +153,7 @@ func (_c *userStoreInterfaceMock_DeleteUser_Call) Return(err error) *userStoreIn
 	return _c
 }
 
-func (_c *userStoreInterfaceMock_DeleteUser_Call) RunAndReturn(run func(id string) error) *userStoreInterfaceMock_DeleteUser_Call {
+func (_c *userStoreInterfaceMock_DeleteUser_Call) RunAndReturn(run func(ctx context.Context, id string) error) *userStoreInterfaceMock_DeleteUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -308,16 +308,16 @@ func (_mock *userStoreInterfaceMock) GetUser(ctx context.Context, id string) (us
 
 	var r0 user.User
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (user.User, error)); ok {
-		return returnFunc(id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (user.User, error)); ok {
+		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) user.User); ok {
-		r0 = returnFunc(id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) user.User); ok {
+		r0 = returnFunc(ctx, id)
 	} else {
 		r0 = ret.Get(0).(user.User)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(id)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, id)
 	} else {
 		r1 = ret.Error(1)
 	}
