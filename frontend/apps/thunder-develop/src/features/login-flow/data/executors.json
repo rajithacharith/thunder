@@ -594,7 +594,7 @@
       "action": {
         "type": "EXECUTOR",
         "executor": {
-          "name": "IdentityResolver"
+          "name": "IdentifyingExecutor"
         },
         "onSuccess": "",
         "onFailure": ""

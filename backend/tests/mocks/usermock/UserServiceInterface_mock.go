@@ -41,7 +41,6 @@ func (_m *UserServiceInterfaceMock) EXPECT() *UserServiceInterfaceMock_Expecter 
 }
 
 // AuthenticateUser provides a mock function for the type UserServiceInterfaceMock
-
 func (_mock *UserServiceInterfaceMock) AuthenticateUser(ctx context.Context, request user.AuthenticateUserRequest) (*user.AuthenticateUserResponse, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, request)
 
@@ -77,6 +76,7 @@ type UserServiceInterfaceMock_AuthenticateUser_Call struct {
 }
 
 // AuthenticateUser is a helper method to define mock.On call
+//   - ctx context.Context
 //   - request user.AuthenticateUserRequest
 func (_e *UserServiceInterfaceMock_Expecter) AuthenticateUser(ctx interface{}, request interface{}) *UserServiceInterfaceMock_AuthenticateUser_Call {
 	return &UserServiceInterfaceMock_AuthenticateUser_Call{Call: _e.mock.On("AuthenticateUser", ctx, request)}
@@ -281,6 +281,7 @@ type UserServiceInterfaceMock_DeleteUser_Call struct {
 }
 
 // DeleteUser is a helper method to define mock.On call
+//   - ctx context.Context
 //   - userID string
 func (_e *UserServiceInterfaceMock_Expecter) DeleteUser(ctx interface{}, userID interface{}) *UserServiceInterfaceMock_DeleteUser_Call {
 	return &UserServiceInterfaceMock_DeleteUser_Call{Call: _e.mock.On("DeleteUser", ctx, userID)}
@@ -315,7 +316,6 @@ func (_c *UserServiceInterfaceMock_DeleteUser_Call) RunAndReturn(run func(ctx co
 }
 
 // GetUser provides a mock function for the type UserServiceInterfaceMock
-
 func (_mock *UserServiceInterfaceMock) GetUser(ctx context.Context, userID string) (*user.User, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, userID)
 
@@ -351,6 +351,7 @@ type UserServiceInterfaceMock_GetUser_Call struct {
 }
 
 // GetUser is a helper method to define mock.On call
+//   - ctx context.Context
 //   - userID string
 func (_e *UserServiceInterfaceMock_Expecter) GetUser(ctx interface{}, userID interface{}) *UserServiceInterfaceMock_GetUser_Call {
 	return &UserServiceInterfaceMock_GetUser_Call{Call: _e.mock.On("GetUser", ctx, userID)}
@@ -385,7 +386,6 @@ func (_c *UserServiceInterfaceMock_GetUser_Call) RunAndReturn(run func(ctx conte
 }
 
 // GetUserCredentialsByType provides a mock function for the type UserServiceInterfaceMock
-
 func (_mock *UserServiceInterfaceMock) GetUserCredentialsByType(ctx context.Context, userID string, credentialType string) ([]user.Credential, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, userID, credentialType)
 
@@ -421,6 +421,7 @@ type UserServiceInterfaceMock_GetUserCredentialsByType_Call struct {
 }
 
 // GetUserCredentialsByType is a helper method to define mock.On call
+//   - ctx context.Context
 //   - userID string
 //   - credentialType string
 func (_e *UserServiceInterfaceMock_Expecter) GetUserCredentialsByType(ctx interface{}, userID interface{}, credentialType interface{}) *UserServiceInterfaceMock_GetUserCredentialsByType_Call {
@@ -461,7 +462,6 @@ func (_c *UserServiceInterfaceMock_GetUserCredentialsByType_Call) RunAndReturn(r
 }
 
 // GetUserGroups provides a mock function for the type UserServiceInterfaceMock
-
 func (_mock *UserServiceInterfaceMock) GetUserGroups(ctx context.Context, userID string, limit int, offset int) (*user.UserGroupListResponse, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, userID, limit, offset)
 
@@ -497,6 +497,7 @@ type UserServiceInterfaceMock_GetUserGroups_Call struct {
 }
 
 // GetUserGroups is a helper method to define mock.On call
+//   - ctx context.Context
 //   - userID string
 //   - limit int
 //   - offset int
@@ -578,6 +579,7 @@ type UserServiceInterfaceMock_GetUserList_Call struct {
 }
 
 // GetUserList is a helper method to define mock.On call
+//   - ctx context.Context
 //   - limit int
 //   - offset int
 //   - filters map[string]interface{}
@@ -659,6 +661,7 @@ type UserServiceInterfaceMock_GetUsersByPath_Call struct {
 }
 
 // GetUsersByPath is a helper method to define mock.On call
+//   - ctx context.Context
 //   - handlePath string
 //   - limit int
 //   - offset int
@@ -711,7 +714,6 @@ func (_c *UserServiceInterfaceMock_GetUsersByPath_Call) RunAndReturn(run func(ct
 }
 
 // IdentifyUser provides a mock function for the type UserServiceInterfaceMock
-
 func (_mock *UserServiceInterfaceMock) IdentifyUser(ctx context.Context, filters map[string]interface{}) (*string, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, filters)
 
@@ -747,6 +749,7 @@ type UserServiceInterfaceMock_IdentifyUser_Call struct {
 }
 
 // IdentifyUser is a helper method to define mock.On call
+//   - ctx context.Context
 //   - filters map[string]interface{}
 func (_e *UserServiceInterfaceMock_Expecter) IdentifyUser(ctx interface{}, filters interface{}) *UserServiceInterfaceMock_IdentifyUser_Call {
 	return &UserServiceInterfaceMock_IdentifyUser_Call{Call: _e.mock.On("IdentifyUser", ctx, filters)}
@@ -781,7 +784,6 @@ func (_c *UserServiceInterfaceMock_IdentifyUser_Call) RunAndReturn(run func(ctx 
 }
 
 // UpdateUser provides a mock function for the type UserServiceInterfaceMock
-
 func (_mock *UserServiceInterfaceMock) UpdateUser(ctx context.Context, userID string, user1 *user.User) (*user.User, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, userID, user1)
 
@@ -817,6 +819,7 @@ type UserServiceInterfaceMock_UpdateUser_Call struct {
 }
 
 // UpdateUser is a helper method to define mock.On call
+//   - ctx context.Context
 //   - userID string
 //   - user1 *user.User
 func (_e *UserServiceInterfaceMock_Expecter) UpdateUser(ctx interface{}, userID interface{}, user1 interface{}) *UserServiceInterfaceMock_UpdateUser_Call {
@@ -857,7 +860,6 @@ func (_c *UserServiceInterfaceMock_UpdateUser_Call) RunAndReturn(run func(ctx co
 }
 
 // UpdateUserAttributes provides a mock function for the type UserServiceInterfaceMock
-
 func (_mock *UserServiceInterfaceMock) UpdateUserAttributes(ctx context.Context, userID string, attributes json.RawMessage) (*user.User, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, userID, attributes)
 
@@ -893,6 +895,7 @@ type UserServiceInterfaceMock_UpdateUserAttributes_Call struct {
 }
 
 // UpdateUserAttributes is a helper method to define mock.On call
+//   - ctx context.Context
 //   - userID string
 //   - attributes json.RawMessage
 func (_e *UserServiceInterfaceMock_Expecter) UpdateUserAttributes(ctx interface{}, userID interface{}, attributes interface{}) *UserServiceInterfaceMock_UpdateUserAttributes_Call {
@@ -933,7 +936,6 @@ func (_c *UserServiceInterfaceMock_UpdateUserAttributes_Call) RunAndReturn(run f
 }
 
 // UpdateUserCredentials provides a mock function for the type UserServiceInterfaceMock
-
 func (_mock *UserServiceInterfaceMock) UpdateUserCredentials(ctx context.Context, userID string, credentials json.RawMessage) *serviceerror.ServiceError {
 	ret := _mock.Called(ctx, userID, credentials)
 
@@ -958,6 +960,7 @@ type UserServiceInterfaceMock_UpdateUserCredentials_Call struct {
 }
 
 // UpdateUserCredentials is a helper method to define mock.On call
+//   - ctx context.Context
 //   - userID string
 //   - credentials json.RawMessage
 func (_e *UserServiceInterfaceMock_Expecter) UpdateUserCredentials(ctx interface{}, userID interface{}, credentials interface{}) *UserServiceInterfaceMock_UpdateUserCredentials_Call {
@@ -998,7 +1001,6 @@ func (_c *UserServiceInterfaceMock_UpdateUserCredentials_Call) RunAndReturn(run 
 }
 
 // ValidateUserIDs provides a mock function for the type UserServiceInterfaceMock
-
 func (_mock *UserServiceInterfaceMock) ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, userIDs)
 
@@ -1034,6 +1036,7 @@ type UserServiceInterfaceMock_ValidateUserIDs_Call struct {
 }
 
 // ValidateUserIDs is a helper method to define mock.On call
+//   - ctx context.Context
 //   - userIDs []string
 func (_e *UserServiceInterfaceMock_Expecter) ValidateUserIDs(ctx interface{}, userIDs interface{}) *UserServiceInterfaceMock_ValidateUserIDs_Call {
 	return &UserServiceInterfaceMock_ValidateUserIDs_Call{Call: _e.mock.On("ValidateUserIDs", ctx, userIDs)}
@@ -1068,7 +1071,6 @@ func (_c *UserServiceInterfaceMock_ValidateUserIDs_Call) RunAndReturn(run func(c
 }
 
 // VerifyUser provides a mock function for the type UserServiceInterfaceMock
-
 func (_mock *UserServiceInterfaceMock) VerifyUser(ctx context.Context, userID string, credentials map[string]interface{}) (*user.User, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, userID, credentials)
 
@@ -1104,6 +1106,7 @@ type UserServiceInterfaceMock_VerifyUser_Call struct {
 }
 
 // VerifyUser is a helper method to define mock.On call
+//   - ctx context.Context
 //   - userID string
 //   - credentials map[string]interface{}
 func (_e *UserServiceInterfaceMock_Expecter) VerifyUser(ctx interface{}, userID interface{}, credentials interface{}) *UserServiceInterfaceMock_VerifyUser_Call {
