@@ -130,7 +130,7 @@ export default function SDKCard({
             {icon}
           </Box>
           <Box sx={{flex: 1, minWidth: 0}}>
-            <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 0.5}}>
+            <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, justifyContent: 'space-between'}}>
               <Typography variant="h6" sx={{fontWeight: 600}}>
                 {title}
               </Typography>
