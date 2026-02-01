@@ -155,7 +155,12 @@ func (rs *roleService) CreateRole(
 		return nil, &ErrorRoleNameConflict
 	}
 
-	id := utils.GenerateUUID()
+	id, err := utils.GenerateUUIDv7()
+	if err != nil {
+		logger.Error("Failed to generate UUID", log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
+
 	if err := rs.roleStore.CreateRole(id, role); err != nil {
 		logger.Error("Failed to create role", log.Error(err))
 		return nil, &ErrorInternalServerError

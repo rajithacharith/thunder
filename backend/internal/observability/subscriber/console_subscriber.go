@@ -77,10 +77,17 @@ func (cs *ConsoleSubscriber) Initialize() error {
 		cs.categories = []event.EventCategory{event.CategoryAll}
 	}
 
-	cs.id = utils.GenerateUUID()
+	cs.logger = log.GetLogger().With(log.String(log.LoggerKeyComponentName, consoleSubscriberComponentName))
+
+	id, err := utils.GenerateUUIDv7()
+	if err != nil {
+		cs.logger.Error("failed to generate UUID for console subscriber", log.Error(err))
+		return err
+	}
+	cs.id = id
+
 	cs.formatter = fmtr
 	cs.adapter = adptr
-	cs.logger = log.GetLogger().With(log.String(log.LoggerKeyComponentName, consoleSubscriberComponentName))
 
 	cs.logger.Debug("Console subscriber initialized",
 		log.String("format", consoleConfig.Format),

@@ -85,7 +85,12 @@ func (s *notificationSenderMgtService) CreateSender(
 		return nil, &ErrorDuplicateSenderName
 	}
 
-	id := sysutils.GenerateUUID()
+	id, err := sysutils.GenerateUUIDv7()
+	if err != nil {
+		logger.Error("Failed to generate UUID", log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
+
 	sender.ID = id
 
 	// Create the sender

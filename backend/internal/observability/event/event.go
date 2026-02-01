@@ -72,9 +72,14 @@ const (
 // NewEvent creates a new Event with required fields.
 // Additional data should be added using WithData().
 func NewEvent(traceID string, eventType string, component string) *Event {
+	eventID, err := utils.GenerateUUIDv7()
+	if err != nil {
+		return &Event{}
+	}
+
 	return &Event{
 		TraceID:   traceID,
-		EventID:   utils.GenerateUUID(),
+		EventID:   eventID,
 		Type:      eventType,
 		Timestamp: time.Now(),
 		Component: component,

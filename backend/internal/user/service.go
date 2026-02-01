@@ -206,7 +206,12 @@ func (us *userService) CreateUser(ctx context.Context, user *User) (*User, *serv
 		return nil, svcErr
 	}
 
-	user.ID = utils.GenerateUUID()
+	var err error
+	user.ID, err = utils.GenerateUUIDv7()
+	if err != nil {
+		logger.Error("Failed to generate UUID", log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
 
 	credentials, err := us.extractCredentials(user)
 	if err != nil {

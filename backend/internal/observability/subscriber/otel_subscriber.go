@@ -106,7 +106,11 @@ func (o *OTelSubscriber) Initialize() error {
 
 	// Get tracer from the global provider
 	o.tracer = otel.Tracer("thunder-observability")
-	o.id = utils.GenerateUUID()
+	o.id, err = utils.GenerateUUIDv7()
+	if err != nil {
+		o.logger.Error("Failed to generate UUID", log.Error(err))
+		return fmt.Errorf("Failed to generate UUID: %w", err)
+	}
 
 	o.logger.Debug("OpenTelemetry subscriber initialized successfully",
 		log.String("exporterType", otelConfig.ExporterType),

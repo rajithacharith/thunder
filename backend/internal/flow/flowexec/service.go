@@ -188,7 +188,11 @@ func (s *flowExecService) initContext(appID string, flowType common.FlowType,
 	}
 
 	ctx := EngineContext{}
-	flowID := sysutils.GenerateUUID()
+	flowID, err := sysutils.GenerateUUIDv7()
+	if err != nil {
+		logger.Error("Failed to generate UUID", log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
 	ctx.FlowID = flowID
 
 	graph, svcErr := s.flowMgtService.GetGraph(graphID)
