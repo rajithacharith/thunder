@@ -123,7 +123,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success(
 			},
 		},
 		Application: appmodel.Application{
-			Token: &appmodel.TokenConfig{
+			Assertion: &appmodel.AssertionConfig{
 				UserAttributes: []string{"userType", "ouId"},
 			},
 		},
@@ -213,7 +213,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Token: &appmodel.TokenConfig{
+			Assertion: &appmodel.AssertionConfig{
 				UserAttributes: []string{"email", "phone"},
 			},
 		},
@@ -451,7 +451,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Token: &appmodel.TokenConfig{
+			Assertion: &appmodel.AssertionConfig{
 				UserAttributes: []string{"userType", "ouId"},
 			},
 		},
@@ -483,7 +483,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithCustomTokenConfig() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Token: &appmodel.TokenConfig{
+			Assertion: &appmodel.AssertionConfig{
 				Issuer:         "custom-issuer",
 				ValidityPeriod: 7200,
 			},
@@ -513,7 +513,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Token: &appmodel.TokenConfig{
+			Assertion: &appmodel.AssertionConfig{
 				UserAttributes: []string{"ouId", "ouName", "ouHandle"},
 			},
 		},
@@ -556,7 +556,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Token: &appmodel.TokenConfig{
+			Assertion: &appmodel.AssertionConfig{
 				UserAttributes: []string{"email"},
 			},
 		},
@@ -621,7 +621,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFai
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Token: &appmodel.TokenConfig{
+			Assertion: &appmodel.AssertionConfig{
 				UserAttributes: []string{oauth2const.ClaimOUID},
 			},
 		},
@@ -652,7 +652,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserA
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Token: &appmodel.TokenConfig{
+			Assertion: &appmodel.AssertionConfig{
 				UserAttributes: []string{"email", "phone"},
 			},
 		},
@@ -683,7 +683,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganiz
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Token: &appmodel.TokenConfig{
+			Assertion: &appmodel.AssertionConfig{
 				UserAttributes: []string{oauth2const.ClaimOUID},
 			},
 		},
@@ -718,7 +718,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
 			// Token config with user attributes configured
-			Token: &appmodel.TokenConfig{
+			Assertion: &appmodel.AssertionConfig{
 				UserAttributes: []string{"email", "username", "firstName"},
 			},
 		},
@@ -759,7 +759,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Token: &appmodel.TokenConfig{
+			Assertion: &appmodel.AssertionConfig{
 				UserAttributes: []string{oauth2const.UserAttributeGroups},
 			},
 		},
@@ -805,7 +805,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_EmptyGroups() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Token: &appmodel.TokenConfig{
+			Assertion: &appmodel.AssertionConfig{
 				UserAttributes: []string{oauth2const.UserAttributeGroups},
 			},
 		},
@@ -844,7 +844,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_GetUserGroupsFa
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Token: &appmodel.TokenConfig{
+			Assertion: &appmodel.AssertionConfig{
 				UserAttributes: []string{oauth2const.UserAttributeGroups},
 			},
 		},

@@ -236,9 +236,9 @@ func CreateApplication(app Application) (string, error) {
 		appData["allowed_user_types"] = app.AllowedUserTypes
 	}
 
-	// Add token if provided
-	if app.TokenConfig != nil {
-		appData["token"] = app.TokenConfig
+	// Add assertion config if provided
+	if app.AssertionConfig != nil {
+		appData["assertion"] = app.AssertionConfig
 	}
 
 	appJSON, err := json.Marshal(appData)

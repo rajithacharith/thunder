@@ -48,7 +48,7 @@ type Application struct {
 	URL                       string              `json:"url,omitempty"`
 	LogoURL                   string              `json:"logo_url,omitempty"`
 	Certificate               *ApplicationCert    `json:"certificate,omitempty"`
-	Token                     *TokenConfig        `json:"token,omitempty"`
+	Assertion                 *AssertionConfig    `json:"assertion,omitempty"`
 	TosURI                    string              `json:"tos_uri,omitempty"`
 	PolicyURI                 string              `json:"policy_uri,omitempty"`
 	Contacts                  []string            `json:"contacts,omitempty"`
@@ -83,14 +83,20 @@ type OAuthAppConfig struct {
 
 // OAuthTokenConfig represents the OAuth token configuration.
 type OAuthTokenConfig struct {
-	Issuer      string         `json:"issuer,omitempty"`
-	AccessToken *TokenConfig   `json:"access_token,omitempty"`
-	IDToken     *IDTokenConfig `json:"id_token,omitempty"`
+	Issuer      string             `json:"issuer,omitempty"`
+	AccessToken *AccessTokenConfig `json:"access_token,omitempty"`
+	IDToken     *IDTokenConfig     `json:"id_token,omitempty"`
 }
 
-// TokenConfig represents the token configuration.
-type TokenConfig struct {
+// AssertionConfig represents the assertion configuration (for application-level).
+type AssertionConfig struct {
 	Issuer         string   `json:"issuer,omitempty"`
+	ValidityPeriod int64    `json:"validity_period,omitempty"`
+	UserAttributes []string `json:"user_attributes,omitempty"`
+}
+
+// AccessTokenConfig represents the access token configuration.
+type AccessTokenConfig struct {
 	ValidityPeriod int64    `json:"validity_period,omitempty"`
 	UserAttributes []string `json:"user_attributes,omitempty"`
 }

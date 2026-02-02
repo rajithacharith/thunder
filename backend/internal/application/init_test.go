@@ -105,7 +105,7 @@ registration_flow_id: test-reg-flow
 is_registration_flow_enabled: true
 url: https://example.com
 logo_url: https://example.com/logo.png
-token:
+assertion:
   issuer: test-issuer
   validity_period: 3600
   user_attributes:
@@ -147,8 +147,8 @@ inbound_auth_config:
 	assert.Equal(suite.T(), "https://example.com/logo.png", appDTO.LogoURL)
 
 	// Verify token config
-	assert.NotNil(suite.T(), appDTO.Token)
-	assert.Equal(suite.T(), "test-issuer", appDTO.Token.Issuer)
+	assert.NotNil(suite.T(), appDTO.Assertion)
+	assert.Equal(suite.T(), "test-issuer", appDTO.Assertion.Issuer)
 	// Note: ValidityPeriod and UserAttributes might be 0/nil if not properly parsed
 	// This could be due to YAML structure differences
 
@@ -204,7 +204,7 @@ is_registration_flow_enabled: false
 	assert.Empty(suite.T(), appDTO.RegistrationFlowID)
 	assert.Empty(suite.T(), appDTO.URL)
 	assert.Empty(suite.T(), appDTO.LogoURL)
-	assert.Nil(suite.T(), appDTO.Token)
+	assert.Nil(suite.T(), appDTO.Assertion)
 	assert.Nil(suite.T(), appDTO.Certificate)
 	assert.Empty(suite.T(), appDTO.InboundAuthConfig)
 }

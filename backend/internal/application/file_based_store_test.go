@@ -63,7 +63,7 @@ func (suite *FileBasedStoreTestSuite) createTestApplication(id, name string) *mo
 		IsRegistrationFlowEnabled: true,
 		URL:                       "https://example.com",
 		LogoURL:                   "https://example.com/logo.png",
-		Token: &model.TokenConfig{
+		Assertion: &model.AssertionConfig{
 			Issuer:         "test-issuer",
 			ValidityPeriod: 3600,
 			UserAttributes: []string{"email", "name"},

@@ -67,7 +67,7 @@ func (suite *ApplicationStoreTestSuite) createTestApplication() model.Applicatio
 		TosURI:                    "https://example.com/tos",
 		PolicyURI:                 "https://example.com/policy",
 		Contacts:                  []string{"contact@example.com", "support@example.com"},
-		Token: &model.TokenConfig{
+		Assertion: &model.AssertionConfig{
 			Issuer:         "test-issuer",
 			ValidityPeriod: 3600,
 			UserAttributes: []string{"email", "name", "sub"},
@@ -138,15 +138,15 @@ func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_Success() {
 	suite.Len(contacts, 2)
 	suite.Equal("contact@example.com", contacts[0])
 
-	token, ok := result["token"].(map[string]interface{})
+	assertion, ok := result["assertion"].(map[string]interface{})
 	suite.True(ok)
-	suite.Equal("test-issuer", token["issuer"])
-	suite.Equal(float64(3600), token["validity_period"])
+	suite.Equal("test-issuer", assertion["issuer"])
+	suite.Equal(float64(3600), assertion["validity_period"])
 }
 
 func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_WithoutToken() {
 	app := suite.createTestApplication()
-	app.Token = nil
+	app.Assertion = nil
 
 	jsonBytes, err := getAppJSONDataBytes(&app)
 
@@ -156,13 +156,13 @@ func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_WithoutToken() {
 	var result map[string]interface{}
 	err = json.Unmarshal(jsonBytes, &result)
 	suite.NoError(err)
-	suite.Nil(result["token"])
+	suite.Nil(result["assertion"])
 	suite.Equal(app.URL, result["url"])
 }
 
 func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_WithEmptyToken() {
 	app := suite.createTestApplication()
-	app.Token = &model.TokenConfig{} // Empty token - should not be included
+	app.Assertion = &model.AssertionConfig{} // Empty token - should not be included
 
 	jsonBytes, err := getAppJSONDataBytes(&app)
 
@@ -172,12 +172,12 @@ func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_WithEmptyToken()
 	var result map[string]interface{}
 	err = json.Unmarshal(jsonBytes, &result)
 	suite.NoError(err)
-	suite.Nil(result["token"])
+	suite.Nil(result["assertion"])
 }
 
 func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_WithPartialToken() {
 	app := suite.createTestApplication()
-	app.Token = &model.TokenConfig{
+	app.Assertion = &model.AssertionConfig{
 		Issuer: "test-issuer",
 		// No validity period or user attributes
 	}
@@ -191,11 +191,11 @@ func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_WithPartialToken
 	err = json.Unmarshal(jsonBytes, &result)
 	suite.NoError(err)
 
-	token, ok := result["token"].(map[string]interface{})
+	assertion, ok := result["assertion"].(map[string]interface{})
 	suite.True(ok)
-	suite.Equal("test-issuer", token["issuer"])
-	suite.Nil(token["validity_period"])
-	suite.Nil(token["user_attributes"])
+	suite.Equal("test-issuer", assertion["issuer"])
+	suite.Nil(assertion["validity_period"])
+	suite.Nil(assertion["user_attributes"])
 }
 
 func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_EmptyContacts() {
@@ -593,7 +593,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_Succes
 		"tos_uri":    "https://example.com/tos",
 		"policy_uri": "https://example.com/policy",
 		"contacts":   []interface{}{"contact@example.com"},
-		"token": map[string]interface{}{
+		"assertion": map[string]interface{}{
 			"issuer":          "test-issuer",
 			"validity_period": float64(3600),
 			"user_attributes": []interface{}{"email", "name"},
@@ -635,9 +635,9 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_Succes
 	suite.Equal("https://example.com/tos", result.TosURI)
 	suite.Equal("https://example.com/policy", result.PolicyURI)
 	suite.Len(result.Contacts, 1)
-	suite.NotNil(result.Token)
-	suite.Equal("test-issuer", result.Token.Issuer)
-	suite.Equal(int64(3600), result.Token.ValidityPeriod)
+	suite.NotNil(result.Assertion)
+	suite.Equal("test-issuer", result.Assertion.Issuer)
+	suite.Equal(int64(3600), result.Assertion.ValidityPeriod)
 	suite.Len(result.InboundAuthConfig, 1)
 	suite.Equal("client_app1", result.InboundAuthConfig[0].OAuthAppConfig.ClientID)
 }
@@ -712,7 +712,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithNu
 	suite.Equal("", result.URL)
 	suite.Equal("", result.LogoURL)
 	suite.Equal("", result.Template) // Null app_json means no template
-	suite.Nil(result.Token)
+	suite.Nil(result.Assertion)
 }
 
 func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithByteAppJSON() {
@@ -1106,9 +1106,9 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithIn
 
 func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTokenInvalidType() {
 	appJSON := map[string]interface{}{
-		"url":      "https://example.com",
-		"logo_url": "https://example.com/logo.png",
-		"token":    "not a map", // Invalid type - should be map[string]interface{}
+		"url":       "https://example.com",
+		"logo_url":  "https://example.com/logo.png",
+		"assertion": "not a map", // Invalid type - should be map[string]interface{}
 	}
 	appJSONBytes, _ := json.Marshal(appJSON)
 
@@ -1126,7 +1126,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTo
 
 	// Token with invalid type should be ignored (not cause error)
 	suite.NoError(err)
-	suite.Nil(result.Token)
+	suite.Nil(result.Assertion)
 	suite.Equal("app1", result.ID)
 }
 
@@ -1134,7 +1134,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTo
 	appJSON := map[string]interface{}{
 		"url":      "https://example.com",
 		"logo_url": "https://example.com/logo.png",
-		"token": map[string]interface{}{
+		"assertion": map[string]interface{}{
 			"issuer":          "test-issuer",
 			"validity_period": "not a number", // Invalid type
 			"user_attributes": []interface{}{"email"},
@@ -1156,16 +1156,16 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTo
 
 	// Invalid validity_period type should be ignored (not cause error)
 	suite.NoError(err)
-	suite.NotNil(result.Token)
-	suite.Equal("test-issuer", result.Token.Issuer)
-	suite.Equal(int64(0), result.Token.ValidityPeriod) // Should be 0 when parsing fails
+	suite.NotNil(result.Assertion)
+	suite.Equal("test-issuer", result.Assertion.Issuer)
+	suite.Equal(int64(0), result.Assertion.ValidityPeriod) // Should be 0 when parsing fails
 }
 
 func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTokenInvalidUserAttributesType() {
 	appJSON := map[string]interface{}{
 		"url":      "https://example.com",
 		"logo_url": "https://example.com/logo.png",
-		"token": map[string]interface{}{
+		"assertion": map[string]interface{}{
 			"issuer":          "test-issuer",
 			"validity_period": float64(3600),
 			"user_attributes": "not an array", // Invalid type
@@ -1187,16 +1187,16 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTo
 
 	// Invalid user_attributes type should be ignored (not cause error)
 	suite.NoError(err)
-	suite.NotNil(result.Token)
-	suite.Equal("test-issuer", result.Token.Issuer)
-	suite.Len(result.Token.UserAttributes, 0) // Should be empty when parsing fails
+	suite.NotNil(result.Assertion)
+	suite.Equal("test-issuer", result.Assertion.Issuer)
+	suite.Len(result.Assertion.UserAttributes, 0) // Should be empty when parsing fails
 }
 
 func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTokenUserAttributesNonStringElement() {
 	appJSON := map[string]interface{}{
 		"url":      "https://example.com",
 		"logo_url": "https://example.com/logo.png",
-		"token": map[string]interface{}{
+		"assertion": map[string]interface{}{
 			"issuer":          "test-issuer",
 			"validity_period": float64(3600),
 			"user_attributes": []interface{}{"email", 123, "name"}, // Mixed types
@@ -1218,10 +1218,10 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTo
 
 	// Non-string elements should be skipped
 	suite.NoError(err)
-	suite.NotNil(result.Token)
-	suite.Len(result.Token.UserAttributes, 2) // Only "email" and "name", 123 is skipped
-	suite.Equal("email", result.Token.UserAttributes[0])
-	suite.Equal("name", result.Token.UserAttributes[1])
+	suite.NotNil(result.Assertion)
+	suite.Len(result.Assertion.UserAttributes, 2) // Only "email" and "name", 123 is skipped
+	suite.Equal("email", result.Assertion.UserAttributes[0])
+	suite.Equal("name", result.Assertion.UserAttributes[1])
 }
 
 func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithContactsNonStringElement() {

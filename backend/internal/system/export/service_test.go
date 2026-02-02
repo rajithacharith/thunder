@@ -239,7 +239,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_CompleteOAuthApplicatio
 				OAuthAppConfig: mockOAuthConfig,
 			},
 		},
-		Token: &appmodel.TokenConfig{
+		Assertion: &appmodel.AssertionConfig{
 			UserAttributes: []string{"email", "username"},
 		},
 	}

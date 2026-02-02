@@ -121,9 +121,9 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 	iss := ""
 	validityPeriod := int64(0)
 
-	if ctx.Application.Token != nil {
-		iss = ctx.Application.Token.Issuer
-		validityPeriod = ctx.Application.Token.ValidityPeriod
+	if ctx.Application.Assertion != nil {
+		iss = ctx.Application.Assertion.Issuer
+		validityPeriod = ctx.Application.Assertion.ValidityPeriod
 	}
 	if iss == "" {
 		iss = jwtConfig.Issuer
@@ -157,10 +157,10 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 		jwtClaims["authorized_permissions"] = permissions
 	}
 
-	// Get user attributes from application token config
+	// Get user attributes from application assertion config
 	var userAttributes []string
-	if ctx.Application.Token != nil {
-		userAttributes = ctx.Application.Token.UserAttributes
+	if ctx.Application.Assertion != nil {
+		userAttributes = ctx.Application.Assertion.UserAttributes
 	}
 
 	if err := a.appendUserDetailsToClaims(ctx, jwtClaims, userAttributes); err != nil {

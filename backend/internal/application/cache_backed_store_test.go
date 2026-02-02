@@ -150,7 +150,7 @@ func (suite *CacheBackedStoreTestSuite) createTestApp() *model.ApplicationProces
 		IsRegistrationFlowEnabled: true,
 		URL:                       "https://example.com",
 		LogoURL:                   "https://example.com/logo.png",
-		Token: &model.TokenConfig{
+		Assertion: &model.AssertionConfig{
 			Issuer:         "https://issuer.com",
 			ValidityPeriod: 3600,
 			UserAttributes: []string{"email", "name"},
