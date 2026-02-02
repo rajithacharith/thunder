@@ -25,11 +25,11 @@ import (
 	"github.com/asgardeo/thunder/internal/cert"
 )
 
-// TokenConfig represents the token configuration structure for application-level (root) token configs.
-type TokenConfig struct {
-	Issuer         string   `json:"issuer,omitempty" yaml:"issuer,omitempty" jsonschema:"Token issuer. The entity that issues the token (typically authorization server URL)."`
-	ValidityPeriod int64    `json:"validity_period,omitempty" yaml:"validity_period,omitempty" jsonschema:"Token validity period in seconds."`
-	UserAttributes []string `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in the token. List of user claim names to embed in the token (e.g., email, username, roles)."`
+// AssertionConfig represents the assertion configuration structure for application-level (root) assertion configs.
+type AssertionConfig struct {
+	Issuer         string   `json:"issuer,omitempty" yaml:"issuer,omitempty" jsonschema:"Assertion issuer. The entity that issues the assertion (typically authorization server URL)."`
+	ValidityPeriod int64    `json:"validity_period,omitempty" yaml:"validity_period,omitempty" jsonschema:"Assertion validity period in seconds."`
+	UserAttributes []string `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in the assertion. List of user claim names to embed in the assertion (e.g., email, username, roles)."`
 }
 
 // AccessTokenConfig represents the access token configuration structure.
@@ -70,7 +70,7 @@ type ApplicationDTO struct {
 	PolicyURI string   `json:"policy_uri,omitempty" jsonschema:"Privacy Policy URI. Optional. Link to your application's privacy policy."`
 	Contacts  []string `json:"contacts,omitempty" jsonschema:"Contact email addresses. Optional. Administrative contact emails for this application."`
 
-	Token             *TokenConfig            `json:"token,omitempty" jsonschema:"Token configuration. Optional. Customize token validity periods and included user attributes."`
+	Assertion         *AssertionConfig        `json:"assertion,omitempty" jsonschema:"Assertion configuration. Optional. Customize assertion validity periods and included user attributes."`
 	Certificate       *ApplicationCertificate `json:"certificate,omitempty" jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
 	InboundAuthConfig []InboundAuthConfigDTO  `json:"inbound_auth_config,omitempty" jsonschema:"OAuth/OIDC authentication configuration. Required for OAuth-enabled applications. Configure OAuth grant types, redirect URIs, and client authentication methods."`
 	AllowedUserTypes  []string                `json:"allowed_user_types,omitempty" jsonschema:"Allowed user types. Optional. Restricts which types of users can register to this application."`
@@ -107,7 +107,7 @@ type Application struct {
 	PolicyURI string   `yaml:"policy_uri,omitempty" json:"policy_uri,omitempty" jsonschema:"Privacy Policy URI."`
 	Contacts  []string `yaml:"contacts,omitempty" json:"contacts,omitempty"`
 
-	Token             *TokenConfig                `yaml:"token,omitempty" json:"token,omitempty" jsonschema:"Token configuration settings."`
+	Assertion         *AssertionConfig            `yaml:"assertion,omitempty" json:"assertion,omitempty" jsonschema:"Assertion configuration settings."`
 	Certificate       *ApplicationCertificate     `yaml:"certificate,omitempty" json:"certificate,omitempty" jsonschema:"Application certificate settings."`
 	InboundAuthConfig []InboundAuthConfigComplete `yaml:"inbound_auth_config,omitempty" json:"inbound_auth_config,omitempty" jsonschema:"Inbound authentication configuration (OAuth2/OIDC settings)."`
 	AllowedUserTypes  []string                    `yaml:"allowed_user_types,omitempty" json:"allowed_user_types,omitempty" jsonschema:"Allowed user types for registration."`
@@ -130,7 +130,7 @@ type ApplicationProcessedDTO struct {
 	PolicyURI string `yaml:"policy_uri,omitempty"`
 	Contacts  []string
 
-	Token             *TokenConfig                    `yaml:"token,omitempty"`
+	Assertion         *AssertionConfig                `yaml:"assertion,omitempty"`
 	Certificate       *ApplicationCertificate         `yaml:"certificate,omitempty"`
 	InboundAuthConfig []InboundAuthConfigProcessedDTO `yaml:"inbound_auth_config,omitempty"`
 	AllowedUserTypes  []string                        `yaml:"allowed_user_types,omitempty"`
@@ -169,7 +169,7 @@ type ApplicationRequest struct {
 	Template                  string                      `json:"template,omitempty" yaml:"template,omitempty"`
 	URL                       string                      `json:"url,omitempty" yaml:"url,omitempty"`
 	LogoURL                   string                      `json:"logo_url,omitempty" yaml:"logo_url,omitempty"`
-	Token                     *TokenConfig                `json:"token,omitempty" yaml:"token,omitempty"`
+	Assertion                 *AssertionConfig            `json:"assertion,omitempty" yaml:"assertion,omitempty"`
 	Certificate               *ApplicationCertificate     `json:"certificate,omitempty" yaml:"certificate,omitempty"`
 	TosURI                    string                      `json:"tos_uri,omitempty" yaml:"tos_uri,omitempty"`
 	PolicyURI                 string                      `json:"policy_uri,omitempty" yaml:"policy_uri,omitempty"`
@@ -192,7 +192,7 @@ type ApplicationRequestWithID struct {
 	Template                  string                      `json:"template,omitempty" yaml:"template,omitempty"`
 	URL                       string                      `json:"url,omitempty" yaml:"url,omitempty"`
 	LogoURL                   string                      `json:"logo_url,omitempty" yaml:"logo_url,omitempty"`
-	Token                     *TokenConfig                `json:"token,omitempty" yaml:"token,omitempty"`
+	Assertion                 *AssertionConfig            `json:"assertion,omitempty" yaml:"assertion,omitempty"`
 	Certificate               *ApplicationCertificate     `json:"certificate,omitempty" yaml:"certificate,omitempty"`
 	TosURI                    string                      `json:"tos_uri,omitempty" yaml:"tos_uri,omitempty"`
 	PolicyURI                 string                      `json:"policy_uri,omitempty" yaml:"policy_uri,omitempty"`
@@ -214,7 +214,7 @@ type ApplicationCompleteResponse struct {
 	Template                  string                      `json:"template,omitempty"`
 	URL                       string                      `json:"url,omitempty"`
 	LogoURL                   string                      `json:"logo_url,omitempty"`
-	Token                     *TokenConfig                `json:"token,omitempty"`
+	Assertion                 *AssertionConfig            `json:"assertion,omitempty"`
 	Certificate               *ApplicationCertificate     `json:"certificate,omitempty"`
 	TosURI                    string                      `json:"tos_uri,omitempty"`
 	PolicyURI                 string                      `json:"policy_uri,omitempty"`
@@ -236,7 +236,7 @@ type ApplicationGetResponse struct {
 	Template                  string                  `json:"template,omitempty"`
 	URL                       string                  `json:"url,omitempty"`
 	LogoURL                   string                  `json:"logo_url,omitempty"`
-	Token                     *TokenConfig            `json:"token,omitempty"`
+	Assertion                 *AssertionConfig        `json:"assertion,omitempty"`
 	Certificate               *ApplicationCertificate `json:"certificate,omitempty"`
 	TosURI                    string                  `json:"tos_uri,omitempty"`
 	PolicyURI                 string                  `json:"policy_uri,omitempty"`

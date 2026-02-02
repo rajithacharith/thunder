@@ -402,20 +402,20 @@ func getAppJSONDataBytes(app *model.ApplicationProcessedDTO) ([]byte, error) {
 		jsonData["allowed_user_types"] = app.AllowedUserTypes
 	}
 
-	// Include token config if present
-	if app.Token != nil {
-		tokenData := map[string]interface{}{}
-		if app.Token.Issuer != "" {
-			tokenData["issuer"] = app.Token.Issuer
+	// Include assertion config if present
+	if app.Assertion != nil {
+		assertionData := map[string]interface{}{}
+		if app.Assertion.Issuer != "" {
+			assertionData["issuer"] = app.Assertion.Issuer
 		}
-		if app.Token.ValidityPeriod != 0 {
-			tokenData["validity_period"] = app.Token.ValidityPeriod
+		if app.Assertion.ValidityPeriod != 0 {
+			assertionData["validity_period"] = app.Assertion.ValidityPeriod
 		}
-		if len(app.Token.UserAttributes) > 0 {
-			tokenData["user_attributes"] = app.Token.UserAttributes
+		if len(app.Assertion.UserAttributes) > 0 {
+			assertionData["user_attributes"] = app.Assertion.UserAttributes
 		}
-		if len(tokenData) > 0 {
-			jsonData["token"] = tokenData
+		if len(assertionData) > 0 {
+			jsonData["assertion"] = assertionData
 		}
 	}
 
@@ -630,25 +630,25 @@ func extractStringArrayFromJSON(data map[string]interface{}, key string) ([]stri
 	return nil, fmt.Errorf("failed to parse %s from app JSON", key)
 }
 
-// extractTokenConfigFromJSON extracts token configuration from JSON data.
-func extractTokenConfigFromJSON(data map[string]interface{}) *model.TokenConfig {
-	tokenData, exists := data["token"]
-	if !exists || tokenData == nil {
+// extractAssertionConfigFromJSON extracts assertion configuration from JSON data.
+func extractAssertionConfigFromJSON(data map[string]interface{}) *model.AssertionConfig {
+	assertionData, exists := data["assertion"]
+	if !exists || assertionData == nil {
 		return nil
 	}
-	tokenMap, ok := tokenData.(map[string]interface{})
+	assertionMap, ok := assertionData.(map[string]interface{})
 	if !ok {
 		return nil
 	}
 
-	config := &model.TokenConfig{}
-	if issuer, ok := tokenMap["issuer"].(string); ok {
+	config := &model.AssertionConfig{}
+	if issuer, ok := assertionMap["issuer"].(string); ok {
 		config.Issuer = issuer
 	}
-	if validityPeriod, ok := tokenMap["validity_period"].(float64); ok {
+	if validityPeriod, ok := assertionMap["validity_period"].(float64); ok {
 		config.ValidityPeriod = int64(validityPeriod)
 	}
-	if userAttrs, ok := tokenMap["user_attributes"].([]interface{}); ok {
+	if userAttrs, ok := assertionMap["user_attributes"].([]interface{}); ok {
 		for _, attr := range userAttrs {
 			if attrStr, ok := attr.(string); ok {
 				config.UserAttributes = append(config.UserAttributes, attrStr)
@@ -714,7 +714,7 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 		return model.ApplicationProcessedDTO{}, err
 	}
 
-	rootTokenConfig := extractTokenConfigFromJSON(appJSONData)
+	assertionConfig := extractAssertionConfigFromJSON(appJSONData)
 
 	// Extract template from app JSON if present
 	template, err := extractStringFromJSON(appJSONData, "template")
@@ -733,7 +733,7 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 		Template:                  template,
 		URL:                       url,
 		LogoURL:                   logoURL,
-		Token:                     rootTokenConfig,
+		Assertion:                 assertionConfig,
 		TosURI:                    tosURI,
 		PolicyURI:                 policyURI,
 		Contacts:                  contacts,

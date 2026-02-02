@@ -33,7 +33,7 @@ type Application struct {
 	URL                       string              `json:"url,omitempty"`
 	LogoURL                   string              `json:"logo_url,omitempty"`
 	Certificate               *ApplicationCert    `json:"certificate,omitempty"`
-	Token                     *TokenConfig        `json:"token,omitempty"`
+	Assertion                 *AssertionConfig    `json:"assertion,omitempty"`
 	TosURI                    string              `json:"tos_uri,omitempty"`
 	PolicyURI                 string              `json:"policy_uri,omitempty"`
 	Contacts                  []string            `json:"contacts,omitempty"`
@@ -74,8 +74,8 @@ type OAuthTokenConfig struct {
 	IDToken     *IDTokenConfig     `json:"id_token,omitempty"`
 }
 
-// TokenConfig represents the token configuration (used for application-level token config).
-type TokenConfig struct {
+// AssertionConfig represents the assertion configuration (used for application-level assertion config).
+type AssertionConfig struct {
 	Issuer         string   `json:"issuer,omitempty"`
 	ValidityPeriod int64    `json:"validity_period,omitempty"`
 	UserAttributes []string `json:"user_attributes,omitempty"`
@@ -165,17 +165,17 @@ func (app *Application) equals(expectedApp Application) bool {
 		return false
 	}
 
-	// Token config
-	if (app.Token != nil) && (expectedApp.Token != nil) {
-		if app.Token.Issuer != expectedApp.Token.Issuer ||
-			app.Token.ValidityPeriod != expectedApp.Token.ValidityPeriod {
+	// Assertion config
+	if (app.Assertion != nil) && (expectedApp.Assertion != nil) {
+		if app.Assertion.Issuer != expectedApp.Assertion.Issuer ||
+			app.Assertion.ValidityPeriod != expectedApp.Assertion.ValidityPeriod {
 			return false
 		}
-		if !compareStringSlices(app.Token.UserAttributes, expectedApp.Token.UserAttributes) {
+		if !compareStringSlices(app.Assertion.UserAttributes, expectedApp.Assertion.UserAttributes) {
 			return false
 		}
-	} else if (app.Token == nil && expectedApp.Token != nil) ||
-		(app.Token != nil && expectedApp.Token == nil) {
+	} else if (app.Assertion == nil && expectedApp.Assertion != nil) ||
+		(app.Assertion != nil && expectedApp.Assertion == nil) {
 		return false
 	}
 

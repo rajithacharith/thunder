@@ -164,7 +164,7 @@ func parseToApplicationDTO(data []byte) (*model.ApplicationDTO, error) {
 		IsRegistrationFlowEnabled: appRequest.IsRegistrationFlowEnabled,
 		URL:                       appRequest.URL,
 		LogoURL:                   appRequest.LogoURL,
-		Token:                     appRequest.Token,
+		Assertion:                 appRequest.Assertion,
 		Certificate:               appRequest.Certificate,
 		AllowedUserTypes:          appRequest.AllowedUserTypes,
 	}

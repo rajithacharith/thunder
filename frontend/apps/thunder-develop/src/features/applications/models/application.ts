@@ -17,7 +17,7 @@
  */
 
 import type {InboundAuthConfig} from './inbound-auth';
-import type {TokenConfig} from './token';
+import type {AssertionConfig} from './token';
 
 /**
  * Application Response Model (Basic)
@@ -253,8 +253,8 @@ export interface Application {
   [key: string]: unknown;
 
   /**
-   * Token configuration
-   * Defines how access tokens and ID tokens are generated.
+   * Assertion configuration
+   * Defines how assertions are generated for this application.
    */
-  token?: TokenConfig;
+  assertion?: AssertionConfig;
 }

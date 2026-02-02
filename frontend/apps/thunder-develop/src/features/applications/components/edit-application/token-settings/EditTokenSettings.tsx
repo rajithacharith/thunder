@@ -167,10 +167,10 @@ export default function EditTokenSettings({
     resolver: zodResolver(tokenConfigSchema),
     mode: 'onChange',
     defaultValues: {
-      validityPeriod: oauth2Config?.token?.validity_period ?? application.token?.validity_period ?? 3600,
+      validityPeriod: oauth2Config?.token?.validity_period ?? application.assertion?.validity_period ?? 3600,
       accessTokenValidity: oauth2Config?.token?.access_token?.validity_period ?? 3600,
       idTokenValidity: oauth2Config?.token?.id_token?.validity_period ?? 3600,
-      issuer: oauth2Config?.token?.issuer ?? application.token?.issuer ?? '',
+      issuer: oauth2Config?.token?.issuer ?? application.assertion?.issuer ?? '',
     },
   });
 
@@ -187,10 +187,10 @@ export default function EditTokenSettings({
       setValue('accessTokenValidity', oauth2Config?.token?.access_token?.validity_period ?? 3600);
       setValue('idTokenValidity', oauth2Config?.token?.id_token?.validity_period ?? 3600);
     } else {
-      setValue('validityPeriod', oauth2Config?.token?.validity_period ?? application.token?.validity_period ?? 3600);
+      setValue('validityPeriod', oauth2Config?.token?.validity_period ?? application.assertion?.validity_period ?? 3600);
     }
-    setValue('issuer', oauth2Config?.token?.issuer ?? application.token?.issuer ?? '');
-  }, [isOAuthMode, oauth2Config, application.token?.validity_period, application.token?.issuer, setValue]);
+    setValue('issuer', oauth2Config?.token?.issuer ?? application.assertion?.issuer ?? '');
+  }, [isOAuthMode, oauth2Config, application.assertion?.validity_period, application.assertion?.issuer, setValue]);
 
   /**
    * Effect to sync form changes back to the parent component.
@@ -224,14 +224,14 @@ export default function EditTokenSettings({
 
       onFieldChange('inbound_auth_config', updatedInboundAuth);
     } else if (!isOAuthMode) {
-      // Native mode: update root-level token config
-      const updatedToken = {
-        ...application.token,
+      // Native mode: update root-level assertion config
+      const updatedAssertion = {
+        ...application.assertion,
         validity_period: validityPeriod,
         issuer,
       };
 
-      onFieldChange('token', updatedToken);
+      onFieldChange('assertion', updatedAssertion);
     }
   }, [
     validityPeriod,
@@ -241,7 +241,7 @@ export default function EditTokenSettings({
     isOAuthMode,
     oauth2Config,
     application.inbound_auth_config,
-    application.token,
+    application.assertion,
     onFieldChange,
   ]);
 
@@ -324,7 +324,7 @@ export default function EditTokenSettings({
       return [];
     }
 
-    return oauth2Config?.token?.user_attributes ?? application.token?.user_attributes ?? [];
+    return oauth2Config?.token?.user_attributes ?? application.assertion?.user_attributes ?? [];
   }, [isOAuthMode, oauth2Config, application]);
 
   const currentAccessTokenAttributes = useMemo(
@@ -401,16 +401,16 @@ export default function EditTokenSettings({
             onFieldChange('inbound_auth_config', updatedInboundAuth);
           }
         } else {
-          // Native mode: update root-level token attributes
+          // Native mode: update root-level assertion attributes
           const newAttributes = [
             ...sharedUserAttributes,
             ...additionsArray.filter((attr) => !sharedUserAttributes.includes(attr)),
           ];
-          const updatedToken = {
-            ...application.token,
+          const updatedAssertion = {
+            ...application.assertion,
             user_attributes: newAttributes,
           };
-          onFieldChange('token', updatedToken);
+          onFieldChange('assertion', updatedAssertion);
         }
       }
 
@@ -460,13 +460,13 @@ export default function EditTokenSettings({
             onFieldChange('inbound_auth_config', updatedInboundAuth);
           }
         } else {
-          // Native mode: update root-level token attributes
+          // Native mode: update root-level assertion attributes
           const newAttributes = sharedUserAttributes.filter((attr) => !removalsArray.includes(attr));
-          const updatedToken = {
-            ...application.token,
+          const updatedAssertion = {
+            ...application.assertion,
             user_attributes: newAttributes,
           };
-          onFieldChange('token', updatedToken);
+          onFieldChange('assertion', updatedAssertion);
         }
       }
 
@@ -490,7 +490,7 @@ export default function EditTokenSettings({
     currentIdTokenAttributes,
     sharedUserAttributes,
     application.inbound_auth_config,
-    application.token,
+    application.assertion,
     onFieldChange,
   ]);
 

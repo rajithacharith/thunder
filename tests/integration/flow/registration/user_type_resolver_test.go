@@ -100,7 +100,7 @@ func (ts *UserTypeResolverRuntimeTestSuite) SetupSuite() {
 		ClientSecret:              "runtime_meta_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{ts.testUserTypeName1, ts.testUserTypeName2},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}

@@ -221,7 +221,7 @@ read -r -d '' REACT_SDK_APP_PAYLOAD <<JSON || true
   "policy_uri": "https://localhost:3000/privacy",
   "contacts": ["admin@example.com"],
   "is_registration_flow_enabled": true,
-  "token": {
+  "assertion": {
     "issuer": "thunder",
     "validity_period": 3600,
     "user_attributes": null

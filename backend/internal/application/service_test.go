@@ -114,7 +114,7 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse_WithEmptyTempla
 	assert.Equal(suite.T(), "", result.Template)
 }
 
-func (suite *ServiceTestSuite) TestGetDefaultTokenConfigFromDeployment() {
+func (suite *ServiceTestSuite) TestGetDefaultAssertionConfigFromDeployment() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
 			Issuer:         "https://test-issuer.com",
@@ -126,7 +126,7 @@ func (suite *ServiceTestSuite) TestGetDefaultTokenConfigFromDeployment() {
 	require.NoError(suite.T(), err)
 	defer config.ResetThunderRuntime()
 
-	result := getDefaultTokenConfigFromDeployment()
+	result := getDefaultAssertionConfigFromDeployment()
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "https://test-issuer.com", result.Issuer)
@@ -169,7 +169,7 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 			name: "Custom root token config",
 			app: &model.ApplicationDTO{
 				Name: "Test App",
-				Token: &model.TokenConfig{
+				Assertion: &model.AssertionConfig{
 					Issuer:         "https://custom-issuer.com",
 					ValidityPeriod: 7200,
 					UserAttributes: []string{"email", "name"},
@@ -185,7 +185,7 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 			name: "Partial root token config",
 			app: &model.ApplicationDTO{
 				Name: "Test App",
-				Token: &model.TokenConfig{
+				Assertion: &model.AssertionConfig{
 					ValidityPeriod: 5000,
 				},
 			},
@@ -271,11 +271,11 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			rootToken, accessToken, idToken, tokenIssuer := processTokenConfiguration(tt.app)
+			rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(tt.app)
 
-			assert.Equal(suite.T(), tt.expectedRootIssuer, rootToken.Issuer)
-			assert.Equal(suite.T(), tt.expectedRootValidity, rootToken.ValidityPeriod)
-			assert.NotNil(suite.T(), rootToken.UserAttributes)
+			assert.Equal(suite.T(), tt.expectedRootIssuer, rootAssertion.Issuer)
+			assert.Equal(suite.T(), tt.expectedRootValidity, rootAssertion.ValidityPeriod)
+			assert.NotNil(suite.T(), rootAssertion.UserAttributes)
 
 			assert.Equal(suite.T(), tt.expectedAccessValidity, accessToken.ValidityPeriod)
 			assert.NotNil(suite.T(), accessToken.UserAttributes)
@@ -1561,9 +1561,9 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDToken() 
 		},
 	}
 
-	rootToken, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
 
-	assert.NotNil(suite.T(), rootToken)
+	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
 	assert.Equal(suite.T(), int64(1200), idToken.ValidityPeriod)
@@ -1986,21 +1986,21 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithRootToken() {
 
 	app := &model.ApplicationDTO{
 		Name: "Test App",
-		Token: &model.TokenConfig{
+		Assertion: &model.AssertionConfig{
 			Issuer:         "https://custom-issuer.com",
 			ValidityPeriod: 1800,
 			UserAttributes: []string{"email", "name"},
 		},
 	}
 
-	rootToken, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
 
-	assert.NotNil(suite.T(), rootToken)
+	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
-	assert.Equal(suite.T(), "https://custom-issuer.com", rootToken.Issuer)
-	assert.Equal(suite.T(), int64(1800), rootToken.ValidityPeriod)
-	assert.Equal(suite.T(), []string{"email", "name"}, rootToken.UserAttributes)
+	assert.Equal(suite.T(), "https://custom-issuer.com", rootAssertion.Issuer)
+	assert.Equal(suite.T(), int64(1800), rootAssertion.ValidityPeriod)
+	assert.Equal(suite.T(), []string{"email", "name"}, rootAssertion.UserAttributes)
 	assert.Equal(suite.T(), "https://custom-issuer.com", tokenIssuer)
 }
 
@@ -2018,19 +2018,19 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithRootTokenDefaul
 
 	app := &model.ApplicationDTO{
 		Name: "Test App",
-		Token: &model.TokenConfig{
+		Assertion: &model.AssertionConfig{
 			Issuer:         "",
 			ValidityPeriod: 0,
 		},
 	}
 
-	rootToken, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
 
-	assert.NotNil(suite.T(), rootToken)
+	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
-	assert.Equal(suite.T(), "https://default-issuer.com", rootToken.Issuer)
-	assert.Equal(suite.T(), int64(3600), rootToken.ValidityPeriod)
+	assert.Equal(suite.T(), "https://default-issuer.com", rootAssertion.Issuer)
+	assert.Equal(suite.T(), int64(3600), rootAssertion.ValidityPeriod)
 	assert.Equal(suite.T(), "https://default-issuer.com", tokenIssuer)
 }
 
@@ -2063,9 +2063,9 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthAccessToke
 		},
 	}
 
-	rootToken, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
 
-	assert.NotNil(suite.T(), rootToken)
+	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
 	assert.Equal(suite.T(), int64(2400), accessToken.ValidityPeriod)
@@ -2102,9 +2102,9 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthAccessToke
 		},
 	}
 
-	rootToken, accessToken, idToken, _ := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken, _ := processTokenConfiguration(app)
 
-	assert.NotNil(suite.T(), rootToken)
+	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
 	assert.Equal(suite.T(), int64(3600), accessToken.ValidityPeriod)
@@ -2142,9 +2142,9 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDTokenDef
 		},
 	}
 
-	rootToken, accessToken, idToken, _ := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken, _ := processTokenConfiguration(app)
 
-	assert.NotNil(suite.T(), rootToken)
+	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
 	assert.Equal(suite.T(), int64(3600), idToken.ValidityPeriod)
@@ -2179,9 +2179,9 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthTokenIssue
 		},
 	}
 
-	rootToken, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
 
-	assert.NotNil(suite.T(), rootToken)
+	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
 	assert.Equal(suite.T(), "https://oauth-issuer.com", tokenIssuer)
@@ -2201,7 +2201,7 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenNilU
 
 	app := &model.ApplicationDTO{
 		Name: "Test App",
-		Token: &model.TokenConfig{
+		Assertion: &model.AssertionConfig{
 			Issuer:         "https://root-issuer.com",
 			ValidityPeriod: 1800,
 			UserAttributes: []string{"email", "name"},
@@ -2221,9 +2221,9 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenNilU
 		},
 	}
 
-	rootToken, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
 
-	assert.NotNil(suite.T(), rootToken)
+	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
 	// nil UserAttributes should be initialized to empty slice
@@ -2262,9 +2262,9 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenEmpt
 		},
 	}
 
-	rootToken, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
 
-	assert.NotNil(suite.T(), rootToken)
+	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
 	assert.NotNil(suite.T(), accessToken.UserAttributes)
