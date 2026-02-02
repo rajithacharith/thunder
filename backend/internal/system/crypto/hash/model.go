@@ -41,3 +41,15 @@ type Credential struct {
 	Hash       string
 	Parameters CredParameters
 }
+
+// HashAlgorithm represents the supported generic hash algorithms
+type HashAlgorithm string
+
+const (
+	// GenericSHA256 represents SHA-256 hash algorithm
+	GenericSHA256 HashAlgorithm = "SHA-256"
+	// GenericSHA384 represents SHA-384 hash algorithm
+	GenericSHA384 HashAlgorithm = "SHA-384"
+	// GenericSHA512 represents SHA-512 hash algorithm
+	GenericSHA512 HashAlgorithm = "SHA-512"
+)
