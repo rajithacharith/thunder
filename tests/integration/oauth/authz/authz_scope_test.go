@@ -544,3 +544,131 @@ func (ts *OAuthAuthzScopeTestSuite) createTestAuthenticationFlow() string {
 
 	return flowID
 }
+
+// TestOAuthAuthzFlow_WithRequiredAttributes tests that required_attributes from scopes and access token config
+// are correctly filtered in the auth assertion
+func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithRequiredAttributes() {
+	// Create OAuth app with IDToken and AccessToken configs
+	appConfig := map[string]interface{}{
+		"name":                       "RequiredAttributesTestApp",
+		"client_id":                  "required_attrs_test_client",
+		"redirect_uris":              []string{scopeTestRedirectURI},
+		"grant_types":                []string{"authorization_code", "refresh_token"},
+		"response_types":             []string{"code"},
+		"token_endpoint_auth_method": "client_secret_basic",
+		"auth_flow_id":               ts.flowID,
+		"inbound_auth_config": []map[string]interface{}{
+			{
+				"type": "oauth2",
+				"config": map[string]interface{}{
+					"client_id":                  "required_attrs_test_client",
+					"client_secret":              "required_attrs_test_secret",
+					"redirect_uris":              []string{scopeTestRedirectURI},
+					"grant_types":                []string{"authorization_code", "refresh_token"},
+					"response_types":             []string{"code"},
+					"token_endpoint_auth_method": "client_secret_basic",
+					"token": map[string]interface{}{
+						"id_token": map[string]interface{}{
+							"user_attributes": []string{"sub", "name", "email"}, // Only allow these in ID token
+							"scope_claims": map[string]interface{}{
+								"profile": []string{"name"}, // Custom mapping
+							},
+						},
+						"access_token": map[string]interface{}{
+							"user_attributes": []string{"groups", "roles"}, // Access token attributes
+						},
+					},
+				},
+			},
+		},
+	}
+
+	appID, err := ts.createApplicationRaw(appConfig)
+	ts.Require().NoError(err, "Failed to create OAuth application")
+	defer func() {
+		_ = testutils.DeleteApplication(appID)
+	}()
+
+	// Create a user with attributes
+	userAttributesJSON := `{
+		"username": "requiredattrsuser",
+		"password": "TestPassword123!",
+		"email": "requiredattrs@test.com",
+		"firstName": "Required",
+		"lastName": "Attrs",
+		"name": "Required Attrs",
+		"groups": ["admin", "user"],
+		"roles": ["developer"],
+		"phone": "+1234567890",
+		"customAttr": "customValue"
+	}`
+
+	user := testutils.User{
+		OrganizationUnit: scopeTestOUID,
+		Type:             "authz-test-person",
+		Attributes:       json.RawMessage(userAttributesJSON),
+	}
+
+	userID, err := testutils.CreateUser(user)
+	ts.Require().NoError(err, "Failed to create test user")
+	defer func() {
+		_ = testutils.DeleteUser(userID)
+	}()
+
+	// Step 1: Initiate authorization flow with OIDC scopes
+	scope := "openid profile email"
+	state := "test-state-123"
+	resp, err := testutils.InitiateAuthorizationFlow("required_attrs_test_client", scopeTestRedirectURI, "code", scope, state)
+	ts.Require().NoError(err, "Failed to initiate authorization flow")
+	ts.Require().Equal(http.StatusFound, resp.StatusCode, "Should redirect to login page")
+
+	// Extract auth ID and flow ID from redirect
+	location := resp.Header.Get("Location")
+	ts.Require().NotEmpty(location, "Location header should be present")
+	authId, flowID, err := testutils.ExtractAuthData(location)
+	ts.Require().NoError(err, "Failed to extract auth data")
+	ts.Require().NotEmpty(authId, "Auth ID should not be empty")
+	ts.Require().NotEmpty(flowID, "Flow ID should not be empty")
+
+	// Step 2: Execute authentication flow
+	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, map[string]string{
+		"username": "requiredattrsuser",
+		"password": "TestPassword123!",
+	}, "action_001")
+	ts.Require().NoError(err, "Failed to execute authentication flow")
+	ts.Require().NotEmpty(flowStep.Assertion, "Assertion should be generated")
+
+	// Step 3: Verify assertion contains only required attributes
+	// Expected: sub (from openid), name (from profile scope, filtered by IDToken.UserAttributes),
+	// email (from email scope, filtered by IDToken.UserAttributes), groups, roles (from AccessToken.UserAttributes)
+	// Should NOT contain: phone, customAttr, email_verified (not in IDToken.UserAttributes)
+
+	// Decode JWT to verify claims
+	jwtClaims, err := testutils.DecodeJWT(flowStep.Assertion)
+	ts.Require().NoError(err, "Failed to decode JWT assertion")
+	claims := jwtClaims.Additional
+
+	// Verify required attributes are present
+	ts.Assert().NotNil(claims["sub"], "sub claim should be present")
+	ts.Assert().Equal(userID, claims["sub"], "sub should match user ID")
+	ts.Assert().NotNil(claims["name"], "name claim should be present (from profile scope)")
+	ts.Assert().Equal("Required Attrs", claims["name"], "name should match user attribute")
+	ts.Assert().NotNil(claims["email"], "email claim should be present (from email scope)")
+	ts.Assert().Equal("requiredattrs@test.com", claims["email"], "email should match user attribute")
+	ts.Assert().NotNil(claims["roles"], "roles claim should be present (from access token config)")
+	rolesValue, ok := claims["roles"].([]interface{})
+	ts.Assert().True(ok, "roles should be an array")
+	ts.Assert().Equal([]interface{}{"developer"}, rolesValue, "roles should match user attribute")
+	if claims["groups"] != nil {
+		groupsValue, ok := claims["groups"].([]interface{})
+		ts.Assert().True(ok, "groups should be an array if present")
+		ts.Assert().NotEmpty(groupsValue, "groups array should not be empty if present")
+	}
+
+	// Verify non-required attributes are NOT present
+	ts.Assert().Nil(claims["phone"], "phone should NOT be present (not in required attributes)")
+	ts.Assert().Nil(claims["customAttr"], "customAttr should NOT be present (not in required attributes)")
+	ts.Assert().Nil(claims["email_verified"], "email_verified should NOT be present (not in IDToken.UserAttributes)")
+	ts.Assert().Nil(claims["firstName"], "firstName should NOT be present (not in required attributes)")
+	ts.Assert().Nil(claims["lastName"], "lastName should NOT be present (not in required attributes)")
+}

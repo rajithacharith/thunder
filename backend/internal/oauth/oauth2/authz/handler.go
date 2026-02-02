@@ -23,9 +23,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/asgardeo/thunder/internal/application"
+	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	flowcm "github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
@@ -178,13 +180,18 @@ func (ah *authorizeHandler) handleInitialAuthorizationRequest(msg *OAuthMessage,
 		oauthParams.RedirectURI = app.RedirectURIs[0]
 	}
 
+	// Compute required attributes from OIDC scopes and access token config
+	requiredAttributes := getRequiredAttributes(oidcScopes, app)
+
 	// Initiate flow with OAuth context
+	runtimeData := map[string]string{
+		"requested_permissions": utils.StringifyStringArray(nonOidcScopes, " "),
+		"required_attributes":   requiredAttributes,
+	}
 	flowInitCtx := &flowexec.FlowInitContext{
 		ApplicationID: app.AppID,
 		FlowType:      string(flowcm.FlowTypeAuthentication),
-		RuntimeData: map[string]string{
-			"requested_permissions": utils.StringifyStringArray(nonOidcScopes, " "),
-		},
+		RuntimeData:   runtimeData,
 	}
 
 	flowID, flowErr := ah.flowExecService.InitiateFlow(flowInitCtx)
@@ -630,4 +637,73 @@ func decodeAttributesFromAssertion(assertion string) (assertionClaims, time.Time
 	assertionClaims.userAttributes = userAttributes
 
 	return assertionClaims, authTime, nil
+}
+
+// getRequiredAttributes computes the required attributes based on OIDC scopes and access token config.
+func getRequiredAttributes(oidcScopes []string, app *appmodel.OAuthAppConfigProcessedDTO) string {
+	if app == nil || app.Token == nil {
+		return ""
+	}
+
+	// Early return if no attributes are configured in either ID token or access token configs
+	if (app.Token.IDToken == nil || len(app.Token.IDToken.UserAttributes) == 0) &&
+		(app.Token.AccessToken == nil || len(app.Token.AccessToken.UserAttributes) == 0) {
+		return ""
+	}
+
+	// Set to collect unique attribute names
+	requiredAttrsSet := make(map[string]bool)
+
+	// Map OIDC scopes to claims for ID token
+	var scopeClaimsMapping map[string][]string
+	var idTokenAllowedSet map[string]bool
+	if app.Token.IDToken != nil {
+		scopeClaimsMapping = app.Token.IDToken.ScopeClaims
+		if len(app.Token.IDToken.UserAttributes) > 0 {
+			idTokenAllowedSet = make(map[string]bool, len(app.Token.IDToken.UserAttributes))
+			for _, attr := range app.Token.IDToken.UserAttributes {
+				idTokenAllowedSet[attr] = true
+			}
+		}
+	}
+
+	for _, scope := range oidcScopes {
+		var scopeClaims []string
+
+		// Check app-specific scope claims first
+		if scopeClaimsMapping != nil {
+			if appClaims, exists := scopeClaimsMapping[scope]; exists {
+				scopeClaims = appClaims
+			}
+		}
+
+		// Fall back to standard OIDC scopes if no app-specific mapping
+		if scopeClaims == nil {
+			if standardScope, exists := oauth2const.StandardOIDCScopes[scope]; exists {
+				scopeClaims = standardScope.Claims
+			}
+		}
+
+		// Add claims to the set, but only if they're allowed in app config
+		for _, claim := range scopeClaims {
+			if idTokenAllowedSet != nil && idTokenAllowedSet[claim] {
+				requiredAttrsSet[claim] = true
+			}
+		}
+	}
+
+	// Add access token attributes from app config
+	if app.Token.AccessToken != nil && len(app.Token.AccessToken.UserAttributes) > 0 {
+		for _, attr := range app.Token.AccessToken.UserAttributes {
+			requiredAttrsSet[attr] = true
+		}
+	}
+
+	// Convert set to slice
+	requiredAttrs := make([]string, 0, len(requiredAttrsSet))
+	for attr := range requiredAttrsSet {
+		requiredAttrs = append(requiredAttrs, attr)
+	}
+
+	return strings.Join(requiredAttrs, " ")
 }
