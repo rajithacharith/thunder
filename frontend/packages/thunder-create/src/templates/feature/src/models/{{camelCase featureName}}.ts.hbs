@@ -1,0 +1,104 @@
+/**
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+/**
+ * Basic {{pascalCase featureName}} model with essential properties.
+ * Used for list views and basic operations.
+ */
+export interface Basic{{pascalCase featureName}} {
+  /** Unique identifier for the {{camelCase featureName}} */
+  id: string;
+  /** Display name of the {{camelCase featureName}} */
+  name: string;
+  /** Description of the {{camelCase featureName}} */
+  description: string;
+  /** Creation timestamp */
+  createdAt?: string;
+  /** Last updated timestamp */
+  updatedAt?: string;
+}
+
+/**
+ * Complete {{pascalCase featureName}} model with all properties.
+ * Used for detailed views and full CRUD operations.
+ */
+export interface {{pascalCase featureName}} extends Basic{{pascalCase featureName}} {
+  /** Additional detailed properties */
+  status?: '{{constantCase featureName}}_STATUS_ACTIVE' | '{{constantCase featureName}}_STATUS_INACTIVE' | '{{constantCase featureName}}_STATUS_PENDING';
+  /** Owner or creator information */
+  owner?: {
+    id: string;
+    name: string;
+    email?: string;
+  };
+  /** Configuration or settings specific to the {{camelCase featureName}} */
+  config?: Record<string, unknown>;
+  /** Tags or labels associated with the {{camelCase featureName}} */
+  tags?: string[];
+  /** Metadata for additional information */
+  metadata?: {
+    [key: string]: string | number | boolean;
+  };
+}
+
+/**
+ * {{pascalCase featureName}} creation request payload.
+ */
+export interface Create{{pascalCase featureName}}Request {
+  /** Name of the new {{camelCase featureName}} */
+  name: string;
+  /** Description of the new {{camelCase featureName}} */
+  description: string;
+  /** Initial configuration */
+  config?: Record<string, unknown>;
+  /** Initial tags */
+  tags?: string[];
+  /** Initial metadata */
+  metadata?: {
+    [key: string]: string | number | boolean;
+  };
+}
+
+/**
+ * {{pascalCase featureName}} update request payload.
+ */
+export interface Update{{pascalCase featureName}}Request {
+  /** Updated name */
+  name?: string;
+  /** Updated description */
+  description?: string;
+  /** Updated status */
+  status?: '{{constantCase featureName}}_STATUS_ACTIVE' | '{{constantCase featureName}}_STATUS_INACTIVE' | '{{constantCase featureName}}_STATUS_PENDING';
+  /** Updated configuration */
+  config?: Record<string, unknown>;
+  /** Updated tags */
+  tags?: string[];
+  /** Updated metadata */
+  metadata?: {
+    [key: string]: string | number | boolean;
+  };
+}
+
+/**
+ * {{pascalCase featureName}} status enum.
+ */
+export enum {{pascalCase featureName}}Status {
+  ACTIVE = '{{constantCase featureName}}_STATUS_ACTIVE',
+  INACTIVE = '{{constantCase featureName}}_STATUS_INACTIVE',
+  PENDING = '{{constantCase featureName}}_STATUS_PENDING',
+}

@@ -1,0 +1,165 @@
+/**
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import type {{pascalCase featureName}}, Basic{{pascalCase featureName}} from '../models/{{camelCase featureName}}';
+
+/**
+ * Validates if a {{camelCase featureName}} name is valid.
+ *
+ * @param name - The name to validate
+ * @returns true if the name is valid, false otherwise
+ */
+export function isValid{{pascalCase featureName}}Name(name: string): boolean {
+  if (!name || name.trim().length === 0) {
+    return false;
+  }
+
+  // Name should be between 1 and 100 characters
+  const trimmedName = name.trim();
+  return trimmedName.length >= 1 && trimmedName.length <= 100;
+}
+
+/**
+ * Formats a {{camelCase featureName}} name for display.
+ *
+ * @param name - The name to format
+ * @returns Formatted name
+ */
+export function format{{pascalCase featureName}}Name(name: string): string {
+  if (!name) return '';
+
+  return name.trim().replace(/\s+/g, ' ');
+}
+
+/**
+ * Generates a URL-friendly slug from a {{camelCase featureName}} name.
+ *
+ * @param name - The name to convert to slug
+ * @returns URL-friendly slug
+ */
+export function generate{{pascalCase featureName}}Slug(name: string): string {
+  if (!name) return '';
+
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Filters {{camelCase featureName}}s based on search criteria.
+ *
+ * @param {{camelCase featureName}}s - Array of {{camelCase featureName}}s to filter
+ * @param searchTerm - Search term to filter by
+ * @returns Filtered array of {{camelCase featureName}}s
+ */
+export function filter{{pascalCase featureName}}s(
+  {{camelCase featureName}}s: Basic{{pascalCase featureName}}[],
+  searchTerm: string
+): Basic{{pascalCase featureName}}[] {
+  if (!searchTerm || searchTerm.trim().length === 0) {
+    return {{camelCase featureName}}s;
+  }
+
+  const lowercaseSearch = searchTerm.toLowerCase().trim();
+
+  return {{camelCase featureName}}s.filter(({{camelCase featureName}}) =>
+    {{camelCase featureName}}.name.toLowerCase().includes(lowercaseSearch) ||
+    {{camelCase featureName}}.description.toLowerCase().includes(lowercaseSearch)
+  );
+}
+
+/**
+ * Sorts {{camelCase featureName}}s by a specified field.
+ *
+ * @param {{camelCase featureName}}s - Array of {{camelCase featureName}}s to sort
+ * @param field - Field to sort by
+ * @param direction - Sort direction ('asc' or 'desc')
+ * @returns Sorted array of {{camelCase featureName}}s
+ */
+export function sort{{pascalCase featureName}}s(
+  {{camelCase featureName}}s: Basic{{pascalCase featureName}}[],
+  field: keyof Basic{{pascalCase featureName}},
+  direction: 'asc' | 'desc' = 'asc'
+): Basic{{pascalCase featureName}}[] {
+  return [...{{camelCase featureName}}s].sort((a, b) => {
+    const aValue = a[field];
+    const bValue = b[field];
+
+    if (aValue === undefined && bValue === undefined) return 0;
+    if (aValue === undefined) return direction === 'asc' ? 1 : -1;
+    if (bValue === undefined) return direction === 'asc' ? -1 : 1;
+
+    if (aValue < bValue) return direction === 'asc' ? -1 : 1;
+    if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+}
+
+/**
+ * Converts a {{camelCase featureName}} to a CSV row.
+ *
+ * @param {{camelCase featureName}} - The {{camelCase featureName}} to convert
+ * @returns CSV row string
+ */
+export function {{camelCase featureName}}ToCsv({{camelCase featureName}}: Basic{{pascalCase featureName}}): string {
+  const fields = [
+    {{camelCase featureName}}.id,
+    '"' + {{camelCase featureName}}.name.replace(/"/g, '""') + '"', // Escape quotes
+    '"' + {{camelCase featureName}}.description.replace(/"/g, '""') + '"',
+    {{camelCase featureName}}.createdAt || '',
+    {{camelCase featureName}}.updatedAt || '',
+  ];
+
+  return fields.join(',');
+}
+
+/**
+ * Exports {{camelCase featureName}}s to CSV format.
+ *
+ * @param {{camelCase featureName}}s - Array of {{camelCase featureName}}s to export
+ * @returns CSV string
+ */
+export function export{{pascalCase featureName}}sToCsv({{camelCase featureName}}s: Basic{{pascalCase featureName}}[]): string {
+  const headers = ['ID', 'Name', 'Description', 'Created At', 'Updated At'];
+  const csvRows = [headers.join(',')];
+
+  {{camelCase featureName}}s.forEach(({{camelCase featureName}}) => {
+    csvRows.push({{camelCase featureName}}ToCsv({{camelCase featureName}}));
+  });
+
+  return csvRows.join('\n');
+}
+
+/**
+ * Checks if a {{camelCase featureName}} has been recently created (within the last 24 hours).
+ *
+ * @param {{camelCase featureName}} - The {{camelCase featureName}} to check
+ * @returns true if recently created, false otherwise
+ */
+export function isRecently{{pascalCase featureName}}Created({{camelCase featureName}}: Basic{{pascalCase featureName}}): boolean {
+  if (!{{camelCase featureName}}.createdAt) return false;
+
+  const createdDate = new Date({{camelCase featureName}}.createdAt);
+  const now = new Date();
+  const timeDiff = now.getTime() - createdDate.getTime();
+  const hoursDiff = timeDiff / (1000 * 3600);
+
+  return hoursDiff <= 24;
+}

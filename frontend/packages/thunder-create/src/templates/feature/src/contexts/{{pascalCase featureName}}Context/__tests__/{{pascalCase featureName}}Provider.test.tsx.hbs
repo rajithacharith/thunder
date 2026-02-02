@@ -1,0 +1,55 @@
+/**
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {describe, it, expect} from 'vitest';
+import {render, screen} from '@testing-library/react';
+import {{pascalCase featureName}}Provider from '../{{pascalCase featureName}}Provider';
+import use{{pascalCase featureName}} from '../use{{pascalCase featureName}}';
+
+describe('{{pascalCase featureName}}Provider', () => {
+  it('should render children', () => {
+    render(
+      <{{pascalCase featureName}}Provider>
+        <div data-testid="child">Test Child</div>
+      </{{pascalCase featureName}}Provider>,
+    );
+
+    expect(screen.getByTestId('child')).toBeInTheDocument();
+  });
+
+  it('should provide context values', () => {
+    const TestComponent = () => {
+      const context = use{{pascalCase featureName}}();
+      return (
+        <div>
+          <span data-testid="loading">\{String(context.isLoading)}</span>
+          <span data-testid="error">\{context.error || 'null'}</span>
+        </div>
+      );
+    };
+
+    render(
+      <{{pascalCase featureName}}Provider>
+        <TestComponent />
+      </{{pascalCase featureName}}Provider>,
+    );
+
+    expect(screen.getByTestId('loading')).toHaveTextContent('false');
+    expect(screen.getByTestId('error')).toHaveTextContent('null');
+  });
+});

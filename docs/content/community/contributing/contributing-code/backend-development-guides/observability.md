@@ -2,9 +2,10 @@
 title: Observability
 description: Learn how to instrument your code with observability events and understand the observability architecture in Thunder.
 hide_table_of_contents: false
+sidebar_position: 3
 ---
 
-# Observability Developer Guide
+# Observability
 
 This guide explains how to instrument your code with observability events and provides an overview of the observability architecture. It is intended for developers adding new features or components to Thunder.
 
@@ -15,8 +16,6 @@ This guide explains how to instrument your code with observability events and pr
 3. [Distributed Tracing](#distributed-tracing)
 4. [Architecture Overview](#architecture-overview)
 5. [Extending Observability](#extending-observability)
-
----
 
 ## Integration Guide
 
