@@ -1,0 +1,200 @@
+/**
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {describe, it, expect} from 'vitest';
+import {
+  isValid{{pascalCase featureName}}Name,
+  format{{pascalCase featureName}}Name,
+  generate{{pascalCase featureName}}Slug,
+  filter{{pascalCase featureName}}s,
+  sort{{pascalCase featureName}}s,
+  {{camelCase featureName}}ToCsv,
+  export{{pascalCase featureName}}sToCsv,
+  isRecently{{pascalCase featureName}}Created,
+} from '../{{camelCase featureName}}Utils';
+import type Basic{{pascalCase featureName}} from '../../models/{{camelCase featureName}}';
+
+const mock{{pascalCase featureName}}s: Basic{{pascalCase featureName}}[] = [
+  {
+    id: '1',
+    name: 'First {{pascalCase featureName}}',
+    description: 'Description for first {{camelCase featureName}}',
+    createdAt: '2025-01-01T00:00:00Z',
+    updatedAt: '2025-01-01T12:00:00Z',
+  },
+  {
+    id: '2',
+    name: 'Second {{pascalCase featureName}}',
+    description: 'Description for second {{camelCase featureName}}',
+    createdAt: '2025-01-02T00:00:00Z',
+  },
+  {
+    id: '3',
+    name: 'Another Test',
+    description: 'Different description',
+    createdAt: '2024-12-31T00:00:00Z',
+  },
+];
+
+describe('{{camelCase featureName}}Utils', () => {
+  describe('isValid{{pascalCase featureName}}Name', () => {
+    it('should return true for valid names', () => {
+      expect(isValid{{pascalCase featureName}}Name('Valid Name')).toBe(true);
+      expect(isValid{{pascalCase featureName}}Name('A')).toBe(true);
+      expect(isValid{{pascalCase featureName}}Name('a'.repeat(100))).toBe(true);
+    });
+
+    it('should return false for invalid names', () => {
+      expect(isValid{{pascalCase featureName}}Name('')).toBe(false);
+      expect(isValid{{pascalCase featureName}}Name('   ')).toBe(false);
+      expect(isValid{{pascalCase featureName}}Name('a'.repeat(101))).toBe(false);
+    });
+  });
+
+  describe('format{{pascalCase featureName}}Name', () => {
+    it('should format names correctly', () => {
+      expect(format{{pascalCase featureName}}Name('  Test  Name  ')).toBe('Test Name');
+      expect(format{{pascalCase featureName}}Name('Multiple   Spaces')).toBe('Multiple Spaces');
+      expect(format{{pascalCase featureName}}Name('')).toBe('');
+    });
+  });
+
+  describe('generate{{pascalCase featureName}}Slug', () => {
+    it('should generate valid slugs', () => {
+      expect(generate{{pascalCase featureName}}Slug('Test Name')).toBe('test-name');
+      expect(generate{{pascalCase featureName}}Slug('Special!@#$%^&*()Characters')).toBe('special-characters');
+      expect(generate{{pascalCase featureName}}Slug('123 Numbers')).toBe('123-numbers');
+      expect(generate{{pascalCase featureName}}Slug('  Leading-and-trailing  ')).toBe('leading-and-trailing');
+      expect(generate{{pascalCase featureName}}Slug('')).toBe('');
+    });
+  });
+
+  describe('filter{{pascalCase featureName}}s', () => {
+    it('should filter by name', () => {
+      const result = filter{{pascalCase featureName}}s(mock{{pascalCase featureName}}s, 'First');
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('First {{pascalCase featureName}}');
+    });
+
+    it('should filter by description', () => {
+      const result = filter{{pascalCase featureName}}s(mock{{pascalCase featureName}}s, 'Different');
+      expect(result).toHaveLength(1);
+      expect(result[0].description).toBe('Different description');
+    });
+
+    it('should be case insensitive', () => {
+      const result = filter{{pascalCase featureName}}s(mock{{pascalCase featureName}}s, 'FIRST');
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('First {{pascalCase featureName}}');
+    });
+
+    it('should return all items for empty search', () => {
+      const result = filter{{pascalCase featureName}}s(mock{{pascalCase featureName}}s, '');
+      expect(result).toHaveLength(mock{{pascalCase featureName}}s.length);
+    });
+  });
+
+  describe('sort{{pascalCase featureName}}s', () => {
+    it('should sort by name ascending', () => {
+      const result = sort{{pascalCase featureName}}s(mock{{pascalCase featureName}}s, 'name', 'asc');
+      expect(result[0].name).toBe('Another Test');
+      expect(result[1].name).toBe('First {{pascalCase featureName}}');
+      expect(result[2].name).toBe('Second {{pascalCase featureName}}');
+    });
+
+    it('should sort by name descending', () => {
+      const result = sort{{pascalCase featureName}}s(mock{{pascalCase featureName}}s, 'name', 'desc');
+      expect(result[0].name).toBe('Second {{pascalCase featureName}}');
+      expect(result[1].name).toBe('First {{pascalCase featureName}}');
+      expect(result[2].name).toBe('Another Test');
+    });
+
+    it('should sort by createdAt', () => {
+      const result = sort{{pascalCase featureName}}s(mock{{pascalCase featureName}}s, 'createdAt', 'asc');
+      expect(result[0].id).toBe('3'); // 2024-12-31
+      expect(result[1].id).toBe('1'); // 2025-01-01
+      expect(result[2].id).toBe('2'); // 2025-01-02
+    });
+  });
+
+  describe('{{camelCase featureName}}ToCsv', () => {
+    it('should convert {{camelCase featureName}} to CSV row', () => {
+      const {{camelCase featureName}} = mock{{pascalCase featureName}}s[0];
+      const csvRow = {{camelCase featureName}}ToCsv({{camelCase featureName}});
+
+      expect(csvRow).toBe('1,"First {{pascalCase featureName}}","Description for first {{camelCase featureName}}",2025-01-01T00:00:00Z,2025-01-01T12:00:00Z');
+    });
+
+    it('should escape quotes in names and descriptions', () => {
+      const {{camelCase featureName}}: Basic{{pascalCase featureName}} = {
+        id: 'test',
+        name: 'Name with "quotes"',
+        description: 'Description with "quotes"',
+      };
+
+      const csvRow = {{camelCase featureName}}ToCsv({{camelCase featureName}});
+      expect(csvRow).toContain('"Name with ""quotes"""');
+      expect(csvRow).toContain('"Description with ""quotes"""');
+    });
+  });
+
+  describe('export{{pascalCase featureName}}sToCsv', () => {
+    it('should export {{camelCase featureName}}s to CSV with headers', () => {
+      const csv = export{{pascalCase featureName}}sToCsv(mock{{pascalCase featureName}}s);
+      const lines = csv.split('\n');
+
+      expect(lines[0]).toBe('ID,Name,Description,Created At,Updated At');
+      expect(lines).toHaveLength(mock{{pascalCase featureName}}s.length + 1); // +1 for header
+    });
+  });
+
+  describe('isRecently{{pascalCase featureName}}Created', () => {
+    it('should return true for recently created {{camelCase featureName}}s', () => {
+      const now = new Date();
+      const recent{{pascalCase featureName}}: Basic{{pascalCase featureName}} = {
+        id: 'recent',
+        name: 'Recent {{pascalCase featureName}}',
+        description: 'Recently created',
+        createdAt: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+      };
+
+      expect(isRecently{{pascalCase featureName}}Created(recent{{pascalCase featureName}})).toBe(true);
+    });
+
+    it('should return false for old {{camelCase featureName}}s', () => {
+      const old{{pascalCase featureName}}: Basic{{pascalCase featureName}} = {
+        id: 'old',
+        name: 'Old {{pascalCase featureName}}',
+        description: 'Old creation',
+        createdAt: '2024-01-01T00:00:00Z', // Much older than 24 hours
+      };
+
+      expect(isRecently{{pascalCase featureName}}Created(old{{pascalCase featureName}})).toBe(false);
+    });
+
+    it('should return false for {{camelCase featureName}}s without createdAt', () => {
+      const {{camelCase featureName}}WithoutDate: Basic{{pascalCase featureName}} = {
+        id: 'no-date',
+        name: 'No Date {{pascalCase featureName}}',
+        description: 'No creation date',
+      };
+
+      expect(isRecently{{pascalCase featureName}}Created({{camelCase featureName}}WithoutDate)).toBe(false);
+    });
+  });
+});

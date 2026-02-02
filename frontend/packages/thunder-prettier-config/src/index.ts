@@ -32,6 +32,7 @@ const config = {
   semi: true,
   singleQuote: true,
   tabWidth: 2,
+  insertFinalNewline: true,
   // Adds trailing commas at the end of all objects.
   // 1. Easier to add an item or re-order items.
   // 2. Removes the need to have one line item be special because it lacks the ,.

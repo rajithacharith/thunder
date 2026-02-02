@@ -1,139 +1,13 @@
 ---
-title: Development Guide
-description: Learn how to contribute code to Thunder, including setup, development workflow, testing, and pull request processes.
+title: Development Pipeline
+description: Understand the development pipeline for contributing code to Thunder.
+sidebar_position: 3
 hide_table_of_contents: false
 ---
 
-# Development Guide - Contributing Code
+# Development Pipeline
 
-This guide explains how to contribute code to Thunder.
-
----
-
-## 🎯 When to Use This Guide
-
-Use this guide when:
-
-* ✅ You're implementing an **approved design proposal**
-* ✅ You're working on a **Fast Track contribution** (bug fix, improvement)
-* ✅ You need to understand **code standards and workflow**
-
----
-
-## 📋 Table of Contents
-
-- [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
-- [Development Commands](#development-commands)
-  - [Building](#building)
-  - [Running](#running)
-  - [Testing](#testing)
-  - [Linting](#linting)
-  - [Generating Mocks](#generating-mocks)
-  - [Other Commands](#other-commands)
-- [Advanced Setup (Manual Mode)](#advanced-setup-manual-mode)
-- [Development Workflow](#development-workflow)
-
----
-
-## Prerequisites
-
-Before you begin, ensure you have the following installed on your system:
-
-### Required Tools (Core Development)
-
-- **[Git](https://git-scm.com/downloads)** - Version control system
-- **[Go](https://golang.org/doc/install)** - Version 1.25 or higher
-- **[Node.js](https://nodejs.org/en/download/)** - Version 22 or higher (`LTS` is recommended ✅)
-- **[pnpm](https://pnpm.io/installation)** - Version 9 or higher (`LTS` is recommended ✅)
-
-### Required Tools (Frontend Development)
-
-- **[ESLint VSCode Extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)** - For linting support in VSCode
-- **[Prettier VSCode Extension](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)** - For code formatting in VSCode
-
----
-
-## Quick Start
-
-### 1. Fork the Repository
-
-Start by forking the WSO2 Thunder repository to your GitHub account.
-
-### 2. Clone the Repository
-
-Clone your forked repository to your local machine.
-
-```bash
-git clone https://github.com/<your-username>/thunder.git
-cd thunder
-```
-
-### 3. Configure the Deployment
-
-Open `backend/cmd/server/repository/conf/deployment.yaml` in your favorite text editor and make the following changes:
-
-**Add CORS allowed origins:**
-
-```yaml
-cors:
-  allowed_origins:
-    - "https://localhost:5190"
-    - "https://localhost:5191"
-```
-
-> [!TIP]
-> This configuration allows the Thunder Gate and Thunder Develop applications to communicate with the backend server during development.
-
-**Configure the Gate client:**
-
-```yaml
-gate_client:
-  port: 5190
-```
-
-> [!TIP]
-> This configuration points the backend server to the local Thunder Gate application for authentication.
-
-### 4. Run the Project
-
-Start the Thunder server & apps in development mode.
-
-```bash
-make run
-```
-
-> [!Note]
-> This command will automatically set up your complete development environment:
->
-> **What gets created:**
->
-> - `Develop` application with redirect URI pointing to the local Thunder Develop application
-> - Default admin user with credentials: `admin` / `admin`
->
-> **Services that start:**
->
-> - **Backend server**: [https://localhost:8090](https://localhost:8090)
-> - **Thunder Gate** (Login/Register): [https://localhost:5190/gate](https://localhost:5190/gate)
-> - **Thunder Develop** (Admin Console): [https://localhost:5191/develop](https://localhost:5191/develop)
-
-💡 **Alternatively**, if you would rather run the backend and frontend servers separately, run the following commands in separate terminal windows:
-
-**Backend Server:**
-
-```bash
-make run_backend
-```
-
-**Frontend Server:**
-
-```bash
-make run_frontend
-```
-
----
-
-## Development Commands
+## Useful Commands
 
 This section provides a reference for all available make commands.
 
@@ -256,8 +130,6 @@ make docker-build-multiarch
 make help
 ```
 
----
-
 ## Advanced Setup (Manual Mode)
 
 <details>
@@ -379,8 +251,6 @@ This will run the Thunder Develop application on `https://localhost:5191/develop
 
 </details>
 
----
-
 ## Development Workflow
 
 ### 1. Make Your Changes
@@ -472,8 +342,6 @@ Then create a Pull Request to the `thunder/main` branch on GitHub:
 
 Once approved by maintainers and all checks pass a maintainer will merge your PR.
 
----
-
 ## 🎉 After Your PR is Merged
 
 Your contribution will be:
@@ -483,7 +351,5 @@ Your contribution will be:
 * ✅ Celebrated in the community! 🎊
 
 **Thank you for contributing to Thunder!** 🚀⚡
-
----
 
 **Ready to start coding?** Pick an issue, create a branch, and start building!
