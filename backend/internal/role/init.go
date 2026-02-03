@@ -25,6 +25,8 @@ import (
 	"github.com/asgardeo/thunder/internal/group"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	resourcepkg "github.com/asgardeo/thunder/internal/resource"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
+	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/user"
 )
@@ -38,7 +40,19 @@ func Initialize(
 	resourceService resourcepkg.ResourceServiceInterface,
 ) RoleServiceInterface {
 	roleStore := newRoleStore()
-	roleService := newRoleService(roleStore, userService, groupService, ouService, resourceService)
+
+	// Get transactioner from DB provider
+	dbProvider := provider.GetDBProvider()
+	dbClient, err := dbProvider.GetConfigDBClient()
+	if err != nil {
+		log.GetLogger().Fatal("Failed to get DB client", log.Error(err))
+	}
+	transactioner, err := dbClient.GetTransactioner()
+	if err != nil {
+		log.GetLogger().Fatal("Failed to get transactioner", log.Error(err))
+	}
+
+	roleService := newRoleService(roleStore, userService, groupService, ouService, resourceService, transactioner)
 	roleHandler := newRoleHandler(roleService)
 	registerRoutes(mux, roleHandler)
 	return roleService

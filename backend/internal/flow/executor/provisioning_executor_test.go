@@ -181,7 +181,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success() {
 		})).Return(existingGroup, nil)
 
 	// Mock role assignment
-	suite.mockRoleService.On("AddAssignments", "test-role-id",
+	suite.mockRoleService.On("AddAssignments", mock.Anything, "test-role-id",
 		mock.MatchedBy(func(assignments []role.RoleAssignment) bool {
 			return len(assignments) == 1 &&
 				assignments[0].ID == testNewUserID &&
@@ -1000,7 +1000,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_GroupAssignmentF
 		Return(nil, &serviceerror.ServiceError{Error: "Group not found"})
 
 	// Role assignment should still be attempted
-	suite.mockRoleService.On("AddAssignments", "test-role-id", mock.Anything).Return(nil)
+	suite.mockRoleService.On("AddAssignments", mock.Anything, "test-role-id", mock.Anything).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -1054,7 +1054,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_BothGroupAndRole
 		Return(nil, &serviceerror.ServiceError{Error: "Group not found"})
 
 	// Mock role assignment also fails
-	suite.mockRoleService.On("AddAssignments", "test-role-id", mock.Anything).
+	suite.mockRoleService.On("AddAssignments", mock.Anything, "test-role-id", mock.Anything).
 		Return(&serviceerror.ServiceError{Error: "Role not found"})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -1116,7 +1116,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_RoleAssignmentFa
 		Return(existingGroup, nil)
 
 	// Role assignment fails (e.g., role doesn't exist)
-	suite.mockRoleService.On("AddAssignments", "test-role-id", mock.Anything).
+	suite.mockRoleService.On("AddAssignments", mock.Anything, "test-role-id", mock.Anything).
 		Return(&serviceerror.ServiceError{Error: "Role not found"})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -1203,7 +1203,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_GroupWithExistingMembers
 			return hasExisting1 && hasExisting2 && hasNewUser
 		})).Return(existingGroup, nil)
 
-	suite.mockRoleService.On("AddAssignments", "test-role-id", mock.Anything).Return(nil)
+	suite.mockRoleService.On("AddAssignments", mock.Anything, "test-role-id", mock.Anything).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -1258,7 +1258,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_AuthFlow_AutoProvisionin
 	suite.mockGroupService.On("GetGroup", "test-group-id").Return(existingGroup, nil)
 	suite.mockGroupService.On("UpdateGroup", "test-group-id", mock.Anything).
 		Return(existingGroup, nil)
-	suite.mockRoleService.On("AddAssignments", "test-role-id", mock.Anything).Return(nil)
+	suite.mockRoleService.On("AddAssignments", mock.Anything, "test-role-id", mock.Anything).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -1332,7 +1332,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success_WithGroupAndRole
 		})).Return(existingGroup, nil)
 
 	// Mock role assignment
-	suite.mockRoleService.On("AddAssignments", "test-role-id",
+	suite.mockRoleService.On("AddAssignments", mock.Anything, "test-role-id",
 		mock.MatchedBy(func(assignments []role.RoleAssignment) bool {
 			return len(assignments) == 1 &&
 				assignments[0].ID == testNewUserID &&
