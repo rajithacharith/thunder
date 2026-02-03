@@ -39,5 +39,6 @@ type RefreshTokenGrantHandlerInterface interface {
 		oauthApp *appmodel.OAuthAppConfigProcessedDTO,
 		subject, audience, grantType string,
 		scopes []string,
+		claimsRequest *model.ClaimsRequest,
 	) *model.ErrorResponse
 }

@@ -18,6 +18,8 @@
 
 package model
 
+import "github.com/asgardeo/thunder/internal/system/utils"
+
 // OAuthParameters represents the parameters required for OAuth2 authorization.
 type OAuthParameters struct {
 	State               string
@@ -29,4 +31,50 @@ type OAuthParameters struct {
 	CodeChallenge       string
 	CodeChallengeMethod string
 	Resource            string
+	ClaimsRequest       *ClaimsRequest
+}
+
+// ClaimsRequest represents the OIDC claims request parameter structure.
+type ClaimsRequest struct {
+	UserInfo map[string]*IndividualClaimRequest `json:"userinfo,omitempty"`
+	IDToken  map[string]*IndividualClaimRequest `json:"id_token,omitempty"`
+}
+
+// IndividualClaimRequest represents a request for an individual claim.
+type IndividualClaimRequest struct {
+	Essential bool          `json:"essential,omitempty"`
+	Value     interface{}   `json:"value,omitempty"`
+	Values    []interface{} `json:"values,omitempty"`
+}
+
+// IsEmpty returns true if the ClaimsRequest has no claims requested.
+func (cr *ClaimsRequest) IsEmpty() bool {
+	return cr == nil || (len(cr.UserInfo) == 0 && len(cr.IDToken) == 0)
+}
+
+// MatchesValue checks if the given value matches the requested value or values.
+// Returns true if no value/values constraint is specified, or if the value matches.
+func (icr *IndividualClaimRequest) MatchesValue(value interface{}) bool {
+	if icr == nil {
+		return true
+	}
+
+	// If no value constraints, any value matches
+	if icr.Value == nil && len(icr.Values) == 0 {
+		return true
+	}
+
+	// Check single value match
+	if icr.Value != nil {
+		return utils.CompareValues(value, icr.Value)
+	}
+
+	// Check values array match
+	for _, v := range icr.Values {
+		if utils.CompareValues(value, v) {
+			return true
+		}
+	}
+
+	return false
 }

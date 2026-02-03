@@ -52,6 +52,7 @@ const (
 	RequestParamActorTokenType      string = "actor_token_type"
 	RequestParamRequestedTokenType  string = "requested_token_type"
 	RequestParamAudience            string = "audience"
+	RequestParamClaims              string = "claims"
 )
 
 // Server OAuth constants.
@@ -269,10 +270,11 @@ const (
 
 // Custom JWT claim names.
 const (
-	ClaimUserType string = "userType"
-	ClaimOUID     string = "ouId"
-	ClaimOUName   string = "ouName"
-	ClaimOUHandle string = "ouHandle"
+	ClaimUserType      string = "userType"
+	ClaimOUID          string = "ouId"
+	ClaimOUName        string = "ouName"
+	ClaimOUHandle      string = "ouHandle"
+	ClaimClaimsRequest string = "claims_req"
 )
 
 // JWT signing algorithms.

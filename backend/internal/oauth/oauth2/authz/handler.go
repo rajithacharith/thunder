@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -122,6 +123,9 @@ func (ah *authorizeHandler) handleInitialAuthorizationRequest(msg *OAuthMessage,
 	// Extract resource parameter
 	resource := msg.RequestQueryParams[oauth2const.RequestParamResource]
 
+	// Extract claims parameter
+	claimsParam := msg.RequestQueryParams[oauth2const.RequestParamClaims]
+
 	if clientID == "" {
 		ah.redirectToErrorPage(w, r, oauth2const.ErrorInvalidRequest, "Missing client_id parameter")
 		return
@@ -132,6 +136,19 @@ func (ah *authorizeHandler) handleInitialAuthorizationRequest(msg *OAuthMessage,
 	if svcErr != nil || app == nil {
 		ah.redirectToErrorPage(w, r, oauth2const.ErrorInvalidClient, "Invalid client_id")
 		return
+	}
+
+	// Parse the claims parameter if present
+	var claimsRequest *oauth2model.ClaimsRequest
+	if claimsParam != "" {
+		var err error
+		claimsRequest, err = oauth2utils.ParseClaimsRequest(claimsParam)
+		if err != nil {
+			logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+			logger.Debug("Failed to parse claims parameter", log.Error(err))
+			ah.redirectToErrorPage(w, r, oauth2const.ErrorInvalidRequest, "Invalid claims parameter")
+			return
+		}
 	}
 
 	// Validate the authorization request.
@@ -172,6 +189,7 @@ func (ah *authorizeHandler) handleInitialAuthorizationRequest(msg *OAuthMessage,
 		CodeChallenge:       codeChallenge,
 		CodeChallengeMethod: codeChallengeMethod,
 		Resource:            resource,
+		ClaimsRequest:       claimsRequest,
 	}
 
 	// Set the redirect URI if not provided in the request. Invalid cases are already handled at this point.
@@ -180,8 +198,8 @@ func (ah *authorizeHandler) handleInitialAuthorizationRequest(msg *OAuthMessage,
 		oauthParams.RedirectURI = app.RedirectURIs[0]
 	}
 
-	// Compute required attributes from OIDC scopes and access token config
-	requiredAttributes := getRequiredAttributes(oidcScopes, app)
+	// Compute required attributes from OIDC scopes, access token config, and claims parameter
+	requiredAttributes := getRequiredAttributes(oidcScopes, app, claimsRequest)
 
 	// Initiate flow with OAuth context
 	runtimeData := map[string]string{
@@ -270,6 +288,25 @@ func (ah *authorizeHandler) handleAuthorizationResponseFromEngine(msg *OAuthMess
 		logger.Error("User ID is empty after decoding assertion")
 		ah.writeAuthZResponseToErrorPage(w, oauth2const.ErrorInvalidRequest, "Invalid user ID", authRequestCtx)
 		return
+	}
+
+	// Validate sub claim constraint if specified in claims parameter
+	// If sub claim is requested with a value constraint and doesn't match, authentication must fail.
+	hasOpenIDScope := slices.Contains(authRequestCtx.OAuthParameters.StandardScopes, "openid")
+	if hasOpenIDScope {
+		if err := validateSubClaimConstraint(
+			authRequestCtx.OAuthParameters.ClaimsRequest,
+			assertionClaims.userID,
+		); err != nil {
+			logger.Debug("Sub claim validation failed", log.Error(err))
+			ah.writeAuthZResponseToErrorPage(
+				w,
+				oauth2const.ErrorAccessDenied,
+				"Subject identifier mismatch",
+				authRequestCtx,
+			)
+			return
+		}
 	}
 
 	// Extract authorized permissions for permission scopes
@@ -560,6 +597,7 @@ func createAuthorizationCode(
 		CodeChallenge:       authRequestCtx.OAuthParameters.CodeChallenge,
 		CodeChallengeMethod: authRequestCtx.OAuthParameters.CodeChallengeMethod,
 		Resource:            resource,
+		ClaimsRequest:       authRequestCtx.OAuthParameters.ClaimsRequest,
 	}, nil
 }
 
@@ -639,55 +677,67 @@ func decodeAttributesFromAssertion(assertion string) (assertionClaims, time.Time
 	return assertionClaims, authTime, nil
 }
 
-// getRequiredAttributes computes the required attributes based on OIDC scopes and access token config.
-func getRequiredAttributes(oidcScopes []string, app *appmodel.OAuthAppConfigProcessedDTO) string {
+// getRequiredAttributes computes the required attributes based on OIDC scopes, access token config,
+// and claims parameter.
+func getRequiredAttributes(oidcScopes []string, app *appmodel.OAuthAppConfigProcessedDTO,
+	claimsRequest *oauth2model.ClaimsRequest) string {
+	requiredAttrsSet := make(map[string]bool)
+
+	// Early return if no app config
 	if app == nil || app.Token == nil {
 		return ""
 	}
 
-	// Early return if no attributes are configured in either ID token or access token configs
-	if (app.Token.IDToken == nil || len(app.Token.IDToken.UserAttributes) == 0) &&
-		(app.Token.AccessToken == nil || len(app.Token.AccessToken.UserAttributes) == 0) {
-		return ""
-	}
+	// Check if openid scope is present
+	hasOpenIDScope := slices.Contains(oidcScopes, "openid")
 
-	// Set to collect unique attribute names
-	requiredAttrsSet := make(map[string]bool)
-
-	// Map OIDC scopes to claims for ID token
-	var scopeClaimsMapping map[string][]string
-	var idTokenAllowedSet map[string]bool
-	if app.Token.IDToken != nil {
-		scopeClaimsMapping = app.Token.IDToken.ScopeClaims
-		if len(app.Token.IDToken.UserAttributes) > 0 {
-			idTokenAllowedSet = make(map[string]bool, len(app.Token.IDToken.UserAttributes))
-			for _, attr := range app.Token.IDToken.UserAttributes {
-				idTokenAllowedSet[attr] = true
-			}
-		}
-	}
-
-	for _, scope := range oidcScopes {
-		var scopeClaims []string
-
-		// Check app-specific scope claims first
-		if scopeClaimsMapping != nil {
-			if appClaims, exists := scopeClaimsMapping[scope]; exists {
-				scopeClaims = appClaims
+	// Process OIDC-related claims only if openid scope is present
+	if hasOpenIDScope {
+		// Build allowed attributes set and scope claims mapping from ID token config
+		var idTokenAllowedSet map[string]bool
+		var scopeClaimsMapping map[string][]string
+		if app.Token.IDToken != nil {
+			scopeClaimsMapping = app.Token.IDToken.ScopeClaims
+			if len(app.Token.IDToken.UserAttributes) > 0 {
+				idTokenAllowedSet = make(map[string]bool, len(app.Token.IDToken.UserAttributes))
+				for _, attr := range app.Token.IDToken.UserAttributes {
+					idTokenAllowedSet[attr] = true
+				}
 			}
 		}
 
-		// Fall back to standard OIDC scopes if no app-specific mapping
-		if scopeClaims == nil {
-			if standardScope, exists := oauth2const.StandardOIDCScopes[scope]; exists {
-				scopeClaims = standardScope.Claims
+		// Add claims from claims parameter for ID token
+		if claimsRequest != nil && claimsRequest.IDToken != nil && idTokenAllowedSet != nil {
+			for claimName := range claimsRequest.IDToken {
+				if idTokenAllowedSet[claimName] {
+					requiredAttrsSet[claimName] = true
+				}
 			}
 		}
 
-		// Add claims to the set, but only if they're allowed in app config
-		for _, claim := range scopeClaims {
-			if idTokenAllowedSet != nil && idTokenAllowedSet[claim] {
-				requiredAttrsSet[claim] = true
+		// Add claims from OIDC scopes
+		for _, scope := range oidcScopes {
+			var scopeClaims []string
+
+			// Check app-specific scope claims first
+			if scopeClaimsMapping != nil {
+				if appClaims, exists := scopeClaimsMapping[scope]; exists {
+					scopeClaims = appClaims
+				}
+			}
+
+			// Fall back to standard OIDC scopes if no app-specific mapping
+			if scopeClaims == nil {
+				if standardScope, exists := oauth2const.StandardOIDCScopes[scope]; exists {
+					scopeClaims = standardScope.Claims
+				}
+			}
+
+			// Add claims to the set if they are allowed in ID token according to app config
+			for _, claim := range scopeClaims {
+				if idTokenAllowedSet != nil && idTokenAllowedSet[claim] {
+					requiredAttrsSet[claim] = true
+				}
 			}
 		}
 	}
@@ -699,11 +749,44 @@ func getRequiredAttributes(oidcScopes []string, app *appmodel.OAuthAppConfigProc
 		}
 	}
 
-	// Convert set to slice
-	requiredAttrs := make([]string, 0, len(requiredAttrsSet))
-	for attr := range requiredAttrsSet {
-		requiredAttrs = append(requiredAttrs, attr)
+	return mapKeysToSpaceSeparatedString(requiredAttrsSet)
+}
+
+// mapKeysToSpaceSeparatedString converts map keys to a space-separated string.
+func mapKeysToSpaceSeparatedString(m map[string]bool) string {
+	if len(m) == 0 {
+		return ""
+	}
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	return strings.Join(keys, " ")
+}
+
+// validateSubClaimConstraint validates the sub claim constraint if specified in the claims parameter.
+func validateSubClaimConstraint(claimsRequest *oauth2model.ClaimsRequest, actualSubject string) error {
+	if claimsRequest == nil {
+		return nil
 	}
 
-	return strings.Join(requiredAttrs, " ")
+	// Check id_token sub claim constraint
+	if claimsRequest.IDToken != nil {
+		if subReq, exists := claimsRequest.IDToken["sub"]; exists && subReq != nil {
+			if !subReq.MatchesValue(actualSubject) {
+				return errors.New("sub claim in id_token does not match requested value")
+			}
+		}
+	}
+
+	// Check userinfo sub claim constraint
+	if claimsRequest.UserInfo != nil {
+		if subReq, exists := claimsRequest.UserInfo["sub"]; exists && subReq != nil {
+			if !subReq.MatchesValue(actualSubject) {
+				return errors.New("sub claim in userinfo does not match requested value")
+			}
+		}
+	}
+
+	return nil
 }

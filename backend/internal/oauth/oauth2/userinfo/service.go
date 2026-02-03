@@ -25,7 +25,9 @@ import (
 	"github.com/asgardeo/thunder/internal/application"
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
+	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -67,26 +69,26 @@ func (s *userInfoService) GetUserInfo(accessToken string) (map[string]interface{
 		return nil, &errorInvalidAccessToken
 	}
 
-	claims, svcErr := s.validateAndDecodeToken(accessToken)
+	tokenClaims, svcErr := s.validateAndDecodeToken(accessToken)
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
-	sub, svcErr := s.extractSubClaim(claims)
+	sub, svcErr := s.extractSubClaim(tokenClaims)
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
-	if svcErr := s.validateGrantType(claims); svcErr != nil {
+	if svcErr := s.validateGrantType(tokenClaims); svcErr != nil {
 		return nil, svcErr
 	}
 
-	scopes := s.extractScopes(claims)
+	scopes := s.extractScopes(tokenClaims)
 	if len(scopes) == 0 {
 		return map[string]interface{}{"sub": sub}, nil
 	}
 
-	oauthApp := s.getOAuthApp(claims)
+	oauthApp := s.getOAuthApp(tokenClaims)
 
 	includeGroups := oauthApp != nil &&
 		oauthApp.Token != nil &&
@@ -107,7 +109,12 @@ func (s *userInfoService) GetUserInfo(accessToken string) (map[string]interface{
 		userAttributes[constants.UserAttributeGroups] = userGroups
 	}
 
-	return s.buildUserInfoResponse(sub, scopes, userAttributes, oauthApp), nil
+	response, svcErr := s.buildUserInfoResponse(sub, scopes, userAttributes, oauthApp, tokenClaims)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
+	return response, nil
 }
 
 // validateAndDecodeToken validates the JWT signature and decodes the payload.
@@ -188,25 +195,56 @@ func (s *userInfoService) getOAuthApp(claims map[string]interface{}) *appmodel.O
 }
 
 // buildUserInfoResponse builds the final UserInfo response from sub, scopes, and user attributes.
+// It also processes any explicit claims request embedded in the access token.
 func (s *userInfoService) buildUserInfoResponse(
 	sub string,
 	scopes []string,
 	userAttributes map[string]interface{},
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
-) map[string]interface{} {
-	scopeClaims := tokenservice.BuildOIDCClaimsFromScopes(
-		scopes,
-		userAttributes,
-		oauthApp,
-	)
-
+	tokenClaims map[string]interface{},
+) (map[string]interface{}, *serviceerror.ServiceError) {
 	response := map[string]interface{}{
 		"sub": sub,
 	}
 
-	for key, value := range scopeClaims {
+	// Build claims from scopes and explicit claims request
+	// Extract only the UserInfo claims map from the access token
+	claimsRequest, svcErr := s.extractClaimsRequest(tokenClaims)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+	var userInfoClaims map[string]*model.IndividualClaimRequest
+	if claimsRequest != nil {
+		userInfoClaims = claimsRequest.UserInfo
+	}
+	claimData := tokenservice.BuildClaims(
+		scopes,
+		userInfoClaims,
+		userAttributes,
+		oauthApp,
+	)
+
+	for key, value := range claimData {
 		response[key] = value
 	}
 
-	return response
+	return response, nil
+}
+
+// extractClaimsRequest extracts the claims request from the access token if present.
+func (s *userInfoService) extractClaimsRequest(
+	tokenClaims map[string]interface{},
+) (*model.ClaimsRequest, *serviceerror.ServiceError) {
+	claimsRequestStr, ok := tokenClaims[constants.ClaimClaimsRequest].(string)
+	if !ok || claimsRequestStr == "" {
+		return nil, nil
+	}
+
+	claimsRequest, err := oauth2utils.ParseClaimsRequest(claimsRequestStr)
+	if err != nil {
+		s.logger.Error("Failed to parse claims request from access token", log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
+
+	return claimsRequest, nil
 }

@@ -21,6 +21,7 @@ package tokenservice
 
 import (
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 )
 
 // TokenType represents the type of token being processed.
@@ -51,6 +52,7 @@ type AccessTokenBuildContext struct {
 	GrantType      string
 	OAuthApp       *appmodel.OAuthAppConfigProcessedDTO
 	ActorClaims    *SubjectTokenClaims
+	ClaimsRequest  *oauth2model.ClaimsRequest
 }
 
 // RefreshTokenBuildContext contains all the information needed to build a refresh token.
@@ -62,6 +64,7 @@ type RefreshTokenBuildContext struct {
 	AccessTokenAudience  string
 	AccessTokenUserAttrs map[string]interface{}
 	OAuthApp             *appmodel.OAuthAppConfigProcessedDTO
+	ClaimsRequest        *oauth2model.ClaimsRequest
 }
 
 // IDTokenBuildContext contains all the information needed to build an ID token (OIDC).
@@ -72,6 +75,7 @@ type IDTokenBuildContext struct {
 	UserAttributes map[string]interface{}
 	AuthTime       int64
 	OAuthApp       *appmodel.OAuthAppConfigProcessedDTO
+	ClaimsRequest  *oauth2model.ClaimsRequest
 }
 
 // RefreshTokenClaims represents the validated claims from a refresh token.
@@ -82,6 +86,7 @@ type RefreshTokenClaims struct {
 	Scopes         []string
 	UserAttributes map[string]interface{}
 	Iat            int64
+	ClaimsRequest  *oauth2model.ClaimsRequest
 }
 
 // SubjectTokenClaims represents the validated claims from a subject token (for token exchange).

@@ -62,6 +62,7 @@ type TokenDTO struct {
 	UserAttributes map[string]interface{}
 	Subject        string
 	Audience       string
+	ClaimsRequest  *ClaimsRequest
 }
 
 // TokenResponseDTO represents the data transfer object for token responses.

@@ -23,6 +23,8 @@ import (
 	"errors"
 	"fmt"
 
+	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
+	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 )
@@ -42,6 +44,7 @@ const (
 	jsonDataKeyCodeChallengeMethod = "code_challenge_method"
 	jsonDataKeyResource            = "resource"
 	jsonDataKeyUserAttributes      = "user_attributes"
+	jsonDataKeyClaimsRequest       = "claims_request"
 )
 
 // AuthorizationCodeStoreInterface defines the interface for managing authorization codes.
@@ -151,6 +154,11 @@ func (acs *authorizationCodeStore) getJSONDataBytes(authzCode AuthorizationCode)
 		jsonData[jsonDataKeyUserAttributes] = authzCode.UserAttributes
 	}
 
+	// Include claims request if present
+	if authzCode.ClaimsRequest != nil {
+		jsonData[jsonDataKeyClaimsRequest] = authzCode.ClaimsRequest
+	}
+
 	jsonDataBytes, err := json.Marshal(jsonData)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling authz data to JSON: %w", err)
@@ -255,5 +263,28 @@ func appendAuthzDataJSON(row map[string]interface{}, authzCode *AuthorizationCod
 		authzCode.UserAttributes = userAttrs
 	}
 
+	if claimsData, ok := authzData[jsonDataKeyClaimsRequest]; ok && claimsData != nil {
+		claimsRequest, err := parseClaimsRequestFromJSON(claimsData)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse claims_request from authorization code: %w", err)
+		}
+		authzCode.ClaimsRequest = claimsRequest
+	}
+
 	return authzCode, nil
+}
+
+// parseClaimsRequestFromJSON parses a ClaimsRequest from JSON data stored in the database.
+func parseClaimsRequestFromJSON(data interface{}) (*oauth2model.ClaimsRequest, error) {
+	if data == nil {
+		return nil, nil
+	}
+
+	// Marshal the data to JSON string
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal claims_request: %w", err)
+	}
+
+	return oauth2utils.ParseClaimsRequest(string(jsonBytes))
 }
