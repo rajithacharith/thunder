@@ -21,7 +21,10 @@ package hash
 
 import (
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
+	"fmt"
+	"hash"
 )
 
 // GenerateThumbprint generates a SHA-256 thumbprint for the given data.
@@ -33,4 +36,35 @@ func GenerateThumbprint(data []byte) string {
 // GenerateThumbprintFromString generates a SHA-256 thumbprint for the given string data.
 func GenerateThumbprintFromString(data string) string {
 	return GenerateThumbprint([]byte(data))
+}
+
+// Hash returns the hash of the given data using the specified algorithm.
+func Hash(data []byte, alg HashAlgorithm) ([]byte, error) {
+	switch alg {
+	case GenericSHA256:
+		h := sha256.Sum256(data)
+		return h[:], nil
+	case GenericSHA384:
+		h := sha512.Sum384(data)
+		return h[:], nil
+	case GenericSHA512:
+		h := sha512.Sum512(data)
+		return h[:], nil
+	default:
+		return nil, fmt.Errorf("unsupported hash algorithm: %s", alg)
+	}
+}
+
+// GetHash returns a hash.Hash for the given algorithm.
+func GetHash(alg HashAlgorithm) (hash.Hash, error) {
+	switch alg {
+	case GenericSHA256:
+		return sha256.New(), nil
+	case GenericSHA384:
+		return sha512.New384(), nil
+	case GenericSHA512:
+		return sha512.New(), nil
+	default:
+		return nil, fmt.Errorf("unsupported hash algorithm: %s", alg)
+	}
 }
