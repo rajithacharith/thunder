@@ -231,56 +231,21 @@ html[data-theme='dark'] .dropdown>.navbar__link:after {
 
 /* ------------------------------ API Doc Adjustments ---------------------- */
 
-.api-method > .menu__link,
-.schema > .menu__link {
-  align-items: center;
-  justify-content: space-between;
+/* Capitalize the Scalar side bar item text transformation */
+.apis-page .scalar-api-reference aside .group\/items > .group\/item .group\/button {
+  text-transform: capitalize;
 }
 
-.api-method > .menu__link::after,
-.schema > .menu__link::after {
-  font-size: 12px;
-  margin-right: var(--ifm-spacing-horizontal);
-  text-transform: uppercase;
-  font-weight: 500;
+/* Hide the introduction in side panel & content in Scalar since it's redundant with the content in the main page. */
+.apis-page .scalar-api-reference aside .group\/items > .group\/item:first-child {
+  display: none;
 }
 
-.get > .menu__link::after {
-  content: "get";
-  color: var(--ifm-color-primary);
+.apis-page .scalar-api-reference main .introduction-section {
+  display: none;
 }
 
-.post > .menu__link::after {
-  content: "post";
-  color: var(--openapi-code-green);
-}
-
-.delete > .menu__link::after {
-  content: "del";
-  color: var(--openapi-code-red);
-}
-
-.put > .menu__link::after {
-  content: "put";
-  color: var(--openapi-code-blue);
-}
-
-.patch > .menu__link::after {
-  content: "patch";
-  color: var(--openapi-code-orange);
-}
-
-.head > .menu__link::after {
-  content: "head";
-  color: var(--ifm-color-secondary-darkest);
-}
-
-.event > .menu__link::after {
-  content: "event";
-  color: var(--ifm-color-secondary-darkest);
-}
-
-.schema > .menu__link::after {
-  content: "schema";
-  color: var(--ifm-color-secondary-darkest);
+/* Capitalize section headers in the API reference */
+.apis-page .scalar-api-reference main .section-header-label {
+  text-transform: capitalize;
 }

@@ -65,7 +65,6 @@
     "eslint": "catalog:",
     "eslint-import-resolver-alias": "1.1.2",
     "eslint-import-resolver-typescript": "4.4.4",
-    "glob": "catalog:",
     "prettier": "catalog:",
     "rimraf": "catalog:",
     "rolldown": "catalog:",

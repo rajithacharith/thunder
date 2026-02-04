@@ -16,21 +16,46 @@
  * under the License.
  */
 
-const thunderConfig = {
+export interface DocusaurusThunderConfig {
+  project: {
+    name: string;
+    description: string;
+    source: {
+      github: {
+        name: string;
+        fullName: string;
+        url: string;
+        discussionsUrl: string;
+        issuesUrl: string;
+        releasesUrl: string;
+        editUrls: {
+          blog: string;
+          content: string;
+        };
+        owner: {
+          name: string;
+        };
+      };
+    };
+  };
+  documentation: {
+    apiDocumentation: {
+      specPath: string;
+    };
+    deployment: {
+      production: {
+        baseUrl: string;
+        url: string;
+      };
+    };
+  };
+}
+
+const docusaurusThunderConfig = {
   project: {
     name: 'Thunder',
     description:
       'Thunder is a modern, open-source identity management service designed for teams building secure, customizable authentication experiences across applications, services, and AI agents.',
-    documentation: {
-      deployment: {
-        production: {
-          baseUrl: 'thunder',
-          // TODO: Docusaurus doesn't seem to allow subpaths in the URL yet.
-          // Can't use the GitHub pages URL until then.
-          url: 'https://thunder.dev',
-        },
-      },
-    },
     source: {
       github: {
         name: 'thunder',
@@ -49,6 +74,19 @@ const thunderConfig = {
       },
     },
   },
+  documentation: {
+    apiDocumentation: {
+      specPath: '/api/combined.yaml',
+    },
+    deployment: {
+      production: {
+        baseUrl: 'thunder',
+        // TODO: Docusaurus doesn't seem to allow subpaths in the URL yet.
+        // Can't use the GitHub pages URL until then.
+        url: 'https://thunder.dev',
+      },
+    },
+  },
 };
 
-export default thunderConfig;
+export default docusaurusThunderConfig;
