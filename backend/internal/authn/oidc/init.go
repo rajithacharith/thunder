@@ -21,7 +21,7 @@ package oidc
 import (
 	"github.com/asgardeo/thunder/internal/idp"
 	syshttp "github.com/asgardeo/thunder/internal/system/http"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/user"
 )
 

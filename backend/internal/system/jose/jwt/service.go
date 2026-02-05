@@ -27,7 +27,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -38,13 +37,13 @@ import (
 	"github.com/asgardeo/thunder/internal/system/crypto/sign"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	httpservice "github.com/asgardeo/thunder/internal/system/http"
+	"github.com/asgardeo/thunder/internal/system/jose/jws"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
 // JWTServiceInterface defines the interface for JWT operations.
 type JWTServiceInterface interface {
-	GetPublicKey() crypto.PublicKey
 	GenerateJWT(sub, aud, iss string, validityPeriod int64, claims map[string]interface{}) (
 		string, int64, *serviceerror.ServiceError)
 	VerifyJWT(jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError
@@ -60,12 +59,12 @@ type JWTServiceInterface interface {
 type jwtService struct {
 	privateKey crypto.PrivateKey
 	signAlg    sign.SignAlgorithm
-	jwsAlg     JWSAlgorithm
+	jwsAlg     jws.Algorithm
 	kid        string
 	logger     *log.Logger
 }
 
-// GetJWTService returns a singleton instance of JWTService.
+// newJWTService creates a new JWT service instance.
 func newJWTService(pkiService pki.PKIServiceInterface) (JWTServiceInterface, error) {
 	preferredKid := config.GetThunderRuntime().Config.JWT.PreferredKeyID
 
@@ -83,7 +82,7 @@ func newJWTService(pkiService pki.PKIServiceInterface) (JWTServiceInterface, err
 		return &jwtService{
 			privateKey: k,
 			signAlg:    sign.RSASHA256,
-			jwsAlg:     RS256,
+			jwsAlg:     jws.RS256,
 			kid:        kid,
 			logger:     logger,
 		}, nil
@@ -91,27 +90,27 @@ func newJWTService(pkiService pki.PKIServiceInterface) (JWTServiceInterface, err
 		// Determine ECDSA algorithm based on curve
 		crvName := k.Curve.Params().Name
 		switch crvName {
-		case "P-256":
+		case jws.P256:
 			return &jwtService{
 				privateKey: k,
 				signAlg:    sign.ECDSASHA256,
-				jwsAlg:     ES256,
+				jwsAlg:     jws.ES256,
 				kid:        kid,
 				logger:     logger,
 			}, nil
-		case "P-384":
+		case jws.P384:
 			return &jwtService{
 				privateKey: k,
 				signAlg:    sign.ECDSASHA384,
-				jwsAlg:     ES384,
+				jwsAlg:     jws.ES384,
 				kid:        kid,
 				logger:     logger,
 			}, nil
-		case "P-521":
+		case jws.P521:
 			return &jwtService{
 				privateKey: k,
 				signAlg:    sign.ECDSASHA512,
-				jwsAlg:     ES512,
+				jwsAlg:     jws.ES512,
 				kid:        kid,
 				logger:     logger,
 			}, nil
@@ -122,29 +121,12 @@ func newJWTService(pkiService pki.PKIServiceInterface) (JWTServiceInterface, err
 		return &jwtService{
 			privateKey: k,
 			signAlg:    sign.ED25519,
-			jwsAlg:     EdDSA,
+			jwsAlg:     jws.EdDSA,
 			kid:        kid,
 			logger:     logger,
 		}, nil
 	default:
 		return nil, errors.New("unsupported private key type")
-	}
-}
-
-// GetPublicKey returns the RSA public key corresponding to the server's private key.
-func (js *jwtService) GetPublicKey() crypto.PublicKey {
-	if js.privateKey == nil {
-		return nil
-	}
-	switch k := js.privateKey.(type) {
-	case *rsa.PrivateKey:
-		return &k.PublicKey
-	case *ecdsa.PrivateKey:
-		return &k.PublicKey
-	case ed25519.PrivateKey:
-		return k.Public()
-	default:
-		return nil
 	}
 }
 
@@ -335,7 +317,7 @@ func (js *jwtService) VerifyJWTSignatureWithPublicKey(jwtToken string,
 		return &ErrorDecodingJWTHeader
 	}
 	algStr, _ := header["alg"].(string)
-	alg, err := mapJWSAlgToSignAlg(JWSAlgorithm(algStr))
+	alg, err := jws.MapAlgorithmToSignAlg(jws.Algorithm(algStr))
 	if err != nil {
 		return &ErrorUnsupportedJWSAlgorithm
 	}
@@ -346,26 +328,6 @@ func (js *jwtService) VerifyJWTSignatureWithPublicKey(jwtToken string,
 		return &ErrorInvalidTokenSignature
 	}
 	return nil
-}
-
-// mapJWSAlgToSignAlg maps JWS alg header values to internal SignAlgorithm.
-func mapJWSAlgToSignAlg(jwsAlg JWSAlgorithm) (sign.SignAlgorithm, error) {
-	switch jwsAlg {
-	case RS256:
-		return sign.RSASHA256, nil
-	case RS512:
-		return sign.RSASHA512, nil
-	case ES256:
-		return sign.ECDSASHA256, nil
-	case ES384:
-		return sign.ECDSASHA384, nil
-	case ES512:
-		return sign.ECDSASHA512, nil
-	case EdDSA:
-		return sign.ED25519, nil
-	default:
-		return "", fmt.Errorf("unsupported JWS alg: %s", jwsAlg)
-	}
 }
 
 // VerifyJWTSignatureWithJWKS verifies the signature of a JWT token using a JWK Set (JWKS) endpoint.
@@ -426,7 +388,7 @@ func (js *jwtService) VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string
 	}
 
 	// Convert JWK to public key
-	pubKey, err := jwkToPublicKey(jwk)
+	pubKey, err := jws.JWKToPublicKey(jwk)
 	if err != nil {
 		js.logger.Debug("Failed to convert JWK to public key: " + err.Error())
 		return &ErrorFailedToParseJWKS

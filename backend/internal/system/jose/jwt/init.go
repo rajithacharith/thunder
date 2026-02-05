@@ -16,12 +16,12 @@
  * under the License.
  */
 
-// Package jwe provides JSON Web Encryption (JWE) related functionalities.
-package jwe
+// Package jwt provides functionalities for handling JSON Web Tokens (JWTs).
+package jwt
 
 import "github.com/asgardeo/thunder/internal/system/crypto/pki"
 
-// Initialize initializes the JWE service.
-func Initialize(pkiService pki.PKIServiceInterface) (JWEServiceInterface, error) {
-	return newJWEService(pkiService)
+// Initialize initializes the JWT service.
+func Initialize(pkiService pki.PKIServiceInterface) (JWTServiceInterface, error) {
+	return newJWTService(pkiService)
 }
