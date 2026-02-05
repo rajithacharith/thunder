@@ -22,6 +22,7 @@
 package engine
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/asgardeo/thunder/internal/role"
@@ -48,7 +49,8 @@ func (e *rbacEngine) GetAuthorizedPermissions(
 	requestedPermissions []string,
 ) ([]string, error) {
 	// Delegate to role service
-	authorizedPerms, svcErr := e.roleService.GetAuthorizedPermissions(userID, groupIDs, requestedPermissions)
+	authorizedPerms, svcErr := e.roleService.GetAuthorizedPermissions(
+		context.TODO(), userID, groupIDs, requestedPermissions)
 	if svcErr != nil {
 		return nil, fmt.Errorf("role service error: %s", svcErr.Error)
 	}

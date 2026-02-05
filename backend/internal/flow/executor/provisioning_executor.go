@@ -403,7 +403,7 @@ func (p *provisioningExecutor) assignGroupsAndRoles(
 	}
 	// Assign to role
 	if roleID != "" {
-		if err := p.assignToRole(userID, roleID, logger); err != nil {
+		if err := p.assignToRole(context.TODO(), userID, roleID, logger); err != nil {
 			roleErr = fmt.Errorf("failed to assign user to role %s: %w", roleID, err)
 		}
 	}
@@ -506,7 +506,8 @@ func (p *provisioningExecutor) assignToGroup(userID string, groupID string, logg
 }
 
 // assignToRole adds the user to the specified role.
-func (p *provisioningExecutor) assignToRole(userID string, roleID string, logger *log.Logger) error {
+func (p *provisioningExecutor) assignToRole(
+	ctx context.Context, userID string, roleID string, logger *log.Logger) error {
 	logger.Debug("Adding user to role",
 		log.String("userID", userID),
 		log.String("roleID", roleID))
@@ -519,7 +520,7 @@ func (p *provisioningExecutor) assignToRole(userID string, roleID string, logger
 		},
 	}
 
-	svcErr := p.roleService.AddAssignments(roleID, assignments)
+	svcErr := p.roleService.AddAssignments(ctx, roleID, assignments)
 	if svcErr != nil {
 		logger.Error("Failed to add role assignment",
 			log.String("roleID", roleID),

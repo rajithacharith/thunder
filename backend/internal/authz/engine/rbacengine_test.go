@@ -21,6 +21,7 @@ package engine
 import (
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -53,7 +54,7 @@ func (suite *RBACEngineTestSuite) TestGetAuthorizedPermissions_Success() {
 	requestedPermissions := []string{"perm1", "perm2", "perm3"}
 	authorizedPermissions := []string{"perm1", "perm3"}
 
-	suite.mockRoleService.On("GetAuthorizedPermissions", userID, groupIDs, requestedPermissions).
+	suite.mockRoleService.On("GetAuthorizedPermissions", mock.Anything, userID, groupIDs, requestedPermissions).
 		Return(authorizedPermissions, nil)
 
 	result, err := suite.engine.GetAuthorizedPermissions(userID, groupIDs, requestedPermissions)
@@ -68,7 +69,7 @@ func (suite *RBACEngineTestSuite) TestGetAuthorizedPermissions_UserOnly() {
 	requestedPermissions := []string{"perm1", "perm2"}
 	authorizedPermissions := []string{"perm1"}
 
-	suite.mockRoleService.On("GetAuthorizedPermissions", userID, groupIDs, requestedPermissions).
+	suite.mockRoleService.On("GetAuthorizedPermissions", mock.Anything, userID, groupIDs, requestedPermissions).
 		Return(authorizedPermissions, nil)
 
 	result, err := suite.engine.GetAuthorizedPermissions(userID, groupIDs, requestedPermissions)
@@ -83,7 +84,7 @@ func (suite *RBACEngineTestSuite) TestGetAuthorizedPermissions_GroupsOnly() {
 	requestedPermissions := []string{"perm1", "perm2"}
 	authorizedPermissions := []string{"perm2"}
 
-	suite.mockRoleService.On("GetAuthorizedPermissions", userID, groupIDs, requestedPermissions).
+	suite.mockRoleService.On("GetAuthorizedPermissions", mock.Anything, userID, groupIDs, requestedPermissions).
 		Return(authorizedPermissions, nil)
 
 	result, err := suite.engine.GetAuthorizedPermissions(userID, groupIDs, requestedPermissions)
@@ -98,7 +99,7 @@ func (suite *RBACEngineTestSuite) TestGetAuthorizedPermissions_NoAuthorizedPermi
 	requestedPermissions := []string{"perm1", "perm2"}
 	authorizedPermissions := []string{}
 
-	suite.mockRoleService.On("GetAuthorizedPermissions", userID, groupIDs, requestedPermissions).
+	suite.mockRoleService.On("GetAuthorizedPermissions", mock.Anything, userID, groupIDs, requestedPermissions).
 		Return(authorizedPermissions, nil)
 
 	result, err := suite.engine.GetAuthorizedPermissions(userID, groupIDs, requestedPermissions)
@@ -119,7 +120,7 @@ func (suite *RBACEngineTestSuite) TestGetAuthorizedPermissions_RoleServiceError(
 		ErrorDescription: "An unexpected error occurred",
 	}
 
-	suite.mockRoleService.On("GetAuthorizedPermissions", userID, groupIDs, requestedPermissions).
+	suite.mockRoleService.On("GetAuthorizedPermissions", mock.Anything, userID, groupIDs, requestedPermissions).
 		Return([]string(nil), roleServiceError)
 
 	result, err := suite.engine.GetAuthorizedPermissions(userID, groupIDs, requestedPermissions)
@@ -134,7 +135,7 @@ func (suite *RBACEngineTestSuite) TestGetAuthorizedPermissions_AllPermissionsAut
 	groupIDs := []string{"group1"}
 	requestedPermissions := []string{"perm1", "perm2"}
 
-	suite.mockRoleService.On("GetAuthorizedPermissions", userID, groupIDs, requestedPermissions).
+	suite.mockRoleService.On("GetAuthorizedPermissions", mock.Anything, userID, groupIDs, requestedPermissions).
 		Return(requestedPermissions, nil)
 
 	result, err := suite.engine.GetAuthorizedPermissions(userID, groupIDs, requestedPermissions)
