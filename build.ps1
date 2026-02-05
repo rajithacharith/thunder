@@ -566,9 +566,7 @@ function Prepare-Frontend-For-Packaging {
     # Copy gate app build output
     if (Test-Path (Join-Path $FRONTEND_GATE_APP_SOURCE_DIR "dist")) {
         Write-Host "Copying Gate app build output..."
-        Get-ChildItem -Path (Join-Path $FRONTEND_GATE_APP_SOURCE_DIR "dist") -Force | ForEach-Object {
-            Copy-Item -Path $_.FullName -Destination (Join-Path $package_folder $GATE_APP_DIST_DIR) -Recurse -Force
-        }
+        Copy-Item -Path (Join-Path $FRONTEND_GATE_APP_SOURCE_DIR "dist\*") -Destination (Join-Path $package_folder $GATE_APP_DIST_DIR) -Recurse -Force
     }
     else {
         Write-Host "Warning: Gate app build output not found at $((Join-Path $FRONTEND_GATE_APP_SOURCE_DIR "dist"))"
@@ -577,9 +575,7 @@ function Prepare-Frontend-For-Packaging {
     # Copy develop app build output
     if (Test-Path (Join-Path $FRONTEND_DEVELOP_APP_SOURCE_DIR "dist")) {
         Write-Host "Copying Develop app build output..."
-        Get-ChildItem -Path (Join-Path $FRONTEND_DEVELOP_APP_SOURCE_DIR "dist") -Force | ForEach-Object {
-            Copy-Item -Path $_.FullName -Destination (Join-Path $package_folder $DEVELOP_APP_DIST_DIR) -Recurse -Force
-        }
+        Copy-Item -Path (Join-Path $FRONTEND_DEVELOP_APP_SOURCE_DIR "dist\*") -Destination (Join-Path $package_folder $DEVELOP_APP_DIST_DIR) -Recurse -Force
     }
     else {
         Write-Host "Warning: Develop app build output not found at $((Join-Path $FRONTEND_DEVELOP_APP_SOURCE_DIR "dist"))"
@@ -1476,10 +1472,49 @@ function Run {
     Write-Host "⚙️  Running initial data setup..."
     Write-Host ""
     
-    # Run the setup script - it will handle server readiness checking
-    # In dev mode, add the frontend dev server redirect URI
-    $setupScript = Join-Path $BACKEND_BASE_DIR "scripts/setup_initial_data.sh"
-    & $setupScript -port $PORT --develop-redirect-uris "https://localhost:${DEVELOP_APP_DEFAULT_PORT}/develop"
+    # Wait for server to be ready
+    $MAX_RETRIES = 30
+    $RETRY_INTERVAL = 2
+    $retries = 0
+    
+    # Configure TLS to use modern protocols (required for HTTPS requests on Windows)
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
+    } catch {
+        # Fallback to TLS 1.2 if TLS 1.3 is not available
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    }
+    
+    Write-Host "[INFO] Waiting for Thunder server to be ready..."
+    while ($retries -lt $MAX_RETRIES) {
+        try {
+            $response = Invoke-WebRequest -Uri "$BASE_URL/health/readiness" -UseBasicParsing -SkipCertificateCheck -ErrorAction Stop
+            if ($response.StatusCode -eq 200) {
+                Write-Host "✓ Server is ready!"
+                break
+            }
+        }
+        catch {
+            # Server not ready yet
+        }
+        
+        $retries++
+        if ($retries -ge $MAX_RETRIES) {
+            Write-Host "❌ Server did not become ready after $MAX_RETRIES attempts"
+            Write-Host "💡 Please ensure the Thunder server is running at $BASE_URL"
+            exit 1
+        }
+        
+        Write-Host "[WAITING] Attempt $retries/$MAX_RETRIES - Server not ready yet, retrying in ${RETRY_INTERVAL}s..."
+        Start-Sleep -Seconds $RETRY_INTERVAL
+    }
+    
+    Write-Host ""
+    
+    # Run the bootstrap script directly with environment variable and arguments
+    $env:THUNDER_API_BASE = $BASE_URL
+    $bootstrapScript = Join-Path $BACKEND_BASE_DIR "cmd/server/bootstrap/01-default-resources.ps1"
+    & $bootstrapScript -DevelopRedirectUris "https://localhost:${DEVELOP_APP_DEFAULT_PORT}/develop"
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "❌ Initial data setup failed"
@@ -1642,7 +1677,7 @@ function Run-Frontend {
         
         Write-Host "Starting frontend applications in the background..."
         # Start frontend processes in background
-        $frontendProcess = Start-Process -FilePath "pnpm" -ArgumentList "-r", "--parallel", "--filter", "@thunder/develop", "--filter", "@thunder/gate", "dev" -PassThru -NoNewWindow
+        $frontendProcess = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "pnpm", "-r", "--parallel", "--filter", "@thunder/develop", "--filter", "@thunder/gate", "dev" -PassThru -NoNewWindow
         $script:FRONTEND_PID = $frontendProcess.Id
     }
     finally {
