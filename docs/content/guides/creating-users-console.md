@@ -6,7 +6,7 @@
 
 This guide explains how to create users in Thunder using the console application. It targets system administrators and IT professionals who manage user accounts.
 
-## When to use This
+## When to use This Provide
 
 Use this guide when you need to add new users to Thunder for authentication and authorization purposes. This is applicable when setting up a new system or managing existing deployments.
 
