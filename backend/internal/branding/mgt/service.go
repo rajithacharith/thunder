@@ -101,7 +101,12 @@ func (bs *brandingMgtService) CreateBranding(
 		return nil, err
 	}
 
-	id := utils.GenerateUUID()
+	id, err := utils.GenerateUUIDv7()
+	if err != nil {
+		bs.logger.Error("Failed to generate UUID", log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
+
 	if err := bs.brandingMgtStore.CreateBranding(id, branding); err != nil {
 		bs.logger.Error("Failed to create branding", log.Error(err))
 		return nil, &serviceerror.InternalServerError

@@ -71,19 +71,8 @@ func main() {
 		logger.Fatal("Failed to initialize multiplexer")
 	}
 
-	// Load the server's private key for signing JWTs.
-	pkiService, err := pki.Initialize()
-	if err != nil {
-		logger.Fatal("Failed to initialize certificate service", log.Error(err))
-	}
-
-	jwtService, err := jwt.Initialize(pkiService)
-	if err != nil {
-		logger.Fatal("Failed to load private key", log.Error(err))
-	}
-
 	// Register the services.
-	registerServices(mux, jwtService, pkiService)
+	jwtService := registerServices(mux)
 
 	// Register static file handlers for frontend applications.
 	registerStaticFileHandlers(logger, mux, thunderHome)

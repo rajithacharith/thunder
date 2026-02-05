@@ -32,9 +32,10 @@ import ExpressLogo from '@site/src/components/icons/ExpressLogo';
 import GoLogo from '@site/src/components/icons/GoLogo';
 import PythonLogo from '@site/src/components/icons/PythonLogo';
 import FlutterLogo from '@site/src/components/icons/FlutterLogo';
-import iOSLogo from '@site/src/components/icons/iOSLogo';
+import IOSLogo from '@site/src/components/icons/IOSLogo';
 import AndroidLogo from '@site/src/components/icons/AndroidLogo';
 import ReactRouterLogo from '@site/src/components/icons/ReactRouterLogo';
+import ApiReference from '@site/src/components/ApiReference';
 
 export default {
   ...MDXComponents,
@@ -57,9 +58,10 @@ export default {
   GoLogo,
   PythonLogo,
   FlutterLogo,
-  iOSLogo,
+  IOSLogo,
   AndroidLogo,
   ReactRouterLogo,
+  ApiReference,
   // TODO: Heading styling is a bit off when oxygen-ui Typography is used.
   // After sorting that out, we can switch to using Oxygen UI Typography for headings as well.
   // ex: h1: (props: TypographyProps<'h1'>) => <Typography variant="h1" {...props} />,

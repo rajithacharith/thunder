@@ -23,9 +23,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/asgardeo/thunder/internal/application"
+	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	flowcm "github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
@@ -178,13 +180,18 @@ func (ah *authorizeHandler) handleInitialAuthorizationRequest(msg *OAuthMessage,
 		oauthParams.RedirectURI = app.RedirectURIs[0]
 	}
 
+	// Compute required attributes from OIDC scopes and access token config
+	requiredAttributes := getRequiredAttributes(oidcScopes, app)
+
 	// Initiate flow with OAuth context
+	runtimeData := map[string]string{
+		"requested_permissions": utils.StringifyStringArray(nonOidcScopes, " "),
+		"required_attributes":   requiredAttributes,
+	}
 	flowInitCtx := &flowexec.FlowInitContext{
 		ApplicationID: app.AppID,
 		FlowType:      string(flowcm.FlowTypeAuthentication),
-		RuntimeData: map[string]string{
-			"requested_permissions": utils.StringifyStringArray(nonOidcScopes, " "),
-		},
+		RuntimeData:   runtimeData,
 	}
 
 	flowID, flowErr := ah.flowExecService.InitiateFlow(flowInitCtx)
@@ -265,9 +272,15 @@ func (ah *authorizeHandler) handleAuthorizationResponseFromEngine(msg *OAuthMess
 		return
 	}
 
-	authorizedScopes := assertionClaims.userAttributes["authorized_permissions"]
+	// Extract authorized permissions for permission scopes
 	// Overwrite the non oidc scopes in auth request context with the authorized scopes from the assertion.
-	authRequestCtx.OAuthParameters.PermissionScopes = utils.ParseStringArray(authorizedScopes, " ")
+	if assertionClaims.authorizedPermissions != "" {
+		authRequestCtx.OAuthParameters.PermissionScopes = utils.ParseStringArray(
+			assertionClaims.authorizedPermissions, " ")
+	} else {
+		// Clear permission scopes if no authorized permissions in assertion
+		authRequestCtx.OAuthParameters.PermissionScopes = []string{}
+	}
 
 	// Generate the authorization code.
 	authzCode, err := createAuthorizationCode(authRequestCtx, &assertionClaims, authTime)
@@ -523,16 +536,23 @@ func createAuthorizationCode(
 	validityPeriod := oauthConfig.AuthorizationCode.ValidityPeriod
 	expiryTime := authTime.Add(time.Duration(validityPeriod) * time.Second)
 
+	codeID, err := utils.GenerateUUIDv7()
+	if err != nil {
+		return AuthorizationCode{}, errors.New("Failed to generate UUID")
+	}
+
+	code, err := utils.GenerateUUIDv7()
+	if err != nil {
+		return AuthorizationCode{}, errors.New("Failed to generate UUID")
+	}
+
 	return AuthorizationCode{
-		CodeID:              utils.GenerateUUID(),
-		Code:                utils.GenerateUUID(),
+		CodeID:              codeID,
+		Code:                code,
 		ClientID:            clientID,
 		RedirectURI:         redirectURI,
 		AuthorizedUserID:    assertionClaims.userID,
-		AuthorizedUserType:  assertionClaims.userType,
-		UserOUID:            assertionClaims.ouID,
-		UserOUName:          assertionClaims.ouName,
-		UserOUHandle:        assertionClaims.ouHandle,
+		UserAttributes:      assertionClaims.userAttributes,
 		TimeCreated:         authTime,
 		ExpiryTime:          expiryTime,
 		Scopes:              utils.StringifyStringArray(allScopes, " "),
@@ -556,7 +576,7 @@ func (ah *authorizeHandler) verifyAssertion(assertion string, logger *log.Logger
 // decodeAttributesFromAssertion decodes user attributes from the flow assertion JWT.
 func decodeAttributesFromAssertion(assertion string) (assertionClaims, time.Time, error) {
 	assertionClaims := assertionClaims{
-		userAttributes: make(map[string]string),
+		userAttributes: make(map[string]interface{}),
 	}
 
 	_, jwtPayload, err := jwt.DecodeJWT(assertion)
@@ -579,72 +599,111 @@ func decodeAttributesFromAssertion(assertion string) (assertionClaims, time.Time
 		}
 	}
 
-	userAttributes := make(map[string]string)
+	// Standard JWT claims that should not be treated as user attributes.
+	standardClaims := map[string]bool{
+		"iss": true, "sub": true, "aud": true, "exp": true, "nbf": true, "iat": true, "jti": true,
+		"assurance":              true,
+		"authorized_permissions": true,
+	}
+
+	userAttributes := make(map[string]interface{})
 	for key, value := range jwtPayload {
-		switch key {
-		case oauth2const.ClaimSub:
+		// Extract sub claim
+		if key == oauth2const.ClaimSub {
 			if strValue, ok := value.(string); ok {
 				assertionClaims.userID = strValue
 			} else {
 				return assertionClaims, time.Time{}, errors.New("JWT 'sub' claim is not a string")
 			}
-		case "username":
-			if strValue, ok := value.(string); ok {
-				userAttributes["username"] = strValue
-			} else {
-				return assertionClaims, time.Time{}, errors.New("JWT 'username' claim is not a string")
-			}
-		case "email":
-			if strValue, ok := value.(string); ok {
-				userAttributes["email"] = strValue
-			} else {
-				return assertionClaims, time.Time{}, errors.New("JWT 'email' claim is not a string")
-			}
-		case "firstName":
-			if strValue, ok := value.(string); ok {
-				userAttributes["firstName"] = strValue
-			} else {
-				return assertionClaims, time.Time{}, errors.New("JWT 'firstName' claim is not a string")
-			}
-		case "lastName":
-			if strValue, ok := value.(string); ok {
-				userAttributes["lastName"] = strValue
-			} else {
-				return assertionClaims, time.Time{}, errors.New("JWT 'lastName' claim is not a string")
-			}
-		case "authorized_permissions":
-			if strValue, ok := value.(string); ok {
-				userAttributes["authorized_permissions"] = strValue
-			} else {
-				return assertionClaims, time.Time{}, errors.New("JWT 'authorized_permissions' claim is not a string")
-			}
-		case oauth2const.ClaimUserType:
-			if strValue, ok := value.(string); ok {
-				assertionClaims.userType = strValue
-			} else {
-				return assertionClaims, time.Time{}, errors.New("JWT 'userType' claim is not a string")
-			}
-		case oauth2const.ClaimOUID:
-			if strValue, ok := value.(string); ok {
-				assertionClaims.ouID = strValue
-			} else {
-				return assertionClaims, time.Time{}, errors.New("JWT 'ouId' claim is not a string")
-			}
-		case oauth2const.ClaimOUName:
-			if strValue, ok := value.(string); ok {
-				assertionClaims.ouName = strValue
-			} else {
-				return assertionClaims, time.Time{}, errors.New("JWT 'ouName' claim is not a string")
-			}
-		case oauth2const.ClaimOUHandle:
-			if strValue, ok := value.(string); ok {
-				assertionClaims.ouHandle = strValue
-			} else {
-				return assertionClaims, time.Time{}, errors.New("JWT 'ouHandle' claim is not a string")
-			}
+			continue
 		}
+
+		// Extract authorized_permissions claim
+		if key == "authorized_permissions" {
+			if strValue, ok := value.(string); ok {
+				assertionClaims.authorizedPermissions = strValue
+			}
+			continue
+		}
+
+		// Skip standard JWT claims
+		if standardClaims[key] {
+			continue
+		}
+
+		// All other claims are treated as user attributes
+		userAttributes[key] = value
 	}
 	assertionClaims.userAttributes = userAttributes
 
 	return assertionClaims, authTime, nil
+}
+
+// getRequiredAttributes computes the required attributes based on OIDC scopes and access token config.
+func getRequiredAttributes(oidcScopes []string, app *appmodel.OAuthAppConfigProcessedDTO) string {
+	if app == nil || app.Token == nil {
+		return ""
+	}
+
+	// Early return if no attributes are configured in either ID token or access token configs
+	if (app.Token.IDToken == nil || len(app.Token.IDToken.UserAttributes) == 0) &&
+		(app.Token.AccessToken == nil || len(app.Token.AccessToken.UserAttributes) == 0) {
+		return ""
+	}
+
+	// Set to collect unique attribute names
+	requiredAttrsSet := make(map[string]bool)
+
+	// Map OIDC scopes to claims for ID token
+	var scopeClaimsMapping map[string][]string
+	var idTokenAllowedSet map[string]bool
+	if app.Token.IDToken != nil {
+		scopeClaimsMapping = app.Token.IDToken.ScopeClaims
+		if len(app.Token.IDToken.UserAttributes) > 0 {
+			idTokenAllowedSet = make(map[string]bool, len(app.Token.IDToken.UserAttributes))
+			for _, attr := range app.Token.IDToken.UserAttributes {
+				idTokenAllowedSet[attr] = true
+			}
+		}
+	}
+
+	for _, scope := range oidcScopes {
+		var scopeClaims []string
+
+		// Check app-specific scope claims first
+		if scopeClaimsMapping != nil {
+			if appClaims, exists := scopeClaimsMapping[scope]; exists {
+				scopeClaims = appClaims
+			}
+		}
+
+		// Fall back to standard OIDC scopes if no app-specific mapping
+		if scopeClaims == nil {
+			if standardScope, exists := oauth2const.StandardOIDCScopes[scope]; exists {
+				scopeClaims = standardScope.Claims
+			}
+		}
+
+		// Add claims to the set, but only if they're allowed in app config
+		for _, claim := range scopeClaims {
+			if idTokenAllowedSet != nil && idTokenAllowedSet[claim] {
+				requiredAttrsSet[claim] = true
+			}
+		}
+	}
+
+	// Add access token attributes from app config
+	if app.Token.AccessToken != nil && len(app.Token.AccessToken.UserAttributes) > 0 {
+		for _, attr := range app.Token.AccessToken.UserAttributes {
+			requiredAttrsSet[attr] = true
+		}
+	}
+
+	// Convert set to slice
+	requiredAttrs := make([]string, 0, len(requiredAttrsSet))
+	for attr := range requiredAttrsSet {
+		requiredAttrs = append(requiredAttrs, attr)
+	}
+
+	return strings.Join(requiredAttrs, " ")
 }

@@ -551,10 +551,10 @@ func retrieveAndValidateApplicationDetails(ts *ApplicationAPITestSuite, expected
 	appForComparison.AuthFlowID = defaultAuthFlowID
 	appForComparison.RegistrationFlowID = defaultRegistrationFlowID
 
-	// If expected doesn't have Token but API returned one (default), copy it to expected
-	// This handles cases where the server provides default token config
-	if appForComparison.Token == nil && app.Token != nil {
-		appForComparison.Token = app.Token
+	// If expected doesn't have assertion token but API returned one (default), copy it to expected
+	// This handles cases where the server provides default assertion config
+	if appForComparison.Assertion == nil && app.Assertion != nil {
+		appForComparison.Assertion = app.Assertion
 	}
 
 	if !app.equals(appForComparison) {
@@ -2278,7 +2278,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 		PolicyURI:   "https://completemeta.example.com/privacy",
 		Contacts:    []string{"admin@completemeta.example.com", "support@completemeta.example.com"},
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
-		Token: &TokenConfig{
+		Assertion: &AssertionConfig{
 			Issuer:         "https://custom-issuer.example.com",
 			ValidityPeriod: 7200,
 			UserAttributes: []string{"email", "username", "groups"},
@@ -2331,11 +2331,11 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 	ts.Assert().Equal("https://completemeta.example.com/privacy", retrievedApp.PolicyURI)
 	ts.Assert().Equal([]string{"admin@completemeta.example.com", "support@completemeta.example.com"}, retrievedApp.Contacts)
 
-	// Verify root token config
-	ts.Require().NotNil(retrievedApp.Token)
-	ts.Assert().Equal("https://custom-issuer.example.com", retrievedApp.Token.Issuer)
-	ts.Assert().Equal(int64(7200), retrievedApp.Token.ValidityPeriod)
-	ts.Assert().Equal([]string{"email", "username", "groups"}, retrievedApp.Token.UserAttributes)
+	// Verify assertion config
+	ts.Require().NotNil(retrievedApp.Assertion)
+	ts.Assert().Equal("https://custom-issuer.example.com", retrievedApp.Assertion.Issuer)
+	ts.Assert().Equal(int64(7200), retrievedApp.Assertion.ValidityPeriod)
+	ts.Assert().Equal([]string{"email", "username", "groups"}, retrievedApp.Assertion.UserAttributes)
 
 	// Verify OAuth config fields
 	ts.Require().Len(retrievedApp.InboundAuthConfig, 1)
@@ -2368,7 +2368,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyRootToken() {
 		Name:        "Root Token Only App",
 		Description: "App with only root token",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
-		Token: &TokenConfig{
+		Assertion: &AssertionConfig{
 			Issuer:         "https://root-issuer.example.com",
 			ValidityPeriod: 5400,
 		},
@@ -2380,9 +2380,9 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyRootToken() {
 
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
-	ts.Require().NotNil(retrievedApp.Token)
-	ts.Assert().Equal("https://root-issuer.example.com", retrievedApp.Token.Issuer)
-	ts.Assert().Equal(int64(5400), retrievedApp.Token.ValidityPeriod)
+	ts.Require().NotNil(retrievedApp.Assertion)
+	ts.Assert().Equal("https://root-issuer.example.com", retrievedApp.Assertion.Issuer)
+	ts.Assert().Equal(int64(5400), retrievedApp.Assertion.ValidityPeriod)
 }
 
 // TestApplicationUpdateMetadataFields tests updating metadata fields.
@@ -2537,7 +2537,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateTokenConfiguration() {
 		Name:        "Update Token Config App",
 		Description: "App to update token config",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
-		Token: &TokenConfig{
+		Assertion: &AssertionConfig{
 			Issuer:         "https://initial-issuer.example.com",
 			ValidityPeriod: 3600,
 		},
@@ -2560,9 +2560,9 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateTokenConfiguration() {
 	defer deleteApplication(appID)
 
 	// Update token config
-	app.Token.Issuer = "https://updated-issuer.example.com"
-	app.Token.ValidityPeriod = 7200
-	app.Token.UserAttributes = []string{"email", "username"}
+	app.Assertion.Issuer = "https://updated-issuer.example.com"
+	app.Assertion.ValidityPeriod = 7200
+	app.Assertion.UserAttributes = []string{"email", "username"}
 
 	payload, _ := json.Marshal(app)
 	req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/applications/%s", testServerURL, appID), bytes.NewReader(payload))
@@ -2578,10 +2578,10 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateTokenConfiguration() {
 	// Verify token config update
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
-	ts.Require().NotNil(retrievedApp.Token)
-	ts.Assert().Equal("https://updated-issuer.example.com", retrievedApp.Token.Issuer)
-	ts.Assert().Equal(int64(7200), retrievedApp.Token.ValidityPeriod)
-	ts.Assert().Equal([]string{"email", "username"}, retrievedApp.Token.UserAttributes)
+	ts.Require().NotNil(retrievedApp.Assertion)
+	ts.Assert().Equal("https://updated-issuer.example.com", retrievedApp.Assertion.Issuer)
+	ts.Assert().Equal(int64(7200), retrievedApp.Assertion.ValidityPeriod)
+	ts.Assert().Equal([]string{"email", "username"}, retrievedApp.Assertion.UserAttributes)
 }
 
 // TestApplicationWithEmptyContacts tests app with empty contacts array.

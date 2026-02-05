@@ -17,11 +17,9 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import type {JSX} from 'react';
 import type {InviteUserRenderProps} from '@asgardeo/react';
-import render from '@/test/test-utils';
 import UsersListPage from '../UsersListPage';
 import type {UserSchemaListResponse} from '../../types/users';
 

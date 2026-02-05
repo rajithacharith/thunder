@@ -43,9 +43,10 @@ import (
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/export"
 	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+	"github.com/asgardeo/thunder/internal/system/jwe"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/services"
@@ -57,17 +58,29 @@ import (
 var observabilitySvc observability.ObservabilityServiceInterface
 
 // registerServices registers all the services with the provided HTTP multiplexer.
-func registerServices(
-	mux *http.ServeMux,
-	jwtService jwt.JWTServiceInterface,
-	pkiService pki.PKIServiceInterface,
-) {
+func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	logger := log.GetLogger()
+
+	// Load the server's private key for signing JWTs.
+	pkiService, err := pki.Initialize()
+	if err != nil {
+		logger.Fatal("Failed to initialize certificate service", log.Error(err))
+	}
+
+	jwtService, err := jwt.Initialize(pkiService)
+	if err != nil {
+		logger.Fatal("Failed to load private key", log.Error(err))
+	}
+
+	_, err = jwe.Initialize(pkiService)
+	if err != nil {
+		logger.Fatal("Failed to initialize JWE service", log.Error(err))
+	}
 
 	observabilitySvc = observability.Initialize()
 
 	// List to collect exporters from each package
-	var exporters []immutableresource.ResourceExporter
+	var exporters []declarativeresource.ResourceExporter
 
 	// Initialize i18n service for internationalization support.
 	_, i18nExporter, err := i18nmgt.Initialize(mux)
@@ -156,6 +169,8 @@ func registerServices(
 
 	// Register the health service.
 	services.NewHealthCheckService(mux)
+
+	return jwtService
 }
 
 // unregisterServices unregisters all services that require cleanup during shutdown.

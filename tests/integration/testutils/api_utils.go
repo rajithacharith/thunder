@@ -236,6 +236,11 @@ func CreateApplication(app Application) (string, error) {
 		appData["allowed_user_types"] = app.AllowedUserTypes
 	}
 
+	// Add assertion config if provided
+	if app.AssertionConfig != nil {
+		appData["assertion"] = app.AssertionConfig
+	}
+
 	appJSON, err := json.Marshal(appData)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal application: %w", err)

@@ -53,7 +53,7 @@
                 "executor": {
                   "name": "EmailOTPExecutor"
                 },
-                "next": ""
+                "onSuccess": ""
               }
             },
             {
@@ -111,7 +111,7 @@
                 "executor": {
                   "name": "SMSOTPExecutor"
                 },
-                "next": ""
+                "onSuccess": ""
               }
             },
             {
@@ -160,7 +160,7 @@
         "executor": {
           "name": "MagicLinkExecutor"
         },
-        "next": ""
+        "onSuccess": ""
       },
       "components": [
         {
@@ -215,7 +215,7 @@
               "label": "Sign In with Passkey",
               "action": {
                 "type": "NEXT",
-                "next": ""
+                "onSuccess": ""
               }
             }
           ]

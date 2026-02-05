@@ -54,3 +54,11 @@ export interface TokenConfig {
    */
   user_attributes: string[];
 }
+
+/**
+ * Assertion Configuration
+ *
+ * Application-level assertion configuration for non-OAuth flows.
+ * This is an alias for TokenConfig with the same properties.
+ */
+export type AssertionConfig = TokenConfig;

@@ -17,10 +17,8 @@
  */
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import {useForm} from 'react-hook-form';
-import render from '@/test/test-utils';
 import renderSchemaField from '../renderSchemaField';
 import type {PropertyDefinition} from '../../types/users';
 

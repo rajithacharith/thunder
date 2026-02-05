@@ -711,7 +711,7 @@ describe('ExecutionExtendedProperties', () => {
             }) as unknown,
           }) as unknown,
           display: expect.objectContaining({
-            label: 'Passkey Challenge',
+            label: 'Request Passkey',
           }) as unknown,
         }),
         passkeyResource,
@@ -751,7 +751,7 @@ describe('ExecutionExtendedProperties', () => {
         'data',
         expect.objectContaining({
           display: expect.objectContaining({
-            label: 'Passkey Verify',
+            label: 'Verify Passkey',
           }) as unknown,
         }),
         passkeyResource,
@@ -784,7 +784,7 @@ describe('ExecutionExtendedProperties', () => {
             relyingPartyName: 'Thunder',
           }) as unknown,
           display: expect.objectContaining({
-            label: 'Passkey Challenge',
+            label: 'Request Passkey',
             icon: 'passkey-icon.png',
           }) as unknown,
         }),

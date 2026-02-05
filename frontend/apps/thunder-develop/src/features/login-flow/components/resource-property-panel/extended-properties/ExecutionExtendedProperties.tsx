@@ -19,15 +19,7 @@
 import type {CommonResourcePropertiesPropsInterface} from '@/features/flows/components/resource-property-panel/ResourceProperties';
 import {useMemo, type ReactNode} from 'react';
 import {useTranslation} from 'react-i18next';
-import {
-  Alert,
-  FormHelperText,
-  FormLabel,
-  MenuItem,
-  Select,
-  Stack,
-  Typography,
-} from '@wso2/oxygen-ui';
+import {Alert, FormHelperText, FormLabel, MenuItem, Select, Stack, TextField, Typography} from '@wso2/oxygen-ui';
 import type {StepData} from '@/features/flows/models/steps';
 import {ExecutionTypes} from '@/features/flows/models/steps';
 import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
@@ -55,9 +47,28 @@ const SMS_OTP_MODES = [
  * Available modes for Passkey executor.
  */
 const PASSKEY_MODES = [
-  {value: 'challenge', translationKey: 'flows:core.executions.passkey.mode.challenge', displayLabel: 'Passkey Challenge'},
-  {value: 'verify', translationKey: 'flows:core.executions.passkey.mode.verify', displayLabel: 'Passkey Verify'},
+  {
+    value: 'challenge',
+    translationKey: 'flows:core.executions.passkey.mode.challenge',
+    displayLabel: 'Request Passkey',
+  },
+  {value: 'verify', translationKey: 'flows:core.executions.passkey.mode.verify', displayLabel: 'Verify Passkey'},
+  {
+    value: 'register_start',
+    translationKey: 'flows:core.executions.passkey.mode.registerStart',
+    displayLabel: 'Start Passkey Registration',
+  },
+  {
+    value: 'register_finish',
+    translationKey: 'flows:core.executions.passkey.mode.registerFinish',
+    displayLabel: 'Finish Passkey Registration',
+  },
 ] as const;
+
+/**
+ * Passkey modes that require relying party configuration.
+ */
+const PASSKEY_MODES_WITH_RELYING_PARTY = ['challenge', 'register_start'] as const;
 
 /**
  * Props interface of {@link ExecutionExtendedProperties}
@@ -101,11 +112,28 @@ function ExecutionExtendedProperties({resource, onChange}: ExecutionExtendedProp
     return (stepData?.properties as {senderId?: string})?.senderId ?? '';
   }, [resource]);
 
+  // Get the current relying party ID for Passkey executor
+  const currentRelyingPartyId = useMemo(() => {
+    const stepData = resource?.data as StepData | undefined;
+    return (stepData?.properties as {relyingPartyId?: string})?.relyingPartyId ?? '';
+  }, [resource]);
+
+  // Get the current relying party name for Passkey executor
+  const currentRelyingPartyName = useMemo(() => {
+    const stepData = resource?.data as StepData | undefined;
+    return (stepData?.properties as {relyingPartyName?: string})?.relyingPartyName ?? '';
+  }, [resource]);
+
   // Check if this is an SMS OTP executor
   const isSmsOtpExecutor = executorName === ExecutionTypes.SMSOTPAuth;
 
   // Check if this is a Passkey executor
   const isPasskeyExecutor = executorName === ExecutionTypes.PasskeyAuth;
+
+  // Check if current Passkey mode requires relying party configuration
+  const showRelyingPartyConfig =
+    isPasskeyExecutor &&
+    PASSKEY_MODES_WITH_RELYING_PARTY.includes(currentMode as (typeof PASSKEY_MODES_WITH_RELYING_PARTY)[number]);
 
   // Get the IDP type for the current executor
   const idpType = useMemo(() => {
@@ -214,6 +242,16 @@ function ExecutionExtendedProperties({resource, onChange}: ExecutionExtendedProp
     onChange('data', updatedData, resource);
   };
 
+  // Handle relying party ID change for Passkey executor
+  const handleRelyingPartyIdChange = (value: string): void => {
+    onChange('data.properties.relyingPartyId', value, resource);
+  };
+
+  // Handle relying party name change for Passkey executor
+  const handleRelyingPartyNameChange = (value: string): void => {
+    onChange('data.properties.relyingPartyName', value, resource);
+  };
+
   // Render SMS OTP mode and sender selector
   if (isSmsOtpExecutor) {
     const hasSenders = (notificationSenders?.length ?? 0) > 0;
@@ -267,20 +305,20 @@ function ExecutionExtendedProperties({resource, onChange}: ExecutionExtendedProp
             ))}
           </Select>
           {showSenderError && (
-            <FormHelperText error>{senderErrorMessage || t('flows:core.executions.smsOtp.sender.required')}</FormHelperText>
+            <FormHelperText error>
+              {senderErrorMessage || t('flows:core.executions.smsOtp.sender.required')}
+            </FormHelperText>
           )}
         </div>
 
         {!isLoadingSenders && !hasSenders && (
-          <Alert severity="warning">
-            {t('flows:core.executions.smsOtp.sender.noSenders')}
-          </Alert>
+          <Alert severity="warning">{t('flows:core.executions.smsOtp.sender.noSenders')}</Alert>
         )}
       </Stack>
     );
   }
 
-  // Render Passkey mode selector
+  // Render Passkey mode selector and relying party configuration
   if (isPasskeyExecutor) {
     return (
       <Stack gap={2}>
@@ -307,6 +345,40 @@ function ExecutionExtendedProperties({resource, onChange}: ExecutionExtendedProp
             ))}
           </Select>
         </div>
+
+        {showRelyingPartyConfig && (
+          <>
+            <div>
+              <FormLabel htmlFor="relying-party-id">
+                {t('flows:core.executions.passkey.relyingPartyId.label')}
+              </FormLabel>
+              <TextField
+                id="relying-party-id"
+                value={currentRelyingPartyId}
+                onChange={(e) => handleRelyingPartyIdChange(e.target.value)}
+                placeholder={t('flows:core.executions.passkey.relyingPartyId.placeholder')}
+                fullWidth
+                size="small"
+              />
+              <FormHelperText>{t('flows:core.executions.passkey.relyingPartyId.hint')}</FormHelperText>
+            </div>
+
+            <div>
+              <FormLabel htmlFor="relying-party-name">
+                {t('flows:core.executions.passkey.relyingPartyName.label')}
+              </FormLabel>
+              <TextField
+                id="relying-party-name"
+                value={currentRelyingPartyName}
+                onChange={(e) => handleRelyingPartyNameChange(e.target.value)}
+                placeholder={t('flows:core.executions.passkey.relyingPartyName.placeholder')}
+                fullWidth
+                size="small"
+              />
+              <FormHelperText>{t('flows:core.executions.passkey.relyingPartyName.hint')}</FormHelperText>
+            </div>
+          </>
+        )}
       </Stack>
     );
   }

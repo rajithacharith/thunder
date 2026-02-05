@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor} from '@testing-library/react';
-import {renderHook} from '../../../../test/test-utils';
+import {waitFor, renderHook} from '@thunder/test-utils';
 import useCreateUserType from '../useCreateUserType';
 import type {ApiUserSchema, CreateUserSchemaRequest} from '../../types/user-types';
 
@@ -33,8 +32,8 @@ vi.mock('@asgardeo/react', () => ({
 
 // Mock useConfig
 const mockGetServerUrl = vi.fn<() => string | undefined>(() => 'https://localhost:8090');
-vi.mock('@thunder/commons-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
     useConfig: () => ({

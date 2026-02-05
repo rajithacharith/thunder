@@ -32,8 +32,8 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/userschema"
@@ -81,7 +81,7 @@ func newApplicationService(
 func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*model.ApplicationDTO,
 	*serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
-	if err := immutableresource.CheckImmutableCreate(); err != nil {
+	if err := declarativeresource.CheckDeclarativeCreate(); err != nil {
 		return nil, err
 	}
 
@@ -91,7 +91,7 @@ func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 	}
 
 	appID := processedDTO.ID
-	rootToken := processedDTO.Token
+	assertion := processedDTO.Assertion
 
 	// Validate and prepare the certificate if provided.
 	cert, svcErr := as.getValidatedCertificateForCreate(appID, app)
@@ -132,7 +132,7 @@ func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 		Template:                  app.Template,
 		URL:                       app.URL,
 		LogoURL:                   app.LogoURL,
-		Token:                     rootToken,
+		Assertion:                 assertion,
 		Certificate:               returnCert,
 		TosURI:                    app.TosURI,
 		PolicyURI:                 app.PolicyURI,
@@ -214,9 +214,14 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 
 	appID := app.ID
 	if appID == "" {
-		appID = sysutils.GenerateUUID()
+		var err error
+		appID, err = sysutils.GenerateUUIDv7()
+		if err != nil {
+			logger.Error("Failed to generate UUID", log.Error(err))
+			return nil, nil, &serviceerror.InternalServerError
+		}
 	}
-	rootToken, finalOAuthAccessToken, finalOAuthIDToken, finalOAuthTokenIssuer := processTokenConfiguration(app)
+	assertion, finalOAuthAccessToken, finalOAuthIDToken, finalOAuthTokenIssuer := processTokenConfiguration(app)
 
 	processedDTO := &model.ApplicationProcessedDTO{
 		ID:                        appID,
@@ -229,7 +234,7 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 		Template:                  app.Template,
 		URL:                       app.URL,
 		LogoURL:                   app.LogoURL,
-		Token:                     rootToken,
+		Assertion:                 assertion,
 		TosURI:                    app.TosURI,
 		PolicyURI:                 app.PolicyURI,
 		Contacts:                  app.Contacts,
@@ -360,7 +365,7 @@ func (as *applicationService) GetApplication(appID string) (*model.Application,
 		LogoURL:                   applicationDTO.LogoURL,
 		TosURI:                    applicationDTO.TosURI,
 		PolicyURI:                 applicationDTO.PolicyURI,
-		Token:                     applicationDTO.Token,
+		Assertion:                 applicationDTO.Assertion,
 		Contacts:                  applicationDTO.Contacts,
 		Certificate:               applicationDTO.Certificate,
 		AllowedUserTypes:          applicationDTO.AllowedUserTypes,
@@ -418,7 +423,7 @@ func (as *applicationService) enrichApplicationWithCertificate(application *mode
 func (as *applicationService) UpdateApplication(appID string, app *model.ApplicationDTO) (
 	*model.ApplicationDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
-	if err := immutableresource.CheckImmutableUpdate(); err != nil {
+	if err := declarativeresource.CheckDeclarativeUpdate(); err != nil {
 		return nil, err
 	}
 
@@ -491,7 +496,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 	}
 
 	// Process token configuration
-	rootToken, finalOAuthAccessToken, finalOAuthIDToken, finalOAuthTokenIssuer := processTokenConfiguration(app)
+	assertion, finalOAuthAccessToken, finalOAuthIDToken, finalOAuthTokenIssuer := processTokenConfiguration(app)
 
 	processedDTO := &model.ApplicationProcessedDTO{
 		ID:                        appID,
@@ -504,7 +509,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		Template:                  app.Template,
 		URL:                       app.URL,
 		LogoURL:                   app.LogoURL,
-		Token:                     rootToken,
+		Assertion:                 assertion,
 		TosURI:                    app.TosURI,
 		PolicyURI:                 app.PolicyURI,
 		Contacts:                  app.Contacts,
@@ -560,7 +565,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		Template:                  app.Template,
 		URL:                       app.URL,
 		LogoURL:                   app.LogoURL,
-		Token:                     rootToken,
+		Assertion:                 assertion,
 		Certificate:               returnCert,
 		TosURI:                    app.TosURI,
 		PolicyURI:                 app.PolicyURI,
@@ -599,7 +604,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 
 // DeleteApplication delete the application for given app id.
 func (as *applicationService) DeleteApplication(appID string) *serviceerror.ServiceError {
-	if err := immutableresource.CheckImmutableDelete(); err != nil {
+	if err := declarativeresource.CheckDeclarativeDelete(); err != nil {
 		return err
 	}
 	if appID == "" {
@@ -1209,41 +1214,41 @@ func (as *applicationService) rollbackApplicationCertificateUpdate(appID string,
 	return nil
 }
 
-// getDefaultTokenConfigFromDeployment creates a default token configuration from deployment settings.
-func getDefaultTokenConfigFromDeployment() *model.TokenConfig {
+// getDefaultAssertionConfigFromDeployment creates a default assertion configuration from deployment settings.
+func getDefaultAssertionConfigFromDeployment() *model.AssertionConfig {
 	jwtConfig := config.GetThunderRuntime().Config.JWT
-	tokenConfig := &model.TokenConfig{
+	assertionConfig := &model.AssertionConfig{
 		Issuer:         jwtConfig.Issuer,
 		ValidityPeriod: jwtConfig.ValidityPeriod,
 	}
 
-	return tokenConfig
+	return assertionConfig
 }
 
 // processTokenConfiguration processes token configuration for an application, applying defaults where necessary.
 func processTokenConfiguration(app *model.ApplicationDTO) (
-	*model.TokenConfig, *model.AccessTokenConfig, *model.IDTokenConfig, string) {
-	// Resolve root token config
-	var rootToken *model.TokenConfig
-	if app.Token != nil {
-		rootToken = &model.TokenConfig{
-			Issuer:         app.Token.Issuer,
-			ValidityPeriod: app.Token.ValidityPeriod,
-			UserAttributes: app.Token.UserAttributes,
+	*model.AssertionConfig, *model.AccessTokenConfig, *model.IDTokenConfig, string) {
+	// Resolve root assertion config
+	var assertion *model.AssertionConfig
+	if app.Assertion != nil {
+		assertion = &model.AssertionConfig{
+			Issuer:         app.Assertion.Issuer,
+			ValidityPeriod: app.Assertion.ValidityPeriod,
+			UserAttributes: app.Assertion.UserAttributes,
 		}
 
-		deploymentDefaults := getDefaultTokenConfigFromDeployment()
-		if rootToken.Issuer == "" {
-			rootToken.Issuer = deploymentDefaults.Issuer
+		deploymentDefaults := getDefaultAssertionConfigFromDeployment()
+		if assertion.Issuer == "" {
+			assertion.Issuer = deploymentDefaults.Issuer
 		}
-		if rootToken.ValidityPeriod == 0 {
-			rootToken.ValidityPeriod = deploymentDefaults.ValidityPeriod
+		if assertion.ValidityPeriod == 0 {
+			assertion.ValidityPeriod = deploymentDefaults.ValidityPeriod
 		}
 	} else {
-		rootToken = getDefaultTokenConfigFromDeployment()
+		assertion = getDefaultAssertionConfigFromDeployment()
 	}
-	if rootToken.UserAttributes == nil {
-		rootToken.UserAttributes = make([]string, 0)
+	if assertion.UserAttributes == nil {
+		assertion.UserAttributes = make([]string, 0)
 	}
 
 	// Resolve OAuth access token config
@@ -1259,15 +1264,15 @@ func processTokenConfiguration(app *model.ApplicationDTO) (
 
 	if oauthAccessToken != nil {
 		if oauthAccessToken.ValidityPeriod == 0 {
-			oauthAccessToken.ValidityPeriod = rootToken.ValidityPeriod
+			oauthAccessToken.ValidityPeriod = assertion.ValidityPeriod
 		}
 		if oauthAccessToken.UserAttributes == nil {
 			oauthAccessToken.UserAttributes = make([]string, 0)
 		}
 	} else {
 		oauthAccessToken = &model.AccessTokenConfig{
-			ValidityPeriod: rootToken.ValidityPeriod,
-			UserAttributes: rootToken.UserAttributes,
+			ValidityPeriod: assertion.ValidityPeriod,
+			UserAttributes: assertion.UserAttributes,
 		}
 	}
 
@@ -1285,7 +1290,7 @@ func processTokenConfiguration(app *model.ApplicationDTO) (
 
 	if oauthIDToken != nil {
 		if oauthIDToken.ValidityPeriod == 0 {
-			oauthIDToken.ValidityPeriod = rootToken.ValidityPeriod
+			oauthIDToken.ValidityPeriod = assertion.ValidityPeriod
 		}
 		if oauthIDToken.UserAttributes == nil {
 			oauthIDToken.UserAttributes = make([]string, 0)
@@ -1295,8 +1300,8 @@ func processTokenConfiguration(app *model.ApplicationDTO) (
 		}
 	} else {
 		oauthIDToken = &model.IDTokenConfig{
-			ValidityPeriod: rootToken.ValidityPeriod,
-			UserAttributes: rootToken.UserAttributes,
+			ValidityPeriod: assertion.ValidityPeriod,
+			UserAttributes: assertion.UserAttributes,
 			ScopeClaims:    make(map[string][]string),
 		}
 	}
@@ -1307,10 +1312,10 @@ func processTokenConfiguration(app *model.ApplicationDTO) (
 		app.InboundAuthConfig[0].OAuthAppConfig.Token.Issuer != "" {
 		tokenIssuer = app.InboundAuthConfig[0].OAuthAppConfig.Token.Issuer
 	} else {
-		tokenIssuer = rootToken.Issuer
+		tokenIssuer = assertion.Issuer
 	}
 
-	return rootToken, oauthAccessToken, oauthIDToken, tokenIssuer
+	return assertion, oauthAccessToken, oauthIDToken, tokenIssuer
 }
 
 // validateRedirectURIs validates redirect URIs format and requirements.

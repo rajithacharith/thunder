@@ -28,10 +28,10 @@ import Head from '@docusaurus/Head';
 import {Box} from '@wso2/oxygen-ui';
 
 export default function Homepage(): ReactNode {
-  const siteConfig = useDocusaurusContext();
+  const {siteConfig} = useDocusaurusContext();
 
   return (
-    <Layout title={siteConfig.siteConfig.tagline} noFooter>
+    <Layout title={siteConfig.tagline} noFooter>
       <Head>
         <link rel="prefetch" href="/assets/css/elements.min.css" />
       </Head>

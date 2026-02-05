@@ -90,7 +90,12 @@ func (fs *FileSubscriber) Initialize() error {
 		fs.categories = []event.EventCategory{event.CategoryAll}
 	}
 
-	fs.id = utils.GenerateUUID()
+	id, err := utils.GenerateUUIDv7()
+	if err != nil {
+		return fmt.Errorf("failed to generate file subscriber ID: %w", err)
+	}
+
+	fs.id = id
 	fs.formatter = fmtr
 	fs.adapter = adptr
 	fs.logger = log.GetLogger().With(log.String(log.LoggerKeyComponentName, fileSubscriberComponentName))

@@ -20,6 +20,7 @@
 package group
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -197,8 +198,14 @@ func (gs *groupService) CreateGroup(request CreateGroupRequest) (*Group, *servic
 		return nil, &ErrorInternalServerError
 	}
 
+	groupDaoID, err := utils.GenerateUUIDv7()
+	if err != nil {
+		logger.Error("Failed to generate UUID", log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
+
 	groupDAO := GroupDAO{
-		ID:                 utils.GenerateUUID(),
+		ID:                 groupDaoID,
 		Name:               request.Name,
 		Description:        request.Description,
 		OrganizationUnitID: request.OrganizationUnitID,
@@ -501,7 +508,7 @@ func (gs *groupService) validateOU(ouID string) *serviceerror.ServiceError {
 func (gs *groupService) validateUserIDs(userIDs []string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
-	invalidUserIDs, svcErr := gs.userService.ValidateUserIDs(userIDs)
+	invalidUserIDs, svcErr := gs.userService.ValidateUserIDs(context.TODO(), userIDs)
 	if svcErr != nil {
 		logger.Error("Failed to validate user IDs", log.String("error", svcErr.Error), log.String("code", svcErr.Code))
 		return &ErrorInternalServerError

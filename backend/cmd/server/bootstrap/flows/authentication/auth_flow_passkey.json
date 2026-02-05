@@ -1,6 +1,6 @@
 {
     "name": "Passkey Only Authentication Flow",
-    "handle": "passkey-authentication-flow",
+    "handle": "default-passkey-flow",
     "flowType": "AUTHENTICATION",
     "nodes": [
         {
@@ -63,10 +63,9 @@
             "id": "identity_resolver",
             "type": "TASK_EXECUTION",
             "executor": {
-                "name": "IdentityResolver"
+                "name": "IdentifyingExecutor"
             },
-            "onSuccess": "passkey_challenge",
-            "onFailure": "prompt_identifier"
+            "onSuccess": "passkey_challenge"
         },
         {
             "id": "passkey_challenge",
@@ -79,8 +78,7 @@
                 "name": "PasskeyAuthExecutor",
                 "mode": "challenge"
             },
-            "onSuccess": "passkey_verify",
-            "onFailure": "prompt_identifier"
+            "onSuccess": "passkey_verify"
         },
         {
             "id": "passkey_verify",
@@ -89,8 +87,7 @@
                 "name": "PasskeyAuthExecutor",
                 "mode": "verify"
             },
-            "onSuccess": "auth_assert",
-            "onFailure": "prompt_identifier"
+            "onSuccess": "auth_assert"
         },
         {
             "id": "auth_assert",

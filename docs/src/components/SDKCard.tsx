@@ -70,7 +70,6 @@ export default function SDKCard({
         height: '100%',
         border: '1px solid',
         borderColor: 'divider',
-        bgcolor: 'background.paper',
         transition: 'all 0.3s ease',
         position: 'relative',
         overflow: 'visible',
@@ -131,7 +130,7 @@ export default function SDKCard({
             {icon}
           </Box>
           <Box sx={{flex: 1, minWidth: 0}}>
-            <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 0.5}}>
+            <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, justifyContent: 'space-between'}}>
               <Typography variant="h6" sx={{fontWeight: 600}}>
                 {title}
               </Typography>

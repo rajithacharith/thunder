@@ -65,7 +65,7 @@
                       "eventType": "SUBMIT",
                       "label": "Continue",
                       "action": {
-                        "next": "{{AUTH_ASSERT_EXECUTOR_ID}}",
+                        "onSuccess": "{{AUTH_ASSERT_EXECUTOR_ID}}",
                         "type": "NEXT"
                       }
                     }
@@ -91,7 +91,8 @@
                 "executor": {
                   "name": "AuthAssertExecutor"
                 },
-                "next": "END"
+                "onSuccess": "END",
+                "onFailure": ""
               }
             }
           },
@@ -214,7 +215,7 @@
                       "label": "Sign In",
                       "action": {
                         "type": "NEXT",
-                        "next": "{{BASIC_AUTH_EXECUTION_STEP_ID}}"
+                        "onSuccess": "{{BASIC_AUTH_EXECUTION_STEP_ID}}"
                       }
                     },
                     {
@@ -245,7 +246,8 @@
                 "executor": {
                   "name": "BasicAuthExecutor"
                 },
-                "next": "{{AUTH_ASSERT_EXECUTOR_ID}}"
+                "onSuccess": "{{AUTH_ASSERT_EXECUTOR_ID}}",
+                "onFailure": ""
               }
             }
           },
@@ -266,7 +268,8 @@
                 "executor": {
                   "name": "AuthAssertExecutor"
                 },
-                "next": "END"
+                "onSuccess": "END",
+                "onFailure": ""
               }
             }
           },
@@ -393,7 +396,7 @@
                       "label": "Continue",
                       "action": {
                         "type": "NEXT",
-                        "next": "{{BASIC_AUTH_EXECUTION_STEP_ID}}"
+                        "onSuccess": "{{BASIC_AUTH_EXECUTION_STEP_ID}}"
                       }
                     }
                   ]
@@ -420,7 +423,7 @@
                       "image": "assets/images/icons/google.svg",
                       "action": {
                         "type": "NEXT",
-                        "next": "{{GOOGLE_EXECUTION_STEP_ID}}"
+                        "onSuccess": "{{GOOGLE_EXECUTION_STEP_ID}}"
                       }
                     }
                   ]
@@ -445,7 +448,7 @@
                 "executor": {
                   "name": "BasicAuthExecutor"
                 },
-                "next": "{{AUTH_ASSERT_EXECUTOR_ID}}"
+                "onSuccess": "{{AUTH_ASSERT_EXECUTOR_ID}}"
               }
             }
           },
@@ -466,7 +469,7 @@
                 "executor": {
                   "name": "GoogleOIDCAuthExecutor"
                 },
-                "next": "{{AUTH_ASSERT_EXECUTOR_ID}}"
+                "onSuccess": "{{AUTH_ASSERT_EXECUTOR_ID}}"
               },
               "properties": {
                 "idpId": "{{IDP_ID}}"
@@ -490,7 +493,8 @@
                 "executor": {
                   "name": "AuthAssertExecutor"
                 },
-                "next": "END"
+                "onSuccess": "END",
+                "onFailure": ""
               }
             }
           },
@@ -625,7 +629,7 @@
                       "label": "Sign In",
                       "action": {
                         "type": "NEXT",
-                        "next": "{{BASIC_AUTH_EXECUTION_STEP_ID}}"
+                        "onSuccess": "{{BASIC_AUTH_EXECUTION_STEP_ID}}"
                       }
                     }
                   ]
@@ -650,7 +654,8 @@
                 "executor": {
                   "name": "BasicAuthExecutor"
                 },
-                "next": "{{SMS_SEND_EXECUTOR_ID}}"
+                "onSuccess": "{{SMS_SEND_EXECUTOR_ID}}",
+                "onFailure": ""
               }
             }
           },
@@ -672,7 +677,8 @@
                   "name": "SMSOTPAuthExecutor",
                   "mode": "send"
                 },
-                "next": "{{SMS_OTP_VERIFICATION_STEP_ID}}"
+                "onSuccess": "{{SMS_OTP_VERIFICATION_STEP_ID}}",
+                "onFailure": ""
               }
             }
           },
@@ -721,7 +727,7 @@
                       "label": "Verify",
                       "action": {
                         "type": "NEXT",
-                        "next": "{{SMS_VERIFY_EXECUTOR_ID}}"
+                        "onSuccess": "{{SMS_VERIFY_EXECUTOR_ID}}"
                       }
                     },
                     {
@@ -732,7 +738,7 @@
                       "label": "Resend OTP",
                       "action": {
                         "type": "NEXT",
-                        "next": "{{SMS_SEND_EXECUTOR_ID}}"
+                        "onSuccess": "{{SMS_SEND_EXECUTOR_ID}}"
                       }
                     }
                   ]
@@ -758,7 +764,8 @@
                   "name": "SMSOTPAuthExecutor",
                   "mode": "verify"
                 },
-                "next": "{{AUTH_ASSERT_EXECUTOR_ID}}"
+                "onSuccess": "{{AUTH_ASSERT_EXECUTOR_ID}}",
+                "onFailure": ""
               }
             }
           },
@@ -779,7 +786,8 @@
                 "executor": {
                   "name": "AuthAssertExecutor"
                 },
-                "next": "END"
+                "onSuccess": "END",
+                "onFailure": ""
               }
             }
           },
@@ -898,7 +906,7 @@
                       "label": "Send OTP",
                       "action": {
                         "type": "NEXT",
-                        "next": "{{SMS_SEND_EXECUTOR_ID}}"
+                        "onSuccess": "{{SMS_SEND_EXECUTOR_ID}}"
                       }
                     }
                   ]
@@ -924,7 +932,8 @@
                   "name": "SMSOTPAuthExecutor",
                   "mode": "send"
                 },
-                "next": "{{SMS_OTP_VERIFICATION_STEP_ID}}"
+                "onSuccess": "{{SMS_OTP_VERIFICATION_STEP_ID}}",
+                "onFailure": ""
               }
             }
           },
@@ -980,7 +989,7 @@
                       "label": "Verify",
                       "action": {
                         "type": "NEXT",
-                        "next": "{{SMS_VERIFY_EXECUTOR_ID}}"
+                        "onSuccess": "{{SMS_VERIFY_EXECUTOR_ID}}"
                       }
                     },
                     {
@@ -991,7 +1000,7 @@
                       "label": "Resend OTP",
                       "action": {
                         "type": "NEXT",
-                        "next": "{{SMS_SEND_EXECUTOR_ID}}"
+                        "onSuccess": "{{SMS_SEND_EXECUTOR_ID}}"
                       }
                     }
                   ]
@@ -1017,7 +1026,8 @@
                   "name": "SMSOTPAuthExecutor",
                   "mode": "verify"
                 },
-                "next": "{{AUTH_ASSERT_EXECUTOR_ID}}"
+                "onSuccess": "{{AUTH_ASSERT_EXECUTOR_ID}}",
+                "onFailure": ""
               }
             }
           },
@@ -1038,7 +1048,8 @@
                 "executor": {
                   "name": "AuthAssertExecutor"
                 },
-                "next": "END"
+                "onSuccess": "END",
+                "onFailure": ""
               }
             }
           },
@@ -1073,7 +1084,7 @@
     "type": "PASSKEY_LOGIN",
     "display": {
       "label": "Passkey Login",
-      "description": "Passwordless login experience using passkeys",
+      "description": "Passwordless login experience using passkeys with registration fallback",
       "image": "assets/images/icons/fingerprint.svg",
       "showOnResourcePanel": true
     },
@@ -1082,6 +1093,10 @@
         "__generationMeta__": {
           "defaultPropertySelectorId": "{{PASSKEY_CHALLENGE_EXECUTOR_ID}}",
           "replacers": [
+            {
+              "key": "PASSKEY_USERNAME_VIEW_ID",
+              "type": "ID"
+            },
             {
               "key": "IDENTITY_RESOLVER_EXECUTOR_ID",
               "type": "ID"
@@ -1092,6 +1107,22 @@
             },
             {
               "key": "PASSKEY_VERIFY_EXECUTOR_ID",
+              "type": "ID"
+            },
+            {
+              "key": "PASSWORD_FOR_REG_VIEW_ID",
+              "type": "ID"
+            },
+            {
+              "key": "BASIC_AUTH_FOR_REG_EXECUTOR_ID",
+              "type": "ID"
+            },
+            {
+              "key": "PASSKEY_REGISTER_START_EXECUTOR_ID",
+              "type": "ID"
+            },
+            {
+              "key": "PASSKEY_REGISTER_FINISH_EXECUTOR_ID",
               "type": "ID"
             },
             {
@@ -1110,19 +1141,19 @@
             },
             "position": {
               "x": 62,
-              "y": 330
+              "y": 569
             }
           },
           {
-            "id": "{{ID}}",
+            "id": "{{PASSKEY_USERNAME_VIEW_ID}}",
             "type": "VIEW",
             "size": {
               "width": 350,
-              "height": 500
+              "height": 529
             },
             "position": {
-              "x": 310,
-              "y": 97
+              "x": 463,
+              "y": 322
             },
             "data": {
               "components": [
@@ -1131,11 +1162,12 @@
                   "category": "DISPLAY",
                   "type": "TEXT",
                   "variant": "HEADING_3",
-                  "label": "Sign In"
+                  "label": "Sign In with Passkey"
                 },
                 {
                   "category": "BLOCK",
                   "type": "BLOCK",
+                  "config": {},
                   "id": "{{ID}}",
                   "components": [
                     {
@@ -1155,10 +1187,10 @@
                       "type": "ACTION",
                       "variant": "PRIMARY",
                       "eventType": "SUBMIT",
-                      "label": "Sign In with Passkey",
+                      "label": "Continue",
                       "action": {
                         "type": "NEXT",
-                        "next": "{{IDENTITY_RESOLVER_EXECUTOR_ID}}"
+                        "onSuccess": "{{IDENTITY_RESOLVER_EXECUTOR_ID}}"
                       }
                     },
                     {
@@ -1177,19 +1209,20 @@
             "type": "TASK_EXECUTION",
             "size": {
               "width": 200,
-              "height": 113
+              "height": 124
             },
             "position": {
-              "x": 820,
-              "y": 291
+              "x": 947,
+              "y": 540
             },
             "data": {
               "action": {
                 "type": "EXECUTOR",
                 "executor": {
-                  "name": "IdentityResolver"
+                  "name": "IdentifyingExecutor"
                 },
-                "next": "{{PASSKEY_CHALLENGE_EXECUTOR_ID}}"
+                "onSuccess": "{{PASSKEY_CHALLENGE_EXECUTOR_ID}}",
+                "onFailure": "{{PASSKEY_USERNAME_VIEW_ID}}"
               }
             }
           },
@@ -1198,11 +1231,11 @@
             "type": "TASK_EXECUTION",
             "size": {
               "width": 200,
-              "height": 113
+              "height": 124
             },
             "position": {
-              "x": 1200,
-              "y": 291
+              "x": 1255,
+              "y": 540
             },
             "data": {
               "action": {
@@ -1211,7 +1244,8 @@
                   "name": "PasskeyAuthExecutor",
                   "mode": "challenge"
                 },
-                "next": "{{PASSKEY_VERIFY_EXECUTOR_ID}}"
+                "onSuccess": "{{PASSKEY_VERIFY_EXECUTOR_ID}}",
+                "onFailure": "{{PASSWORD_FOR_REG_VIEW_ID}}"
               },
               "properties": {
                 "relyingPartyId": "localhost",
@@ -1224,11 +1258,11 @@
             "type": "TASK_EXECUTION",
             "size": {
               "width": 200,
-              "height": 113
+              "height": 124
             },
             "position": {
-              "x": 1580,
-              "y": 291
+              "x": 2241,
+              "y": 315
             },
             "data": {
               "action": {
@@ -1237,7 +1271,141 @@
                   "name": "PasskeyAuthExecutor",
                   "mode": "verify"
                 },
-                "next": "{{AUTH_ASSERT_EXECUTOR_ID}}"
+                "onSuccess": "{{AUTH_ASSERT_EXECUTOR_ID}}",
+                "onFailure": ""
+              }
+            }
+          },
+          {
+            "id": "{{PASSWORD_FOR_REG_VIEW_ID}}",
+            "type": "VIEW",
+            "size": {
+              "width": 350,
+              "height": 544
+            },
+            "position": {
+              "x": 1611,
+              "y": 414
+            },
+            "data": {
+              "components": [
+                {
+                  "id": "{{ID}}",
+                  "category": "DISPLAY",
+                  "type": "TEXT",
+                  "variant": "HEADING_3",
+                  "label": "Register Passkey"
+                },
+                {
+                  "id": "{{ID}}",
+                  "category": "DISPLAY",
+                  "type": "TEXT",
+                  "variant": "BODY_1",
+                  "label": "No passkey found. Enter your password to register a new passkey."
+                },
+                {
+                  "category": "BLOCK",
+                  "type": "BLOCK",
+                  "config": {},
+                  "id": "{{ID}}",
+                  "components": [
+                    {
+                      "id": "{{ID}}",
+                      "category": "FIELD",
+                      "type": "PASSWORD_INPUT",
+                      "inputType": "password",
+                      "ref": "password",
+                      "hint": "",
+                      "label": "Password",
+                      "required": true,
+                      "placeholder": "Enter your password"
+                    },
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "ACTION",
+                      "variant": "PRIMARY",
+                      "eventType": "SUBMIT",
+                      "label": "Verify & Register Passkey",
+                      "action": {
+                        "type": "NEXT",
+                        "onSuccess": "{{BASIC_AUTH_FOR_REG_EXECUTOR_ID}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "id": "{{BASIC_AUTH_FOR_REG_EXECUTOR_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 217,
+              "height": 124
+            },
+            "position": {
+              "x": 2082,
+              "y": 738
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "BasicAuthExecutor"
+                },
+                "onSuccess": "{{PASSKEY_REGISTER_START_EXECUTOR_ID}}",
+                "onFailure": "{{PASSWORD_FOR_REG_VIEW_ID}}"
+              }
+            }
+          },
+          {
+            "id": "{{PASSKEY_REGISTER_START_EXECUTOR_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 249,
+              "height": 124
+            },
+            "position": {
+              "x": 2420,
+              "y": 738
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "PasskeyAuthExecutor",
+                  "mode": "register_start"
+                },
+                "onSuccess": "{{PASSKEY_REGISTER_FINISH_EXECUTOR_ID}}",
+                "onFailure": ""
+              },
+              "properties": {
+                "relyingPartyId": "localhost",
+                "relyingPartyName": "Thunder"
+              }
+            }
+          },
+          {
+            "id": "{{PASSKEY_REGISTER_FINISH_EXECUTOR_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 256,
+              "height": 124
+            },
+            "position": {
+              "x": 2813,
+              "y": 738
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "PasskeyAuthExecutor",
+                  "mode": "register_finish"
+                },
+                "onSuccess": "{{AUTH_ASSERT_EXECUTOR_ID}}",
+                "onFailure": ""
               }
             }
           },
@@ -1246,11 +1414,11 @@
             "type": "TASK_EXECUTION",
             "size": {
               "width": 244,
-              "height": 113
+              "height": 124
             },
             "position": {
-              "x": 1960,
-              "y": 291
+              "x": 3315,
+              "y": 518
             },
             "data": {
               "action": {
@@ -1258,7 +1426,8 @@
                 "executor": {
                   "name": "AuthAssertExecutor"
                 },
-                "next": "END"
+                "onSuccess": "END",
+                "onFailure": ""
               }
             }
           },
@@ -1270,8 +1439,8 @@
               "height": 34
             },
             "position": {
-              "x": 2380,
-              "y": 330
+              "x": 3671,
+              "y": 561
             },
             "config": {},
             "data": {

@@ -1,0 +1,142 @@
+/**
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {describe, it, expect} from 'vitest';
+import type {
+  {{pascalCase featureName}},
+  Basic{{pascalCase featureName}},
+  Create{{pascalCase featureName}}Request,
+  Update{{pascalCase featureName}}Request,
+} from '../{{camelCase featureName}}';
+import {{pascalCase featureName}}Status from '../{{camelCase featureName}}';
+
+describe('{{pascalCase featureName}} Models', () => {
+  describe('{{pascalCase featureName}}Status', () => {
+    it('should have correct enum values', () => {
+      expect({{pascalCase featureName}}Status.ACTIVE).toBe('{{constantCase featureName}}_STATUS_ACTIVE');
+      expect({{pascalCase featureName}}Status.INACTIVE).toBe('{{constantCase featureName}}_STATUS_INACTIVE');
+      expect({{pascalCase featureName}}Status.PENDING).toBe('{{constantCase featureName}}_STATUS_PENDING');
+    });
+  });
+
+  describe('Basic{{pascalCase featureName}}', () => {
+    it('should accept valid basic {{camelCase featureName}} data', () => {
+      const basic{{pascalCase featureName}}: Basic{{pascalCase featureName}} = {
+        id: 'test-{{kebabCase featureName}}-id',
+        name: 'Test {{pascalCase featureName}}',
+        description: 'A test {{camelCase featureName}}',
+        createdAt: '2025-01-01T00:00:00Z',
+        updatedAt: '2025-01-01T00:00:00Z',
+      };
+
+      expect(basic{{pascalCase featureName}}.id).toBe('test-{{kebabCase featureName}}-id');
+      expect(basic{{pascalCase featureName}}.name).toBe('Test {{pascalCase featureName}}');
+      expect(basic{{pascalCase featureName}}.description).toBe('A test {{camelCase featureName}}');
+    });
+
+    it('should work with minimal required fields', () => {
+      const minimal{{pascalCase featureName}}: Basic{{pascalCase featureName}} = {
+        id: 'minimal-id',
+        name: 'Minimal {{pascalCase featureName}}',
+        description: 'Minimal description',
+      };
+
+      expect(minimal{{pascalCase featureName}}.id).toBeDefined();
+      expect(minimal{{pascalCase featureName}}.name).toBeDefined();
+      expect(minimal{{pascalCase featureName}}.description).toBeDefined();
+    });
+  });
+
+  describe('{{pascalCase featureName}}', () => {
+    it('should extend Basic{{pascalCase featureName}} with additional properties', () => {
+      const full{{pascalCase featureName}}: {{pascalCase featureName}} = {
+        id: 'full-{{kebabCase featureName}}-id',
+        name: 'Full {{pascalCase featureName}}',
+        description: 'A complete {{camelCase featureName}}',
+        status: {{pascalCase featureName}}Status.ACTIVE,
+        owner: {
+          id: 'owner-id',
+          name: 'Owner Name',
+          email: 'owner@example.com',
+        },
+        config: {
+          setting1: 'value1',
+          setting2: true,
+        },
+        tags: ['tag1', 'tag2'],
+        metadata: {
+          key1: 'value1',
+          key2: 123,
+          key3: true,
+        },
+      };
+
+      expect(full{{pascalCase featureName}}.status).toBe({{pascalCase featureName}}Status.ACTIVE);
+      expect(full{{pascalCase featureName}}.owner?.name).toBe('Owner Name');
+      expect(full{{pascalCase featureName}}.tags).toContain('tag1');
+      expect(full{{pascalCase featureName}}.metadata?.key2).toBe(123);
+    });
+  });
+
+  describe('Create{{pascalCase featureName}}Request', () => {
+    it('should accept valid creation request', () => {
+      const createRequest: Create{{pascalCase featureName}}Request = {
+        name: 'New {{pascalCase featureName}}',
+        description: 'A new {{camelCase featureName}} to be created',
+        config: {
+          initialSetting: 'value',
+        },
+        tags: ['new', 'test'],
+        metadata: {
+          source: 'test',
+        },
+      };
+
+      expect(createRequest.name).toBe('New {{pascalCase featureName}}');
+      expect(createRequest.config?.initialSetting).toBe('value');
+    });
+
+    it('should work with minimal required fields', () => {
+      const minimalRequest: Create{{pascalCase featureName}}Request = {
+        name: 'Minimal {{pascalCase featureName}}',
+        description: 'Minimal description',
+      };
+
+      expect(minimalRequest.name).toBeDefined();
+      expect(minimalRequest.description).toBeDefined();
+    });
+  });
+
+  describe('Update{{pascalCase featureName}}Request', () => {
+    it('should accept partial updates', () => {
+      const updateRequest: Update{{pascalCase featureName}}Request = {
+        name: 'Updated {{pascalCase featureName}}',
+        status: {{pascalCase featureName}}Status.INACTIVE,
+      };
+
+      expect(updateRequest.name).toBe('Updated {{pascalCase featureName}}');
+      expect(updateRequest.status).toBe({{pascalCase featureName}}Status.INACTIVE);
+    });
+
+    it('should work with empty update object', () => {
+      const emptyUpdate: Update{{pascalCase featureName}}Request = {};
+
+      expect(emptyUpdate).toBeDefined();
+    });
+  });
+});

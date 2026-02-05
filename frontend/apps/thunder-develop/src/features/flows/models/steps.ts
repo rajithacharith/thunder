@@ -41,9 +41,14 @@ export interface StepWithCodeGenerationMetadata extends StrictStep {
 
 export interface StepAction {
   /**
-   * The ID of the next step to navigate to.
+   * The ID of the next step to navigate to on success.
    */
-  next?: string;
+  onSuccess?: string;
+  /**
+   * The ID of the next step to navigate to on failure.
+   * Used for TASK_EXECUTION nodes that support branching.
+   */
+  onFailure?: string;
   /**
    * The executor configuration for this action.
    */

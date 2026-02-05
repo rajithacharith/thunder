@@ -19,7 +19,7 @@
 import type {JSX} from 'react';
 import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
 import {AsgardeoProvider} from '@asgardeo/react';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
 import I18nProvider from './i18n/I18nProvider';
@@ -37,11 +37,6 @@ export default function AppWithConfig(): JSX.Element {
       afterSignInUrl={getClientUrl() ?? (import.meta.env.VITE_ASGARDEO_AFTER_SIGN_IN_URL as string)}
       scopes={getScopes().length > 0 ? getScopes() : undefined}
       platform="AsgardeoV2"
-      tokenValidation={{
-        idToken: {
-          validate: false,
-        },
-      }}
     >
       <OxygenUIThemeProvider radialBackground>
         <QueryClientProvider client={queryClient}>

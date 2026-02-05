@@ -21,25 +21,30 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 import fs from 'fs';
 import webpackPlugin from './plugins/webpackPlugin';
-import thunderConfig from './thunder.config';
-
-const resourcesHTML = fs.readFileSync('./src/snippets/resources.html', 'utf-8');
+import thunderConfig from './docusaurus.thunder.config';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
+
+const resourcesHTML = fs.readFileSync('./src/snippets/resources.html', 'utf-8');
 
 const config: Config = {
   title: thunderConfig.project.name,
   tagline: thunderConfig.project.description,
   favicon: 'assets/images/favicon.ico',
 
+  // Prevent search engine indexing
+  // TODO: Remove this flag when the docs are ready for public access
+  // Tracker: https://github.com/asgardeo/thunder/issues/1209
+  noIndex: true,
+
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
     v4: true, // Improve compatibility with the upcoming Docusaurus v4
   },
 
-  url: thunderConfig.project.documentation.deployment.production.url,
+  url: thunderConfig.documentation.deployment.production.url,
   // Since we use GitHub pages, the base URL is the repository name.
-  baseUrl: `/${thunderConfig.project.documentation.deployment.production.baseUrl}/`,
+  baseUrl: `/${thunderConfig.documentation.deployment.production.baseUrl}/`,
 
   // GitHub pages deployment config.
   organizationName: thunderConfig.project.source.github.owner.name, // Usually your GitHub org/user name.
@@ -53,123 +58,7 @@ const config: Config = {
     locales: ['en'],
   },
 
-  plugins: [
-    webpackPlugin,
-    [
-      'docusaurus-plugin-openapi-docs',
-      {
-        id: 'openapi-api',
-        docsPluginId: 'classic',
-        config: {
-          applications: {
-            specPath: '../api/application.yaml',
-            outputDir: 'docs/apis/application',
-            sidebarOptions: {
-              groupPathsBy: 'tag',
-            },
-          },
-          authentication: {
-            specPath: '../api/authentication.yaml',
-            outputDir: 'docs/apis/authentication',
-            sidebarOptions: {
-              groupPathsBy: 'tag',
-            },
-          },
-          branding: {
-            specPath: '../api/branding.yaml',
-            outputDir: 'docs/apis/branding',
-            sidebarOptions: {
-              groupPathsBy: 'tag',
-            },
-          },
-          flowExecution: {
-            specPath: '../api/flow-execution.yaml',
-            outputDir: 'docs/apis/flow-execution',
-            sidebarOptions: {
-              groupPathsBy: 'tag',
-            },
-          },
-          flowManagement: {
-            specPath: '../api/flow-management.yaml',
-            outputDir: 'docs/apis/flow-management',
-            sidebarOptions: {
-              groupPathsBy: 'tag',
-            },
-          },
-          group: {
-            specPath: '../api/group.yaml',
-            outputDir: 'docs/apis/group',
-            sidebarOptions: {
-              groupPathsBy: 'tag',
-            },
-          },
-          healthCheck: {
-            specPath: '../api/healthcheck.yaml',
-            outputDir: 'docs/apis/health-check',
-            sidebarOptions: {
-              groupPathsBy: 'tag',
-            },
-          },
-          i18n: {
-            specPath: '../api/i18n.yaml',
-            outputDir: 'docs/apis/i18n',
-            sidebarOptions: {
-              groupPathsBy: 'tag',
-            },
-          },
-          idp: {
-            specPath: '../api/idp.yaml',
-            outputDir: 'docs/apis/idp',
-            sidebarOptions: {
-              groupPathsBy: 'tag',
-            },
-          },
-          notificationSender: {
-            specPath: '../api/notification-sender.yaml',
-            outputDir: 'docs/apis/notification-sender',
-            sidebarOptions: {
-              groupPathsBy: 'tag',
-            },
-          },
-          ou: {
-            specPath: '../api/ou.yaml',
-            outputDir: 'docs/apis/ou',
-            sidebarOptions: {
-              groupPathsBy: 'tag',
-            },
-          },
-          registration: {
-            specPath: '../api/registration.yaml',
-            outputDir: 'docs/apis/registration',
-            sidebarOptions: {
-              groupPathsBy: 'tag',
-            },
-          },
-          resource: {
-            specPath: '../api/resource.yaml',
-            outputDir: 'docs/apis/resource',
-            sidebarOptions: {
-              groupPathsBy: 'tag',
-            },
-          },
-          role: {
-            specPath: '../api/role.yaml',
-            outputDir: 'docs/apis/role',
-            sidebarOptions: {
-              groupPathsBy: 'tag',
-            },
-          },
-          user: {
-            specPath: '../api/user.yaml',
-            outputDir: 'docs/apis/user',
-            sidebarOptions: {
-              groupPathsBy: 'tag',
-            },
-          },
-        },
-      },
-    ],
-  ],
+  plugins: [webpackPlugin],
 
   presets: [
     [
@@ -178,8 +67,6 @@ const config: Config = {
         docs: {
           path: 'content',
           sidebarPath: './sidebars.ts',
-          // Derived from docusaurus-theme-openapi
-          docItemComponent: '@theme/ApiItem',
           // Edit URL for the "edit this page" feature.
           editUrl: thunderConfig.project.source.github.editUrls.content,
         },
@@ -203,9 +90,12 @@ const config: Config = {
     ],
   ],
 
-  themes: ['docusaurus-theme-openapi-docs'],
-
   themeConfig: {
+    announcementBar: {
+      id: 'docs_wip',
+      content: '🚧 WIP: Docs are under active development and may change frequently.',
+      isCloseable: false,
+    },
     image: 'assets/images/thunder-social-card.png',
     colorMode: {
       respectPrefersColorScheme: true,
@@ -229,8 +119,7 @@ const config: Config = {
           className: 'navbar__link--docs',
         },
         {
-          type: 'docSidebar',
-          sidebarId: 'apisSidebar',
+          to: '/apis',
           position: 'left',
           label: 'APIs',
         },
@@ -274,10 +163,15 @@ const config: Config = {
       copyright: `Copyright © ${new Date().getFullYear()} ${thunderConfig.project.name}.`,
     },
     prism: {
-      theme: prismThemes.github,
-      darkTheme: prismThemes.dracula,
+      theme: prismThemes.nightOwlLight,
+      darkTheme: prismThemes.nightOwl,
     },
   } satisfies Preset.ThemeConfig,
+
+  /* -------------------------------- Thunder Config ------------------------------- */
+  customFields: {
+    thunder: thunderConfig,
+  },
 };
 
 export default config;

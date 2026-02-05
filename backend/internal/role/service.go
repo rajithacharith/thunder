@@ -20,6 +20,7 @@
 package role
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -27,6 +28,7 @@ import (
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	resourcepkg "github.com/asgardeo/thunder/internal/resource"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
@@ -37,17 +39,19 @@ const loggerComponentName = "RoleMgtService"
 
 // RoleServiceInterface defines the interface for the role service.
 type RoleServiceInterface interface {
-	GetRoleList(limit, offset int) (*RoleList, *serviceerror.ServiceError)
-	CreateRole(role RoleCreationDetail) (*RoleWithPermissionsAndAssignments, *serviceerror.ServiceError)
-	GetRoleWithPermissions(id string) (*RoleWithPermissions, *serviceerror.ServiceError)
-	UpdateRoleWithPermissions(id string, role RoleUpdateDetail) (*RoleWithPermissions, *serviceerror.ServiceError)
-	DeleteRole(id string) *serviceerror.ServiceError
-	GetRoleAssignments(id string, limit, offset int,
+	GetRoleList(ctx context.Context, limit, offset int) (*RoleList, *serviceerror.ServiceError)
+	CreateRole(ctx context.Context, role RoleCreationDetail) (
+		*RoleWithPermissionsAndAssignments, *serviceerror.ServiceError)
+	GetRoleWithPermissions(ctx context.Context, id string) (*RoleWithPermissions, *serviceerror.ServiceError)
+	UpdateRoleWithPermissions(ctx context.Context, id string, role RoleUpdateDetail) (
+		*RoleWithPermissions, *serviceerror.ServiceError)
+	DeleteRole(ctx context.Context, id string) *serviceerror.ServiceError
+	GetRoleAssignments(ctx context.Context, id string, limit, offset int,
 		includeDisplay bool) (*AssignmentList, *serviceerror.ServiceError)
-	AddAssignments(id string, assignments []RoleAssignment) *serviceerror.ServiceError
-	RemoveAssignments(id string, assignments []RoleAssignment) *serviceerror.ServiceError
+	AddAssignments(ctx context.Context, id string, assignments []RoleAssignment) *serviceerror.ServiceError
+	RemoveAssignments(ctx context.Context, id string, assignments []RoleAssignment) *serviceerror.ServiceError
 	GetAuthorizedPermissions(
-		userID string, groups []string, requestedPermissions []string,
+		ctx context.Context, userID string, groups []string, requestedPermissions []string,
 	) ([]string, *serviceerror.ServiceError)
 }
 
@@ -58,6 +62,7 @@ type roleService struct {
 	groupService    group.GroupServiceInterface
 	ouService       oupkg.OrganizationUnitServiceInterface
 	resourceService resourcepkg.ResourceServiceInterface
+	transactioner   transaction.Transactioner
 }
 
 // newRoleService creates a new instance of RoleService with injected dependencies.
@@ -67,6 +72,7 @@ func newRoleService(
 	groupService group.GroupServiceInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	resourceService resourcepkg.ResourceServiceInterface,
+	transactioner transaction.Transactioner,
 ) RoleServiceInterface {
 	return &roleService{
 		roleStore:       roleStore,
@@ -74,24 +80,25 @@ func newRoleService(
 		groupService:    groupService,
 		ouService:       ouService,
 		resourceService: resourceService,
+		transactioner:   transactioner,
 	}
 }
 
 // GetRoleList retrieves a list of roles.
-func (rs *roleService) GetRoleList(limit, offset int) (*RoleList, *serviceerror.ServiceError) {
+func (rs *roleService) GetRoleList(ctx context.Context, limit, offset int) (*RoleList, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
 	}
 
-	totalCount, err := rs.roleStore.GetRoleListCount()
+	totalCount, err := rs.roleStore.GetRoleListCount(ctx)
 	if err != nil {
 		logger.Error("Failed to get role count", log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
 
-	roles, err := rs.roleStore.GetRoleList(limit, offset)
+	roles, err := rs.roleStore.GetRoleList(ctx, limit, offset)
 	if err != nil {
 		logger.Error("Failed to list roles", log.Error(err))
 		return nil, &ErrorInternalServerError
@@ -110,7 +117,7 @@ func (rs *roleService) GetRoleList(limit, offset int) (*RoleList, *serviceerror.
 
 // CreateRole creates a new role.
 func (rs *roleService) CreateRole(
-	role RoleCreationDetail,
+	ctx context.Context, role RoleCreationDetail,
 ) (*RoleWithPermissionsAndAssignments, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Creating role", log.String("name", role.Name))
@@ -126,7 +133,7 @@ func (rs *roleService) CreateRole(
 
 	// Validate assignment IDs early to avoid unnecessary database operations
 	if len(role.Assignments) > 0 {
-		if err := rs.validateAssignmentIDs(role.Assignments); err != nil {
+		if err := rs.validateAssignmentIDs(ctx, role.Assignments); err != nil {
 			return nil, err
 		}
 	}
@@ -143,7 +150,7 @@ func (rs *roleService) CreateRole(
 	}
 
 	// Check if role name already exists in the organization unit
-	nameExists, err := rs.roleStore.CheckRoleNameExists(role.OrganizationUnitID, role.Name)
+	nameExists, err := rs.roleStore.CheckRoleNameExists(ctx, role.OrganizationUnitID, role.Name)
 	if err != nil {
 		logger.Error("Failed to check role name existence", log.Error(err))
 		return nil, &ErrorInternalServerError
@@ -154,10 +161,10 @@ func (rs *roleService) CreateRole(
 		return nil, &ErrorRoleNameConflict
 	}
 
-	id := utils.GenerateUUID()
-	if err := rs.roleStore.CreateRole(id, role); err != nil {
-		logger.Error("Failed to create role", log.Error(err))
-		return nil, &ErrorInternalServerError
+	id, err := utils.GenerateUUIDv7()
+	if err != nil {
+		logger.Error("Failed to generate UUID", log.Error(err))
+		return nil, &serviceerror.InternalServerError
 	}
 
 	serviceRole := &RoleWithPermissionsAndAssignments{
@@ -169,12 +176,25 @@ func (rs *roleService) CreateRole(
 		Assignments:        role.Assignments,
 	}
 
+	err = rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		if err := rs.roleStore.CreateRole(txCtx, id, role); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		logger.Error("Failed to create role", log.Error(err))
+		return nil, &ErrorInternalServerError
+	}
+
 	logger.Debug("Successfully created role", log.String("id", id), log.String("name", role.Name))
 	return serviceRole, nil
 }
 
 // GetRoleWithPermissions retrieves a specific role by its id.
-func (rs *roleService) GetRoleWithPermissions(id string) (*RoleWithPermissions, *serviceerror.ServiceError) {
+func (rs *roleService) GetRoleWithPermissions(ctx context.Context, id string) (
+	*RoleWithPermissions, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Retrieving role", log.String("id", id))
 
@@ -182,7 +202,7 @@ func (rs *roleService) GetRoleWithPermissions(id string) (*RoleWithPermissions, 
 		return nil, &ErrorMissingRoleID
 	}
 
-	role, err := rs.roleStore.GetRole(id)
+	role, err := rs.roleStore.GetRole(ctx, id)
 	if err != nil {
 		if errors.Is(err, ErrRoleNotFound) {
 			logger.Debug("Role not found", log.String("id", id))
@@ -198,7 +218,7 @@ func (rs *roleService) GetRoleWithPermissions(id string) (*RoleWithPermissions, 
 
 // UpdateRole updates an existing role.
 func (rs *roleService) UpdateRoleWithPermissions(
-	id string, role RoleUpdateDetail) (*RoleWithPermissions, *serviceerror.ServiceError) {
+	ctx context.Context, id string, role RoleUpdateDetail) (*RoleWithPermissions, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Updating role", log.String("id", id), log.String("name", role.Name))
 
@@ -215,7 +235,7 @@ func (rs *roleService) UpdateRoleWithPermissions(
 		return nil, err
 	}
 
-	exists, err := rs.roleStore.IsRoleExist(id)
+	exists, err := rs.roleStore.IsRoleExist(ctx, id)
 	if err != nil {
 		logger.Error("Failed to check role existence", log.String("id", id), log.Error(err))
 		return nil, &ErrorInternalServerError
@@ -237,7 +257,7 @@ func (rs *roleService) UpdateRoleWithPermissions(
 	}
 
 	// Check if role name already exists in the organization unit (excluding the current role)
-	nameExists, err := rs.roleStore.CheckRoleNameExistsExcludingID(role.OrganizationUnitID, role.Name, id)
+	nameExists, err := rs.roleStore.CheckRoleNameExistsExcludingID(ctx, role.OrganizationUnitID, role.Name, id)
 	if err != nil {
 		logger.Error("Failed to check role name existence", log.Error(err))
 		return nil, &ErrorInternalServerError
@@ -248,7 +268,11 @@ func (rs *roleService) UpdateRoleWithPermissions(
 		return nil, &ErrorRoleNameConflict
 	}
 
-	if err := rs.roleStore.UpdateRole(id, role); err != nil {
+	err = rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		return rs.roleStore.UpdateRole(txCtx, id, role)
+	})
+
+	if err != nil {
 		logger.Error("Failed to update role", log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
@@ -264,7 +288,7 @@ func (rs *roleService) UpdateRoleWithPermissions(
 }
 
 // DeleteRole delete the specified role by its id.
-func (rs *roleService) DeleteRole(id string) *serviceerror.ServiceError {
+func (rs *roleService) DeleteRole(ctx context.Context, id string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Deleting role", log.String("id", id))
 
@@ -272,7 +296,7 @@ func (rs *roleService) DeleteRole(id string) *serviceerror.ServiceError {
 		return &ErrorMissingRoleID
 	}
 
-	exists, err := rs.roleStore.IsRoleExist(id)
+	exists, err := rs.roleStore.IsRoleExist(ctx, id)
 	if err != nil {
 		logger.Error("Failed to check role existence", log.String("id", id), log.Error(err))
 		return &ErrorInternalServerError
@@ -283,7 +307,7 @@ func (rs *roleService) DeleteRole(id string) *serviceerror.ServiceError {
 	}
 
 	// Check if role has any assignments before deleting
-	assignmentCount, err := rs.roleStore.GetRoleAssignmentsCount(id)
+	assignmentCount, err := rs.roleStore.GetRoleAssignmentsCount(ctx, id)
 	if err != nil {
 		logger.Error("Failed to get role assignments count", log.String("id", id), log.Error(err))
 		return &ErrorInternalServerError
@@ -295,7 +319,7 @@ func (rs *roleService) DeleteRole(id string) *serviceerror.ServiceError {
 		return &ErrorCannotDeleteRole
 	}
 
-	if err := rs.roleStore.DeleteRole(id); err != nil {
+	if err := rs.roleStore.DeleteRole(ctx, id); err != nil {
 		logger.Error("Failed to delete role", log.String("id", id), log.Error(err))
 		return &ErrorInternalServerError
 	}
@@ -305,7 +329,7 @@ func (rs *roleService) DeleteRole(id string) *serviceerror.ServiceError {
 }
 
 // GetRoleAssignments retrieves assignments for a role with pagination.
-func (rs *roleService) GetRoleAssignments(id string, limit, offset int,
+func (rs *roleService) GetRoleAssignments(ctx context.Context, id string, limit, offset int,
 	includeDisplay bool) (*AssignmentList, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
@@ -317,7 +341,7 @@ func (rs *roleService) GetRoleAssignments(id string, limit, offset int,
 		return nil, &ErrorMissingRoleID
 	}
 
-	exists, err := rs.roleStore.IsRoleExist(id)
+	exists, err := rs.roleStore.IsRoleExist(ctx, id)
 	if err != nil {
 		logger.Error("Failed to check role existence", log.String("id", id), log.Error(err))
 		return nil, &ErrorInternalServerError
@@ -327,13 +351,13 @@ func (rs *roleService) GetRoleAssignments(id string, limit, offset int,
 		return nil, &ErrorRoleNotFound
 	}
 
-	totalCount, err := rs.roleStore.GetRoleAssignmentsCount(id)
+	totalCount, err := rs.roleStore.GetRoleAssignmentsCount(ctx, id)
 	if err != nil {
 		logger.Error("Failed to get role assignments count", log.String("id", id), log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
 
-	assignments, err := rs.roleStore.GetRoleAssignments(id, limit, offset)
+	assignments, err := rs.roleStore.GetRoleAssignments(ctx, id, limit, offset)
 	if err != nil {
 		logger.Error("Failed to get role assignments", log.String("id", id), log.Error(err))
 		return nil, &ErrorInternalServerError
@@ -346,7 +370,7 @@ func (rs *roleService) GetRoleAssignments(id string, limit, offset int,
 		// Populate display names if requested
 		displayName := ""
 		if includeDisplay {
-			displayName, err = rs.getDisplayNameForAssignment(&assignments[i])
+			displayName, err = rs.getDisplayNameForAssignment(ctx, &assignments[i])
 			if err != nil {
 				logger.Warn("Failed to get display name for assignment",
 					log.String("assignmentID", assignments[i].ID),
@@ -375,7 +399,8 @@ func (rs *roleService) GetRoleAssignments(id string, limit, offset int,
 }
 
 // AddAssignments adds assignments to a role.
-func (rs *roleService) AddAssignments(id string, assignments []RoleAssignment) *serviceerror.ServiceError {
+func (rs *roleService) AddAssignments(
+	ctx context.Context, id string, assignments []RoleAssignment) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Adding assignments to role", log.String("id", id))
 
@@ -387,7 +412,7 @@ func (rs *roleService) AddAssignments(id string, assignments []RoleAssignment) *
 		return err
 	}
 
-	exists, err := rs.roleStore.IsRoleExist(id)
+	exists, err := rs.roleStore.IsRoleExist(ctx, id)
 	if err != nil {
 		logger.Error("Failed to check role existence", log.String("id", id), log.Error(err))
 		return &ErrorInternalServerError
@@ -397,11 +422,16 @@ func (rs *roleService) AddAssignments(id string, assignments []RoleAssignment) *
 		return &ErrorRoleNotFound
 	}
 
-	if err := rs.validateAssignmentIDs(assignments); err != nil {
+	// Validate assignment IDs
+	if err := rs.validateAssignmentIDs(ctx, assignments); err != nil {
 		return err
 	}
 
-	if err := rs.roleStore.AddAssignments(id, assignments); err != nil {
+	err = rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		return rs.roleStore.AddAssignments(txCtx, id, assignments)
+	})
+
+	if err != nil {
 		logger.Error("Failed to add assignments to role", log.String("id", id), log.Error(err))
 		return &ErrorInternalServerError
 	}
@@ -411,7 +441,8 @@ func (rs *roleService) AddAssignments(id string, assignments []RoleAssignment) *
 }
 
 // RemoveAssignments removes assignments from a role.
-func (rs *roleService) RemoveAssignments(id string, assignments []RoleAssignment) *serviceerror.ServiceError {
+func (rs *roleService) RemoveAssignments(
+	ctx context.Context, id string, assignments []RoleAssignment) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Removing assignments from role", log.String("id", id))
 
@@ -423,7 +454,7 @@ func (rs *roleService) RemoveAssignments(id string, assignments []RoleAssignment
 		return err
 	}
 
-	exists, err := rs.roleStore.IsRoleExist(id)
+	exists, err := rs.roleStore.IsRoleExist(ctx, id)
 	if err != nil {
 		logger.Error("Failed to check role existence", log.String("id", id), log.Error(err))
 		return &ErrorInternalServerError
@@ -433,7 +464,11 @@ func (rs *roleService) RemoveAssignments(id string, assignments []RoleAssignment
 		return &ErrorRoleNotFound
 	}
 
-	if err := rs.roleStore.RemoveAssignments(id, assignments); err != nil {
+	err = rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		return rs.roleStore.RemoveAssignments(txCtx, id, assignments)
+	})
+
+	if err != nil {
 		logger.Error("Failed to remove assignments from role", log.String("id", id), log.Error(err))
 		return &ErrorInternalServerError
 	}
@@ -444,7 +479,7 @@ func (rs *roleService) RemoveAssignments(id string, assignments []RoleAssignment
 
 // GetAuthorizedPermissions checks which of the requested permissions are authorized for the user based on their roles.
 func (rs *roleService) GetAuthorizedPermissions(
-	userID string, groups []string, requestedPermissions []string,
+	ctx context.Context, userID string, groups []string, requestedPermissions []string,
 ) ([]string, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Authorizing permissions", log.String("userID", userID), log.Int("groupCount", len(groups)))
@@ -465,7 +500,7 @@ func (rs *roleService) GetAuthorizedPermissions(
 	}
 
 	// Get authorized permissions from store
-	authorizedPermissions, err := rs.roleStore.GetAuthorizedPermissions(userID, groups, requestedPermissions)
+	authorizedPermissions, err := rs.roleStore.GetAuthorizedPermissions(ctx, userID, groups, requestedPermissions)
 	if err != nil {
 		logger.Error("Failed to get authorized permissions",
 			log.String("userID", userID),
@@ -534,7 +569,8 @@ func (rs *roleService) validateAssignmentsRequest(assignments []RoleAssignment) 
 }
 
 // validateAssignmentIDs validates that all provided assignment IDs exist.
-func (rs *roleService) validateAssignmentIDs(assignments []RoleAssignment) *serviceerror.ServiceError {
+func (rs *roleService) validateAssignmentIDs(
+	ctx context.Context, assignments []RoleAssignment) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	var userIDs []string
@@ -556,7 +592,7 @@ func (rs *roleService) validateAssignmentIDs(assignments []RoleAssignment) *serv
 
 	// Validate user IDs using user service
 	if len(userIDs) > 0 {
-		invalidUserIDs, svcErr := rs.userService.ValidateUserIDs(userIDs)
+		invalidUserIDs, svcErr := rs.userService.ValidateUserIDs(ctx, userIDs)
 		if svcErr != nil {
 			logger.Error("Failed to validate user IDs", log.String("error", svcErr.Error),
 				log.String("code", svcErr.Code))
@@ -635,10 +671,10 @@ func buildPaginationLinks(base string, limit, offset, totalCount int) []Link {
 }
 
 // getDisplayNameForAssignment retrieves the display name for a user or group assignment.
-func (rs *roleService) getDisplayNameForAssignment(assignment *RoleAssignment) (string, error) {
+func (rs *roleService) getDisplayNameForAssignment(ctx context.Context, assignment *RoleAssignment) (string, error) {
 	switch assignment.Type {
 	case AssigneeTypeUser:
-		userResp, svcErr := rs.userService.GetUser(assignment.ID)
+		userResp, svcErr := rs.userService.GetUser(ctx, assignment.ID)
 		if svcErr != nil {
 			return "", fmt.Errorf("failed to get user: %w", errors.New(svcErr.Error))
 		}

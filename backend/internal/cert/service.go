@@ -128,7 +128,12 @@ func (s *certificateService) CreateCertificate(cert *Certificate) (*Certificate,
 		return nil, &ErrorCertificateAlreadyExists
 	}
 
-	cert.ID = sysutils.GenerateUUID()
+	cert.ID, err = sysutils.GenerateUUIDv7()
+	if err != nil {
+		logger.Error("Failed to generate UUID", log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
+
 	err = s.store.CreateCertificate(cert)
 	if err != nil {
 		logger.Error("Failed to create certificate", log.Error(err))

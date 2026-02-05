@@ -102,7 +102,7 @@ paths:
               tos_uri: "https://myapp.example.com/terms"
               policy_uri: "https://myapp.example.com/privacy"
               contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
-              token:
+              assertion:
                 issuer: "thunder"
                 validity_period: 3600
                 user_attributes: ["email", "username"]
@@ -160,7 +160,7 @@ paths:
                 tos_uri: "https://myapp.example.com/terms"
                 policy_uri: "https://myapp.example.com/privacy"
                 contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
-                token:
+                assertion:
                   issuer: "thunder"
                   validity_period: 3600
                   user_attributes: ["email", "username"]
@@ -269,7 +269,7 @@ paths:
                 tos_uri: "https://myapp.example.com/terms"
                 policy_uri: "https://myapp.example.com/privacy"
                 contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
-                token:
+                assertion:
                   issuer: "thunder"
                   validity_period: 3600
                   user_attributes: ["email", "username"]
@@ -368,7 +368,7 @@ paths:
               tos_uri: "https://myapp.example.com/terms"
               policy_uri: "https://myapp.example.com/privacy"
               contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
-              token:
+              assertion:
                 issuer: "thunder"
                 validity_period: 3600
                 user_attributes: ["email", "username"]
@@ -429,7 +429,7 @@ paths:
                 tos_uri: "https://myapp.example.com/terms"
                 policy_uri: "https://myapp.example.com/privacy"
                 contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
-                token:
+                assertion:
                   issuer: "thunder"
                   validity_period: 3600
                   user_attributes: ["email", "username"]
@@ -624,8 +624,8 @@ components:
           format: uri
           description: The URL of the application's logo.
           example: "https://myapp.example.com/logo.png"
-        token:
-          $ref: '#/components/schemas/TokenConfig'
+        assertion:
+          $ref: '#/components/schemas/AssertionConfig'
         certificate:
           $ref: '#/components/schemas/Certificate'
         inbound_auth_config:
@@ -708,8 +708,8 @@ components:
           format: uri
           description: The URL of the application's logo.
           example: "https://myapp.example.com/logo.png"
-        token:
-          $ref: '#/components/schemas/TokenConfig'
+        assertion:
+          $ref: '#/components/schemas/AssertionConfig'
         certificate:
           $ref: '#/components/schemas/Certificate'
         inbound_auth_config:
@@ -792,8 +792,8 @@ components:
           format: uri
           description: The URL of the application's logo.
           example: "https://myapp.example.com/logo.png"
-        token:
-          $ref: '#/components/schemas/TokenConfig'
+        assertion:
+          $ref: '#/components/schemas/AssertionConfig'
         certificate:
           $ref: '#/components/schemas/Certificate'
         inbound_auth_config:
@@ -888,10 +888,10 @@ components:
           items:
             $ref: '#/components/schemas/BasicApplicationResponse'
 
-    TokenConfig:
+    AssertionConfig:
       type: object
       description: |
-        Token configuration for application-level (root) tokens. This includes an issuer field
+        Assertion configuration for application-level (root) assertions. This includes an issuer field
         since application-level tokens can have their own issuer.
       properties:
         issuer:

@@ -44,10 +44,12 @@ const mockQueryClient = {
   invalidateQueries: mockInvalidateQueries,
 };
 
-let mockQueryData: {
-  language: string;
-  translations: Record<string, Record<string, string>>;
-} | undefined;
+let mockQueryData:
+  | {
+      language: string;
+      translations: Record<string, Record<string, string>>;
+    }
+  | undefined;
 
 // Capture queryFn for testing
 let capturedQueryFn: (() => Promise<unknown>) | null = null;
@@ -62,8 +64,8 @@ vi.mock('@tanstack/react-query', () => ({
   useQueryClient: () => mockQueryClient,
 }));
 
-// Mock @thunder/commons-contexts
-vi.mock('@thunder/commons-contexts', () => ({
+// Mock @thunder/shared-contexts
+vi.mock('@thunder/shared-contexts', () => ({
   useConfig: () => ({
     getServerUrl: () => 'https://api.example.com',
   }),
@@ -252,13 +254,7 @@ describe('I18nProvider', () => {
       </I18nProvider>,
     );
 
-    expect(mockAddResourceBundle).toHaveBeenCalledWith(
-      'en-US',
-      'newNamespace',
-      {key: 'value'},
-      true,
-      true,
-    );
+    expect(mockAddResourceBundle).toHaveBeenCalledWith('en-US', 'newNamespace', {key: 'value'}, true, true);
   });
 
   it('should register cache invalidator on mount', () => {

@@ -23,8 +23,8 @@ import (
 	"errors"
 	"strings"
 
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -56,7 +56,7 @@ func newIDPService(idpStore idpStoreInterface) IDPServiceInterface {
 // CreateIdentityProvider creates a new Identity Provider.
 func (is *idpService) CreateIdentityProvider(idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError) {
 	logger := is.logger
-	if err := immutableresource.CheckImmutableCreate(); err != nil {
+	if err := declarativeresource.CheckDeclarativeCreate(); err != nil {
 		return nil, err
 	}
 
@@ -76,7 +76,13 @@ func (is *idpService) CreateIdentityProvider(idp *IDPDTO) (*IDPDTO, *serviceerro
 	}
 
 	// Create the IdP in the database.
-	idp.ID = utils.GenerateUUID()
+	id, err := utils.GenerateUUIDv7()
+	if err != nil {
+		logger.Error("failed to generate ID for identity provider", log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
+
+	idp.ID = id
 	err = is.idpStore.CreateIdentityProvider(*idp)
 	if err != nil {
 		logger.Error("Failed to create IdP", log.Error(err))
@@ -140,7 +146,7 @@ func (is *idpService) GetIdentityProviderByName(idpName string) (*IDPDTO, *servi
 func (is *idpService) UpdateIdentityProvider(idpID string, idp *IDPDTO) (*IDPDTO,
 	*serviceerror.ServiceError) {
 	logger := is.logger
-	if err := immutableresource.CheckImmutableUpdate(); err != nil {
+	if err := declarativeresource.CheckDeclarativeUpdate(); err != nil {
 		return nil, err
 	}
 
@@ -190,7 +196,7 @@ func (is *idpService) UpdateIdentityProvider(idpID string, idp *IDPDTO) (*IDPDTO
 // DeleteIdentityProvider deletes an identity provider.
 func (is *idpService) DeleteIdentityProvider(idpID string) *serviceerror.ServiceError {
 	logger := is.logger
-	if err := immutableresource.CheckImmutableDelete(); err != nil {
+	if err := declarativeresource.CheckDeclarativeDelete(); err != nil {
 		return err
 	}
 

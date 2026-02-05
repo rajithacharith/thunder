@@ -19,14 +19,18 @@
 package executor
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"slices"
 	"sort"
+	"strings"
 
 	"github.com/asgardeo/thunder/internal/authn/assert"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -118,9 +122,9 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 	iss := ""
 	validityPeriod := int64(0)
 
-	if ctx.Application.Token != nil {
-		iss = ctx.Application.Token.Issuer
-		validityPeriod = ctx.Application.Token.ValidityPeriod
+	if ctx.Application.Assertion != nil {
+		iss = ctx.Application.Assertion.Issuer
+		validityPeriod = ctx.Application.Assertion.ValidityPeriod
 	}
 	if iss == "" {
 		iss = jwtConfig.Issuer
@@ -154,17 +158,39 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 		jwtClaims["authorized_permissions"] = permissions
 	}
 
-	if err := a.appendUserDetailsToClaims(ctx, jwtClaims); err != nil {
+	// Get user attributes from required_attributes in runtimeData if present,
+	// otherwise fallback to application token config
+	var userAttributes []string
+	if requiredAttrs, exists := ctx.RuntimeData["required_attributes"]; exists {
+		userAttributes = strings.Fields(requiredAttrs)
+	} else if ctx.Application.Assertion != nil {
+		// Fallback to application token user attributes
+		userAttributes = ctx.Application.Assertion.UserAttributes
+	}
+
+	if err := a.appendUserDetailsToClaims(ctx, jwtClaims, userAttributes); err != nil {
 		return "", err
 	}
 
-	// Add user type to the claims
-	if ctx.AuthenticatedUser.UserType != "" {
-		jwtClaims[userTypeKey] = ctx.AuthenticatedUser.UserType
+	// Handle groups if configured in user attributes
+	if slices.Contains(userAttributes, oauth2const.UserAttributeGroups) && ctx.AuthenticatedUser.UserID != "" {
+		if err := a.appendGroupsToClaims(ctx.AuthenticatedUser.UserID, jwtClaims); err != nil {
+			return "", err
+		}
 	}
 
-	if ctx.AuthenticatedUser.OrganizationUnitID != "" {
-		if err := a.appendOUDetailsToClaims(ctx.AuthenticatedUser.OrganizationUnitID, jwtClaims); err != nil {
+	// Add user type to the claims
+	if slices.Contains(userAttributes, oauth2const.ClaimUserType) && ctx.AuthenticatedUser.UserType != "" {
+		jwtClaims[oauth2const.ClaimUserType] = ctx.AuthenticatedUser.UserType
+	}
+
+	// Add OU details to the claims
+	ouAttributesConfigured := slices.Contains(userAttributes, oauth2const.ClaimOUID) ||
+		slices.Contains(userAttributes, oauth2const.ClaimOUName) ||
+		slices.Contains(userAttributes, oauth2const.ClaimOUHandle)
+	if ouAttributesConfigured && ctx.AuthenticatedUser.OrganizationUnitID != "" {
+		if err := a.appendOUDetailsToClaims(
+			ctx.AuthenticatedUser.OrganizationUnitID, jwtClaims, userAttributes); err != nil {
 			return "", err
 		}
 	}
@@ -226,31 +252,56 @@ func (a *authAssertExecutor) extractAuthenticatorReferences(
 
 // appendUserDetailsToClaims appends user details to the JWT claims.
 func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *core.NodeContext,
-	jwtClaims map[string]interface{}) error {
-	if ctx.Application.Token != nil && len(ctx.Application.Token.UserAttributes) > 0 &&
-		ctx.AuthenticatedUser.UserID != "" {
-		var user *user.User
-		var attrs map[string]interface{}
+	jwtClaims map[string]interface{}, userAttributes []string) error {
+	if len(userAttributes) == 0 {
+		return nil
+	}
 
-		for _, attr := range ctx.Application.Token.UserAttributes {
-			// check for the attribute in authenticated user attributes
-			if val, ok := ctx.AuthenticatedUser.Attributes[attr]; ok {
-				jwtClaims[attr] = val
-				continue
+	var attrs map[string]interface{}
+
+	standardClaims := oauth2const.GetStandardClaims()
+
+	for _, attr := range userAttributes {
+		// Skip attributes that are handled separately
+		if attr == oauth2const.UserAttributeGroups ||
+			attr == oauth2const.ClaimUserType ||
+			attr == oauth2const.ClaimOUID ||
+			attr == oauth2const.ClaimOUName ||
+			attr == oauth2const.ClaimOUHandle {
+			continue
+		}
+
+		// Skip standard JWT claims if present in the user attributes
+		if slices.Contains(standardClaims, attr) {
+			continue
+		}
+
+		// Check for the attribute in authenticated user attributes
+		if val, ok := ctx.AuthenticatedUser.Attributes[attr]; ok {
+			jwtClaims[attr] = val
+			continue
+		}
+
+		// Check runtime data as fallback
+		if val, exists := ctx.RuntimeData[attr]; exists && val != "" {
+			jwtClaims[attr] = val
+			continue
+		}
+
+		// For users with local accounts, fetch from user store
+		if ctx.AuthenticatedUser.UserID != "" && attrs == nil {
+			var err error
+			_, attrs, err = a.getUserAttributes(ctx.AuthenticatedUser.UserID)
+			if err != nil {
+				return err
 			}
+		}
 
-			// fetch user details only once
-			if user == nil {
-				var err error
-				user, attrs, err = a.getUserAttributes(ctx.AuthenticatedUser.UserID)
-				if err != nil {
-					return err
-				}
-			}
-
-			// check for the attribute in user store attributes
+		// Check for the attribute in user store attributes
+		if attrs != nil {
 			if val, ok := attrs[attr]; ok {
 				jwtClaims[attr] = val
+				continue
 			}
 		}
 	}
@@ -259,11 +310,12 @@ func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *core.NodeContext,
 }
 
 // getUserAttributes retrieves user details and unmarshal the attributes.
-func (a *authAssertExecutor) getUserAttributes(userID string) (*user.User, map[string]interface{}, error) {
+func (a *authAssertExecutor) getUserAttributes(userID string) (
+	*user.User, map[string]interface{}, error) {
 	logger := a.logger.With(log.String("userID", userID))
 
 	var svcErr *serviceerror.ServiceError
-	user, svcErr := a.userService.GetUser(userID)
+	user, svcErr := a.userService.GetUser(context.TODO(), userID)
 	if svcErr != nil {
 		logger.Error("Failed to fetch user attributes",
 			log.String("userID", userID), log.Any("error", svcErr))
@@ -282,7 +334,9 @@ func (a *authAssertExecutor) getUserAttributes(userID string) (*user.User, map[s
 }
 
 // appendOUDetailsToClaims appends organization unit details to the JWT claims.
-func (a *authAssertExecutor) appendOUDetailsToClaims(ouID string, jwtClaims map[string]interface{}) error {
+// Only adds attributes that are configured in userAttributes.
+func (a *authAssertExecutor) appendOUDetailsToClaims(
+	ouID string, jwtClaims map[string]interface{}, userAttributes []string) error {
 	logger := a.logger.With(log.String(ouIDKey, ouID))
 
 	organizationUnit, svcErr := a.ouService.GetOrganizationUnit(ouID)
@@ -292,12 +346,43 @@ func (a *authAssertExecutor) appendOUDetailsToClaims(ouID string, jwtClaims map[
 		return errors.New("something went wrong while fetching organization unit: " + svcErr.ErrorDescription)
 	}
 
-	jwtClaims[ouIDKey] = organizationUnit.ID
-	if organizationUnit.Name != "" {
-		jwtClaims[userInputOuName] = organizationUnit.Name
+	// Only add ouId if configured
+	if slices.Contains(userAttributes, oauth2const.ClaimOUID) {
+		jwtClaims[oauth2const.ClaimOUID] = organizationUnit.ID
 	}
-	if organizationUnit.Handle != "" {
-		jwtClaims[userInputOuHandle] = organizationUnit.Handle
+
+	// Only add ouName if configured
+	if slices.Contains(userAttributes, oauth2const.ClaimOUName) && organizationUnit.Name != "" {
+		jwtClaims[oauth2const.ClaimOUName] = organizationUnit.Name
+	}
+
+	// Only add ouHandle if configured
+	if slices.Contains(userAttributes, oauth2const.ClaimOUHandle) && organizationUnit.Handle != "" {
+		jwtClaims[oauth2const.ClaimOUHandle] = organizationUnit.Handle
+	}
+
+	return nil
+}
+
+// appendGroupsToClaims appends user groups to the JWT claims.
+func (a *authAssertExecutor) appendGroupsToClaims(
+	userID string, jwtClaims map[string]interface{}) error {
+	logger := a.logger.With(log.String("userID", userID))
+
+	groups, svcErr := a.userService.GetUserGroups(context.TODO(), userID, oauth2const.DefaultGroupListLimit, 0)
+	if svcErr != nil {
+		logger.Error("Failed to fetch user groups",
+			log.String("userID", userID), log.Any("error", svcErr))
+		return errors.New("something went wrong while fetching user groups: " + svcErr.ErrorDescription)
+	}
+
+	userGroups := make([]string, 0, len(groups.Groups))
+	for _, group := range groups.Groups {
+		userGroups = append(userGroups, group.Name)
+	}
+
+	if len(userGroups) > 0 {
+		jwtClaims[oauth2const.UserAttributeGroups] = userGroups
 	}
 
 	return nil

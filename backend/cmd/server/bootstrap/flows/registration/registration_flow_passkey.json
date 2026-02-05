@@ -1,7 +1,7 @@
 {
     "name": "Passkey Registration Flow",
     "flowType": "REGISTRATION",
-    "handle": "passkey_registration_flow",
+    "handle": "default-passkey-flow",
     "nodes": [
         {
             "id": "start",
