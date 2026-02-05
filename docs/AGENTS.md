@@ -206,5 +206,3 @@ Before finalizing documentation output:
 
 Vale installation reference:
 - https://vale.sh/docs/vale-cli/installation/
-
-# Thunder documentation review instructions
