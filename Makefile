@@ -46,13 +46,16 @@ prepare:
 clean:
 	./build.sh clean $(OS) $(ARCH)
 
-build: build_backend build_frontend build_samples
+build: build_backend build_frontend build_docs build_samples
 
 build_backend:
 	./build.sh build_backend $(OS) $(ARCH)
 
 build_frontend:
 	./build.sh build_frontend
+
+build_docs:
+	./build.sh build_docs
 
 package_samples:
 	./build.sh package_samples $(OS) $(ARCH)
@@ -96,6 +99,9 @@ run_backend:
 
 run_frontend:
 	./build.sh run_frontend $(OS) $(ARCH)
+
+run_docs:
+	./build.sh run_docs
 
 docker-build:
 	docker build -t thunder:$(VERSION) .
@@ -144,6 +150,7 @@ help:
 	@echo "  build                         - Build Thunder (backend + frontend + samples)."
 	@echo "  build_backend                 - Build the backend Go application."
 	@echo "  build_frontend                - Build the frontend applications."
+	@echo "  build_docs                    - Build the documentation."
 	@echo "  package_samples               - Package sample applications."
 	@echo "  build_samples                 - Build sample applications."
 	@echo "  test_unit                     - Run unit tests."
@@ -154,6 +161,7 @@ help:
 	@echo "  run                           - Build and run the Thunder server locally."
 	@echo "  run_backend                   - Build and run the Thunder backend locally."
 	@echo "  run_frontend                  - Build and run the frontend applications locally."
+	@echo "  run_docs                      - Run the documentation development server with live reload."
 	@echo "  docker-build                  - Build single-arch Docker image with version tag."
 	@echo "  docker-build-latest           - Build single-arch Docker image with latest tag."
 	@echo "  docker-build-multiarch        - Build multi-arch Docker image with version tag."
@@ -166,12 +174,13 @@ help:
 	@echo "  generate_i18n                 - Extract i18n messages and generate defaults.go."
 	@echo "  help                          - Show this help message."
 
-.PHONY: all prepare clean build build_backend build_frontend build_samples package_samples run
+.PHONY: all prepare clean build build_backend build_frontend build_docs build_samples package_samples run
 .PHONY: docker-build docker-build-latest docker-build-multiarch
 .PHONY: docker-build-multiarch-latest docker-build-multiarch-push
 .PHONY: test_unit test_integration build_with_coverage build_with_coverage_only test
 .PHONY: help go_install_tool
 .PHONY: lint lint_backend lint_frontend golangci-lint mockery install-mockery
+.PHONY: run_backend run_frontend run_docs
 
 define go_install_tool
 	cd /tmp && \

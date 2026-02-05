@@ -183,6 +183,11 @@ $VANILLA_SAMPLE_APP_SERVER_DIR = Join-Path $VANILLA_SAMPLE_APP_DIR "server"
 $REACT_SDK_SAMPLE_APP_DIR = Join-Path $SAMPLE_BASE_DIR "apps/react-sdk-sample"
 $REACT_API_SAMPLE_APP_DIR = Join-Path $SAMPLE_BASE_DIR "apps/react-api-based-sample"
 
+# Default ports
+$GATE_APP_DEFAULT_PORT = 5190
+$DEVELOP_APP_DEFAULT_PORT = 5191
+$DOCS_DEFAULT_PORT = 3000
+
 # ============================================================================
 # Read Configuration from deployment.yaml
 # ============================================================================
@@ -414,6 +419,32 @@ function Build-Frontend {
         
         Write-Host "Building frontend applications & packages..."
         & pnpm build
+    }
+    finally {
+        Pop-Location
+    }
+    
+    Write-Host "================================================================"
+}
+
+function Build-Docs {
+    Write-Host "================================================================"
+    Write-Host "Building documentation..."
+    
+    # Check if pnpm is installed, if not install it
+    if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
+        Write-Host "pnpm not found, installing..."
+        & npm install -g pnpm
+    }
+    
+    # Navigate to frontend directory first to ensure build:docs script can run
+    Push-Location $FRONTEND_BASE_DIR
+    try {
+        Write-Host "Installing frontend dependencies (required for docs build)..."
+        & pnpm install --frozen-lockfile
+        
+        Write-Host "Building documentation..."
+        & pnpm run build:docs
     }
     finally {
         Pop-Location
@@ -1440,9 +1471,6 @@ function Run {
     $script:ORIGINAL_THUNDER_SKIP_SECURITY = $env:THUNDER_SKIP_SECURITY
     $env:THUNDER_SKIP_SECURITY = "true"
     Run-Backend -ShowFinalOutput $false
-    
-    $GATE_APP_DEFAULT_PORT = 5190
-    $DEVELOP_APP_DEFAULT_PORT = 5191
 
     # Run initial data setup
     Write-Host "⚙️  Running initial data setup..."
@@ -1624,69 +1652,90 @@ function Run-Frontend {
     Write-Host "================================================================"
 }
 
+function Run-Docs {
+    Write-Host "================================================================"
+    Write-Host "Starting documentation development server..."
+    
+    # Check if pnpm is installed, if not install it
+    if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
+        Write-Host "pnpm not found, installing..."
+        & npm install -g pnpm
+    }
+    
+    # Navigate to frontend directory first to install all dependencies
+    Push-Location $FRONTEND_BASE_DIR
+    try {
+        Write-Host "Installing frontend dependencies (required for docs)..."
+        & pnpm install --frozen-lockfile
+    }
+    finally {
+        Pop-Location
+    }
+    
+    # Navigate to docs directory
+    Push-Location (Join-Path $SCRIPT_DIR "docs")
+    try {
+        Write-Host "Starting documentation server with live reload..."
+        Write-Host "📚 Documentation will be available at http://localhost:$DOCS_DEFAULT_PORT"
+        Write-Host "Press Ctrl+C to stop."
+        & pnpm dev
+    }
+    finally {
+        Pop-Location
+    }
+    
+    Write-Host "================================================================"
+}
+
 # Main script logic
 switch ($Command) {
-    "clean" {
+    'clean' {
         Clean
     }
-    "build_backend" {
+    'build_backend' {
         Build-Backend
+        Prepare-Backend-For-Packaging
         Package
     }
-    "build_frontend" {
+    'build_frontend' {
         Build-Frontend
     }
-    "build_samples" {
+    'build_docs' {
+        Build-Docs
+    }
+    'build_samples' {
         Build-Sample-App
+    }
+    'package_samples' {
         Package-Sample-App
     }
-    "package_samples" {
-        Package-Sample-App
-    }
-    "build" {
-        Build-Backend
-        Build-Frontend
-        Package
-        Build-Sample-App
-        Package-Sample-App
-    }
-    "test_unit" {
+    'test_unit' {
         Test-Unit
     }
-    "test_integration" {
+    'test_integration' {
         Test-Integration
     }
-    "merge_coverage" {
+    'merge_coverage' {
         Merge-Coverage
     }
-    "test" {
+    'run' {
+        Run
+    }
+    'run_backend' {
+        Run-Backend
+    }
+    'run_frontend' {
+        Run-Frontend
+    }
+    'run_docs' {
+        Run-Docs
+    }
+    'test' {
         Test-Unit
         Test-Integration
     }
-    "run" {
-        Run
-    }
-    "run_backend" {
-        Run-Backend
-    }
-    "run_frontend" {
-        Run-Frontend
-    }
     default {
-        Write-Host "Usage: ./build.ps1 {clean|build|build_backend|build_frontend|test|run} [OS] [ARCH]"
-        Write-Host ""
-        Write-Host "  clean                    - Clean build artifacts"
-        Write-Host "  build                    - Build the complete Thunder application (backend + frontend + samples)"
-        Write-Host "  build_backend            - Build only the Thunder backend server"
-        Write-Host "  build_frontend           - Build only the Next.js frontend applications"
-        Write-Host "  build_samples            - Build the sample applications"
-        Write-Host "  test_unit                - Run unit tests with coverage"
-        Write-Host "  test_integration         - Run integration tests. Use -TestRun and -TestPackage for filtering."
-        Write-Host "  merge_coverage           - Merge unit and integration test coverage reports"
-        Write-Host "  test                     - Run all tests (unit and integration)"
-        Write-Host "  run                      - Run the Thunder server for development (with automatic initial data setup)"
-        Write-Host "  run_backend              - Run the Thunder backend for development"
-        Write-Host "  run_frontend             - Run the Thunder frontend for development"
+        Write-Host "Usage: $($MyInvocation.MyCommand.Name) {clean|build_backend|build_frontend|build_docs|build_samples|package_samples|test_unit|test_integration|merge_coverage|run|run_backend|run_frontend|run_docs|test}"
         exit 1
     }
 }
