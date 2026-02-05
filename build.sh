@@ -129,6 +129,11 @@ VANILLA_SAMPLE_APP_SERVER_DIR=$VANILLA_SAMPLE_APP_DIR/server
 REACT_SDK_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-sdk-sample
 REACT_API_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-api-based-sample
 
+# Default ports
+GATE_APP_DEFAULT_PORT=5190
+DEVELOP_APP_DEFAULT_PORT=5191
+DOCS_DEFAULT_PORT=3000
+
 # Integration test filters (optional)
 TEST_RUN="${4:-}"
 TEST_PACKAGE="${5:-}"
@@ -345,6 +350,29 @@ function build_frontend() {
     
     echo "Building frontend applications & packages..."
     pnpm build
+    
+    # Return to script directory
+    cd "$SCRIPT_DIR" || exit 1
+    echo "================================================================"
+}
+
+function build_docs() {
+    echo "================================================================"
+    echo "Building documentation..."
+    
+    # Check if pnpm is installed, if not install it
+    if ! command -v pnpm >/dev/null 2>&1; then
+        echo "pnpm not found, installing..."
+        npm install -g pnpm
+    fi
+    
+    # Navigate to frontend directory first to ensure build:docs script can run
+    cd "$FRONTEND_BASE_DIR" || exit 1
+    echo "Installing frontend dependencies (required for docs build)..."
+    pnpm install --frozen-lockfile
+    
+    echo "Building documentation..."
+    pnpm run build:docs
     
     # Return to script directory
     cd "$SCRIPT_DIR" || exit 1
@@ -911,9 +939,6 @@ function run() {
     ORIGINAL_THUNDER_SKIP_SECURITY="${THUNDER_SKIP_SECURITY:-}"
     export THUNDER_SKIP_SECURITY=true
     run_backend false
-    
-    GATE_APP_DEFAULT_PORT=5190
-    DEVELOP_APP_DEFAULT_PORT=5191
 
     # Run initial data setup
     echo "⚙️  Running initial data setup..."
@@ -1076,6 +1101,34 @@ function run_frontend() {
     echo "================================================================"
 }
 
+function run_docs() {
+    echo "================================================================"
+    echo "Starting documentation development server..."
+    
+    # Check if pnpm is installed, if not install it
+    if ! command -v pnpm >/dev/null 2>&1; then
+        echo "pnpm not found, installing..."
+        npm install -g pnpm
+    fi
+    
+    # Navigate to frontend directory first to install all dependencies
+    cd "$FRONTEND_BASE_DIR" || exit 1
+    echo "Installing frontend dependencies (required for docs)..."
+    pnpm install --frozen-lockfile
+    
+    # Navigate to docs directory
+    cd "$SCRIPT_DIR/docs" || exit 1
+    
+    echo "Starting documentation server with live reload..."
+    echo "📚 Documentation will be available at http://localhost:$DOCS_DEFAULT_PORT"
+    echo "Press Ctrl+C to stop."
+    pnpm dev
+    
+    # Return to script directory
+    cd "$SCRIPT_DIR" || exit 1
+    echo "================================================================"
+}
+
 case "$1" in
     clean)
         clean
@@ -1086,6 +1139,9 @@ case "$1" in
         ;;
     build_frontend)
         build_frontend
+        ;;
+    build_docs)
+        build_docs
         ;;
     build_samples)
         build_sample_app
@@ -1123,13 +1179,17 @@ case "$1" in
     run_frontend)
         run_frontend
         ;;
+    run_docs)
+        run_docs
+        ;;
     *)
-        echo "Usage: ./build.sh {clean|build|build_backend|build_frontend|test|run} [OS] [ARCH]"
+        echo "Usage: ./build.sh {clean|build|build_backend|build_frontend|build_docs|test|run} [OS] [ARCH]"
         echo ""
         echo "  clean                    - Clean build artifacts"
         echo "  build                    - Build the complete Thunder application (backend + frontend + samples)"
         echo "  build_backend            - Build only the Thunder backend server"
         echo "  build_frontend           - Build only the Next.js frontend applications"
+        echo "  build_docs               - Build only the documentation"
         echo "  build_samples            - Build the sample applications"
         echo "  test_unit                - Run unit tests with coverage"
         echo "  test_integration         - Run integration tests. Use -run and -package for filtering"
@@ -1138,6 +1198,7 @@ case "$1" in
         echo "  run                      - Run the Thunder server for development (with automatic initial data setup)"
         echo "  run_backend              - Run the Thunder backend for development"
         echo "  run_frontend             - Run the Thunder frontend for development"
+        echo "  run_docs                 - Run the documentation development server with live reload"
         exit 1
         ;;
 esac

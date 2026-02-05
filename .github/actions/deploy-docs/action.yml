@@ -34,11 +34,11 @@ runs:
         version: 'latest'
         run_install: false
 
-    - name: 📦 Build Frontend
+    - name: 🛠️ Build Documentation
       if: inputs.build-docs == 'true'
       shell: bash
       run: |
-        make build_frontend
+        make build_docs
 
     - name: 📥 Download Docs Artifact
       if: inputs.docs-artifact-name != ''
