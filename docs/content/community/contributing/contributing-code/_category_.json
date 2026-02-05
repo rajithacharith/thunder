@@ -1,5 +1,6 @@
 {
   "position": 4,
   "label": "Contributing Code",
-  "collapsible": true
+  "collapsible": true,
+  "collapsed": false
 }

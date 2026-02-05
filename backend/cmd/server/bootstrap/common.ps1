@@ -20,6 +20,14 @@
 # Common functions for bootstrap scripts
 # Dot-source this file at the beginning of each bootstrap script
 
+# Configure TLS to use modern protocols (required for HTTPS requests on Windows)
+try {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
+} catch {
+    # Fallback to TLS 1.2 if TLS 1.3 is not available
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+}
+
 # Logging Functions
 function Log-Info {
     param([string]$Message)
@@ -88,15 +96,19 @@ function Invoke-ThunderApi {
     }
     catch {
         $statusCode = 500
+        $body = ""
+        
+        # Try to extract status code and response body from the exception
         if ($_.Exception.Response) {
             $statusCode = [int]$_.Exception.Response.StatusCode
         }
         
-        $body = ""
-        if ($_.Exception.Response) {
-            $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
-            $body = $reader.ReadToEnd()
-            $reader.Close()
+        # PowerShell 7+ provides error details directly in ErrorDetails
+        if ($_.ErrorDetails.Message) {
+            $body = $_.ErrorDetails.Message
+        }
+        elseif ($_.Exception.Message) {
+            $body = $_.Exception.Message
         }
         
         return @{
