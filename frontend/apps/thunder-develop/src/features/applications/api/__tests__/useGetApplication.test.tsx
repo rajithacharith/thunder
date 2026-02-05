@@ -111,7 +111,7 @@ describe('useGetApplication', () => {
   });
 
   it('should initialize with loading state when applicationId is provided', () => {
-    mockHttpRequest.mockImplementation(() => new Promise(() => {})); // Never resolves
+    mockHttpRequest.mockReturnValue(new Promise(() => {})); // Never resolves
 
     const {result} = renderHook(() => useGetApplication('550e8400-e29b-41d4-a716-446655440000'));
 

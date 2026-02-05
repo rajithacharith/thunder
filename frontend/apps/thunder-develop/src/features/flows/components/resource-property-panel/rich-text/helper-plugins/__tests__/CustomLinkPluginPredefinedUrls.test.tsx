@@ -118,6 +118,25 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
+    // Restore default implementations for hoisted mocks
+    // vi.clearAllMocks() does not reset implementations set via mockReturnValue/mockImplementation
+    mockRegisterUpdateListener.mockImplementation(() => vi.fn());
+    mockRegisterCommand.mockImplementation(() => vi.fn());
+    mockGetRootElement.mockImplementation(() => document.createElement('div'));
+    mockGetEditorState.mockImplementation(() => ({
+      read: vi.fn((callback: () => void) => callback()),
+    }));
+    mockGetSelection.mockImplementation(() => ({type: 'range'}));
+    mockIsRangeSelection.mockImplementation(() => true);
+    mockIsLinkNode.mockImplementation(() => false);
+    mockGetSelectedNode.mockImplementation(() => ({
+      getParent: () => null,
+      getURL: () => 'https://example.com',
+      setTarget: vi.fn(),
+      setRel: vi.fn(),
+      type: 'text',
+    }));
+
     // Mock window methods
     vi.spyOn(window, 'addEventListener').mockImplementation(vi.fn());
     vi.spyOn(window, 'removeEventListener').mockImplementation(vi.fn());

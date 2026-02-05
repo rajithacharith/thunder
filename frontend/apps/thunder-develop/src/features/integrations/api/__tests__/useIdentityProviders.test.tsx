@@ -221,11 +221,10 @@ describe('useIdentityProviders', () => {
 
   describe('Loading State', () => {
     it('should show loading state during fetch', async () => {
-      mockHttpRequest.mockImplementation(
-        () =>
-          new Promise((resolve) => {
-            setTimeout(() => resolve({data: mockIdentityProviders}), 100);
-          }),
+      mockHttpRequest.mockReturnValue(
+        new Promise((resolve) => {
+          setTimeout(() => resolve({data: mockIdentityProviders}), 100);
+        }),
       );
 
       const {result} = renderHook(() => useIdentityProviders());
@@ -451,11 +450,10 @@ describe('useIdentityProviders', () => {
 
   describe('React Query Features', () => {
     it('should support isLoading flag', async () => {
-      mockHttpRequest.mockImplementation(
-        () =>
-          new Promise((resolve) => {
-            setTimeout(() => resolve({data: mockIdentityProviders}), 50);
-          }),
+      mockHttpRequest.mockReturnValue(
+        new Promise((resolve) => {
+          setTimeout(() => resolve({data: mockIdentityProviders}), 50);
+        }),
       );
 
       const {result} = renderHook(() => useIdentityProviders());

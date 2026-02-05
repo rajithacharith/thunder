@@ -135,7 +135,7 @@ export default function EditTokenSettings({
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
 
-  const applyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const applyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['user', 'default']));
   const [userSchemas, setUserSchemas] = useState<ApiUserSchema[]>([]);
 

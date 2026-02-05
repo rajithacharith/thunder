@@ -25,6 +25,7 @@ import {TemplateTypes} from '@/features/flows/models/templates';
 import type {Resources} from '@/features/flows/models/resources';
 import type {FlowDefinitionResponse} from '@/features/flows/models/responses';
 import useFlowInitialization from '../useFlowInitialization';
+import type {UseFlowInitializationProps} from '../useFlowInitialization';
 
 // Mock external dependencies
 vi.mock('lodash-es/cloneDeep', () => ({
@@ -153,12 +154,12 @@ const createMockExistingFlowData = (): FlowDefinitionResponse =>
   }) as FlowDefinitionResponse;
 
 describe('useFlowInitialization', () => {
-  let mockSetNodes: ReturnType<typeof vi.fn>;
-  let mockSetEdges: ReturnType<typeof vi.fn>;
+  let mockSetNodes: React.Dispatch<React.SetStateAction<Node[]>> & ReturnType<typeof vi.fn>;
+  let mockSetEdges: React.Dispatch<React.SetStateAction<Edge[]>> & ReturnType<typeof vi.fn>;
   let mockUpdateNodeInternals: ReturnType<typeof vi.fn>;
-  let mockGenerateEdges: ReturnType<typeof vi.fn>;
-  let mockValidateEdges: ReturnType<typeof vi.fn>;
-  let mockOnNeedsAutoLayout: ReturnType<typeof vi.fn>;
+  let mockGenerateEdges: ((flowSteps: unknown[]) => Edge[]) & ReturnType<typeof vi.fn>;
+  let mockValidateEdges: ((edges: Edge[], nodes?: Node[]) => Edge[]) & ReturnType<typeof vi.fn>;
+  let mockOnNeedsAutoLayout: ((needsLayout: boolean) => void) & ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -168,17 +169,17 @@ describe('useFlowInitialization', () => {
       if (typeof updater === 'function') {
         updater([]);
       }
-    });
+    }) as unknown as React.Dispatch<React.SetStateAction<Node[]>> & ReturnType<typeof vi.fn>;
     // Mock setEdges to execute the callback if it's a function
     mockSetEdges = vi.fn((updater: React.SetStateAction<Edge[]>) => {
       if (typeof updater === 'function') {
         updater([]);
       }
-    });
+    }) as unknown as React.Dispatch<React.SetStateAction<Edge[]>> & ReturnType<typeof vi.fn>;
     mockUpdateNodeInternals = vi.fn();
-    mockGenerateEdges = vi.fn().mockReturnValue([]);
-    mockValidateEdges = vi.fn((edges: Edge[]) => edges);
-    mockOnNeedsAutoLayout = vi.fn();
+    mockGenerateEdges = vi.fn().mockReturnValue([]) as unknown as ((flowSteps: unknown[]) => Edge[]) & ReturnType<typeof vi.fn>;
+    mockValidateEdges = vi.fn((edges: Edge[]) => edges) as unknown as ((edges: Edge[], nodes?: Node[]) => Edge[]) & ReturnType<typeof vi.fn>;
+    mockOnNeedsAutoLayout = vi.fn() as unknown as ((needsLayout: boolean) => void) & ReturnType<typeof vi.fn>;
   });
 
   afterEach(() => {
@@ -201,7 +202,7 @@ describe('useFlowInitialization', () => {
       ...overrides,
     };
 
-    return renderHook(() => useFlowInitialization(defaultProps));
+    return renderHook(() => useFlowInitialization(defaultProps as UseFlowInitializationProps));
   };
 
   describe('Hook Interface', () => {

@@ -115,11 +115,10 @@ describe('useDeleteApplication', () => {
   });
 
   it('should set pending state during deletion', async () => {
-    mockHttpRequest.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          setTimeout(() => resolve(undefined), 100);
-        }),
+    mockHttpRequest.mockReturnValue(
+      new Promise((resolve) => {
+        setTimeout(() => resolve(undefined), 100);
+      }),
     );
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';

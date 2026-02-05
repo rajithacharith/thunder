@@ -112,11 +112,10 @@ describe('useUpdateFlow', () => {
   });
 
   it('should set pending state during update', async () => {
-    mockHttpRequest.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          setTimeout(() => resolve({data: mockFlowResponse}), 100);
-        }),
+    mockHttpRequest.mockReturnValue(
+      new Promise((resolve) => {
+        setTimeout(() => resolve({data: mockFlowResponse}), 100);
+      }),
     );
 
     const {result} = renderHook(() => useUpdateFlow());

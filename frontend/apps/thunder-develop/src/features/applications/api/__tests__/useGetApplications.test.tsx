@@ -87,7 +87,7 @@ describe('useGetApplications', () => {
   });
 
   it('should initialize with loading state', () => {
-    mockHttpRequest.mockImplementation(() => new Promise(() => {})); // Never resolves
+    mockHttpRequest.mockReturnValue(new Promise(() => {})); // Never resolves
 
     const {result} = renderHook(() => useGetApplications());
 

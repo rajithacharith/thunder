@@ -108,7 +108,7 @@ describe('useGetFlowById', () => {
     });
   });
 
-  it('should not fetch when flowId is undefined', async () => {
+  it('should not fetch when flowId is undefined', () => {
     const {result} = renderHook(() => useGetFlowById(undefined));
 
     // Should not be loading or fetching when disabled
@@ -116,7 +116,7 @@ describe('useGetFlowById', () => {
     expect(mockHttpRequest).not.toHaveBeenCalled();
   });
 
-  it('should not fetch when enabled is false', async () => {
+  it('should not fetch when enabled is false', () => {
     const {result} = renderHook(() => useGetFlowById('flow-123', false));
 
     expect(result.current.isFetching).toBe(false);
@@ -144,11 +144,10 @@ describe('useGetFlowById', () => {
   });
 
   it('should show loading state while fetching', async () => {
-    mockHttpRequest.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          setTimeout(() => resolve({data: mockFlowResponse}), 100);
-        }),
+    mockHttpRequest.mockReturnValue(
+      new Promise((resolve) => {
+        setTimeout(() => resolve({data: mockFlowResponse}), 100);
+      }),
     );
 
     const {result} = renderHook(() => useGetFlowById('flow-123'));

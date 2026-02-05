@@ -19,6 +19,7 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {render, screen, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
+import type {NavigateFunction} from 'react-router';
 import type {ApplicationListResponse} from '../../models/responses';
 import ApplicationsList from '../ApplicationsList';
 
@@ -142,7 +143,7 @@ describe('ApplicationsList', () => {
 
   beforeEach(() => {
     mockNavigate = vi.fn();
-    vi.mocked(useNavigate).mockReturnValue(mockNavigate);
+    vi.mocked(useNavigate).mockReturnValue(mockNavigate as unknown as NavigateFunction);
     vi.mocked(useDataGridLocaleText).mockReturnValue({});
   });
 
