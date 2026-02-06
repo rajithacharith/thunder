@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
@@ -690,4 +691,249 @@ func (suite *OAuth2UtilsTestSuite) TestSeparateOIDCAndNonOIDCScopes_CustomScopes
 			assert.Contains(t, nonOidcScopes, scope, "Custom scope should be in non-OIDC list")
 		})
 	}
+}
+
+// Claims parameter parsing tests
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_ValidJSON() {
+	jsonStr := `{
+		"userinfo": {
+			"given_name": {"essential": true},
+			"nickname": null,
+			"email": {"essential": true},
+			"picture": null
+		},
+		"id_token": {
+			"auth_time": {"essential": true},
+			"acr": {"values": ["urn:mace:incommon:iap:silver"]}
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), claimsRequest)
+	assert.NotNil(suite.T(), claimsRequest.UserInfo)
+	assert.NotNil(suite.T(), claimsRequest.IDToken)
+
+	// Verify userinfo claims
+	assert.Len(suite.T(), claimsRequest.UserInfo, 4)
+	assert.NotNil(suite.T(), claimsRequest.UserInfo["given_name"])
+	assert.True(suite.T(), claimsRequest.UserInfo["given_name"].Essential)
+	assert.Nil(suite.T(), claimsRequest.UserInfo["nickname"])
+
+	// Verify id_token claims
+	assert.Len(suite.T(), claimsRequest.IDToken, 2)
+	assert.NotNil(suite.T(), claimsRequest.IDToken["auth_time"])
+	assert.True(suite.T(), claimsRequest.IDToken["auth_time"].Essential)
+	assert.NotNil(suite.T(), claimsRequest.IDToken["acr"])
+	assert.Contains(suite.T(), claimsRequest.IDToken["acr"].Values, "urn:mace:incommon:iap:silver")
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_EmptyString() {
+	claimsRequest, err := ParseClaimsRequest("")
+
+	assert.NoError(suite.T(), err)
+	assert.Nil(suite.T(), claimsRequest)
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_InvalidJSON() {
+	jsonStr := `{invalid json}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), claimsRequest)
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_OnlyUserInfo() {
+	jsonStr := `{
+		"userinfo": {
+			"email": {"essential": true}
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), claimsRequest)
+	assert.NotNil(suite.T(), claimsRequest.UserInfo)
+	assert.Nil(suite.T(), claimsRequest.IDToken)
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_OnlyIDToken() {
+	jsonStr := `{
+		"id_token": {
+			"sub": {"value": "248289761001"}
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), claimsRequest)
+	assert.Nil(suite.T(), claimsRequest.UserInfo)
+	assert.NotNil(suite.T(), claimsRequest.IDToken)
+	assert.NotNil(suite.T(), claimsRequest.IDToken["sub"])
+	assert.Equal(suite.T(), "248289761001", claimsRequest.IDToken["sub"].Value)
+}
+
+func (suite *OAuth2UtilsTestSuite) TestSerializeClaimsRequest_ValidRequest() {
+	claimsRequest := &model.ClaimsRequest{
+		UserInfo: map[string]*model.IndividualClaimRequest{
+			"email":      {Essential: true},
+			"given_name": nil,
+		},
+		IDToken: map[string]*model.IndividualClaimRequest{
+			"auth_time": {Essential: true},
+		},
+	}
+
+	serialized, err := SerializeClaimsRequest(claimsRequest)
+
+	assert.NoError(suite.T(), err)
+	assert.NotEmpty(suite.T(), serialized)
+
+	// Verify roundtrip
+	parsed, err := ParseClaimsRequest(serialized)
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), parsed)
+	assert.True(suite.T(), parsed.UserInfo["email"].Essential)
+}
+
+func (suite *OAuth2UtilsTestSuite) TestSerializeClaimsRequest_NilRequest() {
+	serialized, err := SerializeClaimsRequest(nil)
+
+	assert.NoError(suite.T(), err)
+	assert.Empty(suite.T(), serialized)
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_MutuallyExclusiveValueAndValues() {
+	// Test that value and values cannot both be specified (OIDC spec violation)
+	jsonStr := `{
+		"userinfo": {
+			"email": {
+				"value": "user@example.com",
+				"values": ["user1@example.com", "user2@example.com"]
+			}
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), claimsRequest)
+	assert.Contains(suite.T(), err.Error(), "mutually exclusive")
+	assert.Contains(suite.T(), err.Error(), "email")
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_EmptyValuesArray() {
+	// Test that empty values array is rejected (OIDC spec - must match "one of" the values)
+	jsonStr := `{
+		"userinfo": {
+			"email": {
+				"values": []
+			}
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), claimsRequest)
+	assert.Contains(suite.T(), err.Error(), "empty 'values' array")
+	assert.Contains(suite.T(), err.Error(), "email")
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_MutuallyExclusiveInIDToken() {
+	// Test mutual exclusivity in id_token section
+	jsonStr := `{
+		"id_token": {
+			"sub": {
+				"value": "user123",
+				"values": ["user123", "user456"]
+			}
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), claimsRequest)
+	assert.Contains(suite.T(), err.Error(), "mutually exclusive")
+	assert.Contains(suite.T(), err.Error(), "sub")
+	assert.Contains(suite.T(), err.Error(), "id_token")
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_EmptyValuesArrayInIDToken() {
+	// Test empty values array rejection in id_token section
+	jsonStr := `{
+		"id_token": {
+			"acr": {
+				"values": []
+			}
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), claimsRequest)
+	assert.Contains(suite.T(), err.Error(), "empty 'values' array")
+	assert.Contains(suite.T(), err.Error(), "acr")
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_ValidValueOnly() {
+	// Test valid request with only value (not values)
+	jsonStr := `{
+		"userinfo": {
+			"email": {
+				"value": "user@example.com"
+			}
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), claimsRequest)
+	assert.NotNil(suite.T(), claimsRequest.UserInfo["email"])
+	assert.Equal(suite.T(), "user@example.com", claimsRequest.UserInfo["email"].Value)
+	assert.Nil(suite.T(), claimsRequest.UserInfo["email"].Values)
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_ValidValuesOnly() {
+	// Test valid request with only values (not value)
+	jsonStr := `{
+		"id_token": {
+			"acr": {
+				"values": ["urn:mace:incommon:iap:silver", "urn:mace:incommon:iap:bronze"]
+			}
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), claimsRequest)
+	assert.NotNil(suite.T(), claimsRequest.IDToken["acr"])
+	assert.Nil(suite.T(), claimsRequest.IDToken["acr"].Value)
+	assert.Len(suite.T(), claimsRequest.IDToken["acr"].Values, 2)
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_NullClaimRequest() {
+	// Test that null individual claim requests are valid (means claim is requested without constraints)
+	jsonStr := `{
+		"userinfo": {
+			"email": null,
+			"name": null
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), claimsRequest)
+	assert.Nil(suite.T(), claimsRequest.UserInfo["email"])
+	assert.Nil(suite.T(), claimsRequest.UserInfo["name"])
 }

@@ -22,10 +22,12 @@ package utils
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"regexp"
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
@@ -130,4 +132,88 @@ func SeparateOIDCAndNonOIDCScopes(scopes string) ([]string, []string) {
 		}
 	}
 	return oidcScopes, nonOidcScopes
+}
+
+// ParseClaimsRequest parses the claims parameter JSON string into a ClaimsRequest struct.
+// Returns nil if the input is empty.
+// Returns an error if the JSON is malformed or violates OIDC spec constraints.
+func ParseClaimsRequest(claimsParam string) (*model.ClaimsRequest, error) {
+	if claimsParam == "" {
+		return nil, nil
+	}
+
+	var claimsRequest model.ClaimsRequest
+	if err := json.Unmarshal([]byte(claimsParam), &claimsRequest); err != nil {
+		return nil, fmt.Errorf("invalid claims parameter: %w", err)
+	}
+
+	// Validate claims request
+	if err := validateClaimsRequest(&claimsRequest); err != nil {
+		return nil, err
+	}
+
+	return &claimsRequest, nil
+}
+
+// validateClaimsRequest validates a ClaimsRequest against OIDC spec constraints.
+func validateClaimsRequest(cr *model.ClaimsRequest) error {
+	if cr == nil {
+		return nil
+	}
+
+	// Validate userinfo claims
+	for claimName, claimReq := range cr.UserInfo {
+		if err := validateIndividualClaimRequest("userinfo", claimName, claimReq); err != nil {
+			return err
+		}
+	}
+
+	// Validate id_token claims
+	for claimName, claimReq := range cr.IDToken {
+		if err := validateIndividualClaimRequest("id_token", claimName, claimReq); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// validateIndividualClaimRequest validates constraints for an individual claim request.
+func validateIndividualClaimRequest(location, claimName string, icr *model.IndividualClaimRequest) error {
+	if icr == nil {
+		return nil
+	}
+
+	// value and values are mutually exclusive
+	if icr.Value != nil && len(icr.Values) > 0 {
+		return fmt.Errorf(
+			"invalid claims parameter: claim '%s' in %s has both 'value' and 'values' specified "+
+				"(mutually exclusive per OIDC spec)",
+			claimName, location)
+	}
+
+	// values array must contain at least one value
+	if icr.Values != nil && len(icr.Values) == 0 {
+		return fmt.Errorf(
+			"invalid claims parameter: claim '%s' in %s has empty 'values' array "+
+				"(must contain at least one value)",
+			claimName, location)
+	}
+
+	return nil
+}
+
+// SerializeClaimsRequest serializes a ClaimsRequest to JSON string.
+// Returns empty string if the claims request is nil or empty.
+func SerializeClaimsRequest(cr *model.ClaimsRequest) (string, error) {
+	if cr == nil || cr.IsEmpty() {
+		return "", nil
+	}
+
+	data, err := json.Marshal(cr)
+	if err != nil {
+		return "", fmt.Errorf("failed to serialize claims request: %w", err)
+	}
+
+	return string(data), nil
 }

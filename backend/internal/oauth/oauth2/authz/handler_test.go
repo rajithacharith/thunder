@@ -1463,7 +1463,7 @@ func (suite *AuthorizeHandlerTestSuite) TestGetRequiredAttributes() {
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			result := getRequiredAttributes(tt.oidcScopes, tt.app)
+			result := getRequiredAttributes(tt.oidcScopes, tt.app, nil)
 
 			// Parse both results into sets for comparison (order doesn't matter)
 			resultAttrs := make(map[string]bool)
@@ -1477,6 +1477,114 @@ func (suite *AuthorizeHandlerTestSuite) TestGetRequiredAttributes() {
 			}
 
 			assert.Equal(t, expectedAttrs, resultAttrs, tt.description)
+		})
+	}
+}
+
+// TestValidateSubClaimConstraint tests the sub claim validation requirement
+func (suite *AuthorizeHandlerTestSuite) TestValidateSubClaimConstraint() {
+	tests := []struct {
+		name          string
+		claimsRequest *oauth2model.ClaimsRequest
+		actualSubject string
+		expectError   bool
+	}{
+		{
+			name:          "nil claims request should pass",
+			claimsRequest: nil,
+			actualSubject: "user123",
+			expectError:   false,
+		},
+		{
+			name: "no sub constraint should pass",
+			claimsRequest: &oauth2model.ClaimsRequest{
+				IDToken: map[string]*oauth2model.IndividualClaimRequest{
+					"email": nil,
+				},
+			},
+			actualSubject: "user123",
+			expectError:   false,
+		},
+		{
+			name: "matching id_token sub value should pass",
+			claimsRequest: &oauth2model.ClaimsRequest{
+				IDToken: map[string]*oauth2model.IndividualClaimRequest{
+					"sub": {Value: "user123"},
+				},
+			},
+			actualSubject: "user123",
+			expectError:   false,
+		},
+		{
+			name: "non-matching id_token sub value should fail",
+			claimsRequest: &oauth2model.ClaimsRequest{
+				IDToken: map[string]*oauth2model.IndividualClaimRequest{
+					"sub": {Value: "expected-user"},
+				},
+			},
+			actualSubject: "actual-user",
+			expectError:   true,
+		},
+		{
+			name: "matching userinfo sub value should pass",
+			claimsRequest: &oauth2model.ClaimsRequest{
+				UserInfo: map[string]*oauth2model.IndividualClaimRequest{
+					"sub": {Value: "user456"},
+				},
+			},
+			actualSubject: "user456",
+			expectError:   false,
+		},
+		{
+			name: "non-matching userinfo sub value should fail",
+			claimsRequest: &oauth2model.ClaimsRequest{
+				UserInfo: map[string]*oauth2model.IndividualClaimRequest{
+					"sub": {Value: "expected-user"},
+				},
+			},
+			actualSubject: "actual-user",
+			expectError:   true,
+		},
+		{
+			name: "matching sub in values array should pass",
+			claimsRequest: &oauth2model.ClaimsRequest{
+				IDToken: map[string]*oauth2model.IndividualClaimRequest{
+					"sub": {Values: []interface{}{"user1", "user2", "user3"}},
+				},
+			},
+			actualSubject: "user2",
+			expectError:   false,
+		},
+		{
+			name: "non-matching sub in values array should fail",
+			claimsRequest: &oauth2model.ClaimsRequest{
+				IDToken: map[string]*oauth2model.IndividualClaimRequest{
+					"sub": {Values: []interface{}{"user1", "user2", "user3"}},
+				},
+			},
+			actualSubject: "user4",
+			expectError:   true,
+		},
+		{
+			name: "null sub request (voluntary) should pass",
+			claimsRequest: &oauth2model.ClaimsRequest{
+				IDToken: map[string]*oauth2model.IndividualClaimRequest{
+					"sub": nil,
+				},
+			},
+			actualSubject: "any-user",
+			expectError:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.T().Run(tt.name, func(t *testing.T) {
+			err := validateSubClaimConstraint(tt.claimsRequest, tt.actualSubject)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

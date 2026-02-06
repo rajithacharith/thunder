@@ -34,27 +34,36 @@ import (
 
 // InitiateAuthorizationFlow starts the OAuth2 authorization flow
 func InitiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state string) (*http.Response, error) {
-	return initiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state, "", "", "")
+	return initiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state, "", "", "", "")
 }
 
 // InitiateAuthorizationFlowWithResource starts the OAuth2 authorization flow with resource parameter
 func InitiateAuthorizationFlowWithResource(clientID, redirectURI, responseType, scope, state,
 	resource string) (*http.Response, error) {
-	return initiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state, resource, "", "")
+	return initiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state, resource, "", "", "")
 }
 
 // InitiateAuthorizationFlowWithPKCE starts the OAuth2 authorization flow with PKCE parameters
 func InitiateAuthorizationFlowWithPKCE(clientID, redirectURI, responseType, scope, state, resource,
 	codeChallenge, codeChallengeMethod string) (*http.Response, error) {
 	return initiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state, resource,
-		codeChallenge, codeChallengeMethod)
+		codeChallenge, codeChallengeMethod, "")
 }
 
-// initiateAuthorizationFlow starts the OAuth2 authorization flow
+// InitiateAuthorizationFlowWithClaims starts the OAuth2 authorization flow with claims parameter
+func InitiateAuthorizationFlowWithClaims(
+	clientID, redirectURI, responseType, scope, state, claimsParam string,
+) (*http.Response, error) {
+	return initiateAuthorizationFlow(
+		clientID, redirectURI, responseType, scope, state, "", "", "", claimsParam,
+	)
+}
+
+// initiateAuthorizationFlow starts the OAuth2 authorization flow with all optional parameters.
 // clientID, redirectURI, responseType, scope, and state are required parameters.
-// resource, codeChallenge, and codeChallengeMethod are optional parameters.
+// resource, codeChallenge, codeChallengeMethod, and claimsParam are optional parameters.
 func initiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state, resource,
-	codeChallenge, codeChallengeMethod string) (*http.Response, error) {
+	codeChallenge, codeChallengeMethod, claimsParam string) (*http.Response, error) {
 	authURL := TestServerURL + "/oauth2/authorize"
 	params := url.Values{}
 	params.Set("client_id", clientID)
@@ -68,6 +77,9 @@ func initiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state
 	if codeChallenge != "" {
 		params.Set("code_challenge", codeChallenge)
 		params.Set("code_challenge_method", codeChallengeMethod)
+	}
+	if claimsParam != "" {
+		params.Set("claims", claimsParam)
 	}
 
 	req, err := http.NewRequest("GET", authURL+"?"+params.Encode(), nil)
