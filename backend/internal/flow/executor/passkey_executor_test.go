@@ -195,14 +195,29 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteChallenge_Success() {
 
 func (suite *PasskeyAuthExecutorTestSuite) TestExecuteChallenge_MissingUserID() {
 	ctx := createPasskeyNodeContext(passkeyExecutorModeChallenge, common.FlowTypeAuthentication)
-	// Not setting userID in RuntimeData
+	// Not setting userID in RuntimeData - this triggers usernameless flow
+
+	expectedStartData := &passkey.PasskeyAuthenticationStartData{
+		SessionToken: testSessionToken,
+		PublicKeyCredentialRequestOptions: passkey.PublicKeyCredentialRequestOptions{
+			Challenge: "dGVzdC1jaGFsbGVuZ2U=",
+		},
+	}
+
+	// Mock passkey service for usernameless authentication (empty UserID)
+	suite.mockPasskeyService.On("StartAuthentication", mock.MatchedBy(
+		func(req *passkey.PasskeyAuthenticationStartRequest) bool {
+			return req.UserID == "" && req.RelyingPartyID == testRelyingPartyID
+		})).Return(expectedStartData, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
+	// Usernameless flow should succeed
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Contains(suite.T(), resp.FailureReason, "User ID is required")
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), testSessionToken, resp.RuntimeData[runtimePasskeySessionToken])
+	assert.NotEmpty(suite.T(), resp.AdditionalData[runtimePasskeyChallenge])
 }
 
 func (suite *PasskeyAuthExecutorTestSuite) TestExecuteChallenge_MissingRelyingPartyID() {

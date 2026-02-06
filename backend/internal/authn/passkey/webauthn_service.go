@@ -120,12 +120,23 @@ type webAuthnService interface {
 		user webauthnUserInterface,
 	) (*credentialAssertion, *sessionData, error)
 
+	// BeginDiscoverableLogin initiates usernameless authentication ceremony for discoverable credentials.
+	BeginDiscoverableLogin() (*credentialAssertion, *sessionData, error)
+
 	// ValidateLogin validates the authentication response and returns the verified credential.
 	ValidateLogin(
 		user webauthnUserInterface,
 		session sessionData,
 		response *parsedCredentialAssertionData,
 	) (*webauthnCredential, error)
+
+	// ValidatePasskeyLogin validates discoverable credential authentication and resolves the user.
+	// Returns the authenticated user, verified credential, and any error.
+	ValidatePasskeyLogin(
+		userHandler func(rawID, userHandle []byte) (webauthnUserInterface, error),
+		session sessionData,
+		response *parsedCredentialAssertionData,
+	) (webauthnUserInterface, *webauthnCredential, error)
 }
 
 // defaultWebAuthnService is the default implementation using the GO-WebAuthn library.
@@ -178,6 +189,13 @@ func (a *defaultWebAuthnService) BeginLogin(
 	return a.webAuthnLib.BeginLogin(user)
 }
 
+// BeginDiscoverableLogin wraps the WebAuthn library's BeginDiscoverableLogin method.
+func (a *defaultWebAuthnService) BeginDiscoverableLogin() (*credentialAssertion, *sessionData, error) {
+	return a.webAuthnLib.BeginDiscoverableLogin(
+		webauthn.WithUserVerification(verificationPreferred),
+	)
+}
+
 // ValidateLogin wraps the WebAuthn library's ValidateLogin method.
 func (a *defaultWebAuthnService) ValidateLogin(
 	user webauthnUserInterface,
@@ -185,6 +203,37 @@ func (a *defaultWebAuthnService) ValidateLogin(
 	response *parsedCredentialAssertionData,
 ) (*webauthnCredential, error) {
 	return a.webAuthnLib.ValidateLogin(user, session, response)
+}
+
+// ValidatePasskeyLogin wraps the WebAuthn library's ValidatePasskeyLogin method for discoverable credentials.
+func (a *defaultWebAuthnService) ValidatePasskeyLogin(
+	userHandler func(rawID, userHandle []byte) (webauthnUserInterface, error),
+	session sessionData,
+	response *parsedCredentialAssertionData,
+) (webauthnUserInterface, *webauthnCredential, error) {
+	// Create a wrapper handler that converts our interface to the library's User interface
+	libUserHandler := func(rawID, userHandle []byte) (webauthn.User, error) {
+		user, err := userHandler(rawID, userHandle)
+		if err != nil {
+			return nil, err
+		}
+		// Our webauthnUserInterface is compatible with webauthn.User
+		return user, nil
+	}
+
+	user, cred, err := a.webAuthnLib.ValidatePasskeyLogin(libUserHandler, session, response)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Convert the returned user back to our interface type
+	// Since the user came from our handler, it's already our type
+	ourUser, ok := user.(webauthnUserInterface)
+	if !ok {
+		return nil, nil, fmt.Errorf("user is not of expected type")
+	}
+
+	return ourUser, cred, nil
 }
 
 // parseAssertionResponse converts raw string parameters to parsedCredentialAssertionData.

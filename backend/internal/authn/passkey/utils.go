@@ -186,9 +186,6 @@ func validateAuthenticationStartRequest(req *PasskeyAuthenticationStartRequest) 
 	if req == nil {
 		return &ErrorInvalidFinishData
 	}
-	if strings.TrimSpace(req.UserID) == "" {
-		return &ErrorEmptyUserIdentifier
-	}
 	if strings.TrimSpace(req.RelyingPartyID) == "" {
 		return &ErrorEmptyRelyingPartyID
 	}

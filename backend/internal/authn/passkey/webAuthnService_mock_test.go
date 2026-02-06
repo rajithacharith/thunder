@@ -35,6 +35,69 @@ func (_m *webAuthnServiceMock) EXPECT() *webAuthnServiceMock_Expecter {
 	return &webAuthnServiceMock_Expecter{mock: &_m.Mock}
 }
 
+// BeginDiscoverableLogin provides a mock function for the type webAuthnServiceMock
+func (_mock *webAuthnServiceMock) BeginDiscoverableLogin() (*credentialAssertion, *sessionData, error) {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for BeginDiscoverableLogin")
+	}
+
+	var r0 *credentialAssertion
+	var r1 *sessionData
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func() (*credentialAssertion, *sessionData, error)); ok {
+		return returnFunc()
+	}
+	if returnFunc, ok := ret.Get(0).(func() *credentialAssertion); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*credentialAssertion)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func() *sessionData); ok {
+		r1 = returnFunc()
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*sessionData)
+		}
+	}
+	if returnFunc, ok := ret.Get(2).(func() error); ok {
+		r2 = returnFunc()
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// webAuthnServiceMock_BeginDiscoverableLogin_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'BeginDiscoverableLogin'
+type webAuthnServiceMock_BeginDiscoverableLogin_Call struct {
+	*mock.Call
+}
+
+// BeginDiscoverableLogin is a helper method to define mock.On call
+func (_e *webAuthnServiceMock_Expecter) BeginDiscoverableLogin() *webAuthnServiceMock_BeginDiscoverableLogin_Call {
+	return &webAuthnServiceMock_BeginDiscoverableLogin_Call{Call: _e.mock.On("BeginDiscoverableLogin")}
+}
+
+func (_c *webAuthnServiceMock_BeginDiscoverableLogin_Call) Run(run func()) *webAuthnServiceMock_BeginDiscoverableLogin_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *webAuthnServiceMock_BeginDiscoverableLogin_Call) Return(v *credentialAssertion, v1 *sessionData, err error) *webAuthnServiceMock_BeginDiscoverableLogin_Call {
+	_c.Call.Return(v, v1, err)
+	return _c
+}
+
+func (_c *webAuthnServiceMock_BeginDiscoverableLogin_Call) RunAndReturn(run func() (*credentialAssertion, *sessionData, error)) *webAuthnServiceMock_BeginDiscoverableLogin_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // BeginLogin provides a mock function for the type webAuthnServiceMock
 func (_mock *webAuthnServiceMock) BeginLogin(user webauthnUserInterface) (*credentialAssertion, *sessionData, error) {
 	ret := _mock.Called(user)
@@ -325,6 +388,88 @@ func (_c *webAuthnServiceMock_ValidateLogin_Call) Return(v *webauthnCredential, 
 }
 
 func (_c *webAuthnServiceMock_ValidateLogin_Call) RunAndReturn(run func(user webauthnUserInterface, session sessionData, response *parsedCredentialAssertionData) (*webauthnCredential, error)) *webAuthnServiceMock_ValidateLogin_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ValidatePasskeyLogin provides a mock function for the type webAuthnServiceMock
+func (_mock *webAuthnServiceMock) ValidatePasskeyLogin(userHandler func(rawID []byte, userHandle []byte) (webauthnUserInterface, error), session sessionData, response *parsedCredentialAssertionData) (webauthnUserInterface, *webauthnCredential, error) {
+	ret := _mock.Called(userHandler, session, response)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ValidatePasskeyLogin")
+	}
+
+	var r0 webauthnUserInterface
+	var r1 *webauthnCredential
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(func(rawID []byte, userHandle []byte) (webauthnUserInterface, error), sessionData, *parsedCredentialAssertionData) (webauthnUserInterface, *webauthnCredential, error)); ok {
+		return returnFunc(userHandler, session, response)
+	}
+	if returnFunc, ok := ret.Get(0).(func(func(rawID []byte, userHandle []byte) (webauthnUserInterface, error), sessionData, *parsedCredentialAssertionData) webauthnUserInterface); ok {
+		r0 = returnFunc(userHandler, session, response)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(webauthnUserInterface)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(func(rawID []byte, userHandle []byte) (webauthnUserInterface, error), sessionData, *parsedCredentialAssertionData) *webauthnCredential); ok {
+		r1 = returnFunc(userHandler, session, response)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*webauthnCredential)
+		}
+	}
+	if returnFunc, ok := ret.Get(2).(func(func(rawID []byte, userHandle []byte) (webauthnUserInterface, error), sessionData, *parsedCredentialAssertionData) error); ok {
+		r2 = returnFunc(userHandler, session, response)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// webAuthnServiceMock_ValidatePasskeyLogin_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ValidatePasskeyLogin'
+type webAuthnServiceMock_ValidatePasskeyLogin_Call struct {
+	*mock.Call
+}
+
+// ValidatePasskeyLogin is a helper method to define mock.On call
+//   - userHandler func(rawID []byte, userHandle []byte) (webauthnUserInterface, error)
+//   - session sessionData
+//   - response *parsedCredentialAssertionData
+func (_e *webAuthnServiceMock_Expecter) ValidatePasskeyLogin(userHandler interface{}, session interface{}, response interface{}) *webAuthnServiceMock_ValidatePasskeyLogin_Call {
+	return &webAuthnServiceMock_ValidatePasskeyLogin_Call{Call: _e.mock.On("ValidatePasskeyLogin", userHandler, session, response)}
+}
+
+func (_c *webAuthnServiceMock_ValidatePasskeyLogin_Call) Run(run func(userHandler func(rawID []byte, userHandle []byte) (webauthnUserInterface, error), session sessionData, response *parsedCredentialAssertionData)) *webAuthnServiceMock_ValidatePasskeyLogin_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 func(rawID []byte, userHandle []byte) (webauthnUserInterface, error)
+		if args[0] != nil {
+			arg0 = args[0].(func(rawID []byte, userHandle []byte) (webauthnUserInterface, error))
+		}
+		var arg1 sessionData
+		if args[1] != nil {
+			arg1 = args[1].(sessionData)
+		}
+		var arg2 *parsedCredentialAssertionData
+		if args[2] != nil {
+			arg2 = args[2].(*parsedCredentialAssertionData)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *webAuthnServiceMock_ValidatePasskeyLogin_Call) Return(webauthnUserInterfaceMoqParam webauthnUserInterface, v *webauthnCredential, err error) *webAuthnServiceMock_ValidatePasskeyLogin_Call {
+	_c.Call.Return(webauthnUserInterfaceMoqParam, v, err)
+	return _c
+}
+
+func (_c *webAuthnServiceMock_ValidatePasskeyLogin_Call) RunAndReturn(run func(userHandler func(rawID []byte, userHandle []byte) (webauthnUserInterface, error), session sessionData, response *parsedCredentialAssertionData) (webauthnUserInterface, *webauthnCredential, error)) *webAuthnServiceMock_ValidatePasskeyLogin_Call {
 	_c.Call.Return(run)
 	return _c
 }

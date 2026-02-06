@@ -196,6 +196,13 @@ func (suite *UtilsTestSuite) TestValidateRegistrationStartRequest_EmptyRelyingPa
 	suite.Equal(ErrorEmptyRelyingPartyID.Code, err.Code)
 }
 
+func (suite *UtilsTestSuite) TestValidateAuthenticationStartRequest_NilRequest() {
+	err := validateAuthenticationStartRequest(nil)
+
+	suite.NotNil(err)
+	suite.Equal(ErrorInvalidFinishData.Code, err.Code)
+}
+
 func (suite *UtilsTestSuite) TestHandleUserRetrievalError_ClientError() {
 	svcErr := &serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
