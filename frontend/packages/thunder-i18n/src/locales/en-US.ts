@@ -1043,6 +1043,7 @@ const translations = {
     // Passkey authentication
     'passkey.button.use': 'Sign in with Passkey',
     'passkey.signin.heading': 'Sign in with Passkey',
+    'passkey.signin.description': 'Use your passkey to securely sign in to your account without a password.',
     'passkey.register.heading': 'Register Passkey',
     'passkey.register.description': 'Create a passkey to securely sign in to your account without a password.',
   },

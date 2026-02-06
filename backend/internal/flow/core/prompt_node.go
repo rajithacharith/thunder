@@ -211,17 +211,32 @@ func (n *promptNode) hasSelectedAction(ctx *NodeContext, nodeResp *common.NodeRe
 }
 
 // tryAutoSelectSingleAction attempts to auto-select the action when there's exactly one action
-// defined and no action has been selected.
+// defined, no action has been selected, and inputs are defined. If no inputs are defined
+// (confirmation-only prompts), we should not auto-select as the prompt is meant to wait for
+// explicit user action.
 // Returns true if an action was auto-selected, otherwise false.
 func (n *promptNode) tryAutoSelectSingleAction(ctx *NodeContext) bool {
 	actions := n.getAllActions()
-	if len(actions) == 1 && ctx.CurrentAction == "" {
+	allInputs := n.getAllInputs()
+
+	// Auto-select only when: single action, no action selected, and has inputs defined
+	// Skip auto-select for confirmation prompts (no inputs) - they should wait for explicit action
+	if len(actions) == 1 && ctx.CurrentAction == "" && len(allInputs) > 0 {
 		ctx.CurrentAction = actions[0].Ref
 		n.logger.Debug("Auto-selected single action", log.String(log.LoggerKeyFlowID, ctx.FlowID),
 			log.String("actionRef", actions[0].Ref))
 		return true
 	}
 	return false
+}
+
+// getAllInputs returns all inputs from prompts.
+func (n *promptNode) getAllInputs() []common.Input {
+	inputs := make([]common.Input, 0)
+	for _, prompt := range n.prompts {
+		inputs = append(inputs, prompt.Inputs...)
+	}
+	return inputs
 }
 
 // getAllActions returns all actions from prompts.

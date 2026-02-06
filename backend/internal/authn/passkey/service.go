@@ -288,39 +288,25 @@ func (w *passkeyService) StartAuthentication(req *PasskeyAuthenticationStartRequ
 	}
 
 	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Starting passkey authentication",
-		log.String("userID", log.MaskString(req.UserID)),
-		log.String("relyingPartyID", req.RelyingPartyID))
+
+	// Check if this is usernameless flow
+	isUsernameless := strings.TrimSpace(req.UserID) == ""
+
+	userID := req.UserID
+	if isUsernameless {
+		userID = ""
+		logger.Debug("Starting usernameless passkey authentication",
+			log.String("relyingPartyID", req.RelyingPartyID))
+	} else {
+		logger.Debug("Starting passkey authentication",
+			log.String("userID", log.MaskString(req.UserID)),
+			log.String("relyingPartyID", req.RelyingPartyID))
+	}
 
 	// Validate input
 	if svcErr := validateAuthenticationStartRequest(req); svcErr != nil {
 		return nil, svcErr
 	}
-
-	// Retrieve user by userID to verify user exists
-	coreUser, svcErr := w.userService.GetUser(context.TODO(), req.UserID)
-	if svcErr != nil {
-		return nil, handleUserRetrievalError(svcErr, req.UserID, logger)
-	}
-
-	// Retrieve user's registered passkey credentials from database
-	credentials, err := w.getStoredPasskeyCredentials(req.UserID)
-	if err != nil {
-		logger.Error("Failed to retrieve credentials from database", log.Error(err))
-		return nil, &serviceerror.InternalServerError
-	}
-
-	logger.Debug("Retrieved credentials for authentication",
-		log.String("userID", req.UserID),
-		log.Int("credentialCount", len(credentials)))
-
-	if len(credentials) == 0 {
-		logger.Debug("No credentials found for user", log.String("userID", req.UserID))
-		return nil, &ErrorNoCredentialsFound
-	}
-
-	// Create WebAuthn user from core user
-	webAuthnUser := newWebAuthnUserFromCoreUser(coreUser, credentials)
 
 	// Initialize WebAuthn service with relying party configuration
 	rpOrigins := getConfiguredOrigins()
@@ -330,16 +316,54 @@ func (w *passkeyService) StartAuthentication(req *PasskeyAuthenticationStartRequ
 		return nil, &serviceerror.InternalServerError
 	}
 
-	// Begin login ceremony using the WebAuthn service
-	// The WebAuthn service will generate challenge and set timeout automatically
-	options, sessionData, err := webAuthnService.BeginLogin(webAuthnUser)
-	if err != nil {
-		logger.Error("Failed to begin passkey login", log.String("error", err.Error()))
-		return nil, &serviceerror.InternalServerError
+	var options *credentialAssertion
+	var sessionData *sessionData
+
+	if isUsernameless {
+		// Usernameless flow: Use discoverable credentials
+		options, sessionData, err = webAuthnService.BeginDiscoverableLogin()
+		if err != nil {
+			logger.Error("Failed to begin usernameless passkey login", log.String("error", err.Error()))
+			return nil, &serviceerror.InternalServerError
+		}
+	} else {
+		// Username-based flow: Retrieve user and credentials
+		// Retrieve user by userID to verify user exists
+		coreUser, svcErr := w.userService.GetUser(context.TODO(), req.UserID)
+		if svcErr != nil {
+			return nil, handleUserRetrievalError(svcErr, req.UserID, logger)
+		}
+
+		// Retrieve user's registered passkey credentials from database
+		credentials, err := w.getStoredPasskeyCredentials(req.UserID)
+		if err != nil {
+			logger.Error("Failed to retrieve credentials from database", log.Error(err))
+			return nil, &serviceerror.InternalServerError
+		}
+
+		logger.Debug("Retrieved credentials for authentication",
+			log.String("userID", log.MaskString(req.UserID)),
+			log.Int("credentialCount", len(credentials)))
+
+		if len(credentials) == 0 {
+			logger.Debug("No credentials found for user", log.String("userID", log.MaskString(req.UserID)))
+			return nil, &ErrorNoCredentialsFound
+		}
+
+		// Create WebAuthn user from core user
+		webAuthnUser := newWebAuthnUserFromCoreUser(coreUser, credentials)
+
+		// Begin login ceremony using the WebAuthn service
+		// The WebAuthn service will generate challenge and set timeout automatically
+		options, sessionData, err = webAuthnService.BeginLogin(webAuthnUser)
+		if err != nil {
+			logger.Error("Failed to begin passkey login", log.String("error", err.Error()))
+			return nil, &serviceerror.InternalServerError
+		}
 	}
 
-	// Store session data in cache with TTL
-	sessionToken, svcErr := w.storeSessionData(req.UserID, req.RelyingPartyID, sessionData)
+	// Store session data in cache with TTL using normalized userID
+	sessionToken, svcErr := w.storeSessionData(userID, req.RelyingPartyID, sessionData)
 	if svcErr != nil {
 		logger.Error("Failed to store session data", log.String("error", svcErr.Error))
 		return nil, svcErr
@@ -373,15 +397,45 @@ func (w *passkeyService) FinishAuthentication(req *PasskeyAuthenticationFinishRe
 	}
 
 	// Retrieve session data from cache
-	sessionData, userID, relyingPartyID, svcErr := w.retrieveSessionData(req.SessionToken)
+	sessionData, sessionUserID, relyingPartyID, svcErr := w.retrieveSessionData(req.SessionToken)
 	if svcErr != nil {
 		logger.Error("Failed to retrieve session data", log.String("error", svcErr.Error))
 		return nil, svcErr
 	}
 
-	logger.Debug("Processing passkey authentication",
-		log.String("userID", log.MaskString(userID)),
-		log.String("relyingPartyID", relyingPartyID))
+	// Check if this is usernameless flow (session was created without userID)
+	isUsernameless := strings.TrimSpace(sessionUserID) == ""
+
+	var userID string
+
+	if isUsernameless {
+		// Usernameless flow: Resolve user from userHandle in the authentication response
+		if req.UserHandle == "" {
+			logger.Error("UserHandle is required for usernameless authentication")
+			return nil, &ErrorInvalidAuthenticatorResponse
+		}
+
+		// Decode userHandle to get userID
+		userHandleBytes, err := base64.StdEncoding.DecodeString(req.UserHandle)
+		if err != nil {
+			// Try RawURLEncoding if standard encoding fails
+			userHandleBytes, err = base64.RawURLEncoding.DecodeString(req.UserHandle)
+			if err != nil {
+				logger.Error("Failed to decode userHandle", log.Error(err))
+				return nil, &ErrorInvalidAuthenticatorResponse
+			}
+		}
+
+		userID = string(userHandleBytes)
+		logger.Debug("Resolved userID from userHandle for usernameless authentication",
+			log.String("userID", log.MaskString(userID)))
+	} else {
+		// Username-based flow: Use userID from session
+		userID = sessionUserID
+		logger.Debug("Processing passkey authentication",
+			log.String("userID", log.MaskString(userID)),
+			log.String("relyingPartyID", relyingPartyID))
+	}
 
 	// Get core user
 	coreUser, svcErr := w.userService.GetUser(context.TODO(), userID)
@@ -425,11 +479,27 @@ func (w *passkeyService) FinishAuthentication(req *PasskeyAuthenticationFinishRe
 		return nil, &ErrorInvalidAuthenticatorResponse
 	}
 
-	// Verify the credential assertion using WebAuthn service
-	credential, err := webAuthnService.ValidateLogin(webAuthnUser, *sessionData, parsedResponse)
-	if err != nil {
-		logger.Debug("Failed to validate WebAuthn assertion", log.String("error", err.Error()))
-		return nil, &ErrorInvalidSignature
+	var credential *webauthnCredential
+
+	if isUsernameless {
+		// Usernameless flow: Use ValidatePasskeyLogin with user handler
+		userHandler := func(rawID, userHandle []byte) (webauthnUserInterface, error) {
+			// The user has already been resolved and validated above
+			return webAuthnUser, nil
+		}
+
+		_, credential, err = webAuthnService.ValidatePasskeyLogin(userHandler, *sessionData, parsedResponse)
+		if err != nil {
+			logger.Debug("Failed to validate passkey assertion", log.String("error", err.Error()))
+			return nil, &ErrorInvalidSignature
+		}
+	} else {
+		// Username-based flow: Use ValidateLogin with specific user
+		credential, err = webAuthnService.ValidateLogin(webAuthnUser, *sessionData, parsedResponse)
+		if err != nil {
+			logger.Debug("Failed to validate WebAuthn assertion", log.String("error", err.Error()))
+			return nil, &ErrorInvalidSignature
+		}
 	}
 
 	logger.Debug("Passkey authentication verified successfully",

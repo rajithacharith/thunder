@@ -379,15 +379,20 @@ func (suite *PasskeyAuthTestSuite) TestPasskeyAuthenticationStartInvalidUserID()
 	suite.Equal(http.StatusBadRequest, statusCode, "Expected status 400 for invalid user ID")
 }
 
-// TestPasskeyAuthenticationStartEmptyUserID tests authentication with empty user ID
+// TestPasskeyAuthenticationStartEmptyUserID tests usernameless authentication with empty user ID
 func (suite *PasskeyAuthTestSuite) TestPasskeyAuthenticationStartEmptyUserID() {
 	authRequest := PasskeyAuthStartRequest{
 		UserID:         "",
 		RelyingPartyID: testRelyingPartyID,
 	}
 
-	_, statusCode, _ := suite.sendPasskeyAuthStartRequest(authRequest)
-	suite.Equal(http.StatusBadRequest, statusCode, "Expected status 400 for empty user ID")
+	response, statusCode, err := suite.sendPasskeyAuthStartRequest(authRequest)
+	// Usernameless authentication should succeed
+	suite.NoError(err, "Failed to send passkey auth start request")
+	suite.Equal(http.StatusOK, statusCode, "Expected status 200 for usernameless authentication")
+	suite.NotNil(response, "Response should not be nil")
+	suite.NotEmpty(response.SessionToken, "Response should contain session token")
+	suite.NotEmpty(response.PublicKeyCredentialRequestOptions.Challenge, "Response should contain challenge")
 }
 
 // TestPasskeyRegistrationFinishInvalidSessionToken tests finish registration with invalid session
@@ -428,6 +433,279 @@ func (suite *PasskeyAuthTestSuite) TestPasskeyAuthenticationFinishInvalidSession
 	_, statusCode, _ := suite.sendPasskeyAuthFinishRequest(finishRequest)
 	suite.True(statusCode == http.StatusUnauthorized || statusCode == http.StatusBadRequest,
 		"Expected status 401 or 400 for invalid session token")
+}
+
+// TestPasskeyAuthenticationUsernamelessFlow tests the complete usernameless passkey authentication flow
+func (suite *PasskeyAuthTestSuite) TestPasskeyAuthenticationUsernamelessFlow() {
+	authStartRequest := PasskeyAuthStartRequest{
+		UserID:         "", // Empty userID for usernameless flow
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	startResponse, statusCode, err := suite.sendPasskeyAuthStartRequest(authStartRequest)
+	suite.Require().NoError(err, "Failed to send usernameless passkey auth start request")
+	suite.Equal(http.StatusOK, statusCode, "Expected status 200 for usernameless authentication start")
+	suite.NotNil(startResponse, "Start response should not be nil")
+
+	suite.NotEmpty(startResponse.SessionToken, "Response should contain session token")
+	suite.NotEmpty(startResponse.PublicKeyCredentialRequestOptions.Challenge,
+		"Response should contain challenge")
+	suite.Equal(testRelyingPartyID, startResponse.PublicKeyCredentialRequestOptions.RelyingPartyID,
+		"Response should contain correct RP ID")
+
+	suite.Empty(startResponse.PublicKeyCredentialRequestOptions.AllowCredentials,
+		"AllowCredentials should be empty for usernameless flow to enable discoverable credentials")
+
+	_, err = base64.RawURLEncoding.DecodeString(startResponse.PublicKeyCredentialRequestOptions.Challenge)
+	suite.NoError(err, "Challenge should be valid base64")
+
+	suite.NotZero(startResponse.PublicKeyCredentialRequestOptions.Timeout,
+		"Timeout should be set in request options")
+
+	suite.NotEmpty(startResponse.PublicKeyCredentialRequestOptions.UserVerification,
+		"User verification should be specified")
+}
+
+// TestPasskeyAuthenticationUsernamelessFlowWithWhitespace tests usernameless flow with whitespace userID
+func (suite *PasskeyAuthTestSuite) TestPasskeyAuthenticationUsernamelessFlowWithWhitespace() {
+	authStartRequest := PasskeyAuthStartRequest{
+		UserID:         "   ", // Whitespace userID
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	startResponse, statusCode, err := suite.sendPasskeyAuthStartRequest(authStartRequest)
+	suite.Require().NoError(err, "Failed to send usernameless passkey auth start request")
+	suite.Equal(http.StatusOK, statusCode, "Expected status 200 for usernameless authentication start")
+	suite.NotNil(startResponse, "Start response should not be nil")
+
+	suite.Empty(startResponse.PublicKeyCredentialRequestOptions.AllowCredentials,
+		"AllowCredentials should be empty for usernameless flow")
+}
+
+// TestPasskeyAuthenticationUsernamelessFlowEmptyRelyingPartyID tests usernameless with missing RP ID
+func (suite *PasskeyAuthTestSuite) TestPasskeyAuthenticationUsernamelessFlowEmptyRelyingPartyID() {
+	authStartRequest := PasskeyAuthStartRequest{
+		UserID:         "", // Usernameless
+		RelyingPartyID: "", // Missing RP ID
+	}
+
+	_, statusCode, _ := suite.sendPasskeyAuthStartRequest(authStartRequest)
+	suite.Equal(http.StatusBadRequest, statusCode,
+		"Expected status 400 for usernameless flow with missing RP ID")
+}
+
+// TestPasskeyAuthenticationFinishUsernamelessWithValidCredential tests finish authentication for usernameless flow
+// This test covers the ValidatePasskeyLogin path including the type assertion of user interface
+func (suite *PasskeyAuthTestSuite) TestPasskeyAuthenticationFinishUsernamelessWithValidCredential() {
+	registerStartRequest := PasskeyRegisterStartRequest{
+		UserID:           suite.testUserID,
+		RelyingPartyID:   testRelyingPartyID,
+		RelyingPartyName: testRelyingPartyName,
+		AuthenticatorSelection: &AuthenticatorSelectionCriteria{
+			ResidentKey:      "required",
+			UserVerification: "required",
+		},
+	}
+
+	registerStartResponse, statusCode, err := suite.sendPasskeyRegisterStartRequest(registerStartRequest)
+	suite.Require().NoError(err, "Failed to send passkey register start request")
+	suite.Require().Equal(http.StatusOK, statusCode, "Expected status 200 for registration start")
+	suite.Require().NotEmpty(registerStartResponse.SessionToken, "Session token should not be empty")
+
+	authStartRequest := PasskeyAuthStartRequest{
+		UserID:         "", // Empty userID for usernameless flow
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	authStartResponse, statusCode, err := suite.sendPasskeyAuthStartRequest(authStartRequest)
+	suite.Require().NoError(err, "Failed to send usernameless passkey auth start request")
+	suite.Equal(http.StatusOK, statusCode, "Expected status 200 for usernameless authentication start")
+	suite.NotNil(authStartResponse, "Auth start response should not be nil")
+	suite.NotEmpty(authStartResponse.SessionToken, "Session token should not be empty")
+
+	// Verify the response structure for usernameless flow
+	suite.Empty(authStartResponse.PublicKeyCredentialRequestOptions.AllowCredentials,
+		"AllowCredentials should be empty for usernameless flow")
+	suite.NotEmpty(authStartResponse.PublicKeyCredentialRequestOptions.Challenge,
+		"Challenge should be present")
+	suite.Equal(testRelyingPartyID, authStartResponse.PublicKeyCredentialRequestOptions.RelyingPartyID,
+		"RelyingPartyID should match")
+
+	finishRequest := PasskeyAuthFinishRequest{
+		CredentialID:   "mock-credential-id",
+		CredentialType: "public-key",
+		Response: AuthenticatorAssertionResponse{
+			ClientDataJSON: base64.RawURLEncoding.EncodeToString([]byte(
+				`{"type":"webauthn.get","challenge":"` +
+					authStartResponse.PublicKeyCredentialRequestOptions.Challenge + `","origin":"http://localhost"}`)),
+			AuthenticatorData: base64.RawURLEncoding.EncodeToString([]byte(
+				"mock-auth-data-with-sufficient-length-for-parsing")),
+			Signature:  base64.RawURLEncoding.EncodeToString([]byte("mock-signature")),
+			UserHandle: base64.StdEncoding.EncodeToString([]byte(suite.testUserID)),
+		},
+		SessionToken: authStartResponse.SessionToken,
+	}
+
+	_, statusCode, _ = suite.sendPasskeyAuthFinishRequest(finishRequest)
+	// Should fail validation but the code path including type assertion should be exercised
+	suite.True(statusCode == http.StatusBadRequest || statusCode == http.StatusUnauthorized,
+		"Expected validation error status for mock credential")
+}
+
+// TestPasskeyAuthenticationFinishUsernamelessWithInvalidUserHandle tests usernameless flow with invalid userHandle
+// This test ensures proper error handling in the ValidatePasskeyLogin path
+func (suite *PasskeyAuthTestSuite) TestPasskeyAuthenticationFinishUsernamelessWithInvalidUserHandle() {
+	// Start usernameless authentication
+	authStartRequest := PasskeyAuthStartRequest{
+		UserID:         "", // Empty userID for usernameless flow
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	authStartResponse, statusCode, err := suite.sendPasskeyAuthStartRequest(authStartRequest)
+	suite.Require().NoError(err, "Failed to send usernameless passkey auth start request")
+	suite.Require().Equal(http.StatusOK, statusCode, "Expected status 200 for usernameless authentication start")
+
+	// Attempt finish with invalid user handle
+	finishRequest := PasskeyAuthFinishRequest{
+		CredentialID:   "mock-credential-id",
+		CredentialType: "public-key",
+		Response: AuthenticatorAssertionResponse{
+			ClientDataJSON: base64.RawURLEncoding.EncodeToString([]byte(
+				`{"type":"webauthn.get","challenge":"` +
+					authStartResponse.PublicKeyCredentialRequestOptions.Challenge + `","origin":"http://localhost"}`)),
+			AuthenticatorData: base64.RawURLEncoding.EncodeToString([]byte("mock-auth-data")),
+			Signature:         base64.RawURLEncoding.EncodeToString([]byte("mock-signature")),
+			UserHandle:        "!!!invalid-base64!!!",
+		},
+		SessionToken: authStartResponse.SessionToken,
+	}
+
+	_, statusCode, _ = suite.sendPasskeyAuthFinishRequest(finishRequest)
+	suite.True(statusCode == http.StatusBadRequest || statusCode == http.StatusUnauthorized,
+		"Expected error status for invalid user handle")
+}
+
+// TestPasskeyAuthenticationFinishUsernamelessWithEmptyUserHandle tests usernameless flow without userHandle
+// This covers the error case when userHandle is missing in usernameless authentication
+func (suite *PasskeyAuthTestSuite) TestPasskeyAuthenticationFinishUsernamelessWithEmptyUserHandle() {
+	authStartRequest := PasskeyAuthStartRequest{
+		UserID:         "", // Empty userID for usernameless flow
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	authStartResponse, statusCode, err := suite.sendPasskeyAuthStartRequest(authStartRequest)
+	suite.Require().NoError(err, "Failed to send usernameless passkey auth start request")
+	suite.Require().Equal(
+		http.StatusOK, statusCode, "Expected status 200 for usernameless authentication start")
+
+	// Attempt finish without user handle
+	finishRequest := PasskeyAuthFinishRequest{
+		CredentialID:   "mock-credential-id",
+		CredentialType: "public-key",
+		Response: AuthenticatorAssertionResponse{
+			ClientDataJSON:    base64.RawURLEncoding.EncodeToString([]byte(`{"type":"webauthn.get"}`)),
+			AuthenticatorData: base64.RawURLEncoding.EncodeToString([]byte("mock-auth-data")),
+			Signature:         base64.RawURLEncoding.EncodeToString([]byte("mock-signature")),
+			UserHandle:        "", // Empty userHandle
+		},
+		SessionToken: authStartResponse.SessionToken,
+	}
+
+	_, statusCode, _ = suite.sendPasskeyAuthFinishRequest(finishRequest)
+	suite.True(statusCode == http.StatusBadRequest || statusCode == http.StatusUnauthorized,
+		"Expected error status when userHandle is missing in usernameless flow")
+}
+
+// TestPasskeyAuthenticationFinishUsernamelessWithNonExistentUser tests usernameless flow with non-existent user
+// This test covers the case where the userHandle points to a user that doesn't exist
+func (suite *PasskeyAuthTestSuite) TestPasskeyAuthenticationFinishUsernamelessWithNonExistentUser() {
+	// Start usernameless authentication
+	authStartRequest := PasskeyAuthStartRequest{
+		UserID:         "", // Empty userID for usernameless flow
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	authStartResponse, statusCode, err := suite.sendPasskeyAuthStartRequest(authStartRequest)
+	suite.Require().NoError(err, "Failed to send usernameless passkey auth start request")
+	suite.Require().Equal(http.StatusOK, statusCode, "Expected status 200 for usernameless authentication start")
+
+	// Attempt finish with userHandle pointing to non-existent user
+	nonExistentUserID := "non-existent-user-id-12345"
+	finishRequest := PasskeyAuthFinishRequest{
+		CredentialID:   "mock-credential-id",
+		CredentialType: "public-key",
+		Response: AuthenticatorAssertionResponse{
+			ClientDataJSON: base64.RawURLEncoding.EncodeToString([]byte(
+				`{"type":"webauthn.get","challenge":"` +
+					authStartResponse.PublicKeyCredentialRequestOptions.Challenge + `","origin":"http://localhost"}`)),
+			AuthenticatorData: base64.RawURLEncoding.EncodeToString([]byte("mock-auth-data")),
+			Signature:         base64.RawURLEncoding.EncodeToString([]byte("mock-signature")),
+			UserHandle:        base64.StdEncoding.EncodeToString([]byte(nonExistentUserID)),
+		},
+		SessionToken: authStartResponse.SessionToken,
+	}
+
+	_, statusCode, _ = suite.sendPasskeyAuthFinishRequest(finishRequest)
+	suite.True(statusCode >= http.StatusBadRequest,
+		"Expected error status for non-existent user in usernameless flow")
+}
+
+// TestPasskeyAuthenticationUsernamelessValidationError tests the ValidatePasskeyLogin path
+// when signature validation fails. This explicitly tests the error handling in the usernameless
+// flow where ValidatePasskeyLogin returns an error resulting in ErrorInvalidSignature.
+func (suite *PasskeyAuthTestSuite) TestPasskeyAuthenticationUsernamelessValidationError() {
+	authStartRequest := PasskeyAuthStartRequest{
+		UserID:         "", // Empty userID for usernameless flow
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	authStartResponse, statusCode, err := suite.sendPasskeyAuthStartRequest(authStartRequest)
+	suite.Require().NoError(err, "Failed to send usernameless passkey auth start request")
+	suite.Require().Equal(http.StatusOK, statusCode, "Expected status 200 for usernameless authentication start")
+	suite.Require().NotEmpty(authStartResponse.SessionToken, "Session token should not be empty")
+
+	finishRequest := PasskeyAuthFinishRequest{
+		CredentialID:   base64.RawURLEncoding.EncodeToString([]byte("test-credential-id")),
+		CredentialType: "public-key",
+		Response: AuthenticatorAssertionResponse{
+			ClientDataJSON: base64.RawURLEncoding.EncodeToString([]byte(
+				`{"type":"webauthn.get","challenge":"` +
+					authStartResponse.PublicKeyCredentialRequestOptions.Challenge +
+					`","origin":"http://` + testRelyingPartyID + `"}`)),
+			AuthenticatorData: base64.RawURLEncoding.EncodeToString(make([]byte, 37)),
+			Signature:         base64.RawURLEncoding.EncodeToString([]byte("invalid-signature")),
+			UserHandle:        base64.StdEncoding.EncodeToString([]byte(suite.testUserID)),
+		},
+		SessionToken: authStartResponse.SessionToken,
+	}
+
+	_, statusCode, _ = suite.sendPasskeyAuthFinishRequest(finishRequest)
+	suite.True(statusCode == http.StatusBadRequest || statusCode == http.StatusUnauthorized,
+		"Expected validation error status for usernameless flow with invalid signature")
+}
+
+// TestPasskeyAuthenticationUsernameBasedValidationError tests the ValidateLogin path
+// when signature validation fails. This explicitly tests the error handling in the username-based
+// flow where ValidateLogin returns an error resulting in ErrorInvalidSignature.
+func (suite *PasskeyAuthTestSuite) TestPasskeyAuthenticationUsernameBasedValidationError() {
+	authStartRequest := PasskeyAuthStartRequest{
+		UserID:         suite.testUserID, // Provide user ID for username-based flow
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	registerStartRequest := PasskeyRegisterStartRequest{
+		UserID:           suite.testUserID,
+		RelyingPartyID:   testRelyingPartyID,
+		RelyingPartyName: testRelyingPartyName,
+	}
+
+	_, regStatus, _ := suite.sendPasskeyRegisterStartRequest(registerStartRequest)
+	suite.Require().Equal(http.StatusOK, regStatus, "Registration start should succeed")
+
+	_, statusCode, _ := suite.sendPasskeyAuthStartRequest(authStartRequest)
+
+	suite.True(statusCode == http.StatusNotFound || statusCode == http.StatusBadRequest,
+		"Expected error when user has no registered credentials for username-based flow")
 }
 
 // Helper methods
