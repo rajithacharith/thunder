@@ -584,7 +584,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_Consen
 }
 
 func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_InvalidRequestType() {
-	req := httptest.NewRequest(http.MethodPost, "/auth", nil)
+	req := httptest.NewRequest(http.MethodPost, "/oauth2/auth/callback", nil)
 	rr := httptest.NewRecorder()
 
 	suite.handler.HandleAuthCallbackPostRequest(rr, req)
@@ -1284,7 +1284,7 @@ func (suite *AuthorizeHandlerTestSuite) TestWriteAuthZResponse() {
 }
 
 func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_UnsupportedMethod() {
-	req := httptest.NewRequest(http.MethodPut, "/auth", nil)
+	req := httptest.NewRequest(http.MethodPut, "/oauth2/auth/callback", nil)
 	rr := httptest.NewRecorder()
 
 	suite.handler.HandleAuthCallbackPostRequest(rr, req)
