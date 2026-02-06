@@ -301,6 +301,27 @@ vi.mock('../../components/create-application/Preview', () => ({
   ),
 }));
 
+vi.mock('../../components/create-application/ShowClientSecret', () => ({
+  default: ({
+    appName,
+    clientSecret,
+    onContinue,
+  }: {
+    appName: string;
+    clientSecret: string;
+    onCopySecret: () => void;
+    onContinue: () => void;
+  }) => (
+    <div data-testid="show-client-secret">
+      <div data-testid="client-secret-app-name">{appName}</div>
+      <div data-testid="client-secret-value">{clientSecret}</div>
+      <button type="button" data-testid="client-secret-continue" onClick={onContinue}>
+        Continue
+      </button>
+    </div>
+  ),
+}));
+
 describe('ApplicationCreatePage', () => {
   let user: ReturnType<typeof userEvent.setup>;
 
@@ -974,6 +995,296 @@ describe('ApplicationCreatePage', () => {
       await user.type(callbackInput, 'https://example.com/callback');
 
       expect(callbackInput).toHaveValue('https://example.com/callback');
+    });
+  });
+
+  describe('Client Secret Display (COMPLETE Step)', () => {
+    it('should show COMPLETE step when application is created with client_secret', async () => {
+      mockCreateBranding.mockImplementation((_data, {onSuccess}: {onSuccess: (branding: Branding) => void}) => {
+        onSuccess({id: 'branding-123', displayName: 'Test Branding', preferences: {}} as Branding);
+      });
+
+      mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
+        onSuccess({
+          id: 'app-123',
+          name: 'My App',
+          inbound_auth_config: [
+            {
+              type: 'oauth2',
+              config: {
+                client_id: 'test-client-id',
+                client_secret: 'test_secret_12345',
+                redirect_uris: ['https://example.com/callback'],
+              },
+            },
+          ],
+        } as Application);
+      });
+
+      renderWithProviders();
+
+      await user.type(screen.getByTestId('app-name-input'), 'My App');
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Should show COMPLETE step with client secret
+      await waitFor(() => {
+        expect(screen.getByTestId('show-client-secret')).toBeInTheDocument();
+      });
+
+      expect(screen.getByTestId('client-secret-app-name')).toHaveTextContent('My App');
+      expect(screen.getByTestId('client-secret-value')).toHaveTextContent('test_secret_12345');
+    });
+
+    it('should not show COMPLETE step when application is created without client_secret', async () => {
+      mockCreateBranding.mockImplementation((_data, {onSuccess}: {onSuccess: (branding: Branding) => void}) => {
+        onSuccess({id: 'branding-123', displayName: 'Test Branding', preferences: {}} as Branding);
+      });
+
+      mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
+        onSuccess({
+          id: 'app-123',
+          name: 'My App',
+          inbound_auth_config: [],
+        } as Application);
+      });
+
+      renderWithProviders();
+
+      await user.type(screen.getByTestId('app-name-input'), 'My App');
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Should navigate directly to application details page
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/applications/app-123');
+      });
+
+      // Should not show COMPLETE step
+      expect(screen.queryByTestId('show-client-secret')).not.toBeInTheDocument();
+    });
+
+    it('should navigate to application details when continue is clicked on COMPLETE step', async () => {
+      mockCreateBranding.mockImplementation((_data, {onSuccess}: {onSuccess: (branding: Branding) => void}) => {
+        onSuccess({id: 'branding-123', displayName: 'Test Branding', preferences: {}} as Branding);
+      });
+
+      mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
+        onSuccess({
+          id: 'app-456',
+          name: 'My App',
+          inbound_auth_config: [
+            {
+              type: 'oauth2',
+              config: {
+                client_id: 'test-client-id',
+                client_secret: 'test_secret_12345',
+                redirect_uris: ['https://example.com/callback'],
+              },
+            },
+          ],
+        } as Application);
+      });
+
+      renderWithProviders();
+
+      await user.type(screen.getByTestId('app-name-input'), 'My App');
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Should show COMPLETE step
+      await waitFor(() => {
+        expect(screen.getByTestId('show-client-secret')).toBeInTheDocument();
+      });
+
+      // Click continue on COMPLETE step
+      const continueButton = screen.getByTestId('client-secret-continue');
+      await user.click(continueButton);
+
+      // Should navigate to application details page
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/applications/app-456');
+      });
+    });
+
+    it('should not show back button on COMPLETE step', async () => {
+      mockCreateBranding.mockImplementation((_data, {onSuccess}: {onSuccess: (branding: Branding) => void}) => {
+        onSuccess({id: 'branding-123', displayName: 'Test Branding', preferences: {}} as Branding);
+      });
+
+      mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
+        onSuccess({
+          id: 'app-123',
+          name: 'My App',
+          inbound_auth_config: [
+            {
+              type: 'oauth2',
+              config: {
+                client_id: 'test-client-id',
+                client_secret: 'test_secret_12345',
+                redirect_uris: ['https://example.com/callback'],
+              },
+            },
+          ],
+        } as Application);
+      });
+
+      renderWithProviders();
+
+      await user.type(screen.getByTestId('app-name-input'), 'My App');
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Should show COMPLETE step
+      await waitFor(() => {
+        expect(screen.getByTestId('show-client-secret')).toBeInTheDocument();
+      });
+
+      // Back button should not be present
+      expect(screen.queryByRole('button', {name: /back/i})).not.toBeInTheDocument();
+    });
+
+    it('should not show preview panel on COMPLETE step', async () => {
+      mockCreateBranding.mockImplementation((_data, {onSuccess}: {onSuccess: (branding: Branding) => void}) => {
+        onSuccess({id: 'branding-123', displayName: 'Test Branding', preferences: {}} as Branding);
+      });
+
+      mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
+        onSuccess({
+          id: 'app-123',
+          name: 'My App',
+          inbound_auth_config: [
+            {
+              type: 'oauth2',
+              config: {
+                client_id: 'test-client-id',
+                client_secret: 'test_secret_12345',
+                redirect_uris: ['https://example.com/callback'],
+              },
+            },
+          ],
+        } as Application);
+      });
+
+      renderWithProviders();
+
+      await user.type(screen.getByTestId('app-name-input'), 'My App');
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Preview should be visible on DESIGN step
+      await waitFor(() => {
+        expect(screen.getByTestId('preview')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Should show COMPLETE step
+      await waitFor(() => {
+        expect(screen.getByTestId('show-client-secret')).toBeInTheDocument();
+      });
+
+      // Preview should not be visible on COMPLETE step
+      expect(screen.queryByTestId('preview')).not.toBeInTheDocument();
     });
   });
 });

@@ -355,11 +355,9 @@ describe('TechnologyGuide', () => {
       const copyButton = screen.getByTestId('copy-prompt-button');
       fireEvent.click(copyButton);
 
-      // The copied feedback is shown in the Tooltip's aria-label or as translated text
+      // The copied feedback is shown in the Tooltip
       await waitFor(() => {
-        // Check for the translated key or the aria-label showing copied state
-        const button = screen.getByTestId('copy-prompt-button');
-        expect(button).toHaveAttribute('aria-label', 'clientSecret.copied');
+        expect(screen.getByText('Copied to clipboard')).toBeInTheDocument();
       });
     });
 
@@ -382,9 +380,9 @@ describe('TechnologyGuide', () => {
       const copyCodeButton = screen.getByTestId('copy-code-button-1');
       fireEvent.click(copyCodeButton);
 
-      // The copied feedback is shown as translated text (clientSecret.copied)
+      // The copied feedback is shown as translated text
       await waitFor(() => {
-        expect(screen.getByText('clientSecret.copied')).toBeInTheDocument();
+        expect(screen.getByText('Copied to clipboard')).toBeInTheDocument();
       });
     });
 

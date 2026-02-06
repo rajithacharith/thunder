@@ -49,8 +49,12 @@ describe('application-create-flow models', () => {
       expect(ApplicationCreateFlowStep.CONFIGURE).toBe('CONFIGURE');
     });
 
-    it('should have exactly 6 steps', () => {
-      expect(Object.keys(ApplicationCreateFlowStep)).toHaveLength(6);
+    it('should have COMPLETE step', () => {
+      expect(ApplicationCreateFlowStep.COMPLETE).toBe('COMPLETE');
+    });
+
+    it('should have exactly 7 steps', () => {
+      expect(Object.keys(ApplicationCreateFlowStep)).toHaveLength(7);
     });
   });
 
