@@ -99,7 +99,7 @@ jobs:
   report-results:
     name: 📊 Report Results
     runs-on: ubuntu-latest
-    needs: [validate-complete-build, validate-sample-packaging-linux, validate-sample-packaging-macos, deploy-docs]
+    needs: [validate-complete-build, validate-sample-packaging-linux, validate-sample-packaging-macos]
     if: always()
     steps:
       - name: 📥 Checkout Code
@@ -111,23 +111,21 @@ jobs:
           BUILD_STATUS="${{ needs.validate-complete-build.result }}"
           LINUX_STATUS="${{ needs.validate-sample-packaging-linux.result }}"
           MACOS_STATUS="${{ needs.validate-sample-packaging-macos.result }}"
-          DOCS_STATUS="${{ needs.deploy-docs.result }}"
 
           echo "Complete build: $BUILD_STATUS"
           echo "Linux/Windows samples: $LINUX_STATUS"
           echo "macOS samples: $MACOS_STATUS"
-          echo "Docs deployment: $DOCS_STATUS"
 
           # Check if all jobs succeeded
-          if [ "$BUILD_STATUS" = "success" ] && [ "$LINUX_STATUS" = "success" ] && [ "$MACOS_STATUS" = "success" ] && [ "$DOCS_STATUS" = "success" ]; then
+          if [ "$BUILD_STATUS" = "success" ] && [ "$LINUX_STATUS" = "success" ] && [ "$MACOS_STATUS" = "success" ]; then
             echo "status=success" >> $GITHUB_OUTPUT
             echo "message=✅ All nightly build validations passed successfully!" >> $GITHUB_OUTPUT
           # Check if any job was cancelled
-          elif [ "$BUILD_STATUS" = "cancelled" ] || [ "$LINUX_STATUS" = "cancelled" ] || [ "$MACOS_STATUS" = "cancelled" ] || [ "$DOCS_STATUS" = "cancelled" ]; then
+          elif [ "$BUILD_STATUS" = "cancelled" ] || [ "$LINUX_STATUS" = "cancelled" ] || [ "$MACOS_STATUS" = "cancelled" ]; then
             echo "status=cancelled" >> $GITHUB_OUTPUT
             echo "message=⚠️ Nightly build validation was cancelled." >> $GITHUB_OUTPUT
           # Check if any job was skipped
-          elif [ "$BUILD_STATUS" = "skipped" ] || [ "$LINUX_STATUS" = "skipped" ] || [ "$MACOS_STATUS" = "skipped" ] || [ "$DOCS_STATUS" = "skipped" ]; then
+          elif [ "$BUILD_STATUS" = "skipped" ] || [ "$LINUX_STATUS" = "skipped" ] || [ "$MACOS_STATUS" = "skipped" ]; then
             echo "status=skipped" >> $GITHUB_OUTPUT
             echo "message=⚠️ Some nightly build validation jobs were skipped." >> $GITHUB_OUTPUT
           # Otherwise, treat as failure
@@ -149,7 +147,6 @@ jobs:
           echo "- Complete Build (All Platforms): ${{ needs.validate-complete-build.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Linux/Windows Samples: ${{ needs.validate-sample-packaging-linux.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- macOS Samples: ${{ needs.validate-sample-packaging-macos.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Docs Deployment: ${{ needs.deploy-docs.result }}" >> $GITHUB_STEP_SUMMARY
 
       - name: 🔔 Notify on Failure
         if: steps.check_status.outputs.status == 'failure'
