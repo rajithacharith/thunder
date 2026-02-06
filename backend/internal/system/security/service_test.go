@@ -96,6 +96,7 @@ func (suite *SecurityServiceTestSuite) TestProcess_PublicPaths() {
 		{"Auth path with subpath", "/auth/register/user"},
 		{"OAuth2 token", "/oauth2/token"},
 		{"OAuth2 authorize", "/oauth2/authorize"},
+		{"OAuth2 authorize callback", "/oauth2/authorize/callback"},
 		{"OAuth2 well-known", "/oauth2/.well-known/openid_configuration"},
 		{"OAuth2 JWKS", "/oauth2/jwks"},
 		{"OAuth2 register", "/oauth2/register"},

@@ -76,6 +76,7 @@ const (
 const (
 	OAuth2TokenEndpoint         string = "/oauth2/token" // #nosec G101
 	OAuth2AuthorizationEndpoint string = "/oauth2/authorize"
+	OAuth2AuthorizeCallbackEndpoint string = "/oauth2/authorize/callback"
 	OAuth2IntrospectionEndpoint string = "/oauth2/introspect"
 	OAuth2RevokeEndpoint        string = "/oauth2/revoke"
 	OAuth2UserInfoEndpoint      string = "/oauth2/userinfo"

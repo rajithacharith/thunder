@@ -23,6 +23,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
@@ -50,11 +51,15 @@ func registerRoutes(mux *http.ServeMux, authzHandler AuthorizeHandlerInterface) 
 		AllowCredentials: true,
 	}
 
-	mux.HandleFunc(middleware.WithCORS("GET /oauth2/authorize",
+	mux.HandleFunc(middleware.WithCORS("GET "+constants.OAuth2AuthorizationEndpoint,
 		authzHandler.HandleAuthorizeGetRequest, opts))
-	mux.HandleFunc(middleware.WithCORS("POST /oauth2/authorize",
+	mux.HandleFunc(middleware.WithCORS("POST "+constants.OAuth2AuthorizeCallbackEndpoint,
 		authzHandler.HandleAuthorizePostRequest, opts))
-	mux.HandleFunc(middleware.WithCORS("OPTIONS /oauth2/authorize",
+	mux.HandleFunc(middleware.WithCORS("OPTIONS "+constants.OAuth2AuthorizationEndpoint,
+		func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}, opts))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS "+constants.OAuth2AuthorizeCallbackEndpoint,
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		}, opts))
