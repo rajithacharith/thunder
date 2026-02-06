@@ -44,18 +44,29 @@ func Initialize(
 
 // registerRoutes registers the routes for OAuth2 authorization operations.
 func registerRoutes(mux *http.ServeMux, authzHandler AuthorizeHandlerInterface) {
-	opts := middleware.CORSOptions{
-		AllowedMethods:   "GET, POST",
+	authorizeOpts := middleware.CORSOptions{
+		AllowedMethods:   "GET",
+		AllowedHeaders:   "Content-Type, Authorization",
+		AllowCredentials: true,
+	}
+
+	callbackOpts := middleware.CORSOptions{
+		AllowedMethods:   "POST",
 		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
 	}
 
 	mux.HandleFunc(middleware.WithCORS("GET /oauth2/authorize",
-		authzHandler.HandleAuthorizeGetRequest, opts))
-	mux.HandleFunc(middleware.WithCORS("POST /oauth2/authorize",
-		authzHandler.HandleAuthorizePostRequest, opts))
+		authzHandler.HandleAuthorizeGetRequest, authorizeOpts))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /oauth2/authorize",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
-		}, opts))
+		}, authorizeOpts))
+
+	mux.HandleFunc(middleware.WithCORS("POST /oauth2/auth/callback",
+		authzHandler.HandleAuthCallbackPostRequest, callbackOpts))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /oauth2/auth/callback",
+		func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}, callbackOpts))
 }
