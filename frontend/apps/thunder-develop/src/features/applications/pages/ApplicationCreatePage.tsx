@@ -36,6 +36,7 @@ import ConfigureName from '../components/create-application/ConfigureName';
 import ConfigureExperience from '../components/create-application/ConfigureExperience';
 import ConfigureStack from '../components/create-application/ConfigureStack';
 import ConfigureDetails from '../components/create-application/ConfigureDetails';
+import ShowClientSecret from '../components/create-application/ShowClientSecret';
 import {getDefaultOAuthConfig} from '../models/oauth';
 import Preview from '../components/create-application/Preview';
 import useCreateApplication from '../api/useCreateApplication';
@@ -87,6 +88,7 @@ export default function ApplicationCreatePage(): JSX.Element {
       EXPERIENCE: {label: t('applications:onboarding.steps.experience'), order: 4},
       STACK: {label: t('applications:onboarding.steps.stack'), order: 5},
       CONFIGURE: {label: t('applications:onboarding.steps.configure'), order: 6},
+      COMPLETE: {label: t('applications:onboarding.steps.complete'), order: 7},
     }),
     [t],
   );
@@ -98,6 +100,7 @@ export default function ApplicationCreatePage(): JSX.Element {
   const {data: brandingsData} = useGetBrandings({limit: 100});
 
   const [selectedUserTypes, setSelectedUserTypes] = useState<string[]>([]);
+  const [createdApplication, setCreatedApplication] = useState<Application | null>(null);
 
   const [stepReady, setStepReady] = useState<Record<ApplicationCreateFlowStep, boolean>>({
     NAME: false,
@@ -106,6 +109,7 @@ export default function ApplicationCreatePage(): JSX.Element {
     EXPERIENCE: true,
     STACK: true,
     CONFIGURE: true,
+    COMPLETE: true,
   });
   const [useDefaultBranding, setUseDefaultBranding] = useState<boolean>(false);
   const [defaultBrandingId, setDefaultBrandingId] = useState<string | undefined>(undefined);
@@ -205,12 +209,22 @@ export default function ApplicationCreatePage(): JSX.Element {
 
       createApplication.mutate(applicationData, {
         onSuccess: (createdApp: Application): void => {
-          // Navigate to the application edit page
-          (async () => {
-            await navigate(`/applications/${createdApp.id}`);
-          })().catch((_error: unknown) => {
-            logger.error('Failed to navigate to application details', {error: _error, applicationId: createdApp.id});
-          });
+          const hasClientSecret = createdApp.inbound_auth_config?.some(
+            (config) => config.type === 'oauth2' && config.config?.client_secret,
+          );
+
+          if (hasClientSecret) {
+            // Store the application and show the COMPLETE step
+            setCreatedApplication(createdApp);
+            setCurrentStep(ApplicationCreateFlowStep.COMPLETE);
+          } else {
+            // No client secret, navigate directly to the application details page
+            (async () => {
+              await navigate(`/applications/${createdApp.id}`);
+            })().catch((_error: unknown) => {
+              logger.error('Failed to navigate to application details', {error: _error, applicationId: createdApp.id});
+            });
+          }
         },
         onError: (err: Error) => {
           setError(err.message ?? 'Failed to create application. Please try again.');
@@ -353,6 +367,19 @@ export default function ApplicationCreatePage(): JSX.Element {
         // Configuration complete, create application with OAuth config
         handleCreateApplication(false);
         break;
+      case ApplicationCreateFlowStep.COMPLETE:
+        // Navigate to the application details page
+        if (createdApplication) {
+          (async () => {
+            await navigate(`/applications/${createdApplication.id}`);
+          })().catch((_error: unknown) => {
+            logger.error('Failed to navigate to application details', {
+              error: _error,
+              applicationId: createdApplication.id,
+            });
+          });
+        }
+        break;
       default:
         break;
     }
@@ -492,6 +519,21 @@ export default function ApplicationCreatePage(): JSX.Element {
           />
         );
 
+      case ApplicationCreateFlowStep.COMPLETE: {
+        if (!createdApplication) {
+          return null;
+        }
+
+        const oauth2Config = createdApplication.inbound_auth_config?.find((config) => config.type === 'oauth2');
+        const clientSecret = oauth2Config?.config?.client_secret;
+
+        if (!clientSecret) {
+          return null;
+        }
+
+        return <ShowClientSecret appName={appName} clientSecret={clientSecret} onContinue={handleNextStep} />;
+      }
+
       default:
         return null;
     }
@@ -535,7 +577,10 @@ export default function ApplicationCreatePage(): JSX.Element {
       <Box sx={{flex: 1, display: 'flex', flexDirection: 'row'}}>
         <Box
           sx={{
-            flex: currentStep === ApplicationCreateFlowStep.NAME ? 1 : '0 0 50%',
+            flex:
+              currentStep === ApplicationCreateFlowStep.NAME || currentStep === ApplicationCreateFlowStep.COMPLETE
+                ? 1
+                : '0 0 50%',
             display: 'flex',
             flexDirection: 'column',
           }}
@@ -583,6 +628,7 @@ export default function ApplicationCreatePage(): JSX.Element {
                 py: 8,
                 px: 20,
                 mx: currentStep === ApplicationCreateFlowStep.NAME ? 'auto' : 0,
+                alignItems: currentStep === ApplicationCreateFlowStep.COMPLETE ? 'center' : 'flex-start',
               }}
             >
               <Box
@@ -611,32 +657,35 @@ export default function ApplicationCreatePage(): JSX.Element {
                     gap: 2,
                   }}
                 >
-                  {currentStep !== ApplicationCreateFlowStep.NAME && (
+                  {currentStep !== ApplicationCreateFlowStep.NAME &&
+                    currentStep !== ApplicationCreateFlowStep.COMPLETE && (
+                      <Button
+                        variant="outlined"
+                        onClick={handlePrevStep}
+                        sx={{minWidth: 100}}
+                        disabled={createApplication.isPending || createBranding.isPending}
+                      >
+                        {t('common:actions.back')}
+                      </Button>
+                    )}
+
+                  {currentStep !== ApplicationCreateFlowStep.COMPLETE && (
                     <Button
-                      variant="outlined"
-                      onClick={handlePrevStep}
+                      variant="contained"
+                      disabled={!stepReady[currentStep]}
                       sx={{minWidth: 100}}
-                      disabled={createApplication.isPending || createBranding.isPending}
+                      onClick={handleNextStep}
                     >
-                      {t('common:actions.back')}
+                      {t('common:actions.continue')}
                     </Button>
                   )}
-
-                  <Button
-                    variant="contained"
-                    disabled={!stepReady[currentStep]}
-                    sx={{minWidth: 100}}
-                    onClick={handleNextStep}
-                  >
-                    {t('common:actions.continue')}
-                  </Button>
                 </Box>
               </Box>
             </Box>
           </Box>
         </Box>
-        {/* Right side - Preview (show from design step onwards) */}
-        {currentStep !== ApplicationCreateFlowStep.NAME && (
+        {/* Right side - Preview (show from design step onwards, but hide on complete step) */}
+        {currentStep !== ApplicationCreateFlowStep.NAME && currentStep !== ApplicationCreateFlowStep.COMPLETE && (
           <Box sx={{flex: '0 0 50%', display: 'flex', flexDirection: 'column', p: 5}}>
             <Preview appLogo={appLogo} selectedColor={selectedColor} integrations={integrations} />
           </Box>
