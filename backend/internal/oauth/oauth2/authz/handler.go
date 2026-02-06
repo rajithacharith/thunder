@@ -45,7 +45,7 @@ const loggerComponentName = "AuthorizeHandler"
 // AuthorizeHandlerInterface defines the interface for handling OAuth2 authorization requests.
 type AuthorizeHandlerInterface interface {
 	HandleAuthorizeGetRequest(w http.ResponseWriter, r *http.Request)
-	HandleAuthorizePostRequest(w http.ResponseWriter, r *http.Request)
+	HandleAuthCallbackPostRequest(w http.ResponseWriter, r *http.Request)
 }
 
 // authorizeHandler implements the AuthorizeHandlerInterface for handling OAuth2 authorization requests.
@@ -85,8 +85,9 @@ func (ah *authorizeHandler) HandleAuthorizeGetRequest(w http.ResponseWriter, r *
 	ah.handleInitialAuthorizationRequest(oAuthMessage, w, r)
 }
 
-// HandleAuthorizePostRequest handles the POST request for OAuth2 authorization.
-func (ah *authorizeHandler) HandleAuthorizePostRequest(w http.ResponseWriter, r *http.Request) {
+// HandleAuthCallbackPostRequest handles the POST request for OAuth2 auth callback.
+// This endpoint receives the assertion from the flow engine after successful authentication.
+func (ah *authorizeHandler) HandleAuthCallbackPostRequest(w http.ResponseWriter, r *http.Request) {
 	oAuthMessage := ah.getOAuthMessage(r, w)
 	if oAuthMessage == nil {
 		return

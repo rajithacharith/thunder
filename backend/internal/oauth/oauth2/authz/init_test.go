@@ -84,9 +84,64 @@ func (suite *InitTestSuite) TestInitialize_RegistersRoutes() {
 	_, pattern := mux.Handler(&http.Request{Method: "GET", URL: &url.URL{Path: "/oauth2/authorize"}})
 	assert.Contains(suite.T(), pattern, "/oauth2/authorize")
 
-	_, pattern = mux.Handler(&http.Request{Method: "POST", URL: &url.URL{Path: "/oauth2/authorize"}})
-	assert.Contains(suite.T(), pattern, "/oauth2/authorize")
+	_, pattern = mux.Handler(&http.Request{Method: "POST", URL: &url.URL{Path: "/oauth2/auth/callback"}})
+	assert.Contains(suite.T(), pattern, "/oauth2/auth/callback")
 
 	_, pattern = mux.Handler(&http.Request{Method: "OPTIONS", URL: &url.URL{Path: "/oauth2/authorize"}})
 	assert.Contains(suite.T(), pattern, "/oauth2/authorize")
+
+	_, pattern = mux.Handler(&http.Request{Method: "OPTIONS", URL: &url.URL{Path: "/oauth2/auth/callback"}})
+	assert.Contains(suite.T(), pattern, "/oauth2/auth/callback")
+}
+
+func (suite *InitTestSuite) TestRegisterRoutes_CORSConfiguration() {
+	mux := http.NewServeMux()
+
+	_ = Initialize(mux, suite.mockAppService, suite.mockJWTService, suite.mockFlowExecService)
+
+	testCases := []struct {
+		name          string
+		method        string
+		path          string
+		expectAllowed bool
+	}{
+		{
+			name:          "GET /oauth2/authorize allowed",
+			method:        "GET",
+			path:          "/oauth2/authorize",
+			expectAllowed: true,
+		},
+		{
+			name:          "POST /oauth2/auth/callback allowed",
+			method:        "POST",
+			path:          "/oauth2/auth/callback",
+			expectAllowed: true,
+		},
+		{
+			name:          "OPTIONS /oauth2/authorize returns no content",
+			method:        "OPTIONS",
+			path:          "/oauth2/authorize",
+			expectAllowed: true,
+		},
+		{
+			name:          "OPTIONS /oauth2/auth/callback returns no content",
+			method:        "OPTIONS",
+			path:          "/oauth2/auth/callback",
+			expectAllowed: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			req, err := http.NewRequest(tc.method, tc.path, nil)
+			assert.NoError(suite.T(), err)
+
+			handler, pattern := mux.Handler(req)
+
+			if tc.expectAllowed {
+				assert.Contains(suite.T(), pattern, tc.path, "Route should be registered")
+				assert.NotNil(suite.T(), handler, "Handler should be registered")
+			}
+		})
+	}
 }

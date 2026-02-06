@@ -557,7 +557,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizeGetRequest_InvalidPar
 	assert.NotEqual(suite.T(), http.StatusInternalServerError, rr.Code)
 }
 
-func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizePostRequest_ConsentType() {
+func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_ConsentType() {
 	// Test TypeConsentResponseFromUser case
 	// This case is not implemented yet, but we test that it doesn't panic
 	postData := AuthZPostRequest{
@@ -566,7 +566,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizePostRequest_ConsentTy
 	}
 	jsonData, _ := json.Marshal(postData)
 
-	req := httptest.NewRequest(http.MethodPost, "/oauth2/authorize", bytes.NewReader(jsonData))
+	req := httptest.NewRequest(http.MethodPost, "/oauth2/auth/callback", bytes.NewReader(jsonData))
 	req.Header.Set("Content-Type", "application/json")
 	// Add a query parameter to indicate consent response type
 	req.URL.RawQuery = "requestType=consentResponseFromUser"
@@ -577,17 +577,17 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizePostRequest_ConsentTy
 
 	// The consent type is not handled yet (TODO), so it should fall through to default case
 	// or handle gracefully without panicking
-	suite.handler.HandleAuthorizePostRequest(rr, req)
+	suite.handler.HandleAuthCallbackPostRequest(rr, req)
 
 	// Should return some response (either error or handled gracefully)
 	assert.NotEqual(suite.T(), 0, rr.Code)
 }
 
-func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizePostRequest_InvalidRequestType() {
+func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_InvalidRequestType() {
 	req := httptest.NewRequest(http.MethodPost, "/auth", nil)
 	rr := httptest.NewRecorder()
 
-	suite.handler.HandleAuthorizePostRequest(rr, req)
+	suite.handler.HandleAuthCallbackPostRequest(rr, req)
 
 	assert.Equal(suite.T(), http.StatusBadRequest, rr.Code)
 }
@@ -1066,12 +1066,12 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizeGetRequest_GetOAuthMe
 	assert.Equal(suite.T(), http.StatusBadRequest, rr.Code)
 }
 
-func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizePostRequest_GetOAuthMessageReturnsNil() {
-	req := httptest.NewRequest("POST", "/oauth2/authorize", bytes.NewReader([]byte("invalid json")))
+func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_GetOAuthMessageReturnsNil() {
+	req := httptest.NewRequest("POST", "/oauth2/auth/callback", bytes.NewReader([]byte("invalid json")))
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
 
-	suite.handler.HandleAuthorizePostRequest(rr, req)
+	suite.handler.HandleAuthCallbackPostRequest(rr, req)
 
 	// Should return 400 Bad Request when getOAuthMessage fails
 	assert.Equal(suite.T(), http.StatusBadRequest, rr.Code)
@@ -1283,11 +1283,11 @@ func (suite *AuthorizeHandlerTestSuite) TestWriteAuthZResponse() {
 	assert.Equal(suite.T(), "https://example.com/callback?code=abc123", resp.RedirectURI)
 }
 
-func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizePostRequest_UnsupportedMethod() {
+func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_UnsupportedMethod() {
 	req := httptest.NewRequest(http.MethodPut, "/auth", nil)
 	rr := httptest.NewRecorder()
 
-	suite.handler.HandleAuthorizePostRequest(rr, req)
+	suite.handler.HandleAuthCallbackPostRequest(rr, req)
 
 	assert.Equal(suite.T(), http.StatusBadRequest, rr.Code)
 	var response map[string]interface{}
