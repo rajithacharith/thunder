@@ -19,7 +19,6 @@ Follow these instructions when creating new documenttion content for Thunder. Ad
 
 ### What you must do
 
-- On the top of the document, write "This document was created by an AI agent following the Thunder documentation creation instructions." in italics.
 - Strictly adhere to the authoring standards outlined below.
 - Choose the appropriate navigation location for the new content based on its topic and relevance.
 - Create content that is clear, concise, and actionable for the intended audience.
