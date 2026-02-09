@@ -1,0 +1,6 @@
+extends: capitalization
+message: "Use Title Case for headings."
+level: error
+scope: heading
+match: $title
+style: AP
