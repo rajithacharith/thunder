@@ -82,6 +82,7 @@ You must follow these standards when creating documentation content for Thunder.
     ```toml
     [server]
     hostname = "localhost"
+    ```
 
 ### Configuration guidance
 
