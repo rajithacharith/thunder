@@ -288,13 +288,14 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/oauth2/authorize",
+              "raw": "{{baseUrl}}/oauth2/auth/callback",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "oauth2",
-                "authorize"
+                "auth",
+                "callback"
               ]
             }
           },
@@ -3619,13 +3620,14 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/oauth2/authorize",
+              "raw": "{{baseUrl}}/oauth2/auth/callback",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "oauth2",
-                "authorize"
+                "auth",
+                "callback"
               ]
             }
           },

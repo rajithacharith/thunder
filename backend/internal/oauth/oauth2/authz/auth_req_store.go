@@ -159,6 +159,11 @@ func (authzRS *authorizationRequestStore) getJSONDataBytes(authRequestCtx authRe
 		jsonKeyResource:            authRequestCtx.OAuthParameters.Resource,
 	}
 
+	// Add claims_request if present
+	if authRequestCtx.OAuthParameters.ClaimsRequest != nil {
+		jsonData[jsonKeyClaimsRequest] = authRequestCtx.OAuthParameters.ClaimsRequest
+	}
+
 	jsonDataBytes, err := json.Marshal(jsonData)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling request context to JSON: %w", err)
@@ -225,6 +230,16 @@ func (authzRS *authorizationRequestStore) buildAuthRequestContextFromResultRow(
 	}
 	if resource, ok := requestDataMap[jsonKeyResource].(string); ok {
 		oauthParams.Resource = resource
+	}
+
+	// Parse claims_request if present
+	if claimsData, ok := requestDataMap[jsonKeyClaimsRequest]; ok && claimsData != nil {
+		claimsRequest, err := parseClaimsRequestFromJSON(claimsData)
+		if err != nil {
+			return authRequestContext{}, fmt.Errorf(
+				"failed to parse claims_request from authorization request: %w", err)
+		}
+		oauthParams.ClaimsRequest = claimsRequest
 	}
 
 	return authRequestContext{

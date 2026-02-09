@@ -397,7 +397,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_WithScopeClaimsMappin
 		"exp":       float64(time.Now().Add(time.Hour).Unix()),
 		"nbf":       float64(time.Now().Add(-time.Minute).Unix()),
 		"sub":       "user123",
-		"scope":     "custom_scope",
+		"scope":     "openid custom_scope",
 		"client_id": "client123",
 	}
 	token := s.createToken(claims)
@@ -462,7 +462,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_NoAppConfig() {
 		Attributes: userAttrsJSON,
 	}, nil)
 
-	// When no app config, BuildOIDCClaimsFromScopes returns empty (no allowedUserAttributes)
+	// When no app config, BuildClaims returns empty (no allowedUserAttributes)
 	response, svcErr := s.userInfoService.GetUserInfo(token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)

@@ -27,6 +27,7 @@ import (
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/user"
 )
@@ -215,8 +216,8 @@ func validateIssuer(issuer string, oauthApp *appmodel.OAuthAppConfigProcessedDTO
 	return nil
 }
 
-// BuildOIDCClaimsFromScopes builds OIDC claims based on scopes, user attributes, and app configuration.
-func BuildOIDCClaimsFromScopes(
+// buildClaimsFromScopes builds claims from OIDC scopes based on scope-to-claims mapping.
+func buildClaimsFromScopes(
 	scopes []string,
 	userAttributes map[string]interface{},
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
@@ -298,4 +299,103 @@ func FetchUserAttributesAndGroups(userService user.UserServiceInterface, userID 
 	}
 
 	return attrs, userGroups, nil
+}
+
+// buildClaimsFromRequest builds claims from explicit claims parameter.
+// Returns empty if allowedUserAttributes is not configured.
+// Filters claims by availability, allowed attributes, and value/values constraints.
+func buildClaimsFromRequest(
+	requestedClaims map[string]*model.IndividualClaimRequest,
+	userAttributes map[string]interface{},
+	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+) map[string]interface{} {
+	result := make(map[string]interface{})
+
+	if requestedClaims == nil || userAttributes == nil {
+		return result
+	}
+
+	// Get allowed user attributes from app config if configured
+	var allowedUserAttributes []string
+	if oauthApp != nil && oauthApp.Token != nil && oauthApp.Token.IDToken != nil {
+		allowedUserAttributes = oauthApp.Token.IDToken.UserAttributes
+	}
+
+	// Return empty if no allowed attributes configured
+	if len(allowedUserAttributes) == 0 {
+		return result
+	}
+
+	// Process each requested claim
+	for claimName, claimReq := range requestedClaims {
+		// Check if claim value is available in user attributes
+		value, exists := userAttributes[claimName]
+		if !exists || value == nil {
+			// Per OIDC spec, it's not an error to not return a requested claim
+			continue
+		}
+
+		// Check if this claim is allowed by app config
+		if !slices.Contains(allowedUserAttributes, claimName) {
+			continue
+		}
+
+		// Check value/values constraints if specified
+		if claimReq != nil && !claimReq.MatchesValue(value) {
+			// Value doesn't match the requested constraint, skip this claim
+			continue
+		}
+
+		// TODO: Revisit "essential" claim handling if needed.
+
+		result[claimName] = value
+	}
+
+	return result
+}
+
+// BuildClaims builds claims by merging scope-based claims with explicit claims request.
+// Explicit claims override scope claims. Returns empty if allowedUserAttributes is not configured.
+// The requestedClaims should contain only the relevant claims map (IDToken or UserInfo) for the target.
+func BuildClaims(
+	scopes []string,
+	requestedClaims map[string]*model.IndividualClaimRequest,
+	userAttributes map[string]interface{},
+	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+) map[string]interface{} {
+	result := make(map[string]interface{})
+
+	// Check for openid scope first
+	hasOpenIDScope := slices.Contains(scopes, "openid")
+
+	if !hasOpenIDScope || userAttributes == nil {
+		return result
+	}
+
+	// Build scope claims
+	scopeClaims := buildClaimsFromScopes(scopes, userAttributes, oauthApp)
+
+	// Process explicit claims request if present
+	if requestedClaims != nil {
+		explicitClaims := buildClaimsFromRequest(requestedClaims, userAttributes, oauthApp)
+
+		// Add scope claims that are not explicitly requested
+		for k, v := range scopeClaims {
+			if _, explicitlyRequested := requestedClaims[k]; !explicitlyRequested {
+				result[k] = v
+			}
+		}
+
+		// Add validated explicit claims (takes precedence over scope claims)
+		for claimName, value := range explicitClaims {
+			result[claimName] = value
+		}
+	} else {
+		// No explicit claims request, add all scope claims
+		for k, v := range scopeClaims {
+			result[k] = v
+		}
+	}
+
+	return result
 }

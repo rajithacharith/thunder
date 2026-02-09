@@ -22,8 +22,10 @@
     "wso2"
   ],
   "scripts": {
-    "build": "nx run-many --target=build --all && pnpm run build:docs",
-    "build:docs": "node ./scripts/build-docs.js",
+    "build": "nx run-many --target=build --all",
+    "build:apps": "nx run-many --target=build --projects=apps/*",
+    "build:docs": "pnpm run build:packages && node ./scripts/build-docs.js",
+    "build:packages": "nx run-many --target=build --projects=packages/*",
     "clean": "nx run-many --target=clean --all",
     "lint": "nx run-many --target=lint --all --parallel",
     "lint:fix": "nx run-many --target=fix:lint --all --parallel",

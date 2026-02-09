@@ -151,6 +151,7 @@ type TokenResponse struct {
 	ExpiresIn    float64   `json:"expires_in"`
 	Scope        string    `json:"scope,omitempty"`
 	RefreshToken string    `json:"refresh_token,omitempty"`
+	IDToken      string    `json:"id_token,omitempty"`
 	ExpiresAt    time.Time `json:"expires_at,omitempty"` // Absolute expiry time
 }
 

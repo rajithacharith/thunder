@@ -31,6 +31,7 @@ const (
 	jsonKeyCodeChallenge       = "code_challenge"
 	jsonKeyCodeChallengeMethod = "code_challenge_method"
 	jsonKeyResource            = "resource"
+	jsonKeyClaimsRequest       = "claims_request"
 )
 
 // Database column names for authorization request storage.

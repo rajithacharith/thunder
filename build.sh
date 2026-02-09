@@ -129,6 +129,11 @@ VANILLA_SAMPLE_APP_SERVER_DIR=$VANILLA_SAMPLE_APP_DIR/server
 REACT_SDK_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-sdk-sample
 REACT_API_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-api-based-sample
 
+# Default ports
+GATE_APP_DEFAULT_PORT=5190
+DEVELOP_APP_DEFAULT_PORT=5191
+DOCS_DEFAULT_PORT=3000
+
 # Integration test filters (optional)
 TEST_RUN="${4:-}"
 TEST_PACKAGE="${5:-}"
@@ -351,6 +356,29 @@ function build_frontend() {
     echo "================================================================"
 }
 
+function build_docs() {
+    echo "================================================================"
+    echo "Building documentation..."
+    
+    # Check if pnpm is installed, if not install it
+    if ! command -v pnpm >/dev/null 2>&1; then
+        echo "pnpm not found, installing..."
+        npm install -g pnpm
+    fi
+    
+    # Navigate to frontend directory first to ensure build:docs script can run
+    cd "$FRONTEND_BASE_DIR" || exit 1
+    echo "Installing frontend dependencies (required for docs build)..."
+    pnpm install --frozen-lockfile
+    
+    echo "Building documentation..."
+    pnpm run build:docs
+    
+    # Return to script directory
+    cd "$SCRIPT_DIR" || exit 1
+    echo "================================================================"
+}
+
 function prepare_backend_for_packaging() {
     echo "================================================================"
     echo "Copying backend artifacts..."
@@ -375,7 +403,8 @@ function prepare_backend_for_packaging() {
     chmod +x "$DIST_DIR/$PRODUCT_FOLDER/bootstrap/"*.sh 2>/dev/null || true
 
     echo "=== Ensuring server certificates exist in the distribution ==="
-    ensure_certificates "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR"
+    ensure_certificates "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR" "server"
+    ensure_certificates "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR" "signing"
     echo "================================================================"
 
     echo "=== Ensuring crypto file exists in the distribution ==="
@@ -449,7 +478,7 @@ function build_sample_app() {
     # Build React Vanilla sample
     echo "=== Building React Vanilla sample app ==="
     echo "=== Ensuring React Vanilla sample app certificates exist ==="
-    ensure_certificates "$VANILLA_SAMPLE_APP_DIR"
+    ensure_certificates "$VANILLA_SAMPLE_APP_DIR" "server"
 
     cd "$VANILLA_SAMPLE_APP_DIR" || exit 1
     echo "Installing React Vanilla sample dependencies..."
@@ -466,7 +495,7 @@ function build_sample_app() {
 
     # Ensure certificates exist for React SDK sample
     echo "=== Ensuring React SDK sample app certificates exist ==="
-    ensure_certificates "$REACT_SDK_SAMPLE_APP_DIR"
+    ensure_certificates "$REACT_SDK_SAMPLE_APP_DIR" "server"
 
     cd "$REACT_SDK_SAMPLE_APP_DIR" || exit 1
     echo "Installing React SDK sample dependencies..."
@@ -483,7 +512,7 @@ function build_sample_app() {
 
     # Ensure certificates exist for React API-based sample
     echo "=== Ensuring React API-based sample app certificates exist ==="
-    ensure_certificates "$REACT_API_SAMPLE_APP_DIR"
+    ensure_certificates "$REACT_API_SAMPLE_APP_DIR" "server"
 
     cd "$REACT_API_SAMPLE_APP_DIR" || exit 1
     echo "Installing React API-based sample dependencies..."
@@ -553,7 +582,7 @@ function package_vanilla_sample() {
 
     # Ensure the certificates exist in the sample app directory
     echo "=== Ensuring certificates exist in the React Vanilla sample distribution ==="
-    ensure_certificates "$DIST_DIR/$VANILLA_SAMPLE_APP_FOLDER"
+    ensure_certificates "$DIST_DIR/$VANILLA_SAMPLE_APP_FOLDER" "server"
 
     # Copy the appropriate startup script based on the target OS
     if [ "$SAMPLE_DIST_OS" = "win" ]; then
@@ -627,7 +656,7 @@ function package_react_api_based_sample() {
 
     # Ensure the certificates exist in the sample app dist directory
     echo "=== Ensuring certificates exist in the React API-based sample distribution ==="
-    ensure_certificates "$DIST_DIR/$REACT_API_SAMPLE_APP_FOLDER/dist"
+    ensure_certificates "$DIST_DIR/$REACT_API_SAMPLE_APP_FOLDER/dist" "server"
 
     # Copy the appropriate startup script based on the target OS
     if [ "$SAMPLE_DIST_OS" = "win" ]; then
@@ -826,16 +855,16 @@ function merge_coverage() {
 
 function ensure_certificates() {
     local cert_dir=$1
-    local cert_name_prefix="server"
+    local cert_name_prefix=${2:-"server"}  # Default to "server" if not specified
     local cert_file_name="${cert_name_prefix}.cert"
     local key_file_name="${cert_name_prefix}.key"
 
-    # Generate certificate and key file if don't exists in the cert directory
+    # Generate certificate and key file if they don't exist in the cert directory
     local local_cert_file="${LOCAL_CERT_DIR}/${cert_file_name}"
     local local_key_file="${LOCAL_CERT_DIR}/${key_file_name}"
     if [[ ! -f "$local_cert_file" || ! -f "$local_key_file" ]]; then
         mkdir -p "$LOCAL_CERT_DIR"
-        echo "Generating SSL certificates in $LOCAL_CERT_DIR..."
+        echo "Generating certificates (${cert_name_prefix}) in $LOCAL_CERT_DIR..."
         OPENSSL_ERR=$(
             openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
                 -keyout "$local_key_file" \
@@ -844,12 +873,12 @@ function ensure_certificates() {
                 > /dev/null 2>&1
         )
         if [[ $? -ne 0 ]]; then
-            echo "Error generating SSL certificates: $OPENSSL_ERR"
+            echo "Error generating certificates: $OPENSSL_ERR"
             exit 1
         fi
         echo "Certificates generated successfully in $LOCAL_CERT_DIR."
     else
-        echo "Certificates already exist in $LOCAL_CERT_DIR."
+        echo "Certificates (${cert_name_prefix}) already exist in $LOCAL_CERT_DIR."
     fi
 
     # Copy the generated certificates to the specified directory
@@ -858,12 +887,12 @@ function ensure_certificates() {
 
     if [[ ! -f "$cert_file" || ! -f "$key_file" ]]; then
         mkdir -p "$cert_dir"
-        echo "Copying certificates to $cert_dir..."
+        echo "Copying certificates (${cert_name_prefix}) to $cert_dir..."
         cp "$local_cert_file" "$cert_file"
         cp "$local_key_file" "$key_file"
         echo "Certificates copied successfully to $cert_dir."
     else
-        echo "Certificates already exist in $cert_dir."
+        echo "Certificates (${cert_name_prefix}) already exist in $cert_dir."
     fi
 }
 
@@ -910,9 +939,6 @@ function run() {
     ORIGINAL_THUNDER_SKIP_SECURITY="${THUNDER_SKIP_SECURITY:-}"
     export THUNDER_SKIP_SECURITY=true
     run_backend false
-    
-    GATE_APP_DEFAULT_PORT=5190
-    DEVELOP_APP_DEFAULT_PORT=5191
 
     # Run initial data setup
     echo "⚙️  Running initial data setup..."
@@ -1005,11 +1031,12 @@ function run_backend() {
     local show_final_output=${1:-true}
 
     echo "=== Ensuring server certificates exist ==="
-    ensure_certificates "$BACKEND_DIR/$SECURITY_DIR"
+    ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "server"
+    ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "signing"
 
     echo "=== Ensuring sample app certificates exist ==="
-    ensure_certificates "$VANILLA_SAMPLE_APP_DIR"
-    ensure_certificates "$REACT_API_SAMPLE_APP_DIR"
+    ensure_certificates "$VANILLA_SAMPLE_APP_DIR" "server"
+    ensure_certificates "$REACT_API_SAMPLE_APP_DIR" "server"
 
     ensure_crypto_file "$BACKEND_DIR/$SECURITY_DIR"
 
@@ -1074,6 +1101,34 @@ function run_frontend() {
     echo "================================================================"
 }
 
+function run_docs() {
+    echo "================================================================"
+    echo "Starting documentation development server..."
+    
+    # Check if pnpm is installed, if not install it
+    if ! command -v pnpm >/dev/null 2>&1; then
+        echo "pnpm not found, installing..."
+        npm install -g pnpm
+    fi
+    
+    # Navigate to frontend directory first to install all dependencies
+    cd "$FRONTEND_BASE_DIR" || exit 1
+    echo "Installing frontend dependencies (required for docs)..."
+    pnpm install --frozen-lockfile
+    
+    # Navigate to docs directory
+    cd "$SCRIPT_DIR/docs" || exit 1
+    
+    echo "Starting documentation server with live reload..."
+    echo "📚 Documentation will be available at http://localhost:$DOCS_DEFAULT_PORT"
+    echo "Press Ctrl+C to stop."
+    pnpm dev
+    
+    # Return to script directory
+    cd "$SCRIPT_DIR" || exit 1
+    echo "================================================================"
+}
+
 case "$1" in
     clean)
         clean
@@ -1084,6 +1139,9 @@ case "$1" in
         ;;
     build_frontend)
         build_frontend
+        ;;
+    build_docs)
+        build_docs
         ;;
     build_samples)
         build_sample_app
@@ -1121,13 +1179,17 @@ case "$1" in
     run_frontend)
         run_frontend
         ;;
+    run_docs)
+        run_docs
+        ;;
     *)
-        echo "Usage: ./build.sh {clean|build|build_backend|build_frontend|test|run} [OS] [ARCH]"
+        echo "Usage: ./build.sh {clean|build|build_backend|build_frontend|build_docs|test|run} [OS] [ARCH]"
         echo ""
         echo "  clean                    - Clean build artifacts"
         echo "  build                    - Build the complete Thunder application (backend + frontend + samples)"
         echo "  build_backend            - Build only the Thunder backend server"
         echo "  build_frontend           - Build only the Next.js frontend applications"
+        echo "  build_docs               - Build only the documentation"
         echo "  build_samples            - Build the sample applications"
         echo "  test_unit                - Run unit tests with coverage"
         echo "  test_integration         - Run integration tests. Use -run and -package for filtering"
@@ -1136,6 +1198,7 @@ case "$1" in
         echo "  run                      - Run the Thunder server for development (with automatic initial data setup)"
         echo "  run_backend              - Run the Thunder backend for development"
         echo "  run_frontend             - Run the Thunder frontend for development"
+        echo "  run_docs                 - Run the documentation development server with live reload"
         exit 1
         ;;
 esac

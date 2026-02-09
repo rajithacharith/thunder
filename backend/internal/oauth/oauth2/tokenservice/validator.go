@@ -23,6 +23,8 @@ import (
 	"time"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 )
@@ -73,6 +75,17 @@ func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*
 		userAttributes = userAttrs
 	}
 
+	// Extract claims request if present
+	var claimsRequest *oauth2model.ClaimsRequest
+	if claimsJSON, ok := claims["access_token_claims_request"].(string); ok && claimsJSON != "" {
+		parsed, err := utils.ParseClaimsRequest(claimsJSON)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"failed to parse claims_request from refresh token: %w", err)
+		}
+		claimsRequest = parsed
+	}
+
 	// Extract user type and organizational unit details if present
 	return &RefreshTokenClaims{
 		Sub:            sub,
@@ -81,6 +94,7 @@ func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*
 		Scopes:         scopes,
 		UserAttributes: userAttributes,
 		Iat:            iat,
+		ClaimsRequest:  claimsRequest,
 	}, nil
 }
 

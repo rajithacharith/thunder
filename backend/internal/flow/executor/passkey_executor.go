@@ -120,7 +120,7 @@ func newPasskeyAuthExecutor(
 		{
 			Identifier: userAttributeUserID,
 			Type:       "string",
-			Required:   true,
+			Required:   false, // Optional to support usernameless flow
 		},
 	}
 
@@ -176,13 +176,14 @@ func (p *passkeyAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRe
 func (p *passkeyAuthExecutor) executeChallenge(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
 	logger := p.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
-	logger.Debug("Generating passkey authentication challenge")
 
+	// Get userID from context (may be empty for usernameless flow)
 	userID := p.GetUserIDFromContext(ctx)
+
 	if userID == "" {
-		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "User ID is required for passkey authentication"
-		return execResp, nil
+		logger.Debug("Generating usernameless passkey authentication challenge")
+	} else {
+		logger.Debug("Generating passkey authentication challenge", log.String("userID", userID))
 	}
 
 	// Get relying party ID from node properties or use a default
@@ -192,9 +193,9 @@ func (p *passkeyAuthExecutor) executeChallenge(ctx *core.NodeContext,
 		return execResp, errors.New("relying party ID is not configured in node properties")
 	}
 
-	// Start passkey authentication
+	// Start passkey authentication (service will detect usernameless flow if userID is empty)
 	startReq := &passkey.PasskeyAuthenticationStartRequest{
-		UserID:         userID,
+		UserID:         userID, // May be empty for usernameless flow
 		RelyingPartyID: relyingPartyID,
 	}
 	startData, svcErr := p.passkeyService.StartAuthentication(startReq)
@@ -225,7 +226,11 @@ func (p *passkeyAuthExecutor) executeChallenge(ctx *core.NodeContext,
 	execResp.AdditionalData[runtimePasskeyChallenge] = string(challengeJSON)
 	execResp.Status = common.ExecComplete
 
-	logger.Debug("Passkey challenge generated successfully", log.String("userID", userID))
+	if userID == "" {
+		logger.Debug("Usernameless passkey challenge generated successfully")
+	} else {
+		logger.Debug("Passkey challenge generated successfully", log.String("userID", userID))
+	}
 	return execResp, nil
 }
 

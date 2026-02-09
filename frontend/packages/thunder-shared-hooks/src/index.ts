@@ -22,3 +22,9 @@ export {
   type TemplateLiteralResult,
   type TemplateLiteralResolverResult,
 } from './useTemplateLiteralResolver';
+
+export {
+  default as useCopyToClipboard,
+  type UseCopyToClipboardOptions,
+  type UseCopyToClipboardResult,
+} from './useCopyToClipboard';

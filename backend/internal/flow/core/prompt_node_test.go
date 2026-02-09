@@ -427,7 +427,7 @@ func (s *PromptOnlyNodeTestSuite) TestAutoSelectSingleAction_NoInputs() {
 	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
 	promptNode := node.(PromptNodeInterface)
 
-	// Single action with no inputs - should auto-complete
+	// Single action with no inputs - should NOT auto-complete (confirmation prompts wait for explicit action)
 	promptNode.SetPrompts([]common.Prompt{
 		{
 			Action: &common.Action{Ref: "continue", NextNode: "next_node"},
@@ -443,10 +443,10 @@ func (s *PromptOnlyNodeTestSuite) TestAutoSelectSingleAction_NoInputs() {
 
 	s.Nil(err)
 	s.NotNil(resp)
-	s.Equal(common.NodeStatusComplete, resp.Status, "Single action should be auto-selected")
-	s.Equal("next_node", resp.NextNodeID, "Should route to the next node for auto-selected action")
-	s.Empty(resp.Actions, "No actions should be returned when auto-selected")
-	s.Equal("continue", ctx.CurrentAction, "Context should have the auto-selected action")
+	s.Equal(common.NodeStatusIncomplete, resp.Status, "Confirmation prompt should wait for explicit action")
+	s.Len(resp.Actions, 1, "Should return the action for user to select")
+	s.Equal("continue", resp.Actions[0].Ref)
+	s.Equal("", ctx.CurrentAction, "Context should NOT have auto-selected action for confirmation prompts")
 }
 
 func (s *PromptOnlyNodeTestSuite) TestAutoSelectSingleAction_WithInputsProvided() {
@@ -540,4 +540,417 @@ func (s *PromptOnlyNodeTestSuite) TestAutoSelectSingleAction_MultipleActionsNoAu
 	s.Equal(common.NodeStatusIncomplete, resp.Status, "Should be incomplete when multiple actions exist")
 	s.Len(resp.Actions, 2, "Should return all actions when multiple exist")
 	s.Equal("", ctx.CurrentAction, "Context should NOT have an auto-selected action with multiple actions")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "username", Required: true},
+			},
+			Action: &common.Action{Ref: "submit", NextNode: "next"},
+		},
+	})
+
+	// Context with failure reason in runtime data
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		RuntimeData: map[string]string{
+			"failureReason": "Authentication failed",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusIncomplete, resp.Status)
+	s.Equal("Authentication failed", resp.FailureReason, "Should include failure reason in response")
+	s.NotContains(ctx.RuntimeData, "failureReason", "Should delete failure reason from runtime data")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestExecuteWithEmptyFailureReason() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "username", Required: true},
+			},
+			Action: &common.Action{Ref: "submit", NextNode: "next"},
+		},
+	})
+
+	// Context with empty failure reason
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		RuntimeData: map[string]string{
+			"failureReason": "",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusIncomplete, resp.Status)
+	s.Equal("", resp.FailureReason, "Should not set failure reason when empty")
+	s.Contains(ctx.RuntimeData, "failureReason", "Should not delete empty failure reason from runtime data")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestExecuteWithNilRuntimeData() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "username", Required: true},
+			},
+			Action: &common.Action{Ref: "submit", NextNode: "next"},
+		},
+	})
+
+	// Context with nil runtime data
+	ctx := &NodeContext{
+		FlowID:      "test-flow",
+		UserInputs:  map[string]string{},
+		RuntimeData: nil,
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusIncomplete, resp.Status)
+	s.Equal("", resp.FailureReason, "Should handle nil runtime data gracefully")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestExecuteInvalidActionReturnsFailure() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+
+	// Setup prompts with specific actions
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "username", Required: true},
+				{Identifier: "password", Required: true},
+			},
+			Action: &common.Action{Ref: "valid_action", NextNode: "next_node"},
+		},
+	})
+
+	// Provide all required inputs but with an action that matches but has no nextNode
+	// This simulates when getNextNodeForActionRef returns empty string
+	ctx := &NodeContext{
+		FlowID:        "test-flow",
+		CurrentAction: "valid_action",
+		UserInputs: map[string]string{
+			"username": "testuser",
+			"password": "testpass",
+		},
+	}
+
+	// Temporarily modify the prompt to have empty nextNode
+	prompts := promptNode.GetPrompts()
+	originalNextNode := prompts[0].Action.NextNode
+	prompts[0].Action.NextNode = ""
+	promptNode.SetPrompts(prompts)
+
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusFailure, resp.Status, "Should return failure status")
+	s.Equal("Invalid action selected", resp.FailureReason, "Should set failure reason")
+
+	// Restore for other tests
+	prompts[0].Action.NextNode = originalNextNode
+	promptNode.SetPrompts(prompts)
+}
+
+func (s *PromptOnlyNodeTestSuite) TestGetAndSetPrompts() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+
+	// Initially should be empty
+	prompts := promptNode.GetPrompts()
+	s.NotNil(prompts)
+	s.Len(prompts, 0)
+
+	// Set prompts
+	testPrompts := []common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "username", Required: true},
+				{Identifier: "password", Required: true},
+			},
+			Action: &common.Action{Ref: "login", NextNode: "auth_node"},
+		},
+		{
+			Action: &common.Action{Ref: "signup", NextNode: "register_node"},
+		},
+	}
+	promptNode.SetPrompts(testPrompts)
+
+	// Verify prompts are set
+	retrievedPrompts := promptNode.GetPrompts()
+	s.Len(retrievedPrompts, 2)
+	s.Equal("username", retrievedPrompts[0].Inputs[0].Identifier)
+	s.Equal("login", retrievedPrompts[0].Action.Ref)
+	s.Equal("signup", retrievedPrompts[1].Action.Ref)
+}
+
+func (s *PromptOnlyNodeTestSuite) TestGetAllInputs() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(*promptNode)
+
+	// Set multiple prompts with various inputs
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "username", Required: true},
+				{Identifier: "password", Required: true},
+			},
+			Action: &common.Action{Ref: "login", NextNode: "auth_node"},
+		},
+		{
+			Inputs: []common.Input{
+				{Identifier: "email", Required: true},
+			},
+			Action: &common.Action{Ref: "signup", NextNode: "register_node"},
+		},
+		{
+			// Prompt with no inputs
+			Action: &common.Action{Ref: "cancel", NextNode: "exit_node"},
+		},
+	})
+
+	// Test getAllInputs
+	allInputs := promptNode.getAllInputs()
+	s.Len(allInputs, 3, "Should return all inputs from all prompts")
+	s.Equal("username", allInputs[0].Identifier)
+	s.Equal("password", allInputs[1].Identifier)
+	s.Equal("email", allInputs[2].Identifier)
+}
+
+func (s *PromptOnlyNodeTestSuite) TestGetAllInputsEmpty() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(*promptNode)
+
+	// No prompts set
+	allInputs := promptNode.getAllInputs()
+	s.NotNil(allInputs)
+	s.Len(allInputs, 0, "Should return empty slice when no prompts")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestGetAllActions() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(*promptNode)
+
+	// Set multiple prompts with actions
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "username", Required: true},
+			},
+			Action: &common.Action{Ref: "login", NextNode: "auth_node"},
+		},
+		{
+			Action: &common.Action{Ref: "signup", NextNode: "register_node"},
+		},
+		{
+			Inputs: []common.Input{
+				{Identifier: "email", Required: true},
+			},
+			Action: &common.Action{Ref: "reset", NextNode: "reset_node"},
+		},
+	})
+
+	// Test getAllActions
+	allActions := promptNode.getAllActions()
+	s.Len(allActions, 3, "Should return all actions from all prompts")
+	s.Equal("login", allActions[0].Ref)
+	s.Equal("signup", allActions[1].Ref)
+	s.Equal("reset", allActions[2].Ref)
+}
+
+func (s *PromptOnlyNodeTestSuite) TestGetAllActionsWithNilAction() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(*promptNode)
+
+	// Set prompts with some nil actions
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "username", Required: true},
+			},
+			Action: &common.Action{Ref: "login", NextNode: "auth_node"},
+		},
+		{
+			Inputs: []common.Input{
+				{Identifier: "email", Required: true},
+			},
+			Action: nil, // No action
+		},
+		{
+			Action: &common.Action{Ref: "signup", NextNode: "register_node"},
+		},
+	})
+
+	// Test getAllActions - should only return non-nil actions
+	allActions := promptNode.getAllActions()
+	s.Len(allActions, 2, "Should only return non-nil actions")
+	s.Equal("login", allActions[0].Ref)
+	s.Equal("signup", allActions[1].Ref)
+}
+
+func (s *PromptOnlyNodeTestSuite) TestGetAllActionsEmpty() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(*promptNode)
+
+	// No prompts set
+	allActions := promptNode.getAllActions()
+	s.NotNil(allActions)
+	s.Len(allActions, 0, "Should return empty slice when no prompts")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestGetNextNodeForActionRef() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(*promptNode)
+
+	// Set prompts with multiple actions
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Action: &common.Action{Ref: "login", NextNode: "auth_node"},
+		},
+		{
+			Action: &common.Action{Ref: "signup", NextNode: "register_node"},
+		},
+		{
+			Action: &common.Action{Ref: "cancel", NextNode: "exit_node"},
+		},
+	})
+
+	// Test finding existing actions
+	nextNode := promptNode.getNextNodeForActionRef("login", promptNode.logger)
+	s.Equal("auth_node", nextNode)
+
+	nextNode = promptNode.getNextNodeForActionRef("signup", promptNode.logger)
+	s.Equal("register_node", nextNode)
+
+	nextNode = promptNode.getNextNodeForActionRef("cancel", promptNode.logger)
+	s.Equal("exit_node", nextNode)
+}
+
+func (s *PromptOnlyNodeTestSuite) TestGetNextNodeForActionRefNotFound() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(*promptNode)
+
+	// Set prompts with actions
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Action: &common.Action{Ref: "login", NextNode: "auth_node"},
+		},
+		{
+			Action: &common.Action{Ref: "signup", NextNode: "register_node"},
+		},
+	})
+
+	// Test finding non-existent action
+	nextNode := promptNode.getNextNodeForActionRef("nonexistent", promptNode.logger)
+	s.Equal("", nextNode, "Should return empty string when action not found")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestGetNextNodeForActionRefEmptyRef() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(*promptNode)
+
+	// Set prompts with actions
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Action: &common.Action{Ref: "login", NextNode: "auth_node"},
+		},
+	})
+
+	// Test with empty action ref
+	nextNode := promptNode.getNextNodeForActionRef("", promptNode.logger)
+	s.Equal("", nextNode, "Should return empty string for empty action ref")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestAutoSelectClearsActionsFromResponse() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+
+	// Single action with inputs - should auto-select
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "username", Required: true},
+			},
+			Action: &common.Action{Ref: "submit", NextNode: "auth_node"},
+		},
+	})
+
+	ctx := &NodeContext{
+		FlowID:        "test-flow",
+		CurrentAction: "", // No action selected
+		UserInputs: map[string]string{
+			"username": "testuser",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusComplete, resp.Status)
+	s.Len(resp.Actions, 0, "Actions should be cleared after auto-selection")
+	s.Equal("submit", ctx.CurrentAction, "Action should be auto-selected in context")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureAndRecovery() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "username", Required: true},
+				{Identifier: "password", Required: true},
+			},
+			Action: &common.Action{Ref: "submit", NextNode: "next"},
+		},
+	})
+
+	// First execution with failure
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		RuntimeData: map[string]string{
+			"failureReason": "Invalid credentials",
+			"otherData":     "should remain",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusIncomplete, resp.Status)
+	s.Equal("Invalid credentials", resp.FailureReason)
+	s.NotContains(ctx.RuntimeData, "failureReason", "Failure reason should be removed")
+	s.Contains(ctx.RuntimeData, "otherData", "Other runtime data should remain")
+
+	// Second execution with correct inputs (recovery)
+	ctx.CurrentAction = "submit"
+	ctx.UserInputs = map[string]string{
+		"username": "testuser",
+		"password": "testpass",
+	}
+	resp, err = node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusComplete, resp.Status)
+	s.Equal("", resp.FailureReason, "Should not have failure reason on success")
+	s.Equal("next", resp.NextNodeID)
 }

@@ -128,6 +128,11 @@ func (e *executor) ValidatePrerequisites(ctx *NodeContext, execResp *common.Exec
 	}
 
 	for _, prerequisite := range prerequisites {
+		// Skip optional prerequisites
+		if !prerequisite.Required {
+			continue
+		}
+
 		if prerequisite.Identifier == userAttributeUserID {
 			userID := ctx.AuthenticatedUser.UserID
 			if userID != "" {

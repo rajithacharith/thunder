@@ -557,7 +557,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizeGetRequest_InvalidPar
 	assert.NotEqual(suite.T(), http.StatusInternalServerError, rr.Code)
 }
 
-func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizePostRequest_ConsentType() {
+func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_ConsentType() {
 	// Test TypeConsentResponseFromUser case
 	// This case is not implemented yet, but we test that it doesn't panic
 	postData := AuthZPostRequest{
@@ -566,7 +566,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizePostRequest_ConsentTy
 	}
 	jsonData, _ := json.Marshal(postData)
 
-	req := httptest.NewRequest(http.MethodPost, "/oauth2/authorize", bytes.NewReader(jsonData))
+	req := httptest.NewRequest(http.MethodPost, "/oauth2/auth/callback", bytes.NewReader(jsonData))
 	req.Header.Set("Content-Type", "application/json")
 	// Add a query parameter to indicate consent response type
 	req.URL.RawQuery = "requestType=consentResponseFromUser"
@@ -577,17 +577,17 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizePostRequest_ConsentTy
 
 	// The consent type is not handled yet (TODO), so it should fall through to default case
 	// or handle gracefully without panicking
-	suite.handler.HandleAuthorizePostRequest(rr, req)
+	suite.handler.HandleAuthCallbackPostRequest(rr, req)
 
 	// Should return some response (either error or handled gracefully)
 	assert.NotEqual(suite.T(), 0, rr.Code)
 }
 
-func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizePostRequest_InvalidRequestType() {
-	req := httptest.NewRequest(http.MethodPost, "/auth", nil)
+func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_InvalidRequestType() {
+	req := httptest.NewRequest(http.MethodPost, "/oauth2/auth/callback", nil)
 	rr := httptest.NewRecorder()
 
-	suite.handler.HandleAuthorizePostRequest(rr, req)
+	suite.handler.HandleAuthCallbackPostRequest(rr, req)
 
 	assert.Equal(suite.T(), http.StatusBadRequest, rr.Code)
 }
@@ -1066,12 +1066,12 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizeGetRequest_GetOAuthMe
 	assert.Equal(suite.T(), http.StatusBadRequest, rr.Code)
 }
 
-func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizePostRequest_GetOAuthMessageReturnsNil() {
-	req := httptest.NewRequest("POST", "/oauth2/authorize", bytes.NewReader([]byte("invalid json")))
+func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_GetOAuthMessageReturnsNil() {
+	req := httptest.NewRequest("POST", "/oauth2/auth/callback", bytes.NewReader([]byte("invalid json")))
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
 
-	suite.handler.HandleAuthorizePostRequest(rr, req)
+	suite.handler.HandleAuthCallbackPostRequest(rr, req)
 
 	// Should return 400 Bad Request when getOAuthMessage fails
 	assert.Equal(suite.T(), http.StatusBadRequest, rr.Code)
@@ -1283,11 +1283,11 @@ func (suite *AuthorizeHandlerTestSuite) TestWriteAuthZResponse() {
 	assert.Equal(suite.T(), "https://example.com/callback?code=abc123", resp.RedirectURI)
 }
 
-func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizePostRequest_UnsupportedMethod() {
-	req := httptest.NewRequest(http.MethodPut, "/auth", nil)
+func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_UnsupportedMethod() {
+	req := httptest.NewRequest(http.MethodPut, "/oauth2/auth/callback", nil)
 	rr := httptest.NewRecorder()
 
-	suite.handler.HandleAuthorizePostRequest(rr, req)
+	suite.handler.HandleAuthCallbackPostRequest(rr, req)
 
 	assert.Equal(suite.T(), http.StatusBadRequest, rr.Code)
 	var response map[string]interface{}
@@ -1463,7 +1463,7 @@ func (suite *AuthorizeHandlerTestSuite) TestGetRequiredAttributes() {
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			result := getRequiredAttributes(tt.oidcScopes, tt.app)
+			result := getRequiredAttributes(tt.oidcScopes, tt.app, nil)
 
 			// Parse both results into sets for comparison (order doesn't matter)
 			resultAttrs := make(map[string]bool)
@@ -1477,6 +1477,114 @@ func (suite *AuthorizeHandlerTestSuite) TestGetRequiredAttributes() {
 			}
 
 			assert.Equal(t, expectedAttrs, resultAttrs, tt.description)
+		})
+	}
+}
+
+// TestValidateSubClaimConstraint tests the sub claim validation requirement
+func (suite *AuthorizeHandlerTestSuite) TestValidateSubClaimConstraint() {
+	tests := []struct {
+		name          string
+		claimsRequest *oauth2model.ClaimsRequest
+		actualSubject string
+		expectError   bool
+	}{
+		{
+			name:          "nil claims request should pass",
+			claimsRequest: nil,
+			actualSubject: "user123",
+			expectError:   false,
+		},
+		{
+			name: "no sub constraint should pass",
+			claimsRequest: &oauth2model.ClaimsRequest{
+				IDToken: map[string]*oauth2model.IndividualClaimRequest{
+					"email": nil,
+				},
+			},
+			actualSubject: "user123",
+			expectError:   false,
+		},
+		{
+			name: "matching id_token sub value should pass",
+			claimsRequest: &oauth2model.ClaimsRequest{
+				IDToken: map[string]*oauth2model.IndividualClaimRequest{
+					"sub": {Value: "user123"},
+				},
+			},
+			actualSubject: "user123",
+			expectError:   false,
+		},
+		{
+			name: "non-matching id_token sub value should fail",
+			claimsRequest: &oauth2model.ClaimsRequest{
+				IDToken: map[string]*oauth2model.IndividualClaimRequest{
+					"sub": {Value: "expected-user"},
+				},
+			},
+			actualSubject: "actual-user",
+			expectError:   true,
+		},
+		{
+			name: "matching userinfo sub value should pass",
+			claimsRequest: &oauth2model.ClaimsRequest{
+				UserInfo: map[string]*oauth2model.IndividualClaimRequest{
+					"sub": {Value: "user456"},
+				},
+			},
+			actualSubject: "user456",
+			expectError:   false,
+		},
+		{
+			name: "non-matching userinfo sub value should fail",
+			claimsRequest: &oauth2model.ClaimsRequest{
+				UserInfo: map[string]*oauth2model.IndividualClaimRequest{
+					"sub": {Value: "expected-user"},
+				},
+			},
+			actualSubject: "actual-user",
+			expectError:   true,
+		},
+		{
+			name: "matching sub in values array should pass",
+			claimsRequest: &oauth2model.ClaimsRequest{
+				IDToken: map[string]*oauth2model.IndividualClaimRequest{
+					"sub": {Values: []interface{}{"user1", "user2", "user3"}},
+				},
+			},
+			actualSubject: "user2",
+			expectError:   false,
+		},
+		{
+			name: "non-matching sub in values array should fail",
+			claimsRequest: &oauth2model.ClaimsRequest{
+				IDToken: map[string]*oauth2model.IndividualClaimRequest{
+					"sub": {Values: []interface{}{"user1", "user2", "user3"}},
+				},
+			},
+			actualSubject: "user4",
+			expectError:   true,
+		},
+		{
+			name: "null sub request (voluntary) should pass",
+			claimsRequest: &oauth2model.ClaimsRequest{
+				IDToken: map[string]*oauth2model.IndividualClaimRequest{
+					"sub": nil,
+				},
+			},
+			actualSubject: "any-user",
+			expectError:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.T().Run(tt.name, func(t *testing.T) {
+			err := validateSubClaimConstraint(tt.claimsRequest, tt.actualSubject)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

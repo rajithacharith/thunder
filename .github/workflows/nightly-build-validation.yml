@@ -45,43 +45,14 @@ jobs:
       - name: ✅ Verify All Build Artifacts
         run: ./scripts/verify-build-artifacts.sh
 
-      - name: 📦 Upload Documentation Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: thunder-docs
-          path: docs/build
-          if-no-files-found: error
-
-  deploy-docs:
-    name: 📚 Deploy Documentation
-    runs-on: ubuntu-latest
-    needs: validate-complete-build
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: 📥 Checkout Code
-        uses: actions/checkout@v4
-
-      - name: 📚 Deploy Documentation
-        id: deployment
-        uses: ./.github/actions/deploy-docs
-        with:
-          docs-artifact-name: 'thunder-docs'
-          build-docs: 'false'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 📝 Add Docs Deployment Summary
+      - name: ✅ Verify Docs Artifacts
         run: |
-          echo "# 📚 Nightly Documentation Deployment" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Nightly documentation has been deployed to GitHub Pages!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 View at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> $GITHUB_STEP_SUMMARY
+          if [ ! -d "docs/build" ] || [ -z "$(ls -A docs/build)" ]; then
+            echo "Docs build directory is missing or empty!"
+            exit 1
+          else
+            echo "Docs build artifacts verified successfully."
+          fi
 
   validate-sample-packaging-linux:
     name: 📦 Validate Linux & Windows Sample Packaging

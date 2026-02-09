@@ -20,8 +20,9 @@ cors:
     - "https://localhost:5191"
 ```
 
-> [!TIP]
-> This configuration allows the Thunder Gate and Thunder Develop applications to communicate with the backend server during development.
+:::tip
+This configuration allows the Thunder Gate and Thunder Develop applications to communicate with the backend server during development.
+:::
 
 **Configure the Gate client:**
 
@@ -30,41 +31,58 @@ gate_client:
   port: 5190
 ```
 
-> [!TIP]
-> This configuration points the backend server to the local Thunder Gate application for authentication.
+:::tip
+This configuration points the backend server to the local Thunder Gate application for authentication.
+:::
 
 ## Run the Server
 
 Start the Thunder server & apps in development mode.
 
-```bash
-make run
-```
+<CodeGroup>
+  <CodeBlock lang="bash" label="Linux/macOS">
+    make run
+  </CodeBlock>
+  <CodeBlock lang="powershell" label="Windows">
+    .\build.ps1 run
+  </CodeBlock>
+</CodeGroup>
 
-> [!Note]
-> This command will automatically set up your complete development environment:
->
-> **What gets created:**
->
-> - `Develop` application with redirect URI pointing to the local Thunder Develop application
-> - Default admin user with credentials: `admin` / `admin`
->
-> **Services that start:**
->
-> - **Backend server**: [https://localhost:8090](https://localhost:8090)
-> - **Thunder Gate** (Login/Register): [https://localhost:5190/gate](https://localhost:5190/gate)
-> - **Thunder Develop** (Admin Console): [https://localhost:5191/develop](https://localhost:5191/develop)
+:::note
+This command will automatically set up your complete development environment:
+
+**What gets created:**
+
+- `Develop` application with redirect URI pointing to the local Thunder Develop application
+- Default admin user with credentials: `admin` / `admin`
+
+**Services that start:**
+
+- **Backend server**: [https://localhost:8090](https://localhost:8090)
+- **Thunder Gate** (Login/Register): [https://localhost:5190/gate](https://localhost:5190/gate)
+- **Thunder Develop** (Admin Console): [https://localhost:5191/develop](https://localhost:5191/develop)
+:::
 
 💡 **Alternatively**, if you would rather run the backend and frontend servers separately, run the following commands in separate terminal windows:
 
 **Backend Server:**
 
-```bash
-make run_backend
-```
+<CodeGroup>
+  <CodeBlock lang="bash" label="Linux/macOS">
+    make run_backend
+  </CodeBlock>
+  <CodeBlock lang="powershell" label="Windows">
+    .\build.ps1 run_backend
+  </CodeBlock>
+</CodeGroup>
 
 **Frontend Server:**
 
-```bash
-make run_frontend
-```
+<CodeGroup>
+  <CodeBlock lang="bash" label="Linux/macOS">
+    make run_frontend
+  </CodeBlock>
+  <CodeBlock lang="powershell" label="Windows">
+    .\build.ps1 run_frontend
+  </CodeBlock>
+</CodeGroup>

@@ -238,6 +238,16 @@ func (s *ExecutorTestSuite) TestValidatePrerequisites() {
 			common.ExecFailure,
 			"Prerequisite not met: apiKey",
 		},
+		{
+			"Optional prerequisite not met",
+			[]common.Input{{Identifier: "optionalKey", Required: false}},
+			authncm.AuthenticatedUser{},
+			map[string]string{},
+			map[string]string{},
+			true,
+			"",
+			"",
+		},
 	}
 
 	for _, tt := range tests {
