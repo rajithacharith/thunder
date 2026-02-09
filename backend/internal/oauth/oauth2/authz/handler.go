@@ -127,6 +127,9 @@ func (ah *authorizeHandler) handleInitialAuthorizationRequest(msg *OAuthMessage,
 	// Extract claims parameter
 	claimsParam := msg.RequestQueryParams[oauth2const.RequestParamClaims]
 
+	// Extract claims_locales parameter
+	claimsLocales := msg.RequestQueryParams[oauth2const.RequestParamClaimsLocales]
+
 	if clientID == "" {
 		ah.redirectToErrorPage(w, r, oauth2const.ErrorInvalidRequest, "Missing client_id parameter")
 		return
@@ -191,6 +194,7 @@ func (ah *authorizeHandler) handleInitialAuthorizationRequest(msg *OAuthMessage,
 		CodeChallengeMethod: codeChallengeMethod,
 		Resource:            resource,
 		ClaimsRequest:       claimsRequest,
+		ClaimsLocales:       claimsLocales,
 	}
 
 	// Set the redirect URI if not provided in the request. Invalid cases are already handled at this point.
@@ -206,6 +210,7 @@ func (ah *authorizeHandler) handleInitialAuthorizationRequest(msg *OAuthMessage,
 	runtimeData := map[string]string{
 		"requested_permissions": utils.StringifyStringArray(nonOidcScopes, " "),
 		"required_attributes":   requiredAttributes,
+		"required_locales":      claimsLocales,
 	}
 	flowInitCtx := &flowexec.FlowInitContext{
 		ApplicationID: app.AppID,
@@ -600,6 +605,7 @@ func createAuthorizationCode(
 		CodeChallengeMethod: authRequestCtx.OAuthParameters.CodeChallengeMethod,
 		Resource:            resource,
 		ClaimsRequest:       authRequestCtx.OAuthParameters.ClaimsRequest,
+		ClaimsLocales:       authRequestCtx.OAuthParameters.ClaimsLocales,
 	}, nil
 }
 

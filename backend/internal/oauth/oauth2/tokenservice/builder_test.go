@@ -388,6 +388,44 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Error_JWTGenerationFail
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
+func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_WithClaimsLocales() {
+	ctx := &AccessTokenBuildContext{
+		Subject:        "user123",
+		Audience:       "app123",
+		ClientID:       "test-client",
+		Scopes:         []string{"openid", "profile"},
+		UserAttributes: map[string]interface{}{"name": testUserName},
+		GrantType:      string(constants.GrantTypeAuthorizationCode),
+		OAuthApp:       suite.oauthApp,
+		ClaimsLocales:  "en-US fr-CA ja",
+	}
+
+	expectedToken := testAccessToken
+	expectedIat := time.Now().Unix()
+
+	suite.mockJWTService.On("GenerateJWT",
+		"user123",
+		"app123",
+		"https://thunder.io",
+		int64(3600),
+		mock.MatchedBy(func(claims map[string]interface{}) bool {
+			return claims["scope"] == "openid profile" &&
+				claims["client_id"] == "test-client" &&
+				claims["grant_type"] == string(constants.GrantTypeAuthorizationCode) &&
+				claims["name"] == testUserName &&
+				claims["claims_locales"] == "en-US fr-CA ja"
+		}),
+	).Return(expectedToken, expectedIat, nil)
+
+	result, err := suite.builder.BuildAccessToken(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), expectedToken, result.Token)
+	assert.Equal(suite.T(), "en-US fr-CA ja", result.ClaimsLocales)
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
 func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_Basic() {
 	// Create OAuth app with user attributes configured
 	oauthAppWithUserAttrs := &appmodel.OAuthAppConfigProcessedDTO{
@@ -653,6 +691,44 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Error_JWTGenerationFai
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
 	assert.Contains(suite.T(), err.Error(), "failed to generate refresh token")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithClaimsLocales() {
+	ctx := &RefreshTokenBuildContext{
+		ClientID:             "test-client",
+		Scopes:               []string{"openid", "profile"},
+		GrantType:            string(constants.GrantTypeAuthorizationCode),
+		AccessTokenSubject:   "user123",
+		AccessTokenAudience:  "app123",
+		AccessTokenUserAttrs: map[string]interface{}{"name": testUserName},
+		OAuthApp:             suite.oauthApp,
+		ClaimsLocales:        "en-US fr-CA ja",
+	}
+
+	expectedToken := testRefreshToken
+	expectedIat := time.Now().Unix()
+
+	suite.mockJWTService.On("GenerateJWT",
+		"test-client",
+		"https://thunder.io",
+		"https://thunder.io",
+		int64(3600),
+		mock.MatchedBy(func(claims map[string]interface{}) bool {
+			return claims["scope"] == "openid profile" &&
+				claims["access_token_sub"] == "user123" &&
+				claims["access_token_aud"] == testAppID &&
+				claims["grant_type"] == string(constants.GrantTypeAuthorizationCode) &&
+				claims["access_token_claims_locales"] == "en-US fr-CA ja"
+		}),
+	).Return(expectedToken, expectedIat, nil)
+
+	result, err := suite.builder.BuildRefreshToken(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), expectedToken, result.Token)
+	assert.Equal(suite.T(), "en-US fr-CA ja", result.ClaimsLocales)
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
