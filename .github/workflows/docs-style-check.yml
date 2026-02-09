@@ -31,7 +31,7 @@ jobs:
       - name: Run Vale
         uses: errata-ai/vale-action@reviewdog
         with:
-            filter_mode: added
-            reporter: github-pr-check
+          filter_mode: added
+          reporter: github-pr-check
         env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
