@@ -399,7 +399,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServerErrorResponse'
 
-  /auth/webauthn/start:
+  /auth/passkey/start:
     post:
       summary: Start WebAuthn authentication
       description: Initiate WebAuthn/Passkey authentication for a user.
@@ -446,7 +446,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServerErrorResponse'
 
-  /auth/webauthn/finish:
+  /auth/passkey/finish:
     post:
       summary: Finish WebAuthn authentication
       description: Complete WebAuthn/Passkey authentication for a user.
