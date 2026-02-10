@@ -159,7 +159,7 @@ Add only examples that help complete the task.
 - Ensure examples are syntactically correct.
 - Explain what the example does.
 
-### Step 5: Validate for completeness
+### Step 5: Validate for Completeness
 
 Confirm the draft includes:
 
