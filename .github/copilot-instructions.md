@@ -1,5 +1,3 @@
-<!-- vale off -->
-
 # GitHub Copilot Custom Instructions
 
 ## Project Overview

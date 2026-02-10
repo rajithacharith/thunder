@@ -3,7 +3,6 @@ title: AGENTS
 description: AI agents should use this file when creating and reviewing documentation content for Thunder. It contains the standards, guidelines, and requirements that must be followed to ensure high-quality documentation.
 ---
 
-<!-- vale off -->
 # Thunder Documentation Creation Instructions
 
 Follow these instructions when creating new documentation content for Thunder. Adhere to all guidelines to ensure consistency, clarity, and quality.
