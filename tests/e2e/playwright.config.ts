@@ -88,7 +88,9 @@ export default defineConfig({
    * This ensures the server is up before the setup project tries to authenticate.
    */
   webServer: {
-    command: "cd ../.. && ./build.sh run_backend",
+    command: process.platform === "win32"
+      ? "cd ..\\..  && pwsh -File .\\build.ps1 run_backend"
+      : "cd ../.. && ./build.sh run_backend",
     url: "https://localhost:8090/health/liveness",
     reuseExistingServer: true,
     ignoreHTTPSErrors: true,

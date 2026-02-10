@@ -221,6 +221,93 @@ else {
 Write-Host ""
 
 # ============================================================================
+# Create React SDK Sample Application
+# ============================================================================
+
+Log-Info "Creating React SDK Sample App application..."
+
+$reactSdkAppData = @{
+    name = "React SDK Sample"
+    description = "Sample React application using Thunder React SDK"
+    client_id = "REACT_SDK_SAMPLE"
+    url = "https://localhost:3000"
+    logo_url = "https://localhost:3000/logo.png"
+    tos_uri = "https://localhost:3000/terms"
+    policy_uri = "https://localhost:3000/privacy"
+    contacts = @("admin@example.com")
+    is_registration_flow_enabled = $true
+    assertion = @{
+        issuer = "thunder"
+        validity_period = 3600
+        user_attributes = $null
+    }
+    certificate = @{
+        type = "NONE"
+        value = ""
+    }
+    user_attributes = @("given_name","family_name","email","groups","name")
+    allowed_user_types = @("Customer")
+    inbound_auth_config = @(
+        @{
+            type = "oauth2"
+            config = @{
+                client_id = "REACT_SDK_SAMPLE"
+                redirect_uris = @("https://localhost:3000")
+                grant_types = @("authorization_code")
+                response_types = @("code")
+                token_endpoint_auth_method = "none"
+                pkce_required = $true
+                public_client = $true
+                token = @{
+                    issuer = "https://localhost:8090"
+                    access_token = @{
+                        validity_period = 3600
+                        user_attributes = @("given_name","family_name","email","groups","name")
+                    }
+                    id_token = @{
+                        validity_period = 3600
+                        user_attributes = @("given_name","family_name","email","groups","name")
+                        scope_claims = @{
+                            email = @("email","email_verified")
+                            group = @("groups")
+                            phone = @("phone_number","phone_number_verified")
+                            profile = @("name","given_name","family_name","picture")
+                        }
+                    }
+                }
+            }
+        }
+    )
+} | ConvertTo-Json -Depth 15
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/applications" -Data $reactSdkAppData
+
+if ($response.StatusCode -in 200, 201, 202) {
+    Log-Success "React SDK Sample App created successfully"
+    $body = $response.Body | ConvertFrom-Json
+    $reactSdkAppId = $body.id
+    if ($reactSdkAppId) {
+        Log-Info "React SDK Sample App ID: $reactSdkAppId"
+    }
+    else {
+        Log-Warning "Could not extract React SDK Sample App ID from response"
+    }
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "React SDK Sample App already exists, skipping"
+}
+elseif ($response.StatusCode -eq 400 -and ($response.Body -match "Application already exists|APP-1022")) {
+    Log-Warning "React SDK Sample App already exists, skipping"
+}
+else {
+    Log-Error "Failed to create React SDK Sample App (HTTP $($response.StatusCode))"
+    Write-Host "Response: $($response.Body)"
+    exit 1
+}
+
+Write-Host ""
+
+# ============================================================================
 # Summary
 # ============================================================================
 
