@@ -1,4 +1,6 @@
-name: Vale Lint (Changed Markdown Only)
+# This workflow ...
+
+name: 🥒 Vale Lint (Changed Markdown Only)
 
 on:
   pull_request:
