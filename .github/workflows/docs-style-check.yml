@@ -24,9 +24,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
-      
-      - name: ⚙️ Install mdx2vast (required for MDX linting)
-        run: npm install -g mdx2vast@0.3.1
 
       - name: 🔍 Run Vale
         uses: errata-ai/vale-action@v2.1.1
