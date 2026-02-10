@@ -4,3 +4,4 @@ level: error
 scope: heading
 match: $title
 style: AP
+
