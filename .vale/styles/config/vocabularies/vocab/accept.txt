@@ -2,6 +2,7 @@ Asgardeo
 WSO2
 OIDC
 OAuth
+OAuth2
 OpenID
 IAM
 IdP
