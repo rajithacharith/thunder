@@ -11,8 +11,8 @@ jobs:
     name: Vale style check
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write  # Needed to post PR comments
       contents: read
+      checks: write
 
     steps:
       - name: Check out code
@@ -26,10 +26,10 @@ jobs:
           node-version: 20
       
       - name: Install mdx2vast (required for MDX linting)
-        run: npm install -g mdx2vast
+        run: npm install -g mdx2vast@0.6.4
 
       - name: Run Vale
-        uses: errata-ai/vale-action@reviewdog
+        uses: errata-ai/vale-action@v2.1.1
         with:
           filter_mode: added
           reporter: github-pr-check

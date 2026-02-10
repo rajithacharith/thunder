@@ -52,7 +52,6 @@ You must follow these standards when creating documentation content for Thunder.
 - You must use title case for all headings. This includes h1, h2, h3 and all titles. Pronouns need to be capitalized as per standard grammar rules.
 - Use consistent heading levels to reflect document structure.
 - Make headings task-focused and descriptive. Do not use generic headings like “Introduction” or “Details.”
-- Do not use decorative symbols (for example, “→”, “¶”, “✅”, emojis).
 
 ### Lists
 
@@ -252,6 +251,6 @@ Use sign-in for end-user UI text, user actions, and user-facing flows or journey
 Examples:
 - Sign in with Google
 - Sign in to the Console
-- when the user signs in 
+- when the user signs in
 - sign-in flow
 - sign-in journey
