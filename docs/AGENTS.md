@@ -1,15 +1,15 @@
-<!--
-Thunder documentation creation instructions
+---
+title: AGENTS
+description: AI agents should use this file when creating and reviewing documentation content for Thunder. It contains the standards, guidelines, and requirements that must be followed to ensure high-quality documentation.
+---
 
-Purpose:
-Provide deterministic, enforceable instructions for an AI agent to create Thunder 
--->
-
+<!-- vale off -->
 # Thunder Documentation Creation Instructions
 
 Follow these instructions when creating new documentation content for Thunder. Adhere to all guidelines to ensure consistency, clarity, and quality.
 
 ## Scope and Boundaries
+
 
 ### Audience
 
@@ -245,7 +245,7 @@ Examples:
 
 Avoid using login to describe user-facing flows or actions.
 
-#### Signin / Sign In — User-Facing Perspective
+#### Sign-in / Sign In — User-Facing Perspective
 
 Use sign-in for end-user UI text, user actions, and user-facing flows or journeys.
 
