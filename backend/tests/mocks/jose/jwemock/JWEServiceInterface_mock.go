@@ -8,7 +8,7 @@ import (
 	"crypto"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/jwe"
+	"github.com/asgardeo/thunder/internal/system/jose/jwe"
 	mock "github.com/stretchr/testify/mock"
 )
 
