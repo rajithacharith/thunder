@@ -130,52 +130,6 @@ func (_c *JWTServiceInterfaceMock_GenerateJWT_Call) RunAndReturn(run func(sub st
 	return _c
 }
 
-// GetPublicKey provides a mock function for the type JWTServiceInterfaceMock
-func (_mock *JWTServiceInterfaceMock) GetPublicKey() crypto.PublicKey {
-	ret := _mock.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetPublicKey")
-	}
-
-	var r0 crypto.PublicKey
-	if returnFunc, ok := ret.Get(0).(func() crypto.PublicKey); ok {
-		r0 = returnFunc()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(crypto.PublicKey)
-		}
-	}
-	return r0
-}
-
-// JWTServiceInterfaceMock_GetPublicKey_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetPublicKey'
-type JWTServiceInterfaceMock_GetPublicKey_Call struct {
-	*mock.Call
-}
-
-// GetPublicKey is a helper method to define mock.On call
-func (_e *JWTServiceInterfaceMock_Expecter) GetPublicKey() *JWTServiceInterfaceMock_GetPublicKey_Call {
-	return &JWTServiceInterfaceMock_GetPublicKey_Call{Call: _e.mock.On("GetPublicKey")}
-}
-
-func (_c *JWTServiceInterfaceMock_GetPublicKey_Call) Run(run func()) *JWTServiceInterfaceMock_GetPublicKey_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *JWTServiceInterfaceMock_GetPublicKey_Call) Return(publicKey crypto.PublicKey) *JWTServiceInterfaceMock_GetPublicKey_Call {
-	_c.Call.Return(publicKey)
-	return _c
-}
-
-func (_c *JWTServiceInterfaceMock_GetPublicKey_Call) RunAndReturn(run func() crypto.PublicKey) *JWTServiceInterfaceMock_GetPublicKey_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // VerifyJWT provides a mock function for the type JWTServiceInterfaceMock
 func (_mock *JWTServiceInterfaceMock) VerifyJWT(jwtToken string, expectedAud string, expectedIss string) *serviceerror.ServiceError {
 	ret := _mock.Called(jwtToken, expectedAud, expectedIss)

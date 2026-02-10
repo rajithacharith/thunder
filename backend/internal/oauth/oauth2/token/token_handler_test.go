@@ -39,7 +39,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/scope"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/granthandlersmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/scopemock"
 	"github.com/asgardeo/thunder/tests/mocks/observabilitymock"
