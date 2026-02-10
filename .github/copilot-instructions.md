@@ -265,4 +265,4 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
 
 ### Documentation
 
-Follow the documentation creation instructions in [`docs/AGENTS.md`](docs/AGENTS.md) when creating new documentation content for the project.
+Follow the documentation creation instructions in [`docs/AGENTS.md`](/docs/AGENTS.md) when creating new documentation content for the project.
