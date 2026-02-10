@@ -7,7 +7,7 @@ Provide deterministic, enforceable instructions for an AI agent to create Thunde
 
 # Thunder Documentation Creation Instructions
 
-Follow these instructions when creating new documenttion content for Thunder. Adhere to all guidelines to ensure consistency, clarity, and quality.
+Follow these instructions when creating new documentation content for Thunder. Adhere to all guidelines to ensure consistency, clarity, and quality.
 
 ## Scope and Boundaries
 
