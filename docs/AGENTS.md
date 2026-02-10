@@ -120,12 +120,12 @@ For a guide, use the following structure. You must follow this structure exactly
 
 - Title
 - Purpose
-- When to use
+- When to Use
 - Prerequisites
 - Steps (numbered procedure)
 - Validate (how to confirm it worked)
 - Troubleshoot (optional)
-- Next steps (optional)
+- Next Steps (optional)
 
 ## Creation Workflow
 
