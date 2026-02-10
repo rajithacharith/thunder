@@ -203,6 +203,15 @@ Before finalizing documentation output:
   - Ask the user to rerun Vale and share the results.
   - Do not assume compliance or guess fixes without Vale feedback.
 
+### CI Feedback Handling
+
+When Vale feedback is provided through CI checks:
+
+- Only respond to the **latest** Vale check run.
+- Ignore resolved or outdated annotations from previous commits.
+- Do NOT repeat or expand on previously addressed Vale findings.
+- If the latest CI run is clean, do not comment on earlier issues.
+
 Vale installation reference:
 - https://vale.sh/docs/vale-cli/installation/
 
