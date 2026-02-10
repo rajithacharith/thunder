@@ -213,7 +213,7 @@ When Vale feedback is provided through CI checks:
 - If the latest CI run is clean, do not comment on earlier issues.
 
 Vale installation reference:
-- https://vale.sh/docs/vale-cli/installation/
+- [Vale CLI installation instructions](https://vale.sh/docs/vale-cli/installation/)
 
 ## Vocabulary Guidelines
 
