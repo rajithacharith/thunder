@@ -172,8 +172,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success() {
 		OrganizationUnitID: testOUID,
 		Members:            []group.Member{},
 	}
-	suite.mockGroupService.On("GetGroup", "test-group-id").Return(existingGroup, nil)
-	suite.mockGroupService.On("UpdateGroup", "test-group-id",
+	suite.mockGroupService.On("GetGroup", mock.Anything, "test-group-id").Return(existingGroup, nil)
+	suite.mockGroupService.On("UpdateGroup", mock.Anything, "test-group-id",
 		mock.MatchedBy(func(req group.UpdateGroupRequest) bool {
 			return len(req.Members) == 1 &&
 				req.Members[0].ID == testNewUserID &&
@@ -996,7 +996,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_GroupAssignmentF
 	suite.mockUserService.On("CreateUser", mock.Anything, mock.Anything).Return(createdUser, nil)
 
 	// Mock group retrieval fails (e.g., group doesn't exist)
-	suite.mockGroupService.On("GetGroup", "test-group-id").
+	suite.mockGroupService.On("GetGroup", mock.Anything, "test-group-id").
 		Return(nil, &serviceerror.ServiceError{Error: "Group not found"})
 
 	// Role assignment should still be attempted
@@ -1050,7 +1050,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_BothGroupAndRole
 	suite.mockUserService.On("CreateUser", mock.Anything, mock.Anything).Return(createdUser, nil)
 
 	// Mock group retrieval fails
-	suite.mockGroupService.On("GetGroup", "test-group-id").
+	suite.mockGroupService.On("GetGroup", mock.Anything, "test-group-id").
 		Return(nil, &serviceerror.ServiceError{Error: "Group not found"})
 
 	// Mock role assignment also fails
@@ -1111,8 +1111,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_RoleAssignmentFa
 		OrganizationUnitID: testOUID,
 		Members:            []group.Member{},
 	}
-	suite.mockGroupService.On("GetGroup", "test-group-id").Return(existingGroup, nil)
-	suite.mockGroupService.On("UpdateGroup", "test-group-id", mock.Anything).
+	suite.mockGroupService.On("GetGroup", mock.Anything, "test-group-id").Return(existingGroup, nil)
+	suite.mockGroupService.On("UpdateGroup", mock.Anything, "test-group-id", mock.Anything).
 		Return(existingGroup, nil)
 
 	// Role assignment fails (e.g., role doesn't exist)
@@ -1177,10 +1177,10 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_GroupWithExistingMembers
 			{ID: "existing-user-2", Type: group.MemberTypeUser},
 		},
 	}
-	suite.mockGroupService.On("GetGroup", "test-group-id").Return(existingGroup, nil)
+	suite.mockGroupService.On("GetGroup", mock.Anything, "test-group-id").Return(existingGroup, nil)
 
 	// Verify UpdateGroup is called with all 3 members (2 existing + 1 new)
-	suite.mockGroupService.On("UpdateGroup", "test-group-id",
+	suite.mockGroupService.On("UpdateGroup", mock.Anything, "test-group-id",
 		mock.MatchedBy(func(req group.UpdateGroupRequest) bool {
 			if len(req.Members) != 3 {
 				return false
@@ -1255,8 +1255,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_AuthFlow_AutoProvisionin
 		OrganizationUnitID: testOUID,
 		Members:            []group.Member{},
 	}
-	suite.mockGroupService.On("GetGroup", "test-group-id").Return(existingGroup, nil)
-	suite.mockGroupService.On("UpdateGroup", "test-group-id", mock.Anything).
+	suite.mockGroupService.On("GetGroup", mock.Anything, "test-group-id").Return(existingGroup, nil)
+	suite.mockGroupService.On("UpdateGroup", mock.Anything, "test-group-id", mock.Anything).
 		Return(existingGroup, nil)
 	suite.mockRoleService.On("AddAssignments", mock.Anything, "test-role-id", mock.Anything).Return(nil)
 
@@ -1321,10 +1321,10 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success_WithGroupAndRole
 		OrganizationUnitID: testOUID,
 		Members:            []group.Member{},
 	}
-	suite.mockGroupService.On("GetGroup", "test-group-id").Return(existingGroup, nil)
+	suite.mockGroupService.On("GetGroup", mock.Anything, "test-group-id").Return(existingGroup, nil)
 
 	// Mock UpdateGroup - should be called with user added to members
-	suite.mockGroupService.On("UpdateGroup", "test-group-id",
+	suite.mockGroupService.On("UpdateGroup", mock.Anything, "test-group-id",
 		mock.MatchedBy(func(req group.UpdateGroupRequest) bool {
 			return len(req.Members) == 1 &&
 				req.Members[0].ID == testNewUserID &&

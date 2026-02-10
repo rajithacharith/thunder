@@ -397,7 +397,7 @@ func (p *provisioningExecutor) assignGroupsAndRoles(
 	var groupErr, roleErr error
 	// Assign to group
 	if groupID != "" {
-		if err := p.assignToGroup(userID, groupID, logger); err != nil {
+		if err := p.assignToGroup(context.TODO(), userID, groupID, logger); err != nil {
 			groupErr = fmt.Errorf("failed to assign user to group %s: %w", groupID, err)
 		}
 	}
@@ -460,13 +460,18 @@ func (p *provisioningExecutor) getRoleToAssign(ctx *core.NodeContext) string {
 }
 
 // assignToGroup adds the user to the specified group.
-func (p *provisioningExecutor) assignToGroup(userID string, groupID string, logger *log.Logger) error {
+func (p *provisioningExecutor) assignToGroup(
+	ctx context.Context,
+	userID string,
+	groupID string,
+	logger *log.Logger,
+) error {
 	logger.Debug("Adding user to group",
 		log.String("userID", userID),
 		log.String("groupID", groupID))
 
 	// Get existing group to retrieve current members
-	existingGroup, svcErr := p.groupService.GetGroup(groupID)
+	existingGroup, svcErr := p.groupService.GetGroup(ctx, groupID)
 	if svcErr != nil {
 		logger.Error("Failed to retrieve group for assignment",
 			log.String("groupID", groupID),
@@ -490,7 +495,7 @@ func (p *provisioningExecutor) assignToGroup(userID string, groupID string, logg
 		Members:            updatedMembers,
 	}
 
-	_, svcErr = p.groupService.UpdateGroup(groupID, updateRequest)
+	_, svcErr = p.groupService.UpdateGroup(ctx, groupID, updateRequest)
 	if svcErr != nil {
 		logger.Error("Failed to update group with new member",
 			log.String("groupID", groupID),

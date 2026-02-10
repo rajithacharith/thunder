@@ -46,6 +46,8 @@ func newGroupHandler(groupService GroupServiceInterface) *groupHandler {
 
 // HandleGroupListRequest handles the list groups request.
 func (gh *groupHandler) HandleGroupListRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
@@ -54,7 +56,7 @@ func (gh *groupHandler) HandleGroupListRequest(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	groupListResponse, svcErr := gh.groupService.GetGroupList(limit, offset)
+	groupListResponse, svcErr := gh.groupService.GetGroupList(ctx, limit, offset)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
@@ -70,6 +72,8 @@ func (gh *groupHandler) HandleGroupListRequest(w http.ResponseWriter, r *http.Re
 
 // HandleGroupListByPathRequest handles the list groups by OU path request.
 func (gh *groupHandler) HandleGroupListByPathRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	path, pathValidationFailed := extractAndValidatePath(w, r)
@@ -83,7 +87,7 @@ func (gh *groupHandler) HandleGroupListByPathRequest(w http.ResponseWriter, r *h
 		return
 	}
 
-	groupListResponse, svcErr := gh.groupService.GetGroupsByPath(path, limit, offset)
+	groupListResponse, svcErr := gh.groupService.GetGroupsByPath(ctx, path, limit, offset)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
@@ -99,6 +103,8 @@ func (gh *groupHandler) HandleGroupListByPathRequest(w http.ResponseWriter, r *h
 
 // HandleGroupPostRequest handles the create group request.
 func (gh *groupHandler) HandleGroupPostRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	createRequest, err := sysutils.DecodeJSONBody[CreateGroupRequest](r)
@@ -113,7 +119,7 @@ func (gh *groupHandler) HandleGroupPostRequest(w http.ResponseWriter, r *http.Re
 	}
 
 	sanitizedRequest := gh.sanitizeCreateGroupRequest(createRequest)
-	createdGroup, svcErr := gh.groupService.CreateGroup(sanitizedRequest)
+	createdGroup, svcErr := gh.groupService.CreateGroup(ctx, sanitizedRequest)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
@@ -126,6 +132,8 @@ func (gh *groupHandler) HandleGroupPostRequest(w http.ResponseWriter, r *http.Re
 
 // HandleGroupPostByPathRequest handles the create group by OU path request.
 func (gh *groupHandler) HandleGroupPostByPathRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	path, pathValidationFailed := extractAndValidatePath(w, r)
@@ -144,7 +152,7 @@ func (gh *groupHandler) HandleGroupPostByPathRequest(w http.ResponseWriter, r *h
 		return
 	}
 
-	group, svcErr := gh.groupService.CreateGroupByPath(path, *createRequest)
+	group, svcErr := gh.groupService.CreateGroupByPath(ctx, path, *createRequest)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
@@ -157,6 +165,8 @@ func (gh *groupHandler) HandleGroupPostByPathRequest(w http.ResponseWriter, r *h
 
 // HandleGroupGetRequest handles the get group by id request.
 func (gh *groupHandler) HandleGroupGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
@@ -170,7 +180,7 @@ func (gh *groupHandler) HandleGroupGetRequest(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	group, svcErr := gh.groupService.GetGroup(id)
+	group, svcErr := gh.groupService.GetGroup(ctx, id)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
@@ -183,6 +193,8 @@ func (gh *groupHandler) HandleGroupGetRequest(w http.ResponseWriter, r *http.Req
 
 // HandleGroupPutRequest handles the update group request.
 func (gh *groupHandler) HandleGroupPutRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
@@ -208,7 +220,7 @@ func (gh *groupHandler) HandleGroupPutRequest(w http.ResponseWriter, r *http.Req
 	}
 
 	sanitizedRequest := gh.sanitizeUpdateGroupRequest(updateRequest)
-	group, svcErr := gh.groupService.UpdateGroup(id, sanitizedRequest)
+	group, svcErr := gh.groupService.UpdateGroup(ctx, id, sanitizedRequest)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
@@ -221,6 +233,8 @@ func (gh *groupHandler) HandleGroupPutRequest(w http.ResponseWriter, r *http.Req
 
 // HandleGroupDeleteRequest handles the delete group request.
 func (gh *groupHandler) HandleGroupDeleteRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
@@ -234,7 +248,7 @@ func (gh *groupHandler) HandleGroupDeleteRequest(w http.ResponseWriter, r *http.
 		return
 	}
 
-	svcErr := gh.groupService.DeleteGroup(id)
+	svcErr := gh.groupService.DeleteGroup(ctx, id)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
@@ -246,6 +260,8 @@ func (gh *groupHandler) HandleGroupDeleteRequest(w http.ResponseWriter, r *http.
 
 // HandleGroupMembersGetRequest handles the get group members request.
 func (gh *groupHandler) HandleGroupMembersGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
@@ -265,7 +281,7 @@ func (gh *groupHandler) HandleGroupMembersGetRequest(w http.ResponseWriter, r *h
 		return
 	}
 
-	memberListResponse, svcErr := gh.groupService.GetGroupMembers(id, limit, offset)
+	memberListResponse, svcErr := gh.groupService.GetGroupMembers(ctx, id, limit, offset)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return

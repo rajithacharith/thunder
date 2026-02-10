@@ -607,7 +607,7 @@ func (rs *roleService) validateAssignmentIDs(
 
 	// Validate group IDs using group service
 	if len(groupIDs) > 0 {
-		if err := rs.groupService.ValidateGroupIDs(groupIDs); err != nil {
+		if err := rs.groupService.ValidateGroupIDs(ctx, groupIDs); err != nil {
 			if err.Code == group.ErrorInvalidGroupMemberID.Code {
 				logger.Debug("Invalid group member IDs found")
 				return &ErrorInvalidAssignmentID
@@ -682,7 +682,7 @@ func (rs *roleService) getDisplayNameForAssignment(ctx context.Context, assignme
 		return userResp.ID, nil
 
 	case AssigneeTypeGroup:
-		groupResp, svcErr := rs.groupService.GetGroup(assignment.ID)
+		groupResp, svcErr := rs.groupService.GetGroup(ctx, assignment.ID)
 		if svcErr != nil {
 			return "", fmt.Errorf("failed to get group: %w", errors.New(svcErr.Error))
 		}

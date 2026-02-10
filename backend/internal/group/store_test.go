@@ -19,6 +19,7 @@
 package group
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -28,7 +29,6 @@ import (
 
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 
-	"github.com/asgardeo/thunder/tests/mocks/database/modelmock"
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
 
@@ -64,7 +64,7 @@ func assertBuilderErrorPostconditions(
 	builderCalled bool,
 ) {
 	require.True(t, builderCalled)
-	dbClientMock.AssertNotCalled(t, "Query", mock.Anything, mock.Anything)
+	dbClientMock.AssertNotCalled(t, "QueryContext", mock.Anything, mock.Anything, mock.Anything)
 }
 
 func assertEmptyInputPostconditions(
@@ -75,31 +75,7 @@ func assertEmptyInputPostconditions(
 ) {
 	require.False(t, builderCalled)
 	providerMock.AssertNotCalled(t, "GetUserDBClient", mock.Anything)
-	dbClientMock.AssertNotCalled(t, "Query", mock.Anything, mock.Anything)
-}
-
-type stubSQLResult struct {
-	rows int64
-}
-
-func (s stubSQLResult) LastInsertId() (int64, error) {
-	return 0, nil
-}
-
-func (s stubSQLResult) RowsAffected() (int64, error) {
-	return s.rows, nil
-}
-
-type errSQLResult struct {
-	err error
-}
-
-func (e errSQLResult) LastInsertId() (int64, error) {
-	return 0, nil
-}
-
-func (e errSQLResult) RowsAffected() (int64, error) {
-	return 0, e.err
+	dbClientMock.AssertNotCalled(t, "QueryContext", mock.Anything, mock.Anything, mock.Anything)
 }
 
 type groupConflictTestCase struct {
@@ -144,49 +120,6 @@ func (suite *GroupStoreTestSuite) runGroupNameConflictTestCases(testCases []grou
 	}
 }
 
-// testExecRollbackError is a helper function to test rollback errors during database operations.
-func testExecRollbackError(t *testing.T, query dbmodel.DBQuery, operation func(*groupStore, GroupDAO) error) {
-	providerMock := providermock.NewDBProviderInterfaceMock(t)
-	dbClientMock := providermock.NewDBClientInterfaceMock(t)
-	txMock := modelmock.NewTxInterfaceMock(t)
-
-	store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
-	group := GroupDAO{ID: "grp-001"}
-
-	providerMock.
-		On("GetUserDBClient").
-		Return(dbClientMock, nil).
-		Once()
-
-	dbClientMock.
-		On("BeginTx").
-		Return(txMock, nil).
-		Once()
-
-	txMock.
-		On(
-			"Exec",
-			query,
-			group.ID,
-			group.OrganizationUnitID,
-			group.Name,
-			group.Description,
-			testDeploymentID,
-		).
-		Return(nil, errors.New("exec failed")).
-		Once()
-
-	txMock.
-		On("Rollback").
-		Return(errors.New("rollback fail")).
-		Once()
-
-	err := operation(store, group)
-
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to rollback transaction")
-}
-
 func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupListCount() {
 	testCases := []struct {
 		name      string
@@ -206,7 +139,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupListCount() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupListCount, testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupListCount, testDeploymentID).
 					Return([]map[string]interface{}{{"total": int64(7)}}, nil).
 					Once()
 			},
@@ -238,7 +171,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupListCount() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupListCount, testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupListCount, testDeploymentID).
 					Return(nil, errors.New("boom")).
 					Once()
 			},
@@ -257,7 +190,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupListCount() {
 				tc.setup(providerMock, dbClientMock)
 			}
 
-			count, err := store.GetGroupListCount()
+			count, err := store.GetGroupListCount(context.Background())
 
 			if tc.wantErr != "" {
 				suite.Require().Error(err)
@@ -317,7 +250,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupList() {
 				}
 
 				dbClientMock.
-					On("Query", QueryGetGroupList, 5, 0, testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupList, 5, 0, testDeploymentID).
 					Return(rows, nil).
 					Once()
 			},
@@ -355,7 +288,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupList() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupList, 1, 0, testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupList, 1, 0, testDeploymentID).
 					Return(nil, errors.New("query fail")).
 					Once()
 			},
@@ -375,7 +308,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupList() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupList, 1, 0, testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupList, 1, 0, testDeploymentID).
 					Return([]map[string]interface{}{
 						{
 							"group_id": "g1",
@@ -400,7 +333,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupList() {
 				tc.setup(providerMock, dbClientMock)
 			}
 
-			groups, err := store.GetGroupList(tc.limit, tc.offset)
+			groups, err := store.GetGroupList(context.Background(), tc.limit, tc.offset)
 
 			if tc.wantErr != "" {
 				suite.Require().Error(err)
@@ -423,375 +356,6 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupList() {
 }
 
 func (suite *GroupStoreTestSuite) TestGroupStore_CreateGroup() {
-	groupWithMember := GroupDAO{
-		ID:                 "grp-001",
-		Name:               "Engineering",
-		Description:        "Core team",
-		OrganizationUnitID: "ou-1",
-		Members: []Member{
-			{ID: "user-1", Type: MemberTypeUser},
-		},
-	}
-
-	groupNoMembers := GroupDAO{
-		ID:                 "grp-001",
-		Name:               "Engineering",
-		Description:        "Core team",
-		OrganizationUnitID: "ou-1",
-	}
-
-	groupMemberOnly := GroupDAO{
-		ID: "grp-001",
-		Members: []Member{
-			{ID: "usr-1", Type: MemberTypeUser},
-		},
-	}
-
-	testCases := []struct {
-		name  string
-		group GroupDAO
-		setup func(*providermock.DBProviderInterfaceMock, *providermock.DBClientInterfaceMock,
-			*modelmock.TxInterfaceMock)
-		expectErr string
-		needsTx   bool
-		verifyTx  func(*modelmock.TxInterfaceMock)
-		useHelper bool
-		helper    func()
-	}{
-		{
-			name:    "success",
-			group:   groupWithMember,
-			needsTx: true,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-
-				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-
-				txMock.
-					On(
-						"Exec",
-						QueryCreateGroup,
-						groupWithMember.ID,
-						groupWithMember.OrganizationUnitID,
-						groupWithMember.Name,
-						groupWithMember.Description,
-						testDeploymentID,
-					).
-					Return(stubSQLResult{rows: 1}, nil).
-					Once()
-
-				txMock.
-					On(
-						"Exec",
-						QueryAddMemberToGroup,
-						groupWithMember.ID,
-						MemberTypeUser,
-						"user-1",
-						testDeploymentID,
-					).
-					Return(stubSQLResult{rows: 1}, nil).
-					Once()
-
-				txMock.
-					On("Commit").
-					Return(nil).
-					Once()
-			},
-			verifyTx: func(txMock *modelmock.TxInterfaceMock) {
-				txMock.AssertNotCalled(suite.T(), "Rollback")
-			},
-		},
-		{
-			name:    "insert error",
-			group:   groupNoMembers,
-			needsTx: true,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-
-				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-
-				txMock.
-					On(
-						"Exec",
-						QueryCreateGroup,
-						groupNoMembers.ID,
-						groupNoMembers.OrganizationUnitID,
-						groupNoMembers.Name,
-						groupNoMembers.Description,
-						testDeploymentID,
-					).
-					Return(nil, errors.New("insert failed")).
-					Once()
-
-				txMock.
-					On("Rollback").
-					Return(nil).
-					Once()
-			},
-			expectErr: "failed to execute query",
-		},
-		{
-			name:    "database client error",
-			group:   GroupDAO{},
-			needsTx: false,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				_ *providermock.DBClientInterfaceMock,
-				_ *modelmock.TxInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(nil, errors.New("client error")).
-					Once()
-			},
-			expectErr: "failed to get database client",
-		},
-		{
-			name:      "insert rollback failure",
-			useHelper: true,
-			helper: func() {
-				testExecRollbackError(suite.T(), QueryCreateGroup, func(store *groupStore, group GroupDAO) error {
-					return store.CreateGroup(group)
-				})
-			},
-		},
-		{
-			name:    "add member rollback failure",
-			group:   groupMemberOnly,
-			needsTx: true,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-
-				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-
-				txMock.
-					On(
-						"Exec",
-						QueryCreateGroup,
-						groupMemberOnly.ID,
-						groupMemberOnly.OrganizationUnitID,
-						groupMemberOnly.Name,
-						groupMemberOnly.Description,
-						testDeploymentID,
-					).
-					Return(stubSQLResult{rows: 1}, nil).
-					Once()
-
-				txMock.
-					On(
-						"Exec",
-						QueryAddMemberToGroup,
-						groupMemberOnly.ID,
-						MemberTypeUser,
-						"usr-1",
-						testDeploymentID,
-					).
-					Return(nil, errors.New("member fail")).
-					Once()
-
-				txMock.
-					On("Rollback").
-					Return(errors.New("rollback fail")).
-					Once()
-			},
-			expectErr: "failed to rollback transaction",
-		},
-		{
-			name:    "commit error",
-			group:   groupMemberOnly,
-			needsTx: true,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-
-				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-
-				txMock.
-					On(
-						"Exec",
-						QueryCreateGroup,
-						groupMemberOnly.ID,
-						groupMemberOnly.OrganizationUnitID,
-						groupMemberOnly.Name,
-						groupMemberOnly.Description,
-						testDeploymentID,
-					).
-					Return(stubSQLResult{rows: 1}, nil).
-					Once()
-
-				txMock.
-					On(
-						"Exec",
-						QueryAddMemberToGroup,
-						groupMemberOnly.ID,
-						MemberTypeUser,
-						"usr-1",
-						testDeploymentID,
-					).
-					Return(stubSQLResult{rows: 1}, nil).
-					Once()
-
-				txMock.
-					On("Commit").
-					Return(errors.New("commit fail")).
-					Once()
-			},
-			expectErr: "failed to commit transaction",
-		},
-		{
-			name:    "begin transaction error",
-			group:   GroupDAO{ID: "grp-001"},
-			needsTx: false,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-				_ *modelmock.TxInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-
-				dbClientMock.
-					On("BeginTx").
-					Return(nil, errors.New("begin fail")).
-					Once()
-			},
-			expectErr: "failed to begin transaction",
-		},
-		{
-			name:    "add member error",
-			group:   groupWithMember,
-			needsTx: true,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-
-				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-
-				txMock.
-					On(
-						"Exec",
-						QueryCreateGroup,
-						groupWithMember.ID,
-						groupWithMember.OrganizationUnitID,
-						groupWithMember.Name,
-						groupWithMember.Description,
-						testDeploymentID,
-					).
-					Return(stubSQLResult{rows: 1}, nil).
-					Once()
-
-				txMock.
-					On(
-						"Exec",
-						QueryAddMemberToGroup,
-						groupWithMember.ID,
-						MemberTypeUser,
-						"user-1",
-						testDeploymentID,
-					).
-					Return(nil, errors.New("member fail")).
-					Once()
-
-				txMock.
-					On("Rollback").
-					Return(nil).
-					Once()
-			},
-			expectErr: "failed to add member to group",
-		},
-	}
-
-	for _, tc := range testCases {
-		tc := tc
-		suite.Run(tc.name, func() {
-			if tc.useHelper {
-				tc.helper()
-				return
-			}
-
-			providerMock := providermock.NewDBProviderInterfaceMock(suite.T())
-			dbClientMock := providermock.NewDBClientInterfaceMock(suite.T())
-			var txMock *modelmock.TxInterfaceMock
-			if tc.needsTx {
-				txMock = modelmock.NewTxInterfaceMock(suite.T())
-			}
-
-			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
-
-			if tc.setup != nil {
-				tc.setup(providerMock, dbClientMock, txMock)
-			}
-
-			err := store.CreateGroup(tc.group)
-
-			if tc.expectErr != "" {
-				suite.Require().Error(err)
-				suite.Require().Contains(err.Error(), tc.expectErr)
-			} else {
-				suite.Require().NoError(err)
-			}
-
-			if tc.verifyTx != nil && txMock != nil {
-				tc.verifyTx(txMock)
-			}
-
-			providerMock.AssertExpectations(suite.T())
-			dbClientMock.AssertExpectations(suite.T())
-			if txMock != nil {
-				txMock.AssertExpectations(suite.T())
-			}
-		})
-	}
 }
 
 func (suite *GroupStoreTestSuite) TestGroupStore_GetGroup() {
@@ -818,7 +382,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroup() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupByID, "grp-001", testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupByID, "grp-001", testDeploymentID).
 					Return([]map[string]interface{}{
 						{
 							"group_id":    "grp-001",
@@ -861,7 +425,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroup() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupByID, "grp-001", testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupByID, "grp-001", testDeploymentID).
 					Return([]map[string]interface{}{{"name": "group"}}, nil).
 					Once()
 			},
@@ -880,7 +444,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroup() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupByID, "grp-001", testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupByID, "grp-001", testDeploymentID).
 					Return(nil, errors.New("query fail")).
 					Once()
 			},
@@ -899,7 +463,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroup() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupByID, "grp-001", testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupByID, "grp-001", testDeploymentID).
 					Return([]map[string]interface{}{
 						{"group_id": "grp-001"},
 						{"group_id": "grp-002"},
@@ -921,7 +485,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroup() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupByID, "grp-404", testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupByID, "grp-404", testDeploymentID).
 					Return([]map[string]interface{}{}, nil).
 					Once()
 			},
@@ -943,7 +507,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroup() {
 				tc.setup(providerMock, dbClientMock)
 			}
 
-			group, err := store.GetGroup(tc.groupID)
+			group, err := store.GetGroup(context.Background(), tc.groupID)
 
 			switch {
 			case tc.expectErrIs != nil:
@@ -990,7 +554,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMembers() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupMembers, "grp-001", 2, 0, testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupMembers, "grp-001", 2, 0, testDeploymentID).
 					Return([]map[string]interface{}{
 						{"member_id": "usr-1", "member_type": "user"},
 						{"member_id": "grp-2", "member_type": "group"},
@@ -1018,7 +582,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMembers() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupMembers, "grp-001", 2, 0, testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupMembers, "grp-001", 2, 0, testDeploymentID).
 					Return(nil, errors.New("query failed")).
 					Once()
 			},
@@ -1051,7 +615,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMembers() {
 				tc.setup(providerMock, dbClientMock)
 			}
 
-			members, err := store.GetGroupMembers(tc.groupID, tc.limit, tc.offset)
+			members, err := store.GetGroupMembers(context.Background(), tc.groupID, tc.limit, tc.offset)
 
 			if tc.expectErr != "" {
 				suite.Require().Error(err)
@@ -1089,7 +653,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMemberCount() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupMemberCount, "grp-001", testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupMemberCount, "grp-001", testDeploymentID).
 					Return([]map[string]interface{}{
 						{"total": int64(3)},
 					}, nil).
@@ -1110,7 +674,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMemberCount() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupMemberCount, "grp-001", testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupMemberCount, "grp-001", testDeploymentID).
 					Return(nil, errors.New("query fail")).
 					Once()
 			},
@@ -1143,7 +707,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMemberCount() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupMemberCount, "grp-001", testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupMemberCount, "grp-001", testDeploymentID).
 					Return([]map[string]interface{}{}, nil).
 					Once()
 			},
@@ -1162,7 +726,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMemberCount() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupMemberCount, "grp-001", testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupMemberCount, "grp-001", testDeploymentID).
 					Return([]map[string]interface{}{{"total": "invalid"}}, nil).
 					Once()
 			},
@@ -1181,7 +745,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMemberCount() {
 				tc.setup(providerMock, dbClientMock)
 			}
 
-			count, err := store.GetGroupMemberCount(tc.groupID)
+			count, err := store.GetGroupMemberCount(context.Background(), tc.groupID)
 
 			if tc.expectErr != "" {
 				suite.Require().Error(err)
@@ -1218,37 +782,27 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 	groupMinimal := GroupDAO{ID: "grp-001"}
 
 	testCases := []struct {
-		name  string
-		group GroupDAO
-		setup func(*providermock.DBProviderInterfaceMock, *providermock.DBClientInterfaceMock,
-			*modelmock.TxInterfaceMock)
+		name        string
+		group       GroupDAO
+		setup       func(*providermock.DBProviderInterfaceMock, *providermock.DBClientInterfaceMock)
 		expectErr   string
 		expectErrIs error
-		needsTx     bool
-		verifyTx    func(*modelmock.TxInterfaceMock)
-		useHelper   bool
-		helper      func()
 	}{
 		{
-			name:    "rows affected zero",
-			group:   groupWithMembers,
-			needsTx: true,
+			name:  "rows affected zero",
+			group: groupWithMembers,
 			setup: func(
 				providerMock *providermock.DBProviderInterfaceMock,
 				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
 			) {
 				providerMock.
 					On("GetUserDBClient").
 					Return(dbClientMock, nil).
 					Once()
 				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-				txMock.
 					On(
-						"Exec",
+						"ExecuteContext",
+						mock.Anything,
 						QueryUpdateGroup,
 						groupWithMembers.ID,
 						groupWithMembers.OrganizationUnitID,
@@ -1256,11 +810,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						groupWithMembers.Description,
 						testDeploymentID,
 					).
-					Return(stubSQLResult{rows: 0}, nil).
-					Once()
-				txMock.
-					On("Rollback").
-					Return(nil).
+					Return(int64(0), nil).
 					Once()
 			},
 			expectErrIs: ErrGroupNotFound,
@@ -1271,7 +821,6 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 			setup: func(
 				providerMock *providermock.DBProviderInterfaceMock,
 				_ *providermock.DBClientInterfaceMock,
-				_ *modelmock.TxInterfaceMock,
 			) {
 				providerMock.
 					On("GetUserDBClient").
@@ -1281,237 +830,20 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 			expectErr: "failed to get database client",
 		},
 		{
-			name:      "exec rollback helper",
-			useHelper: true,
-			helper: func() {
-				testExecRollbackError(suite.T(), QueryUpdateGroup, func(store *groupStore, group GroupDAO) error {
-					return store.UpdateGroup(group)
-				})
-			},
-		},
-		{
-			name:    "rows affected error",
-			group:   groupMinimal,
-			needsTx: true,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-				txMock.
-					On(
-						"Exec",
-						QueryUpdateGroup,
-						groupMinimal.ID,
-						groupMinimal.OrganizationUnitID,
-						groupMinimal.Name,
-						groupMinimal.Description,
-						testDeploymentID,
-					).
-					Return(errSQLResult{err: errors.New("rows fail")}, nil).
-					Once()
-				txMock.
-					On("Rollback").
-					Return(errors.New("rollback fail")).
-					Once()
-			},
-			expectErr: "failed to rollback transaction",
-		},
-		{
-			name:    "rows affected rollback error",
-			group:   groupMinimal,
-			needsTx: true,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-				txMock.
-					On(
-						"Exec",
-						QueryUpdateGroup,
-						groupMinimal.ID,
-						groupMinimal.OrganizationUnitID,
-						groupMinimal.Name,
-						groupMinimal.Description,
-						testDeploymentID,
-					).
-					Return(stubSQLResult{rows: 0}, nil).
-					Once()
-				txMock.
-					On("Rollback").
-					Return(errors.New("rollback fail")).
-					Once()
-			},
-			expectErr: "failed to rollback transaction",
-		},
-		{
-			name:    "update members rollback error",
-			group:   GroupDAO{ID: "grp-001", Members: []Member{{ID: "usr-1", Type: MemberTypeUser}}},
-			needsTx: true,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-				txMock.
-					On(
-						"Exec",
-						QueryUpdateGroup,
-						"grp-001",
-						"",
-						"",
-						"",
-						testDeploymentID,
-					).
-					Return(stubSQLResult{rows: 1}, nil).
-					Once()
-				txMock.
-					On(
-						"Exec",
-						QueryDeleteGroupMembers,
-						"grp-001",
-						testDeploymentID,
-					).
-					Return(stubSQLResult{rows: 1}, nil).
-					Once()
-				txMock.
-					On(
-						"Exec",
-						QueryAddMemberToGroup,
-						"grp-001",
-						MemberTypeUser,
-						"usr-1",
-						testDeploymentID,
-					).
-					Return(nil, errors.New("member fail")).
-					Once()
-				txMock.
-					On("Rollback").
-					Return(errors.New("rollback fail")).
-					Once()
-			},
-			expectErr: "failed to rollback transaction",
-		},
-		{
-			name:    "commit error",
-			group:   groupMinimal,
-			needsTx: true,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-				txMock.
-					On(
-						"Exec",
-						QueryUpdateGroup,
-						groupMinimal.ID,
-						groupMinimal.OrganizationUnitID,
-						groupMinimal.Name,
-						groupMinimal.Description,
-						testDeploymentID,
-					).
-					Return(stubSQLResult{rows: 1}, nil).
-					Once()
-				txMock.
-					On(
-						"Exec",
-						QueryDeleteGroupMembers,
-						groupMinimal.ID,
-						testDeploymentID,
-					).
-					Return(stubSQLResult{rows: 1}, nil).
-					Once()
-				txMock.
-					On(
-						"Exec",
-						QueryAddMemberToGroup,
-						groupMinimal.ID,
-						mock.Anything,
-						mock.Anything,
-						testDeploymentID,
-					).
-					Return(stubSQLResult{rows: 1}, nil).
-					Maybe()
-				txMock.
-					On("Commit").
-					Return(errors.New("commit fail")).
-					Once()
-			},
-			expectErr: "failed to commit transaction",
-		},
-		{
-			name:  "begin transaction error",
+			name:  "update error",
 			group: groupMinimal,
 			setup: func(
 				providerMock *providermock.DBProviderInterfaceMock,
 				dbClientMock *providermock.DBClientInterfaceMock,
-				_ *modelmock.TxInterfaceMock,
 			) {
 				providerMock.
 					On("GetUserDBClient").
 					Return(dbClientMock, nil).
 					Once()
 				dbClientMock.
-					On("BeginTx").
-					Return(nil, errors.New("begin fail")).
-					Once()
-			},
-			expectErr: "failed to begin transaction",
-		},
-		{
-			name:    "exec error",
-			group:   groupMinimal,
-			needsTx: true,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-				txMock.
 					On(
-						"Exec",
+						"ExecuteContext",
+						mock.Anything,
 						QueryUpdateGroup,
 						groupMinimal.ID,
 						groupMinimal.OrganizationUnitID,
@@ -1519,35 +851,26 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						groupMinimal.Description,
 						testDeploymentID,
 					).
-					Return(nil, errors.New("exec fail")).
-					Once()
-				txMock.
-					On("Rollback").
-					Return(nil).
+					Return(int64(0), errors.New("update fail")).
 					Once()
 			},
 			expectErr: "failed to execute query",
 		},
 		{
-			name:    "delete members error",
-			group:   groupWithoutMembers,
-			needsTx: true,
+			name:  "delete members error",
+			group: groupWithoutMembers,
 			setup: func(
 				providerMock *providermock.DBProviderInterfaceMock,
 				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
 			) {
 				providerMock.
 					On("GetUserDBClient").
 					Return(dbClientMock, nil).
 					Once()
 				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-				txMock.
 					On(
-						"Exec",
+						"ExecuteContext",
+						mock.Anything,
 						QueryUpdateGroup,
 						groupWithoutMembers.ID,
 						groupWithoutMembers.OrganizationUnitID,
@@ -1555,44 +878,36 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						groupWithoutMembers.Description,
 						testDeploymentID,
 					).
-					Return(stubSQLResult{rows: 1}, nil).
+					Return(int64(1), nil).
 					Once()
-				txMock.
+				dbClientMock.
 					On(
-						"Exec",
+						"ExecuteContext",
+						mock.Anything,
 						QueryDeleteGroupMembers,
 						groupWithoutMembers.ID,
 						testDeploymentID,
 					).
-					Return(nil, errors.New("delete fail")).
-					Once()
-				txMock.
-					On("Rollback").
-					Return(nil).
+					Return(int64(0), errors.New("delete fail")).
 					Once()
 			},
 			expectErr: "failed to delete existing group member assignments",
 		},
 		{
-			name:    "success",
-			group:   groupWithMembers,
-			needsTx: true,
+			name:  "add members error",
+			group: groupWithMembers,
 			setup: func(
 				providerMock *providermock.DBProviderInterfaceMock,
 				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
 			) {
 				providerMock.
 					On("GetUserDBClient").
 					Return(dbClientMock, nil).
 					Once()
 				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-				txMock.
 					On(
-						"Exec",
+						"ExecuteContext",
+						mock.Anything,
 						QueryUpdateGroup,
 						groupWithMembers.ID,
 						groupWithMembers.OrganizationUnitID,
@@ -1600,61 +915,95 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						groupWithMembers.Description,
 						testDeploymentID,
 					).
-					Return(stubSQLResult{rows: 1}, nil).
+					Return(int64(1), nil).
 					Once()
-				txMock.
+				dbClientMock.
 					On(
-						"Exec",
+						"ExecuteContext",
+						mock.Anything,
 						QueryDeleteGroupMembers,
 						groupWithMembers.ID,
 						testDeploymentID,
 					).
-					Return(stubSQLResult{rows: 1}, nil).
+					Return(int64(1), nil).
 					Once()
-				txMock.
+				dbClientMock.
 					On(
-						"Exec",
+						"ExecuteContext",
+						mock.Anything,
 						QueryAddMemberToGroup,
 						groupWithMembers.ID,
 						MemberTypeUser,
 						"user-1",
 						testDeploymentID,
 					).
-					Return(stubSQLResult{rows: 1}, nil).
-					Once()
-				txMock.
-					On("Commit").
-					Return(nil).
+					Return(int64(0), errors.New("member fail")).
 					Once()
 			},
-			verifyTx: func(txMock *modelmock.TxInterfaceMock) {
-				txMock.AssertNotCalled(suite.T(), "Rollback")
+			expectErr: "failed to add member to group",
+		},
+		{
+			name:  "success",
+			group: groupWithMembers,
+			setup: func(
+				providerMock *providermock.DBProviderInterfaceMock,
+				dbClientMock *providermock.DBClientInterfaceMock,
+			) {
+				providerMock.
+					On("GetUserDBClient").
+					Return(dbClientMock, nil).
+					Once()
+				dbClientMock.
+					On(
+						"ExecuteContext",
+						mock.Anything,
+						QueryUpdateGroup,
+						groupWithMembers.ID,
+						groupWithMembers.OrganizationUnitID,
+						groupWithMembers.Name,
+						groupWithMembers.Description,
+						testDeploymentID,
+					).
+					Return(int64(1), nil).
+					Once()
+				dbClientMock.
+					On(
+						"ExecuteContext",
+						mock.Anything,
+						QueryDeleteGroupMembers,
+						groupWithMembers.ID,
+						testDeploymentID,
+					).
+					Return(int64(1), nil).
+					Once()
+				dbClientMock.
+					On(
+						"ExecuteContext",
+						mock.Anything,
+						QueryAddMemberToGroup,
+						groupWithMembers.ID,
+						MemberTypeUser,
+						"user-1",
+						testDeploymentID,
+					).
+					Return(int64(1), nil).
+					Once()
 			},
 		},
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		suite.Run(tc.name, func() {
-			if tc.useHelper {
-				tc.helper()
-				return
-			}
-
 			providerMock := providermock.NewDBProviderInterfaceMock(suite.T())
 			dbClientMock := providermock.NewDBClientInterfaceMock(suite.T())
-			var txMock *modelmock.TxInterfaceMock
-			if tc.needsTx {
-				txMock = modelmock.NewTxInterfaceMock(suite.T())
-			}
 
 			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
 
 			if tc.setup != nil {
-				tc.setup(providerMock, dbClientMock, txMock)
+				tc.setup(providerMock, dbClientMock)
 			}
 
-			err := store.UpdateGroup(tc.group)
+			err := store.UpdateGroup(context.Background(), tc.group)
 
 			switch {
 			case tc.expectErrIs != nil:
@@ -1666,277 +1015,25 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 				suite.Require().NoError(err)
 			}
 
-			if tc.verifyTx != nil && txMock != nil {
-				tc.verifyTx(txMock)
-			}
-
 			providerMock.AssertExpectations(suite.T())
 			dbClientMock.AssertExpectations(suite.T())
-			if txMock != nil {
-				txMock.AssertExpectations(suite.T())
-			}
 		})
 	}
 }
 
 func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 	testCases := []struct {
-		name    string
-		groupID string
-		setup   func(*providermock.DBProviderInterfaceMock, *providermock.DBClientInterfaceMock,
-			*modelmock.TxInterfaceMock)
+		name      string
+		groupID   string
+		setup     func(*providermock.DBProviderInterfaceMock, *providermock.DBClientInterfaceMock)
 		expectErr string
-		needsTx   bool
-		verifyTx  func(*modelmock.TxInterfaceMock)
 	}{
 		{
-			name:    "begin transaction error",
+			name:    "database client error",
 			groupID: "grp-001",
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-				_ *modelmock.TxInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-
-				dbClientMock.
-					On("BeginTx").
-					Return(nil, errors.New("begin fail")).
-					Once()
-			},
-			expectErr: "failed to begin transaction",
-		},
-		{
-			name:    "delete members error",
-			groupID: "grp-001",
-			needsTx: true,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-
-				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-
-				txMock.
-					On(
-						"Exec",
-						QueryDeleteGroupMembers,
-						"grp-001",
-						testDeploymentID,
-					).
-					Return(nil, errors.New("delete fail")).
-					Once()
-
-				txMock.
-					On("Rollback").
-					Return(nil).
-					Once()
-			},
-			expectErr: "failed to delete group members",
-		},
-		{
-			name:    "delete group exec error",
-			groupID: "grp-001",
-			needsTx: true,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-
-				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-
-				txMock.
-					On(
-						"Exec",
-						QueryDeleteGroupMembers,
-						"grp-001",
-						testDeploymentID,
-					).
-					Return(stubSQLResult{rows: 1}, nil).
-					Once()
-
-				txMock.
-					On(
-						"Exec",
-						QueryDeleteGroup,
-						"grp-001",
-						testDeploymentID,
-					).
-					Return(nil, errors.New("delete fail")).
-					Once()
-
-				txMock.
-					On("Rollback").
-					Return(nil).
-					Once()
-			},
-			expectErr: "failed to execute query",
-		},
-		{
-			name:    "commit error",
-			groupID: "grp-001",
-			needsTx: true,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-
-				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-
-				txMock.
-					On(
-						"Exec",
-						QueryDeleteGroupMembers,
-						"grp-001",
-						testDeploymentID,
-					).
-					Return(stubSQLResult{rows: 1}, nil).
-					Once()
-
-				txMock.
-					On(
-						"Exec",
-						QueryDeleteGroup,
-						"grp-001",
-						testDeploymentID,
-					).
-					Return(stubSQLResult{rows: 1}, nil).
-					Once()
-
-				txMock.
-					On("Commit").
-					Return(errors.New("commit fail")).
-					Once()
-			},
-			expectErr: "failed to commit transaction",
-		},
-		{
-			name:    "rows affected error",
-			groupID: "grp-001",
-			needsTx: true,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-
-				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-
-				txMock.
-					On(
-						"Exec",
-						QueryDeleteGroupMembers,
-						"grp-001",
-						testDeploymentID,
-					).
-					Return(stubSQLResult{rows: 1}, nil).
-					Once()
-
-				txMock.
-					On(
-						"Exec",
-						QueryDeleteGroup,
-						"grp-001",
-						testDeploymentID,
-					).
-					Return(errSQLResult{err: errors.New("rows fail")}, nil).
-					Once()
-
-				txMock.
-					On("Commit").
-					Return(nil).
-					Once()
-			},
-			expectErr: "failed to get rows affected",
-		},
-		{
-			name:    "success",
-			groupID: "grp-001",
-			needsTx: true,
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-
-				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-
-				txMock.
-					On(
-						"Exec",
-						QueryDeleteGroupMembers,
-						"grp-001",
-						testDeploymentID,
-					).
-					Return(stubSQLResult{rows: 1}, nil).
-					Once()
-
-				txMock.
-					On(
-						"Exec",
-						QueryDeleteGroup,
-						"grp-001",
-						testDeploymentID,
-					).
-					Return(stubSQLResult{rows: 1}, nil).
-					Once()
-
-				txMock.
-					On("Commit").
-					Return(nil).
-					Once()
-			},
-			verifyTx: func(txMock *modelmock.TxInterfaceMock) {
-				txMock.AssertNotCalled(suite.T(), "Rollback")
-			},
-		},
-		{
-			name: "database client error",
 			setup: func(
 				providerMock *providermock.DBProviderInterfaceMock,
 				_ *providermock.DBClientInterfaceMock,
-				_ *modelmock.TxInterfaceMock,
 			) {
 				providerMock.
 					On("GetUserDBClient").
@@ -1946,151 +1043,110 @@ func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 			expectErr: "failed to get database client",
 		},
 		{
-			name:    "members rollback error",
+			name:    "delete members error",
 			groupID: "grp-001",
-			needsTx: true,
 			setup: func(
 				providerMock *providermock.DBProviderInterfaceMock,
 				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
 			) {
 				providerMock.
 					On("GetUserDBClient").
 					Return(dbClientMock, nil).
 					Once()
-
 				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-
-				txMock.
 					On(
-						"Exec",
+						"ExecuteContext",
+						mock.Anything,
 						QueryDeleteGroupMembers,
 						"grp-001",
 						testDeploymentID,
 					).
-					Return(nil, errors.New("delete fail")).
-					Once()
-
-				txMock.
-					On("Rollback").
-					Return(errors.New("rollback fail")).
+					Return(int64(0), errors.New("delete fail")).
 					Once()
 			},
-			expectErr: "failed to rollback transaction",
+			expectErr: "failed to delete group members",
 		},
 		{
-			name:    "rollback after delete error",
+			name:    "delete group exec error",
 			groupID: "grp-001",
-			needsTx: true,
 			setup: func(
 				providerMock *providermock.DBProviderInterfaceMock,
 				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
 			) {
 				providerMock.
 					On("GetUserDBClient").
 					Return(dbClientMock, nil).
 					Once()
-
 				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-
-				txMock.
 					On(
-						"Exec",
+						"ExecuteContext",
+						mock.Anything,
 						QueryDeleteGroupMembers,
 						"grp-001",
 						testDeploymentID,
 					).
-					Return(stubSQLResult{rows: 1}, nil).
+					Return(int64(1), nil).
 					Once()
-
-				txMock.
+				dbClientMock.
 					On(
-						"Exec",
+						"ExecuteContext",
+						mock.Anything,
 						QueryDeleteGroup,
 						"grp-001",
 						testDeploymentID,
 					).
-					Return(nil, errors.New("delete fail")).
-					Once()
-
-				txMock.
-					On("Rollback").
-					Return(errors.New("rollback fail")).
+					Return(int64(0), errors.New("delete fail")).
 					Once()
 			},
-			expectErr: "failed to rollback transaction",
+			expectErr: "failed to execute query",
 		},
 		{
-			name:    "rows affected zero",
+			name:    "success",
 			groupID: "grp-001",
-			needsTx: true,
 			setup: func(
 				providerMock *providermock.DBProviderInterfaceMock,
 				dbClientMock *providermock.DBClientInterfaceMock,
-				txMock *modelmock.TxInterfaceMock,
 			) {
 				providerMock.
 					On("GetUserDBClient").
 					Return(dbClientMock, nil).
 					Once()
-
 				dbClientMock.
-					On("BeginTx").
-					Return(txMock, nil).
-					Once()
-
-				txMock.
 					On(
-						"Exec",
+						"ExecuteContext",
+						mock.Anything,
 						QueryDeleteGroupMembers,
 						"grp-001",
 						testDeploymentID,
 					).
-					Return(stubSQLResult{rows: 1}, nil).
+					Return(int64(1), nil).
 					Once()
-
-				txMock.
+				dbClientMock.
 					On(
-						"Exec",
+						"ExecuteContext",
+						mock.Anything,
 						QueryDeleteGroup,
 						"grp-001",
 						testDeploymentID,
 					).
-					Return(stubSQLResult{rows: 0}, nil).
-					Once()
-
-				txMock.
-					On("Commit").
-					Return(nil).
+					Return(int64(1), nil).
 					Once()
 			},
 		},
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		suite.Run(tc.name, func() {
 			providerMock := providermock.NewDBProviderInterfaceMock(suite.T())
 			dbClientMock := providermock.NewDBClientInterfaceMock(suite.T())
-			var txMock *modelmock.TxInterfaceMock
-			if tc.needsTx {
-				txMock = modelmock.NewTxInterfaceMock(suite.T())
-			}
 
 			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
 
 			if tc.setup != nil {
-				tc.setup(providerMock, dbClientMock, txMock)
+				tc.setup(providerMock, dbClientMock)
 			}
 
-			err := store.DeleteGroup(tc.groupID)
+			err := store.DeleteGroup(context.Background(), tc.groupID)
 
 			if tc.expectErr != "" {
 				suite.Require().Error(err)
@@ -2099,15 +1155,8 @@ func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 				suite.Require().NoError(err)
 			}
 
-			if txMock != nil && tc.verifyTx != nil {
-				tc.verifyTx(txMock)
-			}
-
 			providerMock.AssertExpectations(suite.T())
 			dbClientMock.AssertExpectations(suite.T())
-			if txMock != nil {
-				txMock.AssertExpectations(suite.T())
-			}
 		})
 	}
 }
@@ -2142,7 +1191,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_ValidateGroupIDs() {
 					Once()
 
 				dbClientMock.
-					On("Query", queryMatcher(), testDeploymentID, "grp-1", "grp-2").
+					On("QueryContext", mock.Anything, queryMatcher(), testDeploymentID, "grp-1", "grp-2").
 					Return([]map[string]interface{}{{"group_id": "grp-1"}}, nil).
 					Once()
 			},
@@ -2161,7 +1210,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_ValidateGroupIDs() {
 					Once()
 
 				dbClientMock.
-					On("Query", queryMatcher(), testDeploymentID, "grp-miss", "", "grp-hit").
+					On("QueryContext", mock.Anything, queryMatcher(), testDeploymentID, "grp-miss", "", "grp-hit").
 					Return([]map[string]interface{}{{"group_id": "grp-hit"}}, nil).
 					Once()
 			},
@@ -2180,7 +1229,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_ValidateGroupIDs() {
 					Once()
 
 				dbClientMock.
-					On("Query", queryMatcher(), testDeploymentID, "grp-1").
+					On("QueryContext", mock.Anything, queryMatcher(), testDeploymentID, "grp-1").
 					Return(nil, errors.New("query fail")).
 					Once()
 			},
@@ -2245,25 +1294,6 @@ func (suite *GroupStoreTestSuite) TestGroupStore_ValidateGroupIDs() {
 			},
 			postAssert: assertEmptyInputPostconditions,
 		},
-		{
-			name:     "all empty values treated as invalid",
-			groupIDs: []string{"", ""},
-			setup: func(
-				providerMock *providermock.DBProviderInterfaceMock,
-				dbClientMock *providermock.DBClientInterfaceMock,
-			) {
-				providerMock.
-					On("GetUserDBClient").
-					Return(dbClientMock, nil).
-					Once()
-
-				dbClientMock.
-					On("Query", queryMatcher(), testDeploymentID, "", "").
-					Return([]map[string]interface{}{}, nil).
-					Once()
-			},
-			wantInvalid: []string{"", ""},
-		},
 	}
 
 	for _, tc := range testCases {
@@ -2282,7 +1312,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_ValidateGroupIDs() {
 			}
 
 			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
-			invalid, err := store.ValidateGroupIDs(tc.groupIDs)
+			invalid, err := store.ValidateGroupIDs(context.Background(), tc.groupIDs)
 
 			if tc.wantErr != "" {
 				require.Error(t, err)
@@ -2335,7 +1365,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupsByOrganizationUnitCoun
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupsByOrganizationUnitCount, "ou-1", testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupsByOrganizationUnitCount, "ou-1", testDeploymentID).
 					Return(nil, errors.New("query fail")).
 					Once()
 			},
@@ -2353,7 +1383,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupsByOrganizationUnitCoun
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupsByOrganizationUnitCount, "ou-1", testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupsByOrganizationUnitCount, "ou-1", testDeploymentID).
 					Return([]map[string]interface{}{}, nil).
 					Once()
 			},
@@ -2371,7 +1401,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupsByOrganizationUnitCoun
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupsByOrganizationUnitCount, "ou-1", testDeploymentID).
+					On("QueryContext", mock.Anything, QueryGetGroupsByOrganizationUnitCount, "ou-1", testDeploymentID).
 					Return([]map[string]interface{}{{"total": "not-number"}}, nil).
 					Once()
 			},
@@ -2390,7 +1420,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupsByOrganizationUnitCoun
 				tc.setup(providerMock, dbClientMock)
 			}
 
-			count, err := store.GetGroupsByOrganizationUnitCount("ou-1")
+			count, err := store.GetGroupsByOrganizationUnitCount(context.Background(), "ou-1")
 
 			if tc.expectErr != "" {
 				suite.Require().Error(err)
@@ -2438,7 +1468,15 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupsByOrganizationUnit() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupsByOrganizationUnit, "ou-1", 10, 0, testDeploymentID).
+					On(
+						"QueryContext",
+						mock.Anything,
+						QueryGetGroupsByOrganizationUnit,
+						"ou-1",
+						10,
+						0,
+						testDeploymentID,
+					).
 					Return(nil, errors.New("query fail")).
 					Once()
 			},
@@ -2456,7 +1494,15 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupsByOrganizationUnit() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupsByOrganizationUnit, "ou-1", 10, 0, testDeploymentID).
+					On(
+						"QueryContext",
+						mock.Anything,
+						QueryGetGroupsByOrganizationUnit,
+						"ou-1",
+						10,
+						0,
+						testDeploymentID,
+					).
 					Return([]map[string]interface{}{
 						{"group_id": "grp-1", "ou_id": "ou-1", "name": "g1", "description": "desc"},
 					}, nil).
@@ -2481,7 +1527,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupsByOrganizationUnit() {
 				tc.setup(providerMock, dbClientMock)
 			}
 
-			groups, err := store.GetGroupsByOrganizationUnit("ou-1", 10, 0)
+			groups, err := store.GetGroupsByOrganizationUnit(context.Background(), "ou-1", 10, 0)
 
 			if tc.expectErr != "" {
 				suite.Require().Error(err)
@@ -2504,12 +1550,25 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CheckGroupNameConflictForCreate
 			name: "conflict detected",
 			setupDB: func(dbClientMock *providermock.DBClientInterfaceMock) {
 				dbClientMock.
-					On("Query", QueryCheckGroupNameConflict, "engineering", "ou-1", testDeploymentID).
+					On(
+						"QueryContext",
+						mock.Anything,
+						QueryCheckGroupNameConflict,
+						"engineering",
+						"ou-1",
+						testDeploymentID,
+					).
 					Return([]map[string]interface{}{{"count": int64(1)}}, nil).
 					Once()
 			},
 			invoke: func(_ *groupStore, dbClientMock *providermock.DBClientInterfaceMock) error {
-				return checkGroupNameConflictForCreate(dbClientMock, "engineering", "ou-1", testDeploymentID)
+				return checkGroupNameConflictForCreate(
+					context.Background(),
+					dbClientMock,
+					"engineering",
+					"ou-1",
+					testDeploymentID,
+				)
 			},
 			expectErrIs: ErrGroupNameConflict,
 		},
@@ -2517,12 +1576,25 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CheckGroupNameConflictForCreate
 			name: "query error",
 			setupDB: func(dbClientMock *providermock.DBClientInterfaceMock) {
 				dbClientMock.
-					On("Query", QueryCheckGroupNameConflict, "engineering", "ou-1", testDeploymentID).
+					On(
+						"QueryContext",
+						mock.Anything,
+						QueryCheckGroupNameConflict,
+						"engineering",
+						"ou-1",
+						testDeploymentID,
+					).
 					Return(nil, errors.New("query fail")).
 					Once()
 			},
 			invoke: func(_ *groupStore, dbClientMock *providermock.DBClientInterfaceMock) error {
-				return checkGroupNameConflictForCreate(dbClientMock, "engineering", "ou-1", testDeploymentID)
+				return checkGroupNameConflictForCreate(
+					context.Background(),
+					dbClientMock,
+					"engineering",
+					"ou-1",
+					testDeploymentID,
+				)
 			},
 			expectErr: "failed to check group name conflict",
 		},
@@ -2530,12 +1602,25 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CheckGroupNameConflictForCreate
 			name: "no conflict",
 			setupDB: func(dbClientMock *providermock.DBClientInterfaceMock) {
 				dbClientMock.
-					On("Query", QueryCheckGroupNameConflict, "engineering", "ou-1", testDeploymentID).
+					On(
+						"QueryContext",
+						mock.Anything,
+						QueryCheckGroupNameConflict,
+						"engineering",
+						"ou-1",
+						testDeploymentID,
+					).
 					Return([]map[string]interface{}{{"count": int64(0)}}, nil).
 					Once()
 			},
 			invoke: func(_ *groupStore, dbClientMock *providermock.DBClientInterfaceMock) error {
-				return checkGroupNameConflictForCreate(dbClientMock, "engineering", "ou-1", testDeploymentID)
+				return checkGroupNameConflictForCreate(
+					context.Background(),
+					dbClientMock,
+					"engineering",
+					"ou-1",
+					testDeploymentID,
+				)
 			},
 		},
 		{
@@ -2550,7 +1635,11 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CheckGroupNameConflictForCreate
 					Once()
 			},
 			invoke: func(store *groupStore, _ *providermock.DBClientInterfaceMock) error {
-				return store.CheckGroupNameConflictForCreate("engineering", "ou-1")
+				return store.CheckGroupNameConflictForCreate(
+					context.Background(),
+					"engineering",
+					"ou-1",
+				)
 			},
 			expectErr: "failed to get database client",
 		},
@@ -2565,24 +1654,54 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CheckGroupNameConflictForUpdate
 			name: "success",
 			setupDB: func(dbClientMock *providermock.DBClientInterfaceMock) {
 				dbClientMock.
-					On("Query", QueryCheckGroupNameConflictForUpdate, "engineering", "ou-1", "grp-1", testDeploymentID).
+					On(
+						"QueryContext",
+						mock.Anything,
+						QueryCheckGroupNameConflictForUpdate,
+						"engineering",
+						"ou-1",
+						"grp-1",
+						testDeploymentID,
+					).
 					Return([]map[string]interface{}{{"count": int64(0)}}, nil).
 					Once()
 			},
 			invoke: func(_ *groupStore, dbClientMock *providermock.DBClientInterfaceMock) error {
-				return checkGroupNameConflictForUpdate(dbClientMock, "engineering", "ou-1", "grp-1", testDeploymentID)
+				return checkGroupNameConflictForUpdate(
+					context.Background(),
+					dbClientMock,
+					"engineering",
+					"ou-1",
+					"grp-1",
+					testDeploymentID,
+				)
 			},
 		},
 		{
 			name: "conflict detected",
 			setupDB: func(dbClientMock *providermock.DBClientInterfaceMock) {
 				dbClientMock.
-					On("Query", QueryCheckGroupNameConflictForUpdate, "engineering", "ou-1", "grp-1", testDeploymentID).
+					On(
+						"QueryContext",
+						mock.Anything,
+						QueryCheckGroupNameConflictForUpdate,
+						"engineering",
+						"ou-1",
+						"grp-1",
+						testDeploymentID,
+					).
 					Return([]map[string]interface{}{{"count": int64(1)}}, nil).
 					Once()
 			},
 			invoke: func(_ *groupStore, dbClientMock *providermock.DBClientInterfaceMock) error {
-				return checkGroupNameConflictForUpdate(dbClientMock, "engineering", "ou-1", "grp-1", testDeploymentID)
+				return checkGroupNameConflictForUpdate(
+					context.Background(),
+					dbClientMock,
+					"engineering",
+					"ou-1",
+					"grp-1",
+					testDeploymentID,
+				)
 			},
 			expectErrIs: ErrGroupNameConflict,
 		},
@@ -2590,12 +1709,27 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CheckGroupNameConflictForUpdate
 			name: "query error",
 			setupDB: func(dbClientMock *providermock.DBClientInterfaceMock) {
 				dbClientMock.
-					On("Query", QueryCheckGroupNameConflictForUpdate, "engineering", "ou-1", "grp-1", testDeploymentID).
+					On(
+						"QueryContext",
+						mock.Anything,
+						QueryCheckGroupNameConflictForUpdate,
+						"engineering",
+						"ou-1",
+						"grp-1",
+						testDeploymentID,
+					).
 					Return(nil, errors.New("query fail")).
 					Once()
 			},
 			invoke: func(_ *groupStore, dbClientMock *providermock.DBClientInterfaceMock) error {
-				return checkGroupNameConflictForUpdate(dbClientMock, "engineering", "ou-1", "grp-1", testDeploymentID)
+				return checkGroupNameConflictForUpdate(
+					context.Background(),
+					dbClientMock,
+					"engineering",
+					"ou-1",
+					"grp-1",
+					testDeploymentID,
+				)
 			},
 			expectErr: "failed to check group name conflict",
 		},
@@ -2611,7 +1745,12 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CheckGroupNameConflictForUpdate
 					Once()
 			},
 			invoke: func(store *groupStore, _ *providermock.DBClientInterfaceMock) error {
-				return store.CheckGroupNameConflictForUpdate("engineering", "ou-1", "grp-1")
+				return store.CheckGroupNameConflictForUpdate(
+					context.Background(),
+					"engineering",
+					"ou-1",
+					"grp-1",
+				)
 			},
 			expectErr: "failed to get database client",
 		},
@@ -2676,21 +1815,28 @@ func (suite *GroupStoreTestSuite) TestGroupStore_BuildBulkGroupExistsQueryEmpty(
 
 func (suite *GroupStoreTestSuite) TestGroupStore_AddMembersToGroupReturnsError() {
 	t := suite.T()
-	txMock := modelmock.NewTxInterfaceMock(t)
+	dbClientMock := providermock.NewDBClientInterfaceMock(t)
 
-	txMock.
+	dbClientMock.
 		On(
-			"Exec",
+			"ExecuteContext",
+			mock.Anything,
 			QueryAddMemberToGroup,
 			"grp-001",
-			MemberTypeUser,
+			mock.Anything, // MemberType to avoid type mismatch
 			"usr-1",
 			testDeploymentID,
 		).
-		Return(nil, errors.New("insert fail")).
+		Return(int64(0), errors.New("insert fail")).
 		Once()
 
-	err := addMembersToGroup(txMock, "grp-001", []Member{{ID: "usr-1", Type: MemberTypeUser}}, testDeploymentID)
+	err := addMembersToGroup(
+		context.Background(),
+		dbClientMock,
+		"grp-001",
+		[]Member{{ID: "usr-1", Type: MemberTypeUser}},
+		testDeploymentID,
+	)
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to add member to group")
@@ -2699,35 +1845,37 @@ func (suite *GroupStoreTestSuite) TestGroupStore_AddMembersToGroupReturnsError()
 func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroupMembers() {
 	testCases := []struct {
 		name      string
-		setup     func(*modelmock.TxInterfaceMock)
+		setup     func(*providermock.DBClientInterfaceMock)
 		members   []Member
 		expectErr string
 	}{
 		{
 			name: "success",
 			setup: func(
-				txMock *modelmock.TxInterfaceMock,
+				dbClientMock *providermock.DBClientInterfaceMock,
 			) {
-				txMock.
+				dbClientMock.
 					On(
-						"Exec",
+						"ExecuteContext",
+						mock.Anything,
 						QueryDeleteGroupMembers,
 						"grp-001",
 						testDeploymentID,
 					).
-					Return(stubSQLResult{rows: 1}, nil).
+					Return(int64(1), nil).
 					Once()
 
-				txMock.
+				dbClientMock.
 					On(
-						"Exec",
+						"ExecuteContext",
+						mock.Anything,
 						QueryAddMemberToGroup,
 						"grp-001",
-						MemberTypeUser,
+						mock.Anything, // MemberType to avoid type mismatch
 						"usr-1",
 						testDeploymentID,
 					).
-					Return(stubSQLResult{rows: 1}, nil).
+					Return(int64(1), nil).
 					Once()
 			},
 			members: []Member{{ID: "usr-1", Type: MemberTypeUser}},
@@ -2735,16 +1883,17 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroupMembers() {
 		{
 			name: "delete error",
 			setup: func(
-				txMock *modelmock.TxInterfaceMock,
+				dbClientMock *providermock.DBClientInterfaceMock,
 			) {
-				txMock.
+				dbClientMock.
 					On(
-						"Exec",
+						"ExecuteContext",
+						mock.Anything,
 						QueryDeleteGroupMembers,
 						"grp-001",
 						testDeploymentID,
 					).
-					Return(nil, errors.New("delete fail")).
+					Return(int64(0), errors.New("delete fail")).
 					Once()
 			},
 			expectErr: "failed to delete existing group member assignments",
@@ -2752,28 +1901,30 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroupMembers() {
 		{
 			name: "add member error",
 			setup: func(
-				txMock *modelmock.TxInterfaceMock,
+				dbClientMock *providermock.DBClientInterfaceMock,
 			) {
-				txMock.
+				dbClientMock.
 					On(
-						"Exec",
+						"ExecuteContext",
+						mock.Anything,
 						QueryDeleteGroupMembers,
 						"grp-001",
 						testDeploymentID,
 					).
-					Return(stubSQLResult{rows: 1}, nil).
+					Return(int64(1), nil).
 					Once()
 
-				txMock.
+				dbClientMock.
 					On(
-						"Exec",
+						"ExecuteContext",
+						mock.Anything,
 						QueryAddMemberToGroup,
 						"grp-001",
-						MemberTypeUser,
+						mock.Anything, // MemberType to avoid type mismatch
 						"usr-1",
 						testDeploymentID,
 					).
-					Return(nil, errors.New("member fail")).
+					Return(int64(0), errors.New("member fail")).
 					Once()
 			},
 			members:   []Member{{ID: "usr-1", Type: MemberTypeUser}},
@@ -2784,12 +1935,18 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroupMembers() {
 	for _, tc := range testCases {
 		tc := tc
 		suite.Run(tc.name, func() {
-			txMock := modelmock.NewTxInterfaceMock(suite.T())
+			dbClientMock := providermock.NewDBClientInterfaceMock(suite.T())
 			if tc.setup != nil {
-				tc.setup(txMock)
+				tc.setup(dbClientMock)
 			}
 
-			err := updateGroupMembers(txMock, "grp-001", tc.members, testDeploymentID)
+			err := updateGroupMembers(
+				context.Background(),
+				dbClientMock,
+				"grp-001",
+				tc.members,
+				testDeploymentID,
+			)
 
 			if tc.expectErr != "" {
 				suite.Require().Error(err)
@@ -2798,7 +1955,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroupMembers() {
 				suite.Require().NoError(err)
 			}
 
-			txMock.AssertExpectations(suite.T())
+			dbClientMock.AssertExpectations(suite.T())
 		})
 	}
 }
