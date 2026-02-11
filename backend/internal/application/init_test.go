@@ -23,6 +23,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+
 	"github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/cert"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
@@ -80,6 +82,7 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled() {
 	// Execute
 	service, _, err := Initialize(
 		mux,
+		nil,
 		suite.mockCertService,
 		suite.mockFlowMgtService,
 		nil, // themeMgtService - not needed for this test
@@ -91,6 +94,44 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled() {
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), service)
 	assert.Implements(suite.T(), (*ApplicationServiceInterface)(nil), service)
+}
+
+// TestInitialize_WithMCPServer tests the Initialize function with an MCP server
+func (suite *InitTestSuite) TestInitialize_WithMCPServer() {
+	// Setup - ensure config is reset and initialized for this test
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	assert.NoError(suite.T(), err)
+
+	mux := http.NewServeMux()
+
+	// Create a mock MCP server
+	mcpServer := mcp.NewServer(&mcp.Implementation{
+		Name:    "test-mcp-server",
+		Version: "1.0.0",
+	}, nil)
+
+	// Execute
+	service, _, err := Initialize(
+		mux,
+		mcpServer,
+		suite.mockCertService,
+		suite.mockFlowMgtService,
+		nil, // themeMgtService - not needed for this test
+		nil, // layoutMgtService - not needed for this test
+		suite.mockUserSchemaService,
+	)
+
+	// Assert
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), service)
+	assert.Implements(suite.T(), (*ApplicationServiceInterface)(nil), service)
+	assert.NotNil(suite.T(), mcpServer)
 }
 
 // TestParseToApplicationDTO_ValidYAML tests parsing a valid YAML configuration
@@ -479,6 +520,7 @@ func TestInitialize_Standalone(t *testing.T) {
 	// Execute
 	service, _, err := Initialize(
 		mux,
+		nil,
 		mockCertService,
 		mockFlowMgtService,
 		nil, // themeMgtService - not needed for this test
@@ -525,6 +567,7 @@ func TestInitialize_WithDeclarativeResources_Standalone(t *testing.T) {
 	// Execute
 	service, _, err := Initialize(
 		mux,
+		nil,
 		mockCertService,
 		mockFlowMgtService,
 		nil, // themeMgtService - not needed for this test
@@ -536,4 +579,49 @@ func TestInitialize_WithDeclarativeResources_Standalone(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, service)
 	assert.Implements(t, (*ApplicationServiceInterface)(nil), service)
+}
+
+// TestInitialize_WithMCPServer_Standalone tests Initialize function with MCP server
+func TestInitialize_WithMCPServer_Standalone(t *testing.T) {
+	// Setup minimal config for testing
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+
+	// Reset and initialize with test config
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	assert.NoError(t, err)
+
+	defer config.ResetThunderRuntime() // Clean up after test
+
+	mux := http.NewServeMux()
+	mockCertService := certmock.NewCertificateServiceInterfaceMock(t)
+	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(t)
+	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+
+	// Create a mock MCP server
+	mcpServer := mcp.NewServer(&mcp.Implementation{
+		Name:    "test-mcp-server",
+		Version: "1.0.0",
+	}, nil)
+
+	// Execute
+	service, _, err := Initialize(
+		mux,
+		mcpServer,
+		mockCertService,
+		mockFlowMgtService,
+		nil, // themeMgtService - not needed for this test
+		nil, // layoutMgtService - not needed for this test
+		mockUserSchemaService,
+	)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, service)
+	assert.Implements(t, (*ApplicationServiceInterface)(nil), service)
+	assert.NotNil(t, mcpServer)
 }

@@ -16,8 +16,8 @@
  * under the License.
  */
 
-// Package common provides utility functions for MCP schema generation and manipulation.
-package common
+// Package tool provides utility functions for MCP schema generation and manipulation.
+package tool
 
 import (
 	"encoding/json"
@@ -148,6 +148,7 @@ func applyEnum(prop *jsonschema.Schema, values []string) {
 	}
 }
 
+// stringSliceToAny converts a slice of strings to a slice of empty interfaces.
 func stringSliceToAny(strings []string) []any {
 	anys := make([]any, len(strings))
 	for i, s := range strings {

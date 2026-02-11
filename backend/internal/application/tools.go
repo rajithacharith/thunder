@@ -16,9 +16,6 @@
  * under the License.
  */
 
-// Package application provides application management tool models.
-//
-//nolint:lll
 package application
 
 import (
@@ -28,57 +25,22 @@ import (
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	appsvc "github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/application/model"
-	"github.com/asgardeo/thunder/internal/mcp/tools/common"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/system/mcp/tool"
 )
 
 // applicationTools provides MCP tools for managing Thunder applications.
 type applicationTools struct {
-	appService appsvc.ApplicationServiceInterface
+	appService ApplicationServiceInterface
 }
 
-// NewApplicationTools creates a new applicationTools instance.
-func NewApplicationTools(appService appsvc.ApplicationServiceInterface) *applicationTools {
-	return &applicationTools{
+// registerMCPTools registers all application MCP tools with the server.
+func registerMCPTools(server *mcp.Server, appService ApplicationServiceInterface) {
+	tools := &applicationTools{
 		appService: appService,
 	}
-}
 
-// Schema definitions
-var (
-	// Common schema modifiers for ApplicationDTO
-	appSchemaModifiers []func(*jsonschema.Schema)
-
-	// Modified input schema for create_application tool
-	createAppInputSchema *jsonschema.Schema
-
-	// Modified input schema for update_application tool
-	updateAppInputSchema *jsonschema.Schema
-)
-
-func init() {
-	appSchemaModifiers = []func(*jsonschema.Schema){
-		common.WithEnum("inbound_auth_config.config", "grant_types", oauth2const.GetSupportedGrantTypes()),
-		common.WithEnum("inbound_auth_config.config", "response_types", oauth2const.GetSupportedResponseTypes()),
-		common.WithEnum("inbound_auth_config.config", "token_endpoint_auth_method", oauth2const.GetSupportedTokenEndpointAuthMethods()),
-		common.WithEnum("inbound_auth_config", "type", []string{string(model.OAuthInboundAuthType)}),
-	}
-
-	createAppInputSchema = common.GenerateSchema[model.ApplicationDTO](
-		append(appSchemaModifiers,
-			common.WithRemove("", "id"),
-		)...,
-	)
-
-	updateAppInputSchema = common.GenerateSchema[model.ApplicationDTO](
-		append(appSchemaModifiers, common.WithRequired("", "id"))...,
-	)
-}
-
-// RegisterTools registers all application tools with the MCP server.
-func (t *applicationTools) RegisterTools(server *mcp.Server) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "thunder_list_applications",
 		Description: `List all registered applications.`,
@@ -86,25 +48,27 @@ func (t *applicationTools) RegisterTools(server *mcp.Server) {
 			Title:        "List Applications",
 			ReadOnlyHint: true,
 		},
-	}, t.listApplications)
+	}, tools.listApplications)
 
 	mcp.AddTool(server, &mcp.Tool{
-		Name:        "thunder_get_application_by_id",
-		Description: `Retrieve full details of an application by ID including OAuth settings, customizations, and flow associations.`,
+		Name: "thunder_get_application_by_id",
+		Description: `Retrieve full details of an application by ID including OAuth settings, ` +
+			`customizations, and flow associations.`,
 		Annotations: &mcp.ToolAnnotations{
 			Title:        "Get Application by ID",
 			ReadOnlyHint: true,
 		},
-	}, t.getApplicationByID)
+	}, tools.getApplicationByID)
 
 	mcp.AddTool(server, &mcp.Tool{
-		Name:        "thunder_get_application_by_client_id",
-		Description: `Retrieve full details of an application by client_id including OAuth settings, customizations, and flow associations.`,
+		Name: "thunder_get_application_by_client_id",
+		Description: `Retrieve full details of an application by client_id including OAuth ` +
+			`settings, customizations, and flow associations.`,
 		Annotations: &mcp.ToolAnnotations{
 			Title:        "Get Application by Client ID",
 			ReadOnlyHint: true,
 		},
-	}, t.getApplicationByClientID)
+	}, tools.getApplicationByClientID)
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "thunder_create_application",
@@ -117,12 +81,12 @@ Prerequisites: Create flows first using create_flow if custom authentication/reg
 Behavior:
 - If auth_flow_id is omitted, the default authentication flow is used.
 - If user_attributes are omitted in token configs, defaults are applied.`,
-		InputSchema: createAppInputSchema,
+		InputSchema: getCreateAppSchema(),
 		Annotations: &mcp.ToolAnnotations{
 			Title:          "Create Application",
 			IdempotentHint: false,
 		},
-	}, t.createApplication)
+	}, tools.createApplication)
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "thunder_update_application",
@@ -136,24 +100,26 @@ Workflow:
 3. Send the complete object back
 
 Any field not provided will be reset to empty/default.`,
-		InputSchema: updateAppInputSchema,
+		InputSchema: getUpdateAppSchema(),
 		Annotations: &mcp.ToolAnnotations{
 			Title:          "Update Application",
 			IdempotentHint: true,
 		},
-	}, t.updateApplication)
+	}, tools.updateApplication)
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "thunder_get_application_templates",
 		Description: `Get minimal OAuth configuration templates for common application types.
 
-Templates contain ONLY the required fields to create each app type. Optional fields with service-layer defaults are omitted.
-Prompt the user for any missing required placeholders.`,
+Templates contain ONLY the required fields to create each app type. ` +
+			`Optional fields with service-layer defaults are omitted.
+` +
+			`Prompt the user for any missing required placeholders.`,
 		Annotations: &mcp.ToolAnnotations{
 			Title:        "Get Application Templates",
 			ReadOnlyHint: true,
 		},
-	}, t.getApplicationTemplates)
+	}, tools.getApplicationTemplates)
 }
 
 // listApplications handles the list_applications tool call.
@@ -161,13 +127,14 @@ func (t *applicationTools) listApplications(
 	ctx context.Context,
 	req *mcp.CallToolRequest,
 	_ any,
-) (*mcp.CallToolResult, applicationListOutput, error) {
+) (*mcp.CallToolResult, model.ApplicationListOutput, error) {
 	listResponse, svcErr := t.appService.GetApplicationList()
 	if svcErr != nil {
-		return nil, applicationListOutput{}, fmt.Errorf("failed to list applications: %s", svcErr.ErrorDescription)
+		return nil, model.ApplicationListOutput{},
+			fmt.Errorf("failed to list applications: %s", svcErr.ErrorDescription)
 	}
 
-	return nil, applicationListOutput{
+	return nil, model.ApplicationListOutput{
 		TotalCount:   listResponse.TotalResults,
 		Applications: listResponse.Applications,
 	}, nil
@@ -177,7 +144,7 @@ func (t *applicationTools) listApplications(
 func (t *applicationTools) getApplicationByID(
 	ctx context.Context,
 	req *mcp.CallToolRequest,
-	input common.IDInput,
+	input tool.IDInput,
 ) (*mcp.CallToolResult, *model.Application, error) {
 	app, svcErr := t.appService.GetApplication(input.ID)
 	if svcErr != nil {
@@ -191,7 +158,7 @@ func (t *applicationTools) getApplicationByID(
 func (t *applicationTools) getApplicationByClientID(
 	ctx context.Context,
 	req *mcp.CallToolRequest,
-	input clientIDInput,
+	input model.ClientIDInput,
 ) (*mcp.CallToolResult, *model.Application, error) {
 	// Get OAuth application to find app ID
 	oauthApp, svcErr := t.appService.GetOAuthApplication(input.ClientID)
@@ -247,7 +214,7 @@ func (t *applicationTools) getApplicationTemplates(
 		"spa": map[string]interface{}{
 			"name": "<APP_NAME>",
 			"token": map[string]interface{}{
-				"user_attributes": defaultUserAttributes,
+				"user_attributes": model.DefaultUserAttributes,
 			},
 			"inbound_auth_config": []map[string]interface{}{
 				{
@@ -258,13 +225,13 @@ func (t *applicationTools) getApplicationTemplates(
 						"token_endpoint_auth_method": "none",
 						"pkce_required":              true,
 						"public_client":              true,
-						"scopes":                     defaultScopes,
+						"scopes":                     model.DefaultScopes,
 						"token": map[string]interface{}{
 							"access_token": map[string]interface{}{
-								"user_attributes": defaultUserAttributes,
+								"user_attributes": model.DefaultUserAttributes,
 							},
 							"id_token": map[string]interface{}{
-								"user_attributes": defaultUserAttributes,
+								"user_attributes": model.DefaultUserAttributes,
 							},
 						},
 					},
@@ -274,7 +241,7 @@ func (t *applicationTools) getApplicationTemplates(
 		"mobile": map[string]interface{}{
 			"name": "<APP_NAME>",
 			"token": map[string]interface{}{
-				"user_attributes": defaultUserAttributes,
+				"user_attributes": model.DefaultUserAttributes,
 			},
 			"inbound_auth_config": []map[string]interface{}{
 				{
@@ -285,13 +252,13 @@ func (t *applicationTools) getApplicationTemplates(
 						"token_endpoint_auth_method": "none",
 						"pkce_required":              true,
 						"public_client":              true,
-						"scopes":                     defaultScopes,
+						"scopes":                     model.DefaultScopes,
 						"token": map[string]interface{}{
 							"access_token": map[string]interface{}{
-								"user_attributes": defaultUserAttributes,
+								"user_attributes": model.DefaultUserAttributes,
 							},
 							"id_token": map[string]interface{}{
-								"user_attributes": defaultUserAttributes,
+								"user_attributes": model.DefaultUserAttributes,
 							},
 						},
 					},
@@ -301,7 +268,7 @@ func (t *applicationTools) getApplicationTemplates(
 		"server": map[string]interface{}{
 			"name": "<APP_NAME>",
 			"token": map[string]interface{}{
-				"user_attributes": defaultUserAttributes,
+				"user_attributes": model.DefaultUserAttributes,
 			},
 			"inbound_auth_config": []map[string]interface{}{
 				{
@@ -310,13 +277,13 @@ func (t *applicationTools) getApplicationTemplates(
 						"redirect_uris": []string{"<REDIRECT_URI>"},
 						"grant_types":   []string{"authorization_code", "refresh_token"},
 						"pkce_required": true,
-						"scopes":        defaultScopes,
+						"scopes":        model.DefaultScopes,
 						"token": map[string]interface{}{
 							"access_token": map[string]interface{}{
-								"user_attributes": defaultUserAttributes,
+								"user_attributes": model.DefaultUserAttributes,
 							},
 							"id_token": map[string]interface{}{
-								"user_attributes": defaultUserAttributes,
+								"user_attributes": model.DefaultUserAttributes,
 							},
 						},
 					},
@@ -337,4 +304,29 @@ func (t *applicationTools) getApplicationTemplates(
 	}
 
 	return nil, templates, nil
+}
+
+// getCommonSchemaModifiers returns the common schema modifiers for ApplicationDTO.
+func getCommonSchemaModifiers() []func(*jsonschema.Schema) {
+	return []func(*jsonschema.Schema){
+		tool.WithEnum("inbound_auth_config.config", "grant_types", oauth2const.GetSupportedGrantTypes()),
+		tool.WithEnum("inbound_auth_config.config", "response_types", oauth2const.GetSupportedResponseTypes()),
+		tool.WithEnum("inbound_auth_config.config", "token_endpoint_auth_method",
+			oauth2const.GetSupportedTokenEndpointAuthMethods()),
+		tool.WithEnum("inbound_auth_config", "type", []string{string(model.OAuthInboundAuthType)}),
+	}
+}
+
+// getCreateAppSchema generates the schema for create_application tool.
+func getCreateAppSchema() *jsonschema.Schema {
+	modifiers := getCommonSchemaModifiers()
+	modifiers = append(modifiers, tool.WithRemove("", "id"))
+	return tool.GenerateSchema[model.ApplicationDTO](modifiers...)
+}
+
+// getUpdateAppSchema generates the schema for update_application tool.
+func getUpdateAppSchema() *jsonschema.Schema {
+	modifiers := getCommonSchemaModifiers()
+	modifiers = append(modifiers, tool.WithRequired("", "id"))
+	return tool.GenerateSchema[model.ApplicationDTO](modifiers...)
 }
