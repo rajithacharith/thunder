@@ -41,6 +41,11 @@ describe('getFlowSupportedIntegrations', () => {
       const result = getFlowSupportedIntegrations('sms-flow');
       expect(result).toContain('sms-otp');
     });
+
+    it('should detect passkey from handle containing "passkey"', () => {
+      const result = getFlowSupportedIntegrations('passkey-flow');
+      expect(result).toContain(AuthenticatorTypes.PASSKEY);
+    });
   });
 
   describe('Multiple Integration Detection', () => {
@@ -63,6 +68,14 @@ describe('getFlowSupportedIntegrations', () => {
       expect(result).toContain(AuthenticatorTypes.BASIC_AUTH);
       expect(result).toContain('google');
       expect(result).toContain('github');
+      expect(result).toHaveLength(3);
+    });
+
+    it('should detect basic, passkey, and google', () => {
+      const result = getFlowSupportedIntegrations('basic-passkey-google-flow');
+      expect(result).toContain(AuthenticatorTypes.BASIC_AUTH);
+      expect(result).toContain(AuthenticatorTypes.PASSKEY);
+      expect(result).toContain('google');
       expect(result).toHaveLength(3);
     });
 

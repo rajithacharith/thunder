@@ -483,6 +483,104 @@ describe('Preview', () => {
     });
   });
 
+  describe('Passkey functionality', () => {
+    it('should render passkey button when enabled', () => {
+      renderComponent({
+        integrations: {
+          [AuthenticatorTypes.PASSKEY]: true,
+        },
+      });
+
+      expect(screen.getByRole('button', {name: /Sign in with Passkey/i})).toBeInTheDocument();
+    });
+
+    it('should not render passkey button when disabled', () => {
+      renderComponent({
+        integrations: {
+          [AuthenticatorTypes.PASSKEY]: false,
+        },
+      });
+
+      expect(screen.queryByRole('button', {name: /Sign in with Passkey/i})).not.toBeInTheDocument();
+    });
+
+    it('should render passkey button with outlined variant when username/password is enabled', () => {
+      renderComponent({
+        integrations: {
+          [AuthenticatorTypes.BASIC_AUTH]: true,
+          [AuthenticatorTypes.PASSKEY]: true,
+        },
+        selectedColor: '#FF5733',
+      });
+
+      const passkeyButton = screen.getByRole('button', {name: /Sign in with Passkey/i});
+      expect(passkeyButton).toHaveClass('MuiButton-outlined');
+      expect(passkeyButton).toHaveStyle({color: '#FF5733'});
+    });
+
+    it('should render passkey button with contained variant when username/password is disabled', () => {
+      renderComponent({
+        integrations: {
+          [AuthenticatorTypes.BASIC_AUTH]: false,
+          [AuthenticatorTypes.PASSKEY]: true,
+        },
+        selectedColor: '#FF5733',
+      });
+
+      const passkeyButton = screen.getByRole('button', {name: /Sign in with Passkey/i});
+      expect(passkeyButton).toHaveClass('MuiButton-contained');
+      expect(passkeyButton).toHaveStyle({backgroundColor: '#FF5733'});
+    });
+
+    it('should apply margin bottom to passkey button when social logins are present', () => {
+      renderComponent({
+        integrations: {
+          [AuthenticatorTypes.PASSKEY]: true,
+          'google-idp': true,
+        },
+      });
+
+      const passkeyButton = screen.getByRole('button', {name: /Sign in with Passkey/i});
+      // The box containing the button should have margin-bottom
+      const containerBox = passkeyButton.closest('form');
+      expect(containerBox).toHaveStyle({marginBottom: '16px'}); // theme spacing(2) = 16px usually
+    });
+
+    it('should not apply margin bottom to passkey button when social logins are absent', () => {
+      renderComponent({
+        integrations: {
+          [AuthenticatorTypes.PASSKEY]: true,
+          'google-idp': false,
+        },
+      });
+
+      const passkeyButton = screen.getByRole('button', {name: /Sign in with Passkey/i});
+      const containerBox = passkeyButton.closest('form');
+      expect(containerBox).toHaveStyle({marginBottom: '0px'});
+    });
+
+    it('should render divider when passkey and social logins are enabled', () => {
+      renderComponent({
+        integrations: {
+          [AuthenticatorTypes.PASSKEY]: true,
+          'google-idp': true,
+        },
+      });
+
+      expect(screen.getByText('or')).toBeInTheDocument();
+    });
+
+    it('should render divider when passkey and SMS OTP are enabled', () => {
+      renderComponent({
+        integrations: {
+          [AuthenticatorTypes.PASSKEY]: true,
+          'sms-otp': true,
+        },
+      });
+
+    });
+  });
+
   describe('dark mode', () => {
     it('should render in dark mode', () => {
       mockUseColorScheme.mockReturnValue({mode: 'dark'});

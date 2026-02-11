@@ -183,7 +183,9 @@ export default function ConfigureSignInOptions({
    * Broadcast readiness whenever integrations or selected flow change.
    */
   useEffect((): void => {
-    const isReady: boolean = hasAtLeastOneSelected(integrations, selectedAuthFlow);
+    // Mark step as ready if flow is selected OR integrations are enabled (trigger generation)
+    const hasEnabledIntegrations = Object.values(integrations).some((enabled) => enabled);
+    const isReady: boolean = selectedAuthFlow !== null || hasEnabledIntegrations;
     if (onReadyChange) {
       onReadyChange(isReady);
     }
@@ -213,7 +215,20 @@ export default function ConfigureSignInOptions({
 
     // Find matching flow for the new integration state
     const matchingFlow: BasicFlowDefinition | null = getFlowForEnabledIntegrations(newIntegrations);
-    setSelectedAuthFlow(matchingFlow);
+
+    if (matchingFlow) {
+      setSelectedAuthFlow(matchingFlow);
+    } else {
+      // If no matching flow found, check if we need to generate one
+      const hasEnabledIntegrations = Object.values(newIntegrations).some((enabled) => enabled);
+
+      if (hasEnabledIntegrations) {
+        // Clear current selection while generating new flow
+        setSelectedAuthFlow(null);
+      } else {
+        setSelectedAuthFlow(null);
+      }
+    }
   };
 
   if (isLoading || isFlowsLoading) {

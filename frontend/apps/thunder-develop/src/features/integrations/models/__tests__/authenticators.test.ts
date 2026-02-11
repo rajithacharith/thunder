@@ -25,12 +25,21 @@ describe('AuthenticatorTypes', () => {
     expect(AuthenticatorTypes.BASIC_AUTH).toBe('basic_auth');
   });
 
+  it('should have PASSKEY defined with correct value', () => {
+    expect(AuthenticatorTypes.PASSKEY).toBe('passkey');
+  });
+
   it('should be a const object with expected keys', () => {
-    expect(Object.keys(AuthenticatorTypes)).toEqual(['BASIC_AUTH']);
+    expect(Object.keys(AuthenticatorTypes)).toEqual(['BASIC_AUTH', 'PASSKEY']);
   });
 
   it('should allow type-safe assignment', () => {
     const authenticator: AuthenticatorType = AuthenticatorTypes.BASIC_AUTH;
     expect(authenticator).toBe('basic_auth');
+  });
+
+  it('should allow type-safe assignment for PASSKEY', () => {
+    const authenticator: AuthenticatorType = AuthenticatorTypes.PASSKEY;
+    expect(authenticator).toBe('passkey');
   });
 });

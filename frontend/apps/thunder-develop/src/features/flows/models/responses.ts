@@ -247,6 +247,14 @@ export interface FlowNode {
    * Next node ID on failed execution
    */
   onFailure?: string;
+  /**
+   * Node-level condition for execution
+   */
+  condition?: {
+    key: string;
+    value: string;
+    onSkip?: string;
+  };
 }
 
 /**

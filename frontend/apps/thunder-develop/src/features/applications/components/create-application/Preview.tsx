@@ -31,7 +31,7 @@ import {
   Avatar,
   Stack,
 } from '@wso2/oxygen-ui';
-import {AppWindowMac} from '@wso2/oxygen-ui-icons-react';
+import {AppWindowMac, KeyRound} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {type IdentityProvider} from '@/features/integrations/models/identity-provider';
@@ -114,6 +114,7 @@ export default function Preview({appLogo, selectedColor, integrations}: PreviewP
   const {data: identityProviders} = useIdentityProviders();
 
   const hasUsernamePassword: boolean = integrations[AuthenticatorTypes.BASIC_AUTH] ?? false;
+  const hasPasskey: boolean = integrations[AuthenticatorTypes.PASSKEY] ?? false;
   const selectedProviders: IdentityProvider[] =
     identityProviders?.filter((idp: IdentityProvider): boolean => integrations[idp.id]) ?? [];
   const hasSocialLogins: boolean = selectedProviders.length > 0;
@@ -259,6 +260,43 @@ export default function Preview({appLogo, selectedColor, integrations}: PreviewP
                       </Box>
                     )}
 
+                    {/* Passkey option - Conditionally rendered */}
+                    {hasPasskey && (
+                      <Box
+                        component="form"
+                        onSubmit={(e) => e.preventDefault()}
+                        sx={{display: 'flex', flexDirection: 'column', gap: 2, mb: hasSocialLogins ? 2 : 0}}
+                      >
+                        <Button
+                          type="submit"
+                          fullWidth
+                          variant={hasUsernamePassword ? 'outlined' : 'contained'}
+                          color="secondary"
+                          startIcon={<KeyRound />}
+                          sx={
+                            hasUsernamePassword
+                              ? {
+                                  borderColor: selectedColor,
+                                  color: selectedColor,
+                                  '&:hover': {
+                                    borderColor: selectedColor,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                                  },
+                                }
+                              : {
+                                  color: '#fff',
+                                  backgroundColor: selectedColor,
+                                  '&:hover': {
+                                    backgroundColor: selectedColor,
+                                  },
+                                }
+                          }
+                        >
+                          {t('applications:onboarding.preview.passkeySignIn')}
+                        </Button>
+                      </Box>
+                    )}
+
                     {/* SMS OTP option - Conditionally rendered */}
                     {hasSmsOtp && (
                       <Box
@@ -304,8 +342,8 @@ export default function Preview({appLogo, selectedColor, integrations}: PreviewP
                     )}
 
                     {/* Divider - Show when multiple auth methods exist */}
-                    {((hasUsernamePassword && hasSmsOtp) ||
-                      ((hasUsernamePassword || hasSmsOtp) && hasSocialLogins)) && (
+                    {(((hasUsernamePassword || hasPasskey) && hasSmsOtp) ||
+                      (((hasUsernamePassword || hasPasskey) || hasSmsOtp) && hasSocialLogins)) && (
                       <Divider>{t('applications:onboarding.preview.dividerText')}</Divider>
                     )}
 

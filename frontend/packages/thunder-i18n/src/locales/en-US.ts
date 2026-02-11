@@ -624,6 +624,7 @@ const translations = {
     'onboarding.preview.password': 'Password',
     'onboarding.preview.passwordPlaceholder': 'Enter your Password',
     'onboarding.preview.signInButton': 'Sign In',
+    'onboarding.preview.passkeySignIn': 'Sign in with Passkey',
     'onboarding.preview.mobileNumber': 'Mobile Number',
     'onboarding.preview.mobileNumberPlaceholder': 'Enter your mobile number',
     'onboarding.preview.sendOtpButton': 'Send OTP',
@@ -655,6 +656,7 @@ const translations = {
     'onboarding.configure.SignInOptions.usernamePassword': 'Username & Password',
     'onboarding.configure.SignInOptions.google': 'Google',
     'onboarding.configure.SignInOptions.github': 'GitHub',
+    'onboarding.configure.SignInOptions.passkey': 'Passkey',
     'onboarding.configure.SignInOptions.notConfigured': 'Not configured',
     'onboarding.configure.SignInOptions.noFlowFound':
       'No flow found for the selected sign-in options. Please try a different combination.',
@@ -738,6 +740,16 @@ const translations = {
     'onboarding.configure.details.deeplink.label': 'Deep Link / Universal Link',
     'onboarding.configure.details.deeplink.placeholder': 'myapp://callback or https://example.com/callback',
     'onboarding.configure.details.deeplink.helperText': 'The custom URL scheme or universal link for your mobile app',
+    'onboarding.configure.details.passkey.title': 'Passkey Settings',
+
+    'onboarding.configure.passkey.title': 'Passkey Configuration',
+    'onboarding.configure.passkey.description': 'Configure the Relying Party details for Passkey authentication.',
+    'onboarding.configure.details.relyingPartyId.label': 'Relying Party ID',
+    'onboarding.configure.details.relyingPartyId.placeholder': 'e.g., example.com',
+    'onboarding.configure.details.relyingPartyId.helperText': 'The domain where the WebAuthn credential is valid',
+    'onboarding.configure.details.relyingPartyName.label': 'Relying Party Name',
+    'onboarding.configure.details.relyingPartyName.placeholder': 'e.g., My Application',
+    'onboarding.configure.details.relyingPartyName.helperText': 'A user-friendly name for the Relying Party',
     'onboarding.configure.details.noConfigRequired.title': 'No Additional Configuration Needed',
     'onboarding.configure.details.noConfigRequired.description':
       'Your application is ready to go! You can proceed to the next step.',

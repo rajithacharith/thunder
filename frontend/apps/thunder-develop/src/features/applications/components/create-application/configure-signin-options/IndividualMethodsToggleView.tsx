@@ -18,7 +18,7 @@
 
 import {List, Divider} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
-import {UserRound, Google, GitHub} from '@wso2/oxygen-ui-icons-react';
+import {UserRound, Google, GitHub, KeyRound} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {type IdentityProvider, IdentityProviderTypes} from '@/features/integrations/models/identity-provider';
 import getIntegrationIcon from '@/features/integrations/utils/getIntegrationIcon';
@@ -78,6 +78,18 @@ export default function IndividualMethodsToggleView({
           name={t('applications:onboarding.configure.SignInOptions.usernamePassword')}
           icon={<UserRound size={24} />}
           isEnabled={hasUsernamePassword}
+          isAvailable
+          onToggle={onIntegrationToggle}
+        />
+
+        <Divider component="li" />
+
+        {/* Passkey */}
+        <AuthenticationMethodItem
+          id={AuthenticatorTypes.PASSKEY}
+          name={t('applications:onboarding.configure.SignInOptions.passkey')}
+          icon={<KeyRound size={24} />}
+          isEnabled={integrations[AuthenticatorTypes.PASSKEY] ?? false}
           isAvailable
           onToggle={onIntegrationToggle}
         />

@@ -22,6 +22,7 @@ import userEvent from '@testing-library/user-event';
 import type {BasicFlowDefinition} from '@/features/flows/models/responses';
 import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
+import findMatchingFlowForIntegrations from '@/features/flows/utils/findMatchingFlowForIntegrations';
 import ConfigureSignInOptions, {type ConfigureSignInOptionsProps} from '../ConfigureSignInOptions';
 
 // Mock react-i18next
@@ -274,6 +275,18 @@ describe('ConfigureSignInOptions', () => {
       await user.click(screen.getByTestId('toggle-basic-auth'));
 
       expect(mockOnIntegrationToggle).toHaveBeenCalledWith(AuthenticatorTypes.BASIC_AUTH);
+    });
+
+    it('should select matching flow when integration toggle matches a flow', async () => {
+      const user = userEvent.setup();
+      const mockedFindMatchingFlow = vi.mocked(findMatchingFlowForIntegrations);
+      mockedFindMatchingFlow.mockReturnValue(mockFlows[0]);
+
+      renderComponent();
+
+      await user.click(screen.getByTestId('toggle-basic-auth'));
+
+      expect(mockSetSelectedAuthFlow).toHaveBeenCalledWith(mockFlows[0]);
     });
   });
 

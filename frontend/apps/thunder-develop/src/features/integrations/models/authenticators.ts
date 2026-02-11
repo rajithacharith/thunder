@@ -26,6 +26,7 @@
  */
 export const AuthenticatorTypes = {
   BASIC_AUTH: 'basic_auth',
+  PASSKEY: 'passkey',
 } as const;
 
 /**

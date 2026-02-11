@@ -186,6 +186,30 @@ export interface ApplicationCreateContextType {
    * @remark Needed for step 06: Configuration step.
    */
   setCallbackUrlFromConfig: (url: string) => void;
+  
+  /**
+   * The relying party ID for Passkey configuration.
+   * @remark Needed for step 06: Configuration step.
+   */
+  relyingPartyId: string;
+
+  /**
+   * Sets the relying party ID.
+   * @remark Needed for step 06: Configuration step.
+   */
+  setRelyingPartyId: (id: string) => void;
+
+  /**
+   * The relying party name for Passkey configuration.
+   * @remark Needed for step 06: Configuration step.
+   */
+  relyingPartyName: string;
+
+  /**
+   * Sets the relying party name.
+   * @remark Needed for step 06: Configuration step.
+   */
+  setRelyingPartyName: (name: string) => void;
 
   /**
    * Whether the user has completed the onboarding process.

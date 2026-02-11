@@ -54,6 +54,8 @@ const INITIAL_STATE: {
   selectedPlatform: PlatformApplicationTemplate | null;
   hostingUrl: string;
   callbackUrlFromConfig: string;
+  relyingPartyId: string;
+  relyingPartyName: string;
   hasCompletedOnboarding: boolean;
   error: string | null;
 } = {
@@ -70,6 +72,8 @@ const INITIAL_STATE: {
   selectedPlatform: null,
   hostingUrl: '',
   callbackUrlFromConfig: '',
+  relyingPartyId: '',
+  relyingPartyName: '',
   hasCompletedOnboarding: false,
   error: null,
 };
@@ -126,6 +130,8 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
   const [selectedTemplateConfig, setSelectedTemplateConfig] = useState<ApplicationTemplate | null>(null);
   const [hostingUrl, setHostingUrl] = useState<string>(INITIAL_STATE.hostingUrl);
   const [callbackUrlFromConfig, setCallbackUrlFromConfig] = useState<string>(INITIAL_STATE.callbackUrlFromConfig);
+  const [relyingPartyId, setRelyingPartyId] = useState<string>('');
+  const [relyingPartyName, setRelyingPartyName] = useState<string>('');
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(INITIAL_STATE.hasCompletedOnboarding);
   const [error, setError] = useState<string | null>(INITIAL_STATE.error);
 
@@ -157,6 +163,8 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
     setSelectedPlatform(INITIAL_STATE.selectedPlatform);
     setHostingUrl(INITIAL_STATE.hostingUrl);
     setCallbackUrlFromConfig(INITIAL_STATE.callbackUrlFromConfig);
+    setRelyingPartyId('');
+    setRelyingPartyName('');
     setHasCompletedOnboarding(INITIAL_STATE.hasCompletedOnboarding);
     setError(INITIAL_STATE.error);
   }, []);
@@ -188,6 +196,10 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
       setHostingUrl,
       callbackUrlFromConfig,
       setCallbackUrlFromConfig,
+      relyingPartyId,
+      setRelyingPartyId,
+      relyingPartyName,
+      setRelyingPartyName,
       hasCompletedOnboarding,
       setHasCompletedOnboarding,
       error,
@@ -208,8 +220,14 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
       selectedTemplateConfig,
       hostingUrl,
       callbackUrlFromConfig,
+      setCallbackUrlFromConfig,
+      relyingPartyId,
+      setRelyingPartyId,
+      relyingPartyName,
+      setRelyingPartyName,
       hasCompletedOnboarding,
       error,
+      setError,
       reset,
     ],
   );

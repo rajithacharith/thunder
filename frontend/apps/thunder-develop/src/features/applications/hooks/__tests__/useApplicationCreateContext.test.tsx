@@ -27,6 +27,10 @@ import {ApplicationCreateFlowStep, ApplicationCreateFlowSignInApproach} from '..
 
 describe('useApplicationCreateContext', () => {
   const mockContextValue: ApplicationCreateContextType = {
+    relyingPartyId: '',
+    setRelyingPartyId: vi.fn(),
+    relyingPartyName: '',
+    setRelyingPartyName: vi.fn(),
     currentStep: ApplicationCreateFlowStep.NAME,
     setCurrentStep: vi.fn(),
     appName: 'Test App',
