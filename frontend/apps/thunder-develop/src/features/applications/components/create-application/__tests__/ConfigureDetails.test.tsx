@@ -27,10 +27,13 @@ import ApplicationCreateContext, {
 } from '../../../contexts/ApplicationCreate/ApplicationCreateContext';
 import {TechnologyApplicationTemplate, PlatformApplicationTemplate} from '../../../models/application-templates';
 import {getDefaultOAuthConfig, TokenEndpointAuthMethods} from '../../../models/oauth';
+import {AuthenticatorTypes} from '../../../../integrations/models/authenticators';
+
+let translationLookup = (key: string): string => key;
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string) => translationLookup(key),
   }),
 }));
 
@@ -84,6 +87,10 @@ const renderWithContext = (
     error: null,
     setError: vi.fn(),
     reset: vi.fn(),
+    relyingPartyId: '',
+    setRelyingPartyId: vi.fn(),
+    relyingPartyName: '',
+    setRelyingPartyName: vi.fn(),
     ...contextOverrides,
   };
 
@@ -104,6 +111,7 @@ const renderWithContext = (
 describe('ConfigureDetails', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    translationLookup = (key: string): string => key;
   });
 
   it('renders the no-configuration message when redirect URIs are already populated', () => {
@@ -120,9 +128,33 @@ describe('ConfigureDetails', () => {
       {selectedTemplateConfig: template},
     );
 
-    expect(screen.getByText('applications:onboarding.configure.details.noConfigRequired.title')).toBeInTheDocument();
     expect(
       screen.getByText('applications:onboarding.configure.details.noConfigRequired.description'),
+    ).toBeInTheDocument();
+  });
+
+  it('renders passkey configuration even when no other configuration is required', () => {
+    const template = createTemplate('Browser App', ['https://example.com/callback']);
+
+    renderWithContext(
+      {
+        technology: TechnologyApplicationTemplate.REACT,
+        platform: PlatformApplicationTemplate.BROWSER,
+        onHostingUrlChange: vi.fn(),
+        onCallbackUrlChange: vi.fn(),
+        onReadyChange: vi.fn(),
+      },
+      {
+        selectedTemplateConfig: template,
+        integrations: {[AuthenticatorTypes.PASSKEY]: true},
+        selectedAuthFlow: null,
+      },
+    );
+
+    expect(screen.queryByText('applications:onboarding.configure.details.noConfigRequired.title')).not.toBeInTheDocument();
+    expect(screen.getByText('applications:onboarding.configure.details.passkey.title')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('applications:onboarding.configure.details.relyingPartyId.placeholder'),
     ).toBeInTheDocument();
   });
 
@@ -464,5 +496,175 @@ describe('ConfigureDetails', () => {
     expect(
       screen.getByPlaceholderText('applications:onboarding.configure.details.hostingUrl.placeholder'),
     ).toBeInTheDocument();
+  });
+
+  it('allows updating relying party ID for passkey configuration', async () => {
+    const template = createTemplate('Browser App', ['https://example.com/callback']);
+    const setRelyingPartyId = vi.fn();
+
+    renderWithContext(
+      {
+        technology: TechnologyApplicationTemplate.REACT,
+        platform: PlatformApplicationTemplate.BROWSER,
+        onHostingUrlChange: vi.fn(),
+        onCallbackUrlChange: vi.fn(),
+        onReadyChange: vi.fn(),
+      },
+      {
+        selectedTemplateConfig: template,
+        integrations: {[AuthenticatorTypes.PASSKEY]: true},
+        relyingPartyId: 'localhost',
+        setRelyingPartyId,
+      },
+    );
+
+    const relyingPartyIdInput = screen.getByPlaceholderText(
+      'applications:onboarding.configure.details.relyingPartyId.placeholder',
+    );
+    const user = userEvent.setup();
+
+    await user.clear(relyingPartyIdInput);
+    await user.type(relyingPartyIdInput, 'example.com');
+
+    expect(setRelyingPartyId).toHaveBeenCalled();
+  });
+
+  it('allows updating relying party name for passkey configuration', async () => {
+    const template = createTemplate('Browser App', ['https://example.com/callback']);
+    const setRelyingPartyName = vi.fn();
+
+    renderWithContext(
+      {
+        technology: TechnologyApplicationTemplate.REACT,
+        platform: PlatformApplicationTemplate.BROWSER,
+        onHostingUrlChange: vi.fn(),
+        onCallbackUrlChange: vi.fn(),
+        onReadyChange: vi.fn(),
+      },
+      {
+        selectedTemplateConfig: template,
+        integrations: {[AuthenticatorTypes.PASSKEY]: true},
+        relyingPartyName: 'Test App',
+        setRelyingPartyName,
+      },
+    );
+
+    const relyingPartyNameInput = screen.getByPlaceholderText(
+      'applications:onboarding.configure.details.relyingPartyName.placeholder',
+    );
+    const user = userEvent.setup();
+
+    await user.clear(relyingPartyNameInput);
+    await user.type(relyingPartyNameInput, 'My Application');
+
+    expect(setRelyingPartyName).toHaveBeenCalled();
+  });
+
+  it('renders both passkey and URL configuration when passkey is enabled', () => {
+    const template = createTemplate('Browser App', []);
+
+    renderWithContext(
+      {
+        technology: TechnologyApplicationTemplate.REACT,
+        platform: PlatformApplicationTemplate.BROWSER,
+        onHostingUrlChange: vi.fn(),
+        onCallbackUrlChange: vi.fn(),
+        onReadyChange: vi.fn(),
+      },
+      {
+        selectedTemplateConfig: template,
+        integrations: {[AuthenticatorTypes.PASSKEY]: true},
+      },
+    );
+
+    // Should show passkey configuration
+    expect(screen.getByText('applications:onboarding.configure.details.passkey.title')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('applications:onboarding.configure.details.relyingPartyId.placeholder'),
+    ).toBeInTheDocument();
+
+    // Should also show URL configuration
+    expect(
+      screen.getByPlaceholderText('applications:onboarding.configure.details.hostingUrl.placeholder'),
+    ).toBeInTheDocument();
+  });
+
+  it('does not render passkey configuration when BASIC_AUTH is the only authenticator', () => {
+    const template = createTemplate('Browser App', []);
+
+    renderWithContext(
+      {
+        technology: TechnologyApplicationTemplate.REACT,
+        platform: PlatformApplicationTemplate.BROWSER,
+        onHostingUrlChange: vi.fn(),
+        onCallbackUrlChange: vi.fn(),
+        onReadyChange: vi.fn(),
+      },
+      {
+        selectedTemplateConfig: template,
+        integrations: {[AuthenticatorTypes.BASIC_AUTH]: true},
+      },
+    );
+
+    // Should not show passkey section
+    expect(screen.queryByText('applications:onboarding.configure.details.passkey.title')).not.toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText('applications:onboarding.configure.details.relyingPartyId.placeholder'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('initializes passkey relying party defaults from hostname and app name', async () => {
+    const template = createTemplate('Browser App', ['https://example.com/callback']);
+
+    renderWithContext(
+      {
+        technology: TechnologyApplicationTemplate.REACT,
+        platform: PlatformApplicationTemplate.BROWSER,
+        onHostingUrlChange: vi.fn(),
+        onCallbackUrlChange: vi.fn(),
+        onReadyChange: vi.fn(),
+      },
+      {
+        selectedTemplateConfig: template,
+        integrations: {[AuthenticatorTypes.PASSKEY]: true},
+        selectedAuthFlow: null,
+        relyingPartyId: '',
+        relyingPartyName: '',
+      },
+    );
+
+    const relyingPartyIdInput = screen.getByDisplayValue(
+      window.location.hostname,
+    );
+    const relyingPartyNameInput = screen.getByDisplayValue('Test App');
+
+    expect(relyingPartyIdInput).toHaveValue(window.location.hostname);
+    expect(relyingPartyNameInput).toHaveValue('Test App');
+  });
+
+  it('falls back to default passkey labels and placeholders when translations are empty', () => {
+    translationLookup = (): string => '';
+    const template = createTemplate('Browser App', ['https://example.com/callback']);
+
+    renderWithContext(
+      {
+        technology: TechnologyApplicationTemplate.REACT,
+        platform: PlatformApplicationTemplate.BROWSER,
+        onHostingUrlChange: vi.fn(),
+        onCallbackUrlChange: vi.fn(),
+        onReadyChange: vi.fn(),
+      },
+      {
+        selectedTemplateConfig: template,
+        integrations: {[AuthenticatorTypes.PASSKEY]: true},
+        selectedAuthFlow: null,
+      },
+    );
+
+    expect(screen.getByText('Passkey Settings')).toBeInTheDocument();
+    expect(screen.getByText('Relying Party ID')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('e.g., example.com')).toBeInTheDocument();
+    expect(screen.getByText('Relying Party Name')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('e.g., My App')).toBeInTheDocument();
   });
 });

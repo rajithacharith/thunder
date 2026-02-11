@@ -42,6 +42,7 @@ import getConfigurationTypeFromTemplate from '../../utils/getConfigurationTypeFr
 import type {PlatformApplicationTemplate, TechnologyApplicationTemplate} from '../../models/application-templates';
 import useApplicationCreate from '../../contexts/ApplicationCreate/useApplicationCreate';
 import {ApplicationCreateFlowConfiguration} from '../../models/application-create-flow';
+import {AuthenticatorTypes} from '../../../integrations/models/authenticators';
 
 /**
  * Zod schema for validating URL inputs (hosting URLs and callback URLs).
@@ -91,6 +92,8 @@ const formSchema = z
     callbackUrl: z.string().optional(),
     callbackMode: z.enum(['same', 'custom']),
     deeplink: z.string().optional(),
+    relyingPartyId: z.string().optional(),
+    relyingPartyName: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     // Validate hostingUrl for URL-based platforms
@@ -269,7 +272,16 @@ export default function ConfigureDetails({
 }: ConfigureDetailsProps): JSX.Element {
   const {t} = useTranslation();
   const logger = useLogger('ConfigureDetails');
-  const {selectedTemplateConfig} = useApplicationCreate();
+  const {
+    selectedTemplateConfig,
+    integrations,
+    selectedAuthFlow,
+    relyingPartyId: contextRelyingPartyId,
+    setRelyingPartyId,
+    relyingPartyName: contextRelyingPartyName,
+    setRelyingPartyName,
+    appName,
+  } = useApplicationCreate();
   const {
     control,
     formState: {errors, isValid},
@@ -283,8 +295,13 @@ export default function ConfigureDetails({
       callbackUrl: '',
       callbackMode: 'same',
       deeplink: '',
+      relyingPartyId: '',
+      relyingPartyName: '',
     },
   });
+
+  const isPasskeyConfigEnabled: boolean =
+    !selectedAuthFlow && (integrations[AuthenticatorTypes.PASSKEY] ?? false);
 
   const configurationType: ApplicationCreateFlowConfiguration =
     getConfigurationTypeFromTemplate(selectedTemplateConfig);
@@ -293,6 +310,8 @@ export default function ConfigureDetails({
   const callbackUrl: string = useWatch({control, name: 'callbackUrl'}) ?? '';
   const callbackMode: 'same' | 'custom' = useWatch({control, name: 'callbackMode'}) ?? 'same';
   const deeplink: string = useWatch({control, name: 'deeplink'}) ?? '';
+  const relyingPartyId: string = useWatch({control, name: 'relyingPartyId'}) ?? '';
+  const relyingPartyName: string = useWatch({control, name: 'relyingPartyName'}) ?? '';
   const defaultHostDisplay: string = hostingUrl;
 
   /**
@@ -316,6 +335,43 @@ export default function ConfigureDetails({
       // optional: swallow/handle error
     });
   }, [callbackMode, hostingUrl, setValue, onCallbackUrlChange, trigger, logger]);
+
+  /**
+   * Initialize relying party fields with defaults if empty.
+   */
+  useEffect(() => {
+    if (isPasskeyConfigEnabled) {
+      if (!relyingPartyId && !contextRelyingPartyId) {
+        // Default to hostname from window location (or hostingUrl if valid domain?)
+        // Better to use window.location.hostname as a sensible default for local dev
+        // or extract domain from hostingUrl if possible.
+        // For now using window.location.hostname to match previous behavior
+        setValue('relyingPartyId', window.location.hostname);
+      }
+      if (!relyingPartyName && !contextRelyingPartyName) {
+        setValue('relyingPartyName', appName);
+      }
+    }
+  }, [
+    isPasskeyConfigEnabled,
+    relyingPartyId,
+    relyingPartyName,
+    contextRelyingPartyId,
+    contextRelyingPartyName,
+    appName,
+    setValue,
+  ]);
+
+  /**
+   * Sync relying party fields with context.
+   */
+  useEffect(() => {
+    setRelyingPartyId(relyingPartyId);
+  }, [relyingPartyId, setRelyingPartyId]);
+
+  useEffect(() => {
+    setRelyingPartyName(relyingPartyName);
+  }, [relyingPartyName, setRelyingPartyName]);
 
   /**
    * Notify parent of hosting URL changes.
@@ -346,7 +402,18 @@ export default function ConfigureDetails({
    * Determine if step is ready based on validity and configuration type.
    */
   useEffect((): void => {
+    // If Passkey is enabled, we MUST have valid relying party info
+    if (isPasskeyConfigEnabled) {
+      if (!relyingPartyId || !relyingPartyName) {
+        onReadyChange(false);
+        return;
+      }
+    }
+
     if (configurationType === ApplicationCreateFlowConfiguration.NONE) {
+      // Even if no base config needed, if Passkey is enabled we need those fields valid
+      // The Passkey check block above handles returning false if invalid.
+      // If we are here, it means either Passkey is disabled OR Passkey fields are valid.
       onReadyChange(true);
       return;
     }
@@ -373,13 +440,19 @@ export default function ConfigureDetails({
     callbackUrl,
     callbackMode,
     deeplink,
+    relyingPartyId,
+    relyingPartyName,
+    isPasskeyConfigEnabled,
     errors,
     onReadyChange,
     selectedTemplateConfig,
   ]);
 
-  // For platforms that don't require configuration
-  if (configurationType === ApplicationCreateFlowConfiguration.NONE) {
+  // For platforms that don't require configuration AND no passkey configuration needed
+  if (
+    configurationType === ApplicationCreateFlowConfiguration.NONE &&
+    !isPasskeyConfigEnabled
+  ) {
     return (
       <Stack spacing={3}>
         <Box sx={{textAlign: 'center', py: 4}}>
@@ -401,11 +474,13 @@ export default function ConfigureDetails({
         <Typography variant="h1" gutterBottom>
           {t('applications:onboarding.configure.details.title')}
         </Typography>
-        <Typography variant="subtitle1" gutterBottom>
-          {configurationType === ApplicationCreateFlowConfiguration.DEEPLINK
-            ? t('applications:onboarding.configure.details.mobile.description')
-            : t('applications:onboarding.configure.details.description')}
-        </Typography>
+        {configurationType !== ApplicationCreateFlowConfiguration.NONE && (
+          <Typography variant="subtitle1" gutterBottom>
+            {configurationType === ApplicationCreateFlowConfiguration.DEEPLINK
+              ? t('applications:onboarding.configure.details.mobile.description')
+              : t('applications:onboarding.configure.details.description')}
+          </Typography>
+        )}
       </Stack>
 
       {/* User Type Selection - shown when template requires it and user types are available */}
@@ -564,6 +639,63 @@ export default function ConfigureDetails({
             <Alert severity="info">{t('applications:onboarding.configure.details.callbackUrl.info')}</Alert>
           </Stack>
         </>
+      )}
+      
+      {/* Passkey Relying Party Configuration */}
+      {isPasskeyConfigEnabled && (
+        <Stack spacing={2}>
+          <Typography variant="subtitle1" gutterBottom>
+            {t('applications:onboarding.configure.details.passkey.title') || 'Passkey Settings'}
+          </Typography>
+          <FormControl fullWidth required>
+            <FormLabel htmlFor="relying-party-id-input">
+              {t('applications:onboarding.configure.details.relyingPartyId.label') || 'Relying Party ID'}
+            </FormLabel>
+            <Controller
+              name="relyingPartyId"
+              control={control}
+              render={({field}) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  id="relying-party-id-input"
+                  placeholder={
+                    t('applications:onboarding.configure.details.relyingPartyId.placeholder') || 'e.g., example.com'
+                  }
+                  error={!!errors.relyingPartyId}
+                  helperText={
+                    errors.relyingPartyId?.message ??
+                    t('applications:onboarding.configure.details.relyingPartyId.helperText')
+                  }
+                />
+              )}
+            />
+          </FormControl>
+          <FormControl fullWidth required>
+            <FormLabel htmlFor="relying-party-name-input">
+              {t('applications:onboarding.configure.details.relyingPartyName.label') || 'Relying Party Name'}
+            </FormLabel>
+            <Controller
+              name="relyingPartyName"
+              control={control}
+              render={({field}) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  id="relying-party-name-input"
+                  placeholder={
+                    t('applications:onboarding.configure.details.relyingPartyName.placeholder') || 'e.g., My App'
+                  }
+                  error={!!errors.relyingPartyName}
+                  helperText={
+                    errors.relyingPartyName?.message ??
+                    t('applications:onboarding.configure.details.relyingPartyName.helperText')
+                  }
+                />
+              )}
+            />
+          </FormControl>
+        </Stack>
       )}
     </Stack>
   );

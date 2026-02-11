@@ -102,7 +102,7 @@ describe('findMatchingFlowForIntegrations', () => {
     });
 
     it('should normalize github-related integrations', () => {
-      const result = findMatchingFlowForIntegrations(['github-oauth'], availableFlows);
+      const result = findMatchingFlowForIntegrations(['basic_auth', 'github-oauth'], availableFlows);
       expect(result).not.toBeNull();
       expect(result?.handle).toContain('github');
     });
@@ -123,14 +123,11 @@ describe('findMatchingFlowForIntegrations', () => {
   });
 
   describe('Fallback Matching', () => {
-    it('should return superset flow when no exact match exists', () => {
-      const limitedFlows: BasicFlowDefinition[] = [
-        createFlow('1', 'basic-google-github-flow', 'Full Flow'),
-      ];
+    it('should return null when no exact match exists (strict matching)', () => {
+      const limitedFlows: BasicFlowDefinition[] = [createFlow('1', 'basic-google-github-flow', 'Full Flow')];
 
       const result = findMatchingFlowForIntegrations(['basic_auth', 'google'], limitedFlows);
-      expect(result).not.toBeNull();
-      expect(result?.handle).toBe('basic-google-github-flow');
+      expect(result).toBeNull();
     });
 
     it('should return null when no flow supports all integrations', () => {
@@ -142,7 +139,15 @@ describe('findMatchingFlowForIntegrations', () => {
   describe('Edge Cases', () => {
     it('should handle flows without handles', () => {
       const flowsWithNoHandle: BasicFlowDefinition[] = [
-        {id: '1', handle: '', name: 'No Handle Flow', flowType: 'AUTHENTICATION', activeVersion: 1, createdAt: '2025-01-01', updatedAt: '2025-01-01'},
+        {
+          id: '1',
+          handle: '',
+          name: 'No Handle Flow',
+          flowType: 'AUTHENTICATION',
+          activeVersion: 1,
+          createdAt: '2025-01-01',
+          updatedAt: '2025-01-01',
+        },
       ];
 
       const result = findMatchingFlowForIntegrations(['basic_auth'], flowsWithNoHandle);

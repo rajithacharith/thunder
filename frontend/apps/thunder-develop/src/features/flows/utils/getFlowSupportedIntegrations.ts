@@ -56,6 +56,11 @@ function getFlowSupportedIntegrations(flowHandle: string): string[] {
     integrations.push('sms-otp');
   }
 
+  // Check for Passkey
+  if (flowHandle.includes('passkey')) {
+    integrations.push(AuthenticatorTypes.PASSKEY);
+  }
+
   return integrations;
 }
 

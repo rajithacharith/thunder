@@ -78,23 +78,8 @@ function findMatchingFlowForIntegrations(
     return allIntegrationsSupported && exactMatch;
   });
 
-  // If no exact match, find a flow that at least supports all enabled integrations
   if (!matchingFlow) {
-    return (
-      availableFlows.find((flow) => {
-        if (!flow.handle) return false;
-
-        const flowSupportedIntegrations = getFlowSupportedIntegrations(flow.handle);
-        const normalizedFlowIntegrations = flowSupportedIntegrations.map((type) => {
-          if (type === AuthenticatorTypes.BASIC_AUTH) return 'basic_auth';
-          return type;
-        });
-
-        return normalizedIntegrations.every((integration) =>
-          normalizedFlowIntegrations.includes(integration),
-        );
-      }) ?? null
-    );
+    return null;
   }
 
   return matchingFlow;

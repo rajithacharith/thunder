@@ -67,6 +67,10 @@ const renderWithContext = (
     error: null,
     setError: vi.fn(),
     reset: vi.fn(),
+    relyingPartyId: '',
+    setRelyingPartyId: vi.fn(),
+    relyingPartyName: '',
+    setRelyingPartyName: vi.fn(),
     ...contextOverrides,
   };
 

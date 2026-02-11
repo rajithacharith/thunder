@@ -69,6 +69,10 @@ function TestWithMockValue() {
       setHostingUrl: vi.fn(),
       callbackUrlFromConfig: 'https://example.com/callback',
       setCallbackUrlFromConfig: vi.fn(),
+      relyingPartyId: '',
+      setRelyingPartyId: vi.fn(),
+      relyingPartyName: '',
+      setRelyingPartyName: vi.fn(),
       hasCompletedOnboarding: false,
       setHasCompletedOnboarding: vi.fn(),
       error: null,
@@ -110,6 +114,10 @@ describe('ApplicationCreateContext', () => {
   it('has correct TypeScript interface definition', () => {
     // This test ensures the interface matches expected shape
     const mockContext: ApplicationCreateContextType = {
+      relyingPartyId: '',
+      setRelyingPartyId: () => {},
+      relyingPartyName: '',
+      setRelyingPartyName: () => {},
       currentStep: 'NAME',
       setCurrentStep: () => {},
       appName: '',
@@ -155,6 +163,10 @@ describe('ApplicationCreateContext', () => {
 
   it('allows null values for optional properties', () => {
     const mockContext: ApplicationCreateContextType = {
+      relyingPartyId: '',
+      setRelyingPartyId: () => {},
+      relyingPartyName: '',
+      setRelyingPartyName: () => {},
       currentStep: 'NAME',
       setCurrentStep: () => {},
       appName: '',

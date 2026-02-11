@@ -103,6 +103,22 @@ vi.mock('../../../integrations/api/useIdentityProviders', () => ({
 }));
 
 // Mock flows API
+const {mockCreateFlow, mockGenerateFlowGraph} = vi.hoisted(() => ({
+  mockCreateFlow: vi.fn(),
+  mockGenerateFlowGraph: vi.fn(),
+}));
+
+vi.mock('../../../flows/api/useCreateFlow', () => ({
+  default: () => ({
+    mutate: mockCreateFlow,
+    isPending: false,
+  }),
+}));
+
+vi.mock('../../../flows/utils/generateFlowGraph', () => ({
+  default: mockGenerateFlowGraph,
+}));
+
 vi.mock('../../../flows/api/useGetFlows', () => ({
   default: () => ({
     data: {
@@ -190,7 +206,7 @@ vi.mock('../../components/create-application/configure-signin-options/ConfigureS
   const useApplicationCreateContextModule = await import('../../hooks/useApplicationCreateContext');
 
   return {
-    default: function MockConfigureSignInOptions({
+    default: vi.fn(({
       integrations,
       onIntegrationToggle,
       onReadyChange,
@@ -198,7 +214,7 @@ vi.mock('../../components/create-application/configure-signin-options/ConfigureS
       integrations: Record<string, boolean>;
       onIntegrationToggle: (id: string) => void;
       onReadyChange: (ready: boolean) => void;
-    }) {
+    }) => {
       const {setSelectedAuthFlow} = useApplicationCreateContextModule.default();
 
       setTimeout(() => {
@@ -222,7 +238,7 @@ vi.mock('../../components/create-application/configure-signin-options/ConfigureS
           </button>
         </div>
       );
-    },
+    }),
   };
 });
 
@@ -1285,6 +1301,136 @@ describe('ApplicationCreatePage', () => {
 
       // Preview should not be visible on COMPLETE step
       expect(screen.queryByTestId('preview')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Flow Generation', () => {
+    it('should generate flow and create application when integrations are selected but no flow matches', async () => {
+      // Mock createFlow to return success
+      mockCreateFlow.mockImplementation((_data, {onSuccess}: {onSuccess: (flow: unknown) => void}) => {
+        onSuccess({
+          id: 'generated-flow-id',
+          name: 'Generated Flow',
+          handle: 'generated-flow',
+        });
+      });
+
+      // Mock createApplication to success
+      mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
+        onSuccess({id: 'app-with-generated-flow', name: 'My App'} as Application);
+      });
+
+      // Override MockConfigureSignInOptions to simulate selection without setting a flow
+      const ConfigureSignInOptionsModule = await import('../../components/create-application/configure-signin-options/ConfigureSignInOptions');
+      const useApplicationCreateContextModule = await import('../../hooks/useApplicationCreateContext');
+
+      vi.mocked(ConfigureSignInOptionsModule.default).mockImplementation(
+        ({onReadyChange}: {onReadyChange?: (ready: boolean) => void}) => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
+          const {setSelectedAuthFlow, setIntegrations} = useApplicationCreateContextModule.default();
+          
+          const handleSetup = () => {
+             // Explicitly set flow to null to trigger generation logic
+            setSelectedAuthFlow(null);
+            // Explicitly set integrations
+            setIntegrations({'basic_auth': true});
+            onReadyChange?.(true);
+          };
+
+          return (
+            <div data-testid="configure-sign-in">
+              <button type="button" data-testid="setup-flow-generation" onClick={handleSetup}>Setup Flow Generation</button>
+            </div>
+          );
+        }
+      );
+
+      renderWithProviders();
+
+      // Navigate to options step
+      await user.type(screen.getByTestId('app-name-input'), 'My App');
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // At Options step
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      });
+      
+      // Trigger setup
+      await user.click(screen.getByTestId('setup-flow-generation'));
+      
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Experience -> Stack -> Configure
+      await user.click(screen.getByRole('button', {name: /continue/i})); // Experience
+      await user.click(screen.getByRole('button', {name: /continue/i})); // Stack
+      await user.click(screen.getByRole('button', {name: /continue/i})); // Configure Details
+
+      // Verify generateFlowGraph called
+      await waitFor(() => {
+        expect(mockGenerateFlowGraph).toHaveBeenCalled();
+        expect(mockCreateFlow).toHaveBeenCalled();
+        expect(mockCreateApplication).toHaveBeenCalled();
+      });
+
+      // Verify createApplication called with generated flow ID
+      const createAppCall = mockCreateApplication.mock.calls[0][0] as Application;
+      expect(createAppCall.auth_flow_id).toBe('generated-flow-id');
+    });
+
+    it('should show error when flow generation fails', async () => {
+       // Mock createFlow to fail
+       mockCreateFlow.mockImplementation((_data, {onError}: {onError: (error: Error) => void}) => {
+        onError(new Error('Flow generation failed'));
+      });
+
+       // Override MockConfigureSignInOptions to simulate selection without setting a flow
+       const ConfigureSignInOptionsModule = await import('../../components/create-application/configure-signin-options/ConfigureSignInOptions');
+       const useApplicationCreateContextModule = await import('../../hooks/useApplicationCreateContext');
+
+       vi.mocked(ConfigureSignInOptionsModule.default).mockImplementation(
+        ({onReadyChange}: {onReadyChange?: (ready: boolean) => void}) => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
+          const {setSelectedAuthFlow, setIntegrations} = useApplicationCreateContextModule.default();
+          
+          const handleSetup = () => {
+             setSelectedAuthFlow(null);
+             setIntegrations({'basic_auth': true});
+             onReadyChange?.(true);
+          };
+
+          return (
+            <div data-testid="configure-sign-in">
+               <button type="button" data-testid="setup-flow-generation-error" onClick={handleSetup}>Setup Flow Generation Error</button>
+            </div>
+          );
+        }
+      );
+
+      renderWithProviders();
+
+      // Navigate to trigger point
+      await user.type(screen.getByTestId('app-name-input'), 'My App');
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByRole('button', {name: /continue/i})); // Design
+      
+      // Options step
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      });
+      
+      // Trigger setup
+      await user.click(screen.getByTestId('setup-flow-generation-error'));
+      
+      await user.click(screen.getByRole('button', {name: /continue/i})); // Options -> Experience
+      await user.click(screen.getByRole('button', {name: /continue/i})); // Experience -> Stack
+      await user.click(screen.getByRole('button', {name: /continue/i})); // Stack -> Configure
+      await user.click(screen.getByRole('button', {name: /continue/i})); // Configure -> Create
+
+      await waitFor(() => {
+         expect(screen.getByText('Flow generation failed')).toBeInTheDocument();
+      });
     });
   });
 });

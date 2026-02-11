@@ -29,6 +29,7 @@ vi.mock('react-i18next', () => ({
     t: (key: string) => {
       const translations: Record<string, string> = {
         'applications:onboarding.configure.SignInOptions.usernamePassword': 'Username & Password',
+        'applications:onboarding.configure.SignInOptions.passkey': 'Passkey',
         'applications:onboarding.configure.SignInOptions.google': 'Google',
         'applications:onboarding.configure.SignInOptions.github': 'GitHub',
         'applications:onboarding.configure.SignInOptions.notConfigured': 'Not configured',
@@ -95,6 +96,12 @@ describe('IndividualMethodsToggleView', () => {
       expect(screen.getByText('Username & Password')).toBeInTheDocument();
     });
 
+    it('should render Passkey option', () => {
+      renderComponent();
+
+      expect(screen.getByText('Passkey')).toBeInTheDocument();
+    });
+
     it('should render Google option', () => {
       renderComponent();
 
@@ -140,6 +147,44 @@ describe('IndividualMethodsToggleView', () => {
       expect(switches[0]).not.toBeChecked();
     });
 
+    it('should show Passkey as enabled when passkey is true', () => {
+      renderComponent({
+        integrations: {
+          [AuthenticatorTypes.BASIC_AUTH]: false,
+          [AuthenticatorTypes.PASSKEY]: true,
+        },
+      });
+
+      const switches = screen.getAllByRole('switch');
+      // Second switch should be for Passkey
+      expect(switches[1]).toBeChecked();
+    });
+
+    it('should show Passkey as disabled when passkey is false', () => {
+      renderComponent({
+        integrations: {
+          [AuthenticatorTypes.BASIC_AUTH]: false,
+          [AuthenticatorTypes.PASSKEY]: false,
+        },
+      });
+
+      const switches = screen.getAllByRole('switch');
+      // Second switch should be for Passkey
+      expect(switches[1]).not.toBeChecked();
+    });
+
+    it('should show Passkey as disabled when passkey is undefined', () => {
+      renderComponent({
+        integrations: {
+          [AuthenticatorTypes.BASIC_AUTH]: false,
+          [AuthenticatorTypes.PASSKEY]: undefined as unknown as boolean,
+        },
+      });
+
+      const switches = screen.getAllByRole('switch');
+      expect(switches[1]).not.toBeChecked();
+    });
+
     it('should show Google as enabled when its ID is in integrations', () => {
       renderComponent({
         integrations: {
@@ -150,7 +195,7 @@ describe('IndividualMethodsToggleView', () => {
 
       const switches = screen.getAllByRole('switch');
       // Second switch should be for Google
-      expect(switches[1]).toBeChecked();
+      expect(switches[2]).toBeChecked();
     });
 
     it('should show GitHub as enabled when its ID is in integrations', () => {
@@ -163,7 +208,7 @@ describe('IndividualMethodsToggleView', () => {
 
       const switches = screen.getAllByRole('switch');
       // Third switch should be for GitHub
-      expect(switches[2]).toBeChecked();
+      expect(switches[3]).toBeChecked();
     });
   });
 
@@ -178,12 +223,22 @@ describe('IndividualMethodsToggleView', () => {
       expect(mockOnIntegrationToggle).toHaveBeenCalledWith(AuthenticatorTypes.BASIC_AUTH);
     });
 
+    it('should call onIntegrationToggle with passkey when Passkey is toggled', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      const switches = screen.getAllByRole('switch');
+      await user.click(switches[1]); // Passkey switch
+
+      expect(mockOnIntegrationToggle).toHaveBeenCalledWith(AuthenticatorTypes.PASSKEY);
+    });
+
     it('should call onIntegrationToggle with google provider ID when Google is toggled', async () => {
       const user = userEvent.setup();
       renderComponent();
 
       const switches = screen.getAllByRole('switch');
-      await user.click(switches[1]); // Google switch
+      await user.click(switches[2]); // Google switch
 
       expect(mockOnIntegrationToggle).toHaveBeenCalledWith('google-idp');
     });
@@ -193,7 +248,7 @@ describe('IndividualMethodsToggleView', () => {
       renderComponent();
 
       const switches = screen.getAllByRole('switch');
-      await user.click(switches[2]); // GitHub switch
+      await user.click(switches[3]); // GitHub switch
 
       expect(mockOnIntegrationToggle).toHaveBeenCalledWith('github-idp');
     });
@@ -294,9 +349,9 @@ describe('IndividualMethodsToggleView', () => {
         availableIntegrations: [],
       });
 
-      // Only Username & Password should have a switch
+      // Only Username & Password and Passkey should have a switch
       const switches = screen.getAllByRole('switch');
-      expect(switches).toHaveLength(1);
+      expect(switches).toHaveLength(2);
     });
   });
 

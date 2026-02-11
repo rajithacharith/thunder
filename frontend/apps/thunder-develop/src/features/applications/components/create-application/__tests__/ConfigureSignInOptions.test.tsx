@@ -316,7 +316,7 @@ describe('ConfigureSignInOptions', () => {
     renderComponent();
 
     const switches = screen.getAllByRole('switch');
-    await user.click(switches[1]); // Click Google switch
+    await user.click(switches[2]); // Click Google switch
 
     expect(mockOnIntegrationToggle).toHaveBeenCalledWith('google-idp');
   });
@@ -338,8 +338,8 @@ describe('ConfigureSignInOptions', () => {
 
     const switches = screen.getAllByRole('switch');
     expect(switches[0]).toBeChecked(); // Username & Password
-    expect(switches[1]).toBeChecked(); // Google
-    expect(switches[2]).not.toBeChecked(); // GitHub
+    expect(switches[2]).toBeChecked(); // Google
+    expect(switches[3]).not.toBeChecked(); // GitHub
   });
 
   it('should show username/password option when no integrations are available', () => {
@@ -489,7 +489,7 @@ describe('ConfigureSignInOptions', () => {
     });
 
     let switches = screen.getAllByRole('switch');
-    expect(switches[1]).toBeChecked();
+    expect(switches[2]).toBeChecked();
 
     rerender({
       integrations: {
@@ -499,7 +499,7 @@ describe('ConfigureSignInOptions', () => {
     });
 
     switches = screen.getAllByRole('switch');
-    expect(switches[1]).toBeChecked();
+    expect(switches[2]).toBeChecked();
   });
 
   describe('Google and GitHub always shown', () => {
@@ -546,8 +546,8 @@ describe('ConfigureSignInOptions', () => {
 
       // Should not have a switch for Google (disabled)
       const switches = screen.getAllByRole('switch');
-      // Only username/password should have a switch
-      expect(switches.length).toBe(1);
+      // Only username/password and passkey should have a switch
+      expect(switches.length).toBe(2);
 
       // Google button should be disabled
       const googleButton = googleText.closest('.MuiListItemButton-root');
@@ -582,8 +582,8 @@ describe('ConfigureSignInOptions', () => {
       renderComponent();
 
       const switches = screen.getAllByRole('switch');
-      // Should have switches for username/password, Google, and GitHub
-      expect(switches.length).toBe(3);
+      // Should have switches for username/password, passkey, Google, and GitHub
+      expect(switches.length).toBe(4);
 
       // Google should be toggleable
       const googleButton = screen.getByText('Google').closest('.MuiListItemButton-root');
@@ -600,8 +600,8 @@ describe('ConfigureSignInOptions', () => {
       renderComponent();
 
       const switches = screen.getAllByRole('switch');
-      // Should have switches for username/password, Google, and GitHub
-      expect(switches.length).toBe(3);
+      // Should have switches for username/password, passkey, Google, and GitHub
+      expect(switches.length).toBe(4);
 
       // GitHub should be toggleable
       const githubButton = screen.getByText('GitHub').closest('.MuiListItemButton-root');

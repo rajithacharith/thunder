@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {Box, Stack, Button, IconButton, LinearProgress, Breadcrumbs, Typography, Alert} from '@wso2/oxygen-ui';
+import {Box, Stack, Button, IconButton, LinearProgress, Breadcrumbs, Typography, Alert, CircularProgress} from '@wso2/oxygen-ui';
 import {X, ChevronRight} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useNavigate} from 'react-router';
@@ -52,6 +52,13 @@ import {
 import TemplateConstants from '../constants/template-constants';
 import getConfigurationTypeFromTemplate from '../utils/getConfigurationTypeFromTemplate';
 import useGetUserTypes from '../../user-types/api/useGetUserTypes';
+import useCreateFlow from '../../flows/api/useCreateFlow';
+import generateFlowGraph from '../../flows/utils/generateFlowGraph';
+import useIdentityProviders from '../../integrations/api/useIdentityProviders';
+import {IdentityProviderTypes} from '../../integrations/models/identity-provider';
+import {AuthenticatorTypes} from '../../integrations/models/authenticators';
+import type {BasicFlowDefinition} from '../../flows/models/responses';
+
 
 export default function ApplicationCreatePage(): JSX.Element {
   const {t} = useTranslation();
@@ -68,6 +75,7 @@ export default function ApplicationCreatePage(): JSX.Element {
     integrations,
     toggleIntegration,
     selectedAuthFlow,
+    setSelectedAuthFlow,
     signInApproach,
     setSignInApproach,
     selectedTechnology,
@@ -75,6 +83,8 @@ export default function ApplicationCreatePage(): JSX.Element {
     setHostingUrl,
     callbackUrlFromConfig,
     setCallbackUrlFromConfig,
+    relyingPartyId,
+    relyingPartyName,
     selectedTemplateConfig,
     error,
     setError,
@@ -101,6 +111,9 @@ export default function ApplicationCreatePage(): JSX.Element {
 
   const [selectedUserTypes, setSelectedUserTypes] = useState<string[]>([]);
   const [createdApplication, setCreatedApplication] = useState<Application | null>(null);
+
+  const createFlow = useCreateFlow();
+  const {data: idpData} = useIdentityProviders();
 
   const [stepReady, setStepReady] = useState<Record<ApplicationCreateFlowStep, boolean>>({
     NAME: false,
@@ -145,6 +158,7 @@ export default function ApplicationCreatePage(): JSX.Element {
 
   const handleIntegrationToggle = (integrationId: string): void => {
     toggleIntegration(integrationId);
+    setSelectedAuthFlow(null);
   };
 
   const handleBrandingSelectionChange = (useDefault: boolean, brandingId?: string): void => {
@@ -152,10 +166,10 @@ export default function ApplicationCreatePage(): JSX.Element {
     setDefaultBrandingId(brandingId);
   };
 
-  const handleCreateApplication = (skipOAuthConfig = false): void => {
+  const handleCreateApplication = (skipOAuthConfig = false, overrideFlowId?: string): void => {
     setError(null);
 
-    const authFlowId: string | undefined = selectedAuthFlow?.id;
+    const authFlowId: string | undefined = overrideFlowId ?? selectedAuthFlow?.id;
 
     // Validate that we have a valid flow selected
     if (!authFlowId) {
@@ -329,6 +343,49 @@ export default function ApplicationCreatePage(): JSX.Element {
     });
   };
 
+  const ensureFlowAndCreateApplication = (skipOAuthConfig = false): void => {
+    // If we already have a selected flow, proceed to create application
+    if (selectedAuthFlow) {
+      handleCreateApplication(skipOAuthConfig);
+      return;
+    }
+
+    // Check if we need to generate a flow
+    const hasEnabledIntegrations = Object.values(integrations).some((v) => v);
+
+    if (hasEnabledIntegrations) {
+      const availableIntegrations = idpData ?? [];
+      const googleProvider = availableIntegrations.find((idp) => idp.type === IdentityProviderTypes.GOOGLE);
+      const githubProvider = availableIntegrations.find((idp) => idp.type === IdentityProviderTypes.GITHUB);
+
+      const generatedFlowRequest = generateFlowGraph({
+        hasBasicAuth: integrations[AuthenticatorTypes.BASIC_AUTH] ?? false,
+        hasPasskey: integrations[AuthenticatorTypes.PASSKEY] ?? false,
+        googleIdpId: integrations[googleProvider?.id ?? ''] ? googleProvider?.id : undefined,
+        githubIdpId: integrations[githubProvider?.id ?? ''] ? githubProvider?.id : undefined,
+        hasSmsOtp: integrations['sms-otp'] ?? false,
+        relyingPartyId: relyingPartyId || window.location.hostname,
+        relyingPartyName: relyingPartyName || appName,
+      });
+
+      createFlow.mutate(generatedFlowRequest, {
+        onSuccess: (savedFlow) => {
+          // We cast because BasicFlowDefinition is a subset of FlowDefinitionResponse
+          setSelectedAuthFlow(savedFlow as unknown as BasicFlowDefinition);
+
+          // Proceed to create application with the newly generated flow
+          handleCreateApplication(skipOAuthConfig, savedFlow.id);
+        },
+        onError: (err) => {
+          setError(err.message ?? 'Failed to generate authentication flow.');
+        },
+      });
+    } else {
+      // If no integrations selected, try to create application (will fail validation if flow required)
+      handleCreateApplication(skipOAuthConfig);
+    }
+  };
+
   const handleNextStep = (): void => {
     switch (currentStep) {
       case ApplicationCreateFlowStep.NAME:
@@ -345,27 +402,41 @@ export default function ApplicationCreatePage(): JSX.Element {
         setCurrentStep(ApplicationCreateFlowStep.STACK);
         break;
       case ApplicationCreateFlowStep.STACK: {
-        // For CUSTOM approach, create app immediately after technology selection
+        // For INBUILT approach and EMBEDDED approach, check if passkey configuration is needed
+        const isPasskeyConfigEnabled: boolean =
+          !selectedAuthFlow && (integrations[AuthenticatorTypes.PASSKEY] ?? false);
+
+        // For CUSTOM approach, create app immediately after technology selection, unless passkey config is needed
         if (signInApproach === ApplicationCreateFlowSignInApproach.EMBEDDED) {
-          handleCreateApplication(true); // Skip OAuth for custom
+          if (isPasskeyConfigEnabled) {
+            setCurrentStep(ApplicationCreateFlowStep.CONFIGURE);
+          } else {
+            ensureFlowAndCreateApplication(true); // Skip OAuth for custom
+          }
           break;
         }
 
-        // For INBUILT approach, check if configuration is needed based on template
+        const configurationType: ApplicationCreateFlowConfiguration =
+          getConfigurationTypeFromTemplate(selectedTemplateConfig);
+
         const needsConfiguration: boolean =
-          getConfigurationTypeFromTemplate(selectedTemplateConfig) !== ApplicationCreateFlowConfiguration.NONE;
+          configurationType !== ApplicationCreateFlowConfiguration.NONE || isPasskeyConfigEnabled;
 
         if (needsConfiguration) {
           setCurrentStep(ApplicationCreateFlowStep.CONFIGURE);
         } else {
           // Skip configure step for technologies/platforms that don't need it
-          handleCreateApplication(false);
+          ensureFlowAndCreateApplication(false);
         }
         break;
       }
       case ApplicationCreateFlowStep.CONFIGURE:
-        // Configuration complete, create application with OAuth config
-        handleCreateApplication(false);
+        // Configuration complete, create application
+        if (signInApproach === ApplicationCreateFlowSignInApproach.EMBEDDED) {
+          ensureFlowAndCreateApplication(true);
+        } else {
+          ensureFlowAndCreateApplication(false);
+        }
         break;
       case ApplicationCreateFlowStep.COMPLETE:
         // Navigate to the application details page
@@ -670,14 +741,17 @@ export default function ApplicationCreatePage(): JSX.Element {
                     )}
 
                   {currentStep !== ApplicationCreateFlowStep.COMPLETE && (
-                    <Button
-                      variant="contained"
-                      disabled={!stepReady[currentStep]}
-                      sx={{minWidth: 100}}
-                      onClick={handleNextStep}
-                    >
-                      {t('common:actions.continue')}
-                    </Button>
+                    <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
+                      {createFlow.isPending && <CircularProgress size={20} />}
+                      <Button
+                        variant="contained"
+                        disabled={!stepReady[currentStep] || createFlow.isPending}
+                        sx={{minWidth: 100}}
+                        onClick={handleNextStep}
+                      >
+                        {t('common:actions.continue')}
+                      </Button>
+                    </Box>
                   )}
                 </Box>
               </Box>
