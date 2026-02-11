@@ -45,20 +45,8 @@ describe('TokenConstants', () => {
       });
     });
 
-    it('should contain organization unit claims', () => {
-      const ouClaims = ['ouHandle', 'ouId', 'ouName'];
-
-      ouClaims.forEach((claim) => {
-        expect(TokenConstants.DEFAULT_TOKEN_ATTRIBUTES).toContain(claim);
-      });
-    });
-
-    it('should contain userType claim', () => {
-      expect(TokenConstants.DEFAULT_TOKEN_ATTRIBUTES).toContain('userType');
-    });
-
     it('should have the expected number of attributes', () => {
-      expect(TokenConstants.DEFAULT_TOKEN_ATTRIBUTES).toHaveLength(14);
+      expect(TokenConstants.DEFAULT_TOKEN_ATTRIBUTES).toHaveLength(10);
     });
 
     it('should not contain duplicate values', () => {
@@ -76,15 +64,46 @@ describe('TokenConstants', () => {
         'iss',
         'jti',
         'nbf',
-        'ouHandle',
-        'ouId',
-        'ouName',
         'scope',
         'sub',
-        'userType',
       ];
 
       expect(TokenConstants.DEFAULT_TOKEN_ATTRIBUTES).toEqual(expectedAttributes);
+    });
+  });
+
+  describe('USER_INFO_DEFAULT_ATTRIBUTES', () => {
+    it('should be defined', () => {
+      expect(TokenConstants.USER_INFO_DEFAULT_ATTRIBUTES).toBeDefined();
+    });
+
+    it('should be an array', () => {
+      expect(Array.isArray(TokenConstants.USER_INFO_DEFAULT_ATTRIBUTES)).toBe(true);
+    });
+
+    it('should contain sub attribute', () => {
+      expect(TokenConstants.USER_INFO_DEFAULT_ATTRIBUTES).toContain('sub');
+    });
+
+    it('should match expected defaults', () => {
+      expect(TokenConstants.USER_INFO_DEFAULT_ATTRIBUTES).toEqual(['sub']);
+    });
+  });
+
+  describe('ADDITIONAL_USER_ATTRIBUTES', () => {
+    it('should be defined', () => {
+      expect(TokenConstants.ADDITIONAL_USER_ATTRIBUTES).toBeDefined();
+    });
+
+    it('should be an array', () => {
+      expect(Array.isArray(TokenConstants.ADDITIONAL_USER_ATTRIBUTES)).toBe(true);
+    });
+
+    it('should contain expected attributes', () => {
+      expect(TokenConstants.ADDITIONAL_USER_ATTRIBUTES).toContain('ouHandle');
+      expect(TokenConstants.ADDITIONAL_USER_ATTRIBUTES).toContain('ouId');
+      expect(TokenConstants.ADDITIONAL_USER_ATTRIBUTES).toContain('ouName');
+      expect(TokenConstants.ADDITIONAL_USER_ATTRIBUTES).toContain('userType');
     });
   });
 });
