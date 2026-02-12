@@ -38,8 +38,6 @@ import {
   Select,
   MenuItem,
   CircularProgress,
-  Avatar,
-  useTheme,
 } from '@wso2/oxygen-ui';
 import {
   EmbeddedFlowComponentType,
@@ -51,7 +49,7 @@ import {Eye, EyeClosed} from '@wso2/oxygen-ui-icons-react';
 import {useNavigate} from 'react-router';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {mapEmbeddedFlowTextVariant, useBranding} from '@thunder/shared-branding';
+import {mapEmbeddedFlowTextVariant, useDesign} from '@thunder/shared-design';
 import {useConfig} from '@thunder/shared-contexts';
 import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import ROUTES from '../../constants/routes';
@@ -83,8 +81,7 @@ export default function AcceptInviteBox(): JSX.Element {
   const {resolve} = useTemplateLiteralResolver();
   const {t} = useTranslation();
   const {getServerUrl} = useConfig();
-  const {images, theme: brandingTheme, isBrandingEnabled} = useBranding();
-  const theme = useTheme();
+  const {isDesignEnabled} = useDesign();
 
   const [showPasswordMap, setShowPasswordMap] = useState<Record<string, boolean>>({});
   const baseUrl = getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string);
@@ -272,36 +269,17 @@ export default function AcceptInviteBox(): JSX.Element {
     <Stack gap={2}>
       <ColorSchemeImage
         src={{
-          light: images?.logo?.primary?.url ?? `${import.meta.env.BASE_URL}/assets/images/logo.svg`,
-          dark: images?.logo?.primary?.url ?? `${import.meta.env.BASE_URL}/assets/images/logo-inverted.svg`,
+          light: `${import.meta.env.BASE_URL}/assets/images/logo.svg`,
+          dark: `${import.meta.env.BASE_URL}/assets/images/logo-inverted.svg`,
         }}
         alt={{
-          light: images?.logo?.primary?.alt ?? 'Logo (Light)',
-          dark: images?.logo?.primary?.alt ?? 'Logo (Dark)',
+          light: 'Logo (Light)',
+          dark: 'Logo (Dark)',
         }}
-        height={images?.logo?.primary?.height ?? 30}
-        width={images?.logo?.primary?.width ?? 'auto'}
+        height={30}
+        width="auto"
         sx={{display: {xs: 'flex', md: 'none'}}}
       />
-      {images?.logo?.primary?.url && (
-        <Box sx={{display: {xs: 'none', md: 'flex'}, justifyContent: 'center', mb: 2}}>
-          <Avatar
-            src={images.logo.primary.url}
-            alt={images.logo.primary.alt ?? 'Logo'}
-            sx={{
-              width: 64,
-              height: 64,
-              p: 1,
-              ...theme.applyStyles('light', {
-                backgroundColor: brandingTheme?.palette?.primary?.main ?? theme.palette.primary.main,
-              }),
-              ...theme.applyStyles('dark', {
-                backgroundColor: brandingTheme?.palette?.primary?.main ?? theme.palette.primary.main,
-              }),
-            }}
-          />
-        </Box>
-      )}
       <StyledPaper variant="outlined">
         <AcceptInvite
           baseUrl={baseUrl}
@@ -387,7 +365,7 @@ export default function AcceptInviteBox(): JSX.Element {
                           <Typography
                             key={component.id ?? index}
                             variant={mapEmbeddedFlowTextVariant(variant)}
-                            sx={{mb: 1, textAlign: isBrandingEnabled ? 'center' : 'left'}}
+                            sx={{mb: 1, textAlign: isDesignEnabled ? 'center' : 'left'}}
                           >
                             {t(resolve(labelText) ?? labelText)}
                           </Typography>

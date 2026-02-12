@@ -27,12 +27,12 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('@thunder/shared-branding', () => ({
-  useGetBrandings: vi.fn(() => ({
+vi.mock('@thunder/shared-design', () => ({
+  useGetThemes: vi.fn(() => ({
     data: {
-      brandings: [
-        {id: 'branding-1', displayName: 'Default Theme'},
-        {id: 'branding-2', displayName: 'Dark Theme'},
+      themes: [
+        {id: 'theme-1', displayName: 'Default Theme'},
+        {id: 'theme-2', displayName: 'Dark Theme'},
       ],
     },
     isLoading: false,
@@ -45,7 +45,7 @@ describe('EditCustomizationSettings', () => {
     name: 'Test Application',
     description: 'Test Description',
     template: 'custom',
-    branding_id: 'branding-1',
+    theme_id: 'theme-1',
     tos_uri: 'https://example.com/terms',
     policy_uri: 'https://example.com/privacy',
     contacts: ['contact@example.com'],
@@ -121,7 +121,7 @@ describe('EditCustomizationSettings', () => {
         <EditCustomizationSettings application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />,
       );
 
-      // Verify branding from application
+      // Verify theme from application
       expect(screen.getByRole('combobox')).toHaveValue('Default Theme');
 
       // Verify URLs from application
@@ -137,7 +137,7 @@ describe('EditCustomizationSettings', () => {
 
     it('should propagate editedApp prop to all sections', () => {
       const editedApp = {
-        branding_id: 'branding-2',
+        theme_id: 'theme-2',
         tos_uri: 'https://edited.com/terms',
         policy_uri: 'https://edited.com/privacy',
         contacts: ['edited@example.com'],
@@ -151,7 +151,7 @@ describe('EditCustomizationSettings', () => {
         />,
       );
 
-      // Verify edited branding
+      // Verify edited theme
       expect(screen.getByRole('combobox')).toHaveValue('Dark Theme');
 
       // Verify edited URLs

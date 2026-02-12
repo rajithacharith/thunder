@@ -28,16 +28,23 @@ vi.mock('../App', () => ({
   default: () => <div data-testid="app">App</div>,
 }));
 
-// Create mock for useBranding
-const mockUseBranding = vi.fn();
-vi.mock('@thunder/shared-branding', () => ({
+// Create mock for useDesign
+const mockUseDesign = vi.fn();
+vi.mock('@thunder/shared-design', () => ({
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-  useBranding: () => mockUseBranding(),
+  useDesign: () => mockUseDesign(),
 }));
 
 // Mock OxygenUI components - capture props passed to theme provider
 vi.mock('@wso2/oxygen-ui', () => ({
-  OxygenUIThemeProvider: ({children, ...rest}: {children: React.ReactNode; theme?: unknown; radialBackground?: boolean}) => {
+  OxygenUIThemeProvider: ({
+    children,
+    ...rest
+  }: {
+    children: React.ReactNode;
+    theme?: unknown;
+    radialBackground?: boolean;
+  }) => {
     capturedThemeProviderProps = {...rest};
     return <div data-testid="theme-provider">{children}</div>;
   },
@@ -50,12 +57,11 @@ describe('AppWithTheme', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     capturedThemeProviderProps = undefined;
-    mockUseBranding.mockReturnValue({
+    mockUseDesign.mockReturnValue({
       theme: null,
       isLoading: false,
-      images: null,
       layout: null,
-      isBrandingEnabled: false,
+      isDesignEnabled: false,
     });
   });
 
@@ -80,12 +86,11 @@ describe('AppWithTheme', () => {
   });
 
   it('renders CircularProgress when loading', () => {
-    mockUseBranding.mockReturnValue({
+    mockUseDesign.mockReturnValue({
       theme: null,
       isLoading: true,
-      images: null,
       layout: null,
-      isBrandingEnabled: false,
+      isDesignEnabled: false,
     });
 
     render(<AppWithTheme />);
@@ -94,12 +99,11 @@ describe('AppWithTheme', () => {
   });
 
   it('does not pass theme to OxygenUIThemeProvider when theme is null', () => {
-    mockUseBranding.mockReturnValue({
+    mockUseDesign.mockReturnValue({
       theme: null,
       isLoading: false,
-      images: null,
       layout: null,
-      isBrandingEnabled: false,
+      isDesignEnabled: false,
     });
 
     render(<AppWithTheme />);
@@ -109,12 +113,11 @@ describe('AppWithTheme', () => {
   });
 
   it('does not pass theme to OxygenUIThemeProvider when theme is undefined', () => {
-    mockUseBranding.mockReturnValue({
+    mockUseDesign.mockReturnValue({
       theme: undefined,
       isLoading: false,
-      images: null,
       layout: null,
-      isBrandingEnabled: false,
+      isDesignEnabled: false,
     });
 
     render(<AppWithTheme />);
@@ -124,12 +127,12 @@ describe('AppWithTheme', () => {
 
   it('passes theme to OxygenUIThemeProvider when theme is available', () => {
     const mockTheme = {palette: {primary: {main: '#ff0000'}}};
-    mockUseBranding.mockReturnValue({
-      theme: mockTheme,
+    mockUseDesign.mockReturnValue({
+      theme: null,
+      transformedTheme: mockTheme,
       isLoading: false,
-      images: null,
       layout: null,
-      isBrandingEnabled: true,
+      isDesignEnabled: true,
     });
 
     render(<AppWithTheme />);
@@ -140,12 +143,12 @@ describe('AppWithTheme', () => {
 
   it('shows loading spinner when isLoading is true and theme is present', () => {
     const mockTheme = {palette: {primary: {main: '#ff0000'}}};
-    mockUseBranding.mockReturnValue({
-      theme: mockTheme,
+    mockUseDesign.mockReturnValue({
+      theme: null,
+      transformedTheme: mockTheme,
       isLoading: true,
-      images: null,
       layout: null,
-      isBrandingEnabled: true,
+      isDesignEnabled: true,
     });
 
     render(<AppWithTheme />);

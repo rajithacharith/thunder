@@ -18,6 +18,7 @@
 
 import type {PropsWithChildren} from 'react';
 import {useState, useMemo, useCallback, useEffect} from 'react';
+import type {ThemeConfig} from '@thunder/shared-design';
 import useGetApplications from '../../api/useGetApplications';
 import {AuthenticatorTypes} from '../../../integrations/models/authenticators';
 import ApplicationCreateContext, {type ApplicationCreateContextType} from './ApplicationCreateContext';
@@ -28,7 +29,6 @@ import type {
   ApplicationTemplate,
 } from '../../models/application-templates';
 import type {BasicFlowDefinition} from '../../../flows/models/responses';
-import generateAppPrimaryColorSuggestions from '../../utils/generateAppPrimaryColorSuggestions';
 
 /**
  * Props for the {@link ApplicationCreateProvider} component.
@@ -45,8 +45,10 @@ export type ApplicationCreateProviderProps = PropsWithChildren;
 const INITIAL_STATE: {
   currentStep: ApplicationCreateFlowStep;
   appName: string;
-  selectedColor: string;
+  themeId: string | null;
+  selectedTheme: ThemeConfig | null;
   appLogo: string | null;
+  selectedColor: string;
   integrations: Record<string, boolean>;
   selectedAuthFlow: BasicFlowDefinition | null;
   signInApproach: ApplicationCreateFlowSignInApproach;
@@ -61,8 +63,10 @@ const INITIAL_STATE: {
 } = {
   currentStep: ApplicationCreateFlowStep.NAME,
   appName: '',
-  selectedColor: generateAppPrimaryColorSuggestions()[0],
+  themeId: null,
+  selectedTheme: null,
   appLogo: null,
+  selectedColor: '#3B82F6',
   integrations: {
     [AuthenticatorTypes.BASIC_AUTH]: true,
   },
@@ -114,8 +118,10 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
   const {data: applicationsData} = useGetApplications({limit: 1, offset: 0});
   const [currentStep, setCurrentStep] = useState<ApplicationCreateFlowStep>(INITIAL_STATE.currentStep);
   const [appName, setAppName] = useState<string>(INITIAL_STATE.appName);
-  const [selectedColor, setSelectedColor] = useState<string>(INITIAL_STATE.selectedColor);
+  const [themeId, setThemeId] = useState<string | null>(INITIAL_STATE.themeId);
+  const [selectedTheme, setSelectedTheme] = useState<ThemeConfig | null>(INITIAL_STATE.selectedTheme);
   const [appLogo, setAppLogo] = useState<string | null>(INITIAL_STATE.appLogo);
+  const [selectedColor, setSelectedColor] = useState<string>(INITIAL_STATE.selectedColor);
   const [integrations, setIntegrations] = useState<Record<string, boolean>>(INITIAL_STATE.integrations);
   const [selectedAuthFlow, setSelectedAuthFlow] = useState<BasicFlowDefinition | null>(INITIAL_STATE.selectedAuthFlow);
   const [signInApproach, setSignInApproach] = useState<ApplicationCreateFlowSignInApproach>(
@@ -154,8 +160,10 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
   const reset = useCallback((): void => {
     setCurrentStep(INITIAL_STATE.currentStep);
     setAppName(INITIAL_STATE.appName);
-    setSelectedColor(INITIAL_STATE.selectedColor);
+    setThemeId(INITIAL_STATE.themeId);
+    setSelectedTheme(INITIAL_STATE.selectedTheme);
     setAppLogo(INITIAL_STATE.appLogo);
+    setSelectedColor(INITIAL_STATE.selectedColor);
     setIntegrations(INITIAL_STATE.integrations);
     setSelectedAuthFlow(INITIAL_STATE.selectedAuthFlow);
     setSignInApproach(INITIAL_STATE.signInApproach);
@@ -175,10 +183,14 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
       setCurrentStep,
       appName,
       setAppName,
-      selectedColor,
-      setSelectedColor,
+      themeId,
+      setThemeId,
+      selectedTheme,
+      setSelectedTheme,
       appLogo,
       setAppLogo,
+      selectedColor,
+      setSelectedColor,
       integrations,
       setIntegrations,
       toggleIntegration,
@@ -209,8 +221,10 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
     [
       currentStep,
       appName,
-      selectedColor,
+      themeId,
+      selectedTheme,
       appLogo,
+      selectedColor,
       integrations,
       toggleIntegration,
       selectedAuthFlow,

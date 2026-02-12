@@ -29,23 +29,18 @@ vi.mock('../../../components/SignIn/SignInSlogan', () => ({
   default: () => <div data-testid="signin-slogan">SignInSlogan</div>,
 }));
 
-// Mock useBranding hook
-const mockUseBranding = vi.fn();
-vi.mock('@thunder/shared-branding', () => ({
+// Mock useDesign hook
+const mockUseDesign = vi.fn();
+vi.mock('@thunder/shared-design', () => ({
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-  useBranding: () => mockUseBranding(),
-  LayoutType: {
-    LEFT_ALIGNED: 'LEFT_ALIGNED',
-    CENTERED: 'CENTERED',
-  },
+  useDesign: () => mockUseDesign(),
 }));
 
 describe('SignIn', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseBranding.mockReturnValue({
-      isBrandingEnabled: false,
-      layout: null,
+    mockUseDesign.mockReturnValue({
+      isDesignEnabled: false,
     });
   });
 
@@ -59,28 +54,17 @@ describe('SignIn', () => {
     expect(screen.getByTestId('signin-box')).toBeInTheDocument();
   });
 
-  it('shows SignInSlogan when branding is not enabled', () => {
-    mockUseBranding.mockReturnValue({
-      isBrandingEnabled: false,
-      layout: null,
+  it('shows SignInSlogan when design is not enabled', () => {
+    mockUseDesign.mockReturnValue({
+      isDesignEnabled: false,
     });
     render(<SignIn />);
     expect(screen.getByTestId('signin-slogan')).toBeInTheDocument();
   });
 
-  it('shows SignInSlogan when branding is enabled with LEFT_ALIGNED layout', () => {
-    mockUseBranding.mockReturnValue({
-      isBrandingEnabled: true,
-      layout: {type: 'LEFT_ALIGNED'},
-    });
-    render(<SignIn />);
-    expect(screen.getByTestId('signin-slogan')).toBeInTheDocument();
-  });
-
-  it('hides SignInSlogan when branding is enabled with non-LEFT_ALIGNED layout', () => {
-    mockUseBranding.mockReturnValue({
-      isBrandingEnabled: true,
-      layout: {type: 'CENTERED'},
+  it('hides SignInSlogan when design is enabled', () => {
+    mockUseDesign.mockReturnValue({
+      isDesignEnabled: true,
     });
     render(<SignIn />);
     expect(screen.queryByTestId('signin-slogan')).not.toBeInTheDocument();

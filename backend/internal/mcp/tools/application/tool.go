@@ -90,7 +90,7 @@ func (t *applicationTools) RegisterTools(server *mcp.Server) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "thunder_get_application_by_id",
-		Description: `Retrieve full details of an application by ID including OAuth settings, branding, and flow associations.`,
+		Description: `Retrieve full details of an application by ID including OAuth settings, customizations, and flow associations.`,
 		Annotations: &mcp.ToolAnnotations{
 			Title:        "Get Application by ID",
 			ReadOnlyHint: true,
@@ -99,7 +99,7 @@ func (t *applicationTools) RegisterTools(server *mcp.Server) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "thunder_get_application_by_client_id",
-		Description: `Retrieve full details of an application by client_id including OAuth settings, branding, and flow associations.`,
+		Description: `Retrieve full details of an application by client_id including OAuth settings, customizations, and flow associations.`,
 		Annotations: &mcp.ToolAnnotations{
 			Title:        "Get Application by Client ID",
 			ReadOnlyHint: true,

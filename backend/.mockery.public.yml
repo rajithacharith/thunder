@@ -349,12 +349,20 @@ packages:
       pkgname: observabilitymock
       filename: "{{.InterfaceName}}_mock.go"
 
-  github.com/asgardeo/thunder/internal/branding/mgt:
+  github.com/asgardeo/thunder/internal/design/theme/mgt:
     config:
       all: true
-      dir: tests/mocks/brandingmock
+      dir: tests/mocks/design/thememock
       structname: '{{.InterfaceName}}Mock'
-      pkgname: brandingmock
+      pkgname: thememock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/design/layout/mgt:
+    config:
+      all: true
+      dir: tests/mocks/design/layoutmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: layoutmock
       filename: "{{.InterfaceName}}_mock.go"
   
   github.com/asgardeo/thunder/internal/system/crypto/hash:

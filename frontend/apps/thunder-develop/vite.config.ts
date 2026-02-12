@@ -39,6 +39,7 @@ export default defineConfig({
       },
     }),
     // Add visualizer plugin for bundle analysis (only when ANALYZE=true)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     ...(process.env.ANALYZE === 'true'
       ? [
           visualizer({

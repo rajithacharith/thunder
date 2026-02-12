@@ -40,7 +40,7 @@ var testPublicPaths = []string{
 	"/gate/**",
 	"/develop/**",
 	"/error/**",
-	"/branding/resolve/**",
+	"/design/resolve/**",
 	"/i18n/languages",
 	"/i18n/languages/*/translations/resolve",
 	"/i18n/languages/*/translations/ns/*/keys/*/resolve",

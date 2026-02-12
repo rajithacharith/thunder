@@ -35,10 +35,14 @@ describe('useApplicationCreateContext', () => {
     setCurrentStep: vi.fn(),
     appName: 'Test App',
     setAppName: vi.fn(),
-    selectedColor: '#000000',
-    setSelectedColor: vi.fn(),
+    themeId: null,
+    setThemeId: vi.fn(),
+    selectedTheme: null,
+    setSelectedTheme: vi.fn(),
     appLogo: null,
     setAppLogo: vi.fn(),
+    selectedColor: '',
+    setSelectedColor: vi.fn(),
     integrations: {},
     setIntegrations: vi.fn(),
     toggleIntegration: vi.fn(),
@@ -77,7 +81,7 @@ describe('useApplicationCreateContext', () => {
 
     expect(result.current.currentStep).toBe(ApplicationCreateFlowStep.NAME);
     expect(result.current.appName).toBe('Test App');
-    expect(result.current.selectedColor).toBe('#000000');
+    expect(result.current.selectedTheme).toBeNull();
     expect(result.current.signInApproach).toBe(ApplicationCreateFlowSignInApproach.INBUILT);
   });
 
@@ -96,7 +100,8 @@ describe('useApplicationCreateContext', () => {
 
     expect(typeof result.current.setCurrentStep).toBe('function');
     expect(typeof result.current.setAppName).toBe('function');
-    expect(typeof result.current.setSelectedColor).toBe('function');
+    expect(typeof result.current.setThemeId).toBe('function');
+    expect(typeof result.current.setSelectedTheme).toBe('function');
     expect(typeof result.current.setAppLogo).toBe('function');
     expect(typeof result.current.setIntegrations).toBe('function');
     expect(typeof result.current.toggleIntegration).toBe('function');
@@ -107,7 +112,8 @@ describe('useApplicationCreateContext', () => {
     const contextWithValues: ApplicationCreateContextType = {
       ...mockContextValue,
       appName: 'My Application',
-      selectedColor: '#FF5733',
+      themeId: null,
+      selectedTheme: null,
       appLogo: 'https://example.com/logo.png',
       hostingUrl: 'https://myapp.com',
       callbackUrlFromConfig: 'https://myapp.com/callback',
@@ -118,7 +124,8 @@ describe('useApplicationCreateContext', () => {
     });
 
     expect(result.current.appName).toBe('My Application');
-    expect(result.current.selectedColor).toBe('#FF5733');
+    expect(result.current.themeId).toBeNull();
+    expect(result.current.selectedTheme).toBeNull();
     expect(result.current.appLogo).toBe('https://example.com/logo.png');
     expect(result.current.hostingUrl).toBe('https://myapp.com');
     expect(result.current.callbackUrlFromConfig).toBe('https://myapp.com/callback');
@@ -176,7 +183,7 @@ describe('useApplicationCreateContext', () => {
       ApplicationCreateFlowStep.OPTIONS,
       ApplicationCreateFlowStep.EXPERIENCE,
       ApplicationCreateFlowStep.STACK,
-      ApplicationCreateFlowStep.CONFIGURE
+      ApplicationCreateFlowStep.CONFIGURE,
     ];
 
     steps.forEach((step) => {

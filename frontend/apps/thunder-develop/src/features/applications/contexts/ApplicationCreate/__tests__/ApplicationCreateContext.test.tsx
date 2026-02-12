@@ -35,7 +35,7 @@ function TestConsumer() {
       <div data-testid="context-type">{typeof context}</div>
       <div data-testid="current-step">{context.currentStep}</div>
       <div data-testid="app-name">{context.appName}</div>
-      <div data-testid="selected-color">{context.selectedColor}</div>
+      <div data-testid="selected-theme">{context.themeId ?? 'null'}</div>
     </div>
   );
 }
@@ -48,10 +48,14 @@ function TestWithMockValue() {
       setCurrentStep: vi.fn(),
       appName: 'Test App',
       setAppName: vi.fn(),
-      selectedColor: '#ff0000',
-      setSelectedColor: vi.fn(),
+      themeId: null,
+      setThemeId: vi.fn(),
+      selectedTheme: null,
+      setSelectedTheme: vi.fn(),
       appLogo: null,
       setAppLogo: vi.fn(),
+      selectedColor: '',
+      setSelectedColor: vi.fn(),
       integrations: {},
       setIntegrations: vi.fn(),
       toggleIntegration: vi.fn(),
@@ -108,7 +112,7 @@ describe('ApplicationCreateContext', () => {
 
     expect(screen.getByTestId('current-step')).toHaveTextContent('DESIGN');
     expect(screen.getByTestId('app-name')).toHaveTextContent('Test App');
-    expect(screen.getByTestId('selected-color')).toHaveTextContent('#ff0000');
+    expect(screen.getByTestId('selected-theme')).toHaveTextContent('null');
   });
 
   it('has correct TypeScript interface definition', () => {
@@ -122,10 +126,14 @@ describe('ApplicationCreateContext', () => {
       setCurrentStep: () => {},
       appName: '',
       setAppName: () => {},
-      selectedColor: '#000000',
-      setSelectedColor: () => {},
+      themeId: null,
+      setThemeId: () => {},
+      selectedTheme: null,
+      setSelectedTheme: () => {},
       appLogo: null,
       setAppLogo: () => {},
+      selectedColor: '',
+      setSelectedColor: () => {},
       integrations: {},
       setIntegrations: () => {},
       toggleIntegration: () => {},
@@ -155,8 +163,9 @@ describe('ApplicationCreateContext', () => {
     expect(typeof mockContext.setCurrentStep).toBe('function');
     expect(typeof mockContext.appName).toBe('string');
     expect(typeof mockContext.setAppName).toBe('function');
-    expect(typeof mockContext.selectedColor).toBe('string');
-    expect(typeof mockContext.setSelectedColor).toBe('function');
+    expect(mockContext.themeId).toBeNull();
+    expect(mockContext.selectedTheme).toBeNull();
+    expect(typeof mockContext.setSelectedTheme).toBe('function');
     expect(typeof mockContext.toggleIntegration).toBe('function');
     expect(typeof mockContext.reset).toBe('function');
   });
@@ -171,10 +180,14 @@ describe('ApplicationCreateContext', () => {
       setCurrentStep: () => {},
       appName: '',
       setAppName: () => {},
-      selectedColor: '#000000',
-      setSelectedColor: () => {},
+      themeId: null,
+      setThemeId: () => {},
+      selectedTheme: null,
+      setSelectedTheme: () => {},
       appLogo: null, // Should allow null
       setAppLogo: () => {},
+      selectedColor: '',
+      setSelectedColor: () => {},
       integrations: {},
       setIntegrations: () => {},
       toggleIntegration: () => {},

@@ -1,0 +1,61 @@
+{
+  "id": "03ab3589-0e38-4bb8-8df0-8fb980fdc3c6",
+  "displayName": "High Contrast",
+  "description": "A high contrast theme optimized for accessibility with bold colors and maximum readability.",
+  "theme": {
+    "direction": "ltr",
+    "defaultColorScheme": "light",
+    "colorSchemes": {
+      "light": {
+        "colors": {
+          "primary": {
+            "main": "#0000ff",
+            "dark": "#0000cc",
+            "contrastText": "#ffffff"
+          },
+          "secondary": {
+            "main": "#000000",
+            "dark": "#000000",
+            "contrastText": "#ffffff"
+          },
+          "background": {
+            "default": "#efefef",
+            "paper": "#f0f0f0"
+          },
+          "text": {
+            "primary": "#000000",
+            "secondary": "#000000"
+          }
+        }
+      },
+      "dark": {
+        "colors": {
+          "primary": {
+            "main": "#00ff00",
+            "dark": "#00cc00",
+            "contrastText": "#000000"
+          },
+          "secondary": {
+            "main": "#ffff00",
+            "dark": "#cccc00",
+            "contrastText": "#000000"
+          },
+          "background": {
+            "default": "#000000",
+            "paper": "#000000"
+          },
+          "text": {
+            "primary": "#ffffff",
+            "secondary": "#ffffff"
+          }
+        }
+      }
+    },
+    "shape": {
+      "borderRadius": 0
+    },
+    "typography": {
+      "fontFamily": "'Roboto Mono', monospace"
+    }
+  }
+}

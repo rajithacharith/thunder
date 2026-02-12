@@ -19,7 +19,7 @@
 import type {JSX} from 'react';
 import {AsgardeoProvider} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
-import {BrandingProvider} from '@thunder/shared-branding';
+import {DesignProvider} from '@thunder/shared-design';
 import AppWithTheme from './AppWithTheme';
 
 export default function AppWithConfig(): JSX.Element {
@@ -30,9 +30,9 @@ export default function AppWithConfig(): JSX.Element {
       baseUrl={getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string)}
       platform="AsgardeoV2"
     >
-      <BrandingProvider>
+      <DesignProvider>
         <AppWithTheme />
-      </BrandingProvider>
+      </DesignProvider>
     </AsgardeoProvider>
   );
 }

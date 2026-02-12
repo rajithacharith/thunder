@@ -20,6 +20,7 @@ import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
+import type {ThemeConfig} from '@thunder/shared-design';
 import Preview, {type PreviewProps} from '../Preview';
 
 // Mock the @asgardeo/react module
@@ -43,6 +44,49 @@ vi.mock('@wso2/oxygen-ui', async (importOriginal) => {
 
 const {default: useIdentityProviders} = await import('@/features/integrations/api/useIdentityProviders');
 
+const mockTheme: ThemeConfig = {
+  direction: 'ltr',
+  defaultColorScheme: 'light',
+  colorSchemes: {
+    light: {
+      colors: {
+        primary: {
+          main: '#FF5733',
+          dark: '#CC4529',
+          contrastText: '#FFFFFF',
+        },
+        secondary: {
+          main: '#0066CC',
+          dark: '#004C99',
+          contrastText: '#FFFFFF',
+        },
+        background: {
+          default: '#FFFFFF',
+          paper: '#F5F5F5',
+        },
+      },
+    },
+    dark: {
+      colors: {
+        primary: {
+          main: '#00FF00',
+          dark: '#00CC00',
+          contrastText: '#000000',
+        },
+        secondary: {
+          main: '#0088FF',
+          dark: '#0066CC',
+          contrastText: '#FFFFFF',
+        },
+        background: {
+          default: '#121212',
+          paper: '#1E1E1E',
+        },
+      },
+    },
+  },
+};
+
 describe('Preview', () => {
   const mockIdentityProviders: IdentityProvider[] = [
     {
@@ -61,7 +105,7 @@ describe('Preview', () => {
 
   const defaultProps: PreviewProps = {
     appLogo: 'https://example.com/logo.png',
-    selectedColor: '#FF5733',
+    selectedTheme: mockTheme,
     integrations: {
       [AuthenticatorTypes.BASIC_AUTH]: true,
     },
@@ -414,16 +458,16 @@ describe('Preview', () => {
       expect(screen.getByText('or')).toBeInTheDocument();
     });
 
-    it('should apply selected color to Send OTP button', () => {
+    it('should apply theme colors to Send OTP button', () => {
       renderComponent({
         integrations: {
           'sms-otp': true,
         },
-        selectedColor: '#00FF00',
+        selectedTheme: mockTheme,
       });
 
       const sendOtpButton = screen.getByRole('button', {name: 'Send OTP'});
-      expect(sendOtpButton).toHaveStyle({backgroundColor: '#00FF00'});
+      expect(sendOtpButton).toHaveStyle({backgroundColor: '#FF5733'});
     });
 
     it('should render mobile number input as disabled', () => {
@@ -510,12 +554,12 @@ describe('Preview', () => {
           [AuthenticatorTypes.BASIC_AUTH]: true,
           [AuthenticatorTypes.PASSKEY]: true,
         },
-        selectedColor: '#FF5733',
+        selectedTheme: mockTheme,
       });
 
       const passkeyButton = screen.getByRole('button', {name: /Sign in with Passkey/i});
       expect(passkeyButton).toHaveClass('MuiButton-outlined');
-      expect(passkeyButton).toHaveStyle({color: '#FF5733'});
+      expect(passkeyButton).toHaveClass('MuiButton-colorPrimary');
     });
 
     it('should render passkey button with contained variant when username/password is disabled', () => {
@@ -524,15 +568,15 @@ describe('Preview', () => {
           [AuthenticatorTypes.BASIC_AUTH]: false,
           [AuthenticatorTypes.PASSKEY]: true,
         },
-        selectedColor: '#FF5733',
+        selectedTheme: mockTheme,
       });
 
       const passkeyButton = screen.getByRole('button', {name: /Sign in with Passkey/i});
       expect(passkeyButton).toHaveClass('MuiButton-contained');
-      expect(passkeyButton).toHaveStyle({backgroundColor: '#FF5733'});
+      expect(passkeyButton).toHaveClass('MuiButton-colorPrimary');
     });
 
-    it('should apply margin bottom to passkey button when social logins are present', () => {
+    it('should render passkey button inside form container when social logins are present', () => {
       renderComponent({
         integrations: {
           [AuthenticatorTypes.PASSKEY]: true,
@@ -541,12 +585,11 @@ describe('Preview', () => {
       });
 
       const passkeyButton = screen.getByRole('button', {name: /Sign in with Passkey/i});
-      // The box containing the button should have margin-bottom
       const containerBox = passkeyButton.closest('form');
-      expect(containerBox).toHaveStyle({marginBottom: '16px'}); // theme spacing(2) = 16px usually
+      expect(containerBox).toBeInTheDocument();
     });
 
-    it('should not apply margin bottom to passkey button when social logins are absent', () => {
+    it('should render passkey button inside form container when social logins are absent', () => {
       renderComponent({
         integrations: {
           [AuthenticatorTypes.PASSKEY]: true,
@@ -556,7 +599,7 @@ describe('Preview', () => {
 
       const passkeyButton = screen.getByRole('button', {name: /Sign in with Passkey/i});
       const containerBox = passkeyButton.closest('form');
-      expect(containerBox).toHaveStyle({marginBottom: '0px'});
+      expect(containerBox).toBeInTheDocument();
     });
 
     it('should render divider when passkey and social logins are enabled', () => {
@@ -759,12 +802,12 @@ describe('Preview', () => {
       expect(screen.getByText('Preview')).toBeInTheDocument();
     });
 
-    it('should apply dark mode styles to avatar', () => {
+    it('should apply dark mode styles when mode is dark', () => {
       mockUseColorScheme.mockReturnValue({mode: 'dark'});
 
       renderComponent({
         appLogo: 'https://example.com/logo.png',
-        selectedColor: '#00FF00',
+        selectedTheme: mockTheme,
       });
 
       const logo = screen.getByRole('img');
@@ -772,17 +815,17 @@ describe('Preview', () => {
       expect(avatarContainer).toBeInTheDocument();
     });
 
-    it('should apply light mode styles to avatar', () => {
+    it('should apply light mode styles when mode is light', () => {
       mockUseColorScheme.mockReturnValue({mode: 'light'});
 
       renderComponent({
         appLogo: 'https://example.com/logo.png',
-        selectedColor: '#00FF00',
+        selectedTheme: mockTheme,
       });
 
       const logo = screen.getByRole('img');
       const avatarContainer = logo.closest('.MuiAvatar-root');
-      expect(avatarContainer).toHaveStyle({backgroundColor: '#00FF00'});
+      expect(avatarContainer).toHaveStyle({backgroundColor: '#FF5733'});
     });
   });
 });

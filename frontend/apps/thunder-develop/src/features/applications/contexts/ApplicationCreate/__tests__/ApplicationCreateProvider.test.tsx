@@ -59,8 +59,9 @@ function TestConsumer() {
     <div>
       <div data-testid="current-step">{context.currentStep}</div>
       <div data-testid="app-name">{context.appName}</div>
-      <div data-testid="selected-color">{context.selectedColor}</div>
+      <div data-testid="selected-theme">{context.themeId ?? 'null'}</div>
       <div data-testid="app-logo">{context.appLogo ?? 'null'}</div>
+      <div data-testid="selected-color">{context.selectedColor}</div>
       <div data-testid="integrations">{JSON.stringify(context.integrations)}</div>
       <div data-testid="sign-in-approach">{context.signInApproach}</div>
       <div data-testid="selected-technology">{context.selectedTechnology ?? 'null'}</div>
@@ -75,8 +76,8 @@ function TestConsumer() {
       <button type="button" onClick={() => context.setAppName('Test App')}>
         Set App Name
       </button>
-      <button type="button" onClick={() => context.setSelectedColor('#ff0000')}>
-        Set Red Color
+      <button type="button" onClick={() => context.setSelectedTheme(null)}>
+        Set Theme to null
       </button>
       <button type="button" onClick={() => context.setAppLogo('test-logo.png')}>
         Set Logo
@@ -131,7 +132,7 @@ describe('ApplicationCreateProvider', () => {
 
     expect(screen.getByTestId('current-step')).toHaveTextContent(ApplicationCreateFlowStep.NAME);
     expect(screen.getByTestId('app-name')).toHaveTextContent('');
-    expect(screen.getByTestId('selected-color')).toHaveTextContent('#'); // Should have default color
+    expect(screen.getByTestId('selected-theme')).toHaveTextContent('null');
     expect(screen.getByTestId('app-logo')).toHaveTextContent('null');
     expect(screen.getByTestId('integrations')).toHaveTextContent(
       JSON.stringify({[AuthenticatorTypes.BASIC_AUTH]: true}),
@@ -172,7 +173,7 @@ describe('ApplicationCreateProvider', () => {
     expect(screen.getByTestId('app-name')).toHaveTextContent('Test App');
   });
 
-  it('updates selected color when setSelectedColor is called', async () => {
+  it('updates selected theme when setSelectedTheme is called', async () => {
     const user = userEvent.setup();
 
     renderWithQueryClient(
@@ -181,9 +182,9 @@ describe('ApplicationCreateProvider', () => {
       </ApplicationCreateProvider>,
     );
 
-    await user.click(screen.getByText('Set Red Color'));
+    await user.click(screen.getByText('Set Theme to null'));
 
-    expect(screen.getByTestId('selected-color')).toHaveTextContent('#ff0000');
+    expect(screen.getByTestId('selected-theme')).toHaveTextContent('null');
   });
 
   it('updates app logo when setAppLogo is called', async () => {
@@ -321,12 +322,12 @@ describe('ApplicationCreateProvider', () => {
 
     // Set some values
     await user.click(screen.getByText('Set App Name'));
-    await user.click(screen.getByText('Set Red Color'));
+    await user.click(screen.getByText('Set Theme to null'));
     await user.click(screen.getByText('Set Error'));
 
     // Verify values are set
     expect(screen.getByTestId('app-name')).toHaveTextContent('Test App');
-    expect(screen.getByTestId('selected-color')).toHaveTextContent('#ff0000');
+    expect(screen.getByTestId('selected-theme')).toHaveTextContent('null');
     expect(screen.getByTestId('error')).toHaveTextContent('Test error');
 
     // Reset
@@ -336,8 +337,7 @@ describe('ApplicationCreateProvider', () => {
     expect(screen.getByTestId('current-step')).toHaveTextContent(ApplicationCreateFlowStep.NAME);
     expect(screen.getByTestId('app-name')).toHaveTextContent('');
     expect(screen.getByTestId('error')).toHaveTextContent('null');
-    // Color should be back to default (not #ff0000)
-    expect(screen.getByTestId('selected-color')).not.toHaveTextContent('#ff0000');
+    expect(screen.getByTestId('selected-theme')).toHaveTextContent('null');
   });
 
   it('memoizes context value to prevent unnecessary re-renders', () => {

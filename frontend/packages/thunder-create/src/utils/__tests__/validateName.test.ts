@@ -54,73 +54,73 @@ describe('validateName', () => {
 
   describe('invalid names', () => {
     it('should reject empty strings', () => {
-      expect(() => validateName('')).toThrow('Name name cannot be empty');
+      expect(() => validateName('')).toThrow('Feature name cannot be empty');
     });
 
     it('should reject whitespace-only strings', () => {
-      expect(() => validateName('   ')).toThrow('Name name cannot be empty');
+      expect(() => validateName('   ')).toThrow('Feature name cannot be empty');
     });
 
     it('should reject names starting with numbers', () => {
       expect(() => validateName('123feature')).toThrow(
-        'Name name must start with a letter, end with a letter or number, and contain only letters, numbers, underscores, and hyphens',
+        'Feature name must start with a letter, end with a letter or number, and contain only letters, numbers, underscores, and hyphens',
       );
     });
 
     it('should reject names starting with hyphens', () => {
       expect(() => validateName('-feature')).toThrow(
-        'Name name must start with a letter, end with a letter or number, and contain only letters, numbers, underscores, and hyphens',
+        'Feature name must start with a letter, end with a letter or number, and contain only letters, numbers, underscores, and hyphens',
       );
     });
 
     it('should reject names starting with underscores', () => {
       expect(() => validateName('_feature')).toThrow(
-        'Name name must start with a letter, end with a letter or number, and contain only letters, numbers, underscores, and hyphens',
+        'Feature name must start with a letter, end with a letter or number, and contain only letters, numbers, underscores, and hyphens',
       );
     });
 
     it('should reject names ending with hyphens', () => {
       expect(() => validateName('feature-')).toThrow(
-        'Name name must start with a letter, end with a letter or number, and contain only letters, numbers, underscores, and hyphens',
+        'Feature name must start with a letter, end with a letter or number, and contain only letters, numbers, underscores, and hyphens',
       );
     });
 
     it('should reject names ending with underscores', () => {
       expect(() => validateName('feature_')).toThrow(
-        'Name name must start with a letter, end with a letter or number, and contain only letters, numbers, underscores, and hyphens',
+        'Feature name must start with a letter, end with a letter or number, and contain only letters, numbers, underscores, and hyphens',
       );
     });
 
     it('should reject names with special characters', () => {
       expect(() => validateName('feature@name')).toThrow(
-        'Name name must start with a letter, end with a letter or number, and contain only letters, numbers, underscores, and hyphens',
+        'Feature name must start with a letter, end with a letter or number, and contain only letters, numbers, underscores, and hyphens',
       );
       expect(() => validateName('feature.name')).toThrow(
-        'Name name must start with a letter, end with a letter or number, and contain only letters, numbers, underscores, and hyphens',
+        'Feature name must start with a letter, end with a letter or number, and contain only letters, numbers, underscores, and hyphens',
       );
       expect(() => validateName('feature name')).toThrow(
-        'Name name must start with a letter, end with a letter or number, and contain only letters, numbers, underscores, and hyphens',
+        'Feature name must start with a letter, end with a letter or number, and contain only letters, numbers, underscores, and hyphens',
       );
     });
 
     it('should reject names longer than 50 characters', () => {
       const longName = 'a'.repeat(51);
-      expect(() => validateName(longName)).toThrow('Name name must be 50 characters or less');
+      expect(() => validateName(longName)).toThrow('Feature name must be 50 characters or less');
     });
 
     it('should reject reserved words', () => {
-      expect(() => validateName('index')).toThrow("Name name 'index' is reserved");
-      expect(() => validateName('src')).toThrow("Name name 'src' is reserved");
-      expect(() => validateName('dist')).toThrow("Name name 'dist' is reserved");
-      expect(() => validateName('build')).toThrow("Name name 'build' is reserved");
-      expect(() => validateName('node_modules')).toThrow("Name name 'node_modules' is reserved");
-      expect(() => validateName('package')).toThrow("Name name 'package' is reserved");
-      expect(() => validateName('test')).toThrow("Name name 'test' is reserved");
+      expect(() => validateName('index')).toThrow("Feature name 'index' is reserved");
+      expect(() => validateName('src')).toThrow("Feature name 'src' is reserved");
+      expect(() => validateName('dist')).toThrow("Feature name 'dist' is reserved");
+      expect(() => validateName('build')).toThrow("Feature name 'build' is reserved");
+      expect(() => validateName('node_modules')).toThrow("Feature name 'node_modules' is reserved");
+      expect(() => validateName('package')).toThrow("Feature name 'package' is reserved");
+      expect(() => validateName('test')).toThrow("Feature name 'test' is reserved");
     });
 
     it('should reject reserved words regardless of case', () => {
-      expect(() => validateName('INDEX')).toThrow("Name name 'INDEX' is reserved");
-      expect(() => validateName('Src')).toThrow("Name name 'Src' is reserved");
+      expect(() => validateName('INDEX')).toThrow("Feature name 'INDEX' is reserved");
+      expect(() => validateName('Src')).toThrow("Feature name 'Src' is reserved");
     });
   });
 

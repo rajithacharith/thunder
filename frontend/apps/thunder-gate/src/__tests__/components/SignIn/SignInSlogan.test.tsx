@@ -20,19 +20,9 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
 import SignInSlogan from '../../../components/SignIn/SignInSlogan';
 
-// Mock useBranding
-const mockUseBranding = vi.fn();
-vi.mock('@thunder/shared-branding', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-  useBranding: () => mockUseBranding(),
-}));
-
 describe('SignInSlogan', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseBranding.mockReturnValue({
-      images: null,
-    });
   });
 
   it('renders without crashing', () => {
@@ -64,56 +54,7 @@ describe('SignInSlogan', () => {
     ).toBeInTheDocument();
   });
 
-  it('uses branded logo when available', () => {
-    mockUseBranding.mockReturnValue({
-      images: {
-        logo: {
-          primary: {
-            url: 'https://example.com/branded-logo.png',
-          },
-        },
-      },
-    });
-    render(<SignInSlogan />);
-    // Component should render with branded logo
-    expect(screen.getByText('Flexible Identity Platform')).toBeInTheDocument();
-  });
-
-  it('uses default logo when no branded logo', () => {
-    mockUseBranding.mockReturnValue({
-      images: null,
-    });
-    render(<SignInSlogan />);
-    // Component should render with default logo
-    expect(screen.getByText('Flexible Identity Platform')).toBeInTheDocument();
-  });
-
-  it('uses default logo when images object exists but no logo', () => {
-    mockUseBranding.mockReturnValue({
-      images: {},
-    });
-    render(<SignInSlogan />);
-    expect(screen.getByText('Flexible Identity Platform')).toBeInTheDocument();
-  });
-
-  it('uses default logo when logo object exists but no primary', () => {
-    mockUseBranding.mockReturnValue({
-      images: {
-        logo: {},
-      },
-    });
-    render(<SignInSlogan />);
-    expect(screen.getByText('Flexible Identity Platform')).toBeInTheDocument();
-  });
-
-  it('uses default logo when primary object exists but no url', () => {
-    mockUseBranding.mockReturnValue({
-      images: {
-        logo: {
-          primary: {},
-        },
-      },
-    });
+  it('renders with default logos', () => {
     render(<SignInSlogan />);
     expect(screen.getByText('Flexible Identity Platform')).toBeInTheDocument();
   });
