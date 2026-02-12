@@ -12,4 +12,10 @@ Thunder
 npm
 pnpm
 [Vv]ite
+[Pp]asswordless
+[Uu]sernameless
+APIs
+UIs
+iCloud
+hostname
 
