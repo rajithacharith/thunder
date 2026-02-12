@@ -147,3 +147,27 @@ const (
 	// RuntimeKeySkipProvisioning indicates whether to skip provisioning
 	RuntimeKeySkipProvisioning = "skipProvisioning"
 )
+
+// TODO: Define a go type for InputType when formalizing input types
+
+// InputType constants define known input types used in flow definitions.
+const (
+	// InputTypeText represents a text input type.
+	InputTypeText = "TEXT_INPUT"
+	// InputTypePassword represents a password credential input type.
+	InputTypePassword = "PASSWORD_INPUT"
+	// InputTypeOTP represents a one-time password input type.
+	InputTypeOTP = "OTP_INPUT"
+
+	// TODO: Add support for other sensitive input types:
+	// - Passkey credential fields (credentialId, clientDataJSON, authenticatorData, signature, userHandle)
+	// - OAuth/OIDC authorization codes
+	// - OIDC nonce
+	// - Invite tokens
+)
+
+// sensitiveInputTypes contains the list of input types that are considered sensitive.
+var sensitiveInputTypes = []string{
+	InputTypePassword,
+	InputTypeOTP,
+}

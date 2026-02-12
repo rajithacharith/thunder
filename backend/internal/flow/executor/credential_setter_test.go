@@ -52,7 +52,7 @@ func (suite *CredentialSetterTestSuite) SetupTest() {
 		[]common.Input{
 			{
 				Identifier: userAttributeUserID,
-				Type:       "TEXT",
+				Type:       common.InputTypeText,
 				Required:   true,
 			},
 		}).Return(suite.mockBaseExecutor)
@@ -79,7 +79,7 @@ func (suite *CredentialSetterTestSuite) TestExecute_Success() {
 	suite.mockBaseExecutor.On("GetRequiredInputs", ctx).Return([]common.Input{
 		{
 			Identifier: userAttributePassword,
-			Type:       "PASSWORD_INPUT",
+			Type:       common.InputTypePassword,
 			Required:   true,
 		},
 	})
@@ -141,7 +141,7 @@ func (suite *CredentialSetterTestSuite) TestExecute_EmptyPassword() {
 	suite.mockBaseExecutor.On("GetRequiredInputs", ctx).Return([]common.Input{
 		{
 			Identifier: userAttributePassword,
-			Type:       "PASSWORD_INPUT",
+			Type:       common.InputTypePassword,
 			Required:   true,
 		},
 	})
@@ -169,7 +169,7 @@ func (suite *CredentialSetterTestSuite) TestExecute_ServiceError() {
 	suite.mockBaseExecutor.On("GetRequiredInputs", ctx).Return([]common.Input{
 		{
 			Identifier: userAttributePassword,
-			Type:       "PASSWORD_INPUT",
+			Type:       common.InputTypePassword,
 			Required:   true,
 		},
 	})
@@ -207,7 +207,7 @@ func (suite *CredentialSetterTestSuite) TestExecute_CustomAttribute() {
 		{
 			Identifier: customAttr,
 			Required:   true,
-			Type:       "TEXT",
+			Type:       common.InputTypeText,
 		},
 	})
 
@@ -265,7 +265,7 @@ func (suite *CredentialSetterTestSuite) TestExecute_EmptyInputIdentifier() {
 	suite.mockBaseExecutor.On("GetRequiredInputs", ctx).Return([]common.Input{
 		{
 			Identifier: "",
-			Type:       "PASSWORD_INPUT",
+			Type:       common.InputTypePassword,
 			Required:   true,
 		},
 	})

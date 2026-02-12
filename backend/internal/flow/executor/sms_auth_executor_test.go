@@ -62,7 +62,7 @@ func (suite *SMSAuthExecutorTestSuite) SetupTest() {
 		{
 			Ref:        "otp_input",
 			Identifier: userInputOTP,
-			Type:       "OTP_INPUT",
+			Type:       common.InputTypeOTP,
 			Required:   true,
 		},
 	}

@@ -133,6 +133,9 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 		nodeResp, nodeErr := currentNode.Execute(nodeCtx)
 		executionEndTime := time.Now().UnixMilli()
 
+		// Clear sensitive inputs from context after executor has consumed them.
+		fe.clearSensitiveInputs(ctx, currentNode)
+
 		recordNodeExecution(ctx, currentNode, nodeResp, nodeErr, executionStartTime, executionEndTime)
 
 		// Publish node execution completed or failed event
@@ -267,6 +270,34 @@ func (fe *flowEngine) getExecutorByName(executorName string) (core.ExecutorInter
 	}
 
 	return exec, nil
+}
+
+// clearSensitiveInputs removes sensitive user inputs from the engine context after a node has executed.
+// This cleanup is only applied for authentication flows.
+func (fe *flowEngine) clearSensitiveInputs(ctx *EngineContext, node core.NodeInterface) {
+	if ctx.FlowType != common.FlowTypeAuthentication {
+		return
+	}
+
+	execNode, ok := node.(core.ExecutorBackedNodeInterface)
+	if !ok {
+		return
+	}
+
+	// Get inputs from the node configuration. If the node does not define its own inputs,
+	// fall back to the executor's default inputs.
+	inputs := execNode.GetInputs()
+	if len(inputs) == 0 {
+		if executor := execNode.GetExecutor(); executor != nil {
+			inputs = executor.GetDefaultInputs()
+		}
+	}
+
+	for _, input := range inputs {
+		if input.IsSensitive() {
+			delete(ctx.UserInputs, input.Identifier)
+		}
+	}
 }
 
 // updateContextWithNodeResponse updates the engine context with the node response and authenticated user.

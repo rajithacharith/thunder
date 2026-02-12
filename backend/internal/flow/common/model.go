@@ -19,6 +19,8 @@
 package common
 
 import (
+	"slices"
+
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 )
 
@@ -29,6 +31,11 @@ type Input struct {
 	Type       string   `json:"type"`
 	Required   bool     `json:"required"`
 	Options    []string `json:"options,omitempty"`
+}
+
+// IsSensitive checks whether this input's type is considered sensitive.
+func (i Input) IsSensitive() bool {
+	return slices.Contains(sensitiveInputTypes, i.Type)
 }
 
 // Action represents an action to be executed in a flow step

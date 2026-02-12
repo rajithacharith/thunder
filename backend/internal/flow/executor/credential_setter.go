@@ -47,14 +47,14 @@ func newCredentialSetter(
 		[]common.Input{
 			{
 				Identifier: userAttributePassword,
-				Type:       "PASSWORD_INPUT",
+				Type:       common.InputTypePassword,
 				Required:   true,
 			},
 		},
 		[]common.Input{
 			{
 				Identifier: userAttributeUserID,
-				Type:       "TEXT",
+				Type:       common.InputTypeText,
 				Required:   true,
 			},
 		},
