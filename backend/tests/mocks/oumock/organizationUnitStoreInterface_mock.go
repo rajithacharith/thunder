@@ -973,6 +973,57 @@ func (_c *organizationUnitStoreInterfaceMock_GetOrganizationUnitUsersList_Call) 
 	return _c
 }
 
+// IsOrganizationUnitDeclarative provides a mock function for the type organizationUnitStoreInterfaceMock
+func (_mock *organizationUnitStoreInterfaceMock) IsOrganizationUnitDeclarative(id string) bool {
+	ret := _mock.Called(id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsOrganizationUnitDeclarative")
+	}
+
+	var r0 bool
+	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
+		r0 = returnFunc(id)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	return r0
+}
+
+// organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsOrganizationUnitDeclarative'
+type organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call struct {
+	*mock.Call
+}
+
+// IsOrganizationUnitDeclarative is a helper method to define mock.On call
+//   - id string
+func (_e *organizationUnitStoreInterfaceMock_Expecter) IsOrganizationUnitDeclarative(id interface{}) *organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call {
+	return &organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call{Call: _e.mock.On("IsOrganizationUnitDeclarative", id)}
+}
+
+func (_c *organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call) Run(run func(id string)) *organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call) Return(b bool) *organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call {
+	_c.Call.Return(b)
+	return _c
+}
+
+func (_c *organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call) RunAndReturn(run func(id string) bool) *organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // IsOrganizationUnitExists provides a mock function for the type organizationUnitStoreInterfaceMock
 func (_mock *organizationUnitStoreInterfaceMock) IsOrganizationUnitExists(id string) (bool, error) {
 	ret := _mock.Called(id)
@@ -1029,57 +1080,6 @@ func (_c *organizationUnitStoreInterfaceMock_IsOrganizationUnitExists_Call) Retu
 }
 
 func (_c *organizationUnitStoreInterfaceMock_IsOrganizationUnitExists_Call) RunAndReturn(run func(id string) (bool, error)) *organizationUnitStoreInterfaceMock_IsOrganizationUnitExists_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// IsOrganizationUnitDeclarative provides a mock function for the type organizationUnitStoreInterfaceMock
-func (_mock *organizationUnitStoreInterfaceMock) IsOrganizationUnitDeclarative(id string) bool {
-	ret := _mock.Called(id)
-
-	if len(ret) == 0 {
-		panic("no return value specified for IsOrganizationUnitDeclarative")
-	}
-
-	var r0 bool
-	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = returnFunc(id)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-	return r0
-}
-
-// organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsOrganizationUnitDeclarative'
-type organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call struct {
-	*mock.Call
-}
-
-// IsOrganizationUnitDeclarative is a helper method to define mock.On call
-//   - id string
-func (_e *organizationUnitStoreInterfaceMock_Expecter) IsOrganizationUnitDeclarative(id interface{}) *organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call {
-	return &organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call{Call: _e.mock.On("IsOrganizationUnitDeclarative", id)}
-}
-
-func (_c *organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call) Run(run func(id string)) *organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call) Return(b bool) *organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call {
-	_c.Call.Return(b)
-	return _c
-}
-
-func (_c *organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call) RunAndReturn(run func(id string) bool) *organizationUnitStoreInterfaceMock_IsOrganizationUnitDeclarative_Call {
 	_c.Call.Return(run)
 	return _c
 }

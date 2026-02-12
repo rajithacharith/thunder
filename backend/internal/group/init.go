@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/user"
 )
@@ -32,11 +33,17 @@ func Initialize(
 	mux *http.ServeMux,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	userService user.UserServiceInterface,
-) GroupServiceInterface {
-	groupService := newGroupService(ouService, userService)
+) (GroupServiceInterface, error) {
+	// Get transactioner from DB provider
+	transactioner, err := provider.GetDBProvider().GetUserDBTransactioner()
+	if err != nil {
+		return nil, err
+	}
+
+	groupService := newGroupService(ouService, userService, transactioner)
 	groupHandler := newGroupHandler(groupService)
 	registerRoutes(mux, groupHandler)
-	return groupService
+	return groupService, nil
 }
 
 // registerRoutes registers the routes for group management operations.

@@ -418,7 +418,8 @@ func (suite *RoleServiceTestSuite) TestCreateRole_InvalidGroupID() {
 
 	// Assignment validation now happens before OU and name checks
 	suite.mockResourceService.On("ValidatePermissions", "rs1", []string{"perm1"}).Return([]string{}, nil)
-	suite.mockGroupService.On("ValidateGroupIDs", []string{"invalid_group"}).Return(&group.ErrorInvalidGroupMemberID)
+	suite.mockGroupService.On("ValidateGroupIDs", mock.Anything, []string{"invalid_group"}).
+		Return(&group.ErrorInvalidGroupMemberID)
 
 	result, err := suite.service.CreateRole(context.Background(), request)
 
@@ -1029,7 +1030,7 @@ func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_Success() 
 	suite.mockStore.On("GetRoleAssignmentsCount", mock.Anything, "role1").Return(2, nil)
 	suite.mockStore.On("GetRoleAssignments", mock.Anything, "role1", 10, 0).Return(expectedAssignments, nil)
 	suite.mockUserService.On("GetUser", mock.Anything, testUserID1).Return(&user.User{ID: testUserID1}, nil).Once()
-	suite.mockGroupService.On("GetGroup", "group1").Return(&group.Group{Name: "Test Group"}, nil).Once()
+	suite.mockGroupService.On("GetGroup", mock.Anything, "group1").Return(&group.Group{Name: "Test Group"}, nil).Once()
 
 	result, err := suite.service.GetRoleAssignments(context.Background(), "role1", 10, 0, true)
 
@@ -1061,7 +1062,7 @@ func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_FetchError
 			name:       "Group fetch error",
 			assignment: RoleAssignment{ID: "group1", Type: AssigneeTypeGroup},
 			setupMock: func() {
-				suite.mockGroupService.On("GetGroup", "group1").
+				suite.mockGroupService.On("GetGroup", mock.Anything, "group1").
 					Return(nil, &serviceerror.ServiceError{Code: "GROUP_NOT_FOUND"}).Once()
 			},
 			expectedDisplay: "",
@@ -1300,7 +1301,7 @@ func (suite *RoleServiceTestSuite) TestValidateAssignmentIDs_GroupServiceError()
 
 	// Assignment validation now happens before OU and name checks
 	suite.mockResourceService.On("ValidatePermissions", "rs1", []string{"perm1"}).Return([]string{}, nil)
-	suite.mockGroupService.On("ValidateGroupIDs", []string{"group1"}).
+	suite.mockGroupService.On("ValidateGroupIDs", mock.Anything, []string{"group1"}).
 		Return(&serviceerror.ServiceError{Code: "INTERNAL_ERROR"})
 
 	result, err := suite.service.CreateRole(context.Background(), request)
