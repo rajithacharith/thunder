@@ -48,6 +48,7 @@ type AuthorizationCode struct {
 	CodeChallengeMethod string
 	Resource            string
 	ClaimsRequest       *oauth2model.ClaimsRequest
+	ClaimsLocales       string
 }
 
 // AuthZPostRequest represents the request body for the authorization POST request.

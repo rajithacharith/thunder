@@ -144,6 +144,7 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 		GrantType:      string(constants.GrantTypeAuthorizationCode),
 		OAuthApp:       oauthApp,
 		ClaimsRequest:  authCode.ClaimsRequest,
+		ClaimsLocales:  authCode.ClaimsLocales,
 	})
 	if err != nil {
 		return nil, &model.ErrorResponse{

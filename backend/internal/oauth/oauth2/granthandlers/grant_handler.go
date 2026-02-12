@@ -40,5 +40,6 @@ type RefreshTokenGrantHandlerInterface interface {
 		subject, audience, grantType string,
 		scopes []string,
 		claimsRequest *model.ClaimsRequest,
+		claimsLocales string,
 	) *model.ErrorResponse
 }

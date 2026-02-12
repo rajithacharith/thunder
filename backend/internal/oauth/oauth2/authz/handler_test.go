@@ -383,6 +383,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleInitialAuthorizationRequest_In
 		RuntimeData: map[string]string{
 			"requested_permissions": "read write",
 			"required_attributes":   "",
+			"required_locales":      "",
 		},
 	}
 	suite.mockFlowExecService.EXPECT().InitiateFlow(expectedFlowInitCtx).Return("test-session-key", nil)
@@ -420,6 +421,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleInitialAuthorizationRequest_In
 		RuntimeData: map[string]string{
 			"requested_permissions": "read write",
 			"required_attributes":   "",
+			"required_locales":      "",
 		},
 	}
 	mockError := &serviceerror.InternalServerError
@@ -457,6 +459,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleInitialAuthorizationRequest_Wi
 		RuntimeData: map[string]string{
 			"requested_permissions": "read write", // Only non-OIDC scopes
 			"required_attributes":   "",
+			"required_locales":      "",
 		},
 	}
 	suite.mockFlowExecService.EXPECT().InitiateFlow(expectedFlowInitCtx).Return("test-session-key", nil)
@@ -502,6 +505,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleInitialAuthorizationRequest_On
 		RuntimeData: map[string]string{
 			"requested_permissions": "", // Empty, only OIDC scopes
 			"required_attributes":   "",
+			"required_locales":      "",
 		},
 	}
 	suite.mockFlowExecService.EXPECT().InitiateFlow(expectedFlowInitCtx).Return("test-session-key", nil)
@@ -859,6 +863,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleInitialAuthorizationRequest_In
 		RuntimeData: map[string]string{
 			"requested_permissions": "read write",
 			"required_attributes":   "",
+			"required_locales":      "",
 		},
 	}
 	suite.mockFlowExecService.EXPECT().InitiateFlow(expectedFlowInitCtx).Return("test-flow-id", nil)
@@ -894,6 +899,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleInitialAuthorizationRequest_Em
 		RuntimeData: map[string]string{
 			"requested_permissions": "read write",
 			"required_attributes":   "",
+			"required_locales":      "",
 		},
 	}
 	suite.mockFlowExecService.EXPECT().InitiateFlow(expectedFlowInitCtx).Return("test-flow-id", nil)
@@ -1587,4 +1593,81 @@ func (suite *AuthorizeHandlerTestSuite) TestValidateSubClaimConstraint() {
 			}
 		})
 	}
+}
+
+// TestGetOAuthMessageForGetRequest_WithClaimsLocales tests that claims_locales parameter is extracted
+func (suite *AuthorizeHandlerTestSuite) TestGetOAuthMessageForGetRequest_WithClaimsLocales() {
+	req := httptest.NewRequest(http.MethodGet,
+		"/auth?client_id=test-client&redirect_uri=https://example.com&claims_locales=en-US%20fr-CA%20ja", nil)
+
+	msg, err := suite.handler.getOAuthMessageForGetRequest(req)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), msg)
+	if msg != nil {
+		assert.Equal(suite.T(), "test-client", msg.RequestQueryParams["client_id"])
+		assert.Equal(suite.T(), "en-US fr-CA ja", msg.RequestQueryParams["claims_locales"])
+	}
+}
+
+// TestHandleInitialAuthorizationRequest_WithClaimsLocales tests that claims_locales is passed to RuntimeData
+func (suite *AuthorizeHandlerTestSuite) TestHandleInitialAuthorizationRequest_WithClaimsLocales() {
+	app := suite.createTestOAuthApp()
+	suite.mockAppService.EXPECT().GetOAuthApplication("test-client-id").Return(app, nil)
+
+	// Mock flow exec service - claims_locales should be passed as "required_locales" in RuntimeData
+	expectedFlowInitCtx := &flowexec.FlowInitContext{
+		ApplicationID: "test-app-id",
+		FlowType:      string(flowcm.FlowTypeAuthentication),
+		RuntimeData: map[string]string{
+			"requested_permissions": "read write",
+			"required_attributes":   "",
+			"required_locales":      "en-US fr-CA",
+		},
+	}
+	suite.mockFlowExecService.EXPECT().InitiateFlow(expectedFlowInitCtx).Return("test-session-key", nil)
+	suite.mockAuthReqStore.EXPECT().AddRequest(mock.Anything).Return(testAuthID)
+
+	// Create OAuth message with claims_locales parameter
+	msg := &OAuthMessage{
+		RequestType: oauth2const.TypeInitialAuthorizationRequest,
+		RequestQueryParams: map[string]string{
+			"client_id":      "test-client-id",
+			"redirect_uri":   "https://client.example.com/callback",
+			"response_type":  "code",
+			"scope":          "openid read write",
+			"claims_locales": "en-US fr-CA",
+		},
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/auth", nil)
+	rr := httptest.NewRecorder()
+
+	suite.handler.handleInitialAuthorizationRequest(msg, rr, req)
+
+	assert.Equal(suite.T(), http.StatusFound, rr.Code)
+	location := rr.Header().Get("Location")
+	assert.Contains(suite.T(), location, "/login")
+}
+
+// TestCreateAuthorizationCode_WithClaimsLocales tests that ClaimsLocales is stored in authorization code
+func (suite *AuthorizeHandlerTestSuite) TestCreateAuthorizationCode_WithClaimsLocales() {
+	authRequestCtx := &authRequestContext{
+		OAuthParameters: oauth2model.OAuthParameters{
+			ClientID:         "test-client",
+			RedirectURI:      "https://client.example.com/callback",
+			StandardScopes:   []string{"openid", "profile"},
+			PermissionScopes: []string{"read"},
+			ClaimsLocales:    "en-US ja",
+		},
+	}
+
+	assertionClaims := &assertionClaims{userID: "test-user"}
+	authTime := time.Now()
+
+	result, err := createAuthorizationCode(authRequestCtx, assertionClaims, authTime)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "test-client", result.ClientID)
+	assert.Equal(suite.T(), "en-US ja", result.ClaimsLocales)
 }

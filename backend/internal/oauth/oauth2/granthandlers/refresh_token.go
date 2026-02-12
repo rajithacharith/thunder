@@ -106,6 +106,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 		GrantType:      refreshTokenClaims.GrantType,
 		OAuthApp:       oauthApp,
 		ClaimsRequest:  refreshTokenClaims.ClaimsRequest,
+		ClaimsLocales:  refreshTokenClaims.ClaimsLocales,
 	})
 	if err != nil {
 		logger.Error("Failed to generate access token", log.Error(err))
@@ -128,7 +129,8 @@ func (h *refreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 	if renewRefreshToken {
 		logger.Debug("Renewing refresh token", log.String("client_id", tokenRequest.ClientID))
 		errResp := h.IssueRefreshToken(tokenResponse, oauthApp, refreshTokenClaims.Sub, refreshTokenClaims.Aud,
-			refreshTokenClaims.GrantType, newTokenScopes, refreshTokenClaims.ClaimsRequest)
+			refreshTokenClaims.GrantType, newTokenScopes, refreshTokenClaims.ClaimsRequest,
+			refreshTokenClaims.ClaimsLocales)
 		if errResp != nil && errResp.Error != "" {
 			errResp.ErrorDescription = "Error while issuing refresh token: " + errResp.ErrorDescription
 			logger.Error("Failed to issue refresh token", log.String("error", errResp.Error))
@@ -154,6 +156,7 @@ func (h *refreshTokenGrantHandler) IssueRefreshToken(
 	subject, audience, grantType string,
 	scopes []string,
 	claimsRequest *model.ClaimsRequest,
+	claimsLocales string,
 ) *model.ErrorResponse {
 	tokenCtx := &tokenservice.RefreshTokenBuildContext{
 		ClientID:             oauthApp.ClientID,
@@ -164,6 +167,7 @@ func (h *refreshTokenGrantHandler) IssueRefreshToken(
 		AccessTokenUserAttrs: tokenResponse.AccessToken.UserAttributes,
 		OAuthApp:             oauthApp,
 		ClaimsRequest:        claimsRequest,
+		ClaimsLocales:        claimsLocales,
 	}
 
 	// Build refresh token using token builder

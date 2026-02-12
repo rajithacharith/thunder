@@ -157,6 +157,7 @@ func (authzRS *authorizationRequestStore) getJSONDataBytes(authRequestCtx authRe
 		jsonKeyCodeChallenge:       authRequestCtx.OAuthParameters.CodeChallenge,
 		jsonKeyCodeChallengeMethod: authRequestCtx.OAuthParameters.CodeChallengeMethod,
 		jsonKeyResource:            authRequestCtx.OAuthParameters.Resource,
+		jsonKeyClaimsLocales:       authRequestCtx.OAuthParameters.ClaimsLocales,
 	}
 
 	// Add claims_request if present
@@ -230,6 +231,9 @@ func (authzRS *authorizationRequestStore) buildAuthRequestContextFromResultRow(
 	}
 	if resource, ok := requestDataMap[jsonKeyResource].(string); ok {
 		oauthParams.Resource = resource
+	}
+	if claimsLocales, ok := requestDataMap[jsonKeyClaimsLocales].(string); ok {
+		oauthParams.ClaimsLocales = claimsLocales
 	}
 
 	// Parse claims_request if present

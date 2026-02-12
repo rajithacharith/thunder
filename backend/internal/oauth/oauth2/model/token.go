@@ -63,6 +63,7 @@ type TokenDTO struct {
 	Subject        string
 	Audience       string
 	ClaimsRequest  *ClaimsRequest
+	ClaimsLocales  string
 }
 
 // TokenResponseDTO represents the data transfer object for token responses.

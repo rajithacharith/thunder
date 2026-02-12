@@ -70,6 +70,7 @@ func (tb *tokenBuilder) BuildAccessToken(ctx *AccessTokenBuildContext) (*oauth2m
 		Subject:        ctx.Subject,
 		Audience:       ctx.Audience,
 		ClaimsRequest:  ctx.ClaimsRequest,
+		ClaimsLocales:  ctx.ClaimsLocales,
 	}
 
 	token, iat, err := tb.jwtService.GenerateJWT(
@@ -131,6 +132,11 @@ func (tb *tokenBuilder) buildAccessTokenClaims(
 		if serialized != "" {
 			claims[constants.ClaimClaimsRequest] = serialized
 		}
+	}
+
+	// Include claims_locales if present
+	if ctx.ClaimsLocales != "" {
+		claims[constants.ClaimClaimsLocales] = ctx.ClaimsLocales
 	}
 
 	return claims, nil
@@ -197,11 +203,12 @@ func (tb *tokenBuilder) BuildRefreshToken(ctx *RefreshTokenBuildContext) (*oauth
 	}
 
 	tokenDTO := &oauth2model.TokenDTO{
-		ExpiresIn: tokenConfig.ValidityPeriod,
-		Scopes:    ctx.Scopes,
-		ClientID:  ctx.ClientID,
-		Subject:   ctx.AccessTokenSubject,
-		Audience:  tokenConfig.Issuer,
+		ExpiresIn:     tokenConfig.ValidityPeriod,
+		Scopes:        ctx.Scopes,
+		ClientID:      ctx.ClientID,
+		Subject:       ctx.AccessTokenSubject,
+		Audience:      tokenConfig.Issuer,
+		ClaimsLocales: ctx.ClaimsLocales,
 	}
 
 	token, iat, err := tb.jwtService.GenerateJWT(
@@ -251,6 +258,11 @@ func (tb *tokenBuilder) buildRefreshTokenClaims(ctx *RefreshTokenBuildContext) (
 		if serialized != "" {
 			claims["access_token_claims_request"] = serialized
 		}
+	}
+
+	// Include claims_locales if present
+	if ctx.ClaimsLocales != "" {
+		claims["access_token_claims_locales"] = ctx.ClaimsLocales
 	}
 
 	return claims, nil

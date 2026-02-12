@@ -32,6 +32,7 @@ type OAuthParameters struct {
 	CodeChallengeMethod string
 	Resource            string
 	ClaimsRequest       *ClaimsRequest
+	ClaimsLocales       string
 }
 
 // ClaimsRequest represents the OIDC claims request parameter structure.

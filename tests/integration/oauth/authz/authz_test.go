@@ -1091,3 +1091,94 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithResourceParameter() {
 	ts.True(ok, "Audience claim should be present in access token")
 	ts.Equal(resourceURL, aud, "Audience should match the resource parameter")
 }
+
+// TestAuthorizationCodeFlowWithClaimsLocales tests that claims_locales parameter is accepted and stored
+func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithClaimsLocales() {
+	// Test that claims_locales parameter is properly handled in authorization flow
+	claimsLocales := "en-US fr-CA ja"
+
+	// Create test user
+	user := testutils.User{
+		OrganizationUnit: testOUID,
+		Type:             "authz-test-person",
+		Attributes: json.RawMessage(`{
+			"username": "localestest",
+			"password": "testpass123",
+			"email": "localestest@example.com",
+			"firstName": "Locales",
+			"lastName": "Test"
+		}`),
+	}
+	userID, err := testutils.CreateUser(user)
+	ts.NoError(err, "Failed to create test user")
+	defer func() {
+		if err := testutils.DeleteUser(userID); err != nil {
+			ts.T().Logf("Warning: Failed to delete test user: %v", err)
+		}
+	}()
+
+	// Start authorization flow with claims_locales parameter
+	resp, err := testutils.InitiateAuthorizationFlowWithClaimsLocales(
+		clientID, redirectURI, "code", "openid", "test_locales_state", claimsLocales,
+	)
+	ts.NoError(err, "Failed to initiate authorization flow with claims_locales")
+	if resp == nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	ts.Equal(http.StatusFound, resp.StatusCode, "Expected redirect status")
+	location := resp.Header.Get("Location")
+	ts.NotEmpty(location, "Expected redirect location header")
+
+	authId, flowId, err := testutils.ExtractAuthData(location)
+	ts.NoError(err, "Failed to extract auth ID")
+
+	// Initiate authentication flow
+	_, err = testutils.ExecuteAuthenticationFlow(flowId, nil, "")
+	ts.NoError(err, "Failed to initiate authentication flow")
+
+	// Execute authentication flow
+	flowStep, err := testutils.ExecuteAuthenticationFlow(flowId, map[string]string{
+		"username": "localestest",
+		"password": "testpass123",
+	}, "action_001")
+	ts.NoError(err, "Failed to execute authentication flow")
+	ts.Equal("COMPLETE", flowStep.FlowStatus, "Expected flow status COMPLETE")
+
+	// Complete authorization
+	authzResponse, err := testutils.CompleteAuthorization(authId, flowStep.Assertion)
+	ts.NoError(err, "Failed to complete authorization")
+
+	// Extract authorization code
+	authzCode, err := testutils.ExtractAuthorizationCode(authzResponse.RedirectURI)
+	ts.NoError(err, "Failed to extract authorization code")
+	ts.NotEmpty(authzCode, "Authorization code should be present")
+
+	// Exchange authorization code for access token
+	result, err := testutils.RequestToken(clientID, clientSecret, authzCode, redirectURI, "authorization_code")
+	ts.NoError(err, "Failed to exchange code for token")
+	ts.Equal(http.StatusOK, result.StatusCode, "Token request should succeed")
+
+	// Verify token response
+	tokenResponse := result.Token
+	ts.NotEmpty(tokenResponse.AccessToken, "Access token should be present")
+	ts.Equal("Bearer", tokenResponse.TokenType, "Token type should be Bearer")
+	ts.True(tokenResponse.ExpiresIn > 0, "Expires in should be greater than 0")
+
+	// Decode JWT to verify basic claims
+	parts := strings.Split(tokenResponse.AccessToken, ".")
+	ts.Len(parts, 3, "Access token should be a JWT with 3 parts")
+
+	payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[1])
+	ts.NoError(err, "Failed to decode JWT payload")
+
+	var claims map[string]interface{}
+	err = json.Unmarshal(payloadBytes, &claims)
+	ts.NoError(err, "Failed to unmarshal JWT claims")
+
+	ts.Equal(clientID, claims["aud"], "Audience claim should match client_id")
+	ts.Equal("openid", claims["scope"], "Scope claim should match requested scope")
+	ts.Equal(userID, claims["sub"], "Subject claim should match authenticated user ID")
+	ts.Equal(claimsLocales, claims["claims_locales"], "claims_locales claim should match requested value")
+}

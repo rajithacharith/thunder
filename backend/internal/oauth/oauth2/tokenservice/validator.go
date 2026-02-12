@@ -86,6 +86,9 @@ func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*
 		claimsRequest = parsed
 	}
 
+	// Extract claims_locales if present
+	claimsLocales, _ := extractStringClaim(claims, "access_token_claims_locales")
+
 	// Extract user type and organizational unit details if present
 	return &RefreshTokenClaims{
 		Sub:            sub,
@@ -95,6 +98,7 @@ func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*
 		UserAttributes: userAttributes,
 		Iat:            iat,
 		ClaimsRequest:  claimsRequest,
+		ClaimsLocales:  claimsLocales,
 	}, nil
 }
 
