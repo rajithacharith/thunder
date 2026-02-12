@@ -29,6 +29,8 @@ type ExportRequest struct {
 	OrganizationUnits   []string `json:"organization_units,omitempty"`
 	Flows               []string `json:"flows,omitempty"`
 	Translations        []string `json:"translations,omitempty"`
+	Layouts             []string `json:"layouts,omitempty"`
+	Themes              []string `json:"themes,omitempty"`
 
 	Options *ExportOptions `json:"options,omitempty"`
 }

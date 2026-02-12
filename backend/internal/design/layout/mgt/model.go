@@ -22,12 +22,12 @@ import "encoding/json"
 
 // Layout represents a layout configuration.
 type Layout struct {
-	ID          string          `json:"id"`
-	DisplayName string          `json:"displayName"`
-	Description string          `json:"description,omitempty"`
-	Layout      json.RawMessage `json:"layout"`
-	CreatedAt   string          `json:"createdAt"`
-	UpdatedAt   string          `json:"updatedAt"`
+	ID          string          `json:"id" yaml:"id,omitempty"`
+	DisplayName string          `json:"displayName" yaml:"displayName"`
+	Description string          `json:"description,omitempty" yaml:"description,omitempty"`
+	Layout      json.RawMessage `json:"layout" yaml:"layout"`
+	CreatedAt   string          `json:"createdAt" yaml:"createdAt,omitempty"`
+	UpdatedAt   string          `json:"updatedAt" yaml:"updatedAt,omitempty"`
 }
 
 // LayoutListItem represents a layout item in the list response.
@@ -51,6 +51,14 @@ type UpdateLayoutRequest struct {
 	DisplayName string          `json:"displayName"`
 	Description string          `json:"description,omitempty"`
 	Layout      json.RawMessage `json:"layout"`
+}
+
+// layoutRequestWithID represents the request structure for creating a layout from file-based config.
+type layoutRequestWithID struct {
+	ID          string      `yaml:"id"`
+	DisplayName string      `yaml:"displayName"`
+	Description string      `yaml:"description,omitempty"`
+	Layout      interface{} `yaml:"layout"`
 }
 
 // LayoutListResponse represents the response for listing layout configurations with pagination.

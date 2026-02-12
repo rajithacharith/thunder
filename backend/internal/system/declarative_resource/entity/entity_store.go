@@ -37,6 +37,8 @@ const (
 	KeyTypeOU                 KeyType = "ou"
 	KeyTypeFlow               KeyType = "flow"
 	KeyTypeTranslation        KeyType = "translation"
+	KeyTypeTheme              KeyType = "theme"
+	KeyTypeLayout             KeyType = "layout"
 )
 
 // String returns the string representation of KeyType
@@ -48,7 +50,7 @@ func (kt KeyType) String() string {
 func (kt KeyType) IsValid() bool {
 	switch kt {
 	case KeyTypeApplication, KeyTypeNotification, KeyTypeIDP, KeyTypeNotificationSender,
-		KeyTypeUserSchema, KeyTypeOU, KeyTypeFlow, KeyTypeTranslation:
+		KeyTypeUserSchema, KeyTypeOU, KeyTypeFlow, KeyTypeTranslation, KeyTypeTheme, KeyTypeLayout:
 		return true
 	default:
 		return false
