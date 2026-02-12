@@ -30,6 +30,7 @@ import {
   Paper,
   Avatar,
   Stack,
+  OxygenUIThemeProvider,
 } from '@wso2/oxygen-ui';
 import {AppWindowMac, KeyRound} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
@@ -37,6 +38,7 @@ import {useTranslation} from 'react-i18next';
 import {type IdentityProvider} from '@/features/integrations/models/identity-provider';
 import getIntegrationIcon from '@/features/integrations/utils/getIntegrationIcon';
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
+import {oxygenUIThemeTransformer, type ThemeConfig} from '@thunder/shared-design';
 import useIdentityProviders from '../../../integrations/api/useIdentityProviders';
 
 /**
@@ -51,9 +53,9 @@ export interface PreviewProps {
   appLogo: string | null;
 
   /**
-   * The primary color to use for branding elements (e.g., sign-in button)
+   * The selected theme configuration to apply to the preview for accurate color representation
    */
-  selectedColor: string;
+  selectedTheme: ThemeConfig | undefined;
 
   /**
    * Record of enabled authentication integrations
@@ -71,7 +73,7 @@ export interface PreviewProps {
  * - Application name and logo
  * - Primary brand color for buttons and interactive elements
  * - Enabled authentication methods (username/password, social logins)
- * - Identity provider buttons with appropriate branding
+ * - Identity provider buttons
  *
  * The preview updates in real-time as users make changes in the onboarding flow,
  * providing immediate visual feedback of their customization choices. The component
@@ -81,7 +83,7 @@ export interface PreviewProps {
  * @param props - The component props
  * @param props.appName - The application name to display in the preview
  * @param props.appLogo - URL of the logo to display in the preview
- * @param props.selectedColor - Hex color code for branding elements
+ * @param props.selectedTheme - The selected theme configuration to apply to the preview for accurate color representation
  * @param props.integrations - Record of enabled authentication integrations
  *
  * @returns JSX element displaying the sign-in page preview in a browser mockup
@@ -95,11 +97,7 @@ export interface PreviewProps {
  *     <Preview
  *       appName="My Application"
  *       appLogo="https://example.com/logo.png"
- *       selectedColor="#FF5733"
- *       integrations={{
- *         'username-password': true,
- *         'google-idp': true
- *       }}
+ *       selectedTheme={selectedTheme}
  *     />
  *   );
  * }
@@ -107,11 +105,14 @@ export interface PreviewProps {
  *
  * @public
  */
-export default function Preview({appLogo, selectedColor, integrations}: PreviewProps): JSX.Element {
+export default function Preview({appLogo, selectedTheme, integrations}: PreviewProps): JSX.Element {
   const {t} = useTranslation();
   const {mode} = useColorScheme();
   const theme = useTheme();
   const {data: identityProviders} = useIdentityProviders();
+
+  // Ensure mode is either 'light' or 'dark' for indexing colorSchemes
+  const colorMode: 'light' | 'dark' = mode === 'dark' ? 'dark' : 'light';
 
   const hasUsernamePassword: boolean = integrations[AuthenticatorTypes.BASIC_AUTH] ?? false;
   const hasPasskey: boolean = integrations[AuthenticatorTypes.PASSKEY] ?? false;
@@ -171,6 +172,7 @@ export default function Preview({appLogo, selectedColor, integrations}: PreviewP
           flexDirection: 'column',
           alignItems: 'center',
           height: '100%',
+          backgroundColor: selectedTheme?.colorSchemes?.[colorMode]?.colors?.background?.default,
         }}
       >
         {appLogo && (
@@ -187,78 +189,68 @@ export default function Preview({appLogo, selectedColor, integrations}: PreviewP
                 width: 64,
                 height: 64,
                 p: 1,
-                ...theme.applyStyles('light', {
-                  backgroundColor: selectedColor,
-                }),
-                ...theme.applyStyles('dark', {
-                  backgroundColor: selectedColor,
-                }),
+                backgroundColor: selectedTheme?.colorSchemes?.[colorMode]?.colors?.primary?.main,
               }}
             />
           </Box>
         )}
-        <Paper sx={{pointerEvents: 'none', width: 400, position: 'relative'}}>
-          <ThemeProvider mode={mode}>
-            <Box>
-              <BaseSignIn onError={() => {}} onSuccess={() => {}}>
-                {() => (
-                  <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, p: 4}}>
-                    <Stack alignItems="center" spacing={1} sx={{mb: 2}}>
-                      <Typography variant="h2" sx={{width: '100%', mb: 2, textAlign: 'center'}}>
-                        {t('applications:onboarding.preview.signin')}
-                      </Typography>
-                    </Stack>
+        <Paper
+          sx={{
+            pointerEvents: 'none',
+            width: 400,
+            position: 'relative',
+          }}
+        >
+          <OxygenUIThemeProvider theme={oxygenUIThemeTransformer(selectedTheme)}>
+            <ThemeProvider mode={colorMode}>
+              <Box>
+                <BaseSignIn onError={() => {}} onSuccess={() => {}}>
+                  {() => (
+                    <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, p: 4}}>
+                      <Stack alignItems="center" spacing={1} sx={{mb: 2}}>
+                        <Typography variant="h3" sx={{width: '100%', mb: 2, textAlign: 'center'}}>
+                          {t('applications:onboarding.preview.signin')}
+                        </Typography>
+                      </Stack>
 
-                    {/* Username/Password form - Conditionally rendered */}
-                    {hasUsernamePassword && (
-                      <Box
-                        component="form"
-                        onSubmit={(e) => e.preventDefault()}
-                        sx={{display: 'flex', flexDirection: 'column', gap: 2, mb: hasSocialLogins ? 2 : 0}}
-                      >
-                        <FormControl required>
-                          <FormLabel htmlFor="preview-username">
-                            {t('applications:onboarding.preview.username')}
-                          </FormLabel>
-                          <TextField
-                            id="preview-username"
-                            type="text"
-                            placeholder={t('applications:onboarding.preview.usernamePlaceholder')}
-                            fullWidth
-                            variant="outlined"
-                            disabled
-                          />
-                        </FormControl>
-                        <FormControl required>
-                          <FormLabel htmlFor="preview-password">
-                            {t('applications:onboarding.preview.password')}
-                          </FormLabel>
-                          <TextField
-                            id="preview-password"
-                            type="password"
-                            placeholder={t('applications:onboarding.preview.passwordPlaceholder')}
-                            fullWidth
-                            variant="outlined"
-                            disabled
-                          />
-                        </FormControl>
-                        <Button
-                          type="submit"
-                          fullWidth
-                          variant="contained"
-                          color="secondary"
-                          sx={{
-                            color: '#fff',
-                            backgroundColor: selectedColor,
-                            '&:hover': {
-                              backgroundColor: selectedColor,
-                            },
-                          }}
+                      {/* Username/Password form - Conditionally rendered */}
+                      {hasUsernamePassword && (
+                        <Box
+                          component="form"
+                          onSubmit={(e) => e.preventDefault()}
+                          sx={{display: 'flex', flexDirection: 'column', gap: 2, mb: hasSocialLogins ? 2 : 0}}
                         >
-                          {t('applications:onboarding.preview.signInButton')}
-                        </Button>
-                      </Box>
-                    )}
+                          <FormControl required>
+                            <FormLabel htmlFor="preview-username">
+                              {t('applications:onboarding.preview.username')}
+                            </FormLabel>
+                            <TextField
+                              id="preview-username"
+                              type="text"
+                              placeholder={t('applications:onboarding.preview.usernamePlaceholder')}
+                              fullWidth
+                              variant="outlined"
+                              disabled
+                            />
+                          </FormControl>
+                          <FormControl required>
+                            <FormLabel htmlFor="preview-password">
+                              {t('applications:onboarding.preview.password')}
+                            </FormLabel>
+                            <TextField
+                              id="preview-password"
+                              type="password"
+                              placeholder={t('applications:onboarding.preview.passwordPlaceholder')}
+                              fullWidth
+                              variant="outlined"
+                              disabled
+                            />
+                          </FormControl>
+                          <Button type="submit" fullWidth variant="contained" color="primary">
+                            {t('applications:onboarding.preview.signInButton')}
+                          </Button>
+                        </Box>
+                      )}
 
                     {/* Passkey option - Conditionally rendered */}
                     {hasPasskey && (
@@ -271,105 +263,88 @@ export default function Preview({appLogo, selectedColor, integrations}: PreviewP
                           type="submit"
                           fullWidth
                           variant={hasUsernamePassword ? 'outlined' : 'contained'}
-                          color="secondary"
+                          color="primary"
                           startIcon={<KeyRound />}
-                          sx={
-                            hasUsernamePassword
-                              ? {
-                                  borderColor: selectedColor,
-                                  color: selectedColor,
-                                  '&:hover': {
-                                    borderColor: selectedColor,
-                                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                                  },
-                                }
-                              : {
-                                  color: '#fff',
-                                  backgroundColor: selectedColor,
-                                  '&:hover': {
-                                    backgroundColor: selectedColor,
-                                  },
-                                }
-                          }
                         >
                           {t('applications:onboarding.preview.passkeySignIn')}
                         </Button>
                       </Box>
                     )}
 
-                    {/* SMS OTP option - Conditionally rendered */}
-                    {hasSmsOtp && (
-                      <Box
-                        component="form"
-                        onSubmit={(e) => e.preventDefault()}
-                        sx={{display: 'flex', flexDirection: 'column', gap: 2, mb: hasSocialLogins ? 2 : 0}}
-                      >
-                        <FormControl required>
-                          <FormLabel htmlFor="preview-mobile">
-                            {t('applications:onboarding.preview.mobileNumber', {
-                              defaultValue: 'Mobile Number',
-                            })}
-                          </FormLabel>
-                          <TextField
-                            id="preview-mobile"
-                            type="tel"
-                            placeholder={t('applications:onboarding.preview.mobileNumberPlaceholder', {
-                              defaultValue: 'Enter your mobile number',
-                            })}
-                            fullWidth
-                            variant="outlined"
-                            disabled
-                          />
-                        </FormControl>
-                        <Button
-                          type="submit"
-                          fullWidth
-                          variant="contained"
-                          color="secondary"
-                          sx={{
-                            color: '#fff',
-                            backgroundColor: selectedColor,
-                            '&:hover': {
-                              backgroundColor: selectedColor,
-                            },
-                          }}
+                      {/* SMS OTP option - Conditionally rendered */}
+                      {hasSmsOtp && (
+                        <Box
+                          component="form"
+                          onSubmit={(e) => e.preventDefault()}
+                          sx={{display: 'flex', flexDirection: 'column', gap: 2, mb: hasSocialLogins ? 2 : 0}}
                         >
-                          {t('applications:onboarding.preview.sendOtpButton', {
-                            defaultValue: 'Send OTP',
-                          })}
-                        </Button>
-                      </Box>
-                    )}
-
-                    {/* Divider - Show when multiple auth methods exist */}
-                    {(((hasUsernamePassword || hasPasskey) && hasSmsOtp) ||
-                      (((hasUsernamePassword || hasPasskey) || hasSmsOtp) && hasSocialLogins)) && (
-                      <Divider>{t('applications:onboarding.preview.dividerText')}</Divider>
-                    )}
-
-                    {/* Social login buttons with actual provider names */}
-                    {hasSocialLogins && (
-                      <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                        {selectedProviders.map(
-                          (provider: IdentityProvider): JSX.Element => (
-                            <Button
-                              key={provider.id}
+                          <FormControl required>
+                            <FormLabel htmlFor="preview-mobile">
+                              {t('applications:onboarding.preview.mobileNumber', {
+                                defaultValue: 'Mobile Number',
+                              })}
+                            </FormLabel>
+                            <TextField
+                              id="preview-mobile"
+                              type="tel"
+                              placeholder={t('applications:onboarding.preview.mobileNumberPlaceholder', {
+                                defaultValue: 'Enter your mobile number',
+                              })}
                               fullWidth
                               variant="outlined"
                               disabled
-                              startIcon={getIntegrationIcon(provider.type)}
-                            >
-                              {t('applications:onboarding.preview.continueWith', {providerName: provider.name})}
-                            </Button>
-                          ),
-                        )}
-                      </Box>
-                    )}
-                  </Box>
-                )}
-              </BaseSignIn>
-            </Box>
-          </ThemeProvider>
+                            />
+                          </FormControl>
+                          <Button
+                            type="submit"
+                            fullWidth
+                            variant="contained"
+                            color="secondary"
+                            sx={{
+                              color: '#fff',
+                              backgroundColor: selectedTheme?.colorSchemes?.[colorMode]?.colors?.primary?.main,
+                              '&:hover': {
+                                backgroundColor: selectedTheme?.colorSchemes?.[colorMode]?.colors?.primary?.dark,
+                              },
+                            }}
+                          >
+                            {t('applications:onboarding.preview.sendOtpButton', {
+                              defaultValue: 'Send OTP',
+                            })}
+                          </Button>
+                        </Box>
+                      )}
+
+                      {/* Divider - Show when multiple auth methods exist */}
+                      {(((hasUsernamePassword || hasPasskey) && hasSmsOtp) ||
+                        (((hasUsernamePassword || hasPasskey) || hasSmsOtp) && hasSocialLogins)) && (
+                        <Divider>{t('applications:onboarding.preview.dividerText')}</Divider>
+                      )}
+
+                      {/* Social login buttons with actual provider names */}
+                      {hasSocialLogins && (
+                        <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+                          {selectedProviders.map(
+                            (provider: IdentityProvider): JSX.Element => (
+                              <Button
+                                key={provider.id}
+                                fullWidth
+                                variant="outlined"
+                                disabled
+                                startIcon={getIntegrationIcon(provider.type)}
+                              >
+                                {t('applications:onboarding.preview.continueWith', {providerName: provider.name})}
+                              </Button>
+                            ),
+                          )}
+                        </Box>
+                      )}
+                    </Box>
+                  )}
+                </BaseSignIn>
+              </Box>
+            </ThemeProvider>
+          </OxygenUIThemeProvider>
         </Paper>
       </Box>
     </Box>

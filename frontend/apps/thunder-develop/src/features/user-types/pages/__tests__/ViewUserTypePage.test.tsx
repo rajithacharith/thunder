@@ -373,7 +373,7 @@ describe('ViewUserTypePage', () => {
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
 
-      const nameInput = screen.getByPlaceholderText(/user type name/i);
+      const nameInput = await screen.findByPlaceholderText(/user type name/i);
       await user.clear(nameInput);
       await user.type(nameInput, 'Updated Schema Name');
 
@@ -385,6 +385,10 @@ describe('ViewUserTypePage', () => {
       render(<ViewUserTypePage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: /save changes/i})).toBeInTheDocument();
+      });
 
       const requiredCheckboxes = screen.getAllByRole('checkbox', {name: /required/i});
       const firstCheckbox = requiredCheckboxes[0];

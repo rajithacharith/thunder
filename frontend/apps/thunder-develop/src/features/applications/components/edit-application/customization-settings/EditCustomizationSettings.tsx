@@ -46,7 +46,7 @@ interface EditCustomizationSettingsProps {
  * Container component for application customization settings.
  *
  * Displays sections for:
- * - Appearance (branding/theme selection)
+ * - Appearance (theme/layout selection)
  * - URLs (Terms of Service, Privacy Policy)
  * - Contact information (email addresses)
  *

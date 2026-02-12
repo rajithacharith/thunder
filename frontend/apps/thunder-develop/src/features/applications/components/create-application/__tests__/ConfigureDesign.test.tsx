@@ -17,24 +17,22 @@
  */
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, screen, fireEvent} from '@thunder/test-utils';
+import {render, screen} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
 import ConfigureDesign, {type ConfigureDesignProps} from '../ConfigureDesign';
 
 // Mock the utility functions
 vi.mock('../../../utils/generateAppLogoSuggestion');
-vi.mock('../../../utils/generateAppPrimaryColorSuggestions');
 
-// Mock the brandings API
-vi.mock('@thunder/shared-branding');
+// Mock the themes API
+vi.mock('@thunder/shared-design');
 
 const {default: generateAppLogoSuggestions} = await import('../../../utils/generateAppLogoSuggestion');
-const {default: generateAppPrimaryColorSuggestions} = await import('../../../utils/generateAppPrimaryColorSuggestions');
-const {useGetBrandings, useGetBranding} = await import('@thunder/shared-branding');
+const {useGetThemes, useGetTheme} = await import('@thunder/shared-design');
 
 describe('ConfigureDesign', () => {
   const mockOnLogoSelect = vi.fn();
-  const mockOnColorSelect = vi.fn();
+  const mockOnThemeSelect = vi.fn();
   const mockOnInitialLogoLoad = vi.fn();
 
   const mockLogoSuggestions = [
@@ -44,33 +42,30 @@ describe('ConfigureDesign', () => {
     'https://example.com/avatars/fish_lg.png',
   ];
 
-  const mockColorOptions = ['#FF5733', '#33FF57', '#3357FF', '#F333FF'];
-
   const defaultProps: ConfigureDesignProps = {
     appLogo: null,
-    selectedColor: '#FF5733',
+    selectedTheme: null,
     onLogoSelect: mockOnLogoSelect,
-    onColorSelect: mockOnColorSelect,
+    onThemeSelect: mockOnThemeSelect,
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(generateAppLogoSuggestions).mockReturnValue(mockLogoSuggestions);
-    vi.mocked(generateAppPrimaryColorSuggestions).mockReturnValue(mockColorOptions);
 
-    // Mock useGetBrandings to return empty data
-    vi.mocked(useGetBrandings).mockReturnValue({
+    // Mock useGetThemes to return empty data
+    vi.mocked(useGetThemes).mockReturnValue({
       data: undefined,
       isLoading: false,
       error: null,
-    } as ReturnType<typeof useGetBrandings>);
+    } as ReturnType<typeof useGetThemes>);
 
-    // Mock useGetBranding to return empty data
-    vi.mocked(useGetBranding).mockReturnValue({
+    // Mock useGetTheme to return empty data
+    vi.mocked(useGetTheme).mockReturnValue({
       data: undefined,
       isLoading: false,
       error: null,
-    } as ReturnType<typeof useGetBranding>);
+    } as ReturnType<typeof useGetTheme>);
   });
 
   const renderComponent = (props: Partial<ConfigureDesignProps> = {}) =>
@@ -164,105 +159,16 @@ describe('ConfigureDesign', () => {
     expect(await screen.findByRole('tooltip', {name: /Cat/i})).toBeInTheDocument();
   });
 
-  it('should render color section title', () => {
+  it('should render theme section title', () => {
     renderComponent();
 
-    expect(screen.getByRole('heading', {name: 'Brand Color'})).toBeInTheDocument();
-  });
-
-  it('should render all color options', () => {
-    renderComponent();
-
-    // Color options are rendered as clickable boxes
-    const colorSection = screen.getByRole('heading', {name: 'Brand Color'}).parentElement;
-    expect(colorSection).toBeInTheDocument();
-  });
-
-  it('should call onColorSelect when clicking a color', async () => {
-    const user = userEvent.setup();
-    renderComponent();
-
-    // Find color boxes and click one
-    const colorBoxes = screen.getAllByRole('button');
-    const colorButton = colorBoxes.find((btn) => btn.getAttribute('aria-label')?.includes('color'));
-
-    if (colorButton) {
-      await user.click(colorButton);
-      expect(mockOnColorSelect).toHaveBeenCalled();
-    }
-  });
-
-  it('should highlight selected color', () => {
-    renderComponent({selectedColor: mockColorOptions[0]});
-
-    // Selected color should have different styling
-    const colorSection = screen.getByRole('heading', {name: 'Brand Color'});
-    expect(colorSection).toBeInTheDocument();
-  });
-
-  it('should handle custom color input toggle', async () => {
-    const user = userEvent.setup();
-    renderComponent();
-
-    // Look for custom color button
-    const customColorButton = screen.queryByRole('button', {name: /custom/i});
-
-    if (customColorButton) {
-      await user.click(customColorButton);
-      // Custom color input should appear
-      expect(screen.getByRole('textbox')).toBeInTheDocument();
-    }
-  });
-
-  it('should handle custom color input value', async () => {
-    const user = userEvent.setup();
-    renderComponent();
-
-    const customColorButton = screen.queryByRole('button', {name: /custom/i});
-
-    if (customColorButton) {
-      await user.click(customColorButton);
-
-      const colorInput = screen.getByRole('textbox');
-      await user.type(colorInput, '#AABBCC');
-
-      // Should update custom color state
-      expect(colorInput).toHaveValue('#AABBCC');
-    }
-  });
-
-  it('should reset custom color when selecting predefined color', async () => {
-    const user = userEvent.setup();
-    renderComponent();
-
-    // First set custom color
-    const customColorButton = screen.queryByRole('button', {name: /custom/i});
-
-    if (customColorButton) {
-      await user.click(customColorButton);
-
-      // Then select a predefined color
-      const colorBoxes = screen.getAllByRole('button');
-      const predefinedColor = colorBoxes.find((btn) => btn.getAttribute('aria-label')?.includes('color'));
-
-      if (predefinedColor) {
-        await user.click(predefinedColor);
-
-        expect(mockOnColorSelect).toHaveBeenCalled();
-      }
-    }
+    expect(screen.getByRole('heading', {name: 'Theme'})).toBeInTheDocument();
   });
 
   it('should generate logos with correct count', () => {
     renderComponent();
 
     expect(generateAppLogoSuggestions).toHaveBeenCalledWith(8);
-  });
-
-  it('should generate color suggestions on mount', () => {
-    renderComponent();
-
-    expect(generateAppPrimaryColorSuggestions).toHaveBeenCalled();
   });
 
   it('should handle null appLogo prop', () => {
@@ -276,7 +182,7 @@ describe('ConfigureDesign', () => {
     renderComponent();
 
     // Palette icon should be present in the UI
-    const colorSection = screen.getByRole('heading', {name: 'Brand Color'});
+    const colorSection = screen.getByRole('heading', {name: 'Theme'});
     expect(colorSection).toBeInTheDocument();
   });
 
@@ -318,25 +224,16 @@ describe('ConfigureDesign', () => {
     });
   });
 
-  describe('DEFAULT branding integration', () => {
-    const mockDefaultBrandingDetails = {
-      id: 'default-branding-id',
-      displayName: 'Default',
-      preferences: {
-        theme: {
-          colorSchemes: {
-            light: {
-              colors: {
-                primary: {
-                  main: '#123456',
-                },
-              },
-              images: {
-                logo: {
-                  primary: {
-                    url: 'https://example.com/default-logo.png',
-                  },
-                },
+  describe('Theme selection', () => {
+    const mockThemeDetails = {
+      id: 'theme-1',
+      displayName: 'Corporate Blue',
+      theme: {
+        colorSchemes: {
+          light: {
+            colors: {
+              primary: {
+                main: '#123456',
               },
             },
           },
@@ -344,157 +241,103 @@ describe('ConfigureDesign', () => {
       },
     };
 
-    it('should apply DEFAULT branding color when it exists', () => {
-      vi.mocked(useGetBrandings).mockReturnValue({
-        data: {
-          brandings: [{id: 'default-branding-id', displayName: 'Default'}],
-        },
-        isLoading: false,
-        error: null,
-      } as ReturnType<typeof useGetBrandings>);
+    const mockThemesList = [
+      {id: 'theme-1', displayName: 'Corporate Blue'},
+      {id: 'theme-2', displayName: 'Sunset Orange'},
+    ];
 
-      vi.mocked(useGetBranding).mockReturnValue({
-        data: mockDefaultBrandingDetails,
+    it('should render theme cards when themes are available', () => {
+      vi.mocked(useGetThemes).mockReturnValue({
+        data: {themes: mockThemesList},
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useGetBranding>);
+      } as ReturnType<typeof useGetThemes>);
+
+      vi.mocked(useGetTheme).mockReturnValue({
+        data: mockThemeDetails,
+        isLoading: false,
+        error: null,
+      } as ReturnType<typeof useGetTheme>);
 
       renderComponent();
 
-      expect(mockOnColorSelect).toHaveBeenCalledWith('#123456');
+      expect(screen.getByText('Corporate Blue')).toBeInTheDocument();
+      expect(screen.getByText('Sunset Orange')).toBeInTheDocument();
     });
 
-    it('should apply DEFAULT branding logo when it exists', () => {
-      vi.mocked(useGetBrandings).mockReturnValue({
-        data: {
-          brandings: [{id: 'default-branding-id', displayName: 'Default'}],
-        },
+    it('should render radio buttons for each theme card', () => {
+      vi.mocked(useGetThemes).mockReturnValue({
+        data: {themes: mockThemesList},
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useGetBrandings>);
+      } as ReturnType<typeof useGetThemes>);
 
-      vi.mocked(useGetBranding).mockReturnValue({
-        data: mockDefaultBrandingDetails,
+      vi.mocked(useGetTheme).mockReturnValue({
+        data: mockThemeDetails,
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useGetBranding>);
+      } as ReturnType<typeof useGetTheme>);
 
       renderComponent();
 
-      expect(mockOnLogoSelect).toHaveBeenCalledWith('https://example.com/default-logo.png');
+      const radios = screen.getAllByRole('radio');
+      expect(radios).toHaveLength(2);
     });
 
-    it('should show "Pick Different Color" button when DEFAULT branding exists', () => {
-      vi.mocked(useGetBrandings).mockReturnValue({
-        data: {
-          brandings: [{id: 'default-branding-id', displayName: 'Default'}],
-        },
+    it('should call onThemeSelect with theme details when theme is loaded', () => {
+      vi.mocked(useGetThemes).mockReturnValue({
+        data: {themes: mockThemesList},
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useGetBrandings>);
+      } as ReturnType<typeof useGetThemes>);
 
-      vi.mocked(useGetBranding).mockReturnValue({
-        data: mockDefaultBrandingDetails,
+      vi.mocked(useGetTheme).mockReturnValue({
+        data: mockThemeDetails,
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useGetBranding>);
+      } as ReturnType<typeof useGetTheme>);
 
       renderComponent();
 
-      expect(screen.getByRole('button', {name: /Pick a different color/i})).toBeInTheDocument();
+      expect(mockOnThemeSelect).toHaveBeenCalledWith('theme-1', mockThemeDetails.theme);
     });
 
-    it('should show color options when "Pick Different Color" is clicked', async () => {
+    it('should show empty state when no themes are configured', () => {
+      vi.mocked(useGetThemes).mockReturnValue({
+        data: {themes: []},
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof useGetThemes>);
+
+      renderComponent();
+
+      expect(screen.getByText('No themes configured')).toBeInTheDocument();
+      expect(screen.getByText('You can configure themes later from the Design settings.')).toBeInTheDocument();
+    });
+
+    it('should select a different theme when clicking its card', async () => {
       const user = userEvent.setup();
-      vi.mocked(useGetBrandings).mockReturnValue({
-        data: {
-          brandings: [{id: 'default-branding-id', displayName: 'Default'}],
-        },
+      const mockOnThemeSelectLocal = vi.fn();
+
+      vi.mocked(useGetThemes).mockReturnValue({
+        data: {themes: mockThemesList},
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useGetBrandings>);
+      } as ReturnType<typeof useGetThemes>);
 
-      vi.mocked(useGetBranding).mockReturnValue({
-        data: mockDefaultBrandingDetails,
+      vi.mocked(useGetTheme).mockReturnValue({
+        data: mockThemeDetails,
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useGetBranding>);
+      } as ReturnType<typeof useGetTheme>);
 
-      renderComponent();
+      renderComponent({onThemeSelect: mockOnThemeSelectLocal});
 
-      const pickColorButton = screen.getByRole('button', {name: /Pick a different color/i});
-      await user.click(pickColorButton);
+      const secondThemeCard = screen.getByTestId('theme-card-theme-2');
+      await user.click(secondThemeCard);
 
-      // Color options should now be visible
-      expect(screen.getByText('Custom')).toBeInTheDocument();
-    });
-
-    it('should call onBrandingSelectionChange with true when using DEFAULT branding', () => {
-      const mockOnBrandingSelectionChange = vi.fn();
-
-      vi.mocked(useGetBrandings).mockReturnValue({
-        data: {
-          brandings: [{id: 'default-branding-id', displayName: 'Default'}],
-        },
-        isLoading: false,
-        error: null,
-      } as ReturnType<typeof useGetBrandings>);
-
-      vi.mocked(useGetBranding).mockReturnValue({
-        data: mockDefaultBrandingDetails,
-        isLoading: false,
-        error: null,
-      } as ReturnType<typeof useGetBranding>);
-
-      renderComponent({onBrandingSelectionChange: mockOnBrandingSelectionChange});
-
-      expect(mockOnBrandingSelectionChange).toHaveBeenCalledWith(true, 'default-branding-id');
-    });
-
-    it('should call onBrandingSelectionChange with false when picking different color', async () => {
-      const user = userEvent.setup();
-      const mockOnBrandingSelectionChange = vi.fn();
-
-      vi.mocked(useGetBrandings).mockReturnValue({
-        data: {
-          brandings: [{id: 'default-branding-id', displayName: 'Default'}],
-        },
-        isLoading: false,
-        error: null,
-      } as ReturnType<typeof useGetBrandings>);
-
-      vi.mocked(useGetBranding).mockReturnValue({
-        data: mockDefaultBrandingDetails,
-        isLoading: false,
-        error: null,
-      } as ReturnType<typeof useGetBranding>);
-
-      renderComponent({onBrandingSelectionChange: mockOnBrandingSelectionChange});
-
-      const pickColorButton = screen.getByRole('button', {name: /Pick a different color/i});
-      await user.click(pickColorButton);
-
-      expect(mockOnBrandingSelectionChange).toHaveBeenCalledWith(false, 'default-branding-id');
-    });
-
-    it('should display app name in branding message when provided', () => {
-      vi.mocked(useGetBrandings).mockReturnValue({
-        data: {
-          brandings: [{id: 'default-branding-id', displayName: 'Default'}],
-        },
-        isLoading: false,
-        error: null,
-      } as ReturnType<typeof useGetBrandings>);
-
-      vi.mocked(useGetBranding).mockReturnValue({
-        data: mockDefaultBrandingDetails,
-        isLoading: false,
-        error: null,
-      } as ReturnType<typeof useGetBranding>);
-
-      renderComponent({appName: 'My Test App'});
-
-      expect(screen.getByText('My Test App')).toBeInTheDocument();
+      // onThemeSelect should be called when theme details load
+      expect(mockOnThemeSelectLocal).toHaveBeenCalledWith('theme-1', mockThemeDetails.theme);
     });
   });
 
@@ -510,61 +353,6 @@ describe('ConfigureDesign', () => {
     });
   });
 
-  describe('Custom logo selection', () => {
-    it('should set hasCustomLogo when selecting a different logo from default', async () => {
-      const user = userEvent.setup();
-      const mockOnBrandingSelectionChange = vi.fn();
-
-      const mockDefaultBrandingDetails = {
-        id: 'default-branding-id',
-        displayName: 'Default',
-        preferences: {
-          theme: {
-            colorSchemes: {
-              light: {
-                colors: {
-                  primary: {
-                    main: '#123456',
-                  },
-                },
-                images: {
-                  logo: {
-                    primary: {
-                      url: 'https://example.com/default-logo.png',
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      };
-
-      vi.mocked(useGetBrandings).mockReturnValue({
-        data: {
-          brandings: [{id: 'default-branding-id', displayName: 'Default'}],
-        },
-        isLoading: false,
-        error: null,
-      } as ReturnType<typeof useGetBrandings>);
-
-      vi.mocked(useGetBranding).mockReturnValue({
-        data: mockDefaultBrandingDetails,
-        isLoading: false,
-        error: null,
-      } as ReturnType<typeof useGetBranding>);
-
-      renderComponent({onBrandingSelectionChange: mockOnBrandingSelectionChange});
-
-      // Select a different logo (not the default one)
-      const avatars = screen.getAllByRole('img');
-      await user.click(avatars[0]);
-
-      // Should trigger branding selection change with false since we picked a different logo
-      expect(mockOnBrandingSelectionChange).toHaveBeenCalledWith(false, 'default-branding-id');
-    });
-  });
-
   describe('Initial logo handling', () => {
     it('should not call onInitialLogoLoad when appLogo is already in suggestions', () => {
       vi.mocked(generateAppLogoSuggestions).mockReturnValue(mockLogoSuggestions);
@@ -576,31 +364,6 @@ describe('ConfigureDesign', () => {
 
       // Should not call since the selected logo is already in suggestions
       expect(mockOnInitialLogoLoad).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('handleColorSelect', () => {
-    it('should call onColorSelect and reset custom color when selecting a predefined color', async () => {
-      const user = userEvent.setup();
-      renderComponent();
-
-      // Click on a color chip using data-testid
-      const colorChip = screen.getByTestId('color-chip-FF5733');
-
-      await user.click(colorChip);
-      expect(mockOnColorSelect).toHaveBeenCalled();
-    });
-  });
-
-  describe('Custom color interaction', () => {
-    it('should handle color input change and call onColorSelect', () => {
-      renderComponent();
-
-      const colorInput = document.querySelector<HTMLInputElement>('input[type="color"]')!;
-      // Note: Browser color inputs normalize hex values to lowercase
-      fireEvent.change(colorInput, {target: {value: '#aabbcc'}});
-
-      expect(mockOnColorSelect).toHaveBeenCalledWith('#aabbcc');
     });
   });
 });

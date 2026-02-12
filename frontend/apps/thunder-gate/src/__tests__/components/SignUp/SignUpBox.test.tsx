@@ -21,11 +21,11 @@ import {render, screen, fireEvent, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
 import SignUpBox from '../../../components/SignUp/SignUpBox';
 
-// Mock useBranding
-const mockUseBranding = vi.fn();
-vi.mock('@thunder/shared-branding', () => ({
+// Mock useDesign
+const mockUseDesign = vi.fn();
+vi.mock('@thunder/shared-design', () => ({
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-  useBranding: () => mockUseBranding(),
+  useDesign: () => mockUseDesign(),
   mapEmbeddedFlowTextVariant: (variant: string) => {
     switch (variant) {
       case 'H1':
@@ -116,10 +116,8 @@ vi.mock('@asgardeo/react', async () => {
 describe('SignUpBox', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseBranding.mockReturnValue({
-      images: null,
-      theme: null,
-      isBrandingEnabled: false,
+    mockUseDesign.mockReturnValue({
+      isDesignEnabled: false,
     });
     mockSignUpRenderProps = createMockSignUpRenderProps();
   });
@@ -533,20 +531,9 @@ describe('SignUpBox', () => {
     expect(screen.getByText('Email is required')).toBeInTheDocument();
   });
 
-  it('shows branded logo when images are available', () => {
-    mockUseBranding.mockReturnValue({
-      images: {
-        logo: {
-          primary: {
-            url: 'https://example.com/logo.png',
-            alt: 'Custom Logo',
-            height: 40,
-            width: 100,
-          },
-        },
-      },
-      theme: {palette: {primary: {main: '#ff0000'}}},
-      isBrandingEnabled: true,
+  it('renders correctly when design is enabled', () => {
+    mockUseDesign.mockReturnValue({
+      isDesignEnabled: true,
     });
     mockSignUpRenderProps = createMockSignUpRenderProps({
       components: [{id: 'block', type: 'BLOCK', components: []}],

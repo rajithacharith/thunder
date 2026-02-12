@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {render, screen, waitFor} from '@thunder/test-utils';
+import {render, screen, waitFor, fireEvent} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {UseQueryResult, UseMutationResult} from '@tanstack/react-query';
@@ -459,7 +459,7 @@ describe('ApplicationEditPage', () => {
       await user.type(descriptionInput, 'Updated description');
 
       // Blur to save
-      await user.tab();
+      fireEvent.blur(descriptionInput);
 
       await waitFor(() => {
         expect(screen.getByText('Updated description')).toBeInTheDocument();
@@ -1042,9 +1042,7 @@ describe('ApplicationEditPage', () => {
       // Find all edit buttons and click the one next to the avatar
       const allButtons = screen.getAllByRole('button');
       // The edit icon next to avatar has a smaller icon (size 14)
-      const avatarEditButton = allButtons.find(
-        (btn) => btn.querySelector('svg') && btn.closest('[class*="absolute"]'),
-      );
+      const avatarEditButton = allButtons.find((btn) => btn.querySelector('svg') && btn.closest('[class*="absolute"]'));
 
       if (avatarEditButton) {
         await user.click(avatarEditButton);

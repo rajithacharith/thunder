@@ -82,7 +82,7 @@ describe('Application Models', () => {
         is_registration_flow_enabled: true,
         template: 'nextjs',
         inbound_auth_config: [],
-        branding_id: 'brand_123',
+        theme_id: 'theme_123',
         certificate: {
           type: 'PEM',
           value: 'cert_value',
@@ -103,7 +103,7 @@ describe('Application Models', () => {
       expect(app).toHaveProperty('is_registration_flow_enabled');
       expect(app).toHaveProperty('template');
       expect(app).toHaveProperty('inbound_auth_config');
-      expect(app).toHaveProperty('branding_id');
+      expect(app).toHaveProperty('theme_id');
       expect(app).toHaveProperty('certificate');
       expect(app).toHaveProperty('allowed_user_types');
     });

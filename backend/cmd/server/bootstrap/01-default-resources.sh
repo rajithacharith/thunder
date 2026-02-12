@@ -810,6 +810,74 @@ fi
 echo ""
 
 # ============================================================================
+# Create Themes
+# ============================================================================
+
+log_info "Creating themes..."
+
+# Get the script directory to locate theme files
+THEMES_DIR="${SCRIPT_DIR}/themes"
+
+# Check if themes directory exists
+if [[ ! -d "$THEMES_DIR" ]]; then
+    log_warning "Themes directory not found at ${THEMES_DIR}, skipping theme creation"
+else
+    shopt -s nullglob
+    THEME_FILES=("$THEMES_DIR"/*.json)
+    shopt -u nullglob
+    
+    if [[ ${#THEME_FILES[@]} -gt 0 ]]; then
+        log_info "Processing themes from ${THEMES_DIR}..."
+        
+        THEME_COUNT=0
+        THEME_SUCCESS=0
+        THEME_SKIPPED=0
+        
+        for THEME_FILE in "${THEME_FILES[@]}"; do
+            [[ ! -f "$THEME_FILE" ]] && continue
+            
+            THEME_COUNT=$((THEME_COUNT + 1))
+            
+            # Get theme name from file content or use filename
+            THEME_NAME=$(grep -o '"displayName"[[:space:]]*:[[:space:]]*"[^"]*"' "$THEME_FILE" | head -1 | sed 's/"displayName"[[:space:]]*:[[:space:]]*"\([^"]*\)"/\1/')
+            if [[ -z "$THEME_NAME" ]]; then
+                THEME_NAME=$(basename "$THEME_FILE" .json)
+            fi
+            
+            log_info "Creating theme: ${THEME_NAME} (from $(basename "$THEME_FILE"))"
+            THEME_PAYLOAD=$(cat "$THEME_FILE")
+            
+            RESPONSE=$(thunder_api_call POST "/design/themes" "${THEME_PAYLOAD}")
+            HTTP_CODE="${RESPONSE: -3}"
+            BODY="${RESPONSE%???}"
+            
+            if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
+                log_success "Theme '${THEME_NAME}' created successfully"
+                THEME_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+                if [[ -n "$THEME_ID" ]]; then
+                    log_info "Theme ID: $THEME_ID"
+                fi
+                THEME_SUCCESS=$((THEME_SUCCESS + 1))
+            elif [[ "$HTTP_CODE" == "409" ]]; then
+                log_warning "Theme '${THEME_NAME}' already exists, skipping"
+                THEME_SKIPPED=$((THEME_SKIPPED + 1))
+            else
+                log_error "Failed to create theme '${THEME_NAME}' (HTTP $HTTP_CODE)"
+                echo "Response: $BODY"
+                exit 1
+            fi
+        done
+        
+        echo ""
+        log_info "Theme creation summary: ${THEME_SUCCESS} created, ${THEME_SKIPPED} skipped (Total: ${THEME_COUNT})"
+    else
+        log_warning "No theme files found in ${THEMES_DIR}"
+    fi
+fi
+
+echo ""
+
+# ============================================================================
 # Summary
 # ============================================================================
 

@@ -27,7 +27,6 @@ import (
 	"github.com/asgardeo/thunder/internal/cert"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/tests/mocks/brandingmock"
 	"github.com/asgardeo/thunder/tests/mocks/certmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
@@ -46,14 +45,12 @@ type InitTestSuite struct {
 	suite.Suite
 	mockCertService       *certmock.CertificateServiceInterfaceMock
 	mockFlowMgtService    *flowmgtmock.FlowMgtServiceInterfaceMock
-	mockBrandingService   *brandingmock.BrandingMgtServiceInterfaceMock
 	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
 }
 
 func (suite *InitTestSuite) SetupTest() {
 	suite.mockCertService = certmock.NewCertificateServiceInterfaceMock(suite.T())
 	suite.mockFlowMgtService = flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
-	suite.mockBrandingService = brandingmock.NewBrandingMgtServiceInterfaceMock(suite.T())
 	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 }
 
@@ -85,7 +82,8 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled() {
 		mux,
 		suite.mockCertService,
 		suite.mockFlowMgtService,
-		suite.mockBrandingService,
+		nil, // themeMgtService - not needed for this test
+		nil, // layoutMgtService - not needed for this test
 		suite.mockUserSchemaService,
 	)
 
@@ -476,11 +474,17 @@ func TestInitialize_Standalone(t *testing.T) {
 	mux := http.NewServeMux()
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(t)
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(t)
-	mockBrandingService := brandingmock.NewBrandingMgtServiceInterfaceMock(t)
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 
 	// Execute
-	service, _, err := Initialize(mux, mockCertService, mockFlowMgtService, mockBrandingService, mockUserSchemaService)
+	service, _, err := Initialize(
+		mux,
+		mockCertService,
+		mockFlowMgtService,
+		nil, // themeMgtService - not needed for this test
+		nil, // layoutMgtService - not needed for this test
+		mockUserSchemaService,
+	)
 
 	// Assert
 	assert.NoError(t, err)
@@ -516,11 +520,17 @@ func TestInitialize_WithDeclarativeResources_Standalone(t *testing.T) {
 	mux := http.NewServeMux()
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(t)
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(t)
-	mockBrandingService := brandingmock.NewBrandingMgtServiceInterfaceMock(t)
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 
 	// Execute
-	service, _, err := Initialize(mux, mockCertService, mockFlowMgtService, mockBrandingService, mockUserSchemaService)
+	service, _, err := Initialize(
+		mux,
+		mockCertService,
+		mockFlowMgtService,
+		nil, // themeMgtService - not needed for this test
+		nil, // layoutMgtService - not needed for this test
+		mockUserSchemaService,
+	)
 
 	// Assert
 	assert.NoError(t, err)

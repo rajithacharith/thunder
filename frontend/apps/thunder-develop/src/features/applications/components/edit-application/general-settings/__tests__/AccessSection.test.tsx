@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AccessSection from '../AccessSection';
 import useGetUserTypes from '../../../../../user-types/api/useGetUserTypes';
@@ -377,10 +377,8 @@ describe('AccessSection', () => {
       const input = screen.getByLabelText('Allowed User Types');
       await user.click(input);
 
-      await waitFor(async () => {
-        const guestOption = screen.getAllByText('guest').find((el) => el.closest('li'));
-        if (guestOption) await user.click(guestOption);
-      });
+      const guestOption = await screen.findByRole('option', {name: 'guest'});
+      await user.click(guestOption);
 
       await waitFor(() => {
         expect(mockOnFieldChange).toHaveBeenCalled();
@@ -498,9 +496,7 @@ describe('AccessSection', () => {
         expect(mockOnFieldChange).toHaveBeenCalledWith('inbound_auth_config', expect.any(Array));
       });
     });
-
   });
-
 
   describe('Handle empty user types data', () => {
     it('should handle undefined user types data gracefully', () => {
@@ -558,10 +554,9 @@ describe('AccessSection', () => {
 
       // Clear and blur to trigger empty error
       await user.clear(uriInput);
-      await user.tab();
+      fireEvent.blur(uriInput);
 
       // Now type something to clear the error
-      await user.click(uriInput);
       await user.type(uriInput, 'https://new-uri.com');
 
       // Error should be cleared when typing non-empty value
@@ -945,5 +940,4 @@ describe('AccessSection', () => {
       });
     });
   });
-
 });

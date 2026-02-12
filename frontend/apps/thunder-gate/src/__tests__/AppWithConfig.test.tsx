@@ -28,9 +28,9 @@ vi.mock('../AppWithTheme', () => ({
   default: () => <div data-testid="app-with-theme">App With Theme</div>,
 }));
 
-// Mock the BrandingProvider
-vi.mock('@thunder/shared-branding', () => ({
-  BrandingProvider: ({children}: {children: React.ReactNode}) => <div data-testid="branding-provider">{children}</div>,
+// Mock the DesignProvider
+vi.mock('@thunder/shared-design', () => ({
+  DesignProvider: ({children}: {children: React.ReactNode}) => <div data-testid="design-provider">{children}</div>,
 }));
 
 // Mock AsgardeoProvider to capture baseUrl
@@ -69,10 +69,10 @@ describe('AppWithConfig', () => {
     expect(getByTestId('app-with-theme')).toBeInTheDocument();
   });
 
-  it('wraps with BrandingProvider', () => {
+  it('wraps with DesignProvider', () => {
     mockGetServerUrl.mockReturnValue('https://server-url.com');
     const {getByTestId} = render(<AppWithConfig />);
-    expect(getByTestId('branding-provider')).toBeInTheDocument();
+    expect(getByTestId('design-provider')).toBeInTheDocument();
   });
 
   it('uses getServerUrl when available', () => {

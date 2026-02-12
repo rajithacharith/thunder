@@ -1,0 +1,61 @@
+{
+  "id": "96c62e6d-9297-4295-8195-d28dfe0c9ff7",
+  "displayName": "Classic",
+  "description": "A timeless theme with warm accents and readable contrast for programming.",
+  "theme": {
+    "direction": "ltr",
+    "defaultColorScheme": "light",
+    "colorSchemes": {
+      "light": {
+        "colors": {
+          "primary": {
+            "main": "#ff7300",
+            "dark": "#cc5c00",
+            "contrastText": "#ffffff"
+          },
+          "secondary": {
+            "main": "#757575",
+            "dark": "#5c5c5c",
+            "contrastText": "#ffffff"
+          },
+          "background": {
+            "default": "#fafafa",
+            "paper": "#ffffff"
+          },
+          "text": {
+            "primary": "#000000",
+            "secondary": "#444444"
+          }
+        }
+      },
+      "dark": {
+        "colors": {
+          "primary": {
+            "main": "#ff7300",
+            "dark": "#cc5c00",
+            "contrastText": "#ffffff"
+          },
+          "secondary": {
+            "main": "#757575",
+            "dark": "#5c5c5c",
+            "contrastText": "#ffffff"
+          },
+          "background": {
+            "default": "#121212",
+            "paper": "#1e1e1e"
+          },
+          "text": {
+            "primary": "#ffffff",
+            "secondary": "#cccccc"
+          }
+        }
+      }
+    },
+    "shape": {
+      "borderRadius": 8
+    },
+    "typography": {
+      "fontFamily": "'Inter Variable', sans-serif"
+    }
+  }
+}

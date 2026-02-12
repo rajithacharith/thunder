@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
+import {render, screen, waitFor, userEvent, fireEvent} from '@thunder/test-utils';
 import type {OrganizationUnitListParams} from '@/features/organization-units/types/organization-units';
 import CreateUserTypePage from '../CreateUserTypePage';
 import type {ApiError, CreateUserSchemaRequest} from '../../types/user-types';
@@ -218,8 +218,8 @@ describe('CreateUserTypePage', () => {
       expect(ouSelect).toHaveTextContent('Root Organization');
     });
 
-    await user.click(ouSelect);
-    const childOption = await screen.findByText('Child Organization');
+    fireEvent.mouseDown(ouSelect);
+    const childOption = await screen.findByRole('option', {name: /Child Organization/i});
     await user.click(childOption);
 
     await waitFor(() => {

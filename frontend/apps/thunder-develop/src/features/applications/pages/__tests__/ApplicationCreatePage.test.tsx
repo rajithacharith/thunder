@@ -19,14 +19,13 @@
 import {render, screen, waitFor} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import userEvent from '@testing-library/user-event';
-import type {Branding} from '@thunder/shared-branding';
+import type {ThemeConfig} from '@thunder/shared-design';
 import type {Application} from '../../models/application';
 import ApplicationCreatePage from '../ApplicationCreatePage';
 import ApplicationCreateProvider from '../../contexts/ApplicationCreate/ApplicationCreateProvider';
 
 // Mock functions
 const mockCreateApplication = vi.fn();
-const mockCreateBranding = vi.fn();
 const mockNavigate = vi.fn();
 
 // Mock logger
@@ -49,23 +48,16 @@ vi.mock('react-router', async () => {
   };
 });
 
-// Mock branding hooks
-vi.mock('@thunder/shared-branding', () => ({
-  useCreateBranding: () => ({
-    mutate: mockCreateBranding,
-    isPending: false,
-  }),
-  useGetBrandings: () => ({
-    data: {brandings: []},
+// Mock design hooks
+vi.mock('@thunder/shared-design', () => ({
+  useGetThemes: () => ({
+    data: {themes: [{id: 'theme-1', displayName: 'Default Theme', theme: {}}]},
     isLoading: false,
   }),
-  useGetBranding: () => ({
+  useGetTheme: () => ({
     data: null,
     isLoading: false,
   }),
-  LayoutType: {
-    CENTERED: 'centered',
-  },
 }));
 
 // Mock application API
@@ -164,39 +156,26 @@ vi.mock('../../components/create-application/ConfigureName', () => ({
 
 vi.mock('../../components/create-application/ConfigureDesign', () => ({
   default: ({
-    selectedColor,
-    onColorSelect,
     onLogoSelect,
-    onBrandingSelectionChange,
+    onThemeSelect,
   }: {
     appLogo: string | null;
-    appName: string;
-    selectedColor: string;
-    onColorSelect: (color: string) => void;
+    selectedTheme: ThemeConfig | null;
     onLogoSelect: (logo: string) => void;
     onInitialLogoLoad: (logo: string) => void;
     onReadyChange: (ready: boolean) => void;
-    onBrandingSelectionChange?: (useDefault: boolean, brandingId?: string) => void;
+    onThemeSelect?: (themeId: string, themeConfig: ThemeConfig) => void;
   }) => (
     <div data-testid="configure-design">
-      <input
-        data-testid="color-picker"
-        type="color"
-        value={selectedColor}
-        onChange={(e) => onColorSelect(e.target.value)}
-      />
       <button type="button" data-testid="logo-select-btn" onClick={() => onLogoSelect('test-logo.png')}>
         Select Logo
       </button>
       <button
         type="button"
-        data-testid="use-default-branding-btn"
-        onClick={() => onBrandingSelectionChange?.(true, 'default-branding-id')}
+        data-testid="select-theme-btn"
+        onClick={() => onThemeSelect?.('theme-1', {} as ThemeConfig)}
       >
-        Use Default Branding
-      </button>
-      <button type="button" data-testid="use-custom-branding-btn" onClick={() => onBrandingSelectionChange?.(false)}>
-        Use Custom Branding
+        Select Theme
       </button>
     </div>
   ),
@@ -569,10 +548,6 @@ describe('ApplicationCreatePage', () => {
 
   describe('Application Creation - Inbuilt Approach', () => {
     it('should create application with OAuth config for inbuilt approach', async () => {
-      mockCreateBranding.mockImplementation((_data, {onSuccess}: {onSuccess: (branding: Branding) => void}) => {
-        onSuccess({id: 'branding-123', displayName: 'Test Branding', preferences: {}} as Branding);
-      });
-
       mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
         onSuccess({id: 'app-123', name: 'My App'} as Application);
       });
@@ -605,7 +580,6 @@ describe('ApplicationCreatePage', () => {
       await user.click(screen.getByRole('button', {name: /continue/i}));
 
       await waitFor(() => {
-        expect(mockCreateBranding).toHaveBeenCalled();
         expect(mockCreateApplication).toHaveBeenCalled();
       });
 
@@ -617,10 +591,6 @@ describe('ApplicationCreatePage', () => {
     });
 
     it('should navigate to application details page after creation', async () => {
-      mockCreateBranding.mockImplementation((_data, {onSuccess}: {onSuccess: (branding: Branding) => void}) => {
-        onSuccess({id: 'branding-123', displayName: 'Test Branding', preferences: {}} as Branding);
-      });
-
       mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
         onSuccess({id: 'app-123', name: 'My App'} as Application);
       });
@@ -663,10 +633,6 @@ describe('ApplicationCreatePage', () => {
       const getConfigurationTypeFromTemplate = await import('../../utils/getConfigurationTypeFromTemplate');
       vi.mocked(getConfigurationTypeFromTemplate.default).mockReturnValue('NONE');
 
-      mockCreateBranding.mockImplementation((_data, {onSuccess}: {onSuccess: (branding: Branding) => void}) => {
-        onSuccess({id: 'branding-123', displayName: 'Test Branding', preferences: {}} as Branding);
-      });
-
       mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
         onSuccess({id: 'app-123', name: 'My App'} as Application);
       });
@@ -698,7 +664,6 @@ describe('ApplicationCreatePage', () => {
       await user.click(screen.getByRole('button', {name: /continue/i}));
 
       await waitFor(() => {
-        expect(mockCreateBranding).toHaveBeenCalled();
         expect(mockCreateApplication).toHaveBeenCalled();
       });
 
@@ -710,10 +675,6 @@ describe('ApplicationCreatePage', () => {
     it('should skip configure step for embedded approach', async () => {
       const getConfigurationTypeFromTemplate = await import('../../utils/getConfigurationTypeFromTemplate');
       vi.mocked(getConfigurationTypeFromTemplate.default).mockReturnValue('NONE');
-
-      mockCreateBranding.mockImplementation((_data, {onSuccess}: {onSuccess: (branding: Branding) => void}) => {
-        onSuccess({id: 'branding-123', displayName: 'Test Branding', preferences: {}} as Branding);
-      });
 
       mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
         onSuccess({id: 'app-123', name: 'My App'} as Application);
@@ -750,47 +711,7 @@ describe('ApplicationCreatePage', () => {
   });
 
   describe('Error Handling', () => {
-    it('should show error when branding creation fails', async () => {
-      mockCreateBranding.mockImplementation((_data, {onError}: {onError: (error: Error) => void}) => {
-        onError(new Error('Failed to create branding'));
-      });
-
-      renderWithProviders();
-
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
-      });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
-      });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
-      });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
-      });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-
-      await waitFor(() => {
-        expect(screen.getByText(/failed to create branding/i)).toBeInTheDocument();
-      });
-    });
-
     it('should show error when application creation fails', async () => {
-      mockCreateBranding.mockImplementation((_data, {onSuccess}: {onSuccess: (branding: Branding) => void}) => {
-        onSuccess({id: 'branding-123', displayName: 'Test Branding', preferences: {}} as Branding);
-      });
-
       mockCreateApplication.mockImplementation((_data, {onError}: {onError: (error: Error) => void}) => {
         onError(new Error('Failed to create application'));
       });
@@ -830,8 +751,8 @@ describe('ApplicationCreatePage', () => {
     });
 
     it('should allow dismissing error message', async () => {
-      mockCreateBranding.mockImplementation((_data, {onError}: {onError: (error: Error) => void}) => {
-        onError(new Error('Failed to create branding'));
+      mockCreateApplication.mockImplementation((_data, {onError}: {onError: (error: Error) => void}) => {
+        onError(new Error('Failed to create application'));
       });
 
       renderWithProviders();
@@ -862,7 +783,7 @@ describe('ApplicationCreatePage', () => {
 
       await waitFor(
         () => {
-          expect(screen.getByText(/failed to create branding/i)).toBeInTheDocument();
+          expect(screen.getByText(/failed to create application/i)).toBeInTheDocument();
         },
         {timeout: 10000},
       );
@@ -871,53 +792,13 @@ describe('ApplicationCreatePage', () => {
       await user.click(closeButton);
 
       await waitFor(() => {
-        expect(screen.queryByText(/failed to create branding/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/failed to create application/i)).not.toBeInTheDocument();
       });
     });
   });
 
-  describe('Branding Selection', () => {
-    it('should use custom branding by default', async () => {
-      mockCreateBranding.mockImplementation((_data, {onSuccess}: {onSuccess: (branding: Branding) => void}) => {
-        onSuccess({id: 'branding-123', displayName: 'Test Branding', preferences: {}} as Branding);
-      });
-
-      mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
-        onSuccess({id: 'app-123', name: 'My App'} as Application);
-      });
-
-      renderWithProviders();
-
-      await user.type(screen.getByTestId('app-name-input'), 'My App');
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
-      });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
-      });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
-      });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
-      });
-      await user.click(screen.getByRole('button', {name: /continue/i}));
-
-      await waitFor(() => {
-        expect(mockCreateBranding).toHaveBeenCalled();
-      });
-    });
-
-    it('should use default branding when selected', async () => {
+  describe('Theme Selection', () => {
+    it('should allow selecting a theme', async () => {
       mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
         onSuccess({id: 'app-123', name: 'My App'} as Application);
       });
@@ -927,9 +808,9 @@ describe('ApplicationCreatePage', () => {
       await user.type(screen.getByTestId('app-name-input'), 'My App');
       await user.click(screen.getByRole('button', {name: /continue/i}));
 
-      // Select default branding
-      const useDefaultBtn = screen.getByTestId('use-default-branding-btn');
-      await user.click(useDefaultBtn);
+      // Select a theme
+      const selectThemeBtn = screen.getByTestId('select-theme-btn');
+      await user.click(selectThemeBtn);
 
       await user.click(screen.getByRole('button', {name: /continue/i}));
 
@@ -955,9 +836,11 @@ describe('ApplicationCreatePage', () => {
 
       await waitFor(() => {
         expect(mockCreateApplication).toHaveBeenCalled();
-        // Should NOT create new branding
-        expect(mockCreateBranding).not.toHaveBeenCalled();
       });
+
+      // Verify theme_id was included in the application creation
+      const createAppCall = mockCreateApplication.mock.calls[0][0] as Application;
+      expect(createAppCall.theme_id).toBe('theme-1');
     });
   });
 
@@ -1016,10 +899,6 @@ describe('ApplicationCreatePage', () => {
 
   describe('Client Secret Display (COMPLETE Step)', () => {
     it('should show COMPLETE step when application is created with client_secret', async () => {
-      mockCreateBranding.mockImplementation((_data, {onSuccess}: {onSuccess: (branding: Branding) => void}) => {
-        onSuccess({id: 'branding-123', displayName: 'Test Branding', preferences: {}} as Branding);
-      });
-
       mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
         onSuccess({
           id: 'app-123',
@@ -1073,10 +952,6 @@ describe('ApplicationCreatePage', () => {
     });
 
     it('should not show COMPLETE step when application is created without client_secret', async () => {
-      mockCreateBranding.mockImplementation((_data, {onSuccess}: {onSuccess: (branding: Branding) => void}) => {
-        onSuccess({id: 'branding-123', displayName: 'Test Branding', preferences: {}} as Branding);
-      });
-
       mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
         onSuccess({
           id: 'app-123',
@@ -1121,10 +996,6 @@ describe('ApplicationCreatePage', () => {
     });
 
     it('should navigate to application details when continue is clicked on COMPLETE step', async () => {
-      mockCreateBranding.mockImplementation((_data, {onSuccess}: {onSuccess: (branding: Branding) => void}) => {
-        onSuccess({id: 'branding-123', displayName: 'Test Branding', preferences: {}} as Branding);
-      });
-
       mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
         onSuccess({
           id: 'app-456',
@@ -1184,10 +1055,6 @@ describe('ApplicationCreatePage', () => {
     });
 
     it('should not show back button on COMPLETE step', async () => {
-      mockCreateBranding.mockImplementation((_data, {onSuccess}: {onSuccess: (branding: Branding) => void}) => {
-        onSuccess({id: 'branding-123', displayName: 'Test Branding', preferences: {}} as Branding);
-      });
-
       mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
         onSuccess({
           id: 'app-123',
@@ -1241,10 +1108,6 @@ describe('ApplicationCreatePage', () => {
     });
 
     it('should not show preview panel on COMPLETE step', async () => {
-      mockCreateBranding.mockImplementation((_data, {onSuccess}: {onSuccess: (branding: Branding) => void}) => {
-        onSuccess({id: 'branding-123', displayName: 'Test Branding', preferences: {}} as Branding);
-      });
-
       mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
         onSuccess({
           id: 'app-123',

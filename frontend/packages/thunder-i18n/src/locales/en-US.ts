@@ -646,11 +646,10 @@ const translations = {
     'onboarding.configure.design.subtitle': 'Customize the appearance of your application',
     'onboarding.configure.design.logo.title': 'Application Logo',
     'onboarding.configure.design.logo.shuffle': 'Shuffle',
-    'onboarding.configure.design.color.title': 'Brand Color',
-    'onboarding.configure.design.color.customLabel': 'Custom',
-    'onboarding.configure.design.color.defaultBranding.withAppName': 'will use the default brand color',
-    'onboarding.configure.design.color.defaultBranding.withoutAppName': 'Using the default brand color',
-    'onboarding.configure.design.color.pickDifferent': 'Pick a different color',
+    'onboarding.configure.design.theme.title': 'Theme',
+    'onboarding.configure.design.theme.emptyState': 'No themes configured',
+    'onboarding.configure.design.theme.noDescription': 'No description',
+    'onboarding.configure.design.theme.emptyStateHint': 'You can configure themes later from the Design settings.',
     'onboarding.configure.SignInOptions.title': 'Sign In Options',
     'onboarding.configure.SignInOptions.subtitle': 'Choose how users will sign-in to your application',
     'onboarding.configure.SignInOptions.usernamePassword': 'Username & Password',
@@ -865,8 +864,6 @@ const translations = {
     'view.fields.updatedAt': 'Updated At',
     'view.values.yes': 'Yes',
     'view.values.no': 'No',
-    'edit.customization.brandingId.hint':
-      'Choose a theme to customize authentication pages. Select the Default Theme (shared across all applications) or pick an app-specific theme.',
     'edit.customization.tosUri.hint':
       "URL to your application's Terms of Service. May be displayed to users during consent or user sign-in, sign-up or recovery flows.",
     'edit.customization.policyUri.hint':
@@ -962,7 +959,7 @@ const translations = {
     'edit.customization.labels.theme': 'Theme',
     'edit.customization.labels.tosUri': 'Terms of Service URI',
     'edit.customization.labels.policyUri': 'Privacy Policy URI',
-    'edit.customization.theme.placeholder': 'Theme configuration ID',
+    'edit.customization.theme.placeholder': 'Select a Theme',
     'edit.customization.theme.hint':
       'Choose a theme to customize authentication pages. Select the Default Theme (shared across all applications) or pick an app-specific theme.',
     'edit.customization.tosUri.placeholder': 'https://example.com/terms',
@@ -1446,7 +1443,7 @@ const translations = {
   },
 
   /**
-   * Appearance namespace - Theme and branding related translations
+   * Appearance namespace - Theme and layout related translations
    */
   appearance: {
     'theme.defaultTheme': 'Default Theme',

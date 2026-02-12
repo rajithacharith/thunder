@@ -23,13 +23,6 @@ import {useNavigate} from 'react-router';
 import {useState, useCallback, useMemo, useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
-import {
-  useCreateBranding,
-  useGetBrandings,
-  type CreateBrandingRequest,
-  type Branding,
-  LayoutType,
-} from '@thunder/shared-branding';
 import ConfigureSignInOptions from '../components/create-application/configure-signin-options/ConfigureSignInOptions';
 import ConfigureDesign from '../components/create-application/ConfigureDesign';
 import ConfigureName from '../components/create-application/ConfigureName';
@@ -68,8 +61,10 @@ export default function ApplicationCreatePage(): JSX.Element {
     setCurrentStep,
     appName,
     setAppName,
-    selectedColor,
-    setSelectedColor,
+    themeId,
+    setThemeId,
+    selectedTheme,
+    setSelectedTheme,
     appLogo,
     setAppLogo,
     integrations,
@@ -105,9 +100,7 @@ export default function ApplicationCreatePage(): JSX.Element {
   const navigate = useNavigate();
   const logger = useLogger('ApplicationCreatePage');
   const createApplication = useCreateApplication();
-  const createBranding = useCreateBranding();
   const {data: userTypesData} = useGetUserTypes();
-  const {data: brandingsData} = useGetBrandings({limit: 100});
 
   const [selectedUserTypes, setSelectedUserTypes] = useState<string[]>([]);
   const [createdApplication, setCreatedApplication] = useState<Application | null>(null);
@@ -124,8 +117,7 @@ export default function ApplicationCreatePage(): JSX.Element {
     CONFIGURE: true,
     COMPLETE: true,
   });
-  const [useDefaultBranding, setUseDefaultBranding] = useState<boolean>(false);
-  const [defaultBrandingId, setDefaultBrandingId] = useState<string | undefined>(undefined);
+
   const [oauthConfig, setOAuthConfig] = useState<OAuth2Config | null>(getDefaultOAuthConfig());
 
   /**
@@ -161,11 +153,6 @@ export default function ApplicationCreatePage(): JSX.Element {
     setSelectedAuthFlow(null);
   };
 
-  const handleBrandingSelectionChange = (useDefault: boolean, brandingId?: string): void => {
-    setUseDefaultBranding(useDefault);
-    setDefaultBrandingId(brandingId);
-  };
-
   const handleCreateApplication = (skipOAuthConfig = false, overrideFlowId?: string): void => {
     setError(null);
 
@@ -178,167 +165,69 @@ export default function ApplicationCreatePage(): JSX.Element {
       return;
     }
 
-    const createApplicationWithBranding = (brandingId: string): void => {
-      const userTypes = userTypesData?.schemas ?? [];
-      const allowedUserTypes = (() => {
-        // If there's exactly 1 user type, automatically include it
-        if (userTypes.length === 1) {
-          return [userTypes[0].name];
-        }
+    const userTypes = userTypesData?.schemas ?? [];
+    const allowedUserTypes = (() => {
+      // If there's exactly 1 user type, automatically include it
+      if (userTypes.length === 1) {
+        return [userTypes[0].name];
+      }
 
-        // If there are multiple user types, use the selected ones
-        if (userTypes.length > 1) {
-          return selectedUserTypes.length > 0 ? selectedUserTypes : undefined;
-        }
+      // If there are multiple user types, use the selected ones
+      if (userTypes.length > 1) {
+        return selectedUserTypes.length > 0 ? selectedUserTypes : undefined;
+      }
 
-        // If there are no user types, don't include the field
-        return undefined;
-      })();
+      // If there are no user types, don't include the field
+      return undefined;
+    })();
 
-      const applicationData: CreateApplicationRequest = {
-        name: appName,
-        logo_url: appLogo ?? undefined,
-        auth_flow_id: authFlowId,
-        user_attributes: ['given_name', 'family_name', 'email', 'groups'],
-        branding_id: brandingId,
-        is_registration_flow_enabled: true,
-        ...(allowedUserTypes && {allowed_user_types: allowedUserTypes}),
-        // Include template if available, append '-embedded' suffix for CUSTOM approach
-        ...(selectedTemplateConfig?.id && {
-          template:
-            signInApproach === ApplicationCreateFlowSignInApproach.EMBEDDED
-              ? `${selectedTemplateConfig.id}${TemplateConstants.EMBEDDED_SUFFIX}`
-              : selectedTemplateConfig.id,
-        }),
-        // Only include OAuth config if not skipping
-        ...(!skipOAuthConfig && {
-          inbound_auth_config: [
-            {
-              type: 'oauth2',
-              config: oauthConfig,
-            },
-          ],
-        }),
-      };
-
-      createApplication.mutate(applicationData, {
-        onSuccess: (createdApp: Application): void => {
-          const hasClientSecret = createdApp.inbound_auth_config?.some(
-            (config) => config.type === 'oauth2' && config.config?.client_secret,
-          );
-
-          if (hasClientSecret) {
-            // Store the application and show the COMPLETE step
-            setCreatedApplication(createdApp);
-            setCurrentStep(ApplicationCreateFlowStep.COMPLETE);
-          } else {
-            // No client secret, navigate directly to the application details page
-            (async () => {
-              await navigate(`/applications/${createdApp.id}`);
-            })().catch((_error: unknown) => {
-              logger.error('Failed to navigate to application details', {error: _error, applicationId: createdApp.id});
-            });
-          }
-        },
-        onError: (err: Error) => {
-          setError(err.message ?? 'Failed to create application. Please try again.');
-        },
-      });
-    };
-
-    // If using DEFAULT branding, use its ID directly
-    if (useDefaultBranding && defaultBrandingId) {
-      createApplicationWithBranding(defaultBrandingId);
-      return;
-    }
-
-    // Otherwise, create a new branding with the selected color
-    // If there are no brandings in the system, create "Default Theme"
-    // If there's at least one branding, create app-specific theme
-    const hasNoBrandings = (brandingsData?.brandings?.length ?? 0) === 0;
-    const brandingName = hasNoBrandings
-      ? t('appearance:theme.defaultTheme')
-      : t('appearance:theme.appTheme.displayName', {appName});
-    const brandingData: CreateBrandingRequest = {
-      displayName: brandingName,
-      preferences: {
-        layout: {
-          type: LayoutType.CENTERED,
-        },
-        theme: {
-          activeColorScheme: 'light',
-          colorSchemes: {
-            light: {
-              colors: {
-                primary: {
-                  main: selectedColor,
-                  dark: selectedColor,
-                  contrastText: '#ffffff',
-                },
-                secondary: {
-                  main: selectedColor,
-                  dark: selectedColor,
-                  contrastText: '#ffffff',
-                },
-              },
-              ...(appLogo && {
-                images: {
-                  logo: {
-                    primary: {
-                      url: appLogo,
-                      alt: `${appName} Logo`,
-                      width: 128,
-                      height: 64,
-                    },
-                    favicon: {
-                      url: appLogo,
-                      type: 'image/png',
-                    },
-                  },
-                },
-              }),
-            },
-            dark: {
-              colors: {
-                primary: {
-                  main: selectedColor,
-                  dark: selectedColor,
-                  contrastText: '#ffffff',
-                },
-                secondary: {
-                  main: selectedColor,
-                  dark: selectedColor,
-                  contrastText: '#ffffff',
-                },
-              },
-              ...(appLogo && {
-                images: {
-                  logo: {
-                    primary: {
-                      url: appLogo,
-                      alt: `${appName} Logo`,
-                      width: 128,
-                      height: 64,
-                    },
-                    favicon: {
-                      url: appLogo,
-                      type: 'image/png',
-                    },
-                  },
-                },
-              }),
-            },
+    const applicationData: CreateApplicationRequest = {
+      name: appName,
+      logo_url: appLogo ?? undefined,
+      auth_flow_id: authFlowId,
+      user_attributes: ['given_name', 'family_name', 'email', 'groups'],
+      ...(themeId && {theme_id: themeId}),
+      is_registration_flow_enabled: true,
+      ...(allowedUserTypes && {allowed_user_types: allowedUserTypes}),
+      // Include template if available, append '-embedded' suffix for CUSTOM approach
+      ...(selectedTemplateConfig?.id && {
+        template:
+          signInApproach === ApplicationCreateFlowSignInApproach.EMBEDDED
+            ? `${selectedTemplateConfig.id}${TemplateConstants.EMBEDDED_SUFFIX}`
+            : selectedTemplateConfig.id,
+      }),
+      // Only include OAuth config if not skipping
+      ...(!skipOAuthConfig && {
+        inbound_auth_config: [
+          {
+            type: 'oauth2',
+            config: oauthConfig,
           },
-        },
-      },
+        ],
+      }),
     };
 
-    createBranding.mutate(brandingData, {
-      onSuccess: (branding: Branding) => {
-        createApplicationWithBranding(branding.id);
+    createApplication.mutate(applicationData, {
+      onSuccess: (createdApp: Application): void => {
+        const hasClientSecret = createdApp.inbound_auth_config?.some(
+          (config) => config.type === 'oauth2' && config.config?.client_secret,
+        );
+
+        if (hasClientSecret) {
+          // Store the application and show the COMPLETE step
+          setCreatedApplication(createdApp);
+          setCurrentStep(ApplicationCreateFlowStep.COMPLETE);
+        } else {
+          // No client secret, navigate directly to the application details page
+          (async () => {
+            await navigate(`/applications/${createdApp.id}`);
+          })().catch((_error: unknown) => {
+            logger.error('Failed to navigate to application details', {error: _error, applicationId: createdApp.id});
+          });
+        }
       },
       onError: (err: Error) => {
-        setError(err.message ?? 'Failed to create branding. Please try again.');
+        setError(err.message ?? 'Failed to create application. Please try again.');
       },
     });
   };
@@ -538,13 +427,15 @@ export default function ApplicationCreatePage(): JSX.Element {
         return (
           <ConfigureDesign
             appLogo={appLogo}
-            selectedColor={selectedColor}
-            appName={appName}
+            themeId={themeId}
+            selectedTheme={selectedTheme}
             onLogoSelect={handleLogoSelect}
             onInitialLogoLoad={handleLogoSelect}
-            onColorSelect={setSelectedColor}
+            onThemeSelect={(id, config) => {
+              setThemeId(id);
+              setSelectedTheme(config);
+            }}
             onReadyChange={handleDesignStepReadyChange}
-            onBrandingSelectionChange={handleBrandingSelectionChange}
           />
         );
 
@@ -734,7 +625,7 @@ export default function ApplicationCreatePage(): JSX.Element {
                         variant="outlined"
                         onClick={handlePrevStep}
                         sx={{minWidth: 100}}
-                        disabled={createApplication.isPending || createBranding.isPending}
+                        disabled={createApplication.isPending}
                       >
                         {t('common:actions.back')}
                       </Button>
@@ -761,7 +652,7 @@ export default function ApplicationCreatePage(): JSX.Element {
         {/* Right side - Preview (show from design step onwards, but hide on complete step) */}
         {currentStep !== ApplicationCreateFlowStep.NAME && currentStep !== ApplicationCreateFlowStep.COMPLETE && (
           <Box sx={{flex: '0 0 50%', display: 'flex', flexDirection: 'column', p: 5}}>
-            <Preview appLogo={appLogo} selectedColor={selectedColor} integrations={integrations} />
+            <Preview appLogo={appLogo} selectedTheme={selectedTheme ?? undefined} integrations={integrations} />
           </Box>
         )}
       </Box>

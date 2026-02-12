@@ -18,6 +18,7 @@
 
 import type {Context} from 'react';
 import {createContext} from 'react';
+import type {ThemeConfig} from '@thunder/shared-design';
 import type {
   ApplicationCreateFlowSignInApproach,
   ApplicationCreateFlowStep,
@@ -61,16 +62,28 @@ export interface ApplicationCreateContextType {
   setAppName: (name: string) => void;
 
   /**
-   * The selected brand color (hex format)
+   * The ID of the selected theme
    * @remark Needed for step 02: Application Design.
    */
-  selectedColor: string;
+  themeId: string | null;
 
   /**
-   * Sets the selected brand color
+   * Sets the selected theme ID
    * @remark Needed for step 02: Application Design.
    */
-  setSelectedColor: (color: string) => void;
+  setThemeId: (themeId: string | null) => void;
+
+  /**
+   * The selected theme configuration (UI theme data only, not API response wrapper)
+   * @remark Needed for step 02: Application Design and preview.
+   */
+  selectedTheme: ThemeConfig | null;
+
+  /**
+   * Sets the selected theme configuration
+   * @remark Needed for step 02: Application Design and preview.
+   */
+  setSelectedTheme: (theme: ThemeConfig | null) => void;
 
   /**
    * URL of the selected application logo
@@ -83,6 +96,18 @@ export interface ApplicationCreateContextType {
    * @remark Needed for step 02: Application Design.
    */
   setAppLogo: (logo: string | null) => void;
+
+  /**
+   * The selected primary color for the application
+   * @remark Needed for step 02: Application Design.
+   */
+  selectedColor: string;
+
+  /**
+   * Sets the selected primary color
+   * @remark Needed for step 02: Application Design.
+   */
+  setSelectedColor: (color: string) => void;
 
   /**
    * Record of enabled authentication integrations

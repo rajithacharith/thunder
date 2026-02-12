@@ -19,9 +19,9 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {useGetBrandings} from '@thunder/shared-branding';
+import {useGetThemes} from '@thunder/shared-design';
 import type {UseQueryResult} from '@tanstack/react-query';
-import type {BrandingListResponse} from '@thunder/shared-branding';
+import type {ThemeListResponse} from '@thunder/shared-design';
 import AppearanceSection from '../AppearanceSection';
 import type {Application} from '../../../../models/application';
 
@@ -31,8 +31,8 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('@thunder/shared-branding', () => ({
-  useGetBrandings: vi.fn(),
+vi.mock('@thunder/shared-design', () => ({
+  useGetThemes: vi.fn(),
 }));
 
 describe('AppearanceSection', () => {
@@ -41,23 +41,23 @@ describe('AppearanceSection', () => {
     name: 'Test Application',
     description: 'Test Description',
     template: 'custom',
-    branding_id: 'branding-1',
+    theme_id: 'theme-1',
   } as Application;
 
-  const mockBrandings = [
-    {id: 'branding-1', displayName: 'Default Theme'},
-    {id: 'branding-2', displayName: 'Dark Theme'},
-    {id: 'branding-3', displayName: 'Light Theme'},
+  const mockThemes = [
+    {id: 'theme-1', displayName: 'Default Theme'},
+    {id: 'theme-2', displayName: 'Dark Theme'},
+    {id: 'theme-3', displayName: 'Light Theme'},
   ];
 
   const mockOnFieldChange = vi.fn();
 
   beforeEach(() => {
     mockOnFieldChange.mockClear();
-    vi.mocked(useGetBrandings).mockReturnValue({
-      data: {brandings: mockBrandings},
+    vi.mocked(useGetThemes).mockReturnValue({
+      data: {themes: mockThemes},
       isLoading: false,
-    } as UseQueryResult<BrandingListResponse>);
+    } as UseQueryResult<ThemeListResponse>);
   });
 
   describe('Rendering', () => {
@@ -83,35 +83,35 @@ describe('AppearanceSection', () => {
   });
 
   describe('Loading State', () => {
-    it('should show loading indicator when brandings are loading', () => {
-      vi.mocked(useGetBrandings).mockReturnValue({
+    it('should show loading indicator when themes are loading', () => {
+      vi.mocked(useGetThemes).mockReturnValue({
         data: undefined,
         isLoading: true,
-      } as UseQueryResult<BrandingListResponse>);
+      } as UseQueryResult<ThemeListResponse>);
 
       render(<AppearanceSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
 
-    it('should not show loading indicator when brandings are loaded', () => {
+    it('should not show loading indicator when themes are loaded', () => {
       render(<AppearanceSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
       expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     });
   });
 
-  describe('Branding Selection', () => {
-    it('should display current branding from application', () => {
+  describe('Theme Selection', () => {
+    it('should display current theme from application', () => {
       render(<AppearanceSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
       const input = screen.getByRole('combobox');
       expect(input).toHaveValue('Default Theme');
     });
 
-    it('should prioritize editedApp branding_id over application', () => {
+    it('should prioritize editedApp theme_id over application', () => {
       const editedApp = {
-        branding_id: 'branding-2',
+        theme_id: 'theme-2',
       };
 
       render(
@@ -122,7 +122,7 @@ describe('AppearanceSection', () => {
       expect(input).toHaveValue('Dark Theme');
     });
 
-    it('should show all available brandings in dropdown', async () => {
+    it('should show all available themes in dropdown', async () => {
       const user = userEvent.setup();
 
       render(<AppearanceSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
@@ -136,7 +136,7 @@ describe('AppearanceSection', () => {
       expect(within(listbox).getByText('Light Theme')).toBeInTheDocument();
     });
 
-    it('should call onFieldChange when branding is changed', async () => {
+    it('should call onFieldChange when theme is changed', async () => {
       const user = userEvent.setup();
 
       render(<AppearanceSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
@@ -148,10 +148,10 @@ describe('AppearanceSection', () => {
       const darkThemeOption = within(listbox).getByText('Dark Theme');
       await user.click(darkThemeOption);
 
-      expect(mockOnFieldChange).toHaveBeenCalledWith('branding_id', 'branding-2');
+      expect(mockOnFieldChange).toHaveBeenCalledWith('theme_id', 'theme-2');
     });
 
-    it('should handle clearing branding selection', async () => {
+    it('should handle clearing theme selection', async () => {
       const user = userEvent.setup();
 
       render(<AppearanceSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
@@ -161,19 +161,19 @@ describe('AppearanceSection', () => {
 
       if (clearButton) {
         await user.click(clearButton);
-        expect(mockOnFieldChange).toHaveBeenCalledWith('branding_id', '');
+        expect(mockOnFieldChange).toHaveBeenCalledWith('theme_id', '');
       }
     });
   });
 
   describe('Edge Cases', () => {
-    it('should handle missing branding_id in application', () => {
-      const appWithoutBranding: Partial<Application> = {...mockApplication};
-      delete appWithoutBranding.branding_id;
+    it('should handle missing theme_id in application', () => {
+      const appWithoutTheme: Partial<Application> = {...mockApplication};
+      delete appWithoutTheme.theme_id;
 
       render(
         <AppearanceSection
-          application={appWithoutBranding as Application}
+          application={appWithoutTheme as Application}
           editedApp={{}}
           onFieldChange={mockOnFieldChange}
         />,
@@ -183,34 +183,32 @@ describe('AppearanceSection', () => {
       expect(input).toHaveValue('');
     });
 
-    it('should handle empty brandings list', () => {
-      vi.mocked(useGetBrandings).mockReturnValue({
-        data: {brandings: []},
+    it('should handle empty themes list', () => {
+      vi.mocked(useGetThemes).mockReturnValue({
+        data: {themes: []},
         isLoading: false,
-      } as unknown as UseQueryResult<BrandingListResponse>);
+      } as unknown as UseQueryResult<ThemeListResponse>);
 
       render(<AppearanceSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
       expect(screen.getByRole('combobox')).toBeInTheDocument();
     });
 
-    it('should handle undefined brandings data', () => {
-      vi.mocked(useGetBrandings).mockReturnValue({
+    it('should handle undefined themes data', () => {
+      vi.mocked(useGetThemes).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as UseQueryResult<BrandingListResponse>);
+      } as UseQueryResult<ThemeListResponse>);
 
       render(<AppearanceSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
       expect(screen.getByRole('combobox')).toBeInTheDocument();
     });
 
-    it('should handle branding_id not found in brandings list', () => {
-      const appWithInvalidBranding = {...mockApplication, branding_id: 'non-existent-id'};
+    it('should handle theme_id not found in themes list', () => {
+      const appWithInvalidTheme = {...mockApplication, theme_id: 'non-existent-id'};
 
-      render(
-        <AppearanceSection application={appWithInvalidBranding} editedApp={{}} onFieldChange={mockOnFieldChange} />,
-      );
+      render(<AppearanceSection application={appWithInvalidTheme} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
       const input = screen.getByRole('combobox');
       expect(input).toHaveValue('');

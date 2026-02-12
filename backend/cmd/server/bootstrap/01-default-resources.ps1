@@ -801,6 +801,71 @@ else {
 Write-Host ""
 
 # ============================================================================
+# Create Themes
+# ============================================================================
+
+Log-Info "Creating themes..."
+
+# Get the script directory to locate theme files
+$themesDir = Join-Path $PSScriptRoot "themes"
+
+# Check if themes directory exists
+if (-not (Test-Path $themesDir)) {
+    Log-Warning "Themes directory not found at $themesDir, skipping theme creation"
+}
+else {
+    $themeFiles = Get-ChildItem -Path $themesDir -Filter "*.json" -File -ErrorAction SilentlyContinue
+    
+    if ($themeFiles.Count -gt 0) {
+        Log-Info "Processing themes from $themesDir..."
+        
+        $themeCount = 0
+        $themeSuccess = 0
+        $themeSkipped = 0
+        
+        foreach ($themeFile in $themeFiles) {
+            $themeCount++
+            
+            # Get theme name from file content
+            $themeContent = Get-Content -Path $themeFile.FullName -Raw | ConvertFrom-Json
+            $themeName = if ($themeContent.displayName) { $themeContent.displayName } else { $themeFile.BaseName }
+            
+            Log-Info "Creating theme: $themeName (from $($themeFile.Name))"
+            $themePayload = Get-Content $themeFile.FullName -Raw
+            
+            $response = Invoke-ThunderApi -Method POST -Endpoint "/design/themes" -Data $themePayload
+            
+            if ($response.StatusCode -in 200, 201) {
+                Log-Success "Theme '$themeName' created successfully"
+                $body = $response.Body | ConvertFrom-Json
+                $themeId = $body.id
+                if ($themeId) {
+                    Log-Info "Theme ID: $themeId"
+                }
+                $themeSuccess++
+            }
+            elseif ($response.StatusCode -eq 409) {
+                Log-Warning "Theme '$themeName' already exists, skipping"
+                $themeSkipped++
+            }
+            else {
+                Log-Error "Failed to create theme '$themeName' (HTTP $($response.StatusCode))"
+                Write-Host "Response: $($response.Body)"
+                exit 1
+            }
+        }
+        
+        Write-Host ""
+        Log-Info "Theme creation summary: $themeSuccess created, $themeSkipped skipped (Total: $themeCount)"
+    }
+    else {
+        Log-Warning "No theme files found in $themesDir"
+    }
+}
+
+Write-Host ""
+
+# ============================================================================
 # Summary
 # ============================================================================
 

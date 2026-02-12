@@ -117,8 +117,8 @@ describe('useApplicationCreate', () => {
         'setCurrentStep',
         'appName',
         'setAppName',
-        'selectedColor',
-        'setSelectedColor',
+        'selectedTheme',
+        'setSelectedTheme',
         'appLogo',
         'setAppLogo',
         'integrations',
@@ -197,7 +197,7 @@ describe('useApplicationCreate', () => {
         setAppName,
         toggleIntegration,
         reset,
-        setSelectedColor,
+        setSelectedTheme,
         setAppLogo,
         setIntegrations,
         setSelectedAuthFlow,
@@ -217,7 +217,7 @@ describe('useApplicationCreate', () => {
           <div data-testid="setAppName-type">{typeof setAppName}</div>
           <div data-testid="toggleIntegration-type">{typeof toggleIntegration}</div>
           <div data-testid="reset-type">{typeof reset}</div>
-          <div data-testid="setSelectedColor-type">{typeof setSelectedColor}</div>
+          <div data-testid="setSelectedTheme-type">{typeof setSelectedTheme}</div>
           <div data-testid="setAppLogo-type">{typeof setAppLogo}</div>
           <div data-testid="setIntegrations-type">{typeof setIntegrations}</div>
           <div data-testid="setSelectedAuthFlow-type">{typeof setSelectedAuthFlow}</div>
@@ -245,7 +245,7 @@ describe('useApplicationCreate', () => {
     expect(screen.getByTestId('setAppName-type')).toHaveTextContent('function');
     expect(screen.getByTestId('toggleIntegration-type')).toHaveTextContent('function');
     expect(screen.getByTestId('reset-type')).toHaveTextContent('function');
-    expect(screen.getByTestId('setSelectedColor-type')).toHaveTextContent('function');
+    expect(screen.getByTestId('setSelectedTheme-type')).toHaveTextContent('function');
     expect(screen.getByTestId('setAppLogo-type')).toHaveTextContent('function');
     expect(screen.getByTestId('setIntegrations-type')).toHaveTextContent('function');
     expect(screen.getByTestId('setSelectedAuthFlow-type')).toHaveTextContent('function');
@@ -278,7 +278,7 @@ describe('useApplicationCreate', () => {
     errorSpy.mockRestore();
   });
 
-  it('has exactly 34 properties in the context interface', () => {
+  it('has exactly 38 properties in the context interface', () => {
     function TestContextProperties() {
       const context = useApplicationCreate();
 
@@ -297,6 +297,6 @@ describe('useApplicationCreate', () => {
       </TestWrapper>,
     );
 
-    expect(screen.getByTestId('property-count')).toHaveTextContent('34');
+    expect(screen.getByTestId('property-count')).toHaveTextContent('38');
   });
 });

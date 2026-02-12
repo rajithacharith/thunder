@@ -157,20 +157,28 @@ packages:
       pkgname: security
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/asgardeo/thunder/internal/branding/mgt:
+  github.com/asgardeo/thunder/internal/design/theme/mgt:
     config:
       all: true
-      dir: internal/branding/mgt
+      dir: internal/design/theme/mgt
       structname: '{{.InterfaceName}}Mock'
-      pkgname: brandingmgt
+      pkgname: thememgt
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/asgardeo/thunder/internal/branding/resolve:
+  github.com/asgardeo/thunder/internal/design/layout/mgt:
     config:
       all: true
-      dir: internal/branding/resolve
+      dir: internal/design/layout/mgt
       structname: '{{.InterfaceName}}Mock'
-      pkgname: brandingresolve
+      pkgname: layoutmgt
+      filename: "{{.InterfaceName}}_mock_test.go"
+
+  github.com/asgardeo/thunder/internal/design/resolve:
+    config:
+      all: true
+      dir: internal/design/resolve
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: resolve
       filename: "{{.InterfaceName}}_mock_test.go"
 
   github.com/asgardeo/thunder/internal/oauth/oauth2/userinfo:

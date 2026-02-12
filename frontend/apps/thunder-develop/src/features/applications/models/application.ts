@@ -218,6 +218,13 @@ export interface Application {
   allowed_user_types?: string[];
 
   /**
+   * Theme configuration ID
+   * References a theme that customizes the visual styling
+   * @example '96c62e6d-9297-4295-8195-d28dfe0c9ff7'
+   */
+  theme_id?: string;
+
+  /**
    * Application template identifier
    * Indicates which template was used to create this application
    * @example 'react', 'nextjs', 'browser', 'mobile'

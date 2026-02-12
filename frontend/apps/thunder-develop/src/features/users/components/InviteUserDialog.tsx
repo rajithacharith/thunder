@@ -46,8 +46,14 @@ import {useTranslation} from 'react-i18next';
 import {useForm, Controller} from 'react-hook-form';
 import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
-import {EmbeddedFlowComponentType, EmbeddedFlowEventType, InviteUser, type EmbeddedFlowComponent, type InviteUserRenderProps} from '@asgardeo/react';
-import {mapEmbeddedFlowTextVariant} from '@thunder/shared-branding';
+import {
+  EmbeddedFlowComponentType,
+  EmbeddedFlowEventType,
+  InviteUser,
+  type EmbeddedFlowComponent,
+  type InviteUserRenderProps,
+} from '@asgardeo/react';
+import {mapEmbeddedFlowTextVariant} from '@thunder/shared-design';
 import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 
 /** Typed shape for flow sub-components */
@@ -79,7 +85,20 @@ interface InviteUserContentProps {
 const STEPS = ['User Details', 'Invite Link'];
 
 function InviteUserContent({
-  props: {values, error, isLoading, components, handleInputChange, handleSubmit, isInviteGenerated, inviteLink, copyInviteLink, inviteLinkCopied, resetFlow, isValid: propsIsValid},
+  props: {
+    values,
+    error,
+    isLoading,
+    components,
+    handleInputChange,
+    handleSubmit,
+    isInviteGenerated,
+    inviteLink,
+    copyInviteLink,
+    inviteLinkCopied,
+    resetFlow,
+    isValid: propsIsValid,
+  },
   getOptionValue,
   getOptionLabel,
   handleClose,
@@ -94,40 +113,48 @@ function InviteUserContent({
    * Build Zod schema dynamically based on flow components
    */
   const buildFormSchema = useMemo(
-    () => (comps: EmbeddedFlowComponent[]): z.ZodObject<Record<string, z.ZodTypeAny>> => {
-      const shape: Record<string, z.ZodTypeAny> = {};
+    () =>
+      (comps: EmbeddedFlowComponent[]): z.ZodObject<Record<string, z.ZodTypeAny>> => {
+        const shape: Record<string, z.ZodTypeAny> = {};
 
-      const processComponents = (compList: EmbeddedFlowComponent[]) => {
-        compList.forEach((comp) => {
-          if ((String(comp.type) === String(EmbeddedFlowComponentType.Block) || comp.type === 'BLOCK') && comp.components) {
-            processComponents(comp.components);
-          } else if (
-            ((String(comp.type) === String(EmbeddedFlowComponentType.TextInput) || comp.type === 'TEXT_INPUT') ||
-              comp.type === 'EMAIL_INPUT' ||
-              comp.type === 'SELECT') &&
-            comp.ref
-          ) {
-            let fieldSchema: z.ZodTypeAny = z.string();
+        const processComponents = (compList: EmbeddedFlowComponent[]) => {
+          compList.forEach((comp) => {
+            if (
+              (String(comp.type) === String(EmbeddedFlowComponentType.Block) || comp.type === 'BLOCK') &&
+              comp.components
+            ) {
+              processComponents(comp.components);
+            } else if (
+              (String(comp.type) === String(EmbeddedFlowComponentType.TextInput) ||
+                comp.type === 'TEXT_INPUT' ||
+                comp.type === 'EMAIL_INPUT' ||
+                comp.type === 'SELECT') &&
+              comp.ref
+            ) {
+              let fieldSchema: z.ZodTypeAny = z.string();
 
-            if (comp.type === 'EMAIL_INPUT') {
-              fieldSchema = z.string().email('Please enter a valid email address');
+              if (comp.type === 'EMAIL_INPUT') {
+                fieldSchema = z.string().email('Please enter a valid email address');
+              }
+
+              const labelText = typeof comp.label === 'string' ? comp.label : comp.ref;
+              if (comp.required) {
+                fieldSchema = (fieldSchema as z.ZodString).min(
+                  1,
+                  `${t(resolve(labelText) ?? labelText) ?? comp.ref} is required`,
+                );
+              } else {
+                fieldSchema = (fieldSchema as z.ZodString).optional();
+              }
+
+              shape[comp.ref] = fieldSchema;
             }
+          });
+        };
 
-            const labelText = typeof comp.label === 'string' ? comp.label : comp.ref;
-            if (comp.required) {
-              fieldSchema = (fieldSchema as z.ZodString).min(1, `${t(resolve(labelText) ?? labelText) ?? comp.ref} is required`);
-            } else {
-              fieldSchema = (fieldSchema as z.ZodString).optional();
-            }
-
-            shape[comp.ref] = fieldSchema;
-          }
-        });
-      };
-
-      processComponents(comps);
-      return z.object(shape);
-    },
+        processComponents(comps);
+        return z.object(shape);
+      },
     [t, resolve],
   );
 
@@ -261,7 +288,11 @@ function InviteUserContent({
                   }}
                   renderValue={(selected) => {
                     if (!selected || selected === '') {
-                      return <Typography sx={{color: 'text.secondary'}}>{t(resolve(placeholderText) ?? 'Select an option')}</Typography>;
+                      return (
+                        <Typography sx={{color: 'text.secondary'}}>
+                          {t(resolve(placeholderText) ?? 'Select an option')}
+                        </Typography>
+                      );
                     }
                     const selectedOption = options.find((opt: unknown) => getOptionValue(opt) === selected);
                     return selectedOption ? getOptionLabel(selectedOption) : String(selected);
@@ -351,7 +382,13 @@ function InviteUserContent({
               value={inviteLink}
               InputProps={{readOnly: true}}
               size="small"
-              sx={{'& .MuiInputBase-root': {backgroundColor: 'background.default', fontFamily: 'monospace', fontSize: '0.85rem'}}}
+              sx={{
+                '& .MuiInputBase-root': {
+                  backgroundColor: 'background.default',
+                  fontFamily: 'monospace',
+                  fontSize: '0.85rem',
+                },
+              }}
             />
             <IconButton
               onClick={() => {
@@ -468,17 +505,30 @@ function InviteUserContent({
 
                   // Submit button
                   if (
-                    (String(subComponent.type) === String(EmbeddedFlowComponentType.Action) || subComponent.type === 'ACTION') &&
-                    (String(subComponent.eventType) === String(EmbeddedFlowEventType.Submit) || subComponent.eventType === 'SUBMIT')
+                    (String(subComponent.type) === String(EmbeddedFlowComponentType.Action) ||
+                      subComponent.type === 'ACTION') &&
+                    (String(subComponent.eventType) === String(EmbeddedFlowEventType.Submit) ||
+                      subComponent.eventType === 'SUBMIT')
                   ) {
                     const subLabel = typeof subComponent.label === 'string' ? subComponent.label : '';
                     return (
-                      <Box key={subComponent.id ?? compIndex} sx={{display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 2}}>
+                      <Box
+                        key={subComponent.id ?? compIndex}
+                        sx={{display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 2}}
+                      >
                         <Button variant="outlined" onClick={handleClose} disabled={isLoading}>
                           {t('common:actions.cancel', 'Cancel')}
                         </Button>
-                        <Button type="submit" variant={subComponent.variant === 'PRIMARY' ? 'contained' : 'outlined'} disabled={isButtonDisabled}>
-                          {isLoading ? <CircularProgress size={20} color="inherit" /> : t(resolve(subLabel) ?? subLabel)}
+                        <Button
+                          type="submit"
+                          variant={subComponent.variant === 'PRIMARY' ? 'contained' : 'outlined'}
+                          disabled={isButtonDisabled}
+                        >
+                          {isLoading ? (
+                            <CircularProgress size={20} color="inherit" />
+                          ) : (
+                            t(resolve(subLabel) ?? subLabel)
+                          )}
                         </Button>
                       </Box>
                     );
@@ -532,7 +582,6 @@ export default function InviteUserDialog({open, onClose, onSuccess = undefined}:
     }
     return JSON.stringify(option);
   };
-
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>

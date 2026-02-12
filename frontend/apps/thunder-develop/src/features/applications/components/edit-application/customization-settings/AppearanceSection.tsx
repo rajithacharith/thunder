@@ -18,7 +18,7 @@
 
 import {Box, Typography, TextField, Autocomplete, CircularProgress} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
-import {useGetBrandings} from '@thunder/shared-branding';
+import {useGetThemes} from '@thunder/shared-design';
 import type {Application} from '../../../models/application';
 import SettingsCard from '../SettingsCard';
 
@@ -45,17 +45,17 @@ interface AppearanceSectionProps {
 /**
  * Section component for configuring application appearance.
  *
- * Provides an autocomplete dropdown to select a branding theme from available options.
- * The selected branding affects the look and feel of the application's login pages.
+ * Provides an autocomplete dropdown to select a theme or layout from available options.
+ * The selected theme or layout affects the look and feel of the application's login pages.
  *
  * @param props - Component props
  * @returns Appearance configuration UI within a SettingsCard
  */
 export default function AppearanceSection({application, editedApp, onFieldChange}: AppearanceSectionProps) {
   const {t} = useTranslation();
-  const {data: brandingsData, isLoading: loadingBrandings} = useGetBrandings();
+  const {data: themesData, isLoading: loadingThemes} = useGetThemes();
 
-  const themeOptions = brandingsData?.brandings ?? [];
+  const themeOptions = themesData?.themes ?? [];
 
   return (
     <SettingsCard
@@ -70,16 +70,9 @@ export default function AppearanceSection({application, editedApp, onFieldChange
           fullWidth
           options={themeOptions}
           getOptionLabel={(option) => (typeof option === 'string' ? option : option.displayName)}
-          value={
-            themeOptions.find(
-              (theme) =>
-                theme.id ===
-                (((editedApp as Record<string, unknown>).branding_id as string) ??
-                  ((application as Record<string, unknown>).branding_id as string)),
-            ) ?? null
-          }
-          onChange={(_event, newValue) => onFieldChange('branding_id' as keyof Application, newValue?.id ?? '')}
-          loading={loadingBrandings}
+          value={themeOptions.find((theme) => theme.id === (editedApp.theme_id! ?? application.theme_id!)) ?? null}
+          onChange={(_event, newValue) => onFieldChange('theme_id' as keyof Application, newValue?.id ?? '')}
+          loading={loadingThemes}
           renderInput={(params) => (
             <TextField
               {...params}
@@ -89,7 +82,7 @@ export default function AppearanceSection({application, editedApp, onFieldChange
                 ...params.InputProps,
                 endAdornment: (
                   <>
-                    {loadingBrandings ? <CircularProgress color="inherit" size={20} /> : null}
+                    {loadingThemes ? <CircularProgress color="inherit" size={20} /> : null}
                     {params.InputProps.endAdornment}
                   </>
                 ),

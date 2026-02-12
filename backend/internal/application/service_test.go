@@ -80,7 +80,8 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse_WithTemplate() 
 		AuthFlowID:                "auth_flow_1",
 		RegistrationFlowID:        "reg_flow_1",
 		IsRegistrationFlowEnabled: true,
-		BrandingID:                "brand-123",
+		ThemeID:                   "theme-123",
+		LayoutID:                  "layout-456",
 		Template:                  "spa",
 		ClientID:                  "client-123",
 		LogoURL:                   "https://example.com/logo.png",
@@ -90,7 +91,8 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse_WithTemplate() 
 
 	assert.Equal(suite.T(), "app-123", result.ID)
 	assert.Equal(suite.T(), "Test App", result.Name)
-	assert.Equal(suite.T(), "brand-123", result.BrandingID)
+	assert.Equal(suite.T(), "theme-123", result.ThemeID)
+	assert.Equal(suite.T(), "layout-456", result.LayoutID)
 	assert.Equal(suite.T(), "spa", result.Template)
 	assert.Equal(suite.T(), "client-123", result.ClientID)
 	assert.Equal(suite.T(), "https://example.com/logo.png", result.LogoURL)
@@ -3590,4 +3592,169 @@ func (suite *ServiceTestSuite) TestProcessScopeClaimsConfiguration() {
 			assert.Equal(suite.T(), tt.expectedClaims, result)
 		})
 	}
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_ValidateApplicationError() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, _, _, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name: "", // Invalid name to trigger ValidateApplication error
+	}
+
+	result, svcErr := service.CreateApplication(app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorInvalidApplicationName, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_CertificateValidationError() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, _, _, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name: "Test App",
+		Certificate: &model.ApplicationCertificate{
+			Type:  "INVALID_TYPE",
+			Value: "some-value",
+		},
+	}
+
+	mockStore := service.appStore.(*applicationStoreInterfaceMock)
+	mockFlowMgtService := service.flowMgtService.(*flowmgtmock.FlowMgtServiceInterfaceMock)
+
+	mockStore.On("GetApplicationByName", "Test App").Return(nil, model.ApplicationNotFoundError)
+	app.AuthFlowID = "auth-flow-id"
+	mockFlowMgtService.EXPECT().IsValidFlow("auth-flow-id").Return(true)
+
+	app.RegistrationFlowID = "reg-flow-id"
+	mockFlowMgtService.EXPECT().IsValidFlow("reg-flow-id").Return(true)
+
+	result, svcErr := service.CreateApplication(app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorInvalidCertificateType.Code, svcErr.Code)
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_CertificateCreationError() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, _, mockCertService, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name: "Test App",
+		Certificate: &model.ApplicationCertificate{
+			Type:  "JWKS",
+			Value: `{"keys":[]}`,
+		},
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+	}
+
+	mockStore := service.appStore.(*applicationStoreInterfaceMock)
+	mockFlowMgtService := service.flowMgtService.(*flowmgtmock.FlowMgtServiceInterfaceMock)
+
+	mockStore.On("GetApplicationByName", "Test App").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow("auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow("reg-flow-id").Return(true)
+
+	svcErrExpected := &serviceerror.ServiceError{Type: serviceerror.ServerErrorType}
+	mockCertService.EXPECT().CreateCertificate(mock.Anything).Return(nil, svcErrExpected)
+
+	result, svcErr := service.CreateApplication(app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestUpdateApplication_NotFound() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name: "New Name",
+	}
+
+	mockStore.On("GetApplicationByID", "app123").Return(nil, model.ApplicationNotFoundError)
+
+	result, svcErr := service.UpdateApplication("app123", app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorApplicationNotFound, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestUpdateApplication_NameConflict() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, _ := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   "app123",
+		Name: "Old Name",
+	}
+
+	app := &model.ApplicationDTO{
+		Name: "New Name",
+	}
+
+	existingAppWithName := &model.ApplicationProcessedDTO{
+		ID:   "app456",
+		Name: "New Name",
+	}
+
+	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
+	mockStore.On("GetApplicationByName", "New Name").Return(existingAppWithName, nil)
+
+	result, svcErr := service.UpdateApplication("app123", app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorApplicationAlreadyExistsWithName, svcErr)
 }
