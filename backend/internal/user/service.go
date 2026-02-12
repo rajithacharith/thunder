@@ -202,7 +202,7 @@ func (us *userService) CreateUser(ctx context.Context, user *User) (*User, *serv
 		return nil, svcErr
 	}
 
-	if svcErr := us.validateUserAndUniqueness(ctx, user.Type, user.Attributes, logger); svcErr != nil {
+	if svcErr := us.validateUserAndUniqueness(ctx, user.Type, user.Attributes, logger, ""); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -415,7 +415,7 @@ func (us *userService) UpdateUser(ctx context.Context, userID string, user *User
 			return errors.New("rollback for validation error")
 		}
 
-		if svcErr := us.validateUserAndUniqueness(txCtx, user.Type, user.Attributes, logger); svcErr != nil {
+		if svcErr := us.validateUserAndUniqueness(txCtx, user.Type, user.Attributes, logger, user.ID); svcErr != nil {
 			capturedSvcErr = svcErr
 			return errors.New("rollback for validation error")
 		}
@@ -479,7 +479,7 @@ func (us *userService) UpdateUserAttributes(
 		existingUser.Attributes = attributes
 
 		if svcErr := us.validateUserAndUniqueness(txCtx, existingUser.Type,
-			existingUser.Attributes, logger); svcErr != nil {
+			existingUser.Attributes, logger, userID); svcErr != nil {
 			capturedSvcErr = svcErr
 			return errors.New("rollback for validation error")
 		}
@@ -1119,7 +1119,7 @@ func (us *userService) validateOrganizationUnitForUserType(
 
 // validateUserAndUniqueness validates the user schema and checks for uniqueness.
 func (us *userService) validateUserAndUniqueness(
-	ctx context.Context, userType string, attributes []byte, logger *log.Logger,
+	ctx context.Context, userType string, attributes []byte, logger *log.Logger, excludeUserID string,
 ) *serviceerror.ServiceError {
 	isValid, svcErr := us.userSchemaService.ValidateUser(userType, attributes)
 	if svcErr != nil {
@@ -1141,6 +1141,9 @@ func (us *userService) validateUserAndUniqueness(
 				} else {
 					return nil, errors.New(svcErr.Error)
 				}
+			}
+			if excludeUserID != "" && userID != nil && *userID == excludeUserID {
+				return nil, nil
 			}
 			return userID, nil
 		})

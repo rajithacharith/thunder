@@ -58,10 +58,11 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 	emptyPayload := []byte(`{}`)
 
 	testCases := []struct {
-		name    string
-		payload []byte
-		setup   func(t *testing.T) (*userService, testMocks)
-		assert  func(t *testing.T, err *serviceerror.ServiceError, mocks testMocks)
+		name          string
+		payload       []byte
+		excludeUserID string
+		setup         func(t *testing.T) (*userService, testMocks)
+		assert        func(t *testing.T, err *serviceerror.ServiceError, mocks testMocks)
 	}{
 		{
 			name:    "ReturnsInternalErrorWhenSchemaValidationFails",
@@ -327,6 +328,46 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 				require.Equal(t, ErrorInternalServerError, *err)
 			},
 		},
+		{
+			name:          "ReturnsNilWhenConflictIsWithSameUser",
+			payload:       payloadWithEmail,
+			excludeUserID: svcTestUserID123,
+			setup: func(t *testing.T) (*userService, testMocks) {
+				existingUserID := svcTestUserID123
+				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+				userStoreMock := newUserStoreInterfaceMock(t)
+				userStoreMock.
+					On("IdentifyUser", mock.Anything, mock.AnythingOfType("map[string]interface {}")).
+					Return(&existingUserID, nil).
+					Once()
+				schemaMock.
+					On("ValidateUser", testUserType, mock.Anything).
+					Return(true, nil).
+					Once()
+				schemaMock.
+					On("ValidateUserUniqueness", testUserType, mock.Anything, mock.Anything).
+					Run(func(args mock.Arguments) {
+						identify := args.Get(2).(func(map[string]interface{}) (*string, error))
+
+						id, err := identify(map[string]interface{}{"email": "employee@example.com"})
+						require.NoError(t, err)
+						require.Nil(t, id)
+					}).
+					Return(true, nil).
+					Once()
+
+				return &userService{
+						userSchemaService: schemaMock,
+						userStore:         userStoreMock,
+					}, testMocks{
+						schemaService: schemaMock,
+						userStore:     userStoreMock,
+					}
+			},
+			assert: func(t *testing.T, err *serviceerror.ServiceError, mocks testMocks) {
+				require.Nil(t, err)
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -335,7 +376,8 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 			service, mocks := tc.setup(t)
 			logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserServiceTest"))
 
-			err := service.validateUserAndUniqueness(context.Background(), testUserType, tc.payload, logger)
+			err := service.validateUserAndUniqueness(context.Background(), testUserType, tc.payload, logger,
+				tc.excludeUserID)
 			tc.assert(t, err, mocks)
 		})
 	}
