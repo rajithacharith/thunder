@@ -920,3 +920,151 @@ func (s *EngineTestSuite) TestGetNodeInputs_PromptNodeEmptyInputs() {
 
 	s.Nil(inputs)
 }
+
+func (s *EngineTestSuite) TestClearSensitiveInputs_AuthFlowRemovesPassword() {
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(s.T())
+	mockNode.On("GetInputs").Return([]common.Input{
+		{Identifier: "username", Type: "TEXT_INPUT", Required: true},
+		{Identifier: "password", Type: common.InputTypePassword, Required: true},
+	})
+	mockNode.On("GetExecutor").Return(nil).Maybe()
+
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		FlowType: common.FlowTypeAuthentication,
+		UserInputs: map[string]string{
+			"username": "testuser",
+			"password": "secret123",
+		},
+	}
+
+	fe.clearSensitiveInputs(ctx, mockNode)
+
+	s.Equal("testuser", ctx.UserInputs["username"])
+	_, exists := ctx.UserInputs["password"]
+	s.False(exists)
+}
+
+func (s *EngineTestSuite) TestClearSensitiveInputs_AuthFlowRemovesOTP() {
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(s.T())
+	mockNode.On("GetInputs").Return([]common.Input{
+		{Identifier: "otp", Type: common.InputTypeOTP, Required: true},
+	})
+	mockNode.On("GetExecutor").Return(nil).Maybe()
+
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		FlowType: common.FlowTypeAuthentication,
+		UserInputs: map[string]string{
+			"otp": "123456",
+		},
+	}
+
+	fe.clearSensitiveInputs(ctx, mockNode)
+
+	_, exists := ctx.UserInputs["otp"]
+	s.False(exists)
+}
+
+func (s *EngineTestSuite) TestClearSensitiveInputs_RegistrationFlowRetainsPassword() {
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(s.T())
+	mockNode.On("GetInputs").Return([]common.Input{
+		{Identifier: "password", Type: common.InputTypePassword, Required: true},
+	}).Maybe()
+
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		FlowType: common.FlowTypeRegistration,
+		UserInputs: map[string]string{
+			"password": "secret123",
+		},
+	}
+
+	fe.clearSensitiveInputs(ctx, mockNode)
+
+	s.Equal("secret123", ctx.UserInputs["password"])
+}
+
+func (s *EngineTestSuite) TestClearSensitiveInputs_NoNodeInputs() {
+	mockNode := coremock.NewNodeInterfaceMock(s.T())
+
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		FlowType: common.FlowTypeAuthentication,
+		UserInputs: map[string]string{
+			"password": "secret123",
+		},
+	}
+
+	fe.clearSensitiveInputs(ctx, mockNode)
+
+	// Password should remain since the node has no declared inputs
+	s.Equal("secret123", ctx.UserInputs["password"])
+}
+
+func (s *EngineTestSuite) TestClearSensitiveInputs_NonSensitiveInputsRetained() {
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(s.T())
+	mockNode.On("GetInputs").Return([]common.Input{
+		{Identifier: "username", Type: "TEXT_INPUT", Required: true},
+	})
+	mockNode.On("GetExecutor").Return(nil).Maybe()
+
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		FlowType: common.FlowTypeAuthentication,
+		UserInputs: map[string]string{
+			"username": "testuser",
+		},
+	}
+
+	fe.clearSensitiveInputs(ctx, mockNode)
+
+	s.Equal("testuser", ctx.UserInputs["username"])
+}
+
+func (s *EngineTestSuite) TestClearSensitiveInputs_NoNodeInputsUsesExecutorDefaults() {
+	// Node has no configured inputs, but executor defaults have PASSWORD_INPUT.
+	mockExecutor := coremock.NewExecutorInterfaceMock(s.T())
+	mockExecutor.On("GetDefaultInputs").Return([]common.Input{
+		{Identifier: "username", Type: "string", Required: true},
+		{Identifier: "password", Type: common.InputTypePassword, Required: true},
+	})
+
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(s.T())
+	mockNode.On("GetInputs").Return([]common.Input{})
+	mockNode.On("GetExecutor").Return(mockExecutor)
+
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		FlowType: common.FlowTypeAuthentication,
+		UserInputs: map[string]string{
+			"username": "testuser",
+			"password": "secret123",
+		},
+	}
+
+	fe.clearSensitiveInputs(ctx, mockNode)
+
+	s.Equal("testuser", ctx.UserInputs["username"])
+	_, exists := ctx.UserInputs["password"]
+	s.False(exists)
+}
+
+func (s *EngineTestSuite) TestClearSensitiveInputs_UserOnboardingFlowRetainsPassword() {
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(s.T())
+	mockNode.On("GetInputs").Return([]common.Input{
+		{Identifier: "password", Type: common.InputTypePassword, Required: true},
+	}).Maybe()
+
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		FlowType: common.FlowTypeUserOnboarding,
+		UserInputs: map[string]string{
+			"password": "secret123",
+		},
+	}
+
+	fe.clearSensitiveInputs(ctx, mockNode)
+
+	s.Equal("secret123", ctx.UserInputs["password"])
+}

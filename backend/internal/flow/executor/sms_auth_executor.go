@@ -36,11 +36,10 @@ import (
 )
 
 const (
-	smsAuthLoggerComponentName = "SMSOTPAuthExecutor"
-	userInputOTP               = "otp"
-	errorInvalidOTP            = "invalid OTP provided"
-	smsOTPExecutorModeSend     = "send"
-	smsOTPExecutorModeVerify   = "verify"
+	userInputOTP             = "otp"
+	errorInvalidOTP          = "invalid OTP provided"
+	smsOTPExecutorModeSend   = "send"
+	smsOTPExecutorModeVerify = "verify"
 )
 
 // mobileNumberInput is the input definition for mobile number collection.
@@ -75,7 +74,7 @@ func newSMSOTPAuthExecutor(
 		{
 			Ref:        "otp_input",
 			Identifier: userInputOTP,
-			Type:       "OTP_INPUT",
+			Type:       common.InputTypeOTP,
 			Required:   true,
 		},
 	}
@@ -83,7 +82,7 @@ func newSMSOTPAuthExecutor(
 		mobileNumberInput,
 	}
 
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, smsAuthLoggerComponentName),
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "SMSOTPAuthExecutor"),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameSMSAuth))
 
 	identifyExec := newIdentifyingExecutor(ExecutorNameSMSAuth, defaultInputs, prerequisites,

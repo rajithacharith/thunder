@@ -23,6 +23,7 @@ package executor
 import (
 	"encoding/json"
 	"errors"
+	"slices"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
@@ -32,11 +33,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/user"
-)
-
-const (
-	basicAuthLoggerComponentName = "BasicAuthExecutor"
-	inputDataTypePassword        = "PASSWORD_INPUT"
 )
 
 // basicAuthExecutor implements the ExecutorInterface for basic authentication.
@@ -61,17 +57,17 @@ func newBasicAuthExecutor(
 	defaultInputs := []common.Input{
 		{
 			Identifier: userAttributeUsername,
-			Type:       "string",
+			Type:       common.InputTypeText,
 			Required:   true,
 		},
 		{
 			Identifier: userAttributePassword,
-			Type:       inputDataTypePassword,
+			Type:       common.InputTypePassword,
 			Required:   true,
 		},
 	}
 
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, basicAuthLoggerComponentName),
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "BasicAuthExecutor"),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameBasicAuth))
 
 	identifyExec := newIdentifyingExecutor(ExecutorNameBasicAuth, defaultInputs, []common.Input{},
@@ -148,7 +144,7 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 
 	for _, inputData := range b.GetRequiredInputs(ctx) {
 		if value, ok := ctx.UserInputs[inputData.Identifier]; ok {
-			if inputData.Type != inputDataTypePassword {
+			if !slices.Contains(nonSearchableInputs, inputData.Identifier) {
 				userSearchAttributes[inputData.Identifier] = value
 			}
 			userAuthenticateAttributes[inputData.Identifier] = value

@@ -55,25 +55,25 @@ var (
 						{
 							"ref":        "input_003",
 							"identifier": "firstName",
-							"type":       "string",
+							"type":       "TEXT_INPUT",
 							"required":   true,
 						},
 						{
 							"ref":        "input_004",
 							"identifier": "lastName",
-							"type":       "string",
+							"type":       "TEXT_INPUT",
 							"required":   true,
 						},
 						{
 							"ref":        "input_005",
 							"identifier": "email",
-							"type":       "string",
+							"type":       "TEXT_INPUT",
 							"required":   true,
 						},
 						{
 							"ref":        "input_006",
 							"identifier": "mobileNumber",
-							"type":       "string",
+							"type":       "TEXT_INPUT",
 							"required":   false,
 						},
 					},
@@ -458,7 +458,7 @@ func (ts *AttributeCollectFlowTestSuite) validateRequiredInputs(actualInputs []c
 		if expectedName == "password" {
 			ts.Require().Equal("PASSWORD_INPUT", input.Type, "Expected input password to be of type PASSWORD_INPUT")
 		} else {
-			ts.Require().Equal("string", input.Type, "Expected input '%s' to be of type string", expectedName)
+			ts.Require().Equal("TEXT_INPUT", input.Type, "Expected input '%s' to be of type string", expectedName)
 		}
 
 		// Check if required field is set correctly based on the flow definition
