@@ -36,6 +36,7 @@ type OrganizationUnitServiceTestSuite struct {
 }
 
 const testParentID = "parent"
+const testOUID = "ou-1"
 
 func TestOUService_OrganizationUnitServiceTestSuite_Run(t *testing.T) {
 	suite.Run(t, new(OrganizationUnitServiceTestSuite))
@@ -333,7 +334,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 }
 
 func (suite *OrganizationUnitServiceTestSuite) TestOUService_CreateOrganizationUnit() {
-	parentID := "parent-1"
+	parentID := testParentOUID
 	validRequest := OrganizationUnitRequest{
 		Handle:      "finance",
 		Name:        "Finance",
@@ -1783,4 +1784,166 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_CheckCircularDepend
 
 	err = service3.checkCircularDependency("ou-1", &parentID)
 	suite.Require().Equal(&ErrorInternalServerError, err)
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationUnit_SameParent() {
+	parentID := testParentOUID
+
+	suite.Run("skips conflict checks when name handle and parent unchanged", func() {
+		store := newOrganizationUnitStoreInterfaceMock(suite.T())
+		existing := OrganizationUnit{
+			ID:          testOUID,
+			Handle:      "finance",
+			Name:        "Finance",
+			Description: "old",
+			Parent:      &parentID,
+		}
+		store.On("GetOrganizationUnit", testOUID).
+			Return(existing, nil).
+			Once()
+		store.On("IsOrganizationUnitDeclarative", testOUID).
+			Return(false).
+			Once()
+		store.On("IsOrganizationUnitExists", parentID).
+			Return(true, nil).
+			Once()
+		// checkCircularDependency walks up from parent
+		store.On("GetOrganizationUnit", parentID).
+			Return(OrganizationUnit{ID: parentID, Parent: nil}, nil).
+			Once()
+		store.On("UpdateOrganizationUnit", mock.MatchedBy(func(ou OrganizationUnit) bool {
+			return ou.ID == testOUID && ou.Description == "updated" && *ou.Parent == parentID
+		})).
+			Return(nil).
+			Once()
+
+		service := suite.newService(store)
+		result, err := service.UpdateOrganizationUnit(testOUID, OrganizationUnitRequest{
+			Handle:      "finance",
+			Name:        "Finance",
+			Description: "updated",
+			Parent:      strPtr(parentID),
+		})
+
+		suite.Require().Nil(err)
+		suite.Require().Equal("updated", result.Description)
+		store.AssertNotCalled(suite.T(), "CheckOrganizationUnitNameConflict", mock.Anything, mock.Anything)
+		store.AssertNotCalled(suite.T(), "CheckOrganizationUnitHandleConflict", mock.Anything, mock.Anything)
+		store.AssertExpectations(suite.T())
+	})
+
+	suite.Run("runs conflict checks when parent changes from nil to value", func() {
+		store := newOrganizationUnitStoreInterfaceMock(suite.T())
+		existing := OrganizationUnit{
+			ID:     testOUID,
+			Handle: "finance",
+			Name:   "Finance",
+			Parent: nil,
+		}
+		store.On("GetOrganizationUnit", testOUID).
+			Return(existing, nil).
+			Once()
+		store.On("IsOrganizationUnitDeclarative", testOUID).
+			Return(false).
+			Once()
+		store.On("IsOrganizationUnitExists", parentID).
+			Return(true, nil).
+			Once()
+		// checkCircularDependency walks up from parent
+		store.On("GetOrganizationUnit", parentID).
+			Return(OrganizationUnit{ID: parentID, Parent: nil}, nil).
+			Once()
+		store.On("CheckOrganizationUnitNameConflict", "Finance", mock.MatchedBy(func(p *string) bool {
+			return p != nil && *p == parentID
+		})).
+			Return(false, nil).
+			Once()
+		store.On("CheckOrganizationUnitHandleConflict", "finance", mock.MatchedBy(func(p *string) bool {
+			return p != nil && *p == parentID
+		})).
+			Return(false, nil).
+			Once()
+		store.On("UpdateOrganizationUnit", mock.MatchedBy(func(ou OrganizationUnit) bool {
+			return ou.ID == testOUID && *ou.Parent == parentID
+		})).
+			Return(nil).
+			Once()
+
+		service := suite.newService(store)
+		result, err := service.UpdateOrganizationUnit(testOUID, OrganizationUnitRequest{
+			Handle: "finance",
+			Name:   "Finance",
+			Parent: strPtr(parentID),
+		})
+
+		suite.Require().Nil(err)
+		suite.Require().Equal(testOUID, result.ID)
+		store.AssertExpectations(suite.T())
+	})
+
+	suite.Run("runs conflict checks when parent changes from value to nil", func() {
+		store := newOrganizationUnitStoreInterfaceMock(suite.T())
+		existing := OrganizationUnit{
+			ID:     testOUID,
+			Handle: "finance",
+			Name:   "Finance",
+			Parent: &parentID,
+		}
+		store.On("GetOrganizationUnit", testOUID).
+			Return(existing, nil).
+			Once()
+		store.On("IsOrganizationUnitDeclarative", testOUID).
+			Return(false).
+			Once()
+		store.On("CheckOrganizationUnitNameConflict", "Finance", (*string)(nil)).
+			Return(false, nil).
+			Once()
+		store.On("CheckOrganizationUnitHandleConflict", "finance", (*string)(nil)).
+			Return(false, nil).
+			Once()
+		store.On("UpdateOrganizationUnit", mock.MatchedBy(func(ou OrganizationUnit) bool {
+			return ou.ID == testOUID && ou.Parent == nil
+		})).
+			Return(nil).
+			Once()
+
+		service := suite.newService(store)
+		result, err := service.UpdateOrganizationUnit(testOUID, OrganizationUnitRequest{
+			Handle: "finance",
+			Name:   "Finance",
+			Parent: nil,
+		})
+
+		suite.Require().Nil(err)
+		suite.Require().Equal(testOUID, result.ID)
+		store.AssertExpectations(suite.T())
+	})
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_StringPtrEqual() {
+	suite.Run("both nil", func() {
+		suite.Require().True(stringPtrEqual(nil, nil))
+	})
+
+	suite.Run("first nil", func() {
+		b := "value"
+		suite.Require().False(stringPtrEqual(nil, &b))
+	})
+
+	suite.Run("second nil", func() {
+		a := "value"
+		suite.Require().False(stringPtrEqual(&a, nil))
+	})
+
+	suite.Run("equal values", func() {
+		a := "same"
+		b := "same"
+		suite.Require().True(stringPtrEqual(&a, &b))
+	})
+
+	suite.Run("different values", func() {
+		a := "one"
+		b := "two"
+		suite.Require().False(stringPtrEqual(&a, &b))
+	})
 }
