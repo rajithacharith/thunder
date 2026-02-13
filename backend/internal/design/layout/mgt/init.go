@@ -21,16 +21,32 @@ package layoutmgt
 import (
 	"net/http"
 
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize initializes the layout management service and registers its routes.
-func Initialize(mux *http.ServeMux) LayoutMgtServiceInterface {
-	layoutMgtStore := newLayoutMgtStore()
+func Initialize(mux *http.ServeMux) (LayoutMgtServiceInterface, declarativeresource.ResourceExporter, error) {
+	var layoutMgtStore layoutMgtStoreInterface
+	if declarativeresource.IsDeclarativeModeEnabled() {
+		layoutMgtStore = newLayoutFileBasedStore()
+	} else {
+		layoutMgtStore = newLayoutMgtStore()
+	}
+
 	layoutMgtService := newLayoutMgtService(layoutMgtStore)
+
+	if declarativeresource.IsDeclarativeModeEnabled() {
+		if err := loadDeclarativeResources(layoutMgtStore); err != nil {
+			return nil, nil, err
+		}
+	}
+
 	layoutMgtHandler := newLayoutMgtHandler(layoutMgtService)
 	registerRoutes(mux, layoutMgtHandler)
-	return layoutMgtService
+
+	exporter := newLayoutExporter(layoutMgtService)
+	return layoutMgtService, exporter, nil
 }
 
 // registerRoutes registers the routes for layout management operations.

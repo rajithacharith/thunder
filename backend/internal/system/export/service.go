@@ -38,6 +38,8 @@ const (
 	resourceTypeOU                 = "organization_unit"
 	resourceTypeFlow               = "flow"
 	resourceTypeTranslation        = "translation"
+	resourceTypeLayout             = "layout"
+	resourceTypeTheme              = "theme"
 )
 
 // parameterizerInterface defines the interface for template parameterization.
@@ -106,6 +108,8 @@ func (es *exportService) ExportResources(request *ExportRequest) (*ExportRespons
 		resourceTypeOU:                 request.OrganizationUnits,
 		resourceTypeFlow:               request.Flows,
 		resourceTypeTranslation:        request.Translations,
+		resourceTypeLayout:             request.Layouts,
+		resourceTypeTheme:              request.Themes,
 	}
 
 	// Export resources using the registry

@@ -22,12 +22,12 @@ import "encoding/json"
 
 // Theme represents a theme configuration.
 type Theme struct {
-	ID          string          `json:"id"`
-	DisplayName string          `json:"displayName"`
-	Description string          `json:"description"`
-	Theme       json.RawMessage `json:"theme"`
-	CreatedAt   string          `json:"createdAt"`
-	UpdatedAt   string          `json:"updatedAt"`
+	ID          string          `json:"id" yaml:"id,omitempty"`
+	DisplayName string          `json:"displayName" yaml:"displayName"`
+	Description string          `json:"description" yaml:"description,omitempty"`
+	Theme       json.RawMessage `json:"theme" yaml:"theme"`
+	CreatedAt   string          `json:"createdAt" yaml:"createdAt,omitempty"`
+	UpdatedAt   string          `json:"updatedAt" yaml:"updatedAt,omitempty"`
 }
 
 // ThemeListItem represents a theme item in the list response.
@@ -51,6 +51,14 @@ type UpdateThemeRequest struct {
 	DisplayName string          `json:"displayName"`
 	Description string          `json:"description"`
 	Theme       json.RawMessage `json:"theme"`
+}
+
+// themeRequestWithID represents the request structure for creating a theme from file-based config.
+type themeRequestWithID struct {
+	ID          string      `yaml:"id"`
+	DisplayName string      `yaml:"displayName"`
+	Description string      `yaml:"description,omitempty"`
+	Theme       interface{} `yaml:"theme"`
 }
 
 // ThemeListResponse represents the response for listing theme configurations with pagination.

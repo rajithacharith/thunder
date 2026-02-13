@@ -21,16 +21,32 @@ package thememgt
 import (
 	"net/http"
 
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize initializes the theme management service and registers its routes.
-func Initialize(mux *http.ServeMux) ThemeMgtServiceInterface {
-	themeMgtStore := newThemeMgtStore()
+func Initialize(mux *http.ServeMux) (ThemeMgtServiceInterface, declarativeresource.ResourceExporter, error) {
+	var themeMgtStore themeMgtStoreInterface
+	if declarativeresource.IsDeclarativeModeEnabled() {
+		themeMgtStore = newThemeFileBasedStore()
+	} else {
+		themeMgtStore = newThemeMgtStore()
+	}
+
 	themeMgtService := newThemeMgtService(themeMgtStore)
+
+	if declarativeresource.IsDeclarativeModeEnabled() {
+		if err := loadDeclarativeResources(themeMgtStore); err != nil {
+			return nil, nil, err
+		}
+	}
+
 	themeMgtHandler := newThemeMgtHandler(themeMgtService)
 	registerRoutes(mux, themeMgtHandler)
-	return themeMgtService
+
+	exporter := newThemeExporter(themeMgtService)
+	return themeMgtService, exporter, nil
 }
 
 // registerRoutes registers the routes for theme management operations.

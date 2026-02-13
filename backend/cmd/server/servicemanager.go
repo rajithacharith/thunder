@@ -147,8 +147,17 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	}
 
 	// Initialize theme and layout services
-	themeMgtService := thememgt.Initialize(mux)
-	layoutMgtService := layoutmgt.Initialize(mux)
+	themeMgtService, themeExporter, err := thememgt.Initialize(mux)
+	if err != nil {
+		logger.Fatal("Failed to initialize ThemeMgtService", log.Error(err))
+	}
+	exporters = append(exporters, themeExporter)
+
+	layoutMgtService, layoutExporter, err := layoutmgt.Initialize(mux)
+	if err != nil {
+		logger.Fatal("Failed to initialize LayoutMgtService", log.Error(err))
+	}
+	exporters = append(exporters, layoutExporter)
 
 	applicationService, applicationExporter, err := application.Initialize(
 		mux, certservice, flowMgtService, themeMgtService, layoutMgtService, userSchemaService)
