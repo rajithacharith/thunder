@@ -160,7 +160,7 @@ configuration:
       type: "postgres" # postgres or sqlite
       # Below two parameters are only required for sqlite
       sqlitePath: "repository/database/thunderdb.db" # Only required for sqlite
-      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000" # Only required for sqlite
+      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)" # Only required for sqlite
       # Below parameters are only required for Postgres
       name: "thunderdb" 
       host: "localhost" 
@@ -177,7 +177,7 @@ configuration:
       type: "postgres" # postgres or sqlite
       # Below two parameters are only required for sqlite
       sqlitePath: "repository/database/runtimedb.db" # Only required for sqlite
-      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000" # Only required for sqlite
+      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)" # Only required for sqlite
       # Below parameters are only required for Postgres
       name: "runtimedb" 
       host: "localhost" 
@@ -193,7 +193,7 @@ configuration:
       type: "postgres" # postgres or sqlite
       # Below two parameters are only required for sqlite
       sqlitePath: "repository/database/userdb.db" # Only required for sqlite
-      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000" # Only required for sqlite
+      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)" # Only required for sqlite
       # Below parameters are only required for Postgres
       name: "userdb" 
       host: "localhost" 

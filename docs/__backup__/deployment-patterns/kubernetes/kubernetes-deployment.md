@@ -218,15 +218,15 @@ configuration:
     identity:
       type: sqlite
       sqlitePath: repository/database/thunderdb.db
-      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000"
+      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)"
     runtime:
       type: sqlite
       sqlitePath: repository/database/runtimedb.db
-      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000"
+      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)"
     user:
       type: sqlite
       sqlitePath: repository/database/userdb.db
-      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000"  
+      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)"  
 ```
 
 ### Update Strategy

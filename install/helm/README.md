@@ -323,8 +323,8 @@ Each database section (`identity`, `runtime`, `user`) supports these fields:
 | `configuration.crypto.keys[].certFile`            | Signing certificate file path                                                                         | `repository/resources/security/signing.cert` |
 | `configuration.crypto.keys[].keyFile`             | Signing key file path                                                                                 | `repository/resources/security/signing.key`  |
 | `configuration.database.identity.type`            | Identity database type (postgres or sqlite)                                                           | `postgres`                   |
-| `configuration.database.identity.sqlitePath`      | SQLite database path (for sqlite only)                                                                | `repository/database/thunderdb.db` |
-| `configuration.database.identity.sqliteOptions`   | SQLite options (for sqlite only)                                                                      | `_journal_mode=WAL&_busy_timeout=5000` |
+| `configuration.database.identity.sqlitePath`      | SQLite database path (for SQLite only)                                                                | `repository/database/thunderdb.db` |
+| `configuration.database.identity.sqliteOptions`   | SQLite options (for SQLite only)                                                                      | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
 | `configuration.database.identity.name`            | Postgres database name (for postgres only)                                                            | `thunderdb`                  |
 | `configuration.database.identity.host`            | Postgres host (for postgres only)                                                                     | `localhost` |
 | `configuration.database.identity.port`            | Postgres port (for postgres only)                                                                     | `5432`                       |
@@ -337,8 +337,8 @@ Each database section (`identity`, `runtime`, `user`) supports these fields:
 | `configuration.database.identity.max_idle_conns`  | Maximum number of idle connections in the pool                                                        | `100`                        |
 | `configuration.database.identity.conn_max_lifetime` | Maximum lifetime of a connection in seconds                                                         | `3600`                       |
 | `configuration.database.runtime.type`             | Runtime database type (postgres or sqlite)                                                            | `postgres`                   |
-| `configuration.database.runtime.sqlitePath`       | SQLite database path (for sqlite only)                                                                | `repository/database/runtimedb.db` |
-| `configuration.database.runtime.sqliteOptions`    | SQLite options (for sqlite only)                                                                      | `_journal_mode=WAL&_busy_timeout=5000` |
+| `configuration.database.runtime.sqlitePath`       | SQLite database path (for SQLite only)                                                                | `repository/database/runtimedb.db` |
+| `configuration.database.runtime.sqliteOptions`    | SQLite options (for SQLite only)                                                                      | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
 | `configuration.database.runtime.name`             | Postgres database name (for postgres only)                                                            | `runtimedb`                  |
 | `configuration.database.runtime.host`             | Postgres host (for postgres only)                                                                     | `localhost` |
 | `configuration.database.runtime.port`             | Postgres port (for postgres only)                                                                     | `5432`                      |
@@ -351,8 +351,8 @@ Each database section (`identity`, `runtime`, `user`) supports these fields:
 | `configuration.database.runtime.max_idle_conns`   | Maximum number of idle connections in the pool                                                        | `100`                        |
 | `configuration.database.runtime.conn_max_lifetime` | Maximum lifetime of a connection in seconds                                                          | `3600`                       |
 | `configuration.database.user.type`                | User database type (postgres or sqlite)                                                               | `postgres`                   |
-| `configuration.database.user.sqlitePath`          | SQLite database path (for sqlite only)                                                                | `repository/database/userdb.db` |
-| `configuration.database.user.sqliteOptions`       | SQLite options (for sqlite only)                                                                      | `_journal_mode=WAL&_busy_timeout=5000` |
+| `configuration.database.user.sqlitePath`          | SQLite database path (for SQLite only)                                                                | `repository/database/userdb.db` |
+| `configuration.database.user.sqliteOptions`       | SQLite options (for SQLite only)                                                                      | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
 | `configuration.database.user.name`                | Postgres database name (for postgres only)                                                            | `userdb`                     |
 | `configuration.database.user.host`                | Postgres host (for postgres only)                                                                     | `localhost` |
 | `configuration.database.user.port`                | Postgres port (for postgres only)                                                                     | `5432`                       |
