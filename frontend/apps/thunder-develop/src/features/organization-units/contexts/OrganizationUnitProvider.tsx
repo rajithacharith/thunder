@@ -20,10 +20,11 @@ import {useState, useMemo, useCallback} from 'react';
 import type {PropsWithChildren, JSX} from 'react';
 import {Outlet} from 'react-router';
 import OrganizationUnitContext from './OrganizationUnitContext';
-import type {OUTreeItem, OrganizationUnitContextType} from '../models/organizationUnit';
+import type {OrganizationUnitContextType} from './OrganizationUnitContext';
+import type {OrganizationUnitTreeItem} from '../models/organization-unit-tree';
 
 export default function OrganizationUnitProvider({children}: PropsWithChildren): JSX.Element {
-  const [treeItems, setTreeItems] = useState<OUTreeItem[]>([]);
+  const [treeItems, setTreeItems] = useState<OrganizationUnitTreeItem[]>([]);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [loadedItems, setLoadedItems] = useState<Set<string>>(new Set());
 
@@ -46,5 +47,7 @@ export default function OrganizationUnitProvider({children}: PropsWithChildren):
     [treeItems, expandedItems, loadedItems, resetTreeState],
   );
 
-  return <OrganizationUnitContext.Provider value={contextValue}>{children ?? <Outlet />}</OrganizationUnitContext.Provider>;
+  return (
+    <OrganizationUnitContext.Provider value={contextValue}>{children ?? <Outlet />}</OrganizationUnitContext.Provider>
+  );
 }

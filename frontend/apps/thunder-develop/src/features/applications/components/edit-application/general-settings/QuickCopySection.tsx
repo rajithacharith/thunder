@@ -21,7 +21,7 @@ import {Copy, Check} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import type {Application} from '../../../models/application';
 import type {OAuth2Config} from '../../../models/oauth';
-import SettingsCard from '../SettingsCard';
+import SettingsCard from '../../../../../components/SettingsCard';
 
 /**
  * Props for the {@link QuickCopySection} component.

@@ -19,7 +19,8 @@
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
-import type {CreateOrganizationUnitRequest, OrganizationUnit} from '../types/organization-units';
+import type {OrganizationUnit} from '../models/organization-unit';
+import type {CreateOrganizationUnitRequest} from '../models/requests';
 import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
 
 /**

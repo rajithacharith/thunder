@@ -39,7 +39,7 @@ import {z} from 'zod';
 import useGetUserTypes from '../../../../user-types/api/useGetUserTypes';
 import type {Application} from '../../../models/application';
 import type {OAuth2Config} from '../../../models/oauth';
-import SettingsCard from '../SettingsCard';
+import SettingsCard from '../../../../../components/SettingsCard';
 
 /**
  * Props for the {@link AccessSection} component.

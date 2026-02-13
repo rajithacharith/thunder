@@ -178,6 +178,9 @@ func (ous *organizationUnitService) CreateOrganizationUnit(
 		Name:        request.Name,
 		Description: request.Description,
 		Parent:      request.Parent,
+		ThemeID:     request.ThemeID,
+		LayoutID:    request.LayoutID,
+		LogoURL:     request.LogoURL,
 	}
 
 	err = ous.ouStore.CreateOrganizationUnit(ou)
@@ -423,6 +426,9 @@ func (ous *organizationUnitService) updateOUInternal(
 		Name:        request.Name,
 		Description: request.Description,
 		Parent:      request.Parent,
+		ThemeID:     request.ThemeID,
+		LayoutID:    request.LayoutID,
+		LogoURL:     request.LogoURL,
 	}
 
 	err = ous.ouStore.UpdateOrganizationUnit(updatedOU)

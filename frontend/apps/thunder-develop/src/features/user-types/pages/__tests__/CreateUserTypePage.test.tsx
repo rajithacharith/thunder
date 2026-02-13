@@ -18,7 +18,7 @@
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, userEvent, fireEvent} from '@thunder/test-utils';
-import type {OrganizationUnitListParams} from '@/features/organization-units/types/organization-units';
+import type {OrganizationUnitListParams} from '@/features/organization-units/models/requests';
 import CreateUserTypePage from '../CreateUserTypePage';
 import type {ApiError, CreateUserSchemaRequest} from '../../types/user-types';
 

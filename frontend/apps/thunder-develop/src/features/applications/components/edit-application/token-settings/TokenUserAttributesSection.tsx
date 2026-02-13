@@ -36,7 +36,7 @@ import {useEffect} from 'react';
 import {Prism as SyntaxHighlighter} from 'react-syntax-highlighter';
 import {vscDarkPlus} from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type {OAuth2Config} from '../../../models/oauth';
-import SettingsCard from '../SettingsCard';
+import SettingsCard from '../../../../../components/SettingsCard';
 import TokenConstants from '../../../constants/token-constants';
 
 /**
@@ -160,16 +160,13 @@ export default function TokenUserAttributesSection({
   const jwtPreviewForToken: Record<string, string> = {};
 
   const defaultAttributes =
-    tokenType === 'userinfo'
-      ? TokenConstants.USER_INFO_DEFAULT_ATTRIBUTES
-      : TokenConstants.DEFAULT_TOKEN_ATTRIBUTES;
+    tokenType === 'userinfo' ? TokenConstants.USER_INFO_DEFAULT_ATTRIBUTES : TokenConstants.DEFAULT_TOKEN_ATTRIBUTES;
 
   defaultAttributes.forEach((attribute) => {
     jwtPreviewForToken[attribute] = `<${attribute}>`;
   });
   currentAttributes.forEach((attr: string) => {
-    const isPendingRemoval =
-      pendingRemovals.has(attr) && (tokenType === 'shared' || activeTokenType === tokenType);
+    const isPendingRemoval = pendingRemovals.has(attr) && (tokenType === 'shared' || activeTokenType === tokenType);
 
     if (!isPendingRemoval) {
       jwtPreviewForToken[attr] = `<${attr}>`;
@@ -337,16 +334,22 @@ export default function TokenUserAttributesSection({
                               {(() => {
                                 // Filter out system attributes for userinfo token type
                                 // Create shallow copy to avoid mutating props with sort()
-                                const availableAttributesRaw = Array.from(new Set([...userAttributes, ...TokenConstants.ADDITIONAL_USER_ATTRIBUTES]));
+                                const availableAttributesRaw = Array.from(
+                                  new Set([...userAttributes, ...TokenConstants.ADDITIONAL_USER_ATTRIBUTES]),
+                                );
 
-                                const availableAttributes = availableAttributesRaw.filter((attr) => !(defaultAttributes as readonly string[]).includes(attr));
+                                const availableAttributes = availableAttributesRaw.filter(
+                                  (attr) => !(defaultAttributes as readonly string[]).includes(attr),
+                                );
 
                                 return availableAttributes.sort().map((attr) => {
                                   const isAdded = currentAttributes.includes(attr);
                                   const isPendingAddition =
-                                    pendingAdditions.has(attr) && (tokenType === 'shared' || activeTokenType === tokenType);
+                                    pendingAdditions.has(attr) &&
+                                    (tokenType === 'shared' || activeTokenType === tokenType);
                                   const isPendingRemoval =
-                                    pendingRemovals.has(attr) && (tokenType === 'shared' || activeTokenType === tokenType);
+                                    pendingRemovals.has(attr) &&
+                                    (tokenType === 'shared' || activeTokenType === tokenType);
                                   const isHighlighted = highlightedAttributes.has(attr);
                                   const isActive = (isAdded && !isPendingRemoval) || isPendingAddition;
 
@@ -440,7 +443,9 @@ export default function TokenUserAttributesSection({
                 </Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                   {oauth2Config?.scopes && oauth2Config.scopes.length > 0 ? (
-                    oauth2Config.scopes.map((scope) => <Chip key={scope} label={scope} variant="outlined" size="small" />)
+                    oauth2Config.scopes.map((scope) => (
+                      <Chip key={scope} label={scope} variant="outlined" size="small" />
+                    ))
                   ) : (
                     <Typography variant="body2" color="text.secondary">
                       {t('applications:edit.token.noScopes')}

@@ -1138,6 +1138,10 @@ components:
           type: string
         description:
           type: string
+        logo_url:
+          type: string
+          format: uri
+          description: "Logo URL for the organization unit"
 
     OrganizationUnit:
       allOf:
@@ -1192,6 +1196,18 @@ components:
           type: string
           description: "Optional description of the organization unit"
           example: "Team responsible for frontend development and UI/UX"
+        theme_id:
+          type: string
+          format: uuid
+          description: "Theme configuration ID for the organization unit"
+        layout_id:
+          type: string
+          format: uuid
+          description: "Layout configuration ID for the organization unit"
+        logo_url:
+          type: string
+          format: uri
+          description: "Logo URL for the organization unit"
 
     UpdateOrganizationUnitByHandleRequest:
       type: object
@@ -1209,6 +1225,18 @@ components:
           type: string
           description: "Optional description of the organization unit"
           example: "Team responsible for frontend development and UI/UX"
+        theme_id:
+          type: string
+          format: uuid
+          description: "Theme configuration ID for the organization unit"
+        layout_id:
+          type: string
+          format: uuid
+          description: "Layout configuration ID for the organization unit"
+        logo_url:
+          type: string
+          format: uri
+          description: "Logo URL for the organization unit"
 
     CreateOrganizationUnitRequest:
       allOf:

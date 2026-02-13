@@ -69,7 +69,10 @@ export default function UserTypesList() {
 
   const error = userTypesRequestError ?? organizationUnitsError;
   const isLoading = isUserTypesRequestLoading || organizationUnitsLoading;
-  const organizationUnits = useMemo(() => organizationUnitsResponse?.organizationUnits ?? [], [organizationUnitsResponse]);
+  const organizationUnits = useMemo(
+    () => organizationUnitsResponse?.organizationUnits ?? [],
+    [organizationUnitsResponse],
+  );
   const organizationUnitMap = useMemo(() => {
     const map = new Map<string, string>();
     organizationUnits.forEach((unit) => {
@@ -147,7 +150,7 @@ export default function UserTypesList() {
     () => [
       {
         field: 'name',
-        headerName: t('common:form.name'),
+        headerName: t('common:edit.general.name.label'),
         flex: 1,
         minWidth: 200,
         valueGetter: (_value, row) => row.name ?? null,
@@ -183,7 +186,7 @@ export default function UserTypesList() {
                 sx={{
                   fontFamily: !resolvedUnitName && params.row.ouId ? 'monospace' : undefined,
                   fontSize: '0.875rem',
-                  width: '100%'
+                  width: '100%',
                 }}
               >
                 {content}

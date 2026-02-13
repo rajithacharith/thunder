@@ -19,7 +19,7 @@
 import {Box, Stack, Typography, Chip} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
 import type {OAuth2Config} from '../../../models/oauth';
-import SettingsCard from '../SettingsCard';
+import SettingsCard from '../../../../../components/SettingsCard';
 
 /**
  * Props for the {@link OAuth2ConfigSection} component.

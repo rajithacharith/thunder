@@ -40,7 +40,7 @@ import useGetApplication from '../api/useGetApplication';
 import useUpdateApplication from '../api/useUpdateApplication';
 import type {Application} from '../models/application';
 import type {OAuth2Config} from '../models/oauth';
-import LogoUpdateModal from '../components/LogoUpdateModal';
+import LogoUpdateModal from '../../../components/LogoUpdateModal';
 import IntegrationGuides from '../components/edit-application/integration-guides/IntegrationGuides';
 import EditGeneralSettings from '../components/edit-application/general-settings/EditGeneralSettings';
 import EditFlowsSettings from '../components/edit-application/flows-settings/EditFlowsSettings';
@@ -152,7 +152,7 @@ export default function ApplicationEditPage() {
     return (
       <Box sx={{maxWidth: 1200, mx: 'auto', px: 2, pt: 6}}>
         <Alert severity="error" sx={{mb: 2}}>
-          {error?.message ?? t('applications:view.error')}
+          {error?.message ?? t('applications:edit.page.error')}
         </Alert>
         <Button
           onClick={() => {
@@ -160,7 +160,7 @@ export default function ApplicationEditPage() {
           }}
           startIcon={<ArrowLeft size={16} />}
         >
-          {t('applications:view.back')}
+          {t('applications:edit.page.back')}
         </Button>
       </Box>
     );
@@ -170,7 +170,7 @@ export default function ApplicationEditPage() {
     return (
       <Box sx={{maxWidth: 1200, mx: 'auto', px: 2, pt: 6}}>
         <Alert severity="warning" sx={{mb: 2}}>
-          {t('applications:view.notFound')}
+          {t('applications:edit.page.notFound')}
         </Alert>
         <Button
           onClick={() => {
@@ -178,7 +178,7 @@ export default function ApplicationEditPage() {
           }}
           startIcon={<ArrowLeft size={16} />}
         >
-          {t('applications:view.back')}
+          {t('applications:edit.page.back')}
         </Button>
       </Box>
     );
@@ -199,7 +199,7 @@ export default function ApplicationEditPage() {
           variant="text"
           startIcon={<ArrowLeft size={16} />}
         >
-          {t('applications:view.back')}
+          {t('applications:edit.page.back')}
         </Button>
       </Stack>
 

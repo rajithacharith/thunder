@@ -106,8 +106,8 @@ const translations = {
     'status.failed': 'Failed',
 
     // Form labels
-    'form.name': 'Name',
-    'form.description': 'Description',
+    'edit.general.name.label': 'Name',
+    'edit.general.description.label': 'Description',
     'form.email': 'Email',
     'form.password': 'Password',
     'form.username': 'Username',
@@ -417,6 +417,9 @@ const translations = {
     'listing.treeView.loadError': 'Failed to load child organization units',
     'listing.treeView.addChild': 'Add Child OU',
     'listing.treeView.addChildOrganizationUnit': 'Add Child Organization Unit',
+    'listing.columns.name': 'Name',
+    'listing.columns.handle': 'Handle',
+    'listing.columns.description': 'Description',
 
     // Create page
     'create.title': 'Create Organization Unit',
@@ -425,64 +428,85 @@ const translations = {
     'create.error': 'Failed to create organization unit. Please try again.',
     'create.suggestions.label': 'In a hurry? Pick a random name:',
 
-    // View/Edit page
-    'view.title': 'Organization Unit Details',
-    'view.error': 'Failed to load organization unit',
-    'view.notFound': 'Organization unit not found',
-    'view.back': 'Back to Organization Units',
-    'view.backToOU': 'Back to {{name}}',
-    'view.description.empty': 'No description',
-    'view.description.placeholder': 'Enter a description...',
-    'view.tabs.general': 'General',
-    'view.tabs.childOUs': 'Child OUs',
-    'view.tabs.users': 'Users',
-    'view.tabs.groups': 'Groups',
-    'view.tabs.advanced': 'Advanced Settings',
-    'view.childOUs.title': 'Child Organization Units',
-    'view.childOUs.subtitle': 'View and manage child organization units under this OU',
-    'view.users.title': 'Users',
-    'view.users.subtitle': 'View users belonging to this organization unit',
-    'view.users.columns.id': 'User ID',
-    'view.users.columns.type': 'User Type',
-    'view.groups.title': 'Groups',
-    'view.groups.subtitle': 'View groups belonging to this organization unit',
-    'view.groups.columns.name': 'Group Name',
-    'view.groups.columns.id': 'Group ID',
-    'view.general.title': 'Organization Unit Details',
-    'view.general.subtitle': 'View the details of this organization unit',
-    'view.general.id': 'Organization Unit ID',
-    'view.general.parent': 'Parent Organization Unit',
-    'view.general.noParent': 'Root Organization Unit',
-    'view.advanced.dangerZone': 'Danger Zone',
-    'view.advanced.dangerZoneDescription': 'Deleting this organization unit is permanent and cannot be undone.',
-    'view.advanced.deleteButton': 'Delete Organization Unit',
-    'view.unsavedChanges': 'You have unsaved changes',
-    'view.reset': 'Reset',
-    'view.save': 'Save Changes',
-    'view.saving': 'Saving...',
+    'delete.dialog.title': 'Delete Organization Unit',
+    'delete.dialog.message': 'Are you sure you want to delete this organization unit? This action cannot be undone.',
+    'delete.dialog.disclaimer': 'Warning: All associated data, configurations, and user assignments will be permanently removed.',
+    'delete.dialog.error': 'Failed to delete organization unit. Please try again.',
 
-    'edit.error': 'Failed to update organization unit. Please try again.',
+    /* -------------------- Edit page -------------------- */
+    // Common
+    'edit.page.error': 'Failed to load organization unit',
+    'edit.page.notFound': 'Organization unit not found',
+    'edit.page.back': 'Back to Organization Units',
+    'edit.page.backToOU': 'Back to {{name}}',
+    'edit.page.description.empty': 'No description',
+    'edit.page.description.placeholder': 'Enter a description...',
+    'edit.page.tabs.general': 'General',
+    'edit.page.tabs.childOUs': 'Child OUs',
+    'edit.page.tabs.users': 'Users',
+    'edit.page.tabs.groups': 'Groups',
+    'edit.page.tabs.customization': 'Customization',
+    'edit.page.tabs.advanced': 'Advanced Settings',
+    'edit.actions.unsavedChanges.label': 'You have unsaved changes',
+    'edit.actions.reset.label': 'Reset',
+    'edit.actions.save.label': 'Save Changes',
+    'edit.actions.saving.label': 'Saving...',
 
-    // Delete dialog
-    'delete.title': 'Delete Organization Unit',
-    'delete.message': 'Are you sure you want to delete this organization unit? This action cannot be undone.',
-    'delete.disclaimer': 'Warning: All associated data will be permanently removed.',
-    'delete.error': 'Failed to delete organization unit. Please try again.',
-    'delete.success': 'Organization unit deleted successfully.',
-
+    // General section
+    'edit.general.sections.quickCopy.title': 'Quick Copy',
+    'edit.general.sections.quickCopy.description': 'Copy organization unit identifiers for quick reference.',
+    'edit.general.sections.parentOUSettings.title': 'Parent Organization Unit',
+    'edit.general.sections.parentOUSettings.description': 'The parent organization unit in the hierarchy.',
+    'edit.general.sections.dangerZone.title': 'Danger Zone',
+    'edit.general.sections.dangerZone.description': 'Actions in this section are irreversible. Proceed with caution.',
+    'edit.general.sections.dangerZone.deleteOU.title': 'Delete Organization Unit',
+    'edit.general.sections.dangerZone.deleteOU.description':
+      'Deleting this organization unit is permanent and cannot be undone.',
+    'edit.general.ou.id.label': 'Organization Unit ID',
+    'edit.general.ou.parent.label': 'Parent Organization Unit',
+    'edit.general.ou.noParent.label': 'Root Organization Unit',
+    'edit.general.dangerZone.delete.button.label': 'Delete Organization Unit',
     // Form fields
-    'form.handle': 'Handle',
-    'form.handlePlaceholder': 'e.g., engineering, sales, hr',
-    'form.handleHelperText': 'A unique identifier for this organization unit',
-    'form.name': 'Name',
-    'form.namePlaceholder': 'e.g., Engineering Department',
-    'form.description': 'Description',
-    'form.descriptionPlaceholder': 'Enter a description for this organization unit',
-    'form.parent': 'Parent Organization Unit',
-    'form.parentHelperText': 'The parent organization unit for this new unit',
-    'form.validation.nameRequired': 'Name is required',
-    'form.validation.handleRequired': 'Handle is required',
-    'form.validation.handleFormat': 'Handle must be lowercase alphanumeric with hyphens only',
+    'edit.general.handle.label': 'Handle',
+    'edit.general.handle.placeholder': 'e.g., engineering, sales, hr',
+    'edit.general.handle.hint': 'A unique identifier for this organization unit',
+    'edit.general.handle.validations.required': 'Handle is required',
+    'edit.general.handle.validations.format': 'Handle must be lowercase alphanumeric with hyphens only',
+    'edit.general.name.label': 'Name',
+    'edit.general.name.placeholder': 'e.g., Engineering Department',
+    'edit.general.name.validations.required': 'Name is required',
+    'edit.general.description.label': 'Description',
+    'edit.general.description.placeholder': 'Enter a description for this organization unit',
+    'edit.general.parent.label': 'Parent Organization Unit',
+    'edit.general.parent.hint': 'The parent organization unit for this new unit',
+    'edit.general.dangerZone.delete.title': 'Delete Organization Unit',
+    'edit.general.dangerZone.delete.message':
+      'Are you sure you want to delete this organization unit? This action cannot be undone.',
+    'edit.general.dangerZone.delete.error': 'Failed to delete organization unit. Please try again.',
+    'edit.general.dangerZone.delete.success': 'Organization unit deleted successfully.',
+
+    // Child OUs Section
+    'edit.childOUs.sections.manage.title': 'Child Organization Units',
+    'edit.childOUs.sections.manage.description': 'View and manage child organization units under this OU',
+
+    // Users Section
+    'edit.users.sections.manage.title': 'Users',
+    'edit.users.sections.manage.description': 'View users belonging to this organization unit',
+    'edit.users.sections.manage.listing.columns.id': 'User ID',
+    'edit.users.sections.manage.listing.columns.type': 'User Type',
+    'edit.users.sections.manage.listing.columns.name': 'Group Name',
+
+    // Groups Section
+    'edit.groups.sections.manage.title': 'Groups',
+    'edit.groups.sections.manage.description': 'View groups belonging to this organization unit',
+    'edit.groups.sections.manage.listing.columns.id': 'Group ID',
+
+    // Customization tab
+    'edit.customization.sections.appearance': 'Appearance',
+    'edit.customization.sections.appearance.description': 'Customize the look and feel of this organization unit.',
+    'edit.customization.labels.theme': 'Theme',
+    'edit.customization.theme.placeholder': 'Select a theme',
+    'edit.customization.theme.hint': 'The theme applied to this organization unit.',
   },
 
   // ============================================================================
@@ -837,9 +861,6 @@ const translations = {
       'Your client secret is a confidential key used to authenticate your application. It should be treated with the same level of security as a password. Never expose it in browser console, version control, or logs.',
     'view.title': 'Application Details',
     'view.subtitle': 'View application details and configuration',
-    'view.back': 'Back to Applications',
-    'view.notFound': 'Application not found',
-    'view.error': 'Failed to load application information',
     'view.sections.basicInformation': 'Basic Information',
     'view.sections.flowConfiguration': 'Flow Configuration',
     'view.sections.userAttributes': 'User Attributes',
@@ -895,7 +916,12 @@ const translations = {
     'logoModal.logos.shuffle': 'Shuffle',
     'logoModal.cancel': 'Cancel',
     'logoModal.update': 'Update Logo',
-    // Edit page
+
+    /* -------------------- Edit page -------------------- */
+    // Common
+    'edit.page.error': 'Failed to load application information',
+    'edit.page.notFound': 'Application not found',
+    'edit.page.back': 'Back to Applications',
     'edit.page.description.empty': 'No description',
     'edit.page.description.placeholder': 'Add a description',
     'edit.page.tabs.overview': 'Guide',
@@ -908,9 +934,11 @@ const translations = {
     'edit.page.reset': 'Reset',
     'edit.page.save': 'Save',
     'edit.page.saving': 'Saving...',
-    // Overview settings labels
+
+    // Overview section
     'edit.overview.noGuides': 'No integration guides available for this application type.',
-    // General settings labels
+
+    // General section
     'edit.general.sections.quickCopy': 'Quick Copy',
     'edit.general.sections.quickCopy.description': 'Copy application identifiers for use in your code.',
     'edit.general.sections.access': 'Access',
@@ -936,7 +964,8 @@ const translations = {
     'edit.general.allowedUserTypes.placeholder': 'Select user types',
     'edit.general.allowedUserTypes.hint': 'Users of these types can authenticate with this application',
     'edit.general.applicationUrl.hint': 'The homepage URL of your application',
-    // Flows settings labels
+
+    // Flows section
     'edit.flows.labels.authFlow': 'Authentication Flow',
     'edit.flows.labels.authFlow.description': 'Choose the flow that handles user login and authentication.',
     'edit.flows.labels.registrationFlow': 'Registration Flow',
@@ -952,7 +981,8 @@ const translations = {
       'To modify the selected flow, <0>open the flow builder</0>. To create a new flow, visit the <1>Flows page</1>.',
     'edit.flows.enableRegistration.hint': 'Allow users to register new accounts through this application',
     'edit.flows.editFlow': 'Edit flow',
-    // Customization settings labels
+
+    // Customization section
     'edit.customization.sections.appearance': 'Appearance',
     'edit.customization.sections.appearance.description': 'Customize the visual appearance of your application.',
     'edit.customization.sections.urls': 'URLs',
@@ -965,7 +995,8 @@ const translations = {
       'Choose a theme to customize authentication pages. Select the Default Theme (shared across all applications) or pick an app-specific theme.',
     'edit.customization.tosUri.placeholder': 'https://example.com/terms',
     'edit.customization.policyUri.placeholder': 'https://example.com/privacy',
-    // Token settings labels
+
+    // Token section
     'edit.token.labels.title': 'Token Settings',
     'edit.token.intro': 'Customize your access and ID tokens by adding user attributes.',
     'edit.token.labels.issuer': 'Issuer URL',
@@ -1043,7 +1074,8 @@ const translations = {
       'Scopes define the level of access that the application is requesting. Users will see these during consent.',
     'edit.token.other': 'Other',
     'edit.token.noOtherAttributes': 'No other attributes available',
-    // Advanced settings labels
+
+    // Advanced section
     'edit.advanced.labels.oauth2Config': 'OAuth2 Configuration',
     'edit.advanced.labels.redirectUris': 'Redirect URIs',
     'edit.advanced.labels.grantTypes': 'Grant Types',

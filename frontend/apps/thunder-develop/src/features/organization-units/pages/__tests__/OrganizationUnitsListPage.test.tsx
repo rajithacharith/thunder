@@ -19,7 +19,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {screen, waitFor, renderWithProviders} from '@thunder/test-utils';
 import OrganizationUnitsListPage from '../OrganizationUnitsListPage';
-import type {OrganizationUnitListResponse} from '../../types/organization-units';
+import type {OrganizationUnitListResponse} from '../../models/responses';
 
 // Mock navigate
 const mockNavigate = vi.fn();
@@ -73,9 +73,9 @@ vi.mock('@asgardeo/react', () => ({
 // Mock useOrganizationUnit hook with React state for reactivity
 vi.mock('../../contexts/useOrganizationUnit', async () => {
   const {useState, useCallback} = await import('react');
-  type OUTreeItem = import('../../models/organizationUnit').OUTreeItem;
+  type OrganizationUnitTreeItem = import('../../models/organization-unit-tree').OrganizationUnitTreeItem;
   function useOrganizationUnit() {
-    const [treeItems, setTreeItems] = useState<OUTreeItem[]>([]);
+    const [treeItems, setTreeItems] = useState<OrganizationUnitTreeItem[]>([]);
     const [expandedItems, setExpandedItems] = useState<string[]>([]);
     const [loadedItems, setLoadedItems] = useState<Set<string>>(new Set());
     const resetTreeState = useCallback(() => {
@@ -109,9 +109,11 @@ const listTranslations: Record<string, string> = {
   'organizationUnits:listing.treeView.loadError': 'Failed to load child organization units',
   'organizationUnits:listing.treeView.addChild': 'Add child organization unit',
   'organizationUnits:listing.treeView.addChildOrganizationUnit': 'Add Child Organization Unit',
-  'organizationUnits:delete.title': 'Delete Organization Unit',
-  'organizationUnits:delete.message': 'Are you sure?',
-  'organizationUnits:delete.disclaimer': 'This cannot be undone.',
+  'organizationUnits:delete.dialog.title': 'Delete Organization Unit',
+  'organizationUnits:delete.dialog.message':
+    'Are you sure you want to delete this organization unit? This action cannot be undone.',
+  'organizationUnits:delete.dialog.disclaimer':
+    'Warning: All associated data, configurations, and user assignments will be permanently removed.',
   'common:actions.edit': 'Edit',
   'common:actions.delete': 'Delete',
   'common:actions.cancel': 'Cancel',

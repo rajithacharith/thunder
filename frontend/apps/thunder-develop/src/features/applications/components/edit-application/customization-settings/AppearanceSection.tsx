@@ -20,7 +20,7 @@ import {Box, Typography, TextField, Autocomplete, CircularProgress} from '@wso2/
 import {useTranslation} from 'react-i18next';
 import {useGetThemes} from '@thunder/shared-design';
 import type {Application} from '../../../models/application';
-import SettingsCard from '../SettingsCard';
+import SettingsCard from '../../../../../components/SettingsCard';
 
 /**
  * Props for the {@link AppearanceSection} component.

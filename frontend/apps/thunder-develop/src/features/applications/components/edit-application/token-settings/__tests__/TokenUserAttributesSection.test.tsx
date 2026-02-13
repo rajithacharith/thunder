@@ -24,7 +24,7 @@ import TokenUserAttributesSection from '../TokenUserAttributesSection';
 import type {OAuth2Config} from '../../../../models/oauth';
 
 // Mock the SettingsCard component
-vi.mock('../../SettingsCard', () => ({
+vi.mock('../../../../../../components/SettingsCard', () => ({
   default: ({
     title,
     description,

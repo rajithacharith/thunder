@@ -133,7 +133,7 @@ export default function ApplicationsList(): JSX.Element {
       },
       {
         field: 'description',
-        headerName: t('common:form.description'),
+        headerName: t('common:edit.general.description.label'),
         flex: 1.5,
         minWidth: 250,
         valueGetter: (_value, row): string => row.description ?? '-',
