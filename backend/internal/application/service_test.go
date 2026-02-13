@@ -1060,7 +1060,7 @@ func (suite *ServiceTestSuite) TestGetApplication_Success() {
 	}
 
 	mockStore.On("GetApplicationByID", "app123").Return(app, nil)
-	mockCertService.EXPECT().GetCertificateByReference(
+	mockCertService.EXPECT().GetCertificateByReference(mock.Anything,
 		cert.CertificateReferenceTypeApplication, "app123").Return(nil, &cert.ErrorCertificateNotFound)
 
 	result, svcErr := service.GetApplication("app123")
@@ -1237,7 +1237,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_Success() {
 	service, mockStore, mockCertService, _ := suite.setupTestService()
 
 	mockStore.On("DeleteApplication", "app123").Return(nil)
-	mockCertService.EXPECT().DeleteCertificateByReference(cert.CertificateReferenceTypeApplication,
+	mockCertService.EXPECT().DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication,
 		"app123").Return(nil)
 
 	svcErr := service.DeleteApplication("app123")
@@ -1260,7 +1260,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_CertError() {
 
 	mockStore.On("DeleteApplication", "app123").Return(nil)
 	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
 		Return(&serviceerror.ServiceError{Type: serviceerror.ClientErrorType})
 
 	svcErr := service.DeleteApplication("app123")
@@ -1274,7 +1274,7 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_NotFound() {
 	svcErr := &cert.ErrorCertificateNotFound
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
 		Return(nil, svcErr)
 
 	result, err := service.getApplicationCertificate("app123")
@@ -1287,7 +1287,7 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_NotFound() {
 func (suite *ServiceTestSuite) TestGetApplicationCertificate_NilCertificate() {
 	service, _, mockCertService, _ := suite.setupTestService()
 
-	mockCertService.EXPECT().GetCertificateByReference(cert.CertificateReferenceTypeApplication,
+	mockCertService.EXPECT().GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication,
 		"app123").Return(nil, nil)
 
 	result, err := service.getApplicationCertificate("app123")
@@ -1306,7 +1306,7 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_Success() {
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
 		Return(certificate, nil)
 
 	result, err := service.getApplicationCertificate("app123")
@@ -1324,7 +1324,7 @@ func (suite *ServiceTestSuite) TestCreateApplicationCertificate_Success() {
 		Value: `{"keys":[]}`,
 	}
 
-	mockCertService.EXPECT().CreateCertificate(certificate).Return(certificate, nil)
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, certificate).Return(certificate, nil)
 
 	result, svcErr := service.createApplicationCertificate(certificate)
 
@@ -1356,7 +1356,7 @@ func (suite *ServiceTestSuite) TestCreateApplicationCertificate_ClientError() {
 		ErrorDescription: "Invalid certificate",
 	}
 
-	mockCertService.EXPECT().CreateCertificate(certificate).Return(nil, svcErr)
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, certificate).Return(nil, svcErr)
 
 	result, err := service.createApplicationCertificate(certificate)
 
@@ -1367,7 +1367,7 @@ func (suite *ServiceTestSuite) TestCreateApplicationCertificate_ClientError() {
 func (suite *ServiceTestSuite) TestRollbackAppCertificateCreation_Success() {
 	service, _, mockCertService, _ := suite.setupTestService()
 
-	mockCertService.EXPECT().DeleteCertificateByReference(cert.CertificateReferenceTypeApplication,
+	mockCertService.EXPECT().DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication,
 		"app123").Return(nil)
 
 	svcErr := service.rollbackAppCertificateCreation("app123")
@@ -1384,7 +1384,7 @@ func (suite *ServiceTestSuite) TestRollbackAppCertificateCreation_ClientError() 
 	}
 
 	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
 		Return(svcErr)
 
 	err := service.rollbackAppCertificateCreation("app123")
@@ -1581,7 +1581,7 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_ClientError() {
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
 		Return(nil, svcErr)
 
 	result, err := service.getApplicationCertificate("app123")
@@ -1598,7 +1598,7 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_ServerError() {
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
 		Return(nil, svcErr)
 
 	result, err := service.getApplicationCertificate("app123")
@@ -1615,7 +1615,7 @@ func (suite *ServiceTestSuite) TestRollbackAppCertificateCreation_ServerError() 
 	}
 
 	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
 		Return(svcErr)
 
 	err := service.rollbackAppCertificateCreation("app123")
@@ -1635,7 +1635,7 @@ func (suite *ServiceTestSuite) TestCreateApplicationCertificate_ServerError() {
 		Type: serviceerror.ServerErrorType,
 	}
 
-	mockCertService.EXPECT().CreateCertificate(certificate).Return(nil, svcErr)
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, certificate).Return(nil, svcErr)
 
 	result, err := service.createApplicationCertificate(certificate)
 
@@ -1693,7 +1693,7 @@ func (suite *ServiceTestSuite) TestGetValidatedCertificateForCreate_JWKSURI_Inva
 func (suite *ServiceTestSuite) TestDeleteApplicationCertificate_Success() {
 	service, _, mockCertService, _ := suite.setupTestService()
 
-	mockCertService.EXPECT().DeleteCertificateByReference(cert.CertificateReferenceTypeApplication,
+	mockCertService.EXPECT().DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication,
 		"app123").Return(nil)
 
 	svcErr := service.deleteApplicationCertificate("app123")
@@ -1710,7 +1710,7 @@ func (suite *ServiceTestSuite) TestDeleteApplicationCertificate_ClientError() {
 	}
 
 	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
 		Return(svcErr)
 
 	err := service.deleteApplicationCertificate("app123")
@@ -1726,7 +1726,7 @@ func (suite *ServiceTestSuite) TestDeleteApplicationCertificate_ServerError() {
 	}
 
 	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
 		Return(svcErr)
 
 	err := service.deleteApplicationCertificate("app123")
@@ -1744,7 +1744,7 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_ClientError_NonNotF
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
 		Return(nil, svcErr)
 
 	result, err := service.getApplicationCertificate("app123")
@@ -1939,7 +1939,7 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Error() {
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
 		Return(nil, svcErr)
 
 	result, err := service.enrichApplicationWithCertificate(app)
@@ -1962,7 +1962,7 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Success() {
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
 		Return(certificate, nil)
 
 	result, err := service.enrichApplicationWithCertificate(app)
@@ -2523,10 +2523,11 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithRollback() {
 	mockStore.On("GetApplicationByName", "Test App").Return(nil, model.ApplicationNotFoundError)
 	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
 	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
-	mockCertService.EXPECT().CreateCertificate(mock.Anything).Return(&cert.Certificate{Type: "JWKS"}, nil)
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, mock.Anything).
+		Return(&cert.Certificate{Type: "JWKS"}, nil)
 	mockStore.On("CreateApplication", mock.Anything).Return(errors.New("store error"))
 	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, mock.Anything).
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, mock.Anything).
 		Return(nil)
 
 	result, svcErr := service.CreateApplication(app)
@@ -2565,14 +2566,15 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithRollbackFailu
 	mockStore.On("GetApplicationByName", "Test App").Return(nil, model.ApplicationNotFoundError)
 	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
 	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
-	mockCertService.EXPECT().CreateCertificate(mock.Anything).Return(&cert.Certificate{Type: "JWKS"}, nil)
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, mock.Anything).
+		Return(&cert.Certificate{Type: "JWKS"}, nil)
 	mockStore.On("CreateApplication", mock.Anything).Return(errors.New("store error"))
 	rollbackErr := &serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		ErrorDescription: "Failed to rollback",
 	}
 	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, mock.Anything).
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, mock.Anything).
 		Return(rollbackErr)
 
 	result, svcErr := service.CreateApplication(app)
@@ -2735,12 +2737,13 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWithRollback() {
 	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
 	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
 		Return(nil, &cert.ErrorCertificateNotFound)
-	mockCertService.EXPECT().CreateCertificate(mock.Anything).Return(&cert.Certificate{Type: "JWKS"}, nil)
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, mock.Anything).
+		Return(&cert.Certificate{Type: "JWKS"}, nil)
 	mockStore.On("UpdateApplication", mock.Anything, mock.Anything).Return(errors.New("store error"))
 	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
 		Return(nil)
 
 	result, svcErr := service.UpdateApplication("app123", app)
@@ -2775,7 +2778,7 @@ func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_UpdateCe
 	}
 
 	mockCertService.EXPECT().
-		UpdateCertificateByID(existingCert.ID, existingCert).
+		UpdateCertificateByID(mock.Anything, existingCert.ID, existingCert).
 		Return(nil, clientError).
 		Once()
 
@@ -2813,7 +2816,7 @@ func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_UpdateCe
 	}
 
 	mockCertService.EXPECT().
-		UpdateCertificateByID(existingCert.ID, existingCert).
+		UpdateCertificateByID(mock.Anything, existingCert.ID, existingCert).
 		Return(nil, serverError).
 		Once()
 
@@ -2843,7 +2846,7 @@ func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_DeleteCe
 	}
 
 	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, appID).
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, appID).
 		Return(clientError).
 		Once()
 
@@ -2877,7 +2880,7 @@ func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_DeleteCe
 	}
 
 	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, appID).
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, appID).
 		Return(serverError).
 		Once()
 
@@ -2907,7 +2910,7 @@ func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_CreateCe
 	}
 
 	mockCertService.EXPECT().
-		CreateCertificate(existingCert).
+		CreateCertificate(mock.Anything, existingCert).
 		Return(nil, clientError).
 		Once()
 
@@ -2940,7 +2943,7 @@ func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_CreateCe
 	}
 
 	mockCertService.EXPECT().
-		CreateCertificate(existingCert).
+		CreateCertificate(mock.Anything, existingCert).
 		Return(nil, serverError).
 		Once()
 
@@ -2968,7 +2971,7 @@ func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_Success_
 	}
 
 	mockCertService.EXPECT().
-		UpdateCertificateByID(existingCert.ID, existingCert).
+		UpdateCertificateByID(mock.Anything, existingCert.ID, existingCert).
 		Return(&cert.Certificate{ID: existingCert.ID}, nil).
 		Once()
 
@@ -2990,7 +2993,7 @@ func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_Success_
 	}
 
 	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, appID).
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, appID).
 		Return(nil).
 		Once()
 
@@ -3012,7 +3015,7 @@ func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_Success_
 	}
 
 	mockCertService.EXPECT().
-		CreateCertificate(existingCert).
+		CreateCertificate(mock.Anything, existingCert).
 		Return(&cert.Certificate{ID: existingCert.ID}, nil).
 		Once()
 
@@ -3051,7 +3054,7 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_GetCertificateCl
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testAppIDForRollback).
 		Return(nil, clientError).
 		Once()
 
@@ -3085,7 +3088,7 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_GetCertificateSe
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testAppIDForRollback).
 		Return(nil, serverError).
 		Once()
 
@@ -3126,11 +3129,11 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_UpdateCertificat
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testAppIDForRollback).
 		Return(existingCert, nil).
 		Once()
 	mockCertService.EXPECT().
-		UpdateCertificateByID(existingCert.ID, mock.Anything).
+		UpdateCertificateByID(mock.Anything, existingCert.ID, mock.Anything).
 		Return(nil, clientError).
 		Once()
 
@@ -3174,11 +3177,11 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_UpdateCertificat
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testAppIDForRollback).
 		Return(existingCert, nil).
 		Once()
 	mockCertService.EXPECT().
-		UpdateCertificateByID(existingCert.ID, mock.Anything).
+		UpdateCertificateByID(mock.Anything, existingCert.ID, mock.Anything).
 		Return(nil, serverError).
 		Once()
 
@@ -3213,11 +3216,11 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_CreateCertificat
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testAppIDForRollback).
 		Return(nil, &cert.ErrorCertificateNotFound).
 		Once()
 	mockCertService.EXPECT().
-		CreateCertificate(mock.Anything).
+		CreateCertificate(mock.Anything, mock.Anything).
 		Return(nil, clientError).
 		Once()
 
@@ -3255,11 +3258,11 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_CreateCertificat
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testAppIDForRollback).
 		Return(nil, &cert.ErrorCertificateNotFound).
 		Once()
 	mockCertService.EXPECT().
-		CreateCertificate(mock.Anything).
+		CreateCertificate(mock.Anything, mock.Anything).
 		Return(nil, serverError).
 		Once()
 
@@ -3297,11 +3300,11 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_DeleteCertificat
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testAppIDForRollback).
 		Return(existingCert, nil).
 		Once()
 	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testAppIDForRollback).
 		Return(clientError).
 		Once()
 
@@ -3342,11 +3345,11 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_DeleteCertificat
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testAppIDForRollback).
 		Return(existingCert, nil).
 		Once()
 	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testAppIDForRollback).
 		Return(serverError).
 		Once()
 
@@ -3687,7 +3690,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_CertificateCreationError() 
 	mockFlowMgtService.EXPECT().IsValidFlow("reg-flow-id").Return(true)
 
 	svcErrExpected := &serviceerror.ServiceError{Type: serviceerror.ServerErrorType}
-	mockCertService.EXPECT().CreateCertificate(mock.Anything).Return(nil, svcErrExpected)
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, mock.Anything).Return(nil, svcErrExpected)
 
 	result, svcErr := service.CreateApplication(app)
 

@@ -141,7 +141,10 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 		logger.Fatal("Failed to initialize FlowMgtService", log.Error(err))
 	}
 	exporters = append(exporters, flowMgtExporter)
-	certservice := cert.Initialize()
+	certservice, err := cert.Initialize()
+	if err != nil {
+		logger.Fatal("Failed to initialize CertificateService", log.Error(err))
+	}
 
 	// Initialize theme and layout services
 	themeMgtService := thememgt.Initialize(mux)

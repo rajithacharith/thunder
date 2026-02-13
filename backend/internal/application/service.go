@@ -19,6 +19,7 @@
 package application
 
 import (
+	"context"
 	"errors"
 	"slices"
 
@@ -1016,7 +1017,7 @@ func (as *applicationService) createApplicationCertificate(certificate *cert.Cer
 
 	var returnCert *model.ApplicationCertificate
 	if certificate != nil {
-		_, svcErr := as.certService.CreateCertificate(certificate)
+		_, svcErr := as.certService.CreateCertificate(context.TODO(), certificate)
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ClientErrorType {
 				errorDescription := "Failed to create application certificate: " +
@@ -1045,7 +1046,8 @@ func (as *applicationService) createApplicationCertificate(certificate *cert.Cer
 // rollbackAppCertificateCreation rolls back the application certificate creation in case of an error during
 // application creation.
 func (as *applicationService) rollbackAppCertificateCreation(appID string) *serviceerror.ServiceError {
-	deleteErr := as.certService.DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, appID)
+	deleteErr := as.certService.DeleteCertificateByReference(context.TODO(),
+		cert.CertificateReferenceTypeApplication, appID)
 	if deleteErr != nil {
 		if deleteErr.Type == serviceerror.ClientErrorType {
 			errorDescription := "Failed to rollback application certificate creation: " +
@@ -1063,7 +1065,7 @@ func (as *applicationService) deleteApplicationCertificate(appID string) *servic
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
 	if certErr := as.certService.DeleteCertificateByReference(
-		cert.CertificateReferenceTypeApplication, appID); certErr != nil {
+		context.TODO(), cert.CertificateReferenceTypeApplication, appID); certErr != nil {
 		if certErr.Type == serviceerror.ClientErrorType {
 			errorDescription := "Failed to delete application certificate: " +
 				certErr.ErrorDescription
@@ -1083,7 +1085,7 @@ func (as *applicationService) getApplicationCertificate(appID string) (*model.Ap
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
 	certificate, certErr := as.certService.GetCertificateByReference(
-		cert.CertificateReferenceTypeApplication, appID)
+		context.TODO(), cert.CertificateReferenceTypeApplication, appID)
 
 	if certErr != nil {
 		if certErr.Code == cert.ErrorCertificateNotFound.Code {
@@ -1125,7 +1127,7 @@ func (as *applicationService) updateApplicationCertificate(app *model.Applicatio
 	appID := app.ID
 
 	existingCert, certErr := as.certService.GetCertificateByReference(
-		cert.CertificateReferenceTypeApplication, appID)
+		context.TODO(), cert.CertificateReferenceTypeApplication, appID)
 	if certErr != nil && certErr.Code != cert.ErrorCertificateNotFound.Code {
 		if certErr.Type == serviceerror.ClientErrorType {
 			errorDescription := "Failed to retrieve application certificate: " +
@@ -1153,7 +1155,7 @@ func (as *applicationService) updateApplicationCertificate(app *model.Applicatio
 	var returnCert *model.ApplicationCertificate
 	if updatedCert != nil {
 		if existingCert != nil {
-			_, svcErr := as.certService.UpdateCertificateByID(existingCert.ID, updatedCert)
+			_, svcErr := as.certService.UpdateCertificateByID(context.TODO(), existingCert.ID, updatedCert)
 			if svcErr != nil {
 				if svcErr.Type == serviceerror.ClientErrorType {
 					errorDescription := "Failed to update application certificate: " +
@@ -1166,7 +1168,7 @@ func (as *applicationService) updateApplicationCertificate(app *model.Applicatio
 				return nil, nil, nil, &ErrorCertificateServerError
 			}
 		} else {
-			_, svcErr := as.certService.CreateCertificate(updatedCert)
+			_, svcErr := as.certService.CreateCertificate(context.TODO(), updatedCert)
 			if svcErr != nil {
 				if svcErr.Type == serviceerror.ClientErrorType {
 					errorDescription := "Failed to create application certificate: " +
@@ -1186,7 +1188,7 @@ func (as *applicationService) updateApplicationCertificate(app *model.Applicatio
 		if existingCert != nil {
 			// If no new certificate is provided, delete the existing certificate.
 			deleteErr := as.certService.DeleteCertificateByReference(
-				cert.CertificateReferenceTypeApplication, appID)
+				context.TODO(), cert.CertificateReferenceTypeApplication, appID)
 			if deleteErr != nil {
 				if deleteErr.Type == serviceerror.ClientErrorType {
 					errorDescription := "Failed to delete application certificate: " + deleteErr.ErrorDescription
@@ -1216,7 +1218,7 @@ func (as *applicationService) rollbackApplicationCertificateUpdate(appID string,
 	if updatedCert != nil {
 		if existingCert != nil {
 			// Update to the previously existed certificate.
-			_, svcErr := as.certService.UpdateCertificateByID(existingCert.ID, existingCert)
+			_, svcErr := as.certService.UpdateCertificateByID(context.TODO(), existingCert.ID, existingCert)
 			if svcErr != nil {
 				if svcErr.Type == serviceerror.ClientErrorType {
 					errorDescription := "Failed to revert application certificate update: " +
@@ -1229,7 +1231,7 @@ func (as *applicationService) rollbackApplicationCertificateUpdate(appID string,
 			}
 		} else { // Delete the newly created certificate.
 			deleteErr := as.certService.DeleteCertificateByReference(
-				cert.CertificateReferenceTypeApplication, appID)
+				context.TODO(), cert.CertificateReferenceTypeApplication, appID)
 			if deleteErr != nil {
 				if deleteErr.Type == serviceerror.ClientErrorType {
 					errorDescription := "Failed to delete application certificate " +
@@ -1243,7 +1245,7 @@ func (as *applicationService) rollbackApplicationCertificateUpdate(appID string,
 		}
 	} else {
 		if existingCert != nil { // Create the previously existed certificate.
-			_, svcErr := as.certService.CreateCertificate(existingCert)
+			_, svcErr := as.certService.CreateCertificate(context.TODO(), existingCert)
 			if svcErr != nil {
 				if svcErr.Type == serviceerror.ClientErrorType {
 					errorDescription := "Failed to revert application certificate creation: " +
