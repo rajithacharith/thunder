@@ -388,9 +388,11 @@ func (ous *organizationUnitService) updateOUInternal(
 		return OrganizationUnit{}, err
 	}
 
+	parentChanged := !stringPtrEqual(existingOU.Parent, request.Parent)
+
 	var nameConflict bool
 	var err error
-	if existingOU.Parent != request.Parent || existingOU.Name != request.Name {
+	if parentChanged || existingOU.Name != request.Name {
 		nameConflict, err = ous.ouStore.CheckOrganizationUnitNameConflict(request.Name, request.Parent)
 		if err != nil {
 			logger.Error("Failed to check organization unit name conflict", log.Error(err))
@@ -403,7 +405,7 @@ func (ous *organizationUnitService) updateOUInternal(
 	}
 
 	var handleConflict bool
-	if existingOU.Parent != request.Parent || existingOU.Handle != request.Handle {
+	if parentChanged || existingOU.Handle != request.Handle {
 		handleConflict, err = ous.ouStore.CheckOrganizationUnitHandleConflict(request.Handle, request.Parent)
 		if err != nil {
 			logger.Error("Failed to check organization unit handle conflict", log.Error(err))
@@ -871,4 +873,15 @@ func buildOrganizationUnitListResponse(items interface{}, totalCount, limit, off
 		Links:             buildPaginationLinks(limit, offset, totalCount),
 	}
 	return response, nil
+}
+
+// stringPtrEqual compares two string pointers by their values.
+func stringPtrEqual(a, b *string) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
 }
