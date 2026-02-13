@@ -17,7 +17,7 @@
  */
 
 import {useContext} from 'react';
-import type {OrganizationUnitContextType} from '../models/organizationUnit';
+import type {OrganizationUnitContextType} from './OrganizationUnitContext';
 import OrganizationUnitContext from './OrganizationUnitContext';
 
 export default function useOrganizationUnit(): OrganizationUnitContextType {

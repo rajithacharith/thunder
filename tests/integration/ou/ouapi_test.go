@@ -40,6 +40,9 @@ var (
 		Handle:      "ou-api-test-org-unit",
 		Description: "Test OU for integration testing",
 		Parent:      nil,
+		LogoURL:     "https://example.com/logo.png",
+		ThemeID:     "theme-123",
+		LayoutID:    "layout-456",
 	}
 
 	childOUToCreate = CreateOURequest{
@@ -47,6 +50,9 @@ var (
 		Handle:      "child-test-ou",
 		Description: "Child OU for testing hierarchy",
 		Parent:      nil,
+		LogoURL:     "https://example.com/child-logo.png",
+		ThemeID:     "theme-child",
+		LayoutID:    "layout-child",
 	}
 )
 
@@ -120,6 +126,9 @@ func (suite *OUAPITestSuite) TestGetOrganizationUnit() {
 	suite.Equal(ouToCreate.Name, retrievedOU.Name)
 	suite.Equal(ouToCreate.Description, retrievedOU.Description)
 	suite.Equal(ouToCreate.Parent, retrievedOU.Parent)
+	suite.Equal(ouToCreate.LogoURL, retrievedOU.LogoURL)
+	suite.Equal(ouToCreate.ThemeID, retrievedOU.ThemeID)
+	suite.Equal(ouToCreate.LayoutID, retrievedOU.LayoutID)
 }
 
 func (suite *OUAPITestSuite) TestListOrganizationUnits() {
@@ -157,6 +166,7 @@ func (suite *OUAPITestSuite) TestListOrganizationUnits() {
 			foundParent = true
 			suite.Equal(ouToCreate.Name, ou.Name)
 			suite.Equal(ouToCreate.Description, ou.Description)
+			suite.Equal(ouToCreate.LogoURL, ou.LogoURL)
 		}
 	}
 	suite.True(foundParent, "Created parent OU should be in the list")
@@ -261,6 +271,9 @@ func (suite *OUAPITestSuite) TestUpdateOrganizationUnit() {
 		Name:        "Updated Test Organization Unit",
 		Handle:      "updated-test-org-unit",
 		Description: "Updated description for testing",
+		LogoURL:     "https://example.com/updated-logo.png",
+		ThemeID:     "theme-updated",
+		LayoutID:    "layout-updated",
 	}
 
 	jsonData, err := json.Marshal(updateRequest)
@@ -290,6 +303,9 @@ func (suite *OUAPITestSuite) TestUpdateOrganizationUnit() {
 	suite.Equal("Updated Test Organization Unit", updatedOU.Name)
 	suite.Equal("updated-test-org-unit", updatedOU.Handle)
 	suite.Equal("Updated description for testing", updatedOU.Description)
+	suite.Equal("https://example.com/updated-logo.png", updatedOU.LogoURL)
+	suite.Equal("theme-updated", updatedOU.ThemeID)
+	suite.Equal("layout-updated", updatedOU.LayoutID)
 }
 
 func (suite *OUAPITestSuite) TestDeleteOrganizationUnit() {

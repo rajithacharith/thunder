@@ -19,7 +19,7 @@
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
-import type {OrganizationUnit} from '../types/organization-units';
+import type {OrganizationUnit} from '../models/organization-unit';
 import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
 
 /**

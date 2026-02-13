@@ -19,7 +19,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {screen, fireEvent, waitFor, within, renderWithProviders} from '@thunder/test-utils';
 import OrganizationUnitsTreeView from '../OrganizationUnitsTreeView';
-import type {OrganizationUnitListResponse} from '../../types/organization-units';
+import type {OrganizationUnitListResponse} from '../../models/responses';
 
 // Mock navigate
 const mockNavigate = vi.fn();
@@ -61,9 +61,9 @@ vi.mock('@asgardeo/react', () => ({
 const mockOrganizationUnitConfig = {initialExpandedItems: [] as string[]};
 vi.mock('../../contexts/useOrganizationUnit', async () => {
   const {useState, useCallback} = await import('react');
-  type OUTreeItem = import('../../models/organizationUnit').OUTreeItem;
+  type OrganizationUnitTreeItem = import('../../models/organization-unit-tree').OrganizationUnitTreeItem;
   function useOrganizationUnit() {
-    const [treeItems, setTreeItems] = useState<OUTreeItem[]>([]);
+    const [treeItems, setTreeItems] = useState<OrganizationUnitTreeItem[]>([]);
     const [expandedItems, setExpandedItems] = useState<string[]>(mockOrganizationUnitConfig.initialExpandedItems);
     const [loadedItems, setLoadedItems] = useState<Set<string>>(new Set());
     const resetTreeState = useCallback(() => {
@@ -103,14 +103,19 @@ const translations: Record<string, string> = {
   'common:actions.edit': 'Edit',
   'common:actions.delete': 'Delete',
   'organizationUnits:listing.treeView.addChild': 'Add child organization unit',
-  'organizationUnits:delete.title': 'Delete Organization Unit',
-  'organizationUnits:delete.message': 'Are you sure?',
-  'organizationUnits:delete.disclaimer': 'This cannot be undone.',
-  'organizationUnits:delete.success': 'Organization unit deleted successfully',
-  'organizationUnits:delete.error': 'Failed to delete organization unit',
+  'organizationUnits:edit.general.dangerZone.delete.title': 'Delete Organization Unit',
+  'organizationUnits:edit.general.dangerZone.delete.message':
+    'Are you sure you want to delete this organization unit? This action cannot be undone.',
+  'organizationUnits:edit.general.dangerZone.delete.success': 'Organization unit deleted successfully',
+  'organizationUnits:edit.general.dangerZone.delete.error': 'Failed to delete organization unit',
+  'organizationUnits:delete.dialog.title': 'Delete Organization Unit',
+  'organizationUnits:delete.dialog.message':
+    'Are you sure you want to delete this organization unit? This action cannot be undone.',
+  'organizationUnits:delete.dialog.disclaimer': 'This action is permanent and cannot be undone.',
   'organizationUnits:listing.addRootOrganizationUnit': 'Add Root Organization Unit',
   'organizationUnits:listing.treeView.addChildOrganizationUnit': 'Add Engineering Unit',
   'common:actions.cancel': 'Cancel',
+  'common:status.deleting': 'Deleting...',
 };
 const stableT = (key: string): string => translations[key] ?? key;
 const stableTranslation = {t: stableT};
@@ -311,7 +316,9 @@ describe('OrganizationUnitsTreeView', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
-      expect(screen.getByText('Are you sure?')).toBeInTheDocument();
+      expect(
+        screen.getByText('Are you sure you want to delete this organization unit? This action cannot be undone.'),
+      ).toBeInTheDocument();
     });
   });
 
@@ -392,15 +399,13 @@ describe('OrganizationUnitsTreeView', () => {
   });
 
   it('should show error snackbar after failed deletion', async () => {
-    mockDeleteMutate.mockImplementation(
-      (_id: string, options: {onError: (err: Error) => void}) => {
-        options.onError(
-          Object.assign(new Error('Delete failed'), {
-            response: {data: {code: 'ERR', message: 'fail', description: 'Server error occurred'}},
-          }),
-        );
-      },
-    );
+    mockDeleteMutate.mockImplementation((_id: string, options: {onError: (err: Error) => void}) => {
+      options.onError(
+        Object.assign(new Error('Delete failed'), {
+          response: {data: {code: 'ERR', message: 'fail', description: 'Server error occurred'}},
+        }),
+      );
+    });
 
     renderWithProviders(<OrganizationUnitsTreeView />);
 

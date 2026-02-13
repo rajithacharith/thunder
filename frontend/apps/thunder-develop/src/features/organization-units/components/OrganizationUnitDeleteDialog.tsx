@@ -20,7 +20,7 @@ import type {JSX} from 'react';
 import {Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Alert} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
 import useDeleteOrganizationUnit from '../api/useDeleteOrganizationUnit';
-import type {ApiError} from '../types/organization-units';
+import type {ApiError} from '../models/api-error';
 
 export interface OrganizationUnitDeleteDialogProps {
   /**
@@ -82,7 +82,7 @@ export default function OrganizationUnitDeleteDialog({
         onSuccess?.();
       },
       onError: (err: Error) => {
-        const message = getErrorMessage(err, t('organizationUnits:delete.error'));
+        const message = getErrorMessage(err, t('organizationUnits:delete.dialog.error'));
         onClose();
         onError?.(message);
       },
@@ -91,11 +91,11 @@ export default function OrganizationUnitDeleteDialog({
 
   return (
     <Dialog open={open} onClose={handleCancel} maxWidth="sm" fullWidth>
-      <DialogTitle>{t('organizationUnits:delete.title')}</DialogTitle>
+      <DialogTitle>{t('organizationUnits:delete.dialog.title')}</DialogTitle>
       <DialogContent>
-        <DialogContentText sx={{mb: 2}}>{t('organizationUnits:delete.message')}</DialogContentText>
+        <DialogContentText sx={{mb: 2}}>{t('organizationUnits:delete.dialog.message')}</DialogContentText>
         <Alert severity="warning" sx={{mb: 2}}>
-          {t('organizationUnits:delete.disclaimer')}
+          {t('organizationUnits:delete.dialog.disclaimer')}
         </Alert>
       </DialogContent>
       <DialogActions>

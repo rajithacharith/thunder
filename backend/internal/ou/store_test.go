@@ -298,6 +298,42 @@ func TestBuildOrganizationUnitBasicFromResultRow(t *testing.T) {
 		require.Equal(t, "desc", ou.Description)
 	})
 
+	t.Run("success with design fields", func(t *testing.T) {
+		row := map[string]interface{}{
+			"ou_id":       "ou1",
+			"handle":      "root",
+			"name":        "Root",
+			"description": "desc",
+			"theme_id":    "theme-123",
+			"layout_id":   "layout-456",
+			"logo_url":    "https://example.com/logo.png",
+		}
+
+		ou, err := buildOrganizationUnitBasicFromResultRow(row)
+
+		require.NoError(t, err)
+		require.Equal(t, "ou1", ou.ID)
+		require.Equal(t, "https://example.com/logo.png", ou.LogoURL)
+	})
+
+	t.Run("success with nil design fields", func(t *testing.T) {
+		row := map[string]interface{}{
+			"ou_id":       "ou1",
+			"handle":      "root",
+			"name":        "Root",
+			"description": "desc",
+			"theme_id":    nil,
+			"layout_id":   nil,
+			"logo_url":    nil,
+		}
+
+		ou, err := buildOrganizationUnitBasicFromResultRow(row)
+
+		require.NoError(t, err)
+		require.Equal(t, "ou1", ou.ID)
+		require.Equal(t, "", ou.LogoURL)
+	})
+
 	tests := []struct {
 		name string
 		row  map[string]interface{}
@@ -355,6 +391,27 @@ func TestBuildOrganizationUnitFromResultRow(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, ou.Parent)
 	require.Equal(t, parentID, *ou.Parent)
+
+	t.Run("with design fields", func(t *testing.T) {
+		row := map[string]interface{}{
+			"ou_id":       "ou1",
+			"handle":      "root",
+			"name":        "Root",
+			"description": "desc",
+			"parent_id":   nil,
+			"theme_id":    "theme-abc",
+			"layout_id":   "layout-def",
+			"logo_url":    "https://example.com/logo.png",
+		}
+
+		ou, err := buildOrganizationUnitFromResultRow(row)
+
+		require.NoError(t, err)
+		require.Nil(t, ou.Parent)
+		require.Equal(t, "theme-abc", ou.ThemeID)
+		require.Equal(t, "layout-def", ou.LayoutID)
+		require.Equal(t, "https://example.com/logo.png", ou.LogoURL)
+	})
 
 	t.Run("invalid parent type", func(t *testing.T) {
 		row := map[string]interface{}{
@@ -914,6 +971,44 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 						ou.Handle,
 						ou.Name,
 						ou.Description,
+						ou.ThemeID,
+						ou.LayoutID,
+						ou.LogoURL,
+						testDeploymentID,
+					).
+					Return(int64(1), nil).
+					Once()
+			},
+		},
+		{
+			name: "success with design fields",
+			ou: func() OrganizationUnit {
+				parent := "parent1"
+				return OrganizationUnit{
+					ID:          "ou1",
+					Parent:      &parent,
+					Handle:      "root",
+					Name:        "Root",
+					Description: "desc",
+					ThemeID:     "theme-123",
+					LayoutID:    "layout-456",
+					LogoURL:     "https://example.com/logo.png",
+				}
+			}(),
+			setup: func(ou OrganizationUnit) {
+				suite.expectDBClient()
+				suite.dbClientMock.
+					On(
+						"Execute",
+						queryUpdateOrganizationUnit,
+						ou.ID,
+						ou.Parent,
+						ou.Handle,
+						ou.Name,
+						ou.Description,
+						ou.ThemeID,
+						ou.LayoutID,
+						ou.LogoURL,
 						testDeploymentID,
 					).
 					Return(int64(1), nil).
@@ -934,6 +1029,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 						ou.Handle,
 						ou.Name,
 						ou.Description,
+						ou.ThemeID,
+						ou.LayoutID,
+						ou.LogoURL,
 						testDeploymentID,
 					).
 					Return(int64(0), errors.New("update failed")).
@@ -1391,6 +1489,40 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 						ou.Handle,
 						ou.Name,
 						ou.Description,
+						ou.ThemeID,
+						ou.LayoutID,
+						ou.LogoURL,
+						testDeploymentID,
+					).
+					Return(int64(1), nil).
+					Once()
+			},
+		},
+		{
+			name: "success with design fields",
+			ou: OrganizationUnit{
+				ID:          "ou1",
+				Handle:      "root",
+				Name:        "Root",
+				Description: "desc",
+				ThemeID:     "theme-123",
+				LayoutID:    "layout-456",
+				LogoURL:     "https://example.com/logo.png",
+			},
+			setup: func(ou OrganizationUnit) {
+				suite.expectDBClient()
+				suite.dbClientMock.
+					On(
+						"Execute",
+						queryCreateOrganizationUnit,
+						ou.ID,
+						ou.Parent,
+						ou.Handle,
+						ou.Name,
+						ou.Description,
+						ou.ThemeID,
+						ou.LayoutID,
+						ou.LogoURL,
 						testDeploymentID,
 					).
 					Return(int64(1), nil).
@@ -1416,6 +1548,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 						ou.Handle,
 						ou.Name,
 						ou.Description,
+						ou.ThemeID,
+						ou.LayoutID,
+						ou.LogoURL,
 						testDeploymentID,
 					).
 					Return(int64(0), errors.New("insert failed")).

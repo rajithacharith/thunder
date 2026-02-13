@@ -64,7 +64,7 @@ vi.mock('../../contexts/useOrganizationUnit', () => ({
 }));
 
 // Mock name suggestions utility
-vi.mock('../../utils/generateOUNameSuggestions', () => ({
+vi.mock('../../utils/generateOrganizationUnitNameSuggestions', () => ({
   default: () => ['Suggested Name One', 'Suggested Name Two', 'Suggested Name Three'],
 }));
 
@@ -77,16 +77,16 @@ vi.mock('react-i18next', () => ({
         'organizationUnits:create.heading': 'Create a new organization unit',
         'organizationUnits:create.suggestions.label': 'Try these suggestions:',
         'organizationUnits:create.error': 'Failed to create organization unit',
-        'organizationUnits:form.name': 'Name',
-        'organizationUnits:form.namePlaceholder': 'Enter organization unit name',
-        'organizationUnits:form.handle': 'Handle',
-        'organizationUnits:form.handlePlaceholder': 'Enter handle',
-        'organizationUnits:form.handleHelperText': 'A unique identifier for this organization unit',
-        'organizationUnits:form.description': 'Description',
-        'organizationUnits:form.descriptionPlaceholder': 'Enter description',
-        'organizationUnits:form.parent': 'Parent Organization Unit',
-        'organizationUnits:form.parentHelperText': 'The parent organization unit for this new unit',
-        'organizationUnits:view.general.noParent': 'Root Organization Unit',
+        'organizationUnits:edit.general.name.label': 'Name',
+        'organizationUnits:edit.general.name.placeholder': 'Enter organization unit name',
+        'organizationUnits:edit.general.handle.label': 'Handle',
+        'organizationUnits:edit.general.handle.placeholder': 'Enter handle',
+        'organizationUnits:edit.general.handle.hint': 'A unique identifier for this organization unit',
+        'organizationUnits:edit.general.description.label': 'Description',
+        'organizationUnits:edit.general.description.placeholder': 'Enter description',
+        'organizationUnits:edit.general.parent.label': 'Parent Organization Unit',
+        'organizationUnits:edit.general.parent.hint': 'The parent organization unit for this new unit',
+        'organizationUnits:edit.general.ou.noParent.label': 'Root Organization Unit',
         'common:actions.create': 'Create',
         'common:status.saving': 'Creating...',
       };

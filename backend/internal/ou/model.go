@@ -24,6 +24,7 @@ type OrganizationUnitBasic struct {
 	Handle      string `json:"handle"`
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
+	LogoURL     string `json:"logo_url,omitempty"`
 	IsReadOnly  bool   `json:"isReadOnly,omitempty"`
 }
 
@@ -34,6 +35,9 @@ type OrganizationUnit struct {
 	Name        string  `json:"name" yaml:"name"`
 	Description string  `json:"description,omitempty" yaml:"description,omitempty"`
 	Parent      *string `json:"parent" yaml:"parent"`
+	ThemeID     string  `json:"theme_id,omitempty" yaml:"theme_id,omitempty"`
+	LayoutID    string  `json:"layout_id,omitempty" yaml:"layout_id,omitempty"`
+	LogoURL     string  `json:"logo_url,omitempty" yaml:"logo_url,omitempty"`
 }
 
 // OrganizationUnitRequest represents the request body for creating an organization unit.
@@ -42,6 +46,9 @@ type OrganizationUnitRequest struct {
 	Name        string  `json:"name"`
 	Description string  `json:"description,omitempty"`
 	Parent      *string `json:"parent"`
+	ThemeID     string  `json:"theme_id,omitempty"`
+	LayoutID    string  `json:"layout_id,omitempty"`
+	LogoURL     string  `json:"logo_url,omitempty"`
 }
 
 // Link represents a pagination link.

@@ -41,17 +41,18 @@ import {useConfig} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
 import {useQueryClient} from '@tanstack/react-query';
 import useGetOrganizationUnits from '../api/useGetOrganizationUnits';
-import type {OrganizationUnit, OrganizationUnitListResponse} from '../types/organization-units';
+import type {OrganizationUnit} from '../models/organization-unit';
+import type {OrganizationUnitTreeItem} from '../models/organization-unit-tree';
+import type {OrganizationUnitListResponse} from '../models/responses';
 import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
 import OrganizationUnitDeleteDialog from './OrganizationUnitDeleteDialog';
 import useOrganizationUnit from '../contexts/useOrganizationUnit';
-import type {OUTreeItem} from '../models/organizationUnit';
 
 const PLACEHOLDER_SUFFIX = '__placeholder';
 const ERROR_SUFFIX = '__error';
 const ADD_CHILD_SUFFIX = '__addChild';
 
-function buildAddChildItem(parentId: string, parentName: string, parentHandle: string): OUTreeItem {
+function buildAddChildItem(parentId: string, parentName: string, parentHandle: string): OrganizationUnitTreeItem {
   return {
     id: `${parentId}${ADD_CHILD_SUFFIX}`,
     label: parentName,
@@ -60,12 +61,13 @@ function buildAddChildItem(parentId: string, parentName: string, parentHandle: s
   };
 }
 
-function buildTreeItems(ous: OrganizationUnit[]): OUTreeItem[] {
+function buildTreeItems(ous: OrganizationUnit[]): OrganizationUnitTreeItem[] {
   return ous.map((ou) => ({
     id: ou.id,
     label: ou.name,
     handle: ou.handle,
     description: ou.description,
+    logo_url: ou.logo_url,
     children: [
       {
         id: `${ou.id}${PLACEHOLDER_SUFFIX}`,
@@ -77,9 +79,9 @@ function buildTreeItems(ous: OrganizationUnit[]): OUTreeItem[] {
   }));
 }
 
-function buildItemMap(items: OUTreeItem[]): Map<string, OUTreeItem> {
-  const map = new Map<string, OUTreeItem>();
-  const visit = (list: OUTreeItem[]): void => {
+function buildItemMap(items: OrganizationUnitTreeItem[]): Map<string, OrganizationUnitTreeItem> {
+  const map = new Map<string, OrganizationUnitTreeItem>();
+  const visit = (list: OrganizationUnitTreeItem[]): void => {
     list.forEach((item) => {
       map.set(item.id, item);
       if (item.children) visit(item.children);
@@ -101,11 +103,11 @@ interface CustomTreeItemProps extends TreeView.TreeItemProps {
   editTooltip?: string;
   deleteTooltip?: string;
   loadingItems?: Set<string>;
-  itemMap?: Map<string, OUTreeItem>;
+  itemMap?: Map<string, OrganizationUnitTreeItem>;
 }
 
-function findItem(items: OUTreeItem[], id: string): OUTreeItem | undefined {
-  return items.reduce<OUTreeItem | undefined>((found, item) => {
+function findItem(items: OrganizationUnitTreeItem[], id: string): OrganizationUnitTreeItem | undefined {
+  return items.reduce<OrganizationUnitTreeItem | undefined>((found, item) => {
     if (found) return found;
     if (item.id === id) return item;
 
@@ -275,6 +277,7 @@ function CustomTreeItem(allProps: CustomTreeItemProps): JSX.Element {
                 height: 32,
                 fontSize: '0.875rem',
               }}
+              src={itemData?.logo_url}
             >
               <Building size={14} />
             </Avatar>
@@ -371,7 +374,7 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
   loadingItemsRef.current = loadingItems;
   const expandedItemsRef = useRef<string[]>(expandedItems);
   expandedItemsRef.current = expandedItems;
-  const treeItemsRef = useRef<OUTreeItem[]>(treeItems);
+  const treeItemsRef = useRef<OrganizationUnitTreeItem[]>(treeItems);
   treeItemsRef.current = treeItems;
   const rebuildIdRef = useRef(0);
   const builtFromDataRef = useRef<unknown>(null);
@@ -384,7 +387,11 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
   });
 
   const updateTreeItemChildren = useCallback(
-    (items: OUTreeItem[], parentId: string, children: OUTreeItem[]): OUTreeItem[] =>
+    (
+      items: OrganizationUnitTreeItem[],
+      parentId: string,
+      children: OrganizationUnitTreeItem[],
+    ): OrganizationUnitTreeItem[] =>
       items.map((item) => {
         if (item.id === parentId) {
           return {...item, children};
@@ -402,7 +409,7 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
   // Fetch children for a single parent and return the built tree items.
   // Does NOT update React state — caller is responsible for that.
   const fetchChildItems = useCallback(
-    async (parentId: string): Promise<OUTreeItem[]> => {
+    async (parentId: string): Promise<OrganizationUnitTreeItem[]> => {
       const serverUrl = getServerUrl();
       const result = await queryClient.fetchQuery<OrganizationUnitListResponse>({
         queryKey: [OrganizationUnitQueryKeys.CHILD_ORGANIZATION_UNITS, parentId, {limit: 30, offset: 0}],
@@ -446,7 +453,7 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
         logger.error('Failed to load child organization units', {error: _error, parentId});
         // Replace the loading placeholder with an error placeholder so the user sees feedback.
         // The node is NOT marked as loaded, so collapsing and re-expanding will retry the fetch.
-        const errorItem: OUTreeItem = {
+        const errorItem: OrganizationUnitTreeItem = {
           id: `${parentId}${ERROR_SUFFIX}`,
           label: t('organizationUnits:listing.treeView.loadError'),
           handle: '',
@@ -470,11 +477,11 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
   // insert them into the tree, then recurse for the next deeper level.
   const expandLevel = useCallback(
     (
-      tree: OUTreeItem[],
+      tree: OrganizationUnitTreeItem[],
       levelIds: string[],
       expandedSet: Set<string>,
       loaded: Set<string>,
-    ): Promise<{tree: OUTreeItem[]; loaded: Set<string>}> => {
+    ): Promise<{tree: OrganizationUnitTreeItem[]; loaded: Set<string>}> => {
       if (levelIds.length === 0) {
         return Promise.resolve({tree, loaded});
       }
@@ -483,7 +490,7 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
         levelIds.map((parentId) =>
           fetchChildItems(parentId)
             .then((children) => ({parentId, children, success: true as const}))
-            .catch(() => ({parentId, children: [] as OUTreeItem[], success: false as const})),
+            .catch(() => ({parentId, children: [] as OrganizationUnitTreeItem[], success: false as const})),
         ),
       ).then((results) => {
         // Insert fetched children into the tree and collect next-level IDs
@@ -515,7 +522,10 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
   // Returns the computed tree and loaded set without setting state — the caller
   // is responsible for applying the result so it can guard against stale rebuilds.
   const rebuildTree = useCallback(
-    (rootOUs: OrganizationUnit[], expandedIds: string[]): Promise<{tree: OUTreeItem[]; loaded: Set<string>}> => {
+    (
+      rootOUs: OrganizationUnit[],
+      expandedIds: string[],
+    ): Promise<{tree: OrganizationUnitTreeItem[]; loaded: Set<string>}> => {
       const rootTree = buildTreeItems(rootOUs);
       const expandedSet = new Set(expandedIds);
 
@@ -598,13 +608,10 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
     [navigate, logger],
   );
 
-  const handleDeleteClick = useCallback(
-    (_event: MouseEvent<HTMLElement>, ou: {id: string; name: string}): void => {
-      setSelectedOU(ou);
-      setDeleteDialogOpen(true);
-    },
-    [],
-  );
+  const handleDeleteClick = useCallback((_event: MouseEvent<HTMLElement>, ou: {id: string; name: string}): void => {
+    setSelectedOU(ou);
+    setDeleteDialogOpen(true);
+  }, []);
 
   const handleDeleteDialogClose = (): void => {
     setDeleteDialogOpen(false);
@@ -613,7 +620,11 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
 
   const handleDeleteSuccess = useCallback((): void => {
     resetTreeState();
-    setSnackbar({open: true, message: t('organizationUnits:delete.success'), severity: 'success'});
+    setSnackbar({
+      open: true,
+      message: t('organizationUnits:edit.general.dangerZone.delete.success'),
+      severity: 'success',
+    });
   }, [resetTreeState, t]);
 
   const handleDeleteError = useCallback((message: string): void => {
@@ -821,7 +832,7 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
               itemMap,
             } as Record<string, unknown>,
           }}
-          getItemLabel={(item: OUTreeItem) => item.label}
+          getItemLabel={(item: OrganizationUnitTreeItem) => item.label}
           sx={{
             '& .MuiTreeItem-root': {
               position: 'relative',

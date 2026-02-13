@@ -123,6 +123,7 @@ func (f *fileBasedStore) GetOrganizationUnitList(limit, offset int) ([]Organizat
 					Handle:      ou.Handle,
 					Name:        ou.Name,
 					Description: ou.Description,
+					LogoURL:     ou.LogoURL,
 				}
 				ouList = append(ouList, basicOU)
 			}
@@ -283,6 +284,7 @@ func (f *fileBasedStore) GetOrganizationUnitChildrenList(
 					Handle:      ou.Handle,
 					Name:        ou.Name,
 					Description: ou.Description,
+					LogoURL:     ou.LogoURL,
 				}
 				children = append(children, basicOU)
 			}

@@ -19,7 +19,7 @@
 import {Stack, TextField, FormControl, FormLabel, Autocomplete} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
 import type {Application} from '../../../models/application';
-import SettingsCard from '../SettingsCard';
+import SettingsCard from '../../../../../components/SettingsCard';
 import CertificateTypes from '../../../constants/certificate-types';
 
 /**

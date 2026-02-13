@@ -30,7 +30,7 @@ vi.mock('../../../../../flows/api/useGetFlows');
 type MockedUseGetFlows = ReturnType<typeof useGetFlows>;
 
 // Mock the SettingsCard component
-vi.mock('../../SettingsCard', () => ({
+vi.mock('../../../../../../components/SettingsCard', () => ({
   default: ({
     title,
     description,

@@ -41,7 +41,7 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {
       const translations: Record<string, string> = {
-        'applications:view.back': 'Back to Applications',
+        'applications:edit.page.back': 'Back to Applications',
         'applications:edit.page.loading': 'Loading application...',
         'applications:edit.page.notFound.title': 'Application Not Found',
         'applications:edit.page.notFound.description': 'The application you are looking for does not exist.',
@@ -104,7 +104,7 @@ vi.mock('../../components/edit-application/integration-guides/IntegrationGuides'
   default: vi.fn(() => <div data-testid="integration-guides">Integration Guides</div>),
 }));
 
-vi.mock('../../components/LogoUpdateModal', () => ({
+vi.mock('../../../../components/LogoUpdateModal', () => ({
   default: vi.fn(
     ({open, onLogoUpdate, onClose}: {open: boolean; onLogoUpdate: (url: string) => void; onClose: () => void}) => (
       <div data-testid="logo-update-modal" style={{display: open ? 'block' : 'none'}}>
@@ -802,7 +802,7 @@ describe('ApplicationEditPage', () => {
 
       renderComponent();
 
-      expect(screen.getByText('applications:view.notFound')).toBeInTheDocument();
+      expect(screen.getByText('applications:edit.page.notFound')).toBeInTheDocument();
       expect(screen.getByRole('button', {name: /back to applications/i})).toBeInTheDocument();
     });
   });
@@ -832,7 +832,7 @@ describe('ApplicationEditPage', () => {
 
       renderComponent();
 
-      expect(screen.getByText('applications:view.error')).toBeInTheDocument();
+      expect(screen.getByText('applications:edit.page.error')).toBeInTheDocument();
     });
 
     it('should handle save failure gracefully', async () => {

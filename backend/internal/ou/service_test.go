@@ -464,6 +464,31 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_CreateOrganizationU
 					Once()
 			},
 		},
+		{
+			name: "success with design fields",
+			request: OrganizationUnitRequest{
+				Handle:   "finance",
+				Name:     "Finance",
+				ThemeID:  "theme-123",
+				LayoutID: "layout-456",
+				LogoURL:  "https://example.com/logo.png",
+			},
+			setup: func(store *organizationUnitStoreInterfaceMock) {
+				store.On("CheckOrganizationUnitNameConflict", "Finance", (*string)(nil)).
+					Return(false, nil).
+					Once()
+				store.On("CheckOrganizationUnitHandleConflict", "finance", (*string)(nil)).
+					Return(false, nil).
+					Once()
+				store.On("CreateOrganizationUnit", mock.MatchedBy(func(ou OrganizationUnit) bool {
+					return ou.Name == "Finance" && ou.Handle == "finance" &&
+						ou.ThemeID == "theme-123" && ou.LayoutID == "layout-456" &&
+						ou.LogoURL == "https://example.com/logo.png"
+				})).
+					Return(nil).
+					Once()
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -799,6 +824,48 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 			},
 			assert: func(ou OrganizationUnit) {
 				suite.Equal("updated", ou.Description)
+			},
+		},
+		{
+			name: "success with design fields",
+			id:   "ou-1",
+			request: OrganizationUnitRequest{
+				Handle:   "root",
+				Name:     "Root",
+				ThemeID:  "theme-new",
+				LayoutID: "layout-new",
+				LogoURL:  "https://example.com/new-logo.png",
+			},
+			setup: func(store *organizationUnitStoreInterfaceMock) {
+				existing := OrganizationUnit{
+					ID:       "ou-1",
+					Handle:   "root",
+					Name:     "Root",
+					ThemeID:  "theme-old",
+					LayoutID: "layout-old",
+					LogoURL:  "https://example.com/old-logo.png",
+				}
+				store.On("GetOrganizationUnit", "ou-1").
+					Return(existing, nil).
+					Once()
+				store.On("IsOrganizationUnitDeclarative", "ou-1").
+					Return(false).
+					Once()
+				store.On("UpdateOrganizationUnit", OrganizationUnit{
+					ID:       "ou-1",
+					Handle:   "root",
+					Name:     "Root",
+					ThemeID:  "theme-new",
+					LayoutID: "layout-new",
+					LogoURL:  "https://example.com/new-logo.png",
+				}).
+					Return(nil).
+					Once()
+			},
+			assert: func(ou OrganizationUnit) {
+				suite.Equal("theme-new", ou.ThemeID)
+				suite.Equal("layout-new", ou.LayoutID)
+				suite.Equal("https://example.com/new-logo.png", ou.LogoURL)
 			},
 		},
 		{

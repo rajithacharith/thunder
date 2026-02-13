@@ -22,7 +22,7 @@ import {useTranslation, Trans} from 'react-i18next';
 import useGetFlows from '../../../../flows/api/useGetFlows';
 import {FlowType} from '../../../../flows/models/flows';
 import type {Application} from '../../../models/application';
-import SettingsCard from '../SettingsCard';
+import SettingsCard from '../../../../../components/SettingsCard';
 
 /**
  * Props for the {@link RegistrationFlowSection} component.

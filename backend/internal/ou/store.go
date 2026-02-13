@@ -127,6 +127,9 @@ func (s *organizationUnitStore) CreateOrganizationUnit(ou OrganizationUnit) erro
 		ou.Handle,
 		ou.Name,
 		ou.Description,
+		ou.ThemeID,
+		ou.LayoutID,
+		ou.LogoURL,
 		s.deploymentID,
 	)
 	if err != nil {
@@ -255,6 +258,9 @@ func (s *organizationUnitStore) UpdateOrganizationUnit(ou OrganizationUnit) erro
 		ou.Handle,
 		ou.Name,
 		ou.Description,
+		ou.ThemeID,
+		ou.LayoutID,
+		ou.LogoURL,
 		s.deploymentID,
 	)
 	if err != nil {
@@ -513,11 +519,19 @@ func buildOrganizationUnitBasicFromResultRow(
 		}
 	}
 
+	logoURL := ""
+	if v, ok := row["logo_url"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			logoURL = s
+		}
+	}
+
 	return OrganizationUnitBasic{
 		ID:          ouID,
 		Handle:      handle,
 		Name:        name,
 		Description: description,
+		LogoURL:     logoURL,
 	}, nil
 }
 
@@ -537,12 +551,29 @@ func buildOrganizationUnitFromResultRow(
 		}
 	}
 
+	themeID := ""
+	if v, ok := row["theme_id"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			themeID = s
+		}
+	}
+
+	layoutID := ""
+	if v, ok := row["layout_id"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			layoutID = s
+		}
+	}
+
 	return OrganizationUnit{
 		ID:          ou.ID,
 		Handle:      ou.Handle,
 		Name:        ou.Name,
 		Description: ou.Description,
 		Parent:      parentID,
+		ThemeID:     themeID,
+		LayoutID:    layoutID,
+		LogoURL:     ou.LogoURL,
 	}, nil
 }
 

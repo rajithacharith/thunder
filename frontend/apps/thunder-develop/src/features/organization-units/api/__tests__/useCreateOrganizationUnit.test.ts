@@ -19,7 +19,8 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
 import useCreateOrganizationUnit from '../useCreateOrganizationUnit';
-import type {OrganizationUnit, CreateOrganizationUnitRequest} from '../../types/organization-units';
+import type {OrganizationUnit} from '../../models/organization-unit';
+import type {CreateOrganizationUnitRequest} from '../../models/requests';
 
 // Mock useAsgardeo
 const mockHttpRequest = vi.fn();

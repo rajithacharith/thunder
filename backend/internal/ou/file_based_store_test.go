@@ -560,6 +560,77 @@ func (s *FileBasedStoreTestSuite) TestCreate_StorerInterface() {
 	assert.Equal(s.T(), ou.ID, retrieved.ID)
 }
 
+func (s *FileBasedStoreTestSuite) TestCreateAndRetrieveWithDesignFields() {
+	ou := OrganizationUnit{
+		ID:       "design-ou-1",
+		Handle:   "design-test",
+		Name:     "Design Test OU",
+		Parent:   nil,
+		ThemeID:  "theme-123",
+		LayoutID: "layout-456",
+		LogoURL:  "https://example.com/logo.png",
+	}
+
+	err := s.store.CreateOrganizationUnit(ou)
+	assert.NoError(s.T(), err)
+
+	// Verify design fields are preserved on retrieval
+	retrieved, err := s.store.GetOrganizationUnit("design-ou-1")
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), "theme-123", retrieved.ThemeID)
+	assert.Equal(s.T(), "layout-456", retrieved.LayoutID)
+	assert.Equal(s.T(), "https://example.com/logo.png", retrieved.LogoURL)
+}
+
+func (s *FileBasedStoreTestSuite) TestListIncludesDesignFields() {
+	ou := OrganizationUnit{
+		ID:       "design-list-1",
+		Handle:   "design-list",
+		Name:     "Design List OU",
+		Parent:   nil,
+		ThemeID:  "theme-abc",
+		LayoutID: "layout-def",
+		LogoURL:  "https://example.com/list-logo.png",
+	}
+
+	err := s.store.CreateOrganizationUnit(ou)
+	assert.NoError(s.T(), err)
+
+	list, err := s.store.GetOrganizationUnitList(10, 0)
+	assert.NoError(s.T(), err)
+	assert.Len(s.T(), list, 1)
+	assert.Equal(s.T(), "https://example.com/list-logo.png", list[0].LogoURL)
+}
+
+func (s *FileBasedStoreTestSuite) TestChildrenListIncludesDesignFields() {
+	parentID := "design-parent"
+	parent := OrganizationUnit{
+		ID:     parentID,
+		Handle: "parent",
+		Name:   "Parent",
+		Parent: nil,
+	}
+	child := OrganizationUnit{
+		ID:       "design-child-1",
+		Handle:   "child",
+		Name:     "Child",
+		Parent:   &parentID,
+		ThemeID:  "child-theme",
+		LayoutID: "child-layout",
+		LogoURL:  "https://example.com/child-logo.png",
+	}
+
+	err := s.store.CreateOrganizationUnit(parent)
+	assert.NoError(s.T(), err)
+	err = s.store.CreateOrganizationUnit(child)
+	assert.NoError(s.T(), err)
+
+	children, err := s.store.GetOrganizationUnitChildrenList(parentID, 10, 0)
+	assert.NoError(s.T(), err)
+	assert.Len(s.T(), children, 1)
+	assert.Equal(s.T(), "https://example.com/child-logo.png", children[0].LogoURL)
+}
+
 func (s *FileBasedStoreTestSuite) TestNewFileBasedStore() {
 	// Test that newFileBasedStore creates a valid store
 	store := newFileBasedStore()

@@ -30,7 +30,7 @@ vi.mock('../../../../../flows/api/useGetFlows');
 type MockedUseGetFlows = ReturnType<typeof useGetFlows>;
 
 // Mock the SettingsCard component
-vi.mock('../../SettingsCard', () => ({
+vi.mock('../../../../../../components/SettingsCard', () => ({
   default: ({title, description, children}: {title: string; description: string; children: React.ReactNode}) => (
     <div data-testid="settings-card">
       <div data-testid="card-title">{title}</div>

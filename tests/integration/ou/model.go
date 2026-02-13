@@ -28,6 +28,7 @@ type OrganizationUnitBasic struct {
 	Handle      string `json:"handle"`
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
+	LogoURL     string `json:"logo_url,omitempty"`
 }
 
 // OrganizationUnit represents an organization unit.
@@ -37,6 +38,9 @@ type OrganizationUnit struct {
 	Name        string  `json:"name"`
 	Description string  `json:"description,omitempty"`
 	Parent      *string `json:"parent"`
+	LogoURL     string  `json:"logo_url,omitempty"`
+	ThemeID     string  `json:"theme_id,omitempty"`
+	LayoutID    string  `json:"layout_id,omitempty"`
 }
 
 // CreateOURequest represents the request body for creating an organization unit.
@@ -45,6 +49,9 @@ type CreateOURequest struct {
 	Name        string  `json:"name"`
 	Description string  `json:"description,omitempty"`
 	Parent      *string `json:"parent,omitempty"`
+	LogoURL     string  `json:"logo_url,omitempty"`
+	ThemeID     string  `json:"theme_id,omitempty"`
+	LayoutID    string  `json:"layout_id,omitempty"`
 }
 
 // UpdateOURequest represents the request body for updating an organization unit.
@@ -53,6 +60,9 @@ type UpdateOURequest struct {
 	Name        string  `json:"name"`
 	Description string  `json:"description,omitempty"`
 	Parent      *string `json:"parent,omitempty"`
+	LogoURL     string  `json:"logo_url,omitempty"`
+	ThemeID     string  `json:"theme_id,omitempty"`
+	LayoutID    string  `json:"layout_id,omitempty"`
 }
 
 // OrganizationUnitListResponse represents the response for listing organization units with pagination.

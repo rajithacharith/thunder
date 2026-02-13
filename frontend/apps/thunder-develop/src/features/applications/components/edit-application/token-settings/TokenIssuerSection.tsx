@@ -20,7 +20,7 @@ import {TextField} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
 import {Controller} from 'react-hook-form';
 import type {Control, FieldErrors} from 'react-hook-form';
-import SettingsCard from '../SettingsCard';
+import SettingsCard from '../../../../../components/SettingsCard';
 
 /**
  * Props for the {@link TokenIssuerSection} component.

@@ -19,13 +19,11 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
 import OrganizationUnitEditPage from '../OrganizationUnitEditPage';
-import type {OrganizationUnit} from '../../types/organization-units';
+import type {OrganizationUnit} from '../../models/organization-unit';
 
 // Mock navigate, useParams, and useLocation
 const mockNavigate = vi.fn();
-const mockUseLocation = vi.fn<
-  () => {state: unknown; pathname: string; search: string; hash: string; key: string}
->();
+const mockUseLocation = vi.fn<() => {state: unknown; pathname: string; search: string; hash: string; key: string}>();
 vi.mock('react-router', async () => {
   const actual = await vi.importActual('react-router');
   return {
@@ -115,43 +113,41 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {
       const translations: Record<string, string> = {
-        'organizationUnits:view.back': 'Back',
-        'organizationUnits:view.backToOU': 'Back to Parent OU',
-        'organizationUnits:view.error': 'Failed to load organization unit',
-        'organizationUnits:view.notFound': 'Organization unit not found',
-        'organizationUnits:view.tabs.general': 'General',
-        'organizationUnits:view.tabs.childOUs': 'Child OUs',
-        'organizationUnits:view.tabs.users': 'Users',
-        'organizationUnits:view.tabs.groups': 'Groups',
-        'organizationUnits:view.tabs.advanced': 'Advanced',
-        'organizationUnits:view.unsavedChanges': 'You have unsaved changes',
-        'organizationUnits:view.reset': 'Reset',
-        'organizationUnits:view.save': 'Save',
-        'organizationUnits:view.saving': 'Saving...',
-        'organizationUnits:view.description.placeholder': 'Add a description',
-        'organizationUnits:view.description.empty': 'No description',
-        'organizationUnits:view.general.title': 'General Information',
-        'organizationUnits:view.general.subtitle': 'Basic details',
-        'organizationUnits:form.handle': 'Handle',
-        'organizationUnits:view.general.id': 'Organization Unit ID',
-        'organizationUnits:view.childOUs.title': 'Child OUs',
-        'organizationUnits:view.childOUs.subtitle': 'Child organization units',
-        'organizationUnits:view.users.title': 'Users',
-        'organizationUnits:view.users.subtitle': 'Users in this OU',
-        'organizationUnits:view.users.columns.id': 'User ID',
-        'organizationUnits:view.users.columns.type': 'User Type',
+        'organizationUnits:edit.page.back': 'Back',
+        'organizationUnits:edit.page.backToOU': 'Back to Parent OU',
+        'organizationUnits:edit.page.error': 'Failed to load organization unit',
+        'organizationUnits:edit.page.notFound': 'Organization unit not found',
+        'organizationUnits:edit.page.tabs.general': 'General',
+        'organizationUnits:edit.page.tabs.childOUs': 'Child OUs',
+        'organizationUnits:edit.page.tabs.users': 'Users',
+        'organizationUnits:edit.page.tabs.groups': 'Groups',
+        'organizationUnits:edit.page.tabs.customization': 'Customization',
+        'organizationUnits:edit.customization.labels.theme': 'Theme',
+        'organizationUnits:edit.actions.unsavedChanges.label': 'You have unsaved changes',
+        'organizationUnits:edit.actions.reset.label': 'Reset',
+        'organizationUnits:edit.actions.save.label': 'Save',
+        'organizationUnits:edit.actions.saving.label': 'Saving...',
+        'organizationUnits:edit.page.description.placeholder': 'Add a description',
+        'organizationUnits:edit.page.description.empty': 'No description',
+        'organizationUnits:edit.general.handle.label': 'Handle',
+        'organizationUnits:edit.general.ou.id.label': 'Organization Unit ID',
+        'organizationUnits:edit.users.sections.manage.listing.columns.id': 'User ID',
+        'organizationUnits:edit.users.sections.manage.listing.columns.type': 'User Type',
         'organizationUnits:view.groups.title': 'Groups',
         'organizationUnits:view.groups.subtitle': 'Groups in this OU',
-        'organizationUnits:view.groups.columns.name': 'Name',
-        'organizationUnits:view.groups.columns.id': 'ID',
-        'organizationUnits:view.advanced.dangerZone': 'Danger Zone',
-        'organizationUnits:view.advanced.dangerZoneDescription': 'Irreversible actions',
-        'organizationUnits:view.advanced.deleteButton': 'Delete Organization Unit',
-        'organizationUnits:delete.title': 'Delete Organization Unit',
-        'organizationUnits:delete.message': 'Are you sure?',
-        'organizationUnits:delete.disclaimer': 'This cannot be undone.',
+        'organizationUnits:edit.users.sections.manage.listing.columns.name': 'Name',
+        'organizationUnits:edit.groups.sections.manage.listing.columns.id': 'ID',
+        'organizationUnits:edit.general.dangerZone.delete.button.label': 'Delete Organization Unit',
+        'organizationUnits:edit.general.dangerZone.delete.title': 'Delete Organization Unit',
+        'organizationUnits:edit.general.dangerZone.delete.message':
+          'Are you sure you want to delete this organization unit? This action cannot be undone.',
+        'organizationUnits:delete.dialog.title': 'Delete Organization Unit',
+        'organizationUnits:delete.dialog.message':
+          'Are you sure you want to delete this organization unit? This action cannot be undone.',
+        'organizationUnits:delete.dialog.disclaimer': 'This action is permanent and cannot be undone.',
         'common:actions.cancel': 'Cancel',
         'common:actions.delete': 'Delete',
+        'common:status.deleting': 'Deleting...',
         'organizationUnits:listing.columns.name': 'Name',
         'organizationUnits:listing.columns.handle': 'Handle',
         'organizationUnits:listing.columns.description': 'Description',
@@ -233,7 +229,7 @@ describe('OrganizationUnitEditPage', () => {
       expect(screen.getByText('Child OUs')).toBeInTheDocument();
       expect(screen.getByText('Users')).toBeInTheDocument();
       expect(screen.getByText('Groups')).toBeInTheDocument();
-      expect(screen.getByText('Advanced')).toBeInTheDocument();
+      expect(screen.getByText('Customization')).toBeInTheDocument();
     });
   });
 
@@ -287,11 +283,11 @@ describe('OrganizationUnitEditPage', () => {
       expect(screen.getByText('General')).toBeInTheDocument();
     });
 
-    // Click on Advanced tab
-    fireEvent.click(screen.getByText('Advanced'));
+    // Click on Customization tab
+    fireEvent.click(screen.getByRole('tab', {name: 'Customization'}));
 
     await waitFor(() => {
-      expect(screen.getByText('Danger Zone')).toBeInTheDocument();
+      expect(screen.getByText('Theme')).toBeInTheDocument();
     });
   });
 
@@ -319,25 +315,6 @@ describe('OrganizationUnitEditPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('No description')).toBeInTheDocument();
-    });
-  });
-
-  it('should open delete dialog when delete button is clicked in Advanced tab', async () => {
-    renderWithProviders(<OrganizationUnitEditPage />);
-
-    // Navigate to Advanced tab
-    fireEvent.click(screen.getByText('Advanced'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
-    });
-
-    // Click delete button
-    fireEvent.click(screen.getByText('Delete Organization Unit'));
-
-    await waitFor(() => {
-      // Delete dialog should open
-      expect(screen.getByText('Are you sure?')).toBeInTheDocument();
     });
   });
 
@@ -691,27 +668,6 @@ describe('OrganizationUnitEditPage', () => {
     });
   });
 
-  it('should handle delete dialog close', async () => {
-    renderWithProviders(<OrganizationUnitEditPage />);
-
-    // Navigate to Advanced tab
-    fireEvent.click(screen.getByText('Advanced'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
-    });
-
-    // Open delete dialog
-    fireEvent.click(screen.getByText('Delete Organization Unit'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Are you sure?')).toBeInTheDocument();
-    });
-
-    // Close dialog by clicking cancel
-    fireEvent.click(screen.getByText('Cancel'));
-  });
-
   it('should switch to child OUs tab', async () => {
     renderWithProviders(<OrganizationUnitEditPage />);
 
@@ -854,9 +810,7 @@ describe('OrganizationUnitEditPage', () => {
 
     renderWithProviders(<OrganizationUnitEditPage />);
 
-    // Navigate to Advanced tab and open delete dialog
-    fireEvent.click(screen.getByText('Advanced'));
-
+    // Open delete dialog
     await waitFor(() => {
       expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
     });
@@ -864,7 +818,9 @@ describe('OrganizationUnitEditPage', () => {
     fireEvent.click(screen.getByText('Delete Organization Unit'));
 
     await waitFor(() => {
-      expect(screen.getByText('Are you sure?')).toBeInTheDocument();
+      expect(
+        screen.getByText('Are you sure you want to delete this organization unit? This action cannot be undone.'),
+      ).toBeInTheDocument();
     });
 
     // Find and click the delete confirm button in dialog
@@ -888,8 +844,6 @@ describe('OrganizationUnitEditPage', () => {
 
     renderWithProviders(<OrganizationUnitEditPage />);
 
-    fireEvent.click(screen.getByText('Advanced'));
-
     await waitFor(() => {
       expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
     });
@@ -898,7 +852,9 @@ describe('OrganizationUnitEditPage', () => {
     fireEvent.click(screen.getByText('Delete Organization Unit'));
 
     await waitFor(() => {
-      expect(screen.getByText('Are you sure?')).toBeInTheDocument();
+      expect(
+        screen.getByText('Are you sure you want to delete this organization unit? This action cannot be undone.'),
+      ).toBeInTheDocument();
     });
 
     // Find and click the delete confirm button in dialog

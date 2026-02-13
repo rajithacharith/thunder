@@ -44,6 +44,7 @@ const (
 	defaultOURequestID = "ou-1"
 	defaultOUPath      = "root"
 	defaultOUHandle    = "finance"
+	testOUNameFinance  = "Finance"
 )
 
 func TestOUHandler_OrganizationUnitHandlerTestSuite_Run(t *testing.T) {
@@ -459,8 +460,46 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			},
 		},
 		{
+			name: "passes design fields",
+			body: `{
+				"handle": "finance",
+				"name": "` + testOUNameFinance + `",
+				"theme_id": "theme-123",
+				"layout_id": "layout-456",
+				"logo_url": "https://example.com/logo.png"
+			}`,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On("CreateOrganizationUnit", mock.MatchedBy(func(req OrganizationUnitRequest) bool {
+						return req.Handle == defaultOUHandle &&
+							req.Name == testOUNameFinance &&
+							req.ThemeID == "theme-123" &&
+							req.LayoutID == "layout-456" &&
+							req.LogoURL == "https://example.com/logo.png"
+					})).
+					Return(OrganizationUnit{
+						ID:       "ou-1",
+						Handle:   "finance",
+						Name:     testOUNameFinance,
+						ThemeID:  "theme-123",
+						LayoutID: "layout-456",
+						LogoURL:  "https://example.com/logo.png",
+					}, nil).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusCreated, recorder.Code)
+				var resp OrganizationUnit
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
+				suite.Equal("ou-1", resp.ID)
+				suite.Equal("theme-123", resp.ThemeID)
+				suite.Equal("layout-456", resp.LayoutID)
+				suite.Equal("https://example.com/logo.png", resp.LogoURL)
+			},
+		},
+		{
 			name: "service conflict",
-			body: `{"handle":"finance","name":"Finance"}`,
+			body: `{"handle":"finance","name":"` + testOUNameFinance + `"}`,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
 					On("CreateOrganizationUnit", mock.AnythingOfType("ou.OrganizationUnitRequest")).
@@ -476,7 +515,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 		},
 		{
 			name: "service error",
-			body: `{"handle":"finance","name":"Finance"}`,
+			body: `{"handle":"finance","name":"` + testOUNameFinance + `"}`,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
 					On("CreateOrganizationUnit", mock.AnythingOfType("ou.OrganizationUnitRequest")).
@@ -492,7 +531,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 		},
 		{
 			name:     "service error response write failure",
-			body:     `{"handle":"finance","name":"Finance"}`,
+			body:     `{"handle":"finance","name":"` + testOUNameFinance + `"}`,
 			useFlaky: true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
@@ -507,7 +546,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 		},
 		{
 			name:     "response write error",
-			body:     `{"handle":"finance","name":"Finance"}`,
+			body:     `{"handle":"finance","name":"` + testOUNameFinance + `"}`,
 			useFlaky: true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
@@ -631,7 +670,31 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetRequest(
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
 					On("GetOrganizationUnit", defaultOURequestID).
-					Return(OrganizationUnit{ID: defaultOURequestID, Name: "Finance"}, nil).
+					Return(OrganizationUnit{ID: defaultOURequestID, Name: testOUNameFinance}, nil).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusOK, recorder.Code)
+				var resp OrganizationUnit
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
+				suite.Equal(testOUNameFinance, resp.Name)
+			},
+		},
+		{
+			name:           "returns design fields",
+			url:            "/organization-units/" + defaultOURequestID,
+			pathParamKey:   "id",
+			pathParamValue: defaultOURequestID,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On("GetOrganizationUnit", defaultOURequestID).
+					Return(OrganizationUnit{
+						ID:       defaultOURequestID,
+						Name:     "Finance",
+						ThemeID:  "theme-123",
+						LayoutID: "layout-456",
+						LogoURL:  "https://example.com/logo.png",
+					}, nil).
 					Once()
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
@@ -639,6 +702,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetRequest(
 				var resp OrganizationUnit
 				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
 				suite.Equal("Finance", resp.Name)
+				suite.Equal("theme-123", resp.ThemeID)
+				suite.Equal("layout-456", resp.LayoutID)
+				suite.Equal("https://example.com/logo.png", resp.LogoURL)
 			},
 		},
 	}
@@ -725,6 +791,52 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 				var resp OrganizationUnit
 				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
 				suite.Equal("Finance &lt;script&gt;", resp.Name)
+			},
+		},
+		{
+			name:   "passes design fields on update",
+			method: http.MethodPut,
+			url:    "/organization-units/" + defaultOURequestID,
+			body: `{
+				"handle": "finance",
+				"name": "` + testOUNameFinance + `",
+				"theme_id": "theme-new",
+				"layout_id": "layout-new",
+				"logo_url": "https://example.com/new-logo.png"
+			}`,
+			setJSONHeader:  true,
+			pathParamKey:   "id",
+			pathParamValue: defaultOURequestID,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On(
+						"UpdateOrganizationUnit",
+						defaultOURequestID,
+						mock.MatchedBy(func(req OrganizationUnitRequest) bool {
+							return req.Handle == defaultOUHandle &&
+								req.Name == testOUNameFinance &&
+								req.ThemeID == "theme-new" &&
+								req.LayoutID == "layout-new" &&
+								req.LogoURL == "https://example.com/new-logo.png"
+						}),
+					).
+					Return(OrganizationUnit{
+						ID:       defaultOURequestID,
+						Handle:   "finance",
+						Name:     testOUNameFinance,
+						ThemeID:  "theme-new",
+						LayoutID: "layout-new",
+						LogoURL:  "https://example.com/new-logo.png",
+					}, nil).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusOK, recorder.Code)
+				var resp OrganizationUnit
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
+				suite.Equal("theme-new", resp.ThemeID)
+				suite.Equal("layout-new", resp.LayoutID)
+				suite.Equal("https://example.com/new-logo.png", resp.LogoURL)
 			},
 		},
 		{

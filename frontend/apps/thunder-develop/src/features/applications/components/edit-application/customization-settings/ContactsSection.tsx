@@ -21,7 +21,7 @@ import {useTranslation} from 'react-i18next';
 import {useEffect} from 'react';
 import {useForm, Controller} from 'react-hook-form';
 import type {Application} from '../../../models/application';
-import SettingsCard from '../SettingsCard';
+import SettingsCard from '../../../../../components/SettingsCard';
 
 /**
  * Props for the {@link ContactsSection} component.
