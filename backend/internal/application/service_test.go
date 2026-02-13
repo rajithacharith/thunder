@@ -1154,6 +1154,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_NotFound() {
 
 	service, mockStore, _, _ := suite.setupTestService()
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("DeleteApplication", "app123").Return(model.ApplicationNotFoundError)
 
 	svcErr := service.DeleteApplication("app123")
@@ -1175,6 +1176,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_StoreError() {
 
 	service, mockStore, _, _ := suite.setupTestService()
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("DeleteApplication", "app123").Return(errors.New("store error"))
 
 	svcErr := service.DeleteApplication("app123")
@@ -1195,6 +1197,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_Success() {
 
 	service, mockStore, mockCertService, _ := suite.setupTestService()
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("DeleteApplication", "app123").Return(nil)
 	mockCertService.EXPECT().DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication,
 		"app123").Return(nil)
@@ -1217,6 +1220,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_CertError() {
 
 	service, mockStore, mockCertService, _ := suite.setupTestService()
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("DeleteApplication", "app123").Return(nil)
 	mockCertService.EXPECT().
 		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
@@ -1875,7 +1879,8 @@ func (suite *ServiceTestSuite) TestDeleteApplication_DeclarativeResourcesEnabled
 	require.NoError(suite.T(), err)
 	defer config.ResetThunderRuntime()
 
-	service, _, _, _ := suite.setupTestService()
+	service, mockStore, _, _ := suite.setupTestService()
+	mockStore.On("IsApplicationDeclarative", "app123").Return(true)
 
 	svcErr := service.DeleteApplication("app123")
 
@@ -2508,6 +2513,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorNonNotFound() {
 		Name: "Updated App",
 	}
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	// Return an error that's not ApplicationNotFoundError
 	mockStore.On("GetApplicationByID", "app123").Return(nil, errors.New("database connection error"))
 
@@ -2540,6 +2546,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingName(
 		Name: "New App",
 	}
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
 	// Return an error that's not ApplicationNotFoundError when checking name
 	mockStore.On("GetApplicationByName", "New App").Return(nil, errors.New("database connection error"))
@@ -2595,6 +2602,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingClien
 		},
 	}
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
 	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything).Return(true).Maybe()
 	// Return an error that's not ApplicationNotFoundError when checking client ID
@@ -2639,6 +2647,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWithRollback() {
 		},
 	}
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
 	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
 	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
@@ -3622,6 +3631,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_NotFound() {
 		Name: "New Name",
 	}
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("GetApplicationByID", "app123").Return(nil, model.ApplicationNotFoundError)
 
 	result, svcErr := service.UpdateApplication("app123", app)
@@ -3658,6 +3668,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_NameConflict() {
 		Name: "New Name",
 	}
 
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
 	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
 	mockStore.On("GetApplicationByName", "New Name").Return(existingAppWithName, nil)
 
