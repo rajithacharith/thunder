@@ -936,7 +936,7 @@ jobs:
                     BRANCH: 'main',
                     MODE: 'FULL',
                     USE_DELAYS: 'true',
-                    CONCURRENCY: '50-3000',
+                    CONCURRENCY: '50-1000',
                     PUSH_BENCHMARKS_TO_GITHUB: pushBenchmarkToGitHub
                   }
                 });
