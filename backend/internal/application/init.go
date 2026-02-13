@@ -22,6 +22,8 @@ package application
 import (
 	"net/http"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+
 	"github.com/asgardeo/thunder/internal/cert"
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
@@ -35,6 +37,7 @@ import (
 // Initialize initializes the application service and registers its routes.
 func Initialize(
 	mux *http.ServeMux,
+	mcpServer *mcp.Server,
 	certService cert.CertificateServiceInterface,
 	flowMgtService flowmgt.FlowMgtServiceInterface,
 	themeMgtService thememgt.ThemeMgtServiceInterface,
@@ -60,6 +63,11 @@ func Initialize(
 
 	appHandler := newApplicationHandler(appService)
 	registerRoutes(mux, appHandler)
+
+	// Register MCP tools
+	if mcpServer != nil {
+		registerMCPTools(mcpServer, appService)
+	}
 
 	// Create and return exporter
 	exporter := newApplicationExporter(appService)

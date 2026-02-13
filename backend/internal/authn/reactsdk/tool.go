@@ -26,17 +26,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// reactSDKTools provides MCP tools for integrating with the Asgardeo React SDK.
-type reactSDKTools struct {
-}
-
-// NewReactSDKTools creates a new instance of ReactSDKTools.
-func NewReactSDKTools() *reactSDKTools {
-	return &reactSDKTools{}
-}
-
 // RegisterTools registers all React SDK tools with the MCP server.
-func (t *reactSDKTools) RegisterTools(server *mcp.Server) {
+func RegisterTools(server *mcp.Server) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "thunder_integrate_react_sdk",
 		Description: "Provides instructions and code snippets for integrating Thunder via the " +
@@ -45,11 +36,11 @@ func (t *reactSDKTools) RegisterTools(server *mcp.Server) {
 			Title:          "Integrate React SDK",
 			IdempotentHint: true,
 		},
-	}, t.integrateReactSDK)
+	}, integrateReactSDK)
 }
 
 // integrateReactSDK handles the integrate_react_sdk tool call.
-func (t *reactSDKTools) integrateReactSDK(
+func integrateReactSDK(
 	ctx context.Context,
 	req *mcp.CallToolRequest,
 	input integrateReactSDKInput,

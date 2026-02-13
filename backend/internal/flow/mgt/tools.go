@@ -16,10 +16,7 @@
  * under the License.
  */
 
-// Package flow provides flow management tool models.
-//
-//nolint:lll
-package flow
+package flowmgt
 
 import (
 	"context"
@@ -29,87 +26,49 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	flowCommon "github.com/asgardeo/thunder/internal/flow/common"
-	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
-	"github.com/asgardeo/thunder/internal/mcp/tools/common"
+	"github.com/asgardeo/thunder/internal/system/mcp/tool"
 )
 
 // flowTools provides MCP tools for managing Thunder authentication flows.
 type flowTools struct {
-	flowService flowmgt.FlowMgtServiceInterface
+	flowService FlowMgtServiceInterface
 }
 
-// NewFlowTools creates a new flowTools instance.
-func NewFlowTools(flowService flowmgt.FlowMgtServiceInterface) *flowTools {
-	return &flowTools{
+// registerMCPTools registers all flow tools with the MCP server.
+func registerMCPTools(server *mcp.Server, flowService FlowMgtServiceInterface) {
+	tools := &flowTools{
 		flowService: flowService,
 	}
-}
 
-// Schema definitions
-var (
-	listFlowsInputSchema       *jsonschema.Schema
-	getFlowByHandleInputSchema *jsonschema.Schema
-	getFlowByIDInputSchema     *jsonschema.Schema
-	createFlowInputSchema      *jsonschema.Schema
-	updateFlowInputSchema      *jsonschema.Schema
-)
-
-func init() {
-	listFlowsInputSchema = common.GenerateSchema[listFlowsInput](
-		common.WithEnum("", "flow_type", []string{string(flowCommon.FlowTypeAuthentication), string(flowCommon.FlowTypeRegistration)}),
-		common.WithDefault("", "limit", 30),
-		common.WithDefault("", "offset", 0),
-	)
-
-	getFlowByHandleInputSchema = common.GenerateSchema[getFlowByHandleInput](
-		common.WithEnum("", "flow_type", []string{string(flowCommon.FlowTypeAuthentication), string(flowCommon.FlowTypeRegistration)}),
-		common.WithRequired("", "handle", "flow_type"),
-	)
-
-	getFlowByIDInputSchema = common.GenerateSchema[common.IDInput](
-		common.WithRequired("", "id"),
-	)
-
-	createFlowInputSchema = common.GenerateSchema[flowmgt.FlowDefinition](
-		common.WithEnum("", "flowType", []string{string(flowCommon.FlowTypeAuthentication), string(flowCommon.FlowTypeRegistration)}),
-	)
-
-	updateFlowInputSchema = common.GenerateSchema[updateFlowInput](
-		common.WithRequired("", "id", "name", "nodes"),
-	)
-}
-
-// RegisterTools registers all flow tools with the MCP server.
-func (t *flowTools) RegisterTools(server *mcp.Server) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "thunder_list_flows",
 		Description: `List available flows. Supports optional filtering by flow_type.`,
-		InputSchema: listFlowsInputSchema,
+		InputSchema: getListFlowsSchema(),
 		Annotations: &mcp.ToolAnnotations{
 			Title:        "List Flows",
 			ReadOnlyHint: true,
 		},
-	}, t.listFlows)
+	}, tools.listFlows)
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "thunder_get_flow_by_handle",
 		Description: `Retrieve a complete definition of a flow by its handle (human-readable identifier).`,
-		InputSchema: getFlowByHandleInputSchema,
+		InputSchema: getFlowByHandleSchema(),
 		Annotations: &mcp.ToolAnnotations{
 			Title:        "Get Flow by Handle",
 			ReadOnlyHint: true,
 		},
-	}, t.getFlowByHandle)
+	}, tools.getFlowByHandle)
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "thunder_get_flow_by_id",
 		Description: `Retrieve a complete definition of a flow by its unique ID (UUID).`,
-		InputSchema: getFlowByIDInputSchema,
+		InputSchema: getFlowByIDSchema(),
 		Annotations: &mcp.ToolAnnotations{
 			Title:        "Get Flow by ID",
 			ReadOnlyHint: true,
 		},
-	}, t.getFlowByID)
+	}, tools.getFlowByID)
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "thunder_create_flow",
@@ -125,12 +84,12 @@ Key Requirements:
 - Node types: START, END, TASK_EXECUTION, PROMPT.
 - PROMPT nodes: Require 'meta.components' array for UI rendering.
 - Transitions: Use onSuccess/onFailure node IDs to define the path.`,
-		InputSchema: createFlowInputSchema,
+		InputSchema: getCreateFlowSchema(),
 		Annotations: &mcp.ToolAnnotations{
 			Title:          "Create Flow",
 			IdempotentHint: false,
 		},
-	}, t.createFlow)
+	}, tools.createFlow)
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "thunder_update_flow",
@@ -144,12 +103,12 @@ Workflow:
 3. Send the complete updated object back
 
 Flow versions are automatically tracked. Updating creates a new version.`,
-		InputSchema: updateFlowInputSchema,
+		InputSchema: getUpdateFlowSchema(),
 		Annotations: &mcp.ToolAnnotations{
 			Title:          "Update Flow",
 			IdempotentHint: true,
 		},
-	}, t.updateFlow)
+	}, tools.updateFlow)
 }
 
 // ListFlows handles the list_flows tool call.
@@ -181,7 +140,7 @@ func (t *flowTools) getFlowByHandle(
 	ctx context.Context,
 	req *mcp.CallToolRequest,
 	input getFlowByHandleInput,
-) (*mcp.CallToolResult, *flowmgt.CompleteFlowDefinition, error) {
+) (*mcp.CallToolResult, *CompleteFlowDefinition, error) {
 	flowType := flowCommon.FlowType(input.FlowType)
 
 	flow, svcErr := t.flowService.GetFlowByHandle(input.Handle, flowType)
@@ -196,8 +155,8 @@ func (t *flowTools) getFlowByHandle(
 func (t *flowTools) getFlowByID(
 	ctx context.Context,
 	req *mcp.CallToolRequest,
-	input common.IDInput,
-) (*mcp.CallToolResult, *flowmgt.CompleteFlowDefinition, error) {
+	input tool.IDInput,
+) (*mcp.CallToolResult, *CompleteFlowDefinition, error) {
 	flow, svcErr := t.flowService.GetFlow(input.ID)
 	if svcErr != nil {
 		return nil, nil, fmt.Errorf("failed to get flow: %s", svcErr.ErrorDescription)
@@ -210,8 +169,8 @@ func (t *flowTools) getFlowByID(
 func (t *flowTools) createFlow(
 	ctx context.Context,
 	req *mcp.CallToolRequest,
-	input flowmgt.FlowDefinition,
-) (*mcp.CallToolResult, *flowmgt.CompleteFlowDefinition, error) {
+	input FlowDefinition,
+) (*mcp.CallToolResult, *CompleteFlowDefinition, error) {
 	createdFlow, svcErr := t.flowService.CreateFlow(&input)
 	if svcErr != nil {
 		return nil, nil, fmt.Errorf("failed to create flow: %s", svcErr.ErrorDescription)
@@ -225,7 +184,7 @@ func (t *flowTools) updateFlow(
 	ctx context.Context,
 	req *mcp.CallToolRequest,
 	input updateFlowInput,
-) (*mcp.CallToolResult, *flowmgt.CompleteFlowDefinition, error) {
+) (*mcp.CallToolResult, *CompleteFlowDefinition, error) {
 	// Get current flow to retrieve immutable fields (handle, flowType)
 	currentFlow, svcErr := t.flowService.GetFlow(input.ID)
 	if svcErr != nil {
@@ -233,7 +192,7 @@ func (t *flowTools) updateFlow(
 	}
 
 	// Build update definition with immutable fields preserved and input fields replaced
-	updateDef := &flowmgt.FlowDefinition{
+	updateDef := &FlowDefinition{
 		Handle:   currentFlow.Handle,
 		FlowType: currentFlow.FlowType,
 		Name:     input.Name,
@@ -246,4 +205,45 @@ func (t *flowTools) updateFlow(
 	}
 
 	return nil, updatedFlow, nil
+}
+
+// getListFlowsSchema generates the schema for list_flows tool.
+func getListFlowsSchema() *jsonschema.Schema {
+	return tool.GenerateSchema[listFlowsInput](
+		tool.WithEnum("", "flow_type",
+			[]string{string(flowCommon.FlowTypeAuthentication), string(flowCommon.FlowTypeRegistration)}),
+		tool.WithDefault("", "limit", 30),
+		tool.WithDefault("", "offset", 0),
+	)
+}
+
+// getFlowByHandleSchema generates the schema for get_flow_by_handle tool.
+func getFlowByHandleSchema() *jsonschema.Schema {
+	return tool.GenerateSchema[getFlowByHandleInput](
+		tool.WithEnum("", "flow_type",
+			[]string{string(flowCommon.FlowTypeAuthentication), string(flowCommon.FlowTypeRegistration)}),
+		tool.WithRequired("", "handle", "flow_type"),
+	)
+}
+
+// getFlowByIDSchema generates the schema for get_flow_by_id tool.
+func getFlowByIDSchema() *jsonschema.Schema {
+	return tool.GenerateSchema[tool.IDInput](
+		tool.WithRequired("", "id"),
+	)
+}
+
+// getCreateFlowSchema generates the schema for create_flow tool.
+func getCreateFlowSchema() *jsonschema.Schema {
+	return tool.GenerateSchema[FlowDefinition](
+		tool.WithEnum("", "flowType",
+			[]string{string(flowCommon.FlowTypeAuthentication), string(flowCommon.FlowTypeRegistration)}),
+	)
+}
+
+// getUpdateFlowSchema generates the schema for update_flow tool.
+func getUpdateFlowSchema() *jsonschema.Schema {
+	return tool.GenerateSchema[updateFlowInput](
+		tool.WithRequired("", "id", "name", "nodes"),
+	)
 }

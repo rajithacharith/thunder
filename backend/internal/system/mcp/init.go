@@ -26,30 +26,28 @@ import (
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/modelcontextprotocol/go-sdk/oauthex"
 
-	"github.com/asgardeo/thunder/internal/application"
-	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
-	mcpauth "github.com/asgardeo/thunder/internal/mcp/auth"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
+	mcpauth "github.com/asgardeo/thunder/internal/system/mcp/auth"
 )
 
 // Initialize initializes the MCP server and registers its routes with the provided mux.
 func Initialize(
 	mux *http.ServeMux,
-	appService application.ApplicationServiceInterface,
-	flowService flowmgt.FlowMgtServiceInterface,
 	jwtService jwt.JWTServiceInterface,
-) {
+) *mcpsdk.Server {
 	cfg := config.GetThunderRuntime().Config
 	baseURL := config.GetServerURL(&cfg.Server)
 
 	mcpURL := baseURL + MCPEndpointPath
 	resourceMetadataURL := baseURL + OAuthProtectedResourceMetadataPath
 
-	mcpServer := newServer(appService, flowService)
+	// Create MCP server and register standalone tools
+	mcpServer := newServer()
+
 	tokenVerifier := mcpauth.NewTokenVerifier(jwtService, cfg.JWT.Issuer, mcpURL)
 	httpHandler := mcpsdk.NewStreamableHTTPHandler(func(*http.Request) *mcpsdk.Server {
-		return mcpServer.getMCPServer()
+		return mcpServer
 	}, nil)
 
 	// Secure MCP handler with bearer token authentication
@@ -69,4 +67,6 @@ func Initialize(
 	// Register MCP routes
 	mux.Handle(MCPEndpointPath, securedHandler)
 	mux.Handle(MCPEndpointPath+"/", securedHandler)
+
+	return mcpServer
 }

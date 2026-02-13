@@ -21,6 +21,8 @@ package authn
 import (
 	"net/http"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+
 	"github.com/asgardeo/thunder/internal/authn/assert"
 	"github.com/asgardeo/thunder/internal/authn/credentials"
 	"github.com/asgardeo/thunder/internal/authn/github"
@@ -29,6 +31,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/authn/otp"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
+	"github.com/asgardeo/thunder/internal/authn/reactsdk"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
@@ -51,6 +54,7 @@ type AuthServiceRegistry struct {
 // Initialize initializes the authentication service and registers its routes.
 func Initialize(
 	mux *http.ServeMux,
+	mcpServer *mcp.Server,
 	idpSvc idp.IDPServiceInterface,
 	jwtSvc jwt.JWTServiceInterface,
 	userSvc user.UserServiceInterface,
@@ -72,6 +76,11 @@ func Initialize(
 
 	authnHandler := newAuthenticationHandler(authnService)
 	registerRoutes(mux, authnHandler)
+
+	// Register MCP tools
+	if mcpServer != nil {
+		reactsdk.RegisterTools(mcpServer)
+	}
 
 	return authnService, authServiceRegistry
 }

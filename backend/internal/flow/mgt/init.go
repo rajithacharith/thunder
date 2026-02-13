@@ -21,8 +21,11 @@ package flowmgt
 import (
 	"net/http"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/flow/executor"
+
 	"github.com/asgardeo/thunder/internal/system/config"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
@@ -31,6 +34,7 @@ import (
 // Initialize initializes the flow management service and registers HTTP routes.
 func Initialize(
 	mux *http.ServeMux,
+	mcpServer *mcp.Server,
 	flowFactory core.FlowFactoryInterface,
 	executorRegistry executor.ExecutorRegistryInterface,
 	graphCache core.GraphCacheInterface,
@@ -54,6 +58,11 @@ func Initialize(
 
 	handler := newFlowMgtHandler(service)
 	registerRoutes(mux, handler)
+
+	// Register MCP tools
+	if mcpServer != nil {
+		registerMCPTools(mcpServer, service)
+	}
 
 	// Create and return exporter
 	exporter := newFlowGraphExporter(service)

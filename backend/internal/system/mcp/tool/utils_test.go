@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package common
+package tool
 
 import (
 	"encoding/json"

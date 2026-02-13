@@ -16,13 +16,15 @@
  * under the License.
  */
 
-package application
+package model
 
-// Standard defaults for user-facing applications
-var (
-	defaultUserAttributes = []string{
-		"email", "name", "given_name", "family_name",
-		"profile", "picture", "phone_number", "address", "created_at",
-	}
-	defaultScopes = []string{"openid", "profile", "email"}
-)
+// ApplicationListOutput represents the output for list_applications tool.
+type ApplicationListOutput struct {
+	TotalCount   int                        `json:"total_count" jsonschema:"Total number of applications available."`
+	Applications []BasicApplicationResponse `json:"applications" jsonschema:"List of applications."`
+}
+
+// ClientIDInput represents input for client ID-based lookups.
+type ClientIDInput struct {
+	ClientID string `json:"client_id" jsonschema:"OAuth client ID to search for"`
+}

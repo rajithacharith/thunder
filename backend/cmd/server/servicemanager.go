@@ -35,7 +35,6 @@ import (
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	"github.com/asgardeo/thunder/internal/group"
 	"github.com/asgardeo/thunder/internal/idp"
-	"github.com/asgardeo/thunder/internal/mcp"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/oauth"
 	"github.com/asgardeo/thunder/internal/observability"
@@ -50,6 +49,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/jose"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/mcp"
 	"github.com/asgardeo/thunder/internal/system/services"
 	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/internal/userschema"
@@ -127,8 +127,11 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	}
 	exporters = append(exporters, notificationExporter)
 
+	// Initialize MCP server
+	mcpServer := mcp.Initialize(mux, jwtService)
+
 	// Initialize authentication services.
-	_, authSvcRegistry := authn.Initialize(mux, idpService, jwtService, userService, otpService)
+	_, authSvcRegistry := authn.Initialize(mux, mcpServer, idpService, jwtService, userService, otpService)
 
 	// Initialize flow and executor services.
 	flowFactory, graphCache := flowcore.Initialize()
@@ -136,7 +139,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 		idpService, otpService, jwtService, authSvcRegistry, authZService, userSchemaService, observabilitySvc,
 		groupService, roleService)
 
-	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(mux, flowFactory, execRegistry, graphCache)
+	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(mux, mcpServer, flowFactory, execRegistry, graphCache)
 	if err != nil {
 		logger.Fatal("Failed to initialize FlowMgtService", log.Error(err))
 	}
@@ -160,7 +163,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	exporters = append(exporters, layoutExporter)
 
 	applicationService, applicationExporter, err := application.Initialize(
-		mux, certservice, flowMgtService, themeMgtService, layoutMgtService, userSchemaService)
+		mux, mcpServer, certservice, flowMgtService, themeMgtService, layoutMgtService, userSchemaService)
 	if err != nil {
 		logger.Fatal("Failed to initialize ApplicationService", log.Error(err))
 	}
@@ -177,9 +180,6 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// Initialize OAuth services.
 	oauth.Initialize(mux, applicationService, userService, jwtService, flowExecService, observabilitySvc,
 		pkiService, ouService)
-
-	// Initialize MCP server.
-	mcp.Initialize(mux, applicationService, flowMgtService, jwtService)
 
 	// TODO: Legacy way of initializing services. These need to be refactored in the future aligning to the
 	// dependency injection pattern used above.

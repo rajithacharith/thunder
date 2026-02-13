@@ -16,16 +16,17 @@
  * under the License.
  */
 
-// Package common provides MCP (Model Context Protocol) tool implementations for Thunder.
-package common
+package mcp
 
-// IDInput represents a generic input that requires only a resource ID.
-type IDInput struct {
-	ID string `json:"id" jsonschema:"The unique identifier of the resource"`
-}
+import (
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+)
 
-// PaginationInput represents common input for list operations.
-type PaginationInput struct {
-	Limit  int `json:"limit,omitempty" jsonschema:"Maximum number of results to return (default: 20)"`
-	Offset int `json:"offset,omitempty" jsonschema:"Offset for pagination (default: 0)"`
+// newServer creates a new MCP server.
+func newServer() *mcp.Server {
+	// Create the MCP server instance.
+	return mcp.NewServer(&mcp.Implementation{
+		Name:    "thunder-mcp",
+		Version: "1.0.0",
+	}, nil)
 }
