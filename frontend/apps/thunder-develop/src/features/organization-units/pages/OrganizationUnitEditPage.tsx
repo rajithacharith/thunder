@@ -120,6 +120,7 @@ export default function OrganizationUnitEditPage(): JSX.Element {
       handle: editedOU.handle ?? organizationUnit.handle,
       name: editedOU.name ?? organizationUnit.name,
       description: editedOU.description !== undefined ? editedOU.description : organizationUnit.description,
+      parent: organizationUnit.parent ?? null,
     };
 
     try {
