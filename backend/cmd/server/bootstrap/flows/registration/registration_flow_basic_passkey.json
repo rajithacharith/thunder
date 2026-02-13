@@ -1,0 +1,426 @@
+{
+    "name": "Basic + Passkey Registration Flow",
+    "handle": "default-basic-passkey-flow",
+    "flowType": "REGISTRATION",
+    "nodes": [
+        {
+            "id": "start",
+            "type": "START",
+            "onSuccess": "user_type_resolver"
+        },
+        {
+            "id": "user_type_resolver",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "UserTypeResolver"
+            },
+            "onSuccess": "choose_registration_method"
+        },
+        {
+            "id": "choose_registration_method",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "type": "TEXT",
+                        "id": "text_heading",
+                        "label": "Sign Up",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "type": "TEXT",
+                        "id": "text_description",
+                        "label": "Choose your preferred registration method",
+                        "variant": "BODY"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_basic",
+                        "components": [
+                            {
+                                "type": "TEXT_INPUT",
+                                "id": "input_username",
+                                "ref": "username",
+                                "label": "Username",
+                                "placeholder": "Enter your username",
+                                "required": true
+                            },
+                            {
+                                "type": "PASSWORD_INPUT",
+                                "id": "input_password",
+                                "ref": "password",
+                                "label": "Password",
+                                "placeholder": "Enter your password",
+                                "required": true
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_basic",
+                                "label": "Continue",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_divider",
+                        "components": [
+                            {
+                                "type": "TEXT",
+                                "id": "text_divider",
+                                "label": "OR",
+                                "variant": "BODY"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_passkey",
+                        "components": [
+                            {
+                                "type": "ACTION",
+                                "id": "action_passkey",
+                                "label": "Sign up with Passkey",
+                                "variant": "SECONDARY",
+                                "eventType": "TRIGGER"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "prompts": [
+                {
+                    "inputs": [
+                        {
+                            "ref": "input_username",
+                            "identifier": "username",
+                            "type": "TEXT_INPUT",
+                            "required": true
+                        },
+                        {
+                            "ref": "input_password",
+                            "identifier": "password",
+                            "type": "PASSWORD_INPUT",
+                            "required": true
+                        }
+                    ],
+                    "action": {
+                        "ref": "action_basic",
+                        "nextNode": "basic_auth"
+                    }
+                },
+                {
+                    "action": {
+                        "ref": "action_passkey",
+                        "nextNode": "collect_passkey_user_info"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "basic_auth",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "BasicAuthExecutor"
+            },
+            "onSuccess": "prompt_basic_user_info"
+        },
+        {
+            "id": "prompt_basic_user_info",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "type": "TEXT",
+                        "id": "text_user_info_heading",
+                        "label": "Sign Up",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "type": "TEXT",
+                        "id": "text_user_info_description",
+                        "label": "Complete your profile",
+                        "variant": "BODY"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_user_info",
+                        "components": [
+                            {
+                                "type": "TEXT_INPUT",
+                                "id": "input_firstName",
+                                "ref": "firstName",
+                                "label": "First Name",
+                                "placeholder": "Enter your first name",
+                                "required": true
+                            },
+                            {
+                                "type": "TEXT_INPUT",
+                                "id": "input_lastName",
+                                "ref": "lastName",
+                                "label": "Last Name",
+                                "placeholder": "Enter your last name",
+                                "required": true
+                            },
+                            {
+                                "type": "EMAIL_INPUT",
+                                "id": "input_email",
+                                "ref": "email",
+                                "label": "Email",
+                                "placeholder": "Enter your email",
+                                "required": true
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_user_info",
+                                "label": "Continue",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "prompts": [
+                {
+                    "inputs": [
+                        {
+                            "ref": "input_firstName",
+                            "identifier": "firstName",
+                            "type": "TEXT_INPUT",
+                            "required": true
+                        },
+                        {
+                            "ref": "input_lastName",
+                            "identifier": "lastName",
+                            "type": "TEXT_INPUT",
+                            "required": true
+                        },
+                        {
+                            "ref": "input_email",
+                            "identifier": "email",
+                            "type": "EMAIL_INPUT",
+                            "required": true
+                        }
+                    ],
+                    "action": {
+                        "ref": "action_user_info",
+                        "nextNode": "provisioning"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "provisioning",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "ProvisioningExecutor"
+            },
+            "onSuccess": "prompt_add_passkey"
+        },
+        {
+            "id": "prompt_add_passkey",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "type": "TEXT",
+                        "id": "text_passkey_heading",
+                        "label": "Add a Passkey",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "type": "TEXT",
+                        "id": "text_passkey_description",
+                        "label": "Would you like to add a passkey to your account for faster and more secure sign-ins?",
+                        "variant": "BODY"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_passkey_actions",
+                        "components": [
+                            {
+                                "type": "ACTION",
+                                "id": "action_add_passkey",
+                                "label": "Add Passkey",
+                                "variant": "PRIMARY",
+                                "eventType": "TRIGGER"
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_skip_passkey",
+                                "label": "Skip for now",
+                                "variant": "SECONDARY",
+                                "eventType": "TRIGGER"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "prompts": [
+                {
+                    "action": {
+                        "ref": "action_add_passkey",
+                        "nextNode": "passkey_reg_start"
+                    }
+                },
+                {
+                    "action": {
+                        "ref": "action_skip_passkey",
+                        "nextNode": "auth_assert"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "passkey_reg_start",
+            "type": "TASK_EXECUTION",
+            "properties": {
+                "relyingPartyId": "localhost",
+                "relyingPartyName": "Thunder",
+                "authenticatorSelection": {
+                    "authenticatorAttachment": "platform",
+                    "requireResidentKey": true,
+                    "residentKey": "required",
+                    "userVerification": "required"
+                },
+                "attestation": "direct"
+            },
+            "executor": {
+                "name": "PasskeyAuthExecutor",
+                "mode": "register_start"
+            },
+            "onSuccess": "passkey_reg_finish"
+        },
+        {
+            "id": "passkey_reg_finish",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "PasskeyAuthExecutor",
+                "mode": "register_finish"
+            },
+            "onSuccess": "auth_assert"
+        },
+        {
+            "id": "collect_passkey_user_info",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "type": "TEXT",
+                        "id": "text_passkey_info_heading",
+                        "label": "Sign Up",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "type": "TEXT",
+                        "id": "text_passkey_info_description",
+                        "label": "Sign up with a passkey for secure, passwordless access",
+                        "variant": "BODY"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_passkey_info",
+                        "components": [
+                            {
+                                "type": "TEXT_INPUT",
+                                "id": "input_passkey_username",
+                                "ref": "username",
+                                "label": "Username",
+                                "placeholder": "Enter your username",
+                                "required": true
+                            },
+                            {
+                                "type": "EMAIL_INPUT",
+                                "id": "input_passkey_email",
+                                "ref": "email",
+                                "label": "Email",
+                                "placeholder": "Enter your email",
+                                "required": true
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_passkey_continue",
+                                "label": "Continue",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "prompts": [
+                {
+                    "inputs": [
+                        {
+                            "ref": "input_passkey_username",
+                            "identifier": "username",
+                            "type": "TEXT_INPUT",
+                            "required": true
+                        },
+                        {
+                            "ref": "input_passkey_email",
+                            "identifier": "email",
+                            "type": "EMAIL_INPUT",
+                            "required": true
+                        }
+                    ],
+                    "action": {
+                        "ref": "action_passkey_continue",
+                        "nextNode": "passkey_provisioning"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "passkey_provisioning",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "ProvisioningExecutor"
+            },
+            "onSuccess": "passkey_only_reg_start"
+        },
+        {
+            "id": "passkey_only_reg_start",
+            "type": "TASK_EXECUTION",
+            "properties": {
+                "relyingPartyId": "localhost",
+                "relyingPartyName": "Thunder",
+                "authenticatorSelection": {
+                    "authenticatorAttachment": "platform",
+                    "requireResidentKey": true,
+                    "residentKey": "required",
+                    "userVerification": "required"
+                },
+                "attestation": "direct"
+            },
+            "executor": {
+                "name": "PasskeyAuthExecutor",
+                "mode": "register_start"
+            },
+            "onSuccess": "passkey_only_reg_finish"
+        },
+        {
+            "id": "passkey_only_reg_finish",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "PasskeyAuthExecutor",
+                "mode": "register_finish"
+            },
+            "onSuccess": "auth_assert"
+        },
+        {
+            "id": "auth_assert",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthAssertExecutor"
+            },
+            "onSuccess": "end"
+        },
+        {
+            "id": "end",
+            "type": "END"
+        }
+    ]
+}
