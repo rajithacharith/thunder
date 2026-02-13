@@ -80,6 +80,9 @@ type applicationStoreInterface interface {
 	GetApplicationByName(name string) (*model.ApplicationProcessedDTO, error)
 	UpdateApplication(existingApp, updatedApp *model.ApplicationProcessedDTO) error
 	DeleteApplication(id string) error
+	IsApplicationExists(id string) (bool, error)
+	IsApplicationExistsByName(name string) (bool, error)
+	IsApplicationDeclarative(id string) bool
 }
 
 // applicationStore implements the applicationStoreInterface for handling application data persistence.
@@ -413,6 +416,36 @@ func (st *applicationStore) DeleteApplication(id string) error {
 	}
 
 	return nil
+}
+
+// IsApplicationExists checks if an application exists in the database by ID.
+func (st *applicationStore) IsApplicationExists(id string) (bool, error) {
+	_, err := st.GetApplicationByID(id)
+	if err != nil {
+		if errors.Is(err, model.ApplicationNotFoundError) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+// IsApplicationExistsByName checks if an application exists in the database by name.
+func (st *applicationStore) IsApplicationExistsByName(name string) (bool, error) {
+	_, err := st.GetApplicationByName(name)
+	if err != nil {
+		if errors.Is(err, model.ApplicationNotFoundError) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+// IsApplicationDeclarative checks if an application is immutable.
+// For database store, all applications are mutable (not declarative).
+func (st *applicationStore) IsApplicationDeclarative(id string) bool {
+	return false
 }
 
 // getAppJSONDataBytes constructs the JSON data bytes for the application.

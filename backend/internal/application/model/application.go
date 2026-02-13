@@ -69,6 +69,7 @@ type BasicApplicationDTO struct {
 	Template                  string
 	ClientID                  string
 	LogoURL                   string
+	IsReadOnly                bool
 }
 
 // Application represents the structure for application which returns in GetApplicationById.
@@ -245,6 +246,7 @@ type BasicApplicationResponse struct {
 	ThemeID                   string `json:"theme_id,omitempty" jsonschema:"Theme ID."`
 	LayoutID                  string `json:"layout_id,omitempty" jsonschema:"Layout ID."`
 	Template                  string `json:"template,omitempty" jsonschema:"Application Template."`
+	IsReadOnly                bool   `json:"is_read_only,omitempty" jsonschema:"Indicates if the application is read-only (declarative/immutable)."`
 }
 
 // ApplicationListResponse represents the response structure for listing applications.
