@@ -972,7 +972,7 @@ function Test-Unit {
         
         if ($gotestsum) {
             Write-Host "Running unit tests with coverage using gotestsum..."
-            & gotestsum -- -v -coverprofile=coverage_unit.out -covermode=atomic "-coverpkg=$coverpkg" ./...
+            & gotestsum -- -v "-coverprofile=coverage_unit.out" "-covermode=atomic" "-coverpkg=$coverpkg" ./...
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "There are unit test failures."
                 exit 1
@@ -980,7 +980,7 @@ function Test-Unit {
         }
         else {
             Write-Host "Running unit tests with coverage using go test..."
-            & go test -v -coverprofile=coverage_unit.out -covermode=atomic "-coverpkg=$coverpkg" ./...
+            & go test -v "-coverprofile=coverage_unit.out" "-covermode=atomic" "-coverpkg=$coverpkg" ./...
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "There are unit test failures."
                 exit 1
@@ -990,14 +990,14 @@ function Test-Unit {
         Write-Host "Unit test coverage profile generated in: backend/coverage_unit.out"
         
         # Generate HTML coverage report for unit tests
-        & go tool cover -html=coverage_unit.out -o=coverage_unit.html
+        & go tool cover "-html=coverage_unit.out" "-o=coverage_unit.html"
         Write-Host "Unit test coverage HTML report generated in: backend/coverage_unit.html"
         
         # Display unit test coverage summary
         Write-Host ""
         Write-Host "================================================================"
         Write-Host "Unit Test Coverage Summary:"
-        & go tool cover -func=coverage_unit.out | Select-Object -Last 1
+        & go tool cover "-func=coverage_unit.out" | Select-Object -Last 1
         Write-Host "================================================================"
         Write-Host ""
     }
