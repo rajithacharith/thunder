@@ -200,17 +200,16 @@ describe('useCreateApplication', () => {
   });
 
   it('should set pending state during creation', async () => {
-    mockHttpRequest.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          setTimeout(
-            () =>
-              resolve({
-                data: mockApplication,
-              }),
-            100,
-          );
-        }),
+    mockHttpRequest.mockReturnValue(
+      new Promise((resolve) => {
+        setTimeout(
+          () =>
+            resolve({
+              data: mockApplication,
+            }),
+          100,
+        );
+      }),
     );
 
     const {result} = renderHook(() => useCreateApplication());

@@ -74,16 +74,16 @@ const createMockCanvasData = (): CanvasData => ({
 });
 
 describe('useFlowSave', () => {
-  let mockShowError: ReturnType<typeof vi.fn>;
-  let mockShowSuccess: ReturnType<typeof vi.fn>;
-  let mockSetOpenValidationPanel: ReturnType<typeof vi.fn>;
+  let mockShowError: (message: string) => void;
+  let mockShowSuccess: (message: string) => void;
+  let mockSetOpenValidationPanel: (open: boolean) => void;
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
-    mockShowError = vi.fn();
-    mockShowSuccess = vi.fn();
-    mockSetOpenValidationPanel = vi.fn();
+    mockShowError = vi.fn() as (message: string) => void;
+    mockShowSuccess = vi.fn() as (message: string) => void;
+    mockSetOpenValidationPanel = vi.fn() as (open: boolean) => void;
   });
 
   afterEach(() => {

@@ -82,11 +82,10 @@ describe('useDeleteFlow', () => {
   });
 
   it('should set pending state during deletion', async () => {
-    mockHttpRequest.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          setTimeout(() => resolve({}), 100);
-        }),
+    mockHttpRequest.mockReturnValue(
+      new Promise((resolve) => {
+        setTimeout(() => resolve({}), 100);
+      }),
     );
 
     const {result} = renderHook(() => useDeleteFlow());

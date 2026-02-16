@@ -167,7 +167,7 @@ const createMockEdge = (overrides: Partial<Edge> = {}): Edge => ({
 type SetNodesFn = React.Dispatch<React.SetStateAction<Node[]>>;
 
 describe('useTemplateAndWidgetLoading', () => {
-  let mockSetNodes: ReturnType<typeof vi.fn> & SetNodesFn;
+  let mockSetNodes: SetNodesFn;
   let mockUpdateNodeInternals: ReturnType<typeof vi.fn>;
   let mockGenerateSteps: ReturnType<typeof vi.fn>;
   let mockGenerateEdges: ReturnType<typeof vi.fn>;
@@ -181,7 +181,7 @@ describe('useTemplateAndWidgetLoading', () => {
         return updater([]);
       }
       return updater;
-    }) as ReturnType<typeof vi.fn> & SetNodesFn;
+    }) as unknown as SetNodesFn;
     mockUpdateNodeInternals = vi.fn();
     mockGenerateSteps = vi.fn((steps: Node[]) => steps);
     mockGenerateEdges = vi.fn().mockReturnValue([]);
@@ -192,12 +192,12 @@ describe('useTemplateAndWidgetLoading', () => {
   const renderUseTemplateAndWidgetLoading = (overrides = {}) => {
     const defaultProps = {
       resources: createMockResources(),
-      generateSteps: mockGenerateSteps,
-      generateEdges: mockGenerateEdges,
-      validateEdges: mockValidateEdges,
-      getBlankTemplateComponents: mockGetBlankTemplateComponents,
+      generateSteps: mockGenerateSteps as unknown as (steps: Node[]) => Node[],
+      generateEdges: mockGenerateEdges as unknown as () => Edge[],
+      validateEdges: mockValidateEdges as unknown as (edges: Edge[]) => Edge[],
+      getBlankTemplateComponents: mockGetBlankTemplateComponents as unknown as () => Element[],
       setNodes: mockSetNodes,
-      updateNodeInternals: mockUpdateNodeInternals,
+      updateNodeInternals: mockUpdateNodeInternals as unknown as (nodeId: string | string[]) => void,
       ...overrides,
     };
 
@@ -830,7 +830,7 @@ describe('useTemplateAndWidgetLoading', () => {
           const nodes = [createMockNode({id: 'view-1', type: StepTypes.View, data: {components: []}})];
           updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as unknown as SetNodesFn;
 
       const {result} = renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
 
@@ -867,7 +867,7 @@ describe('useTemplateAndWidgetLoading', () => {
           ];
           capturedNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as unknown as SetNodesFn;
 
       mockGenerateStepElement.mockReturnValue(createMockElement({
         id: 'generated-new-form',
@@ -905,7 +905,7 @@ describe('useTemplateAndWidgetLoading', () => {
           const nodes = [createMockNode({id: 'end-1', type: StepTypes.End})]; // No View
           resultNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as unknown as SetNodesFn;
 
       const {result} = renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
 
@@ -937,7 +937,7 @@ describe('useTemplateAndWidgetLoading', () => {
           return updater(nodes);
         }
         return undefined;
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as unknown as SetNodesFn;
 
       const {result} = renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
 
@@ -970,7 +970,7 @@ describe('useTemplateAndWidgetLoading', () => {
           ];
           capturedNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as unknown as SetNodesFn;
 
       const {result} = renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
 

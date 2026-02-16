@@ -195,17 +195,16 @@ describe('useUpdateApplication', () => {
   });
 
   it('should set pending state during update', async () => {
-    mockHttpRequest.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          setTimeout(
-            () =>
-              resolve({
-                data: mockApplication,
-              }),
-            100,
-          );
-        }),
+    mockHttpRequest.mockReturnValue(
+      new Promise((resolve) => {
+        setTimeout(
+          () =>
+            resolve({
+              data: mockApplication,
+            }),
+          100,
+        );
+      }),
     );
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';

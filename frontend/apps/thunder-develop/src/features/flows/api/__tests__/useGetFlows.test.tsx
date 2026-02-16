@@ -150,11 +150,10 @@ describe('useGetFlows', () => {
   });
 
   it('should show loading state initially', async () => {
-    mockHttpRequest.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          setTimeout(() => resolve({data: mockFlowListResponse}), 100);
-        }),
+    mockHttpRequest.mockReturnValue(
+      new Promise((resolve) => {
+        setTimeout(() => resolve({data: mockFlowListResponse}), 100);
+      }),
     );
 
     const {result} = renderHook(() => useGetFlows());

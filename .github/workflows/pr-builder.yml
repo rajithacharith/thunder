@@ -200,6 +200,19 @@ jobs:
           cd frontend/apps/thunder-gate
           pnpm test:coverage
 
+      # Strip branch data (BRDA/BRF/BRH) from frontend LCOV reports before uploading to Codecov.
+      # React Compiler (babel-plugin-react-compiler) generates phantom branch points in compiled
+      # output that inflate the partial-line count in Codecov's coverage calculation.
+      # This is a known upstream issue: https://github.com/facebook/react/issues/32950
+      # Line and function coverage remain unaffected and accurately reflect test quality.
+      - name: 🧹 Strip branch data from frontend LCOV reports
+        run: |
+          for lcov_file in frontend/apps/thunder-develop/coverage/lcov.info frontend/apps/thunder-gate/coverage/lcov.info; do
+            if [ -f "$lcov_file" ]; then
+              sed -i '/^BRDA:/d;/^BRF:/d;/^BRH:/d' "$lcov_file"
+            fi
+          done
+
       - name: 📦 Upload Built Distribution
         uses: actions/upload-artifact@v4
         with:

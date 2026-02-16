@@ -136,7 +136,7 @@ describe('EditGeneralSettings', () => {
 
   it('should clear copied state after 2 seconds', async () => {
     vi.useRealTimers();
-    const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
     // Mock clipboard API
     Object.assign(navigator, {
       clipboard: {
@@ -173,8 +173,8 @@ describe('EditGeneralSettings', () => {
 
   it('should clear previous timeout when copying again', async () => {
     vi.useRealTimers();
-    const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
-    const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
 
     // Mock clipboard API
     Object.assign(navigator, {
