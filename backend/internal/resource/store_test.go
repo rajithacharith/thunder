@@ -19,6 +19,7 @@
 package resource
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -85,7 +86,8 @@ func (suite *ResourceStoreTestSuite) TestCreateResourceServer() {
 			},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryCreateResourceServer, "rs1", "ou1", "Test Server",
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryCreateResourceServer, "rs1", "ou1", "Test Server",
 					"Test Description", "test-identifier", []byte(`{"delimiter":":"}`), "test-deployment").
 					Return(int64(1), nil)
 			},
@@ -103,7 +105,8 @@ func (suite *ResourceStoreTestSuite) TestCreateResourceServer() {
 			},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryCreateResourceServer, "rs1", "ou1", "Test Server",
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryCreateResourceServer, "rs1", "ou1", "Test Server",
 					"Test Description", "test-identifier", []byte(`{"delimiter":":"}`), "test-deployment").
 					Return(int64(0), errors.New("insert failed"))
 			},
@@ -145,7 +148,8 @@ func (suite *ResourceStoreTestSuite) TestCreateResourceServer() {
 
 			tc.setupMocks()
 
-			err := suite.store.CreateResourceServer(tc.resourceID, tc.resourceServer)
+			err := suite.store.CreateResourceServer(context.Background(),
+				tc.resourceID, tc.resourceServer)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -175,7 +179,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServer() {
 			resourceID: "rs1",
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceServerByID, "rs1", "test-deployment").
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceServerByID, "rs1", "test-deployment").
 					Return([]map[string]interface{}{
 						{
 							"id":                 7,
@@ -204,7 +209,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServer() {
 			resourceID: "nonexistent",
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceServerByID, "nonexistent",
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceServerByID, "nonexistent",
 					"test-deployment").Return([]map[string]interface{}{}, nil)
 			},
 			expectedInternalID: 0,
@@ -216,7 +222,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServer() {
 			resourceID: "rs1",
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceServerByID, "rs1", "test-deployment").
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceServerByID, "rs1", "test-deployment").
 					Return(nil, errors.New("query error"))
 			},
 			expectedInternalID: 0,
@@ -240,7 +247,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServer() {
 
 			tc.setupMocks()
 
-			internalID, rs, err := suite.store.GetResourceServer(tc.resourceID)
+			internalID, rs, err := suite.store.GetResourceServer(context.Background(),
+				tc.resourceID)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -282,7 +290,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServerList() {
 			offset: 0,
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceServerList, 10, 0, "test-deployment").
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceServerList, 10, 0, "test-deployment").
 					Return([]map[string]interface{}{
 						{
 							"id":                 1,
@@ -314,7 +323,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServerList() {
 			offset: 0,
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceServerList, 10, 0, "test-deployment").
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceServerList, 10, 0, "test-deployment").
 					Return(nil, errors.New("query error"))
 			},
 			shouldErr: true,
@@ -325,7 +335,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServerList() {
 			offset: 0,
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceServerList, 10, 0, "test-deployment").
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceServerList, 10, 0, "test-deployment").
 					Return([]map[string]interface{}{
 						{
 							"id":                 3,
@@ -355,7 +366,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServerList() {
 
 			tc.setupMocks()
 
-			servers, err := suite.store.GetResourceServerList(tc.limit, tc.offset)
+			servers, err := suite.store.GetResourceServerList(context.Background(),
+				tc.limit, tc.offset)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -386,7 +398,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServerListCount() {
 			name: "Success",
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceServerListCount, "test-deployment").
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceServerListCount, "test-deployment").
 					Return([]map[string]interface{}{
 						{"total": int64(5)},
 					}, nil)
@@ -398,7 +411,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServerListCount() {
 			name: "QueryError",
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceServerListCount, "test-deployment").
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceServerListCount, "test-deployment").
 					Return(nil, errors.New("query error"))
 			},
 			expectedCount: 0,
@@ -418,7 +432,7 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServerListCount() {
 
 			tc.setupMocks()
 
-			count, err := suite.store.GetResourceServerListCount()
+			count, err := suite.store.GetResourceServerListCount(context.Background())
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -451,7 +465,8 @@ func (suite *ResourceStoreTestSuite) TestUpdateResourceServer() {
 			},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryUpdateResourceServer, "ou1", "Updated Server",
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryUpdateResourceServer, "ou1", "Updated Server",
 					"Updated Description", "updated-identifier", []byte(`{"delimiter":"-"}`), "rs1", "test-deployment").
 					Return(int64(1), nil)
 			},
@@ -469,7 +484,8 @@ func (suite *ResourceStoreTestSuite) TestUpdateResourceServer() {
 			},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryUpdateResourceServer, "ou1", "Updated Server",
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryUpdateResourceServer, "ou1", "Updated Server",
 					"Updated Description", "updated-identifier", []byte(`{"delimiter":"-"}`), "rs1", "test-deployment").
 					Return(int64(0), errors.New("update failed"))
 			},
@@ -493,7 +509,8 @@ func (suite *ResourceStoreTestSuite) TestUpdateResourceServer() {
 
 			tc.setupMocks()
 
-			err := suite.store.UpdateResourceServer(tc.resourceID, tc.resourceServer)
+			err := suite.store.UpdateResourceServer(context.Background(),
+				tc.resourceID, tc.resourceServer)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -520,7 +537,8 @@ func (suite *ResourceStoreTestSuite) TestDeleteResourceServer() {
 			resourceID: "rs1",
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryDeleteResourceServer, "rs1", "test-deployment").
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryDeleteResourceServer, "rs1", "test-deployment").
 					Return(int64(1), nil)
 			},
 			shouldErr: false,
@@ -530,7 +548,8 @@ func (suite *ResourceStoreTestSuite) TestDeleteResourceServer() {
 			resourceID: "rs1",
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryDeleteResourceServer, "rs1", "test-deployment").
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryDeleteResourceServer, "rs1", "test-deployment").
 					Return(int64(0), errors.New("delete failed"))
 			},
 			shouldErr: true,
@@ -553,7 +572,8 @@ func (suite *ResourceStoreTestSuite) TestDeleteResourceServer() {
 
 			tc.setupMocks()
 
-			err := suite.store.DeleteResourceServer(tc.resourceID)
+			err := suite.store.DeleteResourceServer(context.Background(),
+				tc.resourceID)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -581,7 +601,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceServerNameExists() {
 			serverName: "Test Server",
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckResourceServerNameExists, "Test Server",
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckResourceServerNameExists, "Test Server",
 					"test-deployment").Return([]map[string]interface{}{
 					{"count": int64(1)},
 				}, nil)
@@ -594,7 +615,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceServerNameExists() {
 			serverName: "Nonexistent Server",
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckResourceServerNameExists, "Nonexistent Server",
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckResourceServerNameExists, "Nonexistent Server",
 					"test-deployment").Return([]map[string]interface{}{
 					{"count": int64(0)},
 				}, nil)
@@ -607,7 +629,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceServerNameExists() {
 			serverName: "Test Server",
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckResourceServerNameExists, "Test Server",
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckResourceServerNameExists, "Test Server",
 					"test-deployment").Return(nil, errors.New("query error"))
 			},
 			expectedExists: false,
@@ -631,7 +654,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceServerNameExists() {
 
 			tc.setupMocks()
 
-			exists, err := suite.store.CheckResourceServerNameExists(tc.serverName)
+			exists, err := suite.store.CheckResourceServerNameExists(context.Background(),
+				tc.serverName)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -689,7 +713,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceServerIdentifierExists() {
 			identifier: "test-identifier",
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckResourceServerIdentifierExists,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckResourceServerIdentifierExists,
 					"test-identifier", "test-deployment").Return([]map[string]interface{}{
 					{"count": int64(1)},
 				}, nil)
@@ -702,7 +727,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceServerIdentifierExists() {
 			identifier: "nonexistent-identifier",
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckResourceServerIdentifierExists,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckResourceServerIdentifierExists,
 					"nonexistent-identifier", "test-deployment").Return([]map[string]interface{}{
 					{"count": int64(0)},
 				}, nil)
@@ -715,7 +741,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceServerIdentifierExists() {
 			identifier: "test-identifier",
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckResourceServerIdentifierExists,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckResourceServerIdentifierExists,
 					"test-identifier", "test-deployment").Return(nil, errors.New("query error"))
 			},
 			expectedExists: false,
@@ -726,7 +753,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceServerIdentifierExists() {
 	for _, tc := range testCases {
 		suite.runBoolCheckTest(tc.name, tc.setupMocks,
 			func() (bool, error) {
-				return suite.store.CheckResourceServerIdentifierExists(tc.identifier)
+				return suite.store.CheckResourceServerIdentifierExists(context.Background(),
+					tc.identifier)
 			},
 			tc.expectedExists, tc.shouldErr)
 	}
@@ -746,7 +774,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceServerHasDependencies() {
 			internalID: 1,
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckResourceServerHasDependencies, 1,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckResourceServerHasDependencies, 1,
 					"test-deployment").Return([]map[string]interface{}{
 					{"count": int64(3)},
 				}, nil)
@@ -759,7 +788,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceServerHasDependencies() {
 			internalID: 1,
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckResourceServerHasDependencies, 1,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckResourceServerHasDependencies, 1,
 					"test-deployment").Return([]map[string]interface{}{
 					{"count": int64(0)},
 				}, nil)
@@ -772,7 +802,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceServerHasDependencies() {
 			internalID: 1,
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckResourceServerHasDependencies, 1,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckResourceServerHasDependencies, 1,
 					"test-deployment").Return(nil, errors.New("query error"))
 			},
 			expectedHasDeps: false,
@@ -783,7 +814,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceServerHasDependencies() {
 	for _, tc := range testCases {
 		suite.runBoolCheckTest(tc.name, tc.setupMocks,
 			func() (bool, error) {
-				return suite.store.CheckResourceServerHasDependencies(tc.internalID)
+				return suite.store.CheckResourceServerHasDependencies(context.Background(),
+					tc.internalID)
 			},
 			tc.expectedHasDeps, tc.shouldErr)
 	}
@@ -815,7 +847,8 @@ func (suite *ResourceStoreTestSuite) TestCreateResource() {
 			},
 			setupMocks: func(parentID *int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryCreateResource, "res1", 5, "Test Resource",
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryCreateResource, "res1", 5, "Test Resource",
 					"test-handle", "Test Description", "perm:create", "{}", parentID, "test-deployment").
 					Return(int64(1), nil)
 			},
@@ -834,7 +867,8 @@ func (suite *ResourceStoreTestSuite) TestCreateResource() {
 			},
 			setupMocks: func(parentID *int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryCreateResource, "res1", 5, "Test Resource",
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryCreateResource, "res1", 5, "Test Resource",
 					"test-handle", "Test Description", "perm:create", "{}", (*int)(nil), "test-deployment").
 					Return(int64(1), nil)
 			},
@@ -853,7 +887,8 @@ func (suite *ResourceStoreTestSuite) TestCreateResource() {
 			},
 			setupMocks: func(parentID *int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryCreateResource, "res1", 5, "Test Resource",
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryCreateResource, "res1", 5, "Test Resource",
 					"test-handle", "Test Description", "perm:create", "{}", (*int)(nil), "test-deployment").
 					Return(int64(0), errors.New("insert failed"))
 			},
@@ -877,7 +912,8 @@ func (suite *ResourceStoreTestSuite) TestCreateResource() {
 
 			tc.setupMocks(tc.parentID)
 
-			err := suite.store.CreateResource(tc.resourceID, tc.resourceServerInternalID, tc.parentID, tc.resource)
+			err := suite.store.CreateResource(context.Background(),
+				tc.resourceID, tc.resourceServerInternalID, tc.parentID, tc.resource)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -909,7 +945,8 @@ func (suite *ResourceStoreTestSuite) TestGetResource() {
 			setupMocks: func() {
 				parentID := testParentID1
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceByID, "res1", 1,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceByID, "res1", 1,
 					"test-deployment").Return([]map[string]interface{}{
 					{
 						"id":                 11,
@@ -940,7 +977,8 @@ func (suite *ResourceStoreTestSuite) TestGetResource() {
 			resourceServerInternalID: 1,
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceByID, "nonexistent", 1,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceByID, "nonexistent", 1,
 					"test-deployment").Return([]map[string]interface{}{}, nil)
 			},
 			expectedInternalID: 0,
@@ -961,7 +999,8 @@ func (suite *ResourceStoreTestSuite) TestGetResource() {
 
 			tc.setupMocks()
 
-			internalID, res, err := suite.store.GetResource(tc.resourceID, tc.resourceServerInternalID)
+			internalID, res, err := suite.store.GetResource(context.Background(),
+				tc.resourceID, tc.resourceServerInternalID)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -1005,7 +1044,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceList() {
 			offset:                   0,
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceList, 1, 10, 0, "test-deployment").
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceList, 1, 10, 0, "test-deployment").
 					Return([]map[string]interface{}{
 						{
 							"id":                 21,
@@ -1041,7 +1081,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceList() {
 			setupMocks: func() {
 				queryError := errors.New("query error")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceList, 1, 10, 0, "test-deployment").
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceList, 1, 10, 0, "test-deployment").
 					Return(nil, queryError)
 			},
 			shouldErr: true,
@@ -1057,7 +1098,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceList() {
 			offset:                   0,
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceList, 1, 10, 0, "test-deployment").
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceList, 1, 10, 0, "test-deployment").
 					Return([]map[string]interface{}{
 						{
 							"id":                 23,
@@ -1086,7 +1128,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceList() {
 			}
 
 			tc.setupMocks()
-			resources, err := suite.store.GetResourceList(tc.resourceServerInternalID, tc.limit, tc.offset)
+			resources, err := suite.store.GetResourceList(context.Background(),
+				tc.resourceServerInternalID, tc.limit, tc.offset)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -1126,7 +1169,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceListByParent() {
 			offset:                   0,
 			setupMocks: func(parentID *int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceListByNullParent, 1, 10, 0,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceListByNullParent, 1, 10, 0,
 					"test-deployment").Return([]map[string]interface{}{
 					{
 						"id":                 31,
@@ -1149,7 +1193,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceListByParent() {
 			offset:                   0,
 			setupMocks: func(parentID *int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceListByParent, 1, *parentID, 10, 0,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceListByParent, 1, *parentID, 10, 0,
 					"test-deployment").Return([]map[string]interface{}{
 					{
 						"id":                 32,
@@ -1174,7 +1219,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceListByParent() {
 			setupMocks: func(parentID *int) {
 				queryError := errors.New("query error")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceListByNullParent, 1, 10, 0,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceListByNullParent, 1, 10, 0,
 					"test-deployment").Return(nil, queryError)
 			},
 			shouldErr: true,
@@ -1197,7 +1243,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceListByParent() {
 
 			tc.setupMocks(tc.parentID)
 
-			resources, err := suite.store.GetResourceListByParent(
+			resources, err := suite.store.GetResourceListByParent(context.Background(),
+
 				tc.resourceServerInternalID, tc.parentID, tc.limit, tc.offset)
 
 			if tc.shouldErr {
@@ -1230,7 +1277,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceListCount() {
 			resourceServerInternalID: 1,
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceListCount, 1, "test-deployment").
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceListCount, 1, "test-deployment").
 					Return([]map[string]interface{}{
 						{"total": int64(10)},
 					}, nil)
@@ -1244,7 +1292,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceListCount() {
 			setupMocks: func() {
 				queryError := errors.New("query error")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceListCount, 1, "test-deployment").Return(nil, queryError)
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceListCount, 1, "test-deployment").Return(nil, queryError)
 			},
 			expectedCount: 0,
 			shouldErr:     true,
@@ -1262,7 +1311,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceListCount() {
 			}
 
 			tc.setupMocks()
-			count, err := suite.store.GetResourceListCount(tc.resourceServerInternalID)
+			count, err := suite.store.GetResourceListCount(context.Background(),
+				tc.resourceServerInternalID)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -1289,7 +1339,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceListCountByParent() {
 			parentID:                 nil,
 			setupMocks: func(parentID *int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceListCountByNullParent, 1,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceListCountByNullParent, 1,
 					"test-deployment").Return([]map[string]interface{}{
 					{"total": int64(5)},
 				}, nil)
@@ -1303,7 +1354,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceListCountByParent() {
 			parentID:                 func() *int { id := 2; return &id }(),
 			setupMocks: func(parentID *int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceListCountByParent, 1, *parentID,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceListCountByParent, 1, *parentID,
 					"test-deployment").Return([]map[string]interface{}{
 					{"total": int64(3)},
 				}, nil)
@@ -1318,7 +1370,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceListCountByParent() {
 			setupMocks: func(parentID *int) {
 				queryError := errors.New("query error")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetResourceListCountByNullParent, 1, "test-deployment").
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetResourceListCountByNullParent, 1, "test-deployment").
 					Return(nil, queryError)
 			},
 			expectedCount: 0,
@@ -1337,7 +1390,8 @@ func (suite *ResourceStoreTestSuite) TestGetResourceListCountByParent() {
 			}
 
 			tc.setupMocks(tc.parentID)
-			count, err := suite.store.GetResourceListCountByParent(tc.resourceServerInternalID, tc.parentID)
+			count, err := suite.store.GetResourceListCountByParent(context.Background(),
+				tc.resourceServerInternalID, tc.parentID)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -1369,7 +1423,8 @@ func (suite *ResourceStoreTestSuite) TestUpdateResource() {
 			},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryUpdateResource, "Updated Resource", "Updated Description", "{}",
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryUpdateResource, "Updated Resource", "Updated Description", "{}",
 					"res1", 1, "test-deployment").Return(int64(1), nil)
 			},
 			shouldErr: false,
@@ -1384,7 +1439,8 @@ func (suite *ResourceStoreTestSuite) TestUpdateResource() {
 			},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryUpdateResource, "Updated Name", "Updated Description", "{}",
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryUpdateResource, "Updated Name", "Updated Description", "{}",
 					"nonexistent", 1, "test-deployment").Return(int64(0), errResourceNotFound)
 			},
 			shouldErr: true,
@@ -1400,7 +1456,8 @@ func (suite *ResourceStoreTestSuite) TestUpdateResource() {
 			setupMocks: func() {
 				execError := errors.New("update failed")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryUpdateResource, "Updated Name", "Updated Description", "{}",
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryUpdateResource, "Updated Name", "Updated Description", "{}",
 					"res1", 1, "test-deployment").Return(int64(0), execError)
 			},
 			shouldErr: true,
@@ -1422,7 +1479,8 @@ func (suite *ResourceStoreTestSuite) TestUpdateResource() {
 			}
 
 			tc.setupMocks()
-			err := suite.store.UpdateResource(tc.resourceID, tc.resourceServerInternalID, tc.resource)
+			err := suite.store.UpdateResource(context.Background(),
+				tc.resourceID, tc.resourceServerInternalID, tc.resource)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -1451,7 +1509,8 @@ func (suite *ResourceStoreTestSuite) TestDeleteResource() {
 			resourceServerInternalID: 1,
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryDeleteResource, "res1", 1, "test-deployment").
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryDeleteResource, "res1", 1, "test-deployment").
 					Return(int64(1), nil)
 			},
 			shouldErr: false,
@@ -1463,7 +1522,8 @@ func (suite *ResourceStoreTestSuite) TestDeleteResource() {
 			setupMocks: func() {
 				execError := errors.New("delete error")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryDeleteResource, "res1", 1, "test-deployment").
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryDeleteResource, "res1", 1, "test-deployment").
 					Return(int64(0), execError)
 			},
 			shouldErr: true,
@@ -1485,7 +1545,8 @@ func (suite *ResourceStoreTestSuite) TestDeleteResource() {
 			}
 
 			tc.setupMocks()
-			err := suite.store.DeleteResource(tc.resourceID, tc.resourceServerInternalID)
+			err := suite.store.DeleteResource(context.Background(),
+				tc.resourceID, tc.resourceServerInternalID)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -1516,7 +1577,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceHandleExists() {
 			parentID:                 nil,
 			setupMocks: func(parentID *int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckResourceHandleExistsUnderNullParent, 1,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckResourceHandleExistsUnderNullParent, 1,
 					"Test Resource", "test-deployment").Return([]map[string]interface{}{
 					{"count": int64(1)},
 				}, nil)
@@ -1531,7 +1593,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceHandleExists() {
 			parentID:                 nil,
 			setupMocks: func(parentID *int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckResourceHandleExistsUnderNullParent, 1,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckResourceHandleExistsUnderNullParent, 1,
 					"Nonexistent", "test-deployment").Return([]map[string]interface{}{
 					{"count": int64(0)},
 				}, nil)
@@ -1546,7 +1609,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceHandleExists() {
 			parentID:                 func() *int { id := 10; return &id }(),
 			setupMocks: func(parentID *int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckResourceHandleExistsUnderParent, 1,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckResourceHandleExistsUnderParent, 1,
 					"Test Resource", *parentID, "test-deployment").Return([]map[string]interface{}{
 					{"count": int64(0)},
 				}, nil)
@@ -1562,7 +1626,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceHandleExists() {
 			setupMocks: func(parentID *int) {
 				queryError := errors.New("query error")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckResourceHandleExistsUnderNullParent, 1,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckResourceHandleExistsUnderNullParent, 1,
 					"Test Resource", "test-deployment").Return(nil, queryError)
 			},
 			expectedExists: false,
@@ -1582,7 +1647,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceHandleExists() {
 
 			tc.setupMocks(tc.parentID)
 
-			exists, err := suite.store.CheckResourceHandleExists(
+			exists, err := suite.store.CheckResourceHandleExists(context.Background(),
+
 				tc.resourceServerInternalID, tc.resourceHandle, tc.parentID)
 
 			if tc.shouldErr {
@@ -1608,7 +1674,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceHasDependencies() {
 			internalID: 1,
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckResourceHasDependencies, 1,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckResourceHasDependencies, 1,
 					"test-deployment").Return([]map[string]interface{}{
 					{"count": int64(2)},
 				}, nil)
@@ -1621,7 +1688,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceHasDependencies() {
 			internalID: 1,
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckResourceHasDependencies, 1,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckResourceHasDependencies, 1,
 					"test-deployment").Return([]map[string]interface{}{
 					{"count": int64(0)},
 				}, nil)
@@ -1635,7 +1703,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceHasDependencies() {
 			setupMocks: func() {
 				queryError := errors.New("query error")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckResourceHasDependencies, 1, "test-deployment").
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckResourceHasDependencies, 1, "test-deployment").
 					Return(nil, queryError)
 			},
 			expectedHasDeps: false,
@@ -1654,7 +1723,8 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceHasDependencies() {
 			}
 
 			tc.setupMocks()
-			hasDeps, err := suite.store.CheckResourceHasDependencies(tc.internalID)
+			hasDeps, err := suite.store.CheckResourceHasDependencies(context.Background(),
+				tc.internalID)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -1681,7 +1751,8 @@ func (suite *ResourceStoreTestSuite) TestCheckCircularDependency() {
 			parentResourceID: "parent1",
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckCircularDependency, "parent1", "res1",
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckCircularDependency, "parent1", "res1",
 					"test-deployment").Return([]map[string]interface{}{
 					{"count": int64(1)},
 				}, nil)
@@ -1695,7 +1766,8 @@ func (suite *ResourceStoreTestSuite) TestCheckCircularDependency() {
 			parentResourceID: "parent1",
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckCircularDependency, "parent1", "res1",
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckCircularDependency, "parent1", "res1",
 					"test-deployment").Return([]map[string]interface{}{
 					{"count": int64(0)},
 				}, nil)
@@ -1710,7 +1782,8 @@ func (suite *ResourceStoreTestSuite) TestCheckCircularDependency() {
 			setupMocks: func() {
 				queryError := errors.New("query error")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckCircularDependency, "parent1", "res1",
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckCircularDependency, "parent1", "res1",
 					"test-deployment").Return(nil, queryError)
 			},
 			expectedHasCircular: false,
@@ -1729,7 +1802,8 @@ func (suite *ResourceStoreTestSuite) TestCheckCircularDependency() {
 			}
 
 			tc.setupMocks()
-			hasCircular, err := suite.store.CheckCircularDependency(tc.resourceID, tc.parentResourceID)
+			hasCircular, err := suite.store.CheckCircularDependency(context.Background(),
+				tc.resourceID, tc.parentResourceID)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -1767,7 +1841,8 @@ func (suite *ResourceStoreTestSuite) TestCreateAction() {
 			},
 			setupMocks: func(resourceID *int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryCreateAction, "action1", 5, resourceID,
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryCreateAction, "action1", 5, resourceID,
 					"Test Action", "test-handle", "Test Description", "perm:act", "{}", "test-deployment").
 					Return(int64(1), nil)
 			},
@@ -1786,7 +1861,8 @@ func (suite *ResourceStoreTestSuite) TestCreateAction() {
 			},
 			setupMocks: func(resourceID *int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryCreateAction, "action1", 5, (*int)(nil),
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryCreateAction, "action1", 5, (*int)(nil),
 					"Test Action", "test-handle", "Test Description", "perm:act", "{}", "test-deployment").
 					Return(int64(1), nil)
 			},
@@ -1806,7 +1882,8 @@ func (suite *ResourceStoreTestSuite) TestCreateAction() {
 			setupMocks: func(resourceID *int) {
 				execError := errors.New("insert error")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryCreateAction, "action1", 5, (*int)(nil),
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryCreateAction, "action1", 5, (*int)(nil),
 					"Test Action", "test-handle", "Test Description", "perm:act", "{}", "test-deployment").
 					Return(int64(0), execError)
 			},
@@ -1829,7 +1906,8 @@ func (suite *ResourceStoreTestSuite) TestCreateAction() {
 			}
 
 			tc.setupMocks(tc.resourceInternalID)
-			err := suite.store.CreateAction(tc.actionID, tc.resourceServerInternalID, tc.resourceInternalID, tc.action)
+			err := suite.store.CreateAction(context.Background(),
+				tc.actionID, tc.resourceServerInternalID, tc.resourceInternalID, tc.action)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -1863,7 +1941,8 @@ func (suite *ResourceStoreTestSuite) TestGetAction() {
 			setupMocks: func(resourceID *int) {
 				var nilResID *int
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetActionByID, "action1", 1,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetActionByID, "action1", 1,
 					nilResID, "test-deployment").Return([]map[string]interface{}{
 					{
 						"action_id":          "action1",
@@ -1885,7 +1964,8 @@ func (suite *ResourceStoreTestSuite) TestGetAction() {
 			resourceInternalID:       func() *int { id := 10; return &id }(),
 			setupMocks: func(resourceID *int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetActionByID, "action1", 1,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetActionByID, "action1", 1,
 					resourceID, "test-deployment").Return([]map[string]interface{}{
 					{
 						"action_id":          "action1",
@@ -1909,7 +1989,8 @@ func (suite *ResourceStoreTestSuite) TestGetAction() {
 			setupMocks: func(resourceID *int) {
 				var nilResID *int
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetActionByID, "nonexistent", 1,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetActionByID, "nonexistent", 1,
 					nilResID, "test-deployment").Return([]map[string]interface{}{}, nil)
 			},
 			expectedError: errActionNotFound,
@@ -1924,7 +2005,8 @@ func (suite *ResourceStoreTestSuite) TestGetAction() {
 				var nilResID *int
 				queryError := errors.New("query error")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetActionByID, "action1", 1,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetActionByID, "action1", 1,
 					nilResID, "test-deployment").Return(nil, queryError)
 			},
 			shouldErr: true,
@@ -1946,7 +2028,8 @@ func (suite *ResourceStoreTestSuite) TestGetAction() {
 			}
 
 			tc.setupMocks(tc.resourceInternalID)
-			action, err := suite.store.GetAction(tc.actionID, tc.resourceServerInternalID, tc.resourceInternalID)
+			action, err := suite.store.GetAction(context.Background(),
+				tc.actionID, tc.resourceServerInternalID, tc.resourceInternalID)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -1986,7 +2069,8 @@ func (suite *ResourceStoreTestSuite) TestGetActionList() {
 			setupMocks: func(resourceID *int, limit, offset int) {
 				var nilResID *int
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetActionList, testResourceServerInternalID, nilResID,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetActionList, testResourceServerInternalID, nilResID,
 					limit, offset, "test-deployment").Return([]map[string]interface{}{
 					{
 						"action_id":          "action1",
@@ -2019,7 +2103,8 @@ func (suite *ResourceStoreTestSuite) TestGetActionList() {
 				var nilResID *int
 				queryError := errors.New("query error")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetActionList, testResourceServerInternalID, nilResID,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetActionList, testResourceServerInternalID, nilResID,
 					limit, offset, "test-deployment").Return(nil, queryError)
 			},
 			shouldErr: true,
@@ -2033,7 +2118,8 @@ func (suite *ResourceStoreTestSuite) TestGetActionList() {
 			setupMocks: func(resourceID *int, limit, offset int) {
 				var nilResID *int
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetActionList, testResourceServerInternalID, nilResID,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetActionList, testResourceServerInternalID, nilResID,
 					limit, offset, "test-deployment").Return([]map[string]interface{}{
 					{
 						"action_id": 123, // Invalid type
@@ -2051,7 +2137,8 @@ func (suite *ResourceStoreTestSuite) TestGetActionList() {
 			offset:                   0,
 			setupMocks: func(resourceID *int, limit, offset int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetActionList, 5, resourceID, 10, 0,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetActionList, 5, resourceID, 10, 0,
 					"test-deployment").Return([]map[string]interface{}{
 					{
 						"action_id":          "action1",
@@ -2076,7 +2163,8 @@ func (suite *ResourceStoreTestSuite) TestGetActionList() {
 			setupMocks: func(resourceID *int, limit, offset int) {
 				queryError := errors.New("query error")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetActionList, 5, resourceID, 10, 0,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetActionList, 5, resourceID, 10, 0,
 					"test-deployment").Return(nil, queryError)
 			},
 			shouldErr: true,
@@ -2095,7 +2183,8 @@ func (suite *ResourceStoreTestSuite) TestGetActionList() {
 
 			tc.setupMocks(tc.resourceInternalID, tc.limit, tc.offset)
 
-			actions, err := suite.store.GetActionList(
+			actions, err := suite.store.GetActionList(context.Background(),
+
 				tc.resourceServerInternalID, tc.resourceInternalID, tc.limit, tc.offset)
 
 			if tc.shouldErr {
@@ -2131,7 +2220,8 @@ func (suite *ResourceStoreTestSuite) TestGetActionListCount() {
 			setupMocks: func(resourceID *int) {
 				var nilResID *int
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetActionListCount, testResourceServerInternalID,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetActionListCount, testResourceServerInternalID,
 					nilResID, "test-deployment").Return([]map[string]interface{}{
 					{"total": int64(15)},
 				}, nil)
@@ -2147,7 +2237,8 @@ func (suite *ResourceStoreTestSuite) TestGetActionListCount() {
 				var nilResID *int
 				queryError := errors.New("query error")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetActionListCount, testResourceServerInternalID,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetActionListCount, testResourceServerInternalID,
 					nilResID, "test-deployment").Return(nil, queryError)
 			},
 			expectedCount: 0,
@@ -2159,7 +2250,8 @@ func (suite *ResourceStoreTestSuite) TestGetActionListCount() {
 			resourceInternalID:       func() *int { id := 10; return &id }(),
 			setupMocks: func(resourceID *int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetActionListCount, 5, resourceID,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetActionListCount, 5, resourceID,
 					"test-deployment").Return([]map[string]interface{}{
 					{"total": int64(5)},
 				}, nil)
@@ -2174,7 +2266,8 @@ func (suite *ResourceStoreTestSuite) TestGetActionListCount() {
 			setupMocks: func(resourceID *int) {
 				queryError := errors.New("query error")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryGetActionListCount, 5, resourceID,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryGetActionListCount, 5, resourceID,
 					"test-deployment").Return(nil, queryError)
 			},
 			expectedCount: 0,
@@ -2193,7 +2286,8 @@ func (suite *ResourceStoreTestSuite) TestGetActionListCount() {
 			}
 
 			tc.setupMocks(tc.resourceInternalID)
-			count, err := suite.store.GetActionListCount(tc.resourceServerInternalID, tc.resourceInternalID)
+			count, err := suite.store.GetActionListCount(context.Background(),
+				tc.resourceServerInternalID, tc.resourceInternalID)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -2228,7 +2322,8 @@ func (suite *ResourceStoreTestSuite) TestUpdateAction() {
 			setupMocks: func(resourceID *int) {
 				var nilResID *int
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryUpdateAction, "Updated Action",
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryUpdateAction, "Updated Action",
 					"Updated Description", "{}", "action1", testResourceServerInternalID, nilResID, "test-deployment").
 					Return(int64(1), nil)
 			},
@@ -2245,7 +2340,8 @@ func (suite *ResourceStoreTestSuite) TestUpdateAction() {
 			},
 			setupMocks: func(resourceID *int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryUpdateAction, "Updated Action",
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryUpdateAction, "Updated Action",
 					"Updated Description", "{}", "action1", 5, resourceID, "test-deployment").
 					Return(int64(1), nil)
 			},
@@ -2264,7 +2360,8 @@ func (suite *ResourceStoreTestSuite) TestUpdateAction() {
 				var nilResID *int
 				execError := errors.New("update error")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryUpdateAction, "Updated Action",
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryUpdateAction, "Updated Action",
 					"Updated Description", "{}", "action1", testResourceServerInternalID, nilResID, "test-deployment").
 					Return(int64(0), execError)
 			},
@@ -2287,7 +2384,8 @@ func (suite *ResourceStoreTestSuite) TestUpdateAction() {
 			}
 
 			tc.setupMocks(tc.resourceInternalID)
-			err := suite.store.UpdateAction(tc.actionID, tc.resourceServerInternalID, tc.resourceInternalID, tc.action)
+			err := suite.store.UpdateAction(context.Background(),
+				tc.actionID, tc.resourceServerInternalID, tc.resourceInternalID, tc.action)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -2320,7 +2418,8 @@ func (suite *ResourceStoreTestSuite) TestDeleteAction() {
 				var nilResID *int
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 				suite.mockDBClient.On(
-					"Execute", queryDeleteAction, "action1", testResourceServerInternalID, nilResID, "test-deployment",
+					"ExecuteContext", context.Background(),
+					queryDeleteAction, "action1", testResourceServerInternalID, nilResID, "test-deployment",
 				).Return(int64(1), nil)
 			},
 			shouldErr: false,
@@ -2332,7 +2431,8 @@ func (suite *ResourceStoreTestSuite) TestDeleteAction() {
 			resourceInternalID:       func() *int { id := 10; return &id }(),
 			setupMocks: func(resourceID *int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Execute", queryDeleteAction, "action1", 5,
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryDeleteAction, "action1", 5,
 					resourceID, "test-deployment").Return(int64(1), nil)
 			},
 			shouldErr: false,
@@ -2347,7 +2447,8 @@ func (suite *ResourceStoreTestSuite) TestDeleteAction() {
 				execError := errors.New("delete error")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 				suite.mockDBClient.On(
-					"Execute", queryDeleteAction, "action1", testResourceServerInternalID, nilResID, "test-deployment",
+					"ExecuteContext", context.Background(),
+					queryDeleteAction, "action1", testResourceServerInternalID, nilResID, "test-deployment",
 				).Return(int64(0), execError)
 			},
 			shouldErr: true,
@@ -2369,7 +2470,8 @@ func (suite *ResourceStoreTestSuite) TestDeleteAction() {
 			}
 
 			tc.setupMocks(tc.resourceInternalID)
-			err := suite.store.DeleteAction(tc.actionID, tc.resourceServerInternalID, tc.resourceInternalID)
+			err := suite.store.DeleteAction(context.Background(),
+				tc.actionID, tc.resourceServerInternalID, tc.resourceInternalID)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -2402,7 +2504,8 @@ func (suite *ResourceStoreTestSuite) TestIsActionExist() {
 			setupMocks: func(resourceID *int) {
 				var nilResID *int
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckActionExists, "action1", testResourceServerInternalID,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckActionExists, "action1", testResourceServerInternalID,
 					nilResID, "test-deployment").Return([]map[string]interface{}{
 					{"count": int64(1)},
 				}, nil)
@@ -2418,7 +2521,8 @@ func (suite *ResourceStoreTestSuite) TestIsActionExist() {
 			setupMocks: func(resourceID *int) {
 				var nilResID *int
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckActionExists, "nonexistent", testResourceServerInternalID,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckActionExists, "nonexistent", testResourceServerInternalID,
 					nilResID, "test-deployment").Return([]map[string]interface{}{
 					{"count": int64(0)},
 				}, nil)
@@ -2433,7 +2537,8 @@ func (suite *ResourceStoreTestSuite) TestIsActionExist() {
 			resourceInternalID:       func() *int { id := 10; return &id }(),
 			setupMocks: func(resourceID *int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckActionExists, "action1", 5,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckActionExists, "action1", 5,
 					resourceID, "test-deployment").Return([]map[string]interface{}{
 					{"count": int64(1)},
 				}, nil)
@@ -2450,7 +2555,8 @@ func (suite *ResourceStoreTestSuite) TestIsActionExist() {
 				var nilResID *int
 				queryError := errors.New("query error")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckActionExists, "action1", testResourceServerInternalID,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckActionExists, "action1", testResourceServerInternalID,
 					nilResID, "test-deployment").Return(nil, queryError)
 			},
 			expectedExists: false,
@@ -2473,7 +2579,8 @@ func (suite *ResourceStoreTestSuite) TestIsActionExist() {
 			}
 
 			tc.setupMocks(tc.resourceInternalID)
-			exists, err := suite.store.IsActionExist(tc.actionID, tc.resourceServerInternalID, tc.resourceInternalID)
+			exists, err := suite.store.IsActionExist(context.Background(),
+				tc.actionID, tc.resourceServerInternalID, tc.resourceInternalID)
 
 			if tc.shouldErr {
 				suite.Error(err)
@@ -2507,7 +2614,8 @@ func (suite *ResourceStoreTestSuite) TestCheckActionHandleExists() {
 			setupMocks: func(resourceID *int) {
 				var nilResID *int
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckActionHandleExists, testResourceServerInternalID,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckActionHandleExists, testResourceServerInternalID,
 					nilResID, "Test Action", "test-deployment").Return([]map[string]interface{}{
 					{"count": int64(1)},
 				}, nil)
@@ -2523,7 +2631,8 @@ func (suite *ResourceStoreTestSuite) TestCheckActionHandleExists() {
 			setupMocks: func(resourceID *int) {
 				var nilResID *int
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckActionHandleExists, testResourceServerInternalID,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckActionHandleExists, testResourceServerInternalID,
 					nilResID, "Nonexistent", "test-deployment").Return([]map[string]interface{}{
 					{"count": int64(0)},
 				}, nil)
@@ -2538,7 +2647,8 @@ func (suite *ResourceStoreTestSuite) TestCheckActionHandleExists() {
 			actionHandle:             "Test Action",
 			setupMocks: func(resourceID *int) {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckActionHandleExists, 5,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckActionHandleExists, 5,
 					resourceID, "Test Action", "test-deployment").Return([]map[string]interface{}{
 					{"count": int64(0)},
 				}, nil)
@@ -2555,7 +2665,8 @@ func (suite *ResourceStoreTestSuite) TestCheckActionHandleExists() {
 				var nilResID *int
 				queryError := errors.New("query error")
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryCheckActionHandleExists, testResourceServerInternalID,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryCheckActionHandleExists, testResourceServerInternalID,
 					nilResID, "Test Action", "test-deployment").Return(nil, queryError)
 			},
 			expectedExists: false,
@@ -2578,7 +2689,8 @@ func (suite *ResourceStoreTestSuite) TestCheckActionHandleExists() {
 			}
 
 			tc.setupMocks(tc.resourceInternalID)
-			exists, err := suite.store.CheckActionHandleExists(tc.resourceServerInternalID,
+			exists, err := suite.store.CheckActionHandleExists(context.Background(),
+				tc.resourceServerInternalID,
 				tc.resourceInternalID, tc.actionHandle)
 
 			if tc.shouldErr {
@@ -3431,7 +3543,8 @@ func (suite *ResourceStoreTestSuite) TestValidatePermissions() {
 			permissions:         []string{"read", "write", "delete"},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryValidatePermissions, 1,
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryValidatePermissions, 1,
 					"test-deployment", `["read","write","delete"]`).
 					Return([]map[string]interface{}{}, nil)
 			},
@@ -3444,7 +3557,8 @@ func (suite *ResourceStoreTestSuite) TestValidatePermissions() {
 			permissions:         []string{"read", "write", "invalid1", "delete", "invalid2"},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryValidatePermissions, 1, "test-deployment",
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryValidatePermissions, 1, "test-deployment",
 					`["read","write","invalid1","delete","invalid2"]`).
 					Return([]map[string]interface{}{
 						{"permission": "invalid1"},
@@ -3460,7 +3574,8 @@ func (suite *ResourceStoreTestSuite) TestValidatePermissions() {
 			permissions:         []string{"badperm1", "badperm2", "badperm3"},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryValidatePermissions, 2, "test-deployment",
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryValidatePermissions, 2, "test-deployment",
 					`["badperm1","badperm2","badperm3"]`).
 					Return([]map[string]interface{}{
 						{"permission": "badperm1"},
@@ -3477,7 +3592,8 @@ func (suite *ResourceStoreTestSuite) TestValidatePermissions() {
 			permissions:         []string{"read", "write"},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryValidatePermissions, 1, "test-deployment", `["read","write"]`).
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryValidatePermissions, 1, "test-deployment", `["read","write"]`).
 					Return([]map[string]interface{}{
 						{"permission": "read"},
 						{"permission": 123}, // invalid type (int) - should cause error
@@ -3496,7 +3612,8 @@ func (suite *ResourceStoreTestSuite) TestValidatePermissions() {
 			permissions:         []string{"admin"},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryValidatePermissions, 1, "test-deployment", `["admin"]`).
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryValidatePermissions, 1, "test-deployment", `["admin"]`).
 					Return([]map[string]interface{}{
 						{"permission": nil}, // invalid type (nil) - should cause error
 					}, nil)
@@ -3514,7 +3631,8 @@ func (suite *ResourceStoreTestSuite) TestValidatePermissions() {
 			permissions:         []string{"read"},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryValidatePermissions, 1, "test-deployment", `["read"]`).
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryValidatePermissions, 1, "test-deployment", `["read"]`).
 					Return([]map[string]interface{}{
 						{"some_other_field": "value"}, // missing "permission" field - should cause error
 					}, nil)
@@ -3532,7 +3650,8 @@ func (suite *ResourceStoreTestSuite) TestValidatePermissions() {
 			permissions:         []string{"read", "write"},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryValidatePermissions, 1, "test-deployment", `["read","write"]`).
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryValidatePermissions, 1, "test-deployment", `["read","write"]`).
 					Return(nil, errors.New("database connection lost"))
 			},
 			expectedInvalid: nil,
@@ -3563,7 +3682,8 @@ func (suite *ResourceStoreTestSuite) TestValidatePermissions() {
 			permissions:         []string{"admin"},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryValidatePermissions, 5, "test-deployment", `["admin"]`).
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryValidatePermissions, 5, "test-deployment", `["admin"]`).
 					Return([]map[string]interface{}{}, nil)
 			},
 			expectedInvalid: nil,
@@ -3575,7 +3695,8 @@ func (suite *ResourceStoreTestSuite) TestValidatePermissions() {
 			permissions:         []string{"nonexistent"},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-				suite.mockDBClient.On("Query", queryValidatePermissions, 5, "test-deployment", `["nonexistent"]`).
+				suite.mockDBClient.On("QueryContext", context.Background(),
+					queryValidatePermissions, 5, "test-deployment", `["nonexistent"]`).
 					Return([]map[string]interface{}{
 						{"permission": "nonexistent"},
 					}, nil)
@@ -3597,7 +3718,8 @@ func (suite *ResourceStoreTestSuite) TestValidatePermissions() {
 
 			tc.setupMocks()
 
-			invalidPerms, err := suite.store.ValidatePermissions(tc.resServerInternalID, tc.permissions)
+			invalidPerms, err := suite.store.ValidatePermissions(context.Background(),
+				tc.resServerInternalID, tc.permissions)
 
 			if tc.shouldErr {
 				suite.Error(err)

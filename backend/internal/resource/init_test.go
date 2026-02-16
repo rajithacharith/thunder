@@ -19,15 +19,24 @@
 package resource
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+	_ "modernc.org/sqlite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 )
+
+// fakeTransactioner is a test double for transaction.Transactioner
+type fakeTransactioner struct{}
+
+func (f *fakeTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) error {
+	return txFunc(ctx)
+}
 
 type InitTestSuite struct {
 	suite.Suite
@@ -42,18 +51,22 @@ func (suite *InitTestSuite) SetupTest() {
 		Database: config.DatabaseConfig{
 			Identity: config.DataSource{
 				Type: "sqlite",
-				Path: ":memory:",
+				Path: "file:identity?mode=memory&cache=shared",
 			},
 			Runtime: config.DataSource{
 				Type: "sqlite",
-				Path: ":memory:",
+				Path: "file:runtime?mode=memory&cache=shared",
+			},
+			User: config.DataSource{
+				Type: "sqlite",
+				Path: "file:user?mode=memory&cache=shared",
 			},
 		},
 		Server: config.ServerConfig{
 			Identifier: "test-deployment",
 		},
 	}
-	_ = config.InitializeThunderRuntime("test", testConfig)
+	_ = config.InitializeThunderRuntime(".", testConfig)
 }
 
 func (suite *InitTestSuite) TearDownTest() {
@@ -296,7 +309,8 @@ func (suite *InitTestSuite) TestNewResourceService() {
 	mockStore := newResourceStoreInterfaceMock(suite.T())
 
 	// Execute
-	service, err := newResourceService(mockStore, suite.mockOUService)
+	mockTransactioner := &fakeTransactioner{}
+	service, err := newResourceService(suite.mockOUService, mockStore, mockTransactioner)
 
 	// Assert
 	suite.NoError(err)
