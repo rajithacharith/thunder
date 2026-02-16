@@ -22,6 +22,7 @@ import (
 	"net/http"
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
@@ -31,7 +32,14 @@ func Initialize(
 	ouService oupkg.OrganizationUnitServiceInterface,
 ) (ResourceServiceInterface, error) {
 	resourceStore := newResourceStore()
-	resourceService, err := newResourceService(resourceStore, ouService)
+
+	// Get transactioner from DB provider
+	transactioner, err := provider.GetDBProvider().GetConfigDBTransactioner()
+	if err != nil {
+		return nil, err
+	}
+
+	resourceService, err := newResourceService(ouService, resourceStore, transactioner)
 	if err != nil {
 		return nil, err
 	}

@@ -127,7 +127,7 @@ func (rs *roleService) CreateRole(
 	}
 
 	// Validate permissions exist in resource management system
-	if err := rs.validatePermissions(role.Permissions); err != nil {
+	if err := rs.validatePermissions(ctx, role.Permissions); err != nil {
 		return nil, err
 	}
 
@@ -231,7 +231,7 @@ func (rs *roleService) UpdateRoleWithPermissions(
 	}
 
 	// Validate permissions exist in resource management system
-	if err := rs.validatePermissions(role.Permissions); err != nil {
+	if err := rs.validatePermissions(ctx, role.Permissions); err != nil {
 		return nil, err
 	}
 
@@ -695,7 +695,9 @@ func (rs *roleService) getDisplayNameForAssignment(ctx context.Context, assignme
 }
 
 // validatePermissions validates that all permissions exist in the resource management system.
-func (rs *roleService) validatePermissions(permissions []ResourcePermissions) *serviceerror.ServiceError {
+func (rs *roleService) validatePermissions(
+	ctx context.Context, permissions []ResourcePermissions,
+) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if len(permissions) == 0 {
@@ -715,6 +717,7 @@ func (rs *roleService) validatePermissions(permissions []ResourcePermissions) *s
 
 		// Call resource service to validate permissions
 		invalidPerms, svcErr := rs.resourceService.ValidatePermissions(
+			ctx,
 			resPerm.ResourceServerID,
 			resPerm.Permissions,
 		)
