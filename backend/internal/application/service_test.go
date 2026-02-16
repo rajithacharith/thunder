@@ -3761,3 +3761,223 @@ func (suite *ServiceTestSuite) TestUpdateApplication_NameConflict() {
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorApplicationAlreadyExistsWithName, svcErr)
 }
+
+func (suite *ServiceTestSuite) TestGetProcessedClientSecretForUpdate_PublicClient() {
+	oauthConfig := &model.OAuthAppConfigDTO{
+		PublicClient: true,
+		ClientSecret: "should-be-ignored",
+	}
+
+	result := getProcessedClientSecretForUpdate(oauthConfig, nil)
+
+	assert.Equal(suite.T(), "", result)
+}
+
+func (suite *ServiceTestSuite) TestGetProcessedClientSecretForUpdate_NewSecretProvided() {
+	oauthConfig := &model.OAuthAppConfigDTO{
+		PublicClient: false,
+		ClientSecret: "new-secret-123",
+	}
+
+	result := getProcessedClientSecretForUpdate(oauthConfig, nil)
+
+	assert.NotEqual(suite.T(), "", result)
+	assert.NotEqual(suite.T(), "new-secret-123", result)
+}
+
+func (suite *ServiceTestSuite) TestGetProcessedClientSecretForUpdate_PreserveExistingSecret() {
+	existingHashedSecret := "existing-hashed-secret-xyz"
+	existingApp := &model.ApplicationProcessedDTO{
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					ClientID:           "client-123",
+					HashedClientSecret: existingHashedSecret,
+					PublicClient:       false,
+				},
+			},
+		},
+	}
+
+	oauthConfig := &model.OAuthAppConfigDTO{
+		PublicClient: false,
+		ClientSecret: "",
+	}
+
+	var existingOAuthConfig *model.OAuthAppConfigProcessedDTO
+	if len(existingApp.InboundAuthConfig) > 0 {
+		existingOAuthConfig = existingApp.InboundAuthConfig[0].OAuthAppConfig
+	}
+
+	result := getProcessedClientSecretForUpdate(oauthConfig, existingOAuthConfig)
+
+	assert.Equal(suite.T(), existingHashedSecret, result)
+}
+
+func (suite *ServiceTestSuite) TestGetProcessedClientSecretForUpdate_NoExistingApp() {
+	oauthConfig := &model.OAuthAppConfigDTO{
+		PublicClient: false,
+		ClientSecret: "",
+	}
+
+	result := getProcessedClientSecretForUpdate(oauthConfig, nil)
+
+	assert.Equal(suite.T(), "", result)
+}
+
+func (suite *ServiceTestSuite) TestGetProcessedClientSecretForUpdate_NoExistingOAuthConfig() {
+	oauthConfig := &model.OAuthAppConfigDTO{
+		PublicClient: false,
+		ClientSecret: "",
+	}
+
+	result := getProcessedClientSecretForUpdate(oauthConfig, nil)
+
+	assert.Equal(suite.T(), "", result)
+}
+
+// TestResolveClientSecret_PublicClient tests that no secret is generated for public clients.
+func TestResolveClientSecret_PublicClient(t *testing.T) {
+	inboundAuthConfig := &model.InboundAuthConfigDTO{
+		OAuthAppConfig: &model.OAuthAppConfigDTO{
+			ClientSecret: "",
+			PublicClient: true,
+		},
+	}
+
+	err := resolveClientSecret(inboundAuthConfig, nil)
+
+	assert.Nil(t, err)
+	assert.Equal(t, "", inboundAuthConfig.OAuthAppConfig.ClientSecret)
+}
+
+// TestResolveClientSecret_SecretAlreadyProvided tests that existing secrets are not overwritten.
+func TestResolveClientSecret_SecretAlreadyProvided(t *testing.T) {
+	providedSecret := "user-provided-secret"
+	inboundAuthConfig := &model.InboundAuthConfigDTO{
+		OAuthAppConfig: &model.OAuthAppConfigDTO{
+			ClientSecret: providedSecret,
+			PublicClient: false,
+		},
+	}
+
+	err := resolveClientSecret(inboundAuthConfig, nil)
+
+	assert.Nil(t, err)
+	assert.Equal(t, providedSecret, inboundAuthConfig.OAuthAppConfig.ClientSecret)
+}
+
+// TestResolveClientSecret_GenerateForNewConfidentialClient tests secret generation for new clients.
+func TestResolveClientSecret_GenerateForNewConfidentialClient(t *testing.T) {
+	inboundAuthConfig := &model.InboundAuthConfigDTO{
+		OAuthAppConfig: &model.OAuthAppConfigDTO{
+			ClientSecret: "",
+			PublicClient: false,
+		},
+	}
+
+	err := resolveClientSecret(inboundAuthConfig, nil)
+
+	assert.Nil(t, err)
+	assert.NotEmpty(t, inboundAuthConfig.OAuthAppConfig.ClientSecret)
+	// Verify it's a valid OAuth2 secret (should be non-empty and have sufficient length)
+	assert.Greater(t, len(inboundAuthConfig.OAuthAppConfig.ClientSecret), 20)
+}
+
+// TestResolveClientSecret_PreserveExistingSecret tests that existing secrets are preserved during updates.
+func TestResolveClientSecret_PreserveExistingSecret(t *testing.T) {
+	existingHashedSecret := "existing-hashed-secret"
+	existingApp := &model.ApplicationProcessedDTO{
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					HashedClientSecret: existingHashedSecret,
+					PublicClient:       false,
+				},
+			},
+		},
+	}
+
+	inboundAuthConfig := &model.InboundAuthConfigDTO{
+		OAuthAppConfig: &model.OAuthAppConfigDTO{
+			ClientSecret: "",
+			PublicClient: false,
+		},
+	}
+
+	err := resolveClientSecret(inboundAuthConfig, existingApp)
+
+	assert.Nil(t, err)
+	// Secret should remain empty (not generated) because existing app has a secret
+	assert.Equal(t, "", inboundAuthConfig.OAuthAppConfig.ClientSecret)
+}
+
+// TestResolveClientSecret_NoExistingApp tests secret generation when no existing app.
+func TestResolveClientSecret_NoExistingApp(t *testing.T) {
+	inboundAuthConfig := &model.InboundAuthConfigDTO{
+		OAuthAppConfig: &model.OAuthAppConfigDTO{
+			ClientSecret: "",
+			PublicClient: false,
+		},
+	}
+
+	err := resolveClientSecret(inboundAuthConfig, nil)
+
+	assert.Nil(t, err)
+	assert.NotEmpty(t, inboundAuthConfig.OAuthAppConfig.ClientSecret)
+}
+
+// TestResolveClientSecret_ExistingAppWithoutSecret tests secret generation when existing app has no secret.
+func TestResolveClientSecret_ExistingAppWithoutSecret(t *testing.T) {
+	existingApp := &model.ApplicationProcessedDTO{
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					HashedClientSecret: "",
+					PublicClient:       false,
+				},
+			},
+		},
+	}
+
+	inboundAuthConfig := &model.InboundAuthConfigDTO{
+		OAuthAppConfig: &model.OAuthAppConfigDTO{
+			ClientSecret: "",
+			PublicClient: false,
+		},
+	}
+
+	err := resolveClientSecret(inboundAuthConfig, existingApp)
+
+	assert.Nil(t, err)
+	// Should generate a new secret since existing app doesn't have one
+	assert.NotEmpty(t, inboundAuthConfig.OAuthAppConfig.ClientSecret)
+}
+
+// TestResolveClientSecret_ExistingPublicClientToConfidential tests conversion from public to confidential.
+func TestResolveClientSecret_ExistingPublicClientToConfidential(t *testing.T) {
+	existingApp := &model.ApplicationProcessedDTO{
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					HashedClientSecret: "",
+					PublicClient:       true,
+				},
+			},
+		},
+	}
+
+	inboundAuthConfig := &model.InboundAuthConfigDTO{
+		OAuthAppConfig: &model.OAuthAppConfigDTO{
+			ClientSecret: "",
+			PublicClient: false,
+		},
+	}
+
+	err := resolveClientSecret(inboundAuthConfig, existingApp)
+
+	assert.Nil(t, err)
+	// Should generate a new secret when converting public to confidential
+	assert.NotEmpty(t, inboundAuthConfig.OAuthAppConfig.ClientSecret)
+}
