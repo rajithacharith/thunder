@@ -135,6 +135,7 @@ type FlowConfig struct {
 	UserOnboardingFlowHandle string `yaml:"user_onboarding_flow_handle" json:"user_onboarding_flow_handle"`
 	MaxVersionHistory        int    `yaml:"max_version_history" json:"max_version_history"`
 	AutoInferRegistration    bool   `yaml:"auto_infer_registration" json:"auto_infer_registration"`
+	Store                    string `yaml:"store" json:"store"`
 }
 
 // CryptoConfig holds the cryptographic configuration details.
