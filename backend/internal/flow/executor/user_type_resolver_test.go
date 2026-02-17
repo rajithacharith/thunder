@@ -79,7 +79,6 @@ func createMockUserTypeResolverExecutor(t *testing.T) core.ExecutorInterface {
 	mockExec.On("GetName").Return(ExecutorNameUserTypeResolver).Maybe()
 	mockExec.On("GetType").Return(common.ExecutorTypeRegistration).Maybe()
 	mockExec.On("GetDefaultInputs").Return(defaultInputs).Maybe()
-	mockExec.On("GetDefaultMeta").Return(nil).Maybe()
 	mockExec.On("GetPrerequisites").Return([]common.Input{}).Maybe()
 
 	// HasRequiredInputs returns true if userType input is present
@@ -798,30 +797,6 @@ func (suite *UserTypeResolverTestSuite) TestGetUserSchemaAndOU_SchemaNotFound() 
 	suite.mockUserSchemaService.AssertExpectations(suite.T())
 }
 
-func (suite *UserTypeResolverTestSuite) TestGetDefaultMeta() {
-	suite.SetupTest()
-
-	meta := suite.executor.GetDefaultMeta()
-
-	// Verify meta is returned and has proper structure
-	assert.NotNil(suite.T(), meta)
-	metaStruct, ok := meta.(core.MetaStructure)
-	assert.True(suite.T(), ok, "Meta should be of type core.MetaStructure")
-	assert.NotEmpty(suite.T(), metaStruct.Components, "Meta should contain components")
-
-	// MetaBuilder creates TEXT (heading), BLOCK (containing inputs), and ACTION (submit button) components
-	// Verify we have at least a BLOCK component (which contains the inputs)
-	foundBlock := false
-	for _, component := range metaStruct.Components {
-		if component.Type == "BLOCK" {
-			foundBlock = true
-			assert.NotEmpty(suite.T(), component.Components, "BLOCK should contain nested components (inputs)")
-			break
-		}
-	}
-	assert.True(suite.T(), foundBlock, "Meta should contain a BLOCK component with inputs")
-}
-
 func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeProvided_Success() {
 	suite.SetupTest()
 
@@ -966,4 +941,80 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 	requiredInput := result.Inputs[0]
 	assert.Equal(suite.T(), userTypeKey, requiredInput.Identifier)
 	assert.ElementsMatch(suite.T(), []string{"employee", "customer"}, requiredInput.Options)
+}
+
+func (suite *UserTypeResolverTestSuite) TestPromptUserSelection_ForwardsInputsInForwardedData() {
+	suite.SetupTest()
+
+	options := []string{"employee", "customer", "partner"}
+	execResp := &common.ExecutorResponse{
+		ForwardedData: map[string]interface{}{},
+	}
+
+	suite.executor.promptUserSelection(execResp, options)
+
+	// Verify status and inputs are set
+	assert.Equal(suite.T(), common.ExecUserInputRequired, execResp.Status)
+	assert.Len(suite.T(), execResp.Inputs, 1)
+	assert.Equal(suite.T(), userTypeKey, execResp.Inputs[0].Identifier)
+	assert.ElementsMatch(suite.T(), options, execResp.Inputs[0].Options)
+
+	// Verify ForwardedData is set with inputs
+	assert.NotNil(suite.T(), execResp.ForwardedData)
+	forwardedInputs, ok := execResp.ForwardedData[common.ForwardedDataKeyInputs]
+	assert.True(suite.T(), ok, "ForwardedData should contain 'inputs' key")
+
+	// Type assert and verify
+	inputsSlice, ok := forwardedInputs.([]common.Input)
+	assert.True(suite.T(), ok, "ForwardedData['inputs'] should be []common.Input")
+	assert.Len(suite.T(), inputsSlice, 1)
+	assert.Equal(suite.T(), userTypeKey, inputsSlice[0].Identifier)
+	assert.ElementsMatch(suite.T(), options, inputsSlice[0].Options)
+}
+
+func (suite *UserTypeResolverTestSuite) TestPromptUserSelection_WithEmptyOptions() {
+	suite.SetupTest()
+
+	options := []string{}
+	execResp := &common.ExecutorResponse{
+		ForwardedData: map[string]interface{}{},
+	}
+
+	suite.executor.promptUserSelection(execResp, options)
+
+	// Verify status is set
+	assert.Equal(suite.T(), common.ExecUserInputRequired, execResp.Status)
+	assert.Len(suite.T(), execResp.Inputs, 1)
+
+	// Verify ForwardedData is still set even with empty options
+	assert.NotNil(suite.T(), execResp.ForwardedData)
+	forwardedInputs, ok := execResp.ForwardedData[common.ForwardedDataKeyInputs]
+	assert.True(suite.T(), ok, "ForwardedData should contain 'inputs' key even with empty options")
+
+	inputsSlice, ok := forwardedInputs.([]common.Input)
+	assert.True(suite.T(), ok)
+	assert.Len(suite.T(), inputsSlice, 1)
+	assert.Empty(suite.T(), inputsSlice[0].Options)
+}
+
+func (suite *UserTypeResolverTestSuite) TestPromptUserSelection_PreservesExistingForwardedData() {
+	suite.SetupTest()
+
+	options := []string{"employee"}
+	execResp := &common.ExecutorResponse{
+		ForwardedData: map[string]interface{}{
+			"existingKey": "existingValue",
+		},
+	}
+
+	suite.executor.promptUserSelection(execResp, options)
+
+	// Verify existing ForwardedData is preserved
+	assert.NotNil(suite.T(), execResp.ForwardedData)
+	assert.Equal(suite.T(), "existingValue", execResp.ForwardedData["existingKey"])
+
+	// Verify new inputs key is added
+	forwardedInputs, ok := execResp.ForwardedData[common.ForwardedDataKeyInputs]
+	assert.True(suite.T(), ok)
+	assert.NotNil(suite.T(), forwardedInputs)
 }

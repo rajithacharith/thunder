@@ -42,6 +42,7 @@ type NodeContext struct {
 	NodeInputs     []common.Input
 	UserInputs     map[string]string
 	RuntimeData    map[string]string
+	ForwardedData  map[string]interface{}
 
 	HTTPContext       context.Context
 	Application       appmodel.Application

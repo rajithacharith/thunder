@@ -39,6 +39,7 @@ type EngineContext struct {
 	Verbose        bool
 	UserInputs     map[string]string
 	RuntimeData    map[string]string
+	ForwardedData  map[string]interface{}
 	AdditionalData map[string]string
 	TraceID        string
 

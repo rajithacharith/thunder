@@ -278,52 +278,6 @@ func (_c *oidcAuthExecutorInterfaceMock_GetDefaultInputs_Call) RunAndReturn(run 
 	return _c
 }
 
-// GetDefaultMeta provides a mock function for the type oidcAuthExecutorInterfaceMock
-func (_mock *oidcAuthExecutorInterfaceMock) GetDefaultMeta() interface{} {
-	ret := _mock.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetDefaultMeta")
-	}
-
-	var r0 interface{}
-	if returnFunc, ok := ret.Get(0).(func() interface{}); ok {
-		r0 = returnFunc()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interface{})
-		}
-	}
-	return r0
-}
-
-// oidcAuthExecutorInterfaceMock_GetDefaultMeta_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDefaultMeta'
-type oidcAuthExecutorInterfaceMock_GetDefaultMeta_Call struct {
-	*mock.Call
-}
-
-// GetDefaultMeta is a helper method to define mock.On call
-func (_e *oidcAuthExecutorInterfaceMock_Expecter) GetDefaultMeta() *oidcAuthExecutorInterfaceMock_GetDefaultMeta_Call {
-	return &oidcAuthExecutorInterfaceMock_GetDefaultMeta_Call{Call: _e.mock.On("GetDefaultMeta")}
-}
-
-func (_c *oidcAuthExecutorInterfaceMock_GetDefaultMeta_Call) Run(run func()) *oidcAuthExecutorInterfaceMock_GetDefaultMeta_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *oidcAuthExecutorInterfaceMock_GetDefaultMeta_Call) Return(ifaceVal interface{}) *oidcAuthExecutorInterfaceMock_GetDefaultMeta_Call {
-	_c.Call.Return(ifaceVal)
-	return _c
-}
-
-func (_c *oidcAuthExecutorInterfaceMock_GetDefaultMeta_Call) RunAndReturn(run func() interface{}) *oidcAuthExecutorInterfaceMock_GetDefaultMeta_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // GetIDTokenClaims provides a mock function for the type oidcAuthExecutorInterfaceMock
 func (_mock *oidcAuthExecutorInterfaceMock) GetIDTokenClaims(execResp *common.ExecutorResponse, idToken string) (map[string]interface{}, error) {
 	ret := _mock.Called(execResp, idToken)

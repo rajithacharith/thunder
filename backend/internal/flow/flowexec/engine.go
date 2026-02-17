@@ -94,6 +94,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 			UserInputs:        ctx.UserInputs,
 			CurrentNodeID:     ctx.CurrentNode.GetID(),
 			RuntimeData:       ctx.RuntimeData,
+			ForwardedData:     ctx.ForwardedData,
 			HTTPContext:       ctx.HTTPContext,
 			Application:       ctx.Application,
 			AuthenticatedUser: ctx.AuthenticatedUser,
@@ -108,6 +109,13 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 		if nodeCtx.RuntimeData == nil {
 			nodeCtx.RuntimeData = make(map[string]string)
 		}
+		if nodeCtx.ForwardedData == nil {
+			nodeCtx.ForwardedData = make(map[string]interface{})
+		}
+
+		// Clear ForwardedData from engine context after passing to node context
+		// This ensures ForwardedData is only available to the immediate next node
+		ctx.ForwardedData = nil
 
 		// Check if the node should be executed based on its condition
 		if !currentNode.ShouldExecute(nodeCtx) {
@@ -356,6 +364,12 @@ func (fe *flowEngine) updateContextWithNodeResponse(engineCtx *EngineContext, no
 	// Add assertion to the context
 	if nodeResp.Assertion != "" {
 		engineCtx.Assertion = nodeResp.Assertion
+	}
+
+	// Handle forwarded data from the node response
+	// It replaces any existing forwarded data rather than merging
+	if len(nodeResp.ForwardedData) > 0 {
+		engineCtx.ForwardedData = nodeResp.ForwardedData
 	}
 }
 

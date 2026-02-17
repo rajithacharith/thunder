@@ -425,7 +425,7 @@ func (suite *SliceUtilTestSuite) TestDeepCopyMap() {
 	}
 }
 
-func (suite *SliceUtilTestSuite) TestDeepCopyValue() {
+func (suite *SliceUtilTestSuite) TestDeepCopyInterface() {
 	tests := []struct {
 		name     string
 		input    interface{}
@@ -507,7 +507,7 @@ func (suite *SliceUtilTestSuite) TestDeepCopyValue() {
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			result := deepCopyValue(tt.input)
+			result := DeepCopyInterface(tt.input)
 			assert.Equal(suite.T(), tt.expected, result)
 
 			// Verify deep copy for complex types

@@ -77,13 +77,14 @@ func DeepCopyMap(src map[string]interface{}) map[string]interface{} {
 	}
 	dst := make(map[string]interface{}, len(src))
 	for k, v := range src {
-		dst[k] = deepCopyValue(v)
+		dst[k] = DeepCopyInterface(v)
 	}
 	return dst
 }
 
-// deepCopyValue creates a deep copy of interface{} values.
-func deepCopyValue(v interface{}) interface{} {
+// DeepCopyInterface creates a deep copy of an interface{} value.
+// It recursively copies nested maps and slices. For primitive types, a direct copy is returned.
+func DeepCopyInterface(v interface{}) interface{} {
 	if v == nil {
 		return nil
 	}
@@ -94,7 +95,7 @@ func deepCopyValue(v interface{}) interface{} {
 	case []interface{}:
 		copied := make([]interface{}, len(val))
 		for i, item := range val {
-			copied[i] = deepCopyValue(item)
+			copied[i] = DeepCopyInterface(item)
 		}
 		return copied
 	case []string:
