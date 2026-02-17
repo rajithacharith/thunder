@@ -199,28 +199,13 @@ func parseToOUWrapper(data []byte) (interface{}, error) {
 
 // parseToOU parses YAML data to OrganizationUnit.
 func parseToOU(data []byte) (*OrganizationUnit, error) {
-	var ouRequest struct {
-		ID          string  `yaml:"id"`
-		Handle      string  `yaml:"handle"`
-		Name        string  `yaml:"name"`
-		Description string  `yaml:"description,omitempty"`
-		Parent      *string `yaml:"parent,omitempty"`
-	}
-
-	err := yaml.Unmarshal(data, &ouRequest)
+	var ou OrganizationUnit
+	err := yaml.Unmarshal(data, &ou)
 	if err != nil {
 		return nil, err
 	}
 
-	ou := &OrganizationUnit{
-		ID:          ouRequest.ID,
-		Handle:      ouRequest.Handle,
-		Name:        ouRequest.Name,
-		Description: ouRequest.Description,
-		Parent:      ouRequest.Parent,
-	}
-
-	return ou, nil
+	return &ou, nil
 }
 
 // validateOUWrapper wraps validateOU to match ResourceConfig.Validator signature.
