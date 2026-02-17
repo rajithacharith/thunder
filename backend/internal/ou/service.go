@@ -173,14 +173,17 @@ func (ous *organizationUnitService) CreateOrganizationUnit(
 	}
 
 	ou := OrganizationUnit{
-		ID:          ouID,
-		Handle:      request.Handle,
-		Name:        request.Name,
-		Description: request.Description,
-		Parent:      request.Parent,
-		ThemeID:     request.ThemeID,
-		LayoutID:    request.LayoutID,
-		LogoURL:     request.LogoURL,
+		ID:              ouID,
+		Handle:          request.Handle,
+		Name:            request.Name,
+		Description:     request.Description,
+		Parent:          request.Parent,
+		ThemeID:         request.ThemeID,
+		LayoutID:        request.LayoutID,
+		LogoURL:         request.LogoURL,
+		TosURI:          request.TosURI,
+		PolicyURI:       request.PolicyURI,
+		CookiePolicyURI: request.CookiePolicyURI,
 	}
 
 	err = ous.ouStore.CreateOrganizationUnit(ou)
@@ -421,14 +424,17 @@ func (ous *organizationUnitService) updateOUInternal(
 	}
 
 	updatedOU := OrganizationUnit{
-		ID:          existingOU.ID,
-		Handle:      request.Handle,
-		Name:        request.Name,
-		Description: request.Description,
-		Parent:      request.Parent,
-		ThemeID:     request.ThemeID,
-		LayoutID:    request.LayoutID,
-		LogoURL:     request.LogoURL,
+		ID:              existingOU.ID,
+		Handle:          request.Handle,
+		Name:            request.Name,
+		Description:     request.Description,
+		Parent:          request.Parent,
+		ThemeID:         request.ThemeID,
+		LayoutID:        request.LayoutID,
+		LogoURL:         request.LogoURL,
+		TosURI:          request.TosURI,
+		PolicyURI:       request.PolicyURI,
+		CookiePolicyURI: request.CookiePolicyURI,
 	}
 
 	err = ous.ouStore.UpdateOrganizationUnit(updatedOU)

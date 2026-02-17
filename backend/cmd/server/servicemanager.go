@@ -32,6 +32,7 @@ import (
 	flowcore "github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/flow/executor"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
+	"github.com/asgardeo/thunder/internal/flow/flowmeta"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	"github.com/asgardeo/thunder/internal/group"
 	"github.com/asgardeo/thunder/internal/idp"
@@ -79,7 +80,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	var exporters []declarativeresource.ResourceExporter
 
 	// Initialize i18n service for internationalization support.
-	_, i18nExporter, err := i18nmgt.Initialize(mux)
+	i18nService, i18nExporter, err := i18nmgt.Initialize(mux)
 	if err != nil {
 		logger.Fatal("Failed to initialize i18n service", log.Error(err))
 	}
@@ -170,12 +171,16 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	exporters = append(exporters, applicationExporter)
 
 	// Initialize design resolve service for theme and layout resolution
-	_ = resolve.Initialize(mux, themeMgtService, layoutMgtService, applicationService)
+	designResolveService := resolve.Initialize(mux, themeMgtService, layoutMgtService, applicationService)
+
+	// Initialize flow metadata service
+	_ = flowmeta.Initialize(mux, applicationService, ouService, designResolveService, i18nService)
 
 	// Initialize export service with collected exporters
 	_ = export.Initialize(mux, exporters)
 
-	flowExecService := flowexec.Initialize(mux, flowMgtService, applicationService, execRegistry, observabilitySvc)
+	flowExecService := flowexec.Initialize(mux, flowMgtService, applicationService, execRegistry,
+		observabilitySvc)
 
 	// Initialize OAuth services.
 	oauth.Initialize(mux, applicationService, userService, jwtService, flowExecService, observabilitySvc,

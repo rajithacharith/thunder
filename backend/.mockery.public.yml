@@ -364,6 +364,22 @@ packages:
       structname: '{{.InterfaceName}}Mock'
       pkgname: layoutmock
       filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/design/resolve:
+    config:
+      all: true
+      dir: tests/mocks/design/resolvemock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: resolvemock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/system/i18n/mgt:
+    config:
+      all: true
+      dir: tests/mocks/i18n/mgtmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: mgtmock
+      filename: "{{.InterfaceName}}_mock.go"
   
   github.com/asgardeo/thunder/internal/system/crypto/hash:
     config:

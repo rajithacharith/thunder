@@ -219,13 +219,16 @@ func (ouh *organizationUnitHandler) sanitizeOrganizationUnitRequest(
 	request OrganizationUnitRequest,
 ) OrganizationUnitRequest {
 	return OrganizationUnitRequest{
-		Handle:      sysutils.SanitizeString(request.Handle),
-		Name:        sysutils.SanitizeString(request.Name),
-		Description: sysutils.SanitizeString(request.Description),
-		Parent:      request.Parent,
-		ThemeID:     request.ThemeID,
-		LayoutID:    request.LayoutID,
-		LogoURL:     request.LogoURL,
+		Handle:          sysutils.SanitizeString(request.Handle),
+		Name:            sysutils.SanitizeString(request.Name),
+		Description:     sysutils.SanitizeString(request.Description),
+		Parent:          request.Parent,
+		ThemeID:         request.ThemeID,
+		LayoutID:        request.LayoutID,
+		LogoURL:         request.LogoURL,
+		TosURI:          request.TosURI,
+		PolicyURI:       request.PolicyURI,
+		CookiePolicyURI: request.CookiePolicyURI,
 	}
 }
 
