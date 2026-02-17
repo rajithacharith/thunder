@@ -549,12 +549,18 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 			IDToken:     finalOAuthIDToken,
 		}
 
+		var existingOAuthConfig *model.OAuthAppConfigProcessedDTO
+		if len(existingApp.InboundAuthConfig) > 0 {
+			existingOAuthConfig = existingApp.InboundAuthConfig[0].OAuthAppConfig
+		}
+
 		processedInboundAuthConfig := model.InboundAuthConfigProcessedDTO{
 			Type: model.OAuthInboundAuthType,
 			OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
-				AppID:                   appID,
-				ClientID:                inboundAuthConfig.OAuthAppConfig.ClientID,
-				HashedClientSecret:      getProcessedClientSecret(inboundAuthConfig.OAuthAppConfig),
+				AppID:    appID,
+				ClientID: inboundAuthConfig.OAuthAppConfig.ClientID,
+				HashedClientSecret: getProcessedClientSecretForUpdate(
+					inboundAuthConfig.OAuthAppConfig, existingOAuthConfig),
 				RedirectURIs:            inboundAuthConfig.OAuthAppConfig.RedirectURIs,
 				GrantTypes:              inboundAuthConfig.OAuthAppConfig.GrantTypes,
 				ResponseTypes:           inboundAuthConfig.OAuthAppConfig.ResponseTypes,
@@ -927,15 +933,9 @@ func (as *applicationService) processInboundAuthConfig(app *model.ApplicationDTO
 		}
 	}
 
-	// Generate OAuth 2.0 compliant client secret with high entropy for security
-	// Only generate client secret for confidential clients
-	if inboundAuthConfig.OAuthAppConfig.ClientSecret == "" && !inboundAuthConfig.OAuthAppConfig.PublicClient {
-		generatedClientSecret, err := oauthutils.GenerateOAuth2ClientSecret()
-		if err != nil {
-			logger.Error("Failed to generate OAuth client secret", log.Error(err))
-			return nil, &ErrorInternalServerError
-		}
-		inboundAuthConfig.OAuthAppConfig.ClientSecret = generatedClientSecret
+	// Resolve client secret for confidential clients
+	if svcErr := resolveClientSecret(inboundAuthConfig, existingApp); svcErr != nil {
+		return nil, svcErr
 	}
 
 	return inboundAuthConfig, nil
@@ -1517,4 +1517,63 @@ func getProcessedClientSecret(oauthConfig *model.OAuthAppConfigDTO) string {
 		return ""
 	}
 	return hash.GenerateThumbprintFromString(oauthConfig.ClientSecret)
+}
+
+// getProcessedClientSecretForUpdate returns the hashed client secret for update operations.
+// If a new secret is provided, it hashes it. Otherwise, it preserves the existing hashed secret.
+func getProcessedClientSecretForUpdate(
+	newOAuthConfig *model.OAuthAppConfigDTO,
+	existingOAuthConfig *model.OAuthAppConfigProcessedDTO,
+) string {
+	// Public clients don't have secrets
+	if newOAuthConfig.PublicClient {
+		return ""
+	}
+
+	// If a new secret is provided, hash it
+	if newOAuthConfig.ClientSecret != "" {
+		return hash.GenerateThumbprintFromString(newOAuthConfig.ClientSecret)
+	}
+
+	// For updates with no new secret, preserve existing hashed secret
+	if existingOAuthConfig != nil && existingOAuthConfig.HashedClientSecret != "" {
+		return existingOAuthConfig.HashedClientSecret
+	}
+
+	return ""
+}
+
+// resolveClientSecret generates a new client secret for confidential clients if needed.
+// It preserves existing secrets during update operations unless explicitly provided.
+func resolveClientSecret(
+	inboundAuthConfig *model.InboundAuthConfigDTO,
+	existingApp *model.ApplicationProcessedDTO,
+) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
+
+	// Only process confidential clients that don't have a secret provided
+	if inboundAuthConfig.OAuthAppConfig.ClientSecret != "" || inboundAuthConfig.OAuthAppConfig.PublicClient {
+		return nil
+	}
+
+	// Check if we should preserve existing confidential OAuth config secret
+	shouldPreserveSecret := existingApp != nil &&
+		len(existingApp.InboundAuthConfig) > 0 &&
+		existingApp.InboundAuthConfig[0].OAuthAppConfig != nil &&
+		existingApp.InboundAuthConfig[0].OAuthAppConfig.HashedClientSecret != "" &&
+		!existingApp.InboundAuthConfig[0].OAuthAppConfig.PublicClient
+
+	if shouldPreserveSecret {
+		return nil
+	}
+
+	// Generate OAuth 2.0 compliant client secret with high entropy for security
+	generatedClientSecret, err := oauthutils.GenerateOAuth2ClientSecret()
+	if err != nil {
+		logger.Error("Failed to generate OAuth client secret", log.Error(err))
+		return &ErrorInternalServerError
+	}
+
+	inboundAuthConfig.OAuthAppConfig.ClientSecret = generatedClientSecret
+	return nil
 }
