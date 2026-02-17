@@ -329,11 +329,6 @@ func (ous *organizationUnitService) UpdateOrganizationUnitByPath(
 		return OrganizationUnit{}, err
 	}
 
-	// Fail if store is in declarative mode (OU-specific check)
-	if isDeclarativeModeEnabled() {
-		return OrganizationUnit{}, &ErrorCannotModifyDeclarativeResource
-	}
-
 	handles, serviceError := validateAndProcessHandlePath(handlePath)
 	if serviceError != nil {
 		return OrganizationUnit{}, serviceError
@@ -346,6 +341,11 @@ func (ous *organizationUnitService) UpdateOrganizationUnitByPath(
 		}
 		logger.Error("Failed to get organization unit by path", log.Error(err))
 		return OrganizationUnit{}, &ErrorInternalServerError
+	}
+
+	// Check if OU is declarative (for composite mode)
+	if ous.ouStore.IsOrganizationUnitDeclarative(existingOU.ID) {
+		return OrganizationUnit{}, &ErrorCannotModifyDeclarativeResource
 	}
 
 	updatedOU, serviceError := ous.updateOUInternal(existingOU.ID, request, existingOU, logger)
@@ -480,11 +480,6 @@ func (ous *organizationUnitService) DeleteOrganizationUnitByPath(handlePath stri
 		return err
 	}
 
-	// Fail if store is in declarative mode (OU-specific check)
-	if isDeclarativeModeEnabled() {
-		return &ErrorCannotModifyDeclarativeResource
-	}
-
 	handles, serviceError := validateAndProcessHandlePath(handlePath)
 	if serviceError != nil {
 		return serviceError
@@ -497,6 +492,11 @@ func (ous *organizationUnitService) DeleteOrganizationUnitByPath(handlePath stri
 		}
 		logger.Error("Failed to get organization unit by path", log.Error(err))
 		return &ErrorInternalServerError
+	}
+
+	// Check if OU is declarative (for composite mode)
+	if ous.ouStore.IsOrganizationUnitDeclarative(existingOU.ID) {
+		return &ErrorCannotModifyDeclarativeResource
 	}
 
 	svcErr := ous.deleteOUInternal(existingOU.ID, logger)

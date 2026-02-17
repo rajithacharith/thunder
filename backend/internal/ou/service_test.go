@@ -1179,7 +1179,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 			Once()
 		store.On("IsOrganizationUnitDeclarative", "ou-1").
 			Return(false).
-			Once()
+			Twice() // Called in UpdateOrganizationUnitByPath and updateOUInternal
 		store.On("UpdateOrganizationUnit", mock.AnythingOfType("ou.OrganizationUnit")).
 			Return(nil).
 			Once()
@@ -1189,6 +1189,23 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 
 		suite.Require().Nil(err)
 		suite.Require().Equal("ou-1", result.ID)
+	})
+
+	suite.Run("declarative resource cannot be updated", func() {
+		store := newOrganizationUnitStoreInterfaceMock(suite.T())
+		existing := OrganizationUnit{ID: "ou-1", Handle: "root", Name: "Root"}
+		store.On("GetOrganizationUnitByPath", []string{"root"}).
+			Return(existing, nil).
+			Once()
+		store.On("IsOrganizationUnitDeclarative", "ou-1").
+			Return(true).
+			Once()
+
+		service := suite.newService(store)
+		_, err := service.UpdateOrganizationUnitByPath("root", request)
+
+		suite.Require().Equal(ErrorCannotModifyDeclarativeResource, *err)
+		store.AssertNotCalled(suite.T(), "UpdateOrganizationUnit", mock.Anything)
 	})
 }
 
@@ -1361,7 +1378,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 			Once()
 		store.On("IsOrganizationUnitDeclarative", "ou-1").
 			Return(false).
-			Once()
+			Twice() // Called in DeleteOrganizationUnitByPath and deleteOUInternal
 		store.On("CheckOrganizationUnitHasChildResources", "ou-1").
 			Return(true, nil).
 			Once()
@@ -1379,7 +1396,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 			Once()
 		store.On("IsOrganizationUnitDeclarative", "ou-1").
 			Return(false).
-			Once()
+			Twice() // Called in DeleteOrganizationUnitByPath and deleteOUInternal
 		store.On("CheckOrganizationUnitHasChildResources", "ou-1").
 			Return(false, nil).
 			Once()
@@ -1391,6 +1408,23 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 		err := service.DeleteOrganizationUnitByPath("root")
 
 		suite.Require().Nil(err)
+	})
+
+	suite.Run("declarative resource cannot be deleted", func() {
+		store := newOrganizationUnitStoreInterfaceMock(suite.T())
+		store.On("GetOrganizationUnitByPath", []string{"root"}).
+			Return(OrganizationUnit{ID: "ou-1"}, nil).
+			Once()
+		store.On("IsOrganizationUnitDeclarative", "ou-1").
+			Return(true).
+			Once()
+
+		service := suite.newService(store)
+		err := service.DeleteOrganizationUnitByPath("root")
+
+		suite.Require().Equal(ErrorCannotModifyDeclarativeResource, *err)
+		store.AssertNotCalled(suite.T(), "CheckOrganizationUnitHasChildResources", mock.Anything)
+		store.AssertNotCalled(suite.T(), "DeleteOrganizationUnit", mock.Anything)
 	})
 }
 
