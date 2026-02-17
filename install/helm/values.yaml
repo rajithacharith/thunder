@@ -87,6 +87,7 @@ service:
   port: 8090
 
 ingress:
+  enabled: true
   className: "nginx"
   commonAnnotations: &commonAnnotations
     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
@@ -109,6 +110,17 @@ ingress:
     - path: /
       pathType: Prefix
   tlsSecretsName: "thunder-tls"
+
+# Gateway API HTTPRoute configuration (alternative to Ingress)
+httproute:
+  enabled: false
+  annotations: {}
+  # parentRefs specify which Gateway(s) this route attaches to
+  parentRefs: []
+    # - name: my-gateway
+    #   namespace: gateway-ns
+  hostnames: []
+    # - thunder.example.com
 
 # Thunder specific configurations
 configuration:
