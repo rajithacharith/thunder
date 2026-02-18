@@ -187,6 +187,9 @@ func parseToApplicationDTO(data []byte) (*model.ApplicationDTO, error) {
 					PKCERequired:            config.OAuthAppConfig.PKCERequired,
 					PublicClient:            config.OAuthAppConfig.PublicClient,
 					Token:                   config.OAuthAppConfig.Token,
+					Scopes:                  config.OAuthAppConfig.Scopes,
+					UserInfo:                config.OAuthAppConfig.UserInfo,
+					ScopeClaims:             config.OAuthAppConfig.ScopeClaims,
 				},
 			}
 			inboundAuthConfigDTOs = append(inboundAuthConfigDTOs, inboundAuthConfigDTO)
