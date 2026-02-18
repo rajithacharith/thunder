@@ -7,11 +7,11 @@ settings:
 catalogs:
   default:
     '@asgardeo/react':
-      specifier: 0.11.2
-      version: 0.11.2
+      specifier: 0.12.0
+      version: 0.12.0
     '@asgardeo/react-router':
-      specifier: 1.0.27
-      version: 1.0.27
+      specifier: 1.1.0
+      version: 1.1.0
     '@emotion/react':
       specifier: 11.14.0
       version: 11.14.0
@@ -255,10 +255,10 @@ importers:
     dependencies:
       '@asgardeo/react':
         specifier: 'catalog:'
-        version: 0.11.2(@types/react@19.2.7)(react@19.2.3)
+        version: 0.12.0(@types/react@19.2.7)(react@19.2.3)
       '@asgardeo/react-router':
         specifier: 'catalog:'
-        version: 1.0.27(@asgardeo/react@0.11.2(@types/react@19.2.7)(react@19.2.3))(react-router@7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
+        version: 1.1.0(react-router@7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
       '@dnd-kit/abstract':
         specifier: 0.1.21
         version: 0.1.21
@@ -469,7 +469,10 @@ importers:
     dependencies:
       '@asgardeo/react':
         specifier: 'catalog:'
-        version: 0.11.2(@types/react@19.2.7)(react@19.2.3)
+        version: 0.12.0(@types/react@19.2.7)(react@19.2.3)
+      '@asgardeo/react-router':
+        specifier: 'catalog:'
+        version: 1.1.0(react-router@7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
       '@emotion/react':
         specifier: 'catalog:'
         version: 11.14.0(@types/react@19.2.7)(react@19.2.3)
@@ -727,7 +730,7 @@ importers:
     dependencies:
       '@asgardeo/react':
         specifier: 'catalog:'
-        version: 0.11.2(@types/react@19.2.7)(react@19.2.3)
+        version: 0.12.0(@types/react@19.2.7)(react@19.2.3)
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.90.5(react@19.2.3)
@@ -908,7 +911,7 @@ importers:
     dependencies:
       '@asgardeo/react':
         specifier: 'catalog:'
-        version: 0.11.2(@types/react@19.2.7)(react@19.2.3)
+        version: 0.12.0(@types/react@19.2.7)(react@19.2.3)
       '@emotion/react':
         specifier: 'catalog:'
         version: 11.14.0(@types/react@19.2.7)(react@19.2.3)
@@ -1230,24 +1233,23 @@ packages:
   '@asamuzakjp/nwsapi@2.3.9':
     resolution: {integrity: sha512-n8GuYSrI9bF7FFZ/SjhwevlHc8xaVlb/7HmHelnc/PZXBD2ZR49NnN9sMMuDdEGPeeRQ5d0hqlSlEpgCX3Wl0Q==}
 
-  '@asgardeo/browser@0.2.8':
-    resolution: {integrity: sha512-N7C83riKHdoFWZRULphBiLP/jl/ieFzNwBhHRr873S+ZTfpI51HBmPQ+Jbra00h0xvVH50PMWRp/jHCcDbEUWA==}
+  '@asgardeo/browser@0.2.10':
+    resolution: {integrity: sha512-vHD45Y1cEwCkbTqDk4VMYtgOiHKMJ+F8Sv0Kdqm2b5W8ZUCVg9Gl8dYEYttExY1mT2hNCldc5fT8vh+t0ymFpQ==}
 
   '@asgardeo/i18n@0.4.2':
     resolution: {integrity: sha512-tDCnZy08rKyo4BOZTgKmdy6bum9CPHHph0YvYGlcWcG7Ed3KbKpjn9wAF2f8nlsjKE2vdjvH60gclUqtqwPujQ==}
 
-  '@asgardeo/javascript@0.7.1':
-    resolution: {integrity: sha512-d+wljQ+1EkxpPsV372ONKA59y1wg/V6686n4QYTZwQqLVpQAyv91EgGA9+hqnMKFVdfruqPahT3HMgVBrCby5g==}
+  '@asgardeo/javascript@0.7.3':
+    resolution: {integrity: sha512-lrNaV5vblett2hf3T+xWAfppWtFRSPsp3jyrWjZct2esk6rUUJ3Ti1jnit6Xn/u+KwkUmJ72Y9zrKlxTzJqMdg==}
 
-  '@asgardeo/react-router@1.0.27':
-    resolution: {integrity: sha512-/xb29w82Wj7Gsgx75/SrIx6UYcMfHm4njuss62eQkufXp1BWYvJuG52esRJsggn68Cv5eL7/E5Ke2r3MzaW7hQ==}
+  '@asgardeo/react-router@1.1.0':
+    resolution: {integrity: sha512-682VJs6RzY08c0acUUesqKSGYjZpikWuZF9gBON62D3uhL5iE7Oy27WiqRYQbMggTXl3CRBojkhzzYuC3mTCSw==}
     peerDependencies:
-      '@asgardeo/react': 0.6.27
       react: '>=19.1.4'
       react-router: '>=6.30.1'
 
-  '@asgardeo/react@0.11.2':
-    resolution: {integrity: sha512-JaJhHf7oJQWGUl7yYYI/yHDrIUYCr18l5pnA2/z8V0/XdareGLbicJ2pYdGPRiAyAso6MfjnnbbJECbiVLQkEw==}
+  '@asgardeo/react@0.12.0':
+    resolution: {integrity: sha512-857lXthRfbdwEfSskOagMESfRVagq3xkOkqblqVSTdxaH/lMoR+EhUtOAMFfg5+NaczFQ0DHeJhS8iWakpwLwA==}
     peerDependencies:
       '@types/react': '>=19.1.5'
       react: '>=19.1.4'
@@ -2756,12 +2758,6 @@ packages:
 
   '@floating-ui/dom@1.7.5':
     resolution: {integrity: sha512-N0bD2kIPInNHUHehXhMke1rBGs1dwqvC9O9KYMyyjK7iXt7GAhnro7UlcuYcGdS/yYOlq0MAVgrow8IbWJwyqg==}
-
-  '@floating-ui/react-dom@2.1.6':
-    resolution: {integrity: sha512-4JX6rEatQEvlmgU80wZyq9RT96HZJa88q8hp0pBd+LrczeDI4o6uA2M+uvxngVHo4Ihr8uibXxH6+70zhAFrVw==}
-    peerDependencies:
-      react: '>=16.8.0'
-      react-dom: '>=16.8.0'
 
   '@floating-ui/react-dom@2.1.7':
     resolution: {integrity: sha512-0tLRojf/1Go2JgEVm+3Frg9A3IW8bJgKgdO0BN5RkF//ufuz2joZM63Npau2ff3J6lUVYgDSNzNkR+aH3IVfjg==}
@@ -10712,9 +10708,9 @@ snapshots:
 
   '@asamuzakjp/nwsapi@2.3.9': {}
 
-  '@asgardeo/browser@0.2.8(esbuild@0.25.9)':
+  '@asgardeo/browser@0.2.10(esbuild@0.25.9)':
     dependencies:
-      '@asgardeo/javascript': 0.7.1
+      '@asgardeo/javascript': 0.7.3
       axios: 1.13.5
       base64url: 3.0.1
       buffer: 6.0.3
@@ -10735,21 +10731,20 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@asgardeo/javascript@0.7.1':
+  '@asgardeo/javascript@0.7.3':
     dependencies:
       '@asgardeo/i18n': 0.4.2
       tslib: 2.8.1
 
-  '@asgardeo/react-router@1.0.27(@asgardeo/react@0.11.2(@types/react@19.2.7)(react@19.2.3))(react-router@7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)':
+  '@asgardeo/react-router@1.1.0(react-router@7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)':
     dependencies:
-      '@asgardeo/react': 0.11.2(@types/react@19.2.7)(react@19.2.3)
       react: 19.2.3
       react-router: 7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       tslib: 2.8.1
 
-  '@asgardeo/react@0.11.2(@types/react@19.2.7)(react@19.2.3)':
+  '@asgardeo/react@0.12.0(@types/react@19.2.7)(react@19.2.3)':
     dependencies:
-      '@asgardeo/browser': 0.2.8(esbuild@0.25.9)
+      '@asgardeo/browser': 0.2.10(esbuild@0.25.9)
       '@asgardeo/i18n': 0.4.2
       '@emotion/css': 11.13.5
       '@floating-ui/react': 0.27.12(react-dom@19.1.4(react@19.2.3))(react@19.2.3)
@@ -13085,9 +13080,9 @@ snapshots:
       '@floating-ui/core': 1.7.4
       '@floating-ui/utils': 0.2.10
 
-  '@floating-ui/react-dom@2.1.6(react-dom@19.1.4(react@19.2.3))(react@19.2.3)':
+  '@floating-ui/react-dom@2.1.7(react-dom@19.1.4(react@19.2.3))(react@19.2.3)':
     dependencies:
-      '@floating-ui/dom': 1.7.4
+      '@floating-ui/dom': 1.7.5
       react: 19.2.3
       react-dom: 19.1.4(react@19.2.3)
 
@@ -13099,7 +13094,7 @@ snapshots:
 
   '@floating-ui/react@0.27.12(react-dom@19.1.4(react@19.2.3))(react@19.2.3)':
     dependencies:
-      '@floating-ui/react-dom': 2.1.6(react-dom@19.1.4(react@19.2.3))(react@19.2.3)
+      '@floating-ui/react-dom': 2.1.7(react-dom@19.1.4(react@19.2.3))(react@19.2.3)
       '@floating-ui/utils': 0.2.10
       react: 19.2.3
       react-dom: 19.1.4(react@19.2.3)
