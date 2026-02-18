@@ -209,9 +209,9 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 		return nil, errors.New("failed to parse app_id as string")
 	}
 
-	hashedClientSecret, ok := row["consumer_secret"].(string)
+	hashedClientSecret, ok := row["client_secret"].(string)
 	if !ok {
-		return nil, errors.New("failed to parse consumer_secret as string")
+		return nil, errors.New("failed to parse client_secret as string")
 	}
 
 	// Extract OAuth JSON data
@@ -608,10 +608,10 @@ func buildBasicApplicationFromResultRow(row map[string]interface{}) (model.Basic
 		LayoutID:                  layoutID,
 	}
 
-	if row["consumer_key"] != nil {
-		clientID, ok := row["consumer_key"].(string)
+	if row["client_id"] != nil {
+		clientID, ok := row["client_id"].(string)
 		if !ok {
-			return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse consumer_key as string")
+			return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse client_id as string")
 		}
 		application.ClientID = clientID
 	}
@@ -805,9 +805,9 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 // buildOAuthInboundAuthConfig builds OAuth inbound auth configuration from database row and basic app data.
 func buildOAuthInboundAuthConfig(row map[string]interface{}, basicApp model.BasicApplicationDTO) (
 	model.InboundAuthConfigProcessedDTO, error) {
-	hashedClientSecret, ok := row["consumer_secret"].(string)
+	hashedClientSecret, ok := row["client_secret"].(string)
 	if !ok {
-		return model.InboundAuthConfigProcessedDTO{}, fmt.Errorf("failed to parse consumer_secret as string")
+		return model.InboundAuthConfigProcessedDTO{}, fmt.Errorf("failed to parse client_secret as string")
 	}
 
 	// Extract OAuth JSON data from the row.

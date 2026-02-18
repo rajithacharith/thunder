@@ -373,7 +373,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_S
 		"auth_flow_id":                 "auth_flow_1",
 		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
-		"consumer_key":                 "client_app1",
+		"client_id":                    "client_app1",
 	}
 
 	result, err := buildBasicApplicationFromResultRow(row)
@@ -396,7 +396,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 		"auth_flow_id":                 "auth_flow_1",
 		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
-		"consumer_key":                 nil,
+		"client_id":                    nil,
 	}
 
 	result, err := buildBasicApplicationFromResultRow(row)
@@ -414,7 +414,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 		"auth_flow_id":                 "auth_flow_1",
 		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": []byte("1"),
-		"consumer_key":                 "client_app1",
+		"client_id":                    "client_app1",
 	}
 
 	result, err := buildBasicApplicationFromResultRow(row)
@@ -431,7 +431,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 		"auth_flow_id":                 "auth_flow_1",
 		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "0",
-		"consumer_key":                 "client_app1",
+		"client_id":                    "client_app1",
 	}
 
 	result, err := buildBasicApplicationFromResultRow(row)
@@ -456,7 +456,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 		"theme_id":                     "theme-123",
 		"layout_id":                    "layout-456",
 		"app_json":                     string(appJSONBytes),
-		"consumer_key":                 "client_app1",
+		"client_id":                    "client_app1",
 	}
 
 	result, err := buildBasicApplicationFromResultRow(row)
@@ -480,7 +480,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     string(appJSONBytes),
-		"consumer_key":                 "client_app1",
+		"client_id":                    "client_app1",
 	}
 
 	result, err := buildBasicApplicationFromResultRow(row)
@@ -504,7 +504,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     string(appJSONBytes),
-		"consumer_key":                 "client_app1",
+		"client_id":                    "client_app1",
 	}
 
 	result, err := buildBasicApplicationFromResultRow(row)
@@ -578,13 +578,13 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_I
 		"auth_flow_id":                 "auth_flow_1",
 		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
-		"consumer_key":                 123, // Invalid type
+		"client_id":                    123, // Invalid type
 	}
 
 	result, err := buildBasicApplicationFromResultRow(row)
 
 	suite.Error(err)
-	suite.Contains(err.Error(), "failed to parse consumer_key as string")
+	suite.Contains(err.Error(), "failed to parse client_id as string")
 	suite.Equal(model.BasicApplicationDTO{}, result)
 }
 
@@ -622,8 +622,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_Succes
 		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     string(appJSONBytes),
-		"consumer_key":                 "client_app1",
-		"consumer_secret":              "hashed_secret",
+		"client_id":                    "client_app1",
+		"client_secret":                "hashed_secret",
 		"oauth_config_json":            string(oauthJSONBytes),
 	}
 
@@ -879,7 +879,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_Success(
 	oauthJSONBytes, _ := json.Marshal(oauthJSON)
 
 	row := map[string]interface{}{
-		"consumer_secret":   "hashed_secret",
+		"client_secret":     "hashed_secret",
 		"oauth_config_json": string(oauthJSONBytes),
 	}
 
@@ -904,7 +904,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_Success(
 
 func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_WithNullOAuthJSON() {
 	row := map[string]interface{}{
-		"consumer_secret":   "hashed_secret",
+		"client_secret":     "hashed_secret",
 		"oauth_config_json": nil,
 	}
 
@@ -932,7 +932,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_WithByte
 	oauthJSONBytes, _ := json.Marshal(oauthJSON)
 
 	row := map[string]interface{}{
-		"consumer_secret":   "hashed_secret",
+		"client_secret":     "hashed_secret",
 		"oauth_config_json": oauthJSONBytes, // As bytes
 	}
 
@@ -951,7 +951,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_WithByte
 
 func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_InvalidConsumerSecret() {
 	row := map[string]interface{}{
-		"consumer_secret": 123, // Invalid type
+		"client_secret": 123, // Invalid type
 	}
 
 	basicApp := model.BasicApplicationDTO{
@@ -962,7 +962,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_InvalidC
 	result, err := buildOAuthInboundAuthConfig(row, basicApp)
 
 	suite.Error(err)
-	suite.Contains(err.Error(), "failed to parse consumer_secret as string")
+	suite.Contains(err.Error(), "failed to parse client_secret as string")
 	suite.Equal(model.InboundAuthConfigProcessedDTO{}, result)
 }
 
@@ -986,7 +986,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_WithAcce
 	oauthJSONBytes, _ := json.Marshal(oauthJSON)
 
 	row := map[string]interface{}{
-		"consumer_secret":   "hashed_secret",
+		"client_secret":     "hashed_secret",
 		"oauth_config_json": string(oauthJSONBytes),
 	}
 
@@ -1008,7 +1008,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_WithAcce
 
 func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_InvalidOAuthJSONType() {
 	row := map[string]interface{}{
-		"consumer_secret":   "hashed_secret",
+		"client_secret":     "hashed_secret",
 		"oauth_config_json": 123, // Invalid type
 	}
 
@@ -1026,7 +1026,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_InvalidO
 
 func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_InvalidOAuthJSON() {
 	row := map[string]interface{}{
-		"consumer_secret":   "hashed_secret",
+		"client_secret":     "hashed_secret",
 		"oauth_config_json": "invalid json",
 	}
 
@@ -1341,9 +1341,9 @@ func getOAuthApplicationFromResults(
 		return nil, errors.New("failed to parse app_id as string")
 	}
 
-	hashedClientSecret, ok := row["consumer_secret"].(string)
+	hashedClientSecret, ok := row["client_secret"].(string)
 	if !ok {
-		return nil, errors.New("failed to parse consumer_secret as string")
+		return nil, errors.New("failed to parse client_secret as string")
 	}
 
 	// Extract OAuth JSON data
@@ -1451,7 +1451,7 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_WithComplexToken
 
 	mockRow := map[string]interface{}{
 		"app_id":            "app-123",
-		"consumer_secret":   "hashed-secret",
+		"client_secret":     "hashed-secret",
 		"oauth_config_json": tokenConfigJSON,
 	}
 
@@ -1508,7 +1508,7 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_WithNilTokenConf
 
 	mockRow := map[string]interface{}{
 		"app_id":            "app-no-token",
-		"consumer_secret":   "hashed-secret",
+		"client_secret":     "hashed-secret",
 		"oauth_config_json": tokenConfigJSON,
 	}
 
@@ -1540,7 +1540,7 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_WithJSONAsBytes(
 
 	mockRow := map[string]interface{}{
 		"app_id":            "app-bytes",
-		"consumer_secret":   "hashed-secret",
+		"client_secret":     "hashed-secret",
 		"oauth_config_json": tokenConfigJSON, // As []byte instead of string
 	}
 
@@ -1565,7 +1565,7 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_WithNilJSON() {
 
 	mockRow := map[string]interface{}{
 		"app_id":            "app-nil-json",
-		"consumer_secret":   "hashed-secret",
+		"client_secret":     "hashed-secret",
 		"oauth_config_json": nil, // Nil JSON
 	}
 
@@ -1625,7 +1625,7 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_InvalidAppIDType
 
 	mockRow := map[string]interface{}{
 		"app_id":            123, // Invalid type
-		"consumer_secret":   "hashed-secret",
+		"client_secret":     "hashed-secret",
 		"oauth_config_json": "{}",
 	}
 
@@ -1650,7 +1650,7 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_InvalidJSONType(
 
 	mockRow := map[string]interface{}{
 		"app_id":            "app-123",
-		"consumer_secret":   "hashed-secret",
+		"client_secret":     "hashed-secret",
 		"oauth_config_json": 12345, // Invalid type (not string or []byte)
 	}
 
@@ -1675,7 +1675,7 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_MalformedJSON() 
 
 	mockRow := map[string]interface{}{
 		"app_id":            "app-123",
-		"consumer_secret":   "hashed-secret",
+		"client_secret":     "hashed-secret",
 		"oauth_config_json": "{invalid json", // Malformed JSON
 	}
 
@@ -1757,8 +1757,8 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_UnexpectedNumb
 		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     "{}",
-		"consumer_key":                 "client1",
-		"consumer_secret":              "secret1",
+		"client_id":                    "client1",
+		"client_secret":                "secret1",
 		"oauth_config_json":            "{}",
 	}
 
@@ -1770,8 +1770,8 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_UnexpectedNumb
 		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     "{}",
-		"consumer_key":                 "client2",
-		"consumer_secret":              "secret2",
+		"client_id":                    "client2",
+		"client_secret":                "secret2",
 		"oauth_config_json":            "{}",
 	}
 
@@ -1813,8 +1813,8 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_BuildApplicati
 		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     "{}",
-		"consumer_key":                 "client1",
-		"consumer_secret":              "secret1",
+		"client_id":                    "client1",
+		"client_secret":                "secret1",
 		"oauth_config_json":            "{}",
 	}
 
@@ -1851,8 +1851,8 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_BuildApplicati
 		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     12345, // Invalid type - should be string or []byte
-		"consumer_key":                 "client1",
-		"consumer_secret":              "secret1",
+		"client_id":                    "client1",
+		"client_secret":                "secret1",
 		"oauth_config_json":            "{}",
 	}
 
@@ -1889,8 +1889,8 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_BuildApplicati
 		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     "{invalid json", // Malformed JSON
-		"consumer_key":                 "client1",
-		"consumer_secret":              "secret1",
+		"client_id":                    "client1",
+		"client_secret":                "secret1",
 		"oauth_config_json":            "{}",
 	}
 

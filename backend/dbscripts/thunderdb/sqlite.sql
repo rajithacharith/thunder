@@ -107,8 +107,8 @@ CREATE TABLE LAYOUT (
 -- Index for deployment isolation on LAYOUT
 CREATE INDEX idx_layout_deployment_id ON LAYOUT (DEPLOYMENT_ID);
 
--- Table to store basic service provider (app) details.
-CREATE TABLE SP_APP (
+-- Table to store application details.
+CREATE TABLE APPLICATION (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     APP_ID VARCHAR(36) NOT NULL,
@@ -125,41 +125,28 @@ CREATE TABLE SP_APP (
     FOREIGN KEY (LAYOUT_ID, DEPLOYMENT_ID) REFERENCES LAYOUT(LAYOUT_ID, DEPLOYMENT_ID) ON DELETE RESTRICT
 );
 
--- Index for deployment isolation on SP_APP
-CREATE INDEX idx_sp_app_deployment_id ON SP_APP (DEPLOYMENT_ID);
+-- Index for deployment isolation on APPLICATION
+CREATE INDEX idx_application_deployment_id ON APPLICATION (DEPLOYMENT_ID);
 
 -- Index for efficient lookups of applications by theme.
-CREATE INDEX idx_sp_app_theme_id ON SP_APP(THEME_ID);
+CREATE INDEX idx_application_theme_id ON APPLICATION(THEME_ID);
 
 -- Index for efficient lookups of applications by layout.
-CREATE INDEX idx_sp_app_layout_id ON SP_APP(LAYOUT_ID);
+CREATE INDEX idx_application_layout_id ON APPLICATION(LAYOUT_ID);
 
--- Table to store OAuth configurations for SP apps.
-CREATE TABLE IDN_OAUTH_CONSUMER_APPS (
+-- Table to store OAuth configurations for applications.
+CREATE TABLE APP_OAUTH_INBOUND_CONFIG (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
-    CONSUMER_KEY VARCHAR(255) NOT NULL,
-    CONSUMER_SECRET VARCHAR(255) NOT NULL,
+    CLIENT_ID VARCHAR(255) NOT NULL,
+    CLIENT_SECRET VARCHAR(255) NOT NULL,
     APP_ID VARCHAR(36) NOT NULL,
     OAUTH_CONFIG_JSON TEXT,
-    FOREIGN KEY (APP_ID, DEPLOYMENT_ID) REFERENCES SP_APP(APP_ID, DEPLOYMENT_ID) ON DELETE CASCADE
+    FOREIGN KEY (APP_ID, DEPLOYMENT_ID) REFERENCES APPLICATION(APP_ID, DEPLOYMENT_ID) ON DELETE CASCADE
 );
 
--- Index for deployment isolation on IDN_OAUTH_CONSUMER_APPS
-CREATE INDEX idx_idn_oauth_consumer_apps_deployment_id ON IDN_OAUTH_CONSUMER_APPS (DEPLOYMENT_ID);
-
--- Table to store inbound auth configs (e.g., OAuth, SAML) for SP apps.
-CREATE TABLE SP_INBOUND_AUTH (
-    ID INTEGER PRIMARY KEY AUTOINCREMENT,
-    DEPLOYMENT_ID VARCHAR(255) NOT NULL,
-    INBOUND_AUTH_KEY VARCHAR(255) NOT NULL,
-    INBOUND_AUTH_TYPE VARCHAR(50) NOT NULL,
-    APP_ID VARCHAR(36) NOT NULL,
-    FOREIGN KEY (APP_ID, DEPLOYMENT_ID) REFERENCES SP_APP(APP_ID, DEPLOYMENT_ID) ON DELETE CASCADE
-);
-
--- Index for deployment isolation on SP_INBOUND_AUTH
-CREATE INDEX idx_sp_inbound_auth_deployment_id ON SP_INBOUND_AUTH (DEPLOYMENT_ID);
+-- Index for deployment isolation on APP_OAUTH_INBOUND_CONFIG
+CREATE INDEX idx_app_oauth_inbound_config_deployment_id ON APP_OAUTH_INBOUND_CONFIG (DEPLOYMENT_ID);
 
 -- Table to store identity providers.
 CREATE TABLE IDP (
