@@ -47,6 +47,8 @@ type groupStoreInterface interface {
 	GetGroupsByOrganizationUnitCount(ctx context.Context, organizationUnitID string) (int, error)
 	GetGroupsByOrganizationUnit(
 		ctx context.Context, organizationUnitID string, limit, offset int) ([]GroupBasicDAO, error)
+	AddGroupMembers(ctx context.Context, groupID string, members []Member) error
+	RemoveGroupMembers(ctx context.Context, groupID string, members []Member) error
 }
 
 // groupStore is the default implementation of groupStoreInterface.
@@ -399,6 +401,36 @@ func (s *groupStore) GetGroupsByOrganizationUnit(
 	}
 
 	return groups, nil
+}
+
+// AddGroupMembers adds members to a group.
+func (s *groupStore) AddGroupMembers(ctx context.Context, groupID string, members []Member) error {
+	dbClient, err := s.dbProvider.GetUserDBClient()
+	if err != nil {
+		return fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	return addMembersToGroup(ctx, dbClient, groupID, members, s.deploymentID)
+}
+
+// RemoveGroupMembers removes members from a group.
+func (s *groupStore) RemoveGroupMembers(ctx context.Context, groupID string, members []Member) error {
+	dbClient, err := s.dbProvider.GetUserDBClient()
+	if err != nil {
+		return fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	for _, member := range members {
+		_, err := dbClient.ExecuteContext(
+			ctx, QueryDeleteGroupMember,
+			groupID, member.Type, member.ID, s.deploymentID,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to remove member from group: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // buildGroupFromResultRow constructs a GroupDAO from a database result row.
