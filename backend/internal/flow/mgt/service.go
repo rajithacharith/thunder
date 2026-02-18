@@ -63,6 +63,7 @@ type flowMgtService struct {
 	inferenceService flowInferenceServiceInterface
 	graphBuilder     graphBuilderInterface
 	executorRegistry executor.ExecutorRegistryInterface
+	compositeStore   *compositeFlowStore
 	logger           *log.Logger
 }
 
@@ -72,12 +73,14 @@ func newFlowMgtService(
 	inferenceService flowInferenceServiceInterface,
 	graphBuilder graphBuilderInterface,
 	executorRegistry executor.ExecutorRegistryInterface,
+	compositeStore *compositeFlowStore,
 ) FlowMgtServiceInterface {
 	return &flowMgtService{
 		store:            store,
 		inferenceService: inferenceService,
 		graphBuilder:     graphBuilder,
 		executorRegistry: executorRegistry,
+		compositeStore:   compositeStore,
 		logger:           log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
 	}
 }
@@ -231,6 +234,11 @@ func (s *flowMgtService) UpdateFlow(flowID string, flowDef *FlowDefinition) (
 		return nil, &serviceerror.InternalServerError
 	}
 
+	// Prevent updating declarative (immutable) flows
+	if s.isFlowDeclarative(flowID) {
+		return nil, &ErrorFlowDeclarativeReadOnly
+	}
+
 	// Prevent changing the flow type
 	if existingFlow.FlowType != flowDef.FlowType {
 		return nil, &ErrorCannotUpdateFlowType
@@ -280,6 +288,11 @@ func (s *flowMgtService) DeleteFlow(flowID string) *serviceerror.ServiceError {
 		}
 		logger.Error("Failed to get existing flow", log.Error(err))
 		return &serviceerror.InternalServerError
+	}
+
+	// Prevent deleting declarative (immutable) flows
+	if s.isFlowDeclarative(flowID) {
+		return &ErrorFlowDeclarativeReadOnly
 	}
 
 	err = s.store.DeleteFlow(flowID)
@@ -634,4 +647,30 @@ func (s *flowMgtService) hasPasskeyRegistrationModes(flowDef *FlowDefinition) bo
 	}
 
 	return hasRegStart && hasRegFinish
+}
+
+// isFlowDeclarative checks if a flow is declarative (read-only from file store).
+// Returns true only if the flow exists in the file store but NOT in the database store.
+// Database flows take precedence - if a flow exists in both stores, it's treated as mutable (not declarative).
+func (s *flowMgtService) isFlowDeclarative(flowID string) bool {
+	if s.compositeStore == nil {
+		return false
+	}
+
+	// Check DB store first - if flow exists in DB, it's mutable (not declarative)
+	if s.compositeStore.dbStore != nil {
+		_, err := s.compositeStore.dbStore.GetFlowByID(flowID)
+		if err == nil {
+			// Flow exists in DB, so it's mutable (not declarative)
+			return false
+		}
+	}
+
+	// Flow not in DB, check if it exists in file store
+	if s.compositeStore.fileStore != nil {
+		_, err := s.compositeStore.fileStore.GetFlowByID(flowID)
+		return err == nil
+	}
+
+	return false
 }
