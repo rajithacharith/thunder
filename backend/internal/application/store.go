@@ -116,7 +116,7 @@ func (st *applicationStore) CreateApplication(app model.ApplicationProcessedDTO)
 			} else {
 				layoutID = nil
 			}
-			_, err := tx.Exec(QueryCreateApplication, app.ID, app.Name, app.Description,
+			_, err := tx.Exec(queryCreateApplication, app.ID, app.Name, app.Description,
 				app.AuthFlowID, app.RegistrationFlowID, isRegistrationEnabledStr, themeID, layoutID,
 				jsonDataBytes, st.deploymentID)
 			return err
@@ -124,7 +124,7 @@ func (st *applicationStore) CreateApplication(app model.ApplicationProcessedDTO)
 	}
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
 	if len(app.InboundAuthConfig) > 0 {
-		queries = append(queries, createOAuthAppQuery(&app, QueryCreateOAuthApplication, st.deploymentID))
+		queries = append(queries, createOAuthAppQuery(&app, queryCreateOAuthApplication, st.deploymentID))
 	}
 
 	return executeTransaction(queries)
@@ -137,7 +137,7 @@ func (st *applicationStore) GetTotalApplicationCount() (int, error) {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetApplicationCount, st.deploymentID)
+	results, err := dbClient.Query(queryGetApplicationCount, st.deploymentID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -164,7 +164,7 @@ func (st *applicationStore) GetApplicationList() ([]model.BasicApplicationDTO, e
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetApplicationList, st.deploymentID)
+	results, err := dbClient.Query(queryGetApplicationList, st.deploymentID)
 	if err != nil {
 		logger.Error("Failed to execute query", log.Error(err))
 		return nil, fmt.Errorf("failed to execute query: %w", err)
@@ -194,7 +194,7 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetOAuthApplicationByClientID, clientID, st.deploymentID)
+	results, err := dbClient.Query(queryGetOAuthApplicationByClientID, clientID, st.deploymentID)
 	if err != nil {
 		return nil, err
 	}
@@ -209,9 +209,9 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 		return nil, errors.New("failed to parse app_id as string")
 	}
 
-	hashedClientSecret, ok := row["consumer_secret"].(string)
+	hashedClientSecret, ok := row["client_secret"].(string)
 	if !ok {
-		return nil, errors.New("failed to parse consumer_secret as string")
+		return nil, errors.New("failed to parse client_secret as string")
 	}
 
 	// Extract OAuth JSON data
@@ -309,12 +309,12 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 
 // GetApplicationByID retrieves a specific application by its ID from the database.
 func (st *applicationStore) GetApplicationByID(id string) (*model.ApplicationProcessedDTO, error) {
-	return st.getApplicationByQuery(QueryGetApplicationByAppID, id, st.deploymentID)
+	return st.getApplicationByQuery(queryGetApplicationByAppID, id, st.deploymentID)
 }
 
 // GetApplicationByName retrieves a specific application by its name from the database.
 func (st *applicationStore) GetApplicationByName(name string) (*model.ApplicationProcessedDTO, error) {
-	return st.getApplicationByQuery(QueryGetApplicationByName, name, st.deploymentID)
+	return st.getApplicationByQuery(queryGetApplicationByName, name, st.deploymentID)
 }
 
 // getApplicationByQuery retrieves a specific application from the database using the provided query and parameter.
@@ -374,7 +374,7 @@ func (st *applicationStore) UpdateApplication(existingApp, updatedApp *model.App
 			} else {
 				layoutID = nil
 			}
-			_, err := tx.Exec(QueryUpdateApplicationByAppID, updatedApp.ID, updatedApp.Name,
+			_, err := tx.Exec(queryUpdateApplicationByAppID, updatedApp.ID, updatedApp.Name,
 				updatedApp.Description, updatedApp.AuthFlowID, updatedApp.RegistrationFlowID,
 				isRegistrationEnabledStr, themeID, layoutID, jsonDataBytes, st.deploymentID)
 			return err
@@ -382,7 +382,7 @@ func (st *applicationStore) UpdateApplication(existingApp, updatedApp *model.App
 	}
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
 	if len(updatedApp.InboundAuthConfig) > 0 && len(existingApp.InboundAuthConfig) > 0 {
-		queries = append(queries, createOAuthAppQuery(updatedApp, QueryUpdateOAuthApplicationByAppID, st.deploymentID))
+		queries = append(queries, createOAuthAppQuery(updatedApp, queryUpdateOAuthApplicationByAppID, st.deploymentID))
 	} else if len(existingApp.InboundAuthConfig) > 0 {
 		clientID := ""
 		if len(existingApp.InboundAuthConfig) > 0 && existingApp.InboundAuthConfig[0].OAuthAppConfig != nil {
@@ -390,7 +390,7 @@ func (st *applicationStore) UpdateApplication(existingApp, updatedApp *model.App
 		}
 		queries = append(queries, deleteOAuthAppQuery(clientID, st.deploymentID))
 	} else if len(updatedApp.InboundAuthConfig) > 0 {
-		queries = append(queries, createOAuthAppQuery(updatedApp, QueryCreateOAuthApplication, st.deploymentID))
+		queries = append(queries, createOAuthAppQuery(updatedApp, queryCreateOAuthApplication, st.deploymentID))
 	}
 
 	return executeTransaction(queries)
@@ -406,7 +406,7 @@ func (st *applicationStore) DeleteApplication(id string) error {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	_, err = dbClient.Execute(QueryDeleteApplicationByAppID, id, st.deploymentID)
+	_, err = dbClient.Execute(queryDeleteApplicationByAppID, id, st.deploymentID)
 	if err != nil {
 		logger.Error("Failed to execute query", log.Error(err))
 		return fmt.Errorf("failed to execute query: %w", err)
@@ -531,7 +531,7 @@ func createOAuthAppQuery(app *model.ApplicationProcessedDTO,
 // deleteOAuthAppQuery creates a query function for deleting an OAuth application by client ID.
 func deleteOAuthAppQuery(clientID string, deploymentID string) func(tx dbmodel.TxInterface) error {
 	return func(tx dbmodel.TxInterface) error {
-		_, err := tx.Exec(QueryDeleteOAuthApplicationByClientID, clientID, deploymentID)
+		_, err := tx.Exec(queryDeleteOAuthApplicationByClientID, clientID, deploymentID)
 		return err
 	}
 }
@@ -608,10 +608,10 @@ func buildBasicApplicationFromResultRow(row map[string]interface{}) (model.Basic
 		LayoutID:                  layoutID,
 	}
 
-	if row["consumer_key"] != nil {
-		clientID, ok := row["consumer_key"].(string)
+	if row["client_id"] != nil {
+		clientID, ok := row["client_id"].(string)
 		if !ok {
-			return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse consumer_key as string")
+			return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse client_id as string")
 		}
 		application.ClientID = clientID
 	}
@@ -805,9 +805,9 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 // buildOAuthInboundAuthConfig builds OAuth inbound auth configuration from database row and basic app data.
 func buildOAuthInboundAuthConfig(row map[string]interface{}, basicApp model.BasicApplicationDTO) (
 	model.InboundAuthConfigProcessedDTO, error) {
-	hashedClientSecret, ok := row["consumer_secret"].(string)
+	hashedClientSecret, ok := row["client_secret"].(string)
 	if !ok {
-		return model.InboundAuthConfigProcessedDTO{}, fmt.Errorf("failed to parse consumer_secret as string")
+		return model.InboundAuthConfigProcessedDTO{}, fmt.Errorf("failed to parse client_secret as string")
 	}
 
 	// Extract OAuth JSON data from the row.
