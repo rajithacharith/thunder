@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema_test
+package usertype_test
 
 import (
 	"encoding/json"
@@ -28,49 +28,49 @@ import (
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userschema"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/internal/usertype"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 )
 
-// UserSchemaExporterTestSuite tests the UserSchemaExporter.
-type UserSchemaExporterTestSuite struct {
+// UserTypeExporterTestSuite tests the UserTypeExporter.
+type UserTypeExporterTestSuite struct {
 	suite.Suite
-	mockService *userschemamock.UserSchemaServiceInterfaceMock
-	exporter    *userschema.UserSchemaExporter
+	mockService *usertypemock.UserTypeServiceInterfaceMock
+	exporter    *usertype.UserTypeExporter
 	logger      *log.Logger
 }
 
-func TestUserSchemaExporterTestSuite(t *testing.T) {
-	suite.Run(t, new(UserSchemaExporterTestSuite))
+func TestUserTypeExporterTestSuite(t *testing.T) {
+	suite.Run(t, new(UserTypeExporterTestSuite))
 }
 
-func (s *UserSchemaExporterTestSuite) SetupTest() {
-	s.mockService = userschemamock.NewUserSchemaServiceInterfaceMock(s.T())
-	s.exporter = userschema.NewUserSchemaExporterForTest(s.mockService)
+func (s *UserTypeExporterTestSuite) SetupTest() {
+	s.mockService = usertypemock.NewUserTypeServiceInterfaceMock(s.T())
+	s.exporter = usertype.NewUserTypeExporterForTest(s.mockService)
 	s.logger = log.GetLogger()
 }
 
-func (s *UserSchemaExporterTestSuite) TestNewUserSchemaExporter() {
+func (s *UserTypeExporterTestSuite) TestNewUserTypeExporter() {
 	assert.NotNil(s.T(), s.exporter)
 }
 
-func (s *UserSchemaExporterTestSuite) TestGetResourceType() {
-	assert.Equal(s.T(), "user_schema", s.exporter.GetResourceType())
+func (s *UserTypeExporterTestSuite) TestGetResourceType() {
+	assert.Equal(s.T(), "user_type", s.exporter.GetResourceType())
 }
 
-func (s *UserSchemaExporterTestSuite) TestGetParameterizerType() {
-	assert.Equal(s.T(), "UserSchema", s.exporter.GetParameterizerType())
+func (s *UserTypeExporterTestSuite) TestGetParameterizerType() {
+	assert.Equal(s.T(), "UserType", s.exporter.GetParameterizerType())
 }
 
-func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_Success() {
-	expectedResponse := &userschema.UserSchemaListResponse{
-		Schemas: []userschema.UserSchemaListItem{
+func (s *UserTypeExporterTestSuite) TestGetAllResourceIDs_Success() {
+	expectedResponse := &usertype.UserTypeListResponse{
+		Schemas: []usertype.UserTypeListItem{
 			{ID: "schema1", Name: "Schema 1"},
 			{ID: "schema2", Name: "Schema 2"},
 		},
 	}
 
-	s.mockService.EXPECT().GetUserSchemaList(100, 0).Return(expectedResponse, nil)
+	s.mockService.EXPECT().GetUserTypeList(100, 0).Return(expectedResponse, nil)
 
 	ids, err := s.exporter.GetAllResourceIDs()
 
@@ -80,13 +80,13 @@ func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_Success() {
 	assert.Equal(s.T(), "schema2", ids[1])
 }
 
-func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_Error() {
+func (s *UserTypeExporterTestSuite) TestGetAllResourceIDs_Error() {
 	expectedError := &serviceerror.ServiceError{
 		Code:  "ERR_CODE",
 		Error: "test error",
 	}
 
-	s.mockService.EXPECT().GetUserSchemaList(100, 0).Return(nil, expectedError)
+	s.mockService.EXPECT().GetUserTypeList(100, 0).Return(nil, expectedError)
 
 	ids, err := s.exporter.GetAllResourceIDs()
 
@@ -94,12 +94,12 @@ func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_Error() {
 	assert.Equal(s.T(), expectedError, err)
 }
 
-func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_EmptyList() {
-	expectedResponse := &userschema.UserSchemaListResponse{
-		Schemas: []userschema.UserSchemaListItem{},
+func (s *UserTypeExporterTestSuite) TestGetAllResourceIDs_EmptyList() {
+	expectedResponse := &usertype.UserTypeListResponse{
+		Schemas: []usertype.UserTypeListItem{},
 	}
 
-	s.mockService.EXPECT().GetUserSchemaList(100, 0).Return(expectedResponse, nil)
+	s.mockService.EXPECT().GetUserTypeList(100, 0).Return(expectedResponse, nil)
 
 	ids, err := s.exporter.GetAllResourceIDs()
 
@@ -107,13 +107,13 @@ func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_EmptyList() {
 	assert.Len(s.T(), ids, 0)
 }
 
-func (s *UserSchemaExporterTestSuite) TestGetResourceByID_Success() {
-	expectedSchema := &userschema.UserSchema{
+func (s *UserTypeExporterTestSuite) TestGetResourceByID_Success() {
+	expectedSchema := &usertype.UserType{
 		ID:   "schema1",
 		Name: "Test Schema",
 	}
 
-	s.mockService.EXPECT().GetUserSchema("schema1").Return(expectedSchema, nil)
+	s.mockService.EXPECT().GetUserType("schema1").Return(expectedSchema, nil)
 
 	resource, name, err := s.exporter.GetResourceByID("schema1")
 
@@ -122,13 +122,13 @@ func (s *UserSchemaExporterTestSuite) TestGetResourceByID_Success() {
 	assert.Equal(s.T(), expectedSchema, resource)
 }
 
-func (s *UserSchemaExporterTestSuite) TestGetResourceByID_Error() {
+func (s *UserTypeExporterTestSuite) TestGetResourceByID_Error() {
 	expectedError := &serviceerror.ServiceError{
 		Code:  "ERR_CODE",
 		Error: "test error",
 	}
 
-	s.mockService.EXPECT().GetUserSchema("schema1").Return(nil, expectedError)
+	s.mockService.EXPECT().GetUserType("schema1").Return(nil, expectedError)
 
 	resource, name, err := s.exporter.GetResourceByID("schema1")
 
@@ -137,8 +137,8 @@ func (s *UserSchemaExporterTestSuite) TestGetResourceByID_Error() {
 	assert.Equal(s.T(), expectedError, err)
 }
 
-func (s *UserSchemaExporterTestSuite) TestValidateResource_Success() {
-	schema := &userschema.UserSchema{
+func (s *UserTypeExporterTestSuite) TestValidateResource_Success() {
+	schema := &usertype.UserType{
 		ID:     "schema1",
 		Name:   "Valid Schema",
 		Schema: json.RawMessage(`{"field": "value"}`),
@@ -150,20 +150,20 @@ func (s *UserSchemaExporterTestSuite) TestValidateResource_Success() {
 	assert.Equal(s.T(), "Valid Schema", name)
 }
 
-func (s *UserSchemaExporterTestSuite) TestValidateResource_InvalidType() {
+func (s *UserTypeExporterTestSuite) TestValidateResource_InvalidType() {
 	invalidResource := "not a schema"
 
 	name, err := s.exporter.ValidateResource(invalidResource, "schema1", s.logger)
 
 	assert.Empty(s.T(), name)
 	assert.NotNil(s.T(), err)
-	assert.Equal(s.T(), "user_schema", err.ResourceType)
+	assert.Equal(s.T(), "user_type", err.ResourceType)
 	assert.Equal(s.T(), "schema1", err.ResourceID)
 	assert.Equal(s.T(), "INVALID_TYPE", err.Code)
 }
 
-func (s *UserSchemaExporterTestSuite) TestValidateResource_EmptyName() {
-	schema := &userschema.UserSchema{
+func (s *UserTypeExporterTestSuite) TestValidateResource_EmptyName() {
+	schema := &usertype.UserType{
 		ID:   "schema1",
 		Name: "",
 	}
@@ -172,14 +172,14 @@ func (s *UserSchemaExporterTestSuite) TestValidateResource_EmptyName() {
 
 	assert.Empty(s.T(), name)
 	assert.NotNil(s.T(), err)
-	assert.Equal(s.T(), "user_schema", err.ResourceType)
+	assert.Equal(s.T(), "user_type", err.ResourceType)
 	assert.Equal(s.T(), "schema1", err.ResourceID)
 	assert.Equal(s.T(), "SCHEMA_VALIDATION_ERROR", err.Code)
 	assert.Contains(s.T(), err.Error, "name is empty")
 }
 
-func (s *UserSchemaExporterTestSuite) TestValidateResource_NoSchema() {
-	schema := &userschema.UserSchema{
+func (s *UserTypeExporterTestSuite) TestValidateResource_NoSchema() {
+	schema := &usertype.UserType{
 		ID:     "schema1",
 		Name:   "Test Schema",
 		Schema: json.RawMessage(`{}`),
@@ -192,6 +192,6 @@ func (s *UserSchemaExporterTestSuite) TestValidateResource_NoSchema() {
 	assert.Equal(s.T(), "Test Schema", name)
 }
 
-func (s *UserSchemaExporterTestSuite) TestUserSchemaExporterImplementsInterface() {
-	var _ declarativeresource.ResourceExporter = (*userschema.UserSchemaExporter)(nil)
+func (s *UserTypeExporterTestSuite) TestUserTypeExporterImplementsInterface() {
+	var _ declarativeresource.ResourceExporter = (*usertype.UserTypeExporter)(nil)
 }

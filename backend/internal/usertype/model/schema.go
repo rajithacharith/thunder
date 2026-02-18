@@ -46,7 +46,7 @@ type property interface {
 		identifyUser func(map[string]interface{}) (*string, error), logger *log.Logger) (bool, error)
 }
 
-// Schema represents a user schema with a set of properties.
+// Schema represents a user type with a set of properties.
 type Schema struct {
 	properties map[string]property
 }
@@ -133,8 +133,8 @@ func convertToFloat64(value interface{}) (float64, bool) {
 	}
 }
 
-// CompileUserSchema compiles a user schema from the provided JSON.
-func CompileUserSchema(schema json.RawMessage) (*Schema, error) {
+// CompileUserType compiles a user type from the provided JSON.
+func CompileUserType(schema json.RawMessage) (*Schema, error) {
 	var schemaMap map[string]json.RawMessage
 	if err := json.Unmarshal(schema, &schemaMap); err != nil {
 		return nil, fmt.Errorf("invalid JSON: %w", err)

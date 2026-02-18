@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema
+package usertype
 
 import (
 	"net/http"
@@ -29,23 +29,23 @@ import (
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
-const userSchemaHandlerLoggerComponentName = "UserSchemaHandler"
+const userTypeHandlerLoggerComponentName = "UserTypeHandler"
 
-// userSchemaHandler is the handler for user schema management operations.
-type userSchemaHandler struct {
-	userSchemaService UserSchemaServiceInterface
+// userTypeHandler is the handler for user type management operations.
+type userTypeHandler struct {
+	userTypeService UserTypeServiceInterface
 }
 
-// newUserSchemaHandler creates a new instance of userSchemaHandler.
-func newUserSchemaHandler(userSchemaService UserSchemaServiceInterface) *userSchemaHandler {
-	return &userSchemaHandler{
-		userSchemaService: userSchemaService,
+// newUserTypeHandler creates a new instance of userTypeHandler.
+func newUserTypeHandler(userTypeService UserTypeServiceInterface) *userTypeHandler {
+	return &userTypeHandler{
+		userTypeService: userTypeService,
 	}
 }
 
-// HandleUserSchemaListRequest handles the user schema list request.
-func (h *userSchemaHandler) HandleUserSchemaListRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
+// HandleUserTypeListRequest handles the user type list request.
+func (h *userTypeHandler) HandleUserTypeListRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userTypeHandlerLoggerComponentName))
 
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
 	if svcErr != nil {
@@ -57,25 +57,25 @@ func (h *userSchemaHandler) HandleUserSchemaListRequest(w http.ResponseWriter, r
 		limit = serverconst.DefaultPageSize
 	}
 
-	userSchemaListResponse, svcErr := h.userSchemaService.GetUserSchemaList(limit, offset)
+	userTypeListResponse, svcErr := h.userTypeService.GetUserTypeList(limit, offset)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
 	}
 
-	sysutils.WriteSuccessResponse(w, http.StatusOK, userSchemaListResponse)
+	sysutils.WriteSuccessResponse(w, http.StatusOK, userTypeListResponse)
 
-	logger.Debug("Successfully listed user schemas with pagination",
+	logger.Debug("Successfully listed user types with pagination",
 		log.Int("limit", limit), log.Int("offset", offset),
-		log.Int("totalResults", userSchemaListResponse.TotalResults),
-		log.Int("count", userSchemaListResponse.Count))
+		log.Int("totalResults", userTypeListResponse.TotalResults),
+		log.Int("count", userTypeListResponse.Count))
 }
 
-// HandleUserSchemaPostRequest handles the user schema creation request.
-func (h *userSchemaHandler) HandleUserSchemaPostRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
+// HandleUserTypePostRequest handles the user type creation request.
+func (h *userTypeHandler) HandleUserTypePostRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userTypeHandlerLoggerComponentName))
 
-	createRequest, err := sysutils.DecodeJSONBody[CreateUserSchemaRequest](r)
+	createRequest, err := sysutils.DecodeJSONBody[CreateUserTypeRequest](r)
 	if err != nil {
 		errResp := apierror.ErrorResponse{
 			Code:        ErrorInvalidRequestFormat.Code,
@@ -87,83 +87,83 @@ func (h *userSchemaHandler) HandleUserSchemaPostRequest(w http.ResponseWriter, r
 		return
 	}
 
-	sanitizedRequest := h.sanitizeCreateUserSchemaRequest(*createRequest)
+	sanitizedRequest := h.sanitizeCreateUserTypeRequest(*createRequest)
 
-	createdUserSchema, svcErr := h.userSchemaService.CreateUserSchema(sanitizedRequest)
+	createdUserType, svcErr := h.userTypeService.CreateUserType(sanitizedRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
 	}
 
-	sysutils.WriteSuccessResponse(w, http.StatusCreated, createdUserSchema)
+	sysutils.WriteSuccessResponse(w, http.StatusCreated, createdUserType)
 
-	logger.Debug("Successfully created user schema",
-		log.String("schemaID", createdUserSchema.ID), log.String("name", createdUserSchema.Name))
+	logger.Debug("Successfully created user type",
+		log.String("schemaID", createdUserType.ID), log.String("name", createdUserType.Name))
 }
 
-// HandleUserSchemaGetRequest handles the user schema get request.
-func (h *userSchemaHandler) HandleUserSchemaGetRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
+// HandleUserTypeGetRequest handles the user type get request.
+func (h *userTypeHandler) HandleUserTypeGetRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userTypeHandlerLoggerComponentName))
 
 	schemaID, idValidationFailed := extractAndValidateSchemaID(w, r)
 	if idValidationFailed {
 		return
 	}
 
-	userSchema, svcErr := h.userSchemaService.GetUserSchema(schemaID)
+	userType, svcErr := h.userTypeService.GetUserType(schemaID)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
 	}
 
-	sysutils.WriteSuccessResponse(w, http.StatusOK, userSchema)
+	sysutils.WriteSuccessResponse(w, http.StatusOK, userType)
 
-	logger.Debug("Successfully retrieved user schema", log.String("schemaID", schemaID))
+	logger.Debug("Successfully retrieved user type", log.String("schemaID", schemaID))
 }
 
-// HandleUserSchemaPutRequest handles the user schema update request.
-func (h *userSchemaHandler) HandleUserSchemaPutRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
+// HandleUserTypePutRequest handles the user type update request.
+func (h *userTypeHandler) HandleUserTypePutRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userTypeHandlerLoggerComponentName))
 
 	schemaID, idValidationFailed := extractAndValidateSchemaID(w, r)
 	if idValidationFailed {
 		return
 	}
 
-	sanitizedRequest, requestValidationFailed := validateUpdateUserSchemaRequest(w, r, h)
+	sanitizedRequest, requestValidationFailed := validateUpdateUserTypeRequest(w, r, h)
 	if requestValidationFailed {
 		return
 	}
 
-	updatedUserSchema, svcErr := h.userSchemaService.UpdateUserSchema(schemaID, sanitizedRequest)
+	updatedUserType, svcErr := h.userTypeService.UpdateUserType(schemaID, sanitizedRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
 	}
 
-	sysutils.WriteSuccessResponse(w, http.StatusOK, updatedUserSchema)
+	sysutils.WriteSuccessResponse(w, http.StatusOK, updatedUserType)
 
-	logger.Debug("Successfully updated user schema",
-		log.String("schemaID", schemaID), log.String("name", updatedUserSchema.Name))
+	logger.Debug("Successfully updated user type",
+		log.String("schemaID", schemaID), log.String("name", updatedUserType.Name))
 }
 
-// HandleUserSchemaDeleteRequest handles the user schema delete request.
-func (h *userSchemaHandler) HandleUserSchemaDeleteRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
+// HandleUserTypeDeleteRequest handles the user type delete request.
+func (h *userTypeHandler) HandleUserTypeDeleteRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userTypeHandlerLoggerComponentName))
 
 	schemaID, idValidationFailed := extractAndValidateSchemaID(w, r)
 	if idValidationFailed {
 		return
 	}
 
-	svcErr := h.userSchemaService.DeleteUserSchema(schemaID)
+	svcErr := h.userTypeService.DeleteUserType(schemaID)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusNoContent, nil)
-	logger.Debug("Successfully deleted user schema", log.String("schemaID", schemaID))
+	logger.Debug("Successfully deleted user type", log.String("schemaID", schemaID))
 }
 
 // parsePaginationParams parses limit and offset from query parameters.
@@ -195,9 +195,9 @@ func handleError(w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
 	var statusCode int
 	if svcErr.Type == serviceerror.ClientErrorType {
 		statusCode = http.StatusBadRequest
-		if svcErr.Code == ErrorUserSchemaNotFound.Code {
+		if svcErr.Code == ErrorUserTypeNotFound.Code {
 			statusCode = http.StatusNotFound
-		} else if svcErr.Code == ErrorUserSchemaNameConflict.Code {
+		} else if svcErr.Code == ErrorUserTypeNameConflict.Code {
 			statusCode = http.StatusConflict
 		}
 	} else {
@@ -218,9 +218,9 @@ func extractAndValidateSchemaID(w http.ResponseWriter, r *http.Request) (string,
 	schemaID := r.PathValue("id")
 	if schemaID == "" {
 		errResp := apierror.ErrorResponse{
-			Code:        ErrorInvalidUserSchemaRequest.Code,
-			Message:     ErrorInvalidUserSchemaRequest.Error,
-			Description: ErrorInvalidUserSchemaRequest.ErrorDescription,
+			Code:        ErrorInvalidUserTypeRequest.Code,
+			Message:     ErrorInvalidUserTypeRequest.Error,
+			Description: ErrorInvalidUserTypeRequest.ErrorDescription,
 		}
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
 		return "", true
@@ -229,10 +229,10 @@ func extractAndValidateSchemaID(w http.ResponseWriter, r *http.Request) (string,
 	return schemaID, false
 }
 
-func validateUpdateUserSchemaRequest(
-	w http.ResponseWriter, r *http.Request, h *userSchemaHandler,
-) (UpdateUserSchemaRequest, bool) {
-	updateRequest, err := sysutils.DecodeJSONBody[UpdateUserSchemaRequest](r)
+func validateUpdateUserTypeRequest(
+	w http.ResponseWriter, r *http.Request, h *userTypeHandler,
+) (UpdateUserTypeRequest, bool) {
+	updateRequest, err := sysutils.DecodeJSONBody[UpdateUserTypeRequest](r)
 	if err != nil {
 		errResp := apierror.ErrorResponse{
 			Code:        ErrorInvalidRequestFormat.Code,
@@ -241,21 +241,21 @@ func validateUpdateUserSchemaRequest(
 		}
 
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
-		return UpdateUserSchemaRequest{}, true
+		return UpdateUserTypeRequest{}, true
 	}
 
-	sanitizedRequest := h.sanitizeUpdateUserSchemaRequest(*updateRequest)
+	sanitizedRequest := h.sanitizeUpdateUserTypeRequest(*updateRequest)
 	return sanitizedRequest, false
 }
 
-// sanitizeCreateUserSchemaRequest sanitizes the create user schema request input.
-func (h *userSchemaHandler) sanitizeCreateUserSchemaRequest(
-	request CreateUserSchemaRequest,
-) CreateUserSchemaRequest {
+// sanitizeCreateUserTypeRequest sanitizes the create user type request input.
+func (h *userTypeHandler) sanitizeCreateUserTypeRequest(
+	request CreateUserTypeRequest,
+) CreateUserTypeRequest {
 	sanitizedName := sysutils.SanitizeString(request.Name)
 	sanitizedOrganizationUnitID := sysutils.SanitizeString(request.OrganizationUnitID)
 
-	return CreateUserSchemaRequest{
+	return CreateUserTypeRequest{
 		Name:                  sanitizedName,
 		OrganizationUnitID:    sanitizedOrganizationUnitID,
 		AllowSelfRegistration: request.AllowSelfRegistration,
@@ -263,23 +263,23 @@ func (h *userSchemaHandler) sanitizeCreateUserSchemaRequest(
 	}
 }
 
-// sanitizeUpdateUserSchemaRequest sanitizes the update user schema request input.
-func (h *userSchemaHandler) sanitizeUpdateUserSchemaRequest(
-	request UpdateUserSchemaRequest,
-) UpdateUserSchemaRequest {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
+// sanitizeUpdateUserTypeRequest sanitizes the update user type request input.
+func (h *userTypeHandler) sanitizeUpdateUserTypeRequest(
+	request UpdateUserTypeRequest,
+) UpdateUserTypeRequest {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userTypeHandlerLoggerComponentName))
 
 	originalName := request.Name
 	sanitizedName := sysutils.SanitizeString(request.Name)
 	sanitizedOrganizationUnitID := sysutils.SanitizeString(request.OrganizationUnitID)
 
 	if originalName != sanitizedName {
-		logger.Debug("Sanitized user schema name in update request",
+		logger.Debug("Sanitized user type name in update request",
 			log.String("original", log.MaskString(originalName)),
 			log.String("sanitized", log.MaskString(sanitizedName)))
 	}
 
-	return UpdateUserSchemaRequest{
+	return UpdateUserTypeRequest{
 		Name:                  sanitizedName,
 		OrganizationUnitID:    sanitizedOrganizationUnitID,
 		AllowSelfRegistration: request.AllowSelfRegistration,

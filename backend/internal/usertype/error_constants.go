@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema
+package usertype
 
 import (
 	"errors"
@@ -24,7 +24,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 )
 
-// Client errors for user schema management operations.
+// Client errors for user type management operations.
 var (
 	// ErrorInvalidRequestFormat is the error returned when the request format is invalid.
 	ErrorInvalidRequestFormat = serviceerror.ServiceError{
@@ -33,26 +33,26 @@ var (
 		Error:            "Invalid request format",
 		ErrorDescription: "The request body is malformed or contains invalid data",
 	}
-	// ErrorUserSchemaNotFound is the error returned when a user schema is not found.
-	ErrorUserSchemaNotFound = serviceerror.ServiceError{
+	// ErrorUserTypeNotFound is the error returned when a user type is not found.
+	ErrorUserTypeNotFound = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "USRS-1002",
-		Error:            "User schema not found",
-		ErrorDescription: "The user schema with the specified id does not exist",
+		Error:            "User type not found",
+		ErrorDescription: "The user type with the specified id does not exist",
 	}
-	// ErrorUserSchemaNameConflict is the error returned when user schema name already exists.
-	ErrorUserSchemaNameConflict = serviceerror.ServiceError{
+	// ErrorUserTypeNameConflict is the error returned when user type name already exists.
+	ErrorUserTypeNameConflict = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "USRS-1003",
-		Error:            "User schema name conflict",
-		ErrorDescription: "A user schema with the same name already exists",
+		Error:            "User type name conflict",
+		ErrorDescription: "A user type with the same name already exists",
 	}
-	// ErrorInvalidUserSchemaRequest is the error returned when user schema request is invalid.
-	ErrorInvalidUserSchemaRequest = serviceerror.ServiceError{
+	// ErrorInvalidUserTypeRequest is the error returned when user type request is invalid.
+	ErrorInvalidUserTypeRequest = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "USRS-1004",
-		Error:            "Invalid user schema request",
-		ErrorDescription: "The user schema request contains invalid or missing required fields",
+		Error:            "Invalid user type request",
+		ErrorDescription: "The user type request contains invalid or missing required fields",
 	}
 	// ErrorInvalidLimit is the error returned when limit parameter is invalid.
 	ErrorInvalidLimit = serviceerror.ServiceError{
@@ -77,7 +77,7 @@ var (
 	}
 )
 
-// Server errors for user schema management operations.
+// Server errors for user type management operations.
 var (
 	// ErrorInternalServerError is the error returned when an internal server error occurs.
 	ErrorInternalServerError = serviceerror.ServiceError{
@@ -88,13 +88,13 @@ var (
 	}
 )
 
-// Error variables for user schema operations.
+// Error variables for user type operations.
 var (
-	// ErrUserSchemaNotFound is returned when the user schema is not found in the system.
-	ErrUserSchemaNotFound = errors.New("user schema not found")
+	// ErrUserTypeNotFound is returned when the user type is not found in the system.
+	ErrUserTypeNotFound = errors.New("user type not found")
 
-	// ErrUserSchemaAlreadyExists is returned when a user schema with the same name already exists.
-	ErrUserSchemaAlreadyExists = errors.New("user schema already exists")
+	// ErrUserTypeAlreadyExists is returned when a user type with the same name already exists.
+	ErrUserTypeAlreadyExists = errors.New("usertype already exists")
 
 	// ErrInvalidSchemaDefinition is returned when the schema definition is invalid.
 	ErrInvalidSchemaDefinition = errors.New("invalid schema definition")

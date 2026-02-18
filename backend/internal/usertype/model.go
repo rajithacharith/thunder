@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema
+package usertype
 
 import (
 	"encoding/json"
@@ -26,8 +26,8 @@ import (
 // are kept in the model/ subdirectory to maintain clean separation and better organization.
 // This file contains only the simple DTOs and API request/response structures.
 
-// UserSchema represents a user type schema definition.
-type UserSchema struct {
+// UserType represents a user type schema definition.
+type UserType struct {
 	ID                    string          `json:"id,omitempty" yaml:"id,omitempty"`
 	Name                  string          `json:"name,omitempty" yaml:"name"`
 	OrganizationUnitID    string          `json:"ouId" yaml:"organization_unit_id"`
@@ -35,8 +35,8 @@ type UserSchema struct {
 	Schema                json.RawMessage `json:"schema,omitempty" yaml:"schema"`
 }
 
-// UserSchemaListItem represents a simplified user schema for listing operations.
-type UserSchemaListItem struct {
+// UserTypeListItem represents a simplified user type for listing operations.
+type UserTypeListItem struct {
 	ID                    string `json:"id,omitempty"`
 	Name                  string `json:"name,omitempty"`
 	OrganizationUnitID    string `json:"ouId"`
@@ -49,33 +49,33 @@ type Link struct {
 	Rel  string `json:"rel,omitempty"`
 }
 
-// UserSchemaListResponse represents the response for listing user schemas with pagination.
-type UserSchemaListResponse struct {
-	TotalResults int                  `json:"totalResults"`
-	StartIndex   int                  `json:"startIndex"`
-	Count        int                  `json:"count"`
-	Schemas      []UserSchemaListItem `json:"schemas"`
-	Links        []Link               `json:"links"`
+// UserTypeListResponse represents the response for listing user types with pagination.
+type UserTypeListResponse struct {
+	TotalResults int                `json:"totalResults"`
+	StartIndex   int                `json:"startIndex"`
+	Count        int                `json:"count"`
+	Schemas      []UserTypeListItem `json:"schemas"`
+	Links        []Link             `json:"links"`
 }
 
-// CreateUserSchemaRequest represents the request body for creating a user schema.
-type CreateUserSchemaRequest struct {
+// CreateUserTypeRequest represents the request body for creating a user type.
+type CreateUserTypeRequest struct {
 	Name                  string          `json:"name"`
 	OrganizationUnitID    string          `json:"ouId"`
 	AllowSelfRegistration bool            `json:"allowSelfRegistration,omitempty"`
 	Schema                json.RawMessage `json:"schema"`
 }
 
-// UpdateUserSchemaRequest represents the request body for updating a user schema.
-type UpdateUserSchemaRequest struct {
+// UpdateUserTypeRequest represents the request body for updating a user type.
+type UpdateUserTypeRequest struct {
 	Name                  string          `json:"name"`
 	OrganizationUnitID    string          `json:"ouId"`
 	AllowSelfRegistration bool            `json:"allowSelfRegistration,omitempty"`
 	Schema                json.RawMessage `json:"schema"`
 }
 
-// UserSchemaRequestWithID represents the request structure for creating a user schema from file-based config.
-type UserSchemaRequestWithID struct {
+// UserTypeRequestWithID represents the request structure for creating a user type from file-based config.
+type UserTypeRequestWithID struct {
 	ID                    string `yaml:"id"`
 	Name                  string `yaml:"name"`
 	OrganizationUnitID    string `yaml:"organization_unit_id"`

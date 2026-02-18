@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema
+package usertype
 
 import (
 	"net/http"
@@ -71,7 +71,7 @@ func (suite *InitTestSuite) TestInitialize() {
 	assert.NoError(suite.T(), err)
 
 	suite.NotNil(service)
-	suite.Implements((*UserSchemaServiceInterface)(nil), service)
+	suite.Implements((*UserTypeServiceInterface)(nil), service)
 }
 
 // TestRegisterRoutes_ListEndpoint tests that the list endpoint is registered
@@ -87,7 +87,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_ListEndpoint() {
 	_, _, err = Initialize(suite.mux, suite.mockOUService)
 	assert.NoError(suite.T(), err)
 
-	req := httptest.NewRequest(http.MethodGet, "/user-schemas", nil)
+	req := httptest.NewRequest(http.MethodGet, "/user-types", nil)
 	w := httptest.NewRecorder()
 
 	suite.mux.ServeHTTP(w, req)
@@ -108,7 +108,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_CreateEndpoint() {
 	_, _, err = Initialize(suite.mux, suite.mockOUService)
 	assert.NoError(suite.T(), err)
 
-	req := httptest.NewRequest(http.MethodPost, "/user-schemas", nil)
+	req := httptest.NewRequest(http.MethodPost, "/user-types", nil)
 	w := httptest.NewRecorder()
 
 	suite.mux.ServeHTTP(w, req)
@@ -129,7 +129,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_GetByIDEndpoint() {
 	_, _, err = Initialize(suite.mux, suite.mockOUService)
 	assert.NoError(suite.T(), err)
 
-	req := httptest.NewRequest(http.MethodGet, "/user-schemas/test-id", nil)
+	req := httptest.NewRequest(http.MethodGet, "/user-types/test-id", nil)
 	w := httptest.NewRecorder()
 
 	suite.mux.ServeHTTP(w, req)
@@ -150,7 +150,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_UpdateEndpoint() {
 	_, _, err = Initialize(suite.mux, suite.mockOUService)
 	assert.NoError(suite.T(), err)
 
-	req := httptest.NewRequest(http.MethodPut, "/user-schemas/test-id", nil)
+	req := httptest.NewRequest(http.MethodPut, "/user-types/test-id", nil)
 	w := httptest.NewRecorder()
 
 	suite.mux.ServeHTTP(w, req)
@@ -171,7 +171,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_DeleteEndpoint() {
 	_, _, err = Initialize(suite.mux, suite.mockOUService)
 	assert.NoError(suite.T(), err)
 
-	req := httptest.NewRequest(http.MethodDelete, "/user-schemas/test-id", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/user-types/test-id", nil)
 	w := httptest.NewRecorder()
 
 	suite.mux.ServeHTTP(w, req)
@@ -192,7 +192,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflight() {
 	_, _, err = Initialize(suite.mux, suite.mockOUService)
 	assert.NoError(suite.T(), err)
 
-	req := httptest.NewRequest(http.MethodOptions, "/user-schemas", nil)
+	req := httptest.NewRequest(http.MethodOptions, "/user-types", nil)
 	w := httptest.NewRecorder()
 
 	suite.mux.ServeHTTP(w, req)
@@ -213,7 +213,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflightByID() {
 	_, _, err = Initialize(suite.mux, suite.mockOUService)
 	assert.NoError(suite.T(), err)
 
-	req := httptest.NewRequest(http.MethodOptions, "/user-schemas/test-id", nil)
+	req := httptest.NewRequest(http.MethodOptions, "/user-types/test-id", nil)
 	w := httptest.NewRecorder()
 
 	suite.mux.ServeHTTP(w, req)
@@ -221,8 +221,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflightByID() {
 	suite.Equal(http.StatusNoContent, w.Code)
 }
 
-// TestParseToUserSchemaDTO_ValidYAML tests parsing a valid YAML configuration
-func (suite *InitTestSuite) TestParseToUserSchemaDTO_ValidYAML() {
+// TestParseToUserTypeDTO_ValidYAML tests parsing a valid YAML configuration
+func (suite *InitTestSuite) TestParseToUserTypeDTO_ValidYAML() {
 	yamlData := `
 id: "schema-001"
 name: "Employee Schema"
@@ -239,7 +239,7 @@ schema: |
   }
 `
 
-	schemaDTO, err := parseToUserSchemaDTO([]byte(yamlData))
+	schemaDTO, err := parseToUserTypeDTO([]byte(yamlData))
 
 	suite.NoError(err)
 	suite.NotNil(schemaDTO)
@@ -250,8 +250,8 @@ schema: |
 	suite.NotEmpty(schemaDTO.Schema)
 }
 
-// TestParseToUserSchemaDTO_MinimalYAML tests parsing minimal YAML configuration
-func (suite *InitTestSuite) TestParseToUserSchemaDTO_MinimalYAML() {
+// TestParseToUserTypeDTO_MinimalYAML tests parsing minimal YAML configuration
+func (suite *InitTestSuite) TestParseToUserTypeDTO_MinimalYAML() {
 	yamlData := `
 id: "minimal-schema"
 name: "Minimal Schema"
@@ -265,7 +265,7 @@ schema: |
   }
 `
 
-	schemaDTO, err := parseToUserSchemaDTO([]byte(yamlData))
+	schemaDTO, err := parseToUserTypeDTO([]byte(yamlData))
 
 	suite.NoError(err)
 	suite.NotNil(schemaDTO)
@@ -276,21 +276,21 @@ schema: |
 	suite.NotEmpty(schemaDTO.Schema)
 }
 
-// TestParseToUserSchemaDTO_InvalidYAML tests parsing invalid YAML
-func (suite *InitTestSuite) TestParseToUserSchemaDTO_InvalidYAML() {
+// TestParseToUserTypeDTO_InvalidYAML tests parsing invalid YAML
+func (suite *InitTestSuite) TestParseToUserTypeDTO_InvalidYAML() {
 	yamlData := `
 invalid yaml content
   - this is not valid
 `
 
-	schemaDTO, err := parseToUserSchemaDTO([]byte(yamlData))
+	schemaDTO, err := parseToUserTypeDTO([]byte(yamlData))
 
 	suite.Error(err)
 	suite.Nil(schemaDTO)
 }
 
-// TestParseToUserSchemaDTO_ComplexSchema tests parsing with complex schema
-func (suite *InitTestSuite) TestParseToUserSchemaDTO_ComplexSchema() {
+// TestParseToUserTypeDTO_ComplexSchema tests parsing with complex schema
+func (suite *InitTestSuite) TestParseToUserTypeDTO_ComplexSchema() {
 	yamlData := `
 id: "complex-schema"
 name: "Complex Schema"
@@ -325,7 +325,7 @@ schema: |
   }
 `
 
-	schemaDTO, err := parseToUserSchemaDTO([]byte(yamlData))
+	schemaDTO, err := parseToUserTypeDTO([]byte(yamlData))
 
 	suite.NoError(err)
 	suite.NotNil(schemaDTO)
@@ -335,8 +335,8 @@ schema: |
 	suite.NotEmpty(schemaDTO.Schema)
 }
 
-// BenchmarkParseToUserSchemaDTO benchmarks the YAML parsing performance
-func BenchmarkParseToUserSchemaDTO(b *testing.B) {
+// BenchmarkParseToUserTypeDTO benchmarks the YAML parsing performance
+func BenchmarkParseToUserTypeDTO(b *testing.B) {
 	yamlData := `
 id: "benchmark-schema"
 name: "Benchmark Schema"
@@ -352,15 +352,15 @@ schema: |
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := parseToUserSchemaDTO([]byte(yamlData))
+		_, err := parseToUserTypeDTO([]byte(yamlData))
 		if err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
-// TestParseToUserSchemaDTO_Standalone tests YAML parsing without suite dependencies
-func TestParseToUserSchemaDTO_Standalone(t *testing.T) {
+// TestParseToUserTypeDTO_Standalone tests YAML parsing without suite dependencies
+func TestParseToUserTypeDTO_Standalone(t *testing.T) {
 	yamlData := `
 id: "standalone-schema"
 name: "Standalone Schema"
@@ -375,7 +375,7 @@ schema: |
   }
 `
 
-	schemaDTO, err := parseToUserSchemaDTO([]byte(yamlData))
+	schemaDTO, err := parseToUserTypeDTO([]byte(yamlData))
 
 	assert.NoError(t, err)
 	assert.NotNil(t, schemaDTO)
@@ -388,7 +388,7 @@ schema: |
 // TestRegisterRoutes_Standalone tests route registration without suite dependencies
 func TestRegisterRoutes_Standalone(t *testing.T) {
 	mux := http.NewServeMux()
-	mockHandler := &userSchemaHandler{}
+	mockHandler := &userTypeHandler{}
 
 	assert.NotPanics(t, func() {
 		registerRoutes(mux, mockHandler)
@@ -416,11 +416,11 @@ func TestInitialize_Standalone(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NotNil(t, service)
-	assert.Implements(t, (*UserSchemaServiceInterface)(nil), service)
+	assert.Implements(t, (*UserTypeServiceInterface)(nil), service)
 }
 
-// TestParseToUserSchemaDTO_InvalidJSONSchema tests parsing with invalid JSON in schema field
-func TestParseToUserSchemaDTO_InvalidJSONSchema(t *testing.T) {
+// TestParseToUserTypeDTO_InvalidJSONSchema tests parsing with invalid JSON in schema field
+func TestParseToUserTypeDTO_InvalidJSONSchema(t *testing.T) {
 	yamlData := `
 id: "invalid-json-schema"
 name: "Invalid JSON Schema"
@@ -429,15 +429,15 @@ schema: |
   {invalid json here}
 `
 
-	schemaDTO, err := parseToUserSchemaDTO([]byte(yamlData))
+	schemaDTO, err := parseToUserTypeDTO([]byte(yamlData))
 
 	assert.Error(t, err)
 	assert.Nil(t, schemaDTO)
 	assert.Contains(t, err.Error(), "invalid JSON")
 }
 
-// TestParseToUserSchemaDTO_EmptySchemaField tests parsing with empty schema field
-func TestParseToUserSchemaDTO_EmptySchemaField(t *testing.T) {
+// TestParseToUserTypeDTO_EmptySchemaField tests parsing with empty schema field
+func TestParseToUserTypeDTO_EmptySchemaField(t *testing.T) {
 	yamlData := `
 id: "empty-schema"
 name: "Empty Schema"
@@ -445,25 +445,25 @@ organization_unit_id: "550e8400-e29b-41d4-a716-446655440000"
 schema: ""
 `
 
-	schemaDTO, err := parseToUserSchemaDTO([]byte(yamlData))
+	schemaDTO, err := parseToUserTypeDTO([]byte(yamlData))
 
 	assert.Error(t, err)
 	assert.Nil(t, schemaDTO)
 	assert.Contains(t, err.Error(), "invalid JSON")
 }
 
-// TestValidateUserSchemaWithOUCheck tests the validation logic that would be used during initialization
+// TestValidateUserTypeWithOUCheck tests the validation logic that would be used during initialization
 // This tests the same validation path that occurs before the OU service call in Initialize()
-func TestValidateUserSchemaWithOUCheck(t *testing.T) {
+func TestValidateUserTypeWithOUCheck(t *testing.T) {
 	testCases := []struct {
 		name          string
-		schema        UserSchema
+		schema        UserType
 		shouldBeValid bool
 		errorContains string
 	}{
 		{
 			name: "Valid schema with valid OU ID",
-			schema: UserSchema{
+			schema: UserType{
 				ID:                 "valid-schema-001",
 				Name:               "Valid Schema",
 				OrganizationUnitID: "550e8400-e29b-41d4-a716-446655440000",
@@ -473,18 +473,18 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 		},
 		{
 			name: "Invalid schema - empty name",
-			schema: UserSchema{
+			schema: UserType{
 				ID:                 "invalid-001",
 				Name:               "",
 				OrganizationUnitID: "550e8400-e29b-41d4-a716-446655440000",
 				Schema:             []byte(`{"email":{"type":"string"}}`),
 			},
 			shouldBeValid: false,
-			errorContains: "user schema name must not be empty",
+			errorContains: "user type name must not be empty",
 		},
 		{
 			name: "Invalid schema - empty OU ID",
-			schema: UserSchema{
+			schema: UserType{
 				ID:                 "invalid-002",
 				Name:               "Test Schema",
 				OrganizationUnitID: "",
@@ -495,7 +495,7 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 		},
 		{
 			name: "Invalid schema - malformed OU ID",
-			schema: UserSchema{
+			schema: UserType{
 				ID:                 "invalid-003",
 				Name:               "Test Schema",
 				OrganizationUnitID: "not-a-valid-uuid",
@@ -506,7 +506,7 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 		},
 		{
 			name: "Invalid schema - empty schema definition",
-			schema: UserSchema{
+			schema: UserType{
 				ID:                 "invalid-004",
 				Name:               "Test Schema",
 				OrganizationUnitID: "550e8400-e29b-41d4-a716-446655440000",
@@ -517,7 +517,7 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 		},
 		{
 			name: "Invalid schema - malformed schema definition",
-			schema: UserSchema{
+			schema: UserType{
 				ID:                 "invalid-005",
 				Name:               "Test Schema",
 				OrganizationUnitID: "550e8400-e29b-41d4-a716-446655440000",
@@ -530,7 +530,7 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateUserSchemaDefinition(tc.schema)
+			err := validateUserTypeDefinition(tc.schema)
 
 			if tc.shouldBeValid {
 				assert.Nil(t, err, "Expected schema to be valid but got error: %v", err)
@@ -539,7 +539,7 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 				if err != nil {
 					assert.Contains(t, err.ErrorDescription, tc.errorContains,
 						"Error message should contain expected text")
-					assert.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
+					assert.Equal(t, ErrorInvalidUserTypeRequest.Code, err.Code)
 				}
 			}
 		})
@@ -624,9 +624,9 @@ func TestOUServiceInteractionDuringValidation(t *testing.T) {
 	}
 }
 
-// TestParseAndValidateUserSchemaFlow tests the complete flow of parsing and validating
+// TestParseAndValidateUserTypeFlow tests the complete flow of parsing and validating
 // This simulates what happens in Initialize() before the OU check
-func TestParseAndValidateUserSchemaFlow(t *testing.T) {
+func TestParseAndValidateUserTypeFlow(t *testing.T) {
 	testCases := []struct {
 		name          string
 		yamlData      string
@@ -676,7 +676,7 @@ schema: |
 `,
 			expectParseOK: true,
 			expectValidOK: false,
-			errorContains: "user schema name must not be empty",
+			errorContains: "user type name must not be empty",
 		},
 		{
 			name: "Invalid YAML structure",
@@ -692,14 +692,14 @@ this is not valid yaml:
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Step 1: Parse YAML (as done in Initialize)
-			schemaDTO, parseErr := parseToUserSchemaDTO([]byte(tc.yamlData))
+			schemaDTO, parseErr := parseToUserTypeDTO([]byte(tc.yamlData))
 
 			if tc.expectParseOK {
 				assert.NoError(t, parseErr, "Expected YAML parsing to succeed")
 				assert.NotNil(t, schemaDTO)
 
 				// Step 2: Validate schema (as done in Initialize before OU check)
-				validationErr := validateUserSchemaDefinition(*schemaDTO)
+				validationErr := validateUserTypeDefinition(*schemaDTO)
 
 				if tc.expectValidOK {
 					assert.Nil(t, validationErr, "Expected validation to succeed")
@@ -723,7 +723,7 @@ this is not valid yaml:
 func TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML(t *testing.T) {
 	tmpDir := t.TempDir()
 	confDir := tmpDir + "/repository/resources"
-	schemaDir := confDir + "/user_schemas"
+	schemaDir := confDir + "/user_types"
 
 	err := os.MkdirAll(schemaDir, 0750)
 	assert.NoError(t, err)
@@ -757,7 +757,7 @@ func TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML(t *testing.T) {
 	// Initialize should return an error due to invalid YAML
 	_, _, err = Initialize(mux, mockOUService)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load user schema resources")
+	assert.Contains(t, err.Error(), "failed to load user type resources")
 }
 
 // TestInitialize_WithDeclarativeResourcesEnabled_ValidationFailure tests Initialize with validation errors
@@ -766,7 +766,7 @@ func TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML(t *testing.T) {
 func TestInitialize_WithDeclarativeResourcesEnabled_ValidationFailure(t *testing.T) {
 	tmpDir := t.TempDir()
 	confDir := tmpDir + "/repository/resources"
-	schemaDir := confDir + "/user_schemas"
+	schemaDir := confDir + "/user_types"
 
 	err := os.MkdirAll(schemaDir, 0750)
 	assert.NoError(t, err)
@@ -810,14 +810,14 @@ schema: |
 	// Initialize should return an error due to validation failure
 	_, _, err = Initialize(mux, mockOUService)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load user schema resources")
+	assert.Contains(t, err.Error(), "failed to load user type resources")
 }
 
 // TestInitialize_WithDeclarativeResourcesEnabled_OUServiceError tests Initialize when OU service fails
 func TestInitialize_WithDeclarativeResourcesEnabled_OUServiceError(t *testing.T) {
 	tmpDir := t.TempDir()
 	confDir := tmpDir + "/repository/resources"
-	schemaDir := confDir + "/user_schemas"
+	schemaDir := confDir + "/user_types"
 
 	err := os.MkdirAll(schemaDir, 0750)
 	assert.NoError(t, err)
@@ -871,7 +871,7 @@ schema: |
 	// Initialize should return an error due to OU service failure
 	_, _, err = Initialize(mux, mockOUService)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load user schema resources")
+	assert.Contains(t, err.Error(), "failed to load user type resources")
 
 	mockOUService.AssertExpectations(t)
 }
@@ -882,7 +882,7 @@ schema: |
 func TestInitialize_WithDeclarativeResourcesEnabled_InvalidJSONSchema(t *testing.T) {
 	tmpDir := t.TempDir()
 	confDir := tmpDir + "/repository/resources"
-	schemaDir := confDir + "/user_schemas"
+	schemaDir := confDir + "/user_types"
 
 	err := os.MkdirAll(schemaDir, 0750)
 	assert.NoError(t, err)
@@ -924,5 +924,5 @@ schema: |
 	// Initialize should return an error due to invalid JSON
 	_, _, err = Initialize(mux, mockOUService)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load user schema resources")
+	assert.Contains(t, err.Error(), "failed to load user type resources")
 }

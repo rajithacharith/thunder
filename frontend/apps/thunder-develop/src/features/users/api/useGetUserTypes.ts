@@ -19,17 +19,17 @@
 import {useState, useEffect, useRef, useMemo} from 'react';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
-import type {UserSchemaListResponse, SchemaListParams, ApiError} from '../types/users';
+import type {UserTypeListResponse, UserTypeListParams, ApiError} from '../types/users';
 
 /**
- * Custom hook to fetch a list of user schemas
+ * Custom hook to fetch a list of user types
  * @param params - Optional query parameters for pagination
  * @returns Object containing data, loading state, error, and refetch function
  */
-export default function useGetUserSchemas(params?: SchemaListParams) {
+export default function useGetUserTypes(params?: UserTypeListParams) {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
-  const [data, setData] = useState<UserSchemaListResponse | null>(null);
+  const [data, setData] = useState<UserTypeListResponse | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -44,7 +44,7 @@ export default function useGetUserSchemas(params?: SchemaListParams) {
     abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
 
-    const fetchUserSchemas = async (): Promise<void> => {
+    const fetchUserTypes = async (): Promise<void> => {
       try {
         setLoading(true);
         setError(null);
@@ -61,7 +61,7 @@ export default function useGetUserSchemas(params?: SchemaListParams) {
         const queryString = searchParams.toString();
 
         const response = await http.request({
-          url: `${API_BASE_URL}/user-schemas${queryString ? `?${queryString}` : ''}`,
+          url: `${API_BASE_URL}/user-types${queryString ? `?${queryString}` : ''}`,
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -69,7 +69,7 @@ export default function useGetUserSchemas(params?: SchemaListParams) {
           signal: abortControllerRef.current?.signal,
         } as unknown as Parameters<typeof http.request>[0]);
 
-        const jsonData = response.data as UserSchemaListResponse;
+        const jsonData = response.data as UserTypeListResponse;
         setData(jsonData);
         setError(null);
       } catch (err) {
@@ -81,7 +81,7 @@ export default function useGetUserSchemas(params?: SchemaListParams) {
         const apiError: ApiError = {
           code: 'FETCH_ERROR',
           message: err instanceof Error ? err.message : 'An unknown error occurred',
-          description: 'Failed to fetch user schemas',
+          description: 'Failed to fetch user types',
         };
         setError(apiError);
       } finally {
@@ -89,7 +89,7 @@ export default function useGetUserSchemas(params?: SchemaListParams) {
       }
     };
 
-    fetchUserSchemas().catch(() => {
+    fetchUserTypes().catch(() => {
       // Error already handled
     });
 
@@ -100,7 +100,7 @@ export default function useGetUserSchemas(params?: SchemaListParams) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
 
-  const refetch = async (newParams?: SchemaListParams): Promise<void> => {
+  const refetch = async (newParams?: UserTypeListParams): Promise<void> => {
     // Cancel previous request
     abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
@@ -122,7 +122,7 @@ export default function useGetUserSchemas(params?: SchemaListParams) {
       const queryString = searchParams.toString();
 
       const response = await http.request({
-        url: `${API_BASE_URL}/user-schemas${queryString ? `?${queryString}` : ''}`,
+        url: `${API_BASE_URL}/user-types${queryString ? `?${queryString}` : ''}`,
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -130,7 +130,7 @@ export default function useGetUserSchemas(params?: SchemaListParams) {
         signal: abortControllerRef.current?.signal,
       } as unknown as Parameters<typeof http.request>[0]);
 
-      const jsonData = response.data as UserSchemaListResponse;
+      const jsonData = response.data as UserTypeListResponse;
       setData(jsonData);
       setError(null);
     } catch (err) {
@@ -142,7 +142,7 @@ export default function useGetUserSchemas(params?: SchemaListParams) {
       const apiError: ApiError = {
         code: 'FETCH_ERROR',
         message: err instanceof Error ? err.message : 'An unknown error occurred',
-        description: 'Failed to fetch user schemas',
+        description: 'Failed to fetch user types',
       };
       setError(apiError);
       throw err;

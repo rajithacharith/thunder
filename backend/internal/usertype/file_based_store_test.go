@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema
+package usertype
 
 import (
 	"encoding/json"
@@ -33,17 +33,17 @@ const testSchemaJSON = `{"type":"object"}`
 
 type FileBasedStoreTestSuite struct {
 	suite.Suite
-	store userSchemaStoreInterface
+	store userTypeStoreInterface
 }
 
 func (suite *FileBasedStoreTestSuite) SetupTest() {
-	suite.store = newUserSchemaFileBasedStoreForTest()
+	suite.store = newUserTypeFileBasedStoreForTest()
 }
 
-// newUserSchemaFileBasedStoreForTest creates a test instance
-func newUserSchemaFileBasedStoreForTest() userSchemaStoreInterface {
-	genericStore := declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeUserSchema)
-	return &userSchemaFileBasedStore{
+// newUserTypeFileBasedStoreForTest creates a test instance
+func newUserTypeFileBasedStoreForTest() userTypeStoreInterface {
+	genericStore := declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeUserType)
+	return &userTypeFileBasedStore{
 		GenericFileBasedStore: genericStore,
 	}
 }
@@ -52,9 +52,9 @@ func TestFileBasedStoreTestSuite(t *testing.T) {
 	suite.Run(t, new(FileBasedStoreTestSuite))
 }
 
-func (suite *FileBasedStoreTestSuite) TestCreateUserSchema() {
+func (suite *FileBasedStoreTestSuite) TestCreateUserType() {
 	schemaJSON := `{"type":"object","properties":{"username":{"type":"string"}}}`
-	schema := UserSchema{
+	schema := UserType{
 		ID:                    "schema-1",
 		Name:                  "basic_schema",
 		OrganizationUnitID:    "ou-1",
@@ -62,11 +62,11 @@ func (suite *FileBasedStoreTestSuite) TestCreateUserSchema() {
 		Schema:                json.RawMessage(schemaJSON),
 	}
 
-	err := suite.store.CreateUserSchema(schema)
+	err := suite.store.CreateUserType(schema)
 	assert.NoError(suite.T(), err)
 
 	// Verify schema was stored
-	retrieved, err := suite.store.GetUserSchemaByID("schema-1")
+	retrieved, err := suite.store.GetUserTypeByID("schema-1")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), schema.ID, retrieved.ID)
 	assert.Equal(suite.T(), schema.Name, retrieved.Name)
@@ -74,9 +74,9 @@ func (suite *FileBasedStoreTestSuite) TestCreateUserSchema() {
 	assert.Equal(suite.T(), schema.AllowSelfRegistration, retrieved.AllowSelfRegistration)
 }
 
-func (suite *FileBasedStoreTestSuite) TestCreateUserSchema_DuplicateID() {
+func (suite *FileBasedStoreTestSuite) TestCreateUserType_DuplicateID() {
 	schemaJSON := testSchemaJSON
-	schema := UserSchema{
+	schema := UserType{
 		ID:                    "schema-1",
 		Name:                  "basic_schema",
 		OrganizationUnitID:    "ou-1",
@@ -85,24 +85,24 @@ func (suite *FileBasedStoreTestSuite) TestCreateUserSchema_DuplicateID() {
 	}
 
 	// Create first schema
-	err := suite.store.CreateUserSchema(schema)
+	err := suite.store.CreateUserType(schema)
 	assert.NoError(suite.T(), err)
 
 	// Try to create duplicate - should succeed in file-based store as it doesn't check duplicates
-	err = suite.store.CreateUserSchema(schema)
+	err = suite.store.CreateUserType(schema)
 	// File-based store may allow duplicate or return error depending on implementation
 	// Just verify it doesn't panic
 	_ = err
 }
 
-func (suite *FileBasedStoreTestSuite) TestGetUserSchemaByID_NotFound() {
-	_, err := suite.store.GetUserSchemaByID("non-existent-id")
+func (suite *FileBasedStoreTestSuite) TestGetUserTypeByID_NotFound() {
+	_, err := suite.store.GetUserTypeByID("non-existent-id")
 	assert.Error(suite.T(), err)
 }
 
-func (suite *FileBasedStoreTestSuite) TestGetUserSchemaByName() {
+func (suite *FileBasedStoreTestSuite) TestGetUserTypeByName() {
 	schemaJSON := testSchemaJSON
-	schema := UserSchema{
+	schema := UserType{
 		ID:                    "schema-1",
 		Name:                  "basic_schema",
 		OrganizationUnitID:    "ou-1",
@@ -110,25 +110,25 @@ func (suite *FileBasedStoreTestSuite) TestGetUserSchemaByName() {
 		Schema:                json.RawMessage(schemaJSON),
 	}
 
-	err := suite.store.CreateUserSchema(schema)
+	err := suite.store.CreateUserType(schema)
 	assert.NoError(suite.T(), err)
 
 	// Get by name
-	retrieved, err := suite.store.GetUserSchemaByName("basic_schema")
+	retrieved, err := suite.store.GetUserTypeByName("basic_schema")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), schema.ID, retrieved.ID)
 	assert.Equal(suite.T(), schema.Name, retrieved.Name)
 }
 
-func (suite *FileBasedStoreTestSuite) TestGetUserSchemaByName_NotFound() {
-	_, err := suite.store.GetUserSchemaByName("non-existent-name")
+func (suite *FileBasedStoreTestSuite) TestGetUserTypeByName_NotFound() {
+	_, err := suite.store.GetUserTypeByName("non-existent-name")
 	assert.Error(suite.T(), err)
 }
 
-func (suite *FileBasedStoreTestSuite) TestGetUserSchemaList() {
+func (suite *FileBasedStoreTestSuite) TestGetUserTypeList() {
 	schemaJSON := testSchemaJSON
 	// Create multiple schemas
-	schemas := []UserSchema{
+	schemas := []UserType{
 		{
 			ID:                    "schema-1",
 			Name:                  "basic_schema",
@@ -152,56 +152,56 @@ func (suite *FileBasedStoreTestSuite) TestGetUserSchemaList() {
 		},
 	}
 	for _, schema := range schemas {
-		err := suite.store.CreateUserSchema(schema)
+		err := suite.store.CreateUserType(schema)
 		assert.NoError(suite.T(), err)
 	}
 
 	// Get list with pagination
-	list, err := suite.store.GetUserSchemaList(10, 0)
+	list, err := suite.store.GetUserTypeList(10, 0)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), list, 3)
 }
 
-func (suite *FileBasedStoreTestSuite) TestGetUserSchemaList_WithPagination() {
+func (suite *FileBasedStoreTestSuite) TestGetUserTypeList_WithPagination() {
 	schemaJSON := testSchemaJSON
 	// Create multiple schemas
 	for i := 1; i <= 5; i++ {
-		schema := UserSchema{
+		schema := UserType{
 			ID:                    "schema-" + string(rune('0'+i)),
 			Name:                  "schema_" + string(rune('0'+i)),
 			OrganizationUnitID:    "ou-1",
 			AllowSelfRegistration: true,
 			Schema:                json.RawMessage(schemaJSON),
 		}
-		err := suite.store.CreateUserSchema(schema)
+		err := suite.store.CreateUserType(schema)
 		assert.NoError(suite.T(), err)
 	}
 
 	// Get first page
-	list, err := suite.store.GetUserSchemaList(2, 0)
+	list, err := suite.store.GetUserTypeList(2, 0)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), list, 2)
 
 	// Get second page
-	list, err = suite.store.GetUserSchemaList(2, 2)
+	list, err = suite.store.GetUserTypeList(2, 2)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), list, 2)
 
 	// Get last page
-	list, err = suite.store.GetUserSchemaList(2, 4)
+	list, err = suite.store.GetUserTypeList(2, 4)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), list, 1)
 }
 
-func (suite *FileBasedStoreTestSuite) TestGetUserSchemaList_EmptyStore() {
-	list, err := suite.store.GetUserSchemaList(10, 0)
+func (suite *FileBasedStoreTestSuite) TestGetUserTypeList_EmptyStore() {
+	list, err := suite.store.GetUserTypeList(10, 0)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), list, 0)
 }
 
-func (suite *FileBasedStoreTestSuite) TestUpdateUserSchemaByID_ReturnsError() {
+func (suite *FileBasedStoreTestSuite) TestUpdateUserTypeByID_ReturnsError() {
 	schemaJSON := testSchemaJSON
-	schema := UserSchema{
+	schema := UserType{
 		ID:                    "schema-1",
 		Name:                  "basic_schema",
 		OrganizationUnitID:    "ou-1",
@@ -209,39 +209,39 @@ func (suite *FileBasedStoreTestSuite) TestUpdateUserSchemaByID_ReturnsError() {
 		Schema:                json.RawMessage(schemaJSON),
 	}
 
-	err := suite.store.UpdateUserSchemaByID("schema-1", schema)
+	err := suite.store.UpdateUserTypeByID("schema-1", schema)
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "not supported")
 }
 
-func (suite *FileBasedStoreTestSuite) TestDeleteUserSchemaByID_ReturnsError() {
-	err := suite.store.DeleteUserSchemaByID("schema-1")
+func (suite *FileBasedStoreTestSuite) TestDeleteUserTypeByID_ReturnsError() {
+	err := suite.store.DeleteUserTypeByID("schema-1")
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "not supported")
 }
 
-func (suite *FileBasedStoreTestSuite) TestGetUserSchemaListCount() {
+func (suite *FileBasedStoreTestSuite) TestGetUserTypeListCount() {
 	// Initially empty
-	count, err := suite.store.GetUserSchemaListCount()
+	count, err := suite.store.GetUserTypeListCount()
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), 0, count)
 
 	schemaJSON := testSchemaJSON
 	// Add schemas
 	for i := 1; i <= 3; i++ {
-		schema := UserSchema{
+		schema := UserType{
 			ID:                    "schema-" + string(rune('0'+i)),
 			Name:                  "schema_" + string(rune('0'+i)),
 			OrganizationUnitID:    "ou-1",
 			AllowSelfRegistration: true,
 			Schema:                json.RawMessage(schemaJSON),
 		}
-		err := suite.store.CreateUserSchema(schema)
+		err := suite.store.CreateUserType(schema)
 		assert.NoError(suite.T(), err)
 	}
 
 	// Check count
-	count, err = suite.store.GetUserSchemaListCount()
+	count, err = suite.store.GetUserTypeListCount()
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), 3, count)
 }

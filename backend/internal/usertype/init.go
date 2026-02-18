@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema
+package usertype
 
 import (
 	"net/http"
@@ -27,46 +27,46 @@ import (
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
-// Initialize initializes the user schema service and registers its routes.
+// Initialize initializes the user type service and registers its routes.
 func Initialize(
 	mux *http.ServeMux,
 	ouService oupkg.OrganizationUnitServiceInterface,
-) (UserSchemaServiceInterface, declarativeresource.ResourceExporter, error) {
-	var userSchemaStore userSchemaStoreInterface
+) (UserTypeServiceInterface, declarativeresource.ResourceExporter, error) {
+	var userTypeStore userTypeStoreInterface
 	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
-		userSchemaStore = newUserSchemaFileBasedStore()
+		userTypeStore = newUserTypeFileBasedStore()
 	} else {
-		userSchemaStore = newUserSchemaStore()
+		userTypeStore = newUserTypeStore()
 	}
 
-	userSchemaService := newUserSchemaService(ouService, userSchemaStore)
+	userTypeService := newUserTypeService(ouService, userTypeStore)
 
 	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
-		if err := loadDeclarativeResources(userSchemaStore, ouService); err != nil {
+		if err := loadDeclarativeResources(userTypeStore, ouService); err != nil {
 			return nil, nil, err
 		}
 	}
 
-	userSchemaHandler := newUserSchemaHandler(userSchemaService)
-	registerRoutes(mux, userSchemaHandler)
+	userTypeHandler := newUserTypeHandler(userTypeService)
+	registerRoutes(mux, userTypeHandler)
 
 	// Create and return exporter
-	exporter := newUserSchemaExporter(userSchemaService)
-	return userSchemaService, exporter, nil
+	exporter := newUserTypeExporter(userTypeService)
+	return userTypeService, exporter, nil
 }
 
-// registerRoutes registers the routes for user schema management operations.
-func registerRoutes(mux *http.ServeMux, userSchemaHandler *userSchemaHandler) {
+// registerRoutes registers the routes for user type management operations.
+func registerRoutes(mux *http.ServeMux, userTypeHandler *userTypeHandler) {
 	opts1 := middleware.CORSOptions{
 		AllowedMethods:   "GET, POST",
 		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
 	}
-	mux.HandleFunc(middleware.WithCORS("POST /user-schemas",
-		userSchemaHandler.HandleUserSchemaPostRequest, opts1))
-	mux.HandleFunc(middleware.WithCORS("GET /user-schemas",
-		userSchemaHandler.HandleUserSchemaListRequest, opts1))
-	mux.HandleFunc(middleware.WithCORS("OPTIONS /user-schemas",
+	mux.HandleFunc(middleware.WithCORS("POST /user-types",
+		userTypeHandler.HandleUserTypePostRequest, opts1))
+	mux.HandleFunc(middleware.WithCORS("GET /user-types",
+		userTypeHandler.HandleUserTypeListRequest, opts1))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /user-types",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		}, opts1))
@@ -76,13 +76,13 @@ func registerRoutes(mux *http.ServeMux, userSchemaHandler *userSchemaHandler) {
 		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
 	}
-	mux.HandleFunc(middleware.WithCORS("GET /user-schemas/{id}",
-		userSchemaHandler.HandleUserSchemaGetRequest, opts2))
-	mux.HandleFunc(middleware.WithCORS("PUT /user-schemas/{id}",
-		userSchemaHandler.HandleUserSchemaPutRequest, opts2))
-	mux.HandleFunc(middleware.WithCORS("DELETE /user-schemas/{id}",
-		userSchemaHandler.HandleUserSchemaDeleteRequest, opts2))
-	mux.HandleFunc(middleware.WithCORS("OPTIONS /user-schemas/{id}",
+	mux.HandleFunc(middleware.WithCORS("GET /user-types/{id}",
+		userTypeHandler.HandleUserTypeGetRequest, opts2))
+	mux.HandleFunc(middleware.WithCORS("PUT /user-types/{id}",
+		userTypeHandler.HandleUserTypePutRequest, opts2))
+	mux.HandleFunc(middleware.WithCORS("DELETE /user-types/{id}",
+		userTypeHandler.HandleUserTypeDeleteRequest, opts2))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /user-types/{id}",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		}, opts2))

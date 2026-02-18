@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema
+package usertype
 
 import (
 	"encoding/json"
@@ -36,7 +36,7 @@ const (
 	testOUID3 = "00000000-0000-0000-0000-000000000003"
 )
 
-func TestCreateUserSchemaReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
+func TestCreateUserTypeReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
 	// Initialize ThunderRuntime with default config
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
@@ -48,32 +48,32 @@ func TestCreateUserSchemaReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
 	require.NoError(t, err)
 	defer config.ResetThunderRuntime()
 
-	storeMock := newUserSchemaStoreInterfaceMock(t)
+	storeMock := newUserTypeStoreInterfaceMock(t)
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
 	ouID := testOUID1
 	ouServiceMock.On("IsOrganizationUnitExists", ouID).Return(false, (*serviceerror.ServiceError)(nil)).Once()
 
-	service := &userSchemaService{
-		userSchemaStore: storeMock,
-		ouService:       ouServiceMock,
+	service := &userTypeService{
+		userTypeStore: storeMock,
+		ouService:     ouServiceMock,
 	}
 
-	request := CreateUserSchemaRequest{
+	request := CreateUserTypeRequest{
 		Name:               "test-schema",
 		OrganizationUnitID: ouID,
 		Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
-	createdSchema, svcErr := service.CreateUserSchema(request)
+	createdSchema, svcErr := service.CreateUserType(request)
 
 	require.Nil(t, createdSchema)
 	require.NotNil(t, svcErr)
-	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, svcErr.Code)
+	require.Equal(t, ErrorInvalidUserTypeRequest.Code, svcErr.Code)
 	require.Contains(t, svcErr.ErrorDescription, "organization unit id does not exist")
 }
 
-func TestCreateUserSchemaReturnsInternalErrorWhenOUValidationFails(t *testing.T) {
+func TestCreateUserTypeReturnsInternalErrorWhenOUValidationFails(t *testing.T) {
 	// Initialize ThunderRuntime with default config
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
@@ -85,7 +85,7 @@ func TestCreateUserSchemaReturnsInternalErrorWhenOUValidationFails(t *testing.T)
 	require.NoError(t, err)
 	defer config.ResetThunderRuntime()
 
-	storeMock := newUserSchemaStoreInterfaceMock(t)
+	storeMock := newUserTypeStoreInterfaceMock(t)
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
 	ouID := testOUID2
@@ -94,25 +94,25 @@ func TestCreateUserSchemaReturnsInternalErrorWhenOUValidationFails(t *testing.T)
 		Return(false, &serviceerror.ServiceError{Code: "OUS-5000"}).
 		Once()
 
-	service := &userSchemaService{
-		userSchemaStore: storeMock,
-		ouService:       ouServiceMock,
+	service := &userTypeService{
+		userTypeStore: storeMock,
+		ouService:     ouServiceMock,
 	}
 
-	request := CreateUserSchemaRequest{
+	request := CreateUserTypeRequest{
 		Name:               "test-schema",
 		OrganizationUnitID: ouID,
 		Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
-	createdSchema, svcErr := service.CreateUserSchema(request)
+	createdSchema, svcErr := service.CreateUserType(request)
 
 	require.Nil(t, createdSchema)
 	require.NotNil(t, svcErr)
 	require.Equal(t, ErrorInternalServerError, *svcErr)
 }
 
-func TestUpdateUserSchemaReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
+func TestUpdateUserTypeReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
 	// Initialize ThunderRuntime with default config
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
@@ -124,114 +124,114 @@ func TestUpdateUserSchemaReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
 	require.NoError(t, err)
 	defer config.ResetThunderRuntime()
 
-	storeMock := newUserSchemaStoreInterfaceMock(t)
+	storeMock := newUserTypeStoreInterfaceMock(t)
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
 	ouID := testOUID3
 	ouServiceMock.On("IsOrganizationUnitExists", ouID).Return(false, (*serviceerror.ServiceError)(nil)).Once()
 
-	service := &userSchemaService{
-		userSchemaStore: storeMock,
-		ouService:       ouServiceMock,
+	service := &userTypeService{
+		userTypeStore: storeMock,
+		ouService:     ouServiceMock,
 	}
 
-	request := UpdateUserSchemaRequest{
+	request := UpdateUserTypeRequest{
 		Name:               "test-schema",
 		OrganizationUnitID: ouID,
 		Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
-	updatedSchema, svcErr := service.UpdateUserSchema("schema-id", request)
+	updatedSchema, svcErr := service.UpdateUserType("schema-id", request)
 
 	require.Nil(t, updatedSchema)
 	require.NotNil(t, svcErr)
-	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, svcErr.Code)
+	require.Equal(t, ErrorInvalidUserTypeRequest.Code, svcErr.Code)
 }
 
-func TestGetUserSchemaByNameReturnsSchema(t *testing.T) {
-	storeMock := newUserSchemaStoreInterfaceMock(t)
-	expectedSchema := UserSchema{
+func TestGetUserTypeByNameReturnsSchema(t *testing.T) {
+	storeMock := newUserTypeStoreInterfaceMock(t)
+	expectedSchema := UserType{
 		ID:   "schema-id",
 		Name: "employee",
 	}
 	storeMock.
-		On("GetUserSchemaByName", "employee").
+		On("GetUserTypeByName", "employee").
 		Return(expectedSchema, nil).
 		Once()
 
-	service := &userSchemaService{
-		userSchemaStore: storeMock,
+	service := &userTypeService{
+		userTypeStore: storeMock,
 	}
 
-	userSchema, svcErr := service.GetUserSchemaByName("employee")
+	userType, svcErr := service.GetUserTypeByName("employee")
 
 	require.Nil(t, svcErr)
-	require.NotNil(t, userSchema)
-	require.Equal(t, &expectedSchema, userSchema)
+	require.NotNil(t, userType)
+	require.Equal(t, &expectedSchema, userType)
 }
 
-func TestGetUserSchemaByNameReturnsNotFound(t *testing.T) {
-	storeMock := newUserSchemaStoreInterfaceMock(t)
+func TestGetUserTypeByNameReturnsNotFound(t *testing.T) {
+	storeMock := newUserTypeStoreInterfaceMock(t)
 	storeMock.
-		On("GetUserSchemaByName", "employee").
-		Return(UserSchema{}, ErrUserSchemaNotFound).
+		On("GetUserTypeByName", "employee").
+		Return(UserType{}, ErrUserTypeNotFound).
 		Once()
 
-	service := &userSchemaService{
-		userSchemaStore: storeMock,
+	service := &userTypeService{
+		userTypeStore: storeMock,
 	}
 
-	userSchema, svcErr := service.GetUserSchemaByName("employee")
+	userType, svcErr := service.GetUserTypeByName("employee")
 
-	require.Nil(t, userSchema)
+	require.Nil(t, userType)
 	require.NotNil(t, svcErr)
-	require.Equal(t, ErrorUserSchemaNotFound, *svcErr)
+	require.Equal(t, ErrorUserTypeNotFound, *svcErr)
 }
 
-func TestGetUserSchemaByNameReturnsInternalErrorOnStoreFailure(t *testing.T) {
-	storeMock := newUserSchemaStoreInterfaceMock(t)
+func TestGetUserTypeByNameReturnsInternalErrorOnStoreFailure(t *testing.T) {
+	storeMock := newUserTypeStoreInterfaceMock(t)
 	storeMock.
-		On("GetUserSchemaByName", "employee").
-		Return(UserSchema{}, errors.New("db failure")).
+		On("GetUserTypeByName", "employee").
+		Return(UserType{}, errors.New("db failure")).
 		Once()
 
-	service := &userSchemaService{
-		userSchemaStore: storeMock,
+	service := &userTypeService{
+		userTypeStore: storeMock,
 	}
 
-	userSchema, svcErr := service.GetUserSchemaByName("employee")
+	userType, svcErr := service.GetUserTypeByName("employee")
 
-	require.Nil(t, userSchema)
+	require.Nil(t, userType)
 	require.NotNil(t, svcErr)
 	require.Equal(t, ErrorInternalServerError, *svcErr)
 }
 
-func TestGetUserSchemaByNameRequiresName(t *testing.T) {
-	storeMock := newUserSchemaStoreInterfaceMock(t)
+func TestGetUserTypeByNameRequiresName(t *testing.T) {
+	storeMock := newUserTypeStoreInterfaceMock(t)
 
-	service := &userSchemaService{
-		userSchemaStore: storeMock,
+	service := &userTypeService{
+		userTypeStore: storeMock,
 	}
 
-	userSchema, svcErr := service.GetUserSchemaByName("")
+	userType, svcErr := service.GetUserTypeByName("")
 
-	require.Nil(t, userSchema)
+	require.Nil(t, userType)
 	require.NotNil(t, svcErr)
-	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, svcErr.Code)
+	require.Equal(t, ErrorInvalidUserTypeRequest.Code, svcErr.Code)
 }
 
 func TestValidateUserReturnsTrueWhenValidationPasses(t *testing.T) {
-	storeMock := newUserSchemaStoreInterfaceMock(t)
+	storeMock := newUserTypeStoreInterfaceMock(t)
 	storeMock.
-		On("GetUserSchemaByName", "employee").
-		Return(UserSchema{
+		On("GetUserTypeByName", "employee").
+		Return(UserType{
 			Name:   "employee",
 			Schema: json.RawMessage(`{"email":{"type":"string","required":true}}`),
 		}, nil).
 		Once()
 
-	service := &userSchemaService{
-		userSchemaStore: storeMock,
+	service := &userTypeService{
+		userTypeStore: storeMock,
 	}
 
 	ok, svcErr := service.ValidateUser("employee", json.RawMessage(`{"email":"employee@example.com"}`))
@@ -241,14 +241,14 @@ func TestValidateUserReturnsTrueWhenValidationPasses(t *testing.T) {
 }
 
 func TestValidateUserReturnsInternalErrorWhenSchemaLoadFails(t *testing.T) {
-	storeMock := newUserSchemaStoreInterfaceMock(t)
+	storeMock := newUserTypeStoreInterfaceMock(t)
 	storeMock.
-		On("GetUserSchemaByName", "employee").
-		Return(UserSchema{}, errors.New("db failure")).
+		On("GetUserTypeByName", "employee").
+		Return(UserType{}, errors.New("db failure")).
 		Once()
 
-	service := &userSchemaService{
-		userSchemaStore: storeMock,
+	service := &userTypeService{
+		userTypeStore: storeMock,
 	}
 
 	ok, svcErr := service.ValidateUser("employee", json.RawMessage(`{}`))
@@ -259,17 +259,17 @@ func TestValidateUserReturnsInternalErrorWhenSchemaLoadFails(t *testing.T) {
 }
 
 func TestValidateUserUniquenessReturnsTrueWhenNoConflicts(t *testing.T) {
-	storeMock := newUserSchemaStoreInterfaceMock(t)
+	storeMock := newUserTypeStoreInterfaceMock(t)
 	storeMock.
-		On("GetUserSchemaByName", "employee").
-		Return(UserSchema{
+		On("GetUserTypeByName", "employee").
+		Return(UserType{
 			Name:   "employee",
 			Schema: json.RawMessage(`{"email":{"type":"string","unique":true}}`),
 		}, nil).
 		Once()
 
-	service := &userSchemaService{
-		userSchemaStore: storeMock,
+	service := &userTypeService{
+		userTypeStore: storeMock,
 	}
 
 	ok, svcErr := service.ValidateUserUniqueness(
@@ -286,32 +286,32 @@ func TestValidateUserUniquenessReturnsTrueWhenNoConflicts(t *testing.T) {
 }
 
 func TestValidateUserReturnsSchemaNotFoundWhenSchemaMissing(t *testing.T) {
-	storeMock := newUserSchemaStoreInterfaceMock(t)
+	storeMock := newUserTypeStoreInterfaceMock(t)
 	storeMock.
-		On("GetUserSchemaByName", "employee").
-		Return(UserSchema{}, ErrUserSchemaNotFound).
+		On("GetUserTypeByName", "employee").
+		Return(UserType{}, ErrUserTypeNotFound).
 		Once()
 
-	service := &userSchemaService{
-		userSchemaStore: storeMock,
+	service := &userTypeService{
+		userTypeStore: storeMock,
 	}
 
 	ok, svcErr := service.ValidateUser("employee", json.RawMessage(`{"email":"employee@example.com"}`))
 
 	require.False(t, ok)
 	require.NotNil(t, svcErr)
-	require.Equal(t, ErrorUserSchemaNotFound, *svcErr)
+	require.Equal(t, ErrorUserTypeNotFound, *svcErr)
 }
 
 func TestValidateUserUniquenessReturnsSchemaNotFoundWhenSchemaMissing(t *testing.T) {
-	storeMock := newUserSchemaStoreInterfaceMock(t)
+	storeMock := newUserTypeStoreInterfaceMock(t)
 	storeMock.
-		On("GetUserSchemaByName", "employee").
-		Return(UserSchema{}, ErrUserSchemaNotFound).
+		On("GetUserTypeByName", "employee").
+		Return(UserType{}, ErrUserTypeNotFound).
 		Once()
 
-	service := &userSchemaService{
-		userSchemaStore: storeMock,
+	service := &userTypeService{
+		userTypeStore: storeMock,
 	}
 
 	ok, svcErr := service.ValidateUserUniqueness(
@@ -322,18 +322,18 @@ func TestValidateUserUniquenessReturnsSchemaNotFoundWhenSchemaMissing(t *testing
 
 	require.False(t, ok)
 	require.NotNil(t, svcErr)
-	require.Equal(t, ErrorUserSchemaNotFound, *svcErr)
+	require.Equal(t, ErrorUserTypeNotFound, *svcErr)
 }
 
 func TestValidateUserUniquenessReturnsInternalErrorWhenSchemaLoadFails(t *testing.T) {
-	storeMock := newUserSchemaStoreInterfaceMock(t)
+	storeMock := newUserTypeStoreInterfaceMock(t)
 	storeMock.
-		On("GetUserSchemaByName", "employee").
-		Return(UserSchema{}, errors.New("db failure")).
+		On("GetUserTypeByName", "employee").
+		Return(UserType{}, errors.New("db failure")).
 		Once()
 
-	service := &userSchemaService{
-		userSchemaStore: storeMock,
+	service := &userTypeService{
+		userTypeStore: storeMock,
 	}
 
 	ok, svcErr := service.ValidateUserUniqueness(
@@ -347,153 +347,153 @@ func TestValidateUserUniquenessReturnsInternalErrorWhenSchemaLoadFails(t *testin
 	require.Equal(t, ErrorInternalServerError, *svcErr)
 }
 
-func TestValidateUserSchemaDefinitionSuccess(t *testing.T) {
+func TestValidateUserTypeDefinitionSuccess(t *testing.T) {
 	validOUID := testOUID1
 	validSchema := json.RawMessage(`{"email":{"type":"string","required":true}}`)
 
-	schema := UserSchema{
+	schema := UserType{
 		Name:               "test-schema",
 		OrganizationUnitID: validOUID,
 		Schema:             validSchema,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	err := validateUserTypeDefinition(schema)
 
 	require.Nil(t, err)
 }
 
-func TestValidateUserSchemaDefinitionReturnsErrorWhenNameIsEmpty(t *testing.T) {
+func TestValidateUserTypeDefinitionReturnsErrorWhenNameIsEmpty(t *testing.T) {
 	validOUID := testOUID1
 	validSchema := json.RawMessage(`{"email":{"type":"string"}}`)
 
-	schema := UserSchema{
+	schema := UserType{
 		Name:               "",
 		OrganizationUnitID: validOUID,
 		Schema:             validSchema,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	err := validateUserTypeDefinition(schema)
 
 	require.NotNil(t, err)
-	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
-	require.Contains(t, err.ErrorDescription, "user schema name must not be empty")
+	require.Equal(t, ErrorInvalidUserTypeRequest.Code, err.Code)
+	require.Contains(t, err.ErrorDescription, "user type name must not be empty")
 }
 
-func TestValidateUserSchemaDefinitionReturnsErrorWhenOrganizationUnitIDIsEmpty(t *testing.T) {
+func TestValidateUserTypeDefinitionReturnsErrorWhenOrganizationUnitIDIsEmpty(t *testing.T) {
 	validSchema := json.RawMessage(`{"email":{"type":"string"}}`)
 
-	schema := UserSchema{
+	schema := UserType{
 		Name:               "test-schema",
 		OrganizationUnitID: "",
 		Schema:             validSchema,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	err := validateUserTypeDefinition(schema)
 
 	require.NotNil(t, err)
-	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
+	require.Equal(t, ErrorInvalidUserTypeRequest.Code, err.Code)
 	require.Contains(t, err.ErrorDescription, "organization unit id must not be empty")
 }
 
-func TestValidateUserSchemaDefinitionReturnsErrorWhenOrganizationUnitIDIsNotUUID(t *testing.T) {
+func TestValidateUserTypeDefinitionReturnsErrorWhenOrganizationUnitIDIsNotUUID(t *testing.T) {
 	validSchema := json.RawMessage(`{"email":{"type":"string"}}`)
 
-	schema := UserSchema{
+	schema := UserType{
 		Name:               "test-schema",
 		OrganizationUnitID: "not-a-uuid",
 		Schema:             validSchema,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	err := validateUserTypeDefinition(schema)
 
 	require.NotNil(t, err)
-	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
+	require.Equal(t, ErrorInvalidUserTypeRequest.Code, err.Code)
 	require.Contains(t, err.ErrorDescription, "organization unit id is not a valid UUID")
 }
 
-func TestValidateUserSchemaDefinitionReturnsErrorWhenSchemaIsEmpty(t *testing.T) {
+func TestValidateUserTypeDefinitionReturnsErrorWhenSchemaIsEmpty(t *testing.T) {
 	validOUID := testOUID1
 
-	schema := UserSchema{
+	schema := UserType{
 		Name:               "test-schema",
 		OrganizationUnitID: validOUID,
 		Schema:             json.RawMessage{},
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	err := validateUserTypeDefinition(schema)
 
 	require.NotNil(t, err)
-	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
+	require.Equal(t, ErrorInvalidUserTypeRequest.Code, err.Code)
 	require.Contains(t, err.ErrorDescription, "schema definition must not be empty")
 }
 
-func TestValidateUserSchemaDefinitionReturnsErrorWhenSchemaIsNil(t *testing.T) {
+func TestValidateUserTypeDefinitionReturnsErrorWhenSchemaIsNil(t *testing.T) {
 	validOUID := testOUID1
 
-	schema := UserSchema{
+	schema := UserType{
 		Name:               "test-schema",
 		OrganizationUnitID: validOUID,
 		Schema:             nil,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	err := validateUserTypeDefinition(schema)
 
 	require.NotNil(t, err)
-	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
+	require.Equal(t, ErrorInvalidUserTypeRequest.Code, err.Code)
 	require.Contains(t, err.ErrorDescription, "schema definition must not be empty")
 }
 
-func TestValidateUserSchemaDefinitionReturnsErrorWhenSchemaCompilationFails(t *testing.T) {
+func TestValidateUserTypeDefinitionReturnsErrorWhenSchemaCompilationFails(t *testing.T) {
 	validOUID := testOUID1
 	invalidSchema := json.RawMessage(`{"email":"invalid"}`)
 
-	schema := UserSchema{
+	schema := UserType{
 		Name:               "test-schema",
 		OrganizationUnitID: validOUID,
 		Schema:             invalidSchema,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	err := validateUserTypeDefinition(schema)
 
 	require.NotNil(t, err)
-	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
+	require.Equal(t, ErrorInvalidUserTypeRequest.Code, err.Code)
 	require.Contains(t, err.ErrorDescription, "property definition must be an object")
 }
 
-func TestValidateUserSchemaDefinitionReturnsErrorForInvalidJSON(t *testing.T) {
+func TestValidateUserTypeDefinitionReturnsErrorForInvalidJSON(t *testing.T) {
 	validOUID := testOUID1
 	invalidSchema := json.RawMessage(`{invalid json}`)
 
-	schema := UserSchema{
+	schema := UserType{
 		Name:               "test-schema",
 		OrganizationUnitID: validOUID,
 		Schema:             invalidSchema,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	err := validateUserTypeDefinition(schema)
 
 	require.NotNil(t, err)
-	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
+	require.Equal(t, ErrorInvalidUserTypeRequest.Code, err.Code)
 }
 
-func TestValidateUserSchemaDefinitionReturnsErrorForEmptySchemaObject(t *testing.T) {
+func TestValidateUserTypeDefinitionReturnsErrorForEmptySchemaObject(t *testing.T) {
 	validOUID := testOUID1
 	emptySchema := json.RawMessage(`{}`)
 
-	schema := UserSchema{
+	schema := UserType{
 		Name:               "test-schema",
 		OrganizationUnitID: validOUID,
 		Schema:             emptySchema,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	err := validateUserTypeDefinition(schema)
 
 	require.NotNil(t, err)
-	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
+	require.Equal(t, ErrorInvalidUserTypeRequest.Code, err.Code)
 	require.Contains(t, err.ErrorDescription, "schema cannot be empty")
 }
 
-func TestValidateUserSchemaDefinitionWithComplexSchema(t *testing.T) {
+func TestValidateUserTypeDefinitionWithComplexSchema(t *testing.T) {
 	validOUID := testOUID1
 	complexSchema := json.RawMessage(`{
 		"email": {
@@ -523,68 +523,68 @@ func TestValidateUserSchemaDefinitionWithComplexSchema(t *testing.T) {
 		}
 	}`)
 
-	schema := UserSchema{
+	schema := UserType{
 		Name:               "complex-schema",
 		OrganizationUnitID: validOUID,
 		Schema:             complexSchema,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	err := validateUserTypeDefinition(schema)
 
 	require.Nil(t, err)
 }
 
-func TestValidateUserSchemaDefinitionReturnsErrorForMissingTypeField(t *testing.T) {
+func TestValidateUserTypeDefinitionReturnsErrorForMissingTypeField(t *testing.T) {
 	validOUID := testOUID1
 	schemaWithoutType := json.RawMessage(`{"email":{"required":true}}`)
 
-	schema := UserSchema{
+	schema := UserType{
 		Name:               "test-schema",
 		OrganizationUnitID: validOUID,
 		Schema:             schemaWithoutType,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	err := validateUserTypeDefinition(schema)
 
 	require.NotNil(t, err)
-	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
+	require.Equal(t, ErrorInvalidUserTypeRequest.Code, err.Code)
 	require.Contains(t, err.ErrorDescription, "missing required 'type' field")
 }
 
-func TestValidateUserSchemaDefinitionReturnsErrorForInvalidType(t *testing.T) {
+func TestValidateUserTypeDefinitionReturnsErrorForInvalidType(t *testing.T) {
 	validOUID := testOUID1
 	schemaWithInvalidType := json.RawMessage(`{"email":{"type":"invalid-type"}}`)
 
-	schema := UserSchema{
+	schema := UserType{
 		Name:               "test-schema",
 		OrganizationUnitID: validOUID,
 		Schema:             schemaWithInvalidType,
 	}
 
-	err := validateUserSchemaDefinition(schema)
+	err := validateUserTypeDefinition(schema)
 
 	require.NotNil(t, err)
-	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
+	require.Equal(t, ErrorInvalidUserTypeRequest.Code, err.Code)
 }
 
-func TestValidateUserSchemaDefinitionWithMultipleValidationErrors(t *testing.T) {
+func TestValidateUserTypeDefinitionWithMultipleValidationErrors(t *testing.T) {
 	testCases := []struct {
 		name          string
-		schema        UserSchema
+		schema        UserType
 		expectedError string
 	}{
 		{
 			name: "Empty name and empty OU ID",
-			schema: UserSchema{
+			schema: UserType{
 				Name:               "",
 				OrganizationUnitID: "",
 				Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
 			},
-			expectedError: "user schema name must not be empty",
+			expectedError: "user type name must not be empty",
 		},
 		{
 			name: "Valid name but invalid OU ID format",
-			schema: UserSchema{
+			schema: UserType{
 				Name:               "test",
 				OrganizationUnitID: "123",
 				Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
@@ -593,7 +593,7 @@ func TestValidateUserSchemaDefinitionWithMultipleValidationErrors(t *testing.T) 
 		},
 		{
 			name: "Valid OU ID but empty schema",
-			schema: UserSchema{
+			schema: UserType{
 				Name:               "test",
 				OrganizationUnitID: testOUID1,
 				Schema:             json.RawMessage{},
@@ -604,10 +604,10 @@ func TestValidateUserSchemaDefinitionWithMultipleValidationErrors(t *testing.T) 
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateUserSchemaDefinition(tc.schema)
+			err := validateUserTypeDefinition(tc.schema)
 
 			require.NotNil(t, err)
-			require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
+			require.Equal(t, ErrorInvalidUserTypeRequest.Code, err.Code)
 			require.Contains(t, err.ErrorDescription, tc.expectedError)
 		})
 	}
