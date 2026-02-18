@@ -24,8 +24,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-webauthn/webauthn/protocol/webauthncose"
-
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -303,7 +301,7 @@ func (s *sessionStore) buildSessionDataFromResultRow(
 					credParams[i].Type = credentialType(typ)
 				}
 				if alg, ok := paramMap["alg"].(float64); ok {
-					credParams[i].Algorithm = webauthncose.COSEAlgorithmIdentifier(int(alg))
+					credParams[i].Algorithm = int(alg)
 				}
 			}
 		}

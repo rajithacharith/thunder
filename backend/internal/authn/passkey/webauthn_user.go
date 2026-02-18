@@ -19,7 +19,7 @@
 package passkey
 
 import (
-	"github.com/go-webauthn/webauthn/webauthn"
+	"github.com/asgardeo/thunder/internal/webauthn"
 
 	"github.com/asgardeo/thunder/internal/user"
 )

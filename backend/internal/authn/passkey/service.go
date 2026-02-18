@@ -210,7 +210,7 @@ func (w *passkeyService) FinishRegistration(req *PasskeyRegistrationFinishReques
 
 	logger.Debug("Successfully parsed attestation response",
 		log.String("credentialID", parsedCredential.ID),
-		log.String("credentialType", parsedCredential.Type))
+		log.String("credentialType", string(parsedCredential.Type)))
 
 	// Retrieve session data from cache
 	sessionData, userID, relyingPartyID, svcErr := w.retrieveSessionData(req.SessionToken)

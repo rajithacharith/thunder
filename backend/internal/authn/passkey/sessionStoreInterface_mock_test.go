@@ -7,7 +7,7 @@ package passkey
 import (
 	"time"
 
-	"github.com/go-webauthn/webauthn/webauthn"
+	"github.com/asgardeo/thunder/internal/webauthn"
 	mock "github.com/stretchr/testify/mock"
 )
 

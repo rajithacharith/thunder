@@ -19,6 +19,7 @@
 package passkey
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"testing"
@@ -2737,9 +2738,24 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_Usernameless_Suc
 
 	userHandle := base64.StdEncoding.EncodeToString([]byte(testUserID))
 
+	// Generate valid keys and auth data
+	privKey, pubKeyCOSE := generateTestKeys(suite.T())
+	authData := createTestAuthData(testRelyingPartyID)
+
+	// Create client data
+	clientDataJSON := []byte(`{"type":"webauthn.get","challenge":"challenge123",` +
+		`"origin":"https://localhost:8090"}`)
+	clientDataHash := sha256.Sum256(clientDataJSON)
+
+	// Sign authData + clientDataHash
+	signatureBase := make([]byte, len(authData)+len(clientDataHash))
+	copy(signatureBase, authData)
+	copy(signatureBase[len(authData):], clientDataHash[:])
+	signature := signData(suite.T(), privKey, signatureBase)
+
 	mockCredential := webauthnCredential{
 		ID:        []byte("credential123"),
-		PublicKey: []byte("publickey123"),
+		PublicKey: pubKeyCOSE,
 		Authenticator: authenticator{
 			SignCount: 5,
 		},
@@ -2761,7 +2777,10 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_Usernameless_Suc
 
 	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(mockUserCreds, nil).Once()
+		Return(mockUserCreds, nil)
+
+	suite.mockUserService.On("UpdateUserCredentials", mock.Anything, testUserID, mock.Anything).
+		Return(nil).Maybe()
 
 	suite.mockSessionStore.On("deleteSession", testSessionToken).
 		Return(nil).Maybe()
@@ -2771,18 +2790,17 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_Usernameless_Suc
 	req := &PasskeyAuthenticationFinishRequest{
 		CredentialID:      validCredentialID,
 		CredentialType:    "public-key",
-		ClientDataJSON:    base64.RawURLEncoding.EncodeToString([]byte(`{"type":"passkey.get"}`)),
-		AuthenticatorData: base64.RawURLEncoding.EncodeToString([]byte("authenticator-data")),
-		Signature:         base64.RawURLEncoding.EncodeToString([]byte("signature")),
+		ClientDataJSON:    base64.RawURLEncoding.EncodeToString(clientDataJSON),
+		AuthenticatorData: base64.RawURLEncoding.EncodeToString(authData),
+		Signature:         base64.RawURLEncoding.EncodeToString(signature),
 		UserHandle:        userHandle, // Required for usernameless flow
 		SessionToken:      testSessionToken,
 	}
 
 	result, err := suite.service.FinishAuthentication(req)
 
-	suite.Nil(result)
-	suite.NotNil(err)
-	suite.True(err.Code == ErrorInvalidAuthenticatorResponse.Code || err.Code == ErrorInvalidSignature.Code)
+	suite.Nil(err)
+	suite.NotNil(result)
 }
 
 func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_Usernameless_MissingUserHandle() {
@@ -2982,9 +3000,24 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_Usernameless_Wit
 
 	userHandle := base64.RawURLEncoding.EncodeToString([]byte(testUserID))
 
+	// Generate valid keys and auth data
+	privKey, pubKeyCOSE := generateTestKeys(suite.T())
+	authData := createTestAuthData(testRelyingPartyID)
+
+	// Create client data
+	clientDataJSON := []byte(`{"type":"webauthn.get","challenge":"challenge123",` +
+		`"origin":"https://localhost:8090"}`)
+	clientDataHash := sha256.Sum256(clientDataJSON)
+
+	// Sign authData + clientDataHash
+	signatureBase := make([]byte, len(authData)+len(clientDataHash))
+	copy(signatureBase, authData)
+	copy(signatureBase[len(authData):], clientDataHash[:])
+	signature := signData(suite.T(), privKey, signatureBase)
+
 	mockCredential := webauthnCredential{
 		ID:        []byte("credential123"),
-		PublicKey: []byte("publickey123"),
+		PublicKey: pubKeyCOSE,
 		Authenticator: authenticator{
 			SignCount: 5,
 		},
@@ -3001,7 +3034,10 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_Usernameless_Wit
 
 	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return([]user.Credential{{Value: string(credentialJSON)}}, nil).Once()
+		Return([]user.Credential{{Value: string(credentialJSON)}}, nil)
+
+	suite.mockUserService.On("UpdateUserCredentials", mock.Anything, testUserID, mock.Anything).
+		Return(nil).Maybe()
 
 	suite.mockSessionStore.On("deleteSession", testSessionToken).
 		Return(nil).Maybe()
@@ -3011,19 +3047,17 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_Usernameless_Wit
 	req := &PasskeyAuthenticationFinishRequest{
 		CredentialID:      validCredentialID,
 		CredentialType:    "public-key",
-		ClientDataJSON:    base64.RawURLEncoding.EncodeToString([]byte(`{"type":"passkey.get"}`)),
-		AuthenticatorData: base64.RawURLEncoding.EncodeToString([]byte("authenticator-data")),
-		Signature:         base64.RawURLEncoding.EncodeToString([]byte("signature")),
+		ClientDataJSON:    base64.RawURLEncoding.EncodeToString(clientDataJSON),
+		AuthenticatorData: base64.RawURLEncoding.EncodeToString(authData),
+		Signature:         base64.RawURLEncoding.EncodeToString(signature),
 		UserHandle:        userHandle, // RawURLEncoding
 		SessionToken:      testSessionToken,
 	}
 
 	result, err := suite.service.FinishAuthentication(req)
 
-	// Will fail at WebAuthn validation but tests the userHandle decoding fallback
-	suite.Nil(result)
-	suite.NotNil(err)
-	suite.True(err.Code == ErrorInvalidAuthenticatorResponse.Code || err.Code == ErrorInvalidSignature.Code)
+	suite.Nil(err)
+	suite.NotNil(result)
 }
 
 func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_UsernameBasedFlow_WithUserHandle() {
@@ -3036,9 +3070,24 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_UsernameBasedFlo
 	// UserHandle may still be provided but should be ignored in username-based flow
 	userHandle := base64.StdEncoding.EncodeToString([]byte("different-user"))
 
+	// Generate valid keys and auth data
+	privKey, pubKeyCOSE := generateTestKeys(suite.T())
+	authData := createTestAuthData(testRelyingPartyID)
+
+	// Create client data
+	clientDataJSON := []byte(`{"type":"webauthn.get","challenge":"challenge123",` +
+		`"origin":"https://localhost:8090"}`)
+	clientDataHash := sha256.Sum256(clientDataJSON)
+
+	// Sign authData + clientDataHash
+	signatureBase := make([]byte, len(authData)+len(clientDataHash))
+	copy(signatureBase, authData)
+	copy(signatureBase[len(authData):], clientDataHash[:])
+	signature := signData(suite.T(), privKey, signatureBase)
+
 	mockCredential := webauthnCredential{
 		ID:        []byte("credential123"),
-		PublicKey: []byte("publickey123"),
+		PublicKey: pubKeyCOSE,
 		Authenticator: authenticator{
 			SignCount: 5,
 		},
@@ -3055,7 +3104,10 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_UsernameBasedFlo
 
 	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return([]user.Credential{{Value: string(credentialJSON)}}, nil).Once()
+		Return([]user.Credential{{Value: string(credentialJSON)}}, nil)
+
+	suite.mockUserService.On("UpdateUserCredentials", mock.Anything, testUserID, mock.Anything).
+		Return(nil).Maybe()
 
 	suite.mockSessionStore.On("deleteSession", testSessionToken).
 		Return(nil).Maybe()
@@ -3065,18 +3117,17 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_UsernameBasedFlo
 	req := &PasskeyAuthenticationFinishRequest{
 		CredentialID:      validCredentialID,
 		CredentialType:    "public-key",
-		ClientDataJSON:    base64.RawURLEncoding.EncodeToString([]byte(`{"type":"passkey.get"}`)),
-		AuthenticatorData: base64.RawURLEncoding.EncodeToString([]byte("authenticator-data")),
-		Signature:         base64.RawURLEncoding.EncodeToString([]byte("signature")),
+		ClientDataJSON:    base64.RawURLEncoding.EncodeToString(clientDataJSON),
+		AuthenticatorData: base64.RawURLEncoding.EncodeToString(authData),
+		Signature:         base64.RawURLEncoding.EncodeToString(signature),
 		UserHandle:        userHandle, // Provided but should be ignored
 		SessionToken:      testSessionToken,
 	}
 
 	result, err := suite.service.FinishAuthentication(req)
 
-	// Will fail at WebAuthn validation but verifies username-based flow uses session userID
-	suite.Nil(result)
-	suite.NotNil(err)
+	suite.Nil(err)
+	suite.NotNil(result)
 }
 
 // TestFinishAuthentication_ValidatePasskeyLogin_ReachesValidation tests that the usernameless
@@ -3089,9 +3140,24 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ValidatePasskeyL
 
 	userHandle := base64.StdEncoding.EncodeToString([]byte(testUserID))
 
+	// Generate valid keys and auth data
+	privKey, pubKeyCOSE := generateTestKeys(suite.T())
+	authData := createTestAuthData(testRelyingPartyID)
+
+	// Create client data
+	clientDataJSON := []byte(`{"type":"webauthn.get","challenge":"dGVzdC1jaGFsbGVuZ2U",` +
+		`"origin":"https://localhost:8090"}`)
+	clientDataHash := sha256.Sum256(clientDataJSON)
+
+	// Sign authData + clientDataHash
+	signatureBase := make([]byte, len(authData)+len(clientDataHash))
+	copy(signatureBase, authData)
+	copy(signatureBase[len(authData):], clientDataHash[:])
+	signature := signData(suite.T(), privKey, signatureBase)
+
 	mockCredential := webauthnCredential{
 		ID:        []byte("credential123"),
-		PublicKey: []byte("publickey123"),
+		PublicKey: pubKeyCOSE,
 		Authenticator: authenticator{
 			SignCount: 5,
 			AAGUID:    []byte("aaguid123"),
@@ -3110,26 +3176,30 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ValidatePasskeyL
 
 	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return([]user.Credential{{Value: string(credentialJSON)}}, nil).Once()
+		Return([]user.Credential{{Value: string(credentialJSON)}}, nil)
+
+	suite.mockUserService.On("UpdateUserCredentials", mock.Anything, testUserID, mock.Anything).
+		Return(nil).Maybe()
+
+	suite.mockSessionStore.On("deleteSession", testSessionToken).
+		Return(nil).Maybe()
 
 	validCredentialID := base64.RawURLEncoding.EncodeToString([]byte("credential123"))
 
 	req := &PasskeyAuthenticationFinishRequest{
-		CredentialID:   validCredentialID,
-		CredentialType: "public-key",
-		ClientDataJSON: base64.RawURLEncoding.EncodeToString([]byte(
-			`{"type":"webauthn.get","challenge":"dGVzdC1jaGFsbGVuZ2U","origin":"http://` + testRelyingPartyID + `"}`)),
-		AuthenticatorData: base64.RawURLEncoding.EncodeToString(make([]byte, 37)),
-		Signature:         base64.RawURLEncoding.EncodeToString([]byte("test-signature")),
+		CredentialID:      validCredentialID,
+		CredentialType:    "public-key",
+		ClientDataJSON:    base64.RawURLEncoding.EncodeToString(clientDataJSON),
+		AuthenticatorData: base64.RawURLEncoding.EncodeToString(authData),
+		Signature:         base64.RawURLEncoding.EncodeToString(signature),
 		UserHandle:        userHandle,
 		SessionToken:      testSessionToken,
 	}
 
 	result, err := suite.service.FinishAuthentication(req)
 
-	suite.Nil(result)
-	suite.NotNil(err)
-	suite.True(err.Code == ErrorInvalidSignature.Code || err.Code == ErrorInvalidAuthenticatorResponse.Code)
+	suite.NotNil(result)
+	suite.Nil(err)
 }
 
 // TestFinishAuthentication_ValidateLogin_ReachesValidation tests that the username-based
@@ -3140,9 +3210,24 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ValidateLogin_Re
 		RelyingPartyID: testRelyingPartyID,
 	}
 
+	// Generate valid keys and auth data
+	privKey, pubKeyCOSE := generateTestKeys(suite.T())
+	authData := createTestAuthData(testRelyingPartyID)
+
+	// Create client data
+	clientDataJSON := []byte(`{"type":"webauthn.get","challenge":"dGVzdC1jaGFsbGVuZ2U",` +
+		`"origin":"https://localhost:8090"}`)
+	clientDataHash := sha256.Sum256(clientDataJSON)
+
+	// Sign authData + clientDataHash
+	signatureBase := make([]byte, len(authData)+len(clientDataHash))
+	copy(signatureBase, authData)
+	copy(signatureBase[len(authData):], clientDataHash[:])
+	signature := signData(suite.T(), privKey, signatureBase)
+
 	mockCredential := webauthnCredential{
 		ID:        []byte("credential123"),
-		PublicKey: []byte("publickey123"),
+		PublicKey: pubKeyCOSE,
 		Authenticator: authenticator{
 			SignCount: 5,
 			AAGUID:    []byte("aaguid123"),
@@ -3161,24 +3246,28 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ValidateLogin_Re
 
 	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return([]user.Credential{{Value: string(credentialJSON)}}, nil).Once()
+		Return([]user.Credential{{Value: string(credentialJSON)}}, nil)
+
+	suite.mockUserService.On("UpdateUserCredentials", mock.Anything, testUserID, mock.Anything).
+		Return(nil).Maybe()
+
+	suite.mockSessionStore.On("deleteSession", testSessionToken).
+		Return(nil).Maybe()
 
 	validCredentialID := base64.RawURLEncoding.EncodeToString([]byte("credential123"))
 
 	req := &PasskeyAuthenticationFinishRequest{
-		CredentialID:   validCredentialID,
-		CredentialType: "public-key",
-		ClientDataJSON: base64.RawURLEncoding.EncodeToString([]byte(
-			`{"type":"webauthn.get","challenge":"dGVzdC1jaGFsbGVuZ2U","origin":"http://` + testRelyingPartyID + `"}`)),
-		AuthenticatorData: base64.RawURLEncoding.EncodeToString(make([]byte, 37)),
-		Signature:         base64.RawURLEncoding.EncodeToString([]byte("test-signature")),
+		CredentialID:      validCredentialID,
+		CredentialType:    "public-key",
+		ClientDataJSON:    base64.RawURLEncoding.EncodeToString(clientDataJSON),
+		AuthenticatorData: base64.RawURLEncoding.EncodeToString(authData),
+		Signature:         base64.RawURLEncoding.EncodeToString(signature),
 		UserHandle:        "", // Empty for username-based flow
 		SessionToken:      testSessionToken,
 	}
 
 	result, err := suite.service.FinishAuthentication(req)
 
-	suite.Nil(result)
-	suite.NotNil(err)
-	suite.True(err.Code == ErrorInvalidSignature.Code || err.Code == ErrorInvalidAuthenticatorResponse.Code)
+	suite.NotNil(result)
+	suite.Nil(err)
 }
