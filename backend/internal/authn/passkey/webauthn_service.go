@@ -23,8 +23,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/go-webauthn/webauthn/protocol"
-	"github.com/go-webauthn/webauthn/webauthn"
+	"github.com/asgardeo/thunder/internal/webauthn"
+	"github.com/asgardeo/thunder/internal/webauthn/protocol"
 )
 
 // Wrapper types to abstract the underlying WebAuthn library.
@@ -287,7 +287,7 @@ func parseAssertionResponse(credentialID, credentialType, clientDataJSON,
 			RawID: rawID,
 			ParsedCredential: protocol.ParsedCredential{
 				ID:   credentialID,
-				Type: credentialType,
+				Type: protocol.CredentialType(credentialType),
 			},
 		},
 		Response: protocol.ParsedAssertionResponse{
@@ -300,7 +300,7 @@ func parseAssertionResponse(credentialID, credentialType, clientDataJSON,
 			PublicKeyCredential: protocol.PublicKeyCredential{
 				Credential: protocol.Credential{
 					ID:   credentialID,
-					Type: credentialType,
+					Type: protocol.CredentialType(credentialType),
 				},
 				RawID: rawID,
 			},

@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-webauthn/webauthn/protocol"
+	"github.com/asgardeo/thunder/internal/webauthn/protocol"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -445,7 +445,7 @@ func (suite *UtilsTestSuite) TestParseAssertionResponse() {
 				suite.NotNil(result)
 
 				// Verify Data Structure Mapping
-				suite.Equal(tt.credentialType, result.ParsedPublicKeyCredential.ParsedCredential.Type)
+				suite.Equal(tt.credentialType, string(result.ParsedPublicKeyCredential.ParsedCredential.Type))
 				suite.Equal(tt.credentialID, result.ParsedPublicKeyCredential.ParsedCredential.ID)
 
 				// Verify UserHandle specifically

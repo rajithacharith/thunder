@@ -24,8 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-webauthn/webauthn/protocol"
-	"github.com/go-webauthn/webauthn/protocol/webauthncose"
+	"github.com/asgardeo/thunder/internal/webauthn/protocol"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -352,7 +351,7 @@ func (suite *SessionStoreTestSuite) TestSerializeSessionData_FullData() {
 		AllowedCredentialIDs: [][]byte{[]byte("cred1"), []byte("cred2")},
 		Extensions:           map[string]interface{}{"ext1": "value1"},
 		CredParams: []protocol.CredentialParameter{
-			{Type: "public-key", Algorithm: webauthncose.AlgES256},
+			{Type: "public-key", Algorithm: -7},
 		},
 		Mediation: "conditional",
 	}

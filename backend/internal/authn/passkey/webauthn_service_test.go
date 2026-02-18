@@ -23,7 +23,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/go-webauthn/webauthn/protocol"
+	"github.com/asgardeo/thunder/internal/webauthn/protocol"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -380,7 +380,7 @@ func (suite *WebAuthnLibServiceTestSuite) TestParseAssertionResponse_Success() {
 	suite.NoError(err, "Parsing should succeed")
 	suite.NotNil(parsed, "Parsed response should not be nil")
 	suite.Equal("test-credential-id", string(parsed.RawID))
-	suite.Equal("public-key", parsed.Type)
+	suite.Equal("public-key", string(parsed.Type))
 	suite.NotNil(parsed.Response.UserHandle, "User handle should be parsed")
 }
 
