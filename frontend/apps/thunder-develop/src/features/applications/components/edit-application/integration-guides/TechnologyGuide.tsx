@@ -126,59 +126,73 @@ export default function TechnologyGuide({
 
     const contentWithReplacements = replacePlaceholders(llmPrompt.content);
 
-    try {
-      await navigator.clipboard.writeText(contentWithReplacements);
-      setCopiedPrompt(true);
-      setTimeout(() => setCopiedPrompt(false), 2000);
-    } catch {
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-
-      textArea.value = contentWithReplacements;
-      textArea.style.position = 'fixed';
-      textArea.style.opacity = '0';
-      document.body.appendChild(textArea);
-      textArea.select();
-
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
       try {
-        document.execCommand('copy');
+        await navigator.clipboard.writeText(contentWithReplacements);
         setCopiedPrompt(true);
         setTimeout(() => setCopiedPrompt(false), 2000);
       } catch {
-        logger.error('Failed to copy the prompt to clipboard.');
+        fallbackCopy(contentWithReplacements);
       }
-
-      document.body.removeChild(textArea);
+    } else {
+      fallbackCopy(contentWithReplacements);
     }
+  };
+
+  const fallbackCopy = (text: string) => {
+    if (typeof document === 'undefined') return;
+
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.select();
+
+    try {
+      document.execCommand('copy');
+      setCopiedPrompt(true);
+      setTimeout(() => setCopiedPrompt(false), 2000);
+    } catch {
+      logger.error('Failed to copy the prompt to clipboard.');
+    }
+    document.body.removeChild(textArea);
   };
 
   const handleCopyCode = async (code: string, stepNumber: number): Promise<void> => {
     const codeWithReplacements = replacePlaceholders(code);
 
-    try {
-      await navigator.clipboard.writeText(codeWithReplacements);
-      setCopiedStep(stepNumber);
-      setTimeout(() => setCopiedStep(null), 2000);
-    } catch {
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-
-      textArea.value = codeWithReplacements;
-      textArea.style.position = 'fixed';
-      textArea.style.opacity = '0';
-      document.body.appendChild(textArea);
-      textArea.select();
-
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
       try {
-        document.execCommand('copy');
+        await navigator.clipboard.writeText(codeWithReplacements);
         setCopiedStep(stepNumber);
         setTimeout(() => setCopiedStep(null), 2000);
       } catch {
-        logger.error('Failed to copy the code snippet to clipboard.');
+        fallbackCopyCode(codeWithReplacements, stepNumber);
       }
-
-      document.body.removeChild(textArea);
+    } else {
+      fallbackCopyCode(codeWithReplacements, stepNumber);
     }
+  };
+
+  const fallbackCopyCode = (text: string, stepNumber: number) => {
+    if (typeof document === 'undefined') return;
+
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.select();
+
+    try {
+      document.execCommand('copy');
+      setCopiedStep(stepNumber);
+      setTimeout(() => setCopiedStep(null), 2000);
+    } catch {
+      logger.error('Failed to copy the code snippet to clipboard.');
+    }
+    document.body.removeChild(textArea);
   };
 
   const renderCodeBlock = (step: IntegrationStep): JSX.Element | null => {
