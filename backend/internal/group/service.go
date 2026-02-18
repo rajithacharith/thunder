@@ -50,8 +50,8 @@ type GroupServiceInterface interface {
 	GetGroupMembers(ctx context.Context, groupID string, limit, offset int) (
 		*MemberListResponse, *serviceerror.ServiceError)
 	ValidateGroupIDs(ctx context.Context, groupIDs []string) *serviceerror.ServiceError
-	AddGroupMembers(ctx context.Context, groupID string, members []Member) *serviceerror.ServiceError
-	RemoveGroupMembers(ctx context.Context, groupID string, members []Member) *serviceerror.ServiceError
+	AddGroupMembers(ctx context.Context, groupID string, members []Member) (*Group, *serviceerror.ServiceError)
+	RemoveGroupMembers(ctx context.Context, groupID string, members []Member) (*Group, *serviceerror.ServiceError)
 }
 
 // groupService is the default implementation of the GroupServiceInterface.
@@ -350,27 +350,6 @@ func (gs *groupService) UpdateGroup(
 			updateOrganizationUnitID = request.OrganizationUnitID
 		}
 
-		var userIDs []string
-		var groupIDs []string
-		for _, member := range request.Members {
-			switch member.Type {
-			case MemberTypeUser:
-				userIDs = append(userIDs, member.ID)
-			case MemberTypeGroup:
-				groupIDs = append(groupIDs, member.ID)
-			}
-		}
-
-		if err := gs.validateUserIDs(txCtx, userIDs); err != nil {
-			capturedSvcErr = err
-			return errors.New("rollback for invalid user IDs")
-		}
-
-		if err := gs.ValidateGroupIDs(txCtx, groupIDs); err != nil {
-			capturedSvcErr = err
-			return errors.New("rollback for invalid group IDs")
-		}
-
 		if existingGroup.Name != request.Name || existingGroup.OrganizationUnitID != request.OrganizationUnitID {
 			err := gs.groupStore.CheckGroupNameConflictForUpdate(
 				txCtx, request.Name, request.OrganizationUnitID, groupID)
@@ -391,7 +370,6 @@ func (gs *groupService) UpdateGroup(
 			Name:               request.Name,
 			Description:        request.Description,
 			OrganizationUnitID: updateOrganizationUnitID,
-			Members:            request.Members,
 		}
 
 		if err := gs.groupStore.UpdateGroup(txCtx, updatedGroupDAO); err != nil {
@@ -512,103 +490,149 @@ func (gs *groupService) GetGroupMembers(ctx context.Context, groupID string, lim
 
 // AddGroupMembers adds members to a group.
 func (gs *groupService) AddGroupMembers(
-	ctx context.Context, groupID string, members []Member) *serviceerror.ServiceError {
+	ctx context.Context, groupID string, members []Member) (*Group, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Adding members to group", log.String("id", groupID))
 
 	if groupID == "" {
-		return &ErrorMissingGroupID
+		return nil, &ErrorMissingGroupID
 	}
 
 	if len(members) == 0 {
-		return &ErrorEmptyMembers
+		return nil, &ErrorEmptyMembers
 	}
 
 	if svcErr := validateMemberTypes(members); svcErr != nil {
-		return svcErr
+		return nil, svcErr
 	}
 
-	_, err := gs.groupStore.GetGroup(ctx, groupID)
-	if err != nil {
-		if errors.Is(err, ErrGroupNotFound) {
-			logger.Debug("Group not found", log.String("id", groupID))
-			return &ErrorGroupNotFound
+	var capturedSvcErr *serviceerror.ServiceError
+	var updatedGroupDAO GroupDAO
+
+	err := gs.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		_, err := gs.groupStore.GetGroup(txCtx, groupID)
+		if err != nil {
+			if errors.Is(err, ErrGroupNotFound) {
+				logger.Debug("Group not found", log.String("id", groupID))
+				capturedSvcErr = &ErrorGroupNotFound
+				return errors.New("rollback for group not found")
+			}
+			logger.Error("Failed to check group existence", log.String("id", groupID), log.Error(err))
+			capturedSvcErr = &ErrorInternalServerError
+			return err
 		}
-		logger.Error("Failed to check group existence", log.String("id", groupID), log.Error(err))
-		return &ErrorInternalServerError
-	}
 
-	var userIDs []string
-	var groupIDs []string
-	for _, member := range members {
-		switch member.Type {
-		case MemberTypeUser:
-			userIDs = append(userIDs, member.ID)
-		case MemberTypeGroup:
-			groupIDs = append(groupIDs, member.ID)
+		var userIDs []string
+		var groupIDs []string
+		for _, member := range members {
+			switch member.Type {
+			case MemberTypeUser:
+				userIDs = append(userIDs, member.ID)
+			case MemberTypeGroup:
+				groupIDs = append(groupIDs, member.ID)
+			}
 		}
-	}
 
-	if svcErr := gs.validateUserIDs(ctx, userIDs); svcErr != nil {
-		return svcErr
-	}
+		if svcErr := gs.validateUserIDs(txCtx, userIDs); svcErr != nil {
+			capturedSvcErr = svcErr
+			return errors.New("rollback for invalid user IDs")
+		}
 
-	if svcErr := gs.ValidateGroupIDs(ctx, groupIDs); svcErr != nil {
-		return svcErr
-	}
+		if svcErr := gs.ValidateGroupIDs(txCtx, groupIDs); svcErr != nil {
+			capturedSvcErr = svcErr
+			return errors.New("rollback for invalid group IDs")
+		}
 
-	err = gs.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		return gs.groupStore.AddGroupMembers(txCtx, groupID, members)
+		if err := gs.groupStore.AddGroupMembers(txCtx, groupID, members); err != nil {
+			return err
+		}
+
+		groupDAO, err := gs.groupStore.GetGroup(txCtx, groupID)
+		if err != nil {
+			logger.Error("Failed to retrieve updated group", log.String("id", groupID), log.Error(err))
+			capturedSvcErr = &ErrorInternalServerError
+			return err
+		}
+		updatedGroupDAO = groupDAO
+
+		return nil
 	})
+
+	if capturedSvcErr != nil {
+		return nil, capturedSvcErr
+	}
 
 	if err != nil {
 		logger.Error("Failed to add members to group", log.String("id", groupID), log.Error(err))
-		return &ErrorInternalServerError
+		return nil, &ErrorInternalServerError
 	}
 
+	updatedGroup := convertGroupDAOToGroup(updatedGroupDAO)
 	logger.Debug("Successfully added members to group", log.String("id", groupID))
-	return nil
+	return &updatedGroup, nil
 }
 
 // RemoveGroupMembers removes members from a group.
 func (gs *groupService) RemoveGroupMembers(
-	ctx context.Context, groupID string, members []Member) *serviceerror.ServiceError {
+	ctx context.Context, groupID string, members []Member) (*Group, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Removing members from group", log.String("id", groupID))
 
 	if groupID == "" {
-		return &ErrorMissingGroupID
+		return nil, &ErrorMissingGroupID
 	}
 
 	if len(members) == 0 {
-		return &ErrorEmptyMembers
+		return nil, &ErrorEmptyMembers
 	}
 
 	if svcErr := validateMemberTypes(members); svcErr != nil {
-		return svcErr
+		return nil, svcErr
 	}
 
-	_, err := gs.groupStore.GetGroup(ctx, groupID)
-	if err != nil {
-		if errors.Is(err, ErrGroupNotFound) {
-			logger.Debug("Group not found", log.String("id", groupID))
-			return &ErrorGroupNotFound
+	var capturedSvcErr *serviceerror.ServiceError
+	var updatedGroupDAO GroupDAO
+
+	err := gs.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		_, err := gs.groupStore.GetGroup(txCtx, groupID)
+		if err != nil {
+			if errors.Is(err, ErrGroupNotFound) {
+				logger.Debug("Group not found", log.String("id", groupID))
+				capturedSvcErr = &ErrorGroupNotFound
+				return errors.New("rollback for group not found")
+			}
+			logger.Error("Failed to check group existence", log.String("id", groupID), log.Error(err))
+			capturedSvcErr = &ErrorInternalServerError
+			return err
 		}
-		logger.Error("Failed to check group existence", log.String("id", groupID), log.Error(err))
-		return &ErrorInternalServerError
-	}
 
-	err = gs.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		return gs.groupStore.RemoveGroupMembers(txCtx, groupID, members)
+		if err := gs.groupStore.RemoveGroupMembers(txCtx, groupID, members); err != nil {
+			return err
+		}
+
+		groupDAO, err := gs.groupStore.GetGroup(txCtx, groupID)
+		if err != nil {
+			logger.Error("Failed to retrieve updated group", log.String("id", groupID), log.Error(err))
+			capturedSvcErr = &ErrorInternalServerError
+			return err
+		}
+		updatedGroupDAO = groupDAO
+
+		return nil
 	})
+
+	if capturedSvcErr != nil {
+		return nil, capturedSvcErr
+	}
 
 	if err != nil {
 		logger.Error("Failed to remove members from group", log.String("id", groupID), log.Error(err))
-		return &ErrorInternalServerError
+		return nil, &ErrorInternalServerError
 	}
 
+	updatedGroup := convertGroupDAOToGroup(updatedGroupDAO)
 	logger.Debug("Successfully removed members from group", log.String("id", groupID))
-	return nil
+	return &updatedGroup, nil
 }
 
 // validateCreateGroupRequest validates the create group request.
@@ -641,15 +665,6 @@ func (gs *groupService) validateUpdateGroupRequest(request UpdateGroupRequest) *
 
 	if request.OrganizationUnitID == "" {
 		return &ErrorInvalidRequestFormat
-	}
-
-	for _, member := range request.Members {
-		if member.Type != MemberTypeUser && member.Type != MemberTypeGroup {
-			return &ErrorInvalidRequestFormat
-		}
-		if member.ID == "" {
-			return &ErrorInvalidRequestFormat
-		}
 	}
 
 	return nil

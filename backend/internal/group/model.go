@@ -83,10 +83,9 @@ type CreateGroupRequest struct {
 
 // UpdateGroupRequest represents the request body for updating a group.
 type UpdateGroupRequest struct {
-	Name               string   `json:"name"`
-	Description        string   `json:"description,omitempty"`
-	OrganizationUnitID string   `json:"organizationUnitId"`
-	Members            []Member `json:"members,omitempty"`
+	Name               string `json:"name"`
+	Description        string `json:"description,omitempty"`
+	OrganizationUnitID string `json:"organizationUnitId"`
 }
 
 // Link represents a pagination link.

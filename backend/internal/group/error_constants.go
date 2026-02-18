@@ -82,13 +82,6 @@ var (
 		Error:            "Invalid group member ID",
 		ErrorDescription: "One or more group member IDs in the request do not exist",
 	}
-	// ErrorEmptyMembers is the error returned when the members list is empty.
-	ErrorEmptyMembers = serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "GRP-1013",
-		Error:            "Empty members list",
-		ErrorDescription: "The members list cannot be empty",
-	}
 	// ErrorInvalidLimit is the error returned when limit parameter is invalid.
 	ErrorInvalidLimit = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
@@ -102,6 +95,13 @@ var (
 		Code:             "GRP-1012",
 		Error:            "Invalid offset parameter",
 		ErrorDescription: "The offset parameter must be a non-negative integer",
+	}
+	// ErrorEmptyMembers is the error returned when the members list is empty.
+	ErrorEmptyMembers = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "GRP-1013",
+		Error:            "Empty members list",
+		ErrorDescription: "The members list cannot be empty",
 	}
 )
 

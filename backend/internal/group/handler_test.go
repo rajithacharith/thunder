@@ -899,10 +899,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPutRequest() {
 			body: `{
 				"name": " team <script> ",
 				"description": " desc ",
-				"organizationUnitId": " ou-001 ",
-				"members": [
-					{"id": " user-1 ", "type": "user"}
-				]
+				"organizationUnitId": " ou-001 "
 			}`,
 			setJSONHeader: true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
@@ -910,10 +907,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPutRequest() {
 					On("UpdateGroup", mock.Anything, "grp-001", mock.MatchedBy(func(request UpdateGroupRequest) bool {
 						return request.Name == "team &lt;script&gt;" &&
 							request.Description == "desc" &&
-							request.OrganizationUnitID == testOrganizationUnitID &&
-							len(request.Members) == 1 &&
-							request.Members[0].ID == "user-1" &&
-							request.Members[0].Type == MemberTypeUser
+							request.OrganizationUnitID == testOrganizationUnitID
 					})).
 					Return(&Group{ID: "grp-001"}, nil).
 					Once()
@@ -1334,12 +1328,14 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersAddReques
 				serviceMock.
 					On("AddGroupMembers", mock.Anything, "grp-001",
 						[]Member{{ID: "usr-001", Type: MemberTypeUser}}).
-					Return(nil).
+					Return(&Group{ID: "grp-001", Name: "Test Group"}, nil).
 					Once()
 			},
 			assert: func(rr *httptest.ResponseRecorder) {
-				require.Equal(suite.T(), http.StatusNoContent, rr.Code)
-				require.Empty(suite.T(), rr.Body.String())
+				require.Equal(suite.T(), http.StatusOK, rr.Code)
+				var group Group
+				require.NoError(suite.T(), json.Unmarshal(rr.Body.Bytes(), &group))
+				require.Equal(suite.T(), "grp-001", group.ID)
 			},
 		},
 		{
@@ -1369,7 +1365,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersAddReques
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
 					On("AddGroupMembers", mock.Anything, "grp-001", mock.Anything).
-					Return(&ErrorGroupNotFound).
+					Return(nil, &ErrorGroupNotFound).
 					Once()
 			},
 			assert: func(rr *httptest.ResponseRecorder) {
@@ -1387,7 +1383,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersAddReques
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
 					On("AddGroupMembers", mock.Anything, "grp-001", mock.Anything).
-					Return(&ErrorEmptyMembers).
+					Return(nil, &ErrorEmptyMembers).
 					Once()
 			},
 			assert: func(rr *httptest.ResponseRecorder) {
@@ -1432,12 +1428,14 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersRemoveReq
 				serviceMock.
 					On("RemoveGroupMembers", mock.Anything, "grp-001",
 						[]Member{{ID: "usr-001", Type: MemberTypeUser}}).
-					Return(nil).
+					Return(&Group{ID: "grp-001", Name: "Test Group"}, nil).
 					Once()
 			},
 			assert: func(rr *httptest.ResponseRecorder) {
-				require.Equal(suite.T(), http.StatusNoContent, rr.Code)
-				require.Empty(suite.T(), rr.Body.String())
+				require.Equal(suite.T(), http.StatusOK, rr.Code)
+				var group Group
+				require.NoError(suite.T(), json.Unmarshal(rr.Body.Bytes(), &group))
+				require.Equal(suite.T(), "grp-001", group.ID)
 			},
 		},
 		{
@@ -1467,7 +1465,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersRemoveReq
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
 					On("RemoveGroupMembers", mock.Anything, "grp-001", mock.Anything).
-					Return(&ErrorGroupNotFound).
+					Return(nil, &ErrorGroupNotFound).
 					Once()
 			},
 			assert: func(rr *httptest.ResponseRecorder) {
@@ -1485,7 +1483,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersRemoveReq
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
 					On("RemoveGroupMembers", mock.Anything, "grp-001", mock.Anything).
-					Return(&ErrorInternalServerError).
+					Return(nil, &ErrorInternalServerError).
 					Once()
 			},
 			assert: func(rr *httptest.ResponseRecorder) {
@@ -1524,7 +1522,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_RegisterRoutesMembersAddDis
 	serviceMock.
 		On("AddGroupMembers", mock.Anything, "grp-001",
 			[]Member{{ID: "usr-001", Type: MemberTypeUser}}).
-		Return(nil).
+		Return(&Group{ID: "grp-001", Name: "Test Group"}, nil).
 		Once()
 
 	body := strings.NewReader(`{"members":[{"id":"usr-001","type":"user"}]}`)
@@ -1533,7 +1531,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_RegisterRoutesMembersAddDis
 	resp := httptest.NewRecorder()
 	mux.ServeHTTP(resp, req)
 
-	require.Equal(t, http.StatusNoContent, resp.Code)
+	require.Equal(t, http.StatusOK, resp.Code)
 }
 
 func (suite *GroupHandlerTestSuite) TestGroupHandler_RegisterRoutesMembersRemoveDispatch() {
@@ -1547,7 +1545,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_RegisterRoutesMembersRemove
 	serviceMock.
 		On("RemoveGroupMembers", mock.Anything, "grp-001",
 			[]Member{{ID: "usr-001", Type: MemberTypeUser}}).
-		Return(nil).
+		Return(&Group{ID: "grp-001", Name: "Test Group"}, nil).
 		Once()
 
 	body := strings.NewReader(`{"members":[{"id":"usr-001","type":"user"}]}`)
@@ -1556,7 +1554,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_RegisterRoutesMembersRemove
 	resp := httptest.NewRecorder()
 	mux.ServeHTTP(resp, req)
 
-	require.Equal(t, http.StatusNoContent, resp.Code)
+	require.Equal(t, http.StatusOK, resp.Code)
 }
 
 func (suite *GroupHandlerTestSuite) TestGroupHandler_RegisterRoutesMembersInvalidAction() {

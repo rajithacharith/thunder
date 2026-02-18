@@ -250,11 +250,6 @@ func (s *groupStore) UpdateGroup(ctx context.Context, group GroupDAO) error {
 		return ErrGroupNotFound
 	}
 
-	err = updateGroupMembers(ctx, dbClient, group.ID, group.Members, s.deploymentID)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -478,27 +473,6 @@ func addMembersToGroup(
 		if err != nil {
 			return fmt.Errorf("failed to add member to group: %w", err)
 		}
-	}
-	return nil
-}
-
-// updateGroupMembers updates the members assigned to the group by first deleting existing members and
-// then adding new ones.
-func updateGroupMembers(
-	ctx context.Context,
-	dbClient provider.DBClientInterface,
-	groupID string,
-	members []Member,
-	deploymentID string,
-) error {
-	_, err := dbClient.ExecuteContext(ctx, QueryDeleteGroupMembers, groupID, deploymentID)
-	if err != nil {
-		return fmt.Errorf("failed to delete existing group member assignments: %w", err)
-	}
-
-	err = addMembersToGroup(ctx, dbClient, groupID, members, deploymentID)
-	if err != nil {
-		return fmt.Errorf("failed to assign members to group: %w", err)
 	}
 	return nil
 }

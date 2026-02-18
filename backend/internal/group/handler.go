@@ -314,13 +314,13 @@ func (gh *groupHandler) HandleGroupMembersAddRequest(w http.ResponseWriter, r *h
 
 	sanitizedRequest := gh.sanitizeMembersRequest(membersRequest)
 
-	svcErr := gh.groupService.AddGroupMembers(ctx, id, sanitizedRequest.Members)
+	group, svcErr := gh.groupService.AddGroupMembers(ctx, id, sanitizedRequest.Members)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
 	}
 
-	sysutils.WriteSuccessResponse(w, http.StatusNoContent, nil)
+	sysutils.WriteSuccessResponse(w, http.StatusOK, group)
 	logger.Debug("Successfully added members to group", log.String("group id", id))
 }
 
@@ -343,13 +343,13 @@ func (gh *groupHandler) HandleGroupMembersRemoveRequest(w http.ResponseWriter, r
 
 	sanitizedRequest := gh.sanitizeMembersRequest(membersRequest)
 
-	svcErr := gh.groupService.RemoveGroupMembers(ctx, id, sanitizedRequest.Members)
+	group, svcErr := gh.groupService.RemoveGroupMembers(ctx, id, sanitizedRequest.Members)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
 	}
 
-	sysutils.WriteSuccessResponse(w, http.StatusNoContent, nil)
+	sysutils.WriteSuccessResponse(w, http.StatusOK, group)
 	logger.Debug("Successfully removed members from group", log.String("group id", id))
 }
 
@@ -412,23 +412,11 @@ func (gh *groupHandler) sanitizeCreateGroupRequest(request *CreateGroupRequest) 
 
 // sanitizeUpdateGroupRequest sanitizes the update group request input.
 func (gh *groupHandler) sanitizeUpdateGroupRequest(request *UpdateGroupRequest) UpdateGroupRequest {
-	sanitized := UpdateGroupRequest{
+	return UpdateGroupRequest{
 		Name:               sysutils.SanitizeString(request.Name),
 		Description:        sysutils.SanitizeString(request.Description),
 		OrganizationUnitID: sysutils.SanitizeString(request.OrganizationUnitID),
 	}
-
-	if request.Members != nil {
-		sanitized.Members = make([]Member, len(request.Members))
-		for i, member := range request.Members {
-			sanitized.Members[i] = Member{
-				ID:   sysutils.SanitizeString(member.ID),
-				Type: member.Type,
-			}
-		}
-	}
-
-	return sanitized
 }
 
 // sanitizeMembersRequest sanitizes the members request input.
