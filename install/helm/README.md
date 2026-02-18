@@ -194,6 +194,7 @@ The following table lists the configurable parameters of the Thunder chart and t
 
 | Name                                  | Description                                                     | Default                      |
 | ------------------------------------- | --------------------------------------------------------------- | ---------------------------- |
+| `ingress.enabled`                     | Enable Ingress resource                                         | `true`                       |
 | `ingress.className`                   | Ingress controller class                                        | `nginx`                      |
 | `ingress.hostname`                    | Default host for the ingress resource                           | `thunder.local`              |
 | `ingress.paths[0].path`               | Path for the ingress resource                                   | `/`                          |
@@ -201,6 +202,15 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `ingress.tlsSecretsName`              | TLS secret name for HTTPS                                       | `thunder-tls`                |
 | `ingress.commonAnnotations`           | Common annotations for ingress                                  | See values.yaml              |
 | `ingress.customAnnotations`           | Custom annotations for ingress                                  | `{}`                         |
+
+### HTTPRoute Parameters
+
+| Name                                  | Description                                                                  | Default                      |
+| ------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------- |
+| `httproute.enabled`                   | Enable Gateway API HTTPRoute resource (alternative to Ingress)               | `false`                      |
+| `httproute.annotations`               | Annotations for the HTTPRoute resource                                       | `{}`                         |
+| `httproute.parentRefs`                | Gateway references this route attaches to (required when enabled)            | `[]`                         |
+| `httproute.hostnames`                 | Hostnames this route responds to                                             | `[]`                         |
 
 ### Database Password Management
 
@@ -296,7 +306,6 @@ Each database section (`identity`, `runtime`, `user`) supports these fields:
 | `password`             | Direct password value. When Thunder reads config directly, this may also be an env var placeholder (`{{.VAR}}`) or file reference (`file://path`). When using the auto-generated Secret, the value is stored **as-is** in the Secret and such placeholders are **not** resolved. | `"mypassword"` or `"{{.DB_PASSWORD}}"` or `"file:///secrets/pass"` |
 | `passwordRef.name`     | Kubernetes Secret name (optional, defaults to `<release-name>-db-credentials` for auto-convert)                                               | `"my-db-secrets"`            |
 | `passwordRef.key`      | Secret key name. When set, `password` field is ignored and external Secret is used                                                            | `"identity-password"`        |
-
 ### Thunder Configuration Parameters
 
 | Name                                              | Description                                                                                           | Default                      |
