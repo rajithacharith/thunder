@@ -62,12 +62,12 @@ func generateTestKeys(t *testing.T) (*ecdsa.PrivateKey, []byte) {
 	coseKey = append(coseKey, 0x20, 0x01) // key -1 (0x20), val 1 (0x01)
 
 	// x
-	coseKey = append(coseKey, 0x21) // key -2
+	coseKey = append(coseKey, 0x21)       // key -2
 	coseKey = append(coseKey, 0x58, 0x20) // bytes(32) -> 0x58 (header) 0x20 (len)
 	coseKey = append(coseKey, xBytes...)
 
 	// y
-	coseKey = append(coseKey, 0x22) // key -3
+	coseKey = append(coseKey, 0x22)       // key -3
 	coseKey = append(coseKey, 0x58, 0x20) // bytes(32)
 	coseKey = append(coseKey, yBytes...)
 
@@ -75,7 +75,7 @@ func generateTestKeys(t *testing.T) (*ecdsa.PrivateKey, []byte) {
 }
 
 // createTestAuthData creates a valid authenticator data byte array.
-func createTestAuthData(_ *testing.T, rpID string) []byte {
+func createTestAuthData(rpID string) []byte {
 	rpIDHash := sha256.Sum256([]byte(rpID))
 
 	authData := make([]byte, 0, 37)

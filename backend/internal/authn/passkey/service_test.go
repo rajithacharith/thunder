@@ -2740,14 +2740,17 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_Usernameless_Suc
 
 	// Generate valid keys and auth data
 	privKey, pubKeyCOSE := generateTestKeys(suite.T())
-	authData := createTestAuthData(suite.T(), testRelyingPartyID)
+	authData := createTestAuthData(testRelyingPartyID)
 
 	// Create client data
-	clientDataJSON := []byte(`{"type":"webauthn.get","challenge":"challenge123","origin":"https://localhost:8090"}`)
+	clientDataJSON := []byte(`{"type":"webauthn.get","challenge":"challenge123",` +
+		`"origin":"https://localhost:8090"}`)
 	clientDataHash := sha256.Sum256(clientDataJSON)
 
 	// Sign authData + clientDataHash
-	signatureBase := append(authData, clientDataHash[:]...)
+	signatureBase := make([]byte, len(authData)+len(clientDataHash))
+	copy(signatureBase, authData)
+	copy(signatureBase[len(authData):], clientDataHash[:])
 	signature := signData(suite.T(), privKey, signatureBase)
 
 	mockCredential := webauthnCredential{
@@ -2999,14 +3002,17 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_Usernameless_Wit
 
 	// Generate valid keys and auth data
 	privKey, pubKeyCOSE := generateTestKeys(suite.T())
-	authData := createTestAuthData(suite.T(), testRelyingPartyID)
+	authData := createTestAuthData(testRelyingPartyID)
 
 	// Create client data
-	clientDataJSON := []byte(`{"type":"webauthn.get","challenge":"challenge123","origin":"https://localhost:8090"}`)
+	clientDataJSON := []byte(`{"type":"webauthn.get","challenge":"challenge123",` +
+		`"origin":"https://localhost:8090"}`)
 	clientDataHash := sha256.Sum256(clientDataJSON)
 
 	// Sign authData + clientDataHash
-	signatureBase := append(authData, clientDataHash[:]...)
+	signatureBase := make([]byte, len(authData)+len(clientDataHash))
+	copy(signatureBase, authData)
+	copy(signatureBase[len(authData):], clientDataHash[:])
 	signature := signData(suite.T(), privKey, signatureBase)
 
 	mockCredential := webauthnCredential{
@@ -3066,14 +3072,17 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_UsernameBasedFlo
 
 	// Generate valid keys and auth data
 	privKey, pubKeyCOSE := generateTestKeys(suite.T())
-	authData := createTestAuthData(suite.T(), testRelyingPartyID)
+	authData := createTestAuthData(testRelyingPartyID)
 
 	// Create client data
-	clientDataJSON := []byte(`{"type":"webauthn.get","challenge":"challenge123","origin":"https://localhost:8090"}`)
+	clientDataJSON := []byte(`{"type":"webauthn.get","challenge":"challenge123",` +
+		`"origin":"https://localhost:8090"}`)
 	clientDataHash := sha256.Sum256(clientDataJSON)
 
 	// Sign authData + clientDataHash
-	signatureBase := append(authData, clientDataHash[:]...)
+	signatureBase := make([]byte, len(authData)+len(clientDataHash))
+	copy(signatureBase, authData)
+	copy(signatureBase[len(authData):], clientDataHash[:])
 	signature := signData(suite.T(), privKey, signatureBase)
 
 	mockCredential := webauthnCredential{
@@ -3133,14 +3142,17 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ValidatePasskeyL
 
 	// Generate valid keys and auth data
 	privKey, pubKeyCOSE := generateTestKeys(suite.T())
-	authData := createTestAuthData(suite.T(), testRelyingPartyID)
+	authData := createTestAuthData(testRelyingPartyID)
 
 	// Create client data
-	clientDataJSON := []byte(`{"type":"webauthn.get","challenge":"dGVzdC1jaGFsbGVuZ2U","origin":"https://localhost:8090"}`)
+	clientDataJSON := []byte(`{"type":"webauthn.get","challenge":"dGVzdC1jaGFsbGVuZ2U",` +
+		`"origin":"https://localhost:8090"}`)
 	clientDataHash := sha256.Sum256(clientDataJSON)
 
 	// Sign authData + clientDataHash
-	signatureBase := append(authData, clientDataHash[:]...)
+	signatureBase := make([]byte, len(authData)+len(clientDataHash))
+	copy(signatureBase, authData)
+	copy(signatureBase[len(authData):], clientDataHash[:])
 	signature := signData(suite.T(), privKey, signatureBase)
 
 	mockCredential := webauthnCredential{
@@ -3175,9 +3187,9 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ValidatePasskeyL
 	validCredentialID := base64.RawURLEncoding.EncodeToString([]byte("credential123"))
 
 	req := &PasskeyAuthenticationFinishRequest{
-		CredentialID:   validCredentialID,
-		CredentialType: "public-key",
-		ClientDataJSON: base64.RawURLEncoding.EncodeToString(clientDataJSON),
+		CredentialID:      validCredentialID,
+		CredentialType:    "public-key",
+		ClientDataJSON:    base64.RawURLEncoding.EncodeToString(clientDataJSON),
 		AuthenticatorData: base64.RawURLEncoding.EncodeToString(authData),
 		Signature:         base64.RawURLEncoding.EncodeToString(signature),
 		UserHandle:        userHandle,
@@ -3200,14 +3212,17 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ValidateLogin_Re
 
 	// Generate valid keys and auth data
 	privKey, pubKeyCOSE := generateTestKeys(suite.T())
-	authData := createTestAuthData(suite.T(), testRelyingPartyID)
+	authData := createTestAuthData(testRelyingPartyID)
 
 	// Create client data
-	clientDataJSON := []byte(`{"type":"webauthn.get","challenge":"dGVzdC1jaGFsbGVuZ2U","origin":"https://localhost:8090"}`)
+	clientDataJSON := []byte(`{"type":"webauthn.get","challenge":"dGVzdC1jaGFsbGVuZ2U",` +
+		`"origin":"https://localhost:8090"}`)
 	clientDataHash := sha256.Sum256(clientDataJSON)
 
 	// Sign authData + clientDataHash
-	signatureBase := append(authData, clientDataHash[:]...)
+	signatureBase := make([]byte, len(authData)+len(clientDataHash))
+	copy(signatureBase, authData)
+	copy(signatureBase[len(authData):], clientDataHash[:])
 	signature := signData(suite.T(), privKey, signatureBase)
 
 	mockCredential := webauthnCredential{
@@ -3242,9 +3257,9 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ValidateLogin_Re
 	validCredentialID := base64.RawURLEncoding.EncodeToString([]byte("credential123"))
 
 	req := &PasskeyAuthenticationFinishRequest{
-		CredentialID:   validCredentialID,
-		CredentialType: "public-key",
-		ClientDataJSON: base64.RawURLEncoding.EncodeToString(clientDataJSON),
+		CredentialID:      validCredentialID,
+		CredentialType:    "public-key",
+		ClientDataJSON:    base64.RawURLEncoding.EncodeToString(clientDataJSON),
 		AuthenticatorData: base64.RawURLEncoding.EncodeToString(authData),
 		Signature:         base64.RawURLEncoding.EncodeToString(signature),
 		UserHandle:        "", // Empty for username-based flow

@@ -174,9 +174,9 @@ type CredentialParameter struct {
 
 // AuthenticatorSelection represents options for authenticator selection.
 type AuthenticatorSelection struct {
-	AuthenticatorAttachment AuthenticatorAttachment `json:"authenticatorAttachment,omitempty"`
-	RequireResidentKey      *bool                   `json:"requireResidentKey,omitempty"`
-	ResidentKey             ResidentKeyRequirement  `json:"residentKey,omitempty"`
+	AuthenticatorAttachment AuthenticatorAttachment     `json:"authenticatorAttachment,omitempty"`
+	RequireResidentKey      *bool                       `json:"requireResidentKey,omitempty"`
+	ResidentKey             ResidentKeyRequirement      `json:"residentKey,omitempty"`
 	UserVerification        UserVerificationRequirement `json:"userVerification,omitempty"`
 }
 

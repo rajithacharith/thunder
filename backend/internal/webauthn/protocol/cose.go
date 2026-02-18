@@ -171,7 +171,11 @@ func toInt64(i interface{}) (int64, bool) {
 	case int64:
 		return v, true
 	case uint:
-		if uint64(v) > math.MaxInt64 {
+		// Go's uint can be 32 or 64 bits.
+		// If it fits in int64 (positive), it's safe.
+		// MaxInt64 is 1<<63 - 1.
+		// If uint is 64 bit and > MaxInt64, it overflows int64.
+		if uint64(v) > uint64(math.MaxInt64) {
 			return 0, false
 		}
 		return int64(v), true

@@ -104,6 +104,9 @@ func (d *cborDecoder) decodeByteString(info byte) (interface{}, error) {
 		return nil, io.ErrUnexpectedEOF
 	}
 	remaining := len(d.data) - d.pos
+	if remaining < 0 {
+		return nil, io.ErrUnexpectedEOF
+	}
 	if length > uint64(remaining) {
 		return nil, fmt.Errorf("byte string length exceeds data size")
 	}
@@ -125,6 +128,9 @@ func (d *cborDecoder) decodeTextString(info byte) (interface{}, error) {
 		return nil, io.ErrUnexpectedEOF
 	}
 	remaining := len(d.data) - d.pos
+	if remaining < 0 {
+		return nil, io.ErrUnexpectedEOF
+	}
 	if length > uint64(remaining) {
 		return nil, fmt.Errorf("text string length exceeds data size")
 	}
@@ -145,6 +151,9 @@ func (d *cborDecoder) decodeArray(info byte) (interface{}, error) {
 		return nil, io.ErrUnexpectedEOF
 	}
 	remaining := len(d.data) - d.pos
+	if remaining < 0 {
+		return nil, io.ErrUnexpectedEOF
+	}
 	// Sanity check: each element takes at least 1 byte.
 	if length > uint64(remaining) {
 		return nil, fmt.Errorf("array length exceeds data size")

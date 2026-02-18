@@ -4,15 +4,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-
 )
 
 // ParseCredentialCreationResponseBytes parses the JSON response from the client.
 func ParseCredentialCreationResponseBytes(data []byte) (*ParsedCredentialCreationData, error) {
 	// 1. Unmarshal into map or struct to get base64 encoded strings
 	var rawResponse struct {
-		ID       string `json:"id"`
-		RawID    string `json:"rawId"`
+		ID       string         `json:"id"`
+		RawID    string         `json:"rawId"`
 		Type     CredentialType `json:"type"`
 		Response struct {
 			ClientDataJSON    string `json:"clientDataJSON"`
