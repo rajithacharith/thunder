@@ -415,6 +415,12 @@ func (fe *flowEngine) shouldUpdateAuthenticatedUser(engineCtx *EngineContext) bo
 		return executorInst.GetName() == executor.ExecutorNameProvisioning
 	}
 
+	// For user onboarding flows, update from authentication executors or from provisioning executor.
+	if engineCtx.FlowType == common.FlowTypeUserOnboarding {
+		return executorInst.GetType() == common.ExecutorTypeAuthentication ||
+			executorInst.GetName() == executor.ExecutorNameProvisioning
+	}
+
 	return false
 }
 

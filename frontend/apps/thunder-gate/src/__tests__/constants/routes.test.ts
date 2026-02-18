@@ -44,6 +44,10 @@ describe('ROUTES', () => {
     expect(ROUTES.AUTH.INVITE).toBe('/invite');
   });
 
+  it('has AUTH.CALLBACK path', () => {
+    expect(ROUTES.AUTH.CALLBACK).toBe('/callback');
+  });
+
   it('Routes interface has correct structure', () => {
     const routes: Routes = {
       ROOT: '/',
@@ -51,11 +55,13 @@ describe('ROUTES', () => {
         SIGN_IN: '/signin',
         SIGN_UP: '/signup',
         INVITE: '/invite',
+        CALLBACK: '/callback',
       },
     };
     expect(routes.ROOT).toBe('/');
     expect(routes.AUTH.SIGN_IN).toBe('/signin');
     expect(routes.AUTH.SIGN_UP).toBe('/signup');
     expect(routes.AUTH.INVITE).toBe('/invite');
+    expect(routes.AUTH.CALLBACK).toBe('/callback');
   });
 });
