@@ -192,7 +192,7 @@ paths:
                     code: "USR-1019"
                     message: "Schema validation failed"
                     description: "User attributes do not conform to the required schema"
-                user-schema-not-found:
+                user-type-not-found:
                   summary: User type not found
                   value:
                     code: "USR-1021"
@@ -335,7 +335,7 @@ paths:
                     code: "USR-1019"
                     message: "Schema validation failed"
                     description: "User attributes do not conform to the required schema"
-                user-schema-not-found:
+                user-type-not-found:
                   summary: User type not found
                   value:
                     code: "USR-1021"
@@ -639,7 +639,7 @@ paths:
                     code: "USR-1019"
                     message: "Schema validation failed"
                     description: "User attributes do not conform to the required schema"
-                user-schema-not-found:
+                user-type-not-found:
                   summary: User type not found
                   value:
                     code: "USR-1021"
@@ -797,7 +797,7 @@ paths:
                     code: "USR-1019"
                     message: "Schema validation failed"
                     description: "User attributes do not conform to the required schema"
-                user-schema-not-found:
+                user-type-not-found:
                   summary: User type not found
                   value:
                     code: "USR-1021"

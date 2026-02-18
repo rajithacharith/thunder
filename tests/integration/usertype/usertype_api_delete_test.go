@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema
+package usertype
 
 import (
 	"bytes"
@@ -30,24 +30,24 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type DeleteUserSchemaTestSuite struct {
+type DeleteUserTypeTestSuite struct {
 	suite.Suite
 	client             *http.Client
 	organizationUnitID string
 }
 
-var testUserSchemaAPIDeleteOU = testutils.OrganizationUnit{
+var testUserTypeAPIDeleteOU = testutils.OrganizationUnit{
 	Handle:      "test-user-schema-api-delete-ou",
-	Name:        "Test Organization Unit for User Schema API Delete",
-	Description: "Organization unit created for user schema API delete testing",
+	Name:        "Test Organization Unit for User Type API Delete",
+	Description: "Organization unit created for user type API delete testing",
 	Parent:      nil,
 }
 
-func TestDeleteUserSchemaTestSuite(t *testing.T) {
-	suite.Run(t, new(DeleteUserSchemaTestSuite))
+func TestDeleteUserTypeTestSuite(t *testing.T) {
+	suite.Run(t, new(DeleteUserTypeTestSuite))
 }
 
-func (ts *DeleteUserSchemaTestSuite) TearDownSuite() {
+func (ts *DeleteUserTypeTestSuite) TearDownSuite() {
 	if ts.organizationUnitID != "" {
 		if err := testutils.DeleteOrganizationUnit(ts.organizationUnitID); err != nil {
 			ts.T().Logf("Failed to delete test organization unit %s: %v", ts.organizationUnitID, err)
@@ -55,21 +55,21 @@ func (ts *DeleteUserSchemaTestSuite) TearDownSuite() {
 	}
 }
 
-func (ts *DeleteUserSchemaTestSuite) SetupSuite() {
+func (ts *DeleteUserTypeTestSuite) SetupSuite() {
 	ts.client = testutils.GetHTTPClient()
 
 	// Create organization unit for tests
-	ouID, err := testutils.CreateOrganizationUnit(testUserSchemaAPIDeleteOU)
+	ouID, err := testutils.CreateOrganizationUnit(testUserTypeAPIDeleteOU)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit: %v", err)
 	}
 	ts.organizationUnitID = ouID
 }
 
-// TestDeleteUserSchema tests DELETE /user-schemas/{id} with valid ID
-func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchema() {
+// TestDeleteUserType tests DELETE /user-types/{id} with valid ID
+func (ts *DeleteUserTypeTestSuite) TestDeleteUserType() {
 	// Create a schema to delete
-	schema := CreateUserSchemaRequest{
+	schema := CreateUserTypeRequest{
 		Name: "schema-to-delete",
 		Schema: json.RawMessage(`{
             "tempField": {"type": "string", "required": true},
@@ -78,10 +78,10 @@ func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchema() {
 	}
 	schema.OrganizationUnitID = ts.organizationUnitID
 
-	schemaID := ts.createTestSchema(schema)
+	schemaID := ts.createTestType(schema)
 
 	// Delete the schema
-	req, err := http.NewRequest("DELETE", testServerURL+"/user-schemas/"+schemaID, nil)
+	req, err := http.NewRequest("DELETE", testServerURL+"/user-types/"+schemaID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -95,7 +95,7 @@ func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchema() {
 	ts.Assert().Equal(http.StatusNoContent, resp.StatusCode, "Should return 204 No Content for successful deletion")
 
 	// Verify schema is deleted by trying to get it
-	getReq, err := http.NewRequest("GET", testServerURL+"/user-schemas/"+schemaID, nil)
+	getReq, err := http.NewRequest("GET", testServerURL+"/user-types/"+schemaID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to create get request: %v", err)
 	}
@@ -109,11 +109,11 @@ func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchema() {
 	ts.Assert().Equal(http.StatusNotFound, getResp.StatusCode, "Schema should not exist after deletion")
 }
 
-// TestDeleteUserSchemaNotFound tests DELETE /user-schemas/{id} with non-existent ID
-func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchemaNotFound() {
+// TestDeleteUserTypeNotFound tests DELETE /user-types/{id} with non-existent ID
+func (ts *DeleteUserTypeTestSuite) TestDeleteUserTypeNotFound() {
 	nonExistentID := "550e8400-e29b-41d4-a716-446655440000"
 
-	req, err := http.NewRequest("DELETE", testServerURL+"/user-schemas/"+nonExistentID, nil)
+	req, err := http.NewRequest("DELETE", testServerURL+"/user-types/"+nonExistentID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -133,8 +133,8 @@ func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchemaNotFound() {
 	ts.Assert().Empty(bodyBytes, "204 response should have no content body")
 }
 
-// TestDeleteUserSchemaWithInvalidID tests DELETE /user-schemas/{id} with invalid ID formats
-func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchemaWithInvalidID() {
+// TestDeleteUserTypeWithInvalidID tests DELETE /user-types/{id} with invalid ID formats
+func (ts *DeleteUserTypeTestSuite) TestDeleteUserTypeWithInvalidID() {
 	testCases := []struct {
 		name           string
 		schemaID       string
@@ -161,7 +161,7 @@ func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchemaWithInvalidID() {
 		ts.T().Run(tc.name, func(t *testing.T) {
 			// URL-encode the schema ID to handle special characters
 			encodedSchemaID := url.PathEscape(tc.schemaID)
-			req, err := http.NewRequest("DELETE", testServerURL+"/user-schemas/"+encodedSchemaID, nil)
+			req, err := http.NewRequest("DELETE", testServerURL+"/user-types/"+encodedSchemaID, nil)
 			if err != nil {
 				t.Fatalf("Failed to create request: %v", err)
 			}
@@ -186,20 +186,20 @@ func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchemaWithInvalidID() {
 	}
 }
 
-// TestDeleteUserSchemaIdempotency tests DELETE /user-schemas/{id} idempotency
-func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchemaIdempotency() {
+// TestDeleteUserTypeIdempotency tests DELETE /user-types/{id} idempotency
+func (ts *DeleteUserTypeTestSuite) TestDeleteUserTypeIdempotency() {
 	// Create a schema to delete
-	schema := CreateUserSchemaRequest{
+	schema := CreateUserTypeRequest{
 		Name: "idempotency-test-schema",
 		Schema: json.RawMessage(`{
 			"field": {"type": "string"}
 		}`),
 	}
 
-	schemaID := ts.createTestSchema(schema)
+	schemaID := ts.createTestType(schema)
 
 	// Delete the schema first time
-	req1, err := http.NewRequest("DELETE", testServerURL+"/user-schemas/"+schemaID, nil)
+	req1, err := http.NewRequest("DELETE", testServerURL+"/user-types/"+schemaID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to create first request: %v", err)
 	}
@@ -213,7 +213,7 @@ func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchemaIdempotency() {
 	ts.Assert().Equal(http.StatusNoContent, resp1.StatusCode, "First deletion should return 204 No Content")
 
 	// Delete the schema second time (should be idempotent)
-	req2, err := http.NewRequest("DELETE", testServerURL+"/user-schemas/"+schemaID, nil)
+	req2, err := http.NewRequest("DELETE", testServerURL+"/user-types/"+schemaID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to create second request: %v", err)
 	}
@@ -227,10 +227,10 @@ func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchemaIdempotency() {
 	ts.Assert().Equal(http.StatusNoContent, resp2.StatusCode, "Second deletion should return 204 No Content (idempotent behavior)")
 }
 
-// TestDeleteUserSchemaMultiple tests deleting multiple schemas
-func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchemaMultiple() {
+// TestDeleteUserTypeMultiple tests deleting multiple schemas
+func (ts *DeleteUserTypeTestSuite) TestDeleteUserTypeMultiple() {
 	// Create multiple schemas
-	schemas := []CreateUserSchemaRequest{
+	schemas := []CreateUserTypeRequest{
 		{
 			Name:   "multi-delete-schema-1",
 			Schema: json.RawMessage(`{"field1": {"type": "string"}}`),
@@ -247,12 +247,12 @@ func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchemaMultiple() {
 
 	schemaIDs := make([]string, len(schemas))
 	for i, schema := range schemas {
-		schemaIDs[i] = ts.createTestSchema(schema)
+		schemaIDs[i] = ts.createTestType(schema)
 	}
 
 	// Delete all schemas
 	for i, schemaID := range schemaIDs {
-		req, err := http.NewRequest("DELETE", testServerURL+"/user-schemas/"+schemaID, nil)
+		req, err := http.NewRequest("DELETE", testServerURL+"/user-types/"+schemaID, nil)
 		if err != nil {
 			ts.T().Fatalf("Failed to create request for schema %d: %v", i+1, err)
 		}
@@ -268,7 +268,7 @@ func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchemaMultiple() {
 
 	// Verify all schemas are deleted
 	for i, schemaID := range schemaIDs {
-		getReq, err := http.NewRequest("GET", testServerURL+"/user-schemas/"+schemaID, nil)
+		getReq, err := http.NewRequest("GET", testServerURL+"/user-types/"+schemaID, nil)
 		if err != nil {
 			ts.T().Fatalf("Failed to create get request for schema %d: %v", i+1, err)
 		}
@@ -283,20 +283,20 @@ func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchemaMultiple() {
 	}
 }
 
-// TestDeleteUserSchemaResponseHeaders tests response headers for DELETE /user-schemas/{id}
-func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchemaResponseHeaders() {
+// TestDeleteUserTypeResponseHeaders tests response headers for DELETE /user-types/{id}
+func (ts *DeleteUserTypeTestSuite) TestDeleteUserTypeResponseHeaders() {
 	// Create a schema to delete
-	schema := CreateUserSchemaRequest{
+	schema := CreateUserTypeRequest{
 		Name: "headers-test-schema",
 		Schema: json.RawMessage(`{
 			"field": {"type": "string"}
 		}`),
 	}
 
-	schemaID := ts.createTestSchema(schema)
+	schemaID := ts.createTestType(schema)
 
 	// Delete the schema
-	req, err := http.NewRequest("DELETE", testServerURL+"/user-schemas/"+schemaID, nil)
+	req, err := http.NewRequest("DELETE", testServerURL+"/user-types/"+schemaID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -318,7 +318,7 @@ func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchemaResponseHeaders() {
 }
 
 // Helper function to create a test schema
-func (ts *DeleteUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaRequest) string {
+func (ts *DeleteUserTypeTestSuite) createTestType(schema CreateUserTypeRequest) string {
 	if schema.OrganizationUnitID == "" {
 		schema.OrganizationUnitID = ts.organizationUnitID
 	}
@@ -328,7 +328,7 @@ func (ts *DeleteUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaReq
 		ts.T().Fatalf("Failed to marshal request: %v", err)
 	}
 
-	req, err := http.NewRequest("POST", testServerURL+"/user-schemas", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", testServerURL+"/user-types", bytes.NewBuffer(jsonData))
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -350,7 +350,7 @@ func (ts *DeleteUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaReq
 		ts.T().Fatalf("Failed to read response body: %v", err)
 	}
 
-	var createdSchema UserSchema
+	var createdSchema UserType
 	err = json.Unmarshal(bodyBytes, &createdSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to unmarshal response: %v", err)
@@ -359,8 +359,8 @@ func (ts *DeleteUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaReq
 	return createdSchema.ID
 }
 
-func (ts *DeleteUserSchemaTestSuite) deleteSchema(schemaID string) {
-	req, err := http.NewRequest("DELETE", testServerURL+"/user-schemas/"+schemaID, nil)
+func (ts *DeleteUserTypeTestSuite) deleteSchema(schemaID string) {
+	req, err := http.NewRequest("DELETE", testServerURL+"/user-types/"+schemaID, nil)
 	if err != nil {
 		return
 	}

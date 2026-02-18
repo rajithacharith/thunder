@@ -64,9 +64,9 @@ func (s *UserTypeExporterTestSuite) TestGetParameterizerType() {
 
 func (s *UserTypeExporterTestSuite) TestGetAllResourceIDs_Success() {
 	expectedResponse := &usertype.UserTypeListResponse{
-		Schemas: []usertype.UserTypeListItem{
-			{ID: "schema1", Name: "Schema 1"},
-			{ID: "schema2", Name: "Schema 2"},
+		Types: []usertype.UserTypeListItem{
+			{ID: "type1", Name: "Type 1"},
+			{ID: "type2", Name: "Type 2"},
 		},
 	}
 
@@ -96,7 +96,7 @@ func (s *UserTypeExporterTestSuite) TestGetAllResourceIDs_Error() {
 
 func (s *UserTypeExporterTestSuite) TestGetAllResourceIDs_EmptyList() {
 	expectedResponse := &usertype.UserTypeListResponse{
-		Schemas: []usertype.UserTypeListItem{},
+		Types: []usertype.UserTypeListItem{},
 	}
 
 	s.mockService.EXPECT().GetUserTypeList(100, 0).Return(expectedResponse, nil)

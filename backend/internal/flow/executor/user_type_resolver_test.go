@@ -897,7 +897,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 
 	// Mock GetUserTypeList returning empty list
 	emptyList := &usertype.UserTypeListResponse{
-		Schemas: []usertype.UserTypeListItem{},
+		Types: []usertype.UserTypeListItem{},
 	}
 	suite.mockUserTypeService.On("GetUserTypeList", 100, 0).
 		Return(emptyList, nil)
@@ -947,7 +947,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 
 	// Mock GetUserTypeList returning schemas
 	schemaList := &usertype.UserTypeListResponse{
-		Schemas: []usertype.UserTypeListItem{
+		Types: []usertype.UserTypeListItem{
 			{Name: "employee"},
 			{Name: "customer"},
 		},

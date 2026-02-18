@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema
+package usertype
 
 import (
 	"bytes"
@@ -32,7 +32,7 @@ import (
 type UserValidationTestSuite struct {
 	suite.Suite
 	client             *http.Client
-	createdSchemas     []string // Track schemas for cleanup
+	createdTypes       []string // Track types for cleanup
 	createdUsers       []string // Track users for cleanup
 	organizationUnitID string
 }
@@ -50,7 +50,7 @@ func TestUserValidationTestSuite(t *testing.T) {
 
 func (ts *UserValidationTestSuite) SetupSuite() {
 	ts.client = testutils.GetHTTPClient()
-	ts.createdSchemas = []string{}
+	ts.createdTypes = []string{}
 	ts.createdUsers = []string{}
 
 	// Create organization unit for tests
@@ -61,9 +61,9 @@ func (ts *UserValidationTestSuite) SetupSuite() {
 	ts.organizationUnitID = ouID
 
 	ts.createEmployeeSchema()
-	ts.createSchemaWithEnum()
-	ts.createSchemaWithNestedObject()
-	ts.createSchemaWithArray()
+	ts.createUserTypeWithEnum()
+	ts.createUserTypeWithNestedObject()
+	ts.createUserTypeWithArray()
 }
 
 func (ts *UserValidationTestSuite) TearDownSuite() {
@@ -72,8 +72,8 @@ func (ts *UserValidationTestSuite) TearDownSuite() {
 		ts.deleteUser(userID)
 	}
 	// Then clean up created schemas
-	for _, schemaID := range ts.createdSchemas {
-		ts.deleteSchema(schemaID)
+	for _, typeID := range ts.createdTypes {
+		ts.deleteUserType(typeID)
 	}
 	if ts.organizationUnitID != "" {
 		if err := testutils.DeleteOrganizationUnit(ts.organizationUnitID); err != nil {
@@ -317,7 +317,7 @@ func (ts *UserValidationTestSuite) TestCreateUserWithoutSchema() {
 // Helper methods
 
 func (ts *UserValidationTestSuite) createEmployeeSchema() string {
-	schema := CreateUserSchemaRequest{
+	schema := CreateUserTypeRequest{
 		Name: "employee",
 		Schema: json.RawMessage(`{
 			"firstName": {"type": "string"},
@@ -328,11 +328,11 @@ func (ts *UserValidationTestSuite) createEmployeeSchema() string {
 		}`),
 	}
 
-	return ts.createSchema(schema)
+	return ts.createUserType(schema)
 }
 
-func (ts *UserValidationTestSuite) createSchemaWithEnum() string {
-	schema := CreateUserSchemaRequest{
+func (ts *UserValidationTestSuite) createUserTypeWithEnum() string {
+	schema := CreateUserTypeRequest{
 		Name: "student",
 		Schema: json.RawMessage(`{
 			"name": {"type": "string"},
@@ -341,11 +341,11 @@ func (ts *UserValidationTestSuite) createSchemaWithEnum() string {
 		}`),
 	}
 
-	return ts.createSchema(schema)
+	return ts.createUserType(schema)
 }
 
-func (ts *UserValidationTestSuite) createSchemaWithNestedObject() string {
-	schema := CreateUserSchemaRequest{
+func (ts *UserValidationTestSuite) createUserTypeWithNestedObject() string {
+	schema := CreateUserTypeRequest{
 		Name: "customer",
 		Schema: json.RawMessage(`{
 			"name": {"type": "string"},
@@ -360,11 +360,11 @@ func (ts *UserValidationTestSuite) createSchemaWithNestedObject() string {
 		}`),
 	}
 
-	return ts.createSchema(schema)
+	return ts.createUserType(schema)
 }
 
-func (ts *UserValidationTestSuite) createSchemaWithArray() string {
-	schema := CreateUserSchemaRequest{
+func (ts *UserValidationTestSuite) createUserTypeWithArray() string {
+	schema := CreateUserTypeRequest{
 		Name: "teacher",
 		Schema: json.RawMessage(`{
 			"name": {"type": "string"},
@@ -375,19 +375,19 @@ func (ts *UserValidationTestSuite) createSchemaWithArray() string {
 		}`),
 	}
 
-	return ts.createSchema(schema)
+	return ts.createUserType(schema)
 }
 
-func (ts *UserValidationTestSuite) createSchema(schema CreateUserSchemaRequest) string {
-	if schema.OrganizationUnitID == "" {
-		schema.OrganizationUnitID = ts.organizationUnitID
+func (ts *UserValidationTestSuite) createUserType(userType CreateUserTypeRequest) string {
+	if userType.OrganizationUnitID == "" {
+		userType.OrganizationUnitID = ts.organizationUnitID
 	}
 
-	jsonData, err := json.Marshal(schema)
-	ts.Require().NoError(err, "Failed to marshal schema request")
+	jsonData, err := json.Marshal(userType)
+	ts.Require().NoError(err, "Failed to marshal type request")
 
-	req, err := http.NewRequest("POST", testServerURL+"/user-schemas", bytes.NewBuffer(jsonData))
-	ts.Require().NoError(err, "Failed to create schema request")
+	req, err := http.NewRequest("POST", testServerURL+"/user-types", bytes.NewBuffer(jsonData))
+	ts.Require().NoError(err, "Failed to create type request")
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := ts.client.Do(req)
@@ -399,11 +399,11 @@ func (ts *UserValidationTestSuite) createSchema(schema CreateUserSchemaRequest) 
 	body, err := io.ReadAll(resp.Body)
 	ts.Require().NoError(err, "Failed to read schema response body")
 
-	var createdSchema UserSchema
+	var createdSchema UserType
 	err = json.Unmarshal(body, &createdSchema)
 	ts.Require().NoError(err, "Failed to unmarshal schema response")
 
-	ts.createdSchemas = append(ts.createdSchemas, createdSchema.ID)
+	ts.createdTypes = append(ts.createdTypes, createdSchema.ID)
 	return createdSchema.ID
 }
 
@@ -521,8 +521,8 @@ func (ts *UserValidationTestSuite) deleteUser(userID string) {
 	}
 }
 
-func (ts *UserValidationTestSuite) deleteSchema(schemaID string) {
-	req, err := http.NewRequest("DELETE", testServerURL+"/user-schemas/"+schemaID, nil)
+func (ts *UserValidationTestSuite) deleteUserType(typeID string) {
+	req, err := http.NewRequest("DELETE", testServerURL+"/user-types/"+typeID, nil)
 	if err != nil {
 		ts.T().Logf("Failed to create delete schema request: %v", err)
 		return
@@ -537,6 +537,6 @@ func (ts *UserValidationTestSuite) deleteSchema(schemaID string) {
 
 	if resp.StatusCode != 204 && resp.StatusCode != 404 {
 		body, _ := io.ReadAll(resp.Body)
-		ts.T().Logf("Failed to delete schema %s: status %d, body: %s", schemaID, resp.StatusCode, string(body))
+		ts.T().Logf("Failed to delete type %s: status %d, body: %s", typeID, resp.StatusCode, string(body))
 	}
 }

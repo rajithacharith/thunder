@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema
+package usertype
 
 import (
 	"bytes"
@@ -32,7 +32,7 @@ import (
 type UserValidationEdgeCasesTestSuite struct {
 	suite.Suite
 	client             *http.Client
-	createdSchemas     []string // Track schemas for cleanup
+	createdTypes       []string // Track types for cleanup
 	createdUsers       []string // Track users for cleanup
 	organizationUnitID string
 }
@@ -50,7 +50,7 @@ func TestUserValidationEdgeCasesTestSuite(t *testing.T) {
 
 func (ts *UserValidationEdgeCasesTestSuite) SetupSuite() {
 	ts.client = testutils.GetHTTPClient()
-	ts.createdSchemas = []string{}
+	ts.createdTypes = []string{}
 	ts.createdUsers = []string{}
 
 	// Create organization unit for tests
@@ -60,18 +60,18 @@ func (ts *UserValidationEdgeCasesTestSuite) SetupSuite() {
 	}
 	ts.organizationUnitID = ouID
 
-	ts.createEmployeeSchema()
-	ts.createSchemaWithNumbers()
-	ts.createSchemaWithStringEnum()
-	ts.createSchemaWithMixedEnum()
+	ts.createEmployeeUserType()
+	ts.createUserTypeWithNumbers()
+	ts.createUserTypeWithStringEnum()
+	ts.createUserTypeWithMixedEnum()
 }
 
 func (ts *UserValidationEdgeCasesTestSuite) TearDownSuite() {
 	for _, userID := range ts.createdUsers {
 		ts.deleteUser(userID)
 	}
-	for _, schemaID := range ts.createdSchemas {
-		ts.deleteSchema(schemaID)
+	for _, typeID := range ts.createdTypes {
+		ts.deleteUserType(typeID)
 	}
 	if ts.organizationUnitID != "" {
 		if err := testutils.DeleteOrganizationUnit(ts.organizationUnitID); err != nil {
@@ -280,8 +280,8 @@ func (ts *UserValidationEdgeCasesTestSuite) TestUpdateUserChangeType() {
 
 // Helper methods to create different schema types
 
-func (ts *UserValidationEdgeCasesTestSuite) createEmployeeSchema() string {
-	schema := CreateUserSchemaRequest{
+func (ts *UserValidationEdgeCasesTestSuite) createEmployeeUserType() string {
+	schema := CreateUserTypeRequest{
 		Name:               "employee",
 		OrganizationUnitID: ts.organizationUnitID,
 		Schema: json.RawMessage(`{
@@ -293,11 +293,11 @@ func (ts *UserValidationEdgeCasesTestSuite) createEmployeeSchema() string {
 		}`),
 	}
 
-	return ts.createSchema(schema)
+	return ts.createUserType(schema)
 }
 
-func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithNumbers() string {
-	schema := CreateUserSchemaRequest{
+func (ts *UserValidationEdgeCasesTestSuite) createUserTypeWithNumbers() string {
+	schema := CreateUserTypeRequest{
 		Name:               "numeric-user",
 		OrganizationUnitID: ts.organizationUnitID,
 		Schema: json.RawMessage(`{
@@ -307,11 +307,11 @@ func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithNumbers() string {
 		}`),
 	}
 
-	return ts.createSchema(schema)
+	return ts.createUserType(schema)
 }
 
-func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithStringEnum() string {
-	schema := CreateUserSchemaRequest{
+func (ts *UserValidationEdgeCasesTestSuite) createUserTypeWithStringEnum() string {
+	schema := CreateUserTypeRequest{
 		Name:               "status-user",
 		OrganizationUnitID: ts.organizationUnitID,
 		Schema: json.RawMessage(`{
@@ -321,11 +321,11 @@ func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithStringEnum() string 
 		}`),
 	}
 
-	return ts.createSchema(schema)
+	return ts.createUserType(schema)
 }
 
-func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithMixedEnum() string {
-	schema := CreateUserSchemaRequest{
+func (ts *UserValidationEdgeCasesTestSuite) createUserTypeWithMixedEnum() string {
+	schema := CreateUserTypeRequest{
 		Name:               "mixed-user",
 		OrganizationUnitID: ts.organizationUnitID,
 		Schema: json.RawMessage(`{
@@ -335,10 +335,10 @@ func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithMixedEnum() string {
 		}`),
 	}
 
-	return ts.createSchema(schema)
+	return ts.createUserType(schema)
 }
 
-func (ts *UserValidationEdgeCasesTestSuite) createSchema(schema CreateUserSchemaRequest) string {
+func (ts *UserValidationEdgeCasesTestSuite) createUserType(schema CreateUserTypeRequest) string {
 	if schema.OrganizationUnitID == "" {
 		schema.OrganizationUnitID = ts.organizationUnitID
 	}
@@ -346,7 +346,7 @@ func (ts *UserValidationEdgeCasesTestSuite) createSchema(schema CreateUserSchema
 	jsonData, err := json.Marshal(schema)
 	ts.Require().NoError(err, "Failed to marshal schema request")
 
-	req, err := http.NewRequest("POST", testServerURL+"/user-schemas", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", testServerURL+"/user-types", bytes.NewBuffer(jsonData))
 	ts.Require().NoError(err, "Failed to create schema request")
 	req.Header.Set("Content-Type", "application/json")
 
@@ -359,11 +359,11 @@ func (ts *UserValidationEdgeCasesTestSuite) createSchema(schema CreateUserSchema
 	body, err := io.ReadAll(resp.Body)
 	ts.Require().NoError(err, "Failed to read schema response body")
 
-	var createdSchema UserSchema
+	var createdSchema UserType
 	err = json.Unmarshal(body, &createdSchema)
 	ts.Require().NoError(err, "Failed to unmarshal schema response")
 
-	ts.createdSchemas = append(ts.createdSchemas, createdSchema.ID)
+	ts.createdTypes = append(ts.createdTypes, createdSchema.ID)
 	return createdSchema.ID
 }
 
@@ -481,22 +481,22 @@ func (ts *UserValidationEdgeCasesTestSuite) deleteUser(userID string) {
 	}
 }
 
-func (ts *UserValidationEdgeCasesTestSuite) deleteSchema(schemaID string) {
-	req, err := http.NewRequest("DELETE", testServerURL+"/user-schemas/"+schemaID, nil)
+func (ts *UserValidationEdgeCasesTestSuite) deleteUserType(typeID string) {
+	req, err := http.NewRequest("DELETE", testServerURL+"/user-types/"+typeID, nil)
 	if err != nil {
-		ts.T().Logf("Failed to create delete schema request: %v", err)
+		ts.T().Logf("Failed to create delete type request: %v", err)
 		return
 	}
 
 	resp, err := ts.client.Do(req)
 	if err != nil {
-		ts.T().Logf("Failed to send delete schema request: %v", err)
+		ts.T().Logf("Failed to send delete type request: %v", err)
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 204 && resp.StatusCode != 404 {
 		body, _ := io.ReadAll(resp.Body)
-		ts.T().Logf("Failed to delete schema %s: status %d, body: %s", schemaID, resp.StatusCode, string(body))
+		ts.T().Logf("Failed to delete type %s: status %d, body: %s", typeID, resp.StatusCode, string(body))
 	}
 }

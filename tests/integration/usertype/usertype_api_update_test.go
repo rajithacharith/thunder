@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema
+package usertype
 
 import (
 	"bytes"
@@ -29,37 +29,37 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type UpdateUserSchemaTestSuite struct {
+type UpdateUserTypeTestSuite struct {
 	suite.Suite
 	client             *http.Client
-	testSchemaID       string
+	testTypeID         string
 	anotherSchemaID    string
 	organizationUnitID string
 }
 
-var testUserSchemaAPIUpdateOU = testutils.OrganizationUnit{
+var testUserTypeAPIUpdateOU = testutils.OrganizationUnit{
 	Handle:      "test-user-schema-api-update-ou",
-	Name:        "Test Organization Unit for User Schema API Update",
-	Description: "Organization unit created for user schema API update testing",
+	Name:        "Test Organization Unit for User Type API Update",
+	Description: "Organization unit created for user type API update testing",
 	Parent:      nil,
 }
 
-func TestUpdateUserSchemaTestSuite(t *testing.T) {
-	suite.Run(t, new(UpdateUserSchemaTestSuite))
+func TestUpdateUserTypeTestSuite(t *testing.T) {
+	suite.Run(t, new(UpdateUserTypeTestSuite))
 }
 
-func (ts *UpdateUserSchemaTestSuite) SetupSuite() {
+func (ts *UpdateUserTypeTestSuite) SetupSuite() {
 	ts.client = testutils.GetHTTPClient()
 
 	// Create organization unit for tests
-	ouID, err := testutils.CreateOrganizationUnit(testUserSchemaAPIUpdateOU)
+	ouID, err := testutils.CreateOrganizationUnit(testUserTypeAPIUpdateOU)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit: %v", err)
 	}
 	ts.organizationUnitID = ouID
 
 	// Create test schemas for update tests
-	schema1 := CreateUserSchemaRequest{
+	schema1 := CreateUserTypeRequest{
 		Name: "update-test-schema-1",
 		Schema: json.RawMessage(`{
 			"originalField": {"type": "string"}
@@ -67,7 +67,7 @@ func (ts *UpdateUserSchemaTestSuite) SetupSuite() {
 	}
 	schema1.OrganizationUnitID = ts.organizationUnitID
 
-	schema2 := CreateUserSchemaRequest{
+	schema2 := CreateUserTypeRequest{
 		Name: "update-test-schema-2",
 		Schema: json.RawMessage(`{
 			"anotherField": {"type": "string"}
@@ -75,17 +75,17 @@ func (ts *UpdateUserSchemaTestSuite) SetupSuite() {
 	}
 	schema2.OrganizationUnitID = ts.organizationUnitID
 
-	ts.testSchemaID = ts.createTestSchema(schema1)
-	ts.anotherSchemaID = ts.createTestSchema(schema2)
+	ts.testTypeID = ts.createTestType(schema1)
+	ts.anotherSchemaID = ts.createTestType(schema2)
 }
 
-func (ts *UpdateUserSchemaTestSuite) TearDownSuite() {
+func (ts *UpdateUserTypeTestSuite) TearDownSuite() {
 	// Clean up test schemas
-	if ts.testSchemaID != "" {
-		ts.deleteTestSchema(ts.testSchemaID)
+	if ts.testTypeID != "" {
+		ts.deleteTestType(ts.testTypeID)
 	}
 	if ts.anotherSchemaID != "" {
-		ts.deleteTestSchema(ts.anotherSchemaID)
+		ts.deleteTestType(ts.anotherSchemaID)
 	}
 
 	// Clean up created organization units
@@ -96,9 +96,9 @@ func (ts *UpdateUserSchemaTestSuite) TearDownSuite() {
 	}
 }
 
-// TestUpdateUserSchema tests PUT /user-schemas/{id} with valid data
-func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchema() {
-	updateRequest := UpdateUserSchemaRequest{
+// TestUpdateUserType tests PUT /user-types/{id} with valid data
+func (ts *UpdateUserTypeTestSuite) TestUpdateUserType() {
+	updateRequest := UpdateUserTypeRequest{
 		Name: "updated-schema-name",
 		Schema: json.RawMessage(`{
             "updatedField": {"type": "string", "required": true},
@@ -118,7 +118,7 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchema() {
 		ts.T().Fatalf("Failed to marshal request: %v", err)
 	}
 
-	req, err := http.NewRequest("PUT", testServerURL+"/user-schemas/"+ts.testSchemaID, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("PUT", testServerURL+"/user-types/"+ts.testTypeID, bytes.NewBuffer(jsonData))
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -137,23 +137,23 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchema() {
 		ts.T().Fatalf("Failed to read response body: %v", err)
 	}
 
-	var updatedSchema UserSchema
+	var updatedSchema UserType
 	err = json.Unmarshal(bodyBytes, &updatedSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to unmarshal response: %v", err)
 	}
 
 	// Verify updated schema according to API spec
-	ts.Assert().Equal(ts.testSchemaID, updatedSchema.ID, "ID should remain the same")
+	ts.Assert().Equal(ts.testTypeID, updatedSchema.ID, "ID should remain the same")
 	ts.Assert().Equal(updateRequest.Name, updatedSchema.Name, "Name should be updated")
 	ts.Assert().JSONEq(string(updateRequest.Schema), string(updatedSchema.Schema), "Schema data should be updated")
 }
 
-// TestUpdateUserSchemaNotFound tests PUT /user-schemas/{id} with non-existent ID
-func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaNotFound() {
+// TestUpdateUserTypeNotFound tests PUT /user-types/{id} with non-existent ID
+func (ts *UpdateUserTypeTestSuite) TestUpdateUserTypeNotFound() {
 	nonExistentID := "550e8400-e29b-41d4-a716-446655440000"
 
-	updateRequest := UpdateUserSchemaRequest{
+	updateRequest := UpdateUserTypeRequest{
 		Name:   "updated-name",
 		Schema: json.RawMessage(`{"field": {"type": "string"}}`),
 	}
@@ -164,7 +164,7 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaNotFound() {
 		ts.T().Fatalf("Failed to marshal request: %v", err)
 	}
 
-	req, err := http.NewRequest("PUT", testServerURL+"/user-schemas/"+nonExistentID, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("PUT", testServerURL+"/user-types/"+nonExistentID, bytes.NewBuffer(jsonData))
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -193,10 +193,10 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaNotFound() {
 	ts.Assert().NotEmpty(errorResp.Message, "Error should have message")
 }
 
-// TestUpdateUserSchemaWithNameConflict tests PUT /user-schemas/{id} with conflicting name
-func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithNameConflict() {
+// TestUpdateUserTypeWithNameConflict tests PUT /user-types/{id} with conflicting name
+func (ts *UpdateUserTypeTestSuite) TestUpdateUserTypeWithNameConflict() {
 	// Try to update first schema with the name of the second schema
-	updateRequest := UpdateUserSchemaRequest{
+	updateRequest := UpdateUserTypeRequest{
 		Name:   "update-test-schema-2", // Name of another existing schema
 		Schema: json.RawMessage(`{"conflictField": {"type": "string"}}`),
 	}
@@ -207,7 +207,7 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithNameConflict() {
 		ts.T().Fatalf("Failed to marshal request: %v", err)
 	}
 
-	req, err := http.NewRequest("PUT", testServerURL+"/user-schemas/"+ts.testSchemaID, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("PUT", testServerURL+"/user-types/"+ts.testTypeID, bytes.NewBuffer(jsonData))
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -236,8 +236,8 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithNameConflict() {
 	ts.Assert().NotEmpty(errorResp.Message, "Error should have message")
 }
 
-// TestUpdateUserSchemaWithInvalidData tests PUT /user-schemas/{id} with invalid request data
-func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithInvalidData() {
+// TestUpdateUserTypeWithInvalidData tests PUT /user-types/{id} with invalid request data
+func (ts *UpdateUserTypeTestSuite) TestUpdateUserTypeWithInvalidData() {
 	testCases := []struct {
 		name        string
 		requestBody string
@@ -274,7 +274,7 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithInvalidData() {
 
 	for _, tc := range testCases {
 		ts.T().Run(tc.name, func(t *testing.T) {
-			req, err := http.NewRequest("PUT", testServerURL+"/user-schemas/"+ts.testSchemaID, bytes.NewBufferString(tc.requestBody))
+			req, err := http.NewRequest("PUT", testServerURL+"/user-types/"+ts.testTypeID, bytes.NewBufferString(tc.requestBody))
 			if err != nil {
 				t.Fatalf("Failed to create request: %v", err)
 			}
@@ -305,9 +305,9 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithInvalidData() {
 	}
 }
 
-// TestUpdateUserSchemaWithComplexData tests PUT /user-schemas/{id} with complex schema
-func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithComplexData() {
-	updateRequest := UpdateUserSchemaRequest{
+// TestUpdateUserTypeWithComplexData tests PUT /user-types/{id} with complex schema
+func (ts *UpdateUserTypeTestSuite) TestUpdateUserTypeWithComplexData() {
+	updateRequest := UpdateUserTypeRequest{
 		Name: "complex-updated-schema",
 		Schema: json.RawMessage(`{
 			"user": {
@@ -357,7 +357,7 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithComplexData() {
 		ts.T().Fatalf("Failed to marshal request: %v", err)
 	}
 
-	req, err := http.NewRequest("PUT", testServerURL+"/user-schemas/"+ts.testSchemaID, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("PUT", testServerURL+"/user-types/"+ts.testTypeID, bytes.NewBuffer(jsonData))
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -376,20 +376,20 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithComplexData() {
 		ts.T().Fatalf("Failed to read response body: %v", err)
 	}
 
-	var updatedSchema UserSchema
+	var updatedSchema UserType
 	err = json.Unmarshal(bodyBytes, &updatedSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to unmarshal response: %v", err)
 	}
 
 	// Verify complex schema was updated correctly
-	ts.Assert().Equal(ts.testSchemaID, updatedSchema.ID, "ID should remain the same")
+	ts.Assert().Equal(ts.testTypeID, updatedSchema.ID, "ID should remain the same")
 	ts.Assert().Equal(updateRequest.Name, updatedSchema.Name, "Name should be updated")
 	ts.Assert().JSONEq(string(updateRequest.Schema), string(updatedSchema.Schema), "Complex schema data should be updated")
 }
 
 // Helper function to create a test schema
-func (ts *UpdateUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaRequest) string {
+func (ts *UpdateUserTypeTestSuite) createTestType(schema CreateUserTypeRequest) string {
 	if schema.OrganizationUnitID == "" {
 		schema.OrganizationUnitID = ts.organizationUnitID
 	}
@@ -399,7 +399,7 @@ func (ts *UpdateUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaReq
 		ts.T().Fatalf("Failed to marshal request: %v", err)
 	}
 
-	req, err := http.NewRequest("POST", testServerURL+"/user-schemas", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", testServerURL+"/user-types", bytes.NewBuffer(jsonData))
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -421,7 +421,7 @@ func (ts *UpdateUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaReq
 		ts.T().Fatalf("Failed to read response body: %v", err)
 	}
 
-	var createdSchema UserSchema
+	var createdSchema UserType
 	err = json.Unmarshal(bodyBytes, &createdSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to unmarshal response: %v", err)
@@ -431,8 +431,8 @@ func (ts *UpdateUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaReq
 }
 
 // Helper function to delete a test schema
-func (ts *UpdateUserSchemaTestSuite) deleteTestSchema(schemaID string) {
-	req, err := http.NewRequest("DELETE", testServerURL+"/user-schemas/"+schemaID, nil)
+func (ts *UpdateUserTypeTestSuite) deleteTestType(schemaID string) {
+	req, err := http.NewRequest("DELETE", testServerURL+"/user-types/"+schemaID, nil)
 	if err != nil {
 		return
 	}

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema
+package usertype
 
 import (
 	"bytes"
@@ -33,7 +33,7 @@ import (
 type UserUniquenessTestSuite struct {
 	suite.Suite
 	client             *http.Client
-	createdSchemas     []string // Track schemas for cleanup
+	createdTypes       []string // Track types for cleanup
 	createdUsers       []string // Track users for cleanup
 	organizationUnitID string
 }
@@ -51,7 +51,7 @@ func TestUserUniquenessTestSuite(t *testing.T) {
 
 func (ts *UserUniquenessTestSuite) SetupSuite() {
 	ts.client = testutils.GetHTTPClient()
-	ts.createdSchemas = []string{}
+	ts.createdTypes = []string{}
 	ts.createdUsers = []string{}
 
 	// Create organization unit for tests
@@ -68,8 +68,8 @@ func (ts *UserUniquenessTestSuite) TearDownSuite() {
 		ts.deleteUser(userID)
 	}
 	// Then clean up created schemas
-	for _, schemaID := range ts.createdSchemas {
-		ts.deleteSchema(schemaID)
+	for _, typeID := range ts.createdTypes {
+		ts.deleteUserType(typeID)
 	}
 	// Finally clean up created organization unit
 	if ts.organizationUnitID != "" {
@@ -82,8 +82,8 @@ func (ts *UserUniquenessTestSuite) TearDownSuite() {
 // TestCreateUserWithUniqueConstraintViolation tests that creating a user with duplicate unique fields fails
 func (ts *UserUniquenessTestSuite) TestCreateUserWithUniqueConstraintViolation() {
 	// Create a schema with unique constraints
-	uniqueSchemaID := ts.createSchemaWithUniqueFields()
-	ts.createdSchemas = append(ts.createdSchemas, uniqueSchemaID)
+	uniqueTypeID := ts.createUserTypeWithUniqueFields()
+	ts.createdTypes = append(ts.createdTypes, uniqueTypeID)
 
 	// Create first user - should succeed
 	createUserReq1 := CreateUserRequest{
@@ -160,8 +160,8 @@ func (ts *UserUniquenessTestSuite) TestCreateUserWithUniqueConstraintViolation()
 
 // Helper methods
 
-func (ts *UserUniquenessTestSuite) createSchemaWithUniqueFields() string {
-	schema := CreateUserSchemaRequest{
+func (ts *UserUniquenessTestSuite) createUserTypeWithUniqueFields() string {
+	schema := CreateUserTypeRequest{
 		Name:               "unique-employee",
 		OrganizationUnitID: ts.organizationUnitID,
 		Schema: json.RawMessage(`{
@@ -172,14 +172,14 @@ func (ts *UserUniquenessTestSuite) createSchemaWithUniqueFields() string {
 		}`),
 	}
 
-	return ts.createSchema(schema)
+	return ts.createUserType(schema)
 }
 
-func (ts *UserUniquenessTestSuite) createSchema(schema CreateUserSchemaRequest) string {
+func (ts *UserUniquenessTestSuite) createUserType(schema CreateUserTypeRequest) string {
 	jsonData, err := json.Marshal(schema)
 	ts.Require().NoError(err, "Failed to marshal schema request")
 
-	req, err := http.NewRequest("POST", testServerURL+"/user-schemas", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", testServerURL+"/user-types", bytes.NewBuffer(jsonData))
 	ts.Require().NoError(err, "Failed to create schema request")
 	req.Header.Set("Content-Type", "application/json")
 
@@ -195,7 +195,7 @@ func (ts *UserUniquenessTestSuite) createSchema(schema CreateUserSchemaRequest) 
 	}
 	ts.Require().Equal(201, resp.StatusCode, "Schema creation should succeed")
 
-	var createdSchema UserSchema
+	var createdSchema UserType
 	err = json.Unmarshal(body, &createdSchema)
 	ts.Require().NoError(err, "Failed to unmarshal schema response")
 
@@ -272,8 +272,8 @@ func (ts *UserUniquenessTestSuite) deleteUser(userID string) {
 	}
 }
 
-func (ts *UserUniquenessTestSuite) deleteSchema(schemaID string) {
-	req, err := http.NewRequest("DELETE", testServerURL+"/user-schemas/"+schemaID, nil)
+func (ts *UserUniquenessTestSuite) deleteUserType(typeID string) {
+	req, err := http.NewRequest("DELETE", testServerURL+"/user-types/"+typeID, nil)
 	if err != nil {
 		ts.T().Logf("Failed to create delete schema request: %v", err)
 		return
@@ -288,6 +288,6 @@ func (ts *UserUniquenessTestSuite) deleteSchema(schemaID string) {
 
 	if resp.StatusCode != 204 && resp.StatusCode != 404 {
 		body, _ := io.ReadAll(resp.Body)
-		ts.T().Logf("Failed to delete schema %s: status %d, body: %s", schemaID, resp.StatusCode, string(body))
+		ts.T().Logf("Failed to delete type %s: status %d, body: %s", typeID, resp.StatusCode, string(body))
 	}
 }

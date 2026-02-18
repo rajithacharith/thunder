@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema
+package usertype
 
 import (
 	"encoding/json"
@@ -28,8 +28,8 @@ const (
 	testServerURL = "https://localhost:8095"
 )
 
-// UserSchema represents the user schema model for tests
-type UserSchema struct {
+// UserType represents the user type model for tests
+type UserType struct {
 	ID                    string          `json:"id,omitempty"`
 	Name                  string          `json:"name"`
 	OrganizationUnitID    string          `json:"ouId"`
@@ -37,37 +37,37 @@ type UserSchema struct {
 	Schema                json.RawMessage `json:"schema"`
 }
 
-// CreateUserSchemaRequest represents the request to create a user schema
-type CreateUserSchemaRequest struct {
+// CreateUserTypeRequest represents the request to create a user type
+type CreateUserTypeRequest struct {
 	Name                  string          `json:"name"`
 	OrganizationUnitID    string          `json:"ouId"`
 	AllowSelfRegistration bool            `json:"allowSelfRegistration,omitempty"`
 	Schema                json.RawMessage `json:"schema"`
 }
 
-// UpdateUserSchemaRequest represents the request to update a user schema
-type UpdateUserSchemaRequest struct {
+// UpdateUserTypeRequest represents the request to update a user type
+type UpdateUserTypeRequest struct {
 	Name                  string          `json:"name"`
 	OrganizationUnitID    string          `json:"ouId"`
 	AllowSelfRegistration bool            `json:"allowSelfRegistration,omitempty"`
 	Schema                json.RawMessage `json:"schema"`
 }
 
-// UserSchemaListItem represents a simplified user schema for listing operations in tests
-type UserSchemaListItem struct {
+// UserTypeListItem represents a simplified user type for listing operations in tests
+type UserTypeListItem struct {
 	ID                    string `json:"id,omitempty"`
 	Name                  string `json:"name,omitempty"`
 	OrganizationUnitID    string `json:"ouId"`
 	AllowSelfRegistration bool   `json:"allowSelfRegistration,omitempty"`
 }
 
-// UserSchemaListResponse represents the response from listing user schemas
-type UserSchemaListResponse struct {
-	TotalResults int                  `json:"totalResults"`
-	StartIndex   int                  `json:"startIndex"`
-	Count        int                  `json:"count"`
-	Schemas      []UserSchemaListItem `json:"schemas"`
-	Links        []testutils.Link     `json:"links"`
+// UserTypeListResponse represents the response from listing user types
+type UserTypeListResponse struct {
+	TotalResults int                `json:"totalResults"`
+	StartIndex   int                `json:"startIndex"`
+	Count        int                `json:"count"`
+	Types        []UserTypeListItem `json:"types"`
+	Links        []testutils.Link   `json:"links"`
 }
 
 // ErrorResponse represents an API error response

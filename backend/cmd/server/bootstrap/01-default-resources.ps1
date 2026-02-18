@@ -146,7 +146,7 @@ $userTypeData = ([ordered]@{
     }
 } | ConvertTo-Json -Depth 5)
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/user-schemas" -Data $userTypeData
+$response = Invoke-ThunderApi -Method POST -Endpoint "/user-types" -Data $userTypeData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
     Log-Success "User type created successfully"

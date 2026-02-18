@@ -87,7 +87,7 @@ func (us *userTypeService) GetUserTypeList(limit, offset int) (
 		TotalResults: totalCount,
 		StartIndex:   offset + 1,
 		Count:        len(userTypes),
-		Schemas:      userTypes,
+		Types:        userTypes,
 		Links:        buildPaginationLinks(limit, offset, totalCount),
 	}
 

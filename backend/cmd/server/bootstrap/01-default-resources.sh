@@ -100,7 +100,7 @@ echo ""
 
 log_info "Creating default user type (person)..."
 
-RESPONSE=$(thunder_api_call POST "/user-schemas" '{
+RESPONSE=$(thunder_api_call POST "/user-types" '{
   "name": "Person",
   "ouId": "'${DEFAULT_OU_ID}'",
   "schema": {

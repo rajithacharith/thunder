@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema
+package usertype
 
 import (
 	"bytes"
@@ -33,12 +33,12 @@ import (
 
 type UserTreeValidationTestSuite struct {
 	suite.Suite
-	client         *http.Client
-	createdSchemas []string // Track schemas for cleanup
-	createdUsers   []string // Track users for cleanup
-	createdOUs     []string // Track organization units for cleanup
-	ou1ID          string   // ID of ou1
-	ou2ID          string   // ID of ou2 (child of ou1)
+	client       *http.Client
+	createdTypes []string // Track types for cleanup
+	createdUsers []string // Track users for cleanup
+	createdOUs   []string // Track organization units for cleanup
+	ou1ID        string   // ID of ou1
+	ou2ID        string   // ID of ou2 (child of ou1)
 }
 
 var testUserTreeValidationOU = testutils.OrganizationUnit{
@@ -54,7 +54,7 @@ func TestUserTreeValidationTestSuite(t *testing.T) {
 
 func (ts *UserTreeValidationTestSuite) SetupSuite() {
 	ts.client = testutils.GetHTTPClient()
-	ts.createdSchemas = []string{}
+	ts.createdTypes = []string{}
 	ts.createdUsers = []string{}
 	ts.createdOUs = []string{}
 
@@ -67,9 +67,9 @@ func (ts *UserTreeValidationTestSuite) TearDownSuite() {
 	for _, userID := range ts.createdUsers {
 		ts.deleteUser(userID)
 	}
-	// Then clean up created schemas
-	for _, schemaID := range ts.createdSchemas {
-		ts.deleteSchema(schemaID)
+	// Then clean up created types
+	for _, typeID := range ts.createdTypes {
+		ts.deleteType(typeID)
 	}
 	// Finally clean up created organization units in reverse order (children first)
 	for i := len(ts.createdOUs) - 1; i >= 0; i-- {
@@ -79,14 +79,14 @@ func (ts *UserTreeValidationTestSuite) TearDownSuite() {
 	}
 }
 
-// TestCreateUserByPathWithValidSchema tests user creation via tree API with valid schema
-func (ts *UserTreeValidationTestSuite) TestCreateUserByPathWithValidSchema() {
-	// First create a user schema
-	_, schemaName := ts.createEmployeeSchema()
+// TestCreateUserByPathWithValidUserType tests user creation via tree API with valid type
+func (ts *UserTreeValidationTestSuite) TestCreateUserByPathWithValidUserType() {
+	// First create a user type
+	_, typeName := ts.createEmployeeType()
 
-	// Create a user that conforms to the schema via tree API
+	// Create a user that conforms to the type via tree API
 	createUserReq := CreateUserByPathRequest{
-		Type: schemaName,
+		Type: typeName,
 		Attributes: json.RawMessage(`{
 			"firstName": "Alice",
 			"lastName": "Johnson",
@@ -100,14 +100,14 @@ func (ts *UserTreeValidationTestSuite) TestCreateUserByPathWithValidSchema() {
 	ts.createdUsers = append(ts.createdUsers, userID)
 }
 
-// TestCreateUserByPathWithInvalidSchema tests user creation via tree API with invalid schema
-func (ts *UserTreeValidationTestSuite) TestCreateUserByPathWithInvalidSchema() {
-	// Create a user schema
-	_, schemaName := ts.createEmployeeSchema()
+// TestCreateUserByPathWithInvalidUserType tests user creation via tree API with invalid type
+func (ts *UserTreeValidationTestSuite) TestCreateUserByPathWithInvalidUserType() {
+	// Create a user type
+	_, typeName := ts.createEmployeeType()
 
 	// Create a user with invalid data (wrong type for firstName)
 	createUserReq := CreateUserByPathRequest{
-		Type: schemaName,
+		Type: typeName,
 		Attributes: json.RawMessage(`{
 			"firstName": 456,
 			"lastName": "Smith",
@@ -120,14 +120,14 @@ func (ts *UserTreeValidationTestSuite) TestCreateUserByPathWithInvalidSchema() {
 	ts.createUserByPathAndExpectError("ou1/ou2", createUserReq, "USR-1019")
 }
 
-// TestCreateUserByPathWithComplexSchema tests user creation with complex nested schema
-func (ts *UserTreeValidationTestSuite) TestCreateUserByPathWithComplexSchema() {
-	// Create a complex schema
-	_, schemaName := ts.createComplexSchema()
+// TestCreateUserByPathWithComplexUserType tests user creation with complex nested type
+func (ts *UserTreeValidationTestSuite) TestCreateUserByPathWithComplexUserType() {
+	// Create a complex type
+	_, typeName := ts.createComplexType()
 
 	// Test valid complex data
 	createUserReq := CreateUserByPathRequest{
-		Type: schemaName,
+		Type: typeName,
 		Attributes: json.RawMessage(`{
 			"name": "Sarah Wilson",
 			"profile": {
@@ -147,7 +147,7 @@ func (ts *UserTreeValidationTestSuite) TestCreateUserByPathWithComplexSchema() {
 
 	// Test invalid complex data (wrong type in nested array)
 	createUserReq2 := CreateUserByPathRequest{
-		Type: schemaName,
+		Type: typeName,
 		Attributes: json.RawMessage(`{
 			"name": "Bob Johnson",
 			"profile": {
@@ -171,10 +171,10 @@ func (ts *UserTreeValidationTestSuite) getUniqueName(baseName string) string {
 	return fmt.Sprintf("%s_%d", baseName, time.Now().UnixNano())
 }
 
-func (ts *UserTreeValidationTestSuite) createEmployeeSchema() (string, string) {
-	schemaName := ts.getUniqueName("employee")
-	schema := CreateUserSchemaRequest{
-		Name: schemaName,
+func (ts *UserTreeValidationTestSuite) createEmployeeType() (string, string) {
+	typeName := ts.getUniqueName("employee")
+	userType := CreateUserTypeRequest{
+		Name: typeName,
 		Schema: json.RawMessage(`{
 			"firstName": {"type": "string"},
 			"lastName": {"type": "string"},
@@ -183,16 +183,16 @@ func (ts *UserTreeValidationTestSuite) createEmployeeSchema() (string, string) {
 			"isManager": {"type": "boolean"}
 		}`),
 	}
-	schema.OrganizationUnitID = ts.ou1ID
+	userType.OrganizationUnitID = ts.ou1ID
 
-	schemaID := ts.createSchema(schema)
-	return schemaID, schemaName
+	typeID := ts.createUserType(userType)
+	return typeID, typeName
 }
 
-func (ts *UserTreeValidationTestSuite) createComplexSchema() (string, string) {
-	schemaName := ts.getUniqueName("manager")
-	schema := CreateUserSchemaRequest{
-		Name: schemaName,
+func (ts *UserTreeValidationTestSuite) createComplexType() (string, string) {
+	typeName := ts.getUniqueName("manager")
+	userType := CreateUserTypeRequest{
+		Name: typeName,
 		Schema: json.RawMessage(`{
 			"name": {"type": "string"},
 			"profile": {
@@ -218,35 +218,35 @@ func (ts *UserTreeValidationTestSuite) createComplexSchema() (string, string) {
 			}
 		}`),
 	}
-	schema.OrganizationUnitID = ts.ou1ID
+	userType.OrganizationUnitID = ts.ou1ID
 
-	schemaID := ts.createSchema(schema)
-	return schemaID, schemaName
+	typeID := ts.createUserType(userType)
+	return typeID, typeName
 }
 
-func (ts *UserTreeValidationTestSuite) createSchema(schema CreateUserSchemaRequest) string {
-	jsonData, err := json.Marshal(schema)
-	ts.Require().NoError(err, "Failed to marshal schema request")
+func (ts *UserTreeValidationTestSuite) createUserType(userType CreateUserTypeRequest) string {
+	jsonData, err := json.Marshal(userType)
+	ts.Require().NoError(err, "Failed to marshal type request")
 
-	req, err := http.NewRequest("POST", testServerURL+"/user-schemas", bytes.NewBuffer(jsonData))
-	ts.Require().NoError(err, "Failed to create schema request")
+	req, err := http.NewRequest("POST", testServerURL+"/user-types", bytes.NewBuffer(jsonData))
+	ts.Require().NoError(err, "Failed to create type request")
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := ts.client.Do(req)
-	ts.Require().NoError(err, "Failed to send schema request")
+	ts.Require().NoError(err, "Failed to send type request")
 	defer resp.Body.Close()
 
-	ts.Require().Equal(201, resp.StatusCode, "Schema creation should succeed")
+	ts.Require().Equal(201, resp.StatusCode, "Type creation should succeed")
 
 	body, err := io.ReadAll(resp.Body)
-	ts.Require().NoError(err, "Failed to read schema response body")
+	ts.Require().NoError(err, "Failed to read type response body")
 
-	var createdSchema UserSchema
-	err = json.Unmarshal(body, &createdSchema)
-	ts.Require().NoError(err, "Failed to unmarshal schema response")
+	var createdType UserType
+	err = json.Unmarshal(body, &createdType)
+	ts.Require().NoError(err, "Failed to unmarshal type response")
 
-	ts.createdSchemas = append(ts.createdSchemas, createdSchema.ID)
-	return createdSchema.ID
+	ts.createdTypes = append(ts.createdTypes, createdType.ID)
+	return createdType.ID
 }
 
 func (ts *UserTreeValidationTestSuite) createUserByPathAndExpectSuccess(path string, createUserReq CreateUserByPathRequest) string {
@@ -319,23 +319,23 @@ func (ts *UserTreeValidationTestSuite) deleteUser(userID string) {
 	}
 }
 
-func (ts *UserTreeValidationTestSuite) deleteSchema(schemaID string) {
-	req, err := http.NewRequest("DELETE", testServerURL+"/user-schemas/"+schemaID, nil)
+func (ts *UserTreeValidationTestSuite) deleteType(typeID string) {
+	req, err := http.NewRequest("DELETE", testServerURL+"/user-types/"+typeID, nil)
 	if err != nil {
-		ts.T().Logf("Failed to create delete schema request: %v", err)
+		ts.T().Logf("Failed to create delete type request: %v", err)
 		return
 	}
 
 	resp, err := ts.client.Do(req)
 	if err != nil {
-		ts.T().Logf("Failed to send delete schema request: %v", err)
+		ts.T().Logf("Failed to send delete type request: %v", err)
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 204 && resp.StatusCode != 404 {
 		body, _ := io.ReadAll(resp.Body)
-		ts.T().Logf("Failed to delete schema %s: status %d, body: %s", schemaID, resp.StatusCode, string(body))
+		ts.T().Logf("Failed to delete type %s: status %d, body: %s", typeID, resp.StatusCode, string(body))
 	}
 }
 
@@ -343,7 +343,7 @@ func (ts *UserTreeValidationTestSuite) createOrganizationUnits() {
 	parentOU := testutils.OrganizationUnit{
 		Handle:      "ou1",
 		Name:        "Organization Unit 1",
-		Description: "Test OU 1 for schema validation",
+		Description: "Test OU 1 for type validation",
 	}
 
 	ou1ID, err := testutils.CreateOrganizationUnit(parentOU)
@@ -354,7 +354,7 @@ func (ts *UserTreeValidationTestSuite) createOrganizationUnits() {
 	childOU := testutils.OrganizationUnit{
 		Handle:      "ou2",
 		Name:        "Organization Unit 2",
-		Description: "Test OU 2 for schema validation",
+		Description: "Test OU 2 for type validation",
 		Parent:      &ts.ou1ID,
 	}
 

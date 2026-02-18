@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema
+package usertype
 
 import (
 	"bytes"
@@ -29,37 +29,37 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type CreateUserSchemaTestSuite struct {
+type CreateUserTypeTestSuite struct {
 	suite.Suite
 	client             *http.Client
 	createdSchemas     []string // Track schemas for cleanup
 	organizationUnitID string
 }
 
-var testUserSchemaAPICreateOU = testutils.OrganizationUnit{
+var testUserTypeAPICreateOU = testutils.OrganizationUnit{
 	Handle:      "test-user-schema-api-create-ou",
-	Name:        "Test Organization Unit for User Schema API Create",
-	Description: "Organization unit created for user schema API create testing",
+	Name:        "Test Organization Unit for User Type API Create",
+	Description: "Organization unit created for user type API create testing",
 	Parent:      nil,
 }
 
-func TestCreateUserSchemaTestSuite(t *testing.T) {
-	suite.Run(t, new(CreateUserSchemaTestSuite))
+func TestCreateUserTypeTestSuite(t *testing.T) {
+	suite.Run(t, new(CreateUserTypeTestSuite))
 }
 
-func (ts *CreateUserSchemaTestSuite) SetupSuite() {
+func (ts *CreateUserTypeTestSuite) SetupSuite() {
 	ts.client = testutils.GetHTTPClient()
 	ts.createdSchemas = []string{}
 
 	// Create organization unit for tests
-	ouID, err := testutils.CreateOrganizationUnit(testUserSchemaAPICreateOU)
+	ouID, err := testutils.CreateOrganizationUnit(testUserTypeAPICreateOU)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit: %v", err)
 	}
 	ts.organizationUnitID = ouID
 }
 
-func (ts *CreateUserSchemaTestSuite) TearDownSuite() {
+func (ts *CreateUserTypeTestSuite) TearDownSuite() {
 	// Clean up created schemas
 	for _, schemaID := range ts.createdSchemas {
 		ts.deleteSchema(schemaID)
@@ -73,9 +73,9 @@ func (ts *CreateUserSchemaTestSuite) TearDownSuite() {
 	}
 }
 
-// TestCreateUserSchema tests POST /user-schemas with valid data
-func (ts *CreateUserSchemaTestSuite) TestCreateUserSchema() {
-	schema := CreateUserSchemaRequest{
+// TestCreateUserType tests POST /user-types with valid data
+func (ts *CreateUserTypeTestSuite) TestCreateUserType() {
+	schema := CreateUserTypeRequest{
 		Name: "employee-schema-test",
 		Schema: json.RawMessage(`{
             "firstName": {"type": "string"},
@@ -92,7 +92,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchema() {
 		ts.T().Fatalf("Failed to marshal request: %v", err)
 	}
 
-	req, err := http.NewRequest("POST", testServerURL+"/user-schemas", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", testServerURL+"/user-types", bytes.NewBuffer(jsonData))
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -111,7 +111,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchema() {
 		ts.T().Fatalf("Failed to read response body: %v", err)
 	}
 
-	var createdSchema UserSchema
+	var createdSchema UserType
 	err = json.Unmarshal(bodyBytes, &createdSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to unmarshal response: %v", err)
@@ -126,9 +126,9 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchema() {
 	ts.createdSchemas = append(ts.createdSchemas, createdSchema.ID)
 }
 
-// TestCreateUserSchemaWithComplexSchema tests POST /user-schemas with complex JSON schema
-func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithComplexSchema() {
-	schema := CreateUserSchemaRequest{
+// TestCreateUserTypeWithComplexSchema tests POST /user-types with complex JSON schema
+func (ts *CreateUserTypeTestSuite) TestCreateUserTypeWithComplexSchema() {
+	schema := CreateUserTypeRequest{
 		Name: "complex-customer-schema",
 		Schema: json.RawMessage(`{
             "personalInfo": {
@@ -180,7 +180,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithComplexSchema() {
 		ts.T().Fatalf("Failed to marshal request: %v", err)
 	}
 
-	req, err := http.NewRequest("POST", testServerURL+"/user-schemas", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", testServerURL+"/user-types", bytes.NewBuffer(jsonData))
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -199,7 +199,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithComplexSchema() {
 		ts.T().Fatalf("Failed to read response body: %v", err)
 	}
 
-	var createdSchema UserSchema
+	var createdSchema UserType
 	err = json.Unmarshal(bodyBytes, &createdSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to unmarshal response: %v", err)
@@ -214,10 +214,10 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithComplexSchema() {
 	ts.createdSchemas = append(ts.createdSchemas, createdSchema.ID)
 }
 
-// TestCreateUserSchemaWithDuplicateName tests POST /user-schemas with duplicate name
-func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithDuplicateName() {
+// TestCreateUserTypeWithDuplicateName tests POST /user-types with duplicate name
+func (ts *CreateUserTypeTestSuite) TestCreateUserTypeWithDuplicateName() {
 	// First create a schema
-	schema1 := CreateUserSchemaRequest{
+	schema1 := CreateUserTypeRequest{
 		Name:   "duplicate-name-test",
 		Schema: json.RawMessage(`{"field1": {"type": "string"}}`),
 	}
@@ -227,7 +227,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithDuplicateName() {
 	ts.createdSchemas = append(ts.createdSchemas, createdID)
 
 	// Try to create another schema with same name
-	schema2 := CreateUserSchemaRequest{
+	schema2 := CreateUserTypeRequest{
 		Name:   "duplicate-name-test", // Same name
 		Schema: json.RawMessage(`{"field2": {"type": "string"}}`),
 	}
@@ -238,7 +238,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithDuplicateName() {
 		ts.T().Fatalf("Failed to marshal request: %v", err)
 	}
 
-	req, err := http.NewRequest("POST", testServerURL+"/user-schemas", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", testServerURL+"/user-types", bytes.NewBuffer(jsonData))
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -267,17 +267,17 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithDuplicateName() {
 	ts.Assert().NotEmpty(errorResp.Message, "Error should have message")
 }
 
-// TestCreateUserSchemasWithSharedOuID ensures multiple schemas can share the same OU.
-func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemasWithSharedOuID() {
+// TestCreateUserTypesWithSharedOuID ensures multiple schemas can share the same OU.
+func (ts *CreateUserTypeTestSuite) TestCreateUserTypesWithSharedOuID() {
 	sharedOuID := ts.organizationUnitID
 
-	firstSchema := CreateUserSchemaRequest{
+	firstSchema := CreateUserTypeRequest{
 		Name:   "shared-ou-schema-one",
 		Schema: json.RawMessage(`{"username": {"type": "string", "required": true}}`),
 	}
 	firstSchema.OrganizationUnitID = sharedOuID
 
-	secondSchema := CreateUserSchemaRequest{
+	secondSchema := CreateUserTypeRequest{
 		Name: "shared-ou-schema-two",
 		Schema: json.RawMessage(`{
             "email": {"type": "string", "required": true, "regex": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"},
@@ -292,7 +292,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemasWithSharedOuID() {
 	secondID := ts.createSchemaHelper(secondSchema)
 	ts.createdSchemas = append(ts.createdSchemas, secondID)
 
-	req, err := http.NewRequest("GET", testServerURL+"/user-schemas/"+secondID, nil)
+	req, err := http.NewRequest("GET", testServerURL+"/user-types/"+secondID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to create schema retrieval request: %v", err)
 	}
@@ -310,7 +310,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemasWithSharedOuID() {
 		ts.T().Fatalf("Failed to read schema response body: %v", err)
 	}
 
-	var retrievedSchema UserSchema
+	var retrievedSchema UserType
 	if err := json.Unmarshal(bodyBytes, &retrievedSchema); err != nil {
 		ts.T().Fatalf("Failed to unmarshal schema response: %v", err)
 	}
@@ -319,8 +319,8 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemasWithSharedOuID() {
 		"Schema should retain the shared OU ID")
 }
 
-// TestCreateUserSchemaWithInvalidData tests POST /user-schemas with invalid request data
-func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithInvalidData() {
+// TestCreateUserTypeWithInvalidData tests POST /user-types with invalid request data
+func (ts *CreateUserTypeTestSuite) TestCreateUserTypeWithInvalidData() {
 	testCases := []struct {
 		name        string
 		requestBody string
@@ -357,7 +357,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithInvalidData() {
 
 	for _, tc := range testCases {
 		ts.T().Run(tc.name, func(t *testing.T) {
-			req, err := http.NewRequest("POST", testServerURL+"/user-schemas", bytes.NewBufferString(tc.requestBody))
+			req, err := http.NewRequest("POST", testServerURL+"/user-types", bytes.NewBufferString(tc.requestBody))
 			if err != nil {
 				t.Fatalf("Failed to create request: %v", err)
 			}
@@ -388,9 +388,9 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithInvalidData() {
 	}
 }
 
-// TestCreateUserSchemaWithoutContentType tests POST /user-schemas without Content-Type header
-func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithoutContentType() {
-	schema := CreateUserSchemaRequest{
+// TestCreateUserTypeWithoutContentType tests POST /user-types without Content-Type header
+func (ts *CreateUserTypeTestSuite) TestCreateUserTypeWithoutContentType() {
+	schema := CreateUserTypeRequest{
 		Name:   "no-content-type-test",
 		Schema: json.RawMessage(`{"field": {"type": "string"}}`),
 	}
@@ -401,7 +401,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithoutContentType() {
 		ts.T().Fatalf("Failed to marshal request: %v", err)
 	}
 
-	req, err := http.NewRequest("POST", testServerURL+"/user-schemas", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", testServerURL+"/user-types", bytes.NewBuffer(jsonData))
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -422,7 +422,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithoutContentType() {
 	// Clean up if created successfully
 	if resp.StatusCode == http.StatusCreated {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		var createdSchema UserSchema
+		var createdSchema UserType
 		if json.Unmarshal(bodyBytes, &createdSchema) == nil {
 			ts.createdSchemas = append(ts.createdSchemas, createdSchema.ID)
 		}
@@ -430,7 +430,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithoutContentType() {
 }
 
 // Helper function to create a schema and return its ID
-func (ts *CreateUserSchemaTestSuite) createSchemaHelper(schema CreateUserSchemaRequest) string {
+func (ts *CreateUserTypeTestSuite) createSchemaHelper(schema CreateUserTypeRequest) string {
 	if schema.OrganizationUnitID == "" {
 		schema.OrganizationUnitID = ts.organizationUnitID
 	}
@@ -440,7 +440,7 @@ func (ts *CreateUserSchemaTestSuite) createSchemaHelper(schema CreateUserSchemaR
 		ts.T().Fatalf("Failed to marshal request: %v", err)
 	}
 
-	req, err := http.NewRequest("POST", testServerURL+"/user-schemas", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", testServerURL+"/user-types", bytes.NewBuffer(jsonData))
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -462,7 +462,7 @@ func (ts *CreateUserSchemaTestSuite) createSchemaHelper(schema CreateUserSchemaR
 		ts.T().Fatalf("Failed to read response body: %v", err)
 	}
 
-	var createdSchema UserSchema
+	var createdSchema UserType
 	err = json.Unmarshal(bodyBytes, &createdSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to unmarshal response: %v", err)
@@ -472,8 +472,8 @@ func (ts *CreateUserSchemaTestSuite) createSchemaHelper(schema CreateUserSchemaR
 }
 
 // Helper function to delete a schema
-func (ts *CreateUserSchemaTestSuite) deleteSchema(schemaID string) {
-	req, err := http.NewRequest("DELETE", testServerURL+"/user-schemas/"+schemaID, nil)
+func (ts *CreateUserTypeTestSuite) deleteSchema(schemaID string) {
+	req, err := http.NewRequest("DELETE", testServerURL+"/user-types/"+schemaID, nil)
 	if err != nil {
 		return
 	}

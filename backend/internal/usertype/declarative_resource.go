@@ -68,8 +68,8 @@ func (e *UserTypeExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceE
 	if err != nil {
 		return nil, err
 	}
-	ids := make([]string, 0, len(response.Schemas))
-	for _, schema := range response.Schemas {
+	ids := make([]string, 0, len(response.Types))
+	for _, schema := range response.Types {
 		ids = append(ids, schema.ID)
 	}
 	return ids, nil

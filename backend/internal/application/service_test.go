@@ -953,9 +953,9 @@ func (suite *ServiceTestSuite) setupTestService() (
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
 	mockUserTypeService := usertypemock.NewUserTypeServiceInterfaceMock(suite.T())
 	service := &applicationService{
-		appStore:          mockStore,
-		certService:       mockCertService,
-		flowMgtService:    mockFlowMgtService,
+		appStore:        mockStore,
+		certService:     mockCertService,
+		flowMgtService:  mockFlowMgtService,
 		userTypeService: mockUserTypeService,
 	}
 	return service, mockStore, mockCertService, mockFlowMgtService
@@ -3377,14 +3377,14 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyString() {
 		Return(&usertype.UserTypeListResponse{
 			TotalResults: 0,
 			Count:        0,
-			Schemas:      []usertype.UserTypeListItem{},
+			Types:        []usertype.UserTypeListItem{},
 		}, nil).
 		Once()
 
 	serviceWithMock := &applicationService{
-		appStore:          mockStore,
-		certService:       mockCertService,
-		flowMgtService:    mockFlowMgtService,
+		appStore:        mockStore,
+		certService:     mockCertService,
+		flowMgtService:  mockFlowMgtService,
 		userTypeService: mockUserTypeService,
 	}
 
@@ -3410,7 +3410,7 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyStringWithValid
 		Return(&usertype.UserTypeListResponse{
 			TotalResults: 1,
 			Count:        1,
-			Schemas: []usertype.UserTypeListItem{
+			Types: []usertype.UserTypeListItem{
 				{
 					Name: "validUserType",
 				},
@@ -3419,9 +3419,9 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyStringWithValid
 		Once()
 
 	serviceWithMock := &applicationService{
-		appStore:          mockStore,
-		certService:       mockCertService,
-		flowMgtService:    mockFlowMgtService,
+		appStore:        mockStore,
+		certService:     mockCertService,
+		flowMgtService:  mockFlowMgtService,
 		userTypeService: mockUserTypeService,
 	}
 

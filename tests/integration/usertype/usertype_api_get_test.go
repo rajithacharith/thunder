@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema
+package usertype
 
 import (
 	"bytes"
@@ -31,39 +31,39 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type GetUserSchemaTestSuite struct {
+type GetUserTypeTestSuite struct {
 	suite.Suite
 	client             *http.Client
-	testSchemaID       string
-	testSchemaName     string
-	testSchemaData     json.RawMessage
+	testTypeID         string
+	testTypeName       string
+	testTypeData       json.RawMessage
 	organizationUnitID string
 }
 
-var testUserSchemaAPIGetOU = testutils.OrganizationUnit{
-	Handle:      "test-user-schema-api-get-ou",
-	Name:        "Test Organization Unit for User Schema API Get",
-	Description: "Organization unit created for user schema API get testing",
+var testUserTypeAPIGetOU = testutils.OrganizationUnit{
+	Handle:      "test-user-type-api-get-ou",
+	Name:        "Test Organization Unit for User Type API Get",
+	Description: "Organization unit created for user type API get testing",
 	Parent:      nil,
 }
 
-func TestGetUserSchemaTestSuite(t *testing.T) {
-	suite.Run(t, new(GetUserSchemaTestSuite))
+func TestGetUserTypeTestSuite(t *testing.T) {
+	suite.Run(t, new(GetUserTypeTestSuite))
 }
 
-func (ts *GetUserSchemaTestSuite) SetupSuite() {
+func (ts *GetUserTypeTestSuite) SetupSuite() {
 	ts.client = testutils.GetHTTPClient()
 
 	// Create organization unit for tests
-	ouID, err := testutils.CreateOrganizationUnit(testUserSchemaAPIGetOU)
+	ouID, err := testutils.CreateOrganizationUnit(testUserTypeAPIGetOU)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit: %v", err)
 	}
 	ts.organizationUnitID = ouID
 
-	// Create a test schema for retrieval tests
-	ts.testSchemaName = "retrieval-test-schema"
-	ts.testSchemaData = json.RawMessage(`{
+	// Create a test type for retrieval tests
+	ts.testTypeName = "retrieval-test-type"
+	ts.testTypeData = json.RawMessage(`{
         "username": {"type": "string", "required": true},
         "email": {"type": "string", "regex": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"},
         "profile": {
@@ -76,18 +76,18 @@ func (ts *GetUserSchemaTestSuite) SetupSuite() {
         }
     }`)
 
-	schema := CreateUserSchemaRequest{
-		Name:   ts.testSchemaName,
-		Schema: ts.testSchemaData,
+	schema := CreateUserTypeRequest{
+		Name:   ts.testTypeName,
+		Schema: ts.testTypeData,
 	}
 
-	ts.testSchemaID = ts.createTestSchema(schema)
+	ts.testTypeID = ts.createTestType(schema)
 }
 
-func (ts *GetUserSchemaTestSuite) TearDownSuite() {
-	// Clean up test schema
-	if ts.testSchemaID != "" {
-		ts.deleteTestSchema(ts.testSchemaID)
+func (ts *GetUserTypeTestSuite) TearDownSuite() {
+	// Clean up test type
+	if ts.testTypeID != "" {
+		ts.deleteTestType(ts.testTypeID)
 	}
 
 	// Clean up created organization units
@@ -98,9 +98,9 @@ func (ts *GetUserSchemaTestSuite) TearDownSuite() {
 	}
 }
 
-// TestGetUserSchemaByID tests GET /user-schemas/{id} with valid ID
-func (ts *GetUserSchemaTestSuite) TestGetUserSchemaByID() {
-	req, err := http.NewRequest("GET", testServerURL+"/user-schemas/"+ts.testSchemaID, nil)
+// TestGetUserTypeByID tests GET /user-types/{id} with valid ID
+func (ts *GetUserTypeTestSuite) TestGetUserTypeByID() {
+	req, err := http.NewRequest("GET", testServerURL+"/user-types/"+ts.testTypeID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -118,23 +118,23 @@ func (ts *GetUserSchemaTestSuite) TestGetUserSchemaByID() {
 		ts.T().Fatalf("Failed to read response body: %v", err)
 	}
 
-	var schema UserSchema
+	var schema UserType
 	err = json.Unmarshal(bodyBytes, &schema)
 	if err != nil {
 		ts.T().Fatalf("Failed to unmarshal response: %v", err)
 	}
 
 	// Verify retrieved schema according to API spec
-	ts.Assert().Equal(ts.testSchemaID, schema.ID, "ID should match")
-	ts.Assert().Equal(ts.testSchemaName, schema.Name, "Name should match")
-	ts.Assert().JSONEq(string(ts.testSchemaData), string(schema.Schema), "Schema data should match")
+	ts.Assert().Equal(ts.testTypeID, schema.ID, "ID should match")
+	ts.Assert().Equal(ts.testTypeName, schema.Name, "Name should match")
+	ts.Assert().JSONEq(string(ts.testTypeData), string(schema.Schema), "Schema data should match")
 }
 
-// TestGetUserSchemaNotFound tests GET /user-schemas/{id} with non-existent ID
-func (ts *GetUserSchemaTestSuite) TestGetUserSchemaNotFound() {
+// TestGetUserTypeNotFound tests GET /user-types/{id} with non-existent ID
+func (ts *GetUserTypeTestSuite) TestGetUserTypeNotFound() {
 	nonExistentID := "550e8400-e29b-41d4-a716-446655440000"
 
-	req, err := http.NewRequest("GET", testServerURL+"/user-schemas/"+nonExistentID, nil)
+	req, err := http.NewRequest("GET", testServerURL+"/user-types/"+nonExistentID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -162,8 +162,8 @@ func (ts *GetUserSchemaTestSuite) TestGetUserSchemaNotFound() {
 	ts.Assert().NotEmpty(errorResp.Message, "Error should have message")
 }
 
-// TestGetUserSchemaWithInvalidID tests GET /user-schemas/{id} with invalid ID formats
-func (ts *GetUserSchemaTestSuite) TestGetUserSchemaWithInvalidID() {
+// TestGetUserTypeWithInvalidID tests GET /user-types/{id} with invalid ID formats
+func (ts *GetUserTypeTestSuite) TestGetUserTypeWithInvalidID() {
 	testCases := []struct {
 		name           string
 		schemaID       string
@@ -195,11 +195,11 @@ func (ts *GetUserSchemaTestSuite) TestGetUserSchemaWithInvalidID() {
 		ts.T().Run(tc.name, func(t *testing.T) {
 			var requestURL string
 			if tc.schemaID == "" {
-				requestURL = testServerURL + "/user-schemas/"
+				requestURL = testServerURL + "/user-types/"
 			} else {
 				// URL-encode the schema ID to handle special characters
 				encodedSchemaID := url.PathEscape(tc.schemaID)
-				requestURL = testServerURL + "/user-schemas/" + encodedSchemaID
+				requestURL = testServerURL + "/user-types/" + encodedSchemaID
 			}
 
 			req, err := http.NewRequest("GET", requestURL, nil)
@@ -246,9 +246,9 @@ func (ts *GetUserSchemaTestSuite) TestGetUserSchemaWithInvalidID() {
 	}
 }
 
-// TestGetUserSchemaResponseHeaders tests response headers for GET /user-schemas/{id}
-func (ts *GetUserSchemaTestSuite) TestGetUserSchemaResponseHeaders() {
-	req, err := http.NewRequest("GET", testServerURL+"/user-schemas/"+ts.testSchemaID, nil)
+// TestGetUserTypeResponseHeaders tests response headers for GET /user-types/{id}
+func (ts *GetUserTypeTestSuite) TestGetUserTypeResponseHeaders() {
+	req, err := http.NewRequest("GET", testServerURL+"/user-types/"+ts.testTypeID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -267,7 +267,7 @@ func (ts *GetUserSchemaTestSuite) TestGetUserSchemaResponseHeaders() {
 }
 
 // Helper function to create a test schema
-func (ts *GetUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaRequest) string {
+func (ts *GetUserTypeTestSuite) createTestType(schema CreateUserTypeRequest) string {
 	if schema.OrganizationUnitID == "" {
 		schema.OrganizationUnitID = ts.organizationUnitID
 	}
@@ -277,7 +277,7 @@ func (ts *GetUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaReques
 		ts.T().Fatalf("Failed to marshal request: %v", err)
 	}
 
-	req, err := http.NewRequest("POST", testServerURL+"/user-schemas", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", testServerURL+"/user-types", bytes.NewBuffer(jsonData))
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -299,7 +299,7 @@ func (ts *GetUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaReques
 		ts.T().Fatalf("Failed to read response body: %v", err)
 	}
 
-	var createdSchema UserSchema
+	var createdSchema UserType
 	err = json.Unmarshal(bodyBytes, &createdSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to unmarshal response: %v", err)
@@ -309,8 +309,8 @@ func (ts *GetUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaReques
 }
 
 // Helper function to delete a test schema
-func (ts *GetUserSchemaTestSuite) deleteTestSchema(schemaID string) {
-	req, err := http.NewRequest("DELETE", testServerURL+"/user-schemas/"+schemaID, nil)
+func (ts *GetUserTypeTestSuite) deleteTestType(schemaID string) {
+	req, err := http.NewRequest("DELETE", testServerURL+"/user-types/"+schemaID, nil)
 	if err != nil {
 		return
 	}

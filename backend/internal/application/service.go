@@ -783,11 +783,11 @@ func (as *applicationService) validateAllowedUserTypes(allowedUserTypes []string
 			return &ErrorInternalServerError
 		}
 
-		for _, schema := range userTypeList.Schemas {
+		for _, schema := range userTypeList.Types {
 			existingUserTypes[schema.Name] = true
 		}
 
-		if len(userTypeList.Schemas) == 0 || offset+len(userTypeList.Schemas) >= userTypeList.TotalResults {
+		if len(userTypeList.Types) == 0 || offset+len(userTypeList.Types) >= userTypeList.TotalResults {
 			break
 		}
 

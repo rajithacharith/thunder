@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema
+package usertype
 
 import (
 	"bytes"
@@ -29,8 +29,8 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// UserSchemaRequiredAPITestSuite contains API tests for validating the required attribute behavior.
-type UserSchemaRequiredAPITestSuite struct {
+// UserTypeRequiredAPITestSuite contains API tests for validating the required attribute behavior.
+type UserTypeRequiredAPITestSuite struct {
 	suite.Suite
 	client             *http.Client
 	createdSchemas     []string
@@ -38,31 +38,31 @@ type UserSchemaRequiredAPITestSuite struct {
 	organizationUnitID string
 }
 
-var testUserSchemaRequiredOU = testutils.OrganizationUnit{
+var testUserTypeRequiredOU = testutils.OrganizationUnit{
 	Handle:      "test-user-schema-required-ou",
-	Name:        "Test Organization Unit for User Schema Required",
-	Description: "Organization unit created for user schema required testing",
+	Name:        "Test Organization Unit for User Type Required",
+	Description: "Organization unit created for user type required testing",
 	Parent:      nil,
 }
 
-func TestUserSchemaRequiredAPITestSuite(t *testing.T) {
-	suite.Run(t, new(UserSchemaRequiredAPITestSuite))
+func TestUserTypeRequiredAPITestSuite(t *testing.T) {
+	suite.Run(t, new(UserTypeRequiredAPITestSuite))
 }
 
-func (ts *UserSchemaRequiredAPITestSuite) SetupSuite() {
+func (ts *UserTypeRequiredAPITestSuite) SetupSuite() {
 	ts.client = testutils.GetHTTPClient()
 	ts.createdSchemas = []string{}
 	ts.createdUsers = []string{}
 
 	// Create organization unit for tests
-	ouID, err := testutils.CreateOrganizationUnit(testUserSchemaRequiredOU)
+	ouID, err := testutils.CreateOrganizationUnit(testUserTypeRequiredOU)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit: %v", err)
 	}
 	ts.organizationUnitID = ouID
 }
 
-func (ts *UserSchemaRequiredAPITestSuite) TearDownSuite() {
+func (ts *UserTypeRequiredAPITestSuite) TearDownSuite() {
 	for _, userID := range ts.createdUsers {
 		ts.deleteUser(userID)
 	}
@@ -77,8 +77,8 @@ func (ts *UserSchemaRequiredAPITestSuite) TearDownSuite() {
 }
 
 // Test top-level required string attribute.
-func (ts *UserSchemaRequiredAPITestSuite) TestRequiredTopLevelString() {
-	schema := CreateUserSchemaRequest{
+func (ts *UserTypeRequiredAPITestSuite) TestRequiredTopLevelString() {
+	schema := CreateUserTypeRequest{
 		Name: "req-top-level-string",
 		Schema: json.RawMessage(`{
             "email": {"type": "string", "required": true},
@@ -108,8 +108,8 @@ func (ts *UserSchemaRequiredAPITestSuite) TestRequiredTopLevelString() {
 }
 
 // Test required object attribute with nested required property.
-func (ts *UserSchemaRequiredAPITestSuite) TestRequiredObjectAndNested() {
-	schema := CreateUserSchemaRequest{
+func (ts *UserTypeRequiredAPITestSuite) TestRequiredObjectAndNested() {
+	schema := CreateUserTypeRequest{
 		Name: "req-object-nested",
 		Schema: json.RawMessage(`{
             "address": {
@@ -153,8 +153,8 @@ func (ts *UserSchemaRequiredAPITestSuite) TestRequiredObjectAndNested() {
 }
 
 // Test required array attribute at top level.
-func (ts *UserSchemaRequiredAPITestSuite) TestRequiredArrayTopLevel() {
-	schema := CreateUserSchemaRequest{
+func (ts *UserTypeRequiredAPITestSuite) TestRequiredArrayTopLevel() {
+	schema := CreateUserTypeRequest{
 		Name: "req-array-top-level",
 		Schema: json.RawMessage(`{
             "tags": {"type": "array", "required": true, "items": {"type": "string"}}
@@ -190,8 +190,8 @@ func (ts *UserSchemaRequiredAPITestSuite) TestRequiredArrayTopLevel() {
 	ts.createdUsers = append(ts.createdUsers, userID)
 }
 
-func (ts *UserSchemaRequiredAPITestSuite) TestSchemaCreationRequiresOuID() {
-	schema := CreateUserSchemaRequest{
+func (ts *UserTypeRequiredAPITestSuite) TestSchemaCreationRequiresOuID() {
+	schema := CreateUserTypeRequest{
 		Name: "req-ouid-schema",
 		Schema: json.RawMessage(`{
             "field": {"type": "string"}
@@ -201,7 +201,7 @@ func (ts *UserSchemaRequiredAPITestSuite) TestSchemaCreationRequiresOuID() {
 	jsonData, err := json.Marshal(schema)
 	ts.Require().NoError(err, "Failed to marshal schema request")
 
-	req, err := http.NewRequest("POST", testServerURL+"/user-schemas", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", testServerURL+"/user-types", bytes.NewBuffer(jsonData))
 	ts.Require().NoError(err, "Failed to create request")
 	req.Header.Set("Content-Type", "application/json")
 
@@ -220,7 +220,7 @@ func (ts *UserSchemaRequiredAPITestSuite) TestSchemaCreationRequiresOuID() {
 	ts.Assert().Contains(errorResp.Description, "organization unit id must not be empty")
 }
 
-func (ts *UserSchemaRequiredAPITestSuite) createSchemaHelper(schema CreateUserSchemaRequest) string {
+func (ts *UserTypeRequiredAPITestSuite) createSchemaHelper(schema CreateUserTypeRequest) string {
 	if schema.OrganizationUnitID == "" {
 		schema.OrganizationUnitID = ts.organizationUnitID
 	}
@@ -228,7 +228,7 @@ func (ts *UserSchemaRequiredAPITestSuite) createSchemaHelper(schema CreateUserSc
 	jsonData, err := json.Marshal(schema)
 	ts.Require().NoError(err, "Failed to marshal request")
 
-	req, err := http.NewRequest("POST", testServerURL+"/user-schemas", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", testServerURL+"/user-types", bytes.NewBuffer(jsonData))
 	ts.Require().NoError(err, "Failed to create request")
 	req.Header.Set("Content-Type", "application/json")
 
@@ -244,12 +244,12 @@ func (ts *UserSchemaRequiredAPITestSuite) createSchemaHelper(schema CreateUserSc
 	}
 	ts.Require().Equal(http.StatusCreated, resp.StatusCode, "Should return 201 Created")
 
-	var createdSchema UserSchema
+	var createdSchema UserType
 	ts.Require().NoError(json.Unmarshal(bodyBytes, &createdSchema))
 	return createdSchema.ID
 }
 
-func (ts *UserSchemaRequiredAPITestSuite) createUserAndExpectSuccess(reqBody CreateUserRequest) string {
+func (ts *UserTypeRequiredAPITestSuite) createUserAndExpectSuccess(reqBody CreateUserRequest) string {
 	jsonData, err := json.Marshal(reqBody)
 	ts.Require().NoError(err, "Failed to marshal user request")
 
@@ -274,7 +274,7 @@ func (ts *UserSchemaRequiredAPITestSuite) createUserAndExpectSuccess(reqBody Cre
 	return createdUser.ID
 }
 
-func (ts *UserSchemaRequiredAPITestSuite) createUserAndExpectError(reqBody CreateUserRequest, expectedErrorCode string) {
+func (ts *UserTypeRequiredAPITestSuite) createUserAndExpectError(reqBody CreateUserRequest, expectedErrorCode string) {
 	jsonData, err := json.Marshal(reqBody)
 	ts.Require().NoError(err, "Failed to marshal user request")
 
@@ -295,7 +295,7 @@ func (ts *UserSchemaRequiredAPITestSuite) createUserAndExpectError(reqBody Creat
 	ts.Require().Equal(expectedErrorCode, errorResp.Code, "Error code should match expected")
 }
 
-func (ts *UserSchemaRequiredAPITestSuite) deleteUser(userID string) {
+func (ts *UserTypeRequiredAPITestSuite) deleteUser(userID string) {
 	req, err := http.NewRequest("DELETE", testServerURL+"/users/"+userID, nil)
 	if err != nil {
 		return
@@ -307,8 +307,8 @@ func (ts *UserSchemaRequiredAPITestSuite) deleteUser(userID string) {
 	defer resp.Body.Close()
 }
 
-func (ts *UserSchemaRequiredAPITestSuite) deleteSchema(schemaID string) {
-	req, err := http.NewRequest("DELETE", testServerURL+"/user-schemas/"+schemaID, nil)
+func (ts *UserTypeRequiredAPITestSuite) deleteSchema(schemaID string) {
+	req, err := http.NewRequest("DELETE", testServerURL+"/user-types/"+schemaID, nil)
 	if err != nil {
 		return
 	}

@@ -309,15 +309,15 @@ func (u *userTypeResolver) resolveForUserOnboarding(ctx *core.NodeContext,
 		return execResp, nil
 	}
 
-	if len(schemas.Schemas) == 0 {
+	if len(schemas.Types) == 0 {
 		logger.Debug("No user types available")
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "No user types available"
 		return execResp, nil
 	}
 
-	options := make([]string, 0, len(schemas.Schemas))
-	for _, schema := range schemas.Schemas {
+	options := make([]string, 0, len(schemas.Types))
+	for _, schema := range schemas.Types {
 		options = append(options, schema.Name)
 	}
 

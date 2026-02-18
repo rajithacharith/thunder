@@ -54,7 +54,7 @@ type UserTypeListResponse struct {
 	TotalResults int                `json:"totalResults"`
 	StartIndex   int                `json:"startIndex"`
 	Count        int                `json:"count"`
-	Schemas      []UserTypeListItem `json:"schemas"`
+	Types        []UserTypeListItem `json:"types"`
 	Links        []Link             `json:"links"`
 }
 

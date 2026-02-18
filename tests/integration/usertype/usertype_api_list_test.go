@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package userschema
+package usertype
 
 import (
 	"encoding/json"
@@ -30,22 +30,22 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type ListUserSchemasTestSuite struct {
+type ListUserTypesTestSuite struct {
 	suite.Suite
 	client *http.Client
 }
 
-func TestListUserSchemasTestSuite(t *testing.T) {
-	suite.Run(t, new(ListUserSchemasTestSuite))
+func TestListUserTypesTestSuite(t *testing.T) {
+	suite.Run(t, new(ListUserTypesTestSuite))
 }
 
-func (ts *ListUserSchemasTestSuite) SetupSuite() {
+func (ts *ListUserTypesTestSuite) SetupSuite() {
 	ts.client = testutils.GetHTTPClient()
 }
 
-// TestListUserSchemas tests GET /user-schemas
-func (ts *ListUserSchemasTestSuite) TestListUserSchemas() {
-	req, err := http.NewRequest("GET", testServerURL+"/user-schemas", nil)
+// TestListUserTypes tests GET /user-types
+func (ts *ListUserTypesTestSuite) TestListUserTypes() {
+	req, err := http.NewRequest("GET", testServerURL+"/user-types", nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -63,7 +63,7 @@ func (ts *ListUserSchemasTestSuite) TestListUserSchemas() {
 		ts.T().Fatalf("Failed to read response body: %v", err)
 	}
 
-	var listResponse UserSchemaListResponse
+	var listResponse UserTypeListResponse
 	err = json.Unmarshal(bodyBytes, &listResponse)
 	if err != nil {
 		ts.T().Fatalf("Failed to unmarshal response: %v", err)
@@ -71,25 +71,25 @@ func (ts *ListUserSchemasTestSuite) TestListUserSchemas() {
 
 	// Verify response structure according to API spec
 	ts.Assert().GreaterOrEqual(listResponse.TotalResults, 0, "TotalResults should be non-negative")
-	ts.Assert().Equal(listResponse.Count, len(listResponse.Schemas), "Count should match actual schemas")
+	ts.Assert().Equal(listResponse.Count, len(listResponse.Types), "Count should match actual types")
 	ts.Assert().Equal(1, listResponse.StartIndex, "StartIndex should be 1 (1-based)")
 	ts.Assert().NotNil(listResponse.Links, "Should have links array")
 
-	// Verify each schema has required fields for list view
-	for _, schema := range listResponse.Schemas {
-		ts.Assert().NotEmpty(schema.ID, "Schema should have ID")
-		ts.Assert().NotEmpty(schema.Name, "Schema should have name")
+	// Verify each type has required fields for list view
+	for _, typeObj := range listResponse.Types {
+		ts.Assert().NotEmpty(typeObj.ID, "Type should have ID")
+		ts.Assert().NotEmpty(typeObj.Name, "Type should have name")
 	}
 }
 
-// TestListUserSchemasWithPagination tests GET /user-schemas with pagination parameters
-func (ts *ListUserSchemasTestSuite) TestListUserSchemasWithPagination() {
+// TestListUserTypesWithPagination tests GET /user-types with pagination parameters
+func (ts *ListUserTypesTestSuite) TestListUserTypesWithPagination() {
 	// Test with limit parameter
 	params := url.Values{}
 	params.Add("limit", "5")
 	params.Add("offset", "0")
 
-	req, err := http.NewRequest("GET", testServerURL+"/user-schemas?"+params.Encode(), nil)
+	req, err := http.NewRequest("GET", testServerURL+"/user-types?"+params.Encode(), nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -107,19 +107,19 @@ func (ts *ListUserSchemasTestSuite) TestListUserSchemasWithPagination() {
 		ts.T().Fatalf("Failed to read response body: %v", err)
 	}
 
-	var listResponse UserSchemaListResponse
+	var listResponse UserTypeListResponse
 	err = json.Unmarshal(bodyBytes, &listResponse)
 	if err != nil {
 		ts.T().Fatalf("Failed to unmarshal response: %v", err)
 	}
 
 	// Verify pagination
-	ts.Assert().LessOrEqual(listResponse.Count, 5, "Should return at most 5 schemas")
+	ts.Assert().LessOrEqual(listResponse.Count, 5, "Should return at most 5 types")
 	ts.Assert().Equal(1, listResponse.StartIndex, "Start index should be 1 (1-based)")
 }
 
-// TestListUserSchemasWithInvalidPagination tests GET /user-schemas with invalid pagination
-func (ts *ListUserSchemasTestSuite) TestListUserSchemasWithInvalidPagination() {
+// TestListUserTypesWithInvalidPagination tests GET /user-types with invalid pagination
+func (ts *ListUserTypesTestSuite) TestListUserTypesWithInvalidPagination() {
 	testCases := []struct {
 		name   string
 		params map[string]string
@@ -157,7 +157,7 @@ func (ts *ListUserSchemasTestSuite) TestListUserSchemasWithInvalidPagination() {
 				params.Add(key, value)
 			}
 
-			req, err := http.NewRequest("GET", testServerURL+"/user-schemas?"+params.Encode(), nil)
+			req, err := http.NewRequest("GET", testServerURL+"/user-types?"+params.Encode(), nil)
 			if err != nil {
 				t.Fatalf("Failed to create request: %v", err)
 			}
@@ -175,8 +175,8 @@ func (ts *ListUserSchemasTestSuite) TestListUserSchemasWithInvalidPagination() {
 	}
 }
 
-// TestListUserSchemasLimitValidation verifies limit boundary enforcement from commit 26d2841.
-func (ts *ListUserSchemasTestSuite) TestListUserSchemasLimitValidation() {
+// TestListUserTypesLimitValidation verifies limit boundary enforcement from commit 26d2841.
+func (ts *ListUserTypesTestSuite) TestListUserTypesLimitValidation() {
 	const maxPageSize = 100 // Keep in sync with serverconst.MaxPageSize.
 
 	testCases := []struct {
@@ -202,7 +202,7 @@ func (ts *ListUserSchemasTestSuite) TestListUserSchemasLimitValidation() {
 			params.Add("limit", tc.limit)
 			params.Add("offset", "0")
 
-			req, err := http.NewRequest("GET", testServerURL+"/user-schemas?"+params.Encode(), nil)
+			req, err := http.NewRequest("GET", testServerURL+"/user-types?"+params.Encode(), nil)
 			if err != nil {
 				t.Fatalf("Failed to create request: %v", err)
 			}
@@ -224,7 +224,7 @@ func (ts *ListUserSchemasTestSuite) TestListUserSchemasLimitValidation() {
 			}
 
 			if resp.StatusCode == http.StatusOK {
-				var listResponse UserSchemaListResponse
+				var listResponse UserTypeListResponse
 				if err := json.Unmarshal(bodyBytes, &listResponse); err != nil {
 					t.Fatalf("Failed to unmarshal response: %v", err)
 				}
@@ -237,14 +237,14 @@ func (ts *ListUserSchemasTestSuite) TestListUserSchemasLimitValidation() {
 	}
 }
 
-// TestListUserSchemasPaginationLinks tests pagination links in response
-func (ts *ListUserSchemasTestSuite) TestListUserSchemasPaginationLinks() {
+// TestListUserTypesPaginationLinks tests pagination links in response
+func (ts *ListUserTypesTestSuite) TestListUserTypesPaginationLinks() {
 	// Test with small limit to force pagination
 	params := url.Values{}
 	params.Add("limit", "1")
 	params.Add("offset", "0")
 
-	req, err := http.NewRequest("GET", testServerURL+"/user-schemas?"+params.Encode(), nil)
+	req, err := http.NewRequest("GET", testServerURL+"/user-types?"+params.Encode(), nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
@@ -262,7 +262,7 @@ func (ts *ListUserSchemasTestSuite) TestListUserSchemasPaginationLinks() {
 		ts.T().Fatalf("Failed to read response body: %v", err)
 	}
 
-	var listResponse UserSchemaListResponse
+	var listResponse UserTypeListResponse
 	err = json.Unmarshal(bodyBytes, &listResponse)
 	if err != nil {
 		ts.T().Fatalf("Failed to unmarshal response: %v", err)
