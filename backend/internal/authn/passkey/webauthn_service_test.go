@@ -23,8 +23,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/asgardeo/thunder/internal/webauthn/protocol"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/asgardeo/thunder/internal/webauthn/protocol"
 )
 
 const (

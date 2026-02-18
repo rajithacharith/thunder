@@ -6,6 +6,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rsa"
 	"fmt"
+	"math"
 	"math/big"
 )
 
@@ -14,10 +15,6 @@ const (
 	coseKtyOKP = 1
 	coseKtyEC2 = 2
 	coseKtyRSA = 3
-
-	// COSE Algorithms
-	coseAlgES256 = -7
-	coseAlgRS256 = -257
 
 	// COSE Key Parameters
 	coseKeyKty = 1
@@ -174,6 +171,9 @@ func toInt64(i interface{}) (int64, bool) {
 	case int64:
 		return v, true
 	case uint:
+		if uint64(v) > math.MaxInt64 {
+			return 0, false
+		}
 		return int64(v), true
 	case uint8:
 		return int64(v), true
@@ -182,6 +182,9 @@ func toInt64(i interface{}) (int64, bool) {
 	case uint32:
 		return int64(v), true
 	case uint64:
+		if v > math.MaxInt64 {
+			return 0, false
+		}
 		return int64(v), true
 	default:
 		return 0, false

@@ -14,7 +14,9 @@ import (
 )
 
 // BeginLogin initiates the authentication ceremony.
-func (w *WebAuthn) BeginLogin(user User, opts ...LoginOption) (*protocol.CredentialAssertion, *SessionData, error) {
+func (w *WebAuthn) BeginLogin(
+	user User, opts ...LoginOption,
+) (*protocol.CredentialAssertion, *SessionData, error) {
 	// Generate challenge
 	challenge := make([]byte, 32)
 	if _, err := rand.Read(challenge); err != nil {
@@ -23,20 +25,21 @@ func (w *WebAuthn) BeginLogin(user User, opts ...LoginOption) (*protocol.Credent
 
 	assertion := &protocol.CredentialAssertion{
 		Response: protocol.AssertionResponse{
-			Challenge:      challenge,
-			Timeout:        60000, // 60 seconds
-			RelyingPartyID: w.Config.RPID,
+			Challenge:          challenge,
+			Timeout:            60000, // 60 seconds
+			RelyingPartyID:     w.Config.RPID,
 			AllowedCredentials: []protocol.CredentialDescriptor{},
-			UserVerification: protocol.VerificationPreferred,
+			UserVerification:   protocol.VerificationPreferred,
 		},
 	}
 
 	// Populate allowed credentials from user
 	for _, cred := range user.WebAuthnCredentials() {
-		assertion.Response.AllowedCredentials = append(assertion.Response.AllowedCredentials, protocol.CredentialDescriptor{
-			Type: protocol.PublicKeyCredentialType,
-			ID:   cred.ID,
-		})
+		assertion.Response.AllowedCredentials = append(assertion.Response.AllowedCredentials,
+			protocol.CredentialDescriptor{
+				Type: protocol.PublicKeyCredentialType,
+				ID:   cred.ID,
+			})
 	}
 
 	// Apply options
@@ -55,7 +58,9 @@ func (w *WebAuthn) BeginLogin(user User, opts ...LoginOption) (*protocol.Credent
 }
 
 // BeginDiscoverableLogin initiates usernameless authentication ceremony.
-func (w *WebAuthn) BeginDiscoverableLogin(opts ...LoginOption) (*protocol.CredentialAssertion, *SessionData, error) {
+func (w *WebAuthn) BeginDiscoverableLogin(
+	opts ...LoginOption,
+) (*protocol.CredentialAssertion, *SessionData, error) {
 	// Generate challenge
 	challenge := make([]byte, 32)
 	if _, err := rand.Read(challenge); err != nil {
@@ -64,9 +69,9 @@ func (w *WebAuthn) BeginDiscoverableLogin(opts ...LoginOption) (*protocol.Creden
 
 	assertion := &protocol.CredentialAssertion{
 		Response: protocol.AssertionResponse{
-			Challenge:      challenge,
-			Timeout:        60000,
-			RelyingPartyID: w.Config.RPID,
+			Challenge:        challenge,
+			Timeout:          60000,
+			RelyingPartyID:   w.Config.RPID,
 			UserVerification: protocol.VerificationPreferred,
 		},
 	}
@@ -86,7 +91,9 @@ func (w *WebAuthn) BeginDiscoverableLogin(opts ...LoginOption) (*protocol.Creden
 }
 
 // ValidateLogin validates the authentication response.
-func (w *WebAuthn) ValidateLogin(user User, session SessionData, response *protocol.ParsedCredentialAssertionData) (*Credential, error) {
+func (w *WebAuthn) ValidateLogin(
+	user User, session SessionData, response *protocol.ParsedCredentialAssertionData,
+) (*Credential, error) {
 	// 1. Verify Challenge
 	if response.Response.CollectedClientData.Challenge != session.Challenge {
 		return nil, fmt.Errorf("challenge mismatch")
@@ -141,7 +148,10 @@ func (w *WebAuthn) ValidateLogin(user User, session SessionData, response *proto
 	clientDataJSON := response.Raw.AssertionResponse.AuthenticatorResponse.ClientDataJSON
 	clientDataHash := sha256.Sum256(clientDataJSON)
 
-	signatureBase := append(authData, clientDataHash[:]...)
+	// Create a new slice to avoid modifying authData if it has capacity
+	signatureBase := make([]byte, 0, len(authData)+len(clientDataHash))
+	signatureBase = append(signatureBase, authData...)
+	signatureBase = append(signatureBase, clientDataHash[:]...)
 
 	// Parse Public Key
 	pubKey, alg, err := protocol.ParseCOSEKey(credential.PublicKey)
@@ -155,7 +165,7 @@ func (w *WebAuthn) ValidateLogin(user User, session SessionData, response *proto
 	switch k := pubKey.(type) {
 	case *ecdsa.PublicKey:
 		// ES256 (-7) uses SHA-256
-		if alg == 0 || alg == -7 {
+		if alg == 0 || alg == protocol.ES256 {
 			hash := sha256.Sum256(signatureBase)
 			if !ecdsa.VerifyASN1(k, hash[:], signature) {
 				return nil, fmt.Errorf("invalid signature")
@@ -166,7 +176,7 @@ func (w *WebAuthn) ValidateLogin(user User, session SessionData, response *proto
 
 	case *rsa.PublicKey:
 		// RS256 (-257) uses SHA-256 and PKCS1v15
-		if alg == 0 || alg == -257 {
+		if alg == 0 || alg == protocol.RS256 {
 			hash := sha256.Sum256(signatureBase)
 			if err := rsa.VerifyPKCS1v15(k, crypto.SHA256, hash[:], signature); err != nil {
 				return nil, fmt.Errorf("invalid signature: %w", err)

@@ -14,6 +14,7 @@ func New(config *Config) (*WebAuthn, error) {
 	return &WebAuthn{Config: config}, nil
 }
 
+// ErrorInvalidConfig represents an invalid configuration error.
 type ErrorInvalidConfig struct {
 	Message string
 }

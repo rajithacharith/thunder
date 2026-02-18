@@ -12,7 +12,9 @@ import (
 )
 
 // BeginRegistration initiates the registration ceremony.
-func (w *WebAuthn) BeginRegistration(user User, opts ...RegistrationOption) (*protocol.CredentialCreation, *SessionData, error) {
+func (w *WebAuthn) BeginRegistration(
+	user User, opts ...RegistrationOption,
+) (*protocol.CredentialCreation, *SessionData, error) {
 	// Generate challenge
 	challenge := make([]byte, 32)
 	if _, err := rand.Read(challenge); err != nil {
@@ -56,7 +58,9 @@ func (w *WebAuthn) BeginRegistration(user User, opts ...RegistrationOption) (*pr
 }
 
 // CreateCredential verifies the registration response and creates a credential.
-func (w *WebAuthn) CreateCredential(user User, session SessionData, response *protocol.ParsedCredentialCreationData) (*Credential, error) {
+func (w *WebAuthn) CreateCredential(
+	user User, session SessionData, response *protocol.ParsedCredentialCreationData,
+) (*Credential, error) {
 	// 1. Verify Challenge
 	// The response challenge is base64url encoded in ClientDataJSON.
 	// ParsedCredentialCreationData has ParsedCreationResponse with CollectedClientData.

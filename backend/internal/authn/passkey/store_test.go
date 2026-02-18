@@ -24,13 +24,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/asgardeo/thunder/internal/webauthn/protocol"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/webauthn/protocol"
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
 

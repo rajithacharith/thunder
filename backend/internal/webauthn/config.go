@@ -1,3 +1,4 @@
+// Package webauthn implements the WebAuthn API.
 package webauthn
 
 // Config is the configuration for the WebAuthn service.

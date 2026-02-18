@@ -1,3 +1,4 @@
+// Package protocol implements WebAuthn protocol structures and parsing logic.
 package protocol
 
 import (
@@ -49,142 +50,193 @@ func (d *cborDecoder) decode() (interface{}, error) {
 
 	switch majorType {
 	case majorTypeUnsignedInt:
-		val, err := d.readLength(additionalInfo)
-		if err != nil {
-			return nil, err
-		}
-		return int64(val), nil
-
+		return d.decodeUnsignedInt(additionalInfo)
 	case majorTypeNegativeInt:
-		val, err := d.readLength(additionalInfo)
-		if err != nil {
-			return nil, err
-		}
-		return -1 - int64(val), nil
-
+		return d.decodeNegativeInt(additionalInfo)
 	case majorTypeByteString:
-		length, err := d.readLength(additionalInfo)
-		if err != nil {
-			return nil, err
-		}
-		if length > uint64(len(d.data)-d.pos) {
-			return nil, fmt.Errorf("byte string length exceeds data size")
-		}
-		bytes := make([]byte, length)
-		copy(bytes, d.data[d.pos:d.pos+int(length)])
-		d.pos += int(length)
-		return bytes, nil
-
+		return d.decodeByteString(additionalInfo)
 	case majorTypeTextString:
-		length, err := d.readLength(additionalInfo)
-		if err != nil {
-			return nil, err
-		}
-		if length > uint64(len(d.data)-d.pos) {
-			return nil, fmt.Errorf("text string length exceeds data size")
-		}
-		str := string(d.data[d.pos : d.pos+int(length)])
-		d.pos += int(length)
-		return str, nil
-
+		return d.decodeTextString(additionalInfo)
 	case majorTypeArray:
-		length, err := d.readLength(additionalInfo)
-		if err != nil {
-			return nil, err
-		}
-		// Sanity check: each element takes at least 1 byte.
-		if length > uint64(len(d.data)-d.pos) {
-			return nil, fmt.Errorf("array length exceeds data size")
-		}
-		// Additional sanity check for max array size to prevent OOM
-		if length > 65536 {
-			return nil, fmt.Errorf("array length too large")
-		}
-		arr := make([]interface{}, length)
-		for i := 0; i < int(length); i++ {
-			elem, err := d.decode()
-			if err != nil {
-				return nil, err
-			}
-			arr[i] = elem
-		}
-		return arr, nil
-
+		return d.decodeArray(additionalInfo)
 	case majorTypeMap:
-		length, err := d.readLength(additionalInfo)
-		if err != nil {
-			return nil, err
-		}
-		// Try to determine key type. Usually string or int.
-		// If mixed, use interface{} as key.
-		// However, Go maps need consistent key types.
-		// We'll create a generic map first and handle type conversion later if needed.
-		// But for general use, map[interface{}]interface{} is safest.
-		m := make(map[interface{}]interface{})
-		for i := 0; i < int(length); i++ {
-			key, err := d.decode()
-			if err != nil {
-				return nil, err
-			}
-			val, err := d.decode()
-			if err != nil {
-				return nil, err
-			}
-			m[key] = val
-		}
-		return m, nil
-
+		return d.decodeMap(additionalInfo)
 	case majorTypeTag:
-		// Skip tag and decode content
-		_, err := d.readLength(additionalInfo)
-		if err != nil {
-			return nil, err
-		}
-		return d.decode()
-
+		return d.decodeTag(additionalInfo)
 	case majorTypeSimple:
-		switch additionalInfo {
-		case simpleValueFalse:
-			return false, nil
-		case simpleValueTrue:
-			return true, nil
-		case simpleValueNull:
-			return nil, nil
-		case simpleValueUndefined:
-			return nil, nil
-		case 24: // Ignore simple value (1 byte)
-			if d.pos >= len(d.data) {
-				return nil, io.ErrUnexpectedEOF
-			}
-			d.pos++
-			return nil, nil
-		case 25: // Half-precision float (2 bytes)
-			if d.pos+2 > len(d.data) {
-				return nil, io.ErrUnexpectedEOF
-			}
-			// Not implemented, return float64(0)
-			d.pos += 2
-			return float64(0), nil
-		case 26: // Single-precision float (4 bytes)
-			if d.pos+4 > len(d.data) {
-				return nil, io.ErrUnexpectedEOF
-			}
-			bits := binary.BigEndian.Uint32(d.data[d.pos:])
-			d.pos += 4
-			return math.Float32frombits(bits), nil
-		case 27: // Double-precision float (8 bytes)
-			if d.pos+8 > len(d.data) {
-				return nil, io.ErrUnexpectedEOF
-			}
-			bits := binary.BigEndian.Uint64(d.data[d.pos:])
-			d.pos += 8
-			return math.Float64frombits(bits), nil
-		default:
-			return nil, fmt.Errorf("unsupported simple value: %d", additionalInfo)
-		}
-
+		return d.decodeSimple(additionalInfo)
 	default:
 		return nil, fmt.Errorf("unknown major type: %d", majorType)
+	}
+}
+
+func (d *cborDecoder) decodeUnsignedInt(info byte) (interface{}, error) {
+	val, err := d.readLength(info)
+	if err != nil {
+		return nil, err
+	}
+	if val > math.MaxInt64 {
+		return nil, fmt.Errorf("unsigned integer too large for int64")
+	}
+	return int64(val), nil
+}
+
+func (d *cborDecoder) decodeNegativeInt(info byte) (interface{}, error) {
+	val, err := d.readLength(info)
+	if err != nil {
+		return nil, err
+	}
+	if val > math.MaxInt64 {
+		return nil, fmt.Errorf("negative integer too large for int64")
+	}
+	return -1 - int64(val), nil
+}
+
+func (d *cborDecoder) decodeByteString(info byte) (interface{}, error) {
+	length, err := d.readLength(info)
+	if err != nil {
+		return nil, err
+	}
+	if length > uint64(math.MaxInt) {
+		return nil, fmt.Errorf("byte string length too large")
+	}
+	if d.pos > len(d.data) {
+		return nil, io.ErrUnexpectedEOF
+	}
+	remaining := len(d.data) - d.pos
+	if length > uint64(remaining) {
+		return nil, fmt.Errorf("byte string length exceeds data size")
+	}
+	bytes := make([]byte, length)
+	copy(bytes, d.data[d.pos:d.pos+int(length)])
+	d.pos += int(length)
+	return bytes, nil
+}
+
+func (d *cborDecoder) decodeTextString(info byte) (interface{}, error) {
+	length, err := d.readLength(info)
+	if err != nil {
+		return nil, err
+	}
+	if length > uint64(math.MaxInt) {
+		return nil, fmt.Errorf("text string length too large")
+	}
+	if d.pos > len(d.data) {
+		return nil, io.ErrUnexpectedEOF
+	}
+	remaining := len(d.data) - d.pos
+	if length > uint64(remaining) {
+		return nil, fmt.Errorf("text string length exceeds data size")
+	}
+	str := string(d.data[d.pos : d.pos+int(length)])
+	d.pos += int(length)
+	return str, nil
+}
+
+func (d *cborDecoder) decodeArray(info byte) (interface{}, error) {
+	length, err := d.readLength(info)
+	if err != nil {
+		return nil, err
+	}
+	if length > uint64(math.MaxInt) {
+		return nil, fmt.Errorf("array length too large")
+	}
+	if d.pos > len(d.data) {
+		return nil, io.ErrUnexpectedEOF
+	}
+	remaining := len(d.data) - d.pos
+	// Sanity check: each element takes at least 1 byte.
+	if length > uint64(remaining) {
+		return nil, fmt.Errorf("array length exceeds data size")
+	}
+	// Additional sanity check for max array size to prevent OOM
+	if length > 65536 {
+		return nil, fmt.Errorf("array length too large")
+	}
+	arr := make([]interface{}, int(length))
+	for i := 0; i < int(length); i++ {
+		elem, err := d.decode()
+		if err != nil {
+			return nil, err
+		}
+		arr[i] = elem
+	}
+	return arr, nil
+}
+
+func (d *cborDecoder) decodeMap(info byte) (interface{}, error) {
+	length, err := d.readLength(info)
+	if err != nil {
+		return nil, err
+	}
+	// Map length check (length is number of pairs)
+	if length > 65536 {
+		return nil, fmt.Errorf("map length too large")
+	}
+
+	m := make(map[interface{}]interface{})
+	for i := 0; i < int(length); i++ {
+		key, err := d.decode()
+		if err != nil {
+			return nil, err
+		}
+		val, err := d.decode()
+		if err != nil {
+			return nil, err
+		}
+		m[key] = val
+	}
+	return m, nil
+}
+
+func (d *cborDecoder) decodeTag(info byte) (interface{}, error) {
+	// Skip tag and decode content
+	_, err := d.readLength(info)
+	if err != nil {
+		return nil, err
+	}
+	return d.decode()
+}
+
+func (d *cborDecoder) decodeSimple(info byte) (interface{}, error) {
+	switch info {
+	case simpleValueFalse:
+		return false, nil
+	case simpleValueTrue:
+		return true, nil
+	case simpleValueNull:
+		return nil, nil
+	case simpleValueUndefined:
+		return nil, nil
+	case 24: // Ignore simple value (1 byte)
+		if d.pos >= len(d.data) {
+			return nil, io.ErrUnexpectedEOF
+		}
+		d.pos++
+		return nil, nil
+	case 25: // Half-precision float (2 bytes)
+		if d.pos+2 > len(d.data) {
+			return nil, io.ErrUnexpectedEOF
+		}
+		// Not implemented, return float64(0)
+		d.pos += 2
+		return float64(0), nil
+	case 26: // Single-precision float (4 bytes)
+		if d.pos+4 > len(d.data) {
+			return nil, io.ErrUnexpectedEOF
+		}
+		bits := binary.BigEndian.Uint32(d.data[d.pos:])
+		d.pos += 4
+		return math.Float32frombits(bits), nil
+	case 27: // Double-precision float (8 bytes)
+		if d.pos+8 > len(d.data) {
+			return nil, io.ErrUnexpectedEOF
+		}
+		bits := binary.BigEndian.Uint64(d.data[d.pos:])
+		d.pos += 8
+		return math.Float64frombits(bits), nil
+	default:
+		return nil, fmt.Errorf("unsupported simple value: %d", info)
 	}
 }
 

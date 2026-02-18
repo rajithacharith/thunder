@@ -24,12 +24,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/asgardeo/thunder/internal/webauthn/protocol"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/webauthn/protocol"
 )
 
 type UtilsTestSuite struct {

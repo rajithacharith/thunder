@@ -75,7 +75,7 @@ func generateTestKeys(t *testing.T) (*ecdsa.PrivateKey, []byte) {
 }
 
 // createTestAuthData creates a valid authenticator data byte array.
-func createTestAuthData(t *testing.T, rpID string) []byte {
+func createTestAuthData(_ *testing.T, rpID string) []byte {
 	rpIDHash := sha256.Sum256([]byte(rpID))
 
 	authData := make([]byte, 0, 37)
