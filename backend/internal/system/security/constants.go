@@ -31,6 +31,7 @@ var publicPaths = []string{
 	"/auth/**",
 	"/register/passkey/**",
 	"/flow/execute/**",
+	"/flow/meta",
 	"/oauth2/**",
 	"/.well-known/openid-configuration/**",
 	"/.well-known/oauth-authorization-server/**",

@@ -459,6 +459,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 				suite.Equal("ou-1", resp.ID)
 			},
 		},
+		//nolint:dupl // Similar structure but tests different fields (design vs URI fields)
 		{
 			name: "passes design fields",
 			body: `{
@@ -495,6 +496,45 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 				suite.Equal("theme-123", resp.ThemeID)
 				suite.Equal("layout-456", resp.LayoutID)
 				suite.Equal("https://example.com/logo.png", resp.LogoURL)
+			},
+		},
+		//nolint:dupl // Similar structure but tests different fields (design vs URI fields)
+		{
+			name: "passes URI fields",
+			body: `{
+				"handle": "finance",
+				"name": "` + testOUNameFinance + `",
+				"tos_uri": "https://example.com/tos",
+				"policy_uri": "https://example.com/privacy",
+				"cookie_policy_uri": "https://example.com/cookie-policy"
+			}`,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On("CreateOrganizationUnit", mock.MatchedBy(func(req OrganizationUnitRequest) bool {
+						return req.Handle == defaultOUHandle &&
+							req.Name == testOUNameFinance &&
+							req.TosURI == "https://example.com/tos" &&
+							req.PolicyURI == "https://example.com/privacy" &&
+							req.CookiePolicyURI == "https://example.com/cookie-policy"
+					})).
+					Return(OrganizationUnit{
+						ID:              "ou-1",
+						Handle:          "finance",
+						Name:            testOUNameFinance,
+						TosURI:          "https://example.com/tos",
+						PolicyURI:       "https://example.com/privacy",
+						CookiePolicyURI: "https://example.com/cookie-policy",
+					}, nil).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusCreated, recorder.Code)
+				var resp OrganizationUnit
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
+				suite.Equal("ou-1", resp.ID)
+				suite.Equal("https://example.com/tos", resp.TosURI)
+				suite.Equal("https://example.com/privacy", resp.PolicyURI)
+				suite.Equal("https://example.com/cookie-policy", resp.CookiePolicyURI)
 			},
 		},
 		{

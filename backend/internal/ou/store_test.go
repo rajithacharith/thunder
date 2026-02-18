@@ -401,7 +401,8 @@ func TestBuildOrganizationUnitFromResultRow(t *testing.T) {
 			"parent_id":   nil,
 			"theme_id":    "theme-abc",
 			"layout_id":   "layout-def",
-			"logo_url":    "https://example.com/logo.png",
+			"metadata": `{"logo_url":"https://example.com/logo.png","tos_uri":""` +
+				`,"policy_uri":"","cookie_policy_uri":""}`,
 		}
 
 		ou, err := buildOrganizationUnitFromResultRow(row)
@@ -973,7 +974,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 						ou.Description,
 						ou.ThemeID,
 						ou.LayoutID,
-						ou.LogoURL,
+						`{"cookie_policy_uri":"","logo_url":"","policy_uri":"","tos_uri":""}`,
 						testDeploymentID,
 					).
 					Return(int64(1), nil).
@@ -1008,7 +1009,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 						ou.Description,
 						ou.ThemeID,
 						ou.LayoutID,
-						ou.LogoURL,
+						`{"cookie_policy_uri":"","logo_url":"https://example.com/logo.png",`+
+							`"policy_uri":"","tos_uri":""}`,
 						testDeploymentID,
 					).
 					Return(int64(1), nil).
@@ -1031,7 +1033,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 						ou.Description,
 						ou.ThemeID,
 						ou.LayoutID,
-						ou.LogoURL,
+						`{"cookie_policy_uri":"","logo_url":"","policy_uri":"","tos_uri":""}`,
 						testDeploymentID,
 					).
 					Return(int64(0), errors.New("update failed")).
@@ -1491,7 +1493,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 						ou.Description,
 						ou.ThemeID,
 						ou.LayoutID,
-						ou.LogoURL,
+						`{"cookie_policy_uri":"","logo_url":"","policy_uri":"","tos_uri":""}`,
 						testDeploymentID,
 					).
 					Return(int64(1), nil).
@@ -1522,7 +1524,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 						ou.Description,
 						ou.ThemeID,
 						ou.LayoutID,
-						ou.LogoURL,
+						`{"cookie_policy_uri":"","logo_url":"https://example.com/logo.png",`+
+							`"policy_uri":"","tos_uri":""}`,
 						testDeploymentID,
 					).
 					Return(int64(1), nil).
@@ -1550,7 +1553,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 						ou.Description,
 						ou.ThemeID,
 						ou.LayoutID,
-						ou.LogoURL,
+						`{"cookie_policy_uri":"","logo_url":"","policy_uri":"","tos_uri":""}`,
 						testDeploymentID,
 					).
 					Return(int64(0), errors.New("insert failed")).
