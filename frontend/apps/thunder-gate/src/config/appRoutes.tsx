@@ -17,6 +17,7 @@
  */
 
 import {Navigate, type RouteProps} from 'react-router';
+import {CallbackRoute} from '@asgardeo/react-router';
 import ROUTES from '../constants/routes';
 import DefaultLayout from '../layouts/DefaultLayout';
 import SignInPage from '../pages/SignInPage';
@@ -62,6 +63,7 @@ const appRoutes: AppRoute[] = [
       {path: ROUTES.AUTH.SIGN_IN, element: <SignInPage />},
       {path: ROUTES.AUTH.SIGN_UP, element: <SignUpPage />},
       {path: ROUTES.AUTH.INVITE, element: <AcceptInvitePage />},
+      {path: ROUTES.AUTH.CALLBACK, element: <CallbackRoute />},
     ],
   },
 ];

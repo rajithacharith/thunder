@@ -921,6 +921,68 @@ func (s *EngineTestSuite) TestGetNodeInputs_PromptNodeEmptyInputs() {
 	s.Nil(inputs)
 }
 
+func (s *EngineTestSuite) TestShouldUpdateAuthenticatedUser_UserOnboardingFlowWithAuthExecutor() {
+	t := s.T()
+	mockExecutor := coremock.NewExecutorInterfaceMock(t)
+	mockExecutor.On("GetType").Return(common.ExecutorTypeAuthentication)
+
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
+	mockNode.On("GetExecutor").Return(mockExecutor)
+
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		CurrentNode: mockNode,
+		FlowType:    common.FlowTypeUserOnboarding,
+	}
+
+	result := fe.shouldUpdateAuthenticatedUser(ctx)
+
+	s.True(result)
+}
+
+func (s *EngineTestSuite) TestShouldUpdateAuthenticatedUser_UserOnboardingFlowWithProvisioningExecutor() {
+	t := s.T()
+	mockExecutor := coremock.NewExecutorInterfaceMock(t)
+	mockExecutor.On("GetType").Return(common.ExecutorTypeRegistration)
+	mockExecutor.On("GetName").Return("ProvisioningExecutor")
+
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
+	mockNode.On("GetExecutor").Return(mockExecutor)
+
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		CurrentNode: mockNode,
+		FlowType:    common.FlowTypeUserOnboarding,
+	}
+
+	result := fe.shouldUpdateAuthenticatedUser(ctx)
+
+	s.True(result)
+}
+
+func (s *EngineTestSuite) TestShouldUpdateAuthenticatedUser_UserOnboardingFlowWithOtherExecutor() {
+	t := s.T()
+	mockExecutor := coremock.NewExecutorInterfaceMock(t)
+	mockExecutor.On("GetType").Return(common.ExecutorTypeUtility)
+	mockExecutor.On("GetName").Return("SomeOtherExecutor")
+
+	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
+	mockNode.On("GetType").Return(common.NodeTypeTaskExecution)
+	mockNode.On("GetExecutor").Return(mockExecutor)
+
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		CurrentNode: mockNode,
+		FlowType:    common.FlowTypeUserOnboarding,
+	}
+
+	result := fe.shouldUpdateAuthenticatedUser(ctx)
+
+	s.False(result)
+}
+
 func (s *EngineTestSuite) TestClearSensitiveInputs_AuthFlowRemovesPassword() {
 	mockNode := coremock.NewExecutorBackedNodeInterfaceMock(s.T())
 	mockNode.On("GetInputs").Return([]common.Input{

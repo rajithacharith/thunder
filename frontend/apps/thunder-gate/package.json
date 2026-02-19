@@ -35,6 +35,7 @@
   },
   "dependencies": {
     "@asgardeo/react": "catalog:",
+    "@asgardeo/react-router": "catalog:",
     "@emotion/react": "catalog:",
     "@emotion/styled": "catalog:",
     "@fontsource-variable/inter": "5.2.8",
