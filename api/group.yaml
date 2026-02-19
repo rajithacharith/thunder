@@ -238,13 +238,6 @@ paths:
               name: "Activities"
               description: "Activities group"
               organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
-              members:
-                - type: "user"
-                  id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
-                - type: "user"
-                  id: "9f1e47d3-0347-4464-9f02-e0bfae02e896"
-                - type: "group"
-                  id: "6b1e7b8d-7e19-41eb-8fa2-c0ee5bb67a94"
       responses:
         "200":
           description: Group updated
@@ -276,12 +269,6 @@ paths:
                     code: "GRP-1001"
                     message: "Invalid request format"
                     description: "The request body is malformed or contains invalid data"
-                invalid-user-id:
-                  summary: Invalid member ID
-                  value:
-                    code: "GRP-1007"
-                    message: "Invalid member ID"
-                    description: "One or more member IDs in the request do not exist"
                 ou-not-found:
                   summary: Organization unit not found
                   value:
@@ -859,8 +846,16 @@ components:
             $ref: '#/components/schemas/Member'
 
     UpdateGroupRequest:
-      allOf:
-        - $ref: '#/components/schemas/CreateGroupRequest'
+      type: object
+      required: [name, organizationUnitId]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        organizationUnitId:
+          type: string
+          format: uuid
 
     GroupListResponse:
       type: object
