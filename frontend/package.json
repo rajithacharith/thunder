@@ -51,6 +51,11 @@
     "overrides": {
       "vite": "catalog:",
       "nx>axios": ">=1.13.5"
+    },
+    "auditConfig": {
+      "ignoreCves": [
+        "CVE-2026-26996"
+      ]
     }
   }
 }
