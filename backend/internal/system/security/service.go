@@ -23,6 +23,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 
@@ -41,6 +42,7 @@ type securityService struct {
 	authenticators []AuthenticatorInterface
 	logger         *log.Logger
 	compiledPaths  []*regexp.Regexp
+	skipSecurity   bool
 }
 
 // NewSecurityService creates a new instance of the security service.
@@ -58,10 +60,27 @@ func NewSecurityService(authenticators []AuthenticatorInterface, publicPaths []s
 		return nil, err
 	}
 
+	// Check if security enforcement should be skipped via environment variable
+	skipSecurity := os.Getenv("THUNDER_SKIP_SECURITY") == "true"
+
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if skipSecurity {
+		logger.Warn("============================================================")
+		logger.Warn("|       WARNING: SECURITY ENFORCEMENT DISABLED             |")
+		logger.Warn("|                                                          |")
+		logger.Warn("|        THUNDER_SKIP_SECURITY is set to 'true'            |")
+		logger.Warn("|  This is NOT RECOMMENDED for production environments!    |")
+		logger.Warn("| Endpoints accessible without auth, but tokens processed  |")
+		logger.Warn("|                                                          |")
+		logger.Warn("============================================================")
+	}
+
 	return &securityService{
 		authenticators: authenticators,
-		logger:         log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
+		logger:         logger,
 		compiledPaths:  compiledPaths,
+		skipSecurity:   skipSecurity,
 	}, nil
 }
 
@@ -86,13 +105,13 @@ func (s *securityService) Process(r *http.Request) (context.Context, error) {
 
 	// If no authenticator found
 	if authenticator == nil {
-		return s.handleAuthError(r, errNoHandlerFound, isPublic)
+		return s.handleAuthError(r.Context(), r.URL.Path, errNoHandlerFound, isPublic, s.skipSecurity)
 	}
 
 	// Authenticate the request
 	securityCtx, err := authenticator.Authenticate(r)
 	if err != nil {
-		return s.handleAuthError(r, err, isPublic)
+		return s.handleAuthError(r.Context(), r.URL.Path, err, isPublic, s.skipSecurity)
 	}
 
 	// Add authentication context to request context if available
@@ -103,7 +122,7 @@ func (s *securityService) Process(r *http.Request) (context.Context, error) {
 
 	// Authorize the authenticated principal
 	if err := authenticator.Authorize(r.WithContext(ctx), securityCtx); err != nil {
-		return s.handleAuthError(r, err, isPublic)
+		return s.handleAuthError(ctx, r.URL.Path, err, isPublic, s.skipSecurity)
 	}
 
 	return ctx, nil
@@ -170,13 +189,26 @@ func compilePathPatterns(patterns []string) ([]*regexp.Regexp, error) {
 	return compiled, nil
 }
 
-// handleAuthError handles authentication/authorization errors based on whether the path is public.
-func (s *securityService) handleAuthError(r *http.Request, err error, isPublic bool) (context.Context, error) {
+// handleAuthError handles authentication/authorization errors based on whether
+// the path is public or security is skipped.
+func (s *securityService) handleAuthError(
+	ctx context.Context,
+	path string,
+	err error,
+	isPublic bool,
+	skipSecurity bool,
+) (context.Context, error) {
 	if isPublic {
-		s.logger.Debug("Authentication failed on public path, proceeding without authentication",
-			log.Error(err),
-			log.String("path", r.URL.Path))
-		return r.Context(), nil
+		return ctx, nil
 	}
+
+	if skipSecurity {
+		s.logger.Debug(
+			"Proceeding without authentication/authorization enforcement as skipSecurity is enabled",
+			log.Error(err),
+			log.String("path", path))
+		return ctx, nil
+	}
+
 	return nil, err
 }

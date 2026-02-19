@@ -22,6 +22,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -588,4 +589,104 @@ func (suite *SecurityServiceTestSuite) TestProcess_PublicPath_WithInvalidToken()
 
 	userID := GetUserID(ctx)
 	assert.Empty(suite.T(), userID)
+}
+
+// Test skipSecurity flag allows requests to proceed even with auth failures
+func (suite *SecurityServiceTestSuite) TestProcess_SkipSecurity_AllowsAccessWithoutToken() {
+	_ = os.Setenv("THUNDER_SKIP_SECURITY", "true")
+	defer func() { _ = os.Unsetenv("THUNDER_SKIP_SECURITY") }()
+
+	service, err := NewSecurityService([]AuthenticatorInterface{suite.mockAuth1}, testPublicPaths)
+	suite.Require().NoError(err)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
+
+	// No authenticator can handle the request (no token)
+	suite.mockAuth1.On("CanHandle", req).Return(false)
+
+	ctx, err := service.Process(req)
+
+	// Should succeed without authentication
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), ctx)
+	assert.Equal(suite.T(), req.Context(), ctx)
+}
+
+// setupSkipSecurityTest is a helper function to set up skip security tests
+func (suite *SecurityServiceTestSuite) setupSkipSecurityTest() (*http.Request, SecurityServiceInterface) {
+	_ = os.Setenv("THUNDER_SKIP_SECURITY", "true")
+	suite.T().Cleanup(func() { _ = os.Unsetenv("THUNDER_SKIP_SECURITY") })
+
+	service, err := NewSecurityService([]AuthenticatorInterface{suite.mockAuth1}, testPublicPaths)
+	suite.Require().NoError(err)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
+	req.Header.Set("Authorization", "Bearer valid_token")
+	return req, service
+}
+
+// Test skipSecurity flag enriches context when valid token is present
+func (suite *SecurityServiceTestSuite) TestProcess_SkipSecurity_EnrichesContextWithValidToken() {
+	req, service := suite.setupSkipSecurityTest()
+
+	// Authenticator handles request and succeeds
+	suite.mockAuth1.On("CanHandle", req).Return(true)
+	suite.mockAuth1.On("Authenticate", req).Return(suite.testCtx, nil)
+	suite.mockAuth1.On("Authorize", mock.Anything, suite.testCtx).Return(nil)
+
+	ctx, err := service.Process(req)
+
+	// Should succeed and context should be enriched
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), ctx)
+
+	userID := GetUserID(ctx)
+	assert.Equal(suite.T(), "user123", userID)
+}
+
+// Test skipSecurity flag allows access even with invalid token
+func (suite *SecurityServiceTestSuite) TestProcess_SkipSecurity_AllowsAccessWithInvalidToken() {
+	_ = os.Setenv("THUNDER_SKIP_SECURITY", "true")
+	defer func() { _ = os.Unsetenv("THUNDER_SKIP_SECURITY") }()
+
+	service, err := NewSecurityService([]AuthenticatorInterface{suite.mockAuth1}, testPublicPaths)
+	suite.Require().NoError(err)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
+	req.Header.Set("Authorization", "Bearer invalid_token")
+
+	// Authenticator handles request but authentication fails
+	suite.mockAuth1.On("CanHandle", req).Return(true)
+	suite.mockAuth1.On("Authenticate", req).Return(nil, errInvalidToken)
+
+	ctx, err := service.Process(req)
+
+	// Should succeed even though authentication failed
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), ctx)
+	assert.Equal(suite.T(), req.Context(), ctx)
+
+	// Context should not be enriched
+	userID := GetUserID(ctx)
+	assert.Empty(suite.T(), userID)
+}
+
+// Test skipSecurity flag allows access even with insufficient scopes
+func (suite *SecurityServiceTestSuite) TestProcess_SkipSecurity_AllowsAccessWithInsufficientScopes() {
+	req, service := suite.setupSkipSecurityTest()
+
+	// Authenticator handles request, authentication succeeds but authorization fails
+	suite.mockAuth1.On("CanHandle", req).Return(true)
+	suite.mockAuth1.On("Authenticate", req).Return(suite.testCtx, nil)
+	suite.mockAuth1.On("Authorize", mock.Anything, suite.testCtx).Return(errInsufficientScopes)
+
+	ctx, err := service.Process(req)
+
+	// Should succeed even though authorization failed
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), ctx)
+
+	// Context should still be enriched (authentication succeeded)
+	userID := GetUserID(ctx)
+	assert.Equal(suite.T(), "user123", userID)
 }
