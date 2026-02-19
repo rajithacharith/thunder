@@ -651,68 +651,66 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_RegistrationFl
 	suite.mockCredsService.AssertNotCalled(suite.T(), "Authenticate")
 }
 
-func (suite *BasicAuthExecutorTestSuite) TestExecute_InvalidCredentials_ReturnsSpecificFailureReason() {
-	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
-		UserInputs: map[string]string{
-			userAttributeUsername: "testuser",
-			userAttributePassword: "wrongpassword",
+func (suite *BasicAuthExecutorTestSuite) TestExecute_RetryableAuthenticationErrors() {
+	tests := []struct {
+		name           string
+		username       string
+		password       string
+		errorCode      string
+		expectedReason string
+		message        string
+	}{
+		{
+			name:           "Invalid credentials",
+			username:       "testuser",
+			password:       "wrongpassword",
+			errorCode:      authncreds.ErrorInvalidCredentials.Code,
+			expectedReason: failureReasonInvalidCredentials,
+			message:        "Should return specific failure reason for invalid credentials",
 		},
-		RuntimeData: make(map[string]string),
+		{
+			name:           "User not found",
+			username:       "nonexistent",
+			password:       "password123",
+			errorCode:      authncm.ErrorUserNotFound.Code,
+			expectedReason: failureReasonUserNotFound,
+			message:        "Should return specific failure reason for user not found",
+		},
 	}
 
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
-		userAttributeUsername: "testuser",
-	}, map[string]interface{}{
-		userAttributePassword: "wrongpassword",
-	}, mock.Anything).Return(nil, &serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
-		Code: authncreds.ErrorInvalidCredentials.Code,
-	})
+	for _, tt := range tests {
+		suite.T().Run(tt.name, func(t *testing.T) {
+			suite.mockCredsService.ExpectedCalls = nil
+			ctx := &core.NodeContext{
+				FlowID:   "flow-123",
+				FlowType: common.FlowTypeAuthentication,
+				UserInputs: map[string]string{
+					userAttributeUsername: tt.username,
+					userAttributePassword: tt.password,
+				},
+				RuntimeData: make(map[string]string),
+			}
 
-	resp, err := suite.executor.Execute(ctx)
+			suite.mockCredsService.On("Authenticate", map[string]interface{}{
+				userAttributeUsername: tt.username,
+			}, map[string]interface{}{
+				userAttributePassword: tt.password,
+			}, mock.Anything).Return(nil, &serviceerror.ServiceError{
+				Type: serviceerror.ClientErrorType,
+				Code: tt.errorCode,
+			})
 
-	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
-	assert.Equal(suite.T(), failureReasonInvalidCredentials, resp.FailureReason,
-		"Should return specific failure reason for invalid credentials")
-	assert.NotEmpty(suite.T(), resp.Inputs, "Inputs should be re-populated for retry")
-	assert.Len(suite.T(), resp.Inputs, 2, "Should include both username and password inputs")
-	suite.mockCredsService.AssertExpectations(suite.T())
-}
+			resp, err := suite.executor.Execute(ctx)
 
-func (suite *BasicAuthExecutorTestSuite) TestExecute_UserNotFound_ReturnsSpecificFailureReason() {
-	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
-		UserInputs: map[string]string{
-			userAttributeUsername: "nonexistent",
-			userAttributePassword: "password123",
-		},
-		RuntimeData: make(map[string]string),
+			assert.NoError(t, err)
+			assert.NotNil(t, resp)
+			assert.Equal(t, common.ExecUserInputRequired, resp.Status)
+			assert.Equal(t, tt.expectedReason, resp.FailureReason, tt.message)
+			assert.NotEmpty(t, resp.Inputs, "Inputs should be re-populated for retry")
+			assert.Len(t, resp.Inputs, 2, "Should include both username and password inputs")
+			suite.mockCredsService.AssertExpectations(t)
+		})
 	}
-
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
-		userAttributeUsername: "nonexistent",
-	}, map[string]interface{}{
-		userAttributePassword: "password123",
-	}, mock.Anything).Return(nil, &serviceerror.ServiceError{
-		Type: serviceerror.ClientErrorType,
-		Code: authncm.ErrorUserNotFound.Code,
-	})
-
-	resp, err := suite.executor.Execute(ctx)
-
-	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
-	assert.Equal(suite.T(), failureReasonUserNotFound, resp.FailureReason,
-		"Should return specific failure reason for user not found")
-	assert.NotEmpty(suite.T(), resp.Inputs, "Inputs should be re-populated for retry")
-	assert.Len(suite.T(), resp.Inputs, 2, "Should include both username and password inputs")
-	suite.mockCredsService.AssertExpectations(suite.T())
 }
 
 func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_ClientError_ReturnsInputsForRetry() {
