@@ -158,6 +158,8 @@ const (
 	InputTypePassword = "PASSWORD_INPUT"
 	// InputTypeOTP represents a one-time password input type.
 	InputTypeOTP = "OTP_INPUT"
+	// InputTypePhone represents a phone number input type.
+	InputTypePhone = "PHONE_INPUT"
 
 	// TODO: Add support for other sensitive input types:
 	// - Passkey credential fields (credentialId, clientDataJSON, authenticatorData, signature, userHandle)
@@ -171,3 +173,9 @@ var sensitiveInputTypes = []string{
 	InputTypePassword,
 	InputTypeOTP,
 }
+
+// ForwardedData key constants define keys used in the ForwardedData map.
+const (
+	// ForwardedDataKeyInputs is the key used to store input data in ForwardedData.
+	ForwardedDataKeyInputs = "inputs"
+)

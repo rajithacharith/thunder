@@ -35,18 +35,11 @@ import (
 	"github.com/asgardeo/thunder/internal/user"
 )
 
-const (
-	userInputOTP             = "otp"
-	errorInvalidOTP          = "invalid OTP provided"
-	smsOTPExecutorModeSend   = "send"
-	smsOTPExecutorModeVerify = "verify"
-)
-
-// mobileNumberInput is the input definition for mobile number collection.
-var mobileNumberInput = common.Input{
+// MobileNumberInput is the input definition for mobile number collection.
+var MobileNumberInput = common.Input{
 	Ref:        "mobile_number_input",
 	Identifier: userAttributeMobileNumber,
-	Type:       "PHONE_INPUT",
+	Type:       common.InputTypePhone,
 	Required:   true,
 }
 
@@ -79,7 +72,7 @@ func newSMSOTPAuthExecutor(
 		},
 	}
 	prerequisites := []common.Input{
-		mobileNumberInput,
+		MobileNumberInput,
 	}
 
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "SMSOTPAuthExecutor"),
@@ -117,9 +110,9 @@ func (s *smsOTPAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRes
 
 	// Determine the executor mode
 	switch ctx.ExecutorMode {
-	case smsOTPExecutorModeSend:
+	case ExecutorModeSend:
 		return s.executeSend(ctx, execResp)
-	case smsOTPExecutorModeVerify:
+	case ExecutorModeVerify:
 		return s.executeVerify(ctx, execResp)
 	default:
 		return execResp, fmt.Errorf("invalid executor mode: %s", ctx.ExecutorMode)
@@ -274,8 +267,7 @@ func (s *smsOTPAuthExecutor) ValidatePrerequisites(ctx *core.NodeContext,
 	if ctx.FlowType == common.FlowTypeRegistration {
 		logger.Debug("Prerequisites not met for registration flow, prompting for mobile number")
 		execResp.Status = common.ExecUserInputRequired
-		execResp.Inputs = []common.Input{mobileNumberInput}
-		execResp.Meta = s.getMobileInputMeta()
+		execResp.Inputs = []common.Input{MobileNumberInput}
 		return false
 	}
 
@@ -571,7 +563,7 @@ func (s *smsOTPAuthExecutor) validateOTP(ctx *core.NodeContext, execResp *common
 	if providedOTP == "" {
 		logger.Debug("Provided OTP is empty", log.String("userID", userID))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = errorInvalidOTP
+		execResp.FailureReason = failureReasonInvalidOTP
 		return nil
 	}
 
@@ -599,7 +591,7 @@ func (s *smsOTPAuthExecutor) validateOTP(ctx *core.NodeContext, execResp *common
 			log.String("status", string(verifyResult.Status)))
 
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = errorInvalidOTP
+		execResp.FailureReason = failureReasonInvalidOTP
 		return nil
 	}
 
@@ -674,17 +666,4 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	}
 
 	return authenticatedUser, nil
-}
-
-// getMobileInputMeta returns the meta structure for mobile number input prompt.
-func (s *smsOTPAuthExecutor) getMobileInputMeta() interface{} {
-	return core.NewMetaBuilder().
-		WithIDPrefix("mobile_number").
-		WithHeading("{{ t(signup:heading) }}").
-		WithInput(mobileNumberInput, core.MetaInputConfig{
-			Label:       "{{ t(elements:fields.mobile.label) }}",
-			Placeholder: "{{ t(elements:fields.mobile.placeholder) }}",
-		}).
-		WithSubmitButton("{{ t(elements:buttons.submit.text) }}").
-		Build()
 }

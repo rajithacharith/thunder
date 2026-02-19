@@ -43,6 +43,12 @@ const (
 	ExecutorNameCredentialSetter    = "CredentialSetter"
 )
 
+// Executor mode constants
+const (
+	ExecutorModeSend   = "send"
+	ExecutorModeVerify = "verify"
+)
+
 // User attribute and input constants
 const (
 	userAttributeUsername     = "username"
@@ -59,6 +65,7 @@ const (
 	userInputOuHandle    = "ouHandle"
 	userInputOuDesc      = "ouDescription"
 	userInputInviteToken = "inviteToken"
+	userInputOTP         = "otp"
 
 	ouIDKey        = "ouId"
 	defaultOUIDKey = "defaultOUID"
@@ -92,4 +99,5 @@ const (
 	failureReasonUserNotAuthenticated = "User is not authenticated"
 	failureReasonUserNotFound         = "User not found"
 	failureReasonFailedToIdentifyUser = "Failed to identify user"
+	failureReasonInvalidOTP           = "invalid OTP provided"
 )
