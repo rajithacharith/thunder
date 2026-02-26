@@ -87,18 +87,20 @@ func (av *authorizationValidator) validateInitialAuthorizationRequest(msg *OAuth
 		return true, constants.ErrorUnsupportedResponseType, "Unsupported response type"
 	}
 
-	// Validate PKCE parameters if required
-	if oauthApp.RequiresPKCE() && responseType == string(constants.ResponseTypeCode) {
+	// Validate PKCE parameters
+	if responseType == string(constants.ResponseTypeCode) {
 		codeChallenge := msg.RequestQueryParams[constants.RequestParamCodeChallenge]
 		codeChallengeMethod := msg.RequestQueryParams[constants.RequestParamCodeChallengeMethod]
 
-		if codeChallenge == "" {
+		if oauthApp.RequiresPKCE() && codeChallenge == "" {
 			return true, constants.ErrorInvalidRequest, "code_challenge is required for this application"
 		}
 
-		// Validate code challenge format and method
-		if err := pkce.ValidateCodeChallenge(codeChallenge, codeChallengeMethod); err != nil {
-			return true, constants.ErrorInvalidRequest, "Invalid PKCE parameters"
+		// Validate code challenge format and method if PKCE parameters are present
+		if codeChallenge != "" {
+			if err := pkce.ValidateCodeChallenge(codeChallenge, codeChallengeMethod); err != nil {
+				return true, constants.ErrorInvalidRequest, "Invalid PKCE parameters"
+			}
 		}
 	}
 	// Validate nonce length (FAPI 2.0 aligned)
