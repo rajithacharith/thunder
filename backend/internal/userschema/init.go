@@ -21,6 +21,7 @@ package userschema
 import (
 	"net/http"
 
+	"github.com/asgardeo/thunder/internal/consent"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
@@ -35,6 +36,7 @@ func Initialize(
 	mux *http.ServeMux,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	authzService sysauthz.SystemAuthorizationServiceInterface,
+	consentService consent.ConsentServiceInterface,
 ) (UserSchemaServiceInterface, declarativeresource.ResourceExporter, error) {
 	// Step 1: Determine store mode and initialize store structure
 	storeMode := getUserSchemaStoreMode()
@@ -52,7 +54,8 @@ func Initialize(
 	}
 
 	// Step 3: Create service with store
-	userSchemaService := newUserSchemaService(ouService, userSchemaStore, transactioner, authzService)
+	userSchemaService := newUserSchemaService(ouService, userSchemaStore, transactioner,
+		authzService, consentService)
 
 	// Step 4: Load declarative resources into store (if applicable)
 	if storeMode == serverconst.StoreModeComposite || storeMode == serverconst.StoreModeDeclarative {

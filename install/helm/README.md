@@ -390,6 +390,10 @@ Each database section (`identity`, `runtime`, `user`) supports these fields:
 | `configuration.flow.autoInferRegistration`        | Enable auto-infer registration flow                                                                   | `true`                       |
 | `configuration.cors.allowedOrigins`               | CORS allowed origins                                                                                  | See values.yaml              |
 | `configuration.passkey.allowedOrigins`            | Passkey allowed origins                                                                               | `[]`                         |
+| `configuration.consent.enabled`                   | Enable consent service                                                                                | `false`                      |
+| `configuration.consent.baseUrl`                   | Base URL of the consent service                                                                       | `""`                         |
+| `configuration.consent.timeout`                   | Timeout for consent service API calls in seconds                                                      | `5`                          |
+| `configuration.consent.maxRetries`                | Max retry attempts for transient errors when calling consent service API                              | `3`                          |
 
 ### Persistence Parameters
 

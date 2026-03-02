@@ -72,6 +72,7 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 		PolicyURI:                 appRequest.PolicyURI,
 		Contacts:                  appRequest.Contacts,
 		AllowedUserTypes:          appRequest.AllowedUserTypes,
+		LoginConsent:              appRequest.LoginConsent,
 		Metadata:                  appRequest.Metadata,
 	}
 	appDTO.InboundAuthConfig = ah.processInboundAuthConfigFromRequest(appRequest.InboundAuthConfig)
@@ -101,6 +102,7 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 		PolicyURI:                 createdAppDTO.PolicyURI,
 		Contacts:                  createdAppDTO.Contacts,
 		AllowedUserTypes:          createdAppDTO.AllowedUserTypes,
+		LoginConsent:              createdAppDTO.LoginConsent,
 		Metadata:                  createdAppDTO.Metadata,
 	}
 
@@ -171,6 +173,7 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 		PolicyURI:                 appDTO.PolicyURI,
 		Contacts:                  appDTO.Contacts,
 		AllowedUserTypes:          appDTO.AllowedUserTypes,
+		LoginConsent:              appDTO.LoginConsent,
 		Metadata:                  appDTO.Metadata,
 	}
 
@@ -287,6 +290,7 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 		PolicyURI:                 appRequest.PolicyURI,
 		Contacts:                  appRequest.Contacts,
 		AllowedUserTypes:          appRequest.AllowedUserTypes,
+		LoginConsent:              appRequest.LoginConsent,
 		Metadata:                  appRequest.Metadata,
 	}
 	updateReqAppDTO.InboundAuthConfig = ah.processInboundAuthConfigFromRequest(appRequest.InboundAuthConfig)
@@ -316,6 +320,7 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 		PolicyURI:                 updatedAppDTO.PolicyURI,
 		Contacts:                  updatedAppDTO.Contacts,
 		AllowedUserTypes:          updatedAppDTO.AllowedUserTypes,
+		LoginConsent:              updatedAppDTO.LoginConsent,
 		Metadata:                  updatedAppDTO.Metadata,
 	}
 

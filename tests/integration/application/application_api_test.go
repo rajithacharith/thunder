@@ -557,6 +557,14 @@ func retrieveAndValidateApplicationDetails(ts *ApplicationAPITestSuite, expected
 		appForComparison.Assertion = app.Assertion
 	}
 
+	// Ensure login consent config is set in expected app if it's null
+	if appForComparison.LoginConsent == nil {
+		appForComparison.LoginConsent = &LoginConsentConfig{
+			Enabled:        false,
+			ValidityPeriod: 0,
+		}
+	}
+
 	if !app.equals(appForComparison) {
 		appJSON, _ := json.MarshalIndent(app, "", "  ")
 		expectedJSON, _ := json.MarshalIndent(appForComparison, "", "  ")
@@ -1906,7 +1914,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithMinimalTokenConfig() {
 					ResponseTypes:           []string{"code"},
 					TokenEndpointAuthMethod: "client_secret_basic",
 					Scopes:                  []string{"openid"},
-					Token: &OAuthTokenConfig{
+					Token:                   &OAuthTokenConfig{
 						// No AccessToken or IDToken
 					},
 				},

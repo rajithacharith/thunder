@@ -31,6 +31,12 @@ type AssertionConfig struct {
 	UserAttributes []string `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in the assertion. List of user claim names to embed in the assertion (e.g., email, username, roles)."`
 }
 
+// LoginConsentConfig represents the login consent configuration for an application.
+type LoginConsentConfig struct {
+	Enabled        bool  `json:"enabled" yaml:"enabled" jsonschema:"Enable login consent. Default is false."`
+	ValidityPeriod int64 `json:"validity_period" yaml:"validity_period" jsonschema:"Consent validity period in seconds. Default value 0 indicates consent is valid until revoked."`
+}
+
 // ApplicationDTO represents the data transfer object for application service operations.
 type ApplicationDTO struct {
 	ID                        string `json:"id,omitempty" jsonschema:"Application ID. Auto-generated unique identifier."`
@@ -53,6 +59,7 @@ type ApplicationDTO struct {
 	Certificate       *ApplicationCertificate `json:"certificate,omitempty" jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
 	InboundAuthConfig []InboundAuthConfigDTO  `json:"inbound_auth_config,omitempty" jsonschema:"OAuth/OIDC authentication configuration. Required for OAuth-enabled applications. Configure OAuth grant types, redirect URIs, and client authentication methods."`
 	AllowedUserTypes  []string                `json:"allowed_user_types,omitempty" jsonschema:"Allowed user types. Optional. Restricts which types of users can register to this application."`
+	LoginConsent      *LoginConsentConfig     `json:"login_consent,omitempty" jsonschema:"Login consent configuration settings."`
 	Metadata          map[string]interface{}  `json:"metadata,omitempty" jsonschema:"Generic metadata. Optional arbitrary key-value pairs for consumer use."`
 }
 
@@ -94,6 +101,7 @@ type Application struct {
 	Certificate       *ApplicationCertificate     `yaml:"certificate,omitempty" json:"certificate,omitempty" jsonschema:"Application certificate settings."`
 	InboundAuthConfig []InboundAuthConfigComplete `yaml:"inbound_auth_config,omitempty" json:"inbound_auth_config,omitempty" jsonschema:"Inbound authentication configuration (OAuth2/OIDC settings)."`
 	AllowedUserTypes  []string                    `yaml:"allowed_user_types,omitempty" json:"allowed_user_types,omitempty" jsonschema:"Allowed user types for registration."`
+	LoginConsent      *LoginConsentConfig         `yaml:"login_consent,omitempty" json:"login_consent,omitempty" jsonschema:"Login consent configuration settings."`
 	Metadata          map[string]interface{}      `yaml:"metadata,omitempty" json:"metadata,omitempty" jsonschema:"Generic metadata key-value pairs."`
 }
 
@@ -119,6 +127,7 @@ type ApplicationProcessedDTO struct {
 	Certificate       *ApplicationCertificate         `yaml:"certificate,omitempty"`
 	InboundAuthConfig []InboundAuthConfigProcessedDTO `yaml:"inbound_auth_config,omitempty"`
 	AllowedUserTypes  []string                        `yaml:"allowed_user_types,omitempty"`
+	LoginConsent      *LoginConsentConfig             `yaml:"login_consent,omitempty"`
 	Metadata          map[string]interface{}          `yaml:"metadata,omitempty"`
 }
 
@@ -163,6 +172,7 @@ type ApplicationRequest struct {
 	Contacts                  []string                    `json:"contacts,omitempty" yaml:"contacts,omitempty"`
 	InboundAuthConfig         []InboundAuthConfigComplete `json:"inbound_auth_config,omitempty" yaml:"inbound_auth_config,omitempty"`
 	AllowedUserTypes          []string                    `json:"allowed_user_types,omitempty" yaml:"allowed_user_types,omitempty"`
+	LoginConsent              *LoginConsentConfig         `json:"login_consent,omitempty" yaml:"login_consent,omitempty"`
 	Metadata                  map[string]interface{}      `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 }
 
@@ -212,6 +222,7 @@ type ApplicationCompleteResponse struct {
 	Contacts                  []string                    `json:"contacts,omitempty"`
 	InboundAuthConfig         []InboundAuthConfigComplete `json:"inbound_auth_config,omitempty"`
 	AllowedUserTypes          []string                    `json:"allowed_user_types,omitempty"`
+	LoginConsent              *LoginConsentConfig         `json:"login_consent,omitempty"`
 	Metadata                  map[string]interface{}      `json:"metadata,omitempty"`
 }
 
@@ -236,6 +247,7 @@ type ApplicationGetResponse struct {
 	Contacts                  []string                `json:"contacts,omitempty"`
 	InboundAuthConfig         []InboundAuthConfig     `json:"inbound_auth_config,omitempty"`
 	AllowedUserTypes          []string                `json:"allowed_user_types,omitempty"`
+	LoginConsent              *LoginConsentConfig     `json:"login_consent,omitempty"`
 	Metadata                  map[string]interface{}  `json:"metadata,omitempty"`
 }
 

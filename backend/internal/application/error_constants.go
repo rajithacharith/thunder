@@ -247,6 +247,22 @@ var (
 		Error:            "Cannot modify declarative resource",
 		ErrorDescription: "The application is declarative and cannot be modified or deleted",
 	}
+	// ErrorConsentSyncFailed is the error returned when an application's attributes changes failed to sync
+	// with the consent service.
+	ErrorConsentSyncFailed = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1031",
+		Error:            "Consent synchronization failed",
+		ErrorDescription: "Failed to synchronize consent configurations for the application",
+	}
+	// ErrorConsentServiceNotEnabled is the error returned when enabling consent for application while
+	// the consent service is not enabled.
+	ErrorConsentServiceNotEnabled = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1032",
+		Error:            "Consent service not enabled",
+		ErrorDescription: "Cannot enable consent for the application as the consent service is not enabled",
+	}
 )
 
 // Server errors for application operations.

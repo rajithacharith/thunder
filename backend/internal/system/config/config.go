@@ -346,6 +346,14 @@ type RestSecurityConfig struct {
 	APIKey string `yaml:"api_key" json:"api_key"`
 }
 
+// ConsentConfig holds the configuration for the consent service integration.
+type ConsentConfig struct {
+	Enabled    bool   `yaml:"enabled" json:"enabled"`
+	BaseURL    string `yaml:"base_url" json:"base_url"`
+	Timeout    int    `yaml:"timeout" json:"timeout"`         // HTTP request timeout in seconds. Default: 5
+	MaxRetries int    `yaml:"max_retries" json:"max_retries"` // Max retry attempts for transient errors. Default: 3
+}
+
 // Config holds the complete configuration details of the server.
 type Config struct {
 	Server               ServerConfig           `yaml:"server" json:"server"`
@@ -371,6 +379,7 @@ type Config struct {
 	Role                 RoleConfig             `yaml:"role" json:"role"`
 	Theme                ThemeConfig            `yaml:"theme" json:"theme"`
 	Layout               LayoutConfig           `yaml:"layout" json:"layout"`
+	Consent              ConsentConfig          `yaml:"consent" json:"consent"`
 }
 
 // LoadConfig loads the configurations from the specified YAML file and applies defaults.

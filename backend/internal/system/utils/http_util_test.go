@@ -21,6 +21,7 @@ package utils
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -723,6 +724,65 @@ func (suite *HTTPUtilTestSuite) TestWriteErrorResponse_EncodingError() {
 
 		// Status code should still be set before the write failure
 		assert.Equal(t, http.StatusBadRequest, w.ResponseRecorder.Code)
+	})
+}
+
+func (suite *HTTPUtilTestSuite) TestDecodeJSONResponse() {
+	type testStruct struct {
+		Name string `json:"name"`
+		Age  int    `json:"age"`
+	}
+
+	suite.T().Run("ValidJSONResponse", func(t *testing.T) {
+		obj := testStruct{Name: "Alice", Age: 30}
+		buf := new(bytes.Buffer)
+		_ = json.NewEncoder(buf).Encode(obj)
+		resp := &http.Response{
+			Body:       io.NopCloser(buf),
+			StatusCode: http.StatusOK,
+		}
+		result, err := DecodeJSONResponse[testStruct](resp)
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, obj.Name, result.Name)
+		assert.Equal(t, obj.Age, result.Age)
+	})
+
+	suite.T().Run("InvalidJSONResponse", func(t *testing.T) {
+		buf := bytes.NewBufferString("{invalid json}")
+		resp := &http.Response{
+			Body:       io.NopCloser(buf),
+			StatusCode: http.StatusOK,
+		}
+		result, err := DecodeJSONResponse[testStruct](resp)
+		assert.Error(t, err)
+		assert.Nil(t, result)
+	})
+
+	suite.T().Run("EmptyJSONResponse", func(t *testing.T) {
+		buf := bytes.NewBufferString("")
+		resp := &http.Response{
+			Body:       io.NopCloser(buf),
+			StatusCode: http.StatusOK,
+		}
+		result, err := DecodeJSONResponse[testStruct](resp)
+		assert.Error(t, err)
+		assert.Nil(t, result)
+	})
+
+	suite.T().Run("NilResponse", func(t *testing.T) {
+		result, err := DecodeJSONResponse[testStruct](nil)
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), "response or body is nil")
+	})
+
+	suite.T().Run("NilBody", func(t *testing.T) {
+		resp := &http.Response{Body: nil, StatusCode: http.StatusOK}
+		result, err := DecodeJSONResponse[testStruct](resp)
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), "response or body is nil")
 	})
 }
 

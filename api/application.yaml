@@ -111,6 +111,10 @@ paths:
               certificate:
                 type: "JWKS_URI"
                 value: "https://myapp.example.com/.well-known/jwks"
+              allowed_user_types: ["employee", "customer"]
+              login_consent:
+                enabled: true
+                validity_period: 3600
               inbound_auth_config:
                 - type: "oauth2"
                   config:
@@ -172,6 +176,10 @@ paths:
                 certificate:
                   type: "JWKS_URI"
                   value: "https://myapp.example.com/.well-known/jwks"
+                allowed_user_types: ["employee", "customer"]
+                login_consent:
+                  enabled: true
+                  validity_period: 3600
                 inbound_auth_config:
                   - type: "oauth2"
                     config:
@@ -284,6 +292,10 @@ paths:
                 certificate:
                   type: "JWKS_URI"
                   value: "https://myapp.example.com/.well-known/jwks"
+                allowed_user_types: ["employee", "customer"]
+                login_consent:
+                  enabled: true
+                  validity_period: 3600
                 inbound_auth_config:
                   - type: "oauth2"
                     config:
@@ -386,6 +398,10 @@ paths:
               certificate:
                 type: "JWKS_URI"
                 value: "https://myapp.example.com/.well-known/jwks"
+              allowed_user_types: ["employee", "customer"]
+              login_consent:
+                enabled: true
+                validity_period: 3600
               inbound_auth_config:
                 - type: "oauth2"
                   config:
@@ -449,6 +465,10 @@ paths:
                 certificate:
                   type: "JWKS_URI"
                   value: "https://myapp.example.com/.well-known/jwks"
+                allowed_user_types: ["employee", "customer"]
+                login_consent:
+                  enabled: true
+                  validity_period: 3600
                 inbound_auth_config:
                   - type: "oauth2"
                     config:
@@ -675,6 +695,17 @@ components:
             type: string
           description: Array of allowed user types for this application.
           example: ["employee", "customer", "partner"]
+        login_consent:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+              description: Indicates if login consent is enabled for the application.
+              example: true
+            validity_period:
+              type: integer
+              description: The validity period of the login consent in seconds. Default is 0 (no expiration).
+              example: 3600
         metadata:
           type: object
           additionalProperties: true
@@ -770,6 +801,17 @@ components:
             type: string
           description: Array of allowed user types for this application.
           example: ["employee", "customer", "partner"]
+        login_consent:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+              description: Indicates if consent is enabled for the application.
+              example: true
+            validity_period:
+              type: integer
+              description: The validity period of the consent in seconds. Default is 0 (no expiration).
+              example: 3600
         metadata:
           type: object
           additionalProperties: true
@@ -865,6 +907,17 @@ components:
             type: string
           description: Array of allowed user types for this application.
           example: ["employee", "customer", "partner"]
+        login_consent:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+              description: Indicates if consent is enabled for the application.
+              example: true
+            validity_period:
+              type: integer
+              description: The validity period of the consent in seconds. Default is 0 (no expiration).
+              example: 3600
         metadata:
           type: object
           additionalProperties: true

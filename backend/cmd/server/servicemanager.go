@@ -27,6 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/authz"
 	"github.com/asgardeo/thunder/internal/cert"
+	"github.com/asgardeo/thunder/internal/consent"
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	"github.com/asgardeo/thunder/internal/design/resolve"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
@@ -108,7 +109,12 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 
 	hashService := hash.Initialize()
 
-	userSchemaService, userSchemaExporter, err := userschema.Initialize(mux, ouService, ouAuthzService)
+	// Initialize consent service
+	consentService := consent.Initialize()
+
+	// Initialize user schema service
+	userSchemaService, userSchemaExporter, err := userschema.Initialize(
+		mux, ouService, ouAuthzService, consentService)
 	if err != nil {
 		logger.Fatal("Failed to initialize UserSchemaService", log.Error(err))
 	}
@@ -194,7 +200,8 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	exporters = append(exporters, layoutExporter)
 
 	applicationService, applicationExporter, err := application.Initialize(
-		mux, mcpServer, certservice, flowMgtService, themeMgtService, layoutMgtService, userSchemaService)
+		mux, mcpServer, certservice, flowMgtService, themeMgtService, layoutMgtService,
+		userSchemaService, consentService)
 	if err != nil {
 		logger.Fatal("Failed to initialize ApplicationService", log.Error(err))
 	}

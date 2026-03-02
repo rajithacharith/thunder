@@ -32,6 +32,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
+	"github.com/asgardeo/thunder/tests/mocks/consentmock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	"github.com/asgardeo/thunder/tests/mocks/sysauthzmock"
 )
@@ -53,6 +54,26 @@ func newAllowAllAuthz(t interface {
 	authzMock.On("GetAccessibleResources", mock.Anything, mock.Anything, mock.Anything).
 		Return(&sysauthz.AccessibleResources{AllAllowed: true}, nil).Maybe()
 	return authzMock
+}
+
+// newConsentServiceMockEnabled creates a new consent service mock with IsEnabled returning true.
+func newConsentServiceMockEnabled(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *consentmock.ConsentServiceInterfaceMock {
+	consentMock := consentmock.NewConsentServiceInterfaceMock(t)
+	consentMock.On("IsEnabled").Return(true)
+	return consentMock
+}
+
+// newConsentServiceMockDisabled creates a new consent service mock with IsEnabled returning false.
+func newConsentServiceMockDisabled(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *consentmock.ConsentServiceInterfaceMock {
+	consentMock := consentmock.NewConsentServiceInterfaceMock(t)
+	consentMock.On("IsEnabled").Return(false)
+	return consentMock
 }
 
 func TestCreateUserSchemaReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
@@ -778,4 +799,64 @@ func (s *GetCredentialAttributesTestSuite) TestStoreError_ReturnsInternalError()
 	s.Require().Nil(fields)
 	s.Require().NotNil(svcErr)
 	s.Require().Equal(ErrorInternalServerError, *svcErr)
+}
+
+// ----- DeleteUserSchema Tests -----
+
+func TestDeleteUserSchema(t *testing.T) {
+	tests := []struct {
+		name           string
+		schemaID       string
+		schema         json.RawMessage
+		consentService *consentmock.ConsentServiceInterfaceMock
+	}{
+		{
+			name:     "succeeds when attribute extraction fails but consent is enabled",
+			schemaID: "schema-123",
+			// Use invalid JSON to cause extractAttributeNames to fail
+			schema:         json.RawMessage(`{invalid json}`),
+			consentService: newConsentServiceMockEnabled(t),
+		},
+		{
+			name:           "succeeds when consent is disabled",
+			schemaID:       "schema-456",
+			schema:         json.RawMessage(`{"email":{"type":"string"}}`),
+			consentService: newConsentServiceMockDisabled(t),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			testConfig := &config.Config{
+				DeclarativeResources: config.DeclarativeResources{
+					Enabled: false,
+				},
+			}
+			config.ResetThunderRuntime()
+			err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+			require.NoError(t, err)
+			defer config.ResetThunderRuntime()
+
+			storeMock := newUserSchemaStoreInterfaceMock(t)
+			storeMock.On("GetUserSchemaByID", mock.Anything, tc.schemaID).Return(UserSchema{
+				ID:                 tc.schemaID,
+				OrganizationUnitID: testOUID1,
+				Schema:             tc.schema,
+			}, nil).Once()
+			storeMock.On("IsUserSchemaDeclarative", tc.schemaID).Return(false).Once()
+			storeMock.On("DeleteUserSchemaByID", mock.Anything, tc.schemaID).Return(nil).Once()
+
+			service := &userSchemaService{
+				userSchemaStore: storeMock,
+				transactioner:   &mockTransactioner{},
+				consentService:  tc.consentService,
+				authzService:    newAllowAllAuthz(t),
+			}
+
+			svcErr := service.DeleteUserSchema(context.Background(), tc.schemaID)
+
+			require.Nil(t, svcErr)
+			storeMock.AssertExpectations(t)
+		})
+	}
 }

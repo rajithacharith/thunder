@@ -21,11 +21,13 @@ package application
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/cert"
+	"github.com/asgardeo/thunder/internal/consent"
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	flowcommon "github.com/asgardeo/thunder/internal/flow/common"
@@ -62,6 +64,7 @@ type applicationService struct {
 	themeMgtService   thememgt.ThemeMgtServiceInterface
 	layoutMgtService  layoutmgt.LayoutMgtServiceInterface
 	userSchemaService userschema.UserSchemaServiceInterface
+	consentService    consent.ConsentServiceInterface
 }
 
 // newApplicationService creates a new instance of ApplicationService.
@@ -72,6 +75,7 @@ func newApplicationService(
 	themeMgtService thememgt.ThemeMgtServiceInterface,
 	layoutMgtService layoutmgt.LayoutMgtServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
+	consentService consent.ConsentServiceInterface,
 ) ApplicationServiceInterface {
 	return &applicationService{
 		appStore:          appStore,
@@ -80,6 +84,7 @@ func newApplicationService(
 		themeMgtService:   themeMgtService,
 		layoutMgtService:  layoutMgtService,
 		userSchemaService: userSchemaService,
+		consentService:    consentService,
 	}
 }
 
@@ -138,6 +143,26 @@ func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 		return nil, &ErrorInternalServerError
 	}
 
+	// Sync consent purpose AFTER the application is durably persisted.
+	// On failure, compensate by deleting the application and the certificate.
+	if app.LoginConsent.Enabled && as.consentService.IsEnabled() {
+		if svcErr := as.syncConsentPurposeOnCreate(processedDTO); svcErr != nil {
+			if delErr := as.appStore.DeleteApplication(appID); delErr != nil {
+				logger.Error("Failed to compensate application creation after consent sync failure",
+					log.String("appID", appID), log.String("error", delErr.Error()))
+			}
+
+			if cert != nil {
+				if delErr := as.rollbackAppCertificateCreation(appID); delErr != nil {
+					logger.Error("Failed to compensate certificate after consent sync failure",
+						log.String("appID", appID), log.String("error", delErr.Error))
+				}
+			}
+
+			return nil, svcErr
+		}
+	}
+
 	returnApp := &model.ApplicationDTO{
 		ID:                        appID,
 		Name:                      app.Name,
@@ -156,6 +181,7 @@ func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 		PolicyURI:                 app.PolicyURI,
 		Contacts:                  app.Contacts,
 		AllowedUserTypes:          app.AllowedUserTypes,
+		LoginConsent:              app.LoginConsent,
 		Metadata:                  processedDTO.Metadata,
 	}
 	if inboundAuthConfig != nil && len(processedDTO.InboundAuthConfig) > 0 {
@@ -236,6 +262,10 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 		return nil, nil, svcErr
 	}
 
+	if svcErr := as.validateConsentConfig(app); svcErr != nil {
+		return nil, nil, svcErr
+	}
+
 	appID := app.ID
 	if appID == "" {
 		var err error
@@ -266,6 +296,7 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 		PolicyURI:                 app.PolicyURI,
 		Contacts:                  app.Contacts,
 		AllowedUserTypes:          app.AllowedUserTypes,
+		LoginConsent:              app.LoginConsent,
 		Metadata:                  app.Metadata,
 	}
 	if inboundAuthConfig != nil {
@@ -405,6 +436,7 @@ func (as *applicationService) GetApplication(appID string) (*model.Application,
 		Contacts:                  applicationDTO.Contacts,
 		Certificate:               applicationDTO.Certificate,
 		AllowedUserTypes:          applicationDTO.AllowedUserTypes,
+		LoginConsent:              applicationDTO.LoginConsent,
 		Metadata:                  applicationDTO.Metadata,
 	}
 
@@ -534,8 +566,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		return nil, svcErr
 	}
 
-	existingCert, updatedCert, returnCert, svcErr := as.updateApplicationCertificate(app)
-	if svcErr != nil {
+	if svcErr := as.validateConsentConfig(app); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -544,6 +575,54 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 	userInfo := processUserInfoConfiguration(app, finalOAuthIDToken)
 	scopeClaims := processScopeClaimsConfiguration(app)
 
+	processedDTO := as.buildProcessedDTOForUpdate(
+		appID, app,
+		inboundAuthConfig, existingApp,
+		assertion, finalOAuthAccessToken, finalOAuthIDToken,
+		userInfo, scopeClaims,
+	)
+
+	existingCert, updatedCert, returnCert, svcErr := as.updateApplicationCertificate(app)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
+	storeErr := as.appStore.UpdateApplication(existingApp, processedDTO)
+	if storeErr != nil {
+		logger.Error("Failed to update application", log.Error(storeErr), log.String("appID", appID))
+
+		rollbackErr := as.rollbackApplicationCertificateUpdate(appID, existingCert, updatedCert)
+		if rollbackErr != nil {
+			return nil, rollbackErr
+		}
+
+		return nil, &ErrorInternalServerError
+	}
+
+	// Sync consent purpose for the application update.
+	// This block runs whenever the consent service is enabled — regardless of whether login consent
+	// is being enabled or disabled to avoid leaving stale consent purposes.
+	if as.consentService.IsEnabled() {
+		if svcErr := as.syncConsentPurposeOnUpdate(appID, existingApp, processedDTO,
+			existingCert, updatedCert); svcErr != nil {
+			return nil, svcErr
+		}
+	}
+
+	return as.buildReturnDTOForUpdate(
+		appID, app,
+		inboundAuthConfig, processedDTO,
+		assertion, finalOAuthAccessToken, finalOAuthIDToken,
+		userInfo, scopeClaims, returnCert,
+	), nil
+}
+
+// buildProcessedDTOForUpdate constructs the ApplicationProcessedDTO for an application update operation.
+func (as *applicationService) buildProcessedDTOForUpdate(appID string, app *model.ApplicationDTO,
+	inboundAuthConfig *model.InboundAuthConfigDTO, existingApp *model.ApplicationProcessedDTO,
+	assertion *model.AssertionConfig, finalOAuthAccessToken *model.AccessTokenConfig,
+	finalOAuthIDToken *model.IDTokenConfig, userInfo *model.UserInfoConfig,
+	scopeClaims map[string][]string) *model.ApplicationProcessedDTO {
 	processedDTO := &model.ApplicationProcessedDTO{
 		ID:                        appID,
 		Name:                      app.Name,
@@ -561,6 +640,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		PolicyURI:                 app.PolicyURI,
 		Contacts:                  app.Contacts,
 		AllowedUserTypes:          app.AllowedUserTypes,
+		LoginConsent:              app.LoginConsent,
 		Metadata:                  app.Metadata,
 	}
 	if inboundAuthConfig != nil {
@@ -597,18 +677,15 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		processedDTO.InboundAuthConfig = []model.InboundAuthConfigProcessedDTO{processedInboundAuthConfig}
 	}
 
-	storeErr := as.appStore.UpdateApplication(existingApp, processedDTO)
-	if storeErr != nil {
-		logger.Error("Failed to update application", log.Error(storeErr), log.String("appID", appID))
+	return processedDTO
+}
 
-		rollbackErr := as.rollbackApplicationCertificateUpdate(appID, existingCert, updatedCert)
-		if rollbackErr != nil {
-			return nil, rollbackErr
-		}
-
-		return nil, &ErrorInternalServerError
-	}
-
+// buildReturnDTOForUpdate constructs the ApplicationDTO to return from an application update operation.
+func (as *applicationService) buildReturnDTOForUpdate(appID string, app *model.ApplicationDTO,
+	inboundAuthConfig *model.InboundAuthConfigDTO, processedDTO *model.ApplicationProcessedDTO,
+	assertion *model.AssertionConfig, finalOAuthAccessToken *model.AccessTokenConfig,
+	finalOAuthIDToken *model.IDTokenConfig, userInfo *model.UserInfoConfig,
+	scopeClaims map[string][]string, returnCert *model.ApplicationCertificate) *model.ApplicationDTO {
 	returnApp := &model.ApplicationDTO{
 		ID:                        appID,
 		Name:                      app.Name,
@@ -627,6 +704,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		PolicyURI:                 app.PolicyURI,
 		Contacts:                  app.Contacts,
 		AllowedUserTypes:          app.AllowedUserTypes,
+		LoginConsent:              app.LoginConsent,
 		Metadata:                  processedDTO.Metadata,
 	}
 	if inboundAuthConfig != nil {
@@ -657,7 +735,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		returnApp.InboundAuthConfig = []model.InboundAuthConfigDTO{returnInboundAuthConfig}
 	}
 
-	return returnApp, nil
+	return returnApp
 }
 
 // DeleteApplication delete the application for given app id.
@@ -687,6 +765,15 @@ func (as *applicationService) DeleteApplication(appID string) *serviceerror.Serv
 	svcErr := as.deleteApplicationCertificate(appID)
 	if svcErr != nil {
 		return svcErr
+	}
+
+	// Delete the consent purposes associated with the application
+	// If consent deletion fails, we log the error but do NOT re-create the schema
+	// since orphaned consent elements are safe and won't cause active harm.
+	if as.consentService.IsEnabled() {
+		if svcErr := as.deleteConsentPurposes(appID); svcErr != nil {
+			return svcErr
+		}
 	}
 
 	return nil
@@ -836,6 +923,28 @@ func (as *applicationService) validateAllowedUserTypes(allowedUserTypes []string
 	if len(invalidUserTypes) > 0 {
 		logger.Info("Invalid user types found", log.Any("invalidTypes", invalidUserTypes))
 		return &ErrorInvalidUserType
+	}
+
+	return nil
+}
+
+// validateConsentConfig validates the consent configuration for the application.
+func (as *applicationService) validateConsentConfig(appDTO *model.ApplicationDTO) *serviceerror.ServiceError {
+	if appDTO.LoginConsent == nil {
+		appDTO.LoginConsent = &model.LoginConsentConfig{
+			Enabled:        false,
+			ValidityPeriod: 0,
+		}
+
+		return nil
+	}
+
+	if appDTO.LoginConsent.Enabled && !as.consentService.IsEnabled() {
+		return &ErrorConsentServiceNotEnabled
+	}
+
+	if appDTO.LoginConsent.ValidityPeriod < 0 {
+		appDTO.LoginConsent.ValidityPeriod = 0
 	}
 
 	return nil
@@ -1600,4 +1709,342 @@ func resolveClientSecret(
 
 	inboundAuthConfig.OAuthAppConfig.ClientSecret = generatedClientSecret
 	return nil
+}
+
+// extractRequestedAttributes collects all unique user attributes requested by the application
+// across various configurations including assertions, token config, and user info.
+func extractRequestedAttributes(app *model.ApplicationProcessedDTO) map[string]bool {
+	if app == nil {
+		return nil
+	}
+
+	attrMap := make(map[string]bool)
+
+	// Extract from assertion configuration
+	if app.Assertion != nil && len(app.Assertion.UserAttributes) > 0 {
+		for _, attr := range app.Assertion.UserAttributes {
+			attrMap[attr] = true
+		}
+	}
+
+	// Extract from inbound authentication configurations
+	for _, inbound := range app.InboundAuthConfig {
+		if inbound.Type == model.OAuthInboundAuthType && inbound.OAuthAppConfig != nil {
+			oauthConfig := inbound.OAuthAppConfig
+
+			// Extract from access token
+			if oauthConfig.Token != nil && oauthConfig.Token.AccessToken != nil {
+				for _, attr := range oauthConfig.Token.AccessToken.UserAttributes {
+					attrMap[attr] = true
+				}
+			}
+
+			// Extract from ID token
+			if oauthConfig.Token != nil && oauthConfig.Token.IDToken != nil {
+				for _, attr := range oauthConfig.Token.IDToken.UserAttributes {
+					attrMap[attr] = true
+				}
+			}
+
+			// Extract from user info
+			if oauthConfig.UserInfo != nil {
+				for _, attr := range oauthConfig.UserInfo.UserAttributes {
+					attrMap[attr] = true
+				}
+			}
+		}
+	}
+
+	return attrMap
+}
+
+// syncConsentPurposeOnCreate creates a consent purpose for the application create.
+func (as *applicationService) syncConsentPurposeOnCreate(
+	appDTO *model.ApplicationProcessedDTO) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
+
+	// TODO: Replace with application's actual OU when OU support is added
+	const ouID = "default"
+
+	logger.Debug("Attempting to synchronize consent purpose for the newly created application",
+		log.String("appID", appDTO.ID))
+
+	attributesMap := extractRequestedAttributes(appDTO)
+
+	// Skip consent purpose creation if there are no user attributes requested by the application
+	if len(attributesMap) == 0 {
+		logger.Debug("No user attributes requested by the application, skipping consent purpose creation",
+			log.String("appID", appDTO.ID))
+		return nil
+	}
+
+	attributes := make([]string, 0, len(attributesMap))
+	for attr := range attributesMap {
+		attributes = append(attributes, attr)
+	}
+
+	// Create missing consent elements in case they're not created during user type creation
+	// or by another application. This is to ensure that all required consent elements exist
+	// before creating the consent purpose.
+	if err := as.createMissingConsentElements(context.TODO(), ouID, attributes); err != nil {
+		return err
+	}
+
+	logger.Debug("Creating consent purpose for the newly created application", log.String("appID", appDTO.ID),
+		log.Int("attributesCount", len(attributes)))
+
+	purpose := consent.ConsentPurposeInput{
+		Name:        appDTO.Name,
+		Description: "Consent purpose for application " + appDTO.Name,
+		GroupID:     appDTO.ID,
+		Elements:    attributesToPurposeElements(attributesMap),
+	}
+	if _, err := as.consentService.CreateConsentPurpose(context.TODO(), ouID, &purpose); err != nil {
+		return wrapConsentServiceError(err)
+	}
+
+	return nil
+}
+
+// syncConsentPurposeOnUpdate synchronizes the consent purpose when an application is updated.
+// It updates the existing consent purpose to match the updated application configuration or
+// deletes it if consent is disabled.
+func (as *applicationService) syncConsentPurposeOnUpdate(appID string,
+	existingApp *model.ApplicationProcessedDTO, updatedApp *model.ApplicationProcessedDTO,
+	existingCert, updatedCert *cert.Certificate) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
+	var consentSvcErr *serviceerror.ServiceError
+
+	if updatedApp.LoginConsent.Enabled {
+		consentSvcErr = as.updateConsentPurpose(existingApp, updatedApp)
+	} else {
+		consentSvcErr = as.deleteConsentPurposes(appID)
+	}
+
+	if consentSvcErr != nil {
+		if revertErr := as.appStore.UpdateApplication(updatedApp, existingApp); revertErr != nil {
+			logger.Error("Failed to compensate application update after consent sync failure",
+				log.String("appID", appID), log.Error(revertErr))
+		}
+
+		if existingCert != nil || updatedCert != nil {
+			if rollbackErr := as.rollbackApplicationCertificateUpdate(appID, existingCert,
+				updatedCert); rollbackErr != nil {
+				logger.Error("Failed to compensate certificate update after consent sync failure",
+					log.String("appID", appID), log.String("error", rollbackErr.Error))
+			}
+		}
+
+		return consentSvcErr
+	}
+
+	return nil
+}
+
+// updateConsentPurpose updated the consent purpose when an application is updated.
+// It retrieves the existing purpose and updates its content to match the updated application.
+func (as *applicationService) updateConsentPurpose(
+	existingAppDTO, updatedAppDTO *model.ApplicationProcessedDTO) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
+
+	// TODO: Replace with application's actual OU when OU support is added
+	const ouID = "default"
+
+	logger.Debug("Attempting to synchronize consent purpose for the updated application",
+		log.String("appID", existingAppDTO.ID))
+
+	// Find out the attributes that need to be part of the consent purpose based on the updated application
+	newAttributes := extractRequestedAttributes(updatedAppDTO)
+
+	// We need to ensure that consent elements exist for all requested attributes
+	// regardless of what existed in the old application configuration because the consent
+	// purpose might not have been created previously if consent was disabled.
+	requiredAttributes := make([]string, 0, len(newAttributes))
+	for attr := range newAttributes {
+		requiredAttributes = append(requiredAttributes, attr)
+	}
+
+	if len(requiredAttributes) > 0 {
+		logger.Debug("Ensuring consent elements exist for all requested attributes",
+			log.String("appID", existingAppDTO.ID), log.Int("requiredAttributesCount", len(requiredAttributes)))
+
+		if err := as.createMissingConsentElements(context.TODO(), ouID, requiredAttributes); err != nil {
+			return err
+		}
+	}
+
+	// Retrieve the existing consent purposes for the application
+	existingPurposes, err := as.consentService.ListConsentPurposes(context.TODO(), ouID, existingAppDTO.ID)
+	if err != nil {
+		return wrapConsentServiceError(err)
+	}
+
+	// If there are no existing purposes handle separately
+	if len(existingPurposes) == 0 {
+		logger.Debug("No existing consent purpose found for the application", log.String("appID", existingAppDTO.ID))
+
+		// If attributes exists in the updated payload, create a new consent purpose
+		if len(newAttributes) > 0 {
+			logger.Debug("Creating new consent purpose for the application", log.String("appID", existingAppDTO.ID))
+
+			purpose := consent.ConsentPurposeInput{
+				Name:        updatedAppDTO.Name,
+				Description: "Consent purpose for application " + updatedAppDTO.Name,
+				GroupID:     existingAppDTO.ID,
+				Elements:    attributesToPurposeElements(newAttributes),
+			}
+			if _, err := as.consentService.CreateConsentPurpose(context.TODO(), ouID, &purpose); err != nil {
+				return wrapConsentServiceError(err)
+			}
+		}
+
+		return nil
+	}
+
+	// If all attributes are removed, and a purpose exists, delete it
+	if len(newAttributes) == 0 {
+		logger.Debug("All user attributes removed from the application", log.String("appID", existingAppDTO.ID))
+		if err := as.deleteConsentPurposes(existingAppDTO.ID); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	logger.Debug("Existing consent purpose found for the application, updating it with the specified attributes",
+		log.String("appID", existingAppDTO.ID))
+
+	// Update existing purpose with the application changes.
+	// We assume there is only one consent purpose per application
+	updated := consent.ConsentPurposeInput{
+		Name:        updatedAppDTO.Name,
+		Description: "Consent purpose for application " + updatedAppDTO.Name,
+		GroupID:     existingAppDTO.ID,
+		Elements:    attributesToPurposeElements(newAttributes),
+	}
+	if _, err := as.consentService.UpdateConsentPurpose(context.TODO(), ouID,
+		existingPurposes[0].ID, &updated); err != nil {
+		return wrapConsentServiceError(err)
+	}
+
+	return nil
+}
+
+// deleteConsentPurposes removes all consent purposes associated with an application.
+func (as *applicationService) deleteConsentPurposes(appID string) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
+
+	// TODO: Replace with application's actual OU when OU support is added
+	const ouID = "default"
+
+	logger.Debug("Attempting to delete consent purposes for the application", log.String("appID", appID))
+
+	purposes, err := as.consentService.ListConsentPurposes(context.TODO(), ouID, appID)
+	if err != nil {
+		return wrapConsentServiceError(err)
+	}
+
+	// If there are no purposes, return early
+	if len(purposes) == 0 {
+		logger.Debug("No consent purposes found for the application", log.String("appID", appID))
+		return nil
+	}
+
+	// We assume there is only one consent purpose per application
+	logger.Debug("Deleting consent purpose for the application", log.String("appID", appID),
+		log.Int("purposesCount", len(purposes)))
+	if err := as.consentService.DeleteConsentPurpose(context.TODO(), ouID, purposes[0].ID); err != nil {
+		// TODO: Default consent service implementation doesn't allow deleting consent purposes with existing consents.
+		//  We need to handle this case gracefully until the consent service supports force delete or cascade delete
+		// for consent purposes.
+		if err.Code == consent.ErrorDeletingConsentPurposeWithAssociatedRecords.Code {
+			logger.Warn("Cannot delete consent purpose due to existing consents. Consent service doesn't support "+
+				"deleting consent purposes with existing consents",
+				log.String("appID", appID), log.Int("purposesCount", len(purposes)))
+			return nil
+		}
+
+		return wrapConsentServiceError(err)
+	}
+
+	return nil
+}
+
+// createMissingConsentElements validates a list of consent element names and creates only the missing ones.
+// nolint:unparam // ouID is always "default" in current usage but kept for future flexibility
+func (as *applicationService) createMissingConsentElements(ctx context.Context,
+	ouID string, names []string) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
+
+	if len(names) == 0 {
+		logger.Debug("No consent elements to create", log.String("ouID", ouID))
+		return nil
+	}
+
+	validNames, err := as.consentService.ValidateConsentElements(ctx, ouID, names)
+	if err != nil {
+		return wrapConsentServiceError(err)
+	}
+
+	// Create a map of existing elements for fast lookup
+	existingMap := make(map[string]bool, len(validNames))
+	for _, name := range validNames {
+		existingMap[name] = true
+	}
+
+	// Filter out the existing elements
+	var elementsToCreate []consent.ConsentElementInput
+	for _, name := range names {
+		if !existingMap[name] {
+			elementsToCreate = append(elementsToCreate, consent.ConsentElementInput{
+				Name:      name,
+				Namespace: consent.NamespaceAttribute,
+			})
+		}
+	}
+
+	if len(elementsToCreate) > 0 {
+		logger.Debug("Creating missing consent elements", log.String("ouID", ouID),
+			log.Int("totalRequested", len(names)), log.Int("toCreate", len(elementsToCreate)))
+
+		if _, err := as.consentService.CreateConsentElements(ctx, ouID, elementsToCreate); err != nil {
+			return wrapConsentServiceError(err)
+		}
+	}
+
+	return nil
+}
+
+// wrapConsentServiceError converts an I18nServiceError from the consent service into a ServiceError
+// for the application service.
+func wrapConsentServiceError(err *serviceerror.I18nServiceError) *serviceerror.ServiceError {
+	if err == nil {
+		return nil
+	}
+
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
+
+	if err.Type == serviceerror.ClientErrorType {
+		logger.Debug("Failed to sync consent purpose for the application changes", log.Any("error", err))
+		return serviceerror.CustomServiceError(ErrorConsentSyncFailed,
+			fmt.Sprintf(ErrorConsentSyncFailed.ErrorDescription+" : code - %s", err.Code))
+	}
+
+	logger.Error("Failed to sync consent purpose for the application changes", log.Any("error", err))
+	return &ErrorInternalServerError
+}
+
+// attributesToPurposeElements converts a list of user attribute names to consent PurposeElements.
+// TODO: Add support for passing mandatory property, when the support is implemented in the application model.
+func attributesToPurposeElements(attributes map[string]bool) []consent.PurposeElement {
+	elements := make([]consent.PurposeElement, 0, len(attributes))
+	for attr := range attributes {
+		elements = append(elements, consent.PurposeElement{
+			Name:        attr,
+			Namespace:   consent.NamespaceAttribute,
+			IsMandatory: false,
+		})
+	}
+
+	return elements
 }

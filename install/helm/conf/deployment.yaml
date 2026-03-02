@@ -128,3 +128,9 @@ passkey:
   {{- range .Values.configuration.passkey.allowedOrigins }}
     - {{ . | quote }}
   {{- end }}
+
+consent:
+  enabled: {{ .Values.configuration.consent.enabled }}
+  base_url: {{ .Values.configuration.consent.baseUrl | quote }}
+  timeout: {{ .Values.configuration.consent.timeout }}
+  max_retries: {{ .Values.configuration.consent.maxRetries }}
