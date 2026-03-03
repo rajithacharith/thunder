@@ -334,6 +334,11 @@ type AuthnProviderConfig struct {
 	Rest RestConfig `yaml:"rest" json:"rest"`
 }
 
+// UserProviderConfig holds the user provider configuration details.
+type UserProviderConfig struct {
+	Type string `yaml:"type" json:"type"`
+}
+
 // RestConfig holds the REST authentication provider configuration details.
 type RestConfig struct {
 	BaseURL  string             `yaml:"base_url" json:"base_url"`
@@ -376,6 +381,7 @@ type Config struct {
 	Observability        ObservabilityConfig    `yaml:"observability" json:"observability"`
 	Passkey              PasskeyConfig          `yaml:"passkey" json:"passkey"`
 	AuthnProvider        AuthnProviderConfig    `yaml:"authn_provider" json:"authn_provider"`
+	UserProvider         UserProviderConfig     `yaml:"user_provider" json:"user_provider"`
 	Role                 RoleConfig             `yaml:"role" json:"role"`
 	Theme                ThemeConfig            `yaml:"theme" json:"theme"`
 	Layout               LayoutConfig           `yaml:"layout" json:"layout"`

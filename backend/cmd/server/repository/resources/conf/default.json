@@ -147,5 +147,8 @@
     "base_url": "",
     "timeout": 5,
     "max_retries": 3
+  },
+  "user_provider": {
+    "type": "default"
   }
 }
