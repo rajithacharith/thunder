@@ -251,20 +251,6 @@ func validateAuthorizationCode(tokenRequest *model.TokenRequest,
 		}
 	}
 
-	if code.State == authz.AuthCodeStateInactive {
-		// TODO: Revoke all the tokens issued for this authorization code.
-
-		return &model.ErrorResponse{
-			Error:            constants.ErrorInvalidGrant,
-			ErrorDescription: "Inactive authorization code",
-		}
-	} else if code.State != authz.AuthCodeStateActive {
-		return &model.ErrorResponse{
-			Error:            constants.ErrorInvalidGrant,
-			ErrorDescription: "Inactive authorization code",
-		}
-	}
-
 	if code.ExpiryTime.Before(time.Now()) {
 		return &model.ErrorResponse{
 			Error:            constants.ErrorInvalidGrant,

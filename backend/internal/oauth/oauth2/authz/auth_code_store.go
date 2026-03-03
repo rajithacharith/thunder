@@ -52,10 +52,8 @@ const (
 // AuthorizationCodeStoreInterface defines the interface for managing authorization codes.
 type AuthorizationCodeStoreInterface interface {
 	InsertAuthorizationCode(authzCode AuthorizationCode) error
+	ConsumeAuthorizationCode(clientID, authCode string) (bool, error)
 	GetAuthorizationCode(clientID, authCode string) (*AuthorizationCode, error)
-	DeactivateAuthorizationCode(authzCode AuthorizationCode) error
-	RevokeAuthorizationCode(authzCode AuthorizationCode) error
-	ExpireAuthorizationCode(authzCode AuthorizationCode) error
 }
 
 // authorizationCodeStore implements the AuthorizationCodeStoreInterface for managing authorization codes.
@@ -94,6 +92,23 @@ func (acs *authorizationCodeStore) InsertAuthorizationCode(authzCode Authorizati
 	return nil
 }
 
+// ConsumeAuthorizationCode atomically consumes an active authorization code (ACTIVE → INACTIVE).
+// Returns true if this call consumed the code, false if the code was not in ACTIVE state.
+func (acs *authorizationCodeStore) ConsumeAuthorizationCode(clientID, authCode string) (bool, error) {
+	dbClient, err := acs.dbProvider.GetRuntimeDBClient()
+	if err != nil {
+		return false, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	rowsAffected, err := dbClient.Execute(queryConsumeAuthorizationCode,
+		AuthCodeStateInactive, clientID, authCode, AuthCodeStateActive, acs.deploymentID)
+	if err != nil {
+		return false, fmt.Errorf("error consuming authorization code: %w", err)
+	}
+
+	return rowsAffected > 0, nil
+}
+
 // GetAuthorizationCode retrieves an authorization code by client Id and authorization code.
 func (acs *authorizationCodeStore) GetAuthorizationCode(clientID, authCode string) (*AuthorizationCode, error) {
 	dbClient, err := acs.dbProvider.GetRuntimeDBClient()
@@ -111,33 +126,6 @@ func (acs *authorizationCodeStore) GetAuthorizationCode(clientID, authCode strin
 	row := results[0]
 
 	return buildAuthorizationCodeFromResultRow(row)
-}
-
-// DeactivateAuthorizationCode deactivates an authorization code.
-func (acs *authorizationCodeStore) DeactivateAuthorizationCode(authzCode AuthorizationCode) error {
-	return acs.updateAuthorizationCodeState(authzCode, AuthCodeStateInactive)
-}
-
-// RevokeAuthorizationCode revokes an authorization code.
-func (acs *authorizationCodeStore) RevokeAuthorizationCode(authzCode AuthorizationCode) error {
-	return acs.updateAuthorizationCodeState(authzCode, AuthCodeStateRevoked)
-}
-
-// ExpireAuthorizationCode expires an authorization code.
-func (acs *authorizationCodeStore) ExpireAuthorizationCode(authzCode AuthorizationCode) error {
-	return acs.updateAuthorizationCodeState(authzCode, AuthCodeStateExpired)
-}
-
-// updateAuthorizationCodeState updates the state of an authorization code.
-func (acs *authorizationCodeStore) updateAuthorizationCodeState(authzCode AuthorizationCode,
-	newState string) error {
-	dbClient, err := acs.dbProvider.GetRuntimeDBClient()
-	if err != nil {
-		return fmt.Errorf("failed to get database client: %w", err)
-	}
-
-	_, err = dbClient.Execute(queryUpdateAuthorizationCodeState, newState, authzCode.CodeID, acs.deploymentID)
-	return err
 }
 
 // getJSONDataBytes prepares the JSON data bytes for the authorization code.

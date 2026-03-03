@@ -76,8 +76,14 @@ func newAuthorizeService(
 	}
 }
 
-// GetAuthorizationCodeDetails retrieves and invalidates the authorization code.
+// GetAuthorizationCodeDetails atomically consumes and retrieves the authorization code.
 func (as *authorizeService) GetAuthorizationCodeDetails(clientID string, code string) (*AuthorizationCode, error) {
+	consumed, err := as.authCodeStore.ConsumeAuthorizationCode(clientID, code)
+	if err != nil {
+		as.logger.Error("error consuming authorization code", log.Error(err))
+		return nil, errors.New("failed to consume authorization code")
+	}
+
 	authCode, err := as.authCodeStore.GetAuthorizationCode(clientID, code)
 	if err != nil {
 		if errors.Is(err, ErrAuthorizationCodeNotFound) {
@@ -86,17 +92,17 @@ func (as *authorizeService) GetAuthorizationCodeDetails(clientID string, code st
 		as.logger.Error("error retrieving authorization code", log.Error(err))
 		return nil, errors.New("failed to retrieve authorization code")
 	}
-	if authCode == nil || authCode.Code == "" {
-		return nil, errors.New("invalid authorization code")
+
+	if consumed {
+		return authCode, nil
 	}
 
-	// Invalidate the authorization code after use.
-	err = as.authCodeStore.DeactivateAuthorizationCode(*authCode)
-	if err != nil {
-		as.logger.Error("error invalidating authorization code", log.Error(err))
-		return nil, errors.New("failed to invalidate authorization code")
+	if authCode.State == AuthCodeStateInactive {
+		// TODO: Revoke all access tokens already granted for this authorization code.
+		return nil, errors.New("authorization code already used")
 	}
-	return authCode, nil
+
+	return nil, errors.New("invalid authorization code")
 }
 
 // HandleInitialAuthorizationRequest processes an initial authorization request from the client.
