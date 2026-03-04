@@ -80,7 +80,7 @@ func (e *ouExporter) GetAllResourceIDs(ctx context.Context) ([]string, *servicee
 	ids := make([]string, 0, len(ous.OrganizationUnits))
 	for _, ouBasic := range ous.OrganizationUnits {
 		// Only include mutable OUs (exclude immutable ones)
-		if !e.service.IsOrganizationUnitDeclarative(ouBasic.ID) {
+		if !e.service.IsOrganizationUnitDeclarative(ctx, ouBasic.ID) {
 			ids = append(ids, ouBasic.ID)
 		}
 	}
@@ -116,7 +116,7 @@ func (e *ouExporter) getAllChildIDs(ctx context.Context, parentID string) ([]str
 	allIDs := []string{}
 	for _, childBasic := range children.OrganizationUnits {
 		// Only include mutable children (exclude immutable ones)
-		if !e.service.IsOrganizationUnitDeclarative(childBasic.ID) {
+		if !e.service.IsOrganizationUnitDeclarative(ctx, childBasic.ID) {
 			allIDs = append(allIDs, childBasic.ID)
 			grandchildIDs, err := e.getAllChildIDs(ctx, childBasic.ID)
 			if err != nil {
@@ -239,7 +239,11 @@ func validateOUWrapper(data interface{}, fileStore *fileBasedStore, dbStore orga
 
 	// Check for duplicate ID in the database store (only in composite mode)
 	if dbStore != nil {
-		if exists, err := dbStore.IsOrganizationUnitExists(ou.ID); err == nil && exists {
+		exists, err := dbStore.IsOrganizationUnitExists(context.Background(), ou.ID)
+		if err != nil {
+			return fmt.Errorf("failed to check organization unit existence for ID '%s': %w", ou.ID, err)
+		}
+		if exists {
 			return fmt.Errorf("duplicate organization unit ID '%s': "+
 				"an organization unit with this ID already exists in the database store", ou.ID)
 		}

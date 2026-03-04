@@ -40,12 +40,20 @@ func TestInitTestSuite(t *testing.T) {
 func (suite *InitTestSuite) SetupTest() {
 	// Initialize ThunderRuntime for each test
 	config.ResetThunderRuntime()
+	tmpDir := suite.T().TempDir()
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			User: config.DataSource{
+				Type: "sqlite",
+				Path: "test.db",
+			},
+		},
 	}
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	err := config.InitializeThunderRuntime(tmpDir, testConfig)
+	suite.Require().NoError(err)
 }
 
 func (suite *InitTestSuite) TearDownTest() {
