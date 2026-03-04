@@ -29,7 +29,6 @@ type authError struct {
 	ErrorCode        string
 	ErrorDescription string
 	StatusCode       int
-	ResponseHeaders  map[string]string
 }
 
 // newAuthError creates a new authentication error.
@@ -41,23 +40,12 @@ func newAuthError(errorCode, errorDescription string, statusCode int) *authError
 	}
 }
 
-// newAuthErrorWithHeaders creates a new authentication error with response headers.
-func newAuthErrorWithHeaders(errorCode, errorDescription string, statusCode int, headers map[string]string) *authError {
-	return &authError{
-		ErrorCode:        errorCode,
-		ErrorDescription: errorDescription,
-		StatusCode:       statusCode,
-		ResponseHeaders:  headers,
-	}
-}
-
 // Common authentication errors
 var (
-	errInvalidAuthorizationHeader = newAuthErrorWithHeaders(
+	errInvalidAuthorizationHeader = newAuthError(
 		constants.ErrorInvalidClient,
 		"Invalid client credentials",
 		http.StatusUnauthorized,
-		map[string]string{"WWW-Authenticate": "Basic"},
 	)
 	errInvalidClientCredentials = newAuthError(
 		constants.ErrorInvalidClient,

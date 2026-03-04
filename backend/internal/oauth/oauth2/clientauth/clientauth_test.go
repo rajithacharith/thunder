@@ -290,8 +290,6 @@ func (suite *ClientAuthTestSuite) TestAuthenticate_InvalidAuthorizationHeader() 
 	assert.NotNil(suite.T(), authErr)
 	assert.Nil(suite.T(), clientInfo)
 	assert.Equal(suite.T(), errInvalidAuthorizationHeader, authErr)
-	assert.NotNil(suite.T(), authErr.ResponseHeaders)
-	assert.Equal(suite.T(), "Basic", authErr.ResponseHeaders["WWW-Authenticate"])
 }
 
 func (suite *ClientAuthTestSuite) TestAuthenticate_BothHeaderAndBody() {

@@ -23,6 +23,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -35,10 +36,14 @@ func ClientAuthMiddleware(appService application.ApplicationServiceInterface, jw
 			// Authenticate client
 			clientInfo, authErr := authenticate(r, appService, jwtService, discoveryService)
 			if authErr != nil {
-				// Convert headers to the format expected by WriteJSONError
+				// If the client attempted to authenticate via the Authorization
+				// header, include WWW-Authenticate in 401 responses.
 				var respHeaders []map[string]string
-				if len(authErr.ResponseHeaders) > 0 {
-					respHeaders = []map[string]string{authErr.ResponseHeaders}
+				if authErr.StatusCode == http.StatusUnauthorized &&
+					r.Header.Get(serverconst.AuthorizationHeaderName) != "" {
+					respHeaders = []map[string]string{
+						{serverconst.WWWAuthenticateHeaderName: "Basic"},
+					}
 				}
 				// Write error response
 				utils.WriteJSONError(

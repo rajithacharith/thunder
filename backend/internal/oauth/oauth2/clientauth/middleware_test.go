@@ -315,3 +315,94 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_ContextProp
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 	assert.NotNil(suite.T(), clientInfo)
 }
+
+// Tests for RFC 6749 §5.2: WWW-Authenticate header on 401 responses when client used Authorization header.
+
+func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_BasicAuth_401_IncludesWWWAuthenticate() {
+	// Client not found with Basic auth should include WWW-Authenticate: Basic
+	suite.mockAppService.On("GetOAuthApplication", testClientID).
+		Return(nil, nil).Once()
+
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest("POST", "/test", nil)
+	req.SetBasicAuth(testClientID, testClientSecret)
+	w := httptest.NewRecorder()
+
+	middleware(handler).ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusUnauthorized, w.Code)
+	assert.Equal(suite.T(), "Basic", w.Header().Get("WWW-Authenticate"))
+}
+
+func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_BasicAuth_InvalidCreds_IncludesWWWAuth() {
+	clientSecret := testClientSecret
+	hashedSecret := hash.GenerateThumbprintFromString(clientSecret)
+	mockApp := &appmodel.OAuthAppConfigProcessedDTO{
+		ClientID:                testClientID,
+		HashedClientSecret:      hashedSecret,
+		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretBasic,
+		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
+	}
+
+	suite.mockAppService.On("GetOAuthApplication", testClientID).
+		Return(mockApp, nil).Once()
+
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest("POST", "/test", nil)
+	req.SetBasicAuth(testClientID, "wrong-secret")
+	w := httptest.NewRecorder()
+
+	middleware(handler).ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusUnauthorized, w.Code)
+	assert.Equal(suite.T(), "Basic", w.Header().Get("WWW-Authenticate"))
+}
+
+func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_PostAuth_401_NoWWWAuthenticate() {
+	// Client not found with POST body auth should not include WWW-Authenticate
+	suite.mockAppService.On("GetOAuthApplication", "non-existent").
+		Return(nil, nil).Once()
+
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	formData := url.Values{}
+	formData.Set("client_id", "non-existent")
+	formData.Set("client_secret", testClientSecret)
+
+	req := httptest.NewRequest("POST", "/test", strings.NewReader(formData.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	middleware(handler).ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusUnauthorized, w.Code)
+	assert.Empty(suite.T(), w.Header().Get("WWW-Authenticate"))
+}
+
+func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_InvalidBasicAuth_IncludesWWWAuthenticate() {
+	// Invalid Basic auth header format should include WWW-Authenticate: Basic
+	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest("POST", "/test", nil)
+	req.Header.Set("Authorization", "Bearer some-token")
+	w := httptest.NewRecorder()
+
+	middleware(handler).ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusUnauthorized, w.Code)
+	assert.Equal(suite.T(), "Basic", w.Header().Get("WWW-Authenticate"))
+}
