@@ -30,6 +30,3 @@ passkey:
 
 consent:
   enabled: false
-  base_url: ""
-  timeout: 10
-  max_retries: 3
