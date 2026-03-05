@@ -100,6 +100,73 @@ vi.mock('../../api/useGetUserSchema', () => ({
   default: () => mockUseGetUserSchema(),
 }));
 
+// Mock useGetChildOrganizationUnits — controls whether OU step appears
+interface UseGetChildOUsReturn {
+  data: {totalResults: number; startIndex: number; count: number; organizationUnits: unknown[]} | undefined;
+  isLoading: boolean;
+  error: Error | null;
+}
+const mockUseGetChildOrganizationUnits = vi.fn<() => UseGetChildOUsReturn>();
+vi.mock('../../../organization-units/api/useGetChildOrganizationUnits', () => ({
+  default: () => mockUseGetChildOrganizationUnits(),
+}));
+
+// Mock ConfigureOrganizationUnit — mirrors real component's auto-select behavior
+vi.mock('../../components/create-user/ConfigureOrganizationUnit', async () => {
+  const React = await import('react');
+
+  function MockConfigureOrganizationUnit({
+    rootOuId,
+    selectedOuId,
+    onOuIdChange,
+    onReadyChange = undefined,
+  }: {
+    rootOuId: string;
+    selectedOuId: string;
+    onOuIdChange: (ouId: string) => void;
+    onReadyChange?: (isReady: boolean) => void;
+  }): React.JSX.Element {
+    // Replicate the real component's useEffect: auto-select rootOuId when empty
+    React.useEffect(() => {
+      if (!selectedOuId) {
+        onOuIdChange(rootOuId);
+      }
+    }, [selectedOuId, rootOuId, onOuIdChange]);
+
+    // Replicate onReadyChange effect
+    React.useEffect(() => {
+      onReadyChange?.(selectedOuId.length > 0);
+    }, [selectedOuId, onReadyChange]);
+
+    return (
+      <div data-testid="configure-organization-unit" data-root-ou-id={rootOuId} data-selected-ou-id={selectedOuId}>
+        <button
+          type="button"
+          data-testid="select-ou"
+          onClick={() => {
+            onOuIdChange('child-ou-1');
+            onReadyChange?.(true);
+          }}
+        >
+          Select OU
+        </button>
+        <button
+          type="button"
+          data-testid="select-root-ou"
+          onClick={() => {
+            onOuIdChange(rootOuId);
+            onReadyChange?.(true);
+          }}
+        >
+          Select Root OU
+        </button>
+      </div>
+    );
+  }
+
+  return {default: MockConfigureOrganizationUnit};
+});
+
 // Mock child components with controlled test behavior
 vi.mock('../../components/create-user/ConfigureUserType', () => ({
   default: ({
@@ -244,6 +311,12 @@ describe('CreateUserPage', () => {
     });
     mockUseGetUserSchema.mockReturnValue({
       data: mockSchemaData,
+      isLoading: false,
+      error: null,
+    });
+    // Default: no child OUs → OU step is skipped (2-step flow)
+    mockUseGetChildOrganizationUnits.mockReturnValue({
+      data: {totalResults: 0, startIndex: 1, count: 0, organizationUnits: []},
       isLoading: false,
       error: null,
     });
@@ -639,6 +712,275 @@ describe('CreateUserPage', () => {
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalled();
+    });
+  });
+
+  // ============================================================================
+  // Organization Unit Step (3-step flow)
+  // ============================================================================
+
+  describe('with child OUs (3-step flow)', () => {
+    beforeEach(() => {
+      // Enable OU step: the selected schema's OU has child OUs
+      mockUseGetChildOrganizationUnits.mockReturnValue({
+        data: {totalResults: 3, startIndex: 1, count: 3, organizationUnits: [{}, {}, {}]},
+        isLoading: false,
+        error: null,
+      });
+    });
+
+    it('shows OU step after selecting user type', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(screen.getByTestId('select-schema-Employee'));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-organization-unit')).toBeInTheDocument();
+      });
+    });
+
+    it('passes correct rootOuId to ConfigureOrganizationUnit', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(screen.getByTestId('select-schema-Employee'));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        const ouStep = screen.getByTestId('configure-organization-unit');
+        expect(ouStep).toHaveAttribute('data-root-ou-id', 'root-ou');
+      });
+    });
+
+    it('navigates from OU step to User Details step', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      // Step 1: Select user type
+      await user.click(screen.getByTestId('select-schema-Employee'));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Step 2: Select OU
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-organization-unit')).toBeInTheDocument();
+      });
+      await user.click(screen.getByTestId('select-ou'));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Step 3: User Details
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-user-details')).toBeInTheDocument();
+      });
+    });
+
+    it('navigates back from OU step to User Type step', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(screen.getByTestId('select-schema-Employee'));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-organization-unit')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', {name: /back/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-user-type')).toBeInTheDocument();
+      });
+    });
+
+    it('navigates back from User Details to OU step', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      // Go to User Details via OU step
+      await user.click(screen.getByTestId('select-schema-Employee'));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-organization-unit')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTestId('select-ou'));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-user-details')).toBeInTheDocument();
+      });
+
+      // Go back — should return to OU step, not User Type
+      await user.click(screen.getByRole('button', {name: /back/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-organization-unit')).toBeInTheDocument();
+      });
+    });
+
+    it('submits with the selected child OU', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      // Step 1: Select user type
+      await user.click(screen.getByTestId('select-schema-Employee'));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Step 2: Select a child OU
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-organization-unit')).toBeInTheDocument();
+      });
+      await user.click(screen.getByTestId('select-ou'));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Step 3: Fill details and submit
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-user-details')).toBeInTheDocument();
+      });
+      await user.click(screen.getByTestId('fill-form'));
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: /create user/i})).not.toBeDisabled();
+      });
+      await user.click(screen.getByRole('button', {name: /create user/i}));
+
+      await waitFor(() => {
+        expect(mockMutateAsync).toHaveBeenCalledWith({
+          organizationUnit: 'child-ou-1',
+          type: 'Employee',
+          attributes: {username: 'john_doe', age: 30},
+        });
+      });
+    });
+
+    it('submits with root OU when root is selected in OU step', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      // Step 1: Select user type
+      await user.click(screen.getByTestId('select-schema-Employee'));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Step 2: Select the root OU
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-organization-unit')).toBeInTheDocument();
+      });
+      await user.click(screen.getByTestId('select-root-ou'));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Step 3: Fill details and submit
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-user-details')).toBeInTheDocument();
+      });
+      await user.click(screen.getByTestId('fill-form'));
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: /create user/i})).not.toBeDisabled();
+      });
+      await user.click(screen.getByRole('button', {name: /create user/i}));
+
+      await waitFor(() => {
+        expect(mockMutateAsync).toHaveBeenCalledWith({
+          organizationUnit: 'root-ou',
+          type: 'Employee',
+          attributes: {username: 'john_doe', age: 30},
+        });
+      });
+    });
+
+    it('resets OU selection when schema changes', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      // Select first schema (Employee, ouId: 'root-ou')
+      await user.click(screen.getByTestId('select-schema-Employee'));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-organization-unit')).toBeInTheDocument();
+      });
+
+      // Select a child OU (not the auto-selected root)
+      await user.click(screen.getByTestId('select-ou'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-organization-unit')).toHaveAttribute(
+          'data-selected-ou-id',
+          'child-ou-1',
+        );
+      });
+
+      // Go back to user type
+      await user.click(screen.getByRole('button', {name: /back/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-user-type')).toBeInTheDocument();
+      });
+
+      // Select a different schema (Contractor, ouId: 'child-ou')
+      await user.click(screen.getByTestId('select-schema-Contractor'));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        const ouStep = screen.getByTestId('configure-organization-unit');
+        // After schema change, the previous child-ou-1 selection should be gone.
+        // The new schema's root OU (child-ou) is auto-selected by the component.
+        expect(ouStep).toHaveAttribute('data-root-ou-id', 'child-ou');
+        expect(ouStep).toHaveAttribute('data-selected-ou-id', 'child-ou');
+      });
+    });
+
+    it('auto-selects root OU and enables Continue on OU step', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(screen.getByTestId('select-schema-Employee'));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-organization-unit')).toBeInTheDocument();
+      });
+
+      // Root OU is auto-selected, so Continue should be enabled
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: /continue/i})).not.toBeDisabled();
+      });
+    });
+  });
+
+  // ============================================================================
+  // Without child OUs (2-step flow — OU step skipped)
+  // ============================================================================
+
+  describe('without child OUs (2-step flow)', () => {
+    it('skips OU step and goes directly to User Details', async () => {
+      // Default mock already sets totalResults: 0
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(screen.getByTestId('select-schema-Employee'));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Should go straight to User Details, not OU step
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-user-details')).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId('configure-organization-unit')).not.toBeInTheDocument();
+    });
+
+    it('navigates back from User Details directly to User Type', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      await goToDetailsStep(user);
+
+      await user.click(screen.getByRole('button', {name: /back/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-user-type')).toBeInTheDocument();
+      });
     });
   });
 });

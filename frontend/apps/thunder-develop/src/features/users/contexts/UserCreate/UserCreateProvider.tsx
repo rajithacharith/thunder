@@ -30,6 +30,7 @@ import type {SchemaInterface} from '../../types/users';
 const INITIAL_STATE = {
   currentStep: UserCreateFlowStep.USER_TYPE as UserCreateFlowStep,
   selectedSchema: null as SchemaInterface | null,
+  selectedOuId: null as string | null,
   formValues: {} as Record<string, unknown>,
   error: null as string | null,
 };
@@ -43,12 +44,14 @@ const INITIAL_STATE = {
 export default function UserCreateProvider({children}: PropsWithChildren) {
   const [currentStep, setCurrentStep] = useState<UserCreateFlowStep>(INITIAL_STATE.currentStep);
   const [selectedSchema, setSelectedSchema] = useState<SchemaInterface | null>(INITIAL_STATE.selectedSchema);
+  const [selectedOuId, setSelectedOuId] = useState<string | null>(INITIAL_STATE.selectedOuId);
   const [formValues, setFormValues] = useState<Record<string, unknown>>(INITIAL_STATE.formValues);
   const [error, setError] = useState<string | null>(INITIAL_STATE.error);
 
   const reset = useCallback((): void => {
     setCurrentStep(INITIAL_STATE.currentStep);
     setSelectedSchema(INITIAL_STATE.selectedSchema);
+    setSelectedOuId(INITIAL_STATE.selectedOuId);
     setFormValues(INITIAL_STATE.formValues);
     setError(INITIAL_STATE.error);
   }, []);
@@ -59,13 +62,15 @@ export default function UserCreateProvider({children}: PropsWithChildren) {
       setCurrentStep,
       selectedSchema,
       setSelectedSchema,
+      selectedOuId,
+      setSelectedOuId,
       formValues,
       setFormValues,
       error,
       setError,
       reset,
     }),
-    [currentStep, selectedSchema, formValues, error, reset],
+    [currentStep, selectedSchema, selectedOuId, formValues, error, reset],
   );
 
   return <UserCreateContext.Provider value={contextValue}>{children}</UserCreateContext.Provider>;
