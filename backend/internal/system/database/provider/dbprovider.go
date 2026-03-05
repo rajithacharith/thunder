@@ -66,12 +66,12 @@ type DBProviderCloser interface {
 
 // dbProvider is the implementation of DBProviderInterface.
 type dbProvider struct {
-	identityClient DBClientInterface
-	identityMutex  sync.RWMutex
-	runtimeClient  DBClientInterface
-	runtimeMutex   sync.RWMutex
-	userClient     DBClientInterface
-	userMutex      sync.RWMutex
+	configClient  DBClientInterface
+	configMutex   sync.RWMutex
+	runtimeClient DBClientInterface
+	runtimeMutex  sync.RWMutex
+	userClient    DBClientInterface
+	userMutex     sync.RWMutex
 }
 
 var (
@@ -103,8 +103,8 @@ func GetDBProviderCloser() DBProviderCloser {
 // GetConfigDBClient returns a database client for config datasource.
 // Not required to close the returned client manually since it manages its own connection pool.
 func (d *dbProvider) GetConfigDBClient() (DBClientInterface, error) {
-	identityDBConfig := config.GetThunderRuntime().Config.Database.Identity
-	return d.getOrInitClient(&d.identityClient, &d.identityMutex, identityDBConfig, dbNameConfig)
+	configDBConfig := config.GetThunderRuntime().Config.Database.Config
+	return d.getOrInitClient(&d.configClient, &d.configMutex, configDBConfig, dbNameConfig)
 }
 
 // GetRuntimeDBClient returns a database client for runtime datasource.
@@ -152,14 +152,14 @@ func (d *dbProvider) getTransactioner(
 	return client.GetTransactioner()
 }
 
-// initializeAllClients initializes both identity and runtime clients at startup.
+// initializeAllClients initializes config, runtime, and user database clients at startup.
 func (d *dbProvider) initializeAllClients() {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DBProvider"))
 
-	identityDBConfig := config.GetThunderRuntime().Config.Database.Identity
-	err := d.initializeClient(&d.identityClient, identityDBConfig, dbNameConfig)
+	configDBConfig := config.GetThunderRuntime().Config.Database.Config
+	err := d.initializeClient(&d.configClient, configDBConfig, dbNameConfig)
 	if err != nil {
-		logger.Error("Failed to initialize identity database client", log.Error(err))
+		logger.Error("Failed to initialize config database client", log.Error(err))
 	}
 
 	runtimeDBConfig := config.GetThunderRuntime().Config.Database.Runtime
@@ -274,10 +274,10 @@ func (d *dbProvider) Close() error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DBProvider"))
 	logger.Debug("Closing database connections")
 
-	identityErr := d.closeClient(&d.identityClient, &d.identityMutex, "identity")
+	configErr := d.closeClient(&d.configClient, &d.configMutex, "config")
 	runtimeErr := d.closeClient(&d.runtimeClient, &d.runtimeMutex, "runtime")
 	userErr := d.closeClient(&d.userClient, &d.userMutex, "user")
-	return errors.Join(identityErr, runtimeErr, userErr)
+	return errors.Join(configErr, runtimeErr, userErr)
 }
 
 // closeClient is a helper to close a DB client with locking.

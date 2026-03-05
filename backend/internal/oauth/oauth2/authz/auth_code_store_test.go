@@ -50,7 +50,7 @@ func TestAuthorizationCodeStoreTestSuite(t *testing.T) {
 func (suite *AuthorizationCodeStoreTestSuite) SetupTest() {
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},

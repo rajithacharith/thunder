@@ -48,9 +48,9 @@ func (suite *DBProviderTestSuite) SetupTest() {
 	// Initialize a dummy config
 	dummyConfig := &config.Config{
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{Name: "identity", Type: "postgres"},
-			Runtime:  config.DataSource{Name: "runtime", Type: "postgres"},
-			User:     config.DataSource{Name: "user", Type: "postgres"},
+			Config:  config.DataSource{Name: "identity", Type: "postgres"},
+			Runtime: config.DataSource{Name: "runtime", Type: "postgres"},
+			User:    config.DataSource{Name: "user", Type: "postgres"},
 		},
 	}
 	err = config.InitializeThunderRuntime(".", dummyConfig)

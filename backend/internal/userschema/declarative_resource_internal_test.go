@@ -335,7 +335,7 @@ func TestLoadDeclarativeResources(t *testing.T) {
 			Enabled: false,
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -431,7 +431,7 @@ func TestLoadDeclarativeResources_WithNilOUService(t *testing.T) {
 			Enabled: false,
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},

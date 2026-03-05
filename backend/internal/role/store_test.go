@@ -1429,21 +1429,21 @@ func (suite *RoleStoreTestSuite) TestBuildRoleBasicInfoFromResultRow_InvalidData
 
 // Test Helper Functions
 
-func (suite *RoleStoreTestSuite) TestGetIdentityDBClient_Success() {
+func (suite *RoleStoreTestSuite) TestGetConfigDBClient_Success() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 
-	client, err := suite.store.getIdentityDBClient()
+	client, err := suite.store.getConfigDBClient()
 
 	suite.NoError(err)
 	suite.NotNil(client)
 	suite.Equal(suite.mockDBClient, client)
 }
 
-func (suite *RoleStoreTestSuite) TestGetIdentityDBClient_Error() {
+func (suite *RoleStoreTestSuite) TestGetConfigDBClient_Error() {
 	dbError := errors.New("database connection error")
 	suite.mockDBProvider.On("GetConfigDBClient").Return(nil, dbError)
 
-	client, err := suite.store.getIdentityDBClient()
+	client, err := suite.store.getConfigDBClient()
 
 	suite.Error(err)
 	suite.Nil(client)

@@ -62,24 +62,24 @@ Thunder ships with a self-signed certificate for local development at `repositor
 
 Thunder uses three separate databases for different purposes. Each database can be configured independently.
 
-### Identity Database
+### Config Database
 
 Stores identity provider configurations, applications, and authentication flows.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `database.identity.type` | `sqlite` | Database type (`sqlite` or `postgres`) |
-| `database.identity.hostname` | `""` | Database server hostname (for PostgreSQL) |
-| `database.identity.port` | `0` | Database server port (for PostgreSQL) |
-| `database.identity.name` | `""` | Database name (for PostgreSQL) |
-| `database.identity.username` | `""` | Database username (for PostgreSQL) |
-| `database.identity.password` | `""` | Database password (for PostgreSQL) |
-| `database.identity.sslmode` | `""` | SSL mode for PostgreSQL (`disable`, `require`, `verify-ca`, `verify-full`) |
-| `database.identity.path` | `repository/database/thunderdb.db` | SQLite database file path |
-| `database.identity.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | Database-specific connection options |
-| `database.identity.max_open_conns` | `500` | Maximum number of open connections |
-| `database.identity.max_idle_conns` | `100` | Maximum number of idle connections |
-| `database.identity.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
+| `database.config.type` | `sqlite` | Database type (`sqlite` or `postgres`) |
+| `database.config.hostname` | `""` | Database server hostname (for PostgreSQL) |
+| `database.config.port` | `0` | Database server port (for PostgreSQL) |
+| `database.config.name` | `""` | Database name (for PostgreSQL) |
+| `database.config.username` | `""` | Database username (for PostgreSQL) |
+| `database.config.password` | `""` | Database password (for PostgreSQL) |
+| `database.config.sslmode` | `""` | SSL mode for PostgreSQL (`disable`, `require`, `verify-ca`, `verify-full`) |
+| `database.config.path` | `repository/database/configdb.db` | SQLite database file path |
+| `database.config.options` | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` | Database-specific connection options |
+| `database.config.max_open_conns` | `500` | Maximum number of open connections |
+| `database.config.max_idle_conns` | `100` | Maximum number of idle connections |
+| `database.config.conn_max_lifetime` | `3600` | Maximum connection lifetime in seconds |
 
 ### Runtime Database
 

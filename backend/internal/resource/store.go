@@ -772,11 +772,11 @@ func (s *resourceStore) ValidatePermissions(
 
 // Helper methods
 
-// getConfigDBClient retrieves the identity database client.
+// getConfigDBClient retrieves the config database client.
 func (s *resourceStore) getConfigDBClient() (provider.DBClientInterface, error) {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get identity DB client: %w", err)
+		return nil, fmt.Errorf("failed to get config DB client: %w", err)
 	}
 	return dbClient, nil
 }

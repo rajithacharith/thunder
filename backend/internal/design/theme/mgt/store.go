@@ -59,7 +59,7 @@ func newThemeMgtStore() themeMgtStoreInterface {
 
 // GetThemeListCount retrieves the total count of theme configurations.
 func (s *themeMgtStore) GetThemeListCount() (int, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return 0, err
 	}
@@ -74,7 +74,7 @@ func (s *themeMgtStore) GetThemeListCount() (int, error) {
 
 // GetThemeList retrieves theme configurations with pagination.
 func (s *themeMgtStore) GetThemeList(limit, offset int) ([]Theme, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (s *themeMgtStore) GetThemeList(limit, offset int) ([]Theme, error) {
 
 // CreateTheme creates a new theme configuration in the database.
 func (s *themeMgtStore) CreateTheme(id string, theme CreateThemeRequest) error {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return err
 	}
@@ -118,7 +118,7 @@ func (s *themeMgtStore) CreateTheme(id string, theme CreateThemeRequest) error {
 
 // GetTheme retrieves a theme configuration by its id.
 func (s *themeMgtStore) GetTheme(id string) (Theme, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return Theme{}, err
 	}
@@ -141,7 +141,7 @@ func (s *themeMgtStore) GetTheme(id string) (Theme, error) {
 
 // IsThemeExist checks if a theme configuration exists by its ID.
 func (s *themeMgtStore) IsThemeExist(id string) (bool, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return false, err
 	}
@@ -165,7 +165,7 @@ func (s *themeMgtStore) IsThemeExist(id string) (bool, error) {
 
 // UpdateTheme updates a theme configuration.
 func (s *themeMgtStore) UpdateTheme(id string, theme UpdateThemeRequest) error {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return err
 	}
@@ -185,7 +185,7 @@ func (s *themeMgtStore) UpdateTheme(id string, theme UpdateThemeRequest) error {
 
 // DeleteTheme deletes a theme configuration.
 func (s *themeMgtStore) DeleteTheme(id string) error {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return err
 	}
@@ -200,7 +200,7 @@ func (s *themeMgtStore) DeleteTheme(id string) error {
 
 // GetApplicationsCountByThemeID returns the count of applications using a specific theme.
 func (s *themeMgtStore) GetApplicationsCountByThemeID(id string) (int, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return 0, err
 	}
@@ -218,11 +218,11 @@ func (s *themeMgtStore) IsThemeDeclarative(id string) bool {
 	return false
 }
 
-// getIdentityDBClient retrieves the identity database client.
-func (s *themeMgtStore) getIdentityDBClient() (provider.DBClientInterface, error) {
+// getConfigDBClient retrieves the config database client.
+func (s *themeMgtStore) getConfigDBClient() (provider.DBClientInterface, error) {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get identity database client: %w", err)
+		return nil, fmt.Errorf("failed to get config database client: %w", err)
 	}
 	return dbClient, nil
 }

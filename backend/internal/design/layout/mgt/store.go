@@ -59,7 +59,7 @@ func newLayoutMgtStore() layoutMgtStoreInterface {
 
 // GetLayoutListCount retrieves the total count of layout configurations.
 func (s *layoutMgtStore) GetLayoutListCount() (int, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return 0, err
 	}
@@ -74,7 +74,7 @@ func (s *layoutMgtStore) GetLayoutListCount() (int, error) {
 
 // GetLayoutList retrieves layout configurations with pagination.
 func (s *layoutMgtStore) GetLayoutList(limit, offset int) ([]Layout, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (s *layoutMgtStore) GetLayoutList(limit, offset int) ([]Layout, error) {
 
 // CreateLayout creates a new layout configuration in the database.
 func (s *layoutMgtStore) CreateLayout(id string, layout CreateLayoutRequest) error {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return err
 	}
@@ -118,7 +118,7 @@ func (s *layoutMgtStore) CreateLayout(id string, layout CreateLayoutRequest) err
 
 // GetLayout retrieves a layout configuration by its id.
 func (s *layoutMgtStore) GetLayout(id string) (Layout, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return Layout{}, err
 	}
@@ -141,7 +141,7 @@ func (s *layoutMgtStore) GetLayout(id string) (Layout, error) {
 
 // IsLayoutExist checks if a layout configuration exists by its ID.
 func (s *layoutMgtStore) IsLayoutExist(id string) (bool, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return false, err
 	}
@@ -165,7 +165,7 @@ func (s *layoutMgtStore) IsLayoutExist(id string) (bool, error) {
 
 // UpdateLayout updates a layout configuration.
 func (s *layoutMgtStore) UpdateLayout(id string, layout UpdateLayoutRequest) error {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return err
 	}
@@ -185,7 +185,7 @@ func (s *layoutMgtStore) UpdateLayout(id string, layout UpdateLayoutRequest) err
 
 // DeleteLayout deletes a layout configuration.
 func (s *layoutMgtStore) DeleteLayout(id string) error {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return err
 	}
@@ -200,7 +200,7 @@ func (s *layoutMgtStore) DeleteLayout(id string) error {
 
 // GetApplicationsCountByLayoutID returns the count of applications using a specific layout.
 func (s *layoutMgtStore) GetApplicationsCountByLayoutID(id string) (int, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return 0, err
 	}
@@ -218,11 +218,11 @@ func (s *layoutMgtStore) IsLayoutDeclarative(id string) bool {
 	return false
 }
 
-// getIdentityDBClient retrieves the identity database client.
-func (s *layoutMgtStore) getIdentityDBClient() (provider.DBClientInterface, error) {
+// getConfigDBClient retrieves the config database client.
+func (s *layoutMgtStore) getConfigDBClient() (provider.DBClientInterface, error) {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get identity database client: %w", err)
+		return nil, fmt.Errorf("failed to get config database client: %w", err)
 	}
 	return dbClient, nil
 }
