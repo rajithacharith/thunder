@@ -238,6 +238,76 @@ func (_c *UserSchemaServiceInterfaceMock_GetCredentialAttributes_Call) RunAndRet
 	return _c
 }
 
+// GetDisplayAttributesByNames provides a mock function for the type UserSchemaServiceInterfaceMock
+func (_mock *UserSchemaServiceInterfaceMock) GetDisplayAttributesByNames(ctx context.Context, names []string) (map[string]string, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, names)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetDisplayAttributesByNames")
+	}
+
+	var r0 map[string]string
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) (map[string]string, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, names)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) map[string]string); ok {
+		r0 = returnFunc(ctx, names)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, names)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// UserSchemaServiceInterfaceMock_GetDisplayAttributesByNames_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDisplayAttributesByNames'
+type UserSchemaServiceInterfaceMock_GetDisplayAttributesByNames_Call struct {
+	*mock.Call
+}
+
+// GetDisplayAttributesByNames is a helper method to define mock.On call
+//   - ctx context.Context
+//   - names []string
+func (_e *UserSchemaServiceInterfaceMock_Expecter) GetDisplayAttributesByNames(ctx interface{}, names interface{}) *UserSchemaServiceInterfaceMock_GetDisplayAttributesByNames_Call {
+	return &UserSchemaServiceInterfaceMock_GetDisplayAttributesByNames_Call{Call: _e.mock.On("GetDisplayAttributesByNames", ctx, names)}
+}
+
+func (_c *UserSchemaServiceInterfaceMock_GetDisplayAttributesByNames_Call) Run(run func(ctx context.Context, names []string)) *UserSchemaServiceInterfaceMock_GetDisplayAttributesByNames_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []string
+		if args[1] != nil {
+			arg1 = args[1].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *UserSchemaServiceInterfaceMock_GetDisplayAttributesByNames_Call) Return(stringToString map[string]string, serviceError *serviceerror.ServiceError) *UserSchemaServiceInterfaceMock_GetDisplayAttributesByNames_Call {
+	_c.Call.Return(stringToString, serviceError)
+	return _c
+}
+
+func (_c *UserSchemaServiceInterfaceMock_GetDisplayAttributesByNames_Call) RunAndReturn(run func(ctx context.Context, names []string) (map[string]string, *serviceerror.ServiceError)) *UserSchemaServiceInterfaceMock_GetDisplayAttributesByNames_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetUserSchema provides a mock function for the type UserSchemaServiceInterfaceMock
 func (_mock *UserSchemaServiceInterfaceMock) GetUserSchema(ctx context.Context, schemaID string) (*UserSchema, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, schemaID)

@@ -119,3 +119,36 @@ func TestBuildGetUserSchemaCountByOUIDsQuery(t *testing.T) {
 	}
 	runBuildUserSchemaQueryTests(t, testCases, buildGetUserSchemaCountByOUIDsQuery, "ASQ-USER_SCHEMA-009")
 }
+
+func TestBuildGetDisplayAttributesByNamesQuery(t *testing.T) {
+	testCases := []struct {
+		name       string
+		ouIDs      []string
+		wantPG     string
+		wantSQLite string
+	}{
+		{
+			name:       "Empty names",
+			ouIDs:      []string{},
+			wantPG:     `SELECT NAME, SYSTEM_ATTRIBUTES FROM USER_SCHEMAS WHERE 1=0 AND DEPLOYMENT_ID = $1`,
+			wantSQLite: `SELECT NAME, SYSTEM_ATTRIBUTES FROM USER_SCHEMAS WHERE 1=0 AND DEPLOYMENT_ID = ?`,
+		},
+		{
+			name:  "Single name",
+			ouIDs: []string{"SchemaA"},
+			wantPG: `SELECT NAME, SYSTEM_ATTRIBUTES FROM USER_SCHEMAS ` +
+				`WHERE NAME IN ($1) AND DEPLOYMENT_ID = $2`,
+			wantSQLite: `SELECT NAME, SYSTEM_ATTRIBUTES FROM USER_SCHEMAS ` +
+				`WHERE NAME IN (?) AND DEPLOYMENT_ID = ?`,
+		},
+		{
+			name:  "Multiple names",
+			ouIDs: []string{"SchemaA", "SchemaB", "SchemaC"},
+			wantPG: `SELECT NAME, SYSTEM_ATTRIBUTES FROM USER_SCHEMAS ` +
+				`WHERE NAME IN ($1, $2, $3) AND DEPLOYMENT_ID = $4`,
+			wantSQLite: `SELECT NAME, SYSTEM_ATTRIBUTES FROM USER_SCHEMAS ` +
+				`WHERE NAME IN (?, ?, ?) AND DEPLOYMENT_ID = ?`,
+		},
+	}
+	runBuildUserSchemaQueryTests(t, testCases, buildGetDisplayAttributesByNamesQuery, "ASQ-USER_SCHEMA-010")
+}

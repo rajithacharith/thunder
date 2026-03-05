@@ -65,6 +65,9 @@ type UserSchemaServiceInterface interface {
 	GetCredentialAttributes(
 		ctx context.Context, userType string,
 	) ([]string, *serviceerror.ServiceError)
+	GetDisplayAttributesByNames(
+		ctx context.Context, names []string,
+	) (map[string]string, *serviceerror.ServiceError)
 }
 
 // userSchemaService is the default implementation of the UserSchemaServiceInterface.
@@ -564,6 +567,24 @@ func (us *userSchemaService) GetCredentialAttributes(
 	}
 
 	return compiledSchema.GetCredentialAttributes(), nil
+}
+
+// GetDisplayAttributesByNames returns display attributes for multiple user schemas by name.
+func (us *userSchemaService) GetDisplayAttributesByNames(
+	ctx context.Context, names []string,
+) (map[string]string, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
+
+	if len(names) == 0 {
+		return map[string]string{}, nil
+	}
+
+	result, err := us.userSchemaStore.GetDisplayAttributesByNames(ctx, names)
+	if err != nil {
+		return nil, logAndReturnServerError(logger, "Failed to get display attributes by names", err)
+	}
+
+	return result, nil
 }
 
 func (us *userSchemaService) getCompiledSchemaForUserType(

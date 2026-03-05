@@ -164,3 +164,42 @@ func buildGetUserSchemaCountByOUIDsQuery(ouIDs []string) dbmodel.DBQuery {
 			`WHERE OU_ID IN (` + sqliteInClause + `) AND DEPLOYMENT_ID = ?`,
 	}
 }
+
+// buildGetDisplayAttributesByNamesQuery dynamically builds a query to retrieve display attributes
+// for a list of user schema names.
+// For PostgreSQL: WHERE NAME IN ($1, $2, ...) AND DEPLOYMENT_ID = $N
+// For SQLite: WHERE NAME IN (?, ?, ...) AND DEPLOYMENT_ID = ?
+func buildGetDisplayAttributesByNamesQuery(names []string) dbmodel.DBQuery {
+	n := len(names)
+
+	if n == 0 {
+		return dbmodel.DBQuery{
+			ID:            "ASQ-USER_SCHEMA-010",
+			PostgresQuery: `SELECT NAME, SYSTEM_ATTRIBUTES FROM USER_SCHEMAS WHERE 1=0 AND DEPLOYMENT_ID = $1`,
+			SQLiteQuery:   `SELECT NAME, SYSTEM_ATTRIBUTES FROM USER_SCHEMAS WHERE 1=0 AND DEPLOYMENT_ID = ?`,
+		}
+	}
+
+	// Build PostgreSQL placeholders: $1, $2, ..., $N
+	pgPlaceholders := make([]string, n)
+	for i := range names {
+		pgPlaceholders[i] = fmt.Sprintf("$%d", i+1)
+	}
+	pgInClause := strings.Join(pgPlaceholders, ", ")
+	pgDeploymentID := fmt.Sprintf("$%d", n+1)
+
+	// Build SQLite placeholders: ?, ?, ...
+	sqlitePlaceholders := make([]string, n)
+	for i := range names {
+		sqlitePlaceholders[i] = "?"
+	}
+	sqliteInClause := strings.Join(sqlitePlaceholders, ", ")
+
+	return dbmodel.DBQuery{
+		ID: "ASQ-USER_SCHEMA-010",
+		PostgresQuery: `SELECT NAME, SYSTEM_ATTRIBUTES FROM USER_SCHEMAS ` +
+			`WHERE NAME IN (` + pgInClause + `) AND DEPLOYMENT_ID = ` + pgDeploymentID,
+		SQLiteQuery: `SELECT NAME, SYSTEM_ATTRIBUTES FROM USER_SCHEMAS ` +
+			`WHERE NAME IN (` + sqliteInClause + `) AND DEPLOYMENT_ID = ?`,
+	}
+}

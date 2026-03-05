@@ -171,6 +171,36 @@ func (c *compositeUserSchemaStore) IsUserSchemaDeclarative(schemaID string) bool
 	)
 }
 
+// GetDisplayAttributesByNames retrieves display attributes from both stores, with DB taking precedence.
+func (c *compositeUserSchemaStore) GetDisplayAttributesByNames(
+	ctx context.Context, names []string,
+) (map[string]string, error) {
+	if len(names) == 0 {
+		return map[string]string{}, nil
+	}
+
+	dbResult, dbErr := c.dbStore.GetDisplayAttributesByNames(ctx, names)
+	if dbErr != nil {
+		return nil, dbErr
+	}
+
+	fileResult, fileErr := c.fileStore.GetDisplayAttributesByNames(ctx, names)
+	if fileErr != nil {
+		return nil, fileErr
+	}
+
+	// Merge: file first, then DB overwrites (DB takes precedence)
+	merged := make(map[string]string, len(dbResult)+len(fileResult))
+	for name, display := range fileResult {
+		merged[name] = display
+	}
+	for name, display := range dbResult {
+		merged[name] = display
+	}
+
+	return merged, nil
+}
+
 // mergeAndDeduplicateUserSchemas merges user schemas from both stores and removes duplicates by ID.
 // While duplicates shouldn't exist by design (a schema exists in only one store), this provides
 // defensive programming against misconfigurations or bugs.
