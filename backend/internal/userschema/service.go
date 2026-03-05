@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/asgardeo/thunder/internal/consent"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/database/transaction"
@@ -72,6 +73,7 @@ type userSchemaService struct {
 	ouService       oupkg.OrganizationUnitServiceInterface
 	transactioner   transaction.Transactioner
 	authzService    sysauthz.SystemAuthorizationServiceInterface
+	consentService  consent.ConsentServiceInterface
 }
 
 // newUserSchemaService creates a new instance of userSchemaService.
@@ -80,12 +82,14 @@ func newUserSchemaService(
 	store userSchemaStoreInterface,
 	transactioner transaction.Transactioner,
 	authzService sysauthz.SystemAuthorizationServiceInterface,
+	consentService consent.ConsentServiceInterface,
 ) UserSchemaServiceInterface {
 	return &userSchemaService{
 		userSchemaStore: store,
 		ouService:       ouService,
 		transactioner:   transactioner,
 		authzService:    authzService,
+		consentService:  consentService,
 	}
 }
 
@@ -235,6 +239,18 @@ func (us *userSchemaService) CreateUserSchema(
 		return nil, logAndReturnServerError(logger, "Failed to create user schema", err)
 	}
 
+	// Sync consent elements for the created schema
+	if us.consentService.IsEnabled() {
+		if svcErr := us.syncConsentElementsOnCreate(ctx, userSchema.Schema, logger); svcErr != nil {
+			if delErr := us.userSchemaStore.DeleteUserSchemaByID(ctx, userSchema.ID); delErr != nil {
+				logger.Error("Failed to compensate schema creation after consent sync failure",
+					log.String("schemaID", userSchema.ID), log.Error(delErr))
+			}
+
+			return nil, svcErr
+		}
+	}
+
 	return &userSchema, nil
 }
 
@@ -376,6 +392,20 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 		return nil, logAndReturnServerError(logger, "Failed to update user schema", err)
 	}
 
+	// Sync consent elements for the updated schema
+	if us.consentService.IsEnabled() {
+		if svcErr := us.syncConsentElementsOnUpdate(ctx, existingSchema.Schema,
+			userSchema.Schema, logger); svcErr != nil {
+			if revertErr := us.userSchemaStore.UpdateUserSchemaByID(ctx, schemaID,
+				existingSchema); revertErr != nil {
+				logger.Error("Failed to compensate schema update after consent sync failure",
+					log.String("schemaID", schemaID), log.Error(revertErr))
+			}
+
+			return nil, svcErr
+		}
+	}
+
 	return &userSchema, nil
 }
 
@@ -417,10 +447,35 @@ func (us *userSchemaService) DeleteUserSchema(ctx context.Context, schemaID stri
 		return &ErrorCannotModifyDeclarativeResource
 	}
 
+	// Extract attribute names from the existing schema before deletion to identify associated
+	// consent elements for cleanup
+	var attributeNames []string
+	if us.consentService.IsEnabled() {
+		attrNames, err := extractAttributeNames(existingSchema.Schema)
+		if err != nil {
+			logger.Error("Failed to extract attribute names for consent cleanup; proceeding with schema deletion",
+				log.String("schemaID", schemaID), log.Any("error", err))
+			attributeNames = []string{}
+		} else {
+			attributeNames = attrNames
+		}
+	}
+
 	if err := us.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		return us.userSchemaStore.DeleteUserSchemaByID(txCtx, schemaID)
 	}); err != nil {
 		return logAndReturnServerError(logger, "Failed to delete user schema", err)
+	}
+
+	// Sync consent elements for the deleted schema by deleting the associated consent elements
+	// If consent deletion fails, we log the error but do NOT re-create the schema
+	// since orphaned consent elements are safe and won't cause active harm.
+	if us.consentService.IsEnabled() && len(attributeNames) > 0 {
+		if svcErr := us.deleteConsentElements(ctx, attributeNames, logger); svcErr != nil {
+			logger.Error("Failed to delete consent elements for removed schema attributes; "+
+				"orphaned consent elements may remain but schema deletion succeeded",
+				log.Any("attributeNames", attributeNames), log.Any("error", svcErr))
+		}
 	}
 
 	return nil
@@ -689,6 +744,173 @@ func validateUserSchemaDefinition(schema UserSchema) *serviceerror.ServiceError 
 	return nil
 }
 
+// syncConsentElementsOnCreate creates missing consent elements for a new schema creation.
+func (us *userSchemaService) syncConsentElementsOnCreate(ctx context.Context,
+	schema json.RawMessage, logger *log.Logger) *serviceerror.ServiceError {
+	// TODO: Replace "default" with the schema's actual OU when applications are associated with OUs.
+	const ouID = "default"
+
+	logger.Debug("Synchronizing consent elements for the new schema", log.String("ouID", ouID))
+
+	names, err := extractAttributeNames(schema)
+	if err != nil {
+		return err
+	}
+
+	if len(names) > 0 {
+		logger.Debug("Creating missing consent elements for the new schema",
+			log.String("ouID", ouID), log.Int("elementCount", len(names)))
+		if svcErr := us.createMissingConsentElements(ctx, ouID, names, logger); svcErr != nil {
+			return svcErr
+		}
+	}
+
+	return nil
+}
+
+// syncConsentElementsOnUpdate reconciles consent elements when a schema is updated.
+// It creates elements that were added and deletes elements that were removed.
+func (us *userSchemaService) syncConsentElementsOnUpdate(ctx context.Context,
+	oldSchema, newSchema json.RawMessage, logger *log.Logger) *serviceerror.ServiceError {
+	// TODO: Replace "default" with the schema's actual OU when applications are associated with OUs.
+	const ouID = "default"
+
+	logger.Debug("Synchronizing consent elements for the updated schema", log.String("ouID", ouID))
+
+	oldAttrs, err := extractAttributeNamesAsMap(oldSchema)
+	if err != nil {
+		return err
+	}
+
+	newAttrs, err := extractAttributeNamesAsMap(newSchema)
+	if err != nil {
+		return err
+	}
+
+	// Create consent elements for new attributes that were added in the updated schema.
+	// createMissingConsentElements method will handle filtering out existing elements, so we can pass all
+	// new attribute names here. This ensures that even consent service was disabled when creating the schema,
+	// the necessary consent elements are created when updating the schema with consent service enabled.
+	requiredNames := make([]string, 0, len(newAttrs))
+	for name := range newAttrs {
+		requiredNames = append(requiredNames, name)
+	}
+
+	if len(requiredNames) > 0 {
+		logger.Debug("Ensuring consent elements exist for all requested attributes",
+			log.String("ouID", ouID), log.Int("requiredAttributesCount", len(requiredNames)))
+		if err := us.createMissingConsentElements(ctx, ouID, requiredNames, logger); err != nil {
+			return err
+		}
+	}
+
+	// Delete variables that are no longer part of the current payload
+	var removedNames []string
+	for name := range oldAttrs {
+		if _, exists := newAttrs[name]; !exists {
+			removedNames = append(removedNames, name)
+		}
+	}
+
+	return us.deleteConsentElements(ctx, removedNames, logger)
+}
+
+// createMissingConsentElements validates a list of consent element names and creates only
+// the missing ones.
+// nolint:unparam // ouID is always "default" in current usage but kept for future flexibility
+func (us *userSchemaService) createMissingConsentElements(ctx context.Context,
+	ouID string, names []string, logger *log.Logger) *serviceerror.ServiceError {
+	if len(names) == 0 {
+		logger.Debug("No consent elements to create for the schema", log.String("ouID", ouID))
+		return nil
+	}
+
+	logger.Debug("Validating consent elements for the schema attributes",
+		log.String("ouID", ouID), log.Int("elementCount", len(names)))
+
+	validNames, err := us.consentService.ValidateConsentElements(ctx, ouID, names)
+	if err != nil {
+		return wrapConsentServiceError(err, logger)
+	}
+
+	// Create a map of existing elements for fast lookup
+	existingMap := make(map[string]bool, len(validNames))
+	for _, name := range validNames {
+		existingMap[name] = true
+	}
+
+	// Filter out the existing elements
+	var elementsToCreate []consent.ConsentElementInput
+	for _, name := range names {
+		if !existingMap[name] {
+			elementsToCreate = append(elementsToCreate, consent.ConsentElementInput{
+				Name:      name,
+				Namespace: consent.NamespaceAttribute,
+			})
+		}
+	}
+
+	if len(elementsToCreate) > 0 {
+		logger.Debug("Creating new consent elements for the schema attributes",
+			log.String("ouID", ouID), log.Int("elementCount", len(elementsToCreate)))
+		if _, err := us.consentService.CreateConsentElements(ctx, ouID, elementsToCreate); err != nil {
+			return wrapConsentServiceError(err, logger)
+		}
+	}
+
+	return nil
+}
+
+// deleteConsentElements removes a list of consent elements associated with the given attribute names.
+func (us *userSchemaService) deleteConsentElements(ctx context.Context,
+	attributeNames []string, logger *log.Logger) *serviceerror.ServiceError {
+	// TODO: Replace "default" with the schema's actual OU when applications are associated with OUs.
+	const ouID = "default"
+
+	logger.Debug("Deleting consent elements for the removed schema attributes",
+		log.String("ouID", ouID), log.Int("elementCount", len(attributeNames)))
+
+	if len(attributeNames) == 0 {
+		logger.Debug("No consent elements to delete for the schema", log.String("ouID", ouID))
+		return nil
+	}
+
+	for _, attrName := range attributeNames {
+		// List existing consent elements for the removed attribute to find their IDs for deletion
+		existing, err := us.consentService.ListConsentElements(ctx, ouID, consent.NamespaceAttribute, attrName)
+		if err != nil {
+			return wrapConsentServiceError(err, logger)
+		}
+
+		// Delete the first element if the list is not empty.
+		// We assume there is only one consent element per attribute name.
+		// TODO: This should be revisited when user type separation is onboarded to consent elements.
+		if len(existing) > 0 {
+			logger.Debug("Deleting consent element for the removed schema attribute",
+				log.String("ouID", ouID), log.String("attribute", attrName), log.String("elementID", existing[0].ID))
+			if err := us.consentService.DeleteConsentElement(ctx, ouID, existing[0].ID); err != nil {
+				// Silently ignore the error if it's due to associated purposes, but log a warning.
+				// The same attribute can exist in a different schema and purpose can be associated with that,
+				// so we should not block the schema update in that case.
+				// If it's not associated with a purpose, but exists in a different schema, we still delete it,
+				// as the consent element can be created again when configuring attribute for a application.
+				if err.Code == consent.ErrorDeletingConsentElementWithAssociatedPurpose.Code {
+					logger.Warn("Cannot delete consent element for removed attribute due to associated purposes",
+						log.String("attribute", attrName), log.String("elementID", existing[0].ID),
+						log.String("error", err.ErrorDescription.DefaultValue))
+					continue
+				}
+
+				return wrapConsentServiceError(err, logger)
+			}
+		}
+	}
+
+	return nil
+}
+
+// invalidSchemaRequestError creates a service error for invalid user schema requests
+// with an optional detail message.
 func invalidSchemaRequestError(detail string) *serviceerror.ServiceError {
 	err := ErrorInvalidUserSchemaRequest
 	errorDescription := err.ErrorDescription
@@ -701,4 +923,60 @@ func invalidSchemaRequestError(detail string) *serviceerror.ServiceError {
 		Error:            err.Error,
 		ErrorDescription: errorDescription,
 	}
+}
+
+// extractAttributeNames returns the set of attribute names from a schema JSON as a string slice.
+func extractAttributeNames(schema json.RawMessage) ([]string, *serviceerror.ServiceError) {
+	if len(schema) == 0 {
+		return nil, nil
+	}
+
+	var schemaMap map[string]json.RawMessage
+	if err := json.Unmarshal(schema, &schemaMap); err != nil {
+		return nil, invalidSchemaRequestError("invalid schema json: " + err.Error())
+	}
+
+	names := make([]string, 0, len(schemaMap))
+	for name := range schemaMap {
+		names = append(names, name)
+	}
+
+	return names, nil
+}
+
+// extractAttributeNamesAsMap returns the set of attribute names from a schema JSON as a map
+// for last lookups.
+func extractAttributeNamesAsMap(schema json.RawMessage) (map[string]bool, *serviceerror.ServiceError) {
+	result := make(map[string]bool)
+	if len(schema) == 0 {
+		return result, nil
+	}
+
+	var schemaMap map[string]json.RawMessage
+	if err := json.Unmarshal(schema, &schemaMap); err != nil {
+		return nil, invalidSchemaRequestError("invalid schema json: " + err.Error())
+	}
+
+	for name := range schemaMap {
+		result[name] = true
+	}
+
+	return result, nil
+}
+
+// wrapConsentServiceError converts an I18nServiceError from the consent service into a ServiceError
+// for the user schema service.
+func wrapConsentServiceError(err *serviceerror.I18nServiceError, logger *log.Logger) *serviceerror.ServiceError {
+	if err == nil {
+		return nil
+	}
+
+	if err.Type == serviceerror.ClientErrorType {
+		logger.Debug("Failed to sync consent elements for the schema changes", log.Any("error", err))
+		return serviceerror.CustomServiceError(ErrorConsentSyncFailed,
+			fmt.Sprintf(ErrorConsentSyncFailed.ErrorDescription+" : code - %s", err.Code))
+	}
+
+	logger.Error("Failed to sync consent elements for the schema changes", log.Any("error", err))
+	return &ErrorInternalServerError
 }

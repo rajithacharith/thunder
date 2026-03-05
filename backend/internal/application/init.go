@@ -25,6 +25,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/asgardeo/thunder/internal/cert"
+	"github.com/asgardeo/thunder/internal/consent"
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
@@ -43,13 +44,17 @@ func Initialize(
 	themeMgtService thememgt.ThemeMgtServiceInterface,
 	layoutMgtService layoutmgt.LayoutMgtServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
+	consentService consent.ConsentServiceInterface,
 ) (ApplicationServiceInterface, declarativeresource.ResourceExporter, error) {
 	// Step 1: Initialize store structure (without data)
 	appStore := initializeStore()
 
 	// Step 2: Create service with store
 	appService := newApplicationService(
-		appStore, certService, flowMgtService, themeMgtService, layoutMgtService, userSchemaService)
+		appStore, certService, flowMgtService,
+		themeMgtService, layoutMgtService,
+		userSchemaService, consentService,
+	)
 
 	// Step 3: Load declarative resources into store (if applicable)
 	storeMode := getApplicationStoreMode()

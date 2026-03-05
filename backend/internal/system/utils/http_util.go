@@ -112,6 +112,19 @@ func DecodeJSONBody[T any](r *http.Request) (*T, error) {
 	return &data, nil
 }
 
+// DecodeJSONResponse decodes JSON from the response body into any struct type T.
+// TODO: Unify DecodeJSONBody and DecodeJSONResponse into a single method.
+func DecodeJSONResponse[T any](resp *http.Response) (*T, error) {
+	if resp == nil || resp.Body == nil {
+		return nil, errors.New("failed to decode JSON response: response or body is nil")
+	}
+	var data T
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return nil, errors.New("failed to decode JSON response: " + err.Error())
+	}
+	return &data, nil
+}
+
 // SanitizeString trims whitespace, removes control characters, and escapes HTML.
 func SanitizeString(input string) string {
 	if input == "" {

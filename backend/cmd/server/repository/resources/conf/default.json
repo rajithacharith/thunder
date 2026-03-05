@@ -141,5 +141,11 @@
         "api_key": ""
       }
     }
+  },
+  "consent": {
+    "enabled": false,
+    "base_url": "",
+    "timeout": 5,
+    "max_retries": 3
   }
 }

@@ -27,3 +27,6 @@ passkey:
   allowed_origins:
     - "https://localhost:8095"
     - "http://localhost:8095"
+
+consent:
+  enabled: false

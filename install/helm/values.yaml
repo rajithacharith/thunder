@@ -259,6 +259,13 @@ configuration:
     allowedOrigins:
       - "https://localhost:8090"
 
+  # Consent configuration
+  consent:
+    enabled: false
+    baseUrl: ""
+    timeout: 5
+    maxRetries: 3
+
 # Persistence configuration for SQLite databases
 # Only relevant when using SQLite as the database type
 persistence:

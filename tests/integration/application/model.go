@@ -39,6 +39,7 @@ type Application struct {
 	PolicyURI                 string              `json:"policy_uri,omitempty"`
 	Contacts                  []string            `json:"contacts,omitempty"`
 	AllowedUserTypes          []string            `json:"allowed_user_types,omitempty"`
+	LoginConsent              *LoginConsentConfig `json:"login_consent,omitempty"`
 	InboundAuthConfig         []InboundAuthConfig `json:"inbound_auth_config,omitempty"`
 }
 
@@ -86,6 +87,12 @@ type UserInfoConfig struct {
 type AssertionConfig struct {
 	ValidityPeriod int64    `json:"validity_period,omitempty"`
 	UserAttributes []string `json:"user_attributes,omitempty"`
+}
+
+// LoginConsentConfig represents the login consent configuration for an application.
+type LoginConsentConfig struct {
+	Enabled        bool  `json:"enabled"`
+	ValidityPeriod int64 `json:"validity_period,omitempty"`
 }
 
 // AccessTokenConfig represents the access token configuration.
@@ -181,6 +188,20 @@ func (app *Application) equals(expectedApp Application) bool {
 		}
 	} else if (app.Assertion == nil && expectedApp.Assertion != nil) ||
 		(app.Assertion != nil && expectedApp.Assertion == nil) {
+		return false
+	}
+
+	// LoginConsent config
+	if (app.LoginConsent != nil) && (expectedApp.LoginConsent != nil) {
+		if app.LoginConsent.Enabled != expectedApp.LoginConsent.Enabled ||
+			app.LoginConsent.ValidityPeriod != expectedApp.LoginConsent.ValidityPeriod {
+			return false
+		}
+	} else if app.LoginConsent == nil && expectedApp.LoginConsent != nil {
+		// Expected a LoginConsent object but absent
+		return false
+	} else if app.LoginConsent != nil && expectedApp.LoginConsent == nil {
+		// Actual has LoginConsent object but expected omitted it
 		return false
 	}
 

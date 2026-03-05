@@ -29,6 +29,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/cert"
+	"github.com/asgardeo/thunder/internal/consent"
 	flowcommon "github.com/asgardeo/thunder/internal/flow/common"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
@@ -36,6 +37,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/userschema"
 	"github.com/asgardeo/thunder/tests/mocks/certmock"
+	"github.com/asgardeo/thunder/tests/mocks/consentmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
@@ -911,11 +913,16 @@ func (suite *ServiceTestSuite) setupTestService() (
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	mockConsentService := consentmock.NewConsentServiceInterfaceMock(suite.T())
+	// Consent is disabled by default in the base test service; individual tests
+	// can override this via their own service instance.
+	mockConsentService.On("IsEnabled").Maybe().Return(false)
 	service := &applicationService{
 		appStore:          mockStore,
 		certService:       mockCertService,
 		flowMgtService:    mockFlowMgtService,
 		userSchemaService: mockUserSchemaService,
+		consentService:    mockConsentService,
 	}
 	return service, mockStore, mockCertService, mockFlowMgtService
 }
@@ -3939,6 +3946,427 @@ func TestResolveClientSecret_ExistingAppWithoutSecret(t *testing.T) {
 	assert.Nil(t, err)
 	// Should generate a new secret since existing app doesn't have one
 	assert.NotEmpty(t, inboundAuthConfig.OAuthAppConfig.ClientSecret)
+}
+
+// setupConsentEnabledService creates a test service with consent service enabled.
+func (suite *ServiceTestSuite) setupConsentEnabledService() (
+	*applicationService,
+	*applicationStoreInterfaceMock,
+	*certmock.CertificateServiceInterfaceMock,
+	*flowmgtmock.FlowMgtServiceInterfaceMock,
+	*consentmock.ConsentServiceInterfaceMock,
+) {
+	mockStore := newApplicationStoreInterfaceMock(suite.T())
+	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
+	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
+	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	mockConsentService := consentmock.NewConsentServiceInterfaceMock(suite.T())
+	service := &applicationService{
+		appStore:          mockStore,
+		certService:       mockCertService,
+		flowMgtService:    mockFlowMgtService,
+		userSchemaService: mockUserSchemaService,
+		consentService:    mockConsentService,
+	}
+	return service, mockStore, mockCertService, mockFlowMgtService, mockConsentService
+}
+
+// TestCreateApplication_ConsentSyncFails_CompensatesWithAppDeletion verifies that on consent
+// sync failure after app creation, the app is deleted as compensation.
+func (suite *ServiceTestSuite) TestCreateApplication_ConsentSyncFails_CompensatesWithAppDeletion() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		Flow:                 config.FlowConfig{DefaultAuthFlowHandle: "default_auth_flow"},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	app := &model.ApplicationDTO{
+		Name:               "Consent App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		LoginConsent:       &model.LoginConsentConfig{Enabled: true},
+		Assertion: &model.AssertionConfig{
+			UserAttributes: []string{"email"},
+		},
+	}
+
+	// IsEnabled is called in validateConsentConfig and again before sync.
+	mockConsentService.On("IsEnabled").Return(true)
+	mockStore.On("GetApplicationByName", "Consent App").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	mockStore.On("CreateApplication", mock.Anything).Return(nil)
+	// Consent sync fails: ValidateConsentElements returns an I18n error.
+	mockConsentService.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
+		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+	// Compensation: app must be deleted.
+	mockStore.On("DeleteApplication", mock.Anything).Return(nil)
+
+	result, svcErr := service.CreateApplication(app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	mockStore.AssertCalled(suite.T(), "DeleteApplication", mock.Anything)
+}
+
+// TestUpdateApplication_ConsentEnabled_LoginConsentDisabled_DeletesPurposes verifies
+// that when consent is enabled and login consent is disabled, consent purposes are deleted.
+func (suite *ServiceTestSuite) TestUpdateApplication_ConsentEnabled_LoginConsentDisabled_DeletesPurposes() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		Flow:                 config.FlowConfig{DefaultAuthFlowHandle: "default_auth_flow"},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   "app123",
+		Name: "Test App",
+	}
+	app := &model.ApplicationDTO{
+		ID:                 "app123",
+		Name:               "Test App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		// LoginConsent is nil → validateConsentConfig sets Enabled=false
+	}
+
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
+	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
+		Return(nil, nil)
+	mockStore.On("UpdateApplication", mock.Anything, mock.Anything).Return(nil)
+	// Consent enabled → deleteConsentPurposes path (LoginConsent.Enabled=false)
+	mockConsentService.On("IsEnabled").Return(true)
+	mockConsentService.On("ListConsentPurposes", mock.Anything, "default", "app123").
+		Return([]consent.ConsentPurpose{{ID: "purpose-1"}}, (*serviceerror.I18nServiceError)(nil))
+	mockConsentService.On("DeleteConsentPurpose", mock.Anything, "default", "purpose-1").
+		Return((*serviceerror.I18nServiceError)(nil))
+
+	result, svcErr := service.UpdateApplication("app123", app)
+
+	assert.Nil(suite.T(), svcErr)
+	assert.NotNil(suite.T(), result)
+}
+
+// TestUpdateApplication_ConsentSyncFails_CompensatesWithAppRevert verifies that on consent
+// sync failure after an app update, the update is reverted as compensation.
+func (suite *ServiceTestSuite) TestUpdateApplication_ConsentSyncFails_CompensatesWithAppRevert() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		Flow:                 config.FlowConfig{DefaultAuthFlowHandle: "default_auth_flow"},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   "app123",
+		Name: "Test App",
+	}
+	app := &model.ApplicationDTO{
+		ID:                 "app123",
+		Name:               "Test App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		LoginConsent:       &model.LoginConsentConfig{Enabled: true},
+		Assertion: &model.AssertionConfig{
+			UserAttributes: []string{"email"},
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
+	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
+		Return(nil, nil)
+	// Both the actual update and the compensation revert use the same mock.
+	mockStore.On("UpdateApplication", mock.Anything, mock.Anything).Return(nil)
+	// IsEnabled called in validateConsentConfig (true) and in the consent sync block (true).
+	mockConsentService.On("IsEnabled").Return(true)
+	// Consent sync fails: ValidateConsentElements returns an I18n error.
+	mockConsentService.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
+		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+
+	result, svcErr := service.UpdateApplication("app123", app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	// Verify compensation was called: UpdateApplication twice (update + revert).
+	mockStore.AssertNumberOfCalls(suite.T(), "UpdateApplication", 2)
+}
+
+// TestValidateApplication_ConsentConfigFails verifies that ValidateApplication returns
+// an error when LoginConsent.Enabled=true but the consent service is disabled.
+func (suite *ServiceTestSuite) TestValidateApplication_ConsentConfigFails() {
+	testConfig := &config.Config{
+		JWT:  config.JWTConfig{ValidityPeriod: 3600},
+		Flow: config.FlowConfig{DefaultAuthFlowHandle: "default_auth_flow"},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	app := &model.ApplicationDTO{
+		Name:               "Consent App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		LoginConsent:       &model.LoginConsentConfig{Enabled: true},
+	}
+
+	mockStore.On("GetApplicationByName", "Consent App").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	// Consent service disabled → validateConsentConfig fails
+	mockConsentService.On("IsEnabled").Return(false)
+
+	result, inboundAuth, svcErr := service.ValidateApplication(app)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorConsentServiceNotEnabled.Code, svcErr.Code)
+}
+
+// TestUpdateApplication_ConsentConfigFails verifies that UpdateApplication returns
+// an error when LoginConsent.Enabled=true but the consent service is disabled.
+func (suite *ServiceTestSuite) TestUpdateApplication_ConsentConfigFails() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		JWT:                  config.JWTConfig{ValidityPeriod: 3600},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   "app123",
+		Name: "Test App",
+	}
+	app := &model.ApplicationDTO{
+		ID:                 "app123",
+		Name:               "Test App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		LoginConsent:       &model.LoginConsentConfig{Enabled: true},
+	}
+
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
+	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	// Consent service disabled → validateConsentConfig fails
+	mockConsentService.On("IsEnabled").Return(false)
+
+	result, svcErr := service.UpdateApplication("app123", app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorConsentServiceNotEnabled.Code, svcErr.Code)
+}
+
+// TestUpdateApplication_StoreFails_RollbackCertFails verifies that when the store update fails
+// and rolling back the certificate also fails, the rollback error is returned.
+func (suite *ServiceTestSuite) TestUpdateApplication_StoreFails_RollbackCertFails() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		JWT:                  config.JWTConfig{ValidityPeriod: 3600},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService, _ := suite.setupConsentEnabledService()
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   "app123",
+		Name: "Test App",
+	}
+	// No Certificate on the update request → triggers deletion of the existing cert
+	app := &model.ApplicationDTO{
+		ID:                 "app123",
+		Name:               "Test App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+	}
+	existingCert := &cert.Certificate{
+		ID:    "cert-id-1",
+		Type:  cert.CertificateTypeJWKS,
+		Value: `{"keys":[]}`,
+	}
+
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
+	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	// updateApplicationCertificate: get existing cert, then delete it (no new cert in app)
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
+		Return(existingCert, nil)
+	mockCertService.EXPECT().
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
+		Return(nil)
+	// Store update fails
+	mockStore.On("UpdateApplication", mock.Anything, mock.Anything).Return(errors.New("store error"))
+	// Rollback: re-create the old cert → server error
+	mockCertService.EXPECT().
+		CreateCertificate(mock.Anything, mock.Anything).
+		Return((*cert.Certificate)(nil), &serviceerror.ServiceError{Type: serviceerror.ServerErrorType})
+
+	result, svcErr := service.UpdateApplication("app123", app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	// Returns the rollback error, not the store error
+	assert.Equal(suite.T(), ErrorCertificateServerError.Code, svcErr.Code)
+}
+
+// TestCreateApplication_ConsentSyncFails_AppDeleteFails verifies that when consent sync fails
+// and the compensation deletion of the app also fails, the original consent error is returned.
+func (suite *ServiceTestSuite) TestCreateApplication_ConsentSyncFails_AppDeleteFails() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		Flow:                 config.FlowConfig{DefaultAuthFlowHandle: "default_auth_flow"},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	app := &model.ApplicationDTO{
+		Name:               "Consent App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		LoginConsent:       &model.LoginConsentConfig{Enabled: true},
+		Assertion: &model.AssertionConfig{
+			UserAttributes: []string{"email"},
+		},
+	}
+
+	mockConsentService.On("IsEnabled").Return(true)
+	mockStore.On("GetApplicationByName", "Consent App").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	mockStore.On("CreateApplication", mock.Anything).Return(nil)
+	// Consent sync fails
+	mockConsentService.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
+		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+	// Compensation: app deletion itself also fails (logged, not propagated)
+	mockStore.On("DeleteApplication", mock.Anything).Return(errors.New("delete compensate error"))
+
+	result, svcErr := service.CreateApplication(app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	// Returns the consent sync error, not the delete compensation error
+	mockStore.AssertCalled(suite.T(), "DeleteApplication", mock.Anything)
+}
+
+// TestCreateApplication_ConsentSyncFails_WithCert_CertRollbackFails verifies that when
+// consent sync fails with a cert in place and the cert rollback also fails, the original
+// consent error is still returned (rollback failure is only logged).
+func (suite *ServiceTestSuite) TestCreateApplication_ConsentSyncFails_WithCert_CertRollbackFails() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		Flow:                 config.FlowConfig{DefaultAuthFlowHandle: "default_auth_flow"},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	app := &model.ApplicationDTO{
+		Name:               "Consent App With Cert",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		LoginConsent:       &model.LoginConsentConfig{Enabled: true},
+		Assertion: &model.AssertionConfig{
+			UserAttributes: []string{"email"},
+		},
+		Certificate: &model.ApplicationCertificate{
+			Type:  cert.CertificateTypeJWKS,
+			Value: `{"keys":[]}`,
+		},
+	}
+
+	mockConsentService.On("IsEnabled").Return(true)
+	mockStore.On("GetApplicationByName", "Consent App With Cert").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	// Certificate is created successfully during app creation
+	mockCertService.EXPECT().
+		CreateCertificate(mock.Anything, mock.Anything).
+		Return(&cert.Certificate{
+			ID:   "cert-1",
+			Type: cert.CertificateTypeJWKS,
+		}, (*serviceerror.ServiceError)(nil))
+	mockStore.On("CreateApplication", mock.Anything).Return(nil)
+	// Consent sync fails
+	mockConsentService.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
+		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+	// Compensation: app deletion succeeds
+	mockStore.On("DeleteApplication", mock.Anything).Return(nil)
+	// Cert rollback fails (logged, not propagated)
+	mockCertService.EXPECT().
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, mock.Anything).
+		Return(&serviceerror.ServiceError{Type: serviceerror.ServerErrorType})
+
+	result, svcErr := service.CreateApplication(app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	// Returns the consent sync error despite cert rollback failing
+	mockStore.AssertCalled(suite.T(), "DeleteApplication", mock.Anything)
+}
+
+// TestDeleteApplication_ConsentEnabled_DeleteConsentPurposesFails verifies that when
+// the consent service is enabled but deleting consent purposes fails, the error is returned.
+func (suite *ServiceTestSuite) TestDeleteApplication_ConsentEnabled_DeleteConsentPurposesFails() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, _, mockConsentService := suite.setupConsentEnabledService()
+
+	mockStore.On("IsApplicationDeclarative", "app123").Return(false)
+	mockStore.On("DeleteApplication", "app123").Return(nil)
+	mockCertService.EXPECT().
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
+		Return(nil)
+	mockConsentService.On("IsEnabled").Return(true)
+	mockConsentService.On("ListConsentPurposes", mock.Anything, "default", "app123").
+		Return([]consent.ConsentPurpose{{ID: "purpose-1"}}, (*serviceerror.I18nServiceError)(nil))
+	// Delete consent purpose fails with a non-associated-records error
+	mockConsentService.On("DeleteConsentPurpose", mock.Anything, "default", "purpose-1").
+		Return(&serviceerror.InternalServerErrorWithI18n)
+
+	svcErr := service.DeleteApplication("app123")
+
+	assert.NotNil(suite.T(), svcErr)
 }
 
 // TestResolveClientSecret_ExistingPublicClientToConfidential tests conversion from public to confidential.

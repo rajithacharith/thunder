@@ -31,6 +31,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
+	"github.com/asgardeo/thunder/tests/mocks/consentmock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	"github.com/asgardeo/thunder/tests/mocks/sysauthzmock"
 )
@@ -537,10 +538,14 @@ func (s *AuthzTestSuite) TestDeleteUserSchema_NilAuthz_NoError() {
 		Return(UserSchema{ID: "schema-1", OrganizationUnitID: testOUID1}, nil)
 	storeMock.On("DeleteUserSchemaByID", mock.Anything, "schema-1").Return(nil)
 
+	consentMock := consentmock.NewConsentServiceInterfaceMock(s.T())
+	consentMock.On("IsEnabled").Return(false)
+
 	svc := &userSchemaService{
 		userSchemaStore: storeMock,
 		transactioner:   &mockTransactioner{},
 		authzService:    nil,
+		consentService:  consentMock,
 	}
 
 	svcErr := svc.DeleteUserSchema(context.Background(), "schema-1")

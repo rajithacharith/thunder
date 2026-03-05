@@ -437,3 +437,12 @@ packages:
           structname: '{{.InterfaceName}}Mock'
           pkgname: sysauthzmock
           filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/consent:
+    interfaces:
+      ConsentServiceInterface:
+        config:
+          dir: tests/mocks/consentmock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: consentmock
+          filename: "{{.InterfaceName}}_mock.go"

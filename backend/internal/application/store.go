@@ -502,10 +502,19 @@ func getAppJSONDataBytes(app *model.ApplicationProcessedDTO) ([]byte, error) {
 		}
 	}
 
+	// Include login consent config if present
+	if app.LoginConsent != nil {
+		loginConsentData := map[string]interface{}{}
+		loginConsentData["enabled"] = app.LoginConsent.Enabled
+		loginConsentData["validity_period"] = app.LoginConsent.ValidityPeriod
+		jsonData["login_consent"] = loginConsentData
+	}
+
 	jsonDataBytes, err := json.Marshal(jsonData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal application JSON: %w", err)
 	}
+
 	return jsonDataBytes, nil
 }
 
@@ -754,6 +763,33 @@ func extractAssertionConfigFromJSON(data map[string]interface{}) *model.Assertio
 	return config
 }
 
+// extractLoginConsentConfigFromJSON extracts login consent configuration from JSON data.
+func extractLoginConsentConfigFromJSON(data map[string]interface{}) *model.LoginConsentConfig {
+	consentData, exists := data["login_consent"]
+	if !exists || consentData == nil {
+		return nil
+	}
+
+	consentMap, ok := consentData.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	config := &model.LoginConsentConfig{
+		Enabled:        false, // default
+		ValidityPeriod: 0,     // default to indicate no expiry
+	}
+
+	if enabled, ok := consentMap["enabled"].(bool); ok {
+		config.Enabled = enabled
+	}
+	if validityPeriod, ok := consentMap["validity_period"].(float64); ok {
+		config.ValidityPeriod = int64(validityPeriod)
+	}
+
+	return config
+}
+
 // buildApplicationFromResultRow constructs an Application object from a database result row.
 func buildApplicationFromResultRow(row map[string]interface{}) (model.ApplicationProcessedDTO, error) {
 	basicApp, err := buildBasicApplicationFromResultRow(row)
@@ -843,6 +879,7 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 		PolicyURI:                 policyURI,
 		Contacts:                  contacts,
 		AllowedUserTypes:          allowedUserTypes,
+		LoginConsent:              extractLoginConsentConfigFromJSON(appJSONData),
 		Metadata:                  metadata,
 	}
 

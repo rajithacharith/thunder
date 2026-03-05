@@ -92,6 +92,13 @@ var (
 			"stores exceeds the maximum limit. Please refine your query to return " +
 			"fewer results.",
 	}
+	// ErrorConsentSyncFailed is the error returned when user schema changes failed to sync with the consent service.
+	ErrorConsentSyncFailed = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "USRS-1010",
+		Error:            "Consent synchronization failed",
+		ErrorDescription: "Failed to synchronize consent configurations for the user schema",
+	}
 )
 
 // Server errors for user schema management operations.
