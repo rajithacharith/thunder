@@ -119,6 +119,7 @@ $customerUserTypeData = ([ordered]@{
             type = "string"
             required = $true
             unique = $true
+            regex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         }
         given_name = @{
             type = "string"
