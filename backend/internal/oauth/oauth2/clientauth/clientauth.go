@@ -22,6 +22,7 @@ package clientauth
 import (
 	"encoding/base64"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/application"
@@ -130,5 +131,15 @@ func extractBasicAuthCredentials(r *http.Request) (string, string, *authError) {
 		return "", "", errInvalidAuthorizationHeader
 	}
 
-	return credentials[0], credentials[1], nil
+	// URL-decode client credentials.
+	clientID, idErr := url.QueryUnescape(credentials[0])
+	if idErr != nil {
+		return "", "", errInvalidAuthorizationHeader
+	}
+	clientSecret, secretErr := url.QueryUnescape(credentials[1])
+	if secretErr != nil {
+		return "", "", errInvalidAuthorizationHeader
+	}
+
+	return clientID, clientSecret, nil
 }
