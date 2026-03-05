@@ -42,6 +42,7 @@ func newApplicationHandler(service ApplicationServiceInterface) *applicationHand
 
 // HandleApplicationPostRequest handles the application request.
 func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationHandler"))
 
 	appRequest, err := sysutils.DecodeJSONBody[model.ApplicationRequest](r)
@@ -78,9 +79,9 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 	appDTO.InboundAuthConfig = ah.processInboundAuthConfigFromRequest(appRequest.InboundAuthConfig)
 
 	// Create the app using the application service.
-	createdAppDTO, svcErr := ah.service.CreateApplication(&appDTO)
+	createdAppDTO, svcErr := ah.service.CreateApplication(ctx, &appDTO)
 	if svcErr != nil {
-		ah.handleError(w, svcErr)
+		ah.handleError(w, r, svcErr)
 		return
 	}
 
@@ -125,9 +126,10 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 
 // HandleApplicationListRequest handles the application request.
 func (ah *applicationHandler) HandleApplicationListRequest(w http.ResponseWriter, r *http.Request) {
-	listResponse, svcErr := ah.service.GetApplicationList()
+	ctx := r.Context()
+	listResponse, svcErr := ah.service.GetApplicationList(ctx)
 	if svcErr != nil {
-		ah.handleError(w, svcErr)
+		ah.handleError(w, r, svcErr)
 		return
 	}
 
@@ -136,6 +138,7 @@ func (ah *applicationHandler) HandleApplicationListRequest(w http.ResponseWriter
 
 // HandleApplicationGetRequest handles the application request.
 func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationHandler"))
 
 	id := r.PathValue("id")
@@ -149,9 +152,9 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 		return
 	}
 
-	appDTO, svcErr := ah.service.GetApplication(id)
+	appDTO, svcErr := ah.service.GetApplication(ctx, id)
 	if svcErr != nil {
-		ah.handleError(w, svcErr)
+		ah.handleError(w, r, svcErr)
 		return
 	}
 
@@ -249,6 +252,7 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 
 // HandleApplicationPutRequest handles the application request.
 func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationHandler"))
 
 	id := r.PathValue("id")
@@ -297,9 +301,9 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 	updateReqAppDTO.InboundAuthConfig = ah.processInboundAuthConfigFromRequest(appRequest.InboundAuthConfig)
 
 	// Update the application using the application service.
-	updatedAppDTO, svcErr := ah.service.UpdateApplication(id, &updateReqAppDTO)
+	updatedAppDTO, svcErr := ah.service.UpdateApplication(ctx, id, &updateReqAppDTO)
 	if svcErr != nil {
-		ah.handleError(w, svcErr)
+		ah.handleError(w, r, svcErr)
 		return
 	}
 
@@ -344,6 +348,7 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 
 // HandleApplicationDeleteRequest handles the application request.
 func (ah *applicationHandler) HandleApplicationDeleteRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	id := r.PathValue("id")
 	if id == "" {
 		errResp := apierror.ErrorResponse{
@@ -355,9 +360,9 @@ func (ah *applicationHandler) HandleApplicationDeleteRequest(w http.ResponseWrit
 		return
 	}
 
-	svcErr := ah.service.DeleteApplication(id)
+	svcErr := ah.service.DeleteApplication(ctx, id)
 	if svcErr != nil {
-		ah.handleError(w, svcErr)
+		ah.handleError(w, r, svcErr)
 		return
 	}
 
@@ -425,7 +430,8 @@ func (ah *applicationHandler) processInboundAuthConfig(logger *log.Logger, appDT
 }
 
 // handleError handles service errors and returns appropriate HTTP responses.
-func (ah *applicationHandler) handleError(w http.ResponseWriter,
+// When the resolved status is 500, the error is logged with request context.
+func (ah *applicationHandler) handleError(w http.ResponseWriter, r *http.Request,
 	svcErr *serviceerror.ServiceError) {
 	errResp := apierror.ErrorResponse{
 		Code:        svcErr.Code,
@@ -440,6 +446,16 @@ func (ah *applicationHandler) handleError(w http.ResponseWriter,
 		} else {
 			statusCode = http.StatusBadRequest
 		}
+	}
+
+	if statusCode == http.StatusInternalServerError {
+		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationHandler"))
+		logger.Error("Internal server error processing application request",
+			log.String("method", r.Method),
+			log.String("path", r.URL.Path),
+			log.String("error_code", svcErr.Code),
+			log.String("error", svcErr.Error),
+		)
 	}
 
 	sysutils.WriteErrorResponse(w, statusCode, errResp)

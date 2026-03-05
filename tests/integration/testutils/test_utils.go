@@ -752,6 +752,33 @@ func GetZipFilePattern() string {
 	return fmt.Sprintf("thunder-*-%s-%s.zip", goos, goarch)
 }
 
+// GetDBType returns the configured database type ("sqlite" or "postgres").
+func GetDBType() string {
+	ensureInitialized()
+	return dbType
+}
+
+// QueryConfigDB executes a SQL query against the configdb SQLite database and returns
+// the trimmed output produced by the sqlite3 CLI. Returns an error if the database
+// type is not SQLite or if the sqlite3 CLI is unavailable.
+func QueryConfigDB(sqlQuery string) (string, error) {
+	ensureInitialized()
+	if dbType != "sqlite" {
+		return "", fmt.Errorf("QueryConfigDB is only supported for sqlite, current db type: %s", dbType)
+	}
+	dbPath := filepath.Join(extractedProductHome, DatabaseFileBasePath, "configdb.db")
+	absDBPath, err := filepath.Abs(dbPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve configdb path: %v", err)
+	}
+	cmd := exec.Command("sqlite3", absDBPath, sqlQuery)
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("sqlite3 query failed: %v", err)
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
 // detectOSAndArchitecture detects the OS and architecture using Go environment variables
 // or falls back to system detection if environment variables are not available
 func detectOSAndArchitecture() (string, string) {
