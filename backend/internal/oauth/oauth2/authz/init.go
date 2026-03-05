@@ -23,6 +23,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
+	"github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
@@ -46,7 +47,8 @@ func Initialize(
 func registerRoutes(mux *http.ServeMux, authzHandler AuthorizeHandlerInterface) {
 	// CORS MUST NOT be enabled on the authorization endpoint.
 	// The client redirects the user agent to it; it is not accessed directly via XHR/fetch.
-	mux.HandleFunc("GET /oauth2/authorize", authzHandler.HandleAuthorizeGetRequest)
+	mux.HandleFunc("GET /oauth2/authorize",
+		withFrameProtection(authzHandler.HandleAuthorizeGetRequest))
 
 	callbackOpts := middleware.CORSOptions{
 		AllowedMethods:   "POST",
@@ -60,4 +62,13 @@ func registerRoutes(mux *http.ServeMux, authzHandler AuthorizeHandlerInterface) 
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		}, callbackOpts))
+}
+
+// withFrameProtection wraps an HTTP handler to prevent the page from being embedded in frames.
+func withFrameProtection(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set(constants.XFrameOptionsHeaderName, constants.XFrameOptionsDeny)
+		w.Header().Set(constants.ContentSecurityPolicyHeaderName, constants.ContentSecurityPolicyFrameAncestorsNone)
+		handler(w, r)
+	}
 }
