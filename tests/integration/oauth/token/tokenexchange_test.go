@@ -468,7 +468,7 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_InvalidSubjectToken() {
 	resp, statusCode, err := ts.exchangeToken(formData.Encode(), authHeader)
 	ts.Require().NoError(err)
 	ts.Equal(http.StatusBadRequest, statusCode)
-	ts.Equal("invalid_grant", resp.Error)
+	ts.Equal("invalid_request", resp.Error)
 	ts.Contains(resp.ErrorDescription, "Invalid subject_token")
 }
 
@@ -666,7 +666,7 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_SubjectTokenMissingIssClaim(
 	resp, statusCode, err := ts.exchangeToken(formData.Encode(), authHeader)
 	ts.Require().NoError(err)
 	ts.Equal(http.StatusBadRequest, statusCode)
-	ts.Equal("invalid_grant", resp.Error)
+	ts.Equal("invalid_request", resp.Error)
 	ts.Contains(resp.ErrorDescription, "Invalid subject_token")
 }
 
@@ -684,6 +684,6 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_SubjectTokenUnsupportedIssue
 	resp, statusCode, err := ts.exchangeToken(formData.Encode(), authHeader)
 	ts.Require().NoError(err)
 	ts.Equal(http.StatusBadRequest, statusCode)
-	ts.Equal("invalid_grant", resp.Error)
+	ts.Equal("invalid_request", resp.Error)
 	ts.Contains(resp.ErrorDescription, "Invalid subject_token")
 }
