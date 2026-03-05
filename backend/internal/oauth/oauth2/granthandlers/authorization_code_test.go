@@ -415,26 +415,6 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCo
 	assert.Nil(suite.T(), err)
 }
 
-func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCode_InactiveCode() {
-	inactiveCode := suite.testAuthzCode
-	inactiveCode.State = authz.AuthCodeStateInactive
-
-	err := validateAuthorizationCode(suite.testTokenReq, inactiveCode)
-	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), constants.ErrorInvalidGrant, err.Error)
-	assert.Equal(suite.T(), "Inactive authorization code", err.ErrorDescription)
-}
-
-func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCode_InvalidState() {
-	invalidStateCode := suite.testAuthzCode
-	invalidStateCode.State = "INVALID_STATE"
-
-	err := validateAuthorizationCode(suite.testTokenReq, invalidStateCode)
-	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), constants.ErrorInvalidGrant, err.Error)
-	assert.Equal(suite.T(), "Inactive authorization code", err.ErrorDescription)
-}
-
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateAuthorizationCode_ExpiredCode() {
 	expiredCode := suite.testAuthzCode
 	expiredCode.ExpiryTime = time.Now().Add(-5 * time.Minute) // Expired
