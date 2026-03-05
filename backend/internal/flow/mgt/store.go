@@ -34,7 +34,7 @@ import (
 
 // Database column names
 const (
-	colFlowID        = "flow_id"
+	colFlowID        = "id"
 	colHandle        = "handle"
 	colName          = "name"
 	colFlowType      = "flow_type"

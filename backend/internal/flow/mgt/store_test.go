@@ -612,7 +612,7 @@ func (s *FlowStoreTestSuite) TestGetFlowVersionBuildError() {
 
 	s.Error(err)
 	s.Nil(version)
-	s.Contains(err.Error(), "flow_id field")
+	s.Contains(err.Error(), "id field")
 }
 
 func (s *FlowStoreTestSuite) TestBuildBasicFlowDefinitionFromRowInvalidActiveVersion() {
@@ -712,7 +712,7 @@ func (s *FlowStoreTestSuite) TestBuildFlowVersionFromRowInvalidFlowID() {
 
 	s.Error(err)
 	s.Nil(version)
-	s.Contains(err.Error(), "flow_id field is missing or invalid")
+	s.Contains(err.Error(), "id field is missing or invalid")
 }
 
 // Transaction-based Method Tests
@@ -1064,7 +1064,7 @@ func (s *FlowStoreTestSuite) TestUpdateFlow_FlowNotFound() {
 	db, mock, err := sqlmock.New()
 	s.Require().NoError(err)
 	flowCols := []string{
-		"flow_id", "handle", "name", "flow_type", "active_version", "nodes", "created_at", "updated_at"}
+		"id", "handle", "name", "flow_type", "active_version", "nodes", "created_at", "updated_at"}
 	emptyRows := mock.NewRows(flowCols)
 	mock.ExpectQuery("SELECT").WillReturnRows(emptyRows)
 	flowSQLRows, _ := db.Query("SELECT")
@@ -1093,7 +1093,7 @@ func (s *FlowStoreTestSuite) TestUpdateFlow_PushToVersionStackError() {
 	db, mock, err := sqlmock.New()
 	s.Require().NoError(err)
 	flowCols := []string{
-		"flow_id", "handle", "name", "flow_type", "active_version", "nodes", "created_at", "updated_at"}
+		"id", "handle", "name", "flow_type", "active_version", "nodes", "created_at", "updated_at"}
 	flowRows := mock.NewRows(flowCols).
 		AddRow("flow-1", "updated-handle", "Updated Flow", "authentication",
 			int64(3), "[]", "2025-01-01T00:00:00Z", "2025-01-01T00:00:00Z")
@@ -1121,7 +1121,7 @@ func (s *FlowStoreTestSuite) TestRestoreFlowVersion_FlowNotFound() {
 	db, mock, err := sqlmock.New()
 	s.Require().NoError(err)
 	flowCols := []string{
-		"flow_id", "handle", "name", "flow_type", "active_version", "nodes", "created_at", "updated_at"}
+		"id", "handle", "name", "flow_type", "active_version", "nodes", "created_at", "updated_at"}
 	emptyRows := mock.NewRows(flowCols)
 	mock.ExpectQuery("SELECT").WillReturnRows(emptyRows)
 	flowSQLRows, _ := db.Query("SELECT")
@@ -1143,7 +1143,7 @@ func (s *FlowStoreTestSuite) TestRestoreFlowVersion_GetVersionQueryError() {
 	db, mock, err := sqlmock.New()
 	s.Require().NoError(err)
 	flowCols := []string{
-		"flow_id", "handle", "name", "flow_type", "active_version", "nodes", "created_at", "updated_at"}
+		"id", "handle", "name", "flow_type", "active_version", "nodes", "created_at", "updated_at"}
 	flowRows := mock.NewRows(flowCols).
 		AddRow("flow-2", "some-handle", "Some Flow", "authentication",
 			int64(2), "[]", "2025-01-01T00:00:00Z", "2025-01-01T00:00:00Z")
@@ -1170,7 +1170,7 @@ func (s *FlowStoreTestSuite) TestRestoreFlowVersion_PushToVersionStackError() {
 	db, mock, err := sqlmock.New()
 	s.Require().NoError(err)
 	flowCols := []string{
-		"flow_id", "handle", "name", "flow_type", "active_version", "nodes", "created_at", "updated_at"}
+		"id", "handle", "name", "flow_type", "active_version", "nodes", "created_at", "updated_at"}
 	flowRows := mock.NewRows(flowCols).
 		AddRow("flow-3", "some-handle", "Some Flow", "authentication",
 			int64(1), "[]", "2025-01-01T00:00:00Z", "2025-01-01T00:00:00Z")

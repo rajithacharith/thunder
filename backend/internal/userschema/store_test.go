@@ -108,10 +108,10 @@ func (suite *StoreTestSuite) TestGetUserSchemaListByOUIDs() {
 				rows := []map[string]interface{}{
 					{
 						// Invalid row missing fields
-						"schema_id": "schema-1",
+						"id": "schema-1",
 					},
 					{
-						"schema_id":               "schema-2",
+						"id":                      "schema-2",
 						"name":                    "Schema 2",
 						"ou_id":                   "ou-1",
 						"allow_self_registration": true,
@@ -142,7 +142,7 @@ func (suite *StoreTestSuite) TestGetUserSchemaListByOUIDs() {
 
 				rows := []map[string]interface{}{
 					{
-						"schema_id":               "schema-1",
+						"id":                      "schema-1",
 						"name":                    "Schema 1",
 						"ou_id":                   "ou-1",
 						"allow_self_registration": false,
