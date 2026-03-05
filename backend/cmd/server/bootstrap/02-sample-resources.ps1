@@ -110,6 +110,11 @@ $customerUserTypeData = ([ordered]@{
             required = $true
             unique = $true
         }
+        password = @{
+            type = "string"
+            required = $true
+            credential = $true
+        }
         email = @{
             type = "string"
             required = $true
@@ -120,6 +125,18 @@ $customerUserTypeData = ([ordered]@{
             required = $false
         }
         family_name = @{
+            type = "string"
+            required = $false
+        }
+        firstName = @{
+            type = "string"
+            required = $false
+        }
+        lastName = @{
+            type = "string"
+            required = $false
+        }
+        mobileNumber = @{
             type = "string"
             required = $false
         }
