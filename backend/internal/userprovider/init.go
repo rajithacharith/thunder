@@ -25,10 +25,9 @@ import (
 
 // InitializeUserProvider initializes the user provider.
 func InitializeUserProvider(userSvc user.UserServiceInterface) UserProviderInterface {
-	authnProviderConfig := config.GetThunderRuntime().Config.AuthnProvider
-	switch authnProviderConfig.Type {
-	case "rest":
-		// user provider is disabled if authn provider is rest
+	userProviderConfig := config.GetThunderRuntime().Config.UserProvider
+	switch userProviderConfig.Type {
+	case "disabled":
 		return initializeDisabledUserProvider()
 	default:
 		return initializeDefaultUserProvider(userSvc)
