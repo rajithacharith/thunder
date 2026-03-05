@@ -188,6 +188,7 @@ func (us *userSchemaService) CreateUserSchema(
 	schemaToValidate := UserSchema{
 		Name:               request.Name,
 		OrganizationUnitID: request.OrganizationUnitID,
+		SystemAttributes:   request.SystemAttributes,
 		Schema:             request.Schema,
 	}
 	if validationErr := validateUserSchemaDefinition(schemaToValidate); validationErr != nil {
@@ -330,6 +331,7 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 	schemaToValidate := UserSchema{
 		Name:               request.Name,
 		OrganizationUnitID: request.OrganizationUnitID,
+		SystemAttributes:   request.SystemAttributes,
 		Schema:             request.Schema,
 	}
 	if validationErr := validateUserSchemaDefinition(schemaToValidate); validationErr != nil {
@@ -734,14 +736,47 @@ func validateUserSchemaDefinition(schema UserSchema) *serviceerror.ServiceError 
 		return invalidSchemaRequestError("schema definition must not be empty")
 	}
 
-	_, err := model.CompileUserSchema(schema.Schema)
+	compiledSchema, err := model.CompileUserSchema(schema.Schema)
 	if err != nil {
 		logger.Debug("User schema validation failed: schema compilation error",
 			log.Error(err))
 		return invalidSchemaRequestError(err.Error())
 	}
 
-	return nil
+	return validateSystemAttributes(compiledSchema, schema.SystemAttributes)
+}
+
+// validateSystemAttributes validates the system attributes against the compiled schema.
+func validateSystemAttributes(
+	compiledSchema *model.Schema, systemAttrs *SystemAttributes,
+) *serviceerror.ServiceError {
+	if systemAttrs == nil {
+		return nil
+	}
+
+	return validateDisplayAttribute(compiledSchema, systemAttrs.Display)
+}
+
+// validateDisplayAttribute validates that the display attribute, if provided,
+// references an existing, displayable, non-credential attribute in the compiled schema.
+// Only string and number types are considered displayable.
+func validateDisplayAttribute(
+	compiledSchema *model.Schema, display string,
+) *serviceerror.ServiceError {
+	if display == "" {
+		return nil
+	}
+
+	switch compiledSchema.ValidateAsDisplayAttribute(display) {
+	case model.DisplayAttributeNotFound:
+		return &ErrorInvalidDisplayAttribute
+	case model.DisplayAttributeNotDisplayable:
+		return &ErrorNonDisplayableAttribute
+	case model.DisplayAttributeIsCredential:
+		return &ErrorCredentialDisplayAttribute
+	default:
+		return nil
+	}
 }
 
 // syncConsentElementsOnCreate creates missing consent elements for a new schema creation.

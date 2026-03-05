@@ -30,6 +30,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
+	"github.com/asgardeo/thunder/internal/userschema/model"
 
 	"gopkg.in/yaml.v3"
 )
@@ -227,12 +228,19 @@ func validateUserSchema(schemaDTO *UserSchema, ouService oupkg.OrganizationUnitS
 			schemaDTO.OrganizationUnitID, schemaDTO.Name)
 	}
 
-	// Validate schema is valid JSON
-	if len(schemaDTO.Schema) > 0 {
-		var testSchema map[string]interface{}
-		if err := json.Unmarshal(schemaDTO.Schema, &testSchema); err != nil {
-			return fmt.Errorf("invalid schema JSON for user schema '%s': %w", schemaDTO.Name, err)
-		}
+	// Validate schema definition is present and valid.
+	if len(schemaDTO.Schema) == 0 {
+		return fmt.Errorf("schema definition is required for user schema '%s'", schemaDTO.Name)
+	}
+
+	compiledSchema, compileErr := model.CompileUserSchema(schemaDTO.Schema)
+	if compileErr != nil {
+		return fmt.Errorf("invalid schema for user schema '%s': %w", schemaDTO.Name, compileErr)
+	}
+
+	if svcErr := validateSystemAttributes(compiledSchema, schemaDTO.SystemAttributes); svcErr != nil {
+		return fmt.Errorf("invalid system attributes for user schema '%s': %s",
+			schemaDTO.Name, svcErr.ErrorDescription)
 	}
 
 	return nil
