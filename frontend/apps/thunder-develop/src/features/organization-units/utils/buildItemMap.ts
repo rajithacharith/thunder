@@ -16,21 +16,17 @@
  * under the License.
  */
 
-/**
- * User creation step identifiers used in the creation wizard flow
- * to track the current step and navigate between steps.
- *
- * @public
- */
-export const UserCreateFlowStep = {
-  USER_TYPE: 'USER_TYPE',
-  ORGANIZATION_UNIT: 'ORGANIZATION_UNIT',
-  USER_DETAILS: 'USER_DETAILS',
-} as const;
+import type {OrganizationUnitTreeItem} from '../models/organization-unit-tree';
 
-/**
- * User creation step type
- *
- * @public
- */
-export type UserCreateFlowStep = keyof typeof UserCreateFlowStep;
+export default function buildItemMap(items: OrganizationUnitTreeItem[]): Map<string, OrganizationUnitTreeItem> {
+  const map = new Map<string, OrganizationUnitTreeItem>();
+  const visit = (list: OrganizationUnitTreeItem[]): void => {
+    list.forEach((item) => {
+      map.set(item.id, item);
+      if (item.children) visit(item.children);
+    });
+  };
+  visit(items);
+
+  return map;
+}

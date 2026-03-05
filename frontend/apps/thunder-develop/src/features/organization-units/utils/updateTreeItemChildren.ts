@@ -16,21 +16,22 @@
  * under the License.
  */
 
-/**
- * User creation step identifiers used in the creation wizard flow
- * to track the current step and navigate between steps.
- *
- * @public
- */
-export const UserCreateFlowStep = {
-  USER_TYPE: 'USER_TYPE',
-  ORGANIZATION_UNIT: 'ORGANIZATION_UNIT',
-  USER_DETAILS: 'USER_DETAILS',
-} as const;
+import type {OrganizationUnitTreeItem} from '../models/organization-unit-tree';
 
-/**
- * User creation step type
- *
- * @public
- */
-export type UserCreateFlowStep = keyof typeof UserCreateFlowStep;
+export default function updateTreeItemChildren(
+  items: OrganizationUnitTreeItem[],
+  parentId: string,
+  children: OrganizationUnitTreeItem[],
+): OrganizationUnitTreeItem[] {
+  return items.map((item) => {
+    if (item.id === parentId) {
+      return {...item, children};
+    }
+
+    if (item.children && item.children.length > 0) {
+      return {...item, children: updateTreeItemChildren(item.children, parentId, children)};
+    }
+
+    return item;
+  });
+}

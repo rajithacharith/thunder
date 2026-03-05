@@ -375,11 +375,15 @@ const translations = {
 
     // Create wizard steps
     'createWizard.steps.userType': 'User Type',
+    'createWizard.steps.organizationUnit': 'Organization Unit',
     'createWizard.steps.userDetails': 'User Details',
     'createWizard.selectUserType.title': 'Select a user type',
     'createWizard.selectUserType.subtitle': 'Choose a user type (schema) for the new user.',
     'createWizard.selectUserType.fieldLabel': 'User Type',
     'createWizard.selectUserType.placeholder': 'Select a user type',
+    'createWizard.selectOrganizationUnit.title': 'Select an organization unit',
+    'createWizard.selectOrganizationUnit.subtitle': 'Choose which organization unit this user should belong to.',
+    'createWizard.selectOrganizationUnit.fieldLabel': 'Organization Unit',
     'createWizard.userDetails.title': 'Enter user details',
     'createWizard.userDetails.subtitle': 'Fill in the required information for the new user.',
     'createWizard.validationErrors.userTypeRequired': 'Please select a user type before proceeding.',
@@ -465,6 +469,7 @@ const translations = {
   organizationUnits: {
     // Tree picker (shared component)
     'treePicker.empty': 'No organization units available',
+    'treePicker.error': 'Failed to load organization unit data',
 
     // Listing page
     'listing.title': 'Organization Units (OU)',

@@ -19,6 +19,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
 import OrganizationUnitTreePicker from '../OrganizationUnitTreePicker';
+import type {OrganizationUnit} from '../../models/organization-unit';
 import type {OrganizationUnitListResponse} from '../../models/responses';
 
 // Mock logger — stable reference to avoid useCallback churn
@@ -27,11 +28,31 @@ vi.mock('@thunder/logger/react', () => ({
   useLogger: () => stableLogger,
 }));
 
-// Mock the API hook
+// Mock the API hooks
 const mockUseGetOrganizationUnits = vi.fn();
 vi.mock('../../api/useGetOrganizationUnits', () => ({
   default: () =>
     mockUseGetOrganizationUnits() as {
+      data: OrganizationUnitListResponse | undefined;
+      isLoading: boolean;
+      error: Error | null;
+    },
+}));
+
+const mockUseGetOrganizationUnit = vi.fn();
+vi.mock('../../api/useGetOrganizationUnit', () => ({
+  default: () =>
+    mockUseGetOrganizationUnit() as {
+      data: OrganizationUnit | undefined;
+      isLoading: boolean;
+      error: Error | null;
+    },
+}));
+
+const mockUseGetChildOrganizationUnits = vi.fn();
+vi.mock('../../api/useGetChildOrganizationUnits', () => ({
+  default: () =>
+    mockUseGetChildOrganizationUnits() as {
       data: OrganizationUnitListResponse | undefined;
       isLoading: boolean;
       error: Error | null;
@@ -91,6 +112,9 @@ describe('OrganizationUnitTreePicker', () => {
       isLoading: false,
       error: null,
     });
+    // Default: rooted-mode hooks return no data (used when rootOuId is not provided)
+    mockUseGetOrganizationUnit.mockReturnValue({data: undefined, isLoading: false, error: null});
+    mockUseGetChildOrganizationUnits.mockReturnValue({data: undefined, isLoading: false, error: null});
   });
 
   it('should render tree with organization unit names', async () => {
@@ -559,5 +583,195 @@ describe('OrganizationUnitTreePicker', () => {
     // The Mui-selected class should be applied to the selected item
     const selectedElements = document.querySelectorAll('.Mui-selected');
     expect(selectedElements.length).toBeGreaterThan(0);
+  });
+
+  describe('rootOuId mode', () => {
+    const rootOu: OrganizationUnit = {
+      id: 'root-ou-1',
+      handle: 'root-handle',
+      name: 'Root OU',
+      description: 'The root',
+      parent: null,
+    };
+
+    const childOUsResponse: OrganizationUnitListResponse = {
+      totalResults: 2,
+      startIndex: 1,
+      count: 2,
+      organizationUnits: [
+        {id: 'child-1', handle: 'child-1-handle', name: 'Child One', description: null, parent: 'root-ou-1'},
+        {id: 'child-2', handle: 'child-2-handle', name: 'Child Two', description: null, parent: 'root-ou-1'},
+      ],
+    };
+
+    beforeEach(() => {
+      // Default: hooks return no data and not loading (non-rooted hooks)
+      mockUseGetOrganizationUnit.mockReturnValue({data: undefined, isLoading: false, error: null});
+      mockUseGetChildOrganizationUnits.mockReturnValue({data: undefined, isLoading: false, error: null});
+    });
+
+    it('should show loading spinner when root OU is loading', () => {
+      mockUseGetOrganizationUnit.mockReturnValue({data: undefined, isLoading: true, error: null});
+      mockUseGetChildOrganizationUnits.mockReturnValue({data: undefined, isLoading: false, error: null});
+
+      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
+
+      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    });
+
+    it('should show loading spinner when root OU children are loading', () => {
+      mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
+      mockUseGetChildOrganizationUnits.mockReturnValue({data: undefined, isLoading: true, error: null});
+
+      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
+
+      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    });
+
+    it('should render root OU as top-level node with children', async () => {
+      mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
+      mockUseGetChildOrganizationUnits.mockReturnValue({data: childOUsResponse, isLoading: false, error: null});
+
+      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Root OU')).toBeInTheDocument();
+        expect(screen.getByText('Child One')).toBeInTheDocument();
+        expect(screen.getByText('Child Two')).toBeInTheDocument();
+      });
+    });
+
+    it('should auto-expand root OU node', async () => {
+      mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
+      mockUseGetChildOrganizationUnits.mockReturnValue({data: childOUsResponse, isLoading: false, error: null});
+
+      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
+
+      // Children should be visible immediately (root is auto-expanded)
+      await waitFor(() => {
+        expect(screen.getByText('Child One')).toBeInTheDocument();
+        expect(screen.getByText('Child Two')).toBeInTheDocument();
+      });
+    });
+
+    it('should allow selecting the root OU', async () => {
+      const onChange = vi.fn();
+      mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
+      mockUseGetChildOrganizationUnits.mockReturnValue({data: childOUsResponse, isLoading: false, error: null});
+
+      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" onChange={onChange} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Root OU')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText('Root OU'));
+
+      await waitFor(() => {
+        expect(onChange).toHaveBeenCalledWith('root-ou-1');
+      });
+    });
+
+    it('should allow selecting a child OU', async () => {
+      const onChange = vi.fn();
+      mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
+      mockUseGetChildOrganizationUnits.mockReturnValue({data: childOUsResponse, isLoading: false, error: null});
+
+      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" onChange={onChange} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Child One')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText('Child One'));
+
+      await waitFor(() => {
+        expect(onChange).toHaveBeenCalledWith('child-1');
+      });
+    });
+
+    it('should show "no children" placeholder when root OU has no children', async () => {
+      mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
+      mockUseGetChildOrganizationUnits.mockReturnValue({
+        data: {totalResults: 0, startIndex: 1, count: 0, organizationUnits: []},
+        isLoading: false,
+        error: null,
+      });
+
+      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Root OU')).toBeInTheDocument();
+        expect(screen.getByText('No child organization units')).toBeInTheDocument();
+      });
+    });
+
+    it('should not show empty message for global mode when in rooted mode', async () => {
+      mockUseGetOrganizationUnits.mockReturnValue({
+        data: {totalResults: 0, startIndex: 1, count: 0, organizationUnits: []},
+        isLoading: false,
+        error: null,
+      });
+      mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
+      mockUseGetChildOrganizationUnits.mockReturnValue({data: childOUsResponse, isLoading: false, error: null});
+
+      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Root OU')).toBeInTheDocument();
+      });
+
+      // The global empty message should NOT appear
+      expect(screen.queryByText('No organization units available')).not.toBeInTheDocument();
+    });
+
+    it('should display handles for root and child items in rooted mode', async () => {
+      mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
+      mockUseGetChildOrganizationUnits.mockReturnValue({data: childOUsResponse, isLoading: false, error: null});
+
+      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
+
+      await waitFor(() => {
+        expect(screen.getByText('root-handle')).toBeInTheDocument();
+        expect(screen.getByText('child-1-handle')).toBeInTheDocument();
+        expect(screen.getByText('child-2-handle')).toBeInTheDocument();
+      });
+    });
+
+    it('should show load more for children when there are more than returned', async () => {
+      const paginatedChildrenResponse: OrganizationUnitListResponse = {
+        totalResults: 50,
+        startIndex: 1,
+        count: 2,
+        organizationUnits: [
+          {id: 'child-1', handle: 'child-1-handle', name: 'Child One', description: null, parent: 'root-ou-1'},
+          {id: 'child-2', handle: 'child-2-handle', name: 'Child Two', description: null, parent: 'root-ou-1'},
+        ],
+      };
+
+      mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
+      mockUseGetChildOrganizationUnits.mockReturnValue({data: paginatedChildrenResponse, isLoading: false, error: null});
+
+      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Child One')).toBeInTheDocument();
+        expect(screen.getByText('Load more')).toBeInTheDocument();
+      });
+    });
+
+    it('should render correctly with custom maxHeight prop', async () => {
+      mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
+      mockUseGetChildOrganizationUnits.mockReturnValue({data: childOUsResponse, isLoading: false, error: null});
+
+      renderWithProviders(
+        <OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" maxHeight={500} />,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Root OU')).toBeInTheDocument();
+        expect(screen.getByText('Child One')).toBeInTheDocument();
+      });
+    });
   });
 });

@@ -35,6 +35,9 @@ export interface UserCreateContextType {
   selectedSchema: SchemaInterface | null;
   setSelectedSchema: (schema: SchemaInterface | null) => void;
 
+  selectedOuId: string | null;
+  setSelectedOuId: (ouId: string | null) => void;
+
   formValues: Record<string, unknown>;
   setFormValues: (values: Record<string, unknown>) => void;
 

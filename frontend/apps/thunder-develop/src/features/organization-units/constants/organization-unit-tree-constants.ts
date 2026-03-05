@@ -16,21 +16,15 @@
  * under the License.
  */
 
-/**
- * User creation step identifiers used in the creation wizard flow
- * to track the current step and navigate between steps.
- *
- * @public
- */
-export const UserCreateFlowStep = {
-  USER_TYPE: 'USER_TYPE',
-  ORGANIZATION_UNIT: 'ORGANIZATION_UNIT',
-  USER_DETAILS: 'USER_DETAILS',
+const OrganizationUnitTreeConstants = {
+  PLACEHOLDER_SUFFIX: '__placeholder',
+  EMPTY_SUFFIX: '__empty',
+  ERROR_SUFFIX: '__error',
+  ADD_CHILD_SUFFIX: '__addChild',
+  LOAD_MORE_SUFFIX: '__loadMore',
+  ROOT_PARENT_ID: '__root',
+  ROOT_LOAD_MORE_ID: '__root__loadMore',
+  PAGE_SIZE: 30,
 } as const;
 
-/**
- * User creation step type
- *
- * @public
- */
-export type UserCreateFlowStep = keyof typeof UserCreateFlowStep;
+export default OrganizationUnitTreeConstants;

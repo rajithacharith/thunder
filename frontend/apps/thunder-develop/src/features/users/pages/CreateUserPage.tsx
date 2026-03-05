@@ -36,9 +36,11 @@ import {useLogger} from '@thunder/logger/react';
 import useGetUserSchemas from '../api/useGetUserSchemas';
 import useGetUserSchema from '../api/useGetUserSchema';
 import useCreateUser from '../api/useCreateUser';
+import useGetChildOrganizationUnits from '../../organization-units/api/useGetChildOrganizationUnits';
 import useUserCreate from '../contexts/UserCreate/useUserCreate';
 import {UserCreateFlowStep} from '../models/user-create-flow';
 import ConfigureUserType from '../components/create-user/ConfigureUserType';
+import ConfigureOrganizationUnit from '../components/create-user/ConfigureOrganizationUnit';
 import ConfigureUserDetails from '../components/create-user/ConfigureUserDetails';
 
 export default function CreateUserPage(): JSX.Element {
@@ -52,6 +54,8 @@ export default function CreateUserPage(): JSX.Element {
     setCurrentStep,
     selectedSchema,
     setSelectedSchema,
+    selectedOuId,
+    setSelectedOuId,
     formValues,
     setFormValues,
     error,
@@ -60,22 +64,40 @@ export default function CreateUserPage(): JSX.Element {
 
   const {data: userSchemasData} = useGetUserSchemas();
   const {data: userSchemaDetails, isLoading: isSchemaLoading} = useGetUserSchema(selectedSchema?.id);
+  const {data: childOuData, isLoading: isChildOuLoading} = useGetChildOrganizationUnits(selectedSchema?.ouId, {
+    limit: 1,
+    offset: 0,
+  });
 
   const userSchemas = useMemo(() => userSchemasData?.schemas ?? [], [userSchemasData]);
+  const hasChildOUs = !isChildOuLoading && (childOuData?.totalResults ?? 0) > 0;
 
-  const steps: Record<UserCreateFlowStep, {label: string; order: number}> = useMemo(
-    () => ({
-      USER_TYPE: {label: t('users:createWizard.steps.userType'), order: 1},
-      USER_DETAILS: {label: t('users:createWizard.steps.userDetails'), order: 2},
-    }),
-    [t],
-  );
+  const activeSteps = useMemo((): UserCreateFlowStep[] => {
+    const base: UserCreateFlowStep[] = [UserCreateFlowStep.USER_TYPE];
+    if (hasChildOUs) {
+      base.push(UserCreateFlowStep.ORGANIZATION_UNIT);
+    }
+    base.push(UserCreateFlowStep.USER_DETAILS);
+    return base;
+  }, [hasChildOUs]);
+
+  const steps: Partial<Record<UserCreateFlowStep, {label: string}>> = useMemo(() => {
+    const map: Partial<Record<UserCreateFlowStep, {label: string}>> = {
+      USER_TYPE: {label: t('users:createWizard.steps.userType')},
+    };
+    if (hasChildOUs) {
+      map.ORGANIZATION_UNIT = {label: t('users:createWizard.steps.organizationUnit')};
+    }
+    map.USER_DETAILS = {label: t('users:createWizard.steps.userDetails')};
+    return map;
+  }, [t, hasChildOUs]);
 
   const [validationError, setValidationError] = useState<string | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   const [stepReady, setStepReady] = useState<Record<UserCreateFlowStep, boolean>>({
     USER_TYPE: false,
+    ORGANIZATION_UNIT: false,
     USER_DETAILS: false,
   });
 
@@ -100,6 +122,13 @@ export default function CreateUserPage(): JSX.Element {
     [handleStepReadyChange],
   );
 
+  const handleOrganizationUnitStepReadyChange = useCallback(
+    (isReady: boolean): void => {
+      handleStepReadyChange(UserCreateFlowStep.ORGANIZATION_UNIT, isReady);
+    },
+    [handleStepReadyChange],
+  );
+
   const handleUserDetailsStepReadyChange = useCallback(
     (isReady: boolean): void => {
       handleStepReadyChange(UserCreateFlowStep.USER_DETAILS, isReady);
@@ -111,11 +140,12 @@ export default function CreateUserPage(): JSX.Element {
     (schema: typeof selectedSchema): void => {
       if (schema?.id !== selectedSchema?.id) {
         setFormValues({});
-        setStepReady((prev) => ({...prev, USER_DETAILS: false}));
+        setSelectedOuId(null);
+        setStepReady((prev) => ({...prev, ORGANIZATION_UNIT: false, USER_DETAILS: false}));
       }
       setSelectedSchema(schema);
     },
-    [selectedSchema, setSelectedSchema, setFormValues],
+    [selectedSchema, setSelectedSchema, setSelectedOuId, setFormValues],
   );
 
   const handleSubmit = async (): Promise<void> => {
@@ -128,7 +158,9 @@ export default function CreateUserPage(): JSX.Element {
       return;
     }
 
-    const trimmedOuId = selectedSchema.ouId?.trim();
+    // Use the explicitly selected OU if available, otherwise fall back to the schema's OU
+    const ouId = selectedOuId ?? selectedSchema.ouId;
+    const trimmedOuId = ouId?.trim();
     if (!trimmedOuId) {
       setValidationError(t('users:createWizard.validationErrors.ouIdMissing'));
       setSnackbarOpen(true);
@@ -160,6 +192,19 @@ export default function CreateUserPage(): JSX.Element {
   const handleNextStep = (): void => {
     switch (currentStep) {
       case UserCreateFlowStep.USER_TYPE:
+        if (selectedSchema?.ouId && isChildOuLoading) {
+          // Wait for child OU probe to resolve before deciding
+          return;
+        }
+        if (hasChildOUs) {
+          setCurrentStep(UserCreateFlowStep.ORGANIZATION_UNIT);
+        } else {
+          // No child OUs - skip OU step and use the schema's OU directly
+          setSelectedOuId(selectedSchema?.ouId ?? null);
+          setCurrentStep(UserCreateFlowStep.USER_DETAILS);
+        }
+        break;
+      case UserCreateFlowStep.ORGANIZATION_UNIT:
         setCurrentStep(UserCreateFlowStep.USER_DETAILS);
         break;
       case UserCreateFlowStep.USER_DETAILS:
@@ -174,8 +219,15 @@ export default function CreateUserPage(): JSX.Element {
 
   const handlePrevStep = (): void => {
     switch (currentStep) {
-      case UserCreateFlowStep.USER_DETAILS:
+      case UserCreateFlowStep.ORGANIZATION_UNIT:
         setCurrentStep(UserCreateFlowStep.USER_TYPE);
+        break;
+      case UserCreateFlowStep.USER_DETAILS:
+        if (hasChildOUs) {
+          setCurrentStep(UserCreateFlowStep.ORGANIZATION_UNIT);
+        } else {
+          setCurrentStep(UserCreateFlowStep.USER_TYPE);
+        }
         break;
       default:
         break;
@@ -191,6 +243,22 @@ export default function CreateUserPage(): JSX.Element {
             selectedSchema={selectedSchema}
             onSchemaChange={handleSchemaChange}
             onReadyChange={handleUserTypeStepReadyChange}
+          />
+        );
+      case UserCreateFlowStep.ORGANIZATION_UNIT:
+        if (!selectedSchema?.ouId) {
+          // Safety fallback — should not happen since the OU step is only shown
+          // when a schema with an ouId that has child OUs is selected.
+          setCurrentStep(UserCreateFlowStep.USER_TYPE);
+          return null;
+        }
+        return (
+          <ConfigureOrganizationUnit
+            key={selectedSchema.ouId}
+            rootOuId={selectedSchema.ouId}
+            selectedOuId={selectedOuId ?? ''}
+            onOuIdChange={setSelectedOuId}
+            onReadyChange={handleOrganizationUnitStepReadyChange}
           />
         );
       case UserCreateFlowStep.USER_DETAILS:
@@ -221,25 +289,20 @@ export default function CreateUserPage(): JSX.Element {
   };
 
   const getStepProgress = (): number => {
-    const stepNames = Object.keys(steps) as UserCreateFlowStep[];
-    return ((stepNames.indexOf(currentStep) + 1) / stepNames.length) * 100;
+    const currentIndex = activeSteps.indexOf(currentStep);
+    return ((currentIndex + 1) / activeSteps.length) * 100;
   };
 
   const getBreadcrumbSteps = (): UserCreateFlowStep[] => {
-    const allSteps: UserCreateFlowStep[] = [
-      UserCreateFlowStep.USER_TYPE,
-      UserCreateFlowStep.USER_DETAILS,
-    ];
-
-    const currentIndex = allSteps.indexOf(currentStep);
-    return allSteps.slice(0, currentIndex + 1);
+    const currentIndex = activeSteps.indexOf(currentStep);
+    return activeSteps.slice(0, currentIndex + 1);
   };
 
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false);
   };
 
-  const isLastStep = currentStep === UserCreateFlowStep.USER_DETAILS;
+  const isLastStep = currentStep === activeSteps[activeSteps.length - 1];
 
   return (
     <Box sx={{minHeight: '100vh', display: 'flex', flexDirection: 'column'}}>
@@ -267,7 +330,7 @@ export default function CreateUserPage(): JSX.Element {
 
                 return isLast ? (
                   <Typography key={step} variant="h5" color="text.primary">
-                    {steps[step].label}
+                    {steps[step]?.label}
                   </Typography>
                 ) : (
                   <Typography
@@ -285,7 +348,7 @@ export default function CreateUserPage(): JSX.Element {
                     }}
                     sx={{cursor: 'pointer', '&:hover': {textDecoration: 'underline'}}}
                   >
-                    {steps[step].label}
+                    {steps[step]?.label}
                   </Typography>
                 );
               })}
@@ -302,7 +365,7 @@ export default function CreateUserPage(): JSX.Element {
               flexDirection: 'column',
               py: 8,
               px: 20,
-              mx: currentStep === UserCreateFlowStep.USER_TYPE ? 'auto' : 0,
+              mx: currentStep !== UserCreateFlowStep.USER_DETAILS ? 'auto' : 0,
               alignItems: 'flex-start',
             }}
           >
@@ -347,7 +410,13 @@ export default function CreateUserPage(): JSX.Element {
 
                 <Button
                   variant="contained"
-                  disabled={!stepReady[currentStep] || createUserMutation.isPending}
+                  disabled={
+                    !stepReady[currentStep] ||
+                    createUserMutation.isPending ||
+                    (currentStep === UserCreateFlowStep.USER_TYPE &&
+                      Boolean(selectedSchema?.ouId) &&
+                      isChildOuLoading)
+                  }
                   sx={{minWidth: 140}}
                   onClick={handleNextStep}
                 >
