@@ -38,6 +38,10 @@ func (p *boolean) isCredential() bool {
 	return false
 }
 
+func (p *boolean) isDisplayable() bool {
+	return false
+}
+
 func (p *boolean) validateValue(value interface{}, path string, logger *log.Logger) (bool, error) {
 	_, ok := value.(bool)
 	if !ok {

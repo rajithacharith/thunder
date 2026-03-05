@@ -32,6 +32,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
+	"github.com/asgardeo/thunder/internal/userschema/model"
 	"github.com/asgardeo/thunder/tests/mocks/consentmock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	"github.com/asgardeo/thunder/tests/mocks/sysauthzmock"
@@ -683,6 +684,73 @@ func TestValidateUserSchemaDefinitionWithMultipleValidationErrors(t *testing.T) 
 	}
 }
 
+func TestValidateUserSchemaDefinitionWithValidDisplayAttribute(t *testing.T) {
+	schema := UserSchema{
+		Name:               "test-schema",
+		OrganizationUnitID: testOUID1,
+		SystemAttributes:   &SystemAttributes{Display: "email"},
+		Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
+	}
+
+	err := validateUserSchemaDefinition(schema)
+
+	require.Nil(t, err)
+}
+
+func TestValidateUserSchemaDefinitionRejectsNonExistentDisplayAttribute(t *testing.T) {
+	schema := UserSchema{
+		Name:               "test-schema",
+		OrganizationUnitID: testOUID1,
+		SystemAttributes:   &SystemAttributes{Display: "unknown"},
+		Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
+	}
+
+	err := validateUserSchemaDefinition(schema)
+
+	require.NotNil(t, err)
+	require.Equal(t, ErrorInvalidDisplayAttribute.Code, err.Code)
+}
+
+func TestValidateUserSchemaDefinitionRejectsNonDisplayableDisplayAttribute(t *testing.T) {
+	schema := UserSchema{
+		Name:               "test-schema",
+		OrganizationUnitID: testOUID1,
+		SystemAttributes:   &SystemAttributes{Display: "active"},
+		Schema:             json.RawMessage(`{"active":{"type":"boolean"}}`),
+	}
+
+	err := validateUserSchemaDefinition(schema)
+
+	require.NotNil(t, err)
+	require.Equal(t, ErrorNonDisplayableAttribute.Code, err.Code)
+}
+
+func TestValidateUserSchemaDefinitionRejectsCredentialDisplayAttribute(t *testing.T) {
+	schema := UserSchema{
+		Name:               "test-schema",
+		OrganizationUnitID: testOUID1,
+		SystemAttributes:   &SystemAttributes{Display: "password"},
+		Schema:             json.RawMessage(`{"password":{"type":"string","credential":true}}`),
+	}
+
+	err := validateUserSchemaDefinition(schema)
+
+	require.NotNil(t, err)
+	require.Equal(t, ErrorCredentialDisplayAttribute.Code, err.Code)
+}
+
+func TestValidateUserSchemaDefinitionWithNilSystemAttributes(t *testing.T) {
+	schema := UserSchema{
+		Name:               "test-schema",
+		OrganizationUnitID: testOUID1,
+		Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
+	}
+
+	err := validateUserSchemaDefinition(schema)
+
+	require.Nil(t, err)
+}
+
 type GetCredentialAttributesTestSuite struct {
 	suite.Suite
 }
@@ -859,4 +927,235 @@ func TestDeleteUserSchema(t *testing.T) {
 			storeMock.AssertExpectations(t)
 		})
 	}
+}
+
+func TestValidateDisplayAttribute_NilSystemAttributes(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{"email":{"type":"string"}}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "")
+	require.Nil(t, svcErr)
+}
+
+func TestValidateDisplayAttribute_EmptyDisplay(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{"email":{"type":"string"}}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "")
+	require.Nil(t, svcErr)
+}
+
+func TestValidateDisplayAttribute_ValidStringAttribute(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"email":{"type":"string"},
+		"password":{"type":"string","credential":true}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "email")
+	require.Nil(t, svcErr)
+}
+
+func TestValidateDisplayAttribute_ValidNumberAttribute(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"email":{"type":"string"},
+		"age":{"type":"number"}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "age")
+	require.Nil(t, svcErr)
+}
+
+func TestValidateDisplayAttribute_BooleanAttributeRejected(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"email":{"type":"string"},
+		"active":{"type":"boolean"}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "active")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorNonDisplayableAttribute.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_ObjectAttributeRejected(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"address":{"type":"object","properties":{"city":{"type":"string"}}}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "address")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorNonDisplayableAttribute.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_ArrayAttributeRejected(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"tags":{"type":"array","items":{"type":"string"}}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "tags")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorNonDisplayableAttribute.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_CredentialAttributeRejected(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"password":{"type":"string","credential":true}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "password")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorCredentialDisplayAttribute.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_NonExistentAttribute(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"email":{"type":"string"}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "username")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidDisplayAttribute.Code, svcErr.Code)
+}
+
+func TestCreateUserSchemaReturnsErrorForInvalidDisplayAttribute(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(t, err)
+	defer config.ResetThunderRuntime()
+
+	storeMock := newUserSchemaStoreInterfaceMock(t)
+
+	service := &userSchemaService{
+		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	request := CreateUserSchemaRequest{
+		Name:               "test-schema",
+		OrganizationUnitID: testOUID1,
+		Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
+		SystemAttributes:   &SystemAttributes{Display: "nonexistent"},
+	}
+
+	createdSchema, svcErr := service.CreateUserSchema(context.Background(), request)
+
+	require.Nil(t, createdSchema)
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidDisplayAttribute.Code, svcErr.Code)
+}
+
+func TestUpdateUserSchemaReturnsErrorForInvalidDisplayAttribute(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(t, err)
+	defer config.ResetThunderRuntime()
+
+	storeMock := newUserSchemaStoreInterfaceMock(t)
+	storeMock.On("IsUserSchemaDeclarative", "schema-id").Return(false).Once()
+
+	service := &userSchemaService{
+		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	request := UpdateUserSchemaRequest{
+		Name:               "test-schema",
+		OrganizationUnitID: testOUID1,
+		Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
+		SystemAttributes:   &SystemAttributes{Display: "nonexistent"},
+	}
+
+	updatedSchema, svcErr := service.UpdateUserSchema(context.Background(), "schema-id", request)
+
+	require.Nil(t, updatedSchema)
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidDisplayAttribute.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_DottedPath_ValidNestedString(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"address":{"type":"object","properties":{"city":{"type":"string"}}}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "address.city")
+	require.Nil(t, svcErr)
+}
+
+func TestValidateDisplayAttribute_DottedPath_NestedObjectRejected(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"profile":{"type":"object","properties":{
+			"address":{"type":"object","properties":{"city":{"type":"string"}}}
+		}}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "profile.address")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorNonDisplayableAttribute.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_DottedPath_NestedCredentialRejected(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"auth":{"type":"object","properties":{
+			"password":{"type":"string","credential":true}
+		}}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "auth.password")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorCredentialDisplayAttribute.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_DottedPath_NonExistentNested(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"address":{"type":"object","properties":{"city":{"type":"string"}}}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "address.zip")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidDisplayAttribute.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_DottedPath_TraverseIntoNonObject(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"email":{"type":"string"}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "email.domain")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidDisplayAttribute.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_DottedPath_DeeplyNestedValid(t *testing.T) {
+	compiled, err := model.CompileUserSchema(json.RawMessage(`{
+		"profile":{"type":"object","properties":{
+			"name":{"type":"object","properties":{
+				"first":{"type":"string"}
+			}}
+		}}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "profile.name.first")
+	require.Nil(t, svcErr)
 }

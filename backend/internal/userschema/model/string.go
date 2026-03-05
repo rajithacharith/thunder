@@ -42,6 +42,10 @@ func (p *str) isCredential() bool {
 	return p.credential
 }
 
+func (p *str) isDisplayable() bool {
+	return true
+}
+
 func (p *str) validateValue(value interface{}, path string, logger *log.Logger) (bool, error) {
 	strValue, ok := value.(string)
 	if !ok {

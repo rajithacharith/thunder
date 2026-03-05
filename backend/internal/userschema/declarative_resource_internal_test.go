@@ -50,7 +50,7 @@ func TestValidateUserSchema(t *testing.T) {
 				ID:                 "schema-1",
 				Name:               "Valid Schema",
 				OrganizationUnitID: "ou-1",
-				Schema:             json.RawMessage(`{"type": "object"}`),
+				Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
 			},
 			setupMock: func() {
 				mockOUService.EXPECT().GetOrganizationUnit(mock.Anything, "ou-1").
@@ -155,10 +155,10 @@ func TestValidateUserSchema(t *testing.T) {
 					Once()
 			},
 			wantErr: true,
-			errMsg:  "invalid schema JSON",
+			errMsg:  "invalid schema for user schema",
 		},
 		{
-			name: "valid schema with empty schema definition",
+			name: "empty schema definition rejected",
 			schema: &UserSchema{
 				ID:                 "schema-1",
 				Name:               "Valid Schema",
@@ -170,7 +170,8 @@ func TestValidateUserSchema(t *testing.T) {
 					Return(oupkg.OrganizationUnit{ID: "ou-1"}, nil).
 					Once()
 			},
-			wantErr: false, // Empty schema is allowed
+			wantErr: true,
+			errMsg:  "schema definition is required",
 		},
 	}
 
@@ -199,7 +200,7 @@ func TestValidateUserSchemaWrapper(t *testing.T) {
 			ID:                 "schema-1",
 			Name:               "Valid Schema",
 			OrganizationUnitID: "ou-1",
-			Schema:             json.RawMessage(`{"type": "object"}`),
+			Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
 		}
 
 		mockOUService.EXPECT().GetOrganizationUnit(mock.Anything, "ou-1").

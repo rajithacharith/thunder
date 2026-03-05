@@ -40,6 +40,10 @@ func (p *number) isCredential() bool {
 	return p.credential
 }
 
+func (p *number) isDisplayable() bool {
+	return true
+}
+
 func (p *number) validateValue(value interface{}, path string, logger *log.Logger) (bool, error) {
 	numberValue, ok := convertToFloat64(value)
 	if !ok {
