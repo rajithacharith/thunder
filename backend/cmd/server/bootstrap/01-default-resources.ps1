@@ -1156,6 +1156,7 @@ $appData = @{
                     email = @("email", "email_verified")
                     phone = @("phone_number", "phone_number_verified")
                     group = @("groups")
+                    ou = @("ouId")
                 }
             }
         }

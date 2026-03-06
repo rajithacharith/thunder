@@ -32,6 +32,7 @@ import {
 import {X, ChevronRight} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
+import {useAsgardeo} from '@asgardeo/react';
 import {useLogger} from '@thunder/logger/react';
 import useGetUserSchemas from '../api/useGetUserSchemas';
 import useGetUserSchema from '../api/useGetUserSchema';
@@ -64,13 +65,20 @@ export default function CreateUserPage(): JSX.Element {
 
   const {data: userSchemasData} = useGetUserSchemas();
   const {data: userSchemaDetails, isLoading: isSchemaLoading} = useGetUserSchema(selectedSchema?.id);
-  const {data: childOuData, isLoading: isChildOuLoading} = useGetChildOrganizationUnits(selectedSchema?.ouId, {
+  const {
+    data: childOuData,
+    isLoading: isChildOuLoading,
+    error: childOuError,
+  } = useGetChildOrganizationUnits(selectedSchema?.ouId, {
     limit: 1,
     offset: 0,
   });
-
+  const user = useAsgardeo().user as {ouId?: string} | null | undefined;
+  const tokenOuId = user?.ouId ?? null;
+  const isChildOuForbidden = (childOuError as {response?: {status?: number}} | null)?.response?.status === 403;
+  const isChildOuProbeFailed = !!childOuError && !isChildOuForbidden;
   const userSchemas = useMemo(() => userSchemasData?.schemas ?? [], [userSchemasData]);
-  const hasChildOUs = !isChildOuLoading && (childOuData?.totalResults ?? 0) > 0;
+  const hasChildOUs = !isChildOuLoading && !childOuError && (childOuData?.totalResults ?? 0) > 0;
 
   const activeSteps = useMemo((): UserCreateFlowStep[] => {
     const base: UserCreateFlowStep[] = [UserCreateFlowStep.USER_TYPE];
@@ -196,8 +204,20 @@ export default function CreateUserPage(): JSX.Element {
           // Wait for child OU probe to resolve before deciding
           return;
         }
+        if (isChildOuProbeFailed) {
+          setError(t('users:createWizard.errors.childOuProbeFailed'));
+          return;
+        }
         if (hasChildOUs) {
           setCurrentStep(UserCreateFlowStep.ORGANIZATION_UNIT);
+        } else if (isChildOuForbidden) {
+          // User doesn't have permission to list child OUs — fall back to the OU from the access token
+          if (tokenOuId) {
+            setSelectedOuId(tokenOuId);
+            setCurrentStep(UserCreateFlowStep.USER_DETAILS);
+          } else {
+            setError(t('users:createWizard.errors.noOuAccess'));
+          }
         } else {
           // No child OUs - skip OU step and use the schema's OU directly
           setSelectedOuId(selectedSchema?.ouId ?? null);

@@ -24,6 +24,17 @@ import UsersListPage from '../UsersListPage';
 import type {UserSchemaListResponse} from '../../types/users';
 
 const mockNavigate = vi.fn();
+const mockLoggerError = vi.fn();
+
+// Mock logger
+vi.mock('@thunder/logger/react', () => ({
+  useLogger: () => ({
+    info: vi.fn(),
+    error: mockLoggerError,
+    debug: vi.fn(),
+    warn: vi.fn(),
+  }),
+}));
 
 // Mock InviteUser component
 const mockHandleInputChange = vi.fn();
@@ -143,6 +154,7 @@ describe('UsersListPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockLoggerError.mockReset();
     mockUseGetUserSchemas.mockReturnValue({
       data: mockSchemas,
     });
@@ -374,9 +386,12 @@ describe('UsersListPage', () => {
     // Verify navigate was called even though it will fail
     expect(mockNavigate).toHaveBeenCalledWith('/users/create');
 
-    // Wait a bit for the error handler to be called
+    // Wait for the error handler to run and log the error
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalled();
+      expect(mockLoggerError).toHaveBeenCalledWith(
+        'Failed to navigate to create user page',
+        expect.objectContaining({error: navigationError}),
+      );
     });
   });
 });
