@@ -1117,7 +1117,8 @@ RESPONSE=$(thunder_api_call POST "/applications" "{
         \"profile\": [\"name\",\"given_name\",\"family_name\",\"picture\"],
         \"email\": [\"email\",\"email_verified\"],
         \"phone\": [\"phone_number\",\"phone_number_verified\"],
-        \"group\": [\"groups\"]
+        \"group\": [\"groups\"],
+        \"ou\": [\"ouId\"]
       }
     }
   }]

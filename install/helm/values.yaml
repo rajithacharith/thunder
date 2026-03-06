@@ -141,7 +141,7 @@ configuration:
   developerClient:
     path: "/develop"
     clientId: "DEVELOP"
-    scopes: "['openid', 'profile', 'email', 'system']"
+    scopes: "['openid', 'profile', 'email', 'ou', 'system', 'system:user', 'system:group', 'system:ou:view', 'system:userschema:view']"
 
   # TLS configuration
   tls:

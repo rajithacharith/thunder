@@ -111,6 +111,12 @@ vi.mock('../../../organization-units/api/useGetChildOrganizationUnits', () => ({
   default: () => mockUseGetChildOrganizationUnits(),
 }));
 
+// Mock useAsgardeo
+const mockUseAsgardeo = vi.fn();
+vi.mock('@asgardeo/react', () => ({
+  useAsgardeo: () => mockUseAsgardeo() as {user: {ouId?: string} | null | undefined},
+}));
+
 // Mock ConfigureOrganizationUnit — mirrors real component's auto-select behavior
 vi.mock('../../components/create-user/ConfigureOrganizationUnit', async () => {
   const React = await import('react');
@@ -319,6 +325,10 @@ describe('CreateUserPage', () => {
       data: {totalResults: 0, startIndex: 1, count: 0, organizationUnits: []},
       isLoading: false,
       error: null,
+    });
+    // Default: user object has no ouId
+    mockUseAsgardeo.mockReturnValue({
+      user: {ouId: undefined},
     });
   });
 

@@ -385,6 +385,9 @@ const translations = {
     'createWizard.userDetails.subtitle': 'Fill in the required information for the new user.',
     'createWizard.validationErrors.userTypeRequired': 'Please select a user type before proceeding.',
     'createWizard.validationErrors.ouIdMissing': 'Organization unit ID is missing for the selected user type.',
+    'createWizard.errors.noOuAccess':
+      'You do not have permission to access the organization units for the selected user type, and no organization unit could be resolved.',
+    'createWizard.errors.childOuProbeFailed': 'Unable to retrieve organization units for the selected user type.',
   },
 
   // ============================================================================
