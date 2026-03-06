@@ -56,6 +56,18 @@ const ContentTypeFormURLEncoded = "application/x-www-form-urlencoded"
 // WWWAuthenticateHeaderName is the name of the WWW-Authenticate header used in HTTP responses.
 const WWWAuthenticateHeaderName = "WWW-Authenticate"
 
+// XFrameOptionsHeaderName is the name of the X-Frame-Options header used in HTTP responses.
+const XFrameOptionsHeaderName = "X-Frame-Options"
+
+// XFrameOptionsDeny is the X-Frame-Options value that prevents any framing of the page.
+const XFrameOptionsDeny = "DENY"
+
+// ContentSecurityPolicyHeaderName is the name of the Content-Security-Policy header used in HTTP responses.
+const ContentSecurityPolicyHeaderName = "Content-Security-Policy"
+
+// ContentSecurityPolicyFrameAncestorsNone is the CSP directive that prevents the page from being embedded in frames.
+const ContentSecurityPolicyFrameAncestorsNone = "frame-ancestors 'none'"
+
 // CacheControlHeaderName is the name of the cache-control header used in HTTP responses.
 const CacheControlHeaderName = "Cache-Control"
 
