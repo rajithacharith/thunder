@@ -98,7 +98,7 @@ func (suite *ResourceServiceTestSuite) SetupTest() {
 	// Initialize runtime config for the test
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -134,7 +134,7 @@ func (suite *ResourceServiceTestSuite) TestNewResourceService_InvalidDelimiter()
 	// Test with an invalid delimiter character (e.g., " which is 0x22, not allowed)
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -4164,7 +4164,7 @@ func (suite *ResourceServiceTestSuite) TestValidatePermissions() {
 	// Initialize runtime config once for all sub-tests
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},

@@ -368,7 +368,7 @@ func RunInitScript(zipFilePattern string) error {
 		schemaDir  string
 		dbFileName string
 	}{
-		{"thunderdb", "dbscripts/thunderdb", "thunderdb.db"},
+		{"configdb", "dbscripts/configdb", "configdb.db"},
 		{"runtimedb", "dbscripts/runtimedb", "runtimedb.db"},
 		{"userdb", "dbscripts/userdb", "userdb.db"},
 	}

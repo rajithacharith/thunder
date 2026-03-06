@@ -77,7 +77,7 @@ func (suite *InitTestSuite) TestInitialize() {
 			Enabled: false,
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -100,7 +100,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_ListEndpoint() {
 			Enabled: false,
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -127,7 +127,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_CreateEndpoint() {
 			Enabled: false,
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -161,7 +161,7 @@ func (suite *InitTestSuite) TestInitialize_DBTransactionerError() {
 			Enabled: false,
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "invalid-db-type",
 				Path: ":memory:",
 			},
@@ -185,7 +185,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_GetByIDEndpoint() {
 			Enabled: false,
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -212,7 +212,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_UpdateEndpoint() {
 			Enabled: false,
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -239,7 +239,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_DeleteEndpoint() {
 			Enabled: false,
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -266,7 +266,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflight() {
 			Enabled: false,
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -293,7 +293,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflightByID() {
 			Enabled: false,
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -494,7 +494,7 @@ func TestInitialize_Standalone(t *testing.T) {
 			Enabled: false,
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -526,7 +526,7 @@ func TestInitializeStore_MutableMode(t *testing.T) {
 			Store: "mutable",
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -557,7 +557,7 @@ func TestInitializeStore_DeclarativeMode(t *testing.T) {
 			Store: "declarative",
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -586,7 +586,7 @@ func TestInitializeStore_CompositeMode(t *testing.T) {
 			Store: "composite",
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -617,7 +617,7 @@ func TestInitializeStore_DefaultFallbackToMutable(t *testing.T) {
 			Store: "", // Not specified
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -648,7 +648,7 @@ func TestInitializeStore_GlobalDeclarativeEnabled(t *testing.T) {
 			Store: "", // Not specified, should use global setting
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -677,7 +677,7 @@ func TestInitialize_MutableMode(t *testing.T) {
 			Store: "mutable",
 		},
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
@@ -716,7 +716,7 @@ func TestInitialize_StoreModes(t *testing.T) {
 				DeclarativeResources: config.DeclarativeResources{Enabled: false},
 				UserSchema:           config.UserSchemaConfig{Store: m.store},
 				Database: config.DatabaseConfig{
-					Identity: config.DataSource{
+					Config: config.DataSource{
 						Type: "sqlite",
 						Path: ":memory:",
 					},

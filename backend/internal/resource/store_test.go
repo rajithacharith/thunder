@@ -131,7 +131,7 @@ func (suite *ResourceStoreTestSuite) TestCreateResourceServer() {
 			},
 			shouldErr: true,
 			checkError: func(err error) bool {
-				suite.Contains(err.Error(), "failed to get identity DB client")
+				suite.Contains(err.Error(), "failed to get config DB client")
 				return true
 			},
 		},
@@ -2707,7 +2707,7 @@ func (suite *ResourceStoreTestSuite) TestCheckActionHandleExists() {
 
 // Helper Function Tests
 
-func (suite *ResourceStoreTestSuite) TestGetIdentityDBClient_Success() {
+func (suite *ResourceStoreTestSuite) TestGetConfigDBClient_Success() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 
 	client, err := suite.store.getConfigDBClient()
@@ -2717,7 +2717,7 @@ func (suite *ResourceStoreTestSuite) TestGetIdentityDBClient_Success() {
 	suite.Equal(suite.mockDBClient, client)
 }
 
-func (suite *ResourceStoreTestSuite) TestGetIdentityDBClient_Error() {
+func (suite *ResourceStoreTestSuite) TestGetConfigDBClient_Error() {
 	dbError := errors.New("database connection error")
 	suite.mockDBProvider.On("GetConfigDBClient").Return(nil, dbError)
 
@@ -2725,7 +2725,7 @@ func (suite *ResourceStoreTestSuite) TestGetIdentityDBClient_Error() {
 
 	suite.Error(err)
 	suite.Nil(client)
-	suite.Contains(err.Error(), "failed to get identity DB client")
+	suite.Contains(err.Error(), "failed to get config DB client")
 }
 
 func (suite *ResourceStoreTestSuite) TestWithDBClient_Success() {
@@ -2754,7 +2754,7 @@ func (suite *ResourceStoreTestSuite) TestWithDBClient_DBClientError() {
 
 	suite.Error(err)
 	suite.False(called, "Function should not be called when DB client retrieval fails")
-	suite.Contains(err.Error(), "failed to get identity DB client")
+	suite.Contains(err.Error(), "failed to get config DB client")
 }
 
 func (suite *ResourceStoreTestSuite) TestWithDBClient_InnerFunctionError() {

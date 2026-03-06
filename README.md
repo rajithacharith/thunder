@@ -364,11 +364,11 @@ docker compose down -v
 
     ```yaml
     database:
-        identity:
+        config:
             type: "postgres"
             hostname: "localhost"
             port: 5432
-            name: "thunderdb"
+            name: "configdb"
             username: "asgthunder"
             password: "asgthunder"
             sslmode: "disable"

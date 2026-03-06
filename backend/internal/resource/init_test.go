@@ -52,7 +52,7 @@ func (suite *InitTestSuite) SetupTest() {
 	// Initialize runtime config for the test
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},

@@ -47,7 +47,7 @@ func TestIDPStoreTestSuite(t *testing.T) {
 func (s *IDPStoreTestSuite) SetupTest() {
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},

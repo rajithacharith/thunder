@@ -38,7 +38,7 @@ func (suite *InitUserProviderTestSuite) SetupTest() {
 	// Initialize ThunderRuntime with a basic test config
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
-			Identity: config.DataSource{
+			Config: config.DataSource{
 				Type: "sqlite",
 				Path: ":memory:",
 			},
