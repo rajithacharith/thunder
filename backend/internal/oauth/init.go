@@ -59,7 +59,7 @@ func Initialize(
 	discoveryService := discovery.Initialize(mux)
 	token.Initialize(mux, jwtService, applicationService, grantHandlerProvider,
 		scopeValidator, observabilitySvc, discoveryService)
-	introspect.Initialize(mux, jwtService)
+	introspect.Initialize(mux, jwtService, applicationService, discoveryService)
 	userinfo.Initialize(mux, jwtService, tokenValidator, applicationService, userService, ouService)
 	dcr.Initialize(mux, applicationService)
 }
