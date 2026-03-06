@@ -41,6 +41,7 @@ const (
 	ExecutorNameUserTypeResolver    = "UserTypeResolver"
 	ExecutorNameInviteExecutor      = "InviteExecutor"
 	ExecutorNameCredentialSetter    = "CredentialSetter"
+	ExecutorNameConsent             = "ConsentExecutor"
 )
 
 // Executor mode constants
@@ -59,13 +60,14 @@ const (
 	userAttributeGroups       = "groups"
 	userAttributeSub          = "sub"
 
-	userInputCode        = "code"
-	userInputNonce       = "nonce"
-	userInputOuName      = "ouName"
-	userInputOuHandle    = "ouHandle"
-	userInputOuDesc      = "ouDescription"
-	userInputInviteToken = "inviteToken"
-	userInputOTP         = "otp"
+	userInputCode             = "code"
+	userInputNonce            = "nonce"
+	userInputOuName           = "ouName"
+	userInputOuHandle         = "ouHandle"
+	userInputOuDesc           = "ouDescription"
+	userInputInviteToken      = "inviteToken"
+	userInputOTP              = "otp"
+	userInputConsentDecisions = "consent_decisions"
 
 	ouIDKey        = "ouId"
 	defaultOUIDKey = "defaultOUID"
@@ -91,6 +93,8 @@ var nonUserAttributes = []string{"userID", "code", "nonce", "state", "flowID",
 	userTypeKey, ouIDKey, defaultOUIDKey, userInputOuName, userInputOuHandle, userInputOuDesc, userInputInviteToken,
 	common.RuntimeKeyUserEligibleForProvisioning, common.RuntimeKeySkipProvisioning,
 	common.RuntimeKeyUserAutoProvisioned, runtimeKeyStoredInviteToken,
+	common.RuntimeKeyConsentID, common.RuntimeKeyConsentExpiresAt, userInputConsentDecisions,
+	common.RuntimeKeyConsentedAttributes, common.RuntimeKeyConsentSessionToken,
 	"applicationId", "idpId", "senderId"}
 
 const runtimeKeyStoredInviteToken = "storedInviteToken"

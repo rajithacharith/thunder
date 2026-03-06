@@ -127,6 +127,10 @@ const (
 const (
 	// DataIDPName is the key used for the identity provider name in the flow response.
 	DataIDPName = "idpName"
+	// DataConsentPrompt is the key used for the consent prompt data in the flow response.
+	DataConsentPrompt = "consentPrompt"
+	// DataConsentExpiresAt is the key used for the consent expiry timestamp in the flow response.
+	DataConsentExpiresAt = "consentExpiresAt"
 )
 
 // DefaultHTTPTimeout defines the default timeout duration for HTTP requests.
@@ -152,6 +156,14 @@ const (
 	RuntimeKeyRequiredAttributes = "required_attributes"
 	// RuntimeKeyRequiredLocales holds the space-separated locales requested for claims.
 	RuntimeKeyRequiredLocales = "required_locales"
+	// RuntimeKeyConsentID holds the consent record ID after consent has been recorded.
+	RuntimeKeyConsentID = "consent_id"
+	// RuntimeKeyConsentExpiresAt holds the expiry timestamp of the consent prompt.
+	RuntimeKeyConsentExpiresAt = "consentExpiresAt"
+	// RuntimeKeyConsentedAttributes holds a space-separated set of attributes that the user has consented to share.
+	RuntimeKeyConsentedAttributes = "consented_attributes"
+	// RuntimeKeyConsentSessionToken holds the signed JWT session token for consent validation.
+	RuntimeKeyConsentSessionToken = "consent_session_token"
 )
 
 // TODO: Define a go type for InputType when formalizing input types
@@ -166,6 +178,8 @@ const (
 	InputTypeOTP = "OTP_INPUT"
 	// InputTypePhone represents a phone number input type.
 	InputTypePhone = "PHONE_INPUT"
+	// InputTypeConsent represents a consent decisions input type.
+	InputTypeConsent = "CONSENT_INPUT"
 
 	// TODO: Add support for other sensitive input types:
 	// - Passkey credential fields (credentialId, clientDataJSON, authenticatorData, signature, userHandle)
@@ -184,4 +198,6 @@ var sensitiveInputTypes = []string{
 const (
 	// ForwardedDataKeyInputs is the key used to store input data in ForwardedData.
 	ForwardedDataKeyInputs = "inputs"
+	// ForwardedDataKeyConsentPrompt is the key used to forward consent prompt data to the prompt node.
+	ForwardedDataKeyConsentPrompt = "consent_prompt"
 )

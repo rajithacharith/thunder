@@ -85,6 +85,7 @@ func Initialize(
 	reg.RegisterExecutor(ExecutorNameIdentifying, newIdentifyingExecutor(
 		"", []common.Input{{Identifier: userAttributeUsername, Type: "string", Required: true}}, []common.Input{},
 		flowFactory, userProvider))
+	reg.RegisterExecutor(ExecutorNameConsent, newConsentExecutor(flowFactory, authRegistry.ConsentEnforcerService))
 
 	return reg
 }

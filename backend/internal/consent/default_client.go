@@ -642,6 +642,42 @@ func (c *defaultClient) validateConsent(ctx context.Context, ouID, consentID str
 	return c.dtoToValidationResult(result), nil
 }
 
+// updateConsent replaces the content of an existing consent record by ID.
+func (c *defaultClient) updateConsent(ctx context.Context, ouID, consentID string,
+	req *ConsentRequest) (*Consent, *serviceerror.I18nServiceError) {
+	u, svcErr := c.buildServiceEndpoint(consentsEndpoint, consentID)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
+	dto := c.consentRequestToDTO(req)
+	resp, svcErr := c.doRequest(ctx, http.MethodPut, u, ouID, req.GroupID, dto)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+	defer c.closeBody(resp)
+
+	switch resp.StatusCode {
+	case http.StatusBadRequest:
+		return nil, c.handleClientError(resp, &ErrorInvalidConsentUpdateRequest)
+	case http.StatusNotFound:
+		return nil, c.handleClientError(resp, &ErrorConsentRecordNotFound)
+	}
+
+	if svcErr := c.checkStatus(resp); svcErr != nil {
+		return nil, svcErr
+	}
+
+	result, err := sysutils.DecodeJSONResponse[consentResponseDTO](resp)
+	if err != nil {
+		c.logger.Error("Failed to decode update-consent response", log.Error(err))
+		return nil, &serviceerror.InternalServerErrorWithI18n
+	}
+	out := c.dtoToConsent(result)
+
+	return &out, nil
+}
+
 // revokeConsent revokes a consent record by ID with an optional reason.
 func (c *defaultClient) revokeConsent(ctx context.Context, ouID, consentID string,
 	payload *ConsentRevokeRequest) *serviceerror.I18nServiceError {
@@ -733,10 +769,18 @@ func (c *defaultClient) buildConsentSearchURL(filter *ConsentSearchFilter) (
 
 	params := url.Values{}
 	if len(filter.ConsentTypes) > 0 {
-		params.Set("consentTypes", strings.Join(filter.ConsentTypes, ","))
+		consentTypeStrs := make([]string, 0, len(filter.ConsentTypes))
+		for _, ct := range filter.ConsentTypes {
+			consentTypeStrs = append(consentTypeStrs, string(ct))
+		}
+		params.Set("consentTypes", strings.Join(consentTypeStrs, ","))
 	}
 	if len(filter.ConsentStatuses) > 0 {
-		params.Set("consentStatuses", strings.Join(filter.ConsentStatuses, ","))
+		consentStatusStrs := make([]string, 0, len(filter.ConsentStatuses))
+		for _, cs := range filter.ConsentStatuses {
+			consentStatusStrs = append(consentStatusStrs, string(cs))
+		}
+		params.Set("consentStatuses", strings.Join(consentStatusStrs, ","))
 	}
 	if len(filter.GroupIDs) > 0 {
 		params.Set("clientIds", strings.Join(filter.GroupIDs, ","))
@@ -825,8 +869,8 @@ func (c *defaultClient) dtoToConsentPurpose(dto *purposeResponseDTO) ConsentPurp
 func (c *defaultClient) consentAuthorizationRequestToDTO(a *ConsentAuthorizationRequest) authorizationRequestDTO {
 	return authorizationRequestDTO{
 		UserID: a.UserID,
-		Type:   a.Type,
-		Status: a.Status,
+		Type:   string(a.Type),
+		Status: string(a.Status),
 	}
 }
 
@@ -854,7 +898,7 @@ func (c *defaultClient) consentRequestToDTO(req *ConsentRequest) consentCreateDT
 	}
 
 	return consentCreateDTO{
-		Type:           req.Type,
+		Type:           string(req.Type),
 		ValidityTime:   req.ValidityTime,
 		Purposes:       purposes,
 		Authorizations: auths,
@@ -867,8 +911,8 @@ func (c *defaultClient) consentAuthorizationDtoToResponse(a *authorizationRespon
 	return ConsentAuthorization{
 		ID:          a.ID,
 		UserID:      a.UserID,
-		Type:        a.Type,
-		Status:      a.Status,
+		Type:        ConsentAuthorizationType(a.Type),
+		Status:      ConsentAuthorizationStatus(a.Status),
 		UpdatedTime: a.UpdatedTime,
 	}
 }
@@ -898,9 +942,9 @@ func (c *defaultClient) dtoToConsent(dto *consentResponseDTO) Consent {
 
 	return Consent{
 		ID:             dto.ID,
-		Type:           dto.Type,
+		Type:           ConsentType(dto.Type),
 		GroupID:        dto.ClientID,
-		Status:         dto.Status,
+		Status:         ConsentStatus(dto.Status),
 		ValidityTime:   dto.ValidityTime,
 		Purposes:       purposes,
 		Authorizations: auths,

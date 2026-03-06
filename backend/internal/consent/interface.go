@@ -75,6 +75,10 @@ type ConsentServiceInterface interface {
 	ValidateConsent(ctx context.Context, ouID string, consentID string) (
 		*ConsentValidationResult, *serviceerror.I18nServiceError)
 
+	// UpdateConsent updates the content of an existing consent record
+	UpdateConsent(ctx context.Context, ouID string, consentID string, consent *ConsentRequest) (
+		*Consent, *serviceerror.I18nServiceError)
+
 	// RevokeConsent revokes an active consent record (idempotent)
 	RevokeConsent(ctx context.Context, ouID string, consentID string,
 		payload *ConsentRevokeRequest) *serviceerror.I18nServiceError
@@ -127,6 +131,10 @@ type consentClientInterface interface {
 	// validateConsent validates a consent by ID
 	validateConsent(ctx context.Context, ouID, consentID string) (
 		*ConsentValidationResult, *serviceerror.I18nServiceError)
+
+	// updateConsent updates the content of an existing consent record
+	updateConsent(ctx context.Context, ouID, consentID string, req *ConsentRequest) (
+		*Consent, *serviceerror.I18nServiceError)
 
 	// revokeConsent revokes an active consent record
 	revokeConsent(ctx context.Context, ouID, consentID string,

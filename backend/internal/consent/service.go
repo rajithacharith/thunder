@@ -159,6 +159,15 @@ func (s *consentService) ValidateConsent(ctx context.Context, ouID, consentID st
 	return s.client.validateConsent(ctx, ouID, consentID)
 }
 
+// UpdateConsent updates the content of an existing consent record.
+func (s *consentService) UpdateConsent(ctx context.Context, ouID string, consentID string,
+	consent *ConsentRequest) (*Consent, *serviceerror.I18nServiceError) {
+	if consent == nil {
+		return nil, &ErrorInvalidRequestFormat
+	}
+	return s.client.updateConsent(ctx, ouID, consentID, consent)
+}
+
 // RevokeConsent revokes an active consent record.
 func (s *consentService) RevokeConsent(ctx context.Context, ouID, consentID string,
 	payload *ConsentRevokeRequest) *serviceerror.I18nServiceError {

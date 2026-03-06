@@ -46,6 +46,8 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
+const testEmail = "test@example.com"
+
 type AuthAssertExecutorTestSuite struct {
 	suite.Suite
 	mockJWTService      *jwtmock.JWTServiceInterfaceMock
@@ -206,7 +208,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAuthorizedPermissions(
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
-	attrs := map[string]interface{}{"email": "test@example.com", "phone": "1234567890"}
+	attrs := map[string]interface{}{"email": testEmail, "phone": "1234567890"}
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
@@ -216,7 +218,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
-			Attributes:      map[string]interface{}{"email": "test@example.com"},
+			Attributes:      map[string]interface{}{"email": testEmail},
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
@@ -234,7 +236,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 	suite.mockUserProvider.On("GetUser", "user-123").Return(existingUser, nil)
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
-			return claims["email"] == "test@example.com" && claims["phone"] == "1234567890"
+			return claims["email"] == testEmail && claims["phone"] == "1234567890"
 		}), mock.Anything).Return("jwt-token", int64(3600), nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -397,7 +399,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExtractAuthenticatorReferences_SMS
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_Success() {
-	attrs := map[string]interface{}{"email": "test@example.com", "name": "Test User"}
+	attrs := map[string]interface{}{"email": testEmail, "name": "Test User"}
 	attrsJSON, _ := json.Marshal(attrs)
 
 	existingUser := &userprovider.User{
@@ -411,7 +413,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_Success() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resultAttrs)
-	assert.Equal(suite.T(), "test@example.com", resultAttrs["email"])
+	assert.Equal(suite.T(), testEmail, resultAttrs["email"])
 	assert.Equal(suite.T(), "Test User", resultAttrs["name"])
 	suite.mockUserProvider.AssertExpectations(suite.T())
 }
@@ -454,7 +456,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_WithToken_Succes
 	res := authnprovider.GetAttributesResult{
 		AttributesResponse: &authnprovider.AttributesResponse{
 			Attributes: map[string]*authnprovider.AttributeResponse{
-				"email": {Value: "test@example.com"},
+				"email": {Value: testEmail},
 				"name":  {Value: "Test User"},
 			},
 		},
@@ -468,7 +470,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_WithToken_Succes
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resultAttrs)
-	assert.Equal(suite.T(), "test@example.com", resultAttrs["email"])
+	assert.Equal(suite.T(), testEmail, resultAttrs["email"])
 	assert.Equal(suite.T(), "Test User", resultAttrs["name"])
 	suite.mockCredsAuthSvc.AssertExpectations(suite.T())
 }
@@ -605,7 +607,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsFails() {
-	attrs := map[string]interface{}{"email": "test@example.com"}
+	attrs := map[string]interface{}{"email": testEmail}
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
@@ -710,7 +712,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserA
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
-			Attributes:      map[string]interface{}{"email": "test@example.com"},
+			Attributes:      map[string]interface{}{"email": testEmail},
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
@@ -766,7 +768,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganiz
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttributes() {
-	attrs := map[string]interface{}{"email": "test@example.com", "username": "testuser", "firstName": "Test"}
+	attrs := map[string]interface{}{"email": testEmail, "username": "testuser", "firstName": "Test"}
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
@@ -795,7 +797,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			// Should contain the configured user attributes from the user store
-			hasEmail := claims["email"] == "test@example.com"
+			hasEmail := claims["email"] == testEmail
 			hasUsername := claims["username"] == "testuser"
 			hasFirstName := claims["firstName"] == "Test"
 			return hasEmail && hasUsername && hasFirstName
@@ -1094,4 +1096,184 @@ func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithEmp
 
 	assert.NotNil(suite.T(), metadata)
 	assert.Empty(suite.T(), metadata.Locale)
+}
+
+// ----- filterToConsentedAttributes Tests -----
+
+func (suite *AuthAssertExecutorTestSuite) TestFilterToConsentedAttributes_FiltersCorrectly() {
+	userAttributes := []string{"email", "phone", "name", "address"}
+	consentedAttrs := []string{"email", "name"}
+
+	result := filterToConsentedAttributes(userAttributes, consentedAttrs)
+
+	assert.Len(suite.T(), result, 2)
+	assert.Contains(suite.T(), result, "email")
+	assert.Contains(suite.T(), result, "name")
+	assert.NotContains(suite.T(), result, "phone")
+	assert.NotContains(suite.T(), result, "address")
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestFilterToConsentedAttributes_EmptyConsentedAttrs() {
+	userAttributes := []string{"email", "phone"}
+	consentedAttrs := []string{}
+
+	result := filterToConsentedAttributes(userAttributes, consentedAttrs)
+
+	assert.Empty(suite.T(), result)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestFilterToConsentedAttributes_EmptyUserAttrs() {
+	userAttributes := []string{}
+	consentedAttrs := []string{"email", "phone"}
+
+	result := filterToConsentedAttributes(userAttributes, consentedAttrs)
+
+	assert.Empty(suite.T(), result)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestFilterToConsentedAttributes_NilUserAttrs() {
+	consentedAttrs := []string{"email", "phone"}
+
+	result := filterToConsentedAttributes(nil, consentedAttrs)
+
+	assert.Empty(suite.T(), result)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestFilterToConsentedAttributes_NilConsentedAttrs() {
+	userAttributes := []string{"email", "phone"}
+
+	result := filterToConsentedAttributes(userAttributes, nil)
+
+	assert.Empty(suite.T(), result)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestFilterToConsentedAttributes_AllMatch() {
+	userAttributes := []string{"email", "phone"}
+	consentedAttrs := []string{"email", "phone"}
+
+	result := filterToConsentedAttributes(userAttributes, consentedAttrs)
+
+	assert.Len(suite.T(), result, 2)
+	assert.Equal(suite.T(), []string{"email", "phone"}, result)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestFilterToConsentedAttributes_NoMatch() {
+	userAttributes := []string{"email", "phone"}
+	consentedAttrs := []string{"name", "address"}
+
+	result := filterToConsentedAttributes(userAttributes, consentedAttrs)
+
+	assert.Empty(suite.T(), result)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestFilterToConsentedAttributes_PreservesOrder() {
+	userAttributes := []string{"phone", "email", "name"}
+	consentedAttrs := []string{"name", "phone"}
+
+	result := filterToConsentedAttributes(userAttributes, consentedAttrs)
+
+	assert.Len(suite.T(), result, 2)
+	assert.Equal(suite.T(), "phone", result[0], "Order should follow userAttributes")
+	assert.Equal(suite.T(), "name", result[1])
+}
+
+// ----- Execute with Consented Attributes in RuntimeData -----
+
+func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConsentedAttributes_FiltersUserAttrs() {
+	attrs := map[string]interface{}{"email": testEmail, "phone": "1234567890", "name": "Test"}
+	attrsJSON, _ := json.Marshal(attrs)
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		AppID:    "app-123",
+		FlowType: common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "user-123",
+		},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyConsentID:           "consent-123",
+			common.RuntimeKeyConsentedAttributes: "email name",
+		},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Application: appmodel.Application{
+			Assertion: &appmodel.AssertionConfig{
+				UserAttributes: []string{"email", "phone", "name"},
+			},
+		},
+	}
+
+	existingUser := &userprovider.User{
+		UserID:     "user-123",
+		Attributes: attrsJSON,
+	}
+
+	suite.mockUserProvider.On("GetUser", "user-123").Return(existingUser, nil)
+	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
+		mock.MatchedBy(func(claims map[string]interface{}) bool {
+			// Should only have email and name (consented), NOT phone
+			_, hasPhone := claims["phone"]
+			hasEmail := claims["email"] == testEmail
+			hasName := claims["name"] == "Test"
+			return hasEmail && hasName && !hasPhone
+		}), mock.Anything).Return("jwt-token", int64(3600), nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	suite.mockUserProvider.AssertExpectations(suite.T())
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestExecute_WithEmptyConsentedAttributes() {
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		AppID:    "app-123",
+		FlowType: common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "user-123",
+		},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyConsentID:           "consent-456",
+			common.RuntimeKeyConsentedAttributes: "", // Consent ran but no attrs approved
+		},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Application:      appmodel.Application{},
+	}
+
+	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestExecute_WithoutConsentedAttributes() {
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		AppID:    "app-123",
+		FlowType: common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "user-123",
+		},
+		RuntimeData:      map[string]string{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Application:      appmodel.Application{},
+	}
+
+	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 }

@@ -27,6 +27,53 @@ const (
 	NamespaceAttribute Namespace = "attribute"
 )
 
+// ConsentStatus defines the possible statuses for a consent record.
+type ConsentStatus string
+
+const (
+	// ConsentStatusCreated indicates that the consent record has been created, but not yet active.
+	ConsentStatusCreated ConsentStatus = "CREATED"
+	// ConsentStatusActive indicates that the consent is active and valid.
+	ConsentStatusActive ConsentStatus = "ACTIVE"
+	// ConsentStatusRejected indicates that the consent has been rejected by the user.
+	ConsentStatusRejected ConsentStatus = "REJECTED"
+	// ConsentStatusRevoked indicates that the consent has been revoked by the user or admin.
+	ConsentStatusRevoked ConsentStatus = "REVOKED"
+	// ConsentStatusExpired indicates that the consent has expired after its validity time.
+	ConsentStatusExpired ConsentStatus = "EXPIRED"
+)
+
+// ConsentType defines the possible types for a consent record.
+type ConsentType string
+
+const (
+	// ConsentTypeAuthentication represents a consent record related to authentication flows.
+	ConsentTypeAuthentication ConsentType = "AUTHENTICATION"
+)
+
+// ConsentAuthorizationStatus defines the possible statuses for a consent authorization record.
+type ConsentAuthorizationStatus string
+
+const (
+	// AuthorizationStatusCreated indicates that the authorization record has been created,
+	// but not yet approved or rejected.
+	AuthorizationStatusCreated ConsentAuthorizationStatus = "CREATED"
+	// AuthorizationStatusApproved indicates that the authorization record has been approved by the user.
+	AuthorizationStatusApproved ConsentAuthorizationStatus = "APPROVED"
+	// AuthorizationStatusRejected indicates that the authorization record has been rejected by the user.
+	AuthorizationStatusRejected ConsentAuthorizationStatus = "REJECTED"
+)
+
+// ConsentAuthorizationType defines the possible types for a consent authorization record.
+type ConsentAuthorizationType string
+
+const (
+	// AuthorizationTypeAuthorization represents a standard user authorization action for a consent.
+	AuthorizationTypeAuthorization ConsentAuthorizationType = "AUTHORIZATION"
+	// AuthorizationTypeReAuthorization represents a re-authorization action for a consent.
+	AuthorizationTypeReAuthorization ConsentAuthorizationType = "RE_AUTHORIZATION"
+)
+
 // ----- Consent element data models -----
 
 // ConsentElementInput represents the input struct for creating a consent element.
@@ -126,9 +173,9 @@ type ConsentAuthorizationRequest struct {
 	// UserID is the identifier of the user who performed the authorization
 	UserID string
 	// Type is the authorization type (e.g. "authorization")
-	Type string
+	Type ConsentAuthorizationType
 	// Status is the authorization status (e.g. "APPROVED")
-	Status string
+	Status ConsentAuthorizationStatus
 }
 
 // ConsentAuthorization represents the authorization record within a consent.
@@ -138,9 +185,9 @@ type ConsentAuthorization struct {
 	// UserID is the identifier of the user who performed the authorization
 	UserID string
 	// Type is the authorization type (e.g. "authorization")
-	Type string
+	Type ConsentAuthorizationType
 	// Status is the authorization status (e.g. "APPROVED", "CREATED", "REJECTED")
-	Status string
+	Status ConsentAuthorizationStatus
 	// UpdatedTime is the Unix timestamp of the last status change
 	UpdatedTime int64
 }
@@ -148,7 +195,7 @@ type ConsentAuthorization struct {
 // ConsentRequest represents the payload for creating a new consent record.
 type ConsentRequest struct {
 	// Type is the consent type (e.g. "authentication")
-	Type string
+	Type ConsentType
 	// GroupID is the group ID that this consent is associated with (e.g. app id)
 	GroupID string
 	// ValidityTime is the Unix timestamp until which the consent is valid
@@ -164,11 +211,11 @@ type Consent struct {
 	// ID is the unique identifier of the consent
 	ID string
 	// Type is the consent type (e.g. "authentication")
-	Type string
+	Type ConsentType
 	// GroupID is the group ID that this consent is associated with (e.g. app id)
 	GroupID string
 	// Status is the consent status (CREATED, ACTIVE, REJECTED, REVOKED, EXPIRED)
-	Status string
+	Status ConsentStatus
 	// ValidityTime is the Unix timestamp until which the consent is valid
 	ValidityTime int64
 	// Purposes is the list of consent purposes with element approval records
@@ -184,9 +231,9 @@ type Consent struct {
 // ConsentSearchFilter defines the search criteria for querying consent records.
 type ConsentSearchFilter struct {
 	// ConsentTypes is an optional list of consent types to filter by
-	ConsentTypes []string
+	ConsentTypes []ConsentType
 	// ConsentStatuses is an optional list of consent statuses to filter by
-	ConsentStatuses []string
+	ConsentStatuses []ConsentStatus
 	// GroupIDs is an optional list of group IDs to filter by
 	GroupIDs []string
 	// UserIDs is an optional list of user IDs to filter by

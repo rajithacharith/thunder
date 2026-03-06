@@ -24,6 +24,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/asgardeo/thunder/internal/authn/assert"
+	"github.com/asgardeo/thunder/internal/authn/consent"
 	"github.com/asgardeo/thunder/internal/authn/credentials"
 	"github.com/asgardeo/thunder/internal/authn/github"
 	"github.com/asgardeo/thunder/internal/authn/google"
@@ -33,6 +34,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/passkey"
 	"github.com/asgardeo/thunder/internal/authn/reactsdk"
 	"github.com/asgardeo/thunder/internal/authnprovider"
+	consentmgt "github.com/asgardeo/thunder/internal/consent"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
@@ -51,6 +53,7 @@ type AuthServiceRegistry struct {
 	GoogleOIDCAuthnService  google.GoogleOIDCAuthnServiceInterface
 	AuthAssertGenerator     assert.AuthAssertGeneratorInterface
 	PasskeyService          passkey.PasskeyServiceInterface
+	ConsentEnforcerService  consent.ConsentEnforcerServiceInterface
 }
 
 // Initialize initializes the authentication service and registers its routes.
@@ -63,8 +66,10 @@ func Initialize(
 	userProvider userprovider.UserProviderInterface,
 	otpSvc notification.OTPServiceInterface,
 	authnProvider authnprovider.AuthnProviderInterface,
+	consentSvc consentmgt.ConsentServiceInterface,
 ) (AuthenticationServiceInterface, *AuthServiceRegistry) {
-	authServiceRegistry := createAuthServiceRegistry(idpSvc, jwtSvc, userSvc, userProvider, otpSvc, authnProvider)
+	authServiceRegistry := createAuthServiceRegistry(idpSvc, jwtSvc,
+		userSvc, userProvider, otpSvc, authnProvider, consentSvc)
 	authnService := newAuthenticationService(
 		idpSvc,
 		jwtSvc,
@@ -97,6 +102,7 @@ func createAuthServiceRegistry(
 	userProvider userprovider.UserProviderInterface,
 	otpSvc notification.OTPServiceInterface,
 	authnProvider authnprovider.AuthnProviderInterface,
+	consentSvc consentmgt.ConsentServiceInterface,
 ) *AuthServiceRegistry {
 	return &AuthServiceRegistry{
 		CredentialsAuthnService: credentials.Initialize(authnProvider),
@@ -107,6 +113,7 @@ func createAuthServiceRegistry(
 		GoogleOIDCAuthnService:  google.Initialize(idpSvc, userProvider, jwtSvc),
 		PasskeyService:          passkey.Initialize(userSvc),
 		AuthAssertGenerator:     assert.Initialize(),
+		ConsentEnforcerService:  consent.Initialize(consentSvc, jwtSvc),
 	}
 }
 
