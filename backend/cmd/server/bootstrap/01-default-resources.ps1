@@ -1149,13 +1149,13 @@ $appData = @{
                     id_token = @{
                         validity_period = 3600
                         user_attributes = @("given_name", "family_name", "email", "groups", "name", "ouId")
-                        scope_claims = @{
-                            profile = @("name", "given_name", "family_name", "picture")
-                            email = @("email", "email_verified")
-                            phone = @("phone_number", "phone_number_verified")
-                            group = @("groups")
-                        }
                     }
+                }
+                scope_claims = @{
+                    profile = @("name", "given_name", "family_name", "picture")
+                    email = @("email", "email_verified")
+                    phone = @("phone_number", "phone_number_verified")
+                    group = @("groups")
                 }
             }
         }
