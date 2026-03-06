@@ -112,7 +112,8 @@ RESPONSE=$(thunder_api_call POST "/user-schemas" '{
     "email": {
       "type": "string",
       "required": true,
-      "unique": true
+      "unique": true,
+      "regex": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
     },
     "email_verified": {
       "type": "boolean",
