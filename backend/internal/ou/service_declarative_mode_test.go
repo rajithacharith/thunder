@@ -42,11 +42,12 @@ func (suite *DeclarativeModeServiceTestSuite) SetupTest() {
 			Enabled: true,
 		},
 	}
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	suite.Require().NoError(err)
 
 	// Create service with mock store (store won't be called in declarative mode)
 	mockStore := new(organizationUnitStoreInterfaceMock)
-	suite.service = newOrganizationUnitService(nil, mockStore)
+	suite.service = newOrganizationUnitService(nil, mockStore, nil)
 }
 
 func (suite *DeclarativeModeServiceTestSuite) TearDownTest() {

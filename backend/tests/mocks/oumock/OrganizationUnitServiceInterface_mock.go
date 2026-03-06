@@ -930,16 +930,16 @@ func (_c *OrganizationUnitServiceInterfaceMock_GetOrganizationUnitUsersByPath_Ca
 }
 
 // IsOrganizationUnitDeclarative provides a mock function for the type OrganizationUnitServiceInterfaceMock
-func (_mock *OrganizationUnitServiceInterfaceMock) IsOrganizationUnitDeclarative(id string) bool {
-	ret := _mock.Called(id)
+func (_mock *OrganizationUnitServiceInterfaceMock) IsOrganizationUnitDeclarative(ctx context.Context, id string) bool {
+	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for IsOrganizationUnitDeclarative")
 	}
 
 	var r0 bool
-	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = returnFunc(id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, id)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
@@ -952,19 +952,25 @@ type OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call str
 }
 
 // IsOrganizationUnitDeclarative is a helper method to define mock.On call
+//   - ctx context.Context
 //   - id string
-func (_e *OrganizationUnitServiceInterfaceMock_Expecter) IsOrganizationUnitDeclarative(id interface{}) *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call {
-	return &OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call{Call: _e.mock.On("IsOrganizationUnitDeclarative", id)}
+func (_e *OrganizationUnitServiceInterfaceMock_Expecter) IsOrganizationUnitDeclarative(ctx interface{}, id interface{}) *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call {
+	return &OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call{Call: _e.mock.On("IsOrganizationUnitDeclarative", ctx, id)}
 }
 
-func (_c *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call) Run(run func(id string)) *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call {
+func (_c *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call) Run(run func(ctx context.Context, id string)) *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -975,7 +981,7 @@ func (_c *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Cal
 	return _c
 }
 
-func (_c *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call) RunAndReturn(run func(id string) bool) *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call {
+func (_c *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call) RunAndReturn(run func(ctx context.Context, id string) bool) *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call {
 	_c.Call.Return(run)
 	return _c
 }

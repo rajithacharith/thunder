@@ -19,6 +19,8 @@
 package ou
 
 import (
+	"context"
+
 	"errors"
 	"testing"
 
@@ -158,7 +160,8 @@ func (suite *OrganizationUnitStoreTestSuite) runConflictQueryScenario(
 				setup: func(parent *string) {
 					suite.expectDBClient()
 					suite.dbClientMock.
-						On("Query", withParentQueryID, value, *parent, testDeploymentID).
+						On(
+							"QueryContext", mock.Anything, withParentQueryID, value, *parent, testDeploymentID).
 						Return([]map[string]interface{}{{"count": withParentCount}}, nil).
 						Once()
 				},
@@ -169,7 +172,8 @@ func (suite *OrganizationUnitStoreTestSuite) runConflictQueryScenario(
 				setup: func(_ *string) {
 					suite.expectDBClient()
 					suite.dbClientMock.
-						On("Query", withoutParentQueryID, value, testDeploymentID).
+						On(
+							"QueryContext", mock.Anything, withoutParentQueryID, value, testDeploymentID).
 						Return([]map[string]interface{}{{"count": withoutParentCount}}, nil).
 						Once()
 				},
@@ -180,7 +184,8 @@ func (suite *OrganizationUnitStoreTestSuite) runConflictQueryScenario(
 				setup: func(_ *string) {
 					suite.expectDBClient()
 					suite.dbClientMock.
-						On("Query", withoutParentQueryID, value, testDeploymentID).
+						On(
+							"QueryContext", mock.Anything, withoutParentQueryID, value, testDeploymentID).
 						Return(nil, errors.New("query err")).
 						Once()
 				},
@@ -213,7 +218,8 @@ func (suite *OrganizationUnitStoreTestSuite) runCountQueryScenario(
 				setup: func() {
 					suite.expectDBClient()
 					suite.dbClientMock.
-						On("Query", queryID, arg, deploymentID).
+						On(
+							"QueryContext", mock.Anything, queryID, arg, deploymentID).
 						Return([]map[string]interface{}{{"total": int64(successCount)}}, nil).
 						Once()
 				},
@@ -224,7 +230,8 @@ func (suite *OrganizationUnitStoreTestSuite) runCountQueryScenario(
 				setup: func() {
 					suite.expectDBClient()
 					suite.dbClientMock.
-						On("Query", queryID, arg, deploymentID).
+						On(
+							"QueryContext", mock.Anything, queryID, arg, deploymentID).
 						Return([]map[string]interface{}{}, nil).
 						Once()
 				},
@@ -235,7 +242,8 @@ func (suite *OrganizationUnitStoreTestSuite) runCountQueryScenario(
 				setup: func() {
 					suite.expectDBClient()
 					suite.dbClientMock.
-						On("Query", queryID, arg, deploymentID).
+						On(
+							"QueryContext", mock.Anything, queryID, arg, deploymentID).
 						Return([]map[string]interface{}{{"total": "bad"}}, nil).
 						Once()
 				},
@@ -246,7 +254,8 @@ func (suite *OrganizationUnitStoreTestSuite) runCountQueryScenario(
 				setup: func() {
 					suite.expectDBClient()
 					suite.dbClientMock.
-						On("Query", queryID, arg, deploymentID).
+						On(
+							"QueryContext", mock.Anything, queryID, arg, deploymentID).
 						Return(nil, errors.New("query err")).
 						Once()
 				},
@@ -454,7 +463,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CheckOrganizationUnitHa
 			setup: func() {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryCheckOrganizationUnitHasUsersOrGroups, "ou1", testDeploymentID).
+					On(
+						"QueryContext", mock.Anything,
+						queryCheckOrganizationUnitHasUsersOrGroups, "ou1", testDeploymentID).
 					Return([]map[string]interface{}{{"count": int64(1)}}, nil).
 					Once()
 			},
@@ -465,7 +476,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CheckOrganizationUnitHa
 			setup: func() {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryCheckOrganizationUnitHasUsersOrGroups, "ou1", testDeploymentID).
+					On(
+						"QueryContext", mock.Anything,
+						queryCheckOrganizationUnitHasUsersOrGroups, "ou1", testDeploymentID).
 					Return([]map[string]interface{}{{"count": int64(0)}}, nil).
 					Once()
 			},
@@ -476,7 +489,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CheckOrganizationUnitHa
 			setup: func() {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryCheckOrganizationUnitHasUsersOrGroups, "ou1", testDeploymentID).
+					On(
+						"QueryContext", mock.Anything,
+						queryCheckOrganizationUnitHasUsersOrGroups, "ou1", testDeploymentID).
 					Return(nil, errors.New("query err")).
 					Once()
 			},
@@ -500,7 +515,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CheckOrganizationUnitHa
 			suite.SetupTest()
 			tc.setup()
 
-			hasChildren, err := suite.store.CheckOrganizationUnitHasChildResources("ou1")
+			hasChildren, err := suite.store.CheckOrganizationUnitHasChildResources(context.Background(), "ou1")
 
 			if tc.wantErr != "" {
 				suite.Require().Error(err)
@@ -522,7 +537,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CheckOrganizationUnitNa
 		1,
 		0,
 		func(parent *string) (bool, error) {
-			return suite.store.CheckOrganizationUnitNameConflict("Finance", parent)
+			return suite.store.CheckOrganizationUnitNameConflict(context.Background(), "Finance", parent)
 		},
 	)
 }
@@ -535,7 +550,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CheckOrganizationUnitHa
 		0,
 		2,
 		func(parent *string) (bool, error) {
-			return suite.store.CheckOrganizationUnitHandleConflict("finance", parent)
+			return suite.store.CheckOrganizationUnitHandleConflict(context.Background(), "finance", parent)
 		},
 	)
 }
@@ -552,7 +567,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitGrou
 			setup: func() {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitGroupsCount, "ou1", testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryGetOrganizationUnitGroupsCount, "ou1", testDeploymentID).
 					Return([]map[string]interface{}{{"total": int64(2)}}, nil).
 					Once()
 			},
@@ -563,7 +579,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitGrou
 			setup: func() {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitGroupsCount, "ou1", testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryGetOrganizationUnitGroupsCount, "ou1", testDeploymentID).
 					Return([]map[string]interface{}{}, nil).
 					Once()
 			},
@@ -574,7 +591,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitGrou
 			setup: func() {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitGroupsCount, "ou1", testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryGetOrganizationUnitGroupsCount, "ou1", testDeploymentID).
 					Return([]map[string]interface{}{{"total": "bad"}}, nil).
 					Once()
 			},
@@ -585,7 +603,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitGrou
 			setup: func() {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitGroupsCount, "ou1", testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryGetOrganizationUnitGroupsCount, "ou1", testDeploymentID).
 					Return(nil, errors.New("query err")).
 					Once()
 			},
@@ -609,7 +628,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitGrou
 			suite.SetupTest()
 			tc.setup()
 
-			count, err := suite.store.GetOrganizationUnitGroupsCount("ou1")
+			count, err := suite.store.GetOrganizationUnitGroupsCount(context.Background(), "ou1")
 
 			if tc.wantErr != "" {
 				suite.Require().Error(err)
@@ -639,7 +658,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitGrou
 			setup: func(limit, offset int) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitGroupsList, "ou1", limit, offset, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything,
+						queryGetOrganizationUnitGroupsList, "ou1", limit, offset, testDeploymentID).
 					Return([]map[string]interface{}{
 						{"id": "grp1", "name": "Group 1"},
 						{"id": "grp2", "name": "Group 2"},
@@ -659,7 +680,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitGrou
 			setup: func(limit, offset int) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitGroupsList, "ou1", limit, offset, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything,
+						queryGetOrganizationUnitGroupsList, "ou1", limit, offset, testDeploymentID).
 					Return([]map[string]interface{}{
 						{"id": 123},
 					}, nil).
@@ -674,7 +697,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitGrou
 			setup: func(limit, offset int) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitGroupsList, "ou1", limit, offset, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything,
+						queryGetOrganizationUnitGroupsList, "ou1", limit, offset, testDeploymentID).
 					Return([]map[string]interface{}{
 						{"id": "grp1", "name": 5},
 					}, nil).
@@ -689,7 +714,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitGrou
 			setup: func(limit, offset int) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitGroupsList, "ou1", limit, offset, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything,
+						queryGetOrganizationUnitGroupsList, "ou1", limit, offset, testDeploymentID).
 					Return(nil, errors.New("query err")).
 					Once()
 			},
@@ -715,7 +742,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitGrou
 			suite.SetupTest()
 			tc.setup(tc.limit, tc.offset)
 
-			groups, err := suite.store.GetOrganizationUnitGroupsList("ou1", tc.limit, tc.offset)
+			groups, err := suite.store.GetOrganizationUnitGroupsList(context.Background(), "ou1", tc.limit, tc.offset)
 
 			if tc.wantErr != "" {
 				suite.Require().Error(err)
@@ -738,7 +765,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitUser
 		testDeploymentID,
 		4,
 		func() (int, error) {
-			return suite.store.GetOrganizationUnitUsersCount("ou1")
+			return suite.store.GetOrganizationUnitUsersCount(context.Background(), "ou1")
 		},
 	)
 }
@@ -759,7 +786,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitUser
 			setup: func(limit, offset int) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitUsersList, "ou1", limit, offset, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything,
+						queryGetOrganizationUnitUsersList, "ou1", limit, offset, testDeploymentID).
 					Return([]map[string]interface{}{
 						{"id": "user1"},
 						{"id": "user2"},
@@ -778,7 +807,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitUser
 			setup: func(limit, offset int) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitUsersList, "ou1", limit, offset, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything,
+						queryGetOrganizationUnitUsersList, "ou1", limit, offset, testDeploymentID).
 					Return([]map[string]interface{}{
 						{"id": 123},
 					}, nil).
@@ -793,7 +824,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitUser
 			setup: func(limit, offset int) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitUsersList, "ou1", limit, offset, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything,
+						queryGetOrganizationUnitUsersList, "ou1", limit, offset, testDeploymentID).
 					Return(nil, errors.New("query err")).
 					Once()
 			},
@@ -819,7 +852,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitUser
 			suite.SetupTest()
 			tc.setup(tc.limit, tc.offset)
 
-			users, err := suite.store.GetOrganizationUnitUsersList("ou1", tc.limit, tc.offset)
+			users, err := suite.store.GetOrganizationUnitUsersList(context.Background(), "ou1", tc.limit, tc.offset)
 
 			if tc.wantErr != "" {
 				suite.Require().Error(err)
@@ -842,7 +875,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitChil
 		testDeploymentID,
 		5,
 		func() (int, error) {
-			return suite.store.GetOrganizationUnitChildrenCount("root")
+			return suite.store.GetOrganizationUnitChildrenCount(context.Background(), "root")
 		},
 	)
 }
@@ -865,7 +898,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitChil
 			setup: func(parent string, limit, offset int) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitChildrenList, parent, limit, offset, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything,
+						queryGetOrganizationUnitChildrenList, parent, limit, offset, testDeploymentID).
 					Return([]map[string]interface{}{
 						makeOUResultRow("child1", "child1", "Child 1", "", &parent),
 						makeOUResultRow("child2", "child2", "Child 2", "desc", &parent),
@@ -885,7 +920,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitChil
 			setup: func(parent string, limit, offset int) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitChildrenList, parent, limit, offset, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything,
+						queryGetOrganizationUnitChildrenList, parent, limit, offset, testDeploymentID).
 					Return(nil, errors.New("query err")).
 					Once()
 			},
@@ -899,7 +936,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitChil
 			setup: func(parent string, limit, offset int) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitChildrenList, parent, limit, offset, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything,
+						queryGetOrganizationUnitChildrenList, parent, limit, offset, testDeploymentID).
 					Return([]map[string]interface{}{{"ou_id": 1}}, nil).
 					Once()
 			},
@@ -926,7 +965,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitChil
 			suite.SetupTest()
 			tc.setup(tc.parent, tc.limit, tc.offset)
 
-			children, err := suite.store.GetOrganizationUnitChildrenList(tc.parent, tc.limit, tc.offset)
+			children, err := suite.store.GetOrganizationUnitChildrenList(
+				context.Background(), tc.parent, tc.limit, tc.offset,
+			)
 
 			if tc.wantErr != "" {
 				suite.Require().Error(err)
@@ -965,7 +1006,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 				suite.expectDBClient()
 				suite.dbClientMock.
 					On(
-						"Execute",
+						"ExecuteContext", mock.Anything,
 						queryUpdateOrganizationUnit,
 						ou.ID,
 						ou.Parent,
@@ -1000,7 +1041,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 				suite.expectDBClient()
 				suite.dbClientMock.
 					On(
-						"Execute",
+						"ExecuteContext", mock.Anything,
 						queryUpdateOrganizationUnit,
 						ou.ID,
 						ou.Parent,
@@ -1024,7 +1065,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 				suite.expectDBClient()
 				suite.dbClientMock.
 					On(
-						"Execute",
+						"ExecuteContext", mock.Anything,
 						queryUpdateOrganizationUnit,
 						ou.ID,
 						ou.Parent,
@@ -1060,7 +1101,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 			suite.SetupTest()
 			tc.setup(tc.ou)
 
-			err := suite.store.UpdateOrganizationUnit(tc.ou)
+			err := suite.store.UpdateOrganizationUnit(context.Background(), tc.ou)
 
 			if tc.wantErr != "" {
 				suite.Require().Error(err)
@@ -1084,7 +1125,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_DeleteOrganizationUnit(
 			setup: func() {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Execute", queryDeleteOrganizationUnit, "ou1", testDeploymentID).
+					On(
+						"ExecuteContext", mock.Anything, queryDeleteOrganizationUnit, "ou1", testDeploymentID).
 					Return(int64(1), nil).
 					Once()
 			},
@@ -1094,7 +1136,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_DeleteOrganizationUnit(
 			setup: func() {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Execute", queryDeleteOrganizationUnit, "ou1", testDeploymentID).
+					On(
+						"ExecuteContext", mock.Anything, queryDeleteOrganizationUnit, "ou1", testDeploymentID).
 					Return(int64(0), errors.New("delete failed")).
 					Once()
 			},
@@ -1118,7 +1161,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_DeleteOrganizationUnit(
 			suite.SetupTest()
 			tc.setup()
 
-			err := suite.store.DeleteOrganizationUnit("ou1")
+			err := suite.store.DeleteOrganizationUnit(context.Background(), "ou1")
 
 			if tc.wantErr != "" {
 				suite.Require().Error(err)
@@ -1143,7 +1186,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_IsOrganizationUnitExist
 			setup: func() {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryCheckOrganizationUnitExists, "ou1", testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryCheckOrganizationUnitExists, "ou1", testDeploymentID).
 					Return([]map[string]interface{}{{"count": int64(1)}}, nil).
 					Once()
 			},
@@ -1154,7 +1198,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_IsOrganizationUnitExist
 			setup: func() {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryCheckOrganizationUnitExists, "ou1", testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryCheckOrganizationUnitExists, "ou1", testDeploymentID).
 					Return([]map[string]interface{}{}, nil).
 					Once()
 			},
@@ -1165,7 +1210,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_IsOrganizationUnitExist
 			setup: func() {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryCheckOrganizationUnitExists, "ou1", testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryCheckOrganizationUnitExists, "ou1", testDeploymentID).
 					Return([]map[string]interface{}{{"count": int64(0)}}, nil).
 					Once()
 			},
@@ -1176,7 +1222,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_IsOrganizationUnitExist
 			setup: func() {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryCheckOrganizationUnitExists, "ou1", testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryCheckOrganizationUnitExists, "ou1", testDeploymentID).
 					Return([]map[string]interface{}{{"count": "bad"}}, nil).
 					Once()
 			},
@@ -1187,7 +1234,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_IsOrganizationUnitExist
 			setup: func() {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryCheckOrganizationUnitExists, "ou1", testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryCheckOrganizationUnitExists, "ou1", testDeploymentID).
 					Return(nil, errors.New("query err")).
 					Once()
 			},
@@ -1211,7 +1259,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_IsOrganizationUnitExist
 			suite.SetupTest()
 			tc.setup()
 
-			exists, err := suite.store.IsOrganizationUnitExists("ou1")
+			exists, err := suite.store.IsOrganizationUnitExists(context.Background(), "ou1")
 
 			if tc.wantErr != "" {
 				suite.Require().Error(err)
@@ -1243,13 +1291,16 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitByPa
 				childID := "child-id"
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetRootOrganizationUnitByHandle, "root", testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryGetRootOrganizationUnitByHandle, "root", testDeploymentID).
 					Return([]map[string]interface{}{
 						makeOUResultRow(rootID, "root", "Root", "desc", nil),
 					}, nil).
 					Once()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitByHandle, "child", rootID, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything,
+						queryGetOrganizationUnitByHandle, "child", rootID, testDeploymentID).
 					Return([]map[string]interface{}{
 						makeOUResultRow(childID, "child", "Child", "", &rootID),
 					}, nil).
@@ -1286,7 +1337,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitByPa
 			setup: func(_ []string) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetRootOrganizationUnitByHandle, "root", testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryGetRootOrganizationUnitByHandle, "root", testDeploymentID).
 					Return(nil, errors.New("query")).
 					Once()
 			},
@@ -1298,7 +1350,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitByPa
 			setup: func(_ []string) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetRootOrganizationUnitByHandle, "root", testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryGetRootOrganizationUnitByHandle, "root", testDeploymentID).
 					Return([]map[string]interface{}{}, nil).
 					Once()
 			},
@@ -1310,7 +1363,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitByPa
 			setup: func(_ []string) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetRootOrganizationUnitByHandle, "root", testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryGetRootOrganizationUnitByHandle, "root", testDeploymentID).
 					Return([]map[string]interface{}{{"ou_id": 1}}, nil).
 					Once()
 			},
@@ -1323,11 +1377,14 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitByPa
 				rootID := "root"
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetRootOrganizationUnitByHandle, "root", testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryGetRootOrganizationUnitByHandle, "root", testDeploymentID).
 					Return([]map[string]interface{}{makeOUResultRow(rootID, "root", "Root", "", nil)}, nil).
 					Once()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitByHandle, "child", rootID, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything,
+						queryGetOrganizationUnitByHandle, "child", rootID, testDeploymentID).
 					Return(nil, errors.New("child query failed")).
 					Once()
 			},
@@ -1343,7 +1400,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitByPa
 				tc.setup(tc.path)
 			}
 
-			ou, err := suite.store.GetOrganizationUnitByPath(tc.path)
+			ou, err := suite.store.GetOrganizationUnitByPath(context.Background(), tc.path)
 
 			switch {
 			case tc.wantErr != nil:
@@ -1382,7 +1439,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnit() {
 				row := makeOUResultRow(id, "root", "Root", "desc", &parentID)
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitByID, id, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryGetOrganizationUnitByID, id, testDeploymentID).
 					Return([]map[string]interface{}{row}, nil).
 					Once()
 			},
@@ -1398,7 +1456,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnit() {
 			setup: func(id string) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitByID, id, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryGetOrganizationUnitByID, id, testDeploymentID).
 					Return(nil, errors.New("query err")).
 					Once()
 			},
@@ -1410,7 +1469,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnit() {
 			setup: func(id string) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitByID, id, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryGetOrganizationUnitByID, id, testDeploymentID).
 					Return([]map[string]interface{}{}, nil).
 					Once()
 			},
@@ -1422,7 +1482,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnit() {
 			setup: func(id string) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetOrganizationUnitByID, id, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryGetOrganizationUnitByID, id, testDeploymentID).
 					Return([]map[string]interface{}{{"ou_id": 2}}, nil).
 					Once()
 			},
@@ -1447,7 +1508,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnit() {
 			suite.SetupTest()
 			tc.setup(tc.id)
 
-			ou, err := suite.store.GetOrganizationUnit(tc.id)
+			ou, err := suite.store.GetOrganizationUnit(context.Background(), tc.id)
 
 			switch {
 			case tc.wantErr != nil:
@@ -1484,7 +1545,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 				suite.expectDBClient()
 				suite.dbClientMock.
 					On(
-						"Execute",
+						"ExecuteContext", mock.Anything,
 						queryCreateOrganizationUnit,
 						ou.ID,
 						ou.Parent,
@@ -1515,7 +1576,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 				suite.expectDBClient()
 				suite.dbClientMock.
 					On(
-						"Execute",
+						"ExecuteContext", mock.Anything,
 						queryCreateOrganizationUnit,
 						ou.ID,
 						ou.Parent,
@@ -1544,7 +1605,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 				suite.expectDBClient()
 				suite.dbClientMock.
 					On(
-						"Execute",
+						"ExecuteContext", mock.Anything,
 						queryCreateOrganizationUnit,
 						ou.ID,
 						ou.Parent,
@@ -1582,7 +1643,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 				tc.setup(tc.ou)
 			}
 
-			err := suite.store.CreateOrganizationUnit(tc.ou)
+			err := suite.store.CreateOrganizationUnit(context.Background(), tc.ou)
 
 			if tc.wantErr != "" {
 				suite.Require().Error(err)
@@ -1615,7 +1676,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitList
 					makeOUResultRow("child", "child", "Child", "", nil),
 				}
 				suite.dbClientMock.
-					On("Query", queryGetRootOrganizationUnitList, limit, offset, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything,
+						queryGetRootOrganizationUnitList, limit, offset, testDeploymentID).
 					Return(rows, nil).
 					Once()
 			},
@@ -1632,7 +1695,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitList
 			setup: func(limit, offset int) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetRootOrganizationUnitList, limit, offset, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything,
+						queryGetRootOrganizationUnitList, limit, offset, testDeploymentID).
 					Return(nil, errors.New("query error")).
 					Once()
 			},
@@ -1645,7 +1710,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitList
 			setup: func(limit, offset int) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetRootOrganizationUnitList, limit, offset, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything,
+						queryGetRootOrganizationUnitList, limit, offset, testDeploymentID).
 					Return([]map[string]interface{}{{"ou_id": 123}}, nil).
 					Once()
 			},
@@ -1671,7 +1738,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitList
 			suite.SetupTest()
 			tc.setup(tc.limit, tc.offset)
 
-			ous, err := suite.store.GetOrganizationUnitList(tc.limit, tc.offset)
+			ous, err := suite.store.GetOrganizationUnitList(context.Background(), tc.limit, tc.offset)
 
 			if tc.wantErrString != "" {
 				suite.Require().Error(err)
@@ -1700,7 +1767,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitList
 			setup: func() {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetRootOrganizationUnitListCount, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryGetRootOrganizationUnitListCount, testDeploymentID).
 					Return([]map[string]interface{}{{"total": int64(3)}}, nil).
 					Once()
 			},
@@ -1711,7 +1779,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitList
 			setup: func() {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetRootOrganizationUnitListCount, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryGetRootOrganizationUnitListCount, testDeploymentID).
 					Return(nil, errors.New("boom")).
 					Once()
 			},
@@ -1722,7 +1791,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitList
 			setup: func() {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", queryGetRootOrganizationUnitListCount, testDeploymentID).
+					On(
+						"QueryContext", mock.Anything, queryGetRootOrganizationUnitListCount, testDeploymentID).
 					Return([]map[string]interface{}{{"total": "3"}}, nil).
 					Once()
 			},
@@ -1746,7 +1816,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitList
 			suite.SetupTest()
 			tc.setup()
 
-			count, err := suite.store.GetOrganizationUnitListCount()
+			count, err := suite.store.GetOrganizationUnitListCount(context.Background())
 
 			if tc.wantErr != "" {
 				suite.Require().Error(err)
@@ -1779,7 +1849,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitsByI
 					makeOUResultRow("ou2", "root2", "Root2", "desc2", nil),
 				}
 				suite.dbClientMock.
-					On("Query", mock.AnythingOfType("model.DBQuery"), mock.Anything, mock.Anything, mock.Anything).
+					On(
+						"QueryContext", mock.Anything,
+						mock.AnythingOfType("model.DBQuery"), mock.Anything, mock.Anything, mock.Anything).
 					Return(rows, nil).
 					Once()
 			},
@@ -1802,7 +1874,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitsByI
 			setup: func(ids []string) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", mock.AnythingOfType("model.DBQuery"), mock.Anything, mock.Anything).
+					On(
+						"QueryContext", mock.Anything,
+						mock.AnythingOfType("model.DBQuery"), mock.Anything, mock.Anything).
 					Return(nil, errors.New("query error")).
 					Once()
 			},
@@ -1814,7 +1888,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitsByI
 			setup: func(ids []string) {
 				suite.expectDBClient()
 				suite.dbClientMock.
-					On("Query", mock.AnythingOfType("model.DBQuery"), mock.Anything, mock.Anything).
+					On(
+						"QueryContext", mock.Anything,
+						mock.AnythingOfType("model.DBQuery"), mock.Anything, mock.Anything).
 					Return([]map[string]interface{}{{"ou_id": 123}}, nil).
 					Once()
 			},
@@ -1841,7 +1917,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitsByI
 				tc.setup(tc.ids)
 			}
 
-			ous, err := suite.store.GetOrganizationUnitsByIDs(tc.ids)
+			ous, err := suite.store.GetOrganizationUnitsByIDs(context.Background(), tc.ids)
 
 			if tc.wantErrString != "" {
 				suite.Require().Error(err)
@@ -1861,7 +1937,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitsByI
 func (suite *OrganizationUnitStoreTestSuite) TestOUStore_IsOrganizationUnitDeclarative() {
 	suite.Run("returns false", func() {
 		suite.SetupTest()
-		res := suite.store.IsOrganizationUnitDeclarative("ou1")
+		res := suite.store.IsOrganizationUnitDeclarative(context.Background(), "ou1")
 		suite.Require().False(res)
 	})
 }

@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -91,7 +92,7 @@ func (suite *HierarchyResolverTestSuite) TestIsAncestorOrSelf() {
 			ancestorOUID:   "ou1",
 			descendantOUID: "ou1",
 			setupMock: func(m *organizationUnitStoreInterfaceMock) {
-				m.On("GetOrganizationUnit", "ou1").
+				m.On("GetOrganizationUnit", mock.Anything, "ou1").
 					Return(OrganizationUnit{ID: "ou1", Parent: nil}, nil)
 			},
 			wantResult: false,
@@ -101,7 +102,7 @@ func (suite *HierarchyResolverTestSuite) TestIsAncestorOrSelf() {
 			ancestorOUID:   testCoverageParentOUID,
 			descendantOUID: "child-ou",
 			setupMock: func(m *organizationUnitStoreInterfaceMock) {
-				m.On("GetOrganizationUnit", "child-ou").
+				m.On("GetOrganizationUnit", mock.Anything, "child-ou").
 					Return(OrganizationUnit{ID: "child-ou", Parent: &parentID}, nil)
 			},
 			wantResult: true,
@@ -113,9 +114,9 @@ func (suite *HierarchyResolverTestSuite) TestIsAncestorOrSelf() {
 			setupMock: func(m *organizationUnitStoreInterfaceMock) {
 				parentRef := testCoverageParentOUID
 				rootRef := "root-ou"
-				m.On("GetOrganizationUnit", "grandchild-ou").
+				m.On("GetOrganizationUnit", mock.Anything, "grandchild-ou").
 					Return(OrganizationUnit{ID: "grandchild-ou", Parent: &parentRef}, nil)
-				m.On("GetOrganizationUnit", testCoverageParentOUID).
+				m.On("GetOrganizationUnit", mock.Anything, testCoverageParentOUID).
 					Return(OrganizationUnit{ID: testCoverageParentOUID, Parent: &rootRef}, nil)
 			},
 			wantResult: true,
@@ -126,10 +127,10 @@ func (suite *HierarchyResolverTestSuite) TestIsAncestorOrSelf() {
 			descendantOUID: "child-ou",
 			setupMock: func(m *organizationUnitStoreInterfaceMock) {
 				parentRef := testCoverageParentOUID
-				m.On("GetOrganizationUnit", "child-ou").
+				m.On("GetOrganizationUnit", mock.Anything, "child-ou").
 					Return(OrganizationUnit{ID: "child-ou", Parent: &parentRef}, nil)
 				// parent-ou is root (no parent).
-				m.On("GetOrganizationUnit", testCoverageParentOUID).
+				m.On("GetOrganizationUnit", mock.Anything, testCoverageParentOUID).
 					Return(OrganizationUnit{ID: testCoverageParentOUID, Parent: nil}, nil)
 			},
 			wantResult: false,
@@ -139,7 +140,7 @@ func (suite *HierarchyResolverTestSuite) TestIsAncestorOrSelf() {
 			ancestorOUID:   "some-ou",
 			descendantOUID: "root-ou",
 			setupMock: func(m *organizationUnitStoreInterfaceMock) {
-				m.On("GetOrganizationUnit", "root-ou").
+				m.On("GetOrganizationUnit", mock.Anything, "root-ou").
 					Return(OrganizationUnit{ID: "root-ou", Parent: nil}, nil)
 			},
 			wantResult: false,
@@ -149,7 +150,7 @@ func (suite *HierarchyResolverTestSuite) TestIsAncestorOrSelf() {
 			ancestorOUID:   testCoverageParentOUID,
 			descendantOUID: "orphan-ou",
 			setupMock: func(m *organizationUnitStoreInterfaceMock) {
-				m.On("GetOrganizationUnit", "orphan-ou").
+				m.On("GetOrganizationUnit", mock.Anything, "orphan-ou").
 					Return(OrganizationUnit{}, ErrOrganizationUnitNotFound)
 			},
 			wantResult: false,
@@ -159,7 +160,7 @@ func (suite *HierarchyResolverTestSuite) TestIsAncestorOrSelf() {
 			ancestorOUID:   testCoverageParentOUID,
 			descendantOUID: "child-ou",
 			setupMock: func(m *organizationUnitStoreInterfaceMock) {
-				m.On("GetOrganizationUnit", "child-ou").
+				m.On("GetOrganizationUnit", mock.Anything, "child-ou").
 					Return(OrganizationUnit{}, genericErr)
 			},
 			wantResult: false,
@@ -172,9 +173,9 @@ func (suite *HierarchyResolverTestSuite) TestIsAncestorOrSelf() {
 			setupMock: func(m *organizationUnitStoreInterfaceMock) {
 				parentRef := testCoverageParentOUID
 				childRef := "child-ou"
-				m.On("GetOrganizationUnit", "child-ou").
+				m.On("GetOrganizationUnit", mock.Anything, "child-ou").
 					Return(OrganizationUnit{ID: "child-ou", Parent: &parentRef}, nil).Times(1)
-				m.On("GetOrganizationUnit", testCoverageParentOUID).
+				m.On("GetOrganizationUnit", mock.Anything, testCoverageParentOUID).
 					Return(OrganizationUnit{ID: testCoverageParentOUID, Parent: &childRef}, nil).Times(1)
 			},
 			wantResult: false,
@@ -223,7 +224,7 @@ func (suite *HierarchyResolverTestSuite) TestGetAncestorOUIDs() {
 			name: "RootOU_NoParent_ReturnsEmpty",
 			ouID: "root-ou",
 			setupMock: func(m *organizationUnitStoreInterfaceMock) {
-				m.On("GetOrganizationUnit", "root-ou").
+				m.On("GetOrganizationUnit", mock.Anything, "root-ou").
 					Return(OrganizationUnit{ID: "root-ou", Parent: nil}, nil)
 			},
 			wantIDs: []string{},
@@ -233,9 +234,9 @@ func (suite *HierarchyResolverTestSuite) TestGetAncestorOUIDs() {
 			ouID: "child-ou",
 			setupMock: func(m *organizationUnitStoreInterfaceMock) {
 				parentRef := testCoverageParentOUID
-				m.On("GetOrganizationUnit", "child-ou").
+				m.On("GetOrganizationUnit", mock.Anything, "child-ou").
 					Return(OrganizationUnit{ID: "child-ou", Parent: &parentRef}, nil)
-				m.On("GetOrganizationUnit", testCoverageParentOUID).
+				m.On("GetOrganizationUnit", mock.Anything, testCoverageParentOUID).
 					Return(OrganizationUnit{ID: testCoverageParentOUID, Parent: nil}, nil)
 			},
 			wantIDs: []string{testCoverageParentOUID},
@@ -246,11 +247,11 @@ func (suite *HierarchyResolverTestSuite) TestGetAncestorOUIDs() {
 			setupMock: func(m *organizationUnitStoreInterfaceMock) {
 				parentRef := testCoverageParentOUID
 				rootRef := "root-ou"
-				m.On("GetOrganizationUnit", "grandchild-ou").
+				m.On("GetOrganizationUnit", mock.Anything, "grandchild-ou").
 					Return(OrganizationUnit{ID: "grandchild-ou", Parent: &parentRef}, nil)
-				m.On("GetOrganizationUnit", testCoverageParentOUID).
+				m.On("GetOrganizationUnit", mock.Anything, testCoverageParentOUID).
 					Return(OrganizationUnit{ID: testCoverageParentOUID, Parent: &rootRef}, nil)
-				m.On("GetOrganizationUnit", "root-ou").
+				m.On("GetOrganizationUnit", mock.Anything, "root-ou").
 					Return(OrganizationUnit{ID: "root-ou", Parent: nil}, nil)
 			},
 			wantIDs: []string{testCoverageParentOUID, "root-ou"},
@@ -259,7 +260,7 @@ func (suite *HierarchyResolverTestSuite) TestGetAncestorOUIDs() {
 			name: "BrokenChain_OUNotFound_ReturnsNilAndError",
 			ouID: "orphan-ou",
 			setupMock: func(m *organizationUnitStoreInterfaceMock) {
-				m.On("GetOrganizationUnit", "orphan-ou").
+				m.On("GetOrganizationUnit", mock.Anything, "orphan-ou").
 					Return(OrganizationUnit{}, ErrOrganizationUnitNotFound)
 			},
 			wantErr: true,
@@ -269,9 +270,9 @@ func (suite *HierarchyResolverTestSuite) TestGetAncestorOUIDs() {
 			ouID: "child-ou",
 			setupMock: func(m *organizationUnitStoreInterfaceMock) {
 				missingRef := "missing-ou"
-				m.On("GetOrganizationUnit", "child-ou").
+				m.On("GetOrganizationUnit", mock.Anything, "child-ou").
 					Return(OrganizationUnit{ID: "child-ou", Parent: &missingRef}, nil)
-				m.On("GetOrganizationUnit", "missing-ou").
+				m.On("GetOrganizationUnit", mock.Anything, "missing-ou").
 					Return(OrganizationUnit{}, ErrOrganizationUnitNotFound)
 			},
 			wantErr: true,
@@ -280,7 +281,7 @@ func (suite *HierarchyResolverTestSuite) TestGetAncestorOUIDs() {
 			name: "StoreError_ReturnsNilAndError",
 			ouID: "child-ou",
 			setupMock: func(m *organizationUnitStoreInterfaceMock) {
-				m.On("GetOrganizationUnit", "child-ou").
+				m.On("GetOrganizationUnit", mock.Anything, "child-ou").
 					Return(OrganizationUnit{}, genericErr)
 			},
 			wantErr: true,
@@ -290,9 +291,9 @@ func (suite *HierarchyResolverTestSuite) TestGetAncestorOUIDs() {
 			ouID: "child-ou",
 			setupMock: func(m *organizationUnitStoreInterfaceMock) {
 				parentRef := testCoverageParentOUID
-				m.On("GetOrganizationUnit", "child-ou").
+				m.On("GetOrganizationUnit", mock.Anything, "child-ou").
 					Return(OrganizationUnit{ID: "child-ou", Parent: &parentRef}, nil)
-				m.On("GetOrganizationUnit", testCoverageParentOUID).
+				m.On("GetOrganizationUnit", mock.Anything, testCoverageParentOUID).
 					Return(OrganizationUnit{}, genericErr)
 			},
 			wantErr: true,
@@ -303,9 +304,9 @@ func (suite *HierarchyResolverTestSuite) TestGetAncestorOUIDs() {
 			setupMock: func(m *organizationUnitStoreInterfaceMock) {
 				parentRef := testCoverageParentOUID
 				childRef := "child-ou"
-				m.On("GetOrganizationUnit", "child-ou").
+				m.On("GetOrganizationUnit", mock.Anything, "child-ou").
 					Return(OrganizationUnit{ID: "child-ou", Parent: &parentRef}, nil).Times(1)
-				m.On("GetOrganizationUnit", testCoverageParentOUID).
+				m.On("GetOrganizationUnit", mock.Anything, testCoverageParentOUID).
 					Return(OrganizationUnit{ID: testCoverageParentOUID, Parent: &childRef}, nil).Times(1)
 			},
 			wantErr: true,

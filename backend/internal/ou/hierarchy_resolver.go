@@ -67,7 +67,7 @@ func (r *ouHierarchyAdapter) IsAncestor(
 		}
 		visited[current] = struct{}{}
 
-		ou, err := r.store.GetOrganizationUnit(current)
+		ou, err := r.store.GetOrganizationUnit(ctx, current)
 		if err != nil {
 			if errors.Is(err, ErrOrganizationUnitNotFound) {
 				// Broken chain — cannot confirm ancestry; deny-safe.
@@ -118,7 +118,7 @@ func (r *ouHierarchyAdapter) GetAncestorOUIDs(
 		}
 		visited[current] = struct{}{}
 
-		ou, err := r.store.GetOrganizationUnit(current)
+		ou, err := r.store.GetOrganizationUnit(ctx, current)
 		if err != nil {
 			if errors.Is(err, ErrOrganizationUnitNotFound) {
 				logger.Debug("Encountered missing organization unit while collecting ancestors",

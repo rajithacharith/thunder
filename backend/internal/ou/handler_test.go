@@ -313,7 +313,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUListRequest
 				suite.Equal(ErrorInvalidLimit.Code, body.Code)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
-				serviceMock.AssertNotCalled(suite.T(), "GetOrganizationUnitList", mock.Anything, mock.Anything)
+				serviceMock.AssertNotCalled(suite.T(), "GetOrganizationUnitList", mock.Anything)
 			},
 		},
 		{
@@ -326,7 +326,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUListRequest
 				suite.Equal(ErrorInvalidOffset.Code, body.Code)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
-				serviceMock.AssertNotCalled(suite.T(), "GetOrganizationUnitList", mock.Anything, mock.Anything)
+				serviceMock.AssertNotCalled(suite.T(), "GetOrganizationUnitList", mock.Anything)
 			},
 		},
 		{
@@ -772,7 +772,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 				suite.Equal(ErrorMissingOrganizationUnitID.Code, resp.Code)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
-				serviceMock.AssertNotCalled(suite.T(), "UpdateOrganizationUnit", mock.Anything, mock.Anything)
+				serviceMock.AssertNotCalled(suite.T(), "UpdateOrganizationUnit", mock.Anything)
 			},
 		},
 		{
@@ -814,9 +814,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 			pathParamValue: defaultOURequestID,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On(
-						"UpdateOrganizationUnit",
-						mock.Anything,
+					On("UpdateOrganizationUnit", mock.Anything,
 						defaultOURequestID,
 						mock.MatchedBy(func(req OrganizationUnitRequest) bool {
 							return req.Handle == defaultOUHandle &&
@@ -850,9 +848,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 			pathParamValue: defaultOURequestID,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On(
-						"UpdateOrganizationUnit",
-						mock.Anything,
+					On("UpdateOrganizationUnit", mock.Anything,
 						defaultOURequestID,
 						mock.MatchedBy(func(req OrganizationUnitRequest) bool {
 							return req.Handle == defaultOUHandle &&
@@ -1288,7 +1284,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutByPathRe
 				suite.Equal(ErrorInvalidHandlePath.Code, resp.Code)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
-				serviceMock.AssertNotCalled(suite.T(), "UpdateOrganizationUnitByPath", mock.Anything, mock.Anything)
+				serviceMock.AssertNotCalled(suite.T(), "UpdateOrganizationUnitByPath", mock.Anything)
 			},
 		},
 		{
