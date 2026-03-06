@@ -25,6 +25,18 @@ package core
 // This map is populated by the i18n extraction script at build time.
 // Helper functions for accessing these messages are in helpers.go.
 var defaultMessages = map[string]string{
+	"error.consentenforcerservice.consent_create_failed": "Failed to create consent record",
+	"error.consentenforcerservice.consent_create_failed_description": "Error while creating consent record in the consent service",
+	"error.consentenforcerservice.consent_search_failed": "Failed to search consent records",
+	"error.consentenforcerservice.consent_search_failed_description": "Error while searching for consent records from the consent service",
+	"error.consentenforcerservice.consent_session_invalid": "Invalid consent session",
+	"error.consentenforcerservice.consent_session_invalid_description": "The consent session token is invalid or has expired",
+	"error.consentenforcerservice.consent_update_failed": "Failed to update consent record",
+	"error.consentenforcerservice.consent_update_failed_description": "Error while updating consent record in the consent service",
+	"error.consentenforcerservice.essential_consent_denied": "Essential consent denied",
+	"error.consentenforcerservice.essential_consent_denied_description": "One or more essential consent attributes were denied",
+	"error.consentenforcerservice.purpose_fetch_failed": "Failed to fetch consent purposes",
+	"error.consentenforcerservice.purpose_fetch_failed_description": "Error while fetching consent purposes from the consent service",
 	"error.consentservice.cannot_delete_element": "Cannot delete consent element",
 	"error.consentservice.cannot_delete_purpose": "Cannot delete consent purpose",
 	"error.consentservice.consent_not_found": "Consent not found",
@@ -51,6 +63,8 @@ var defaultMessages = map[string]string{
 	"error.consentservice.invalid_revoke_request_description": "The consent revoke request was rejected by the consent service as invalid",
 	"error.consentservice.invalid_search_filter": "Invalid consent search filter",
 	"error.consentservice.invalid_search_filter_description": "The consent search filter was rejected by the consent service as invalid",
+	"error.consentservice.invalid_update_request": "Invalid consent update request",
+	"error.consentservice.invalid_update_request_description": "The consent update request was rejected by the consent service as invalid",
 	"error.consentservice.invalid_validation_request": "Invalid consent validation request",
 	"error.consentservice.invalid_validation_request_description": "The consent validation request was rejected by the consent service as invalid",
 	"error.consentservice.purpose_already_exists": "Consent purpose already exists",

@@ -602,7 +602,7 @@ func (s *DefaultClientTestSuite) TestCreateConsent_Success() {
 
 	s.Nil(svcErr)
 	s.Equal("c1", result.ID)
-	s.Equal("ACTIVE", result.Status)
+	s.Equal(ConsentStatusActive, result.Status)
 }
 
 func (s *DefaultClientTestSuite) TestCreateConsent_BadRequest() {
@@ -647,7 +647,7 @@ func (s *DefaultClientTestSuite) TestSearchConsents_Success() {
 	httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).
 		Return(buildHTTPResponse(s.T(), http.StatusOK, respBody), nil)
 
-	filter := &ConsentSearchFilter{ConsentTypes: []string{"authentication"}}
+	filter := &ConsentSearchFilter{ConsentTypes: []ConsentType{ConsentTypeAuthentication}}
 	result, svcErr := c.searchConsents(context.Background(), "ou1", filter)
 
 	s.Nil(svcErr)
@@ -678,7 +678,7 @@ func (s *DefaultClientTestSuite) TestSearchConsents_EmptyFilter_Success() {
 		Return(buildHTTPResponse(s.T(), http.StatusOK, respBody), nil)
 
 	result, svcErr := c.searchConsents(context.Background(), "ou1", &ConsentSearchFilter{
-		ConsentStatuses: []string{"ACTIVE"},
+		ConsentStatuses: []ConsentStatus{ConsentStatusActive},
 		GroupIDs:        []string{"app-1"},
 		UserIDs:         []string{"user-1"},
 		PurposeNames:    []string{"login"},
@@ -744,6 +744,118 @@ func (s *DefaultClientTestSuite) TestValidateConsent_BadRequest() {
 
 	s.Nil(result)
 	s.Equal(&ErrorInvalidConsentValidationRequest, svcErr)
+}
+
+// ----- updateConsent -----
+
+func (s *DefaultClientTestSuite) TestUpdateConsent_Success() {
+	httpMock := httpmock.NewHTTPClientInterfaceMock(s.T())
+	c := newTestClient(s.T(), httpMock)
+
+	respBody := consentResponseDTO{
+		ID:       "c1",
+		Type:     "authentication",
+		ClientID: "app-1",
+		Status:   "ACTIVE",
+		Purposes: []purposeItemResponseDTO{
+			{
+				Name: "login",
+				Elements: []elementApprovalResponseDTO{
+					{Name: "email", IsUserApproved: true},
+					{Name: "lastName", IsUserApproved: false},
+				},
+			},
+		},
+	}
+	httpMock.EXPECT().Do(mock.MatchedBy(func(req *http.Request) bool {
+		return req.Method == http.MethodPut && req.URL.Path == "/consents/c1"
+	})).Return(buildHTTPResponse(s.T(), http.StatusOK, respBody), nil)
+
+	req := &ConsentRequest{
+		Type:    ConsentTypeAuthentication,
+		GroupID: "app-1",
+		Purposes: []ConsentPurposeItem{
+			{
+				Name: "login",
+				Elements: []ConsentElementApproval{
+					{Name: "email", IsUserApproved: true},
+					{Name: "lastName", IsUserApproved: false},
+				},
+			},
+		},
+	}
+	result, svcErr := c.updateConsent(context.Background(), "ou1", "c1", req)
+
+	s.Nil(svcErr)
+	s.Equal("c1", result.ID)
+	s.Equal(ConsentStatusActive, result.Status)
+	s.Len(result.Purposes, 1)
+	s.Equal("login", result.Purposes[0].Name)
+	s.Len(result.Purposes[0].Elements, 2)
+	s.True(result.Purposes[0].Elements[0].IsUserApproved)  // email approved
+	s.False(result.Purposes[0].Elements[1].IsUserApproved) // lastName denied
+}
+
+func (s *DefaultClientTestSuite) TestUpdateConsent_BadRequest() {
+	httpMock := httpmock.NewHTTPClientInterfaceMock(s.T())
+	c := newTestClient(s.T(), httpMock)
+
+	errBody := consentBackendErrorDTO{Code: "CE-400"}
+	httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).
+		Return(buildHTTPResponse(s.T(), http.StatusBadRequest, errBody), nil)
+
+	result, svcErr := c.updateConsent(context.Background(), "ou1", "c1",
+		&ConsentRequest{Type: ConsentTypeAuthentication})
+
+	s.Nil(result)
+	s.Equal(&ErrorInvalidConsentUpdateRequest, svcErr)
+}
+
+func (s *DefaultClientTestSuite) TestUpdateConsent_NotFound() {
+	httpMock := httpmock.NewHTTPClientInterfaceMock(s.T())
+	c := newTestClient(s.T(), httpMock)
+
+	errBody := consentBackendErrorDTO{Code: "CE-404"}
+	httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).
+		Return(buildHTTPResponse(s.T(), http.StatusNotFound, errBody), nil)
+
+	result, svcErr := c.updateConsent(context.Background(), "ou1", "missing",
+		&ConsentRequest{Type: ConsentTypeAuthentication})
+
+	s.Nil(result)
+	s.Equal(&ErrorConsentRecordNotFound, svcErr)
+}
+
+func (s *DefaultClientTestSuite) TestUpdateConsent_ServerError() {
+	httpMock := httpmock.NewHTTPClientInterfaceMock(s.T())
+	c := newTestClient(s.T(), httpMock)
+
+	errBody := consentBackendErrorDTO{Code: "CE-500"}
+	httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).
+		Return(buildHTTPResponse(s.T(), http.StatusInternalServerError, errBody), nil)
+
+	result, svcErr := c.updateConsent(context.Background(), "ou1", "c1",
+		&ConsentRequest{Type: ConsentTypeAuthentication})
+
+	s.Nil(result)
+	s.Equal(&serviceerror.InternalServerErrorWithI18n, svcErr)
+}
+
+func (s *DefaultClientTestSuite) TestUpdateConsent_UsesCorrectHTTPMethod() {
+	httpMock := httpmock.NewHTTPClientInterfaceMock(s.T())
+	c := newTestClient(s.T(), httpMock)
+
+	respBody := consentResponseDTO{ID: "c1", Status: "ACTIVE"}
+	httpMock.EXPECT().Do(mock.MatchedBy(func(req *http.Request) bool {
+		return req.Method == http.MethodPut
+	})).Return(buildHTTPResponse(s.T(), http.StatusOK, respBody), nil)
+
+	_, svcErr := c.updateConsent(context.Background(), "ou1", "c1", &ConsentRequest{
+		Type:    ConsentTypeAuthentication,
+		GroupID: "app-1",
+	})
+
+	s.Nil(svcErr)
 }
 
 // ----- revokeConsent -----
@@ -863,8 +975,8 @@ func (s *DefaultClientTestSuite) TestBuildConsentSearchURL_AllFilters() {
 	c := newDefaultClient(httpMock).(*defaultClient)
 
 	filter := &ConsentSearchFilter{
-		ConsentTypes:    []string{"authentication"},
-		ConsentStatuses: []string{"ACTIVE"},
+		ConsentTypes:    []ConsentType{ConsentTypeAuthentication},
+		ConsentStatuses: []ConsentStatus{ConsentStatusActive},
 		GroupIDs:        []string{"app-1"},
 		UserIDs:         []string{"user-1"},
 		PurposeNames:    []string{"login"},
@@ -1116,7 +1228,7 @@ func (s *DefaultClientTestSuite) TestSearchConsents_WithAuthorizationsInResponse
 	httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).
 		Return(buildHTTPResponse(s.T(), http.StatusOK, respBody), nil)
 
-	filter := &ConsentSearchFilter{ConsentTypes: []string{"authentication"}}
+	filter := &ConsentSearchFilter{ConsentTypes: []ConsentType{ConsentTypeAuthentication}}
 	result, svcErr := c.searchConsents(context.Background(), "ou1", filter)
 
 	s.Nil(svcErr)

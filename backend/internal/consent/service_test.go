@@ -494,7 +494,7 @@ func (s *ConsentServiceTestSuite) TestSearchConsents_Success() {
 	clientMock := newConsentClientInterfaceMock(s.T())
 	svc := newServiceWithMockClient(s.T(), true, clientMock)
 
-	filter := &ConsentSearchFilter{ConsentTypes: []string{"authentication"}}
+	filter := &ConsentSearchFilter{ConsentTypes: []ConsentType{ConsentTypeAuthentication}}
 	expected := []Consent{{ID: "c1", Type: "authentication"}}
 	clientMock.EXPECT().searchConsents(mock.Anything, "ou1", filter).Return(expected, nil)
 
@@ -594,6 +594,48 @@ func (s *ConsentServiceTestSuite) TestRevokeConsent_NilInput() {
 	// Client should not be called when payload is nil
 	svcErr := svc.RevokeConsent(context.Background(), "ou1", "c1", nil)
 
+	s.NotNil(svcErr)
+	s.Equal(&ErrorInvalidRequestFormat, svcErr)
+}
+
+// ----- UpdateConsent -----
+
+func (s *ConsentServiceTestSuite) TestUpdateConsent_Success() {
+	clientMock := newConsentClientInterfaceMock(s.T())
+	svc := newServiceWithMockClient(s.T(), true, clientMock)
+
+	req := &ConsentRequest{Type: ConsentTypeAuthentication, GroupID: "app-1"}
+	expected := &Consent{ID: "consent-1", Type: ConsentTypeAuthentication, Status: ConsentStatusActive}
+	clientMock.EXPECT().updateConsent(mock.Anything, "ou1", "consent-1", req).Return(expected, nil)
+
+	result, svcErr := svc.UpdateConsent(context.Background(), "ou1", "consent-1", req)
+
+	s.Nil(svcErr)
+	s.Equal(expected, result)
+}
+
+func (s *ConsentServiceTestSuite) TestUpdateConsent_ClientError() {
+	clientMock := newConsentClientInterfaceMock(s.T())
+	svc := newServiceWithMockClient(s.T(), true, clientMock)
+
+	req := &ConsentRequest{Type: ConsentTypeAuthentication}
+	clientMock.EXPECT().updateConsent(mock.Anything, "ou1", "c-missing", req).
+		Return(nil, &ErrorConsentRecordNotFound)
+
+	result, svcErr := svc.UpdateConsent(context.Background(), "ou1", "c-missing", req)
+
+	s.Nil(result)
+	s.Equal(&ErrorConsentRecordNotFound, svcErr)
+}
+
+func (s *ConsentServiceTestSuite) TestUpdateConsent_NilInput() {
+	clientMock := newConsentClientInterfaceMock(s.T())
+	svc := newServiceWithMockClient(s.T(), true, clientMock)
+
+	// Client should not be called when input is nil
+	result, svcErr := svc.UpdateConsent(context.Background(), "ou1", "consent-1", nil)
+
+	s.Nil(result)
 	s.NotNil(svcErr)
 	s.Equal(&ErrorInvalidRequestFormat, svcErr)
 }

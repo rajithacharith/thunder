@@ -182,12 +182,7 @@ func (n *promptNode) hasRequiredInputs(ctx *NodeContext, nodeResp *common.NodeRe
 	}
 
 	// If no action selected or action not found, validate inputs from all prompts
-	allInputs := make([]common.Input, 0)
-	for _, prompt := range n.prompts {
-		allInputs = append(allInputs, prompt.Inputs...)
-	}
-
-	return !n.appendMissingInputs(ctx, nodeResp, allInputs)
+	return !n.appendMissingInputs(ctx, nodeResp, n.getAllInputs())
 }
 
 // appendMissingInputs appends the missing required inputs to the node response.
@@ -294,12 +289,19 @@ func (n *promptNode) tryAutoSelectSingleAction(ctx *NodeContext) bool {
 	return false
 }
 
-// getAllInputs returns all inputs from prompts.
+// getAllInputs returns all unique inputs from prompts, deduplicated by Identifier.
 func (n *promptNode) getAllInputs() []common.Input {
+	seen := make(map[string]struct{})
 	inputs := make([]common.Input, 0)
 	for _, prompt := range n.prompts {
-		inputs = append(inputs, prompt.Inputs...)
+		for _, input := range prompt.Inputs {
+			if _, exists := seen[input.Identifier]; !exists {
+				seen[input.Identifier] = struct{}{}
+				inputs = append(inputs, input)
+			}
+		}
 	}
+
 	return inputs
 }
 

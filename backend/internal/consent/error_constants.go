@@ -265,4 +265,18 @@ var (
 			DefaultValue: "The consent revoke request was rejected by the consent service as invalid",
 		},
 	}
+
+	// ErrorInvalidConsentUpdateRequest is returned when the consent service rejects a consent update request.
+	ErrorInvalidConsentUpdateRequest = serviceerror.I18nServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "CSE-1018",
+		Error: core.I18nMessage{
+			Key:          "error.consentservice.invalid_update_request",
+			DefaultValue: "Invalid consent update request",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.consentservice.invalid_update_request_description",
+			DefaultValue: "The consent update request was rejected by the consent service as invalid",
+		},
+	}
 )

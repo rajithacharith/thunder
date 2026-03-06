@@ -167,7 +167,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// Initialize authentication services.
 	_, authSvcRegistry := authn.Initialize(
 		mux, mcpServer, idpService, jwtService, userService,
-		userProvider, otpService, authnProvider,
+		userProvider, otpService, authnProvider, consentService,
 	)
 
 	// Initialize flow and executor services.

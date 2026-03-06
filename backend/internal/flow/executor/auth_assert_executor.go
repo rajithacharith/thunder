@@ -169,6 +169,22 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 		userAttributes = ctx.Application.Assertion.UserAttributes
 	}
 
+	// If consent has been collected in this flow, restrict user attributes to only those the user approved.
+	// We check RuntimeKeyConsentID to determine if the consent executor ran and recorded a consent.
+	// If consent was recorded but no attributes were approved, userAttributes is set to nil.
+	if _, consentRecorded := ctx.RuntimeData[common.RuntimeKeyConsentID]; consentRecorded {
+		consentedAttrsStr := ctx.RuntimeData[common.RuntimeKeyConsentedAttributes]
+		if consentedAttrsStr != "" {
+			userAttributes = filterToConsentedAttributes(userAttributes, strings.Fields(consentedAttrsStr))
+			logger.Debug("Filtered user attributes to consented set",
+				log.Any("consentedAttributes", strings.Fields(consentedAttrsStr)),
+				log.Any("filteredUserAttributes", userAttributes))
+		} else {
+			logger.Debug("Consent recorded but no attributes approved. Clearing user attributes")
+			userAttributes = nil
+		}
+	}
+
 	if err := a.appendUserDetailsToClaims(ctx, jwtClaims, userAttributes); err != nil {
 		return "", err
 	}
@@ -427,6 +443,23 @@ func (a *authAssertExecutor) appendGroupsToClaims(
 	}
 
 	return nil
+}
+
+// filterToConsentedAttributes returns only those attributes from userAttributes that the user consented to.
+func filterToConsentedAttributes(userAttributes []string, consentedAttrs []string) []string {
+	consentedSet := make(map[string]struct{}, len(consentedAttrs))
+	for _, attr := range consentedAttrs {
+		consentedSet[attr] = struct{}{}
+	}
+
+	filtered := make([]string, 0, len(userAttributes))
+	for _, attr := range userAttributes {
+		if _, consented := consentedSet[attr]; consented {
+			filtered = append(filtered, attr)
+		}
+	}
+
+	return filtered
 }
 
 // buildGetAttributesMetadata constructs the metadata for fetching user attributes.

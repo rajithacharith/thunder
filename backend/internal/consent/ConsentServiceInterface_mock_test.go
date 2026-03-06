@@ -745,6 +745,88 @@ func (_c *ConsentServiceInterfaceMock_SearchConsents_Call) RunAndReturn(run func
 	return _c
 }
 
+// UpdateConsent provides a mock function for the type ConsentServiceInterfaceMock
+func (_mock *ConsentServiceInterfaceMock) UpdateConsent(ctx context.Context, ouID string, consentID string, consent *ConsentRequest) (*Consent, *serviceerror.I18nServiceError) {
+	ret := _mock.Called(ctx, ouID, consentID, consent)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateConsent")
+	}
+
+	var r0 *Consent
+	var r1 *serviceerror.I18nServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, *ConsentRequest) (*Consent, *serviceerror.I18nServiceError)); ok {
+		return returnFunc(ctx, ouID, consentID, consent)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, *ConsentRequest) *Consent); ok {
+		r0 = returnFunc(ctx, ouID, consentID, consent)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*Consent)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, *ConsentRequest) *serviceerror.I18nServiceError); ok {
+		r1 = returnFunc(ctx, ouID, consentID, consent)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.I18nServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// ConsentServiceInterfaceMock_UpdateConsent_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateConsent'
+type ConsentServiceInterfaceMock_UpdateConsent_Call struct {
+	*mock.Call
+}
+
+// UpdateConsent is a helper method to define mock.On call
+//   - ctx context.Context
+//   - ouID string
+//   - consentID string
+//   - consent *ConsentRequest
+func (_e *ConsentServiceInterfaceMock_Expecter) UpdateConsent(ctx interface{}, ouID interface{}, consentID interface{}, consent interface{}) *ConsentServiceInterfaceMock_UpdateConsent_Call {
+	return &ConsentServiceInterfaceMock_UpdateConsent_Call{Call: _e.mock.On("UpdateConsent", ctx, ouID, consentID, consent)}
+}
+
+func (_c *ConsentServiceInterfaceMock_UpdateConsent_Call) Run(run func(ctx context.Context, ouID string, consentID string, consent *ConsentRequest)) *ConsentServiceInterfaceMock_UpdateConsent_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 *ConsentRequest
+		if args[3] != nil {
+			arg3 = args[3].(*ConsentRequest)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *ConsentServiceInterfaceMock_UpdateConsent_Call) Return(consent1 *Consent, i18nServiceError *serviceerror.I18nServiceError) *ConsentServiceInterfaceMock_UpdateConsent_Call {
+	_c.Call.Return(consent1, i18nServiceError)
+	return _c
+}
+
+func (_c *ConsentServiceInterfaceMock_UpdateConsent_Call) RunAndReturn(run func(ctx context.Context, ouID string, consentID string, consent *ConsentRequest) (*Consent, *serviceerror.I18nServiceError)) *ConsentServiceInterfaceMock_UpdateConsent_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateConsentElement provides a mock function for the type ConsentServiceInterfaceMock
 func (_mock *ConsentServiceInterfaceMock) UpdateConsentElement(ctx context.Context, ouID string, elementID string, element *ConsentElementInput) (*ConsentElement, *serviceerror.I18nServiceError) {
 	ret := _mock.Called(ctx, ouID, elementID, element)
