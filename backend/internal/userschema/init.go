@@ -114,7 +114,7 @@ func initializeStore(storeMode serverconst.StoreMode) userSchemaStoreInterface {
 
 	default:
 		dbStore := newUserSchemaStore()
-		userSchemaStore = dbStore
+		userSchemaStore = newCachedBackedUserSchemaStore(dbStore)
 	}
 
 	return userSchemaStore

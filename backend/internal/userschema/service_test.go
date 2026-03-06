@@ -1159,3 +1159,54 @@ func TestValidateDisplayAttribute_DottedPath_DeeplyNestedValid(t *testing.T) {
 	svcErr := validateDisplayAttribute(compiled, "profile.name.first")
 	require.Nil(t, svcErr)
 }
+
+// GetDisplayAttributesByNames tests
+
+type GetDisplayAttributesByNamesTestSuite struct {
+	suite.Suite
+}
+
+func TestGetDisplayAttributesByNamesTestSuite(t *testing.T) {
+	suite.Run(t, new(GetDisplayAttributesByNamesTestSuite))
+}
+
+func (s *GetDisplayAttributesByNamesTestSuite) TestReturnsDisplayAttributes() {
+	storeMock := newUserSchemaStoreInterfaceMock(s.T())
+	expected := map[string]string{"SchemaA": "email", "SchemaB": "firstName"}
+	storeMock.
+		On("GetDisplayAttributesByNames", mock.Anything, []string{"SchemaA", "SchemaB"}).
+		Return(expected, nil).
+		Once()
+
+	service := &userSchemaService{userSchemaStore: storeMock}
+
+	result, svcErr := service.GetDisplayAttributesByNames(
+		context.Background(), []string{"SchemaA", "SchemaB"})
+
+	s.Require().Nil(svcErr)
+	s.Require().Equal(expected, result)
+}
+
+func (s *GetDisplayAttributesByNamesTestSuite) TestEmptyInput_ReturnsEmptyMap() {
+	service := &userSchemaService{}
+
+	result, svcErr := service.GetDisplayAttributesByNames(context.Background(), []string{})
+
+	s.Require().Nil(svcErr)
+	s.Require().Empty(result)
+}
+
+func (s *GetDisplayAttributesByNamesTestSuite) TestStoreError_ReturnsServerError() {
+	storeMock := newUserSchemaStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetDisplayAttributesByNames", mock.Anything, []string{"SchemaA"}).
+		Return(map[string]string(nil), errors.New("db error")).
+		Once()
+
+	service := &userSchemaService{userSchemaStore: storeMock}
+
+	_, svcErr := service.GetDisplayAttributesByNames(context.Background(), []string{"SchemaA"})
+
+	s.Require().NotNil(svcErr)
+	s.Require().Equal(ErrorInternalServerError, *svcErr)
+}

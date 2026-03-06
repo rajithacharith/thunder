@@ -194,6 +194,40 @@ func (f *userSchemaFileBasedStore) IsUserSchemaDeclarative(schemaID string) bool
 	return true
 }
 
+// GetDisplayAttributesByNames retrieves display attributes for a list of user schema names.
+func (f *userSchemaFileBasedStore) GetDisplayAttributesByNames(
+	ctx context.Context, names []string,
+) (map[string]string, error) {
+	if len(names) == 0 {
+		return map[string]string{}, nil
+	}
+
+	nameSet := make(map[string]struct{}, len(names))
+	for _, name := range names {
+		nameSet[name] = struct{}{}
+	}
+
+	list, err := f.GenericFileBasedStore.List()
+	if err != nil {
+		return nil, err
+	}
+
+	displayAttrs := make(map[string]string, len(names))
+	for _, item := range list {
+		if schema, ok := item.Data.(*UserSchema); ok {
+			if _, exists := nameSet[schema.Name]; exists {
+				if schema.SystemAttributes != nil {
+					displayAttrs[schema.Name] = schema.SystemAttributes.Display
+				} else {
+					displayAttrs[schema.Name] = ""
+				}
+			}
+		}
+	}
+
+	return displayAttrs, nil
+}
+
 // newUserSchemaFileBasedStore creates a new instance of a file-based store.
 func newUserSchemaFileBasedStore() userSchemaStoreInterface {
 	genericStore := declarativeresource.NewGenericFileBasedStore(entity.KeyTypeUserSchema)

@@ -82,6 +82,7 @@ type userSchemaStoreInterface interface {
 	UpdateUserSchemaByID(ctx context.Context, schemaID string, userSchema UserSchema) error
 	DeleteUserSchemaByID(ctx context.Context, schemaID string) error
 	IsUserSchemaDeclarative(schemaID string) bool
+	GetDisplayAttributesByNames(ctx context.Context, names []string) (map[string]string, error)
 }
 
 // userSchemaStore is the default implementation of userSchemaStoreInterface.
@@ -345,6 +346,55 @@ func (s *userSchemaStore) DeleteUserSchemaByID(ctx context.Context, schemaID str
 // IsUserSchemaDeclarative returns false as database-backed schemas are always mutable.
 func (s *userSchemaStore) IsUserSchemaDeclarative(schemaID string) bool {
 	return false
+}
+
+// GetDisplayAttributesByNames retrieves display attributes for a list of user schema names.
+func (s *userSchemaStore) GetDisplayAttributesByNames(ctx context.Context, names []string) (map[string]string, error) {
+	if len(names) == 0 {
+		return map[string]string{}, nil
+	}
+
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserSchemaPersistence"))
+
+	dbClient, err := s.dbProvider.GetConfigDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	query := buildGetDisplayAttributesByNamesQuery(names)
+	args := make([]interface{}, 0, len(names)+1)
+	for _, name := range names {
+		args = append(args, name)
+	}
+	args = append(args, s.deploymentID)
+
+	results, err := dbClient.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute display attributes query: %w", err)
+	}
+
+	displayAttrs := make(map[string]string, len(results))
+	for _, row := range results {
+		name, ok := row["name"].(string)
+		if !ok {
+			logger.Error("Failed to parse name from display attributes query")
+			continue
+		}
+
+		sysAttrs, err := parseSystemAttributes(row["system_attributes"])
+		if err != nil {
+			logger.Error("Failed to parse system attributes", log.String("schemaName", name), log.Error(err))
+			continue
+		}
+
+		if sysAttrs != nil {
+			displayAttrs[name] = sysAttrs.Display
+		} else {
+			displayAttrs[name] = ""
+		}
+	}
+
+	return displayAttrs, nil
 }
 
 // parseUserSchemaFromRow parses a user schema from a database row.
