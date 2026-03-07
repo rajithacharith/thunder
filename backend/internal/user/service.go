@@ -66,6 +66,7 @@ type UserServiceInterface interface {
 		identifiers map[string]interface{},
 		credentials map[string]interface{}) (*AuthenticateUserResponse, *serviceerror.ServiceError)
 	ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, *serviceerror.ServiceError)
+	GetUsersByIDs(ctx context.Context, userIDs []string) (map[string]*User, *serviceerror.ServiceError)
 	ValidateUserIDsInOUs(ctx context.Context, userIDs []string,
 		ouIDs []string) ([]string, *serviceerror.ServiceError)
 	GetUserCredentialsByType(ctx context.Context, userID string,
@@ -1218,6 +1219,39 @@ func (us *userService) ValidateUserIDs(ctx context.Context, userIDs []string) ([
 	}
 
 	return invalidUserIDs, nil
+}
+
+// GetUsersByIDs retrieves users by a list of IDs.
+func (us *userService) GetUsersByIDs(
+	ctx context.Context, userIDs []string,
+) (map[string]*User, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if len(userIDs) == 0 {
+		return map[string]*User{}, nil
+	}
+
+	// Deduplicate IDs before passing to store.
+	seen := make(map[string]struct{}, len(userIDs))
+	uniqueIDs := make([]string, 0, len(userIDs))
+	for _, id := range userIDs {
+		if _, ok := seen[id]; !ok {
+			seen[id] = struct{}{}
+			uniqueIDs = append(uniqueIDs, id)
+		}
+	}
+
+	users, err := us.userStore.GetUsersByIDs(ctx, uniqueIDs)
+	if err != nil {
+		return nil, logErrorAndReturnServerError(logger, "Failed to get users by IDs", err)
+	}
+
+	result := make(map[string]*User, len(users))
+	for i := range users {
+		result[users[i].ID] = &users[i]
+	}
+
+	return result, nil
 }
 
 // ValidateUserIDsInOUs validates that all provided user IDs belong to one of the given OUs.

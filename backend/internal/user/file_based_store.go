@@ -254,6 +254,27 @@ func (f *userFileBasedStore) ValidateUserIDs(ctx context.Context, userIDs []stri
 	return invalid, nil
 }
 
+// GetUsersByIDs retrieves users by a list of IDs from the file store.
+func (f *userFileBasedStore) GetUsersByIDs(ctx context.Context, userIDs []string) ([]User, error) {
+	if len(userIDs) == 0 {
+		return []User{}, nil
+	}
+
+	users := make([]User, 0, len(userIDs))
+	for _, id := range userIDs {
+		user, err := f.GetUser(ctx, id)
+		if err != nil {
+			if errors.Is(err, ErrUserNotFound) {
+				continue
+			}
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	return users, nil
+}
+
 // ValidateUserIDsInOUs checks which of the provided user IDs belong to the given OU scope.
 // Returns user IDs that do not belong to any of the provided OUs.
 func (f *userFileBasedStore) ValidateUserIDsInOUs(

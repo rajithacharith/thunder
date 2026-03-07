@@ -52,6 +52,7 @@ type GroupServiceInterface interface {
 	GetGroupMembers(ctx context.Context, groupID string, limit, offset int) (
 		*MemberListResponse, *serviceerror.ServiceError)
 	ValidateGroupIDs(ctx context.Context, groupIDs []string) *serviceerror.ServiceError
+	GetGroupsByIDs(ctx context.Context, groupIDs []string) (map[string]*Group, *serviceerror.ServiceError)
 	AddGroupMembers(ctx context.Context, groupID string, members []Member) (*Group, *serviceerror.ServiceError)
 	RemoveGroupMembers(ctx context.Context, groupID string, members []Member) (*Group, *serviceerror.ServiceError)
 }
@@ -924,6 +925,46 @@ func (gs *groupService) ValidateGroupIDs(ctx context.Context, groupIDs []string)
 	}
 
 	return nil
+}
+
+// GetGroupsByIDs retrieves groups by a list of IDs.
+func (gs *groupService) GetGroupsByIDs(
+	ctx context.Context, groupIDs []string,
+) (map[string]*Group, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if len(groupIDs) == 0 {
+		return map[string]*Group{}, nil
+	}
+
+	// Deduplicate IDs before passing to store.
+	seen := make(map[string]struct{}, len(groupIDs))
+	uniqueIDs := make([]string, 0, len(groupIDs))
+	for _, id := range groupIDs {
+		if _, ok := seen[id]; !ok {
+			seen[id] = struct{}{}
+			uniqueIDs = append(uniqueIDs, id)
+		}
+	}
+
+	groupDAOs, err := gs.groupStore.GetGroupsByIDs(ctx, uniqueIDs)
+	if err != nil {
+		logger.Error("Failed to get groups by IDs", log.Error(err))
+		return nil, &ErrorInternalServerError
+	}
+
+	result := make(map[string]*Group, len(groupDAOs))
+	for _, dao := range groupDAOs {
+		group := convertGroupDAOToGroup(GroupDAO{
+			ID:                 dao.ID,
+			Name:               dao.Name,
+			Description:        dao.Description,
+			OrganizationUnitID: dao.OrganizationUnitID,
+		})
+		result[dao.ID] = &group
+	}
+
+	return result, nil
 }
 
 // convertGroupDAOToGroup constructs a Group from a GroupDAO.
