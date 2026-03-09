@@ -112,7 +112,7 @@ describe('useGetUsers', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.url).toBe('https://api.test.com/users');
+    expect(callArgs.url).toBe('https://api.test.com/users?include=display');
   });
 
   it('should use custom pagination parameters', async () => {

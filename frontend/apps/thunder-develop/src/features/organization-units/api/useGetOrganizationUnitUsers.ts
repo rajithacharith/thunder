@@ -67,6 +67,7 @@ export default function useGetOrganizationUnitUsers(
       const queryParams: URLSearchParams = new URLSearchParams({
         limit: limit.toString(),
         offset: offset.toString(),
+        include: 'display',
       });
 
       const response: {

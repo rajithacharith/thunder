@@ -21,7 +21,6 @@ import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import type {JSX} from 'react';
 import type {InviteUserRenderProps} from '@asgardeo/react';
 import UsersListPage from '../UsersListPage';
-import type {UserSchemaListResponse} from '../../types/users';
 
 const mockNavigate = vi.fn();
 const mockLoggerError = vi.fn();
@@ -87,22 +86,11 @@ vi.mock('react-router', async () => {
 
 // Mock the UsersList component
 vi.mock('../../components/UsersList', () => ({
-  default: ({selectedSchema}: {selectedSchema: string}) => (
-    <div data-testid="users-list" data-schema={selectedSchema}>
+  default: () => (
+    <div data-testid="users-list">
       Users List Component
     </div>
   ),
-}));
-
-// Define the return type for the hook
-interface UseGetUserSchemasReturn {
-  data: UserSchemaListResponse | undefined;
-}
-
-// Mock the useGetUserSchemas hook
-const mockUseGetUserSchemas = vi.fn<() => UseGetUserSchemasReturn>();
-vi.mock('../../api/useGetUserSchemas', () => ({
-  default: () => mockUseGetUserSchemas(),
 }));
 
 // Mock useTemplateLiteralResolver
@@ -142,22 +130,9 @@ vi.mock('../../components/InviteUserDialog', () => ({
 }));
 
 describe('UsersListPage', () => {
-  const mockSchemas: UserSchemaListResponse = {
-    totalResults: 2,
-    startIndex: 1,
-    count: 2,
-    schemas: [
-      {id: 'schema1', name: 'Employee Schema', ouId: 'root-ou'},
-      {id: 'schema2', name: 'Contractor Schema', ouId: 'child-ou'},
-    ],
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
     mockLoggerError.mockReset();
-    mockUseGetUserSchemas.mockReturnValue({
-      data: mockSchemas,
-    });
   });
 
   it('renders page title', () => {
@@ -214,65 +189,10 @@ describe('UsersListPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/users/create');
   });
 
-  it('renders schema select dropdown', () => {
-    render(<UsersListPage />);
-
-    const select = screen.getByRole('combobox');
-    expect(select).toBeInTheDocument();
-  });
-
-  it('displays schema options from API', async () => {
-    const user = userEvent.setup();
-    render(<UsersListPage />);
-
-    const select = screen.getByRole('combobox');
-    await user.click(select);
-
-    await waitFor(() => {
-      const employeeOptions = screen.getAllByText('Employee Schema');
-      const contractorOptions = screen.getAllByText('Contractor Schema');
-      expect(employeeOptions.length).toBeGreaterThan(0);
-      expect(contractorOptions.length).toBeGreaterThan(0);
-    });
-  });
-
-  it('selects first schema by default', () => {
-    render(<UsersListPage />);
-
-    const usersList = screen.getByTestId('users-list');
-    expect(usersList).toHaveAttribute('data-schema', 'schema1');
-  });
-
-  it('changes selected schema when dropdown value changes', async () => {
-    const user = userEvent.setup();
-    render(<UsersListPage />);
-
-    const select = screen.getByRole('combobox');
-    await user.click(select);
-
-    await waitFor(() => {
-      expect(screen.getByText('Contractor Schema')).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByText('Contractor Schema'));
-
-    await waitFor(() => {
-      const usersList = screen.getByTestId('users-list');
-      expect(usersList).toHaveAttribute('data-schema', 'schema2');
-    });
-  });
-
   it('renders UsersList component', () => {
     render(<UsersListPage />);
 
     expect(screen.getByTestId('users-list')).toBeInTheDocument();
-  });
-
-  it('passes selected schema to UsersList', () => {
-    render(<UsersListPage />);
-
-    const usersList = screen.getByTestId('users-list');
-    expect(usersList).toHaveAttribute('data-schema');
   });
 
   it('renders plus icon in create user button', () => {
@@ -282,28 +202,6 @@ describe('UsersListPage', () => {
     // Check that button has an icon by checking for svg within the button
     const icon = createButton.querySelector('svg');
     expect(icon).toBeInTheDocument();
-  });
-
-  it('handles empty schemas list', () => {
-    mockUseGetUserSchemas.mockReturnValue({
-      data: {totalResults: 0, startIndex: 1, count: 0, schemas: []},
-    });
-
-    render(<UsersListPage />);
-
-    const usersList = screen.getByTestId('users-list');
-    expect(usersList).toHaveAttribute('data-schema', '');
-  });
-
-  it('handles undefined schemas data', () => {
-    mockUseGetUserSchemas.mockReturnValue({
-      data: undefined,
-    });
-
-    render(<UsersListPage />);
-
-    expect(screen.getByText('User Management')).toBeInTheDocument();
-    expect(screen.getByTestId('users-list')).toBeInTheDocument();
   });
 
   it('has correct heading level', () => {

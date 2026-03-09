@@ -101,10 +101,11 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
         ),
       },
       {
-        field: 'id',
+        field: 'display',
         headerName: t('groups:addMember.columns.userId'),
         flex: 1,
         minWidth: 250,
+        valueGetter: (_value: unknown, row: ApiUser) => row.display ?? row.id,
       },
     ],
     [theme, t],

@@ -36,7 +36,7 @@ import {
 } from '@wso2/oxygen-ui';
 import {Plus, Trash2, Info} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
-import {useEffect, useRef} from 'react';
+import {useCallback, useEffect, useMemo, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {SchemaPropertyInput, UIPropertyType} from '../../types/user-types';
 
@@ -50,6 +50,8 @@ export interface ConfigurePropertiesProps {
   onPropertiesChange: (properties: SchemaPropertyInput[]) => void;
   enumInput: Record<string, string>;
   onEnumInputChange: (enumInput: Record<string, string>) => void;
+  displayAttribute: string;
+  onDisplayAttributeChange: (displayAttribute: string) => void;
   onReadyChange?: (isReady: boolean) => void;
 }
 
@@ -63,10 +65,46 @@ export default function ConfigureProperties({
   onPropertiesChange,
   enumInput,
   onEnumInputChange,
+  displayAttribute,
+  onDisplayAttributeChange,
   onReadyChange = undefined,
 }: ConfigurePropertiesProps): JSX.Element {
   const {t} = useTranslation();
   const nextId = useRef(properties.length + 1);
+
+  // Eligible properties for display attribute: string/enum type, non-credential, with a name
+  const eligibleDisplayProperties = useMemo(
+    () =>
+      properties.filter(
+        (p) => (p.type === 'string' || p.type === 'enum') && !p.credential && p.name.trim().length > 0,
+      ),
+    [properties],
+  );
+
+  // Track whether user has explicitly cleared the display attribute.
+  const userClearedRef = useRef(false);
+
+  const handleDisplayAttributeChange = useCallback(
+    (value: string): void => {
+      if (!value) {
+        userClearedRef.current = true;
+      } else {
+        userClearedRef.current = false;
+      }
+      onDisplayAttributeChange(value);
+    },
+    [onDisplayAttributeChange],
+  );
+
+  // Auto-select when exactly one eligible property (unless user explicitly cleared), clear if selected becomes ineligible
+  useEffect((): void => {
+    const eligibleNames = eligibleDisplayProperties.map((p) => p.name.trim());
+    if (eligibleNames.length === 1 && !displayAttribute && !userClearedRef.current) {
+      onDisplayAttributeChange(eligibleNames[0]);
+    } else if (displayAttribute && !eligibleNames.includes(displayAttribute)) {
+      onDisplayAttributeChange('');
+    }
+  }, [eligibleDisplayProperties, displayAttribute, onDisplayAttributeChange]);
 
   // Broadcast readiness - ready when at least one property has a name
   useEffect((): void => {
@@ -354,6 +392,46 @@ export default function ConfigureProperties({
       >
         {t('userTypes:addProperty')}
       </Button>
+
+      {/* Display Attribute selection */}
+      {eligibleDisplayProperties.length > 0 && (
+        <Paper variant="outlined" sx={{px: 3, py: 3, borderRadius: 2}}>
+          <FormControl fullWidth>
+            <FormLabel>{t('userTypes:displayAttribute', 'Display Attribute')}</FormLabel>
+            <Typography variant="body2" color="text.secondary" sx={{mb: 1}}>
+              {t('userTypes:displayAttributeHint', 'The property used to display user names in listings and references')}
+            </Typography>
+            <Select
+              value={displayAttribute}
+              onChange={(e) => handleDisplayAttributeChange(e.target.value)}
+              size="small"
+              displayEmpty
+              renderValue={(selected) => {
+                const value = typeof selected === 'string' ? selected : '';
+                if (!value) {
+                  return (
+                    <Typography variant="body2" color="text.secondary">
+                      {t('userTypes:selectDisplayAttribute', 'Select a display attribute')}
+                    </Typography>
+                  );
+                }
+                return value;
+              }}
+            >
+              <MenuItem value="">
+                <Typography variant="body2" color="text.secondary">
+                  {t('common:none', 'None')}
+                </Typography>
+              </MenuItem>
+              {eligibleDisplayProperties.map((prop) => (
+                <MenuItem key={prop.id} value={prop.name.trim()}>
+                  {prop.name.trim()}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Paper>
+      )}
     </Stack>
   );
 }

@@ -75,8 +75,8 @@ vi.mock('../../../organization-units/api/useGetOrganizationUnits', () => ({
 }));
 
 const getOrganizationUnitSelect = () => screen.getAllByRole('combobox')[0];
-const getPropertyTypeSelect = (index = 0) => screen.getAllByRole('combobox')[index + 1];
-const getPropertyTypeSelects = () => screen.getAllByRole('combobox').slice(1);
+const getPropertyTypeSelect = (index = 0) => screen.getAllByRole('combobox')[index + 2];
+const getPropertyTypeSelects = () => screen.getAllByRole('combobox').slice(2);
 
 describe('ViewUserTypePage', () => {
   const mockUserType: ApiUserSchema = {

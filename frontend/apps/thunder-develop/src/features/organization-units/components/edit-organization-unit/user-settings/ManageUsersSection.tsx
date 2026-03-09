@@ -88,10 +88,11 @@ export default function ManageUsersSection({organizationUnitId}: ManageUsersSect
         ),
       },
       {
-        field: 'id',
+        field: 'display',
         headerName: t('organizationUnits:edit.users.sections.manage.listing.columns.id'),
         flex: 1,
         minWidth: 200,
+        valueGetter: (_value: unknown, row: ApiUser) => row.display ?? row.id,
       },
       {
         field: 'type',

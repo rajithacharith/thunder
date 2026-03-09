@@ -60,6 +60,8 @@ export default function CreateUserTypePage(): JSX.Element {
     setProperties,
     enumInput,
     setEnumInput,
+    displayAttribute,
+    setDisplayAttribute,
     error,
     setError,
   } = useUserTypeCreate();
@@ -199,6 +201,10 @@ export default function CreateUserTypePage(): JSX.Element {
       requestBody.allowSelfRegistration = true;
     }
 
+    if (displayAttribute) {
+      requestBody.systemAttributes = {display: displayAttribute};
+    }
+
     try {
       await createUserTypeMutation.mutateAsync(requestBody);
       await navigate('/user-types');
@@ -259,6 +265,8 @@ export default function CreateUserTypePage(): JSX.Element {
             onPropertiesChange={setProperties}
             enumInput={enumInput}
             onEnumInputChange={setEnumInput}
+            displayAttribute={displayAttribute}
+            onDisplayAttributeChange={setDisplayAttribute}
             onReadyChange={handlePropertiesStepReadyChange}
           />
         );
