@@ -631,7 +631,7 @@ describe('UsersList', () => {
     });
   });
 
-  it('should navigate to user when View action button is clicked', async () => {
+  it('should navigate to user when Edit action button is clicked', async () => {
     const user = userEvent.setup();
 
     render(<UsersList selectedSchema="schema1" />);
@@ -640,16 +640,16 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
     });
 
-    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
-    expect(viewButtons.length).toBeGreaterThan(0);
-    await user.click(viewButtons[0]);
+    const editButtons = screen.getAllByRole('button', {name: /^edit$/i});
+    expect(editButtons.length).toBeGreaterThan(0);
+    await user.click(editButtons[0]);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/users/user1');
     });
   });
 
-  it('should navigate to correct user when View action is clicked for second row', async () => {
+  it('should navigate to correct user when Edit action is clicked for second row', async () => {
     const user = userEvent.setup();
 
     render(<UsersList selectedSchema="schema1" />);
@@ -658,16 +658,16 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user2')).toHaveTextContent('jane.smith');
     });
 
-    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
-    expect(viewButtons.length).toBeGreaterThan(1);
-    await user.click(viewButtons[1]);
+    const editButtons = screen.getAllByRole('button', {name: /^edit$/i});
+    expect(editButtons.length).toBeGreaterThan(1);
+    await user.click(editButtons[1]);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/users/user2');
     });
   });
 
-  it('should log error when View button navigation fails', async () => {
+  it('should log error when Edit button navigation fails', async () => {
     const user = userEvent.setup();
     const navigationError = new Error('Navigation failed');
     mockNavigate.mockRejectedValueOnce(navigationError);
@@ -678,8 +678,8 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
     });
 
-    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
-    await user.click(viewButtons[0]);
+    const editButtons = screen.getAllByRole('button', {name: /^edit$/i});
+    await user.click(editButtons[0]);
 
     await waitFor(() => {
       expect(mockLoggerError).toHaveBeenCalledWith(

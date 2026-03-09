@@ -61,15 +61,15 @@ describe('EditGeneralSettings', () => {
   it('should render organization unit section', () => {
     renderWithProviders(<EditGeneralSettings {...defaultProps} />);
 
-    expect(screen.getAllByText('edit.general.sections.organizationUnit.title').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Organization Unit').length).toBeGreaterThan(0);
     expect(screen.getByDisplayValue('ou-123')).toBeInTheDocument();
   });
 
   it('should render danger zone section', () => {
     renderWithProviders(<EditGeneralSettings {...defaultProps} />);
 
-    expect(screen.getByText('edit.general.sections.dangerZone.title')).toBeInTheDocument();
-    expect(screen.getByText('edit.general.sections.dangerZone.deleteGroup')).toBeInTheDocument();
+    expect(screen.getByText('Danger Zone')).toBeInTheDocument();
+    expect(screen.getByText('Delete this group')).toBeInTheDocument();
   });
 
   it('should call onDeleteClick when delete button is clicked', async () => {
@@ -92,14 +92,14 @@ describe('EditGeneralSettings', () => {
     renderWithProviders(<EditGeneralSettings {...defaultProps} />);
 
     expect(
-      screen.getByLabelText('edit.general.sections.quickCopy.copyOrganizationUnitId'),
+      screen.getByLabelText('Copy organization unit ID'),
     ).toBeInTheDocument();
   });
 
   it('should copy organization unit ID to clipboard when copy button is clicked', async () => {
     renderWithProviders(<EditGeneralSettings {...defaultProps} />);
 
-    const copyButton = screen.getByLabelText('edit.general.sections.quickCopy.copyOrganizationUnitId');
+    const copyButton = screen.getByLabelText('Copy organization unit ID');
     fireEvent.click(copyButton);
 
     await waitFor(() => {

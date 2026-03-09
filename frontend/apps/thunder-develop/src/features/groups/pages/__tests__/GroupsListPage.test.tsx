@@ -48,21 +48,21 @@ describe('GroupsListPage', () => {
   it('should render page title and subtitle', () => {
     renderWithProviders(<GroupsListPage />);
 
-    expect(screen.getByText('listing.title')).toBeInTheDocument();
-    expect(screen.getByText('listing.subtitle')).toBeInTheDocument();
+    expect(screen.getByText('Groups')).toBeInTheDocument();
+    expect(screen.getByText('Manage groups and their members across organization units')).toBeInTheDocument();
   });
 
   it('should render add group button', () => {
     renderWithProviders(<GroupsListPage />);
 
-    expect(screen.getByText('listing.addGroup')).toBeInTheDocument();
+    expect(screen.getByText('Add Group')).toBeInTheDocument();
   });
 
   it('should navigate to create page on add group click', async () => {
     const user = userEvent.setup();
     renderWithProviders(<GroupsListPage />);
 
-    await user.click(screen.getByText('listing.addGroup'));
+    await user.click(screen.getByText('Add Group'));
 
     expect(mockNavigate).toHaveBeenCalledWith('/groups/create');
   });
@@ -70,7 +70,7 @@ describe('GroupsListPage', () => {
   it('should render search field', () => {
     renderWithProviders(<GroupsListPage />);
 
-    expect(screen.getByPlaceholderText('listing.search.placeholder')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search groups...')).toBeInTheDocument();
   });
 
   it('should render GroupsList component', () => {

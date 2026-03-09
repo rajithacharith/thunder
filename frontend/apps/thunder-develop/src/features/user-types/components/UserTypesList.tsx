@@ -38,7 +38,7 @@ import {
   DataGrid,
   useTheme,
 } from '@wso2/oxygen-ui';
-import {Eye, Trash2, UserRoundCog} from '@wso2/oxygen-ui-icons-react';
+import {Pencil, Trash2, UserRoundCog} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import useGetUserTypes from '../api/useGetUserTypes';
@@ -223,7 +223,7 @@ export default function UserTypesList() {
         hideable: false,
         renderCell: (params: GridRenderCellParams<UserSchemaListItem>) => (
           <ListingTable.RowActions visibility="hover">
-            <Tooltip title={t('common:actions.view')}>
+            <Tooltip title={t('common:actions.edit')}>
               <IconButton
                 size="small"
                 onClick={(e) => {
@@ -231,7 +231,7 @@ export default function UserTypesList() {
                   handleViewClick(params.row.id);
                 }}
               >
-                <Eye size={16} />
+                <Pencil size={16} />
               </IconButton>
             </Tooltip>
             <Tooltip title={t('common:actions.delete')}>

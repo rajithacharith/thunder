@@ -19,20 +19,8 @@
 import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useNavigate} from 'react-router';
 import {useLogger} from '@thunder/logger/react';
-import {
-  Box,
-  Avatar,
-  IconButton,
-  Typography,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  DataGrid,
-  ListingTable,
-  useTheme,
-} from '@wso2/oxygen-ui';
-import {Users, EllipsisVertical, Eye, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {Box, Avatar, IconButton, Typography, Tooltip, DataGrid, ListingTable, useTheme} from '@wso2/oxygen-ui';
+import {Users, Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import useGetGroups from '../api/useGetGroups';
@@ -59,39 +47,28 @@ export default function GroupsList(): JSX.Element {
   );
   const {data, isLoading, error} = useGetGroups(groupsParams);
 
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
 
-  const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>, groupId: string) => {
-    event.stopPropagation();
-    setAnchorEl(event.currentTarget);
+  const handleViewClick = useCallback(
+    (groupId: string): void => {
+      (async (): Promise<void> => {
+        await navigate(`/groups/${groupId}`);
+      })().catch((_error: unknown) => {
+        logger.error('Failed to navigate to group details', {error: _error, groupId});
+      });
+    },
+    [navigate, logger],
+  );
+
+  const handleDeleteClick = useCallback((groupId: string): void => {
     setSelectedGroupId(groupId);
-  }, []);
-
-  const handleMenuClose = (): void => {
-    setAnchorEl(null);
-  };
-
-  const handleDeleteClick = (): void => {
-    handleMenuClose();
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
   const handleDeleteDialogClose = (): void => {
     setDeleteDialogOpen(false);
     setSelectedGroupId(null);
-  };
-
-  const handleViewClick = (): void => {
-    handleMenuClose();
-    if (selectedGroupId) {
-      (async (): Promise<void> => {
-        await navigate(`/groups/${selectedGroupId}`);
-      })().catch((_error: unknown) => {
-        logger.error('Failed to navigate to group details', {error: _error, groupId: selectedGroupId});
-      });
-    }
   };
 
   const columns: DataGrid.GridColDef<GroupBasic>[] = useMemo(
@@ -150,24 +127,42 @@ export default function GroupsList(): JSX.Element {
       {
         field: 'actions',
         headerName: t('groups:listing.columns.actions'),
-        width: 80,
+        width: 150,
+        align: 'center',
+        headerAlign: 'center',
         sortable: false,
         filterable: false,
         hideable: false,
         renderCell: (params: DataGrid.GridRenderCellParams<GroupBasic>): JSX.Element => (
-          <IconButton
-            size="small"
-            aria-label={t('common:actions.openActionsMenu')}
-            onClick={(e) => {
-              handleMenuOpen(e, params.row.id);
-            }}
-          >
-            <EllipsisVertical size={16} />
-          </IconButton>
+          <ListingTable.RowActions visibility="hover">
+            <Tooltip title={t('common:actions.edit')}>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleViewClick(params.row.id);
+                }}
+              >
+                <Pencil size={16} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={t('common:actions.delete')}>
+              <IconButton
+                size="small"
+                color="error"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteClick(params.row.id);
+                }}
+              >
+                <Trash2 size={16} />
+              </IconButton>
+            </Tooltip>
+          </ListingTable.RowActions>
         ),
       },
     ],
-    [handleMenuOpen, t, theme],
+    [handleDeleteClick, handleViewClick, t, theme],
   );
 
   if (error) {
@@ -215,22 +210,6 @@ export default function GroupsList(): JSX.Element {
           />
         </ListingTable.Container>
       </ListingTable.Provider>
-
-      {/* Actions Menu */}
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-        <MenuItem onClick={handleViewClick}>
-          <ListItemIcon>
-            <Eye size={16} />
-          </ListItemIcon>
-          <ListItemText>{t('common:actions.view')}</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleDeleteClick}>
-          <ListItemIcon>
-            <Trash2 size={16} color={theme.vars?.palette.error.main} />
-          </ListItemIcon>
-          <ListItemText sx={{color: 'error.main'}}>{t('common:actions.delete')}</ListItemText>
-        </MenuItem>
-      </Menu>
 
       <GroupDeleteDialog open={deleteDialogOpen} groupId={selectedGroupId} onClose={handleDeleteDialogClose} />
     </>

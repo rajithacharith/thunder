@@ -293,7 +293,7 @@ describe('UserTypesList', () => {
     expect(deleteButtons.length).toBeGreaterThan(0);
   });
 
-  it('navigates to view page when View is clicked', async () => {
+  it('navigates to edit page when row is clicked', async () => {
     const user = userEvent.setup();
     render(<UserTypesList />);
 
@@ -509,43 +509,43 @@ describe('UserTypesList', () => {
     });
   });
 
-  it('should navigate to user type when View action button is clicked', async () => {
+  it('should navigate to user type when Edit action button is clicked', async () => {
     const user = userEvent.setup();
 
     render(<UserTypesList />);
 
-    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
-    expect(viewButtons.length).toBeGreaterThan(0);
-    await user.click(viewButtons[0]);
+    const editButtons = screen.getAllByRole('button', {name: /^edit$/i});
+    expect(editButtons.length).toBeGreaterThan(0);
+    await user.click(editButtons[0]);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/user-types/schema1');
     });
   });
 
-  it('should navigate to correct user type when View action is clicked for second row', async () => {
+  it('should navigate to correct user type when Edit action is clicked for second row', async () => {
     const user = userEvent.setup();
 
     render(<UserTypesList />);
 
-    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
-    expect(viewButtons.length).toBeGreaterThan(1);
-    await user.click(viewButtons[1]);
+    const editButtons = screen.getAllByRole('button', {name: /^edit$/i});
+    expect(editButtons.length).toBeGreaterThan(1);
+    await user.click(editButtons[1]);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/user-types/schema2');
     });
   });
 
-  it('should log error when View button navigation fails', async () => {
+  it('should log error when Edit button navigation fails', async () => {
     const user = userEvent.setup();
     const navigationError = new Error('Navigation failed');
     mockNavigate.mockRejectedValueOnce(navigationError);
 
     render(<UserTypesList />);
 
-    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
-    await user.click(viewButtons[0]);
+    const editButtons = screen.getAllByRole('button', {name: /^edit$/i});
+    await user.click(editButtons[0]);
 
     await waitFor(() => {
       expect(mockLoggerError).toHaveBeenCalledWith(

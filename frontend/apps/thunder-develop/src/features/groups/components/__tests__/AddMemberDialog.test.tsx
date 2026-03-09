@@ -93,13 +93,13 @@ describe('AddMemberDialog', () => {
   it('should render dialog when open', () => {
     renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
-    expect(screen.getByText('addMember.title')).toBeInTheDocument();
+    expect(screen.getByText('Add Member')).toBeInTheDocument();
   });
 
   it('should not render when closed', () => {
     renderWithProviders(<AddMemberDialog {...defaultProps} open={false} />);
 
-    expect(screen.queryByText('addMember.title')).not.toBeInTheDocument();
+    expect(screen.queryByText('Add Member')).not.toBeInTheDocument();
   });
 
   it('should render users in the grid', () => {
@@ -126,13 +126,13 @@ describe('AddMemberDialog', () => {
     });
     renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
-    expect(screen.getByText('addMember.noResults')).toBeInTheDocument();
+    expect(screen.getByText('No users found')).toBeInTheDocument();
   });
 
   it('should disable add button when no selection', () => {
     renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
-    const addButton = screen.getByText('addMember.add').closest('button');
+    const addButton = screen.getByText('Add Selected').closest('button');
     expect(addButton).toBeDisabled();
   });
 
@@ -142,7 +142,7 @@ describe('AddMemberDialog', () => {
 
     await user.click(screen.getByTestId('checkbox-u1'));
 
-    const addButton = screen.getByText('addMember.add').closest('button');
+    const addButton = screen.getByText('Add Selected').closest('button');
     expect(addButton).not.toBeDisabled();
   });
 
@@ -151,7 +151,7 @@ describe('AddMemberDialog', () => {
     renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
     await user.click(screen.getByTestId('checkbox-u1'));
-    await user.click(screen.getByText('addMember.add'));
+    await user.click(screen.getByText('Add Selected'));
 
     expect(defaultProps.onAdd).toHaveBeenCalledWith([{id: 'u1', type: 'user'}]);
   });
@@ -180,6 +180,6 @@ describe('AddMemberDialog', () => {
     renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
     expect(screen.getByText('Network error')).toBeInTheDocument();
-    expect(screen.queryByText('addMember.noResults')).not.toBeInTheDocument();
+    expect(screen.queryByText('No users found')).not.toBeInTheDocument();
   });
 });

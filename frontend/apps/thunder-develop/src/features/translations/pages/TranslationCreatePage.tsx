@@ -322,7 +322,7 @@ export default function TranslationCreatePage(): JSX.Element {
               sx={{
                 mt: 4,
                 display: 'flex',
-                justifyContent: isFirstStep ? 'flex-start' : 'space-between',
+                justifyContent: isFirstStep ? 'flex-end' : 'space-between',
                 gap: 2,
               }}
             >

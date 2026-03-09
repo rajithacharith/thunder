@@ -36,6 +36,7 @@ beforeAll(async () => {
         userTypes: enUS.userTypes,
         integrations: enUS.integrations,
         applications: enUS.applications,
+        groups: enUS.groups,
         dashboard: enUS.dashboard,
         auth: enUS.auth,
         mfa: enUS.mfa,

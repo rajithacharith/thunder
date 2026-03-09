@@ -20,6 +20,7 @@ import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {renderWithProviders} from '@thunder/test-utils';
+import GroupCreateProvider from '../../contexts/GroupCreate/GroupCreateProvider';
 import CreateGroupPage from '../CreateGroupPage';
 
 const mockNavigate = vi.fn();
@@ -31,11 +32,13 @@ vi.mock('react-router', async () => {
   };
 });
 
-const mockMutate = vi.fn();
+const mockMutateAsync = vi.fn();
 vi.mock('../../api/useCreateGroup', () => ({
   default: () => ({
-    mutate: mockMutate,
+    mutateAsync: mockMutateAsync,
+    mutate: vi.fn(),
     isPending: false,
+    error: null,
   }),
 }));
 
@@ -50,189 +53,333 @@ vi.mock('../../../organization-units/components/OrganizationUnitTreePicker', () 
   ),
 }));
 
+const mockUseGetOrganizationUnits = vi.fn();
+vi.mock('../../../organization-units/api/useGetOrganizationUnits', () => ({
+  default: (...args: unknown[]): unknown => mockUseGetOrganizationUnits(...args),
+}));
+
+function renderPage() {
+  return renderWithProviders(
+    <GroupCreateProvider>
+      <CreateGroupPage />
+    </GroupCreateProvider>,
+  );
+}
+
 describe('CreateGroupPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockNavigate.mockResolvedValue(undefined);
+    mockMutateAsync.mockResolvedValue({});
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should render page title and heading', () => {
-    renderWithProviders(<CreateGroupPage />);
-
-    expect(screen.getByText('create.title')).toBeInTheDocument();
-    expect(screen.getByText('create.heading')).toBeInTheDocument();
-  });
-
-  it('should render form fields', () => {
-    renderWithProviders(<CreateGroupPage />);
-
-    expect(screen.getByText('create.form.name.label')).toBeInTheDocument();
-    expect(screen.getByText('create.form.description.label')).toBeInTheDocument();
-    expect(screen.getByText('create.form.organizationUnit.label')).toBeInTheDocument();
-  });
-
-  it('should render OU tree picker', () => {
-    renderWithProviders(<CreateGroupPage />);
-
-    expect(screen.getByTestId('ou-tree-picker')).toBeInTheDocument();
-  });
-
-  it('should have disabled submit button initially', () => {
-    renderWithProviders(<CreateGroupPage />);
-
-    const submitButton = screen.getByText('Create').closest('button');
-    expect(submitButton).toBeDisabled();
-  });
-
-  it('should enable submit button when form is valid', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<CreateGroupPage />);
-
-    const nameInput = screen.getByPlaceholderText('create.form.name.placeholder');
-    await user.type(nameInput, 'Test Group');
-
-    await user.click(screen.getByTestId('select-ou'));
-
-    await waitFor(() => {
-      const submitButton = screen.getByText('Create').closest('button');
-      expect(submitButton).not.toBeDisabled();
-    });
-  });
-
-  it('should call mutate on form submit', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<CreateGroupPage />);
-
-    const nameInput = screen.getByPlaceholderText('create.form.name.placeholder');
-    await user.type(nameInput, 'Test Group');
-
-    await user.click(screen.getByTestId('select-ou'));
-
-    await waitFor(() => {
-      const submitButton = screen.getByText('Create').closest('button');
-      expect(submitButton).not.toBeDisabled();
-    });
-
-    await user.click(screen.getByText('Create'));
-
-    await waitFor(() => {
-      expect(mockMutate).toHaveBeenCalledWith(
-        {
-          name: 'Test Group',
-          description: undefined,
-          organizationUnitId: 'ou-123',
+  describe('with single OU', () => {
+    beforeEach(() => {
+      mockUseGetOrganizationUnits.mockReturnValue({
+        data: {
+          totalResults: 1,
+          organizationUnits: [{id: 'ou-single', name: 'Default OU'}],
         },
-        expect.objectContaining({
-          onSuccess: expect.any(Function) as unknown,
-          onError: expect.any(Function) as unknown,
-        }),
-      );
-    });
-  });
-
-  it('should navigate to groups list on successful creation', async () => {
-    mockMutate.mockImplementation((_data: unknown, opts: {onSuccess: () => void}) => {
-      opts.onSuccess();
+        isLoading: false,
+      });
     });
 
-    const user = userEvent.setup();
-    renderWithProviders(<CreateGroupPage />);
+    it('should render name step with suggestions', () => {
+      renderPage();
 
-    const nameInput = screen.getByPlaceholderText('create.form.name.placeholder');
-    await user.type(nameInput, 'Test Group');
-
-    await user.click(screen.getByTestId('select-ou'));
-
-    await waitFor(() => {
-      const submitButton = screen.getByText('Create').closest('button');
-      expect(submitButton).not.toBeDisabled();
+      expect(screen.getByTestId('configure-name')).toBeInTheDocument();
+      expect(screen.getByText("Let's give a name to your group")).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('Create'));
+    it('should have disabled button initially', () => {
+      renderPage();
 
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/groups');
-    });
-  });
-
-  it('should display error on failed creation', async () => {
-    mockMutate.mockImplementation((_data: unknown, opts: {onError: (err: Error) => void}) => {
-      opts.onError(new Error('Creation failed'));
+      const button = screen.getByRole('button', {name: 'Continue'});
+      expect(button).toBeDisabled();
     });
 
-    const user = userEvent.setup();
-    renderWithProviders(<CreateGroupPage />);
+    it('should enable button when name is entered', async () => {
+      const user = userEvent.setup();
+      renderPage();
 
-    const nameInput = screen.getByPlaceholderText('create.form.name.placeholder');
-    await user.type(nameInput, 'Test Group');
+      const nameInput = screen.getByPlaceholderText('Enter group name');
+      await user.type(nameInput, 'Test Group');
 
-    await user.click(screen.getByTestId('select-ou'));
-
-    await waitFor(() => {
-      const submitButton = screen.getByText('Create').closest('button');
-      expect(submitButton).not.toBeDisabled();
+      await waitFor(() => {
+        const button = screen.getByRole('button', {name: 'Continue'});
+        expect(button).not.toBeDisabled();
+      });
     });
 
-    await user.click(screen.getByText('Create'));
+    it('should submit directly without OU step when only one OU exists', async () => {
+      const user = userEvent.setup();
+      renderPage();
 
-    await waitFor(() => {
-      expect(screen.getByText('Creation failed')).toBeInTheDocument();
-    });
-  });
+      const nameInput = screen.getByPlaceholderText('Enter group name');
+      await user.type(nameInput, 'Test Group');
 
-  it('should submit with description when provided', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<CreateGroupPage />);
+      await waitFor(() => {
+        const button = screen.getByRole('button', {name: 'Continue'});
+        expect(button).not.toBeDisabled();
+      });
 
-    const nameInput = screen.getByPlaceholderText('create.form.name.placeholder');
-    await user.type(nameInput, 'Test Group');
+      await user.click(screen.getByRole('button', {name: 'Continue'}));
 
-    const descInput = screen.getByPlaceholderText('create.form.description.placeholder');
-    await user.type(descInput, 'A test description');
-
-    await user.click(screen.getByTestId('select-ou'));
-
-    await waitFor(() => {
-      const submitButton = screen.getByText('Create').closest('button');
-      expect(submitButton).not.toBeDisabled();
-    });
-
-    await user.click(screen.getByText('Create'));
-
-    await waitFor(() => {
-      expect(mockMutate).toHaveBeenCalledWith(
-        {
+      await waitFor(() => {
+        expect(mockMutateAsync).toHaveBeenCalledWith({
           name: 'Test Group',
-          description: 'A test description',
-          organizationUnitId: 'ou-123',
-        },
-        expect.objectContaining({
-          onSuccess: expect.any(Function) as unknown,
-          onError: expect.any(Function) as unknown,
-        }),
-      );
+          organizationUnitId: 'ou-single',
+        });
+      });
     });
+
+    it('should navigate to groups list on successful creation', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      const nameInput = screen.getByPlaceholderText('Enter group name');
+      await user.type(nameInput, 'Test Group');
+
+      await waitFor(() => {
+        const button = screen.getByRole('button', {name: 'Continue'});
+        expect(button).not.toBeDisabled();
+      });
+
+      await user.click(screen.getByRole('button', {name: 'Continue'}));
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/groups');
+      });
+    });
+  });
+
+  describe('with multiple OUs', () => {
+    beforeEach(() => {
+      mockUseGetOrganizationUnits.mockReturnValue({
+        data: {
+          totalResults: 3,
+          organizationUnits: [
+            {id: 'ou-1', name: 'OU 1'},
+            {id: 'ou-2', name: 'OU 2'},
+          ],
+        },
+        isLoading: false,
+      });
+    });
+
+    it('should show continue button on name step', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      const nameInput = screen.getByPlaceholderText('Enter group name');
+      await user.type(nameInput, 'Test Group');
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: 'Continue'})).not.toBeDisabled();
+      });
+    });
+
+    it('should navigate to OU step after name step', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      const nameInput = screen.getByPlaceholderText('Enter group name');
+      await user.type(nameInput, 'Test Group');
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: 'Continue'})).not.toBeDisabled();
+      });
+
+      await user.click(screen.getByRole('button', {name: 'Continue'}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-organization-unit')).toBeInTheDocument();
+      });
+    });
+
+    it('should submit after selecting OU in step 2', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      // Step 1: Enter name
+      const nameInput = screen.getByPlaceholderText('Enter group name');
+      await user.type(nameInput, 'Test Group');
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: 'Continue'})).not.toBeDisabled();
+      });
+
+      await user.click(screen.getByRole('button', {name: 'Continue'}));
+
+      // Step 2: Select OU
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-organization-unit')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTestId('select-ou'));
+
+      await waitFor(() => {
+        const button = screen.getByRole('button', {name: 'Continue'});
+        expect(button).not.toBeDisabled();
+      });
+
+      await user.click(screen.getByRole('button', {name: 'Continue'}));
+
+      await waitFor(() => {
+        expect(mockMutateAsync).toHaveBeenCalledWith({
+          name: 'Test Group',
+          organizationUnitId: 'ou-123',
+        });
+      });
+    });
+
+    it('should navigate back to name step via breadcrumb click', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      const nameInput = screen.getByPlaceholderText('Enter group name');
+      await user.type(nameInput, 'Test Group');
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: 'Continue'})).not.toBeDisabled();
+      });
+
+      await user.click(screen.getByRole('button', {name: 'Continue'}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-organization-unit')).toBeInTheDocument();
+      });
+
+      // On OU step, "Create a Group" breadcrumb is a Typography with role="button"
+      const nameStepBreadcrumb = screen.getByRole('button', {name: 'Create a Group'});
+      await user.click(nameStepBreadcrumb);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-name')).toBeInTheDocument();
+      });
+    });
+
+    it('should navigate back to name step via breadcrumb keyboard', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      const nameInput = screen.getByPlaceholderText('Enter group name');
+      await user.type(nameInput, 'Test Group');
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: 'Continue'})).not.toBeDisabled();
+      });
+
+      await user.click(screen.getByRole('button', {name: 'Continue'}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-organization-unit')).toBeInTheDocument();
+      });
+
+      // Navigate via keyboard Enter on the breadcrumb
+      const nameStepBreadcrumb = screen.getByRole('button', {name: 'Create a Group'});
+      nameStepBreadcrumb.focus();
+      await user.keyboard('{Enter}');
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-name')).toBeInTheDocument();
+      });
+    });
+
+    it('should go back from OU step to name step', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      const nameInput = screen.getByPlaceholderText('Enter group name');
+      await user.type(nameInput, 'Test Group');
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: 'Continue'})).not.toBeDisabled();
+      });
+
+      await user.click(screen.getByRole('button', {name: 'Continue'}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-organization-unit')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', {name: 'Back'}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-name')).toBeInTheDocument();
+      });
+    });
+  });
+
+  it('should handle submission error gracefully', async () => {
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: {totalResults: 1, organizationUnits: [{id: 'ou-single', name: 'Default OU'}]},
+      isLoading: false,
+    });
+    mockMutateAsync.mockRejectedValue(new Error('Create failed'));
+
+    const user = userEvent.setup();
+    renderPage();
+
+    const nameInput = screen.getByPlaceholderText('Enter group name');
+    await user.type(nameInput, 'Test Group');
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: 'Continue'})).not.toBeDisabled();
+    });
+
+    await user.click(screen.getByRole('button', {name: 'Continue'}));
+
+    await waitFor(() => {
+      expect(mockMutateAsync).toHaveBeenCalled();
+    });
+
+    // Should not navigate since submission failed
+    expect(mockNavigate).not.toHaveBeenCalledWith('/groups');
+  });
+
+  it('should disable continue button while OUs are loading', () => {
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: null,
+      isLoading: true,
+    });
+
+    renderPage();
+
+    const button = screen.getByRole('button', {name: 'Continue'});
+    expect(button).toBeDisabled();
   });
 
   it('should navigate back when close button is clicked', async () => {
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: {totalResults: 1, organizationUnits: [{id: 'ou-1', name: 'OU 1'}]},
+      isLoading: false,
+    });
+
     const user = userEvent.setup();
-    renderWithProviders(<CreateGroupPage />);
+    renderPage();
 
     const closeButton = screen.getByRole('button', {name: 'Close'});
     await user.click(closeButton);
+
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/groups');
     });
   });
 
-  it('should handle navigate rejection in close handler gracefully', async () => {
+  it('should handle navigate rejection gracefully', async () => {
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: {totalResults: 1, organizationUnits: [{id: 'ou-1', name: 'OU 1'}]},
+      isLoading: false,
+    });
     mockNavigate.mockRejectedValue(new Error('Nav failed'));
+
     const user = userEvent.setup();
-    renderWithProviders(<CreateGroupPage />);
+    renderPage();
 
     const closeButton = screen.getByRole('button', {name: 'Close'});
     await user.click(closeButton);
@@ -240,65 +387,6 @@ describe('CreateGroupPage', () => {
     // Should not throw - error is caught gracefully
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/groups');
-    });
-  });
-
-  it('should handle navigate rejection in onSuccess gracefully', async () => {
-    mockNavigate.mockRejectedValue(new Error('Nav failed'));
-    mockMutate.mockImplementation((_data: unknown, opts: {onSuccess: () => void}) => {
-      opts.onSuccess();
-    });
-
-    const user = userEvent.setup();
-    renderWithProviders(<CreateGroupPage />);
-
-    const nameInput = screen.getByPlaceholderText('create.form.name.placeholder');
-    await user.type(nameInput, 'Test Group');
-    await user.click(screen.getByTestId('select-ou'));
-
-    await waitFor(() => {
-      const submitButton = screen.getByText('Create').closest('button');
-      expect(submitButton).not.toBeDisabled();
-    });
-
-    await user.click(screen.getByText('Create'));
-
-    // Should not throw - error is caught gracefully
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/groups');
-    });
-  });
-
-  it('should close error alert when dismiss is clicked', async () => {
-    mockMutate.mockImplementation((_data: unknown, opts: {onError: (err: Error) => void}) => {
-      opts.onError(new Error('Creation failed'));
-    });
-
-    const user = userEvent.setup();
-    renderWithProviders(<CreateGroupPage />);
-
-    const nameInput = screen.getByPlaceholderText('create.form.name.placeholder');
-    await user.type(nameInput, 'Test Group');
-    await user.click(screen.getByTestId('select-ou'));
-
-    await waitFor(() => {
-      const submitButton = screen.getByText('Create').closest('button');
-      expect(submitButton).not.toBeDisabled();
-    });
-
-    await user.click(screen.getByText('Create'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Creation failed')).toBeInTheDocument();
-    });
-
-    // Close the error alert (find the close button inside the alert)
-    const alert = screen.getByRole('alert');
-    const closeAlertButton = alert.querySelector('button')!;
-    await user.click(closeAlertButton);
-
-    await waitFor(() => {
-      expect(screen.queryByText('Creation failed')).not.toBeInTheDocument();
     });
   });
 });

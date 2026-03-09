@@ -605,6 +605,15 @@ const translations = {
     'create.form.organizationUnit.placeholder': 'Select an organization unit',
     'create.form.organizationUnit.required': 'Organization unit is required',
 
+    // Create wizard
+    'createWizard.steps.name': 'Create a Group',
+    'createWizard.steps.organizationUnit': 'Organization Unit',
+    'createWizard.name.title': "Let's give a name to your group",
+    'createWizard.name.suggestions.label': 'In a hurry? Pick a random name:',
+    'createWizard.organizationUnit.title': 'Select an organization unit',
+    'createWizard.organizationUnit.subtitle': 'Choose the organization unit this group will belong to.',
+    'createWizard.createGroup': 'Create Group',
+
     // Edit page
     'edit.page.back': 'Back to Groups',
     'edit.page.error': 'Failed to load group',

@@ -92,7 +92,7 @@ describe('ManageMembersSection', () => {
   it('should render the section title', () => {
     renderWithProviders(<ManageMembersSection {...defaultProps} />);
 
-    expect(screen.getByText('edit.members.sections.manage.title')).toBeInTheDocument();
+    expect(screen.getByText('Members')).toBeInTheDocument();
   });
 
   it('should render members in the data grid', () => {

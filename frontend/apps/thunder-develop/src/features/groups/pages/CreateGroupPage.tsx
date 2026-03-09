@@ -16,41 +16,30 @@
  * under the License.
  */
 
-import {useState, useMemo, type JSX} from 'react';
+import {useState, useCallback, useMemo} from 'react';
 import {useNavigate} from 'react-router';
 import {
   Box,
   Stack,
   Typography,
   Button,
-  TextField,
-  Alert,
   IconButton,
   LinearProgress,
-  FormControl,
-  FormLabel,
+  Breadcrumbs,
+  Alert,
+  Snackbar,
 } from '@wso2/oxygen-ui';
-import {X} from '@wso2/oxygen-ui-icons-react';
+import {X, ChevronRight} from '@wso2/oxygen-ui-icons-react';
+import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useForm, Controller} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
-import {z} from 'zod';
 import {useLogger} from '@thunder/logger/react';
 import useCreateGroup from '../api/useCreateGroup';
-import OrganizationUnitTreePicker from '../../organization-units/components/OrganizationUnitTreePicker';
+import useGetOrganizationUnits from '../../organization-units/api/useGetOrganizationUnits';
+import useGroupCreate from '../contexts/GroupCreate/useGroupCreate';
+import {GroupCreateFlowStep} from '../models/group-create-flow';
+import ConfigureName from '../components/create-group/ConfigureName';
+import ConfigureOrganizationUnit from '../components/create-group/ConfigureOrganizationUnit';
 import type {CreateGroupRequest} from '../models/requests';
-
-/**
- * Creates a Zod schema for the create group form with i18n support.
- */
-const createFormSchema = (t: (key: string) => string) =>
-  z.object({
-    name: z.string().trim().min(1, t('groups:create.form.name.required')),
-    description: z.string().optional(),
-    organizationUnitId: z.string().min(1, t('groups:create.form.organizationUnit.required')),
-  });
-
-type FormData = z.infer<ReturnType<typeof createFormSchema>>;
 
 export default function CreateGroupPage(): JSX.Element {
   const navigate = useNavigate();
@@ -58,27 +47,52 @@ export default function CreateGroupPage(): JSX.Element {
   const logger = useLogger('CreateGroupPage');
   const createGroup = useCreateGroup();
 
-  const [error, setError] = useState<string | null>(null);
-
-  const formSchema = useMemo(() => createFormSchema(t), [t]);
-
   const {
-    control,
-    handleSubmit,
-    formState: {errors, isValid},
-  } = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    mode: 'onChange',
-    defaultValues: {
-      name: '',
-      description: '',
-      organizationUnitId: '',
-    },
+    currentStep,
+    setCurrentStep,
+    name,
+    setName,
+    organizationUnitId,
+    setOrganizationUnitId,
+    error,
+    setError,
+  } = useGroupCreate();
+
+  // Fetch OUs to determine if we need the OU step
+  const {data: ouData, isLoading: isOuLoading} = useGetOrganizationUnits({limit: 2, offset: 0});
+  const ouList = ouData?.organizationUnits ?? [];
+  const hasMultipleOUs = (ouData?.totalResults ?? 0) > 1;
+
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+
+  const [stepReady, setStepReady] = useState<Record<GroupCreateFlowStep, boolean>>({
+    NAME: false,
+    ORGANIZATION_UNIT: false,
   });
+
+  const activeSteps = useMemo((): GroupCreateFlowStep[] => {
+    const base: GroupCreateFlowStep[] = [GroupCreateFlowStep.NAME];
+    if (hasMultipleOUs) {
+      base.push(GroupCreateFlowStep.ORGANIZATION_UNIT);
+    }
+    return base;
+  }, [hasMultipleOUs]);
+
+  const steps: Partial<Record<GroupCreateFlowStep, {label: string}>> = useMemo(() => {
+    const map: Partial<Record<GroupCreateFlowStep, {label: string}>> = {
+      NAME: {label: t('groups:createWizard.steps.name')},
+    };
+    if (hasMultipleOUs) {
+      map.ORGANIZATION_UNIT = {label: t('groups:createWizard.steps.organizationUnit')};
+    }
+    return map;
+  }, [t, hasMultipleOUs]);
 
   const listUrl = '/groups';
 
   const handleClose = (): void => {
+    if (createGroup.isPending) return;
     (async (): Promise<void> => {
       await navigate(listUrl);
     })().catch((_error: unknown) => {
@@ -86,32 +100,125 @@ export default function CreateGroupPage(): JSX.Element {
     });
   };
 
-  const onSubmit = (data: FormData): void => {
+  const handleStepReadyChange = useCallback((step: GroupCreateFlowStep, isReady: boolean): void => {
+    setStepReady((prev) => ({
+      ...prev,
+      [step]: isReady,
+    }));
+  }, []);
+
+  const handleNameStepReadyChange = useCallback(
+    (isReady: boolean): void => {
+      handleStepReadyChange(GroupCreateFlowStep.NAME, isReady);
+    },
+    [handleStepReadyChange],
+  );
+
+  const handleOuStepReadyChange = useCallback(
+    (isReady: boolean): void => {
+      handleStepReadyChange(GroupCreateFlowStep.ORGANIZATION_UNIT, isReady);
+    },
+    [handleStepReadyChange],
+  );
+
+  const handleSubmit = async (): Promise<void> => {
+    setValidationError(null);
     setError(null);
 
+    if (!name.trim()) {
+      setValidationError(t('groups:create.form.name.required'));
+      setSnackbarOpen(true);
+      return;
+    }
+
+    // If only one OU, use it directly
+    const ouId = hasMultipleOUs ? organizationUnitId : ouList[0]?.id;
+    if (!ouId) {
+      setValidationError(t('groups:create.form.organizationUnit.required'));
+      setSnackbarOpen(true);
+      return;
+    }
+
     const requestData: CreateGroupRequest = {
-      name: data.name,
-      description: data.description?.trim() ? data.description.trim() : undefined,
-      organizationUnitId: data.organizationUnitId,
+      name: name.trim(),
+      organizationUnitId: ouId,
     };
 
-    createGroup.mutate(requestData, {
-      onSuccess: () => {
-        (async (): Promise<void> => {
-          await navigate(listUrl);
-        })().catch((_error: unknown) => {
-          logger.error('Failed to navigate after creating group', {error: _error});
+    try {
+      await createGroup.mutateAsync(requestData);
+      await navigate(listUrl);
+    } catch (submitError) {
+      logger.error('Failed to create group or navigate', {error: submitError});
+    }
+  };
+
+  const handleNextStep = (): void => {
+    switch (currentStep) {
+      case GroupCreateFlowStep.NAME:
+        if (isOuLoading) return;
+        if (hasMultipleOUs) {
+          setCurrentStep(GroupCreateFlowStep.ORGANIZATION_UNIT);
+        } else {
+          // Only one OU — skip the OU step and submit directly
+          handleSubmit().catch(() => {
+            // Error handled in handleSubmit
+          });
+        }
+        break;
+      case GroupCreateFlowStep.ORGANIZATION_UNIT:
+        handleSubmit().catch(() => {
+          // Error handled in handleSubmit
         });
-      },
-      onError: (err: Error) => {
-        setError(err.message ?? t('groups:create.error'));
-      },
-    });
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handlePrevStep = (): void => {
+    switch (currentStep) {
+      case GroupCreateFlowStep.ORGANIZATION_UNIT:
+        setCurrentStep(GroupCreateFlowStep.NAME);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const renderStepContent = (): JSX.Element | null => {
+    switch (currentStep) {
+      case GroupCreateFlowStep.NAME:
+        return <ConfigureName name={name} onNameChange={setName} onReadyChange={handleNameStepReadyChange} />;
+      case GroupCreateFlowStep.ORGANIZATION_UNIT:
+        return (
+          <ConfigureOrganizationUnit
+            selectedOuId={organizationUnitId}
+            onOuIdChange={setOrganizationUnitId}
+            onReadyChange={handleOuStepReadyChange}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  const getStepProgress = (): number => {
+    const currentIndex = activeSteps.indexOf(currentStep);
+    return ((currentIndex + 1) / activeSteps.length) * 100;
+  };
+
+  const getBreadcrumbSteps = (): GroupCreateFlowStep[] => {
+    const currentIndex = activeSteps.indexOf(currentStep);
+    return activeSteps.slice(0, currentIndex + 1);
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false);
   };
 
   return (
     <Box sx={{minHeight: '100vh', display: 'flex', flexDirection: 'column'}}>
-      <LinearProgress variant="determinate" value={100} sx={{height: 6}} />
+      <LinearProgress variant="determinate" value={getStepProgress()} sx={{height: 6}} />
 
       <Box sx={{flex: 1, display: 'flex', flexDirection: 'row'}}>
         <Box
@@ -121,148 +228,139 @@ export default function CreateGroupPage(): JSX.Element {
             flexDirection: 'column',
           }}
         >
-          {/* Header with close button */}
-          <Box sx={{p: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <IconButton
-                onClick={handleClose}
-                aria-label={t('common:actions.close')}
-                sx={{
-                  bgcolor: 'background.paper',
-                  '&:hover': {bgcolor: 'action.hover'},
-                  boxShadow: 1,
-                }}
-              >
-                <X size={24} />
-              </IconButton>
-              <Typography variant="h5">{t('groups:create.title')}</Typography>
-            </Stack>
-          </Box>
-
-          {/* Main content */}
-          <Box sx={{flex: 1, display: 'flex', minHeight: 0}}>
-            <Box
+        {/* Header with close button and breadcrumb */}
+        <Box sx={{p: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <IconButton
+              onClick={handleClose}
+              aria-label={t('common:actions.close')}
               sx={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                py: 8,
-                px: 20,
+                bgcolor: 'background.paper',
+                '&:hover': {bgcolor: 'action.hover'},
+                boxShadow: 1,
               }}
             >
+              <X size={24} />
+            </IconButton>
+            <Breadcrumbs separator={<ChevronRight size={16} />} aria-label="breadcrumb">
+              {getBreadcrumbSteps().map((step, index, array) => {
+                const isLast = index === array.length - 1;
+
+                return isLast ? (
+                  <Typography key={step} variant="h5" color="text.primary">
+                    {steps[step]?.label}
+                  </Typography>
+                ) : (
+                  <Typography
+                    key={step}
+                    variant="h5"
+                    color="inherit"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setCurrentStep(step)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setCurrentStep(step);
+                      }
+                    }}
+                    sx={{cursor: 'pointer', '&:hover': {textDecoration: 'underline'}}}
+                  >
+                    {steps[step]?.label}
+                  </Typography>
+                );
+              })}
+            </Breadcrumbs>
+          </Stack>
+        </Box>
+
+        {/* Main content */}
+        <Box sx={{flex: 1, display: 'flex', minHeight: 0}}>
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              py: 8,
+              px: 20,
+              mx: currentStep === GroupCreateFlowStep.NAME ? 'auto' : 0,
+              alignItems: 'flex-start',
+            }}
+          >
+            <Box
+              sx={{
+                width: '100%',
+                maxWidth: 800,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* Error Alerts */}
+              {error && (
+                <Alert severity="error" sx={{my: 3}} onClose={() => setError(null)}>
+                  {error}
+                </Alert>
+              )}
+
+              {createGroup.error && (
+                <Alert severity="error" sx={{mb: 3}}>
+                  <Typography variant="body2" sx={{fontWeight: 'bold', mb: 0.5}}>
+                    {createGroup.error.message}
+                  </Typography>
+                </Alert>
+              )}
+
+              {renderStepContent()}
+
+              {/* Navigation buttons */}
               <Box
                 sx={{
-                  width: '100%',
-                  maxWidth: 800,
+                  mt: 4,
                   display: 'flex',
-                  flexDirection: 'column',
+                  justifyContent: 'flex-end',
+                  gap: 2,
                 }}
               >
-                {/* Error Alert */}
-                {error && (
-                  <Alert severity="error" sx={{my: 3}} onClose={() => setError(null)}>
-                    {error}
-                  </Alert>
+                {currentStep !== GroupCreateFlowStep.NAME && (
+                  <Button
+                    variant="outlined"
+                    onClick={handlePrevStep}
+                    sx={{minWidth: 100}}
+                    disabled={createGroup.isPending}
+                  >
+                    {t('common:actions.back')}
+                  </Button>
                 )}
 
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleSubmit(onSubmit)(e).catch((err: unknown) => {
-                      logger.error('Form submission error', {error: err});
-                    });
-                  }}
+                <Button
+                  variant="contained"
+                  disabled={!stepReady[currentStep] || createGroup.isPending || isOuLoading}
+                  sx={{minWidth: 100}}
+                  onClick={handleNextStep}
                 >
-                  <Stack direction="column" spacing={4}>
-                    <Typography variant="h1" gutterBottom>
-                      {t('groups:create.heading')}
-                    </Typography>
-
-                    {/* Name field */}
-                    <FormControl fullWidth required>
-                      <FormLabel htmlFor="group-name-input">{t('groups:create.form.name.label')}</FormLabel>
-                      <Controller
-                        name="name"
-                        control={control}
-                        render={({field}) => (
-                          <TextField
-                            {...field}
-                            fullWidth
-                            id="group-name-input"
-                            placeholder={t('groups:create.form.name.placeholder')}
-                            error={!!errors.name}
-                            helperText={errors.name?.message}
-                          />
-                        )}
-                      />
-                    </FormControl>
-
-                    {/* Description field */}
-                    <FormControl fullWidth>
-                      <FormLabel htmlFor="group-description-input">
-                        {t('groups:create.form.description.label')}
-                      </FormLabel>
-                      <Controller
-                        name="description"
-                        control={control}
-                        render={({field}) => (
-                          <TextField
-                            {...field}
-                            fullWidth
-                            id="group-description-input"
-                            placeholder={t('groups:create.form.description.placeholder')}
-                            multiline
-                            rows={3}
-                          />
-                        )}
-                      />
-                    </FormControl>
-
-                    {/* Organization Unit tree picker */}
-                    <FormControl fullWidth required>
-                      <FormLabel htmlFor="group-ou-picker">
-                        {t('groups:create.form.organizationUnit.label')}
-                      </FormLabel>
-                      <Controller
-                        name="organizationUnitId"
-                        control={control}
-                        render={({field}) => (
-                          <OrganizationUnitTreePicker
-                            id="group-ou-picker"
-                            value={field.value}
-                            onChange={field.onChange}
-                            error={!!errors.organizationUnitId}
-                            helperText={errors.organizationUnitId?.message}
-                          />
-                        )}
-                      />
-                    </FormControl>
-
-                    {/* Submit button */}
-                    <Box
-                      sx={{
-                        mt: 4,
-                        display: 'flex',
-                        justifyContent: 'flex-start',
-                        gap: 2,
-                      }}
-                    >
-                      <Button
-                        type="submit"
-                        variant="contained"
-                        disabled={createGroup.isPending || !isValid}
-                        sx={{minWidth: 100}}
-                      >
-                        {createGroup.isPending ? t('common:status.saving') : t('common:actions.create')}
-                      </Button>
-                    </Box>
-                  </Stack>
-                </form>
+                  {(() => {
+                    if (createGroup.isPending) return t('common:status.saving');
+                    return t('common:actions.continue');
+                  })()}
+                </Button>
               </Box>
             </Box>
           </Box>
         </Box>
+        </Box>
       </Box>
+
+      {/* Validation Error Snackbar */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{vertical: 'top', horizontal: 'right'}}
+      >
+        <Alert onClose={handleCloseSnackbar} severity="error" sx={{width: '100%'}}>
+          {validationError}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
