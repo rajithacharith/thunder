@@ -111,13 +111,23 @@ ingress:
       pathType: Prefix
   tlsSecretsName: "thunder-tls"
 
+# Gateway API configuration (Envoy Gateway)
+gateway:
+  enabled: false
+  name: "thunder-gateway"
+  className: "eg"
+  tls:
+    enabled: true
+    secretName: "thunder-tls"
+    mode: Terminate
+
 # Gateway API HTTPRoute configuration (alternative to Ingress)
 httproute:
   enabled: false
   annotations: {}
   # parentRefs specify which Gateway(s) this route attaches to
-  parentRefs: []
-    # - name: my-gateway
+  parentRefs:
+    - name: "thunder-gateway"
     #   namespace: gateway-ns
   hostnames: []
     # - thunder.example.com
