@@ -128,21 +128,24 @@ describe('useUpdateUserType', () => {
   });
 
   it('should set pending state during update', async () => {
-    mockHttpRequest.mockReturnValue(
-      new Promise((resolve) => {
-        setTimeout(
-          () =>
+    /* eslint-disable @typescript-eslint/no-misused-promises */
+    mockHttpRequest.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(() => {
             resolve({
               data: mockUserSchema,
-            }),
-          100,
-        );
-      }),
+            });
+          }, 100);
+        }),
     );
+    /* eslint-enable @typescript-eslint/no-misused-promises */
 
     const {result} = renderHook(() => useUpdateUserType());
 
-    result.current.mutate(mockVariables);
+    await act(async () => {
+      result.current.mutate(mockVariables);
+    });
 
     await waitFor(() => {
       expect(result.current.isPending).toBe(true);

@@ -134,6 +134,22 @@ vi.mock('../adapters/ResendButtonAdapter', () => ({
   ),
 }));
 
+vi.mock('../adapters/IconAdapter', () => ({
+  default: ({resource}: {resource: Element}) => (
+    <div data-testid="icon-adapter" data-resource-id={resource.id}>
+      Icon Adapter
+    </div>
+  ),
+}));
+
+vi.mock('../adapters/StackAdapter', () => ({
+  default: ({stepId, resource}: {stepId: string; resource: Element}) => (
+    <div data-testid="stack-adapter" data-step-id={stepId} data-resource-id={resource.id}>
+      Stack Adapter
+    </div>
+  ),
+}));
+
 describe('CommonElementFactory', () => {
   const createMockElement = (overrides: Partial<Element> = {}): Element =>
     ({
@@ -389,6 +405,33 @@ describe('CommonElementFactory', () => {
 
       expect(screen.getByTestId('resend-button-adapter')).toBeInTheDocument();
       expect(screen.getByTestId('resend-button-adapter')).toHaveAttribute('data-step-id', 'step-1');
+    });
+  });
+
+  describe('Icon Element', () => {
+    it('should render IconAdapter for Icon type', () => {
+      const iconElement = createMockElement({
+        type: ElementTypes.Icon,
+      });
+
+      render(<CommonElementFactory stepId="step-1" resource={iconElement} />);
+
+      expect(screen.getByTestId('icon-adapter')).toBeInTheDocument();
+      expect(screen.getByTestId('icon-adapter')).toHaveAttribute('data-resource-id', 'element-1');
+    });
+  });
+
+  describe('Stack Element', () => {
+    it('should render StackAdapter for Stack type', () => {
+      const stackElement = createMockElement({
+        type: ElementTypes.Stack,
+      });
+
+      render(<CommonElementFactory stepId="step-1" resource={stackElement} />);
+
+      expect(screen.getByTestId('stack-adapter')).toBeInTheDocument();
+      expect(screen.getByTestId('stack-adapter')).toHaveAttribute('data-step-id', 'step-1');
+      expect(screen.getByTestId('stack-adapter')).toHaveAttribute('data-resource-id', 'element-1');
     });
   });
 

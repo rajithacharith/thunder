@@ -149,7 +149,7 @@ describe('ButtonAdapter', () => {
     });
 
     it('should render social button variant with default image', () => {
-      const resource = createMockElement({variant: ButtonVariants.Social});
+      const resource = createMockElement({variant: ButtonVariants.Outlined});
 
       render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
 
@@ -159,6 +159,45 @@ describe('ButtonAdapter', () => {
   });
 
   describe('Button Images', () => {
+    it('should render start icon from resource.startIcon', () => {
+      const resource = createMockElement({
+        startIcon: '/path/to/start-icon.svg',
+        variant: ButtonVariants.Primary,
+      });
+
+      const {container} = render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+
+      const img = container.querySelector('img');
+      expect(img).toBeInTheDocument();
+      expect(img).toHaveAttribute('src', '/path/to/start-icon.svg');
+    });
+
+    it('should render end icon from resource.endIcon', () => {
+      const resource = createMockElement({
+        endIcon: '/path/to/end-icon.svg',
+        variant: ButtonVariants.Primary,
+      });
+
+      const {container} = render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+
+      const imgs = container.querySelectorAll('img');
+      const endIconImg = Array.from(imgs).find((img) => img.getAttribute('src') === '/path/to/end-icon.svg');
+      expect(endIconImg).toBeInTheDocument();
+    });
+
+    it('should prioritize startIcon over image', () => {
+      const resource = createMockElement({
+        startIcon: '/start/icon.svg',
+        image: '/legacy/icon.svg',
+        variant: ButtonVariants.Primary,
+      });
+
+      const {container} = render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+
+      const img = container.querySelector('img');
+      expect(img).toHaveAttribute('src', '/start/icon.svg');
+    });
+
     it('should render start icon from resource.image', () => {
       const resource = createMockElement({
         image: '/path/to/icon.svg',
@@ -229,6 +268,24 @@ describe('ButtonAdapter', () => {
 
       const button = screen.getByRole('button');
       expect(button).toBeInTheDocument();
+    });
+  });
+
+  describe('Template Literal Label', () => {
+    it('should render button with template literal label', () => {
+      const resource = createMockElement({label: '{{meta(application.name)}}'});
+
+      render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+
+      expect(screen.getByRole('button')).toBeInTheDocument();
+    });
+
+    it('should render button with i18n template label', () => {
+      const resource = createMockElement({label: '{{t(signin:button.label)}}'});
+
+      render(<ButtonAdapter resource={resource} />, {wrapper: createWrapper()});
+
+      expect(screen.getByRole('button')).toBeInTheDocument();
     });
   });
 
