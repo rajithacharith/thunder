@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef} from 'react';
 import {Box, Typography, TextField, Button, Divider, Card, FormControl, FormLabel} from '@wso2/oxygen-ui';
 import useIsDarkMode from '../hooks/useIsDarkMode';
 
@@ -32,10 +32,14 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Clear entry animation after it plays so transitions work smoothly on hover.
-  const [entryDone, setEntryDone] = useState(false);
-
+  // Use a ref + class instead of state to avoid a React re-render mid-animation.
   useEffect(() => {
-    const timer = setTimeout(() => setEntryDone(true), (delay + 0.6) * 1000 + 100);
+    const el = cardRef.current;
+
+    if (!el) return;
+    const timer = setTimeout(() => {
+      el.classList.add('entry-done');
+    }, (delay + 1) * 1000 + 200);
 
     return () => clearTimeout(timer);
   }, [delay]);
@@ -283,10 +287,8 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
         <Box
           component="span"
           sx={{
-            cursor: 'pointer',
             fontWeight: 600,
             opacity: 1,
-            '&:hover': {textDecoration: 'underline'},
           }}
         >
           Sign up
@@ -416,10 +418,8 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
         <Box
           component="span"
           sx={{
-            cursor: 'pointer',
             fontWeight: 600,
             opacity: 1,
-            '&:hover': {textDecoration: 'underline'},
           }}
         >
           Sign up
@@ -543,10 +543,8 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
         <Box
           component="span"
           sx={{
-            cursor: 'pointer',
             fontWeight: 600,
             opacity: 1,
-            '&:hover': {textDecoration: 'underline'},
           }}
         >
           Sign up
@@ -585,14 +583,13 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
           '0%, 100%': {opacity: 0.3},
           '50%': {opacity: 0.55},
         },
-        ...(entryDone
-          ? {}
-          : {
-              animation: 'fadeInUp 0.6s ease-out',
-              animationDelay: `${delay}s`,
-              animationFillMode: 'both',
-            }),
-        transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+        willChange: 'transform, opacity',
+        backfaceVisibility: 'hidden',
+        transition: 'none',
+        '&.entry-done': {
+          willChange: 'auto',
+          transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+        },
         bgcolor: isDark ? '#14141e' : '#ffffff',
         // Glowing border
         border: '1px solid',
@@ -626,7 +623,7 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
             ? 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.015), transparent)'
             : 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent)',
           animation: 'shimmerSweep 8s ease-in-out infinite',
-          animationDelay: `${delay + 3}s`,
+          animationDelay: `${delay + 4}s`,
           pointerEvents: 'none',
           zIndex: 1,
         },
@@ -645,7 +642,7 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
           WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
           WebkitMaskComposite: 'xor',
           animation: 'borderGlow 4s ease-in-out infinite',
-          animationDelay: `${delay * 0.5}s`,
+          animationDelay: `${delay + 1.5}s`,
           pointerEvents: 'none',
           zIndex: 0,
         },
@@ -662,9 +659,11 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
     >
       {/* Paint-fill overlay — radial glow follows the cursor */}
       <Box className="paint-fill-overlay" />
-      {variant === 'social' && renderSocialLogin()}
-      {variant === 'email' && renderEmailLogin()}
-      {variant === 'mfa' && renderMfaLogin()}
+      <Box inert sx={{position: 'relative', zIndex: 1}}>
+        {variant === 'social' && renderSocialLogin()}
+        {variant === 'email' && renderEmailLogin()}
+        {variant === 'mfa' && renderMfaLogin()}
+      </Box>
     </Card>
   );
 }
