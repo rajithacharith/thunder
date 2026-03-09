@@ -39,8 +39,8 @@ export interface DocusaurusThunderConfig {
     };
   };
   documentation: {
-    apiDocumentation: {
-      specPath: string;
+    versioning: {
+      enabled: boolean;
     };
     deployment: {
       production: {
@@ -75,8 +75,8 @@ const docusaurusThunderConfig = {
     },
   },
   documentation: {
-    apiDocumentation: {
-      specPath: '/api/combined.yaml',
+    versioning: {
+      enabled: false,
     },
     deployment: {
       production: {

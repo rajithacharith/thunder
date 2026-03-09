@@ -36,16 +36,29 @@ export default function ApiReference({specUrl, ...rest}: ApiReferenceProps) {
       }
     >
       {() => (
-        <ApiReferenceReact
-          configuration={{
-            url: specUrl,
-            theme: 'default',
-            layout: 'modern',
-            // Hides the `Open in Client` button that takes to Scalar Hosted workspace.
-            hideClientButton: true,
-            ...rest,
+        <div
+          className="apis-page"
+          style={{
+            position: 'fixed',
+            top: 'calc(var(--ifm-navbar-height) + var(--docusaurus-announcement-bar-height))',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            overflow: 'auto',
+            background: 'var(--oxygen-palette-background-default)',
           }}
-        />
+        >
+          <ApiReferenceReact
+            configuration={{
+              url: specUrl,
+              theme: 'default',
+              layout: 'modern',
+              // Hides the `Open in Client` button that takes to Scalar Hosted workspace.
+              hideClientButton: true,
+              ...rest,
+            }}
+          />
+        </div>
       )}
     </BrowserOnly>
   );
