@@ -136,6 +136,8 @@ overrides:
   nx>axios: '>=1.13.5'
   rollup: '>=4.59.0'
 
+packageExtensionsChecksum: sha256-7EyWhva5Lcamo6pe18OzfUc27A7xbWt39+G/ofluF9k=
+
 importers:
 
   .:
@@ -275,7 +277,7 @@ importers:
         version: 0.1.21(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@hookform/resolvers':
         specifier: 'catalog:'
-        version: 5.2.2(react-hook-form@7.65.0(react@19.2.3))
+        version: 5.2.2(react-hook-form@7.65.0(react@19.2.3))(zod@4.3.6)
       '@lexical/html':
         specifier: 0.38.2
         version: 0.38.2
@@ -2882,6 +2884,7 @@ packages:
     resolution: {integrity: sha512-A/IxlMLShx3KjV/HeTcTfaMxdwy690+L/ZADoeaTltLx+CVuzkeVIPuybK3jrRfw7YZnmdKsVVHAlEPIAEUNlA==}
     peerDependencies:
       react-hook-form: ^7.55.0
+      zod: '*'
 
   '@humanwhocodes/config-array@0.13.0':
     resolution: {integrity: sha512-DZLEEqFWQFiyK6h5YIeynKx7JlvCYWL0cImfSRXZ9l4Sg2efkFGTuFf6vzXjK1cq6IYkU+Eg/JizXw+TD2vRNw==}
@@ -13821,10 +13824,11 @@ snapshots:
       '@tanstack/vue-virtual': 3.13.18(vue@3.5.28(typescript@5.6.3))
       vue: 3.5.28(typescript@5.6.3)
 
-  '@hookform/resolvers@5.2.2(react-hook-form@7.65.0(react@19.2.3))':
+  '@hookform/resolvers@5.2.2(react-hook-form@7.65.0(react@19.2.3))(zod@4.3.6)':
     dependencies:
       '@standard-schema/utils': 0.3.0
       react-hook-form: 7.65.0(react@19.2.3)
+      zod: 4.3.6
 
   '@humanwhocodes/config-array@0.13.0':
     dependencies:
