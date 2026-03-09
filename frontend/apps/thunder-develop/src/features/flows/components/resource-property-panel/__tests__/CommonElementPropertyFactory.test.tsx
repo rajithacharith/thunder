@@ -25,6 +25,19 @@ import type {Resource} from '../../../models/resources';
 import {ElementTypes} from '../../../models/elements';
 import FlowBuilderElementConstants from '../../../constants/FlowBuilderElementConstants';
 
+// Mock icons package so ICON_NAMES is predictable and icon rendering works
+vi.mock('@wso2/oxygen-ui-icons-react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@wso2/oxygen-ui-icons-react')>();
+  const MockUserIcon = Object.assign(
+    ({size}: {size?: number}) => <svg data-testid="icon-user" data-size={size} />,
+    {displayName: 'User', $$typeof: Symbol.for('react.forward_ref')},
+  );
+  return {
+    ...actual,
+    User: MockUserIcon,
+  };
+});
+
 // Mock child components
 vi.mock('../rich-text/RichTextWithTranslation', () => ({
   default: ({onChange}: {onChange: (html: string) => void}) => (
@@ -300,14 +313,14 @@ describe('CommonElementPropertyFactory', () => {
       expect(container.firstChild).toBeNull();
     });
 
-    it('should return null for number property values', () => {
+    it('should render a text field for number property values', () => {
       const resource: Resource = {
         id: 'resource-1',
         type: ElementTypes.TextInput,
         config: {},
       } as Resource;
 
-      const {container} = render(
+      const {getByTestId} = render(
         <CommonElementPropertyFactory
           resource={resource}
           propertyKey="count"
@@ -317,7 +330,7 @@ describe('CommonElementPropertyFactory', () => {
         {wrapper: createWrapper()},
       );
 
-      expect(container.firstChild).toBeNull();
+      expect(getByTestId('text-property-field')).toBeDefined();
     });
 
     it('should return null for array property values', () => {
@@ -356,6 +369,88 @@ describe('CommonElementPropertyFactory', () => {
           propertyValue="Test Label"
           onChange={mockOnChange}
           data-custom-prop="custom-value"
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      expect(screen.getByTestId('text-property-field')).toBeInTheDocument();
+    });
+  });
+
+  describe('Icon Element', () => {
+    it('should render Autocomplete for Icon element with name property', () => {
+      const iconResource: Resource = {
+        id: 'resource-1',
+        type: ElementTypes.Icon,
+        config: {},
+      } as Resource;
+
+      render(
+        <CommonElementPropertyFactory
+          resource={iconResource}
+          propertyKey="name"
+          propertyValue="User"
+          onChange={mockOnChange}
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
+
+    it('should render Autocomplete for Icon element with empty propertyValue', () => {
+      const iconResource: Resource = {
+        id: 'resource-1',
+        type: ElementTypes.Icon,
+        config: {},
+      } as Resource;
+
+      render(
+        <CommonElementPropertyFactory
+          resource={iconResource}
+          propertyKey="name"
+          propertyValue=""
+          onChange={mockOnChange}
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
+
+    it('should render Autocomplete for Icon element with null propertyValue', () => {
+      const iconResource: Resource = {
+        id: 'resource-1',
+        type: ElementTypes.Icon,
+        config: {},
+      } as Resource;
+
+      render(
+        <CommonElementPropertyFactory
+          resource={iconResource}
+          propertyKey="name"
+          propertyValue={null}
+          onChange={mockOnChange}
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
+
+    it('should render TextPropertyField for non-name property on Icon element', () => {
+      const iconResource: Resource = {
+        id: 'resource-1',
+        type: ElementTypes.Icon,
+        config: {},
+      } as Resource;
+
+      render(
+        <CommonElementPropertyFactory
+          resource={iconResource}
+          propertyKey="size"
+          propertyValue={24}
+          onChange={mockOnChange}
         />,
         {wrapper: createWrapper()},
       );

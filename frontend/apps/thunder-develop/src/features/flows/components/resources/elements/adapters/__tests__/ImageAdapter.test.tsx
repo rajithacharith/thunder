@@ -157,6 +157,34 @@ describe('ImageAdapter', () => {
     });
   });
 
+  describe('Dynamic Source', () => {
+    it('should render dynamic placeholder for meta template src', () => {
+      const resource = createMockElement({src: '{{meta(application.logoUrl)}}'});
+
+      render(<ImageAdapter resource={resource} />);
+
+      expect(screen.getByText('flows:core.placeholders.image.dynamicSrc')).toBeInTheDocument();
+      expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    });
+
+    it('should render dynamic placeholder for i18n template src', () => {
+      const resource = createMockElement({src: '{{t(flowI18n:logo.url)}}'});
+
+      render(<ImageAdapter resource={resource} />);
+
+      expect(screen.getByText('flows:core.placeholders.image.dynamicSrc')).toBeInTheDocument();
+      expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    });
+
+    it('should render ImageIcon in dynamic placeholder', () => {
+      const resource = createMockElement({src: '{{meta(application.logoUrl)}}'});
+
+      const {container} = render(<ImageAdapter resource={resource} />);
+
+      expect(container.querySelector('svg')).toBeInTheDocument();
+    });
+  });
+
   describe('Centering', () => {
     it('should center the image in a flex container', () => {
       const resource = createMockElement({src: 'https://example.com/test.png'});
