@@ -46,8 +46,9 @@ const (
 
 // Executor mode constants
 const (
-	ExecutorModeSend   = "send"
-	ExecutorModeVerify = "verify"
+	ExecutorModeSend     = "send"
+	ExecutorModeGenerate = "generate"
+	ExecutorModeVerify   = "verify"
 )
 
 // User attribute and input constants
@@ -92,12 +93,10 @@ var nonUserAttributes = []string{"userID", "code", "nonce", "state", "flowID",
 	"authorized_permissions", "requested_permissions", "required_attributes", "required_locales",
 	userTypeKey, ouIDKey, defaultOUIDKey, userInputOuName, userInputOuHandle, userInputOuDesc, userInputInviteToken,
 	common.RuntimeKeyUserEligibleForProvisioning, common.RuntimeKeySkipProvisioning,
-	common.RuntimeKeyUserAutoProvisioned, runtimeKeyStoredInviteToken,
+	common.RuntimeKeyUserAutoProvisioned, common.RuntimeKeyStoredInviteToken,
 	common.RuntimeKeyConsentID, common.RuntimeKeyConsentExpiresAt, userInputConsentDecisions,
 	common.RuntimeKeyConsentedAttributes, common.RuntimeKeyConsentSessionToken,
 	"applicationId", "idpId", "senderId"}
-
-const runtimeKeyStoredInviteToken = "storedInviteToken"
 
 // Failure reason constants
 const (
