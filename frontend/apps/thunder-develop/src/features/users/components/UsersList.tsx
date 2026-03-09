@@ -35,7 +35,7 @@ import {
   Button,
   DataGrid,
 } from '@wso2/oxygen-ui';
-import {Eye, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
@@ -281,7 +281,7 @@ export default function UsersList(props: UsersListProps) {
       hideable: false,
       renderCell: (params: DataGrid.GridRenderCellParams<UserWithDetails>) => (
         <ListingTable.RowActions visibility="hover">
-          <Tooltip title={t('common:actions.view')}>
+          <Tooltip title={t('common:actions.edit')}>
             <IconButton
               size="small"
               onClick={(e) => {
@@ -289,7 +289,7 @@ export default function UsersList(props: UsersListProps) {
                 handleViewClick(params.row.id);
               }}
             >
-              <Eye size={16} />
+              <Pencil size={16} />
             </IconButton>
           </Tooltip>
           <Tooltip title={t('common:actions.delete')}>

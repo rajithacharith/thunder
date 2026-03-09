@@ -624,7 +624,7 @@ export default function ApplicationCreatePage(): JSX.Element {
                   sx={{
                     mt: 4,
                     display: 'flex',
-                    justifyContent: currentStep === ApplicationCreateFlowStep.NAME ? 'flex-start' : 'space-between',
+                    justifyContent: currentStep === ApplicationCreateFlowStep.NAME ? 'flex-end' : 'space-between',
                     gap: 2,
                   }}
                 >

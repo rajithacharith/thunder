@@ -173,7 +173,7 @@ describe('GroupEditPage', () => {
     renderWithProviders(<GroupEditPage />);
 
     expect(screen.getByText('Fetch failed')).toBeInTheDocument();
-    expect(screen.getByText('edit.page.back')).toBeInTheDocument();
+    expect(screen.getByText('Back to Groups')).toBeInTheDocument();
   });
 
   it('should render not found state when no group', () => {
@@ -185,7 +185,7 @@ describe('GroupEditPage', () => {
     });
     renderWithProviders(<GroupEditPage />);
 
-    expect(screen.getByText('edit.page.notFound')).toBeInTheDocument();
+    expect(screen.getByText('Group not found')).toBeInTheDocument();
   });
 
   it('should render group name and description', () => {
@@ -205,7 +205,7 @@ describe('GroupEditPage', () => {
     const user = userEvent.setup();
     renderWithProviders(<GroupEditPage />);
 
-    await user.click(screen.getByText('edit.page.back'));
+    await user.click(screen.getByText('Back to Groups'));
 
     expect(mockNavigate).toHaveBeenCalledWith('/groups');
   });
@@ -213,8 +213,8 @@ describe('GroupEditPage', () => {
   it('should render tabs for general and members', () => {
     renderWithProviders(<GroupEditPage />);
 
-    expect(screen.getByText('edit.page.tabs.general')).toBeInTheDocument();
-    expect(screen.getByText('edit.page.tabs.members')).toBeInTheDocument();
+    expect(screen.getByText('General')).toBeInTheDocument();
+    expect(screen.getByText('Members')).toBeInTheDocument();
   });
 
   it('should show general settings by default', () => {
@@ -227,7 +227,7 @@ describe('GroupEditPage', () => {
     const user = userEvent.setup();
     renderWithProviders(<GroupEditPage />);
 
-    await user.click(screen.getByText('edit.page.tabs.members'));
+    await user.click(screen.getByText('Members'));
 
     expect(screen.getByTestId('members-settings')).toBeInTheDocument();
   });
@@ -276,7 +276,7 @@ describe('GroupEditPage', () => {
   it('should not show floating action bar initially', () => {
     renderWithProviders(<GroupEditPage />);
 
-    expect(screen.queryByText('edit.page.unsavedChanges')).not.toBeInTheDocument();
+    expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
   });
 
   it('should call useGetGroup with the groupId from params', () => {
@@ -295,7 +295,7 @@ describe('GroupEditPage', () => {
     const user = userEvent.setup();
     renderWithProviders(<GroupEditPage />);
 
-    await user.click(screen.getByText('edit.page.back'));
+    await user.click(screen.getByText('Back to Groups'));
 
     expect(mockNavigate).toHaveBeenCalledWith('/groups');
   });
@@ -309,7 +309,7 @@ describe('GroupEditPage', () => {
     });
     renderWithProviders(<GroupEditPage />);
 
-    expect(screen.getByText('edit.page.description.empty')).toBeInTheDocument();
+    expect(screen.getByText('No description')).toBeInTheDocument();
   });
 
   it('should enter name editing mode and save on Enter', async () => {
@@ -336,7 +336,7 @@ describe('GroupEditPage', () => {
 
     // Should show floating action bar
     await waitFor(() => {
-      expect(screen.getByText('edit.page.unsavedChanges')).toBeInTheDocument();
+      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
     });
   });
 
@@ -372,7 +372,7 @@ describe('GroupEditPage', () => {
     await user.tab(); // trigger blur
 
     await waitFor(() => {
-      expect(screen.getByText('edit.page.unsavedChanges')).toBeInTheDocument();
+      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
     });
   });
 
@@ -394,7 +394,7 @@ describe('GroupEditPage', () => {
     fireEvent.keyDown(descInput, {key: 'Enter', ctrlKey: true});
 
     await waitFor(() => {
-      expect(screen.getByText('edit.page.unsavedChanges')).toBeInTheDocument();
+      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
     });
   });
 
@@ -428,7 +428,7 @@ describe('GroupEditPage', () => {
     await user.tab();
 
     await waitFor(() => {
-      expect(screen.getByText('edit.page.unsavedChanges')).toBeInTheDocument();
+      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
     });
   });
 
@@ -445,7 +445,7 @@ describe('GroupEditPage', () => {
     await user.tab();
 
     await waitFor(() => {
-      expect(screen.getByText('edit.page.description.empty')).toBeInTheDocument();
+      expect(screen.getByText('No description')).toBeInTheDocument();
     });
   });
 
@@ -497,10 +497,10 @@ describe('GroupEditPage', () => {
     await user.keyboard('{Enter}');
 
     await waitFor(() => {
-      expect(screen.getByText('edit.page.unsavedChanges')).toBeInTheDocument();
+      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('edit.page.save'));
+    await user.click(screen.getByText('Save Changes'));
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalledWith({
@@ -531,10 +531,10 @@ describe('GroupEditPage', () => {
     await user.keyboard('{Enter}');
 
     await waitFor(() => {
-      expect(screen.getByText('edit.page.save')).toBeInTheDocument();
+      expect(screen.getByText('Save Changes')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('edit.page.save'));
+    await user.click(screen.getByText('Save Changes'));
 
     await waitFor(() => {
       expect(screen.getByText('Save failed')).toBeInTheDocument();
@@ -555,13 +555,13 @@ describe('GroupEditPage', () => {
     await user.keyboard('{Enter}');
 
     await waitFor(() => {
-      expect(screen.getByText('edit.page.unsavedChanges')).toBeInTheDocument();
+      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('edit.page.reset'));
+    await user.click(screen.getByText('Reset'));
 
     await waitFor(() => {
-      expect(screen.queryByText('edit.page.unsavedChanges')).not.toBeInTheDocument();
+      expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
     });
   });
 
@@ -575,7 +575,7 @@ describe('GroupEditPage', () => {
     const user = userEvent.setup();
     renderWithProviders(<GroupEditPage />);
 
-    await user.click(screen.getByText('edit.page.back'));
+    await user.click(screen.getByText('Back to Groups'));
 
     expect(mockNavigate).toHaveBeenCalledWith('/groups');
   });
@@ -585,7 +585,7 @@ describe('GroupEditPage', () => {
     const user = userEvent.setup();
     renderWithProviders(<GroupEditPage />);
 
-    await user.click(screen.getByText('edit.page.back'));
+    await user.click(screen.getByText('Back to Groups'));
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/groups');
@@ -607,10 +607,10 @@ describe('GroupEditPage', () => {
     await user.keyboard('{Enter}');
 
     await waitFor(() => {
-      expect(screen.getByText('edit.page.save')).toBeInTheDocument();
+      expect(screen.getByText('Save Changes')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('edit.page.save'));
+    await user.click(screen.getByText('Save Changes'));
 
     await waitFor(() => {
       expect(screen.getByText('Save failed')).toBeInTheDocument();

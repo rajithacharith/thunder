@@ -52,6 +52,9 @@ vi.mock('@wso2/oxygen-ui', async () => {
         </div>
       ),
       Container: ({children}: {children: React.ReactNode}): React.ReactElement => children as React.ReactElement,
+      RowActions: ({children}: {children: React.ReactNode}) => (
+        <div data-testid="row-actions">{children}</div>
+      ),
       DataGrid: ({rows = [], columns = [], loading = false, onRowClick = undefined, getRowId = undefined}: MockDataGridProps) => (
         <div data-testid="data-grid" data-loading={loading}>
           {rows.map((row) => {
@@ -159,7 +162,7 @@ describe('GroupsList', () => {
     });
     renderWithProviders(<GroupsList />);
 
-    expect(screen.getByText('listing.error')).toBeInTheDocument();
+    expect(screen.getByText('Failed to load groups')).toBeInTheDocument();
     expect(screen.getByText('Fetch failed')).toBeInTheDocument();
   });
 
@@ -175,53 +178,37 @@ describe('GroupsList', () => {
     });
   });
 
-  it('should open actions menu on button click', async () => {
-    const user = userEvent.setup();
+  it('should render hover action buttons for each row', () => {
     renderWithProviders(<GroupsList />);
 
-    const actionButtons = screen.getAllByRole('button', {name: /Open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('View')).toBeInTheDocument();
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
+    const editButtons = screen.getAllByRole('button', {name: /Edit/i});
+    const deleteButtons = screen.getAllByRole('button', {name: /Delete/i});
+    expect(editButtons.length).toBeGreaterThanOrEqual(2);
+    expect(deleteButtons.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('should navigate to group on view click', async () => {
+  it('should navigate to group on edit button click', async () => {
     const user = userEvent.setup();
     mockNavigate.mockResolvedValue(undefined);
     renderWithProviders(<GroupsList />);
 
-    const actionButtons = screen.getAllByRole('button', {name: /Open actions menu/i});
-    await user.click(actionButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('View')).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByText('View'));
+    const editButtons = screen.getAllByRole('button', {name: /Edit/i});
+    await user.click(editButtons[0]);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/groups/g1');
     });
   });
 
-  it('should open delete dialog on delete click', async () => {
+  it('should open delete dialog on delete button click', async () => {
     const user = userEvent.setup();
     renderWithProviders(<GroupsList />);
 
-    const actionButtons = screen.getAllByRole('button', {name: /Open actions menu/i});
-    await user.click(actionButtons[0]);
+    const deleteButtons = screen.getAllByRole('button', {name: /Delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByText('Delete'));
-
-    await waitFor(() => {
-      expect(screen.getByText('delete.title')).toBeInTheDocument();
+      expect(screen.getByText('Delete Group')).toBeInTheDocument();
     });
   });
 
@@ -229,23 +216,17 @@ describe('GroupsList', () => {
     const user = userEvent.setup();
     renderWithProviders(<GroupsList />);
 
-    const actionButtons = screen.getAllByRole('button', {name: /Open actions menu/i});
-    await user.click(actionButtons[0]);
+    const deleteButtons = screen.getAllByRole('button', {name: /Delete/i});
+    await user.click(deleteButtons[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByText('Delete'));
-
-    await waitFor(() => {
-      expect(screen.getByText('delete.title')).toBeInTheDocument();
+      expect(screen.getByText('Delete Group')).toBeInTheDocument();
     });
 
     await user.click(screen.getByText('Cancel'));
 
     await waitFor(() => {
-      expect(screen.queryByText('delete.title')).not.toBeInTheDocument();
+      expect(screen.queryByText('Delete Group')).not.toBeInTheDocument();
     });
   });
 });

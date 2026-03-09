@@ -49,15 +49,15 @@ describe('GroupDeleteDialog', () => {
   it('should render dialog when open', () => {
     renderWithProviders(<GroupDeleteDialog {...defaultProps} />);
 
-    expect(screen.getByText('delete.title')).toBeInTheDocument();
-    expect(screen.getByText('delete.message')).toBeInTheDocument();
-    expect(screen.getByText('delete.disclaimer')).toBeInTheDocument();
+    expect(screen.getByText('Delete Group')).toBeInTheDocument();
+    expect(screen.getByText('Are you sure you want to delete this group?')).toBeInTheDocument();
+    expect(screen.getByText('This action cannot be undone. All group associations will be permanently removed.')).toBeInTheDocument();
   });
 
   it('should not render content when closed', () => {
     renderWithProviders(<GroupDeleteDialog {...defaultProps} open={false} />);
 
-    expect(screen.queryByText('delete.title')).not.toBeInTheDocument();
+    expect(screen.queryByText('Delete Group')).not.toBeInTheDocument();
   });
 
   it('should call onClose when cancel is clicked', async () => {
