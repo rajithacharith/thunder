@@ -60,7 +60,7 @@ func (h *authorizationCodeGrantHandler) ValidateGrant(tokenRequest *model.TokenR
 	if tokenRequest.GrantType == "" {
 		return &model.ErrorResponse{
 			Error:            constants.ErrorInvalidRequest,
-			ErrorDescription: "Missing grant type",
+			ErrorDescription: "Missing grant_type parameter",
 		}
 	}
 	if constants.GrantType(tokenRequest.GrantType) != constants.GrantTypeAuthorizationCode {
@@ -78,7 +78,7 @@ func (h *authorizationCodeGrantHandler) ValidateGrant(tokenRequest *model.TokenR
 	if tokenRequest.ClientID == "" {
 		return &model.ErrorResponse{
 			Error:            constants.ErrorInvalidClient,
-			ErrorDescription: "Client Id is required",
+			ErrorDescription: "client_id is required",
 		}
 	}
 
@@ -174,7 +174,7 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 			logger.Error("Failed to generate ID token", log.Error(err))
 			return nil, &model.ErrorResponse{
 				Error:            constants.ErrorServerError,
-				ErrorDescription: "Failed to generate ID token",
+				ErrorDescription: "Failed to generate token",
 			}
 		}
 		tokenResponse.IDToken = *idToken

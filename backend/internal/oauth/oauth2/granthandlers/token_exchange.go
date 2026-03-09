@@ -19,7 +19,6 @@
 package granthandlers
 
 import (
-	"fmt"
 	"net/url"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
@@ -74,7 +73,7 @@ func (h *tokenExchangeGrantHandler) ValidateGrant(tokenRequest *model.TokenReque
 	if !constants.TokenTypeIdentifier(tokenRequest.SubjectTokenType).IsValid() {
 		return &model.ErrorResponse{
 			Error:            constants.ErrorInvalidRequest,
-			ErrorDescription: fmt.Sprintf("Unsupported subject_token_type: %s", tokenRequest.SubjectTokenType),
+			ErrorDescription: "Unsupported subject_token_type",
 		}
 	}
 
@@ -111,7 +110,7 @@ func (h *tokenExchangeGrantHandler) ValidateGrant(tokenRequest *model.TokenReque
 		if !constants.TokenTypeIdentifier(tokenRequest.ActorTokenType).IsValid() {
 			return &model.ErrorResponse{
 				Error:            constants.ErrorInvalidRequest,
-				ErrorDescription: fmt.Sprintf("Unsupported actor_token_type: %s", tokenRequest.ActorTokenType),
+				ErrorDescription: "Unsupported actor_token_type",
 			}
 		}
 	}
@@ -122,18 +121,15 @@ func (h *tokenExchangeGrantHandler) ValidateGrant(tokenRequest *model.TokenReque
 		if !requestedType.IsValid() {
 			return &model.ErrorResponse{
 				Error:            constants.ErrorInvalidRequest,
-				ErrorDescription: fmt.Sprintf("Unsupported requested_token_type: %s", tokenRequest.RequestedTokenType),
+				ErrorDescription: "Unsupported requested_token_type",
 			}
 		}
 		// TODO: Add support for other token types if needed
 		if requestedType != constants.TokenTypeIdentifierAccessToken &&
 			requestedType != constants.TokenTypeIdentifierJWT {
 			return &model.ErrorResponse{
-				Error: constants.ErrorInvalidRequest,
-				ErrorDescription: fmt.Sprintf(
-					"Requested token type '%s' is not supported. Only access tokens and JWT tokens are supported.",
-					tokenRequest.RequestedTokenType,
-				),
+				Error:            constants.ErrorInvalidRequest,
+				ErrorDescription: "Unsupported requested_token_type. Only access tokens and JWT tokens are supported",
 			}
 		}
 	}
@@ -150,7 +146,7 @@ func (h *tokenExchangeGrantHandler) HandleGrant(tokenRequest *model.TokenRequest
 	// Validate and extract subject token claims
 	subjectClaims, err := h.tokenValidator.ValidateSubjectToken(tokenRequest.SubjectToken, oauthApp)
 	if err != nil {
-		logger.Error("Failed to validate subject token", log.Error(err))
+		logger.Debug("Failed to validate subject token", log.Error(err))
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorInvalidRequest,
 			ErrorDescription: "Invalid subject_token",
@@ -162,7 +158,7 @@ func (h *tokenExchangeGrantHandler) HandleGrant(tokenRequest *model.TokenRequest
 	if tokenRequest.ActorToken != "" {
 		actorClaims, err = h.tokenValidator.ValidateSubjectToken(tokenRequest.ActorToken, oauthApp)
 		if err != nil {
-			logger.Error("Failed to validate actor token", log.Error(err))
+			logger.Debug("Failed to validate actor token", log.Error(err))
 			return nil, &model.ErrorResponse{
 				Error:            constants.ErrorInvalidRequest,
 				ErrorDescription: "Invalid actor_token",

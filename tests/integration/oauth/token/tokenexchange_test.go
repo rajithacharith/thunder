@@ -61,7 +61,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{
@@ -555,7 +555,7 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_ApplicationNotRegisteredForG
 
 		tokenResp, statusCode, err := ts.exchangeToken(formData.Encode(), authHeader)
 		ts.Require().NoError(err)
-		ts.Equal(http.StatusUnauthorized, statusCode)
+		ts.Equal(http.StatusBadRequest, statusCode)
 		ts.Equal("unauthorized_client", tokenResp.Error)
 		ts.Contains(tokenResp.ErrorDescription, "not authorized")
 	}

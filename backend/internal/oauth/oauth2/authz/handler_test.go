@@ -312,6 +312,37 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_Servic
 	assert.Contains(suite.T(), resp.RedirectURI, "state=test-state")
 }
 
+func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_ServiceErrorRedirectToClient() {
+	authErr := &AuthorizationError{
+		Code:              oauth2const.ErrorServerError,
+		Message:           "Failed to process authorization request",
+		State:             "test-state",
+		SendErrorToClient: true,
+		ClientRedirectURI: "https://client.example.com/callback",
+	}
+	suite.mockAuthzService.EXPECT().HandleAuthorizationCallback(testAuthID, "test-assertion").Return("", authErr)
+
+	postData := AuthZPostRequest{
+		AuthID:    testAuthID,
+		Assertion: "test-assertion",
+	}
+	jsonData, _ := json.Marshal(postData)
+
+	req := httptest.NewRequest(http.MethodPost, "/oauth2/auth/callback", bytes.NewReader(jsonData))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	suite.handler.HandleAuthCallbackPostRequest(rr, req)
+
+	assert.Equal(suite.T(), http.StatusOK, rr.Code)
+	var resp AuthZPostResponse
+	err := json.NewDecoder(rr.Body).Decode(&resp)
+	assert.NoError(suite.T(), err)
+	assert.Contains(suite.T(), resp.RedirectURI, "https://client.example.com/callback")
+	assert.Contains(suite.T(), resp.RedirectURI, "error=server_error")
+	assert.Contains(suite.T(), resp.RedirectURI, "state=test-state")
+}
+
 func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_InvalidRequestType() {
 	// nil body causes JSON decode to fail → getOAuthMessage returns nil → 400
 	req := httptest.NewRequest(http.MethodPost, "/oauth2/auth/callback", nil)
@@ -598,7 +629,7 @@ func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_Decode
 	_, _, err := decodeAttributesFromAssertion(invalidJWT)
 
 	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "Failed to decode the JWT token")
+	assert.Contains(suite.T(), err.Error(), "failed to decode the JWT token")
 }
 
 func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_InvalidSubClaim() {

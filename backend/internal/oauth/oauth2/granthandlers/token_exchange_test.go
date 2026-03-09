@@ -1085,8 +1085,8 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_UnsupportedID
 	errResp := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
 	assert.NotNil(suite.T(), errResp)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errResp.Error)
-	assert.Contains(suite.T(), errResp.ErrorDescription, "not supported")
-	assert.Contains(suite.T(), errResp.ErrorDescription, string(constants.TokenTypeIdentifierIDToken))
+	assert.Contains(suite.T(), errResp.ErrorDescription, "Unsupported requested_token_type")
+	assert.Contains(suite.T(), errResp.ErrorDescription, "Only access tokens and JWT tokens are supported")
 }
 
 func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_UnsupportedRefreshTokenType() {
@@ -1102,8 +1102,8 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_UnsupportedRe
 	errResp := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
 	assert.NotNil(suite.T(), errResp)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errResp.Error)
-	assert.Contains(suite.T(), errResp.ErrorDescription, "not supported")
-	assert.Contains(suite.T(), errResp.ErrorDescription, string(constants.TokenTypeIdentifierRefreshToken))
+	assert.Contains(suite.T(), errResp.ErrorDescription, "Unsupported requested_token_type")
+	assert.Contains(suite.T(), errResp.ErrorDescription, "Only access tokens and JWT tokens are supported")
 }
 
 func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_CompleteTokenExchangeFlow() {

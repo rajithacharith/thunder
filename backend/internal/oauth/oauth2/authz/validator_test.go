@@ -284,7 +284,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 
 	assert.True(suite.T(), sendErrorToApp)
 	assert.Equal(suite.T(), constants.ErrorInvalidTarget, errorCode)
-	assert.Contains(suite.T(), errorMessage, "absolute URI with a scheme")
+	assert.Contains(suite.T(), errorMessage, "Invalid resource parameter")
 }
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_ResourceWithFragment() {
@@ -302,7 +302,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 
 	assert.True(suite.T(), sendErrorToApp)
 	assert.Equal(suite.T(), constants.ErrorInvalidTarget, errorCode)
-	assert.Contains(suite.T(), errorMessage, "fragment component")
+	assert.Contains(suite.T(), errorMessage, "Invalid resource parameter")
 }
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_ResourceRelativeURI() {
@@ -320,7 +320,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 
 	assert.True(suite.T(), sendErrorToApp)
 	assert.Equal(suite.T(), constants.ErrorInvalidTarget, errorCode)
-	assert.Contains(suite.T(), errorMessage, "absolute URI with a scheme")
+	assert.Contains(suite.T(), errorMessage, "Invalid resource parameter")
 }
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_ResourceInvalidURI() {
@@ -338,7 +338,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 
 	assert.True(suite.T(), sendErrorToApp)
 	assert.Equal(suite.T(), constants.ErrorInvalidTarget, errorCode)
-	assert.Contains(suite.T(), errorMessage, "absolute URI")
+	assert.Contains(suite.T(), errorMessage, "Invalid resource parameter")
 }
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_ResourceParameterWithQuery() {
@@ -416,7 +416,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCERequired_
 
 	assert.True(suite.T(), sendErrorToApp)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errorCode)
-	assert.Equal(suite.T(), "Invalid PKCE parameters", errorMessage)
+	assert.Equal(suite.T(), "Invalid code_challenge or code_challenge_method parameter", errorMessage)
 }
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_PKCERequired_ValidPKCE() {
@@ -478,7 +478,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCERequired_
 
 	assert.True(suite.T(), sendErrorToApp)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errorCode)
-	assert.Equal(suite.T(), "Invalid PKCE parameters", errorMessage)
+	assert.Equal(suite.T(), "Invalid code_challenge or code_challenge_method parameter", errorMessage)
 }
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_PKCENotRequired() {
@@ -537,7 +537,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateAuthzReq_PKCENotRequir
 
 	assert.True(suite.T(), sendErrorToApp)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errorCode)
-	assert.Equal(suite.T(), "Invalid PKCE parameters", errorMessage)
+	assert.Equal(suite.T(), "Invalid code_challenge or code_challenge_method parameter", errorMessage)
 }
 
 // Prompt Parameter Validation Tests (OIDC Core §3.1.2.1)
@@ -629,7 +629,7 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_Pr
 
 	assert.True(suite.T(), sendErrorToApp)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errorCode)
-	assert.Contains(suite.T(), errorMessage, "Invalid prompt parameter value")
+	assert.Equal(suite.T(), "Unsupported prompt parameter value", errorMessage)
 }
 
 func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_PromptSelectAccount() {
@@ -683,5 +683,5 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthzRequest_Pr
 
 	assert.True(suite.T(), sendErrorToApp)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errorCode)
-	assert.Contains(suite.T(), errorMessage, "Invalid prompt parameter value")
+	assert.Equal(suite.T(), "The prompt parameter cannot be empty", errorMessage)
 }

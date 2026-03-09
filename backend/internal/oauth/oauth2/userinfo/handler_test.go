@@ -82,7 +82,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_MissingBearerToken() {
 
 	assert.Equal(s.T(), http.StatusBadRequest, rr.Code)
 	assert.Contains(s.T(), rr.Body.String(), constants.ErrorInvalidRequest)
-	assert.Contains(s.T(), rr.Body.String(), "missing access token")
+	assert.Contains(s.T(), rr.Body.String(), "Invalid or malformed Bearer token")
 	wwwAuth := rr.Header().Get("WWW-Authenticate")
 	assert.Contains(s.T(), wwwAuth, "Bearer")
 	assert.Contains(s.T(), wwwAuth, constants.ErrorInvalidRequest)
@@ -261,7 +261,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_InvalidAuthorizationHeader
 
 	assert.Equal(s.T(), http.StatusBadRequest, rr.Code)
 	assert.Contains(s.T(), rr.Body.String(), constants.ErrorInvalidRequest)
-	assert.Contains(s.T(), rr.Body.String(), "invalid Authorization header format")
+	assert.Contains(s.T(), rr.Body.String(), "Invalid or malformed Bearer token")
 }
 
 // TestHandleUserInfo_EncodingError tests encoding error handling

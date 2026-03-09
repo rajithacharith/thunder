@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,14 +16,12 @@
  * under the License.
  */
 
-package jwks
+package authz
 
-import "github.com/asgardeo/thunder/internal/system/error/serviceerror"
+import "errors"
 
-// ErrorNoCertificateFound is returned when no certificate is found to generate JWKS.
-var ErrorNoCertificateFound = &serviceerror.ServiceError{
-	Code:             "JWKS-5001",
-	Type:             serviceerror.ServerErrorType,
-	Error:            "No certificate found.",
-	ErrorDescription: "No certificate found to generate JWKS.",
-}
+// errAuthorizationCodeNotFound is returned when an authorization code is not found in the database.
+var errAuthorizationCodeNotFound = errors.New("authorization code not found")
+
+// errAuthRequestNotFound is returned when an authorization request context is not found in the store.
+var errAuthRequestNotFound = errors.New("authorization request context not found")

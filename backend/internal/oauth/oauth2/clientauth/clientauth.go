@@ -223,7 +223,7 @@ func validateClientAssertion(
 	discoveryService discovery.DiscoveryServiceInterface,
 	clientID, clientAssertion string) error {
 	if oauthApp.Certificate == nil || oauthApp.Certificate.Type == cert.CertificateTypeNone {
-		return fmt.Errorf("No certificate configured for client assertion validation")
+		return fmt.Errorf("no certificate configured for client assertion validation")
 	}
 
 	// Get token endpoint from discovery service for aud validation
@@ -232,7 +232,7 @@ func validateClientAssertion(
 	if oauthApp.Certificate.Type == cert.CertificateTypeJWKSURI {
 		if err := jwtService.VerifyJWTWithJWKS(clientAssertion, oauthApp.Certificate.Value, tokenEndpoint,
 			clientID); err != nil {
-			return fmt.Errorf("Client assertion verification with JWKS URI failed: %v", err.Error)
+			return fmt.Errorf("client assertion verification with JWKS URI failed: %v", err.Error)
 		}
 		return nil
 	}
@@ -241,12 +241,12 @@ func validateClientAssertion(
 		Keys []map[string]any `json:"keys"`
 	}
 	if err := json.Unmarshal([]byte(oauthApp.Certificate.Value), &jwks); err != nil {
-		return fmt.Errorf("Invalid jwks certificate format: %v", err.Error())
+		return fmt.Errorf("invalid JWKS certificate format: %w", err)
 	}
 
 	var kid string
 	if header, err := jwt.DecodeJWTHeader(clientAssertion); err != nil {
-		return fmt.Errorf("Failed to decode header: %v", err.Error())
+		return fmt.Errorf("failed to decode header: %w", err)
 	} else if k, ok := header["kid"].(string); !ok || k == "" {
 		return fmt.Errorf("JWT header missing 'kid' claim or 'kid' is not a string")
 	} else {
@@ -261,16 +261,16 @@ func validateClientAssertion(
 		}
 	}
 	if jwk == nil {
-		return fmt.Errorf("No matching key found in JWKS for kid: %v", kid)
+		return fmt.Errorf("no matching key found in JWKS for kid: %v", kid)
 	}
 
 	pubKey, err := jws.JWKToPublicKey(jwk)
 	if err != nil {
-		return fmt.Errorf("Failed to convert JWK to public key: %v", err.Error())
+		return fmt.Errorf("failed to convert JWK to public key: %w", err)
 	}
 
 	if err := jwtService.VerifyJWTWithPublicKey(clientAssertion, pubKey, tokenEndpoint, clientID); err != nil {
-		return fmt.Errorf("Client assertion verification failed: %v", err.Error)
+		return fmt.Errorf("client assertion verification failed: %v", err.Error)
 	}
 
 	return nil
