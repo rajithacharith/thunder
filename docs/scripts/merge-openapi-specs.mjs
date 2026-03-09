@@ -33,10 +33,15 @@ const logger = createLogger('merge-openapi-specs');
 
 const API_DIR = join(__dirname, '..', '..', 'api');
 const STATIC_DIR = join(__dirname, '..', 'static', 'api');
-const OUTPUT_FILE = join(STATIC_DIR, 'combined.yaml');
+
+// Resolve version path from --version-path <path> CLI arg, defaulting to 'next'
+const versionPathArgIndex = process.argv.indexOf('--version-path');
+const versionPath = versionPathArgIndex !== -1 ? process.argv[versionPathArgIndex + 1] : 'next';
+
+const OUTPUT_FILE = join(STATIC_DIR, versionPath, 'combined.yaml');
 
 function mergeOpenAPISpecs() {
-  logger.info('🔄 Merging OpenAPI specifications...');
+  logger.info(`🔄 Merging OpenAPI specifications (version path: ${versionPath})...`);
 
   // Dynamically read all YAML files from the API directory
   const API_FILES = readdirSync(API_DIR)
@@ -134,10 +139,12 @@ function mergeOpenAPISpecs() {
   // Sort tags alphabetically
   combined.tags.sort((a, b) => a.name.localeCompare(b.name));
 
-  // Ensure the output directory exists
-  if (!existsSync(STATIC_DIR)) {
-    mkdirSync(STATIC_DIR, {recursive: true});
-    logger.info(`📁 Created output directory: ${STATIC_DIR}`);
+  // Ensure the output directory exists (including any version subdirectory)
+  const outputDir = dirname(OUTPUT_FILE);
+
+  if (!existsSync(outputDir)) {
+    mkdirSync(outputDir, {recursive: true});
+    logger.info(`📁 Created output directory: ${outputDir}`);
   }
 
   // Write the combined spec

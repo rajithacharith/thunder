@@ -19,13 +19,12 @@
 import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
-import fs from 'fs';
 import webpackPlugin from './plugins/webpackPlugin';
 import thunderConfig from './docusaurus.thunder.config';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
-const resourcesHTML = fs.readFileSync('./src/snippets/resources.html', 'utf-8');
+const baseUrl = `/${thunderConfig.documentation.deployment.production.baseUrl}/`;
 
 const config: Config = {
   title: thunderConfig.project.name,
@@ -44,7 +43,7 @@ const config: Config = {
 
   url: thunderConfig.documentation.deployment.production.url,
   // Since we use GitHub pages, the base URL is the repository name.
-  baseUrl: `/${thunderConfig.documentation.deployment.production.baseUrl}/`,
+  baseUrl,
 
   // GitHub pages deployment config.
   organizationName: thunderConfig.project.source.github.owner.name, // Usually your GitHub org/user name.
@@ -127,12 +126,14 @@ const config: Config = {
           className: 'navbar__link--docs',
         },
         {
-          to: '/apis',
+          type: 'doc',
+          docId: 'apis',
           position: 'right',
           label: 'APIs',
         },
         {
-          to: '/docs/sdks/overview',
+          type: 'doc',
+          docId: 'sdks/overview',
           position: 'right',
           label: 'SDKs',
         },
@@ -143,11 +144,20 @@ const config: Config = {
           className: 'navbar__link--dropdown',
           items: [
             {
-              type: 'html',
-              value: resourcesHTML
-                .replace('{{ISSUES_URL}}', thunderConfig.project.source.github.issuesUrl)
-                .replace('{{DISCUSSIONS_URL}}', thunderConfig.project.source.github.discussionsUrl),
-              className: 'navbar__link--dropdown-item',
+              type: 'doc',
+              docId: 'releases',
+              label: 'Releases',
+              className: 'navbar-resources__releases',
+            },
+            {
+              label: 'Discussions',
+              href: thunderConfig.project.source.github.discussionsUrl,
+              className: 'navbar-resources__discussions',
+            },
+            {
+              label: 'Report an Issue',
+              href: thunderConfig.project.source.github.issuesUrl,
+              className: 'navbar-resources__issues',
             },
           ],
         },
@@ -163,11 +173,11 @@ const config: Config = {
           className: 'navbar__github--link',
           'aria-label': 'GitHub repository',
         },
-        {
+        thunderConfig.documentation.versioning.enabled && {
           type: 'docsVersionDropdown',
           position: 'right',
         },
-      ],
+      ].filter(Boolean),
     },
     footer: {
       style: 'dark',
