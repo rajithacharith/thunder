@@ -142,6 +142,11 @@ func isCompositeModeEnabled() bool {
 	return getFlowStoreMode() == serverconst.StoreModeComposite
 }
 
+// isDeclarativeModeEnabled checks if immutable-only store mode is enabled for flows.
+func isDeclarativeModeEnabled() bool {
+	return getFlowStoreMode() == serverconst.StoreModeDeclarative
+}
+
 // registerRoutes registers the HTTP routes for flow management.
 func registerRoutes(mux *http.ServeMux, handler *flowMgtHandler) {
 	opts1 := middleware.CORSOptions{

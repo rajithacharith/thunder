@@ -46,9 +46,10 @@ import (
 )
 
 const (
-	svcTestUserID1   = "user-1"
-	svcTestUserID123 = "user-123"
-	testUserType     = "employee"
+	svcTestUserID1            = "user-1"
+	svcTestUserID123          = "user-123"
+	svcTestDeclarativeUserID1 = "declarative-user-1"
+	testUserType              = "employee"
 )
 const testOrgID = "11111111-1111-1111-1111-111111111111"
 
@@ -230,6 +231,7 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 				existingUserID := svcTestUserID123
 				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				userStoreMock := newUserStoreInterfaceMock(t)
+				userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				userStoreMock.
 					On("IdentifyUser", mock.Anything, mock.AnythingOfType("map[string]interface {}")).
 					Return(&existingUserID, nil).
@@ -270,6 +272,7 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 			setup: func(t *testing.T) (*userService, testMocks) {
 				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				userStoreMock := newUserStoreInterfaceMock(t)
+				userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				userStoreMock.
 					On("IdentifyUser", mock.Anything, mock.AnythingOfType("map[string]interface {}")).
 					Return((*string)(nil), nil).
@@ -308,6 +311,7 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 			setup: func(t *testing.T) (*userService, testMocks) {
 				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				userStoreMock := newUserStoreInterfaceMock(t)
+				userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				userStoreMock.
 					On("IdentifyUser", mock.Anything, mock.AnythingOfType("map[string]interface {}")).
 					Return((*string)(nil), errors.New("store failure")).
@@ -353,6 +357,7 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 				existingUserID := svcTestUserID123
 				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				userStoreMock := newUserStoreInterfaceMock(t)
+				userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				userStoreMock.
 					On("IdentifyUser", mock.Anything, mock.AnythingOfType("map[string]interface {}")).
 					Return(&existingUserID, nil).
@@ -757,6 +762,7 @@ func TestUserService_CreateUser_UsesTransactionAndStore(t *testing.T) {
 		Once()
 
 	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	var capturedCtx context.Context
 	storeMock.
 		On("CreateUser", mock.Anything, mock.MatchedBy(func(u User) bool {
@@ -817,6 +823,7 @@ func TestUserService_CreateUser_PropagatesStoreError(t *testing.T) {
 		Once()
 
 	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.
 		On("CreateUser", mock.Anything, mock.Anything, mock.Anything).
 		Return(storeErr).
@@ -867,6 +874,7 @@ func TestUserService_CreateUser_TransactionerError(t *testing.T) {
 		Once()
 
 	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.AssertNotCalled(t, "CreateUser", mock.Anything, mock.Anything, mock.Anything)
 
 	txMock := &fakeTransactioner{err: errors.New("tx failed")}
@@ -1076,6 +1084,7 @@ func TestUserService_UpdateUserCredentials_Validation(t *testing.T) {
 
 	t.Run("ReturnsInvalidCredentialForUnsupportedType", func(t *testing.T) {
 		userStoreMock := newUserStoreInterfaceMock(t)
+		userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 		userStoreMock.
 			On("GetUser", mock.Anything, svcTestUserID1).
 			Return(User{ID: svcTestUserID1}, nil).
@@ -1116,6 +1125,7 @@ func TestUserService_UpdateUserCredentials_Validation(t *testing.T) {
 
 func TestUserService_UpdateUserCredentials_UserNotFound(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	userStoreMock.
 		On("GetUser", mock.Anything, svcTestUserID1).
 		Return(User{}, ErrUserNotFound).
@@ -1135,6 +1145,7 @@ func TestUserService_UpdateUserCredentials_UserNotFound(t *testing.T) {
 
 func TestUserService_UpdateUserCredentials_Succeeds(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	existingCredentials := Credentials{
 		CredentialType("password"): {
 			{
@@ -1240,6 +1251,7 @@ func TestUserService_UpdateUserCredentials_Succeeds(t *testing.T) {
 
 func TestUserService_UpdateUserCredentials_MultiplePasskeys(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	existingCredentials := Credentials{}
 
 	userStoreMock.
@@ -1308,6 +1320,7 @@ func TestUserService_UpdateUserCredentials_MultiplePasskeys(t *testing.T) {
 
 func TestUserService_UpdateUserCredentials_RejectsMultiplePasswords(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	existingCredentials := Credentials{}
 
 	userStoreMock.
@@ -1376,6 +1389,7 @@ func TestUserService_GetUserCredentialsByType_Validation(t *testing.T) {
 
 func TestUserService_GetUserCredentialsByType_UserNotFound(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	userStoreMock.
 		On("GetCredentials", mock.Anything, svcTestUserID1).
 		Return(User{}, Credentials{}, ErrUserNotFound).
@@ -1393,6 +1407,7 @@ func TestUserService_GetUserCredentialsByType_UserNotFound(t *testing.T) {
 
 func TestUserService_GetUserCredentialsByType_StoreError(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	userStoreMock.
 		On("GetCredentials", mock.Anything, svcTestUserID1).
 		Return(User{}, Credentials{}, errors.New("database error")).
@@ -1410,6 +1425,7 @@ func TestUserService_GetUserCredentialsByType_StoreError(t *testing.T) {
 
 func TestUserService_GetUserCredentialsByType_CredentialTypeNotFound(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	existingCredentials := Credentials{
 		"pin": {
 			{
@@ -1436,6 +1452,7 @@ func TestUserService_GetUserCredentialsByType_CredentialTypeNotFound(t *testing.
 
 func TestUserService_GetUserCredentialsByType_EmptyCredentialArray(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	existingCredentials := Credentials{
 		"password": {}, // Empty array
 		"pin": {
@@ -1463,6 +1480,7 @@ func TestUserService_GetUserCredentialsByType_EmptyCredentialArray(t *testing.T)
 
 func TestUserService_GetUserCredentialsByType_Succeeds(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	existingCredentials := Credentials{
 		"password": {
 			{
@@ -1509,6 +1527,7 @@ func TestUserService_GetUserCredentialsByType_Succeeds(t *testing.T) {
 
 func TestUserService_GetUserCredentialsByType_MultipleCredentials(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	existingCredentials := Credentials{
 		"passkey": {
 			{Value: "public-key-1"},
@@ -1551,6 +1570,7 @@ func TestUserService_UpdateUserAttributes_Validation(t *testing.T) {
 
 func TestUserService_UpdateUserAttributes_RejectsCredentialAttributes(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.On("GetUser", mock.Anything, svcTestUserID1).
 		Return(User{ID: svcTestUserID1, Type: "Person"}, nil).
 		Once()
@@ -1574,6 +1594,7 @@ func TestUserService_UpdateUserAttributes_RejectsCredentialAttributes(t *testing
 
 func TestUserService_UpdateUserAttributes_UserNotFound(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.On("GetUser", mock.Anything, svcTestUserID1).Return(User{}, ErrUserNotFound).Once()
 
 	service := &userService{
@@ -1590,6 +1611,7 @@ func TestUserService_UpdateUserAttributes_UserNotFound(t *testing.T) {
 
 func TestUserService_UpdateUserAttributes_SchemaValidationFails(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.
 		On("GetUser", mock.Anything, svcTestUserID1).
 		Return(User{ID: svcTestUserID1, Type: testUserType, Attributes: json.RawMessage(`{"email":"old"}`)}, nil)
@@ -1620,6 +1642,7 @@ func TestUserService_UpdateUserAttributes_SchemaValidationFails(t *testing.T) {
 
 func TestUserService_UpdateUserAttributes_Succeeds(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.
 		On("GetUser", mock.Anything, svcTestUserID1).
 		Return(User{ID: svcTestUserID1, Type: testUserType,
@@ -1673,6 +1696,7 @@ func TestUserService_GetUser_ReturnsUser(t *testing.T) {
 	expectedUser := User{ID: userID, OrganizationUnit: testOrgID}
 
 	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.On("GetUser", mock.Anything, userID).Return(expectedUser, nil).Once()
 
 	service := &userService{
@@ -1689,6 +1713,7 @@ func TestUserService_DeleteUser(t *testing.T) {
 	userID := svcTestUserID1
 
 	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.On("GetUser", mock.Anything, userID).
 		Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
 	storeMock.On("DeleteUser", mock.Anything, userID).Return(nil).Once()
@@ -1712,6 +1737,7 @@ func TestUserService_UpdateUser(t *testing.T) {
 		Attributes: json.RawMessage(`{"updated":"true"}`)}
 
 	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 
 	// Mock GetUser pre-fetch for authz check
 	storeMock.On("GetUser", mock.Anything, userID).
@@ -1766,6 +1792,7 @@ func TestUserService_UpdateUser_WithCredentials(t *testing.T) {
 	}
 
 	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	hashMock := hashmock.NewHashServiceInterfaceMock(t)
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
@@ -2083,6 +2110,7 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 			}
 
 			storeMock := newUserStoreInterfaceMock(t)
+			storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 			hashMock := hashmock.NewHashServiceInterfaceMock(t)
 			ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 			userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
@@ -2314,6 +2342,7 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storeMock := newUserStoreInterfaceMock(t)
+			storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 			ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 			userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 			hashMock := hashmock.NewHashServiceInterfaceMock(t)
@@ -2428,6 +2457,7 @@ func TestUserService_UpdateUser_PreservesMultipleCredentials(t *testing.T) {
 
 	// Setup mocks
 	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	hashMock := hashmock.NewHashServiceInterfaceMock(t)
@@ -2557,6 +2587,7 @@ func TestUserService_GetUserList(t *testing.T) {
 	filters := map[string]interface{}{}
 
 	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.On("GetUserListCount", mock.Anything, filters).Return(5, nil).Once()
 	storeMock.On("GetUserList", mock.Anything, limit, offset, filters).
 		Return([]User{{ID: svcTestUserID1}}, nil).
@@ -2581,6 +2612,7 @@ func TestUserService_GetUserList_ScopedByOUIDs(t *testing.T) {
 	ouIDs := []string{testOrgID}
 
 	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.On("GetUserListCountByOUIDs", mock.Anything, ouIDs, filters).Return(3, nil).Once()
 	storeMock.On("GetUserListByOUIDs", mock.Anything, ouIDs, limit, offset, filters).
 		Return([]User{{ID: svcTestUserID1, OrganizationUnit: testOrgID}}, nil).
@@ -2625,6 +2657,7 @@ func TestUserService_GetUserList_EmptyOUIDs(t *testing.T) {
 
 func TestUserService_GetUserGroups(t *testing.T) {
 	mockStore := newUserStoreInterfaceMock(t)
+	mockStore.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	userID := svcTestUserID123
 	limit, offset := 10, 0
 
@@ -2648,6 +2681,7 @@ func TestUserService_GetUserGroups(t *testing.T) {
 
 func TestUserService_VerifyUser(t *testing.T) {
 	mockStore := newUserStoreInterfaceMock(t)
+	mockStore.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	mockHash := hashmock.NewHashServiceInterfaceMock(t)
 	userID := svcTestUserID123
 	creds := map[string]interface{}{"password": "password123"}
@@ -2680,6 +2714,7 @@ func TestUserService_VerifyUser(t *testing.T) {
 
 func TestUserService_AuthenticateUser(t *testing.T) {
 	mockStore := newUserStoreInterfaceMock(t)
+	mockStore.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	mockHash := hashmock.NewHashServiceInterfaceMock(t)
 
 	identifiers := map[string]interface{}{
@@ -2719,6 +2754,7 @@ func TestUserService_AuthenticateUser(t *testing.T) {
 
 func TestUserService_ValidateUserIDs(t *testing.T) {
 	mockStore := newUserStoreInterfaceMock(t)
+	mockStore.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	userIDs := []string{"u1", "u2"}
 
 	mockStore.On("ValidateUserIDs", mock.Anything, userIDs).Return([]string{}, nil)
@@ -2801,6 +2837,7 @@ func TestUserService_ValidateUserIDsInOUs(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			storeMock := newUserStoreInterfaceMock(t)
+			storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 			if tc.setup != nil {
 				tc.setup(storeMock)
 			}
@@ -2824,6 +2861,7 @@ func TestUserService_ValidateUserIDsInOUs(t *testing.T) {
 
 func TestUserService_GetUserGroups_ErrorCases(t *testing.T) {
 	mockStore := newUserStoreInterfaceMock(t)
+	mockStore.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	service := &userService{
 		userStore:    mockStore,
 		authzService: newAllowAllAuthz(t),
@@ -2868,6 +2906,7 @@ func TestUserService_GetUserGroups_ErrorCases(t *testing.T) {
 
 func TestUserService_VerifyUser_ErrorCases(t *testing.T) {
 	mockStore := newUserStoreInterfaceMock(t)
+	mockStore.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	mockHash := hashmock.NewHashServiceInterfaceMock(t)
 	service := &userService{userStore: mockStore, hashService: mockHash}
 	ctx := context.Background()
@@ -2924,6 +2963,7 @@ func TestUserService_VerifyUser_ErrorCases(t *testing.T) {
 
 func TestUserService_AuthenticateUser_ErrorCases(t *testing.T) {
 	mockStore := newUserStoreInterfaceMock(t)
+	mockStore.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	service := &userService{userStore: mockStore}
 	ctx := context.Background()
 
@@ -2972,6 +3012,7 @@ func TestBuildPaginationLinks(t *testing.T) {
 
 func TestUserService_CRUD_ErrorCases(t *testing.T) {
 	mockStore := newUserStoreInterfaceMock(t)
+	mockStore.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	service := &userService{
 		userStore:     mockStore,
 		transactioner: &fakeTransactioner{},
@@ -3156,6 +3197,7 @@ func TestUserService_IdentifyVerify_EdgeCases(t *testing.T) {
 
 	t.Run("VerifyUser_InvalidCredentialType", func(t *testing.T) {
 		mockStore := newUserStoreInterfaceMock(t)
+		mockStore.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 		mockStore.On("GetCredentials", mock.Anything, "u1").
 			Return(User{ID: "u1"}, Credentials{CredentialType("password"): []Credential{{Value: "h"}}}, nil).Once()
 		service := &userService{userStore: mockStore}
@@ -3167,6 +3209,7 @@ func TestUserService_IdentifyVerify_EdgeCases(t *testing.T) {
 
 func TestUserService_MoreErrorCases(t *testing.T) {
 	storeMock := &userStoreInterfaceMock{}
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	txMock := &fakeTransactioner{}
@@ -3601,6 +3644,7 @@ func TestUserService_CreateUser_GetCredentialAttributesInternalError(t *testing.
 
 func TestUserService_UpdateUser_NilSchemaService(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.On("GetUser", mock.Anything, svcTestUserID1).
 		Return(User{ID: svcTestUserID1, OrganizationUnit: testOrgID, Type: testUserType}, nil).Once()
 
@@ -3629,6 +3673,7 @@ func TestUserService_UpdateUser_SchemaNotFound(t *testing.T) {
 		Return(nil, &userschema.ErrorUserSchemaNotFound).Once()
 
 	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.On("GetUser", mock.Anything, svcTestUserID1).
 		Return(User{ID: svcTestUserID1, OrganizationUnit: testOrgID, Type: testUserType}, nil).Once()
 
@@ -3654,6 +3699,7 @@ func TestUserService_UpdateUser_SchemaNotFound(t *testing.T) {
 
 func TestUserService_UpdateUserAttributes_NilSchemaService(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.On("GetUser", mock.Anything, svcTestUserID1).
 		Return(User{ID: svcTestUserID1, Type: testUserType}, nil).Once()
 
@@ -3671,6 +3717,7 @@ func TestUserService_UpdateUserAttributes_NilSchemaService(t *testing.T) {
 
 func TestUserService_UpdateUserAttributes_SchemaNotFound(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.On("GetUser", mock.Anything, svcTestUserID1).
 		Return(User{ID: svcTestUserID1, Type: testUserType}, nil).Once()
 
@@ -3693,6 +3740,7 @@ func TestUserService_UpdateUserAttributes_SchemaNotFound(t *testing.T) {
 
 func TestUserService_UpdateUserCredentials_NilSchemaService(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	userStoreMock.On("GetUser", mock.Anything, svcTestUserID1).
 		Return(User{ID: svcTestUserID1, OrganizationUnit: testOrgID, Type: testUserType}, nil).Once()
 	userStoreMock.On("GetCredentials", mock.Anything, svcTestUserID1).
@@ -3712,6 +3760,7 @@ func TestUserService_UpdateUserCredentials_NilSchemaService(t *testing.T) {
 
 func TestUserService_UpdateUserCredentials_SchemaNotFound(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	userStoreMock.On("GetUser", mock.Anything, svcTestUserID1).
 		Return(User{ID: svcTestUserID1, OrganizationUnit: testOrgID, Type: testUserType}, nil).Once()
 	userStoreMock.On("GetCredentials", mock.Anything, svcTestUserID1).
@@ -3819,6 +3868,7 @@ func TestUserService_GetUserList_ErrorCases(t *testing.T) {
 			name: "AllAllowed_GetUserListCount_Error_ReturnsInternalServerError",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUserListCount", mock.Anything, filters).Return(0, storeErr).Once()
 				return &userService{
 					userStore:    storeMock,
@@ -3831,6 +3881,7 @@ func TestUserService_GetUserList_ErrorCases(t *testing.T) {
 			name: "AllAllowed_GetUserList_Error_ReturnsInternalServerError",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUserListCount", mock.Anything, filters).Return(5, nil).Once()
 				storeMock.On("GetUserList", mock.Anything, limit, offset, filters).
 					Return(nil, storeErr).Once()
@@ -3845,6 +3896,7 @@ func TestUserService_GetUserList_ErrorCases(t *testing.T) {
 			name: "ScopedOUIDs_GetUserListCountByOUIDs_Error_ReturnsInternalServerError",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUserListCountByOUIDs", mock.Anything, ouIDs, filters).
 					Return(0, storeErr).Once()
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
@@ -3861,6 +3913,7 @@ func TestUserService_GetUserList_ErrorCases(t *testing.T) {
 			name: "ScopedOUIDs_GetUserListByOUIDs_Error_ReturnsInternalServerError",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUserListCountByOUIDs", mock.Anything, ouIDs, filters).Return(3, nil).Once()
 				storeMock.On("GetUserListByOUIDs", mock.Anything, ouIDs, limit, offset, filters).
 					Return(nil, storeErr).Once()
@@ -4024,6 +4077,7 @@ func TestUserService_GetUser_ErrorCases(t *testing.T) {
 			name: "StoreError_ReturnsInternalServerError",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).Return(User{}, storeErr).Once()
 				return &userService{
 					userStore:    storeMock,
@@ -4036,6 +4090,7 @@ func TestUserService_GetUser_ErrorCases(t *testing.T) {
 			name: "AuthzDenied_ReturnsUnauthorized",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
 					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
 
@@ -4054,6 +4109,7 @@ func TestUserService_GetUser_ErrorCases(t *testing.T) {
 			name: "AuthzServiceError_ReturnsInternalServerError",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
 					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
 
@@ -4102,6 +4158,7 @@ func TestUserService_GetUserGroups_AuthzChecks(t *testing.T) {
 			name: "AuthzDenied_ReturnsUnauthorized",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
 					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
 
@@ -4120,6 +4177,7 @@ func TestUserService_GetUserGroups_AuthzChecks(t *testing.T) {
 			name: "AuthzServiceError_ReturnsInternalServerError",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
 					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
 
@@ -4167,6 +4225,7 @@ func TestUserService_UpdateUser_PreFetchAndAuthzChecks(t *testing.T) {
 			name: "GetUser_NotFound_ReturnsUserNotFound",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).Return(User{}, ErrUserNotFound).Once()
 				return &userService{
 					userStore:    storeMock,
@@ -4179,6 +4238,7 @@ func TestUserService_UpdateUser_PreFetchAndAuthzChecks(t *testing.T) {
 			name: "GetUser_StoreError_ReturnsInternalServerError",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).Return(User{}, storeErr).Once()
 				return &userService{
 					userStore:    storeMock,
@@ -4191,6 +4251,7 @@ func TestUserService_UpdateUser_PreFetchAndAuthzChecks(t *testing.T) {
 			name: "AuthzDenied_ReturnsUnauthorized",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
 					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
 
@@ -4209,6 +4270,7 @@ func TestUserService_UpdateUser_PreFetchAndAuthzChecks(t *testing.T) {
 			name: "AuthzServiceError_ReturnsInternalServerError",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
 					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
 
@@ -4256,6 +4318,7 @@ func TestUserService_UpdateUserAttributes_PreFetchAndAuthzChecks(t *testing.T) {
 			name: "GetUser_StoreError_ReturnsInternalServerError",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).Return(User{}, storeErr).Once()
 				return &userService{
 					userStore:    storeMock,
@@ -4270,6 +4333,7 @@ func TestUserService_UpdateUserAttributes_PreFetchAndAuthzChecks(t *testing.T) {
 			name: "AuthzDenied_ReturnsUnauthorized",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				// Single pre-fetch: used for both schema lookup and authz check.
 				storeMock.On("GetUser", mock.Anything, userID).
 					Return(User{ID: userID, Type: testUserType, OrganizationUnit: testOrgID}, nil).Once()
@@ -4295,6 +4359,7 @@ func TestUserService_UpdateUserAttributes_PreFetchAndAuthzChecks(t *testing.T) {
 			name: "AuthzServiceError_ReturnsInternalServerError",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				// Single pre-fetch: used for both schema lookup and authz check.
 				storeMock.On("GetUser", mock.Anything, userID).
 					Return(User{ID: userID, Type: testUserType, OrganizationUnit: testOrgID}, nil).Once()
@@ -4347,6 +4412,7 @@ func TestUserService_UpdateUserCredentials_PreFetchAndAuthzChecks(t *testing.T) 
 			name: "GetUser_StoreError_ReturnsInternalServerError",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).Return(User{}, storeErr).Once()
 				return &userService{
 					userStore:    storeMock,
@@ -4359,6 +4425,7 @@ func TestUserService_UpdateUserCredentials_PreFetchAndAuthzChecks(t *testing.T) 
 			name: "AuthzDenied_ReturnsUnauthorized",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
 					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
 
@@ -4377,6 +4444,7 @@ func TestUserService_UpdateUserCredentials_PreFetchAndAuthzChecks(t *testing.T) 
 			name: "AuthzServiceError_ReturnsInternalServerError",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
 					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
 
@@ -4421,6 +4489,7 @@ func TestUserService_DeleteUser_PreFetchAndAuthzChecks(t *testing.T) {
 			name: "GetUser_StoreError_ReturnsInternalServerError",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).Return(User{}, storeErr).Once()
 				return &userService{
 					userStore:     storeMock,
@@ -4434,6 +4503,7 @@ func TestUserService_DeleteUser_PreFetchAndAuthzChecks(t *testing.T) {
 			name: "AuthzDenied_ReturnsUnauthorized",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
 					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
 
@@ -4453,6 +4523,7 @@ func TestUserService_DeleteUser_PreFetchAndAuthzChecks(t *testing.T) {
 			name: "AuthzServiceError_ReturnsInternalServerError",
 			setup: func(t *testing.T) *userService {
 				storeMock := newUserStoreInterfaceMock(t)
+				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
 					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
 
@@ -4564,4 +4635,260 @@ func (suite *ServiceIsUserDeclarativeTestSuite) TestIsUserDeclarative_Whitespace
 // TestServiceIsUserDeclarativeTestSuite runs the test suite.
 func TestServiceIsUserDeclarativeTestSuite(t *testing.T) {
 	suite.Run(t, new(ServiceIsUserDeclarativeTestSuite))
+}
+
+// TestUpdateUser_DeclarativeResource tests that UpdateUser returns ErrorCannotModifyDeclarativeResource
+// when the user is declarative.
+func TestUpdateUser_DeclarativeResource(t *testing.T) {
+	userID := svcTestDeclarativeUserID1
+	updatedUser := User{
+		ID:               userID,
+		OrganizationUnit: "ou1",
+		Type:             "employee",
+		Attributes:       json.RawMessage(`{"name":"test"}`),
+	}
+
+	storeMock := newUserStoreInterfaceMock(t)
+	// Mock GetUser for pre-fetch
+	storeMock.On("GetUser", mock.Anything, userID).
+		Return(User{ID: userID, OrganizationUnit: "ou1", Type: "employee"}, nil).Once()
+
+	// Mock IsUserDeclarative to return true
+	storeMock.On("IsUserDeclarative", mock.Anything, userID).Return(true, nil).Once()
+
+	service := &userService{
+		userStore:     storeMock,
+		transactioner: &fakeTransactioner{},
+		authzService:  newAllowAllAuthz(t),
+	}
+
+	_, err := service.UpdateUser(context.Background(), userID, &updatedUser)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorCannotModifyDeclarativeResource.Code, err.Code)
+}
+
+// TestUpdateUser_DeclarativeCheckError tests that UpdateUser surfaces errors from IsUserDeclarative.
+func TestUpdateUser_DeclarativeCheckError(t *testing.T) {
+	userID := svcTestUserID1
+	updatedUser := User{
+		ID:               userID,
+		OrganizationUnit: "ou1",
+		Type:             "employee",
+		Attributes:       json.RawMessage(`{"name":"test"}`),
+	}
+
+	storeMock := newUserStoreInterfaceMock(t)
+	// Mock GetUser for pre-fetch
+	storeMock.On("GetUser", mock.Anything, userID).
+		Return(User{ID: userID, OrganizationUnit: "ou1", Type: "employee"}, nil).Once()
+
+	// Mock IsUserDeclarative to return an error
+	storeErr := errors.New("database connection failed")
+	storeMock.On("IsUserDeclarative", mock.Anything, userID).Return(false, storeErr).Once()
+
+	service := &userService{
+		userStore:     storeMock,
+		transactioner: &fakeTransactioner{},
+		authzService:  newAllowAllAuthz(t),
+	}
+
+	_, err := service.UpdateUser(context.Background(), userID, &updatedUser)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorInternalServerError.Code, err.Code)
+}
+
+// TestUpdateUser_DeclarativeCheckUserNotFound tests that UpdateUser returns ErrorUserNotFound
+// when IsUserDeclarative encounters ErrUserNotFound.
+func TestUpdateUser_DeclarativeCheckUserNotFound(t *testing.T) {
+	userID := "non-existent-user"
+	updatedUser := User{
+		ID:               userID,
+		OrganizationUnit: "ou1",
+		Type:             "employee",
+		Attributes:       json.RawMessage(`{"name":"test"}`),
+	}
+
+	storeMock := newUserStoreInterfaceMock(t)
+	// Mock GetUser for pre-fetch
+	storeMock.On("GetUser", mock.Anything, userID).
+		Return(User{ID: userID, OrganizationUnit: "ou1", Type: "employee"}, nil).Once()
+
+	// Mock IsUserDeclarative to return ErrUserNotFound
+	storeMock.On("IsUserDeclarative", mock.Anything, userID).Return(false, ErrUserNotFound).Once()
+
+	service := &userService{
+		userStore:     storeMock,
+		transactioner: &fakeTransactioner{},
+		authzService:  newAllowAllAuthz(t),
+	}
+
+	_, err := service.UpdateUser(context.Background(), userID, &updatedUser)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorUserNotFound.Code, err.Code)
+}
+
+// TestUpdateUserAttributes_DeclarativeResource tests that UpdateUserAttributes returns
+// ErrorCannotModifyDeclarativeResource when the user is declarative.
+func TestUpdateUserAttributes_DeclarativeResource(t *testing.T) {
+	userID := svcTestDeclarativeUserID1
+	attributes := json.RawMessage(`{"name":"updated"}`)
+
+	storeMock := newUserStoreInterfaceMock(t)
+	// Mock GetUser for pre-fetch
+	storeMock.On("GetUser", mock.Anything, userID).
+		Return(User{ID: userID, OrganizationUnit: "ou1", Type: "employee"}, nil).Once()
+
+	// Mock IsUserDeclarative to return true
+	storeMock.On("IsUserDeclarative", mock.Anything, userID).Return(true, nil).Once()
+
+	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	userSchemaMock.On("GetCredentialAttributes", mock.Anything, "employee").
+		Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Once()
+
+	service := &userService{
+		userStore:         storeMock,
+		userSchemaService: userSchemaMock,
+		transactioner:     &fakeTransactioner{},
+		authzService:      newAllowAllAuthz(t),
+	}
+
+	_, err := service.UpdateUserAttributes(context.Background(), userID, attributes)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorCannotModifyDeclarativeResource.Code, err.Code)
+}
+
+// TestUpdateUserAttributes_DeclarativeCheckError tests that UpdateUserAttributes surfaces errors
+// from IsUserDeclarative.
+func TestUpdateUserAttributes_DeclarativeCheckError(t *testing.T) {
+	userID := svcTestUserID1
+	attributes := json.RawMessage(`{"name":"updated"}`)
+
+	storeMock := newUserStoreInterfaceMock(t)
+	// Mock GetUser for pre-fetch
+	storeMock.On("GetUser", mock.Anything, userID).
+		Return(User{ID: userID, OrganizationUnit: "ou1", Type: "employee"}, nil).Once()
+
+	// Mock IsUserDeclarative to return an error
+	storeErr := errors.New("database connection failed")
+	storeMock.On("IsUserDeclarative", mock.Anything, userID).Return(false, storeErr).Once()
+
+	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	userSchemaMock.On("GetCredentialAttributes", mock.Anything, "employee").
+		Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Once()
+
+	service := &userService{
+		userStore:         storeMock,
+		userSchemaService: userSchemaMock,
+		transactioner:     &fakeTransactioner{},
+		authzService:      newAllowAllAuthz(t),
+	}
+
+	_, err := service.UpdateUserAttributes(context.Background(), userID, attributes)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorInternalServerError.Code, err.Code)
+}
+
+// TestUpdateUserCredentials_DeclarativeResource tests that UpdateUserCredentials returns
+// ErrorCannotModifyDeclarativeResource when the user is declarative.
+func TestUpdateUserCredentials_DeclarativeResource(t *testing.T) {
+	userID := svcTestDeclarativeUserID1
+	credentials := json.RawMessage(`{"password":"newpass123"}`)
+
+	storeMock := newUserStoreInterfaceMock(t)
+	// Mock GetUser for pre-fetch
+	storeMock.On("GetUser", mock.Anything, userID).
+		Return(User{ID: userID, OrganizationUnit: "ou1", Type: "employee"}, nil).Once()
+
+	// Mock IsUserDeclarative to return true
+	storeMock.On("IsUserDeclarative", mock.Anything, userID).Return(true, nil).Once()
+
+	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+
+	service := &userService{
+		userStore:         storeMock,
+		userSchemaService: userSchemaMock,
+		transactioner:     &fakeTransactioner{},
+		authzService:      newAllowAllAuthz(t),
+	}
+
+	err := service.UpdateUserCredentials(context.Background(), userID, credentials)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorCannotModifyDeclarativeResource.Code, err.Code)
+}
+
+// TestUpdateUserCredentials_DeclarativeCheckError tests that UpdateUserCredentials surfaces errors
+// from IsUserDeclarative.
+func TestUpdateUserCredentials_DeclarativeCheckError(t *testing.T) {
+	userID := svcTestUserID1
+	credentials := json.RawMessage(`{"password":"newpass123"}`)
+
+	storeMock := newUserStoreInterfaceMock(t)
+	// Mock GetUser for pre-fetch
+	storeMock.On("GetUser", mock.Anything, userID).
+		Return(User{ID: userID, OrganizationUnit: "ou1", Type: "employee"}, nil).Once()
+
+	// Mock IsUserDeclarative to return an error
+	storeErr := errors.New("database connection failed")
+	storeMock.On("IsUserDeclarative", mock.Anything, userID).Return(false, storeErr).Once()
+
+	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+
+	service := &userService{
+		userStore:         storeMock,
+		userSchemaService: userSchemaMock,
+		transactioner:     &fakeTransactioner{},
+		authzService:      newAllowAllAuthz(t),
+	}
+
+	err := service.UpdateUserCredentials(context.Background(), userID, credentials)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorInternalServerError.Code, err.Code)
+}
+
+// TestDeleteUser_DeclarativeResource tests that DeleteUser returns ErrorCannotModifyDeclarativeResource
+// when the user is declarative.
+func TestDeleteUser_DeclarativeResource(t *testing.T) {
+	userID := svcTestDeclarativeUserID1
+
+	storeMock := newUserStoreInterfaceMock(t)
+	// Mock GetUser for pre-fetch
+	storeMock.On("GetUser", mock.Anything, userID).
+		Return(User{ID: userID, OrganizationUnit: "ou1", Type: "employee"}, nil).Once()
+
+	// Mock IsUserDeclarative to return true
+	storeMock.On("IsUserDeclarative", mock.Anything, userID).Return(true, nil).Once()
+
+	service := &userService{
+		userStore:     storeMock,
+		transactioner: &fakeTransactioner{},
+		authzService:  newAllowAllAuthz(t),
+	}
+
+	err := service.DeleteUser(context.Background(), userID)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorCannotModifyDeclarativeResource.Code, err.Code)
+}
+
+// TestDeleteUser_DeclarativeCheckError tests that DeleteUser surfaces errors from IsUserDeclarative.
+func TestDeleteUser_DeclarativeCheckError(t *testing.T) {
+	userID := svcTestUserID1
+
+	storeMock := newUserStoreInterfaceMock(t)
+	// Mock GetUser for pre-fetch
+	storeMock.On("GetUser", mock.Anything, userID).
+		Return(User{ID: userID, OrganizationUnit: "ou1", Type: "employee"}, nil).Once()
+
+	// Mock IsUserDeclarative to return an error
+	storeErr := errors.New("database connection failed")
+	storeMock.On("IsUserDeclarative", mock.Anything, userID).Return(false, storeErr).Once()
+
+	service := &userService{
+		userStore:     storeMock,
+		transactioner: &fakeTransactioner{},
+		authzService:  newAllowAllAuthz(t),
+	}
+
+	err := service.DeleteUser(context.Background(), userID)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorInternalServerError.Code, err.Code)
 }

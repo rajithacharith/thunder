@@ -166,6 +166,13 @@ var (
 		Error:            "Invalid request format",
 		ErrorDescription: "Invalid credential fields in request",
 	}
+	// ErrorCannotModifyDeclarativeResource is the error returned when trying to modify a declarative user.
+	ErrorCannotModifyDeclarativeResource = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "USR-1025",
+		Error:            "Cannot modify declarative resource",
+		ErrorDescription: "The user is declarative and cannot be modified or deleted",
+	}
 )
 
 // Server errors for user management operations.

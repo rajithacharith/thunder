@@ -25,6 +25,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -32,6 +33,7 @@ import (
 type DeclarativeModeServiceTestSuite struct {
 	suite.Suite
 	service OrganizationUnitServiceInterface
+	store   *organizationUnitStoreInterfaceMock
 }
 
 func (suite *DeclarativeModeServiceTestSuite) SetupTest() {
@@ -45,9 +47,15 @@ func (suite *DeclarativeModeServiceTestSuite) SetupTest() {
 	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
 	suite.Require().NoError(err)
 
-	// Create service with mock store (store won't be called in declarative mode)
-	mockStore := new(organizationUnitStoreInterfaceMock)
-	suite.service = newOrganizationUnitService(nil, mockStore, nil)
+	// Create service with mock store and dependencies
+	suite.store = newOrganizationUnitStoreInterfaceMock(suite.T())
+	mtx := new(mockTransactioner)
+	mtx.On("Transact", mock.Anything, mock.Anything).Return(nil).Maybe()
+	suite.service = &organizationUnitService{
+		ouStore:       suite.store,
+		authzService:  newAllowAllAuthz(suite.T()),
+		transactioner: mtx,
+	}
 }
 
 func (suite *DeclarativeModeServiceTestSuite) TearDownTest() {
@@ -70,6 +78,14 @@ func (suite *DeclarativeModeServiceTestSuite) TestCreateOrganizationUnit_FailsIn
 }
 
 func (suite *DeclarativeModeServiceTestSuite) TestUpdateOrganizationUnit_FailsInDeclarativeMode() {
+	suite.store.On("GetOrganizationUnit", mock.Anything, "ou-1").Return(OrganizationUnit{
+		ID:          "ou-1",
+		Name:        "Existing OU",
+		Handle:      "existing-ou",
+		Description: "Existing Description",
+	}, nil).Once()
+	suite.store.On("IsOrganizationUnitDeclarative", mock.Anything, "ou-1").Return(true).Once()
+
 	request := OrganizationUnitRequest{
 		Name:        "Updated OU",
 		Handle:      "updated-ou",
@@ -85,6 +101,14 @@ func (suite *DeclarativeModeServiceTestSuite) TestUpdateOrganizationUnit_FailsIn
 }
 
 func (suite *DeclarativeModeServiceTestSuite) TestUpdateOrganizationUnitByPath_FailsInDeclarativeMode() {
+	suite.store.On("GetOrganizationUnitByPath", mock.Anything, []string{"path", "to", "ou"}).Return(OrganizationUnit{
+		ID:          "ou-1",
+		Name:        "Existing OU",
+		Handle:      "existing-ou",
+		Description: "Existing Description",
+	}, nil).Once()
+	suite.store.On("IsOrganizationUnitDeclarative", mock.Anything, "ou-1").Return(true).Once()
+
 	request := OrganizationUnitRequest{
 		Name:        "Updated OU",
 		Handle:      "updated-ou",
@@ -93,13 +117,15 @@ func (suite *DeclarativeModeServiceTestSuite) TestUpdateOrganizationUnitByPath_F
 
 	ou, err := suite.service.UpdateOrganizationUnitByPath(context.Background(), "/path/to/ou", request)
 
-	// Should fail because even getting the OU to update will check declarative mode
-	// Or fail during update operation
 	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), ErrorCannotModifyDeclarativeResource.Code, err.Code)
 	assert.Equal(suite.T(), OrganizationUnit{}, ou)
 }
 
 func (suite *DeclarativeModeServiceTestSuite) TestDeleteOrganizationUnit_FailsInDeclarativeMode() {
+	suite.store.On("IsOrganizationUnitExists", mock.Anything, "ou-1").Return(true, nil).Once()
+	suite.store.On("IsOrganizationUnitDeclarative", mock.Anything, "ou-1").Return(true).Once()
+
 	err := suite.service.DeleteOrganizationUnit(context.Background(), "ou-1")
 
 	// Should fail with immutable resource error
@@ -108,11 +134,15 @@ func (suite *DeclarativeModeServiceTestSuite) TestDeleteOrganizationUnit_FailsIn
 }
 
 func (suite *DeclarativeModeServiceTestSuite) TestDeleteOrganizationUnitByPath_FailsInDeclarativeMode() {
+	suite.store.On("GetOrganizationUnitByPath", mock.Anything, []string{"path", "to", "ou"}).Return(OrganizationUnit{
+		ID: "ou-1",
+	}, nil).Once()
+	suite.store.On("IsOrganizationUnitDeclarative", mock.Anything, "ou-1").Return(true).Once()
+
 	err := suite.service.DeleteOrganizationUnitByPath(context.Background(), "/path/to/ou")
 
-	// Should fail because even getting the OU to delete will check declarative mode
-	// Or fail during delete operation
 	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), ErrorCannotModifyDeclarativeResource.Code, err.Code)
 }
 
 func TestDeclarativeModeServiceTestSuite(t *testing.T) {

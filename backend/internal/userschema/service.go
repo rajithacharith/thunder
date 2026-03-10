@@ -29,7 +29,6 @@ import (
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/database/transaction"
-	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
@@ -183,8 +182,8 @@ func (us *userSchemaService) CreateUserSchema(
 ) (*UserSchema, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
 
-	if err := declarativeresource.CheckDeclarativeCreate(); err != nil {
-		return nil, err
+	if isDeclarativeModeEnabled() {
+		return nil, &ErrorCannotModifyDeclarativeResource
 	}
 
 	// Validate the schema definition
@@ -317,10 +316,6 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 	*UserSchema, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
 
-	if err := declarativeresource.CheckDeclarativeUpdate(); err != nil {
-		return nil, err
-	}
-
 	if schemaID == "" {
 		return nil, invalidSchemaRequestError("schema id must not be empty")
 	}
@@ -417,10 +412,6 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 // DeleteUserSchema deletes a user schema by its ID.
 func (us *userSchemaService) DeleteUserSchema(ctx context.Context, schemaID string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
-
-	if err := declarativeresource.CheckDeclarativeDelete(); err != nil {
-		return err
-	}
 
 	if schemaID == "" {
 		return invalidSchemaRequestError("schema id must not be empty")
