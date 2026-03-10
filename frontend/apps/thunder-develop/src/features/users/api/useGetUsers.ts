@@ -48,6 +48,7 @@ export default function useGetUsers(params?: UserListParams): UseQueryResult<Use
       if (filter) {
         searchParams.append('filter', filter);
       }
+      searchParams.append('include', 'display');
 
       const queryString: string = searchParams.toString();
 

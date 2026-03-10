@@ -99,6 +99,13 @@ export type PropertyDefinition =
 export type UserSchemaDefinition = Record<string, PropertyDefinition>;
 
 /**
+ * System-level metadata for a user schema.
+ */
+export interface SystemAttributes {
+  display?: string;
+}
+
+/**
  * Complete User Schema object as returned by API
  */
 export interface ApiUserSchema {
@@ -106,6 +113,7 @@ export interface ApiUserSchema {
   name: string;
   ouId: string;
   allowSelfRegistration: boolean;
+  systemAttributes?: SystemAttributes;
   schema: UserSchemaDefinition;
 }
 
@@ -117,6 +125,7 @@ export interface UserSchemaListItem {
   name: string;
   ouId: string;
   allowSelfRegistration: boolean;
+  systemAttributes?: SystemAttributes;
 }
 
 /**
@@ -145,6 +154,7 @@ export interface CreateUserSchemaRequest {
   name: string;
   ouId: string;
   allowSelfRegistration?: boolean;
+  systemAttributes?: SystemAttributes;
   schema: UserSchemaDefinition;
 }
 
@@ -155,6 +165,7 @@ export interface UpdateUserSchemaRequest {
   name: string;
   ouId: string;
   allowSelfRegistration?: boolean;
+  systemAttributes?: SystemAttributes;
   schema: UserSchemaDefinition;
 }
 

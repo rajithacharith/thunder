@@ -81,6 +81,7 @@ export default function ViewUserTypePage() {
   const [ouId, setOuId] = useState('');
   const [allowSelfRegistration, setAllowSelfRegistration] = useState(false);
   const [properties, setProperties] = useState<SchemaPropertyInput[]>([]);
+  const [displayAttribute, setDisplayAttribute] = useState('');
   const [enumInput, setEnumInput] = useState<Record<string, string>>({});
   const [validationError, setValidationError] = useState<string | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -91,6 +92,13 @@ export default function ViewUserTypePage() {
   const selectedOrganizationUnit = useMemo(
     () => organizationUnits.find((unit) => unit.id === ouId),
     [organizationUnits, ouId],
+  );
+  const eligibleDisplayProperties = useMemo(
+    () =>
+      properties.filter(
+        (p) => (p.type === 'string' || p.type === 'enum') && !p.credential && p.name.trim().length > 0,
+      ),
+    [properties],
   );
 
   const convertSchemaToProperties = (schema: UserSchemaDefinition) => {
@@ -112,6 +120,7 @@ export default function ViewUserTypePage() {
       setName(userType.name);
       setOuId(userType.ouId);
       setAllowSelfRegistration(userType.allowSelfRegistration ?? false);
+      setDisplayAttribute(userType.systemAttributes?.display ?? '');
       convertSchemaToProperties(userType.schema);
     }
   }, [userType]);
@@ -127,6 +136,7 @@ export default function ViewUserTypePage() {
       setName(userType.name);
       setOuId(userType.ouId);
       setAllowSelfRegistration(userType.allowSelfRegistration ?? false);
+      setDisplayAttribute(userType.systemAttributes?.display ?? '');
       convertSchemaToProperties(userType.schema);
     }
     setValidationError(null);
@@ -241,6 +251,7 @@ export default function ViewUserTypePage() {
           name: name.trim(),
           ouId: trimmedOuId,
           allowSelfRegistration,
+          ...(displayAttribute ? {systemAttributes: {display: displayAttribute}} : {}),
           schema,
         },
       });
@@ -459,6 +470,46 @@ export default function ViewUserTypePage() {
                   }
                   label={t('userTypes:allowSelfRegistration')}
                 />
+              )}
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 0.5}}>
+                {t('userTypes:displayAttribute', 'Display Attribute')}
+              </Typography>
+              {!isEditMode ? (
+                <Typography variant="body1" sx={{fontWeight: 500}}>
+                  {userType.systemAttributes?.display ?? t('userTypes:noDisplayAttribute', 'Not configured')}
+                </Typography>
+              ) : (
+                <Select
+                  value={displayAttribute}
+                  onChange={(event) => setDisplayAttribute(event.target.value)}
+                  size="small"
+                  fullWidth
+                  displayEmpty
+                  renderValue={(selected) => {
+                    const value = typeof selected === 'string' ? selected : '';
+                    if (!value) {
+                      return (
+                        <Typography variant="body2" color="text.secondary">
+                          {t('userTypes:selectDisplayAttribute', 'Select a display attribute')}
+                        </Typography>
+                      );
+                    }
+                    return value;
+                  }}
+                >
+                  <MenuItem value="">
+                    <Typography variant="body2" color="text.secondary">
+                      {t('common:none', 'None')}
+                    </Typography>
+                  </MenuItem>
+                  {eligibleDisplayProperties.map((prop) => (
+                    <MenuItem key={prop.id} value={prop.name.trim()}>
+                      {prop.name.trim()}
+                    </MenuItem>
+                  ))}
+                </Select>
               )}
             </Box>
           </Stack>

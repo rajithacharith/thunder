@@ -22,7 +22,7 @@ import React from 'react';
 import type * as OxygenUI from '@wso2/oxygen-ui';
 import {DataGrid} from '@wso2/oxygen-ui';
 import UsersList from '../UsersList';
-import type {UserListResponse, ApiUserSchema} from '../../types/users';
+import type {UserListResponse} from '../../types/users';
 
 const {mockLoggerError} = vi.hoisted(() => ({
   mockLoggerError: vi.fn(),
@@ -34,6 +34,7 @@ const mockDeleteMutateAsync = vi.fn();
 // Mock DataGrid to avoid CSS import issues
 interface MockRow {
   id: string;
+  display?: string;
   attributes?: Record<string, unknown>;
   [key: string]: unknown;
 }
@@ -69,8 +70,7 @@ vi.mock('@wso2/oxygen-ui', async () => {
         <div data-testid="data-grid" data-loading={loading}>
           {rows.map((row) => {
             const rowId = getRowId ? getRowId(row) : row.id;
-            const username = row.attributes?.username;
-            const displayText = typeof username === 'string' ? username : rowId;
+            const displayText = row.display ?? rowId;
 
             return (
               <div key={rowId} className="MuiDataGrid-row-container">
@@ -167,12 +167,6 @@ interface UseGetUsersReturn {
   error: Error | null;
 }
 
-interface UseGetUserSchemaReturn {
-  data: ApiUserSchema | undefined;
-  isLoading: boolean;
-  error: Error | null;
-}
-
 interface UseDeleteUserReturn {
   mutate: ReturnType<typeof vi.fn>;
   mutateAsync: ReturnType<typeof vi.fn>;
@@ -186,15 +180,10 @@ interface UseDeleteUserReturn {
 }
 
 const mockUseGetUsers = vi.fn<() => UseGetUsersReturn>();
-const mockUseGetUserSchema = vi.fn<(schemaId: string) => UseGetUserSchemaReturn>();
 const mockUseDeleteUser = vi.fn<() => UseDeleteUserReturn>();
 
 vi.mock('../../api/useGetUsers', () => ({
   default: () => mockUseGetUsers(),
-}));
-
-vi.mock('../../api/useGetUserSchema', () => ({
-  default: (schemaId: string) => mockUseGetUserSchema(schemaId),
 }));
 
 vi.mock('../../api/useDeleteUser', () => ({
@@ -211,39 +200,27 @@ describe('UsersList', () => {
         id: 'user1',
         organizationUnit: 'org1',
         type: 'schema1',
+        display: 'John Doe',
         attributes: {
           username: 'john.doe',
           firstname: 'John',
           lastname: 'Doe',
           email: 'john@example.com',
-          isActive: true,
         },
       },
       {
         id: 'user2',
         organizationUnit: 'org2',
         type: 'schema2',
+        display: 'Jane Smith',
         attributes: {
           username: 'jane.smith',
           firstname: 'Jane',
           lastname: 'Smith',
           email: 'jane@example.com',
-          isActive: false,
         },
       },
     ],
-  };
-
-  const mockSchema: ApiUserSchema = {
-    id: 'schema1',
-    name: 'Default Schema',
-    schema: {
-      username: {type: 'string', required: true},
-      firstname: {type: 'string'},
-      lastname: {type: 'string'},
-      email: {type: 'string'},
-      isActive: {type: 'boolean'},
-    },
   };
 
   const defaultDeleteReturn: UseDeleteUserReturn = {
@@ -266,25 +243,20 @@ describe('UsersList', () => {
       isLoading: false,
       error: null,
     });
-    mockUseGetUserSchema.mockReturnValue({
-      data: mockSchema,
-      isLoading: false,
-      error: null,
-    });
     mockUseDeleteUser.mockReturnValue({...defaultDeleteReturn});
   });
 
   it('renders DataGrid with users', async () => {
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
-      expect(screen.getByTestId('row-user2')).toHaveTextContent('jane.smith');
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
+      expect(screen.getByTestId('row-user2')).toHaveTextContent('Jane Smith');
     });
   });
 
   it('displays user avatars with initials', async () => {
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
       const grid = screen.getByTestId('data-grid');
@@ -299,7 +271,7 @@ describe('UsersList', () => {
       error: null,
     });
 
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     const grid = screen.getByTestId('data-grid');
     expect(grid).toBeInTheDocument();
@@ -312,45 +284,30 @@ describe('UsersList', () => {
       error: new Error('Failed to load users'),
     });
 
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
       expect(screen.getByText('Failed to load users')).toBeInTheDocument();
     });
   });
 
-  it('displays error from schema request', async () => {
-    mockUseGetUserSchema.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      error: new Error('Failed to load schema'),
-    });
-
-    render(<UsersList selectedSchema="schema1" />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Failed to load schema')).toBeInTheDocument();
-    });
-  });
-
   it('should render inline delete buttons for each row', async () => {
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
     });
 
-    // Actions are now inline buttons (Trash2), not a dropdown menu
     const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
     expect(deleteButtons.length).toBeGreaterThan(0);
   });
 
   it('navigates to view page when row is clicked', async () => {
     const user = userEvent.setup();
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
     });
 
     const row = screen.getByTestId('row-user1');
@@ -363,10 +320,10 @@ describe('UsersList', () => {
 
   it('opens delete dialog when Delete is clicked', async () => {
     const user = userEvent.setup();
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
     });
 
     const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
@@ -381,10 +338,10 @@ describe('UsersList', () => {
   it('deletes user when confirmed', async () => {
     const user = userEvent.setup();
 
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
     });
 
     const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
@@ -402,122 +359,12 @@ describe('UsersList', () => {
     });
   });
 
-  it('navigates when row is clicked', async () => {
-    const user = userEvent.setup();
-    render(<UsersList selectedSchema="schema1" />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
-    });
-
-    const row = screen.getByTestId('row-user1');
-    await user.click(row);
-
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/users/user1');
-    });
-  });
-
-  it('displays active status with chip', async () => {
-    render(<UsersList selectedSchema="schema1" />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Active')).toBeInTheDocument();
-      expect(screen.getByText('Inactive')).toBeInTheDocument();
-    });
-  });
-
-  it('renders empty grid when no data', async () => {
-    mockUseGetUsers.mockReturnValue({
-      data: {
-        totalResults: 0,
-        startIndex: 1,
-        count: 0,
-        users: [],
-      },
-      isLoading: false,
-      error: null,
-    });
-
-    render(<UsersList selectedSchema="schema1" />);
-
-    await waitFor(() => {
-      const grid = screen.getByTestId('data-grid');
-      expect(grid).toBeInTheDocument();
-    });
-  });
-
-  it('renders empty columns when schema is not loaded', () => {
-    mockUseGetUserSchema.mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      error: null,
-    });
-
-    render(<UsersList selectedSchema="schema1" />);
-
-    const grid = screen.getByTestId('data-grid');
-    expect(grid).toBeInTheDocument();
-  });
-
-  it('handles different field types correctly', async () => {
-    const schemaWithTypes: ApiUserSchema = {
-      id: 'schema1',
-      name: 'Test Schema',
-      schema: {
-        username: {type: 'string'},
-        age: {type: 'number'},
-        verified: {type: 'boolean'},
-        tags: {type: 'array', items: {type: 'string'}},
-        metadata: {type: 'object', properties: {}},
-      },
-    };
-
-    const usersWithTypes: UserListResponse = {
-      totalResults: 1,
-      startIndex: 1,
-      count: 1,
-      users: [
-        {
-          id: 'user1',
-          organizationUnit: 'org1',
-          type: 'schema1',
-          attributes: {
-            username: 'testuser',
-            age: 25,
-            verified: true,
-            tags: ['tag1', 'tag2'],
-            metadata: {key: 'value'},
-          },
-        },
-      ],
-    };
-
-    mockUseGetUserSchema.mockReturnValue({
-      data: schemaWithTypes,
-      isLoading: false,
-      error: null,
-    });
-
-    mockUseGetUsers.mockReturnValue({
-      data: usersWithTypes,
-      isLoading: false,
-      error: null,
-    });
-
-    render(<UsersList selectedSchema="schema1" />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('testuser');
-    });
-  });
-
   it('cancels delete when Cancel button is clicked', async () => {
     const user = userEvent.setup();
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
     });
 
     const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
@@ -545,10 +392,10 @@ describe('UsersList', () => {
       isIdle: false,
     });
 
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
     });
 
     const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
@@ -568,7 +415,7 @@ describe('UsersList', () => {
       error: new Error('Failed to load users'),
     });
 
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
       expect(screen.getByText('Failed to load users')).toBeInTheDocument();
@@ -591,10 +438,10 @@ describe('UsersList', () => {
       mutateAsync: failingDeleteMutateAsync,
     });
 
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
     });
 
     const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
@@ -617,10 +464,10 @@ describe('UsersList', () => {
     const navigationError = new Error('Navigation failed');
     mockNavigate.mockRejectedValue(navigationError);
 
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
     });
 
     const row = screen.getByTestId('row-user1');
@@ -631,55 +478,55 @@ describe('UsersList', () => {
     });
   });
 
-  it('should navigate to user when Edit action button is clicked', async () => {
+  it('should navigate to user when View action button is clicked', async () => {
     const user = userEvent.setup();
 
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
     });
 
-    const editButtons = screen.getAllByRole('button', {name: /^edit$/i});
-    expect(editButtons.length).toBeGreaterThan(0);
-    await user.click(editButtons[0]);
+    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    expect(viewButtons.length).toBeGreaterThan(0);
+    await user.click(viewButtons[0]);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/users/user1');
     });
   });
 
-  it('should navigate to correct user when Edit action is clicked for second row', async () => {
+  it('should navigate to correct user when View action is clicked for second row', async () => {
     const user = userEvent.setup();
 
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('row-user2')).toHaveTextContent('jane.smith');
+      expect(screen.getByTestId('row-user2')).toHaveTextContent('Jane Smith');
     });
 
-    const editButtons = screen.getAllByRole('button', {name: /^edit$/i});
-    expect(editButtons.length).toBeGreaterThan(1);
-    await user.click(editButtons[1]);
+    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    expect(viewButtons.length).toBeGreaterThan(1);
+    await user.click(viewButtons[1]);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/users/user2');
     });
   });
 
-  it('should log error when Edit button navigation fails', async () => {
+  it('should log error when View button navigation fails', async () => {
     const user = userEvent.setup();
     const navigationError = new Error('Navigation failed');
     mockNavigate.mockRejectedValueOnce(navigationError);
 
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
     });
 
-    const editButtons = screen.getAllByRole('button', {name: /^edit$/i});
-    await user.click(editButtons[0]);
+    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    await user.click(viewButtons[0]);
 
     await waitFor(() => {
       expect(mockLoggerError).toHaveBeenCalledWith(
@@ -692,29 +539,19 @@ describe('UsersList', () => {
     });
   });
 
-  it('renders schema without avatar when name fields are not present', async () => {
-    const schemaWithoutNameFields: ApiUserSchema = {
-      id: 'schema1',
-      name: 'Test Schema',
-      schema: {
-        email: {type: 'string'},
-        phone: {type: 'string'},
-      },
-    };
-
-    mockUseGetUserSchema.mockReturnValue({
-      data: schemaWithoutNameFields,
-      isLoading: false,
-      error: null,
-    });
-
+  it('renders empty grid when no data', async () => {
     mockUseGetUsers.mockReturnValue({
-      data: mockUsersData,
+      data: {
+        totalResults: 0,
+        startIndex: 1,
+        count: 0,
+        users: [],
+      },
       isLoading: false,
       error: null,
     });
 
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
       const grid = screen.getByTestId('data-grid');
@@ -722,514 +559,41 @@ describe('UsersList', () => {
     });
   });
 
-  it('displays null values for missing attributes', async () => {
-    const usersWithMissingAttrs: UserListResponse = {
-      totalResults: 1,
-      startIndex: 1,
-      count: 1,
-      users: [
-        {
-          id: 'user1',
-          organizationUnit: 'org1',
-          type: 'schema1',
-          attributes: {
-            username: 'john.doe',
-          },
-        },
-      ],
-    };
-
+  it('falls back to user ID when display is not set', async () => {
     mockUseGetUsers.mockReturnValue({
-      data: usersWithMissingAttrs,
-      isLoading: false,
-      error: null,
-    });
-
-    render(<UsersList selectedSchema="schema1" />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toBeInTheDocument();
-    });
-  });
-
-  it('handles array field with empty array', async () => {
-    const schemaWithArray: ApiUserSchema = {
-      id: 'schema1',
-      name: 'Test Schema',
-      schema: {
-        username: {type: 'string'},
-        tags: {type: 'array', items: {type: 'string'}},
+      data: {
+        totalResults: 1,
+        startIndex: 1,
+        count: 1,
+        users: [
+          {
+            id: 'user1',
+            organizationUnit: 'org1',
+            type: 'schema1',
+          },
+        ],
       },
-    };
-
-    const usersWithEmptyArray: UserListResponse = {
-      totalResults: 1,
-      startIndex: 1,
-      count: 1,
-      users: [
-        {
-          id: 'user1',
-          organizationUnit: 'org1',
-          type: 'schema1',
-          attributes: {
-            username: 'john.doe',
-            tags: [],
-          },
-        },
-      ],
-    };
-
-    mockUseGetUserSchema.mockReturnValue({
-      data: schemaWithArray,
       isLoading: false,
       error: null,
     });
 
-    mockUseGetUsers.mockReturnValue({
-      data: usersWithEmptyArray,
-      isLoading: false,
-      error: null,
-    });
-
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toBeInTheDocument();
-    });
-  });
-
-  it('handles array field with null value', async () => {
-    const schemaWithArray: ApiUserSchema = {
-      id: 'schema1',
-      name: 'Test Schema',
-      schema: {
-        username: {type: 'string'},
-        tags: {type: 'array', items: {type: 'string'}},
-      },
-    };
-
-    const usersWithNullArray: UserListResponse = {
-      totalResults: 1,
-      startIndex: 1,
-      count: 1,
-      users: [
-        {
-          id: 'user1',
-          organizationUnit: 'org1',
-          type: 'schema1',
-          attributes: {
-            username: 'john.doe',
-            tags: null,
-          },
-        },
-      ],
-    };
-
-    mockUseGetUserSchema.mockReturnValue({
-      data: schemaWithArray,
-      isLoading: false,
-      error: null,
-    });
-
-    mockUseGetUsers.mockReturnValue({
-      data: usersWithNullArray,
-      isLoading: false,
-      error: null,
-    });
-
-    render(<UsersList selectedSchema="schema1" />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toBeInTheDocument();
-    });
-  });
-
-  it('handles object field with null value', async () => {
-    const schemaWithObject: ApiUserSchema = {
-      id: 'schema1',
-      name: 'Test Schema',
-      schema: {
-        username: {type: 'string'},
-        metadata: {type: 'object', properties: {}},
-      },
-    };
-
-    const usersWithNullObject: UserListResponse = {
-      totalResults: 1,
-      startIndex: 1,
-      count: 1,
-      users: [
-        {
-          id: 'user1',
-          organizationUnit: 'org1',
-          type: 'schema1',
-          attributes: {
-            username: 'john.doe',
-            metadata: null,
-          },
-        },
-      ],
-    };
-
-    mockUseGetUserSchema.mockReturnValue({
-      data: schemaWithObject,
-      isLoading: false,
-      error: null,
-    });
-
-    mockUseGetUsers.mockReturnValue({
-      data: usersWithNullObject,
-      isLoading: false,
-      error: null,
-    });
-
-    render(<UsersList selectedSchema="schema1" />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toBeInTheDocument();
-    });
-  });
-
-  it('handles boolean field with null value', async () => {
-    const schemaWithBoolean: ApiUserSchema = {
-      id: 'schema1',
-      name: 'Test Schema',
-      schema: {
-        username: {type: 'string'},
-        verified: {type: 'boolean'},
-      },
-    };
-
-    const usersWithNullBoolean: UserListResponse = {
-      totalResults: 1,
-      startIndex: 1,
-      count: 1,
-      users: [
-        {
-          id: 'user1',
-          organizationUnit: 'org1',
-          type: 'schema1',
-          attributes: {
-            username: 'john.doe',
-            verified: null,
-          },
-        },
-      ],
-    };
-
-    mockUseGetUserSchema.mockReturnValue({
-      data: schemaWithBoolean,
-      isLoading: false,
-      error: null,
-    });
-
-    mockUseGetUsers.mockReturnValue({
-      data: usersWithNullBoolean,
-      isLoading: false,
-      error: null,
-    });
-
-    render(<UsersList selectedSchema="schema1" />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toBeInTheDocument();
-    });
-  });
-
-  it('handles status field with string value', async () => {
-    const schemaWithStatus: ApiUserSchema = {
-      id: 'schema1',
-      name: 'Test Schema',
-      schema: {
-        username: {type: 'string'},
-        status: {type: 'string'},
-      },
-    };
-
-    const usersWithStatus: UserListResponse = {
-      totalResults: 1,
-      startIndex: 1,
-      count: 1,
-      users: [
-        {
-          id: 'user1',
-          organizationUnit: 'org1',
-          type: 'schema1',
-          attributes: {
-            username: 'john.doe',
-            status: 'active',
-          },
-        },
-      ],
-    };
-
-    mockUseGetUserSchema.mockReturnValue({
-      data: schemaWithStatus,
-      isLoading: false,
-      error: null,
-    });
-
-    mockUseGetUsers.mockReturnValue({
-      data: usersWithStatus,
-      isLoading: false,
-      error: null,
-    });
-
-    render(<UsersList selectedSchema="schema1" />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Active')).toBeInTheDocument();
-    });
-  });
-
-  it('handles status field with inactive string value', async () => {
-    const schemaWithStatus: ApiUserSchema = {
-      id: 'schema1',
-      name: 'Test Schema',
-      schema: {
-        username: {type: 'string'},
-        status: {type: 'string'},
-      },
-    };
-
-    const usersWithInactiveStatus: UserListResponse = {
-      totalResults: 1,
-      startIndex: 1,
-      count: 1,
-      users: [
-        {
-          id: 'user1',
-          organizationUnit: 'org1',
-          type: 'schema1',
-          attributes: {
-            username: 'john.doe',
-            status: 'inactive',
-          },
-        },
-      ],
-    };
-
-    mockUseGetUserSchema.mockReturnValue({
-      data: schemaWithStatus,
-      isLoading: false,
-      error: null,
-    });
-
-    mockUseGetUsers.mockReturnValue({
-      data: usersWithInactiveStatus,
-      isLoading: false,
-      error: null,
-    });
-
-    render(<UsersList selectedSchema="schema1" />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Inactive')).toBeInTheDocument();
-    });
-  });
-
-  it('handles active field with null value', async () => {
-    const schemaWithActive: ApiUserSchema = {
-      id: 'schema1',
-      name: 'Test Schema',
-      schema: {
-        username: {type: 'string'},
-        active: {type: 'boolean'},
-      },
-    };
-
-    const usersWithNullActive: UserListResponse = {
-      totalResults: 1,
-      startIndex: 1,
-      count: 1,
-      users: [
-        {
-          id: 'user1',
-          organizationUnit: 'org1',
-          type: 'schema1',
-          attributes: {
-            username: 'john.doe',
-            active: null,
-          },
-        },
-      ],
-    };
-
-    mockUseGetUserSchema.mockReturnValue({
-      data: schemaWithActive,
-      isLoading: false,
-      error: null,
-    });
-
-    mockUseGetUsers.mockReturnValue({
-      data: usersWithNullActive,
-      isLoading: false,
-      error: null,
-    });
-
-    render(<UsersList selectedSchema="schema1" />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toBeInTheDocument();
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('user1');
     });
   });
 
   it('renders independent inline delete buttons for each user row', async () => {
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
-      expect(screen.getByTestId('row-user2')).toHaveTextContent('jane.smith');
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
+      expect(screen.getByTestId('row-user2')).toHaveTextContent('Jane Smith');
     });
 
-    // Each user row has its own inline delete button
     const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
     expect(deleteButtons.length).toBeGreaterThanOrEqual(2);
-  });
-
-  it('handles number field with null value', async () => {
-    const schemaWithNumber: ApiUserSchema = {
-      id: 'schema1',
-      name: 'Test Schema',
-      schema: {
-        username: {type: 'string'},
-        age: {type: 'number'},
-      },
-    };
-
-    const usersWithNullNumber: UserListResponse = {
-      totalResults: 1,
-      startIndex: 1,
-      count: 1,
-      users: [
-        {
-          id: 'user1',
-          organizationUnit: 'org1',
-          type: 'schema1',
-          attributes: {
-            username: 'john.doe',
-            age: null,
-          },
-        },
-      ],
-    };
-
-    mockUseGetUserSchema.mockReturnValue({
-      data: schemaWithNumber,
-      isLoading: false,
-      error: null,
-    });
-
-    mockUseGetUsers.mockReturnValue({
-      data: usersWithNullNumber,
-      isLoading: false,
-      error: null,
-    });
-
-    render(<UsersList selectedSchema="schema1" />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toBeInTheDocument();
-    });
-  });
-
-  it('displays avatar with only username', async () => {
-    const usersWithOnlyUsername: UserListResponse = {
-      totalResults: 1,
-      startIndex: 1,
-      count: 1,
-      users: [
-        {
-          id: 'user1',
-          organizationUnit: 'org1',
-          type: 'schema1',
-          attributes: {
-            username: 'john',
-            firstname: '',
-            lastname: '',
-          },
-        },
-      ],
-    };
-
-    mockUseGetUsers.mockReturnValue({
-      data: usersWithOnlyUsername,
-      isLoading: false,
-      error: null,
-    });
-
-    render(<UsersList selectedSchema="schema1" />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toBeInTheDocument();
-    });
-  });
-
-  it('handles schema with empty schema entries', async () => {
-    const emptySchema: ApiUserSchema = {
-      id: 'schema1',
-      name: 'Empty Schema',
-      schema: {},
-    };
-
-    mockUseGetUserSchema.mockReturnValue({
-      data: emptySchema,
-      isLoading: false,
-      error: null,
-    });
-
-    render(<UsersList selectedSchema="schema1" />);
-
-    await waitFor(() => {
-      const grid = screen.getByTestId('data-grid');
-      expect(grid).toBeInTheDocument();
-    });
-  });
-
-  it('displays false boolean value correctly', async () => {
-    const schemaWithBoolean: ApiUserSchema = {
-      id: 'schema1',
-      name: 'Test Schema',
-      schema: {
-        username: {type: 'string'},
-        verified: {type: 'boolean'},
-      },
-    };
-
-    const usersWithFalseBoolean: UserListResponse = {
-      totalResults: 1,
-      startIndex: 1,
-      count: 1,
-      users: [
-        {
-          id: 'user1',
-          organizationUnit: 'org1',
-          type: 'schema1',
-          attributes: {
-            username: 'john.doe',
-            verified: false,
-          },
-        },
-      ],
-    };
-
-    mockUseGetUserSchema.mockReturnValue({
-      data: schemaWithBoolean,
-      isLoading: false,
-      error: null,
-    });
-
-    mockUseGetUsers.mockReturnValue({
-      data: usersWithFalseBoolean,
-      isLoading: false,
-      error: null,
-    });
-
-    render(<UsersList selectedSchema="schema1" />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toBeInTheDocument();
-    });
   });
 
   it('displays loading state when deleting user', async () => {
@@ -1240,10 +604,10 @@ describe('UsersList', () => {
       isIdle: false,
     });
 
-    render(<UsersList selectedSchema="schema1" />);
+    render(<UsersList />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('row-user1')).toHaveTextContent('john.doe');
+      expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
     });
 
     const deleteButtons = screen.getAllByRole('button', {name: /delete/i});
@@ -1252,35 +616,6 @@ describe('UsersList', () => {
     await waitFor(() => {
       const confirmButton = screen.getByRole('button', {name: /loading/i});
       expect(confirmButton).toBeDisabled();
-    });
-  });
-
-  it('handles schema loading with all field types', async () => {
-    const comprehensiveSchema: ApiUserSchema = {
-      id: 'schema1',
-      name: 'Comprehensive Schema',
-      schema: {
-        username: {type: 'string'},
-        firstname: {type: 'string'},
-        lastname: {type: 'string'},
-        isActive: {type: 'boolean'},
-        age: {type: 'number'},
-        tags: {type: 'array', items: {type: 'string'}},
-        profile: {type: 'object', properties: {}},
-      },
-    };
-
-    mockUseGetUserSchema.mockReturnValue({
-      data: comprehensiveSchema,
-      isLoading: false,
-      error: null,
-    });
-
-    render(<UsersList selectedSchema="schema1" />);
-
-    await waitFor(() => {
-      const grid = screen.getByTestId('data-grid');
-      expect(grid).toBeInTheDocument();
     });
   });
 });

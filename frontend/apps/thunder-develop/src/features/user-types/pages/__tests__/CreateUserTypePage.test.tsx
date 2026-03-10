@@ -586,6 +586,7 @@ describe('CreateUserTypePage', () => {
             required: true,
           },
         },
+        systemAttributes: {display: 'email'},
       });
     });
 
@@ -632,6 +633,7 @@ describe('CreateUserTypePage', () => {
             required: false,
           },
         },
+        systemAttributes: {display: 'email'},
       });
     });
   });
@@ -765,6 +767,7 @@ describe('CreateUserTypePage', () => {
             enum: ['ACTIVE', 'INACTIVE'],
           },
         },
+        systemAttributes: {display: 'status'},
       });
     });
   });
@@ -801,6 +804,7 @@ describe('CreateUserTypePage', () => {
             regex: '^[A-Z]{3}$',
           },
         },
+        systemAttributes: {display: 'code'},
       });
     });
   });

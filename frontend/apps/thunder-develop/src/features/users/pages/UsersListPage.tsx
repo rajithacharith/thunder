@@ -17,14 +17,12 @@
  */
 
 import {useNavigate} from 'react-router';
-import {Stack, TextField, Button, InputAdornment, Select, MenuItem, PageContent, PageTitle} from '@wso2/oxygen-ui';
-import {useMemo, useState} from 'react';
+import {Stack, TextField, Button, InputAdornment, PageContent, PageTitle} from '@wso2/oxygen-ui';
+import {useState} from 'react';
 import {Plus, Search, Mail} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
 import UsersList from '../components/UsersList';
-import useGetUserSchemas from '../api/useGetUserSchemas';
-import type {SchemaInterface} from '../types/users';
 import InviteUserDialog from '../components/InviteUserDialog';
 
 export default function UsersListPage() {
@@ -32,20 +30,7 @@ export default function UsersListPage() {
   const {t} = useTranslation();
   const logger = useLogger('UsersListPage');
 
-  const [selectedSchema, setSelectedSchema] = useState<string>();
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
-
-  const {data: originalUserSchemas} = useGetUserSchemas();
-
-  const userSchemas: SchemaInterface[] = useMemo(() => {
-    if (!originalUserSchemas?.schemas) {
-      return [];
-    }
-
-    setSelectedSchema(originalUserSchemas.schemas[0]?.id);
-
-    return originalUserSchemas?.schemas;
-  }, [originalUserSchemas]);
 
   const handleOpenInviteDialog = () => {
     setIsInviteDialogOpen(true);
@@ -87,7 +72,7 @@ export default function UsersListPage() {
         </PageTitle.Actions>
       </PageTitle>
 
-      {/* Search and Filters */}
+      {/* Search */}
       <Stack direction="row" spacing={2} mb={4} flexWrap="wrap" useFlexGap>
         <TextField
           placeholder={t('users:searchUsers')}
@@ -101,21 +86,8 @@ export default function UsersListPage() {
             ),
           }}
         />
-        <Select
-          id="user-type-select"
-          value={selectedSchema ?? ''}
-          size="small"
-          sx={{minWidth: 200}}
-          onChange={(e) => setSelectedSchema(e.target.value)}
-        >
-          {userSchemas.map((schema) => (
-            <MenuItem key={schema.id} value={schema.id}>
-              {schema.name}
-            </MenuItem>
-          ))}
-        </Select>
       </Stack>
-      <UsersList selectedSchema={selectedSchema ?? ''} />
+      <UsersList />
 
       {/* User Onboarding Dialog */}
       <InviteUserDialog open={isInviteDialogOpen} onClose={handleCloseInviteDialog} onSuccess={handleInviteSuccess} />

@@ -84,10 +84,11 @@ export default function ManageMembersSection({groupId, onRemoveMember, headerAct
         ),
       },
       {
-        field: 'id',
+        field: 'display',
         headerName: t('groups:edit.members.sections.manage.listing.columns.id'),
         flex: 1,
         minWidth: 250,
+        valueGetter: (_value: unknown, row: Member) => row.display ?? row.id,
       },
       {
         field: 'type',

@@ -41,6 +41,7 @@ export interface ApiUser {
   organizationUnit: string;
   type: string;
   attributes?: Record<string, unknown>;
+  display?: string;
 }
 
 /**

@@ -45,6 +45,7 @@ export default function useGetGroupMembers(
       const queryParams: URLSearchParams = new URLSearchParams({
         limit: limit.toString(),
         offset: offset.toString(),
+        include: 'display',
       });
 
       const response: {

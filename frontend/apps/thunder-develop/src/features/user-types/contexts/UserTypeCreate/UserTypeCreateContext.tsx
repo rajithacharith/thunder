@@ -47,6 +47,9 @@ export interface UserTypeCreateContextType {
   enumInput: Record<string, string>;
   setEnumInput: (enumInput: Record<string, string>) => void;
 
+  displayAttribute: string;
+  setDisplayAttribute: (displayAttribute: string) => void;
+
   error: string | null;
   setError: (error: string | null) => void;
 

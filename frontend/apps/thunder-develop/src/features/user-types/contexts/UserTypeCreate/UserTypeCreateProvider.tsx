@@ -45,6 +45,7 @@ const INITIAL_STATE = {
     },
   ] satisfies SchemaPropertyInput[],
   enumInput: {} as Record<string, string>,
+  displayAttribute: '',
   error: null as string | null,
 };
 
@@ -61,6 +62,7 @@ export default function UserTypeCreateProvider({children}: PropsWithChildren) {
   const [allowSelfRegistration, setAllowSelfRegistration] = useState<boolean>(INITIAL_STATE.allowSelfRegistration);
   const [properties, setProperties] = useState<SchemaPropertyInput[]>(INITIAL_STATE.properties);
   const [enumInput, setEnumInput] = useState<Record<string, string>>(INITIAL_STATE.enumInput);
+  const [displayAttribute, setDisplayAttribute] = useState<string>(INITIAL_STATE.displayAttribute);
   const [error, setError] = useState<string | null>(INITIAL_STATE.error);
 
   const reset = useCallback((): void => {
@@ -70,6 +72,7 @@ export default function UserTypeCreateProvider({children}: PropsWithChildren) {
     setAllowSelfRegistration(INITIAL_STATE.allowSelfRegistration);
     setProperties(INITIAL_STATE.properties);
     setEnumInput(INITIAL_STATE.enumInput);
+    setDisplayAttribute(INITIAL_STATE.displayAttribute);
     setError(INITIAL_STATE.error);
   }, []);
 
@@ -87,11 +90,13 @@ export default function UserTypeCreateProvider({children}: PropsWithChildren) {
       setProperties,
       enumInput,
       setEnumInput,
+      displayAttribute,
+      setDisplayAttribute,
       error,
       setError,
       reset,
     }),
-    [currentStep, name, ouId, allowSelfRegistration, properties, enumInput, error, reset],
+    [currentStep, name, ouId, allowSelfRegistration, properties, enumInput, displayAttribute, error, reset],
   );
 
   return <UserTypeCreateContext.Provider value={contextValue}>{children}</UserTypeCreateContext.Provider>;

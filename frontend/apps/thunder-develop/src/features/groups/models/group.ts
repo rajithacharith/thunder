@@ -24,6 +24,8 @@ export interface Member {
   id: string;
   /** Type of the member */
   type: 'user' | 'group';
+  /** Display name of the member */
+  display?: string;
 }
 
 /**
