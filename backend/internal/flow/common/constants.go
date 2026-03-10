@@ -131,6 +131,8 @@ const (
 	DataConsentPrompt = "consentPrompt"
 	// DataConsentExpiresAt is the key used for the consent expiry timestamp in the flow response.
 	DataConsentExpiresAt = "consentExpiresAt"
+	// DataInviteLink is the key used for the invite link in the flow response additional data.
+	DataInviteLink = "inviteLink"
 )
 
 // DefaultHTTPTimeout defines the default timeout duration for HTTP requests.
@@ -164,6 +166,8 @@ const (
 	RuntimeKeyConsentedAttributes = "consented_attributes"
 	// RuntimeKeyConsentSessionToken holds the signed JWT session token for consent validation.
 	RuntimeKeyConsentSessionToken = "consent_session_token"
+	// RuntimeKeyStoredInviteToken holds the generated invite token stored during the invite send phase.
+	RuntimeKeyStoredInviteToken = "storedInviteToken"
 )
 
 // TODO: Define a go type for InputType when formalizing input types

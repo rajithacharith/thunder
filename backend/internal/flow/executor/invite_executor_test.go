@@ -72,32 +72,51 @@ func (suite *InviteExecutorTestSuite) TearDownTest() {
 	config.ResetThunderRuntime()
 }
 
-func (suite *InviteExecutorTestSuite) TestExecute_GenerateToken_AdminPhase() {
+func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_GenerateToken() {
 	ctx := &core.NodeContext{
-		FlowID:      "test-flow-id",
-		UserInputs:  make(map[string]string),
-		RuntimeData: make(map[string]string),
+		FlowID:         "test-flow-id",
+		ExecutorMode:   ExecutorModeGenerate,
+		UserInputs:     make(map[string]string),
+		RuntimeData:    make(map[string]string),
+		NodeProperties: make(map[string]interface{}),
 	}
-
-	mockExecutor := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
-	mockExecutor.On("HasRequiredInputs", ctx, mock.Anything).Return(false)
 
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
-	assert.NotEmpty(suite.T(), resp.RuntimeData[runtimeKeyStoredInviteToken])
-	assert.Contains(suite.T(), resp.AdditionalData["inviteLink"], "inviteToken=")
-	assert.Contains(suite.T(), resp.AdditionalData["inviteLink"], "flowId=test-flow-id")
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.NotEmpty(suite.T(), resp.RuntimeData[common.RuntimeKeyStoredInviteToken])
+	assert.Contains(suite.T(), resp.AdditionalData[common.DataInviteLink], "inviteToken=")
+	assert.Contains(suite.T(), resp.AdditionalData[common.DataInviteLink], "flowId=test-flow-id")
 }
 
-func (suite *InviteExecutorTestSuite) TestExecute_Idempotency_AdminRetry() {
+func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_Idempotency() {
 	existingToken := "existing-token-123"
 	ctx := &core.NodeContext{
-		FlowID:     "test-flow-id",
-		UserInputs: make(map[string]string),
+		FlowID:       "test-flow-id",
+		ExecutorMode: ExecutorModeGenerate,
+		UserInputs:   make(map[string]string),
 		RuntimeData: map[string]string{
-			runtimeKeyStoredInviteToken: existingToken,
+			common.RuntimeKeyStoredInviteToken: existingToken,
+		},
+		NodeProperties: make(map[string]interface{}),
+	}
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), existingToken, resp.RuntimeData[common.RuntimeKeyStoredInviteToken])
+	assert.Contains(suite.T(), resp.AdditionalData[common.DataInviteLink], existingToken)
+}
+
+func (suite *InviteExecutorTestSuite) TestExecute_VerifyMode_NoTokenProvided() {
+	ctx := &core.NodeContext{
+		FlowID:       "test-flow-id",
+		ExecutorMode: ExecutorModeVerify,
+		UserInputs:   make(map[string]string),
+		RuntimeData: map[string]string{
+			common.RuntimeKeyStoredInviteToken: "stored-token",
 		},
 	}
 
@@ -108,19 +127,18 @@ func (suite *InviteExecutorTestSuite) TestExecute_Idempotency_AdminRetry() {
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
-	assert.Equal(suite.T(), existingToken, resp.RuntimeData[runtimeKeyStoredInviteToken])
-	assert.Contains(suite.T(), resp.AdditionalData["inviteLink"], existingToken)
 }
 
-func (suite *InviteExecutorTestSuite) TestExecute_ValidationSuccess_UserPhase() {
+func (suite *InviteExecutorTestSuite) TestExecute_VerifyMode_ValidationSuccess() {
 	token := "valid-token"
 	ctx := &core.NodeContext{
-		FlowID: "test-flow-id",
+		FlowID:       "test-flow-id",
+		ExecutorMode: ExecutorModeVerify,
 		UserInputs: map[string]string{
 			userInputInviteToken: token,
 		},
 		RuntimeData: map[string]string{
-			runtimeKeyStoredInviteToken: token,
+			common.RuntimeKeyStoredInviteToken: token,
 		},
 	}
 
@@ -133,14 +151,15 @@ func (suite *InviteExecutorTestSuite) TestExecute_ValidationSuccess_UserPhase() 
 	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 }
 
-func (suite *InviteExecutorTestSuite) TestExecute_ValidationFailure_Mismatch() {
+func (suite *InviteExecutorTestSuite) TestExecute_VerifyMode_ValidationFailure_Mismatch() {
 	ctx := &core.NodeContext{
-		FlowID: "test-flow-id",
+		FlowID:       "test-flow-id",
+		ExecutorMode: ExecutorModeVerify,
 		UserInputs: map[string]string{
 			userInputInviteToken: "wrong-token",
 		},
 		RuntimeData: map[string]string{
-			runtimeKeyStoredInviteToken: "correct-token",
+			common.RuntimeKeyStoredInviteToken: "correct-token",
 		},
 	}
 
@@ -154,9 +173,10 @@ func (suite *InviteExecutorTestSuite) TestExecute_ValidationFailure_Mismatch() {
 	assert.Equal(suite.T(), "Invalid invite token", resp.FailureReason)
 }
 
-func (suite *InviteExecutorTestSuite) TestExecute_ValidationFailure_NoStoredToken() {
+func (suite *InviteExecutorTestSuite) TestExecute_VerifyMode_ValidationFailure_NoStoredToken() {
 	ctx := &core.NodeContext{
-		FlowID: "test-flow-id",
+		FlowID:       "test-flow-id",
+		ExecutorMode: ExecutorModeVerify,
 		UserInputs: map[string]string{
 			userInputInviteToken: "some-token",
 		},
@@ -171,6 +191,21 @@ func (suite *InviteExecutorTestSuite) TestExecute_ValidationFailure_NoStoredToke
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
 	assert.Equal(suite.T(), "Invalid invite token", resp.FailureReason)
+}
+
+func (suite *InviteExecutorTestSuite) TestExecute_InvalidMode() {
+	ctx := &core.NodeContext{
+		FlowID:       "test-flow-id",
+		ExecutorMode: "invalid",
+		UserInputs:   make(map[string]string),
+		RuntimeData:  make(map[string]string),
+	}
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), resp)
+	assert.Contains(suite.T(), err.Error(), "invalid executor mode for InviteExecutor")
 }
 
 func TestInviteExecutorSuite(t *testing.T) {
