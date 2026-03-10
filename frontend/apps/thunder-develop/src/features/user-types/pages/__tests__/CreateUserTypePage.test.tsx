@@ -846,6 +846,7 @@ describe('CreateUserTypePage', () => {
             unique: true,
           },
         },
+        systemAttributes: {display: 'employeeId'},
       });
     });
   });
