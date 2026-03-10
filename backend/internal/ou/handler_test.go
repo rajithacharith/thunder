@@ -340,7 +340,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUListRequest
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				suite.Equal("Internal server error\n", recorder.Body.String())
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
 			},
 		},
 		{
@@ -562,7 +564,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				suite.Equal("Internal server error\n", recorder.Body.String())
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
 			},
 		},
 		{
@@ -970,7 +974,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUDeleteReque
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				suite.Equal("Internal server error\n", recorder.Body.String())
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
 			},
 		},
 		{
@@ -1078,7 +1084,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUChildrenLis
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				suite.Equal("Internal server error\n", recorder.Body.String())
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
 			},
 		},
 		{
@@ -1311,7 +1319,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutByPathRe
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				suite.Equal("Internal server error\n", recorder.Body.String())
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
 			},
 		},
 		{
@@ -1395,7 +1405,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUDeleteByPat
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				suite.Equal("Internal server error\n", recorder.Body.String())
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
 			},
 		},
 		{
@@ -1642,7 +1654,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListRe
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				suite.Equal("Internal server error\n", recorder.Body.String())
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
 			},
 		},
 		{

@@ -217,16 +217,6 @@ func (ouh *organizationUnitHandler) handleError(w http.ResponseWriter, svcErr *s
 		statusCode = http.StatusInternalServerError
 	}
 
-	if statusCode == http.StatusInternalServerError {
-		logger := log.GetLogger().With(
-			log.String(log.LoggerKeyComponentName, loggerComponentName))
-		logger.Error("Internal server error occurred",
-			log.String("error", svcErr.Error),
-			log.String("description", svcErr.ErrorDescription))
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
 	sysutils.WriteErrorResponse(w, statusCode, apierror.ErrorResponse{
 		Code:        svcErr.Code,
 		Message:     svcErr.Error,

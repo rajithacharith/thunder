@@ -16,13 +16,17 @@
  * under the License.
  */
 
-package utils
+package user
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/utils"
+	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 // ExtractDisplayValue extracts a string value from JSON attributes using a dot-notation path.
@@ -62,36 +66,28 @@ func ExtractDisplayValue(attributes json.RawMessage, attrPath string) string {
 	}
 }
 
-// DisplayAttributeLookupFunc is a function type for looking up display attribute paths by user type names.
-type DisplayAttributeLookupFunc func(ctx context.Context, typeNames []string) (map[string]string, error)
-
-// ResolveDisplayAttributePaths collects unique user types from the provided type-name pairs and
-// resolves their display attribute paths using the given lookup function.
+// ResolveDisplayAttributePaths collects unique user types and resolves their display
+// attribute paths from the user schema service.
 // Returns nil if there are no types to resolve or if the lookup fails.
 func ResolveDisplayAttributePaths(
-	ctx context.Context, userTypes []string, lookupFn DisplayAttributeLookupFunc,
+	ctx context.Context, userTypes []string, schemaService userschema.UserSchemaServiceInterface,
+	logger *log.Logger,
 ) map[string]string {
-	if lookupFn == nil || len(userTypes) == 0 {
+	if schemaService == nil || len(userTypes) == 0 {
 		return nil
 	}
 
-	seen := make(map[string]struct{})
-	var uniqueTypes []string
-	for _, t := range userTypes {
-		if t != "" {
-			if _, ok := seen[t]; !ok {
-				seen[t] = struct{}{}
-				uniqueTypes = append(uniqueTypes, t)
-			}
-		}
-	}
-
+	uniqueTypes := utils.UniqueNonEmptyStrings(userTypes)
 	if len(uniqueTypes) == 0 {
 		return nil
 	}
 
-	displayPaths, err := lookupFn(ctx, uniqueTypes)
-	if err != nil {
+	displayPaths, svcErr := schemaService.GetDisplayAttributesByNames(ctx, uniqueTypes)
+	if svcErr != nil {
+		if logger != nil {
+			logger.Warn("Failed to resolve display attribute paths, skipping display resolution",
+				log.Any("error", svcErr))
+		}
 		return nil
 	}
 
@@ -102,13 +98,19 @@ func ResolveDisplayAttributePaths(
 // a schema-configured display attribute path. Falls back to the user ID if no display
 // attribute is configured or extraction fails.
 func ResolveUserDisplay(id, userType string, attributes json.RawMessage, displayAttrPaths map[string]string) string {
-	if displayAttrPaths != nil && userType != "" {
-		if path, ok := displayAttrPaths[userType]; ok && path != "" {
-			if val := ExtractDisplayValue(attributes, path); val != "" {
-				return val
-			}
-		}
+	if displayAttrPaths == nil || userType == "" {
+		return id
 	}
 
-	return id
+	path, ok := displayAttrPaths[userType]
+	if !ok || path == "" {
+		return id
+	}
+
+	value := ExtractDisplayValue(attributes, path)
+	if value == "" {
+		return id
+	}
+
+	return value
 }

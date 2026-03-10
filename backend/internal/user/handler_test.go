@@ -314,6 +314,27 @@ func TestHandleUserListRequest_WithIncludeDisplay(t *testing.T) {
 	require.Equal(t, "Alice", resp.Users[0].Display)
 }
 
+func TestHandleUserListRequest_WithInvalidIncludeParam(t *testing.T) {
+	mockSvc := NewUserServiceInterfaceMock(t)
+	expectedResp := &UserListResponse{
+		TotalResults: 1,
+		Users:        []User{{ID: "user-1"}},
+	}
+	// Invalid include value should be treated as no include (includeDisplay=false).
+	mockSvc.On("GetUserList", mock.Anything, 10, 0, mock.Anything, false).Return(expectedResp, nil)
+
+	handler := newUserHandler(mockSvc)
+	req := httptest.NewRequest(http.MethodGet, "/users?limit=10&offset=0&include=invalid", nil)
+	rr := httptest.NewRecorder()
+
+	handler.HandleUserListRequest(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	var resp UserListResponse
+	require.NoError(t, json.NewDecoder(rr.Body).Decode(&resp))
+	require.Empty(t, resp.Users[0].Display)
+}
+
 func TestHandleUserPostRequest_Success(t *testing.T) {
 	mockSvc := NewUserServiceInterfaceMock(t)
 	userReq := &User{Type: "employee", Attributes: json.RawMessage(`{"username":"bob"}`)}

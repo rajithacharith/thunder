@@ -397,12 +397,8 @@ func (rs *roleService) GetRoleAssignments(ctx context.Context, id string, limit,
 			serviceAssignments[i].Type = assignments[i].Type
 		}
 	}
-	displayQuery := ""
-	if includeDisplay {
-		displayQuery = utils.IncludeDisplayQuery
-	}
 	baseURL := fmt.Sprintf("/roles/%s/assignments", id)
-	links := utils.BuildPaginationLinks(baseURL, limit, offset, totalCount, displayQuery)
+	links := utils.BuildPaginationLinks(baseURL, limit, offset, totalCount, utils.DisplayQueryParam(includeDisplay))
 
 	response := &AssignmentList{
 		TotalResults: totalCount,
@@ -712,18 +708,17 @@ func (rs *roleService) populateDisplayNames(
 	for _, u := range usersMap {
 		userTypes = append(userTypes, u.Type)
 	}
-	displayAttrPaths := utils.ResolveDisplayAttributePaths(ctx, userTypes, rs.displayAttributeLookup())
+	displayAttrPaths := user.ResolveDisplayAttributePaths(ctx, userTypes, rs.userSchemaService, logger)
 
 	for i := range assignments {
 		serviceAssignments[i].ID = assignments[i].ID
 		serviceAssignments[i].Type = assignments[i].Type
-		serviceAssignments[i].Display = assignments[i].ID // Fallback to ID if lookup fails
 
 		switch assignments[i].Type {
 		case AssigneeTypeUser:
 			if usersMap != nil {
 				if u, ok := usersMap[assignments[i].ID]; ok {
-					serviceAssignments[i].Display = utils.ResolveUserDisplay(
+					serviceAssignments[i].Display = user.ResolveUserDisplay(
 						u.ID, u.Type, u.Attributes, displayAttrPaths)
 					continue
 				}
@@ -737,22 +732,9 @@ func (rs *roleService) populateDisplayNames(
 				}
 			}
 			serviceAssignments[i].Display = assignments[i].ID
+		default:
+			serviceAssignments[i].Display = assignments[i].ID
 		}
-	}
-}
-
-// displayAttributeLookup returns a lookup function for display attribute paths
-// that delegates to the user schema service.
-func (rs *roleService) displayAttributeLookup() utils.DisplayAttributeLookupFunc {
-	if rs.userSchemaService == nil {
-		return nil
-	}
-	return func(ctx context.Context, typeNames []string) (map[string]string, error) {
-		paths, svcErr := rs.userSchemaService.GetDisplayAttributesByNames(ctx, typeNames)
-		if svcErr != nil {
-			return nil, fmt.Errorf("%s", svcErr.Error)
-		}
-		return paths, nil
 	}
 }
 

@@ -4958,57 +4958,6 @@ func TestDeleteUser_DeclarativeCheckError(t *testing.T) {
 	require.Equal(t, ErrorInternalServerError.Code, err.Code)
 }
 
-// resolveUserDisplay Tests
-
-func TestResolveUserDisplay_WithDisplayAttr(t *testing.T) {
-	u := &User{
-		ID:         "user-1",
-		Type:       "employee",
-		Attributes: json.RawMessage(`{"email":"alice@example.com"}`),
-	}
-	paths := map[string]string{"employee": "email"}
-	require.Equal(t, "alice@example.com", utils.ResolveUserDisplay(u.ID, u.Type, u.Attributes, paths))
-}
-
-func TestResolveUserDisplay_FallbackToID(t *testing.T) {
-	u := &User{
-		ID:         "user-1",
-		Type:       "employee",
-		Attributes: json.RawMessage(`{"name":"Alice"}`),
-	}
-	// Display path points to a non-existent attribute.
-	paths := map[string]string{"employee": "nonexistent"}
-	require.Equal(t, "user-1", utils.ResolveUserDisplay(u.ID, u.Type, u.Attributes, paths))
-}
-
-func TestResolveUserDisplay_NilPaths(t *testing.T) {
-	u := &User{
-		ID:         "user-1",
-		Type:       "employee",
-		Attributes: json.RawMessage(`{"email":"alice@example.com"}`),
-	}
-	require.Equal(t, "user-1", utils.ResolveUserDisplay(u.ID, u.Type, u.Attributes, nil))
-}
-
-func TestResolveUserDisplay_EmptyType(t *testing.T) {
-	u := &User{
-		ID:         "user-1",
-		Attributes: json.RawMessage(`{"email":"alice@example.com"}`),
-	}
-	paths := map[string]string{"employee": "email"}
-	require.Equal(t, "user-1", utils.ResolveUserDisplay(u.ID, u.Type, u.Attributes, paths))
-}
-
-func TestResolveUserDisplay_NestedPath(t *testing.T) {
-	u := &User{
-		ID:         "user-1",
-		Type:       "employee",
-		Attributes: json.RawMessage(`{"profile":{"fullName":"Alice Smith"}}`),
-	}
-	paths := map[string]string{"employee": "profile.fullName"}
-	require.Equal(t, "Alice Smith", utils.ResolveUserDisplay(u.ID, u.Type, u.Attributes, paths))
-}
-
 // populateUserDisplayNames Tests
 
 func TestPopulateUserDisplayNames_Success(t *testing.T) {
@@ -5022,7 +4971,7 @@ func TestPopulateUserDisplayNames_Success(t *testing.T) {
 		{ID: "user-2", Type: "employee", Attributes: json.RawMessage(`{"name":"Bob"}`)},
 	}
 
-	service.populateUserDisplayNames(context.Background(), users)
+	service.populateUserDisplayNames(context.Background(), users, nil)
 	require.Equal(t, "Alice", users[0].Display)
 	require.Equal(t, "Bob", users[1].Display)
 }
@@ -5038,7 +4987,7 @@ func TestPopulateUserDisplayNames_FallbackToID(t *testing.T) {
 		{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"name":"Alice"}`)},
 	}
 
-	service.populateUserDisplayNames(context.Background(), users)
+	service.populateUserDisplayNames(context.Background(), users, nil)
 	require.Equal(t, "user-1", users[0].Display)
 }
 
@@ -5046,7 +4995,7 @@ func TestPopulateUserDisplayNames_EmptyUsers(t *testing.T) {
 	service := &userService{}
 
 	var users []User
-	service.populateUserDisplayNames(context.Background(), users)
+	service.populateUserDisplayNames(context.Background(), users, nil)
 	// Should not panic.
 }
 
@@ -5057,7 +5006,7 @@ func TestPopulateUserDisplayNames_NilSchemaService(t *testing.T) {
 		{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"name":"Alice"}`)},
 	}
 
-	service.populateUserDisplayNames(context.Background(), users)
+	service.populateUserDisplayNames(context.Background(), users, nil)
 	// Display should fall back to user ID when schema service is nil.
 	require.Equal(t, "user-1", users[0].Display)
 }
@@ -5073,7 +5022,7 @@ func TestPopulateUserDisplayNames_SchemaServiceError(t *testing.T) {
 		{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"name":"Alice"}`)},
 	}
 
-	service.populateUserDisplayNames(context.Background(), users)
+	service.populateUserDisplayNames(context.Background(), users, nil)
 	// Display should fall back to user ID on schema service error.
 	require.Equal(t, "user-1", users[0].Display)
 }
@@ -5103,7 +5052,7 @@ func TestPopulateUserDisplayNames_MultipleTypes(t *testing.T) {
 		{ID: "user-2", Type: "customer", Attributes: json.RawMessage(`{"email":"bob@example.com"}`)},
 	}
 
-	service.populateUserDisplayNames(context.Background(), users)
+	service.populateUserDisplayNames(context.Background(), users, nil)
 	require.Equal(t, "Alice", users[0].Display)
 	require.Equal(t, "bob@example.com", users[1].Display)
 }

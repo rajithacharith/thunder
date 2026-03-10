@@ -136,3 +136,19 @@ func UniqueStrings(input []string) []string {
 
 	return result
 }
+
+// UniqueNonEmptyStrings returns a slice containing only unique, non-empty values from the input slice.
+func UniqueNonEmptyStrings(input []string) []string {
+	seen := make(map[string]struct{}, len(input))
+	var result []string
+	for _, s := range input {
+		if s != "" {
+			if _, ok := seen[s]; !ok {
+				seen[s] = struct{}{}
+				result = append(result, s)
+			}
+		}
+	}
+
+	return result
+}

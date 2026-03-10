@@ -24,6 +24,14 @@ import "fmt"
 // when the include=display parameter is active.
 const IncludeDisplayQuery = "&include=display"
 
+// DisplayQueryParam returns IncludeDisplayQuery if includeDisplay is true, empty string otherwise.
+func DisplayQueryParam(includeDisplay bool) string {
+	if includeDisplay {
+		return IncludeDisplayQuery
+	}
+	return ""
+}
+
 // Link represents a pagination link in API responses.
 type Link struct {
 	Href string `json:"href"`

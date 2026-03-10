@@ -281,7 +281,9 @@ func (gh *groupHandler) HandleGroupMembersGetRequest(w http.ResponseWriter, r *h
 		return
 	}
 
-	memberListResponse, svcErr := gh.groupService.GetGroupMembers(ctx, id, limit, offset)
+	includeDisplay := r.URL.Query().Get("include") == "display"
+
+	memberListResponse, svcErr := gh.groupService.GetGroupMembers(ctx, id, limit, offset, includeDisplay)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return

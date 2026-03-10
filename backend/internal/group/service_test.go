@@ -20,6 +20,7 @@ package group
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -29,11 +30,14 @@ import (
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
+	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	"github.com/asgardeo/thunder/tests/mocks/sysauthzmock"
 	"github.com/asgardeo/thunder/tests/mocks/usermock"
+	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
 
 // stubTransactioner is a stub implementation of Transactioner for testing.
@@ -1530,7 +1534,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers() {
 				groupStore:   storeMock,
 			}
 
-			response, err := service.GetGroupMembers(context.Background(), tc.id, tc.limit, tc.offset)
+			response, err := service.GetGroupMembers(context.Background(), tc.id, tc.limit, tc.offset, false)
 
 			if tc.expectErr != nil {
 				suite.Require().Nil(response)
@@ -1552,6 +1556,52 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers() {
 			}
 		})
 	}
+}
+
+func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers_WithDisplay() {
+	storeMock := newGroupStoreInterfaceMock(suite.T())
+	storeMock.On("GetGroup", mock.Anything, "grp-001").
+		Return(GroupDAO{ID: "grp-001"}, nil).Once()
+	storeMock.On("GetGroupMemberCount", mock.Anything, "grp-001").
+		Return(2, nil).Once()
+	storeMock.On("GetGroupMembers", mock.Anything, "grp-001", 5, 0).
+		Return([]Member{
+			{ID: "usr-001", Type: MemberTypeUser},
+			{ID: "grp-002", Type: MemberTypeGroup},
+		}, nil).Once()
+
+	userSvcMock := usermock.NewUserServiceInterfaceMock(suite.T())
+	userSvcMock.On("GetUsersByIDs", mock.Anything, []string{"usr-001"}).
+		Return(map[string]*user.User{
+			"usr-001": {
+				ID:         "usr-001",
+				Type:       "employee",
+				Attributes: json.RawMessage(`{"name":"Alice"}`),
+			},
+		}, (*serviceerror.ServiceError)(nil)).Once()
+
+	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything).
+		Return(map[string]string{"employee": "name"}, (*serviceerror.ServiceError)(nil)).Once()
+
+	storeMock.On("GetGroupsByIDs", mock.Anything, []string{"grp-002"}).
+		Return([]GroupBasicDAO{
+			{ID: "grp-002", Name: "Engineering", OrganizationUnitID: "ou-1"},
+		}, nil).Once()
+
+	service := &groupService{
+		authzService:      newAllowAllAuthz(suite.T()),
+		groupStore:        storeMock,
+		userService:       userSvcMock,
+		userSchemaService: schemaMock,
+	}
+
+	resp, err := service.GetGroupMembers(context.Background(), "grp-001", 5, 0, true)
+	suite.Require().Nil(err)
+	suite.Require().NotNil(resp)
+	suite.Require().Len(resp.Members, 2)
+	suite.Require().Equal("Alice", resp.Members[0].Display)
+	suite.Require().Equal("Engineering", resp.Members[1].Display)
 }
 
 func (suite *GroupServiceTestSuite) TestGroupService_ValidateCreateGroupRequest() {
@@ -2229,4 +2279,214 @@ func (suite *GroupServiceTestSuite) TestGroupService_RemoveGroupMembers() {
 			storeMock.AssertExpectations(suite.T())
 		})
 	}
+}
+
+// resolveUserDisplay Tests
+
+func TestResolveUserDisplay_WithDisplayAttr(t *testing.T) {
+	u := &user.User{
+		ID:         "user-1",
+		Type:       "employee",
+		Attributes: json.RawMessage(`{"email":"alice@example.com"}`),
+	}
+	paths := map[string]string{"employee": "email"}
+	require.Equal(t, "alice@example.com", user.ResolveUserDisplay(u.ID, u.Type, u.Attributes, paths))
+}
+
+func TestResolveUserDisplay_FallbackToID(t *testing.T) {
+	u := &user.User{
+		ID:         "user-1",
+		Type:       "employee",
+		Attributes: json.RawMessage(`{"name":"Alice"}`),
+	}
+	paths := map[string]string{"employee": "nonexistent"}
+	require.Equal(t, "user-1", user.ResolveUserDisplay(u.ID, u.Type, u.Attributes, paths))
+}
+
+func TestResolveUserDisplay_NilPaths(t *testing.T) {
+	u := &user.User{ID: "user-1", Type: "employee"}
+	require.Equal(t, "user-1", user.ResolveUserDisplay(u.ID, u.Type, u.Attributes, nil))
+}
+
+// populateMemberDisplayNames Tests
+
+func TestPopulateMemberDisplayNames_MixedMembers(t *testing.T) {
+	userSvcMock := usermock.NewUserServiceInterfaceMock(t)
+	userSvcMock.On("GetUsersByIDs", mock.Anything, []string{"user-1"}).
+		Return(map[string]*user.User{
+			"user-1": {
+				ID:         "user-1",
+				Type:       "employee",
+				Attributes: json.RawMessage(`{"name":"Alice"}`),
+			},
+		}, (*serviceerror.ServiceError)(nil)).Once()
+
+	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything).
+		Return(map[string]string{"employee": "name"}, (*serviceerror.ServiceError)(nil)).Once()
+
+	storeMock := newGroupStoreInterfaceMock(t)
+	storeMock.On("GetGroupsByIDs", mock.Anything, []string{"group-1"}).
+		Return([]GroupBasicDAO{
+			{ID: "group-1", Name: "Engineering", OrganizationUnitID: "ou-1"},
+		}, nil).Once()
+
+	service := &groupService{
+		userService:       userSvcMock,
+		userSchemaService: schemaMock,
+		groupStore:        storeMock,
+	}
+	logger := log.GetLogger()
+
+	members := []Member{
+		{ID: "user-1", Type: MemberTypeUser},
+		{ID: "group-1", Type: MemberTypeGroup},
+	}
+
+	service.populateMemberDisplayNames(context.Background(), members, logger)
+	require.Equal(t, "Alice", members[0].Display)
+	require.Equal(t, "Engineering", members[1].Display)
+}
+
+func TestPopulateMemberDisplayNames_UserFallbackToID(t *testing.T) {
+	userSvcMock := usermock.NewUserServiceInterfaceMock(t)
+	userSvcMock.On("GetUsersByIDs", mock.Anything, []string{"user-1"}).
+		Return(map[string]*user.User{
+			"user-1": {ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{}`)},
+		}, (*serviceerror.ServiceError)(nil)).Once()
+
+	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything).
+		Return(map[string]string{"employee": "missing"}, (*serviceerror.ServiceError)(nil)).Once()
+
+	service := &groupService{
+		userService:       userSvcMock,
+		userSchemaService: schemaMock,
+	}
+	logger := log.GetLogger()
+
+	members := []Member{
+		{ID: "user-1", Type: MemberTypeUser},
+	}
+
+	service.populateMemberDisplayNames(context.Background(), members, logger)
+	require.Equal(t, "user-1", members[0].Display)
+}
+
+func TestPopulateMemberDisplayNames_UserServiceError(t *testing.T) {
+	userSvcMock := usermock.NewUserServiceInterfaceMock(t)
+	userSvcMock.On("GetUsersByIDs", mock.Anything, []string{"user-1"}).
+		Return(map[string]*user.User(nil), &serviceerror.ServiceError{Code: "ERR"}).Once()
+
+	service := &groupService{
+		userService: userSvcMock,
+	}
+	logger := log.GetLogger()
+
+	members := []Member{
+		{ID: "user-1", Type: MemberTypeUser},
+	}
+
+	service.populateMemberDisplayNames(context.Background(), members, logger)
+	// Falls back to member ID when user service fails.
+	require.Equal(t, "user-1", members[0].Display)
+}
+
+func TestPopulateMemberDisplayNames_EmptyMembers(t *testing.T) {
+	service := &groupService{}
+	logger := log.GetLogger()
+
+	var members []Member
+	service.populateMemberDisplayNames(context.Background(), members, logger)
+	// Should not panic.
+}
+
+func TestPopulateMemberDisplayNames_GroupFallbackToID(t *testing.T) {
+	storeMock := newGroupStoreInterfaceMock(t)
+	storeMock.On("GetGroupsByIDs", mock.Anything, []string{"group-1"}).
+		Return([]GroupBasicDAO{
+			{ID: "group-1", Name: "", OrganizationUnitID: "ou-1"},
+		}, nil).Once()
+
+	service := &groupService{
+		groupStore: storeMock,
+	}
+	logger := log.GetLogger()
+
+	members := []Member{
+		{ID: "group-1", Type: MemberTypeGroup},
+	}
+
+	service.populateMemberDisplayNames(context.Background(), members, logger)
+	// Falls back to member ID when group name is empty.
+	require.Equal(t, "group-1", members[0].Display)
+}
+
+func TestPopulateMemberDisplayNames_SchemaServiceError(t *testing.T) {
+	userSvcMock := usermock.NewUserServiceInterfaceMock(t)
+	userSvcMock.On("GetUsersByIDs", mock.Anything, []string{"user-1"}).
+		Return(map[string]*user.User{
+			"user-1": {
+				ID:         "user-1",
+				Type:       "employee",
+				Attributes: json.RawMessage(`{"name":"Alice"}`),
+			},
+		}, (*serviceerror.ServiceError)(nil)).Once()
+
+	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything).
+		Return(map[string]string(nil), &serviceerror.ServiceError{Code: "ERR"}).Once()
+
+	service := &groupService{
+		userService:       userSvcMock,
+		userSchemaService: schemaMock,
+	}
+	logger := log.GetLogger()
+
+	members := []Member{
+		{ID: "user-1", Type: MemberTypeUser},
+	}
+
+	service.populateMemberDisplayNames(context.Background(), members, logger)
+	// Falls back to member ID when schema service fails to resolve display attributes.
+	require.Equal(t, "user-1", members[0].Display)
+}
+
+func TestPopulateMemberDisplayNames_SchemaServiceError_WithGroupMember(t *testing.T) {
+	groupStoreMock := newGroupStoreInterfaceMock(t)
+
+	userSvcMock := usermock.NewUserServiceInterfaceMock(t)
+	userSvcMock.On("GetUsersByIDs", mock.Anything, []string{"user-1"}).
+		Return(map[string]*user.User{
+			"user-1": {
+				ID:         "user-1",
+				Type:       "employee",
+				Attributes: json.RawMessage(`{"name":"Alice"}`),
+			},
+		}, (*serviceerror.ServiceError)(nil)).Once()
+
+	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything).
+		Return(map[string]string(nil), &serviceerror.ServiceError{Code: "ERR"}).Once()
+
+	groupStoreMock.On("GetGroupsByIDs", mock.Anything, []string{"group-1"}).
+		Return([]GroupBasicDAO{{ID: "group-1", Name: "Engineering", OrganizationUnitID: "ou-1"}}, nil).Once()
+
+	service := &groupService{
+		groupStore:        groupStoreMock,
+		userService:       userSvcMock,
+		userSchemaService: schemaMock,
+	}
+	logger := log.GetLogger()
+
+	members := []Member{
+		{ID: "user-1", Type: MemberTypeUser},
+		{ID: "group-1", Type: MemberTypeGroup},
+	}
+
+	service.populateMemberDisplayNames(context.Background(), members, logger)
+	// User falls back to ID when schema service fails.
+	require.Equal(t, "user-1", members[0].Display)
+	// Group display still resolved via group name despite schema error (schema only affects users).
+	require.Equal(t, "Engineering", members[1].Display)
 }

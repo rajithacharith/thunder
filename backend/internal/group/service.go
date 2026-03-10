@@ -34,6 +34,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 const loggerComponentName = "GroupMgtService"
@@ -49,7 +50,7 @@ type GroupServiceInterface interface {
 	GetGroup(ctx context.Context, groupID string) (*Group, *serviceerror.ServiceError)
 	UpdateGroup(ctx context.Context, groupID string, request UpdateGroupRequest) (*Group, *serviceerror.ServiceError)
 	DeleteGroup(ctx context.Context, groupID string) *serviceerror.ServiceError
-	GetGroupMembers(ctx context.Context, groupID string, limit, offset int) (
+	GetGroupMembers(ctx context.Context, groupID string, limit, offset int, includeDisplay bool) (
 		*MemberListResponse, *serviceerror.ServiceError)
 	ValidateGroupIDs(ctx context.Context, groupIDs []string) *serviceerror.ServiceError
 	GetGroupsByIDs(ctx context.Context, groupIDs []string) (map[string]*Group, *serviceerror.ServiceError)
@@ -59,26 +60,29 @@ type GroupServiceInterface interface {
 
 // groupService is the default implementation of the GroupServiceInterface.
 type groupService struct {
-	groupStore    groupStoreInterface
-	ouService     oupkg.OrganizationUnitServiceInterface
-	userService   user.UserServiceInterface
-	transactioner transaction.Transactioner
-	authzService  sysauthz.SystemAuthorizationServiceInterface
+	groupStore        groupStoreInterface
+	ouService         oupkg.OrganizationUnitServiceInterface
+	userService       user.UserServiceInterface
+	userSchemaService userschema.UserSchemaServiceInterface
+	transactioner     transaction.Transactioner
+	authzService      sysauthz.SystemAuthorizationServiceInterface
 }
 
 // newGroupService creates a new instance of GroupService with injected dependencies.
 func newGroupService(
 	ouService oupkg.OrganizationUnitServiceInterface,
 	userService user.UserServiceInterface,
+	userSchemaService userschema.UserSchemaServiceInterface,
 	authzService sysauthz.SystemAuthorizationServiceInterface,
 	transactioner transaction.Transactioner,
 ) GroupServiceInterface {
 	return &groupService{
-		groupStore:    newGroupStore(),
-		ouService:     ouService,
-		userService:   userService,
-		authzService:  authzService,
-		transactioner: transactioner,
+		groupStore:        newGroupStore(),
+		ouService:         ouService,
+		userService:       userService,
+		userSchemaService: userSchemaService,
+		authzService:      authzService,
+		transactioner:     transactioner,
 	}
 }
 
@@ -127,7 +131,7 @@ func (gs *groupService) listAllGroups(ctx context.Context, limit, offset int) (
 		Groups:       groupBasics,
 		StartIndex:   offset + 1,
 		Count:        len(groupBasics),
-		Links:        buildPaginationLinks("/groups", limit, offset, totalCount),
+		Links:        utils.BuildPaginationLinks("/groups", limit, offset, totalCount, ""),
 	}
 
 	return response, nil
@@ -143,7 +147,7 @@ func (gs *groupService) listGroupsByOUIDs(ctx context.Context, ouIDs []string, l
 			Groups:       []GroupBasic{},
 			StartIndex:   offset + 1,
 			Count:        0,
-			Links:        []Link{},
+			Links:        []utils.Link{},
 		}, nil
 	}
 
@@ -159,7 +163,7 @@ func (gs *groupService) listGroupsByOUIDs(ctx context.Context, ouIDs []string, l
 			Groups:       []GroupBasic{},
 			StartIndex:   offset + 1,
 			Count:        0,
-			Links:        []Link{},
+			Links:        []utils.Link{},
 		}, nil
 	}
 
@@ -179,7 +183,7 @@ func (gs *groupService) listGroupsByOUIDs(ctx context.Context, ouIDs []string, l
 		Groups:       groupBasics,
 		StartIndex:   offset + 1,
 		Count:        len(groupBasics),
-		Links:        buildPaginationLinks("/groups", limit, offset, totalCount),
+		Links:        utils.BuildPaginationLinks("/groups", limit, offset, totalCount, ""),
 	}
 
 	return response, nil
@@ -236,7 +240,7 @@ func (gs *groupService) GetGroupsByPath(
 		Groups:       groupBasics,
 		StartIndex:   offset + 1,
 		Count:        len(groupBasics),
-		Links:        buildPaginationLinks("/groups", limit, offset, totalCount),
+		Links:        utils.BuildPaginationLinks("/groups", limit, offset, totalCount, ""),
 	}
 
 	return response, nil
@@ -555,8 +559,8 @@ func (gs *groupService) DeleteGroup(ctx context.Context, groupID string) *servic
 }
 
 // GetGroupMembers retrieves members of a group with pagination.
-func (gs *groupService) GetGroupMembers(ctx context.Context, groupID string, limit, offset int) (
-	*MemberListResponse, *serviceerror.ServiceError) {
+func (gs *groupService) GetGroupMembers(ctx context.Context, groupID string, limit, offset int,
+	includeDisplay bool) (*MemberListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if err := validatePaginationParams(limit, offset); err != nil {
@@ -598,8 +602,12 @@ func (gs *groupService) GetGroupMembers(ctx context.Context, groupID string, lim
 		return nil, &ErrorInternalServerError
 	}
 
+	if includeDisplay {
+		gs.populateMemberDisplayNames(ctx, members, logger)
+	}
+
 	baseURL := fmt.Sprintf("/groups/%s/members", groupID)
-	links := buildPaginationLinks(baseURL, limit, offset, totalCount)
+	links := utils.BuildPaginationLinks(baseURL, limit, offset, totalCount, utils.DisplayQueryParam(includeDisplay))
 
 	response := &MemberListResponse{
 		TotalResults: totalCount,
@@ -610,6 +618,75 @@ func (gs *groupService) GetGroupMembers(ctx context.Context, groupID string, lim
 	}
 
 	return response, nil
+}
+
+// populateMemberDisplayNames resolves display names for group members.
+// For user members, it uses the schema-configured display attribute path.
+// For group members, it uses the group name.
+func (gs *groupService) populateMemberDisplayNames(ctx context.Context, members []Member, logger *log.Logger) {
+	if len(members) == 0 {
+		return
+	}
+
+	// Separate user and group member IDs.
+	var userIDs, groupIDs []string
+	for _, m := range members {
+		switch m.Type {
+		case MemberTypeUser:
+			userIDs = append(userIDs, m.ID)
+		case MemberTypeGroup:
+			groupIDs = append(groupIDs, m.ID)
+		}
+	}
+
+	// Batch-fetch users and resolve display attribute paths.
+	var usersMap map[string]*user.User
+	var displayAttrPaths map[string]string
+	if len(userIDs) > 0 {
+		var svcErr *serviceerror.ServiceError
+		usersMap, svcErr = gs.userService.GetUsersByIDs(ctx, userIDs)
+		if svcErr != nil {
+			logger.Warn("Failed to batch-fetch users for display resolution", log.Any("error", svcErr))
+		} else {
+			var userTypes []string
+			for _, u := range usersMap {
+				userTypes = append(userTypes, u.Type)
+			}
+			displayAttrPaths = user.ResolveDisplayAttributePaths(ctx, userTypes, gs.userSchemaService, logger)
+		}
+	}
+
+	// Batch-fetch groups for group member display names.
+	var groupsMap map[string]*Group
+	if len(groupIDs) > 0 {
+		var svcErr *serviceerror.ServiceError
+		groupsMap, svcErr = gs.GetGroupsByIDs(ctx, groupIDs)
+		if svcErr != nil {
+			logger.Warn("Failed to batch-fetch groups for display resolution", log.Any("error", svcErr))
+		}
+	}
+
+	// Set display on each member.
+	for i := range members {
+		switch members[i].Type {
+		case MemberTypeUser:
+			if usersMap != nil {
+				if u, ok := usersMap[members[i].ID]; ok {
+					members[i].Display = user.ResolveUserDisplay(u.ID, u.Type, u.Attributes, displayAttrPaths)
+					continue
+				}
+			}
+			members[i].Display = members[i].ID
+		case MemberTypeGroup:
+			if groupsMap != nil {
+				if g, ok := groupsMap[members[i].ID]; ok && g.Name != "" {
+					members[i].Display = g.Name
+					continue
+				}
+			}
+			members[i].Display = members[i].ID
+		}
+	}
 }
 
 // AddGroupMembers adds members to a group.
@@ -986,45 +1063,6 @@ func validatePaginationParams(limit, offset int) *serviceerror.ServiceError {
 		return &ErrorInvalidOffset
 	}
 	return nil
-}
-
-// buildPaginationLinks builds pagination links for the response.
-func buildPaginationLinks(base string, limit, offset, totalCount int) []Link {
-	links := make([]Link, 0)
-
-	if offset > 0 {
-		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=0&limit=%d", base, limit),
-			Rel:  "first",
-		})
-
-		prevOffset := offset - limit
-		if prevOffset < 0 {
-			prevOffset = 0
-		}
-		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=%d&limit=%d", base, prevOffset, limit),
-			Rel:  "prev",
-		})
-	}
-
-	if offset+limit < totalCount {
-		nextOffset := offset + limit
-		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=%d&limit=%d", base, nextOffset, limit),
-			Rel:  "next",
-		})
-	}
-
-	lastPageOffset := ((totalCount - 1) / limit) * limit
-	if offset < lastPageOffset {
-		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=%d&limit=%d", base, lastPageOffset, limit),
-			Rel:  "last",
-		})
-	}
-
-	return links
 }
 
 // checkGroupAccess performs an authorization check on the group resource against the current caller.

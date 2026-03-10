@@ -144,13 +144,11 @@ func (us *userService) listAllUsers(
 		return nil, logErrorAndReturnServerError(logger, "Failed to get user list", err)
 	}
 
-	displayQuery := ""
 	if includeDisplay {
-		displayQuery = utils.IncludeDisplayQuery
-		us.populateUserDisplayNames(ctx, users)
+		us.populateUserDisplayNames(ctx, users, logger)
 	}
 
-	return buildUserListResponse(users, totalCount, limit, offset, displayQuery), nil
+	return buildUserListResponse(users, totalCount, limit, offset, utils.DisplayQueryParam(includeDisplay)), nil
 }
 
 // listUsersByOUIDs retrieves users scoped to the given organization unit IDs.
@@ -158,10 +156,7 @@ func (us *userService) listUsersByOUIDs(
 	ctx context.Context, ouIDs []string, limit, offset int, filters map[string]interface{},
 	includeDisplay bool, logger *log.Logger,
 ) (*UserListResponse, *serviceerror.ServiceError) {
-	displayQuery := ""
-	if includeDisplay {
-		displayQuery = utils.IncludeDisplayQuery
-	}
+	displayQuery := utils.DisplayQueryParam(includeDisplay)
 
 	if len(ouIDs) == 0 {
 		return buildUserListResponse([]User{}, 0, limit, offset, displayQuery), nil
@@ -178,7 +173,7 @@ func (us *userService) listUsersByOUIDs(
 	}
 
 	if includeDisplay {
-		us.populateUserDisplayNames(ctx, users)
+		us.populateUserDisplayNames(ctx, users, logger)
 	}
 
 	return buildUserListResponse(users, totalCount, limit, offset, displayQuery), nil
@@ -248,6 +243,9 @@ func (us *userService) GetUsersByPath(
 			log.Int("offset", offset),
 		)
 	}
+	if ouResponse == nil {
+		return &UserListResponse{}, nil
+	}
 
 	var users []User
 	if includeDisplay && len(ouResponse.Users) > 0 {
@@ -265,20 +263,30 @@ func (us *userService) GetUsersByPath(
 				users[i] = User{ID: ouUser.ID}
 			}
 		} else {
-			// Build an ID-keyed map and reassemble in OU page order.
+			// Build an ID-keyed map for display resolution, but only expose ID + Display.
 			userMap := make(map[string]User, len(fetchedUsers))
 			for _, u := range fetchedUsers {
 				userMap[u.ID] = u
 			}
+
+			// Resolve display attribute paths for the fetched user types.
+			userTypes := make([]string, 0, len(fetchedUsers))
+			for _, u := range fetchedUsers {
+				userTypes = append(userTypes, u.Type)
+			}
+			displayAttrPaths := ResolveDisplayAttributePaths(ctx, userTypes, us.userSchemaService, logger)
+
 			users = make([]User, len(ouResponse.Users))
 			for i, ouUser := range ouResponse.Users {
 				if u, ok := userMap[ouUser.ID]; ok {
-					users[i] = u
+					users[i] = User{
+						ID:      u.ID,
+						Display: ResolveUserDisplay(u.ID, u.Type, u.Attributes, displayAttrPaths),
+					}
 				} else {
 					users[i] = User{ID: ouUser.ID}
 				}
 			}
-			us.populateUserDisplayNames(ctx, users)
 		}
 	} else {
 		users = make([]User, len(ouResponse.Users))
@@ -287,17 +295,13 @@ func (us *userService) GetUsersByPath(
 		}
 	}
 
-	displayQuery := ""
-	if includeDisplay {
-		displayQuery = utils.IncludeDisplayQuery
-	}
-
 	response := &UserListResponse{
 		TotalResults: ouResponse.TotalResults,
 		StartIndex:   ouResponse.StartIndex,
 		Count:        ouResponse.Count,
 		Users:        users,
-		Links:        buildTreePaginationLinks(handlePath, limit, offset, ouResponse.TotalResults, displayQuery),
+		Links: buildTreePaginationLinks(
+			handlePath, limit, offset, ouResponse.TotalResults, utils.DisplayQueryParam(includeDisplay)),
 	}
 
 	return response, nil
@@ -1330,35 +1334,20 @@ func (us *userService) GetUsersByIDs(
 // populateUserDisplayNames resolves display names for a slice of users in-place.
 // It batch-fetches display attribute paths from the user schema service and extracts the
 // display value from each user's attributes. Falls back to user ID if extraction fails.
-func (us *userService) populateUserDisplayNames(ctx context.Context, users []User) {
+func (us *userService) populateUserDisplayNames(ctx context.Context, users []User, logger *log.Logger) {
 	// Collect user types for display attribute resolution.
 	userTypes := make([]string, 0, len(users))
 	for _, u := range users {
 		userTypes = append(userTypes, u.Type)
 	}
 
-	displayAttrPaths := utils.ResolveDisplayAttributePaths(
-		ctx, userTypes, us.displayAttributeLookup())
+	displayAttrPaths := ResolveDisplayAttributePaths(
+		ctx, userTypes, us.userSchemaService, logger)
 
 	// Resolve display for each user.
 	for i := range users {
-		users[i].Display = utils.ResolveUserDisplay(
+		users[i].Display = ResolveUserDisplay(
 			users[i].ID, users[i].Type, users[i].Attributes, displayAttrPaths)
-	}
-}
-
-// displayAttributeLookup returns a lookup function for display attribute paths
-// that delegates to the user schema service.
-func (us *userService) displayAttributeLookup() utils.DisplayAttributeLookupFunc {
-	if us.userSchemaService == nil {
-		return nil
-	}
-	return func(ctx context.Context, typeNames []string) (map[string]string, error) {
-		paths, svcErr := us.userSchemaService.GetDisplayAttributesByNames(ctx, typeNames)
-		if svcErr != nil {
-			return nil, fmt.Errorf("%s", svcErr.Error)
-		}
-		return paths, nil
 	}
 }
 
