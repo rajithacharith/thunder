@@ -19,6 +19,7 @@
 package granthandlers
 
 import (
+	"context"
 	"net/url"
 	"slices"
 	"time"
@@ -55,7 +56,7 @@ func newAuthorizationCodeGrantHandler(
 }
 
 // ValidateGrant validates the authorization code grant request.
-func (h *authorizationCodeGrantHandler) ValidateGrant(tokenRequest *model.TokenRequest,
+func (h *authorizationCodeGrantHandler) ValidateGrant(ctx context.Context, tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO) *model.ErrorResponse {
 	if tokenRequest.GrantType == "" {
 		return &model.ErrorResponse{
@@ -112,13 +113,13 @@ func (h *authorizationCodeGrantHandler) ValidateGrant(tokenRequest *model.TokenR
 }
 
 // HandleGrant processes the authorization code grant request and generates a token response.
-func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
+func (h *authorizationCodeGrantHandler) HandleGrant(ctx context.Context, tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO) (
 	*model.TokenResponseDTO, *model.ErrorResponse) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "AuthorizationCodeGrantHandler"))
 
 	// Retrieve and validate authorization code
-	authCode, errResponse := h.retrieveAndValidateAuthCode(tokenRequest, oauthApp, logger)
+	authCode, errResponse := h.retrieveAndValidateAuthCode(ctx, tokenRequest, oauthApp, logger)
 	if errResponse != nil {
 		return nil, errResponse
 	}
@@ -183,13 +184,13 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 	return tokenResponse, nil
 }
 
-// retrieveAndValidateAuthCode retrieves and validates the authorization code, including PKCE validation.
 func (h *authorizationCodeGrantHandler) retrieveAndValidateAuthCode(
+	ctx context.Context,
 	tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
 	logger *log.Logger,
 ) (*authz.AuthorizationCode, *model.ErrorResponse) {
-	authCode, codeErr := h.authzService.GetAuthorizationCodeDetails(tokenRequest.ClientID, tokenRequest.Code)
+	authCode, codeErr := h.authzService.GetAuthorizationCodeDetails(ctx, tokenRequest.ClientID, tokenRequest.Code)
 	if codeErr != nil {
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorInvalidGrant,

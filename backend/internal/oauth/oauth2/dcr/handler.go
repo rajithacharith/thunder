@@ -24,6 +24,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -42,6 +43,7 @@ func newDCRHandler(dcrService DCRServiceInterface) *dcrHandler {
 
 // HandleDCRRegistration handles the DCR client registration request.
 func (dh *dcrHandler) HandleDCRRegistration(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	// When DCR is not insecure, require a valid token with required permissions.
 	if !config.GetThunderRuntime().Config.OAuth.DCR.Insecure && !dh.checkDCRAuthorization(r, w) {
 		return
@@ -54,8 +56,16 @@ func (dh *dcrHandler) HandleDCRRegistration(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	dcrResponse, svcErr := dh.dcrService.RegisterClient(dcrRequest)
+	dcrResponse, svcErr := dh.dcrService.RegisterClient(ctx, dcrRequest)
 	if svcErr != nil {
+		if svcErr.Type == serviceerror.ServerErrorType {
+			logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DCRHandler"))
+			logger.Error("Internal server error processing DCR registration request",
+				log.String("client_name", log.MaskString(dcrRequest.ClientName)),
+				log.String("error_code", svcErr.Code),
+				log.String("error", svcErr.Error),
+			)
+		}
 		dh.writeServiceErrorResponse(w, svcErr)
 		return
 	}

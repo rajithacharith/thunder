@@ -19,6 +19,7 @@
 package scope
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -91,7 +92,7 @@ func (suite *ScopeValidatorTestSuite) TestValidateScopes() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			scopes, err := suite.validator.ValidateScopes(tc.requestedScopes, tc.clientID)
+			scopes, err := suite.validator.ValidateScopes(context.Background(), tc.requestedScopes, tc.clientID)
 
 			assert.Equal(t, tc.expectedScopes, scopes)
 			assert.Equal(t, tc.expectedError, err)
@@ -103,7 +104,7 @@ func (suite *ScopeValidatorTestSuite) TestValidateScopesInterface() {
 	var _ ScopeValidatorInterface = &apiScopeValidator{}
 
 	validator := newAPIScopeValidator()
-	scopes, err := validator.ValidateScopes("test", "client")
+	scopes, err := validator.ValidateScopes(context.Background(), "test", "client")
 	assert.Equal(suite.T(), "test", scopes)
 	assert.Nil(suite.T(), err)
 }

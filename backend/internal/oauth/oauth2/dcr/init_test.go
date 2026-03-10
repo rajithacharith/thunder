@@ -40,8 +40,16 @@ func TestInitTestSuite(t *testing.T) {
 }
 
 func (suite *InitTestSuite) SetupTest() {
+	config.ResetThunderRuntime()
 	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
-	_ = config.InitializeThunderRuntime("test", &config.Config{})
+	testConfig := &config.Config{
+		Database: config.DatabaseConfig{
+			Config:  config.DataSource{Type: "sqlite", Path: "thunder_test.db"},
+			Runtime: config.DataSource{Type: "sqlite", Path: "thunder_test.db"},
+			User:    config.DataSource{Type: "sqlite", Path: "thunder_test.db"},
+		},
+	}
+	_ = config.InitializeThunderRuntime("", testConfig)
 }
 
 func (suite *InitTestSuite) TearDownTest() {
@@ -51,7 +59,7 @@ func (suite *InitTestSuite) TearDownTest() {
 func (suite *InitTestSuite) TestInitialize() {
 	mux := http.NewServeMux()
 
-	service := Initialize(mux, suite.mockAppService)
+	service := Initialize(mux, suite.mockAppService, &MockTransactioner{})
 
 	assert.NotNil(suite.T(), service)
 	assert.Implements(suite.T(), (*DCRServiceInterface)(nil), service)
@@ -60,7 +68,7 @@ func (suite *InitTestSuite) TestInitialize() {
 func (suite *InitTestSuite) TestInitialize_RegistersRoutes() {
 	mux := http.NewServeMux()
 
-	_ = Initialize(mux, suite.mockAppService)
+	Initialize(mux, suite.mockAppService, &MockTransactioner{})
 
 	// Verify that the routes are registered by attempting to get a handler for them.
 	// The pattern includes the method because of CORS middleware wrapping.

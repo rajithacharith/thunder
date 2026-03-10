@@ -33,8 +33,9 @@ func ClientAuthMiddleware(appService application.ApplicationServiceInterface, jw
 	discoveryService discovery.DiscoveryServiceInterface) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
 			// Authenticate client
-			clientInfo, authErr := authenticate(r, appService, jwtService, discoveryService)
+			clientInfo, authErr := authenticate(ctx, r, appService, jwtService, discoveryService)
 			if authErr != nil {
 				// If the client attempted to authenticate via the Authorization
 				// header, include WWW-Authenticate in 401 responses.
@@ -57,7 +58,7 @@ func ClientAuthMiddleware(appService application.ApplicationServiceInterface, jw
 			}
 
 			// Attach client info to context
-			ctx := withOAuthClient(r.Context(), clientInfo)
+			ctx = withOAuthClient(ctx, clientInfo)
 			r = r.WithContext(ctx)
 
 			next.ServeHTTP(w, r)

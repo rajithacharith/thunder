@@ -42,6 +42,7 @@ func newTokenIntrospectionHandler(introspectionService TokenIntrospectionService
 
 // HandleIntrospect handles token introspection requests
 func (h *tokenIntrospectionHandler) HandleIntrospect(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	if err := r.ParseForm(); err != nil {
 		sysutils.WriteJSONError(w, constants.ErrorInvalidRequest, "Failed to decode request body",
 			http.StatusBadRequest, nil)
@@ -58,7 +59,7 @@ func (h *tokenIntrospectionHandler) HandleIntrospect(w http.ResponseWriter, r *h
 	// token_type_hint parameter is not supported due to non persistent tokens in the server
 	tokenTypeHint := r.FormValue(constants.RequestParamTokenTypeHint)
 
-	response, err := h.service.IntrospectToken(token, tokenTypeHint)
+	response, err := h.service.IntrospectToken(ctx, token, tokenTypeHint)
 	if err != nil {
 		h.logger.Error("Failed to introspect token", log.Error(err))
 		sysutils.WriteJSONError(w, constants.ErrorServerError,

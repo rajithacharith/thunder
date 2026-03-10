@@ -76,7 +76,8 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_Success() {
 		RuntimeData: make(map[string]string),
 	}
 	// Use package-level testUserID constant
-	suite.mockUserProvider.On("IdentifyUser", filters).Return(new(testUserID), nil)
+	userID := testUserID
+	suite.mockUserProvider.On("IdentifyUser", filters).Return(&userID, nil)
 
 	result, err := suite.executor.IdentifyUser(filters, execResp)
 
@@ -154,7 +155,10 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_FilterNonSearchableA
 	// Use package-level testUserID constant
 	suite.mockUserProvider.On("IdentifyUser", map[string]interface{}{
 		"username": "testuser",
-	}).Return(new(testUserID), nil)
+	}).Return(func() *string {
+		userID := testUserID
+		return &userID
+	}(), nil)
 
 	result, err := suite.executor.IdentifyUser(filters, execResp)
 
@@ -213,7 +217,10 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_UserInputs() {
 
 	suite.mockUserProvider.On("IdentifyUser", map[string]interface{}{
 		"username": "testuser",
-	}).Return(new(testUserID), nil)
+	}).Return(func() *string {
+		userID := testUserID
+		return &userID
+	}(), nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -238,7 +245,10 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_RuntimeData() {
 
 	suite.mockUserProvider.On("IdentifyUser", map[string]interface{}{
 		"username": "testuser",
-	}).Return(new(testUserID), nil)
+	}).Return(func() *string {
+		userID := testUserID
+		return &userID
+	}(), nil)
 
 	resp, err := suite.executor.Execute(ctx)
 

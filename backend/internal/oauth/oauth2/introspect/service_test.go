@@ -19,6 +19,7 @@
 package introspect
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
@@ -70,7 +71,7 @@ func (s *TokenIntrospectionServiceTestSuite) SetupTest() {
 }
 
 func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_EmptyToken() {
-	response, err := s.introspectService.IntrospectToken("", "")
+	response, err := s.introspectService.IntrospectToken(context.Background(), "", "")
 	assert.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "token is required")
 	assert.Nil(s.T(), response)
@@ -86,7 +87,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_PublicKeyNotAva
 			ErrorDescription: "The public key is not available for verification",
 		})
 
-	response, err := s.introspectService.IntrospectToken(s.validToken, "")
+	response, err := s.introspectService.IntrospectToken(context.Background(), s.validToken, "")
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), response)
 	assert.False(s.T(), response.Active)
@@ -124,7 +125,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_InvalidSignatur
 		})
 
 	// Test with a token having invalid signature
-	response, err := s.introspectService.IntrospectToken(invalidToken, "")
+	response, err := s.introspectService.IntrospectToken(context.Background(), invalidToken, "")
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), response)
 	assert.False(s.T(), response.Active)
@@ -138,7 +139,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_DecodeFailsAfte
 
 	s.jwtServiceMock.On("VerifyJWT", malformedToken, "", "").Return(nil)
 
-	response, err := s.introspectService.IntrospectToken(malformedToken, "")
+	response, err := s.introspectService.IntrospectToken(context.Background(), malformedToken, "")
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), response)
 	assert.False(s.T(), response.Active)
@@ -299,7 +300,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(nil)
 			}
 
-			response, err := s.introspectService.IntrospectToken(token, "")
+			response, err := s.introspectService.IntrospectToken(context.Background(), token, "")
 
 			if tc.expectError {
 				assert.Error(s.T(), err)

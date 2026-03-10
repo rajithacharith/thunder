@@ -23,12 +23,17 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/application"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize initializes the DCR service and registers its routes.
-func Initialize(mux *http.ServeMux, appService application.ApplicationServiceInterface) DCRServiceInterface {
-	dcrService := newDCRService(appService)
+func Initialize(
+	mux *http.ServeMux,
+	appService application.ApplicationServiceInterface,
+	transactioner transaction.Transactioner,
+) DCRServiceInterface {
+	dcrService := newDCRService(appService, transactioner)
 	dcrHandler := newDCRHandler(dcrService)
 	registerRoutes(mux, dcrHandler)
 	return dcrService

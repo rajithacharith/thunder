@@ -19,11 +19,13 @@
 package authz
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
 	"github.com/asgardeo/thunder/internal/system/constants"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
@@ -34,13 +36,27 @@ func Initialize(
 	applicationService application.ApplicationServiceInterface,
 	jwtService jwt.JWTServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
-) AuthorizeServiceInterface {
+) (AuthorizeServiceInterface, error) {
 	authzCodeStore := newAuthorizationCodeStore()
 	authzReqStore := newAuthorizationRequestStore()
-	authzService := newAuthorizeService(applicationService, jwtService, flowExecService, authzCodeStore, authzReqStore)
+
+	dbProvider := provider.GetDBProvider()
+	runtimeDBClient, err := dbProvider.GetRuntimeDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to initialize database client for authorization service")
+	}
+
+	transactioner, err := runtimeDBClient.GetTransactioner()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to initialize database transactioner for authorization service")
+	}
+
+	authzService := newAuthorizeService(
+		applicationService, jwtService, flowExecService, authzCodeStore, authzReqStore, transactioner,
+	)
 	authzHandler := newAuthorizeHandler(authzService)
 	registerRoutes(mux, authzHandler)
-	return authzService
+	return authzService, nil
 }
 
 // registerRoutes registers the routes for OAuth2 authorization operations.

@@ -19,6 +19,7 @@
 package granthandlers
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -94,7 +95,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestValidateGrant_Success()
 		Scope:        "read",
 	}
 
-	result := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
+	result := suite.handler.ValidateGrant(context.Background(), tokenRequest, suite.oauthApp)
 	assert.Nil(suite.T(), result)
 }
 
@@ -105,7 +106,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestValidateGrant_WrongGran
 		ClientSecret: "secret123",
 	}
 
-	result := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
+	result := suite.handler.ValidateGrant(context.Background(), tokenRequest, suite.oauthApp)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), constants.ErrorUnsupportedGrantType, result.Error)
 	assert.Equal(suite.T(), "Unsupported grant type", result.ErrorDescription)
@@ -168,7 +169,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_Success() {
 				Audience:  testClientID,
 			}, nil)
 
-			result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+			result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 			assert.Nil(t, errResp)
 			assert.NotNil(t, result)
@@ -198,7 +199,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_JWTGenerati
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).
 		Return(nil, errors.New("JWT generation failed"))
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
@@ -231,7 +232,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_NilTokenAtt
 		Audience:  testClientID,
 	}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -265,7 +266,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_TokenTiming
 		}, nil)
 
 	startTime := time.Now().Unix()
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 	endTime := time.Now().Unix()
 
 	assert.Nil(suite.T(), errResp)
@@ -304,7 +305,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_WithResourc
 		Audience:  "https://mcp.example.com/mcp",
 	}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -339,7 +340,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_WithoutReso
 		Audience:  testClientID,
 	}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)

@@ -19,6 +19,8 @@
 package discovery
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/pkce"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -26,8 +28,8 @@ import (
 
 // DiscoveryServiceInterface defines the interface for discovery services
 type DiscoveryServiceInterface interface {
-	GetOAuth2AuthorizationServerMetadata() *OAuth2AuthorizationServerMetadata
-	GetOIDCMetadata() *OIDCProviderMetadata
+	GetOAuth2AuthorizationServerMetadata(ctx context.Context) *OAuth2AuthorizationServerMetadata
+	GetOIDCMetadata(ctx context.Context) *OIDCProviderMetadata
 }
 
 // discoveryService implements DiscoveryServiceInterface
@@ -44,7 +46,9 @@ func newDiscoveryService() DiscoveryServiceInterface {
 }
 
 // GetOAuth2AuthorizationServerMetadata returns OAuth 2.0 Authorization Server Metadata
-func (ds *discoveryService) GetOAuth2AuthorizationServerMetadata() *OAuth2AuthorizationServerMetadata {
+func (ds *discoveryService) GetOAuth2AuthorizationServerMetadata(
+	ctx context.Context,
+) *OAuth2AuthorizationServerMetadata {
 	return &OAuth2AuthorizationServerMetadata{
 		Issuer:                            ds.getIssuer(),
 		AuthorizationEndpoint:             ds.getAuthorizationEndpoint(),
@@ -62,8 +66,8 @@ func (ds *discoveryService) GetOAuth2AuthorizationServerMetadata() *OAuth2Author
 }
 
 // GetOIDCMetadata returns OpenID Connect Provider Metadata
-func (ds *discoveryService) GetOIDCMetadata() *OIDCProviderMetadata {
-	oauth2Meta := ds.GetOAuth2AuthorizationServerMetadata()
+func (ds *discoveryService) GetOIDCMetadata(ctx context.Context) *OIDCProviderMetadata {
+	oauth2Meta := ds.GetOAuth2AuthorizationServerMetadata(ctx)
 
 	return &OIDCProviderMetadata{
 		OAuth2AuthorizationServerMetadata: *oauth2Meta,

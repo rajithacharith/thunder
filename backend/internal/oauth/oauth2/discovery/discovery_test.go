@@ -20,6 +20,7 @@
 package discovery
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -291,7 +292,7 @@ func (suite *DiscoveryTestSuite) TestGetBaseURL_WithPublicHostname() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	service := newDiscoveryService()
-	metadata := service.GetOAuth2AuthorizationServerMetadata()
+	metadata := service.GetOAuth2AuthorizationServerMetadata(context.Background())
 	assert.Contains(suite.T(), metadata.AuthorizationEndpoint, "public.thunder.io")
 	config.ResetThunderRuntime()
 }
@@ -311,7 +312,7 @@ func (suite *DiscoveryTestSuite) TestGetBaseURL_WithHTTPOnly() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	service := newDiscoveryService()
-	metadata := service.GetOAuth2AuthorizationServerMetadata()
+	metadata := service.GetOAuth2AuthorizationServerMetadata(context.Background())
 	assert.Contains(suite.T(), metadata.AuthorizationEndpoint, "http://")
 	config.ResetThunderRuntime()
 }

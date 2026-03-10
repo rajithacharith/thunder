@@ -32,6 +32,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/scope"
 	sysContext "github.com/asgardeo/thunder/internal/system/context"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/observability"
 	"github.com/asgardeo/thunder/internal/system/observability/event"
@@ -51,6 +52,7 @@ type tokenService struct {
 	grantHandlerProvider granthandlers.GrantHandlerProviderInterface
 	scopeValidator       scope.ScopeValidatorInterface
 	observabilitySvc     observability.ObservabilityServiceInterface
+	transactioner        transaction.Transactioner
 }
 
 // newTokenService creates a new instance of tokenService.
@@ -58,11 +60,13 @@ func newTokenService(
 	grantHandlerProvider granthandlers.GrantHandlerProviderInterface,
 	scopeValidator scope.ScopeValidatorInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
+	transactioner transaction.Transactioner,
 ) TokenServiceInterface {
 	return &tokenService{
 		grantHandlerProvider: grantHandlerProvider,
 		scopeValidator:       scopeValidator,
 		observabilitySvc:     observabilitySvc,
+		transactioner:        transactioner,
 	}
 }
 
@@ -133,14 +137,15 @@ func (ts *tokenService) ProcessTokenRequest(
 	}
 
 	// Validate the token request via the grant handler.
-	if tokenError := grantHandler.ValidateGrant(tokenRequest, oauthApp); tokenError != nil && tokenError.Error != "" {
+	tokenError := grantHandler.ValidateGrant(ctx, tokenRequest, oauthApp)
+	if tokenError != nil && tokenError.Error != "" {
 		publishTokenIssuanceFailedEvent(ts.observabilitySvc, ctx, clientID, grantTypeStr, scopeStr,
 			400, tokenError.ErrorDescription, startTime)
 		return nil, tokenError
 	}
 
 	// Validate and filter scopes.
-	validScopes, scopeError := ts.scopeValidator.ValidateScopes(tokenRequest.Scope, oauthApp.ClientID)
+	validScopes, scopeError := ts.scopeValidator.ValidateScopes(ctx, tokenRequest.Scope, oauthApp.ClientID)
 	if scopeError != nil {
 		publishTokenIssuanceFailedEvent(ts.observabilitySvc, ctx, clientID, grantTypeStr, scopeStr,
 			400, scopeError.ErrorDescription, startTime)
@@ -152,7 +157,7 @@ func (ts *tokenService) ProcessTokenRequest(
 	tokenRequest.Scope = validScopes
 
 	// Delegate to the grant handler for token generation.
-	tokenRespDTO, tokenError := grantHandler.HandleGrant(tokenRequest, oauthApp)
+	tokenRespDTO, tokenError := grantHandler.HandleGrant(ctx, tokenRequest, oauthApp)
 	if tokenError != nil {
 		if tokenError.Error != "" {
 			code := 400
@@ -205,6 +210,7 @@ func (ts *tokenService) ProcessTokenRequest(
 		}
 
 		refreshTokenError := refreshGrantHandlerTyped.IssueRefreshToken(
+			ctx,
 			tokenRespDTO, oauthApp,
 			tokenRespDTO.AccessToken.Subject, tokenRespDTO.AccessToken.Audience,
 			grantTypeStr, tokenRespDTO.AccessToken.Scopes, tokenRespDTO.AccessToken.ClaimsRequest,

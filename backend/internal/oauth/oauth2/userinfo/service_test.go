@@ -54,8 +54,16 @@ type UserInfoServiceTestSuite struct {
 	mockAppService     *applicationmock.ApplicationServiceInterfaceMock
 	mockUserService    *usermock.UserServiceInterfaceMock
 	mockOUService      *oumock.OrganizationUnitServiceInterfaceMock
+	mockTransactioner  *MockTransactioner
 	userInfoService    userInfoServiceInterface
 	privateKey         *rsa.PrivateKey
+}
+
+// MockTransactioner is a simple implementation of Transactioner for testing.
+type MockTransactioner struct{}
+
+func (m *MockTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) error {
+	return txFunc(ctx)
 }
 
 func TestUserInfoServiceTestSuite(t *testing.T) {
@@ -68,9 +76,10 @@ func (s *UserInfoServiceTestSuite) SetupTest() {
 	s.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(s.T())
 	s.mockUserService = usermock.NewUserServiceInterfaceMock(s.T())
 	s.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(s.T())
+	s.mockTransactioner = &MockTransactioner{}
 	s.userInfoService = newUserInfoService(
 		s.mockJWTService, s.mockTokenValidator,
-		s.mockAppService, s.mockUserService, s.mockOUService)
+		s.mockAppService, s.mockUserService, s.mockOUService, s.mockTransactioner)
 
 	// Initialize Thunder runtime for tests
 	config.ResetThunderRuntime()

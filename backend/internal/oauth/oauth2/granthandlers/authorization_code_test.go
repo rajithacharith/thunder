@@ -19,6 +19,7 @@
 package granthandlers
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -150,7 +151,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestNewAuthorizationCodeGra
 }
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_Success() {
-	err := suite.handler.ValidateGrant(suite.testTokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
 	assert.Nil(suite.T(), err)
 }
 
@@ -161,7 +162,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_MissingGr
 		Code:      "test-code",
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.Background(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
 	assert.Equal(suite.T(), "Missing grant_type parameter", err.ErrorDescription)
@@ -174,7 +175,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_Unsupport
 		Code:      "test-code",
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.Background(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorUnsupportedGrantType, err.Error)
 	assert.Equal(suite.T(), "Unsupported grant type", err.ErrorDescription)
@@ -187,7 +188,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_MissingAu
 		Code:      "", // Missing authorization code
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.Background(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
 	assert.Equal(suite.T(), "Authorization code is required", err.ErrorDescription)
@@ -200,7 +201,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_MissingCl
 		Code:      "test-code",
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.Background(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorInvalidClient, err.Error)
 	assert.Equal(suite.T(), "client_id is required", err.ErrorDescription)
@@ -214,7 +215,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_MissingRe
 		RedirectURI: "", // Missing redirect URI
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.Background(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
 	assert.Equal(suite.T(), "Redirect URI is required", err.ErrorDescription)
@@ -226,7 +227,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_Success() {
 	authCodeWithResource.Resource = testResourceURL
 
 	// Mock authorization code store to return valid code with resource
-	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&authCodeWithResource, nil)
 
 	// Mock token builder to generate access token
@@ -250,7 +251,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_Success() {
 	tokenReqWithResource := *suite.testTokenReq
 	tokenReqWithResource.Resource = testResourceURL
 
-	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.Background(), &tokenReqWithResource, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -270,14 +271,14 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_Success() {
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_InvalidAuthorizationCode() {
 	// Mock authorization code store to return error
-	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(nil, errors.New("invalid authorization code"))
 
 	// Create token request with matching resource
 	tokenReqWithResource := *suite.testTokenReq
 	tokenReqWithResource.Resource = testResourceURL
 
-	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.Background(), &tokenReqWithResource, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -289,7 +290,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_InvalidAuth
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_JWTGenerationError() {
 	// Mock authorization code store to return valid code
-	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&suite.testAuthzCode, nil)
 
 	// Mock token builder to fail token generation
@@ -299,7 +300,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_JWTGenerati
 	tokenReqWithResource := *suite.testTokenReq
 	tokenReqWithResource.Resource = testResourceURL
 
-	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.Background(), &tokenReqWithResource, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -315,7 +316,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_EmptyScopes
 	authzCodeWithEmptyScopes := suite.testAuthzCode
 	authzCodeWithEmptyScopes.Scopes = ""
 
-	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&authzCodeWithEmptyScopes, nil)
 
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
@@ -331,7 +332,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_EmptyScopes
 	tokenReqWithResource := *suite.testTokenReq
 	tokenReqWithResource.Resource = testResourceURL
 
-	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.Background(), &tokenReqWithResource, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -343,7 +344,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_EmptyScopes
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NilTokenAttributes() {
 	// Test with nil token attributes
-	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&suite.testAuthzCode, nil)
 
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
@@ -361,7 +362,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NilTokenAtt
 	tokenReqWithResource := *suite.testTokenReq
 	tokenReqWithResource.Resource = testResourceURL
 
-	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.Background(), &tokenReqWithResource, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -534,7 +535,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 				authzCode.UserAttributes[constants.UserAttributeGroups] = userGroups
 			}
 
-			suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
+			suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 				Return(&authzCode, nil)
 
 			// Groups come from the authorization code (extracted from assertion during authorization)
@@ -592,7 +593,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 				}, nil).Once()
 			}
 
-			result, err := suite.handler.HandleGrant(suite.testTokenReq, oauthAppWithGroups)
+			result, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, oauthAppWithGroups)
 
 			assert.Nil(suite.T(), err, tc.description)
 			assert.NotNil(suite.T(), result, tc.description)
@@ -719,7 +720,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 			}
 			// Empty groups - not added to UserAttributes (user has no groups)
 
-			suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
+			suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 				Return(&authzCode, nil)
 
 			// Groups come from the authorization code (extracted from assertion during authorization)
@@ -773,7 +774,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 				}, nil).Once()
 			}
 
-			result, err := suite.handler.HandleGrant(suite.testTokenReq, oauthAppWithGroups)
+			result, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, oauthAppWithGroups)
 
 			assert.Nil(suite.T(), err, tc.description)
 			assert.NotNil(suite.T(), result, tc.description)
@@ -803,14 +804,14 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_ResourcePar
 	authCodeWithResource := suite.testAuthzCode
 	authCodeWithResource.Resource = "https://api.example.com/resource"
 
-	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&authCodeWithResource, nil)
 
 	// Create token request with different resource
 	tokenReqWithResource := *suite.testTokenReq
 	tokenReqWithResource.Resource = testResourceURL
 
-	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.Background(), &tokenReqWithResource, suite.oauthApp)
 
 	assert.NotNil(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -823,7 +824,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_ResourcePar
 	authCodeWithResource := suite.testAuthzCode
 	authCodeWithResource.Resource = testResourceURL
 
-	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&authCodeWithResource, nil)
 
 	var capturedAudience string
@@ -843,7 +844,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_ResourcePar
 	tokenReqWithResource := *suite.testTokenReq
 	tokenReqWithResource.Resource = testResourceURL
 
-	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.Background(), &tokenReqWithResource, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -852,7 +853,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_ResourcePar
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NoResourceParameter() {
 	// Auth code without resource parameter
-	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&suite.testAuthzCode, nil)
 
 	var capturedAudience string
@@ -872,7 +873,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NoResourceP
 	tokenReqWithResource := *suite.testTokenReq
 	tokenReqWithResource.Resource = testResourceURL
 
-	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.Background(), &tokenReqWithResource, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -891,7 +892,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_IDTokenGene
 	authzCodeWithOpenID := suite.testAuthzCode
 	authzCodeWithOpenID.Scopes = oidcReadWriteScopes
 
-	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&authzCodeWithOpenID, nil)
 
 	// Mock access token generation succeeds
@@ -908,7 +909,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_IDTokenGene
 	suite.mockTokenBuilder.On("BuildIDToken", mock.Anything).
 		Return(nil, errors.New("failed to generate ID token"))
 
-	result, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -930,7 +931,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_ResourceW
 		Resource:    "https://api.example.com/resource#fragment", // Fragment not allowed
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.Background(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
 	assert.Contains(suite.T(), err.ErrorDescription, "fragment component")
@@ -946,7 +947,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_ResourceP
 		Resource:    "://invalid-uri", // Invalid URI format
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.Background(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
 }
@@ -976,7 +977,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_FetchUserGr
 		"groups":   []string{"Admin", "Users"},
 	}
 
-	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&authzCodeWithGroups, nil)
 
 	// Groups come from the authorization code (extracted from assertion during authorization)
@@ -1000,7 +1001,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_FetchUserGr
 		ClientID:  testClientID,
 	}, nil)
 
-	result, err := suite.handler.HandleGrant(suite.testTokenReq, oauthAppWithGroups)
+	result, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, oauthAppWithGroups)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1038,13 +1039,13 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestRetrieveAndValidateAuth
 	pkceApp := suite.createPKCEApp()
 	authCodeWithPKCE := suite.createAuthCodeWithPKCE()
 
-	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&authCodeWithPKCE, nil)
 
 	tokenReq := *suite.testTokenReq
 	tokenReq.CodeVerifier = "" // Missing code verifier
 
-	result, err := suite.handler.HandleGrant(&tokenReq, pkceApp)
+	result, err := suite.handler.HandleGrant(context.Background(), &tokenReq, pkceApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -1059,13 +1060,13 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestRetrieveAndValidateAuth
 	pkceApp := suite.createPKCEApp()
 	authCodeWithPKCE := suite.createAuthCodeWithPKCE()
 
-	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&authCodeWithPKCE, nil)
 
 	tokenReq := *suite.testTokenReq
 	tokenReq.CodeVerifier = "wrong-verifier-dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk" // Wrong verifier
 
-	result, err := suite.handler.HandleGrant(&tokenReq, pkceApp)
+	result, err := suite.handler.HandleGrant(context.Background(), &tokenReq, pkceApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -1080,7 +1081,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestRetrieveAndValidateAuth
 	authCodeWithPKCE.CodeChallenge = testCodeChallenge
 	authCodeWithPKCE.CodeChallengeMethod = testCodeChallengeMethodS256
 
-	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", mock.Anything, testClientID, "test-auth-code").
 		Return(&authCodeWithPKCE, nil)
 
 	// Mock token builder
@@ -1096,7 +1097,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestRetrieveAndValidateAuth
 	tokenReq := *suite.testTokenReq
 	tokenReq.CodeVerifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk" // Valid verifier
 
-	result, err := suite.handler.HandleGrant(&tokenReq, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.Background(), &tokenReq, suite.oauthApp)
 
 	// Should succeed even though PKCE is not required, because code challenge was provided
 	assert.Nil(suite.T(), err)

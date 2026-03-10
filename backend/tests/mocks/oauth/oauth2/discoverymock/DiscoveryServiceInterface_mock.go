@@ -5,6 +5,8 @@
 package discoverymock
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -37,16 +39,16 @@ func (_m *DiscoveryServiceInterfaceMock) EXPECT() *DiscoveryServiceInterfaceMock
 }
 
 // GetOAuth2AuthorizationServerMetadata provides a mock function for the type DiscoveryServiceInterfaceMock
-func (_mock *DiscoveryServiceInterfaceMock) GetOAuth2AuthorizationServerMetadata() *discovery.OAuth2AuthorizationServerMetadata {
-	ret := _mock.Called()
+func (_mock *DiscoveryServiceInterfaceMock) GetOAuth2AuthorizationServerMetadata(ctx context.Context) *discovery.OAuth2AuthorizationServerMetadata {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetOAuth2AuthorizationServerMetadata")
 	}
 
 	var r0 *discovery.OAuth2AuthorizationServerMetadata
-	if returnFunc, ok := ret.Get(0).(func() *discovery.OAuth2AuthorizationServerMetadata); ok {
-		r0 = returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) *discovery.OAuth2AuthorizationServerMetadata); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*discovery.OAuth2AuthorizationServerMetadata)
@@ -61,13 +63,20 @@ type DiscoveryServiceInterfaceMock_GetOAuth2AuthorizationServerMetadata_Call str
 }
 
 // GetOAuth2AuthorizationServerMetadata is a helper method to define mock.On call
-func (_e *DiscoveryServiceInterfaceMock_Expecter) GetOAuth2AuthorizationServerMetadata() *DiscoveryServiceInterfaceMock_GetOAuth2AuthorizationServerMetadata_Call {
-	return &DiscoveryServiceInterfaceMock_GetOAuth2AuthorizationServerMetadata_Call{Call: _e.mock.On("GetOAuth2AuthorizationServerMetadata")}
+//   - ctx context.Context
+func (_e *DiscoveryServiceInterfaceMock_Expecter) GetOAuth2AuthorizationServerMetadata(ctx interface{}) *DiscoveryServiceInterfaceMock_GetOAuth2AuthorizationServerMetadata_Call {
+	return &DiscoveryServiceInterfaceMock_GetOAuth2AuthorizationServerMetadata_Call{Call: _e.mock.On("GetOAuth2AuthorizationServerMetadata", ctx)}
 }
 
-func (_c *DiscoveryServiceInterfaceMock_GetOAuth2AuthorizationServerMetadata_Call) Run(run func()) *DiscoveryServiceInterfaceMock_GetOAuth2AuthorizationServerMetadata_Call {
+func (_c *DiscoveryServiceInterfaceMock_GetOAuth2AuthorizationServerMetadata_Call) Run(run func(ctx context.Context)) *DiscoveryServiceInterfaceMock_GetOAuth2AuthorizationServerMetadata_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
@@ -77,22 +86,22 @@ func (_c *DiscoveryServiceInterfaceMock_GetOAuth2AuthorizationServerMetadata_Cal
 	return _c
 }
 
-func (_c *DiscoveryServiceInterfaceMock_GetOAuth2AuthorizationServerMetadata_Call) RunAndReturn(run func() *discovery.OAuth2AuthorizationServerMetadata) *DiscoveryServiceInterfaceMock_GetOAuth2AuthorizationServerMetadata_Call {
+func (_c *DiscoveryServiceInterfaceMock_GetOAuth2AuthorizationServerMetadata_Call) RunAndReturn(run func(ctx context.Context) *discovery.OAuth2AuthorizationServerMetadata) *DiscoveryServiceInterfaceMock_GetOAuth2AuthorizationServerMetadata_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetOIDCMetadata provides a mock function for the type DiscoveryServiceInterfaceMock
-func (_mock *DiscoveryServiceInterfaceMock) GetOIDCMetadata() *discovery.OIDCProviderMetadata {
-	ret := _mock.Called()
+func (_mock *DiscoveryServiceInterfaceMock) GetOIDCMetadata(ctx context.Context) *discovery.OIDCProviderMetadata {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetOIDCMetadata")
 	}
 
 	var r0 *discovery.OIDCProviderMetadata
-	if returnFunc, ok := ret.Get(0).(func() *discovery.OIDCProviderMetadata); ok {
-		r0 = returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) *discovery.OIDCProviderMetadata); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*discovery.OIDCProviderMetadata)
@@ -107,13 +116,20 @@ type DiscoveryServiceInterfaceMock_GetOIDCMetadata_Call struct {
 }
 
 // GetOIDCMetadata is a helper method to define mock.On call
-func (_e *DiscoveryServiceInterfaceMock_Expecter) GetOIDCMetadata() *DiscoveryServiceInterfaceMock_GetOIDCMetadata_Call {
-	return &DiscoveryServiceInterfaceMock_GetOIDCMetadata_Call{Call: _e.mock.On("GetOIDCMetadata")}
+//   - ctx context.Context
+func (_e *DiscoveryServiceInterfaceMock_Expecter) GetOIDCMetadata(ctx interface{}) *DiscoveryServiceInterfaceMock_GetOIDCMetadata_Call {
+	return &DiscoveryServiceInterfaceMock_GetOIDCMetadata_Call{Call: _e.mock.On("GetOIDCMetadata", ctx)}
 }
 
-func (_c *DiscoveryServiceInterfaceMock_GetOIDCMetadata_Call) Run(run func()) *DiscoveryServiceInterfaceMock_GetOIDCMetadata_Call {
+func (_c *DiscoveryServiceInterfaceMock_GetOIDCMetadata_Call) Run(run func(ctx context.Context)) *DiscoveryServiceInterfaceMock_GetOIDCMetadata_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
@@ -123,7 +139,7 @@ func (_c *DiscoveryServiceInterfaceMock_GetOIDCMetadata_Call) Return(oIDCProvide
 	return _c
 }
 
-func (_c *DiscoveryServiceInterfaceMock_GetOIDCMetadata_Call) RunAndReturn(run func() *discovery.OIDCProviderMetadata) *DiscoveryServiceInterfaceMock_GetOIDCMetadata_Call {
+func (_c *DiscoveryServiceInterfaceMock_GetOIDCMetadata_Call) RunAndReturn(run func(ctx context.Context) *discovery.OIDCProviderMetadata) *DiscoveryServiceInterfaceMock_GetOIDCMetadata_Call {
 	_c.Call.Return(run)
 	return _c
 }

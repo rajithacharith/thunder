@@ -47,6 +47,16 @@ func TestInitTestSuite(t *testing.T) {
 func (suite *InitTestSuite) SetupTest() {
 	// Initialize Thunder Runtime config with basic test config
 	testConfig := &config.Config{
+		Database: config.DatabaseConfig{
+			Config: config.DataSource{
+				Type: "sqlite",
+				Path: "thunder_test.db",
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: "thunder_test.db",
+			},
+		},
 		GateClient: config.GateClientConfig{
 			Scheme:    "https",
 			Hostname:  "localhost",
@@ -58,7 +68,7 @@ func (suite *InitTestSuite) SetupTest() {
 			AllowedOrigins: []string{"https://example.com"},
 		},
 	}
-	_ = config.InitializeThunderRuntime("test", testConfig)
+	_ = config.InitializeThunderRuntime("", testConfig)
 
 	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
@@ -72,8 +82,9 @@ func (suite *InitTestSuite) TearDownTest() {
 func (suite *InitTestSuite) TestInitialize() {
 	mux := http.NewServeMux()
 
-	service := Initialize(mux, suite.mockAppService, suite.mockJWTService, suite.mockFlowExecService)
+	service, err := Initialize(mux, suite.mockAppService, suite.mockJWTService, suite.mockFlowExecService)
 
+	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), service)
 	assert.Implements(suite.T(), (*AuthorizeServiceInterface)(nil), service)
 }
@@ -81,7 +92,8 @@ func (suite *InitTestSuite) TestInitialize() {
 func (suite *InitTestSuite) TestInitialize_RegistersRoutes() {
 	mux := http.NewServeMux()
 
-	_ = Initialize(mux, suite.mockAppService, suite.mockJWTService, suite.mockFlowExecService)
+	_, err := Initialize(mux, suite.mockAppService, suite.mockJWTService, suite.mockFlowExecService)
+	assert.NoError(suite.T(), err)
 
 	// Verify that the routes are registered by attempting to get a handler for them.
 	// The pattern includes the method because of CORS middleware wrapping.
@@ -98,7 +110,8 @@ func (suite *InitTestSuite) TestInitialize_RegistersRoutes() {
 func (suite *InitTestSuite) TestRegisterRoutes_CORSConfiguration() {
 	mux := http.NewServeMux()
 
-	_ = Initialize(mux, suite.mockAppService, suite.mockJWTService, suite.mockFlowExecService)
+	_, err := Initialize(mux, suite.mockAppService, suite.mockJWTService, suite.mockFlowExecService)
+	assert.NoError(suite.T(), err)
 
 	testCases := []struct {
 		name          string
@@ -144,7 +157,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSConfiguration() {
 func (suite *InitTestSuite) TestRegisterRoutes_CORSHeaders() {
 	mux := http.NewServeMux()
 
-	_ = Initialize(mux, suite.mockAppService, suite.mockJWTService, suite.mockFlowExecService)
+	_, err := Initialize(mux, suite.mockAppService, suite.mockJWTService, suite.mockFlowExecService)
+	assert.NoError(suite.T(), err)
 
 	testCases := []struct {
 		name                 string

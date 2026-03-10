@@ -42,6 +42,14 @@ type TokenServiceTestSuite struct {
 	mockScopeValidator *scopemock.ScopeValidatorInterfaceMock
 	mockGrantHandler   *granthandlersmock.GrantHandlerInterfaceMock
 	mockObsSvc         *observabilitymock.ObservabilityServiceInterfaceMock
+	mockTransactioner  *MockTransactioner
+}
+
+// MockTransactioner is a simple implementation of Transactioner for testing.
+type MockTransactioner struct{}
+
+func (m *MockTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) error {
+	return txFunc(ctx)
 }
 
 func TestTokenServiceSuite(t *testing.T) {
@@ -57,6 +65,8 @@ func (suite *TokenServiceTestSuite) SetupTest() {
 	suite.mockObsSvc.On("IsEnabled").Return(true).Maybe()
 	suite.mockObsSvc.On("PublishEvent", mock.Anything).Return().Maybe()
 
+	suite.mockTransactioner = &MockTransactioner{}
+
 	// Common grant handler lookup; individual tests may override this.
 	suite.mockGrantProvider.
 		On("GetGrantHandler", constants.GrantTypeAuthorizationCode).
@@ -65,7 +75,7 @@ func (suite *TokenServiceTestSuite) SetupTest() {
 
 // newService builds a fresh tokenService using the suite's mocks.
 func (suite *TokenServiceTestSuite) newService() TokenServiceInterface {
-	return newTokenService(suite.mockGrantProvider, suite.mockScopeValidator, suite.mockObsSvc)
+	return newTokenService(suite.mockGrantProvider, suite.mockScopeValidator, suite.mockObsSvc, suite.mockTransactioner)
 }
 
 // defaultApp returns an OAuthAppConfigProcessedDTO that allows the authorization_code grant.
@@ -178,7 +188,7 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_ValidateGrantError()
 		Return(suite.mockGrantHandler, nil)
 
 	suite.mockGrantHandler.
-		On("ValidateGrant", mock.Anything, app).
+		On("ValidateGrant", mock.Anything, mock.Anything, app).
 		Return(&model.ErrorResponse{
 			Error:            "invalid_grant",
 			ErrorDescription: "Invalid authorization code",
@@ -206,10 +216,10 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_ScopeValidationError
 		On("GetGrantHandler", constants.GrantTypeAuthorizationCode).
 		Return(suite.mockGrantHandler, nil)
 
-	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, app).Return(nil)
+	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mock.Anything, app).Return(nil)
 
 	suite.mockScopeValidator.
-		On("ValidateScopes", "invalid_scope", "test-client-id").
+		On("ValidateScopes", mock.Anything, "invalid_scope", "test-client-id").
 		Return("", &scope.ScopeError{
 			Error:            "invalid_scope",
 			ErrorDescription: "Invalid scope requested",
@@ -236,10 +246,10 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_HandleGrantError() {
 		On("GetGrantHandler", constants.GrantTypeAuthorizationCode).
 		Return(suite.mockGrantHandler, nil)
 
-	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, app).Return(nil)
-	suite.mockScopeValidator.On("ValidateScopes", "openid", "test-client-id").Return("openid", nil)
+	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mock.Anything, app).Return(nil)
+	suite.mockScopeValidator.On("ValidateScopes", mock.Anything, "openid", "test-client-id").Return("openid", nil)
 	suite.mockGrantHandler.
-		On("HandleGrant", mock.Anything, app).
+		On("HandleGrant", mock.Anything, mock.Anything, app).
 		Return(nil, &model.ErrorResponse{
 			Error:            "invalid_grant",
 			ErrorDescription: "Authorization code expired",
@@ -266,10 +276,10 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_HandleGrantServerErr
 		On("GetGrantHandler", constants.GrantTypeAuthorizationCode).
 		Return(suite.mockGrantHandler, nil)
 
-	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, app).Return(nil)
-	suite.mockScopeValidator.On("ValidateScopes", "openid", "test-client-id").Return("openid", nil)
+	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mock.Anything, app).Return(nil)
+	suite.mockScopeValidator.On("ValidateScopes", mock.Anything, "openid", "test-client-id").Return("openid", nil)
 	suite.mockGrantHandler.
-		On("HandleGrant", mock.Anything, app).
+		On("HandleGrant", mock.Anything, mock.Anything, app).
 		Return(nil, &model.ErrorResponse{
 			Error:            constants.ErrorServerError,
 			ErrorDescription: "Failed to generate token",
@@ -297,8 +307,8 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_Success() {
 		On("GetGrantHandler", constants.GrantTypeAuthorizationCode).
 		Return(suite.mockGrantHandler, nil)
 
-	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, app).Return(nil)
-	suite.mockScopeValidator.On("ValidateScopes", "openid profile", "test-client-id").
+	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mock.Anything, app).Return(nil)
+	suite.mockScopeValidator.On("ValidateScopes", mock.Anything, "openid profile", "test-client-id").
 		Return("openid profile", nil)
 
 	tokenRespDTO := &model.TokenResponseDTO{
@@ -311,7 +321,7 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_Success() {
 		RefreshToken: model.TokenDTO{Token: ""},
 		IDToken:      model.TokenDTO{Token: ""},
 	}
-	suite.mockGrantHandler.On("HandleGrant", mock.Anything, app).Return(tokenRespDTO, nil)
+	suite.mockGrantHandler.On("HandleGrant", mock.Anything, mock.Anything, app).Return(tokenRespDTO, nil)
 
 	svc := suite.newService()
 	tokenResp, errResp := svc.ProcessTokenRequest(context.Background(), req, app)
@@ -350,8 +360,8 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_WithRefreshToken() {
 		On("GetGrantHandler", constants.GrantTypeRefreshToken).
 		Return(mockRefreshHandler, nil)
 
-	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, app).Return(nil)
-	suite.mockScopeValidator.On("ValidateScopes", "openid", "test-client-id").Return("openid", nil)
+	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mock.Anything, app).Return(nil)
+	suite.mockScopeValidator.On("ValidateScopes", mock.Anything, "openid", "test-client-id").Return("openid", nil)
 
 	tokenRespDTO := &model.TokenResponseDTO{
 		AccessToken: model.TokenDTO{
@@ -365,10 +375,10 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_WithRefreshToken() {
 		RefreshToken: model.TokenDTO{Token: ""},
 		IDToken:      model.TokenDTO{Token: ""},
 	}
-	suite.mockGrantHandler.On("HandleGrant", mock.Anything, app).Return(tokenRespDTO, nil)
+	suite.mockGrantHandler.On("HandleGrant", mock.Anything, mock.Anything, app).Return(tokenRespDTO, nil)
 
 	mockRefreshHandler.
-		On("IssueRefreshToken", tokenRespDTO, app, "user123", "test-audience",
+		On("IssueRefreshToken", mock.Anything, tokenRespDTO, app, "user123", "test-audience",
 			"authorization_code", []string{"openid"}, (*model.ClaimsRequest)(nil), "").
 		Return(nil)
 
@@ -405,8 +415,8 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_RefreshTokenIssuance
 		On("GetGrantHandler", constants.GrantTypeRefreshToken).
 		Return(mockRefreshHandler, nil)
 
-	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, app).Return(nil)
-	suite.mockScopeValidator.On("ValidateScopes", "openid", "test-client-id").Return("openid", nil)
+	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mock.Anything, app).Return(nil)
+	suite.mockScopeValidator.On("ValidateScopes", mock.Anything, "openid", "test-client-id").Return("openid", nil)
 
 	tokenRespDTO := &model.TokenResponseDTO{
 		AccessToken: model.TokenDTO{
@@ -420,10 +430,10 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_RefreshTokenIssuance
 		RefreshToken: model.TokenDTO{Token: ""},
 		IDToken:      model.TokenDTO{Token: ""},
 	}
-	suite.mockGrantHandler.On("HandleGrant", mock.Anything, app).Return(tokenRespDTO, nil)
+	suite.mockGrantHandler.On("HandleGrant", mock.Anything, mock.Anything, app).Return(tokenRespDTO, nil)
 
 	mockRefreshHandler.
-		On("IssueRefreshToken", tokenRespDTO, app, "user123", "test-audience",
+		On("IssueRefreshToken", mock.Anything, tokenRespDTO, app, "user123", "test-audience",
 			"authorization_code", []string{"openid"}, (*model.ClaimsRequest)(nil), "").
 		Return(&model.ErrorResponse{
 			Error:            "server_error",
@@ -461,8 +471,8 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_RefreshTokenHandlerN
 		On("GetGrantHandler", constants.GrantTypeRefreshToken).
 		Return(nil, errors.New("refresh handler not found"))
 
-	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, app).Return(nil)
-	suite.mockScopeValidator.On("ValidateScopes", "openid", "test-client-id").Return("openid", nil)
+	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mock.Anything, app).Return(nil)
+	suite.mockScopeValidator.On("ValidateScopes", mock.Anything, "openid", "test-client-id").Return("openid", nil)
 
 	tokenRespDTO := &model.TokenResponseDTO{
 		AccessToken: model.TokenDTO{
@@ -472,7 +482,7 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_RefreshTokenHandlerN
 		RefreshToken: model.TokenDTO{Token: ""},
 		IDToken:      model.TokenDTO{Token: ""},
 	}
-	suite.mockGrantHandler.On("HandleGrant", mock.Anything, app).Return(tokenRespDTO, nil)
+	suite.mockGrantHandler.On("HandleGrant", mock.Anything, mock.Anything, app).Return(tokenRespDTO, nil)
 
 	svc := suite.newService()
 	_, errResp := svc.ProcessTokenRequest(context.Background(), req, app)
@@ -505,8 +515,8 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_RefreshTokenHandlerC
 		On("GetGrantHandler", constants.GrantTypeRefreshToken).
 		Return(suite.mockGrantHandler, nil)
 
-	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, app).Return(nil)
-	suite.mockScopeValidator.On("ValidateScopes", "openid", "test-client-id").Return("openid", nil)
+	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mock.Anything, app).Return(nil)
+	suite.mockScopeValidator.On("ValidateScopes", mock.Anything, "openid", "test-client-id").Return("openid", nil)
 
 	tokenRespDTO := &model.TokenResponseDTO{
 		AccessToken: model.TokenDTO{
@@ -516,7 +526,7 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_RefreshTokenHandlerC
 		RefreshToken: model.TokenDTO{Token: ""},
 		IDToken:      model.TokenDTO{Token: ""},
 	}
-	suite.mockGrantHandler.On("HandleGrant", mock.Anything, app).Return(tokenRespDTO, nil)
+	suite.mockGrantHandler.On("HandleGrant", mock.Anything, mock.Anything, app).Return(tokenRespDTO, nil)
 
 	svc := suite.newService()
 	_, errResp := svc.ProcessTokenRequest(context.Background(), req, app)
@@ -543,15 +553,15 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_TokenExchange() {
 		On("GetGrantHandler", constants.GrantTypeTokenExchange).
 		Return(mockTEHandler, nil)
 
-	mockTEHandler.On("ValidateGrant", mock.Anything, app).Return(nil)
-	suite.mockScopeValidator.On("ValidateScopes", "", "test-client-id").Return("", nil)
+	mockTEHandler.On("ValidateGrant", mock.Anything, mock.Anything, app).Return(nil)
+	suite.mockScopeValidator.On("ValidateScopes", mock.Anything, "", "test-client-id").Return("", nil)
 
 	tokenRespDTO := &model.TokenResponseDTO{
 		AccessToken:  model.TokenDTO{Token: "exchanged-token", TokenType: "Bearer", ExpiresIn: 3600},
 		RefreshToken: model.TokenDTO{Token: ""},
 		IDToken:      model.TokenDTO{Token: ""},
 	}
-	mockTEHandler.On("HandleGrant", mock.Anything, app).Return(tokenRespDTO, nil)
+	mockTEHandler.On("HandleGrant", mock.Anything, mock.Anything, app).Return(tokenRespDTO, nil)
 
 	svc := suite.newService()
 	tokenResp, errResp := svc.ProcessTokenRequest(context.Background(), req, app)
@@ -580,15 +590,15 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_TokenExchangeWithJWT
 		On("GetGrantHandler", constants.GrantTypeTokenExchange).
 		Return(mockTEHandler, nil)
 
-	mockTEHandler.On("ValidateGrant", mock.Anything, app).Return(nil)
-	suite.mockScopeValidator.On("ValidateScopes", "", "test-client-id").Return("", nil)
+	mockTEHandler.On("ValidateGrant", mock.Anything, mock.Anything, app).Return(nil)
+	suite.mockScopeValidator.On("ValidateScopes", mock.Anything, "", "test-client-id").Return("", nil)
 
 	tokenRespDTO := &model.TokenResponseDTO{
 		AccessToken:  model.TokenDTO{Token: "exchanged-token", TokenType: "Bearer", ExpiresIn: 3600},
 		RefreshToken: model.TokenDTO{Token: ""},
 		IDToken:      model.TokenDTO{Token: ""},
 	}
-	mockTEHandler.On("HandleGrant", mock.Anything, app).Return(tokenRespDTO, nil)
+	mockTEHandler.On("HandleGrant", mock.Anything, mock.Anything, app).Return(tokenRespDTO, nil)
 
 	svc := suite.newService()
 	tokenResp, errResp := svc.ProcessTokenRequest(context.Background(), req, app)

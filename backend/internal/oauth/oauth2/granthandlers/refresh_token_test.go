@@ -19,6 +19,7 @@
 package granthandlers
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -138,7 +139,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestNewRefreshTokenGrantHandler(
 }
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestValidateGrant_Success() {
-	err := suite.handler.ValidateGrant(suite.testTokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
 	assert.Nil(suite.T(), err)
 }
 
@@ -149,7 +150,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestValidateGrant_InvalidGrantTy
 		RefreshToken: "token",
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.Background(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorUnsupportedGrantType, err.Error)
 	assert.Equal(suite.T(), "Unsupported grant type", err.ErrorDescription)
@@ -161,7 +162,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestValidateGrant_MissingRefresh
 		ClientID:  testRefreshTokenClientID,
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.Background(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
 	assert.Equal(suite.T(), "Refresh token is required", err.ErrorDescription)
@@ -173,7 +174,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestValidateGrant_MissingClientI
 		RefreshToken: "token",
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.Background(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
 	assert.Equal(suite.T(), "Client ID is required", err.ErrorDescription)
@@ -184,7 +185,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_InvalidSignature
 	suite.mockTokenValidator.On("ValidateRefreshToken", suite.validRefreshToken, testRefreshTokenClientID).
 		Return(nil, errors.New("public key not available"))
 
-	response, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
+	response, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), response)
 	assert.NotNil(suite.T(), err)
@@ -211,7 +212,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_Success() 
 
 	tokenResponse := &model.TokenResponseDTO{}
 
-	err := suite.handler.IssueRefreshToken(tokenResponse, suite.oauthApp,
+	err := suite.handler.IssueRefreshToken(context.Background(), tokenResponse, suite.oauthApp,
 		testRefreshTokenUserID, testRefreshTokenAudience,
 		"authorization_code", []string{"read", "write"}, nil, "")
 
@@ -232,7 +233,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_JWTGenerat
 
 	tokenResponse := &model.TokenResponseDTO{}
 
-	err := suite.handler.IssueRefreshToken(tokenResponse, suite.oauthApp, "", "",
+	err := suite.handler.IssueRefreshToken(context.Background(), tokenResponse, suite.oauthApp, "", "",
 		"authorization_code", []string{"read"}, nil, "")
 
 	assert.NotNil(suite.T(), err)
@@ -252,7 +253,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_WithEmptyT
 
 	tokenResponse := &model.TokenResponseDTO{}
 
-	err := suite.handler.IssueRefreshToken(tokenResponse, suite.oauthApp, "", "",
+	err := suite.handler.IssueRefreshToken(context.Background(), tokenResponse, suite.oauthApp, "", "",
 		"authorization_code", []string{"read"}, nil, "")
 
 	assert.Nil(suite.T(), err)
@@ -276,7 +277,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_WithClaims
 
 	tokenResponse := &model.TokenResponseDTO{}
 
-	err := suite.handler.IssueRefreshToken(tokenResponse, suite.oauthApp,
+	err := suite.handler.IssueRefreshToken(context.Background(), tokenResponse, suite.oauthApp,
 		testRefreshTokenUserID, testRefreshTokenAudience,
 		"authorization_code", []string{"read"}, nil, "en-US fr-CA ja")
 
@@ -310,7 +311,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_Success_WithRene
 		Scopes:    []string{"read"},
 	}, nil)
 
-	response, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
+	response, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), response)
@@ -355,7 +356,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_Success_WithRene
 		Scopes:    []string{"read"},
 	}, nil)
 
-	response, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
+	response, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), response)
@@ -379,7 +380,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_BuildAccessToken
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).
 		Return(nil, errors.New("failed to sign JWT"))
 
-	response, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
+	response, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), response)
 	assert.NotNil(suite.T(), err)
@@ -415,7 +416,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_IssueRefreshToke
 	suite.mockTokenBuilder.On("BuildRefreshToken", mock.Anything).
 		Return(nil, errors.New("refresh token generation failed"))
 
-	response, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
+	response, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), response)
 	assert.NotNil(suite.T(), err)
@@ -430,7 +431,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_ExtractIatClaimE
 	suite.mockTokenValidator.On("ValidateRefreshToken", suite.validRefreshToken, testRefreshTokenClientID).
 		Return(nil, errors.New("missing or invalid 'iat' claim"))
 
-	response, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
+	response, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), response)
 	assert.NotNil(suite.T(), err)
@@ -528,7 +529,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_IDTokenGenerated
 		Scope:        "openid read",
 	}
 
-	response, err := suite.handler.HandleGrant(tokenReq, suite.oauthApp)
+	response, err := suite.handler.HandleGrant(context.Background(), tokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), response)
@@ -562,7 +563,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_NoIDToken_WhenOp
 		Scopes:    []string{"read"},
 	}, nil)
 
-	response, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
+	response, err := suite.handler.HandleGrant(context.Background(), suite.testTokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), response)
@@ -602,7 +603,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_IDTokenGeneratio
 		Scope:        "openid read",
 	}
 
-	response, err := suite.handler.HandleGrant(tokenReq, suite.oauthApp)
+	response, err := suite.handler.HandleGrant(context.Background(), tokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), response)
 	assert.NotNil(suite.T(), err)
@@ -663,7 +664,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_IDTokenWithRenew
 		Scope:        "openid read",
 	}
 
-	response, err := suite.handler.HandleGrant(tokenReq, suite.oauthApp)
+	response, err := suite.handler.HandleGrant(context.Background(), tokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), response)

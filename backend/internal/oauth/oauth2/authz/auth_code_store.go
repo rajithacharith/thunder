@@ -19,6 +19,7 @@
 package authz
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -51,9 +52,9 @@ const (
 
 // AuthorizationCodeStoreInterface defines the interface for managing authorization codes.
 type AuthorizationCodeStoreInterface interface {
-	InsertAuthorizationCode(authzCode AuthorizationCode) error
-	ConsumeAuthorizationCode(clientID, authCode string) (bool, error)
-	GetAuthorizationCode(clientID, authCode string) (*AuthorizationCode, error)
+	InsertAuthorizationCode(ctx context.Context, authzCode AuthorizationCode) error
+	ConsumeAuthorizationCode(ctx context.Context, clientID, authCode string) (bool, error)
+	GetAuthorizationCode(ctx context.Context, clientID, authCode string) (*AuthorizationCode, error)
 }
 
 // authorizationCodeStore implements the AuthorizationCodeStoreInterface for managing authorization codes.
@@ -71,7 +72,7 @@ func newAuthorizationCodeStore() AuthorizationCodeStoreInterface {
 }
 
 // InsertAuthorizationCode inserts a new authorization code into the database.
-func (acs *authorizationCodeStore) InsertAuthorizationCode(authzCode AuthorizationCode) error {
+func (acs *authorizationCodeStore) InsertAuthorizationCode(ctx context.Context, authzCode AuthorizationCode) error {
 	dbClient, err := acs.dbProvider.GetRuntimeDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -82,7 +83,7 @@ func (acs *authorizationCodeStore) InsertAuthorizationCode(authzCode Authorizati
 		return err
 	}
 
-	_, err = dbClient.Execute(queryInsertAuthorizationCode, authzCode.CodeID, authzCode.Code,
+	_, err = dbClient.ExecuteContext(ctx, queryInsertAuthorizationCode, authzCode.CodeID, authzCode.Code,
 		authzCode.ClientID, authzCode.State, jsonDataBytes, authzCode.TimeCreated, authzCode.ExpiryTime,
 		acs.deploymentID)
 	if err != nil {
@@ -94,13 +95,15 @@ func (acs *authorizationCodeStore) InsertAuthorizationCode(authzCode Authorizati
 
 // ConsumeAuthorizationCode atomically consumes an active authorization code (ACTIVE → INACTIVE).
 // Returns true if this call consumed the code, false if the code was not in ACTIVE state.
-func (acs *authorizationCodeStore) ConsumeAuthorizationCode(clientID, authCode string) (bool, error) {
+func (acs *authorizationCodeStore) ConsumeAuthorizationCode(
+	ctx context.Context, clientID, authCode string,
+) (bool, error) {
 	dbClient, err := acs.dbProvider.GetRuntimeDBClient()
 	if err != nil {
 		return false, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	rowsAffected, err := dbClient.Execute(queryConsumeAuthorizationCode,
+	rowsAffected, err := dbClient.ExecuteContext(ctx, queryConsumeAuthorizationCode,
 		AuthCodeStateInactive, clientID, authCode, AuthCodeStateActive, acs.deploymentID)
 	if err != nil {
 		return false, fmt.Errorf("error consuming authorization code: %w", err)
@@ -110,13 +113,15 @@ func (acs *authorizationCodeStore) ConsumeAuthorizationCode(clientID, authCode s
 }
 
 // GetAuthorizationCode retrieves an authorization code by client Id and authorization code.
-func (acs *authorizationCodeStore) GetAuthorizationCode(clientID, authCode string) (*AuthorizationCode, error) {
+func (acs *authorizationCodeStore) GetAuthorizationCode(
+	ctx context.Context, clientID, authCode string,
+) (*AuthorizationCode, error) {
 	dbClient, err := acs.dbProvider.GetRuntimeDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryGetAuthorizationCode, clientID, authCode, acs.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryGetAuthorizationCode, clientID, authCode, acs.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("error while retrieving authorization code: %w", err)
 	}
