@@ -179,8 +179,8 @@ func (e *consentExecutor) checkConsent(ctx *core.NodeContext, execResp *common.E
 			expiresAtStr := strconv.FormatInt(expiresAt, 10)
 			logger.Debug("Consent timeout configured", log.String("expiresAt", expiresAtStr))
 
-			execResp.AdditionalData[common.DataConsentExpiresAt] = expiresAtStr
-			execResp.RuntimeData[common.RuntimeKeyConsentExpiresAt] = expiresAtStr
+			execResp.AdditionalData[common.DataStepTimeout] = expiresAtStr
+			execResp.RuntimeData[common.RuntimeKeyStepTimeout] = expiresAtStr
 		}
 	}
 
@@ -217,7 +217,7 @@ func (e *consentExecutor) handleConsentDecisions(ctx *core.NodeContext, execResp
 	}
 
 	// Check if the consent prompt has timed out
-	if expiresAtStr, ok := ctx.RuntimeData[common.RuntimeKeyConsentExpiresAt]; ok && expiresAtStr != "" {
+	if expiresAtStr, ok := ctx.RuntimeData[common.RuntimeKeyStepTimeout]; ok && expiresAtStr != "" {
 		if expiresAt, err := strconv.ParseInt(expiresAtStr, 10, 64); err == nil {
 			if time.Now().UnixMilli() > expiresAt {
 				logger.Debug("Consent prompt has timed out", log.Any("expiresAt", expiresAt))

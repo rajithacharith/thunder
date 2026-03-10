@@ -94,7 +94,7 @@ var nonUserAttributes = []string{"userID", "code", "nonce", "state", "flowID",
 	userTypeKey, ouIDKey, defaultOUIDKey, userInputOuName, userInputOuHandle, userInputOuDesc, userInputInviteToken,
 	common.RuntimeKeyUserEligibleForProvisioning, common.RuntimeKeySkipProvisioning,
 	common.RuntimeKeyUserAutoProvisioned, common.RuntimeKeyStoredInviteToken,
-	common.RuntimeKeyConsentID, common.RuntimeKeyConsentExpiresAt, userInputConsentDecisions,
+	common.RuntimeKeyConsentID, common.RuntimeKeyStepTimeout, userInputConsentDecisions,
 	common.RuntimeKeyConsentedAttributes, common.RuntimeKeyConsentSessionToken,
 	"applicationId", "idpId", "senderId"}
 
