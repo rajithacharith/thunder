@@ -280,7 +280,7 @@ func TestHandleUserListRequest_Success(t *testing.T) {
 		TotalResults: 10,
 		Users:        []User{{ID: "user-1"}},
 	}
-	mockSvc.On("GetUserList", mock.Anything, 10, 0, mock.Anything).Return(expectedResp, nil)
+	mockSvc.On("GetUserList", mock.Anything, 10, 0, mock.Anything, false).Return(expectedResp, nil)
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodGet, "/users?limit=10&offset=0", nil)
@@ -292,6 +292,26 @@ func TestHandleUserListRequest_Success(t *testing.T) {
 	var resp UserListResponse
 	require.NoError(t, json.NewDecoder(rr.Body).Decode(&resp))
 	require.Equal(t, expectedResp.TotalResults, resp.TotalResults)
+}
+
+func TestHandleUserListRequest_WithIncludeDisplay(t *testing.T) {
+	mockSvc := NewUserServiceInterfaceMock(t)
+	expectedResp := &UserListResponse{
+		TotalResults: 1,
+		Users:        []User{{ID: "user-1", Display: "Alice"}},
+	}
+	mockSvc.On("GetUserList", mock.Anything, 10, 0, mock.Anything, true).Return(expectedResp, nil)
+
+	handler := newUserHandler(mockSvc)
+	req := httptest.NewRequest(http.MethodGet, "/users?limit=10&offset=0&include=display", nil)
+	rr := httptest.NewRecorder()
+
+	handler.HandleUserListRequest(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	var resp UserListResponse
+	require.NoError(t, json.NewDecoder(rr.Body).Decode(&resp))
+	require.Equal(t, "Alice", resp.Users[0].Display)
 }
 
 func TestHandleUserPostRequest_Success(t *testing.T) {
@@ -373,7 +393,8 @@ func TestHandleUserListByPathRequest_Success(t *testing.T) {
 		TotalResults: 5,
 		Users:        []User{{ID: "user-path-1"}},
 	}
-	mockSvc.On("GetUsersByPath", mock.Anything, "root/engineering", 10, 0, mock.Anything).Return(expectedResp, nil)
+	mockSvc.On("GetUsersByPath", mock.Anything, "root/engineering", 10, 0,
+		mock.Anything, false).Return(expectedResp, nil)
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodGet, "/users/path/root/engineering?limit=10", nil)
@@ -383,6 +404,29 @@ func TestHandleUserListByPathRequest_Success(t *testing.T) {
 	handler.HandleUserListByPathRequest(rr, req)
 
 	require.Equal(t, http.StatusOK, rr.Code)
+}
+
+func TestHandleUserListByPathRequest_WithIncludeDisplay(t *testing.T) {
+	mockSvc := NewUserServiceInterfaceMock(t)
+	expectedResp := &UserListResponse{
+		TotalResults: 1,
+		Users:        []User{{ID: "user-1", Display: "Bob"}},
+	}
+	mockSvc.On("GetUsersByPath", mock.Anything, "root/engineering", 10, 0,
+		mock.Anything, true).Return(expectedResp, nil)
+
+	handler := newUserHandler(mockSvc)
+	req := httptest.NewRequest(
+		http.MethodGet, "/users/path/root/engineering?limit=10&include=display", nil)
+	req.SetPathValue("path", "root/engineering")
+	rr := httptest.NewRecorder()
+
+	handler.HandleUserListByPathRequest(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	var resp UserListResponse
+	require.NoError(t, json.NewDecoder(rr.Body).Decode(&resp))
+	require.Equal(t, "Bob", resp.Users[0].Display)
 }
 
 func TestHandleUserPostByPathRequest_Success(t *testing.T) {
@@ -440,7 +484,7 @@ func TestHandleUserListRequest_WithFilter(t *testing.T) {
 	mockSvc.On("GetUserList", mock.Anything, mock.Anything, mock.Anything,
 		mock.MatchedBy(func(m map[string]interface{}) bool {
 			return m["username"] == "alice"
-		})).Return(expectedResp, nil)
+		}), false).Return(expectedResp, nil)
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodGet, "/users?filter=username%20eq%20%22alice%22", nil)
@@ -457,7 +501,7 @@ func TestHandleUserListRequest_WithFilter_Unquoted(t *testing.T) {
 	mockSvc.On("GetUserList", mock.Anything, mock.Anything, mock.Anything,
 		mock.MatchedBy(func(m map[string]interface{}) bool {
 			return m["age"] == int64(30)
-		})).Return(expectedResp, nil)
+		}), false).Return(expectedResp, nil)
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodGet, "/users?filter=age%20eq%2030", nil)

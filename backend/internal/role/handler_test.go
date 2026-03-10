@@ -31,6 +31,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
 type RoleHandlerTestSuite struct {
@@ -58,7 +59,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleListRequest_Success() {
 			{ID: "role1", Name: "Admin"},
 			{ID: "role2", Name: "User"},
 		},
-		Links: []Link{},
+		Links: []utils.Link{},
 	}
 
 	suite.mockService.On("GetRoleList", mock.Anything, 10, 0).Return(expectedResponse, nil)
@@ -83,7 +84,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleListRequest_DefaultPagination()
 		StartIndex:   1,
 		Count:        1,
 		Roles:        []Role{{ID: "role1", Name: "Admin"}},
-		Links:        []Link{},
+		Links:        []utils.Link{},
 	}
 
 	suite.mockService.On("GetRoleList", mock.Anything, 30, 0).Return(expectedResponse, nil)
@@ -303,7 +304,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleAssignmentsGetRequest_Success()
 			{ID: "user1", Type: AssigneeTypeUser},
 			{ID: "group1", Type: AssigneeTypeGroup},
 		},
-		Links: []Link{},
+		Links: []utils.Link{},
 	}
 
 	suite.mockService.On("GetRoleAssignments", mock.Anything, "role1", 10, 0, false).Return(expectedResponse, nil)

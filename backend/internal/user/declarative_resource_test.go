@@ -206,11 +206,11 @@ func (suite *DeclarativeResourceTestSuite) TestUserExporter_GetAllResourceIDs() 
 	exporter := newUserExporter(mockSvc)
 
 	users := []User{{ID: "user-1"}, {ID: "user-2"}}
-	mockSvc.On("GetUserList", ctx, serverconst.MaxPageSize, 0, mock.Anything).
+	mockSvc.On("GetUserList", ctx, serverconst.MaxPageSize, 0, mock.Anything, false).
 		Return(&UserListResponse{Users: users}, nil)
 	mockSvc.On("IsUserDeclarative", ctx, "user-1").Return(true, nil)
 	mockSvc.On("IsUserDeclarative", ctx, "user-2").Return(false, nil)
-	mockSvc.On("GetUserList", ctx, serverconst.MaxPageSize, 2, mock.Anything).
+	mockSvc.On("GetUserList", ctx, serverconst.MaxPageSize, 2, mock.Anything, false).
 		Return(&UserListResponse{Users: []User{}}, nil)
 
 	ids, err := exporter.GetAllResourceIDs(ctx)

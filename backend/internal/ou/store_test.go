@@ -20,7 +20,6 @@ package ou
 
 import (
 	"context"
-
 	"errors"
 	"testing"
 
@@ -852,7 +851,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitUser
 			suite.SetupTest()
 			tc.setup(tc.limit, tc.offset)
 
-			users, err := suite.store.GetOrganizationUnitUsersList(context.Background(), "ou1", tc.limit, tc.offset)
+			users, err := suite.store.GetOrganizationUnitUsersList(
+				context.Background(), "ou1", tc.limit, tc.offset)
 
 			if tc.wantErr != "" {
 				suite.Require().Error(err)

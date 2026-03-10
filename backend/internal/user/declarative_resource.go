@@ -66,7 +66,7 @@ func (e *userExporter) GetAllResourceIDs(ctx context.Context) ([]string, *servic
 	ids := []string{}
 
 	for {
-		users, err := e.service.GetUserList(ctx, limit, offset, nil)
+		users, err := e.service.GetUserList(ctx, limit, offset, nil, false)
 		if err != nil {
 			return nil, err
 		}

@@ -69,8 +69,11 @@ func (uh *userHandler) HandleUserListRequest(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Parse include parameter to check if display names should be included.
+	includeDisplay := r.URL.Query().Get("include") == "display"
+
 	// Get the user list using the user service.
-	userListResponse, svcErr := uh.userService.GetUserList(ctx, limit, offset, filters)
+	userListResponse, svcErr := uh.userService.GetUserList(ctx, limit, offset, filters, includeDisplay)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -274,7 +277,10 @@ func (uh *userHandler) HandleUserListByPathRequest(w http.ResponseWriter, r *htt
 		return
 	}
 
-	userListResponse, svcErr := uh.userService.GetUsersByPath(ctx, path, limit, offset, filters)
+	// Parse include parameter to check if display names should be included.
+	includeDisplay := r.URL.Query().Get("include") == "display"
+
+	userListResponse, svcErr := uh.userService.GetUsersByPath(ctx, path, limit, offset, filters, includeDisplay)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return

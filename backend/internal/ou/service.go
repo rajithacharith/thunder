@@ -148,7 +148,7 @@ func (ous *organizationUnitService) listAllOrganizationUnits(
 		OrganizationUnits: ouList,
 		StartIndex:        offset + 1,
 		Count:             len(ouList),
-		Links:             buildPaginationLinks(limit, offset, totalCount),
+		Links:             utils.BuildPaginationLinks("/organization-units", limit, offset, totalCount, ""),
 	}, nil
 }
 
@@ -164,7 +164,7 @@ func (ous *organizationUnitService) listAccessibleOrganizationUnits(
 			OrganizationUnits: []OrganizationUnitBasic{},
 			StartIndex:        1,
 			Count:             0,
-			Links:             buildPaginationLinks(limit, offset, 0),
+			Links:             utils.BuildPaginationLinks("/organization-units", limit, offset, 0, ""),
 		}, nil
 	}
 
@@ -185,7 +185,7 @@ func (ous *organizationUnitService) listAccessibleOrganizationUnits(
 			OrganizationUnits: []OrganizationUnitBasic{},
 			StartIndex:        offset + 1,
 			Count:             0,
-			Links:             buildPaginationLinks(limit, offset, total),
+			Links:             utils.BuildPaginationLinks("/organization-units", limit, offset, total, ""),
 		}, nil
 	}
 
@@ -201,7 +201,7 @@ func (ous *organizationUnitService) listAccessibleOrganizationUnits(
 		OrganizationUnits: pageOUs,
 		StartIndex:        offset + 1,
 		Count:             len(pageOUs),
-		Links:             buildPaginationLinks(limit, offset, total),
+		Links:             utils.BuildPaginationLinks("/organization-units", limit, offset, total, ""),
 	}, nil
 }
 
@@ -774,7 +774,9 @@ func (ous *organizationUnitService) GetOrganizationUnitUsers(
 	if svcErr != nil {
 		return nil, svcErr
 	}
-	return buildUserListResponse(items, totalCount, limit, offset)
+
+	base := fmt.Sprintf("/organization-units/%s/users", id)
+	return buildUserListResponse(base, items, totalCount, limit, offset)
 }
 
 // GetOrganizationUnitGroups retrieves a list of groups for a given organization unit ID.
@@ -796,7 +798,8 @@ func (ous *organizationUnitService) GetOrganizationUnitGroups(
 	if svcErr != nil {
 		return nil, svcErr
 	}
-	return buildGroupListResponse(items, totalCount, limit, offset)
+	base := fmt.Sprintf("/organization-units/%s/groups", id)
+	return buildGroupListResponse(base, items, totalCount, limit, offset)
 }
 
 // GetOrganizationUnitChildren retrieves a list of child organization units for a given organization unit ID.
@@ -818,7 +821,8 @@ func (ous *organizationUnitService) GetOrganizationUnitChildren(
 	if svcErr != nil {
 		return nil, svcErr
 	}
-	return buildOrganizationUnitListResponse(items, totalCount, limit, offset)
+	base := fmt.Sprintf("/organization-units/%s/ous", id)
+	return buildOrganizationUnitListResponse(base, items, totalCount, limit, offset)
 }
 
 // GetOrganizationUnitChildrenByPath retrieves a list of child organization units by hierarchical handle path.
@@ -979,45 +983,6 @@ func validatePaginationParams(limit, offset int) *serviceerror.ServiceError {
 	return nil
 }
 
-// buildPaginationLinks builds pagination links for the response.
-func buildPaginationLinks(limit, offset, totalCount int) []Link {
-	links := make([]Link, 0)
-
-	if offset > 0 {
-		links = append(links, Link{
-			Href: fmt.Sprintf("/organization-units?offset=0&limit=%d", limit),
-			Rel:  "first",
-		})
-
-		prevOffset := offset - limit
-		if prevOffset < 0 {
-			prevOffset = 0
-		}
-		links = append(links, Link{
-			Href: fmt.Sprintf("/organization-units?offset=%d&limit=%d", prevOffset, limit),
-			Rel:  "prev",
-		})
-	}
-
-	if offset+limit < totalCount {
-		nextOffset := offset + limit
-		links = append(links, Link{
-			Href: fmt.Sprintf("/organization-units?offset=%d&limit=%d", nextOffset, limit),
-			Rel:  "next",
-		})
-	}
-
-	lastPageOffset := ((totalCount - 1) / limit) * limit
-	if offset < lastPageOffset {
-		links = append(links, Link{
-			Href: fmt.Sprintf("/organization-units?offset=%d&limit=%d", lastPageOffset, limit),
-			Rel:  "last",
-		})
-	}
-
-	return links
-}
-
 // getResourceListWithExistenceCheck is a generic function to get resources for an
 // organization unit with existence check.
 // If mapCompositeError is true, it will map ErrResultLimitExceededInCompositeMode to ErrorResultLimitExceeded.
@@ -1064,55 +1029,52 @@ func (ous *organizationUnitService) getResourceListWithExistenceCheck(
 	return items, totalCount, nil
 }
 
-func buildUserListResponse(items interface{}, totalCount, limit, offset int) (
-	*UserListResponse, *serviceerror.ServiceError,
-) {
+func buildUserListResponse(
+	base string, items interface{}, totalCount, limit, offset int,
+) (*UserListResponse, *serviceerror.ServiceError) {
 	users, ok := items.([]User)
 	if !ok {
 		return nil, &ErrorInternalServerError
 	}
-	response := &UserListResponse{
+	return &UserListResponse{
 		TotalResults: totalCount,
 		Users:        users,
 		StartIndex:   offset + 1,
 		Count:        len(users),
-		Links:        buildPaginationLinks(limit, offset, totalCount),
-	}
-	return response, nil
+		Links:        utils.BuildPaginationLinks(base, limit, offset, totalCount, ""),
+	}, nil
 }
 
-func buildGroupListResponse(items interface{}, totalCount, limit, offset int) (
-	*GroupListResponse, *serviceerror.ServiceError,
-) {
+func buildGroupListResponse(
+	base string, items interface{}, totalCount, limit, offset int,
+) (*GroupListResponse, *serviceerror.ServiceError) {
 	groups, ok := items.([]Group)
 	if !ok {
 		return nil, &ErrorInternalServerError
 	}
-	response := &GroupListResponse{
+	return &GroupListResponse{
 		TotalResults: totalCount,
 		Groups:       groups,
 		StartIndex:   offset + 1,
 		Count:        len(groups),
-		Links:        buildPaginationLinks(limit, offset, totalCount),
-	}
-	return response, nil
+		Links:        utils.BuildPaginationLinks(base, limit, offset, totalCount, ""),
+	}, nil
 }
 
-func buildOrganizationUnitListResponse(items interface{}, totalCount, limit, offset int) (
-	*OrganizationUnitListResponse, *serviceerror.ServiceError,
-) {
+func buildOrganizationUnitListResponse(
+	base string, items interface{}, totalCount, limit, offset int,
+) (*OrganizationUnitListResponse, *serviceerror.ServiceError) {
 	children, ok := items.([]OrganizationUnitBasic)
 	if !ok {
 		return nil, &ErrorInternalServerError
 	}
-	response := &OrganizationUnitListResponse{
+	return &OrganizationUnitListResponse{
 		TotalResults:      totalCount,
 		OrganizationUnits: children,
 		StartIndex:        offset + 1,
 		Count:             len(children),
-		Links:             buildPaginationLinks(limit, offset, totalCount),
-	}
-	return response, nil
+		Links:             utils.BuildPaginationLinks(base, limit, offset, totalCount, ""),
+	}, nil
 }
 
 // stringPtrEqual compares two string pointers by their values.

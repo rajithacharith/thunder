@@ -21,10 +21,8 @@ package role
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/asgardeo/thunder/internal/group"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
@@ -116,7 +114,7 @@ func (rs *roleService) GetRoleList(ctx context.Context, limit, offset int) (*Rol
 		Roles:        roles,
 		StartIndex:   offset + 1,
 		Count:        len(roles),
-		Links:        buildPaginationLinks("/roles", limit, offset, totalCount),
+		Links:        utils.BuildPaginationLinks("/roles", limit, offset, totalCount, ""),
 	}
 
 	return response, nil
@@ -399,8 +397,12 @@ func (rs *roleService) GetRoleAssignments(ctx context.Context, id string, limit,
 			serviceAssignments[i].Type = assignments[i].Type
 		}
 	}
+	displayQuery := ""
+	if includeDisplay {
+		displayQuery = utils.IncludeDisplayQuery
+	}
 	baseURL := fmt.Sprintf("/roles/%s/assignments", id)
-	links := buildPaginationLinks(baseURL, limit, offset, totalCount)
+	links := utils.BuildPaginationLinks(baseURL, limit, offset, totalCount, displayQuery)
 
 	response := &AssignmentList{
 		TotalResults: totalCount,
@@ -668,45 +670,6 @@ func validatePaginationParams(limit, offset int) *serviceerror.ServiceError {
 	return nil
 }
 
-// buildPaginationLinks builds pagination links for the response.
-func buildPaginationLinks(base string, limit, offset, totalCount int) []Link {
-	links := make([]Link, 0)
-
-	if offset > 0 {
-		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=0&limit=%d", base, limit),
-			Rel:  "first",
-		})
-
-		prevOffset := offset - limit
-		if prevOffset < 0 {
-			prevOffset = 0
-		}
-		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=%d&limit=%d", base, prevOffset, limit),
-			Rel:  "prev",
-		})
-	}
-
-	if offset+limit < totalCount {
-		nextOffset := offset + limit
-		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=%d&limit=%d", base, nextOffset, limit),
-			Rel:  "next",
-		})
-	}
-
-	lastPageOffset := ((totalCount - 1) / limit) * limit
-	if offset < lastPageOffset {
-		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=%d&limit=%d", base, lastPageOffset, limit),
-			Rel:  "last",
-		})
-	}
-
-	return links
-}
-
 // populateDisplayNames batch-fetches display names for all assignments using GetUsersByIDs/GetGroupsByIDs.
 func (rs *roleService) populateDisplayNames(
 	ctx context.Context, assignments []RoleAssignment,
@@ -745,7 +708,11 @@ func (rs *roleService) populateDisplayNames(
 	}
 
 	// Resolve display attribute paths for user types
-	displayAttrPaths := rs.resolveDisplayAttributePaths(ctx, usersMap)
+	userTypes := make([]string, 0, len(usersMap))
+	for _, u := range usersMap {
+		userTypes = append(userTypes, u.Type)
+	}
+	displayAttrPaths := utils.ResolveDisplayAttributePaths(ctx, userTypes, rs.displayAttributeLookup())
 
 	for i := range assignments {
 		serviceAssignments[i].ID = assignments[i].ID
@@ -756,96 +723,36 @@ func (rs *roleService) populateDisplayNames(
 		case AssigneeTypeUser:
 			if usersMap != nil {
 				if u, ok := usersMap[assignments[i].ID]; ok {
-					serviceAssignments[i].Display = resolveUserDisplay(u, displayAttrPaths)
+					serviceAssignments[i].Display = utils.ResolveUserDisplay(
+						u.ID, u.Type, u.Attributes, displayAttrPaths)
+					continue
 				}
 			}
+			serviceAssignments[i].Display = assignments[i].ID
 		case AssigneeTypeGroup:
 			if groupsMap != nil {
 				if g, ok := groupsMap[assignments[i].ID]; ok {
 					serviceAssignments[i].Display = g.Name
+					continue
 				}
 			}
+			serviceAssignments[i].Display = assignments[i].ID
 		}
 	}
 }
 
-// resolveDisplayAttributePaths fetches display attribute paths for all unique user types in the map.
-func (rs *roleService) resolveDisplayAttributePaths(
-	ctx context.Context, usersMap map[string]*user.User,
-) map[string]string {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	if rs.userSchemaService == nil || len(usersMap) == 0 {
+// displayAttributeLookup returns a lookup function for display attribute paths
+// that delegates to the user schema service.
+func (rs *roleService) displayAttributeLookup() utils.DisplayAttributeLookupFunc {
+	if rs.userSchemaService == nil {
 		return nil
 	}
-
-	seen := make(map[string]struct{})
-	var typeNames []string
-	for _, u := range usersMap {
-		if u.Type != "" {
-			if _, ok := seen[u.Type]; !ok {
-				seen[u.Type] = struct{}{}
-				typeNames = append(typeNames, u.Type)
-			}
+	return func(ctx context.Context, typeNames []string) (map[string]string, error) {
+		paths, svcErr := rs.userSchemaService.GetDisplayAttributesByNames(ctx, typeNames)
+		if svcErr != nil {
+			return nil, fmt.Errorf("%s", svcErr.Error)
 		}
-	}
-
-	if len(typeNames) == 0 {
-		return nil
-	}
-
-	displayPaths, svcErr := rs.userSchemaService.GetDisplayAttributesByNames(ctx, typeNames)
-	if svcErr != nil {
-		logger.Warn("Failed to get display attribute paths", log.Any("error", svcErr))
-		return nil
-	}
-
-	return displayPaths
-}
-
-// resolveUserDisplay extracts the display value from user attributes using the schema-configured path.
-// Falls back to user ID if no display attribute is configured or extraction fails.
-func resolveUserDisplay(u *user.User, displayAttrPaths map[string]string) string {
-	if displayAttrPaths != nil && u.Type != "" {
-		if path, ok := displayAttrPaths[u.Type]; ok && path != "" {
-			if val := extractDisplayValue(u.Attributes, path); val != "" {
-				return val
-			}
-		}
-	}
-
-	return u.ID
-}
-
-// extractDisplayValue extracts a string value from JSON attributes using a dot-notation path.
-func extractDisplayValue(attributes json.RawMessage, path string) string {
-	if len(attributes) == 0 || path == "" {
-		return ""
-	}
-
-	var data map[string]interface{}
-	if err := json.Unmarshal(attributes, &data); err != nil {
-		return ""
-	}
-
-	parts := strings.Split(path, ".")
-	var current interface{} = data
-
-	for _, part := range parts {
-		m, ok := current.(map[string]interface{})
-		if !ok {
-			return ""
-		}
-		current = m[part]
-		if current == nil {
-			return ""
-		}
-	}
-
-	switch current.(type) {
-	case string, float64:
-		return utils.ConvertInterfaceValueToString(current)
-	default:
-		return ""
+		return paths, nil
 	}
 }
 

@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/tests/mocks/usermock"
 )
@@ -115,7 +116,7 @@ func (suite *DefaultUserProviderTestSuite) TestGetUserGroups() {
 		Groups: []user.UserGroup{
 			{ID: "g1", Name: "Group 1", OrganizationUnitID: "ou1"},
 		},
-		Links: []user.Link{
+		Links: []utils.Link{
 			{Href: "/groups/next", Rel: "next"},
 		},
 		TotalResults: 1,
