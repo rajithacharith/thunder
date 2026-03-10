@@ -66,7 +66,7 @@ const docusaurusThunderConfig = {
         releasesUrl: 'https://github.com/asgardeo/thunder/releases',
         editUrls: {
           blog: 'https://github.com/asgardeo/thunder/tree/main/blog/',
-          content: 'https://github.com/asgardeo/thunder/tree/main/content/',
+          content: 'https://github.com/asgardeo/thunder/tree/main/docs/',
         },
         owner: {
           name: 'asgardeo',
