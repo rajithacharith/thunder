@@ -538,6 +538,11 @@ func (us *userService) UpdateUser(ctx context.Context, userID string, user *User
 		}
 	}
 
+	// Check if user is declarative (immutable)
+	if svcErr := us.checkUserDeclarative(ctx, userID, logger); svcErr != nil {
+		return nil, svcErr
+	}
+
 	// Ensure the user object has the correct ID
 	user.ID = userID
 
@@ -664,6 +669,11 @@ func (us *userService) UpdateUserAttributes(
 		return nil, svcErr
 	}
 
+	// Check if user is declarative (immutable)
+	if svcErr := us.checkUserDeclarative(ctx, userID, logger); svcErr != nil {
+		return nil, svcErr
+	}
+
 	var updatedUser User
 	var capturedSvcErr *serviceerror.ServiceError
 
@@ -786,6 +796,11 @@ func (us *userService) batchUpdateUserCredentials(
 	// Check authz outside the transaction so a denial is returned directly without a rollback.
 	if svcErr := us.checkUserAccess(
 		ctx, security.ActionUpdateUser, existingUser.OrganizationUnit, userID); svcErr != nil {
+		return svcErr
+	}
+
+	// Check if user is declarative (immutable)
+	if svcErr := us.checkUserDeclarative(ctx, userID, logger); svcErr != nil {
 		return svcErr
 	}
 
@@ -1042,6 +1057,11 @@ func (us *userService) DeleteUser(ctx context.Context, userID string) *serviceer
 	// Check authz using the user's OU ID.
 	if svcErr := us.checkUserAccess(
 		ctx, security.ActionDeleteUser, existingUser.OrganizationUnit, userID); svcErr != nil {
+		return svcErr
+	}
+
+	// Check if user is declarative (immutable)
+	if svcErr := us.checkUserDeclarative(ctx, userID, logger); svcErr != nil {
 		return svcErr
 	}
 
@@ -1551,6 +1571,25 @@ func mapOUServiceError(
 	logFields = append(logFields, log.Any("error", svcErr))
 	logger.Error(fmt.Sprintf("Organization unit service error while %s", context), logFields...)
 	return &ErrorInternalServerError
+}
+
+// checkUserDeclarative checks if a user is declarative and returns an error if it is.
+func (us *userService) checkUserDeclarative(
+	ctx context.Context, userID string, logger *log.Logger,
+) *serviceerror.ServiceError {
+	isDeclarative, err := us.userStore.IsUserDeclarative(ctx, userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			return &ErrorUserNotFound
+		}
+		logger.Error("Failed to check if user is declarative",
+			log.String("userID", userID), log.Error(err))
+		return &ErrorInternalServerError
+	}
+	if isDeclarative {
+		return &ErrorCannotModifyDeclarativeResource
+	}
+	return nil
 }
 
 // checkUserAccess validates that the caller is authorized to perform the given action on a user.

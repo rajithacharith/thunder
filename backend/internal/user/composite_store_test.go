@@ -314,7 +314,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserGroups() {
 func (suite *CompositeStoreTestSuite) TestCompositeStore_IdentifyUser() {
 	ctx := context.Background()
 	filters := map[string]interface{}{"username": "alice"}
-	userID := "user-1"
+	userID := svcTestUserID1
 
 	suite.mockDBStore.On("IdentifyUser", ctx, filters).Return(&userID, nil)
 

@@ -62,3 +62,8 @@ func getUserSchemaStoreMode() serverconst.StoreMode {
 
 	return serverconst.StoreModeMutable
 }
+
+// isDeclarativeModeEnabled checks if immutable-only store mode is enabled for user schemas.
+func isDeclarativeModeEnabled() bool {
+	return getUserSchemaStoreMode() == serverconst.StoreModeDeclarative
+}

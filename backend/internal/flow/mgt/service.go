@@ -28,7 +28,6 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/flow/executor"
 	"github.com/asgardeo/thunder/internal/system/config"
-	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
@@ -124,8 +123,8 @@ func (s *flowMgtService) ListFlows(limit, offset int, flowType common.FlowType) 
 // CreateFlow creates a new flow definition with version 1.
 func (s *flowMgtService) CreateFlow(flowDef *FlowDefinition) (
 	*CompleteFlowDefinition, *serviceerror.ServiceError) {
-	if err := declarativeresource.CheckDeclarativeCreate(); err != nil {
-		return nil, err
+	if isDeclarativeModeEnabled() {
+		return nil, &ErrorFlowDeclarativeReadOnly
 	}
 
 	if err := validateFlowDefinition(flowDef); err != nil {
@@ -206,8 +205,8 @@ func (s *flowMgtService) GetFlowByHandle(handle string, flowType common.FlowType
 // Old versions are retained up to the configured max_version_history limit.
 func (s *flowMgtService) UpdateFlow(flowID string, flowDef *FlowDefinition) (
 	*CompleteFlowDefinition, *serviceerror.ServiceError) {
-	if err := declarativeresource.CheckDeclarativeUpdate(); err != nil {
-		return nil, err
+	if isDeclarativeModeEnabled() {
+		return nil, &ErrorFlowDeclarativeReadOnly
 	}
 
 	if flowID == "" {
@@ -260,8 +259,8 @@ func (s *flowMgtService) UpdateFlow(flowID string, flowDef *FlowDefinition) (
 
 // DeleteFlow deletes a flow definition and all its version history.
 func (s *flowMgtService) DeleteFlow(flowID string) *serviceerror.ServiceError {
-	if err := declarativeresource.CheckDeclarativeDelete(); err != nil {
-		return err
+	if isDeclarativeModeEnabled() {
+		return &ErrorFlowDeclarativeReadOnly
 	}
 
 	if flowID == "" {
@@ -363,6 +362,10 @@ func (s *flowMgtService) GetFlowVersion(flowID string, version int) (
 // Creates a new version by copying the configuration from the specified version.
 func (s *flowMgtService) RestoreFlowVersion(flowID string, version int) (
 	*CompleteFlowDefinition, *serviceerror.ServiceError) {
+	if isDeclarativeModeEnabled() {
+		return nil, &ErrorFlowDeclarativeReadOnly
+	}
+
 	if flowID == "" {
 		return nil, &ErrorMissingFlowID
 	}

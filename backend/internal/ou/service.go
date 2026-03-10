@@ -27,7 +27,6 @@ import (
 
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/database/transaction"
-	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
@@ -424,11 +423,6 @@ func (ous *organizationUnitService) UpdateOrganizationUnit(
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Updating organization unit", log.String("ouID", id))
 
-	// Fail if store is in declarative mode
-	if isDeclarativeModeEnabled() {
-		return OrganizationUnit{}, &ErrorCannotModifyDeclarativeResource
-	}
-
 	if svcErr := ous.checkOUAccess(ctx, security.ActionUpdateOU, id); svcErr != nil {
 		return OrganizationUnit{}, svcErr
 	}
@@ -474,10 +468,6 @@ func (ous *organizationUnitService) UpdateOrganizationUnitByPath(
 ) (OrganizationUnit, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Updating organization unit by path", log.String("path", handlePath))
-
-	if err := declarativeresource.CheckDeclarativeUpdate(); err != nil {
-		return OrganizationUnit{}, err
-	}
 
 	handles, serviceError := validateAndProcessHandlePath(handlePath)
 	if serviceError != nil {
@@ -624,11 +614,6 @@ func (ous *organizationUnitService) DeleteOrganizationUnit(ctx context.Context, 
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Deleting organization unit", log.String("ouID", id))
 
-	// Fail if store is in declarative mode
-	if isDeclarativeModeEnabled() {
-		return &ErrorCannotModifyDeclarativeResource
-	}
-
 	if svcErr := ous.checkOUAccess(ctx, security.ActionDeleteOU, id); svcErr != nil {
 		return svcErr
 	}
@@ -673,10 +658,6 @@ func (ous *organizationUnitService) DeleteOrganizationUnitByPath(
 ) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Deleting organization unit by path", log.String("path", handlePath))
-
-	if err := declarativeresource.CheckDeclarativeDelete(); err != nil {
-		return err
-	}
 
 	handles, serviceError := validateAndProcessHandlePath(handlePath)
 	if serviceError != nil {
