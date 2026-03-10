@@ -126,6 +126,12 @@ const config: Config = {
           className: 'navbar__link--docs',
         },
         {
+          type: 'docSidebar',
+          sidebarId: 'useCasesSidebar',
+          position: 'right',
+          label: 'Use Cases',
+        },
+        {
           type: 'doc',
           docId: 'apis',
           position: 'right',
