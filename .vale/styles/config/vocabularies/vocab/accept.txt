@@ -25,3 +25,10 @@ hostname
 JWTs
 JWT
 [Cc]rypto
+[Oo]nboarding
+[Pp]asscode
+[Aa]uditable
+[Mm]isconfigurations
+SDKs
+Pardot
+Entra
