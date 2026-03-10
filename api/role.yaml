@@ -451,16 +451,7 @@ paths:
           schema:
             type: string
             format: uuid
-        - in: query
-          name: include
-          required: false
-          schema:
-            type: string
-            enum:
-              - display
-          description: |
-            Optional parameter to include additional information.
-            - `display` - Include display names for users and groups. For users, the display value is resolved from the schema-configured display attribute (`systemAttributes.display`). Falls back to the user ID if no display attribute is configured. For groups, the group name is used.
+        - $ref: '#/components/parameters/includeQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/offsetQueryParam'
       responses:
@@ -715,6 +706,17 @@ components:
         type: integer
         minimum: 0
         default: 0
+    includeQueryParam:
+      in: query
+      name: include
+      required: false
+      schema:
+        type: string
+        enum:
+          - display
+      description: |
+        Optional parameter to include additional information.
+        - `display` - Include display names for users and groups. For users, the display value is resolved from the schema-configured display attribute (`systemAttributes.display`). Falls back to the user ID if no display attribute is configured, the configured attribute path does not exist in the user's data, or the attribute value is empty. For groups, the group name is used.
 
   schemas:
     Assignment:
@@ -733,7 +735,8 @@ components:
           description: "Type of entity being assigned (user or group)"
         display:
           type: string
-          description: "Display name of the user or group (only included when include=display query parameter is used). For users, resolved from the schema-configured display attribute. For groups, the group name is used."
+          readOnly: true
+          description: "Display name of the user or group (only included when include=display query parameter is used). For users, resolved from the schema-configured display attribute; falls back to the user ID if the attribute is not configured, the path does not exist, or the value is empty. For groups, the group name is used."
 
     AssignmentInput:
       type: object

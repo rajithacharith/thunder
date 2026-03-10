@@ -466,8 +466,8 @@ func (_c *GroupServiceInterfaceMock_GetGroupList_Call) RunAndReturn(run func(ctx
 }
 
 // GetGroupMembers provides a mock function for the type GroupServiceInterfaceMock
-func (_mock *GroupServiceInterfaceMock) GetGroupMembers(ctx context.Context, groupID string, limit int, offset int) (*MemberListResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(ctx, groupID, limit, offset)
+func (_mock *GroupServiceInterfaceMock) GetGroupMembers(ctx context.Context, groupID string, limit int, offset int, includeDisplay bool) (*MemberListResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, groupID, limit, offset, includeDisplay)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetGroupMembers")
@@ -475,18 +475,18 @@ func (_mock *GroupServiceInterfaceMock) GetGroupMembers(ctx context.Context, gro
 
 	var r0 *MemberListResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int) (*MemberListResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(ctx, groupID, limit, offset)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int, bool) (*MemberListResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, groupID, limit, offset, includeDisplay)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int) *MemberListResponse); ok {
-		r0 = returnFunc(ctx, groupID, limit, offset)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int, bool) *MemberListResponse); ok {
+		r0 = returnFunc(ctx, groupID, limit, offset, includeDisplay)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*MemberListResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int, int) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(ctx, groupID, limit, offset)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int, int, bool) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, groupID, limit, offset, includeDisplay)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -505,11 +505,12 @@ type GroupServiceInterfaceMock_GetGroupMembers_Call struct {
 //   - groupID string
 //   - limit int
 //   - offset int
-func (_e *GroupServiceInterfaceMock_Expecter) GetGroupMembers(ctx interface{}, groupID interface{}, limit interface{}, offset interface{}) *GroupServiceInterfaceMock_GetGroupMembers_Call {
-	return &GroupServiceInterfaceMock_GetGroupMembers_Call{Call: _e.mock.On("GetGroupMembers", ctx, groupID, limit, offset)}
+//   - includeDisplay bool
+func (_e *GroupServiceInterfaceMock_Expecter) GetGroupMembers(ctx interface{}, groupID interface{}, limit interface{}, offset interface{}, includeDisplay interface{}) *GroupServiceInterfaceMock_GetGroupMembers_Call {
+	return &GroupServiceInterfaceMock_GetGroupMembers_Call{Call: _e.mock.On("GetGroupMembers", ctx, groupID, limit, offset, includeDisplay)}
 }
 
-func (_c *GroupServiceInterfaceMock_GetGroupMembers_Call) Run(run func(ctx context.Context, groupID string, limit int, offset int)) *GroupServiceInterfaceMock_GetGroupMembers_Call {
+func (_c *GroupServiceInterfaceMock_GetGroupMembers_Call) Run(run func(ctx context.Context, groupID string, limit int, offset int, includeDisplay bool)) *GroupServiceInterfaceMock_GetGroupMembers_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -527,11 +528,16 @@ func (_c *GroupServiceInterfaceMock_GetGroupMembers_Call) Run(run func(ctx conte
 		if args[3] != nil {
 			arg3 = args[3].(int)
 		}
+		var arg4 bool
+		if args[4] != nil {
+			arg4 = args[4].(bool)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
+			arg4,
 		)
 	})
 	return _c
@@ -542,7 +548,7 @@ func (_c *GroupServiceInterfaceMock_GetGroupMembers_Call) Return(memberListRespo
 	return _c
 }
 
-func (_c *GroupServiceInterfaceMock_GetGroupMembers_Call) RunAndReturn(run func(ctx context.Context, groupID string, limit int, offset int) (*MemberListResponse, *serviceerror.ServiceError)) *GroupServiceInterfaceMock_GetGroupMembers_Call {
+func (_c *GroupServiceInterfaceMock_GetGroupMembers_Call) RunAndReturn(run func(ctx context.Context, groupID string, limit int, offset int, includeDisplay bool) (*MemberListResponse, *serviceerror.ServiceError)) *GroupServiceInterfaceMock_GetGroupMembers_Call {
 	_c.Call.Return(run)
 	return _c
 }

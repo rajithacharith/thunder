@@ -44,9 +44,9 @@ const loggerComponentName = "UserService"
 // UserServiceInterface defines the interface for the user service.
 type UserServiceInterface interface {
 	GetUserList(ctx context.Context, limit, offset int,
-		filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError)
+		filters map[string]interface{}, includeDisplay bool) (*UserListResponse, *serviceerror.ServiceError)
 	GetUsersByPath(ctx context.Context, handlePath string, limit, offset int,
-		filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError)
+		filters map[string]interface{}, includeDisplay bool) (*UserListResponse, *serviceerror.ServiceError)
 	CreateUser(ctx context.Context, user *User) (*User, *serviceerror.ServiceError)
 	CreateUserByPath(ctx context.Context, handlePath string,
 		request CreateUserByPathRequest) (*User, *serviceerror.ServiceError)
@@ -103,10 +103,9 @@ func newUserService(
 	}
 }
 
-// GetUserList lists the users.
 // GetUserList retrieves a list of users with pagination and filtering.
 func (us *userService) GetUserList(ctx context.Context, limit, offset int,
-	filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError) {
+	filters map[string]interface{}, includeDisplay bool) (*UserListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if err := validatePaginationParams(limit, offset); err != nil {
@@ -123,16 +122,17 @@ func (us *userService) GetUserList(ctx context.Context, limit, offset int,
 
 	// Unfiltered path: system-level caller — return all users.
 	if accessible.AllAllowed {
-		return us.listAllUsers(ctx, limit, offset, filters, logger)
+		return us.listAllUsers(ctx, limit, offset, filters, includeDisplay, logger)
 	}
 
 	// Filtered path: return users belonging to the accessible OUs.
-	return us.listUsersByOUIDs(ctx, accessible.IDs, limit, offset, filters, logger)
+	return us.listUsersByOUIDs(ctx, accessible.IDs, limit, offset, filters, includeDisplay, logger)
 }
 
 // listAllUsers retrieves users without OU filtering.
 func (us *userService) listAllUsers(
-	ctx context.Context, limit, offset int, filters map[string]interface{}, logger *log.Logger,
+	ctx context.Context, limit, offset int, filters map[string]interface{},
+	includeDisplay bool, logger *log.Logger,
 ) (*UserListResponse, *serviceerror.ServiceError) {
 	totalCount, err := us.userStore.GetUserListCount(ctx, filters)
 	if err != nil {
@@ -144,15 +144,22 @@ func (us *userService) listAllUsers(
 		return nil, logErrorAndReturnServerError(logger, "Failed to get user list", err)
 	}
 
-	return buildUserListResponse(users, totalCount, limit, offset), nil
+	if includeDisplay {
+		us.populateUserDisplayNames(ctx, users, logger)
+	}
+
+	return buildUserListResponse(users, totalCount, limit, offset, utils.DisplayQueryParam(includeDisplay)), nil
 }
 
 // listUsersByOUIDs retrieves users scoped to the given organization unit IDs.
 func (us *userService) listUsersByOUIDs(
-	ctx context.Context, ouIDs []string, limit, offset int, filters map[string]interface{}, logger *log.Logger,
+	ctx context.Context, ouIDs []string, limit, offset int, filters map[string]interface{},
+	includeDisplay bool, logger *log.Logger,
 ) (*UserListResponse, *serviceerror.ServiceError) {
+	displayQuery := utils.DisplayQueryParam(includeDisplay)
+
 	if len(ouIDs) == 0 {
-		return buildUserListResponse([]User{}, 0, limit, offset), nil
+		return buildUserListResponse([]User{}, 0, limit, offset, displayQuery), nil
 	}
 
 	totalCount, err := us.userStore.GetUserListCountByOUIDs(ctx, ouIDs, filters)
@@ -165,23 +172,28 @@ func (us *userService) listUsersByOUIDs(
 		return nil, logErrorAndReturnServerError(logger, "Failed to get user list", err)
 	}
 
-	return buildUserListResponse(users, totalCount, limit, offset), nil
+	if includeDisplay {
+		us.populateUserDisplayNames(ctx, users, logger)
+	}
+
+	return buildUserListResponse(users, totalCount, limit, offset, displayQuery), nil
 }
 
 // buildUserListResponse constructs a paginated UserListResponse.
-func buildUserListResponse(users []User, totalCount, limit, offset int) *UserListResponse {
+func buildUserListResponse(users []User, totalCount, limit, offset int, displayQuery string) *UserListResponse {
 	return &UserListResponse{
 		TotalResults: totalCount,
 		StartIndex:   offset + 1,
 		Count:        len(users),
 		Users:        users,
-		Links:        buildPaginationLinks("/users", limit, offset, totalCount),
+		Links:        utils.BuildPaginationLinks("/users", limit, offset, totalCount, displayQuery),
 	}
 }
 
 // GetUsersByPath retrieves a list of users by hierarchical handle path.
 func (us *userService) GetUsersByPath(
 	ctx context.Context, handlePath string, limit, offset int, filters map[string]interface{},
+	includeDisplay bool,
 ) (*UserListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Getting users by path", log.String("path", handlePath))
@@ -231,11 +243,55 @@ func (us *userService) GetUsersByPath(
 			log.Int("offset", offset),
 		)
 	}
+	if ouResponse == nil {
+		return &UserListResponse{}, nil
+	}
 
-	users := make([]User, len(ouResponse.Users))
-	for i, ouUser := range ouResponse.Users {
-		users[i] = User{
-			ID: ouUser.ID,
+	var users []User
+	if includeDisplay && len(ouResponse.Users) > 0 {
+		// Batch-fetch full user data to resolve display names.
+		userIDs := make([]string, len(ouResponse.Users))
+		for i, ouUser := range ouResponse.Users {
+			userIDs[i] = ouUser.ID
+		}
+		fetchedUsers, err := us.userStore.GetUsersByIDs(ctx, userIDs)
+		if err != nil {
+			logger.Warn("Failed to batch fetch users for display names, skipping display resolution", log.Error(err))
+			// Fall back to bare IDs without display — partial display is worse than none.
+			users = make([]User, len(ouResponse.Users))
+			for i, ouUser := range ouResponse.Users {
+				users[i] = User{ID: ouUser.ID}
+			}
+		} else {
+			// Build an ID-keyed map for display resolution, but only expose ID + Display.
+			userMap := make(map[string]User, len(fetchedUsers))
+			for _, u := range fetchedUsers {
+				userMap[u.ID] = u
+			}
+
+			// Resolve display attribute paths for the fetched user types.
+			userTypes := make([]string, 0, len(fetchedUsers))
+			for _, u := range fetchedUsers {
+				userTypes = append(userTypes, u.Type)
+			}
+			displayAttrPaths := ResolveDisplayAttributePaths(ctx, userTypes, us.userSchemaService, logger)
+
+			users = make([]User, len(ouResponse.Users))
+			for i, ouUser := range ouResponse.Users {
+				if u, ok := userMap[ouUser.ID]; ok {
+					users[i] = User{
+						ID:      u.ID,
+						Display: ResolveUserDisplay(u.ID, u.Type, u.Attributes, displayAttrPaths),
+					}
+				} else {
+					users[i] = User{ID: ouUser.ID}
+				}
+			}
+		}
+	} else {
+		users = make([]User, len(ouResponse.Users))
+		for i, ouUser := range ouResponse.Users {
+			users[i] = User{ID: ouUser.ID}
 		}
 	}
 
@@ -244,7 +300,8 @@ func (us *userService) GetUsersByPath(
 		StartIndex:   ouResponse.StartIndex,
 		Count:        ouResponse.Count,
 		Users:        users,
-		Links:        buildTreePaginationLinks(handlePath, limit, offset, ouResponse.TotalResults),
+		Links: buildTreePaginationLinks(
+			handlePath, limit, offset, ouResponse.TotalResults, utils.DisplayQueryParam(includeDisplay)),
 	}
 
 	return response, nil
@@ -488,7 +545,7 @@ func (as *userService) GetUserGroups(ctx context.Context, userID string, limit, 
 	}
 
 	path := fmt.Sprintf("/users/%s/groups", userID)
-	links := buildPaginationLinks(path, limit, offset, totalCount)
+	links := utils.BuildPaginationLinks(path, limit, offset, totalCount, "")
 
 	response := &UserGroupListResponse{
 		TotalResults: totalCount,
@@ -1274,6 +1331,26 @@ func (us *userService) GetUsersByIDs(
 	return result, nil
 }
 
+// populateUserDisplayNames resolves display names for a slice of users in-place.
+// It batch-fetches display attribute paths from the user schema service and extracts the
+// display value from each user's attributes. Falls back to user ID if extraction fails.
+func (us *userService) populateUserDisplayNames(ctx context.Context, users []User, logger *log.Logger) {
+	// Collect user types for display attribute resolution.
+	userTypes := make([]string, 0, len(users))
+	for _, u := range users {
+		userTypes = append(userTypes, u.Type)
+	}
+
+	displayAttrPaths := ResolveDisplayAttributePaths(
+		ctx, userTypes, us.userSchemaService, logger)
+
+	// Resolve display for each user.
+	for i := range users {
+		users[i].Display = ResolveUserDisplay(
+			users[i].ID, users[i].Type, users[i].Attributes, displayAttrPaths)
+	}
+}
+
 // ValidateUserIDsInOUs validates that all provided user IDs belong to one of the given OUs.
 // Returns IDs that are outside the allowed OU scope.
 func (us *userService) ValidateUserIDsInOUs(
@@ -1611,47 +1688,8 @@ func (us *userService) checkUserAccess(
 	return nil
 }
 
-// buildPaginationLinks builds pagination links for the response.
-func buildPaginationLinks(path string, limit, offset, totalResults int) []Link {
-	links := make([]Link, 0)
-
-	if offset > 0 {
-		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=0&limit=%d", path, limit),
-			Rel:  "first",
-		})
-
-		prevOffset := offset - limit
-		if prevOffset < 0 {
-			prevOffset = 0
-		}
-		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=%d&limit=%d", path, prevOffset, limit),
-			Rel:  "prev",
-		})
-	}
-
-	if offset+limit < totalResults {
-		nextOffset := offset + limit
-		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=%d&limit=%d", path, nextOffset, limit),
-			Rel:  "next",
-		})
-	}
-
-	lastPageOffset := ((totalResults - 1) / limit) * limit
-	if offset < lastPageOffset {
-		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=%d&limit=%d", path, lastPageOffset, limit),
-			Rel:  "last",
-		})
-	}
-
-	return links
-}
-
 // buildTreePaginationLinks builds pagination links for user responses.
-func buildTreePaginationLinks(handlePath string, limit, offset, totalResults int) []Link {
-	path := fmt.Sprintf("/users/tree/%s", path.Clean(handlePath))
-	return buildPaginationLinks(path, limit, offset, totalResults)
+func buildTreePaginationLinks(handlePath string, limit, offset, totalResults int, displayQuery string) []utils.Link {
+	treePath := fmt.Sprintf("/users/tree/%s", path.Clean(handlePath))
+	return utils.BuildPaginationLinks(treePath, limit, offset, totalResults, displayQuery)
 }

@@ -211,7 +211,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_RegisterRoutesGroupMembersD
 	registerRoutes(mux, handler)
 
 	serviceMock.
-		On("GetGroupMembers", mock.Anything, "grp-001", serverconst.DefaultPageSize, 0).
+		On("GetGroupMembers", mock.Anything, "grp-001", serverconst.DefaultPageSize, 0, false).
 		Return(&MemberListResponse{}, nil).
 		Once()
 
@@ -1150,7 +1150,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersGetReques
 			pathParamValue: "grp-001",
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroupMembers", mock.Anything, "grp-001", 2, 1).
+					On("GetGroupMembers", mock.Anything, "grp-001", 2, 1, false).
 					Return(&MemberListResponse{
 						TotalResults: 3,
 						StartIndex:   2,
@@ -1174,6 +1174,33 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersGetReques
 			},
 		},
 		{
+			name:           "success with include=display",
+			method:         http.MethodGet,
+			url:            "/groups/grp-001/members?limit=2&offset=0&include=display",
+			pathParamKey:   "id",
+			pathParamValue: "grp-001",
+			setup: func(serviceMock *GroupServiceInterfaceMock) {
+				serviceMock.
+					On("GetGroupMembers", mock.Anything, "grp-001", 2, 0, true).
+					Return(&MemberListResponse{
+						TotalResults: 1,
+						StartIndex:   1,
+						Count:        1,
+						Members: []Member{
+							{ID: "usr-1", Type: MemberTypeUser, Display: "alice@example.com"},
+						},
+					}, nil).
+					Once()
+			},
+			assert: func(rr *httptest.ResponseRecorder) {
+				require.Equal(suite.T(), http.StatusOK, rr.Code)
+				var body MemberListResponse
+				require.NoError(suite.T(), json.Unmarshal(rr.Body.Bytes(), &body))
+				require.Len(suite.T(), body.Members, 1)
+				require.Equal(suite.T(), "alice@example.com", body.Members[0].Display)
+			},
+		},
+		{
 			name:           "invalid limit",
 			method:         http.MethodGet,
 			url:            "/groups/grp-001/members?limit=NaN",
@@ -1184,7 +1211,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersGetReques
 			},
 			assertService: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "GetGroupMembers",
-					mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+					mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 			},
 		},
 		{
@@ -1195,7 +1222,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersGetReques
 			pathParamValue: "grp-001",
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroupMembers", mock.Anything, "grp-001", serverconst.DefaultPageSize, 0).
+					On("GetGroupMembers", mock.Anything, "grp-001", serverconst.DefaultPageSize, 0, false).
 					Return((*MemberListResponse)(nil), &ErrorGroupNotFound).
 					Once()
 			},
@@ -1212,7 +1239,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersGetReques
 			useFlaky:       true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroupMembers", mock.Anything, "grp-001", serverconst.DefaultPageSize, 0).
+					On("GetGroupMembers", mock.Anything, "grp-001", serverconst.DefaultPageSize, 0, false).
 					Return(&MemberListResponse{}, nil).
 					Once()
 			},
@@ -1232,7 +1259,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersGetReques
 			},
 			assertService: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "GetGroupMembers",
-					mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+					mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 			},
 		},
 		{
@@ -1243,7 +1270,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersGetReques
 			pathParamValue: "grp-001",
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroupMembers", mock.Anything, "grp-001", serverconst.DefaultPageSize, 0).
+					On("GetGroupMembers", mock.Anything, "grp-001", serverconst.DefaultPageSize, 0, false).
 					Return((*MemberListResponse)(nil), &ErrorInternalServerError).
 					Once()
 			},
@@ -1261,7 +1288,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersGetReques
 			},
 			assertService: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "GetGroupMembers",
-					mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+					mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 			},
 		},
 	}

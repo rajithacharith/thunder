@@ -38,6 +38,7 @@ paths:
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/offsetQueryParam'
         - $ref: '#/components/parameters/filterParam'
+        - $ref: '#/components/parameters/includeQueryParam'
       responses:
         "200":
           description: List of users
@@ -491,6 +492,7 @@ paths:
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/offsetQueryParam'
         - $ref: '#/components/parameters/filterParam'
+        - $ref: '#/components/parameters/includeQueryParam'
       responses:
         "200":
           description: List of users in the organization unit
@@ -1371,6 +1373,17 @@ components:
         type: integer
         minimum: 0
         default: 0
+    includeQueryParam:
+      in: query
+      name: include
+      required: false
+      schema:
+        type: string
+        enum:
+          - display
+      description: |
+        Optional parameter to include additional information.
+        - `display` - Include display names for users. The display value is resolved from the schema-configured display attribute (`systemAttributes.display`). Falls back to the user ID if no display attribute is configured, the configured attribute path does not exist in the user's data, or the attribute value is empty.
     filterParam:
       in: query
       name: filter
@@ -1411,6 +1424,10 @@ components:
         attributes:
           type: object
           additionalProperties: true
+        display:
+          type: string
+          readOnly: true
+          description: "Display name of the user (only included when include=display query parameter is used). Resolved from the schema-configured display attribute (`systemAttributes.display`). Falls back to the user ID if no display attribute is configured, the configured attribute path does not exist in the user's data, or the attribute value is empty."
 
     Link:
       type: object

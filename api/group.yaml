@@ -358,6 +358,7 @@ paths:
             format: uuid
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/offsetQueryParam'
+        - $ref: '#/components/parameters/includeQueryParam'
       responses:
         "200":
           description: List of members in the group
@@ -794,6 +795,17 @@ components:
       schema:
         type: integer
         default: 0
+    includeQueryParam:
+      in: query
+      name: include
+      required: false
+      schema:
+        type: string
+        enum:
+          - display
+      description: |
+        Optional parameter to include additional information.
+        - `display` - Include display names for members. For users, the display value is resolved from the schema-configured display attribute (`systemAttributes.display`). Falls back to the user ID if no display attribute is configured, the configured attribute path does not exist in the user's data, or the attribute value is empty. For groups, the group name is used.
 
   schemas:
     Member:
@@ -808,6 +820,10 @@ components:
           enum:
             - user
             - group
+        display:
+          type: string
+          readOnly: true
+          description: "Display name of the member (only included when include=display query parameter is used). For users, resolved from the schema-configured display attribute (`systemAttributes.display`); falls back to the user ID if the attribute is not configured, the path does not exist, or the value is empty. For groups, the group name is used."
 
     Group:
       type: object

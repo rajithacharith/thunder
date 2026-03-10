@@ -31,6 +31,7 @@ import (
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
+	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/tests/mocks/sysauthzmock"
 )
 
@@ -148,6 +149,7 @@ func setupDefaultPathSuccess(
 	listReturn interface{},
 	countMethod string,
 	countReturn interface{},
+	extraListArgs ...interface{},
 ) {
 	store.On("GetOrganizationUnitByPath", mock.Anything, []string{"root"}).
 		Return(OrganizationUnit{ID: "ou-1"}, nil).
@@ -155,7 +157,9 @@ func setupDefaultPathSuccess(
 	store.On("IsOrganizationUnitExists", mock.Anything, "ou-1").
 		Return(true, nil).
 		Once()
-	store.On(listMethod, mock.Anything, "ou-1", limit, offset).
+	listArgs := []interface{}{mock.Anything, "ou-1", limit, offset}
+	listArgs = append(listArgs, extraListArgs...)
+	store.On(listMethod, listArgs...).
 		Return(listReturn, nil).
 		Once()
 	store.On(countMethod, mock.Anything, "ou-1").
@@ -172,6 +176,7 @@ func newDefaultPathListConfig[Resp any](
 	countReturn interface{},
 	assert func(Resp),
 	invoker pathListInvoker[Resp],
+	extraListArgs ...interface{},
 ) pathListTestConfig[Resp] {
 	return pathListTestConfig[Resp]{
 		invalidPath:    invalidPath,
@@ -180,7 +185,9 @@ func newDefaultPathListConfig[Resp any](
 		limit:          limit,
 		offset:         offset,
 		setupSuccess: func(store *organizationUnitStoreInterfaceMock) {
-			setupDefaultPathSuccess(store, limit, offset, listMethod, listReturn, countMethod, countReturn)
+			setupDefaultPathSuccess(
+				store, limit, offset, listMethod, listReturn,
+				countMethod, countReturn, extraListArgs...)
 		},
 		assertSuccess: assert,
 		invoke:        invoker,
@@ -1793,22 +1800,25 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 	}
 }
 
-func (suite *OrganizationUnitServiceTestSuite) TestOUService_BuildUserListResponse_InvalidType() {
-	resp, err := buildUserListResponse("invalid", 10, 5, 0)
-	suite.Nil(resp)
-	suite.NotNil(err)
-	suite.Equal(ErrorInternalServerError, *err)
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_BuildUserListResponse() {
+	users := []User{{ID: "u1"}, {ID: "u2"}}
+	resp, err := buildUserListResponse("/organization-units", users, 10, 5, 0)
+	suite.Nil(err)
+	suite.NotNil(resp)
+	suite.Equal(10, resp.TotalResults)
+	suite.Equal(2, resp.Count)
+	suite.Equal(1, resp.StartIndex)
 }
 
 func (suite *OrganizationUnitServiceTestSuite) TestOUService_BuildGroupListResponse_InvalidType() {
-	resp, err := buildGroupListResponse(123, 10, 5, 0)
+	resp, err := buildGroupListResponse("/organization-units", 123, 10, 5, 0)
 	suite.Nil(resp)
 	suite.NotNil(err)
 	suite.Equal(ErrorInternalServerError, *err)
 }
 
 func (suite *OrganizationUnitServiceTestSuite) TestOUService_BuildOrganizationUnitListResponse_InvalidType() {
-	resp, err := buildOrganizationUnitListResponse(struct{}{}, 10, 5, 0)
+	resp, err := buildOrganizationUnitListResponse("/organization-units", struct{}{}, 10, 5, 0)
 	suite.Nil(resp)
 	suite.NotNil(err)
 	suite.Equal(ErrorInternalServerError, *err)
@@ -1869,7 +1879,7 @@ func TestOUService_ValidatePaginationParams(t *testing.T) {
 }
 
 func TestOUService_BuildPaginationLinks(t *testing.T) {
-	links := buildPaginationLinks(5, 5, 20)
+	links := utils.BuildPaginationLinks("/organization-units", 5, 5, 20, "")
 	require.Len(t, links, 4)
 	require.Equal(t, "first", links[0].Rel)
 	require.Equal(t, "/organization-units?offset=0&limit=5", links[0].Href)

@@ -38,6 +38,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
+	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/userschema"
 	"github.com/asgardeo/thunder/tests/mocks/crypto/hashmock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
@@ -711,7 +712,7 @@ func TestUserService_GetUsersByPath_HandlesOUServiceErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			service := tc.setup(t)
 
-			resp, err := service.GetUsersByPath(context.Background(), "root", 10, 0, nil)
+			resp, err := service.GetUsersByPath(context.Background(), "root", 10, 0, nil, false)
 			require.Nil(t, resp)
 			require.NotNil(t, err)
 			require.Equal(t, *tc.expectedErr, *err)
@@ -2598,7 +2599,7 @@ func TestUserService_GetUserList(t *testing.T) {
 		authzService: newAllowAllAuthz(t),
 	}
 
-	resp, err := service.GetUserList(context.Background(), limit, offset, filters)
+	resp, err := service.GetUserList(context.Background(), limit, offset, filters, false)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 5, resp.TotalResults)
@@ -2627,7 +2628,7 @@ func TestUserService_GetUserList_ScopedByOUIDs(t *testing.T) {
 		authzService: authzMock,
 	}
 
-	resp, err := service.GetUserList(context.Background(), limit, offset, filters)
+	resp, err := service.GetUserList(context.Background(), limit, offset, filters, false)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 3, resp.TotalResults)
@@ -2648,7 +2649,7 @@ func TestUserService_GetUserList_EmptyOUIDs(t *testing.T) {
 		authzService: authzMock,
 	}
 
-	resp, err := service.GetUserList(context.Background(), limit, offset, filters)
+	resp, err := service.GetUserList(context.Background(), limit, offset, filters, false)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 0, resp.TotalResults)
@@ -2990,7 +2991,7 @@ func TestUserService_AuthenticateUser_ErrorCases(t *testing.T) {
 }
 
 func TestBuildPaginationLinks(t *testing.T) {
-	links := buildPaginationLinks("/users", 10, 20, 55)
+	links := utils.BuildPaginationLinks("/users", 10, 20, 55, "")
 	// totalResults 55, limit 10
 	// 0-9, 10-19, 20-29, 30-39, 40-49, 50-54
 	// offset 20 (3rd page)
@@ -3101,10 +3102,74 @@ func TestUserService_GetUsersByPath(t *testing.T) {
 		Users:        []oupkg.User{{ID: "u1"}},
 	}, nil).Once()
 
-	resp, err := service.GetUsersByPath(ctx, "root", 10, 0, nil)
+	resp, err := service.GetUsersByPath(ctx, "root", 10, 0, nil, false)
 	require.Nil(t, err)
 	require.Equal(t, 20, resp.TotalResults)
 	require.NotEmpty(t, resp.Links)
+}
+
+func TestUserService_GetUsersByPath_WithIncludeDisplay(t *testing.T) {
+	mockOU := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	mockStore := newUserStoreInterfaceMock(t)
+	mockSchema := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	service := &userService{
+		ouService:         mockOU,
+		authzService:      newAllowAllAuthz(t),
+		userStore:         mockStore,
+		userSchemaService: mockSchema,
+	}
+	ctx := context.Background()
+
+	mockOU.On("GetOrganizationUnitByPath", mock.Anything, "root").
+		Return(oupkg.OrganizationUnit{ID: "ou-1"}, nil).Once()
+	mockOU.On("GetOrganizationUnitUsers", mock.Anything, "ou-1", 10, 0).
+		Return(&oupkg.UserListResponse{
+			TotalResults: 2,
+			Users:        []oupkg.User{{ID: "u1"}},
+		}, nil).Once()
+	mockStore.On("GetUsersByIDs", mock.Anything, []string{"u1"}).
+		Return([]User{{
+			ID:         "u1",
+			Type:       "employee",
+			Attributes: json.RawMessage(`{"email":"alice@example.com"}`),
+		}}, nil).Once()
+	mockSchema.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
+		Return(map[string]string{"employee": "email"}, nil).Once()
+
+	resp, err := service.GetUsersByPath(ctx, "root", 10, 0, nil, true)
+	require.Nil(t, err)
+	require.Equal(t, 2, resp.TotalResults)
+	require.Equal(t, "alice@example.com", resp.Users[0].Display)
+}
+
+func TestUserService_GetUsersByPath_WithIncludeDisplay_BatchFetchError(t *testing.T) {
+	mockOU := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	mockStore := newUserStoreInterfaceMock(t)
+	service := &userService{
+		ouService:    mockOU,
+		authzService: newAllowAllAuthz(t),
+		userStore:    mockStore,
+	}
+	ctx := context.Background()
+
+	mockOU.On("GetOrganizationUnitByPath", mock.Anything, "root").
+		Return(oupkg.OrganizationUnit{ID: "ou-1"}, nil).Once()
+	mockOU.On("GetOrganizationUnitUsers", mock.Anything, "ou-1", 10, 0).
+		Return(&oupkg.UserListResponse{
+			TotalResults: 1,
+			StartIndex:   1,
+			Count:        1,
+			Users:        []oupkg.User{{ID: "u1"}},
+		}, nil).Once()
+	mockStore.On("GetUsersByIDs", mock.Anything, []string{"u1"}).
+		Return([]User(nil), errors.New("db connection lost")).Once()
+
+	resp, svcErr := service.GetUsersByPath(ctx, "root", 10, 0, nil, true)
+	require.Nil(t, svcErr)
+	require.Equal(t, 1, resp.TotalResults)
+	// Falls back to bare ID when batch fetch fails
+	require.Equal(t, "u1", resp.Users[0].ID)
+	require.Empty(t, resp.Users[0].Display)
 }
 
 func TestProvider(t *testing.T) {
@@ -3932,7 +3997,7 @@ func TestUserService_GetUserList_ErrorCases(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			svc := tc.setup(t)
-			resp, err := svc.GetUserList(context.Background(), limit, offset, filters)
+			resp, err := svc.GetUserList(context.Background(), limit, offset, filters, false)
 			require.Nil(t, resp)
 			require.NotNil(t, err)
 			require.Equal(t, tc.wantErrCode, err.Code)
@@ -3994,7 +4059,7 @@ func TestUserService_GetUsersByPath_AuthzChecks(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			svc := tc.setup(t)
-			resp, err := svc.GetUsersByPath(context.Background(), "root", 10, 0, nil)
+			resp, err := svc.GetUsersByPath(context.Background(), "root", 10, 0, nil, false)
 			require.Nil(t, resp)
 			require.NotNil(t, err)
 			require.Equal(t, tc.wantErrCode, err.Code)
@@ -4891,4 +4956,136 @@ func TestDeleteUser_DeclarativeCheckError(t *testing.T) {
 	err := service.DeleteUser(context.Background(), userID)
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInternalServerError.Code, err.Code)
+}
+
+// populateUserDisplayNames Tests
+
+func TestPopulateUserDisplayNames_Success(t *testing.T) {
+	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
+		Return(map[string]string{"employee": "name"}, (*serviceerror.ServiceError)(nil)).Once()
+
+	service := &userService{userSchemaService: schemaMock}
+	users := []User{
+		{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"name":"Alice"}`)},
+		{ID: "user-2", Type: "employee", Attributes: json.RawMessage(`{"name":"Bob"}`)},
+	}
+
+	service.populateUserDisplayNames(context.Background(), users, nil)
+	require.Equal(t, "Alice", users[0].Display)
+	require.Equal(t, "Bob", users[1].Display)
+}
+
+func TestPopulateUserDisplayNames_FallbackToID(t *testing.T) {
+	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
+		Return(map[string]string{"employee": "missing"}, (*serviceerror.ServiceError)(nil)).Once()
+
+	service := &userService{userSchemaService: schemaMock}
+
+	users := []User{
+		{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"name":"Alice"}`)},
+	}
+
+	service.populateUserDisplayNames(context.Background(), users, nil)
+	require.Equal(t, "user-1", users[0].Display)
+}
+
+func TestPopulateUserDisplayNames_EmptyUsers(t *testing.T) {
+	service := &userService{}
+
+	var users []User
+	service.populateUserDisplayNames(context.Background(), users, nil)
+	// Should not panic.
+}
+
+func TestPopulateUserDisplayNames_NilSchemaService(t *testing.T) {
+	service := &userService{userSchemaService: nil}
+
+	users := []User{
+		{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"name":"Alice"}`)},
+	}
+
+	service.populateUserDisplayNames(context.Background(), users, nil)
+	// Display should fall back to user ID when schema service is nil.
+	require.Equal(t, "user-1", users[0].Display)
+}
+
+func TestPopulateUserDisplayNames_SchemaServiceError(t *testing.T) {
+	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
+		Return(map[string]string(nil), &serviceerror.ServiceError{Code: "ERR", Error: "err"}).Once()
+
+	service := &userService{userSchemaService: schemaMock}
+
+	users := []User{
+		{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"name":"Alice"}`)},
+	}
+
+	service.populateUserDisplayNames(context.Background(), users, nil)
+	// Display should fall back to user ID on schema service error.
+	require.Equal(t, "user-1", users[0].Display)
+}
+
+func TestPopulateUserDisplayNames_MultipleTypes(t *testing.T) {
+	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything,
+		mock.MatchedBy(func(names []string) bool {
+			if len(names) != 2 {
+				return false
+			}
+			set := map[string]bool{}
+			for _, n := range names {
+				set[n] = true
+			}
+			return set["employee"] && set["customer"]
+		})).
+		Return(map[string]string{
+			"employee": "name",
+			"customer": "email",
+		}, (*serviceerror.ServiceError)(nil)).Once()
+
+	service := &userService{userSchemaService: schemaMock}
+
+	users := []User{
+		{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"name":"Alice"}`)},
+		{ID: "user-2", Type: "customer", Attributes: json.RawMessage(`{"email":"bob@example.com"}`)},
+	}
+
+	service.populateUserDisplayNames(context.Background(), users, nil)
+	require.Equal(t, "Alice", users[0].Display)
+	require.Equal(t, "bob@example.com", users[1].Display)
+}
+
+// GetUserList with includeDisplay Tests
+
+func TestUserService_GetUserList_WithIncludeDisplay(t *testing.T) {
+	limit := 10
+	offset := 0
+	filters := map[string]interface{}{}
+
+	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("GetUserListCount", mock.Anything, filters).Return(2, nil).Once()
+	storeMock.On("GetUserList", mock.Anything, limit, offset, filters).
+		Return([]User{
+			{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"name":"Alice"}`)},
+			{ID: "user-2", Type: "employee", Attributes: json.RawMessage(`{"name":"Bob"}`)},
+		}, nil).Once()
+
+	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
+		Return(map[string]string{"employee": "name"}, (*serviceerror.ServiceError)(nil)).Once()
+
+	service := &userService{
+		userStore:         storeMock,
+		userSchemaService: schemaMock,
+		authzService:      newAllowAllAuthz(t),
+	}
+
+	resp, err := service.GetUserList(context.Background(), limit, offset, filters, true)
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	require.Len(t, resp.Users, 2)
+	require.Equal(t, "Alice", resp.Users[0].Display)
+	require.Equal(t, "Bob", resp.Users[1].Display)
 }

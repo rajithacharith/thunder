@@ -18,6 +18,8 @@
 
 package role
 
+import "github.com/asgardeo/thunder/internal/system/utils"
+
 // AssigneeType represents the type of assignee entity.
 type AssigneeType string
 
@@ -90,19 +92,13 @@ type AssignmentsRequest struct {
 	Assignments []AssignmentRequest `json:"assignments"`
 }
 
-// LinkResponse represents a pagination link.
-type LinkResponse struct {
-	Href string `json:"href"`
-	Rel  string `json:"rel"`
-}
-
 // RoleListResponse represents the response for listing roles with pagination.
 type RoleListResponse struct {
 	TotalResults int                   `json:"totalResults"`
 	StartIndex   int                   `json:"startIndex"`
 	Count        int                   `json:"count"`
 	Roles        []RoleSummaryResponse `json:"roles"`
-	Links        []LinkResponse        `json:"links"`
+	Links        []utils.Link          `json:"links"`
 }
 
 // AssignmentListResponse represents the response for listing role assignments with pagination.
@@ -111,7 +107,7 @@ type AssignmentListResponse struct {
 	StartIndex   int                  `json:"startIndex"`
 	Count        int                  `json:"count"`
 	Assignments  []AssignmentResponse `json:"assignments"`
-	Links        []LinkResponse       `json:"links"`
+	Links        []utils.Link         `json:"links"`
 }
 
 // Internal service layer structs - used for business logic processing
@@ -179,19 +175,13 @@ type RoleUpdateDetail struct {
 	Permissions        []ResourcePermissions
 }
 
-// Link represents a pagination link.
-type Link struct {
-	Href string
-	Rel  string
-}
-
 // RoleList represents the result of listing roles.
 type RoleList struct {
 	TotalResults int
 	StartIndex   int
 	Count        int
 	Roles        []Role
-	Links        []Link
+	Links        []utils.Link
 }
 
 // AssignmentList represents the result of listing role assignments.
@@ -200,5 +190,5 @@ type AssignmentList struct {
 	StartIndex   int
 	Count        int
 	Assignments  []RoleAssignmentWithDisplay
-	Links        []Link
+	Links        []utils.Link
 }

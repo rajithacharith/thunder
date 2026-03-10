@@ -27,6 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 // Initialize initializes the group service and registers its routes.
@@ -34,6 +35,7 @@ func Initialize(
 	mux *http.ServeMux,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	userService user.UserServiceInterface,
+	userSchemaService userschema.UserSchemaServiceInterface,
 	authzService sysauthz.SystemAuthorizationServiceInterface,
 ) (GroupServiceInterface, error) {
 	// Get transactioner from DB provider
@@ -42,7 +44,7 @@ func Initialize(
 		return nil, err
 	}
 
-	groupService := newGroupService(ouService, userService, authzService, transactioner)
+	groupService := newGroupService(ouService, userService, userSchemaService, authzService, transactioner)
 	groupHandler := newGroupHandler(groupService)
 	registerRoutes(mux, groupHandler)
 	return groupService, nil

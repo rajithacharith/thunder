@@ -564,9 +564,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				var resp apierror.ErrorResponse
-				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorInternalServerError.Code, resp.Code)
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
 			},
 		},
 		{
@@ -974,9 +974,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUDeleteReque
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				var resp apierror.ErrorResponse
-				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorInternalServerError.Code, resp.Code)
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
 			},
 		},
 		{
@@ -1084,9 +1084,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUChildrenLis
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				var resp apierror.ErrorResponse
-				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorInternalServerError.Code, resp.Code)
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
 			},
 		},
 		{
@@ -1319,9 +1319,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutByPathRe
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				var resp apierror.ErrorResponse
-				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorInternalServerError.Code, resp.Code)
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
 			},
 		},
 		{
@@ -1405,9 +1405,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUDeleteByPat
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				var resp apierror.ErrorResponse
-				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorInternalServerError.Code, resp.Code)
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
 			},
 		},
 		{
@@ -1509,7 +1509,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListBy
 			useFlaky:       true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitUsersByPath", mock.Anything, defaultOUPath, serverconst.DefaultPageSize, 0).
+					On("GetOrganizationUnitUsersByPath",
+						mock.Anything, defaultOUPath,
+						serverconst.DefaultPageSize, 0).
 					Return(&UserListResponse{}, nil).
 					Once()
 			},
@@ -1644,15 +1646,17 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListRe
 			pathParamValue: defaultOURequestID,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitUsers", mock.Anything, defaultOURequestID, serverconst.DefaultPageSize, 0).
+					On("GetOrganizationUnitUsers",
+						mock.Anything, defaultOURequestID,
+						serverconst.DefaultPageSize, 0).
 					Return((*UserListResponse)(nil), &ErrorInternalServerError).
 					Once()
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				var resp apierror.ErrorResponse
-				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorInternalServerError.Code, resp.Code)
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
 			},
 		},
 		{
@@ -1663,7 +1667,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListRe
 			useFlaky:       true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitUsers", mock.Anything, defaultOURequestID, serverconst.DefaultPageSize, 0).
+					On("GetOrganizationUnitUsers",
+						mock.Anything, defaultOURequestID,
+						serverconst.DefaultPageSize, 0).
 					Return(&UserListResponse{}, nil).
 					Once()
 			},

@@ -72,7 +72,7 @@ func (rh *roleHandler) HandleRoleListRequest(w http.ResponseWriter, r *http.Requ
 		StartIndex:   roleList.StartIndex,
 		Count:        roleList.Count,
 		Roles:        roles,
-		Links:        toHTTPLinks(roleList.Links),
+		Links:        roleList.Links,
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, roleListResponse)
@@ -212,7 +212,7 @@ func (rh *roleHandler) HandleRoleAssignmentsGetRequest(w http.ResponseWriter, r 
 		StartIndex:   serviceResponse.StartIndex,
 		Count:        serviceResponse.Count,
 		Assignments:  httpAssignments,
-		Links:        toHTTPLinks(serviceResponse.Links),
+		Links:        serviceResponse.Links,
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, assignmentListResponse)
@@ -458,15 +458,6 @@ func (rh *roleHandler) toHTTPCreateRoleResponse(role *RoleWithPermissionsAndAssi
 		Permissions:        role.Permissions,
 		Assignments:        httpAssignments,
 	}
-}
-
-// toHTTPLinks converts service layer Links to HTTP LinkResponse.
-func toHTTPLinks(links []Link) []LinkResponse {
-	httpLinks := make([]LinkResponse, len(links))
-	for i, link := range links {
-		httpLinks[i] = LinkResponse(link)
-	}
-	return httpLinks
 }
 
 // toRoleAssignments converts HTTP AssignmentsRequest to service layer RoleAssignments.

@@ -32,6 +32,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/tests/mocks/groupmock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
@@ -1326,7 +1327,7 @@ func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_FetchError
 
 			result, err := suite.service.GetRoleAssignments(context.Background(), "role1", 10, 0, true)
 
-			// Should succeed with fallback to assignment ID on error
+			// Should succeed with display falling back to ID on fetch error
 			suite.Nil(err)
 			suite.NotNil(result)
 			suite.Equal(1, result.TotalResults)
@@ -1425,96 +1426,6 @@ func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_SchemaServ
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(testUserID1, result.Assignments[0].Display)
-}
-
-// extractDisplayValue Tests
-
-func (suite *RoleServiceTestSuite) TestExtractDisplayValue_TopLevel() {
-	attrs := json.RawMessage(`{"email":"alice@example.com"}`)
-	suite.Equal("alice@example.com", extractDisplayValue(attrs, "email"))
-}
-
-func (suite *RoleServiceTestSuite) TestExtractDisplayValue_Nested() {
-	attrs := json.RawMessage(`{"profile":{"fullName":"Alice Smith"}}`)
-	suite.Equal("Alice Smith", extractDisplayValue(attrs, "profile.fullName"))
-}
-
-func (suite *RoleServiceTestSuite) TestExtractDisplayValue_NonExistentPath() {
-	attrs := json.RawMessage(`{"email":"alice@example.com"}`)
-	suite.Equal("", extractDisplayValue(attrs, "missing.field"))
-}
-
-func (suite *RoleServiceTestSuite) TestExtractDisplayValue_EmptyAttributes() {
-	suite.Equal("", extractDisplayValue(json.RawMessage(`{}`), "email"))
-}
-
-func (suite *RoleServiceTestSuite) TestExtractDisplayValue_NilAttributes() {
-	suite.Equal("", extractDisplayValue(nil, "email"))
-}
-
-func (suite *RoleServiceTestSuite) TestExtractDisplayValue_InvalidJSON() {
-	suite.Equal("", extractDisplayValue(json.RawMessage(`invalid`), "email"))
-}
-
-func (suite *RoleServiceTestSuite) TestExtractDisplayValue_EmptyPath() {
-	attrs := json.RawMessage(`{"email":"alice@example.com"}`)
-	suite.Equal("", extractDisplayValue(attrs, ""))
-}
-
-func (suite *RoleServiceTestSuite) TestExtractDisplayValue_NumericValue() {
-	attrs := json.RawMessage(`{"age":30}`)
-	suite.Equal("30", extractDisplayValue(attrs, "age"))
-}
-
-func (suite *RoleServiceTestSuite) TestExtractDisplayValue_BooleanValue() {
-	attrs := json.RawMessage(`{"active":true}`)
-	suite.Equal("", extractDisplayValue(attrs, "active"))
-}
-
-// resolveUserDisplay Tests
-
-func (suite *RoleServiceTestSuite) TestResolveUserDisplay_WithDisplayAttr() {
-	u := &user.User{
-		ID:         "user-1",
-		Type:       "employee",
-		Attributes: json.RawMessage(`{"email":"alice@example.com"}`),
-	}
-	paths := map[string]string{"employee": "email"}
-	suite.Equal("alice@example.com", resolveUserDisplay(u, paths))
-}
-
-func (suite *RoleServiceTestSuite) TestResolveUserDisplay_FallbackToID_NilPaths() {
-	u := &user.User{ID: "user-1", Type: "employee"}
-	suite.Equal("user-1", resolveUserDisplay(u, nil))
-}
-
-func (suite *RoleServiceTestSuite) TestResolveUserDisplay_FallbackToID_EmptyType() {
-	u := &user.User{
-		ID:         "user-1",
-		Attributes: json.RawMessage(`{"email":"alice@example.com"}`),
-	}
-	paths := map[string]string{"employee": "email"}
-	suite.Equal("user-1", resolveUserDisplay(u, paths))
-}
-
-func (suite *RoleServiceTestSuite) TestResolveUserDisplay_FallbackToID_EmptyDisplayPath() {
-	u := &user.User{
-		ID:         "user-1",
-		Type:       "employee",
-		Attributes: json.RawMessage(`{"email":"alice@example.com"}`),
-	}
-	paths := map[string]string{"employee": ""}
-	suite.Equal("user-1", resolveUserDisplay(u, paths))
-}
-
-func (suite *RoleServiceTestSuite) TestResolveUserDisplay_FallbackToID_MissingAttribute() {
-	u := &user.User{
-		ID:         "user-1",
-		Type:       "employee",
-		Attributes: json.RawMessage(`{"name":"Alice"}`),
-	}
-	paths := map[string]string{"employee": "email"}
-	suite.Equal("user-1", resolveUserDisplay(u, paths))
 }
 
 // AddAssignments Tests
@@ -1878,7 +1789,7 @@ func (suite *RoleServiceTestSuite) TestBuildPaginationLinks() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			links := buildPaginationLinks(tc.base, tc.limit, tc.offset, tc.totalCount)
+			links := utils.BuildPaginationLinks(tc.base, tc.limit, tc.offset, tc.totalCount, "")
 
 			hasFirst := false
 			hasPrev := false
