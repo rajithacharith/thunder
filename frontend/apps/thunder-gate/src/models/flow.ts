@@ -127,4 +127,6 @@ export interface FlowComponentRendererProps {
   onValidate?: (components: EmbeddedFlowComponent[]) => boolean;
   /** Optional max size (px) to cap image dimensions, e.g. when rendered inside a Stack */
   maxImageSize?: number;
+  /** Additional step data from the flow response */
+  additionalData?: Record<string, unknown>;
 }

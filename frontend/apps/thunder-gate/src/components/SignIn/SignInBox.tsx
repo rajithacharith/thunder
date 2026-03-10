@@ -114,7 +114,7 @@ export default function SignInBox(): JSX.Element {
       />
       <StyledPaper variant="outlined">
         <SignIn>
-          {({onSubmit, isLoading, components, error, isInitialized, meta: flowMeta}) =>
+          {({onSubmit, isLoading, components, error, isInitialized, meta: flowMeta, additionalData}) =>
             (isLoading ?? !isInitialized) ? (
               <Box sx={{display: 'flex', justifyContent: 'center', p: 3}}>
                 <CircularProgress />
@@ -140,6 +140,7 @@ export default function SignInBox(): JSX.Element {
                             values={formInputs}
                             fieldErrors={fieldErrors}
                             isLoading={isLoading}
+                            additionalData={additionalData}
                             resolve={(template) =>
                               resolveAll(template, {
                                 [TemplateLiteralType.TRANSLATION]: t,

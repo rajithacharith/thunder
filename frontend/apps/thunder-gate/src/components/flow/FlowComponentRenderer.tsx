@@ -17,7 +17,7 @@
  */
 
 import type {JSX} from 'react';
-import {EmbeddedFlowComponentType, EmbeddedFlowEventType} from '@asgardeo/react';
+import {EmbeddedFlowComponentType, EmbeddedFlowEventType, type ConsentPurpose} from '@asgardeo/react';
 import TextAdapter from './adapters/TextAdapter';
 import RichTextAdapter from './adapters/RichTextAdapter';
 import ImageAdapter from './adapters/ImageAdapter';
@@ -26,6 +26,8 @@ import IconAdapter from './adapters/IconAdapter';
 import StackAdapter from './adapters/StackAdapter';
 import BlockAdapter from './adapters/BlockAdapter';
 import StandaloneTriggerAdapter from './adapters/StandaloneTriggerAdapter';
+import ConsentAdapter from './adapters/ConsentAdapter';
+import TimerAdapter from './adapters/TimerAdapter';
 import type {FlowComponent, FlowComponentRendererProps} from '../../models/flow';
 
 /**
@@ -73,6 +75,7 @@ export default function FlowComponentRenderer({
   onSubmit,
   onValidate,
   maxImageSize,
+  additionalData,
 }: FlowComponentRendererProps): JSX.Element | null {
   const comp = component as FlowComponent;
 
@@ -114,7 +117,44 @@ export default function FlowComponentRenderer({
   }
 
   // BLOCK (form block or trigger block)
+  // When additionalData contains consent/timer data, inject those adapters alongside the block.
   if ((comp.type as EmbeddedFlowComponentType) === EmbeddedFlowComponentType.Block || comp.type === 'BLOCK') {
+    const hasConsent = additionalData?.consentPrompt != null;
+    const hasTimer = additionalData?.stepTimeout != null;
+
+    if (hasConsent || hasTimer) {
+      const stepTimeout = additionalData?.stepTimeout;
+      const expiresIn = stepTimeout != null ? Math.max(0, Math.floor((Number(stepTimeout) - Date.now()) / 1000)) : 0;
+      const isExpiredOnMount = hasTimer && expiresIn <= 0;
+
+      return (
+        <>
+          {hasTimer && <TimerAdapter expiresIn={expiresIn} />}
+          {hasConsent && (
+            <ConsentAdapter
+              consentData={
+                additionalData?.consentPrompt as string | ConsentPurpose[] | {purposes: ConsentPurpose[]} | undefined
+              }
+              formValues={values}
+              onInputChange={onInputChange}
+            />
+          )}
+          <BlockAdapter
+            component={component}
+            index={index}
+            values={values}
+            touched={touched}
+            fieldErrors={fieldErrors}
+            isLoading={isLoading || isExpiredOnMount}
+            resolve={resolve}
+            onInputChange={onInputChange}
+            onSubmit={onSubmit}
+            onValidate={onValidate}
+          />
+        </>
+      );
+    }
+
     return (
       <BlockAdapter
         component={component}

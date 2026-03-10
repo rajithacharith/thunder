@@ -38,23 +38,35 @@ interface BlockContext {
   onValidate?: (components: EmbeddedFlowComponent[]) => boolean;
   passwordAutoComplete?: 'current-password' | 'new-password';
   blockComponents?: EmbeddedFlowComponent[];
+  /** When true, non-primary submit buttons use onClick instead of form submit */
+  hasMultipleSubmits?: boolean;
+  /** ID of the primary submit action that stays as type="submit" */
+  primarySubmitId?: string;
 }
 
 interface SubmitButtonAdapterProps {
   component: FlowComponent;
   isLoading: boolean;
   resolve: (template: string | undefined) => string | undefined;
+  /** When provided, the button fires its own action via onClick instead of form submit */
+  onClick?: () => void;
 }
 
-function SubmitButtonAdapter({component, isLoading, resolve}: SubmitButtonAdapterProps): JSX.Element {
+function SubmitButtonAdapter({
+  component,
+  isLoading,
+  resolve,
+  onClick = undefined,
+}: SubmitButtonAdapterProps): JSX.Element {
   const {t} = useTranslation();
 
   return (
     <Button
-      type="submit"
+      type={onClick ? 'button' : 'submit'}
       fullWidth
       variant={component.variant === 'PRIMARY' ? 'contained' : 'outlined'}
       disabled={isLoading}
+      onClick={onClick}
       sx={{mt: 2}}
     >
       {t(resolve(component.label)!)}
@@ -174,7 +186,20 @@ function renderFormSubComponent(
     sub.eventType === EmbeddedFlowEventType.Submit
   ) {
     return (
-      <SubmitButtonAdapter key={sub.id ?? compIndex} component={sub} isLoading={ctx.isLoading} resolve={ctx.resolve} />
+      <SubmitButtonAdapter
+        key={sub.id ?? compIndex}
+        component={sub}
+        isLoading={ctx.isLoading}
+        resolve={ctx.resolve}
+        onClick={
+          ctx.hasMultipleSubmits && sub.id !== ctx.primarySubmitId
+            ? () => {
+                if (ctx.onValidate && ctx.blockComponents && !ctx.onValidate(ctx.blockComponents)) return;
+                ctx.onSubmit(sub, ctx.values);
+              }
+            : undefined
+        }
+      />
     );
   }
 
@@ -213,16 +238,21 @@ interface FormBlockAdapterProps extends BlockContext {
 function FormBlockAdapter({component, index, ...ctx}: FormBlockAdapterProps): JSX.Element {
   const blockComponents: EmbeddedFlowComponent[] = component.components ?? [];
 
-  const submitAction = blockComponents.find(
+  const submitActions = blockComponents.filter(
     (c) =>
       (c.type as EmbeddedFlowComponentType) === EmbeddedFlowComponentType.Action &&
       c.eventType === EmbeddedFlowEventType.Submit,
   );
+  const hasMultipleSubmits = submitActions.length > 1;
+
+  // The primary (or first) submit action is the default form submit target,
+  // ensuring Enter-key submission works even when there are multiple actions.
+  const primarySubmit = submitActions.find((c) => (c as FlowComponent).variant === 'PRIMARY') ?? submitActions[0];
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (ctx.onValidate && !ctx.onValidate(blockComponents)) return;
-    if (submitAction) ctx.onSubmit(submitAction, ctx.values);
+    if (primarySubmit) ctx.onSubmit(primarySubmit, ctx.values);
   };
 
   return (
@@ -234,7 +264,12 @@ function FormBlockAdapter({component, index, ...ctx}: FormBlockAdapterProps): JS
       sx={{display: 'flex', flexDirection: 'column', width: '100%', gap: 2}}
     >
       {blockComponents.map((subComponent, compIndex) =>
-        renderFormSubComponent(subComponent, compIndex, {...ctx, blockComponents}),
+        renderFormSubComponent(subComponent, compIndex, {
+          ...ctx,
+          blockComponents,
+          hasMultipleSubmits,
+          primarySubmitId: primarySubmit?.id,
+        }),
       )}
     </Box>
   );
@@ -300,7 +335,25 @@ export default function BlockAdapter({
       c.eventType === EmbeddedFlowEventType.Trigger,
   );
 
-  if (hasSubmit) return <FormBlockAdapter component={component} index={index} blockComponents={outerBlockComponents} onValidate={onValidate} {...ctx} />;
-  if (hasTrigger) return <TriggerBlockAdapter component={component} index={index} blockComponents={outerBlockComponents} onValidate={onValidate} {...ctx} />;
+  if (hasSubmit)
+    return (
+      <FormBlockAdapter
+        component={component}
+        index={index}
+        blockComponents={outerBlockComponents}
+        onValidate={onValidate}
+        {...ctx}
+      />
+    );
+  if (hasTrigger)
+    return (
+      <TriggerBlockAdapter
+        component={component}
+        index={index}
+        blockComponents={outerBlockComponents}
+        onValidate={onValidate}
+        {...ctx}
+      />
+    );
   return null;
 }

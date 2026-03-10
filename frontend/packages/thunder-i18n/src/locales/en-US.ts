@@ -1286,6 +1286,7 @@ const translations = {
   signin: {
     'errors.signin.failed.message': 'Error',
     'errors.signin.failed.description': 'We are sorry, something has gone wrong here. Please try again.',
+    'errors.signin.timeout': 'Time allowed to complete the step has expired.',
     'errors.passkey.failed': 'Passkey authentication failed. Please try again.',
     'redirect.to.signup': "Don't have an account? <1>Sign up</1>",
     heading: 'Sign In',
@@ -1781,7 +1782,8 @@ const translations = {
     'preview.noTheme': 'No themes configured. Preview unavailable.',
 
     'delete.title': 'Delete Language',
-    'delete.message': 'Are you sure you want to delete all custom translations for "{{language}}"? This action cannot be undone.',
+    'delete.message':
+      'Are you sure you want to delete all custom translations for "{{language}}"? This action cannot be undone.',
     'delete.disclaimer': 'All custom translations for this language will be permanently removed and reset to defaults.',
     'delete.error': 'Failed to delete translations. Please try again.',
   },
