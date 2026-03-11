@@ -226,7 +226,7 @@ describe('AcceptInviteBox', () => {
             {
               id: 'name-input',
               type: 'TEXT_INPUT',
-              ref: 'firstName',
+              ref: 'given_name',
               label: 'First Name',
               placeholder: 'Enter your first name',
               required: true,
@@ -559,7 +559,7 @@ describe('AcceptInviteBox', () => {
             {
               id: 'name-input',
               type: 'TEXT_INPUT',
-              ref: 'firstName',
+              ref: 'given_name',
               label: 'First Name',
               required: true,
             },
@@ -917,8 +917,8 @@ describe('AcceptInviteBox', () => {
 
   it('shows validation error for TEXT_INPUT', () => {
     mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
-      touched: {firstName: true},
-      fieldErrors: {firstName: 'First name is required'},
+      touched: {given_name: true},
+      fieldErrors: {given_name: 'First name is required'},
       components: [
         {
           id: 'block-1',
@@ -927,7 +927,7 @@ describe('AcceptInviteBox', () => {
             {
               id: 'name-input',
               type: 'TEXT_INPUT',
-              ref: 'firstName',
+              ref: 'given_name',
               label: 'First Name',
               required: true,
             },
@@ -956,7 +956,7 @@ describe('AcceptInviteBox', () => {
             {
               id: 'name-input',
               type: 'TEXT_INPUT',
-              ref: 'firstName',
+              ref: 'given_name',
               label: 'First Name',
               required: false,
             },
@@ -987,7 +987,7 @@ describe('AcceptInviteBox', () => {
             {
               id: 'name-input',
               type: 'TEXT_INPUT',
-              ref: 'firstName',
+              ref: 'given_name',
               label: 'First Name',
               required: true,
             },
@@ -1014,7 +1014,7 @@ describe('AcceptInviteBox', () => {
 
   it('renders component with values pre-filled', () => {
     mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
-      values: {firstName: 'John'},
+      values: {given_name: 'John'},
       components: [
         {
           id: 'block-1',
@@ -1023,7 +1023,7 @@ describe('AcceptInviteBox', () => {
             {
               id: 'name-input',
               type: 'TEXT_INPUT',
-              ref: 'firstName',
+              ref: 'given_name',
               label: 'First Name',
               required: true,
             },

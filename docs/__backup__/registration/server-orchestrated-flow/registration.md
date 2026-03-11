@@ -110,12 +110,12 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
                 "required": true
             },
             {
-                "name": "firstName",
+                "name": "given_name",
                 "type": "string",
                 "required": true
             },
             {
-                "name": "lastName",
+                "name": "family_name",
                 "type": "string",
                 "required": true
             }
@@ -135,8 +135,8 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
         "action": "<action_ref>",
         "inputs": {
             "email": "thor@thunder.sky",
-            "firstName": "Thor",
-            "lastName": "Odinson"
+            "given_name": "Thor",
+            "family_name": "Odinson"
         }
     }'
     ```
@@ -278,12 +278,12 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
                 "required": true
             },
             {
-                "name": "firstName",
+                "name": "given_name",
                 "type": "string",
                 "required": true
             },
             {
-                "name": "lastName",
+                "name": "family_name",
                 "type": "string",
                 "required": true
             }
@@ -303,8 +303,8 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
         "action": "<action_ref>",
         "inputs": {
             "email": "thor@thunder.sky",
-            "firstName": "Thor",
-            "lastName": "Odinson"
+            "given_name": "Thor",
+            "family_name": "Odinson"
         }
     }'
     ```

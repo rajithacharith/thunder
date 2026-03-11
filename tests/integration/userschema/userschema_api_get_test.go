@@ -69,8 +69,8 @@ func (ts *GetUserSchemaTestSuite) SetupSuite() {
         "profile": {
             "type": "object",
             "properties": {
-                "firstName": {"type": "string"},
-                "lastName": {"type": "string"},
+                "given_name": {"type": "string"},
+                "family_name": {"type": "string"},
                 "age": {"type": "number"}
             }
         }

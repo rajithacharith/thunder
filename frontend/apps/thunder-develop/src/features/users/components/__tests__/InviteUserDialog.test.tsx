@@ -617,7 +617,7 @@ describe('InviteUserDialog', () => {
     const user = userEvent.setup();
     const textInputComponent: EmbeddedFlowComponent = {
       id: 'first_name_input',
-      ref: 'firstName',
+      ref: 'given_name',
       type: EmbeddedFlowComponentType.TextInput,
       label: 'First Name',
       placeholder: 'Enter first name',
@@ -640,7 +640,7 @@ describe('InviteUserDialog', () => {
 
     Object.assign(mockInviteUserRenderProps, {
       components: [blockComponent],
-      values: {firstName: ''},
+      values: {given_name: ''},
       isValid: false,
     });
 
@@ -652,7 +652,7 @@ describe('InviteUserDialog', () => {
     await user.type(textInput, 'John');
 
     await waitFor(() => {
-      expect(mockHandleInputChange).toHaveBeenCalledWith('firstName', 'John');
+      expect(mockHandleInputChange).toHaveBeenCalledWith('given_name', 'John');
     });
   });
 
@@ -979,18 +979,18 @@ describe('InviteUserDialog', () => {
   });
 
   it('renders multiple form fields in a block', () => {
-    const firstNameComponent: EmbeddedFlowComponent = {
+    const givenNameComponent: EmbeddedFlowComponent = {
       id: 'first_name_input',
-      ref: 'firstName',
+      ref: 'given_name',
       type: EmbeddedFlowComponentType.TextInput,
       label: 'First Name',
       placeholder: 'Enter first name',
       required: true,
     };
 
-    const lastNameComponent: EmbeddedFlowComponent = {
+    const familyNameComponent: EmbeddedFlowComponent = {
       id: 'last_name_input',
-      ref: 'lastName',
+      ref: 'family_name',
       type: EmbeddedFlowComponentType.TextInput,
       label: 'Last Name',
       placeholder: 'Enter last name',
@@ -1017,12 +1017,12 @@ describe('InviteUserDialog', () => {
     const blockComponent: EmbeddedFlowComponent = {
       id: 'block',
       type: EmbeddedFlowComponentType.Block,
-      components: [firstNameComponent, lastNameComponent, emailComponent, submitAction],
+      components: [givenNameComponent, familyNameComponent, emailComponent, submitAction],
     };
 
     Object.assign(mockInviteUserRenderProps, {
       components: [blockComponent],
-      values: {firstName: '', lastName: '', email: ''},
+      values: {given_name: '', family_name: '', email: ''},
       isValid: false,
     });
 

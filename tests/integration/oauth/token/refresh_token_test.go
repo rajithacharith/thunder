@@ -60,10 +60,10 @@ var (
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 		},
@@ -197,8 +197,8 @@ func (ts *RefreshTokenTestSuite) SetupSuite() {
 			"username": "%s",
 			"password": "%s",
 			"email": "refresh_token_test@example.com",
-			"firstName": "Refresh",
-			"lastName": "TokenTest"
+			"given_name": "Refresh",
+			"family_name": "TokenTest"
 		}`, refreshTokenTestUsername, refreshTokenTestPassword)),
 	}
 	userID, err := testutils.CreateUser(user)

@@ -97,7 +97,7 @@ t('applications')
 const { t } = useTranslation('users');
 t('title')
 t('addUser')
-t('firstName')
+t('given_name')
 
 // Or use the default namespace and specify the full path
 const { t } = useTranslation();
@@ -202,8 +202,8 @@ export function UsersPage() {
       <table>
         <thead>
           <tr>
-            <th>{t('firstName')}</th>
-            <th>{t('lastName')}</th>
+            <th>{t('given_name')}</th>
+            <th>{t('family_name')}</th>
             <th>{t('email')}</th>
             <th>{t('role')}</th>
             <th>{t('status')}</th>
@@ -554,7 +554,7 @@ Keep related translations in the same namespace for better maintainability.
 Use consistent naming conventions:
 
 - Actions: `add`, `edit`, `delete`, `save`, etc.
-- Labels: descriptive names like `firstName`, `email`, etc.
+- Labels: descriptive names like `given_name`, `email`, etc.
 - Messages: `success`, `error`, `warning`, etc.
 
 ### 4. Avoid Hardcoded Strings

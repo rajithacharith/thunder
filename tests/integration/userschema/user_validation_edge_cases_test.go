@@ -113,7 +113,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithPartialAttributes(
 		OrganizationUnit: ts.organizationUnitID,
 		Type:             "employee",
 		Attributes: json.RawMessage(`{
-			"firstName": "John",
+			"given_name": "John",
 			"email": "john@company.com"
 		}`),
 	}
@@ -129,8 +129,8 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithExtraAttributes() 
 		OrganizationUnit: ts.organizationUnitID,
 		Type:             "employee",
 		Attributes: json.RawMessage(`{
-			"firstName": "John",
-			"lastName": "Doe",
+			"given_name": "John",
+			"family_name": "Doe",
 			"email": "john.doe@company.com",
 			"department": "Engineering",
 			"isManager": false,
@@ -239,8 +239,8 @@ func (ts *UserValidationEdgeCasesTestSuite) TestUpdateUserChangeType() {
 		OrganizationUnit: ts.organizationUnitID,
 		Type:             "employee",
 		Attributes: json.RawMessage(`{
-			"firstName": "John",
-			"lastName": "Doe",
+			"given_name": "John",
+			"family_name": "Doe",
 			"email": "john.doe@company.com",
 			"department": "Engineering",
 			"isManager": false
@@ -284,8 +284,8 @@ func (ts *UserValidationEdgeCasesTestSuite) createEmployeeSchema() string {
 		Name:               "employee",
 		OrganizationUnitID: ts.organizationUnitID,
 		Schema: json.RawMessage(`{
-			"firstName": {"type": "string"},
-			"lastName": {"type": "string"},
+			"given_name": {"type": "string"},
+			"family_name": {"type": "string"},
 			"email": {"type": "string"},
 			"department": {"type": "string"},
 			"isManager": {"type": "boolean"}

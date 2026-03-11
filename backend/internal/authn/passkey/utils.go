@@ -94,8 +94,8 @@ func buildUserDisplayName(userID string, attributes map[string]interface{}) stri
 		return userID
 	}
 
-	firstName, firstOk := attributes["firstName"].(string)
-	lastName, lastOk := attributes["lastName"].(string)
+	firstName, firstOk := attributes["given_name"].(string)
+	lastName, lastOk := attributes["family_name"].(string)
 
 	if firstOk && firstName != "" {
 		if lastOk && lastName != "" {

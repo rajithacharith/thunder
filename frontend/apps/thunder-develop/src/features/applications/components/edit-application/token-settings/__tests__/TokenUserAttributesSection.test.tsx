@@ -164,12 +164,12 @@ describe('TokenUserAttributesSection', () => {
     });
 
     it('should display user attributes as chips when provided', () => {
-      const userAttributes = ['email', 'username', 'firstName'];
+      const userAttributes = ['email', 'username', 'given_name'];
       render(<TestWrapper userAttributes={userAttributes} />);
 
       expect(screen.getByText('email')).toBeInTheDocument();
       expect(screen.getByText('username')).toBeInTheDocument();
-      expect(screen.getByText('firstName')).toBeInTheDocument();
+      expect(screen.getByText('given_name')).toBeInTheDocument();
     });
 
     it('should display no attributes message when userAttributes is empty', () => {
@@ -315,19 +315,19 @@ describe('TokenUserAttributesSection', () => {
     });
 
     it('should render current attributes as filled chips', () => {
-      const userAttributes = ['email', 'username', 'firstName'];
+      const userAttributes = ['email', 'username', 'given_name'];
       const currentAttributes = ['email', 'username'];
 
       render(<TestWrapper userAttributes={userAttributes} currentAttributes={currentAttributes} />);
 
       const emailChip = screen.getByText('email').closest('[role="button"]');
       const usernameChip = screen.getByText('username').closest('[role="button"]');
-      const firstNameChip = screen.getByText('firstName').closest('[role="button"]');
+      const givenNameChip = screen.getByText('given_name').closest('[role="button"]');
 
       // Chips for selected attributes should be present
       expect(emailChip).toBeInTheDocument();
       expect(usernameChip).toBeInTheDocument();
-      expect(firstNameChip).toBeInTheDocument();
+      expect(givenNameChip).toBeInTheDocument();
     });
   });
 

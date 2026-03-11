@@ -89,8 +89,8 @@ func (ts *UserValidationTestSuite) TestCreateUserWithValidSchema() {
 		OrganizationUnit: ts.organizationUnitID,
 		Type:             "employee",
 		Attributes: json.RawMessage(`{
-			"firstName": "John",
-			"lastName": "Doe",
+			"given_name": "John",
+			"family_name": "Doe",
 			"email": "john.doe@company.com",
 			"department": "Engineering",
 			"isManager": false
@@ -108,8 +108,8 @@ func (ts *UserValidationTestSuite) TestCreateUserWithInvalidStringType() {
 		OrganizationUnit: ts.organizationUnitID,
 		Type:             "employee",
 		Attributes: json.RawMessage(`{
-			"firstName": 123,
-			"lastName": "Doe",
+			"given_name": 123,
+			"family_name": "Doe",
 			"email": "john.doe@company.com",
 			"department": "Engineering",
 			"isManager": false
@@ -126,8 +126,8 @@ func (ts *UserValidationTestSuite) TestCreateUserWithInvalidBooleanType() {
 		OrganizationUnit: ts.organizationUnitID,
 		Type:             "employee",
 		Attributes: json.RawMessage(`{
-			"firstName": "John",
-			"lastName": "Doe",
+			"given_name": "John",
+			"family_name": "Doe",
 			"email": "john.doe@company.com",
 			"department": "Engineering",
 			"isManager": "yes"
@@ -238,8 +238,8 @@ func (ts *UserValidationTestSuite) TestUpdateUserWithValidSchema() {
 		OrganizationUnit: ts.organizationUnitID,
 		Type:             "employee",
 		Attributes: json.RawMessage(`{
-			"firstName": "John",
-			"lastName": "Doe",
+			"given_name": "John",
+			"family_name": "Doe",
 			"email": "john.doe@company.com",
 			"department": "Engineering",
 			"isManager": false
@@ -254,8 +254,8 @@ func (ts *UserValidationTestSuite) TestUpdateUserWithValidSchema() {
 		Type:             "employee",
 		OrganizationUnit: ts.organizationUnitID,
 		Attributes: json.RawMessage(`{
-			"firstName": "John",
-			"lastName": "Smith",
+			"given_name": "John",
+			"family_name": "Smith",
 			"email": "john.smith@company.com",
 			"department": "Product",
 			"isManager": true
@@ -272,8 +272,8 @@ func (ts *UserValidationTestSuite) TestUpdateUserWithInvalidSchema() {
 		OrganizationUnit: ts.organizationUnitID,
 		Type:             "employee",
 		Attributes: json.RawMessage(`{
-			"firstName": "John",
-			"lastName": "Doe",
+			"given_name": "John",
+			"family_name": "Doe",
 			"email": "john.doe@company.com",
 			"department": "Engineering",
 			"isManager": false
@@ -288,8 +288,8 @@ func (ts *UserValidationTestSuite) TestUpdateUserWithInvalidSchema() {
 		Type:             "employee",
 		OrganizationUnit: ts.organizationUnitID,
 		Attributes: json.RawMessage(`{
-			"firstName": "John",
-			"lastName": "Smith",
+			"given_name": "John",
+			"family_name": "Smith",
 			"email": "john.smith@company.com",
 			"department": "Product",
 			"isManager": "true"
@@ -320,8 +320,8 @@ func (ts *UserValidationTestSuite) createEmployeeSchema() string {
 	schema := CreateUserSchemaRequest{
 		Name: "employee",
 		Schema: json.RawMessage(`{
-			"firstName": {"type": "string"},
-			"lastName": {"type": "string"},
+			"given_name": {"type": "string"},
+			"family_name": {"type": "string"},
 			"email": {"type": "string"},
 			"department": {"type": "string"},
 			"isManager": {"type": "boolean"}

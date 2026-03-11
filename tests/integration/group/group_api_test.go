@@ -44,10 +44,10 @@ var (
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 			"password": map[string]interface{}{
@@ -61,8 +61,8 @@ var (
 		Type: "group-test-person",
 		Attributes: json.RawMessage(`{
 			"email": "testuser@example.com",
-			"firstName": "Test",
-			"lastName": "User",
+			"given_name": "Test",
+			"family_name": "User",
 			"password": "TestPassword123!"
 		}`),
 	}
@@ -716,8 +716,8 @@ func (suite *GroupAPITestSuite) TestCreateGroupWithMultipleMembers() {
 		Type:             "group-test-person",
 		Attributes: json.RawMessage(`{
 			"email": "testuser2@example.com",
-			"firstName": "Test",
-			"lastName": "User2",
+			"given_name": "Test",
+			"family_name": "User2",
 			"password": "TestPassword123!"
 		}`),
 	}
@@ -983,8 +983,8 @@ func (suite *GroupAPITestSuite) TestAddGroupMembers() {
 		Type:             "group-test-person",
 		Attributes: json.RawMessage(`{
 			"email": "addmember@example.com",
-			"firstName": "Add",
-			"lastName": "Member",
+			"given_name": "Add",
+			"family_name": "Member",
 			"password": "TestPassword123!"
 		}`),
 	}
@@ -1329,8 +1329,8 @@ func (suite *GroupAPITestSuite) TestRemoveGroupMembers() {
 		Type:             "group-test-person",
 		Attributes: json.RawMessage(`{
 			"email": "removemember@example.com",
-			"firstName": "Remove",
-			"lastName": "Member",
+			"given_name": "Remove",
+			"family_name": "Member",
 			"password": "TestPassword123!"
 		}`),
 	}
@@ -1485,8 +1485,8 @@ func (suite *GroupAPITestSuite) TestAddAndRemoveMultipleMembers() {
 		Type:             "group-test-person",
 		Attributes: json.RawMessage(`{
 			"email": "multi1@example.com",
-			"firstName": "Multi",
-			"lastName": "User1",
+			"given_name": "Multi",
+			"family_name": "User1",
 			"password": "TestPassword123!"
 		}`),
 	}
@@ -1503,8 +1503,8 @@ func (suite *GroupAPITestSuite) TestAddAndRemoveMultipleMembers() {
 		Type:             "group-test-person",
 		Attributes: json.RawMessage(`{
 			"email": "multi2@example.com",
-			"firstName": "Multi",
-			"lastName": "User2",
+			"given_name": "Multi",
+			"family_name": "User2",
 			"password": "TestPassword123!"
 		}`),
 	}
@@ -1632,8 +1632,8 @@ func (suite *GroupAPITestSuite) TestAddGroupMembersWithMixedTypes() {
 		Type:             "group-test-person",
 		Attributes: json.RawMessage(`{
 			"email": "mixedtype@example.com",
-			"firstName": "Mixed",
-			"lastName": "Type",
+			"given_name": "Mixed",
+			"family_name": "Type",
 			"password": "TestPassword123!"
 		}`),
 	}

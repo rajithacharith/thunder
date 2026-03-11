@@ -42,7 +42,7 @@ export interface SetupConfig {
     password: string;
     email: string;
     mobileNumber: string;
-    firstName: string;
+    given_name: string;
   };
 }
 
@@ -438,7 +438,7 @@ export class ThunderMFASetup {
         attributes: {
           username: this.config.testUser.username,
           password: this.config.testUser.password,
-          firstName: this.config.testUser.firstName,
+          given_name: this.config.testUser.given_name,
           email: this.config.testUser.email,
           mobileNumber: this.config.testUser.mobileNumber,
         },

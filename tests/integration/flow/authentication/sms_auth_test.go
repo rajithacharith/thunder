@@ -239,10 +239,10 @@ var (
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 			"mobileNumber": map[string]interface{}{
@@ -257,8 +257,8 @@ var (
 			"username": "smsuser",
 			"password": "testpassword",
 			"email": "smsuser@example.com",
-			"firstName": "SMS",
-			"lastName": "User",
+			"given_name": "SMS",
+			"family_name": "User",
 			"mobileNumber": "+1234567890"
 		}`),
 	}

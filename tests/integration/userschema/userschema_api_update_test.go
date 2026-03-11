@@ -319,8 +319,8 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithComplexData() {
 							"personalInfo": {
 								"type": "object",
 								"properties": {
-									"firstName": {"type": "string"},
-									"lastName": {"type": "string"},
+									"given_name": {"type": "string"},
+									"family_name": {"type": "string"},
 									"dateOfBirth": {"type": "string", "regex": "^\\d{4}-\\d{2}-\\d{2}$"}
 								}
 							},

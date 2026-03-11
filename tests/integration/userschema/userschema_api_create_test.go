@@ -78,8 +78,8 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchema() {
 	schema := CreateUserSchemaRequest{
 		Name: "employee-schema-test",
 		Schema: json.RawMessage(`{
-            "firstName": {"type": "string"},
-            "lastName": {"type": "string", "required": true},
+            "given_name": {"type": "string"},
+            "family_name": {"type": "string", "required": true},
             "email": {"type": "string", "required": true, "regex": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"},
             "department": {"type": "string"},
             "isManager": {"type": "boolean"}
@@ -134,8 +134,8 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithComplexSchema() {
             "personalInfo": {
                 "type": "object",
                 "properties": {
-                    "firstName": {"type": "string"},
-                    "lastName": {"type": "string"},
+                    "given_name": {"type": "string"},
+                    "family_name": {"type": "string"},
                     "dateOfBirth": {"type": "string", "regex": "^\\d{4}-\\d{2}-\\d{2}$"}
                 }
             },

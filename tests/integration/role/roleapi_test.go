@@ -49,10 +49,10 @@ var (
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 			"password": map[string]interface{}{
@@ -66,8 +66,8 @@ var (
 		Type: "role-person",
 		Attributes: json.RawMessage(`{
 			"email": "roleuser1@example.com",
-			"firstName": "Role",
-			"lastName": "User1",
+			"given_name": "Role",
+			"family_name": "User1",
 			"password": "TestPassword123!"
 		}`),
 	}
@@ -76,8 +76,8 @@ var (
 		Type: "role-person",
 		Attributes: json.RawMessage(`{
 			"email": "roleuser2@example.com",
-			"firstName": "Role",
-			"lastName": "User2",
+			"given_name": "Role",
+			"family_name": "User2",
 			"password": "TestPassword123!"
 		}`),
 	}

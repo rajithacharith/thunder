@@ -2422,8 +2422,8 @@ func TestUserService_UpdateUser_PreservesMultipleCredentials(t *testing.T) {
 		Attributes: json.RawMessage(`{
 			"username": "john.doe",
 			"email": "john.updated@example.com",
-			"firstName": "John",
-			"lastName": "Doe",
+			"given_name": "John",
+			"family_name": "Doe",
 			"password": "NewPassword456!"
 		}`),
 	}

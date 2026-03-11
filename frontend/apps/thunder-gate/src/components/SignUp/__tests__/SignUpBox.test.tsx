@@ -1570,7 +1570,7 @@ describe('SignUpBox', () => {
           components: [
             {
               type: 'TEXT_INPUT',
-              ref: 'firstName',
+              ref: 'given_name',
               label: 'First Name',
               placeholder: 'Enter first name',
               required: false,

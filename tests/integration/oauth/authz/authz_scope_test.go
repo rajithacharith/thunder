@@ -56,10 +56,10 @@ var (
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 			"name": map[string]interface{}{
@@ -137,8 +137,8 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 			"username": "oauth_authorized_user",
 			"password": "SecurePass123!",
 			"email": "oauth_authorized@test.com",
-			"firstName": "OAuth",
-			"lastName": "Authorized"
+			"given_name": "OAuth",
+			"family_name": "Authorized"
 		}`),
 	}
 	scopeUserWithRole, err = testutils.CreateUser(userWithRole)
@@ -154,8 +154,8 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 			"username": "oauth_unauthorized_user",
 			"password": "SecurePass123!",
 			"email": "oauth_unauthorized@test.com",
-			"firstName": "OAuth",
-			"lastName": "Unauthorized"
+			"given_name": "OAuth",
+			"family_name": "Unauthorized"
 		}`),
 	}
 	scopeUserNoRole, err = testutils.CreateUser(userNoRole)
@@ -612,8 +612,8 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithRequiredAttributes() 
 		"username": "requiredattrsuser",
 		"password": "TestPassword123!",
 		"email": "requiredattrs@test.com",
-		"firstName": "Required",
-		"lastName": "Attrs",
+		"given_name": "Required",
+		"family_name": "Attrs",
 		"name": "Required Attrs",
 		"groups": ["admin", "user"],
 		"roles": ["developer"],
@@ -687,6 +687,6 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithRequiredAttributes() 
 	ts.Assert().Nil(claims["phone"], "phone should NOT be present (not in required attributes)")
 	ts.Assert().Nil(claims["customAttr"], "customAttr should NOT be present (not in required attributes)")
 	ts.Assert().Nil(claims["email_verified"], "email_verified should NOT be present (not in IDToken.UserAttributes)")
-	ts.Assert().Nil(claims["firstName"], "firstName should NOT be present (not in required attributes)")
-	ts.Assert().Nil(claims["lastName"], "lastName should NOT be present (not in required attributes)")
+	ts.Assert().Nil(claims["given_name"], "given_name should NOT be present (not in required attributes)")
+	ts.Assert().Nil(claims["family_name"], "family_name should NOT be present (not in required attributes)")
 }

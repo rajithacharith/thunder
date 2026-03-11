@@ -202,16 +202,16 @@
                         "components": [
                             {
                                 "type": "TEXT_INPUT",
-                                "id": "input_firstName",
-                                "ref": "firstName",
+                                "id": "input_given_name",
+                                "ref": "given_name",
                                 "label": "{{ t(signup:forms.basic_user_info.fields.first_name.label) }}",
                                 "placeholder": "{{ t(signup:forms.basic_user_info.fields.first_name.placeholder) }}",
                                 "required": true
                             },
                             {
                                 "type": "TEXT_INPUT",
-                                "id": "input_lastName",
-                                "ref": "lastName",
+                                "id": "input_family_name",
+                                "ref": "family_name",
                                 "label": "{{ t(signup:forms.basic_user_info.fields.last_name.label) }}",
                                 "placeholder": "{{ t(signup:forms.basic_user_info.fields.last_name.placeholder) }}",
                                 "required": true
@@ -239,14 +239,14 @@
                 {
                     "inputs": [
                         {
-                            "ref": "input_firstName",
-                            "identifier": "firstName",
+                            "ref": "input_given_name",
+                            "identifier": "given_name",
                             "type": "TEXT_INPUT",
                             "required": true
                         },
                         {
-                            "ref": "input_lastName",
-                            "identifier": "lastName",
+                            "ref": "input_family_name",
+                            "identifier": "family_name",
                             "type": "TEXT_INPUT",
                             "required": true
                         },

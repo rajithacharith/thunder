@@ -573,9 +573,9 @@ func (suite *AuthorizeHandlerTestSuite) TestCreateAuthorizationCode_WithClaimsLo
 }
 
 func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_Success() {
-	// JWT with: sub, username, email, firstName, lastName, authorized_permissions, userType, ouId, ouName, ouHandle
+	// JWT with: sub, username, email, given_name, family_name, authorized_permissions, userType, ouId, ouName, ouHandle
 	validJWT := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0." +
-		"eyJzdWIiOiJ0ZXN0LXVzZXIiLCJ1c2VybmFtZSI6InRlc3R1c2VyIiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwiZmlyc3ROYW1lIjoiVGVzdCIsImxhc3ROYW1lIjoiVXNlciIsImF1dGhvcml6ZWRfcGVybWlzc2lvbnMiOiJyZWFkIHdyaXRlIiwidXNlclR5cGUiOiJsb2NhbCIsIm91SWQiOiJvdTEyMyIsIm91TmFtZSI6Ik9yZ2FuaXphdGlvbiIsIm91SGFuZGxlIjoib3JnLWhhbmRsZSJ9." //nolint:lll
+		"eyJzdWIiOiJ0ZXN0LXVzZXIiLCJ1c2VybmFtZSI6InRlc3R1c2VyIiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwiZ2l2ZW5fbmFtZSI6IlRlc3QiLCJmYW1pbHlfbmFtZSI6IlVzZXIiLCJhdXRob3JpemVkX3Blcm1pc3Npb25zIjoicmVhZCB3cml0ZSIsInVzZXJUeXBlIjoibG9jYWwiLCJvdUlkIjoib3UxMjMiLCJvdU5hbWUiOiJPcmdhbml6YXRpb24iLCJvdUhhbmRsZSI6Im9yZy1oYW5kbGUifQ." //nolint:lll
 
 	clms, _, err := decodeAttributesFromAssertion(validJWT)
 
@@ -587,8 +587,8 @@ func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_Succes
 	assert.Equal(suite.T(), "org-handle", clms.userAttributes["ouHandle"])
 	assert.Equal(suite.T(), "testuser", clms.userAttributes["username"])
 	assert.Equal(suite.T(), "test@example.com", clms.userAttributes["email"])
-	assert.Equal(suite.T(), "Test", clms.userAttributes["firstName"])
-	assert.Equal(suite.T(), "User", clms.userAttributes["lastName"])
+	assert.Equal(suite.T(), "Test", clms.userAttributes["given_name"])
+	assert.Equal(suite.T(), "User", clms.userAttributes["family_name"])
 	assert.Equal(suite.T(), "read write", clms.authorizedPermissions)
 }
 
@@ -613,12 +613,12 @@ func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_Invali
 }
 
 func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_NonStringAttributes() {
-	// JWT payload: {"sub":"test-user","username":12345,"email":12345,"firstName":12345,
-	// "lastName":12345,"authorized_permissions":12345}
+	// JWT payload: {"sub":"test-user","username":12345,"email":12345,"given_name":12345,
+	// "family_name":12345,"authorized_permissions":12345}
 	nonStringAttrsJWT := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0." +
 		"eyJzdWIiOiJ0ZXN0LXVzZXIiLCJ1c2VybmFtZSI6MTIzNDUsImVtYWlsIjoxMjM0NSwi" +
-		"Zmlyc3ROYW1lIjoxMjM0NSwibGFzdE5hbWUiOjEyMzQ1LCJhdXRob3JpemVkX3Blcm1p" +
-		"c3Npb25zIjoxMjM0NX0."
+		"Z2l2ZW5fbmFtZSI6MTIzNDUsImZhbWlseV9uYW1lIjoxMjM0NSwiYXV0aG9yaXplZF9w" +
+		"ZXJtaXNzaW9ucyI6MTIzNDV9."
 
 	clms, _, err := decodeAttributesFromAssertion(nonStringAttrsJWT)
 
@@ -626,8 +626,8 @@ func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_NonStr
 	assert.Equal(suite.T(), "test-user", clms.userID)
 	assert.Equal(suite.T(), float64(12345), clms.userAttributes["username"])
 	assert.Equal(suite.T(), float64(12345), clms.userAttributes["email"])
-	assert.Equal(suite.T(), float64(12345), clms.userAttributes["firstName"])
-	assert.Equal(suite.T(), float64(12345), clms.userAttributes["lastName"])
+	assert.Equal(suite.T(), float64(12345), clms.userAttributes["given_name"])
+	assert.Equal(suite.T(), float64(12345), clms.userAttributes["family_name"])
 	// Non-string authorized_permissions is ignored
 	assert.Equal(suite.T(), "", clms.authorizedPermissions)
 }

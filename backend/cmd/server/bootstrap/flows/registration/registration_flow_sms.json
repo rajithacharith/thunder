@@ -141,13 +141,13 @@
                 "inputs": [
                     {
                         "ref": "input_002",
-                        "identifier": "firstName",
+                        "identifier": "given_name",
                         "type": "TEXT_INPUT",
                         "required": false
                     },
                     {
                         "ref": "input_003",
-                        "identifier": "lastName",
+                        "identifier": "family_name",
                         "type": "TEXT_INPUT",
                         "required": false
                     },

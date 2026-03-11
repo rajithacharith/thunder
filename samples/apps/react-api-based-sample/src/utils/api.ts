@@ -87,8 +87,8 @@ export interface User {
   type: string;
   attributes: {
     username?: string;
-    firstName?: string;
-    lastName?: string;
+    given_name?: string;
+    family_name?: string;
     email?: string;
     [key: string]: unknown;
   };

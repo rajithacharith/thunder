@@ -247,7 +247,7 @@ func (s *CacheBackedStoreTestSuite) TestUpdateUserSchemaByID_Success() {
 
 	updatedSchema := oldSchema
 	updatedSchema.Name = "UpdatedSchema"
-	updatedSchema.SystemAttributes = &SystemAttributes{Display: "firstName"}
+	updatedSchema.SystemAttributes = &SystemAttributes{Display: "given_name"}
 
 	s.mockStore.On("UpdateUserSchemaByID", mock.Anything, oldSchema.ID, updatedSchema).Return(nil).Once()
 
@@ -268,7 +268,7 @@ func (s *CacheBackedStoreTestSuite) TestUpdateUserSchemaByID_Success() {
 	cachedByID, ok := s.schemaByIDCache.Get(cache.CacheKey{Key: oldSchema.ID})
 	s.True(ok)
 	s.Equal("UpdatedSchema", cachedByID.Name)
-	s.Equal("firstName", cachedByID.SystemAttributes.Display)
+	s.Equal("given_name", cachedByID.SystemAttributes.Display)
 }
 
 func (s *CacheBackedStoreTestSuite) TestUpdateUserSchemaByID_StoreError() {
@@ -395,7 +395,7 @@ func (s *CacheBackedStoreTestSuite) TestGetUserSchemaListCountByOUIDs_Delegated(
 }
 
 func (s *CacheBackedStoreTestSuite) TestGetDisplayAttributesByNames_Delegated() {
-	expected := map[string]string{"Schema1": "email", "Schema2": "firstName"}
+	expected := map[string]string{"Schema1": "email", "Schema2": "given_name"}
 	s.mockStore.On("GetDisplayAttributesByNames", mock.Anything,
 		[]string{"Schema1", "Schema2"}).Return(expected, nil).Once()
 

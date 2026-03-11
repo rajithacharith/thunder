@@ -48,8 +48,8 @@ interface ApiError {
 function SignUpPage() {
   const [formData, setFormData] = useState({
     username: "",
-    firstName: "",
-    lastName: "",
+    given_name: "",
+    family_name: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -90,8 +90,8 @@ function SignUpPage() {
           type: "Customer",
           attributes: {
             username: formData.username,
-            given_name: formData.firstName,
-            family_name: formData.lastName,
+            given_name: formData.given_name,
+            family_name: formData.family_name,
             email: formData.email,
             password: formData.password,
           },
@@ -182,8 +182,8 @@ function SignUpPage() {
               <TextField
                 fullWidth
                 label="First Name"
-                name="firstName"
-                value={formData.firstName}
+                name="given_name"
+                value={formData.given_name}
                 onChange={handleChange}
                 required
                 disabled={loading || success}
@@ -191,8 +191,8 @@ function SignUpPage() {
               <TextField
                 fullWidth
                 label="Last Name"
-                name="lastName"
-                value={formData.lastName}
+                name="family_name"
+                value={formData.family_name}
                 onChange={handleChange}
                 required
                 disabled={loading || success}

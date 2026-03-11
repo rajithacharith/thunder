@@ -4557,10 +4557,10 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithUserInfoConfig() {
 						},
 					},
 					UserInfo: &UserInfoConfig{
-						UserAttributes: []string{"email", "firstName", "lastName"},
+						UserAttributes: []string{"email", "given_name", "family_name"},
 					},
 					ScopeClaims: map[string][]string{
-						"profile": {"firstName", "lastName"},
+						"profile": {"given_name", "family_name"},
 						"email":   {"email"},
 					},
 				},
@@ -4588,11 +4588,11 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithUserInfoConfig() {
 
 	// Check UserInfo
 	ts.Require().NotNil(oauthConfig.UserInfo)
-	ts.Assert().ElementsMatch([]string{"email", "firstName", "lastName"}, oauthConfig.UserInfo.UserAttributes)
+	ts.Assert().ElementsMatch([]string{"email", "given_name", "family_name"}, oauthConfig.UserInfo.UserAttributes)
 
 	// Check ScopeClaims
 	ts.Require().NotNil(oauthConfig.ScopeClaims)
-	ts.Assert().ElementsMatch([]string{"firstName", "lastName"}, oauthConfig.ScopeClaims["profile"])
+	ts.Assert().ElementsMatch([]string{"given_name", "family_name"}, oauthConfig.ScopeClaims["profile"])
 
 	// Check IDToken is separate
 	ts.Require().NotNil(oauthConfig.Token.IDToken)

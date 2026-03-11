@@ -523,7 +523,7 @@ USER_RESPONSE=$(curl --location 'https://localhost:8090/users' \
   "attributes": {
     "username": "e2e-test-user",
     "password": "e2e-test-password",
-    "firstName": "E2E User",
+    "given_name": "E2E User",
     "email": "e2e@thunder.com",
     "mobileNumber": "+12345678920"
   }
