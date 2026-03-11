@@ -164,6 +164,9 @@ RESPONSE=$(thunder_api_call POST "/user-schemas" '{
       "required": true,
       "credential": true
     }
+  },
+  "systemAttributes": {
+    "display": "username"
   }
 }')
 

@@ -129,6 +129,9 @@ read -r -d '' CUSTOMER_USER_TYPE_PAYLOAD <<JSON || true
       "type": "string",
       "required": false
     }
+  },
+  "systemAttributes": {
+    "display": "username"
   }
 }
 JSON

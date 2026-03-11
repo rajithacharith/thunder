@@ -174,6 +174,9 @@ $userSchemaData = ([ordered]@{
             credential = $true
         }
     }
+    systemAttributes = [ordered]@{
+        display = "username"
+    }
 } | ConvertTo-Json -Depth 5)
 
 $response = Invoke-ThunderApi -Method POST -Endpoint "/user-schemas" -Data $userSchemaData
