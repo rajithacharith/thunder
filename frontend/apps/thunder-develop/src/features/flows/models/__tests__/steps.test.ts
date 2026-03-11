@@ -106,6 +106,10 @@ describe('steps models', () => {
       expect(ExecutionTypes.GithubFederation).toBe('GithubOAuthExecutor');
     });
 
+    it('should have PasskeyAuth type', () => {
+      expect(ExecutionTypes.PasskeyAuth).toBe('PasskeyAuthExecutor');
+    });
+
     it('should have ConfirmationCode type', () => {
       expect(ExecutionTypes.ConfirmationCode).toBe('ConfirmationCodeValidationExecutor');
     });
@@ -126,8 +130,12 @@ describe('steps models', () => {
       expect(ExecutionTypes.SMSOTPAuth).toBe('SMSOTPAuthExecutor');
     });
 
-    it('should have exactly 11 execution types', () => {
-      expect(Object.keys(ExecutionTypes)).toHaveLength(11);
+    it('should have ConsentExecutor type', () => {
+      expect(ExecutionTypes.ConsentExecutor).toBe('ConsentExecutor');
+    });
+
+    it('should have exactly 12 execution types', () => {
+      expect(Object.keys(ExecutionTypes)).toHaveLength(12);
     });
   });
 

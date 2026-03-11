@@ -292,7 +292,7 @@ describe('reactFlowTransformer', () => {
       });
 
       it('should extract inputs from deeply nested block structures (Block A -> Block B -> Action)', () => {
-        // Structure: 
+        // Structure:
         // Outer Block (contains email input)
         //   -> Inner Block (contains password input and submit button)
         // Expected: Submit action should have BOTH email and password inputs
@@ -339,13 +339,13 @@ describe('reactFlowTransformer', () => {
         // Verification
         expect(result.nodes[0].prompts).toHaveLength(1);
         const prompt = result.nodes[0].prompts?.[0];
-        
+
         // Should have inputs from both blocks
         expect(prompt?.inputs).toHaveLength(2);
-        
-        const identifiers = prompt?.inputs?.map(i => i.identifier).sort();
+
+        const identifiers = prompt?.inputs?.map((i) => i.identifier).sort();
         expect(identifiers).toEqual(['email', 'password'].sort());
-        
+
         expect(prompt?.action?.ref).toBe('submit-btn');
       });
 
@@ -721,6 +721,67 @@ describe('reactFlowTransformer', () => {
         expect(execNode?.executor?.inputs?.[0].identifier).toBe('username');
       });
 
+      it('should use ref as execution input identifier when name is missing', () => {
+        const promptComponents: Element[] = [
+          {
+            id: 'input-ref-1',
+            type: ElementTypes.TextInput,
+            category: ElementCategories.Field,
+            ref: 'usernameRef',
+          } as unknown as Element,
+        ];
+
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [
+            createNode('view-1', StepTypes.View, {x: 0, y: 0}, {components: promptComponents}),
+            createNode(
+              'exec-1',
+              StepTypes.Execution,
+              {x: 100, y: 0},
+              {
+                action: {executor: {name: 'PasswordValidator'}},
+              },
+            ),
+          ],
+          edges: [createEdge('edge-1', 'view-1', 'exec-1')],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const execNode = result.nodes.find((n) => n.id === 'exec-1');
+        expect(execNode?.executor?.inputs?.[0].identifier).toBe('usernameRef');
+      });
+
+      it('should use id as execution input identifier when both name and ref are missing', () => {
+        const promptComponents: Element[] = [
+          {
+            id: 'input-id-fallback',
+            type: ElementTypes.TextInput,
+            category: ElementCategories.Field,
+          } as unknown as Element,
+        ];
+
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [
+            createNode('view-1', StepTypes.View, {x: 0, y: 0}, {components: promptComponents}),
+            createNode(
+              'exec-1',
+              StepTypes.Execution,
+              {x: 100, y: 0},
+              {
+                action: {executor: {name: 'PasswordValidator'}},
+              },
+            ),
+          ],
+          edges: [createEdge('edge-1', 'view-1', 'exec-1')],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const execNode = result.nodes.find((n) => n.id === 'exec-1');
+        expect(execNode?.executor?.inputs?.[0].identifier).toBe('input-id-fallback');
+      });
+
       it('should use code input for OAuth executors', () => {
         const canvasData: ReactFlowCanvasData = {
           nodes: [
@@ -767,6 +828,34 @@ describe('reactFlowTransformer', () => {
         expect(execNode?.executor?.inputs?.[0].identifier).toBe('code');
       });
 
+      it('should use consent_decisions input for ConsentExecutor', () => {
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [
+            createNode(
+              'exec-consent-1',
+              StepTypes.Execution,
+              {x: 0, y: 0},
+              {
+                action: {executor: {name: 'ConsentExecutor'}},
+              },
+            ),
+          ],
+          edges: [],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const execNode = result.nodes.find((n) => n.id === 'exec-consent-1');
+        expect(execNode?.executor?.inputs).toEqual([
+          {
+            ref: 'input-generated-id',
+            type: 'CONSENT_INPUT',
+            identifier: 'consent_decisions',
+            required: true,
+          },
+        ]);
+      });
+
       it('should collect inputs from PROMPT node connected via START node', () => {
         // Scenario: START -> PROMPT -> EXECUTION
         // The EXECUTION node should collect inputs from the PROMPT node
@@ -792,10 +881,7 @@ describe('reactFlowTransformer', () => {
               },
             ),
           ],
-          edges: [
-            createEdge('edge-1', 'start-1', 'view-1'),
-            createEdge('edge-2', 'view-1', 'exec-1'),
-          ],
+          edges: [createEdge('edge-1', 'start-1', 'view-1'), createEdge('edge-2', 'view-1', 'exec-1')],
         };
 
         const result = transformReactFlow(canvasData);
@@ -831,10 +917,7 @@ describe('reactFlowTransformer', () => {
             ),
           ],
           // START -> PROMPT and START -> EXECUTION (execution coming from start)
-          edges: [
-            createEdge('edge-1', 'start-1', 'view-1'),
-            createEdge('edge-2', 'start-1', 'exec-1'),
-          ],
+          edges: [createEdge('edge-1', 'start-1', 'view-1'), createEdge('edge-2', 'start-1', 'exec-1')],
         };
 
         const result = transformReactFlow(canvasData);
@@ -1123,6 +1206,104 @@ describe('reactFlowTransformer', () => {
         expect(result.nodes[0].prompts?.[0].inputs).toHaveLength(inputTypes.length);
       });
     });
+
+    describe('Consent Prompt Input Assignment', () => {
+      it('should assign consent input only for prompt actions routed to ConsentExecutor', () => {
+        const components: Element[] = [
+          {
+            id: 'consent-block',
+            type: 'BLOCK',
+            category: ElementCategories.Block,
+            components: [
+              {
+                id: 'username-input',
+                type: ElementTypes.TextInput,
+                category: ElementCategories.Field,
+                name: 'username',
+              } as unknown as Element,
+              {
+                id: 'allow-btn',
+                type: ElementTypes.Action,
+                category: ElementCategories.Action,
+                action: {onSuccess: 'consent-exec-1'},
+              } as Element,
+            ],
+          } as unknown as Element,
+          {
+            id: 'deny-btn',
+            type: ElementTypes.Action,
+            category: ElementCategories.Action,
+            action: {onSuccess: 'consent-exec-1'},
+          } as Element,
+          {
+            id: 'other-btn',
+            type: ElementTypes.Action,
+            category: ElementCategories.Action,
+            action: {onSuccess: 'end-1'},
+          } as Element,
+        ];
+
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [
+            createNode('view-consent-1', StepTypes.View, {x: 0, y: 0}, {components}),
+            createNode(
+              'consent-exec-1',
+              StepTypes.Execution,
+              {x: 300, y: 0},
+              {
+                action: {executor: {name: 'ConsentExecutor'}},
+              },
+            ),
+            createNode('end-1', StepTypes.End, {x: 600, y: 0}),
+          ],
+          edges: [
+            createEdge('edge-allow', 'view-consent-1', 'consent-exec-1', 'allow-btn_NEXT'),
+            createEdge('edge-deny', 'view-consent-1', 'consent-exec-1', 'deny-btn_NEXT'),
+            createEdge('edge-other', 'view-consent-1', 'end-1', 'other-btn_NEXT'),
+            createEdge('edge-success', 'consent-exec-1', 'end-1'),
+            createEdge(
+              'edge-incomplete',
+              'consent-exec-1',
+              'view-consent-1',
+              `consent-exec-1${VisualFlowConstants.FLOW_BUILDER_INCOMPLETE_HANDLE_SUFFIX}`,
+            ),
+          ],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const promptNode = result.nodes.find((n) => n.id === 'view-consent-1');
+        const allowPrompt = promptNode?.prompts?.find((prompt) => prompt.action?.ref === 'allow-btn');
+        const denyPrompt = promptNode?.prompts?.find((prompt) => prompt.action?.ref === 'deny-btn');
+        const otherPrompt = promptNode?.prompts?.find((prompt) => prompt.action?.ref === 'other-btn');
+
+        expect(allowPrompt?.inputs).toEqual([
+          {
+            ref: 'username-input',
+            type: ElementTypes.TextInput,
+            identifier: 'username',
+            required: false,
+          },
+          {
+            ref: 'input-generated-id',
+            type: 'CONSENT_INPUT',
+            identifier: 'consent_decisions',
+            required: true,
+          },
+        ]);
+
+        expect(denyPrompt?.inputs).toEqual([
+          {
+            ref: 'input-generated-id',
+            type: 'CONSENT_INPUT',
+            identifier: 'consent_decisions',
+            required: true,
+          },
+        ]);
+
+        expect(otherPrompt?.inputs).toBeUndefined();
+      });
+    });
   });
 
   describe('validateFlowGraph', () => {
@@ -1212,6 +1393,25 @@ describe('reactFlowTransformer', () => {
       const errors = validateFlowGraph(flowGraph);
 
       expect(errors).toContain('Node exec-1: onFailure references non-existent node non-existent');
+    });
+
+    it('should detect invalid onIncomplete reference', () => {
+      const flowGraph: FlowGraph = {
+        nodes: [
+          {id: 'start-1', type: 'START', layout: {size: {width: 100, height: 50}, position: {x: 0, y: 0}}},
+          {
+            id: 'exec-1',
+            type: 'TASK_EXECUTION',
+            layout: {size: {width: 100, height: 50}, position: {x: 50, y: 0}},
+            onIncomplete: 'non-existent',
+          },
+          {id: 'end-1', type: 'END', layout: {size: {width: 100, height: 50}, position: {x: 100, y: 0}}},
+        ],
+      };
+
+      const errors = validateFlowGraph(flowGraph);
+
+      expect(errors).toContain('Node exec-1: onIncomplete references non-existent node non-existent');
     });
 
     it('should detect invalid action nextNode reference', () => {

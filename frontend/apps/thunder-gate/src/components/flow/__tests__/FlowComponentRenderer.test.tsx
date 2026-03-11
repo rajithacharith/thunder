@@ -40,6 +40,7 @@ vi.mock('@asgardeo/react', () => ({
     Image: 'IMAGE',
     Stack: 'STACK',
     Text: 'TEXT',
+    Timer: 'TIMER',
   },
   EmbeddedFlowEventType: {
     Trigger: 'TRIGGER',
@@ -173,7 +174,23 @@ describe('FlowComponentRenderer', () => {
     );
   });
 
-  it('injects TimerAdapter for BLOCK when stepTimeout is present', () => {
+  it('renders TimerAdapter for TIMER component type', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1000);
+
+    render(
+      <FlowComponentRenderer
+        {...baseProps}
+        component={{id: 'timer-1', type: 'TIMER', label: 'Expires in {time}'}}
+        additionalData={{stepTimeout: String(7000)}}
+      />,
+    );
+
+    expect(screen.getByTestId('timer-adapter')).toBeInTheDocument();
+    expect(screen.getByTestId('timer-adapter')).toHaveAttribute('data-expires-in', '6');
+    expect(timerPropsSpy).toHaveBeenCalledWith(expect.objectContaining({textTemplate: 'Expires in {time}'}));
+  });
+
+  it('does not render TimerAdapter inside BLOCK when stepTimeout is present', () => {
     vi.spyOn(Date, 'now').mockReturnValue(1000);
 
     render(
@@ -184,8 +201,7 @@ describe('FlowComponentRenderer', () => {
       />,
     );
 
-    expect(screen.getByTestId('timer-adapter')).toBeInTheDocument();
-    expect(screen.getByTestId('timer-adapter')).toHaveAttribute('data-expires-in', '6');
+    expect(screen.queryByTestId('timer-adapter')).toBeNull();
     expect(screen.getByTestId('block-adapter')).toHaveAttribute('data-loading', 'false');
   });
 
@@ -200,7 +216,7 @@ describe('FlowComponentRenderer', () => {
       />,
     );
 
-    expect(screen.getByTestId('timer-adapter')).toHaveAttribute('data-expires-in', '0');
+    expect(screen.queryByTestId('timer-adapter')).toBeNull();
     expect(screen.getByTestId('block-adapter')).toHaveAttribute('data-loading', 'true');
   });
 

@@ -400,8 +400,14 @@ function extractPrompts(components: Element[], nodeId: string, edges: Edge[]): F
  * flow was loaded.
  */
 function findNextNode(canvasNode: Node<StepData>, edges: Edge[]): string | undefined {
-  // First try to find from edges (these are the source of truth for connections)
-  const outgoingEdges = edges.filter((edge) => edge.source === canvasNode.id);
+  // Try to find from edges (these are the source of truth for connections)
+  // Exclude 'failure' and 'incomplete' edges, as they map to specific handles properties
+  const outgoingEdges = edges.filter(
+    (edge) =>
+      edge.source === canvasNode.id &&
+      edge.sourceHandle !== 'failure' &&
+      !edge.sourceHandle?.endsWith(VisualFlowConstants.FLOW_BUILDER_INCOMPLETE_HANDLE_SUFFIX),
+  );
 
   if (outgoingEdges.length > 0) {
     // Prefer edges without sourceHandle (default connection)
@@ -410,7 +416,7 @@ function findNextNode(canvasNode: Node<StepData>, edges: Edge[]): string | undef
       return defaultEdge.target;
     }
 
-    // Otherwise use the first edge
+    // Otherwise use the first valid edge
     return outgoingEdges[0].target;
   }
 
@@ -595,6 +601,19 @@ function createOAuthCodeInput(): FlowInput {
 }
 
 /**
+ * Creates the consent decisions input for the ConsentExecutor.
+ * The consent_decisions input carries the user's JSON-encoded consent choices.
+ */
+function createConsentDecisionsInput(): FlowInput {
+  return {
+    ref: generateResourceId('input'),
+    type: 'CONSENT_INPUT',
+    identifier: 'consent_decisions',
+    required: true,
+  };
+}
+
+/**
  * Collects inputs for TASK_EXECUTION nodes from their preceding PROMPT nodes.
  * This is done in a second pass after all nodes are transformed.
  * Returns a new array of flow nodes with inputs added where applicable.
@@ -626,6 +645,20 @@ function collectInputsForExecutionNodes(
       };
     }
 
+    // ConsentExecutor gets a fixed consent_decisions input.
+    // Consent inputs are not standard form fields, so they cannot be inferred from the
+    // preceding PROMPT node's visual component tree via extractInputs.
+    if (executorName === 'ConsentExecutor') {
+      return {
+        ...flowNode,
+        executor: {
+          ...flowNode.executor,
+          name: executorName,
+          inputs: [createConsentDecisionsInput()],
+        },
+      };
+    }
+
     // Find the preceding PROMPT node
     const precedingPromptNode = findPrecedingPromptNode(flowNode.id, canvasNodes, edges);
 
@@ -652,6 +685,65 @@ function collectInputsForExecutionNodes(
 }
 
 /**
+ * Assigns consent_decisions input to prompt actions that route back to a ConsentExecutor.
+ *
+ * Consent prompts are special: the CONSENT_INPUT display elements live inside a
+ * CONSENT_PURPOSE block but aren't standard form fields. Both the "Allow" and
+ * "Deny" actions route back to the ConsentExecutor and must carry the
+ * consent_decisions input so the executor can process the user's choices.
+ *
+ * Flow graph structure:
+ *   ConsentExecutor --onIncomplete--> Consent PROMPT
+ *   Consent PROMPT  --Allow action--> ConsentExecutor  (needs consent_decisions)
+ *   Consent PROMPT  --Deny action-->  ConsentExecutor  (needs consent_decisions)
+ */
+function assignConsentInputsToPromptNodes(flowNodes: FlowNode[]): FlowNode[] {
+  // Find all ConsentExecutor nodes
+  const consentExecutorIds = new Set(
+    flowNodes
+      .filter((node) => node.type === 'TASK_EXECUTION' && node.executor?.name === 'ConsentExecutor')
+      .map((node) => node.id),
+  );
+
+  if (consentExecutorIds.size === 0) {
+    return flowNodes;
+  }
+
+  // Build a map of which PROMPT nodes are the onIncomplete target of a ConsentExecutor
+  const consentPromptIds = new Set(
+    flowNodes
+      .filter((node) => consentExecutorIds.has(node.id) && typeof node.onIncomplete === 'string')
+      .map((node) => node.onIncomplete!),
+  );
+
+  // For each consent PROMPT node, add consent_decisions to the actions
+  // that route back to the ConsentExecutor. Both Allow and Deny actions
+  // will receive this input.
+  return flowNodes.map((node) => {
+    if (node.type !== 'PROMPT' || !consentPromptIds.has(node.id) || !node.prompts) {
+      return node;
+    }
+
+    const consentInput = createConsentDecisionsInput();
+    const prompts = node.prompts.map((prompt) => {
+      if (!prompt.action || !consentExecutorIds.has(prompt.action.nextNode)) {
+        return prompt;
+      }
+
+      return {
+        ...prompt,
+        inputs: prompt.inputs ? [...prompt.inputs, consentInput] : [consentInput],
+      };
+    });
+
+    return {
+      ...node,
+      prompts,
+    };
+  });
+}
+
+/**
  * Main transformer function that converts React Flow canvas data to flow graph format
  *
  * @param canvasData - The output from React Flow's toObject() method
@@ -664,8 +756,14 @@ export function transformReactFlow(canvasData: ReactFlowCanvasData): FlowGraph {
   // Second pass: collect inputs for TASK_EXECUTION nodes from preceding PROMPT nodes
   const nodesWithInputs = collectInputsForExecutionNodes(flowNodes, canvasData.nodes, canvasData.edges);
 
+  // Third pass: assign consent inputs to the correct PROMPT node actions.
+  // ConsentExecutor's onIncomplete points to the consent PROMPT view. Any
+  // action that routes back to the ConsentExecutor (both Allow and Deny) gets
+  // the consent_decisions input.
+  const nodesWithConsentInputs = assignConsentInputsToPromptNodes(nodesWithInputs);
+
   return {
-    nodes: nodesWithInputs,
+    nodes: nodesWithConsentInputs,
   };
 }
 

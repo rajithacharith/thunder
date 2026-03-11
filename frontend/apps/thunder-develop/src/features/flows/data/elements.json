@@ -406,5 +406,16 @@
     "name": "User",
     "size": 24,
     "color": "currentColor"
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "DISPLAY",
+    "type": "TIMER",
+    "display": {
+      "label": "Timer",
+      "image": "assets/images/icons/clock.svg",
+      "showOnResourcePanel": true
+    },
+    "label": "Time remaining: {time}"
   }
 ]

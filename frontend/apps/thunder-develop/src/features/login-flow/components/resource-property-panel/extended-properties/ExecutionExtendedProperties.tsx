@@ -130,6 +130,31 @@ function ExecutionExtendedProperties({resource, onChange}: ExecutionExtendedProp
   // Check if this is a Passkey executor
   const isPasskeyExecutor = executorName === ExecutionTypes.PasskeyAuth;
 
+  // Check if this is a Consent executor
+  const isConsentExecutor = executorName === ExecutionTypes.ConsentExecutor;
+
+  // Get the current timeout for Consent executor
+  const currentTimeout = useMemo(() => {
+    const stepData = resource?.data as StepData | undefined;
+    return (stepData?.properties as {timeout?: string})?.timeout ?? '0';
+  }, [resource]);
+
+  // Handle timeout change for Consent executor
+  const handleTimeoutChange = (value: string): void => {
+    if (value === '') {
+      onChange('data.properties.timeout', '0', resource);
+      return;
+    }
+
+    const num = Number(value);
+    if (Number.isNaN(num)) {
+      return;
+    }
+
+    const parsed = Math.max(0, Math.floor(num));
+    onChange('data.properties.timeout', String(parsed), resource);
+  };
+
   // Check if current Passkey mode requires relying party configuration
   const showRelyingPartyConfig =
     isPasskeyExecutor &&
@@ -314,6 +339,32 @@ function ExecutionExtendedProperties({resource, onChange}: ExecutionExtendedProp
         {!isLoadingSenders && !hasSenders && (
           <Alert severity="warning">{t('flows:core.executions.smsOtp.sender.noSenders')}</Alert>
         )}
+      </Stack>
+    );
+  }
+
+  // Render Consent executor timeout configuration
+  if (isConsentExecutor) {
+    return (
+      <Stack gap={2}>
+        <Typography variant="body2" color="text.secondary">
+          {t('flows:core.executions.consent.description')}
+        </Typography>
+
+        <div>
+          <FormLabel htmlFor="consent-timeout">{t('flows:core.executions.consent.timeout.label')}</FormLabel>
+          <TextField
+            id="consent-timeout"
+            value={currentTimeout}
+            onChange={(e) => handleTimeoutChange(e.target.value)}
+            placeholder={t('flows:core.executions.consent.timeout.placeholder')}
+            fullWidth
+            size="small"
+            type="number"
+            inputProps={{min: 0}}
+          />
+          <FormHelperText>{t('flows:core.executions.consent.timeout.hint')}</FormHelperText>
+        </div>
       </Stack>
     );
   }
