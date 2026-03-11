@@ -25,6 +25,18 @@ package core
 // This map is populated by the i18n extraction script at build time.
 // Helper functions for accessing these messages are in helpers.go.
 var defaultMessages = map[string]string{
+	"error.attributecache.cache_not_found": "Attribute cache not found",
+	"error.attributecache.cache_not_found_description": "The attribute cache entry with the specified ID does not exist",
+	"error.attributecache.internal_server_error": "Internal server error",
+	"error.attributecache.internal_server_error_description": "An unexpected error occurred",
+	"error.attributecache.invalid_expiry_time": "Invalid expiry time",
+	"error.attributecache.invalid_expiry_time_description": "Expiry time must be in the future",
+	"error.attributecache.invalid_request_format": "Invalid request format",
+	"error.attributecache.invalid_request_format_description": "The request body is malformed or contains invalid data",
+	"error.attributecache.missing_attributes": "Missing attributes",
+	"error.attributecache.missing_attributes_description": "Attributes are required",
+	"error.attributecache.missing_cache_id": "Missing cache ID",
+	"error.attributecache.missing_cache_id_description": "Cache ID is required",
 	"error.consentenforcerservice.consent_create_failed": "Failed to create consent record",
 	"error.consentenforcerservice.consent_create_failed_description": "Error while creating consent record in the consent service",
 	"error.consentenforcerservice.consent_search_failed": "Failed to search consent records",

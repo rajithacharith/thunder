@@ -147,6 +147,8 @@ type ResponseType string
 const (
 	// ResponseTypeCode represents the authorization code response type.
 	ResponseTypeCode ResponseType = "code"
+	// ResponseTypeIDToken represents the id token response type.
+	ResponseTypeIDToken ResponseType = "id_token"
 )
 
 // supportedResponseTypes is the single source of truth for all supported response types.

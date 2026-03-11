@@ -38,6 +38,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/userprovider"
+	"github.com/asgardeo/thunder/tests/mocks/attributecachemock"
 	"github.com/asgardeo/thunder/tests/mocks/authn/assertmock"
 	"github.com/asgardeo/thunder/tests/mocks/authn/credentialsmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
@@ -50,13 +51,14 @@ const testEmail = "test@example.com"
 
 type AuthAssertExecutorTestSuite struct {
 	suite.Suite
-	mockJWTService      *jwtmock.JWTServiceInterfaceMock
-	mockOUService       *oumock.OrganizationUnitServiceInterfaceMock
-	mockAssertGenerator *assertmock.AuthAssertGeneratorInterfaceMock
-	mockCredsAuthSvc    *credentialsmock.CredentialsAuthnServiceInterfaceMock
-	mockUserProvider    *userprovidermock.UserProviderInterfaceMock
-	mockFlowFactory     *coremock.FlowFactoryInterfaceMock
-	executor            *authAssertExecutor
+	mockJWTService        *jwtmock.JWTServiceInterfaceMock
+	mockOUService         *oumock.OrganizationUnitServiceInterfaceMock
+	mockAssertGenerator   *assertmock.AuthAssertGeneratorInterfaceMock
+	mockCredsAuthSvc      *credentialsmock.CredentialsAuthnServiceInterfaceMock
+	mockUserProvider      *userprovidermock.UserProviderInterfaceMock
+	mockFlowFactory       *coremock.FlowFactoryInterfaceMock
+	mockAttributeCacheSvc *attributecachemock.AttributeCacheServiceInterfaceMock
+	executor              *authAssertExecutor
 }
 
 func TestAuthAssertExecutorSuite(t *testing.T) {
@@ -73,13 +75,15 @@ func (suite *AuthAssertExecutorTestSuite) SetupTest() {
 	suite.mockCredsAuthSvc = credentialsmock.NewCredentialsAuthnServiceInterfaceMock(suite.T())
 	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
+	suite.mockAttributeCacheSvc = attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
 
 	mockExec := createMockExecutorSimple(suite.T(), ExecutorNameAuthAssert, common.ExecutorTypeUtility)
 	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameAuthAssert, common.ExecutorTypeUtility,
 		[]common.Input{}, []common.Input{}).Return(mockExec)
 
 	suite.executor = newAuthAssertExecutor(suite.mockFlowFactory, suite.mockJWTService,
-		suite.mockOUService, suite.mockAssertGenerator, suite.mockCredsAuthSvc, suite.mockUserProvider)
+		suite.mockOUService, suite.mockAssertGenerator, suite.mockCredsAuthSvc, suite.mockUserProvider,
+		suite.mockAttributeCacheSvc)
 }
 
 func createMockExecutorSimple(t *testing.T, name string,
@@ -398,7 +402,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExtractAuthenticatorReferences_SMS
 	assert.Equal(suite.T(), 1, refs[0].Step)
 }
 
-func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_Success() {
+func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributesFromUserProvider_Success() {
 	attrs := map[string]interface{}{"email": testEmail, "name": "Test User"}
 	attrsJSON, _ := json.Marshal(attrs)
 
@@ -409,7 +413,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_Success() {
 
 	suite.mockUserProvider.On("GetUser", "user-123").Return(existingUser, nil)
 
-	resultAttrs, err := suite.executor.getUserAttributes(context.Background(), "user-123", "", nil, nil)
+	resultAttrs, err := suite.executor.getUserAttributesFromUserProvider("user-123")
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resultAttrs)
@@ -418,18 +422,18 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_Success() {
 	suite.mockUserProvider.AssertExpectations(suite.T())
 }
 
-func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_ServiceError() {
+func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributesFromUserProvider_ServiceError() {
 	suite.mockUserProvider.On("GetUser", "user-123").
 		Return(nil, &userprovider.UserProviderError{Message: "user not found"})
 
-	resultAttrs, err := suite.executor.getUserAttributes(context.Background(), "user-123", "", nil, nil)
+	resultAttrs, err := suite.executor.getUserAttributesFromUserProvider("user-123")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), resultAttrs)
 	suite.mockUserProvider.AssertExpectations(suite.T())
 }
 
-func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_InvalidJSON() {
+func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributesFromUserProvider_InvalidJSON() {
 	existingUser := &userprovider.User{
 		UserID:     "user-123",
 		Attributes: json.RawMessage(`invalid json`),
@@ -437,14 +441,14 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_InvalidJSON() {
 
 	suite.mockUserProvider.On("GetUser", "user-123").Return(existingUser, nil)
 
-	resultAttrs, err := suite.executor.getUserAttributes(context.Background(), "user-123", "", nil, nil)
+	resultAttrs, err := suite.executor.getUserAttributesFromUserProvider("user-123")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), resultAttrs)
 	suite.mockUserProvider.AssertExpectations(suite.T())
 }
 
-func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_WithToken_Success() {
+func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributesFromAuthnProvider_Success() {
 	reqAttrs := &authnprovider.RequestedAttributes{
 		Attributes: map[string]*authnprovider.AttributeMetadataRequest{
 			"email": nil,
@@ -465,7 +469,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_WithToken_Succes
 	suite.mockCredsAuthSvc.On("GetAttributes", mock.Anything, "token-123", reqAttrs,
 		(*authnprovider.GetAttributesMetadata)(nil)).Return(&res, nil)
 
-	resultAttrs, err := suite.executor.getUserAttributes(context.Background(), "user-123",
+	resultAttrs, err := suite.executor.getUserAttributesFromAuthnProvider(context.Background(),
 		"token-123", []string{"email", "name"}, nil)
 
 	assert.NoError(suite.T(), err)
@@ -475,7 +479,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_WithToken_Succes
 	suite.mockCredsAuthSvc.AssertExpectations(suite.T())
 }
 
-func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_WithToken_ServiceError() {
+func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributesFromAuthnProvider_ServiceError() {
 	reqAttrs := &authnprovider.RequestedAttributes{
 		Attributes: map[string]*authnprovider.AttributeMetadataRequest{
 			"email": nil,
@@ -492,7 +496,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_WithToken_Servic
 		ErrorDescription: "something went wrong",
 	})
 
-	resultAttrs, err := suite.executor.getUserAttributes(context.Background(), "user-123",
+	resultAttrs, err := suite.executor.getUserAttributesFromAuthnProvider(context.Background(),
 		"token-123", []string{"email", "name"}, nil)
 
 	assert.Error(suite.T(), err)

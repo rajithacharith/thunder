@@ -24,8 +24,10 @@ import (
 	"errors"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 
+	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/authn/assert"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
@@ -53,6 +55,7 @@ type authAssertExecutor struct {
 	authAssertGenerator assert.AuthAssertGeneratorInterface
 	credsAuthSvc        authncreds.CredentialsAuthnServiceInterface
 	userProvider        userprovider.UserProviderInterface
+	attributeCacheSvc   attributecache.AttributeCacheServiceInterface
 	logger              *log.Logger
 }
 
@@ -66,6 +69,7 @@ func newAuthAssertExecutor(
 	assertGenerator assert.AuthAssertGeneratorInterface,
 	credsAuthSvc authncreds.CredentialsAuthnServiceInterface,
 	userProvider userprovider.UserProviderInterface,
+	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 ) *authAssertExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, authAssertLoggerComponentName),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameAuthAssert))
@@ -80,6 +84,7 @@ func newAuthAssertExecutor(
 		authAssertGenerator: assertGenerator,
 		credsAuthSvc:        credsAuthSvc,
 		userProvider:        userProvider,
+		attributeCacheSvc:   attributeCacheSvc,
 		logger:              logger,
 	}
 }
@@ -185,8 +190,37 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 		}
 	}
 
-	if err := a.appendUserDetailsToClaims(ctx, jwtClaims, userAttributes); err != nil {
-		return "", err
+	resolvedAttributes, attrErr := a.resolveUserAttributes(ctx, userAttributes)
+	if attrErr != nil {
+		return "", attrErr
+	}
+
+	if ttlSecondsStr, exists := ctx.RuntimeData[common.RuntimeKeyUserAttributesCacheTTLSeconds]; exists {
+		if len(resolvedAttributes) > 0 {
+			ttlSeconds, err := strconv.Atoi(ttlSecondsStr)
+			if err != nil {
+				logger.Error("Failed to parse TTL seconds from runtime data",
+					log.String("key", common.RuntimeKeyUserAttributesCacheTTLSeconds),
+					log.String("ttlValue", ttlSecondsStr),
+					log.String("error", err.Error()))
+				return "", errors.New("something went wrong while processing attribute cache configuration")
+			}
+			attributeCache := &attributecache.AttributeCache{
+				Attributes: resolvedAttributes,
+				TTLSeconds: ttlSeconds,
+			}
+			result, creationErr := a.attributeCacheSvc.CreateAttributeCache(ctx.Context, attributeCache)
+			if creationErr != nil {
+				logger.Error("Failed to create attribute cache",
+					log.String("error", creationErr.ErrorDescription.DefaultValue))
+				return "", errors.New("failed to create attribute cache")
+			}
+			jwtClaims["attribute_cache_id"] = result.ID
+		}
+	} else {
+		for attrKey, attrVal := range resolvedAttributes {
+			jwtClaims[attrKey] = attrVal
+		}
 	}
 
 	// Handle groups if configured in user attributes
@@ -267,18 +301,19 @@ func (a *authAssertExecutor) extractAuthenticatorReferences(
 	return refs
 }
 
-// appendUserDetailsToClaims appends user details to the JWT claims.
-func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *core.NodeContext,
-	jwtClaims map[string]interface{}, userAttributes []string) error {
-	if len(userAttributes) == 0 {
-		return nil
+// resolveUserAttributes resolves the user attributes map from the requested attributes.
+func (a *authAssertExecutor) resolveUserAttributes(
+	ctx *core.NodeContext, requestedAttributes []string) (map[string]interface{}, error) {
+	if len(requestedAttributes) == 0 {
+		return nil, nil
 	}
 
-	var attrs map[string]interface{}
+	attributes := make(map[string]interface{})
+	var fetchedAttributes map[string]interface{}
 
 	standardClaims := oauth2const.GetStandardClaims()
 
-	for _, attr := range userAttributes {
+	for _, attr := range requestedAttributes {
 		// Skip attributes that are handled separately
 		if attr == oauth2const.UserAttributeGroups ||
 			attr == oauth2const.ClaimUserType ||
@@ -295,78 +330,81 @@ func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *core.NodeContext,
 
 		// Check for the attribute in authenticated user attributes
 		if val, ok := ctx.AuthenticatedUser.Attributes[attr]; ok {
-			jwtClaims[attr] = val
+			attributes[attr] = val
 			continue
 		}
 
 		// Check runtime data as fallback
 		if val, exists := ctx.RuntimeData[attr]; exists && val != "" {
-			jwtClaims[attr] = val
+			attributes[attr] = val
 			continue
 		}
 
 		// Fetch from user/authentication provider
-		if ctx.AuthenticatedUser.UserID != "" && attrs == nil {
+		if ctx.AuthenticatedUser.UserID != "" && fetchedAttributes == nil {
 			var err error
-			metadata := a.buildGetAttributesMetadata(ctx)
-			attrs, err = a.getUserAttributes(ctx.Context, ctx.AuthenticatedUser.UserID,
-				ctx.AuthenticatedUser.Token, userAttributes, metadata)
+			if ctx.AuthenticatedUser.Token != "" {
+				metadata := a.buildGetAttributesMetadata(ctx)
+				fetchedAttributes, err = a.getUserAttributesFromAuthnProvider(ctx.Context,
+					ctx.AuthenticatedUser.Token, requestedAttributes, metadata)
+			} else {
+				fetchedAttributes, err = a.getUserAttributesFromUserProvider(ctx.AuthenticatedUser.UserID)
+			}
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 
 		// Check for the attribute in attributes fetched from user/authentication provider
-		if attrs != nil {
-			if val, ok := attrs[attr]; ok {
-				jwtClaims[attr] = val
+		if fetchedAttributes != nil {
+			if val, ok := fetchedAttributes[attr]; ok {
+				attributes[attr] = val
 				continue
 			}
 		}
 	}
 
-	return nil
+	return attributes, nil
 }
 
-// getUserAttributes retrieves user details and unmarshal the attributes.
-func (a *authAssertExecutor) getUserAttributes(ctx context.Context, userID string, token string,
+// getUserAttributesFromAuthnProvider retrieves user attributes from the authentication provider.
+func (a *authAssertExecutor) getUserAttributesFromAuthnProvider(ctx context.Context, token string,
 	requestedAttributes []string, metadata *authnprovider.GetAttributesMetadata) (map[string]interface{}, error) {
+	// Convert requested attributes from []string to *RequestedAttributes
+	reqAttrs := &authnprovider.RequestedAttributes{
+		Attributes:    make(map[string]*authnprovider.AttributeMetadataRequest),
+		Verifications: nil,
+	}
+	for _, attrName := range requestedAttributes {
+		reqAttrs.Attributes[attrName] = nil
+	}
+
+	res, svcErr := a.credsAuthSvc.GetAttributes(ctx, token, reqAttrs, metadata)
+	if svcErr != nil {
+		if svcErr.Type == serviceerror.ServerErrorType {
+			return nil, errors.New("something went wrong while fetching user attributes")
+		}
+		return nil, errors.New("failed to fetch user attributes: " + svcErr.ErrorDescription)
+	}
+
+	// Extract attribute values from AttributesResponse
+	attrs := make(map[string]interface{})
+	if res.AttributesResponse != nil && res.AttributesResponse.Attributes != nil {
+		for attrName, attrResp := range res.AttributesResponse.Attributes {
+			if attrResp != nil {
+				attrs[attrName] = attrResp.Value
+			}
+		}
+	}
+	return attrs, nil
+}
+
+// getUserAttributesFromUserProvider retrieves user attributes from the user provider.
+func (a *authAssertExecutor) getUserAttributesFromUserProvider(userID string) (
+	map[string]interface{}, error) {
 	logger := a.logger.With(log.String("userID", userID))
 
 	var jsonAttrs json.RawMessage
-
-	// if token is present, fetch attributes from authentication provider
-	if token != "" {
-		// Convert requested attributes from []string to *RequestedAttributes
-		reqAttrs := &authnprovider.RequestedAttributes{
-			Attributes:    make(map[string]*authnprovider.AttributeMetadataRequest),
-			Verifications: nil,
-		}
-		for _, attrName := range requestedAttributes {
-			reqAttrs.Attributes[attrName] = nil
-		}
-
-		res, svcErr := a.credsAuthSvc.GetAttributes(ctx, token, reqAttrs, metadata)
-		if svcErr != nil {
-			if svcErr.Type == serviceerror.ServerErrorType {
-				return nil, errors.New("something went wrong while fetching user attributes")
-			}
-			return nil, errors.New("failed to fetch user attributes: " + svcErr.ErrorDescription)
-		}
-
-		// Extract attribute values from AttributesResponse
-		attrs := make(map[string]interface{})
-		if res.AttributesResponse != nil && res.AttributesResponse.Attributes != nil {
-			for attrName, attrResp := range res.AttributesResponse.Attributes {
-				if attrResp != nil {
-					attrs[attrName] = attrResp.Value
-				}
-			}
-		}
-		return attrs, nil
-	}
-
-	// if token is not present, fetch attributes from user provider
 	res, err := a.userProvider.GetUser(userID)
 	if err != nil {
 		logger.Error("Failed to fetch user attributes",

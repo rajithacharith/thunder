@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/authn"
 	"github.com/asgardeo/thunder/internal/authz"
 	"github.com/asgardeo/thunder/internal/flow/common"
@@ -49,6 +50,7 @@ func Initialize(
 	groupService group.GroupServiceInterface,
 	roleService role.RoleServiceInterface,
 	userProvider userprovider.UserProviderInterface,
+	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 ) ExecutorRegistryInterface {
 	reg := newExecutorRegistry()
 	reg.RegisterExecutor(ExecutorNameBasicAuth, newBasicAuthExecutor(
@@ -75,7 +77,8 @@ func Initialize(
 
 	reg.RegisterExecutor(ExecutorNameAttributeCollect, newAttributeCollector(flowFactory, userProvider))
 	reg.RegisterExecutor(ExecutorNameAuthAssert, newAuthAssertExecutor(flowFactory, jwtService,
-		ouService, authRegistry.AuthAssertGenerator, authRegistry.CredentialsAuthnService, userProvider))
+		ouService, authRegistry.AuthAssertGenerator, authRegistry.CredentialsAuthnService, userProvider,
+		attributeCacheSvc))
 	reg.RegisterExecutor(ExecutorNameAuthorization, newAuthorizationExecutor(flowFactory, authZService))
 	reg.RegisterExecutor(ExecutorNameHTTPRequest, newHTTPRequestExecutor(flowFactory))
 	reg.RegisterExecutor(ExecutorNameUserTypeResolver, newUserTypeResolver(flowFactory, userSchemaService))

@@ -20,6 +20,7 @@ package authz
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -616,4 +617,737 @@ func (suite *AuthorizeServiceTestSuite) TestGetAuthorizationCodeDetails_ExpiredC
 	assert.Nil(suite.T(), result)
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "invalid authorization code")
+}
+
+func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_NilApp() {
+	accessTokenClaims, idTokenClaims, userInfoClaims := determineClaimsForTokens(
+		[]string{"openid", "profile"},
+		nil,
+		string(oauth2const.ResponseTypeCode),
+		nil,
+	)
+
+	assert.Empty(suite.T(), accessTokenClaims)
+	assert.Empty(suite.T(), idTokenClaims)
+	assert.Empty(suite.T(), userInfoClaims)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_NilTokenConfig() {
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token:    nil,
+	}
+
+	accessTokenClaims, idTokenClaims, userInfoClaims := determineClaimsForTokens(
+		[]string{"openid", "profile"},
+		nil,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	assert.Empty(suite.T(), accessTokenClaims)
+	assert.Empty(suite.T(), idTokenClaims)
+	assert.Empty(suite.T(), userInfoClaims)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_AccessTokenClaimsOnly() {
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			AccessToken: &appmodel.AccessTokenConfig{
+				UserAttributes: []string{"user_id", "org_id", "role"},
+			},
+		},
+	}
+
+	accessTokenClaims, idTokenClaims, userInfoClaims := determineClaimsForTokens(
+		[]string{}, // No OIDC scopes
+		nil,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	assert.Len(suite.T(), accessTokenClaims, 3)
+	assert.True(suite.T(), accessTokenClaims["user_id"])
+	assert.True(suite.T(), accessTokenClaims["org_id"])
+	assert.True(suite.T(), accessTokenClaims["role"])
+	assert.Empty(suite.T(), idTokenClaims)
+	assert.Empty(suite.T(), userInfoClaims)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_NoOpenIDScope() {
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			AccessToken: &appmodel.AccessTokenConfig{
+				UserAttributes: []string{"user_id"},
+			},
+			IDToken: &appmodel.IDTokenConfig{
+				UserAttributes: []string{"email", "name"},
+			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"email", "name"},
+		},
+	}
+
+	accessTokenClaims, idTokenClaims, userInfoClaims := determineClaimsForTokens(
+		[]string{"profile"}, // OIDC scope but no openid
+		nil,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	// Only access token claims should be returned
+	assert.Len(suite.T(), accessTokenClaims, 1)
+	assert.True(suite.T(), accessTokenClaims["user_id"])
+	assert.Empty(suite.T(), idTokenClaims)
+	assert.Empty(suite.T(), userInfoClaims)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_StandardOIDCScopes_CodeFlow() {
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			IDToken: &appmodel.IDTokenConfig{
+				UserAttributes: []string{"email", "email_verified", "name"},
+			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"email", "email_verified", "name", "picture"},
+		},
+	}
+
+	accessTokenClaims, idTokenClaims, userInfoClaims := determineClaimsForTokens(
+		[]string{"openid", "email"},
+		nil,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	assert.Empty(suite.T(), accessTokenClaims)
+	assert.Empty(suite.T(), idTokenClaims)
+	// In code flow, claims from scopes go to userinfo
+	assert.Len(suite.T(), userInfoClaims, 2)
+	assert.True(suite.T(), userInfoClaims["email"])
+	assert.True(suite.T(), userInfoClaims["email_verified"])
+}
+
+func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_StandardOIDCScopes_ImplicitFlow() {
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			IDToken: &appmodel.IDTokenConfig{
+				UserAttributes: []string{"email", "email_verified", "name"},
+			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"email", "email_verified", "name", "picture"},
+		},
+	}
+
+	accessTokenClaims, idTokenClaims, userInfoClaims := determineClaimsForTokens(
+		[]string{"openid", "email"},
+		nil,
+		string(oauth2const.ResponseTypeIDToken), // Implicit flow - no access token
+		app,
+	)
+
+	assert.Empty(suite.T(), accessTokenClaims)
+	// In implicit flow (id_token only), claims from scopes go to id_token
+	assert.Len(suite.T(), idTokenClaims, 2)
+	assert.True(suite.T(), idTokenClaims["email"])
+	assert.True(suite.T(), idTokenClaims["email_verified"])
+	assert.Empty(suite.T(), userInfoClaims)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_ClaimsParameter_IDToken() {
+	claimsRequest := &oauth2model.ClaimsRequest{
+		IDToken: map[string]*oauth2model.IndividualClaimRequest{
+			"email": {},
+			"name":  {},
+		},
+	}
+
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			IDToken: &appmodel.IDTokenConfig{
+				UserAttributes: []string{"email", "name", "picture"},
+			},
+		},
+	}
+
+	accessTokenClaims, idTokenClaims, userInfoClaims := determineClaimsForTokens(
+		[]string{"openid"},
+		claimsRequest,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	assert.Empty(suite.T(), accessTokenClaims)
+	assert.Len(suite.T(), idTokenClaims, 2)
+	assert.True(suite.T(), idTokenClaims["email"])
+	assert.True(suite.T(), idTokenClaims["name"])
+	assert.Empty(suite.T(), userInfoClaims)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_ClaimsParameter_UserInfo() {
+	claimsRequest := &oauth2model.ClaimsRequest{
+		UserInfo: map[string]*oauth2model.IndividualClaimRequest{
+			"email":   {},
+			"picture": {},
+		},
+	}
+
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token:    &appmodel.OAuthTokenConfig{}, // Need Token config for the method to process claims
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"email", "name", "picture"},
+		},
+	}
+
+	accessTokenClaims, idTokenClaims, userInfoClaims := determineClaimsForTokens(
+		[]string{"openid"},
+		claimsRequest,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	assert.Empty(suite.T(), accessTokenClaims)
+	assert.Empty(suite.T(), idTokenClaims)
+	assert.Len(suite.T(), userInfoClaims, 2)
+	assert.True(suite.T(), userInfoClaims["email"])
+	assert.True(suite.T(), userInfoClaims["picture"])
+}
+
+func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_ClaimsParameter_FilteredByAllowedSet() {
+	claimsRequest := &oauth2model.ClaimsRequest{
+		IDToken: map[string]*oauth2model.IndividualClaimRequest{
+			"email":     {},
+			"name":      {},
+			"not_found": {}, // Not in allowed set
+		},
+	}
+
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			IDToken: &appmodel.IDTokenConfig{
+				UserAttributes: []string{"email", "name"}, // not_found is not allowed
+			},
+		},
+	}
+
+	accessTokenClaims, idTokenClaims, userInfoClaims := determineClaimsForTokens(
+		[]string{"openid"},
+		claimsRequest,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	assert.Empty(suite.T(), accessTokenClaims)
+	// not_found should be filtered out
+	assert.Len(suite.T(), idTokenClaims, 2)
+	assert.True(suite.T(), idTokenClaims["email"])
+	assert.True(suite.T(), idTokenClaims["name"])
+	assert.False(suite.T(), idTokenClaims["not_found"])
+	assert.Empty(suite.T(), userInfoClaims)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_CustomScopeMapping() {
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			IDToken: &appmodel.IDTokenConfig{
+				UserAttributes: []string{"org_id", "org_name", "department"},
+			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"org_id", "org_name", "department"},
+		},
+		ScopeClaims: map[string][]string{
+			"organization": {"org_id", "org_name"},
+		},
+	}
+
+	accessTokenClaims, idTokenClaims, userInfoClaims := determineClaimsForTokens(
+		[]string{"openid", "organization"},
+		nil,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	assert.Empty(suite.T(), accessTokenClaims)
+	assert.Empty(suite.T(), idTokenClaims)
+	// Custom scope claims go to userinfo in code flow
+	assert.Len(suite.T(), userInfoClaims, 2)
+	assert.True(suite.T(), userInfoClaims["org_id"])
+	assert.True(suite.T(), userInfoClaims["org_name"])
+}
+
+func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_CustomScopeOverridesStandardScope() {
+	// If app defines custom mapping for a standard scope, it should override
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			IDToken: &appmodel.IDTokenConfig{
+				UserAttributes: []string{"custom_email", "email"},
+			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"custom_email", "email"},
+		},
+		ScopeClaims: map[string][]string{
+			"email": {"custom_email"}, // Override standard email scope
+		},
+	}
+
+	accessTokenClaims, idTokenClaims, userInfoClaims := determineClaimsForTokens(
+		[]string{"openid", "email"},
+		nil,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	assert.Empty(suite.T(), accessTokenClaims)
+	assert.Empty(suite.T(), idTokenClaims)
+	// Should use custom mapping, not standard
+	assert.Len(suite.T(), userInfoClaims, 1)
+	assert.True(suite.T(), userInfoClaims["custom_email"])
+	assert.False(suite.T(), userInfoClaims["email"])
+	assert.False(suite.T(), userInfoClaims["email_verified"])
+}
+
+func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_MultipleScopesCodeFlow() {
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			AccessToken: &appmodel.AccessTokenConfig{
+				UserAttributes: []string{"user_id"},
+			},
+			IDToken: &appmodel.IDTokenConfig{
+				UserAttributes: []string{"email", "email_verified", "name", "picture"},
+			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"email", "email_verified", "name", "picture", "phone_number"},
+		},
+	}
+
+	accessTokenClaims, idTokenClaims, userInfoClaims := determineClaimsForTokens(
+		[]string{"openid", "email", "profile"},
+		nil,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	// Access token claims
+	assert.Len(suite.T(), accessTokenClaims, 1)
+	assert.True(suite.T(), accessTokenClaims["user_id"])
+
+	// ID token claims should be empty (code flow)
+	assert.Empty(suite.T(), idTokenClaims)
+
+	// UserInfo claims from email and profile scopes
+	assert.True(suite.T(), userInfoClaims["email"])
+	assert.True(suite.T(), userInfoClaims["email_verified"])
+	assert.True(suite.T(), userInfoClaims["name"])
+	assert.True(suite.T(), userInfoClaims["picture"])
+	// phone_number not requested via scope
+	assert.False(suite.T(), userInfoClaims["phone_number"])
+}
+
+func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_CompleteScenario() {
+	claimsRequest := &oauth2model.ClaimsRequest{
+		IDToken: map[string]*oauth2model.IndividualClaimRequest{
+			"email": {},
+		},
+		UserInfo: map[string]*oauth2model.IndividualClaimRequest{
+			"phone_number": {},
+		},
+	}
+
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			AccessToken: &appmodel.AccessTokenConfig{
+				UserAttributes: []string{"user_id", "role"},
+			},
+			IDToken: &appmodel.IDTokenConfig{
+				UserAttributes: []string{"email", "email_verified", "name"},
+			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"email", "email_verified", "name", "picture", "phone_number"},
+		},
+		ScopeClaims: map[string][]string{
+			"custom": {"name"},
+		},
+	}
+
+	accessTokenClaims, idTokenClaims, userInfoClaims := determineClaimsForTokens(
+		[]string{"openid", "custom"},
+		claimsRequest,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	// Access token claims from config
+	assert.Len(suite.T(), accessTokenClaims, 2)
+	assert.True(suite.T(), accessTokenClaims["user_id"])
+	assert.True(suite.T(), accessTokenClaims["role"])
+
+	// ID token claims from claims parameter
+	assert.Len(suite.T(), idTokenClaims, 1)
+	assert.True(suite.T(), idTokenClaims["email"])
+
+	// UserInfo claims from custom scope + claims parameter
+	assert.Len(suite.T(), userInfoClaims, 2)
+	assert.True(suite.T(), userInfoClaims["name"])         // from custom scope
+	assert.True(suite.T(), userInfoClaims["phone_number"]) // from claims parameter
+}
+
+func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_EmptyAllowedSets() {
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			IDToken: &appmodel.IDTokenConfig{
+				UserAttributes: []string{}, // Empty allowed set
+			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{}, // Empty allowed set
+		},
+	}
+
+	accessTokenClaims, idTokenClaims, userInfoClaims := determineClaimsForTokens(
+		[]string{"openid", "email", "profile"},
+		nil,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	assert.Empty(suite.T(), accessTokenClaims)
+	assert.Empty(suite.T(), idTokenClaims)
+	assert.Empty(suite.T(), userInfoClaims)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_NilApp() {
+	result := getRequiredAttributes(
+		[]string{"openid", "profile"},
+		nil,
+		string(oauth2const.ResponseTypeCode),
+		nil,
+	)
+
+	assert.Empty(suite.T(), result)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_NilTokenConfig() {
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token:    nil,
+	}
+
+	result := getRequiredAttributes(
+		[]string{"openid", "profile"},
+		nil,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	assert.Empty(suite.T(), result)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_AccessTokenOnly() {
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			AccessToken: &appmodel.AccessTokenConfig{
+				UserAttributes: []string{"user_id", "role"},
+			},
+		},
+	}
+
+	result := getRequiredAttributes(
+		[]string{},
+		nil,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	// Result should contain both attributes space-separated
+	assert.NotEmpty(suite.T(), result)
+	assert.Contains(suite.T(), result, "user_id")
+	assert.Contains(suite.T(), result, "role")
+	// Should have exactly 2 space-separated values
+	parts := strings.Fields(result)
+	assert.Len(suite.T(), parts, 2)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_CodeFlowWithScopes() {
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			AccessToken: &appmodel.AccessTokenConfig{
+				UserAttributes: []string{"user_id"},
+			},
+			IDToken: &appmodel.IDTokenConfig{
+				UserAttributes: []string{"email", "email_verified", "name"},
+			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"email", "email_verified", "name", "picture"},
+		},
+	}
+
+	result := getRequiredAttributes(
+		[]string{"openid", "email"},
+		nil,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	// Should include access token claim + email scope claims from userinfo
+	assert.NotEmpty(suite.T(), result)
+	assert.Contains(suite.T(), result, "user_id")
+	assert.Contains(suite.T(), result, "email")
+	assert.Contains(suite.T(), result, "email_verified")
+
+	parts := strings.Fields(result)
+	assert.Len(suite.T(), parts, 3)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_ImplicitFlowWithScopes() {
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			IDToken: &appmodel.IDTokenConfig{
+				UserAttributes: []string{"email", "email_verified", "name"},
+			},
+		},
+	}
+
+	result := getRequiredAttributes(
+		[]string{"openid", "email"},
+		nil,
+		string(oauth2const.ResponseTypeIDToken),
+		app,
+	)
+
+	// In implicit flow, email scope claims go to id_token
+	assert.NotEmpty(suite.T(), result)
+	assert.Contains(suite.T(), result, "email")
+	assert.Contains(suite.T(), result, "email_verified")
+
+	parts := strings.Fields(result)
+	assert.Len(suite.T(), parts, 2)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_WithClaimsParameter() {
+	claimsRequest := &oauth2model.ClaimsRequest{
+		IDToken: map[string]*oauth2model.IndividualClaimRequest{
+			"email": {},
+		},
+		UserInfo: map[string]*oauth2model.IndividualClaimRequest{
+			"phone_number": {},
+		},
+	}
+
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			AccessToken: &appmodel.AccessTokenConfig{
+				UserAttributes: []string{"user_id"},
+			},
+			IDToken: &appmodel.IDTokenConfig{
+				UserAttributes: []string{"email", "name"},
+			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"email", "phone_number"},
+		},
+	}
+
+	result := getRequiredAttributes(
+		[]string{"openid"},
+		claimsRequest,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	// Should include access token + id_token claim + userinfo claim
+	assert.NotEmpty(suite.T(), result)
+	assert.Contains(suite.T(), result, "user_id")
+	assert.Contains(suite.T(), result, "email")
+	assert.Contains(suite.T(), result, "phone_number")
+
+	parts := strings.Fields(result)
+	assert.Len(suite.T(), parts, 3)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_DeduplicatesClaims() {
+	claimsRequest := &oauth2model.ClaimsRequest{
+		IDToken: map[string]*oauth2model.IndividualClaimRequest{
+			"email": {},
+		},
+		UserInfo: map[string]*oauth2model.IndividualClaimRequest{
+			"email": {}, // Same claim in both
+		},
+	}
+
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			AccessToken: &appmodel.AccessTokenConfig{
+				UserAttributes: []string{"email"}, // Same claim in access token too
+			},
+			IDToken: &appmodel.IDTokenConfig{
+				UserAttributes: []string{"email"},
+			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"email"},
+		},
+	}
+
+	result := getRequiredAttributes(
+		[]string{"openid"},
+		claimsRequest,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	// Email should only appear once despite being in all three token types
+	assert.Equal(suite.T(), "email", result)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_CustomScopeMapping() {
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			IDToken: &appmodel.IDTokenConfig{
+				UserAttributes: []string{"org_id", "org_name"},
+			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"org_id", "org_name"},
+		},
+		ScopeClaims: map[string][]string{
+			"organization": {"org_id", "org_name"},
+		},
+	}
+
+	result := getRequiredAttributes(
+		[]string{"openid", "organization"},
+		nil,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	assert.NotEmpty(suite.T(), result)
+	assert.Contains(suite.T(), result, "org_id")
+	assert.Contains(suite.T(), result, "org_name")
+
+	parts := strings.Fields(result)
+	assert.Len(suite.T(), parts, 2)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_ComplexScenario() {
+	claimsRequest := &oauth2model.ClaimsRequest{
+		IDToken: map[string]*oauth2model.IndividualClaimRequest{
+			"email": {},
+		},
+		UserInfo: map[string]*oauth2model.IndividualClaimRequest{
+			"phone_number": {},
+		},
+	}
+
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			AccessToken: &appmodel.AccessTokenConfig{
+				UserAttributes: []string{"user_id", "role"},
+			},
+			IDToken: &appmodel.IDTokenConfig{
+				UserAttributes: []string{"email", "email_verified", "name"},
+			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"email", "email_verified", "name", "picture", "phone_number"},
+		},
+		ScopeClaims: map[string][]string{
+			"custom": {"name"},
+		},
+	}
+
+	result := getRequiredAttributes(
+		[]string{"openid", "custom"},
+		claimsRequest,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	// Should include:
+	// - Access token: user_id, role
+	// - ID token from claims param: email
+	// - UserInfo from claims param: phone_number
+	// - UserInfo from custom scope: name
+	assert.NotEmpty(suite.T(), result)
+	assert.Contains(suite.T(), result, "user_id")
+	assert.Contains(suite.T(), result, "role")
+	assert.Contains(suite.T(), result, "email")
+	assert.Contains(suite.T(), result, "phone_number")
+	assert.Contains(suite.T(), result, "name")
+
+	parts := strings.Fields(result)
+	assert.Len(suite.T(), parts, 5)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_NoOpenIDScope() {
+	app := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:    "test-app",
+		ClientID: "test-client",
+		Token: &appmodel.OAuthTokenConfig{
+			AccessToken: &appmodel.AccessTokenConfig{
+				UserAttributes: []string{"user_id"},
+			},
+			IDToken: &appmodel.IDTokenConfig{
+				UserAttributes: []string{"email", "name"},
+			},
+		},
+	}
+
+	result := getRequiredAttributes(
+		[]string{"profile"}, // OIDC scope but no openid
+		nil,
+		string(oauth2const.ResponseTypeCode),
+		app,
+	)
+
+	// Without openid scope, only access token claims should be included
+	assert.Equal(suite.T(), "user_id", result)
 }

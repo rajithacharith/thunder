@@ -168,6 +168,8 @@ const (
 	RuntimeKeyConsentSessionToken = "consent_session_token"
 	// RuntimeKeyStoredInviteToken holds the generated invite token stored during the invite send phase.
 	RuntimeKeyStoredInviteToken = "storedInviteToken"
+	// RuntimeKeyUserAttributesCacheTTLSeconds indicates the TTL of the user attributes cache.
+	RuntimeKeyUserAttributesCacheTTLSeconds = "user_attributes_cache_ttl_seconds"
 )
 
 // TODO: Define a go type for InputType when formalizing input types
