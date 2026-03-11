@@ -65,4 +65,4 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
         cache: ${{ steps.detect-package-manager.outputs.package-manager }}
-        cache-dependency-path: ${{ steps.dependency-path.outputs.dependency-path }}
+        cache_dependency_path: ${{ steps.dependency-path.outputs.dependency-path }}

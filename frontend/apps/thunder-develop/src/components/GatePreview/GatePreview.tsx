@@ -48,18 +48,15 @@ export default function GatePreview({
   theme,
   displayName = '',
   showToolbar = true,
-  viewport = {
-    width: VIEWPORT_WIDTHS.desktop,
-    height: VIEWPORT_HEIGHTS.desktop,
-  },
+  viewport = undefined,
   mock = buildPreviewMock(),
-  colorScheme = 'light',
+  colorScheme = undefined,
   syncColorSchemeWithSystem = false,
 }: GatePreviewProps): JSX.Element {
   const {mode, systemMode} = useColorScheme();
   const [previewColorScheme, setPreviewColorScheme] = useState<'light' | 'dark' | 'system'>('light');
   const [viewportState, setViewport] = useState<Viewport>('desktop');
-  const [zoom, setZoom] = useState(75);
+  const [zoom, setZoom] = useState(100);
 
   const resolvedSystemMode: 'light' | 'dark' = (mode === 'system' ? systemMode : mode) === 'dark' ? 'dark' : 'light';
   const activeScheme = colorScheme !== 'system' ? colorScheme : undefined;
@@ -163,7 +160,7 @@ export default function GatePreview({
           >
             <Box
               sx={{
-                transform: `scale(${zoom / 100})`,
+                transform: `scale(${zoom / 140})`,
                 transformOrigin: 'center',
                 flexShrink: 0,
                 transition: 'transform 0.15s ease',

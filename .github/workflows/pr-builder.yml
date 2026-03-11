@@ -28,7 +28,7 @@ jobs:
           node-version: 'lts/*'
 
       - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v4.2.0
         with:
           version: 'latest'
           run_install: false
@@ -178,12 +178,11 @@ jobs:
           main-branch-name: "main"
 
       - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v4.2.0
         with:
           version: 'latest'
           run_install: false
-          cache: true
-          cache-dependency-path: frontend/pnpm-lock.yaml
+          cache_dependency_path: frontend/pnpm-lock.yaml
 
       - name: ⚙️ Set up Go Environment
         uses: ./.github/actions/setup-go
@@ -222,11 +221,11 @@ jobs:
           node-version: 'lts/*'
 
       - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v4.2.0
         with:
           version: 'latest'
           run_install: false
-          cache-dependency-path: frontend/pnpm-lock.yaml
+          cache_dependency_path: frontend/pnpm-lock.yaml
 
       - name: 🗄️ Cache Go Modules
         uses: actions/cache@v4
@@ -313,11 +312,11 @@ jobs:
           node-version: 'lts/*'
 
       - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v4.2.0
         with:
           version: 'latest'
           run_install: false
-          cache-dependency-path: frontend/pnpm-lock.yaml
+          cache_dependency_path: frontend/pnpm-lock.yaml
 
       - name: 📦 Install Frontend Dependencies
         run: |
@@ -430,11 +429,11 @@ jobs:
           node-version: 'lts/*'
 
       - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v4.2.0
         with:
           version: 'latest'
           run_install: false
-          cache-dependency-path: frontend/pnpm-lock.yaml
+          cache_dependency_path: frontend/pnpm-lock.yaml
 
       - name: 🧩 Build and Package Sample Apps
         run: |
