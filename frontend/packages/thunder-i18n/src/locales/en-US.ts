@@ -657,6 +657,8 @@ const translations = {
     'addMember.search.placeholder': 'Search users...',
     'addMember.noResults': 'No users found',
     'addMember.add': 'Add Selected',
+    'addMember.columns.displayName': 'Display Name',
+    'addMember.columns.userType': 'User Type',
     'addMember.columns.userId': 'User ID',
     'addMember.error': 'Failed to add member. Please try again.',
     'addMember.fetchError': 'Failed to load users. Please try again.',

@@ -96,7 +96,10 @@ export default function ViewUserTypePage() {
   const eligibleDisplayProperties = useMemo(
     () =>
       properties.filter(
-        (p) => (p.type === 'string' || p.type === 'enum') && !p.credential && p.name.trim().length > 0,
+        (p) =>
+          (p.type === 'string' || p.type === 'number' || p.type === 'enum') &&
+          !p.credential &&
+          p.name.trim().length > 0,
       ),
     [properties],
   );

@@ -17,7 +17,7 @@
  */
 
 import {useState, useMemo, type JSX, type ReactNode} from 'react';
-import {Box, Avatar, Chip, DataGrid, IconButton, useTheme} from '@wso2/oxygen-ui';
+import {Box, Avatar, Chip, DataGrid, IconButton, Typography, useTheme} from '@wso2/oxygen-ui';
 import {User, Users, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import SettingsCard from '@/components/SettingsCard';
@@ -88,7 +88,16 @@ export default function ManageMembersSection({groupId, onRemoveMember, headerAct
         headerName: t('groups:edit.members.sections.manage.listing.columns.id'),
         flex: 1,
         minWidth: 250,
-        valueGetter: (_value: unknown, row: Member) => row.display ?? row.id,
+        renderCell: (params: DataGrid.GridRenderCellParams<Member>): JSX.Element => (
+          <Box sx={{display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', overflow: 'hidden'}}>
+            <Typography variant="body2" noWrap>
+              {params.row.display ?? params.row.id}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" noWrap sx={{fontFamily: 'monospace', fontSize: '0.7rem'}}>
+              {params.row.id}
+            </Typography>
+          </Box>
+        ),
       },
       {
         field: 'type',

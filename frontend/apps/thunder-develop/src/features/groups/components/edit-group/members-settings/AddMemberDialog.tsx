@@ -27,6 +27,8 @@ import {
   Alert,
   DataGrid,
   Avatar,
+  Chip,
+  Typography,
   useTheme,
 } from '@wso2/oxygen-ui';
 import {User} from '@wso2/oxygen-ui-icons-react';
@@ -49,6 +51,7 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
   const {t} = useTranslation();
   const theme = useTheme();
   const dataGridLocaleText = useDataGridLocaleText();
+
   const [selectionModel, setSelectionModel] = useState<DataGrid.GridRowSelectionModel>({
     type: 'include',
     ids: new Set(),
@@ -102,10 +105,27 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
       },
       {
         field: 'display',
-        headerName: t('groups:addMember.columns.userId'),
+        headerName: t('groups:addMember.columns.displayName'),
         flex: 1,
-        minWidth: 250,
-        valueGetter: (_value: unknown, row: ApiUser) => row.display ?? row.id,
+        minWidth: 200,
+        renderCell: (params: DataGrid.GridRenderCellParams<ApiUser>): JSX.Element => (
+          <Box sx={{display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', overflow: 'hidden'}}>
+            <Typography variant="body2" noWrap>
+              {params.row.display ?? params.row.id}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" noWrap sx={{fontFamily: 'monospace', fontSize: '0.7rem'}}>
+              {params.row.id}
+            </Typography>
+          </Box>
+        ),
+      },
+      {
+        field: 'type',
+        headerName: t('groups:addMember.columns.userType'),
+        width: 150,
+        renderCell: (params: DataGrid.GridRenderCellParams<ApiUser>): JSX.Element => (
+          <Chip label={params.row.type} size="small" variant="outlined" sx={{textTransform: 'capitalize'}} />
+        ),
       },
     ],
     [theme, t],
@@ -123,7 +143,7 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>{t('groups:addMember.title')}</DialogTitle>
       <DialogContent>
         {usersError && !usersLoading && (
