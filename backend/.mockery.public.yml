@@ -463,3 +463,11 @@ packages:
           structname: '{{.InterfaceName}}Mock'
           pkgname: consentmock
           filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/attributecache:
+    config:
+      all: true
+      dir: tests/mocks/attributecachemock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: attributecachemock
+      filename: "{{.InterfaceName}}_mock.go"
