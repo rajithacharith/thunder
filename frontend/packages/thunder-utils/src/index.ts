@@ -25,6 +25,7 @@ export {default as isRelativeUrl} from './path/isRelativeUrl';
 
 // Object Operations
 export {default as isEmpty} from './object/isEmpty';
+export {default as merge} from './object/merge';
 
 // Template Pattern Utilities
 export {default as isI18nTemplatePattern, I18N_PATTERN, I18N_KEY_PATTERN} from './template/isI18nTemplatePattern';

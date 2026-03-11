@@ -257,7 +257,7 @@ describe('ConfigureDesign', () => {
         data: mockThemeDetails,
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useGetTheme>);
+      } as unknown as ReturnType<typeof useGetTheme>);
 
       renderComponent();
 
@@ -265,7 +265,7 @@ describe('ConfigureDesign', () => {
       expect(screen.getByText('Sunset Orange')).toBeInTheDocument();
     });
 
-    it('should render radio buttons for each theme card', () => {
+    it('should render a card for each theme', () => {
       vi.mocked(useGetThemes).mockReturnValue({
         data: {themes: mockThemesList},
         isLoading: false,
@@ -276,12 +276,12 @@ describe('ConfigureDesign', () => {
         data: mockThemeDetails,
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useGetTheme>);
+      } as unknown as ReturnType<typeof useGetTheme>);
 
       renderComponent();
 
-      const radios = screen.getAllByRole('radio');
-      expect(radios).toHaveLength(2);
+      expect(screen.getByTestId('theme-card-theme-1')).toBeInTheDocument();
+      expect(screen.getByTestId('theme-card-theme-2')).toBeInTheDocument();
     });
 
     it('should call onThemeSelect with theme details when theme is loaded', () => {
@@ -295,7 +295,7 @@ describe('ConfigureDesign', () => {
         data: mockThemeDetails,
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useGetTheme>);
+      } as unknown as ReturnType<typeof useGetTheme>);
 
       renderComponent();
 
@@ -329,7 +329,7 @@ describe('ConfigureDesign', () => {
         data: mockThemeDetails,
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useGetTheme>);
+      } as unknown as ReturnType<typeof useGetTheme>);
 
       renderComponent({onThemeSelect: mockOnThemeSelectLocal});
 

@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {Context, createContext} from 'react';
-import type {Theme} from '@wso2/oxygen-ui';
+import {createContext, type Context} from 'react';
 import type {LayoutConfig} from '../../models/layout';
 import type {DesignResolveResponse} from '../../models/responses';
+import type {Theme} from '../../models/theme';
 
 /**
  * Design context interface that provides access to Thunder design configuration

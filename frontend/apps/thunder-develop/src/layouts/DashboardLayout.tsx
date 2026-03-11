@@ -34,6 +34,7 @@ import {
   Languages,
   Layers,
   LayoutGrid,
+  Palette,
   UserRoundCog,
   UsersRound,
   Workflow,
@@ -117,6 +118,12 @@ export default function DashboardLayout(): ReactNode {
       {
         category: t('navigation:categories.customize'),
         routes: [
+          {
+            id: 'design',
+            text: t('navigation:pages.design', 'Design'),
+            icon: <Palette size={16} />,
+            path: '/design',
+          },
           {
             id: 'translations',
             text: t('navigation:pages.translations'),

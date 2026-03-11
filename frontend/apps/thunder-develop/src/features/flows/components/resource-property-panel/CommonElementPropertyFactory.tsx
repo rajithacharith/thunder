@@ -19,6 +19,7 @@
 import {type ComponentType, type ReactElement, useState, useCallback} from 'react';
 import {Autocomplete, type AutocompleteRenderInputParams, Box, TextField} from '@wso2/oxygen-ui';
 import startCase from 'lodash-es/startCase';
+import {useLogger} from '@thunder/logger/react';
 import type {Resource} from '../../models/resources';
 import {ElementTypes} from '../../models/elements';
 import RichTextWithTranslation from './rich-text/RichTextWithTranslation';
@@ -70,13 +71,18 @@ interface IconPickerFieldProps {
 }
 
 function IconPickerField({resource, propertyKey, propertyValue, onChange}: IconPickerFieldProps): ReactElement {
+  const logger = useLogger('ConfigureDetails');
   const [loaded, setLoaded] = useState<{module: IconModule; names: string[]} | null>(null);
 
   const handleOpen = useCallback(() => {
     if (!loaded) {
-      loadIconModule().then(setLoaded).catch(console.error);
+      loadIconModule()
+        .then(setLoaded)
+        .catch((error) => {
+          logger.error('Failed to load icon module', {error});
+        });
     }
-  }, [loaded]);
+  }, [loaded, logger]);
 
   const iconNames = loaded?.names ?? [];
   const totalCount = iconNames.length;

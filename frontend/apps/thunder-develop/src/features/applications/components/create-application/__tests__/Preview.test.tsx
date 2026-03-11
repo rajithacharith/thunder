@@ -18,15 +18,17 @@
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import type {ReactNode} from 'react';
 import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
-import type {ThemeConfig} from '@thunder/shared-design';
+import type {Theme} from '@thunder/shared-design';
+import {type RecursivePartial} from '@thunder/types';
 import Preview, {type PreviewProps} from '../Preview';
 
 // Mock the @asgardeo/react module
 vi.mock('@asgardeo/react', () => ({
-  BaseSignIn: ({children}: {children: () => React.ReactNode}) => <div>{children()}</div>,
-  ThemeProvider: ({children}: {children: React.ReactNode}) => <div>{children}</div>,
+  BaseSignIn: ({children}: {children: () => ReactNode}) => <div>{children()}</div>,
+  ThemeProvider: ({children}: {children: ReactNode}) => <div>{children}</div>,
 }));
 
 // Mock the useIdentityProviders hook
@@ -39,48 +41,75 @@ vi.mock('@wso2/oxygen-ui', async (importOriginal) => {
   return {
     ...actual,
     useColorScheme: () => mockUseColorScheme(),
+    // Prevent OxygenUIThemeProvider from passing the partial test theme to MUI
+    // (which lacks typography and causes a crash)
+    OxygenUIThemeProvider: ({children}: {children: ReactNode}) => children,
   };
 });
 
 const {default: useIdentityProviders} = await import('@/features/integrations/api/useIdentityProviders');
 
-const mockTheme: ThemeConfig = {
+const mockTheme: RecursivePartial<Theme> = {
   direction: 'ltr',
   defaultColorScheme: 'light',
   colorSchemes: {
     light: {
-      colors: {
+      palette: {
         primary: {
           main: '#FF5733',
+          light: '#FF8A66',
           dark: '#CC4529',
           contrastText: '#FFFFFF',
+          mainChannel: '234 88 12',
+          lightChannel: '255 138 102',
+          darkChannel: '204 69 41',
+          contrastTextChannel: '255 255 255',
         },
         secondary: {
           main: '#0066CC',
+          light: '#3399FF',
           dark: '#004C99',
           contrastText: '#FFFFFF',
+          mainChannel: '0 102 204',
+          lightChannel: '51 153 255',
+          darkChannel: '0 76 153',
+          contrastTextChannel: '255 255 255',
         },
         background: {
           default: '#FFFFFF',
           paper: '#F5F5F5',
+          defaultChannel: '255 255 255',
+          paperChannel: '245 245 245',
         },
       },
     },
     dark: {
-      colors: {
+      palette: {
         primary: {
           main: '#00FF00',
           dark: '#00CC00',
           contrastText: '#000000',
+          mainChannel: '0 255 0',
+          darkChannel: '0 204 0',
+          contrastTextChannel: '0 0 0',
+          light: '#66FF66',
+          lightChannel: '102 255 102',
         },
         secondary: {
           main: '#0088FF',
           dark: '#0066CC',
           contrastText: '#FFFFFF',
+          mainChannel: '0 136 255',
+          darkChannel: '0 102 204',
+          contrastTextChannel: '255 255 255',
+          light: '#3399FF',
+          lightChannel: '51 153 255',
         },
         background: {
           default: '#121212',
           paper: '#1E1E1E',
+          defaultChannel: '18 18 18',
+          paperChannel: '30 30 30',
         },
       },
     },
@@ -810,33 +839,65 @@ describe('Preview', () => {
   });
 
   describe('high-contrast theme colors', () => {
-    const highContrastTheme: ThemeConfig = {
+    const highContrastTheme: RecursivePartial<Theme> = {
       colorSchemes: {
         light: {
-          colors: {
+          palette: {
             primary: {
               main: '#0000FF',
               dark: '#0000CC',
               contrastText: '#FFFFFF',
+              light: '#FF8A66',
+              mainChannel: '234 88 12',
+              lightChannel: '255 138 102',
+              darkChannel: '204 69 41',
+              contrastTextChannel: '255 255 255',
             },
             secondary: {
-              main: '#FFD700',
-              dark: '#CCB000',
-              contrastText: '#000000',
+              main: '#0066CC',
+              light: '#3399FF',
+              dark: '#004C99',
+              contrastText: '#FFFFFF',
+              mainChannel: '0 102 204',
+              lightChannel: '51 153 255',
+              darkChannel: '0 76 153',
+              contrastTextChannel: '255 255 255',
+            },
+            background: {
+              default: '#FFFFFF',
+              paper: '#F5F5F5',
+              defaultChannel: '255 255 255',
+              paperChannel: '245 245 245',
             },
           },
         },
         dark: {
-          colors: {
+          palette: {
             primary: {
+              main: '#FFD700',
+              dark: '#CCB000',
+              contrastText: '#000000',
+              mainChannel: '0 255 0',
+              darkChannel: '0 204 0',
+              contrastTextChannel: '0 0 0',
+              light: '#66FF66',
+              lightChannel: '102 255 102',
+            },
+            secondary: {
               main: '#00FFFF',
               dark: '#00CCCC',
               contrastText: '#000000',
+              mainChannel: '0 136 255',
+              darkChannel: '0 102 204',
+              contrastTextChannel: '255 255 255',
+              light: '#3399FF',
+              lightChannel: '51 153 255',
             },
-            secondary: {
-              main: '#FFFF00',
-              dark: '#CCCC00',
-              contrastText: '#000000',
+            background: {
+              default: '#121212',
+              paper: '#1E1E1E',
+              defaultChannel: '18 18 18',
+              paperChannel: '30 30 30',
             },
           },
         },
@@ -885,8 +946,8 @@ describe('Preview', () => {
       });
 
       const passkeyButton = screen.getByRole('button', {name: /Sign in with Passkey/i});
-      expect(passkeyButton).toHaveStyle({backgroundColor: '#00FFFF'});
-      // Dark mode cyan primary has black contrastText
+      expect(passkeyButton).toHaveStyle({backgroundColor: '#FFD700'});
+      // Dark mode gold primary has black contrastText
       expect(passkeyButton).toHaveStyle({color: '#000000'});
     });
   });

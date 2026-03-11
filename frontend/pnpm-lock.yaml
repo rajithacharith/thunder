@@ -408,6 +408,9 @@ importers:
       '@thunder/test-utils':
         specifier: workspace:^
         version: link:../../packages/thunder-test-utils
+      '@thunder/types':
+        specifier: workspace:^
+        version: link:../../packages/thunder-types
       '@types/lodash-es':
         specifier: 'catalog:'
         version: 4.17.12
@@ -938,6 +941,9 @@ importers:
       '@thunder/prettier-config':
         specifier: workspace:^
         version: link:../thunder-prettier-config
+      '@thunder/types':
+        specifier: workspace:^
+        version: link:../thunder-types
       '@types/node':
         specifier: 'catalog:'
         version: 24.7.2

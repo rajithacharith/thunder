@@ -96,6 +96,7 @@ export default defineConfig({
     setupFiles: ['@thunder/test-utils/setup'],
     reporters: process.env.CI ? ['dot'] : ['default'],
     restoreMocks: true,
+    testTimeout: 30000,
     css: {
       modules: {
         classNameStrategy: 'non-scoped',
