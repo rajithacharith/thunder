@@ -49,14 +49,6 @@ func (h *clientCredentialsGrantHandler) ValidateGrant(tokenRequest *model.TokenR
 		}
 	}
 
-	// Validate the client ID and secret.
-	if tokenRequest.ClientID == "" || tokenRequest.ClientSecret == "" {
-		return &model.ErrorResponse{
-			Error:            constants.ErrorInvalidRequest,
-			ErrorDescription: "Client Id and secret are required",
-		}
-	}
-
 	return nil
 }
 
