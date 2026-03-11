@@ -78,8 +78,8 @@ func (suite *APIAuthTestSuite) SetupSuite() {
 			"username":  map[string]interface{}{"type": "string"},
 			"password":  map[string]interface{}{"type": "string", "credential": true},
 			"email":     map[string]interface{}{"type": "string"},
-			"firstName": map[string]interface{}{"type": "string"},
-			"lastName":  map[string]interface{}{"type": "string"},
+			"given_name": map[string]interface{}{"type": "string"},
+			"family_name":  map[string]interface{}{"type": "string"},
 		},
 	}
 
@@ -93,8 +93,8 @@ func (suite *APIAuthTestSuite) SetupSuite() {
 		"username":  username,
 		"password":  password,
 		"email":     fmt.Sprintf("%s@example.com", username),
-		"firstName": "API",
-		"lastName":  "Auth",
+		"given_name": "API",
+		"family_name":  "Auth",
 	}
 	attrBytes, err := json.Marshal(userAttrs)
 	suite.Require().NoError(err)

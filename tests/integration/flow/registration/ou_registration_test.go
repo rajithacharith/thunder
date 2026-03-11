@@ -140,13 +140,13 @@ var (
 						},
 						{
 							"ref":        "input_003",
-							"identifier": "firstName",
+							"identifier": "given_name",
 							"type":       "string",
 							"required":   true,
 						},
 						{
 							"ref":        "input_004",
-							"identifier": "lastName",
+							"identifier": "family_name",
 							"type":       "string",
 							"required":   true,
 						},
@@ -296,13 +296,13 @@ var (
 						},
 						{
 							"ref":        "input_007",
-							"identifier": "firstName",
+							"identifier": "given_name",
 							"type":       "TEXT_INPUT",
 							"required":   true,
 						},
 						{
 							"ref":        "input_008",
-							"identifier": "lastName",
+							"identifier": "family_name",
 							"type":       "TEXT_INPUT",
 							"required":   true,
 						},
@@ -384,10 +384,10 @@ var (
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 			"mobileNumber": map[string]interface{}{
@@ -603,8 +603,8 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOU() {
 				"ouName":        tc.ouName,
 				"ouHandle":      tc.ouHandle,
 				"ouDescription": tc.ouDescription,
-				"firstName":     "Test",
-				"lastName":      "User",
+				"given_name":     "Test",
+				"family_name":      "User",
 				"email":         username + "@example.com",
 			}
 
@@ -696,8 +696,8 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOUCreationDu
 				"ouName":        tc.newOUName,
 				"ouHandle":      newHandle,
 				"ouDescription": "Should fail due to duplicate",
-				"firstName":     "Test",
-				"lastName":      "User",
+				"given_name":     "Test",
+				"family_name":      "User",
 				"email":         username + "@example.com",
 			}
 
@@ -781,8 +781,8 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 			// Step 5: Submit user details
 			inputs = map[string]string{
 				"mobileNumber": mobileNumber,
-				"firstName":    "Test",
-				"lastName":     "User",
+				"given_name":    "Test",
+				"family_name":     "User",
 				"email":        mobileNumber + "@example.com",
 			}
 

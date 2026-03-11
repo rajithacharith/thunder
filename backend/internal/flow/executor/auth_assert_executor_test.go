@@ -772,7 +772,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganiz
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttributes() {
-	attrs := map[string]interface{}{"email": testEmail, "username": "testuser", "firstName": "Test"}
+	attrs := map[string]interface{}{"email": testEmail, "username": "testuser", "given_name": "Test"}
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
@@ -787,7 +787,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 		Application: appmodel.Application{
 			// Token config with user attributes configured
 			Assertion: &appmodel.AssertionConfig{
-				UserAttributes: []string{"email", "username", "firstName"},
+				UserAttributes: []string{"email", "username", "given_name"},
 			},
 		},
 	}
@@ -803,7 +803,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 			// Should contain the configured user attributes from the user store
 			hasEmail := claims["email"] == testEmail
 			hasUsername := claims["username"] == "testuser"
-			hasFirstName := claims["firstName"] == "Test"
+			hasFirstName := claims["given_name"] == "Test"
 			return hasEmail && hasUsername && hasFirstName
 		}), mock.Anything).Return("jwt-token", int64(3600), nil)
 

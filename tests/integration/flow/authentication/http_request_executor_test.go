@@ -215,10 +215,10 @@ var (
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 		},
@@ -230,8 +230,8 @@ var (
 			"username": "httprequestuser",
 			"password": "SecurePass123!",
 			"email": "httprequest@test.com",
-			"firstName": "HTTP",
-			"lastName": "User"
+			"given_name": "HTTP",
+			"family_name": "User"
 		}`),
 	}
 )

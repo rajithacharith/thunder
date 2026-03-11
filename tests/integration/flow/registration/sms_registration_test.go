@@ -172,13 +172,13 @@ var (
 					"inputs": []map[string]interface{}{
 						{
 							"ref":        "input_002",
-							"identifier": "firstName",
+							"identifier": "given_name",
 							"type":       "string",
 							"required":   false,
 						},
 						{
 							"ref":        "input_003",
-							"identifier": "lastName",
+							"identifier": "family_name",
 							"type":       "string",
 							"required":   false,
 						},
@@ -233,10 +233,10 @@ var (
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 			"mobileNumber": map[string]interface{}{
@@ -471,12 +471,12 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlow() {
 	// Step 4: Provide additional attributes
 	fillInputs := []common.Inputs{
 		{
-			Identifier: "firstName",
+			Identifier: "given_name",
 			Type:       "string",
 			Required:   true,
 		},
 		{
-			Identifier: "lastName",
+			Identifier: "family_name",
 			Type:       "string",
 			Required:   true,
 		},
@@ -634,8 +634,8 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowSingleRequestWith
 
 	// Step 4: Provide user attributes
 	userInputs := map[string]string{
-		"firstName":    "Test",
-		"lastName":     "User",
+		"given_name":    "Test",
+		"family_name":     "User",
 		"email":        fmt.Sprintf("%s@example.com", mobileNumber),
 		"mobileNumber": mobileNumber,
 	}
@@ -682,10 +682,10 @@ func fillRequiredRegistrationAttributes(inputs []common.Inputs, mobile string) m
 	for _, input := range inputs {
 		if input.Required {
 			switch input.Identifier {
-			case "firstName":
-				attrInputs["firstName"] = "Test"
-			case "lastName":
-				attrInputs["lastName"] = "User"
+			case "given_name":
+				attrInputs["given_name"] = "Test"
+			case "family_name":
+				attrInputs["family_name"] = "User"
 			case "email":
 				attrInputs["email"] = fmt.Sprintf("%s@example.com", mobile)
 			default:

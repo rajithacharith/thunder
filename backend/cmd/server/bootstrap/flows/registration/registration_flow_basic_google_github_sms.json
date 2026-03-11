@@ -277,13 +277,13 @@
                     },
                     {
                         "ref": "input_004",
-                        "identifier": "firstName",
+                        "identifier": "given_name",
                         "type": "TEXT_INPUT",
                         "required": false
                     },
                     {
                         "ref": "input_005",
-                        "identifier": "lastName",
+                        "identifier": "family_name",
                         "type": "TEXT_INPUT",
                         "required": false
                     },
@@ -305,13 +305,13 @@
                 "inputs": [
                     {
                         "ref": "input_007",
-                        "identifier": "firstName",
+                        "identifier": "given_name",
                         "type": "TEXT_INPUT",
                         "required": false
                     },
                     {
                         "ref": "input_008",
-                        "identifier": "lastName",
+                        "identifier": "family_name",
                         "type": "TEXT_INPUT",
                         "required": false
                     },

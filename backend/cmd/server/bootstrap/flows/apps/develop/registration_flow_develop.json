@@ -102,7 +102,7 @@
                             },
                             {
                                 "id": "input_003",
-                                "ref": "firstName",
+                                "ref": "given_name",
                                 "type": "TEXT_INPUT",
                                 "label": "{{ t(signup:forms.registration.fields.first_name.label) }}",
                                 "required": true,
@@ -110,7 +110,7 @@
                             },
                             {
                                 "id": "input_004",
-                                "ref": "lastName",
+                                "ref": "family_name",
                                 "type": "TEXT_INPUT",
                                 "label": "{{ t(signup:forms.registration.fields.last_name.label) }}",
                                 "required": true,
@@ -152,13 +152,13 @@
                         },
                         {
                             "ref": "input_003",
-                            "identifier": "firstName",
+                            "identifier": "given_name",
                             "type": "TEXT_INPUT",
                             "required": true
                         },
                         {
                             "ref": "input_004",
-                            "identifier": "lastName",
+                            "identifier": "family_name",
                             "type": "TEXT_INPUT",
                             "required": true
                         },
@@ -204,13 +204,13 @@
                     },
                     {
                         "ref": "input_003",
-                        "identifier": "firstName",
+                        "identifier": "given_name",
                         "type": "TEXT_INPUT",
                         "required": true
                     },
                     {
                         "ref": "input_004",
-                        "identifier": "lastName",
+                        "identifier": "family_name",
                         "type": "TEXT_INPUT",
                         "required": true
                     },

@@ -106,11 +106,11 @@ function DashboardPage() {
                   typeof attributes.email === "string"
                     ? (attributes.email as string)
                     : undefined;
-                const firstName =
+                const given_name =
                   typeof attributes.given_name === "string"
                     ? (attributes.given_name as string)
                     : undefined;
-                const lastName =
+                const family_name =
                   typeof attributes.family_name === "string"
                     ? (attributes.family_name as string)
                     : undefined;
@@ -122,8 +122,8 @@ function DashboardPage() {
                   id: user.id,
                   username,
                   email,
-                  firstName,
-                  lastName,
+                  given_name,
+                  family_name,
                   mobileNumber,
                   type: user.type,
                   organizationUnit: user.organizationUnit,

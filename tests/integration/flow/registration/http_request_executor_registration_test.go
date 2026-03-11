@@ -129,13 +129,13 @@ var (
 						},
 						{
 							"ref":        "input_004",
-							"identifier": "firstName",
+							"identifier": "given_name",
 							"type":       "string",
 							"required":   true,
 						},
 						{
 							"ref":        "input_005",
-							"identifier": "lastName",
+							"identifier": "family_name",
 							"type":       "string",
 							"required":   true,
 						},
@@ -157,8 +157,8 @@ var (
 						"externalId":   "{{ context.userID }}",
 						"username":     "{{ context.username }}",
 						"email":        "{{ context.email }}",
-						"firstName":    "{{ context.firstName }}",
-						"lastName":     "{{ context.lastName }}",
+						"given_name":    "{{ context.given_name }}",
+						"family_name":     "{{ context.family_name }}",
 						"unknownField": "{{ context.unknownPlaceholder }}",
 					},
 					"responseMapping": map[string]interface{}{
@@ -206,10 +206,10 @@ var (
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 		},
@@ -342,8 +342,8 @@ func (ts *HTTPRequestRegistrationFlowTestSuite) TestHTTPRequestRegistrationFlow_
 		"username":  "newuser123",
 		"password":  "NewUserPass123!",
 		"email":     "newuser@test.com",
-		"firstName": "New",
-		"lastName":  "User",
+		"given_name": "New",
+		"family_name":  "User",
 	}, "")
 
 	ts.NoError(err, "Registration flow should complete without error")
@@ -375,8 +375,8 @@ func (ts *HTTPRequestRegistrationFlowTestSuite) TestHTTPRequestRegistrationFlow_
 
 	ts.Equal("newuser123", userCreationRequest.Body["username"], "Username should match")
 	ts.Equal("newuser@test.com", userCreationRequest.Body["email"], "Email should match")
-	ts.Equal("New", userCreationRequest.Body["firstName"], "First name should match")
-	ts.Equal("User", userCreationRequest.Body["lastName"], "Last name should match")
+	ts.Equal("New", userCreationRequest.Body["given_name"], "First name should match")
+	ts.Equal("User", userCreationRequest.Body["family_name"], "Last name should match")
 	ts.NotEmpty(userCreationRequest.Body["externalId"], "External ID should be present in payload")
 	ts.Equal("{{ context.unknownPlaceholder }}", userCreationRequest.Body["unknownField"],
 		"Unknown field should retain the placeholder value")

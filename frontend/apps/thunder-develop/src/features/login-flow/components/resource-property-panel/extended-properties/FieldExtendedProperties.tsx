@@ -45,7 +45,7 @@ function FieldExtendedProperties({resource, onChange}: FieldExtendedPropertiesPr
   const {t} = useTranslation();
   const {selectedNotification} = useValidationStatus();
 
-  const attributes: string[] = useMemo(() => ['email', 'username', 'firstName'], []);
+  const attributes: string[] = useMemo(() => ['email', 'username', 'given_name'], []);
   const credentialAttributes: string[] = useMemo(() => ['password', 'pin', 'secret'], []);
 
   const resourceRef = (resource as Element & {ref?: string})?.ref;

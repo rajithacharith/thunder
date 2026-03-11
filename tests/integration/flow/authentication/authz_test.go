@@ -49,10 +49,10 @@ var (
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 		},
@@ -158,8 +158,8 @@ var (
 			"username": "authorized_user",
 			"password": "SecurePass123!",
 			"email": "authorized@test.com",
-			"firstName": "Authorized",
-			"lastName": "User"
+			"given_name": "Authorized",
+			"family_name": "User"
 		}`),
 	}
 
@@ -169,8 +169,8 @@ var (
 			"username": "unauthorized_user",
 			"password": "SecurePass123!",
 			"email": "unauthorized@test.com",
-			"firstName": "Unauthorized",
-			"lastName": "User"
+			"given_name": "Unauthorized",
+			"family_name": "User"
 		}`),
 	}
 

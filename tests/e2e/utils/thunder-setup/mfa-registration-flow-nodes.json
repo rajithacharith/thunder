@@ -151,18 +151,18 @@
         {
           "components": [
             {
-              "id": "input_firstName",
+              "id": "input_given_name",
               "label": "First Name",
               "placeholder": "Enter your first name",
-              "ref": "firstName",
+              "ref": "given_name",
               "required": true,
               "type": "TEXT_INPUT"
             },
             {
-              "id": "input_lastName",
+              "id": "input_family_name",
               "label": "Last Name",
               "placeholder": "Enter your last name",
-              "ref": "lastName",
+              "ref": "family_name",
               "required": true,
               "type": "TEXT_INPUT"
             },
@@ -199,15 +199,15 @@
       {
         "inputs": [
           {
-            "ref": "input_firstName",
+            "ref": "input_given_name",
             "type": "TEXT_INPUT",
-            "identifier": "firstName",
+            "identifier": "given_name",
             "required": true
           },
           {
-            "ref": "input_lastName",
+            "ref": "input_family_name",
             "type": "TEXT_INPUT",
-            "identifier": "lastName",
+            "identifier": "family_name",
             "required": true
           },
           {
@@ -249,15 +249,15 @@
           "required": true
         },
         {
-          "ref": "input_firstName",
+          "ref": "input_given_name",
           "type": "TEXT_INPUT",
-          "identifier": "firstName",
+          "identifier": "given_name",
           "required": true
         },
         {
-          "ref": "input_lastName",
+          "ref": "input_family_name",
           "type": "TEXT_INPUT",
-          "identifier": "lastName",
+          "identifier": "family_name",
           "required": true
         },
         {

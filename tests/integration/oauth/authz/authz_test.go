@@ -69,10 +69,10 @@ var (
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 		},
@@ -422,8 +422,8 @@ func (ts *AuthzTestSuite) TestTokenRequestValidation() {
 			"username": "%s",
 			"password": "%s",
 			"email": "%s@example.com",
-			"firstName": "Test",
-			"lastName": "User"
+			"given_name": "Test",
+			"family_name": "User"
 		}`, username, password, username)),
 	}
 	userID, err := testutils.CreateUser(user)
@@ -781,8 +781,8 @@ func (ts *AuthzTestSuite) TestCompleteAuthorizationCodeFlow() {
 					"username": "%s",
 					"password": "%s",
 					"email": "%s@example.com",
-					"firstName": "Test",
-					"lastName": "User"
+					"given_name": "Test",
+					"family_name": "User"
 				}`, tc.Username, tc.Password, tc.Username)),
 			}
 			userID, err := testutils.CreateUser(user)
@@ -911,8 +911,8 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeErrorScenarios() {
 					"username": "%s",
 					"password": "%s",
 					"email": "%s@example.com",
-					"firstName": "Test",
-					"lastName": "User"
+					"given_name": "Test",
+					"family_name": "User"
 				}`, tc.Username, tc.Password, tc.Username)),
 			}
 			userID, err := testutils.CreateUser(user)
@@ -996,8 +996,8 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithResourceParameter() {
 			"username": "resourcetest",
 			"password": "testpass123",
 			"email": "resourcetest@example.com",
-			"firstName": "Resource",
-			"lastName": "Test"
+			"given_name": "Resource",
+			"family_name": "Test"
 		}`),
 	}
 	userID, err := testutils.CreateUser(user)
@@ -1106,8 +1106,8 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithClaimsLocales() {
 			"username": "localestest",
 			"password": "testpass123",
 			"email": "localestest@example.com",
-			"firstName": "Locales",
-			"lastName": "Test"
+			"given_name": "Locales",
+			"family_name": "Test"
 		}`),
 	}
 	userID, err := testutils.CreateUser(user)
@@ -1198,8 +1198,8 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithNonce() {
 			"username": "noncetest",
 			"password": "testpass123",
 			"email": "noncetest@example.com",
-			"firstName": "Nonce",
-			"lastName": "Test"
+			"given_name": "Nonce",
+			"family_name": "Test"
 		}`),
 	}
 
@@ -1289,8 +1289,8 @@ func (ts *AuthzTestSuite) TestNonceIgnoredWithoutOpenIDScope() {
 			"username": "nonopeniduser",
 			"password": "testpass123",
 			"email": "nonopeniduser@example.com",
-			"firstName": "No",
-			"lastName": "OpenID"
+			"given_name": "No",
+			"family_name": "OpenID"
 		}`),
 	}
 

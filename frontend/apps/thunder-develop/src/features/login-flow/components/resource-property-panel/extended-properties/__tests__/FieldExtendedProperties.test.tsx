@@ -103,7 +103,7 @@ describe('FieldExtendedProperties', () => {
   });
 
   describe('Attribute Selection', () => {
-    it('should have email, username, firstName as options', async () => {
+    it('should have email, username, given_name as options', async () => {
       const resource = createMockResource(ElementTypes.TextInput);
 
       render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);

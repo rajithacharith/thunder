@@ -56,10 +56,10 @@ var (
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 			"phone_number": map[string]interface{}{
@@ -152,8 +152,8 @@ func (ts *ClaimsParameterTestSuite) createTestUser() string {
 		"username":     "claims_test_user",
 		"password":     "SecurePass123!",
 		"email":        "claims_test@example.com",
-		"firstName":    "Claims",
-		"lastName":     "Test",
+		"given_name":    "Claims",
+		"family_name":     "Test",
 		"phone_number": "+1234567890",
 		"locale":       "en-US",
 	}
@@ -279,12 +279,12 @@ func (ts *ClaimsParameterTestSuite) createTestApplication(authFlowID string) str
 					"token": map[string]interface{}{
 						"id_token": map[string]interface{}{
 							"user_attributes": []string{
-								"email", "firstName", "lastName", "phone_number", "locale",
+								"email", "given_name", "family_name", "phone_number", "locale",
 							},
 						},
 					},
 					"scope_claims": map[string][]string{
-						"profile": {"firstName", "lastName", "locale"},
+						"profile": {"given_name", "family_name", "locale"},
 						"email":   {"email"},
 						"phone":   {"phone_number"},
 					},
@@ -646,8 +646,8 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_UserInfo_BasicClaim() {
 
 // TestClaimsParameter_IDToken_BasicClaim tests basic claims parameter for ID Token
 func (ts *ClaimsParameterTestSuite) TestClaimsParameter_IDToken_BasicClaim() {
-	// Request firstName claim explicitly via claims parameter for ID Token
-	claimsParam := `{"id_token":{"firstName":null}}`
+	// Request given_name claim explicitly via claims parameter for ID Token
+	claimsParam := `{"id_token":{"given_name":null}}`
 
 	_, idToken, err := ts.getTokenWithClaims("openid", claimsParam)
 	ts.Require().NoError(err, "Failed to get token with claims parameter")
@@ -657,9 +657,9 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_IDToken_BasicClaim() {
 	idTokenClaims, err := ts.decodeIDToken(idToken)
 	ts.Require().NoError(err, "Failed to decode ID token")
 
-	// Verify ID token contains the requested firstName claim
-	assert.Contains(ts.T(), idTokenClaims, "firstName", "ID Token should contain firstName claim")
-	assert.Equal(ts.T(), "Claims", idTokenClaims["firstName"], "firstName should match")
+	// Verify ID token contains the requested given_name claim
+	assert.Contains(ts.T(), idTokenClaims, "given_name", "ID Token should contain given_name claim")
+	assert.Equal(ts.T(), "Claims", idTokenClaims["given_name"], "given_name should match")
 
 	ts.T().Logf("ID Token claims: %+v", idTokenClaims)
 }
@@ -673,8 +673,8 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_MultipleClaims() {
 			"phone_number": null
 		},
 		"id_token": {
-			"firstName": null,
-			"lastName": null
+			"given_name": null,
+			"family_name": null
 		}
 	}`
 
@@ -692,8 +692,8 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_MultipleClaims() {
 	idTokenClaims, err := ts.decodeIDToken(idToken)
 	ts.Require().NoError(err, "Failed to decode ID token")
 
-	assert.Contains(ts.T(), idTokenClaims, "firstName", "ID Token should contain firstName claim")
-	assert.Contains(ts.T(), idTokenClaims, "lastName", "ID Token should contain lastName claim")
+	assert.Contains(ts.T(), idTokenClaims, "given_name", "ID Token should contain given_name claim")
+	assert.Contains(ts.T(), idTokenClaims, "family_name", "ID Token should contain family_name claim")
 
 	ts.T().Logf("UserInfo response: %+v", userInfo)
 	ts.T().Logf("ID Token claims: %+v", idTokenClaims)
@@ -701,7 +701,7 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_MultipleClaims() {
 
 // TestClaimsParameter_WithScopes tests that claims from scopes and claims parameter are merged
 func (ts *ClaimsParameterTestSuite) TestClaimsParameter_WithScopes() {
-	// Request phone_number via claims parameter, profile scope will add firstName, lastName
+	// Request phone_number via claims parameter, profile scope will add given_name, family_name
 	claimsParam := `{"userinfo":{"phone_number":null}}`
 
 	accessToken, _, err := ts.getTokenWithClaims("openid profile", claimsParam)
@@ -712,8 +712,8 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_WithScopes() {
 	ts.Require().NoError(err, "Failed to call UserInfo endpoint")
 
 	// Verify claims from profile scope
-	assert.Contains(ts.T(), userInfo, "firstName", "UserInfo should contain firstName from profile scope")
-	assert.Contains(ts.T(), userInfo, "lastName", "UserInfo should contain lastName from profile scope")
+	assert.Contains(ts.T(), userInfo, "given_name", "UserInfo should contain given_name from profile scope")
+	assert.Contains(ts.T(), userInfo, "family_name", "UserInfo should contain family_name from profile scope")
 
 	// Verify claim from claims parameter
 	assert.Contains(ts.T(), userInfo, "phone_number", "UserInfo should contain phone_number from claims param")
@@ -842,7 +842,7 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_EmptyClaimsRequest() {
 	// Should still get claims from scopes
 	assert.Contains(ts.T(), userInfo, "sub", "Response should contain sub claim")
 	// Profile scope claims should still be present
-	assert.Contains(ts.T(), userInfo, "firstName", "UserInfo should contain firstName from profile scope")
+	assert.Contains(ts.T(), userInfo, "given_name", "UserInfo should contain given_name from profile scope")
 
 	ts.T().Logf("UserInfo response: %+v", userInfo)
 }
@@ -870,8 +870,8 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_NonConfiguredClaim() {
 
 // TestClaimsParameter_IDToken_EssentialClaim tests essential claim marker in ID Token
 func (ts *ClaimsParameterTestSuite) TestClaimsParameter_IDToken_EssentialClaim() {
-	// Request firstName as essential claim in ID Token
-	claimsParam := `{"id_token":{"firstName":{"essential":true}}}`
+	// Request given_name as essential claim in ID Token
+	claimsParam := `{"id_token":{"given_name":{"essential":true}}}`
 
 	_, idToken, err := ts.getTokenWithClaims("openid", claimsParam)
 	ts.Require().NoError(err, "Failed to get token with claims parameter")
@@ -881,8 +881,8 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_IDToken_EssentialClaim()
 	ts.Require().NoError(err, "Failed to decode ID token")
 
 	// Essential claims should be returned in ID Token
-	assert.Contains(ts.T(), idTokenClaims, "firstName", "ID Token should contain essential firstName claim")
-	assert.Equal(ts.T(), "Claims", idTokenClaims["firstName"], "firstName should match")
+	assert.Contains(ts.T(), idTokenClaims, "given_name", "ID Token should contain essential given_name claim")
+	assert.Equal(ts.T(), "Claims", idTokenClaims["given_name"], "given_name should match")
 
 	ts.T().Logf("ID Token claims: %+v", idTokenClaims)
 }
@@ -995,7 +995,7 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_BothIDTokenAndUserInfo_S
 func (ts *ClaimsParameterTestSuite) TestClaimsParameter_DifferentClaimsForIDTokenAndUserInfo() {
 	// Request different claims for id_token and userinfo
 	claimsParam := `{
-		"id_token": {"firstName": null, "lastName": null},
+		"id_token": {"given_name": null, "family_name": null},
 		"userinfo": {"email": null, "phone_number": null}
 	}`
 
@@ -1005,11 +1005,11 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_DifferentClaimsForIDToke
 	// Verify ID Token contains only requested claims (not email/phone)
 	idTokenClaims, err := ts.decodeIDToken(idToken)
 	ts.Require().NoError(err, "Failed to decode ID token")
-	assert.Contains(ts.T(), idTokenClaims, "firstName", "ID Token should contain firstName")
-	assert.Contains(ts.T(), idTokenClaims, "lastName", "ID Token should contain lastName")
+	assert.Contains(ts.T(), idTokenClaims, "given_name", "ID Token should contain given_name")
+	assert.Contains(ts.T(), idTokenClaims, "family_name", "ID Token should contain family_name")
 	// Note: email/phone might not be in ID token since they weren't requested for id_token
 
-	// Verify UserInfo contains only requested claims (not firstName/lastName unless from scope)
+	// Verify UserInfo contains only requested claims (not given_name/family_name unless from scope)
 	userInfo, err := ts.callUserInfo(accessToken)
 	ts.Require().NoError(err, "Failed to call UserInfo endpoint")
 	assert.Contains(ts.T(), userInfo, "email", "UserInfo should contain email")
@@ -1076,7 +1076,7 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_MixedConstraints() {
 // TestClaimsParameter_OnlyIDTokenClaims tests requesting claims only for ID Token
 func (ts *ClaimsParameterTestSuite) TestClaimsParameter_OnlyIDTokenClaims() {
 	// Request claims only for id_token, userinfo should be empty in claims param
-	claimsParam := `{"id_token":{"email":null,"firstName":null}}`
+	claimsParam := `{"id_token":{"email":null,"given_name":null}}`
 
 	accessToken, idToken, err := ts.getTokenWithClaims("openid", claimsParam)
 	ts.Require().NoError(err, "Failed to get token with claims parameter")
@@ -1085,7 +1085,7 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_OnlyIDTokenClaims() {
 	idTokenClaims, err := ts.decodeIDToken(idToken)
 	ts.Require().NoError(err, "Failed to decode ID token")
 	assert.Contains(ts.T(), idTokenClaims, "email", "ID Token should contain email")
-	assert.Contains(ts.T(), idTokenClaims, "firstName", "ID Token should contain firstName")
+	assert.Contains(ts.T(), idTokenClaims, "given_name", "ID Token should contain given_name")
 
 	// UserInfo should only return sub (no explicit userinfo claims requested)
 	userInfo, err := ts.callUserInfo(accessToken)
@@ -1187,7 +1187,7 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_EmptyUserInfoAndIDToken(
 	userInfo, err := ts.callUserInfo(accessToken)
 	ts.Require().NoError(err, "Failed to call UserInfo endpoint")
 	assert.Contains(ts.T(), userInfo, "sub", "UserInfo should contain sub")
-	assert.Contains(ts.T(), userInfo, "firstName", "UserInfo should contain firstName from profile scope")
+	assert.Contains(ts.T(), userInfo, "given_name", "UserInfo should contain given_name from profile scope")
 
 	ts.T().Logf("ID Token claims: %+v", idTokenClaims)
 	ts.T().Logf("UserInfo response: %+v", userInfo)
@@ -1199,15 +1199,15 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_AllConfiguredClaims() {
 	claimsParam := `{
 		"userinfo": {
 			"email": null,
-			"firstName": null,
-			"lastName": null,
+			"given_name": null,
+			"family_name": null,
 			"phone_number": null,
 			"locale": null
 		},
 		"id_token": {
 			"email": null,
-			"firstName": null,
-			"lastName": null,
+			"given_name": null,
+			"family_name": null,
 			"phone_number": null,
 			"locale": null
 		}
@@ -1220,8 +1220,8 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_AllConfiguredClaims() {
 	idTokenClaims, err := ts.decodeIDToken(idToken)
 	ts.Require().NoError(err, "Failed to decode ID token")
 	assert.Contains(ts.T(), idTokenClaims, "email")
-	assert.Contains(ts.T(), idTokenClaims, "firstName")
-	assert.Contains(ts.T(), idTokenClaims, "lastName")
+	assert.Contains(ts.T(), idTokenClaims, "given_name")
+	assert.Contains(ts.T(), idTokenClaims, "family_name")
 	assert.Contains(ts.T(), idTokenClaims, "phone_number")
 	assert.Contains(ts.T(), idTokenClaims, "locale")
 
@@ -1229,15 +1229,15 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_AllConfiguredClaims() {
 	userInfo, err := ts.callUserInfo(accessToken)
 	ts.Require().NoError(err, "Failed to call UserInfo endpoint")
 	assert.Contains(ts.T(), userInfo, "email")
-	assert.Contains(ts.T(), userInfo, "firstName")
-	assert.Contains(ts.T(), userInfo, "lastName")
+	assert.Contains(ts.T(), userInfo, "given_name")
+	assert.Contains(ts.T(), userInfo, "family_name")
 	assert.Contains(ts.T(), userInfo, "phone_number")
 	assert.Contains(ts.T(), userInfo, "locale")
 
 	// Verify values are correct
 	assert.Equal(ts.T(), "claims_test@example.com", userInfo["email"])
-	assert.Equal(ts.T(), "Claims", userInfo["firstName"])
-	assert.Equal(ts.T(), "Test", userInfo["lastName"])
+	assert.Equal(ts.T(), "Claims", userInfo["given_name"])
+	assert.Equal(ts.T(), "Test", userInfo["family_name"])
 	assert.Equal(ts.T(), "+1234567890", userInfo["phone_number"])
 	assert.Equal(ts.T(), "en-US", userInfo["locale"])
 
@@ -1303,7 +1303,7 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_EssentialFalse() {
 
 // TestClaimsParameter_IDToken_WithProfileScope tests ID Token claims with profile scope
 func (ts *ClaimsParameterTestSuite) TestClaimsParameter_IDToken_WithProfileScope() {
-	// Request phone_number via claims parameter, profile scope adds firstName, lastName
+	// Request phone_number via claims parameter, profile scope adds given_name, family_name
 	claimsParam := `{"id_token":{"phone_number":null}}`
 
 	_, idToken, err := ts.getTokenWithClaims("openid profile", claimsParam)
@@ -1314,8 +1314,8 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_IDToken_WithProfileScope
 	ts.Require().NoError(err, "Failed to decode ID token")
 
 	// Verify claims from profile scope in ID Token
-	assert.Contains(ts.T(), idTokenClaims, "firstName", "ID Token should contain firstName from profile scope")
-	assert.Contains(ts.T(), idTokenClaims, "lastName", "ID Token should contain lastName from profile scope")
+	assert.Contains(ts.T(), idTokenClaims, "given_name", "ID Token should contain given_name from profile scope")
+	assert.Contains(ts.T(), idTokenClaims, "family_name", "ID Token should contain family_name from profile scope")
 
 	// Verify claim from claims parameter
 	assert.Contains(ts.T(), idTokenClaims, "phone_number",
@@ -1365,7 +1365,7 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_ValuesAndEssentialCombin
 // TestClaimsParameter_RefreshToken_PreservesClaimsRequest tests that claims parameter is preserved through refresh token flow
 func (ts *ClaimsParameterTestSuite) TestClaimsParameter_RefreshToken_PreservesClaimsRequest() {
 	// Request specific claims via claims parameter
-	claimsParam := `{"userinfo":{"email":{"essential":true},"phone_number":null},"id_token":{"firstName":null}}`
+	claimsParam := `{"userinfo":{"email":{"essential":true},"phone_number":null},"id_token":{"given_name":null}}`
 
 	accessToken, refreshToken, err := ts.getTokensWithClaims("openid profile", claimsParam)
 	ts.Require().NoError(err, "Failed to get initial tokens with claims parameter")
@@ -1396,7 +1396,7 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_RefreshToken_PreservesCl
 
 // TestClaimsParameter_RefreshToken_WithoutClaimsParameter tests refresh token without claims parameter
 func (ts *ClaimsParameterTestSuite) TestClaimsParameter_RefreshToken_WithoutClaimsParameter() {
-	// Get tokens without claims parameter (profile scope adds firstName, lastName)
+	// Get tokens without claims parameter (profile scope adds given_name, family_name)
 	accessToken, refreshToken, err := ts.getTokensWithClaims("openid profile", "")
 	ts.Require().NoError(err, "Failed to get initial tokens without claims parameter")
 	ts.Require().NotEmpty(refreshToken, "Refresh token should be returned")
@@ -1419,7 +1419,7 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_RefreshToken_WithoutClai
 // TestClaimsParameter_RefreshToken_EssentialClaimPreserved tests essential claims preservation
 func (ts *ClaimsParameterTestSuite) TestClaimsParameter_RefreshToken_EssentialClaimPreserved() {
 	// Request essential claims
-	claimsParam := `{"userinfo":{"email":{"essential":true}},"id_token":{"firstName":{"essential":true}}}`
+	claimsParam := `{"userinfo":{"email":{"essential":true}},"id_token":{"given_name":{"essential":true}}}`
 
 	_, refreshToken, err := ts.getTokensWithClaims("openid", claimsParam)
 	ts.Require().NoError(err, "Failed to get tokens with essential claims")
@@ -1462,7 +1462,7 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_RefreshToken_ValueConstr
 // TestClaimsParameter_RefreshToken_ScopeDownscoping tests refresh with reduced scopes
 func (ts *ClaimsParameterTestSuite) TestClaimsParameter_RefreshToken_ScopeDownscoping() {
 	// Get tokens with multiple scopes and claims parameter
-	claimsParam := `{"id_token":{"firstName":null,"lastName":null},"userinfo":{"email":null,"phone_number":null}}`
+	claimsParam := `{"id_token":{"given_name":null,"family_name":null},"userinfo":{"email":null,"phone_number":null}}`
 
 	_, refreshToken, err := ts.getTokensWithClaims("openid profile email", claimsParam)
 	ts.Require().NoError(err, "Failed to get tokens")
@@ -1483,7 +1483,7 @@ func (ts *ClaimsParameterTestSuite) TestClaimsParameter_RefreshToken_ScopeDownsc
 // TestClaimsParameter_RefreshToken_MultipleRefreshCycles tests claims preservation across multiple refresh cycles
 func (ts *ClaimsParameterTestSuite) TestClaimsParameter_RefreshToken_MultipleRefreshCycles() {
 	// Request specific claims
-	claimsParam := `{"userinfo":{"email":null},"id_token":{"firstName":null}}`
+	claimsParam := `{"userinfo":{"email":null},"id_token":{"given_name":null}}`
 
 	_, refreshToken1, err := ts.getTokensWithClaims("openid", claimsParam)
 	ts.Require().NoError(err, "Failed to get initial tokens")

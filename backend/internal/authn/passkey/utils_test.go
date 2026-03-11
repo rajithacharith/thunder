@@ -92,8 +92,8 @@ func (suite *UtilsTestSuite) TestParseUserAttributes_InvalidJSON() {
 
 func (suite *UtilsTestSuite) TestBuildUserDisplayName_WithName() {
 	attrs := map[string]interface{}{
-		"firstName": "John",
-		"lastName":  "Doe",
+		"given_name":  "John",
+		"family_name": "Doe",
 	}
 
 	result := buildUserDisplayName(testUserID, attrs)
@@ -103,7 +103,7 @@ func (suite *UtilsTestSuite) TestBuildUserDisplayName_WithName() {
 
 func (suite *UtilsTestSuite) TestBuildUserDisplayName_WithFirstNameOnly() {
 	attrs := map[string]interface{}{
-		"firstName": "John",
+		"given_name": "John",
 	}
 
 	result := buildUserDisplayName(testUserID, attrs)
@@ -269,7 +269,7 @@ func (suite *UtilsTestSuite) TestDecodeBase64_InvalidInput() {
 }
 
 func (suite *UtilsTestSuite) TestExtractCoreUser_WithFullAttributes() {
-	attrs := json.RawMessage(`{"firstName":"John","lastName":"Doe","username":"johndoe"}`)
+	attrs := json.RawMessage(`{"given_name":"John","family_name":"Doe","username":"johndoe"}`)
 	testUser := &user.User{
 		ID:               testUserID,
 		Type:             "person",

@@ -1172,7 +1172,7 @@ func TestGetDisplayAttributesByNamesTestSuite(t *testing.T) {
 
 func (s *GetDisplayAttributesByNamesTestSuite) TestReturnsDisplayAttributes() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
-	expected := map[string]string{"SchemaA": "email", "SchemaB": "firstName"}
+	expected := map[string]string{"SchemaA": "email", "SchemaB": "given_name"}
 	storeMock.
 		On("GetDisplayAttributesByNames", mock.Anything, []string{"SchemaA", "SchemaB"}).
 		Return(expected, nil).

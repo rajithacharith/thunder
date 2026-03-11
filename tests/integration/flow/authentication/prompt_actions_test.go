@@ -211,10 +211,10 @@ var (
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 			"mobileNumber": map[string]interface{}{
@@ -229,8 +229,8 @@ var (
 			"username": "promptactionsuser1",
 			"password": "testpassword",
 			"email": "promptactionsuser1@example.com",
-			"firstName": "PromptActions",
-			"lastName": "User1",
+			"given_name": "PromptActions",
+			"family_name": "User1",
 			"mobileNumber": "+1234567890"
 		}`),
 	}
@@ -241,8 +241,8 @@ var (
 			"username": "promptactionsuser2",
 			"password": "testpassword",
 			"email": "promptactionsuser2@example.com",
-			"firstName": "PromptActions",
-			"lastName": "User2"
+			"given_name": "PromptActions",
+			"family_name": "User2"
 		}`),
 	}
 )

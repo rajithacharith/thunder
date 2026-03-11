@@ -55,10 +55,10 @@ var (
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 		},
@@ -145,8 +145,8 @@ func (ts *UserInfoTestSuite) createTestUser() string {
 		"username":  "userinfo_test_user",
 		"password":  "SecurePass123!",
 		"email":     "userinfo_test@example.com",
-		"firstName": "UserInfo",
-		"lastName":  "Test",
+		"given_name": "UserInfo",
+		"family_name":  "Test",
 	}
 
 	attributesJSON, err := json.Marshal(attributes)
@@ -271,11 +271,11 @@ func (ts *UserInfoTestSuite) createTestApplication(authFlowID string) string {
 					"scopes":                     []string{"openid", "profile", "email"},
 					"token": map[string]interface{}{
 						"id_token": map[string]interface{}{
-							"user_attributes": []string{"email", "firstName", "lastName", "name"},
+							"user_attributes": []string{"email", "given_name", "family_name", "name"},
 						},
 					},
 					"scope_claims": map[string][]string{
-						"profile": {"firstName", "lastName", "name"},
+						"profile": {"given_name", "family_name", "name"},
 						"email":   {"email"},
 					},
 				},
@@ -746,7 +746,7 @@ func (ts *UserInfoTestSuite) TestUserInfo_MissingToken() {
 
 func (ts *UserInfoTestSuite) TestUserInfo_SeparateAttributesConfiguration() {
 	// Create a dedicated app for this test with specific UserInfo config
-	// UserInfo config allows ONLY "email", while IDToken config allows "email", "firstName", "lastName"
+	// UserInfo config allows ONLY "email", while IDToken config allows "email", "given_name", "family_name"
 	config := map[string]interface{}{
 		"client_id":      "userinfo_config_test_client",
 		"client_secret":  "userinfo_config_test_secret",
@@ -756,14 +756,14 @@ func (ts *UserInfoTestSuite) TestUserInfo_SeparateAttributesConfiguration() {
 		"scopes":         []string{"openid", "profile", "email"},
 		"token": map[string]interface{}{
 			"id_token": map[string]interface{}{
-				"user_attributes": []string{"email", "firstName", "lastName"},
+				"user_attributes": []string{"email", "given_name", "family_name"},
 			},
 		},
 		"user_info": map[string]interface{}{
 			"user_attributes": []string{"email"}, // UserInfo strictly limited to email
 		},
 		"scope_claims": map[string][]string{
-			"profile": {"firstName", "lastName", "name"},
+			"profile": {"given_name", "family_name", "name"},
 			"email":   {"email"},
 		},
 	}
@@ -791,11 +791,11 @@ func (ts *UserInfoTestSuite) TestUserInfo_SeparateAttributesConfiguration() {
 	// Verify sub claim is always present (required by OIDC spec)
 	assert.Contains(ts.T(), userInfo, "sub")
 
-	// Verify ONLY email is returned (plus sub), and NOT firstName/lastName
+	// Verify ONLY email is returned (plus sub), and NOT given_name/family_name
 	// despite being in profile scope and IDToken config
 	assert.Contains(ts.T(), userInfo, "email")
-	assert.NotContains(ts.T(), userInfo, "firstName")
-	assert.NotContains(ts.T(), userInfo, "lastName")
+	assert.NotContains(ts.T(), userInfo, "given_name")
+	assert.NotContains(ts.T(), userInfo, "family_name")
 }
 
 func (ts *UserInfoTestSuite) TestUserInfo_FallbackConfiguration() {
@@ -809,12 +809,12 @@ func (ts *UserInfoTestSuite) TestUserInfo_FallbackConfiguration() {
 		"scopes":         []string{"openid", "profile", "email"},
 		"token": map[string]interface{}{
 			"id_token": map[string]interface{}{
-				"user_attributes": []string{"email", "firstName"},
+				"user_attributes": []string{"email", "given_name"},
 			},
 		},
 		// No user_info config
 		"scope_claims": map[string][]string{
-			"profile": {"firstName", "lastName", "name"},
+			"profile": {"given_name", "family_name", "name"},
 			"email":   {"email"},
 		},
 	}
@@ -837,10 +837,10 @@ func (ts *UserInfoTestSuite) TestUserInfo_FallbackConfiguration() {
 	// Verify sub claim is always present (required by OIDC spec)
 	assert.Contains(ts.T(), userInfo, "sub")
 
-	// Should fallback to IDToken attributes: email AND firstName
+	// Should fallback to IDToken attributes: email AND given_name
 	assert.Contains(ts.T(), userInfo, "email")
-	assert.Contains(ts.T(), userInfo, "firstName")
-	assert.Equal(ts.T(), "UserInfo", userInfo["firstName"])
+	assert.Contains(ts.T(), userInfo, "given_name")
+	assert.Equal(ts.T(), "UserInfo", userInfo["given_name"])
 }
 
 func (ts *UserInfoTestSuite) TestUserInfo_DefaultClaims() {
@@ -861,7 +861,7 @@ func (ts *UserInfoTestSuite) TestUserInfo_DefaultClaims() {
 			"user_attributes": []string{"userType", "ouId", "ouHandle", "ouName", "email"},
 		},
 		"scope_claims": map[string][]string{
-			"profile": {"firstName", "lastName", "userType", "ouId", "ouHandle", "ouName"},
+			"profile": {"given_name", "family_name", "userType", "ouId", "ouHandle", "ouName"},
 		},
 	}
 
@@ -1010,15 +1010,15 @@ func (ts *UserInfoTestSuite) TestUserInfo_JWS_Response() {
 		"scopes":         []string{"openid", "profile", "email"},
 		"token": map[string]interface{}{
 			"id_token": map[string]interface{}{
-				"user_attributes": []string{"email", "firstName", "lastName"},
+				"user_attributes": []string{"email", "given_name", "family_name"},
 			},
 		},
 		"user_info": map[string]interface{}{
 			"response_type":   "JWS",
-			"user_attributes": []string{"email", "firstName", "lastName"},
+			"user_attributes": []string{"email", "given_name", "family_name"},
 		},
 		"scope_claims": map[string][]string{
-			"profile": {"firstName", "lastName"},
+			"profile": {"given_name", "family_name"},
 			"email":   {"email"},
 		},
 	}

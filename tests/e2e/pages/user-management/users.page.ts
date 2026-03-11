@@ -35,8 +35,8 @@ import { Timeouts } from "../../constants/timeouts";
 export type UserFormData = {
   username: string;
   email: string;
-  firstName?: string;
-  lastName?: string;
+  given_name?: string;
+  family_name?: string;
 };
 
 export class UsersPage extends BasePage {
@@ -55,8 +55,8 @@ export class UsersPage extends BasePage {
   // Form Locators (Step 2: User Details)
   readonly usernameInput: Locator;
   readonly emailInput: Locator;
-  readonly firstNameInput: Locator;
-  readonly lastNameInput: Locator;
+  readonly givenNameInput: Locator;
+  readonly familyNameInput: Locator;
   readonly submitButton: Locator;
   readonly cancelButton: Locator;
   readonly formHeading: Locator;
@@ -97,12 +97,12 @@ export class UsersPage extends BasePage {
 
     this.emailInput = page.locator('input[name="email"]').or(page.getByLabel(/email/i));
 
-    this.firstNameInput = page
-      .locator('input[name="given_name"], input[name="firstName"]')
+    this.givenNameInput = page
+      .locator('input[name="given_name"]')
       .or(page.getByLabel(/first.*name|given.*name/i));
 
-    this.lastNameInput = page
-      .locator('input[name="family_name"], input[name="lastName"]')
+    this.familyNameInput = page
+      .locator('input[name="family_name"]')
       .or(page.getByLabel(/last.*name|family.*name/i));
 
     // Form buttons
@@ -179,11 +179,11 @@ export class UsersPage extends BasePage {
     if (await this.emailInput.first().isVisible().catch(() => false)) {
       await this.emailInput.first().fill(data.email);
     }
-    if (data.firstName && await this.firstNameInput.first().isVisible().catch(() => false)) {
-      await this.firstNameInput.first().fill(data.firstName);
+    if (data.given_name && await this.givenNameInput.first().isVisible().catch(() => false)) {
+      await this.givenNameInput.first().fill(data.given_name);
     }
-    if (data.lastName && await this.lastNameInput.first().isVisible().catch(() => false)) {
-      await this.lastNameInput.first().fill(data.lastName);
+    if (data.family_name && await this.familyNameInput.first().isVisible().catch(() => false)) {
+      await this.familyNameInput.first().fill(data.family_name);
     }
 
     // Fill any remaining empty required text/password inputs with generated values

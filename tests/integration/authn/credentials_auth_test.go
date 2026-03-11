@@ -104,10 +104,10 @@ var (
 					"type": "string",
 					"credential": true,
 				},
-				"firstName": map[string]interface{}{
+				"given_name": map[string]interface{}{
 					"type": "string",
 				},
-				"lastName": map[string]interface{}{
+				"family_name": map[string]interface{}{
 					"type": "string",
 				},
 			},
@@ -184,8 +184,8 @@ func (suite *CredentialsAuthTestSuite) SetupSuite() {
 				"email":        "credtest4@example.com",
 				"mobileNumber": "+1234567892",
 				"password":     "TestPassword999!",
-				"firstName":    "Test",
-				"lastName":     "User",
+				"given_name":    "Test",
+				"family_name":     "User",
 			},
 		},
 	}
@@ -629,8 +629,8 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithDifferentAttributeCom
 			name: "Only additional attributes (no identifying attribute)",
 			authRequest: map[string]interface{}{
 				"identifiers": map[string]interface{}{
-					"firstName": "Test",
-					"lastName":  "User",
+					"given_name": "Test",
+					"family_name":  "User",
 				},
 				"credentials": map[string]interface{}{
 					"password": "TestPassword999!",

@@ -434,7 +434,7 @@ func (ts *UserSchemaAuthzTestSuite) TestOwnOUSchemaLifecycle() {
 			"username":  {"type": "string", "unique": true},
 			"password":  {"type": "string", "credential": true},
 			"email":     {"type": "string"},
-			"firstName": {"type": "string"}
+			"given_name": {"type": "string"}
 		}`),
 	})
 	ts.Require().NoError(err)

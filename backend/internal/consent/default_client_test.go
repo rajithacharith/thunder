@@ -762,7 +762,7 @@ func (s *DefaultClientTestSuite) TestUpdateConsent_Success() {
 				Name: "login",
 				Elements: []elementApprovalResponseDTO{
 					{Name: "email", IsUserApproved: true},
-					{Name: "lastName", IsUserApproved: false},
+					{Name: "family_name", IsUserApproved: false},
 				},
 			},
 		},
@@ -779,7 +779,7 @@ func (s *DefaultClientTestSuite) TestUpdateConsent_Success() {
 				Name: "login",
 				Elements: []ConsentElementApproval{
 					{Name: "email", IsUserApproved: true},
-					{Name: "lastName", IsUserApproved: false},
+					{Name: "family_name", IsUserApproved: false},
 				},
 			},
 		},
@@ -793,7 +793,7 @@ func (s *DefaultClientTestSuite) TestUpdateConsent_Success() {
 	s.Equal("login", result.Purposes[0].Name)
 	s.Len(result.Purposes[0].Elements, 2)
 	s.True(result.Purposes[0].Elements[0].IsUserApproved)  // email approved
-	s.False(result.Purposes[0].Elements[1].IsUserApproved) // lastName denied
+	s.False(result.Purposes[0].Elements[1].IsUserApproved) // family_name denied
 }
 
 func (s *DefaultClientTestSuite) TestUpdateConsent_BadRequest() {
@@ -1450,7 +1450,7 @@ func (s *DefaultClientTestSuite) TestSearchConsents_WithPurposesAndElements_Succ
 					{
 						Name: "profile",
 						Elements: []elementApprovalResponseDTO{
-							{Name: "firstName", IsUserApproved: true},
+							{Name: "given_name", IsUserApproved: true},
 						},
 					},
 				},
@@ -1467,7 +1467,7 @@ func (s *DefaultClientTestSuite) TestSearchConsents_WithPurposesAndElements_Succ
 	s.Len(result[0].Purposes, 1)
 	s.Equal("profile", result[0].Purposes[0].Name)
 	s.Len(result[0].Purposes[0].Elements, 1)
-	s.Equal("firstName", result[0].Purposes[0].Elements[0].Name)
+	s.Equal("given_name", result[0].Purposes[0].Elements[0].Name)
 }
 
 // newTestClientWithConfig creates a defaultClient backed by httpMock and with explicit timeout/maxRetries.
