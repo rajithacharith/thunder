@@ -39,23 +39,23 @@ func Initialize(
 	userSchemaService userschema.UserSchemaServiceInterface,
 	hashService hash.HashServiceInterface,
 	authzService sysauthz.SystemAuthorizationServiceInterface,
-) (UserServiceInterface, declarativeresource.ResourceExporter, error) {
+) (UserServiceInterface, oupkg.OUUserResolver, declarativeresource.ResourceExporter, error) {
 	// Step 1: Determine store mode and initialize store structure
 	storeMode := getUserStoreMode()
 	userStore, err := initializeStore(storeMode)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Step 2: Get database transactioner
 	dbProvider := provider.GetDBProvider()
 	dbClient, err := dbProvider.GetUserDBClient()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	transactioner, err := dbClient.GetTransactioner()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Step 3: Create service with store
@@ -65,16 +65,19 @@ func Initialize(
 	// Step 4: Load declarative resources into store (if applicable)
 	if storeMode == serverconst.StoreModeComposite || storeMode == serverconst.StoreModeDeclarative {
 		if err := loadDeclarativeUserResources(userStore); err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 	}
 
 	userHandler := newUserHandler(userService)
 	registerRoutes(mux, userHandler)
 
+	// Create resolver for OU package to query user data without cross-DB access
+	ouUserResolver := newOUUserResolver(userStore)
+
 	// Create and return exporter
 	exporter := newUserExporter(userService)
-	return userService, exporter, nil
+	return userService, ouUserResolver, exporter, nil
 }
 
 // Store Selection (based on user.store configuration):

@@ -37,17 +37,24 @@ func Initialize(
 	userService user.UserServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 	authzService sysauthz.SystemAuthorizationServiceInterface,
-) (GroupServiceInterface, error) {
+) (GroupServiceInterface, oupkg.OUGroupResolver, error) {
 	// Get transactioner from DB provider
 	transactioner, err := provider.GetDBProvider().GetUserDBTransactioner()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	groupService := newGroupService(ouService, userService, userSchemaService, authzService, transactioner)
+	groupStore := newGroupStore()
+	groupService := newGroupServiceWithStore(
+		groupStore, ouService, userService, userSchemaService, authzService, transactioner,
+	)
+
+	// Create resolver for OU package to query group data without cross-DB access
+	ouGroupResolver := newOUGroupResolver(groupStore)
+
 	groupHandler := newGroupHandler(groupService)
 	registerRoutes(mux, groupHandler)
-	return groupService, nil
+	return groupService, ouGroupResolver, nil
 }
 
 // registerRoutes registers the routes for group management operations.

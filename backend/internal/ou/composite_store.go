@@ -174,14 +174,6 @@ func (c *compositeOUStore) DeleteOrganizationUnit(ctx context.Context, id string
 	return c.dbStore.DeleteOrganizationUnit(ctx, id)
 }
 
-// CheckOrganizationUnitHasChildResources checks if an OU has child resources in either store.
-func (c *compositeOUStore) CheckOrganizationUnitHasChildResources(ctx context.Context, id string) (bool, error) {
-	return declarativeresource.CompositeBooleanCheckHelper(
-		func() (bool, error) { return c.fileStore.CheckOrganizationUnitHasChildResources(ctx, id) },
-		func() (bool, error) { return c.dbStore.CheckOrganizationUnitHasChildResources(ctx, id) },
-	)
-}
-
 // GetOrganizationUnitChildrenCount retrieves the count of child OUs from both stores.
 func (c *compositeOUStore) GetOrganizationUnitChildrenCount(ctx context.Context, id string) (int, error) {
 	return declarativeresource.CompositeMergeCountHelper(
@@ -217,30 +209,6 @@ func (c *compositeOUStore) GetOrganizationUnitChildrenList(ctx context.Context,
 		return nil, ErrResultLimitExceededInCompositeMode
 	}
 	return items, nil
-}
-
-// GetOrganizationUnitUsersCount retrieves the count of users from the database store only.
-func (c *compositeOUStore) GetOrganizationUnitUsersCount(ctx context.Context, id string) (int, error) {
-	return c.dbStore.GetOrganizationUnitUsersCount(ctx, id)
-}
-
-// GetOrganizationUnitUsersList retrieves users from the database store only.
-func (c *compositeOUStore) GetOrganizationUnitUsersList(
-	ctx context.Context, id string, limit, offset int,
-) ([]User, error) {
-	return c.dbStore.GetOrganizationUnitUsersList(ctx, id, limit, offset)
-}
-
-// GetOrganizationUnitGroupsCount retrieves the count of groups from the database store only.
-func (c *compositeOUStore) GetOrganizationUnitGroupsCount(ctx context.Context, id string) (int, error) {
-	return c.dbStore.GetOrganizationUnitGroupsCount(ctx, id)
-}
-
-// GetOrganizationUnitGroupsList retrieves groups from the database store only.
-func (c *compositeOUStore) GetOrganizationUnitGroupsList(
-	ctx context.Context, id string, limit, offset int,
-) ([]Group, error) {
-	return c.dbStore.GetOrganizationUnitGroupsList(ctx, id, limit, offset)
 }
 
 // mergeAndDeduplicateOUs merges root-level OUs from both stores and removes duplicates by ID.

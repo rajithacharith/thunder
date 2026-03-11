@@ -105,31 +105,6 @@ var (
 			`WHERE PARENT_ID = $1 AND DEPLOYMENT_ID = $4 ORDER BY NAME LIMIT $2 OFFSET $3`,
 	}
 
-	// queryGetOrganizationUnitUsersCount is the query to get total count of users in an organization unit.
-	queryGetOrganizationUnitUsersCount = dbmodel.DBQuery{
-		ID:    "OUQ-OU_MGT-12",
-		Query: `SELECT COUNT(*) as total FROM "USER" WHERE OU_ID = $1 AND DEPLOYMENT_ID = $2`,
-	}
-
-	// queryGetOrganizationUnitUsersList is the query to get users in an organization unit with pagination.
-	queryGetOrganizationUnitUsersList = dbmodel.DBQuery{
-		ID:    "OUQ-OU_MGT-13",
-		Query: `SELECT ID FROM "USER" WHERE OU_ID = $1 AND DEPLOYMENT_ID = $4 ORDER BY ID LIMIT $2 OFFSET $3`,
-	}
-
-	// queryGetOrganizationUnitGroupsCount is the query to get total count of groups in an organization unit.
-	queryGetOrganizationUnitGroupsCount = dbmodel.DBQuery{
-		ID:    "OUQ-OU_MGT-14",
-		Query: `SELECT COUNT(*) as total FROM "GROUP" WHERE OU_ID = $1 AND DEPLOYMENT_ID = $2`,
-	}
-
-	// queryGetOrganizationUnitGroupsList is the query to get groups in an organization unit with pagination.
-	queryGetOrganizationUnitGroupsList = dbmodel.DBQuery{
-		ID: "OUQ-OU_MGT-15",
-		Query: `SELECT ID, NAME FROM "GROUP" WHERE OU_ID = $1 AND DEPLOYMENT_ID = $4 ` +
-			`ORDER BY NAME LIMIT $2 OFFSET $3`,
-	}
-
 	// queryCheckOrganizationUnitNameConflict is the query to check if an organization
 	// unit name conflicts under the same parent.
 	queryCheckOrganizationUnitNameConflict = dbmodel.DBQuery{
@@ -160,15 +135,6 @@ var (
 		ID: "OUQ-OU_MGT-19",
 		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT ` +
 			`WHERE HANDLE = $1 AND PARENT_ID IS NULL AND DEPLOYMENT_ID = $2`,
-	}
-
-	// queryCheckOrganizationUnitHasUsersOrGroups is the query to check if an organization unit has users or groups.
-	queryCheckOrganizationUnitHasUsersOrGroups = dbmodel.DBQuery{
-		ID: "OUQ-OU_MGT-20",
-		Query: `SELECT 
-					(SELECT COUNT(*) FROM ORGANIZATION_UNIT WHERE PARENT_ID = $1 AND DEPLOYMENT_ID = $2) +
-					(SELECT COUNT(*) FROM "USER" WHERE OU_ID = $1 AND DEPLOYMENT_ID = $2) + 
-					(SELECT COUNT(*) FROM "GROUP" WHERE OU_ID = $1 AND DEPLOYMENT_ID = $2) as count`,
 	}
 )
 

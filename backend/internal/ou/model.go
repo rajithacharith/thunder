@@ -19,6 +19,8 @@
 package ou
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
@@ -88,6 +90,20 @@ type UserListResponse struct {
 	Count        int          `json:"count"`
 	Users        []User       `json:"users"`
 	Links        []utils.Link `json:"links"`
+}
+
+// OUUserResolver provides access to user data for an organization unit
+// without requiring direct import of the user package.
+type OUUserResolver interface {
+	GetUserCountByOUID(ctx context.Context, ouID string) (int, error)
+	GetUserListByOUID(ctx context.Context, ouID string, limit, offset int) ([]User, error)
+}
+
+// OUGroupResolver provides access to group data for an organization unit
+// without requiring direct import of the group package.
+type OUGroupResolver interface {
+	GetGroupCountByOUID(ctx context.Context, ouID string) (int, error)
+	GetGroupListByOUID(ctx context.Context, ouID string, limit, offset int) ([]Group, error)
 }
 
 // GroupListResponse represents the response for listing groups in an organization unit.

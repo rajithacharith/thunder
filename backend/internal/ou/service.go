@@ -77,11 +77,30 @@ type OrganizationUnitServiceInterface interface {
 	) (*GroupListResponse, *serviceerror.ServiceError)
 }
 
+// ConfigurableOUService extends OrganizationUnitServiceInterface with methods for
+// two-phase initialization of resolvers. This is intentionally separate from the
+// main interface so consumers don't see bootstrap-only methods.
+type ConfigurableOUService interface {
+	OrganizationUnitServiceInterface
+	SetOUUserResolver(resolver OUUserResolver)
+	SetOUGroupResolver(resolver OUGroupResolver)
+}
+
 // OrganizationUnitService provides organization unit management operations.
 type organizationUnitService struct {
 	authzService  sysauthz.SystemAuthorizationServiceInterface
 	ouStore       organizationUnitStoreInterface
 	transactioner transaction.Transactioner
+	userResolver  OUUserResolver
+	groupResolver OUGroupResolver
+}
+
+func (ous *organizationUnitService) SetOUUserResolver(resolver OUUserResolver) {
+	ous.userResolver = resolver
+}
+
+func (ous *organizationUnitService) SetOUGroupResolver(resolver OUGroupResolver) {
+	ous.groupResolver = resolver
 }
 
 // newOrganizationUnitService creates a new instance of OrganizationUnitService.
@@ -89,7 +108,7 @@ func newOrganizationUnitService(
 	authzService sysauthz.SystemAuthorizationServiceInterface,
 	ouStore organizationUnitStoreInterface,
 	transactioner transaction.Transactioner,
-) OrganizationUnitServiceInterface {
+) ConfigurableOUService {
 	return &organizationUnitService{
 		authzService:  authzService,
 		ouStore:       ouStore,
@@ -719,12 +738,41 @@ func (ous *organizationUnitService) deleteOUInternal(
 		return &ErrorCannotModifyDeclarativeResource
 	}
 
-	hasChildren, err := ous.ouStore.CheckOrganizationUnitHasChildResources(ctx, id)
+	// Check child OUs (own table).
+	childCount, err := ous.ouStore.GetOrganizationUnitChildrenCount(ctx, id)
 	if err != nil {
-		logger.Error("Failed to check if organization unit has children", log.Error(err))
+		logger.Error("Failed to check child organization units", log.Error(err))
 		return &ErrorInternalServerError
 	}
-	if hasChildren {
+	if childCount > 0 {
+		return &ErrorCannotDeleteOrganizationUnit
+	}
+
+	// Check users via resolver.
+	if ous.userResolver == nil {
+		logger.Error("OUUserResolver not initialized")
+		return &ErrorInternalServerError
+	}
+	userCount, err := ous.userResolver.GetUserCountByOUID(ctx, id)
+	if err != nil {
+		logger.Error("Failed to check organization unit users", log.Error(err))
+		return &ErrorInternalServerError
+	}
+	if userCount > 0 {
+		return &ErrorCannotDeleteOrganizationUnit
+	}
+
+	// Check groups via resolver.
+	if ous.groupResolver == nil {
+		logger.Error("OUGroupResolver not initialized")
+		return &ErrorInternalServerError
+	}
+	groupCount, err := ous.groupResolver.GetGroupCountByOUID(ctx, id)
+	if err != nil {
+		logger.Error("Failed to check organization unit groups", log.Error(err))
+		return &ErrorInternalServerError
+	}
+	if groupCount > 0 {
 		return &ErrorCannotDeleteOrganizationUnit
 	}
 
@@ -762,13 +810,16 @@ func (ous *organizationUnitService) GetOrganizationUnitUsers(
 	if svcErr := ous.checkOUAccess(ctx, security.ActionReadUser, id); svcErr != nil {
 		return nil, svcErr
 	}
+	if ous.userResolver == nil {
+		return nil, &ErrorInternalServerError
+	}
 
 	items, totalCount, svcErr := ous.getResourceListWithExistenceCheck(
 		ctx, id, limit, offset, "users",
 		func(ctx context.Context, id string, limit, offset int) (interface{}, error) {
-			return ous.ouStore.GetOrganizationUnitUsersList(ctx, id, limit, offset)
+			return ous.userResolver.GetUserListByOUID(ctx, id, limit, offset)
 		},
-		ous.ouStore.GetOrganizationUnitUsersCount,
+		ous.userResolver.GetUserCountByOUID,
 		false, // No composite error mapping for users
 	)
 	if svcErr != nil {
@@ -786,13 +837,16 @@ func (ous *organizationUnitService) GetOrganizationUnitGroups(
 	if svcErr := ous.checkOUAccess(ctx, security.ActionReadGroup, id); svcErr != nil {
 		return nil, svcErr
 	}
+	if ous.groupResolver == nil {
+		return nil, &ErrorInternalServerError
+	}
 
 	items, totalCount, svcErr := ous.getResourceListWithExistenceCheck(
 		ctx, id, limit, offset, "groups",
 		func(ctx context.Context, id string, limit, offset int) (interface{}, error) {
-			return ous.ouStore.GetOrganizationUnitGroupsList(ctx, id, limit, offset)
+			return ous.groupResolver.GetGroupListByOUID(ctx, id, limit, offset)
 		},
-		ous.ouStore.GetOrganizationUnitGroupsCount,
+		ous.groupResolver.GetGroupCountByOUID,
 		false, // No composite error mapping for groups
 	)
 	if svcErr != nil {

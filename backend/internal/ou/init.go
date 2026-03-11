@@ -34,7 +34,7 @@ import (
 // avoid an import cycle), and the declarative resource exporter.
 func Initialize(
 	mux *http.ServeMux, authzService sysauthz.SystemAuthorizationServiceInterface,
-) (OrganizationUnitServiceInterface, sysauthz.OUHierarchyResolver, declarativeresource.ResourceExporter, error) {
+) (ConfigurableOUService, sysauthz.OUHierarchyResolver, declarativeresource.ResourceExporter, error) {
 	ouStore, err := initializeStore()
 	if err != nil {
 		return nil, nil, nil, err

@@ -363,38 +363,6 @@ func (s *FileBasedStoreTestSuite) TestCheckOrganizationUnitNameConflict_WithPare
 	assert.False(s.T(), conflict)
 }
 
-func (s *FileBasedStoreTestSuite) TestCheckOrganizationUnitHasChildResources() {
-	parent := OrganizationUnit{
-		ID:     testParentOUID,
-		Handle: "parent",
-		Name:   "Parent",
-		Parent: nil,
-	}
-	err := s.store.CreateOrganizationUnit(context.Background(), parent)
-	assert.NoError(s.T(), err)
-
-	// No children initially
-	hasChildren, err := s.store.CheckOrganizationUnitHasChildResources(context.Background(), testParentOUID)
-	assert.NoError(s.T(), err)
-	assert.False(s.T(), hasChildren)
-
-	// Add a child
-	parentID := testParentOUID
-	child := OrganizationUnit{
-		ID:     "child-1",
-		Handle: "child",
-		Name:   "Child",
-		Parent: &parentID,
-	}
-	err = s.store.CreateOrganizationUnit(context.Background(), child)
-	assert.NoError(s.T(), err)
-
-	// Should have children now
-	hasChildren, err = s.store.CheckOrganizationUnitHasChildResources(context.Background(), testParentOUID)
-	assert.NoError(s.T(), err)
-	assert.True(s.T(), hasChildren)
-}
-
 func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitListCount() {
 	// Initially empty
 	count, err := s.store.GetOrganizationUnitListCount(context.Background())
@@ -514,34 +482,6 @@ func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitChildrenList_Pagination
 	children, err = s.store.GetOrganizationUnitChildrenList(context.Background(), testParentOUID, 10, 100)
 	assert.NoError(s.T(), err)
 	assert.Empty(s.T(), children)
-}
-
-func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitUsersCount() {
-	// Users are not stored in file-based mode
-	count, err := s.store.GetOrganizationUnitUsersCount(context.Background(), "any-id")
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 0, count)
-}
-
-func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitUsersList() {
-	// Users are not stored in file-based mode
-	users, err := s.store.GetOrganizationUnitUsersList(context.Background(), "any-id", 10, 0)
-	assert.NoError(s.T(), err)
-	assert.Empty(s.T(), users)
-}
-
-func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitGroupsCount() {
-	// Groups are not stored in file-based mode
-	count, err := s.store.GetOrganizationUnitGroupsCount(context.Background(), "any-id")
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 0, count)
-}
-
-func (s *FileBasedStoreTestSuite) TestGetOrganizationUnitGroupsList() {
-	// Groups are not stored in file-based mode
-	groups, err := s.store.GetOrganizationUnitGroupsList(context.Background(), "any-id", 10, 0)
-	assert.NoError(s.T(), err)
-	assert.Empty(s.T(), groups)
 }
 
 func (s *FileBasedStoreTestSuite) TestCreate_StorerInterface() {
