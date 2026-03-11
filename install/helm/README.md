@@ -37,8 +37,10 @@ Thunder's configuration system supports multiple value formats for **any paramet
 ## Prerequisites
 
 ### Infrastructure
+
 - Running Kubernetes cluster ([minikube](https://kubernetes.io/docs/tasks/tools/#minikube) or an alternative cluster)
-- Kubernetes ingress controller ([NGINX Ingress](https://github.com/kubernetes/ingress-nginx) recommended)
+- **For Ingress-based deployment:** Kubernetes ingress controller ([NGINX Ingress](https://github.com/kubernetes/ingress-nginx) recommended)
+- **For Gateway API deployment:** Gateway API implementation ([Envoy Gateway](https://gateway.envoyproxy.io/) recommended)
 
 ### Tools
 | Tool          | Installation Guide | Version Check Command |
@@ -116,6 +118,32 @@ helm uninstall my-thunder
 ```
 
 This command removes all the Kubernetes components associated with the chart and deletes the release.
+
+## Gateway API Setup (Alternative to Ingress)
+
+Thunder supports Kubernetes Gateway API as a modern alternative to Ingress. Enable it by setting `gateway.enabled=true` and `httproute.enabled=true` when installing the chart.
+
+### Gateway API Prerequisites
+- A TLS certificate stored as a Kubernetes Secret named `thunder-tls` in your deployment namespace
+
+### Create a TLS Certificate
+
+Generate a self-signed certificate and create the Kubernetes Secret:
+
+```bash
+# Generate a self-signed certificate for your hostname (e.g., thunder.local)
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout tls.key -out tls.crt \
+  -subj "/CN=thunder.local" \
+  -addext "subjectAltName = DNS:thunder.local"
+
+# Create the TLS secret (must be named 'thunder-tls' in your deployment namespace)
+kubectl create secret tls thunder-tls \
+  --cert=tls.crt \
+  --key=tls.key \
+  -n <your-namespace>
+```
+
 
 ## Parameters
 
@@ -211,6 +239,17 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `httproute.annotations`               | Annotations for the HTTPRoute resource                                       | `{}`                         |
 | `httproute.parentRefs`                | Gateway references this route attaches to (required when enabled)            | `[]`                         |
 | `httproute.hostnames`                 | Hostnames this route responds to                                             | `[]`                         |
+
+### Gateway Parameters
+
+| Name                                  | Description                                                                  | Default                      |
+| ------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------- |
+| `gateway.enabled`                     | Enable Gateway API Gateway resource (alternative to Ingress)                 | `false`                      |
+| `gateway.name`                        | Override the name of the Gateway resource                                    | `""`                         |
+| `gateway.className`                   | Gateway class name                                                           | `eg` (Envoy default name)    |
+| `gateway.tls.enabled`                 | Enable TLS listener on the Gateway                                           | `true`                       |
+| `gateway.tls.secretName`              | TLS secret name for HTTPS listener                                           | `thunder-tls`                |
+| `gateway.tls.mode`                    | TLS reference mode                                                           | `Terminate`                  |
 
 ### Database Password Management
 
