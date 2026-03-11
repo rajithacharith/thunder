@@ -94,6 +94,20 @@ const mockOnInputChange = vi.fn();
 const mockOnValidate = vi.fn(() => true);
 
 const submitAction = {id: 'action-submit', type: 'ACTION', eventType: 'SUBMIT', label: 'Sign In'};
+const primaryConsentAction = {
+  id: 'action-allow',
+  type: 'ACTION',
+  eventType: 'SUBMIT',
+  label: 'Allow',
+  variant: 'PRIMARY',
+};
+const secondaryConsentAction = {
+  id: 'action-deny',
+  type: 'ACTION',
+  eventType: 'SUBMIT',
+  label: 'Deny',
+  variant: 'SECONDARY',
+};
 const triggerAction = {id: 'action-trigger', type: 'ACTION', eventType: 'TRIGGER', label: 'Sign in with Google'};
 const textInput = {id: 'inp-1', type: 'TEXT_INPUT', label: 'Username', ref: 'username'};
 const passwordInput = {id: 'inp-2', type: 'PASSWORD_INPUT', label: 'Password', ref: 'password'};
@@ -225,6 +239,49 @@ describe('BlockAdapter', () => {
       render(<BlockAdapter {...baseProps} component={resendBlock} />);
       expect(screen.getByTestId('block-form')).toBeInTheDocument();
       expect(screen.getByTestId('submit-button')).toBeInTheDocument();
+    });
+  });
+
+  describe('Multiple submit actions (consent-style)', () => {
+    const multiSubmitBlock = {
+      id: 'block-consent-submit',
+      type: 'BLOCK',
+      components: [textInput, primaryConsentAction, secondaryConsentAction],
+    };
+
+    it('keeps PRIMARY action as type=submit and SECONDARY as type=button', () => {
+      render(<BlockAdapter {...baseProps} component={multiSubmitBlock} />);
+
+      expect(screen.getByRole('button', {name: 'Allow'})).toHaveAttribute('type', 'submit');
+      expect(screen.getByRole('button', {name: 'Deny'})).toHaveAttribute('type', 'button');
+    });
+
+    it('submits the PRIMARY action via form submit (Enter-key/default submit path)', () => {
+      render(<BlockAdapter {...baseProps} component={multiSubmitBlock} onValidate={mockOnValidate} />);
+
+      fireEvent.submit(screen.getByTestId('block-form'));
+
+      expect(mockOnValidate).toHaveBeenCalled();
+      expect(mockOnSubmit).toHaveBeenCalledWith(primaryConsentAction, {username: 'alice', password: 'secret'});
+    });
+
+    it('submits SECONDARY action through its own click handler', () => {
+      render(<BlockAdapter {...baseProps} component={multiSubmitBlock} onValidate={mockOnValidate} />);
+
+      fireEvent.click(screen.getByRole('button', {name: 'Deny'}));
+
+      expect(mockOnValidate).toHaveBeenCalled();
+      expect(mockOnSubmit).toHaveBeenCalledWith(secondaryConsentAction, {username: 'alice', password: 'secret'});
+    });
+
+    it('blocks both form-submit and secondary click when validation fails', () => {
+      mockOnValidate.mockReturnValue(false);
+      render(<BlockAdapter {...baseProps} component={multiSubmitBlock} onValidate={mockOnValidate} />);
+
+      fireEvent.submit(screen.getByTestId('block-form'));
+      fireEvent.click(screen.getByRole('button', {name: 'Deny'}));
+
+      expect(mockOnSubmit).not.toHaveBeenCalled();
     });
   });
 });

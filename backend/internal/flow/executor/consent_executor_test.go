@@ -288,8 +288,8 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_PromptRequired_NoTim
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
 	assert.NotEmpty(suite.T(), resp.AdditionalData[common.DataConsentPrompt])
-	assert.Empty(suite.T(), resp.AdditionalData[common.DataConsentExpiresAt],
-		"Should not set expires at without timeout config")
+	assert.Empty(suite.T(), resp.AdditionalData[common.DataStepTimeout],
+		"Should not set timeout without timeout config")
 
 	// Verify ForwardedData contains the prompt data
 	assert.NotNil(suite.T(), resp.ForwardedData[common.ForwardedDataKeyConsentPrompt])
@@ -329,7 +329,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_PromptRequired_WithT
 	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
 
 	// Verify timeout is set
-	expiresAtStr := resp.AdditionalData[common.DataConsentExpiresAt]
+	expiresAtStr := resp.AdditionalData[common.DataStepTimeout]
 	assert.NotEmpty(suite.T(), expiresAtStr)
 
 	expiresAt, parseErr := strconv.ParseInt(expiresAtStr, 10, 64)
@@ -342,7 +342,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_PromptRequired_WithT
 		"expiresAt should be approximately 300 seconds from now")
 
 	// Verify runtime also has the timeout
-	assert.Equal(suite.T(), expiresAtStr, resp.RuntimeData[common.RuntimeKeyConsentExpiresAt])
+	assert.Equal(suite.T(), expiresAtStr, resp.RuntimeData[common.RuntimeKeyStepTimeout])
 }
 
 func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_EmptyTimeout() {
@@ -368,7 +368,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_EmptyTimeout() {
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
-	assert.Empty(suite.T(), resp.AdditionalData[common.DataConsentExpiresAt])
+	assert.Empty(suite.T(), resp.AdditionalData[common.DataStepTimeout])
 }
 
 // ----- Execute: handleConsentDecisions (inputs provided) -----
@@ -528,7 +528,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_ConsentTimeout_Expi
 
 	// Set an expiry timestamp in the past
 	pastExpiry := strconv.FormatInt(time.Now().Add(-1*time.Minute).UnixMilli(), 10)
-	ctx.RuntimeData[common.RuntimeKeyConsentExpiresAt] = pastExpiry
+	ctx.RuntimeData[common.RuntimeKeyStepTimeout] = pastExpiry
 
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("ValidatePrerequisites", ctx, mock.AnythingOfType("*common.ExecutorResponse")).Return(true)
@@ -556,7 +556,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_HasInputs_ConsentTimeout_NotE
 
 	// Set an expiry timestamp in the future
 	futureExpiry := strconv.FormatInt(time.Now().Add(5*time.Minute).UnixMilli(), 10)
-	ctx.RuntimeData[common.RuntimeKeyConsentExpiresAt] = futureExpiry
+	ctx.RuntimeData[common.RuntimeKeyStepTimeout] = futureExpiry
 
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("ValidatePrerequisites", ctx, mock.AnythingOfType("*common.ExecutorResponse")).Return(true)

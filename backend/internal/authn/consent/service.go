@@ -454,7 +454,8 @@ func buildPurposePrompts(purposes []consent.ConsentPurpose, requiredAttributes [
 	// For each purpose, determine which required elements still need consent
 	var promptPurposes []ConsentPurposePrompt
 	for _, purpose := range purposes {
-		var essential, optional []string
+		essential := []string{}
+		optional := []string{}
 		for _, elem := range purpose.Elements {
 			// Skip non required elements if requiredAttributes is specified
 			if len(requiredAttributes) > 0 && !slices.Contains(requiredAttributes, elem.Name) {

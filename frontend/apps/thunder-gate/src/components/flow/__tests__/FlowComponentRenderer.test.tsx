@@ -17,22 +17,31 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
-import {describe, it, expect, vi} from 'vitest';
+import {afterEach, beforeEach, describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import FlowComponentRenderer from '../FlowComponentRenderer';
 import type {FlowComponentRendererProps} from '../../../models/flow';
 
+const {blockPropsSpy, consentPropsSpy, timerPropsSpy} = vi.hoisted(() => ({
+  blockPropsSpy: vi.fn(),
+  consentPropsSpy: vi.fn(),
+  timerPropsSpy: vi.fn(),
+}));
+
 vi.mock('@asgardeo/react', () => ({
   EmbeddedFlowComponentType: {
-    Text: 'TEXT',
-    Block: 'BLOCK',
-    TextInput: 'TEXT_INPUT',
-    PasswordInput: 'PASSWORD_INPUT',
     Action: 'ACTION',
+    Block: 'BLOCK',
+    Consent: 'CONSENT',
+    Icon: 'ICON',
+    Image: 'IMAGE',
+    Stack: 'STACK',
+    Text: 'TEXT',
   },
   EmbeddedFlowEventType: {
-    Submit: 'SUBMIT',
     Trigger: 'TRIGGER',
   },
 }));
@@ -53,10 +62,25 @@ vi.mock('../adapters/StackAdapter', () => ({
   default: () => <div data-testid="stack-adapter" />,
 }));
 vi.mock('../adapters/BlockAdapter', () => ({
-  default: () => <div data-testid="block-adapter" />,
+  default: (props: any) => {
+    blockPropsSpy(props);
+    return <div data-testid="block-adapter" data-loading={String(props.isLoading)} />;
+  },
 }));
 vi.mock('../adapters/StandaloneTriggerAdapter', () => ({
   default: () => <div data-testid="standalone-trigger-adapter" />,
+}));
+vi.mock('../adapters/ConsentAdapter', () => ({
+  default: (props: any) => {
+    consentPropsSpy(props);
+    return <div data-testid="consent-adapter" />;
+  },
+}));
+vi.mock('../adapters/TimerAdapter', () => ({
+  default: (props: any) => {
+    timerPropsSpy(props);
+    return <div data-testid="timer-adapter" data-expires-in={String(props.expiresIn)} />;
+  },
 }));
 
 const baseProps: FlowComponentRendererProps = {
@@ -70,6 +94,16 @@ const baseProps: FlowComponentRendererProps = {
 };
 
 describe('FlowComponentRenderer', () => {
+  beforeEach(() => {
+    blockPropsSpy.mockClear();
+    consentPropsSpy.mockClear();
+    timerPropsSpy.mockClear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('renders TextAdapter for TEXT type', () => {
     render(<FlowComponentRenderer {...baseProps} component={{id: 'c1', type: 'TEXT'}} />);
     expect(screen.getByTestId('text-adapter')).toBeInTheDocument();
@@ -104,22 +138,94 @@ describe('FlowComponentRenderer', () => {
   it('renders BlockAdapter for BLOCK type', () => {
     render(<FlowComponentRenderer {...baseProps} component={{id: 'c6', type: 'BLOCK'}} />);
     expect(screen.getByTestId('block-adapter')).toBeInTheDocument();
+    expect(screen.queryByTestId('consent-adapter')).toBeNull();
+    expect(screen.queryByTestId('timer-adapter')).toBeNull();
+    expect(blockPropsSpy).toHaveBeenCalledWith(expect.objectContaining({isLoading: false}));
   });
 
-  it('renders StandaloneTriggerAdapter for ACTION/TRIGGER type', () => {
+  it('injects ConsentAdapter for BLOCK when consentPrompt is present', () => {
     render(
       <FlowComponentRenderer
         {...baseProps}
-        component={{id: 'c7', type: 'ACTION', eventType: 'TRIGGER'}}
+        component={{id: 'block-consent', type: 'BLOCK'}}
+        additionalData={{
+          consentPrompt: {
+            purposes: [
+              {
+                essential: ['email'],
+                optional: ['givenName'],
+                purpose_id: 'p1',
+                purpose_name: 'Profile',
+              },
+            ],
+          },
+        }}
       />,
     );
+
+    expect(screen.getByTestId('consent-adapter')).toBeInTheDocument();
+    expect(screen.getByTestId('block-adapter')).toBeInTheDocument();
+    expect(screen.queryByTestId('timer-adapter')).toBeNull();
+    expect(consentPropsSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        consentData: expect.any(Object),
+      }),
+    );
+  });
+
+  it('injects TimerAdapter for BLOCK when stepTimeout is present', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1000);
+
+    render(
+      <FlowComponentRenderer
+        {...baseProps}
+        component={{id: 'block-timer', type: 'BLOCK'}}
+        additionalData={{stepTimeout: String(7000)}}
+      />,
+    );
+
+    expect(screen.getByTestId('timer-adapter')).toBeInTheDocument();
+    expect(screen.getByTestId('timer-adapter')).toHaveAttribute('data-expires-in', '6');
+    expect(screen.getByTestId('block-adapter')).toHaveAttribute('data-loading', 'false');
+  });
+
+  it('marks BlockAdapter as loading when stepTimeout is already expired on mount', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(5000);
+
+    render(
+      <FlowComponentRenderer
+        {...baseProps}
+        component={{id: 'block-expired', type: 'BLOCK'}}
+        additionalData={{stepTimeout: String(3000)}}
+      />,
+    );
+
+    expect(screen.getByTestId('timer-adapter')).toHaveAttribute('data-expires-in', '0');
+    expect(screen.getByTestId('block-adapter')).toHaveAttribute('data-loading', 'true');
+  });
+
+  it('keeps BlockAdapter loading true when parent isLoading is true', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1000);
+
+    render(
+      <FlowComponentRenderer
+        {...baseProps}
+        isLoading
+        component={{id: 'block-loading', type: 'BLOCK'}}
+        additionalData={{stepTimeout: String(9000)}}
+      />,
+    );
+
+    expect(screen.getByTestId('block-adapter')).toHaveAttribute('data-loading', 'true');
+  });
+
+  it('renders StandaloneTriggerAdapter for ACTION/TRIGGER type', () => {
+    render(<FlowComponentRenderer {...baseProps} component={{id: 'c7', type: 'ACTION', eventType: 'TRIGGER'}} />);
     expect(screen.getByTestId('standalone-trigger-adapter')).toBeInTheDocument();
   });
 
   it('returns null for unrecognised component types', () => {
-    const {container} = render(
-      <FlowComponentRenderer {...baseProps} component={{id: 'c8', type: 'UNKNOWN_TYPE'}} />,
-    );
+    const {container} = render(<FlowComponentRenderer {...baseProps} component={{id: 'c8', type: 'UNKNOWN_TYPE'}} />);
     expect(container.firstChild).toBeNull();
   });
 
@@ -133,9 +239,7 @@ describe('FlowComponentRenderer', () => {
   it('passes maxImageSize to ImageAdapter', () => {
     // ImageAdapter mock doesn't expose this, but the render should not throw
     expect(() =>
-      render(
-        <FlowComponentRenderer {...baseProps} component={{id: 'img', type: 'IMAGE'}} maxImageSize={80} />,
-      ),
+      render(<FlowComponentRenderer {...baseProps} component={{id: 'img', type: 'IMAGE'}} maxImageSize={80} />),
     ).not.toThrow();
   });
 });

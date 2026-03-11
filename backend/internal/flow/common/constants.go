@@ -129,8 +129,8 @@ const (
 	DataIDPName = "idpName"
 	// DataConsentPrompt is the key used for the consent prompt data in the flow response.
 	DataConsentPrompt = "consentPrompt"
-	// DataConsentExpiresAt is the key used for the consent expiry timestamp in the flow response.
-	DataConsentExpiresAt = "consentExpiresAt"
+	// DataStepTimeout is the key used for the step expiry timestamp in the flow response.
+	DataStepTimeout = "stepTimeout"
 	// DataInviteLink is the key used for the invite link in the flow response additional data.
 	DataInviteLink = "inviteLink"
 )
@@ -160,8 +160,8 @@ const (
 	RuntimeKeyRequiredLocales = "required_locales"
 	// RuntimeKeyConsentID holds the consent record ID after consent has been recorded.
 	RuntimeKeyConsentID = "consent_id"
-	// RuntimeKeyConsentExpiresAt holds the expiry timestamp of the consent prompt.
-	RuntimeKeyConsentExpiresAt = "consentExpiresAt"
+	// RuntimeKeyStepTimeout holds the expiry timestamp for the current flow step.
+	RuntimeKeyStepTimeout = "step_timeout"
 	// RuntimeKeyConsentedAttributes holds a space-separated set of attributes that the user has consented to share.
 	RuntimeKeyConsentedAttributes = "consented_attributes"
 	// RuntimeKeyConsentSessionToken holds the signed JWT session token for consent validation.
