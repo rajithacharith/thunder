@@ -28,6 +28,7 @@ import (
 	"github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/consent"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/tests/mocks/certmock"
 	"github.com/asgardeo/thunder/tests/mocks/consentmock"
 )
 
@@ -54,65 +55,26 @@ func (s *ApplicationServiceConsentTestSuite) TestValidateConsentConfig_NilLoginC
 	svc := newTestApplicationServiceWithConsent(cMock)
 
 	app := &model.ApplicationDTO{}
-	svcErr := svc.validateConsentConfig(app)
+	svc.validateConsentConfig(app)
 
-	s.Nil(svcErr)
 	s.NotNil(app.LoginConsent)
-	s.False(app.LoginConsent.Enabled)
 	s.Equal(int64(0), app.LoginConsent.ValidityPeriod)
-}
-
-func (s *ApplicationServiceConsentTestSuite) TestValidateConsentConfig_EnabledWhenConsentServiceDisabled() {
-	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
-	cMock.EXPECT().IsEnabled().Return(false)
-	svc := newTestApplicationServiceWithConsent(cMock)
-
-	app := &model.ApplicationDTO{
-		LoginConsent: &model.LoginConsentConfig{Enabled: true},
-	}
-	svcErr := svc.validateConsentConfig(app)
-
-	s.NotNil(svcErr)
-	s.Equal(ErrorConsentServiceNotEnabled.Code, svcErr.Code)
-}
-
-func (s *ApplicationServiceConsentTestSuite) TestValidateConsentConfig_EnabledWhenConsentServiceEnabled() {
-	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
-	cMock.EXPECT().IsEnabled().Return(true)
-	svc := newTestApplicationServiceWithConsent(cMock)
-
-	app := &model.ApplicationDTO{
-		LoginConsent: &model.LoginConsentConfig{Enabled: true, ValidityPeriod: 3600},
-	}
-	svcErr := svc.validateConsentConfig(app)
-
-	s.Nil(svcErr)
 }
 
 func (s *ApplicationServiceConsentTestSuite) TestValidateConsentConfig_NegativeValidityPeriodResetToZero() {
 	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
-	cMock.EXPECT().IsEnabled().Return(true)
 	svc := newTestApplicationServiceWithConsent(cMock)
 
 	app := &model.ApplicationDTO{
-		LoginConsent: &model.LoginConsentConfig{Enabled: true, ValidityPeriod: -100},
+		LoginConsent: &model.LoginConsentConfig{ValidityPeriod: -100},
 	}
-	svcErr := svc.validateConsentConfig(app)
+	svc.validateConsentConfig(app)
 
-	s.Nil(svcErr)
 	s.Equal(int64(0), app.LoginConsent.ValidityPeriod)
-}
 
-func (s *ApplicationServiceConsentTestSuite) TestValidateConsentConfig_DisabledConsentWithoutConsentService() {
-	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
-	svc := newTestApplicationServiceWithConsent(cMock)
-
-	app := &model.ApplicationDTO{
-		LoginConsent: &model.LoginConsentConfig{Enabled: false, ValidityPeriod: 100},
-	}
-	svcErr := svc.validateConsentConfig(app)
-
-	s.Nil(svcErr)
+	// Add CertificateServiceInterface mock expectation for GetCertificateByReference
+	certMock := &certmock.CertificateServiceInterfaceMock{}
+	certMock.EXPECT().GetCertificateByReference(mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
 }
 
 // ----- extractRequestedAttributes -----
@@ -448,9 +410,9 @@ func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnCreate_Crea
 	s.NotNil(result)
 }
 
-// ----- updateConsentPurpose -----
+// ----- syncConsentPurposeOnUpdate -----
 
-func (s *ApplicationServiceConsentTestSuite) TestUpdateConsentPurpose_NoPurposes_NoNewAttrs() {
+func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_NoPurposes_NoNewAttrs() {
 	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
 	svc := newTestApplicationServiceWithConsent(cMock)
 
@@ -460,12 +422,12 @@ func (s *ApplicationServiceConsentTestSuite) TestUpdateConsentPurpose_NoPurposes
 	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
 		Return([]consent.ConsentPurpose{}, nil)
 
-	result := svc.updateConsentPurpose(context.Background(), existingApp, updatedApp)
+	result := svc.syncConsentPurposeOnUpdate(context.Background(), existingApp, updatedApp)
 
 	s.Nil(result)
 }
 
-func (s *ApplicationServiceConsentTestSuite) TestUpdateConsentPurpose_NoPurposes_NewAttrs() {
+func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_NoPurposes_NewAttrs() {
 	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
 	svc := newTestApplicationServiceWithConsent(cMock)
 
@@ -483,12 +445,12 @@ func (s *ApplicationServiceConsentTestSuite) TestUpdateConsentPurpose_NoPurposes
 	cMock.EXPECT().CreateConsentPurpose(mock.Anything, "default", mock.Anything).
 		Return(&consent.ConsentPurpose{ID: "p1"}, nil)
 
-	result := svc.updateConsentPurpose(context.Background(), existingApp, updatedApp)
+	result := svc.syncConsentPurposeOnUpdate(context.Background(), existingApp, updatedApp)
 
 	s.Nil(result)
 }
 
-func (s *ApplicationServiceConsentTestSuite) TestUpdateConsentPurpose_ExistingPurpose_NoNewAttrs() {
+func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_ExistingPurpose_NoNewAttrs() {
 	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
 	svc := newTestApplicationServiceWithConsent(cMock)
 
@@ -504,12 +466,12 @@ func (s *ApplicationServiceConsentTestSuite) TestUpdateConsentPurpose_ExistingPu
 	cMock.EXPECT().DeleteConsentPurpose(mock.Anything, "default", "p1").
 		Return((*serviceerror.I18nServiceError)(nil))
 
-	result := svc.updateConsentPurpose(context.Background(), existingApp, updatedApp)
+	result := svc.syncConsentPurposeOnUpdate(context.Background(), existingApp, updatedApp)
 
 	s.Nil(result)
 }
 
-func (s *ApplicationServiceConsentTestSuite) TestUpdateConsentPurpose_ExistingPurpose_NewAttrs() {
+func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_ExistingPurpose_NewAttrs() {
 	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
 	svc := newTestApplicationServiceWithConsent(cMock)
 
@@ -531,12 +493,12 @@ func (s *ApplicationServiceConsentTestSuite) TestUpdateConsentPurpose_ExistingPu
 	cMock.EXPECT().UpdateConsentPurpose(mock.Anything, "default", "p1", mock.Anything).
 		Return(&consent.ConsentPurpose{ID: "p1", Name: "App Updated"}, nil)
 
-	result := svc.updateConsentPurpose(context.Background(), existingApp, updatedApp)
+	result := svc.syncConsentPurposeOnUpdate(context.Background(), existingApp, updatedApp)
 
 	s.Nil(result)
 }
 
-func (s *ApplicationServiceConsentTestSuite) TestUpdateConsentPurpose_ListPurposesError() {
+func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_ListPurposesError() {
 	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
 	svc := newTestApplicationServiceWithConsent(cMock)
 
@@ -546,12 +508,76 @@ func (s *ApplicationServiceConsentTestSuite) TestUpdateConsentPurpose_ListPurpos
 	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
 		Return(nil, &serviceerror.InternalServerErrorWithI18n)
 
-	result := svc.updateConsentPurpose(context.Background(), existingApp, updatedApp)
+	result := svc.syncConsentPurposeOnUpdate(context.Background(), existingApp, updatedApp)
 
 	s.NotNil(result)
 }
 
-func (s *ApplicationServiceConsentTestSuite) TestUpdateConsentPurpose_UpdatePurposeError() {
+func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_CreateMissingElementsError() {
+	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
+	svc := newTestApplicationServiceWithConsent(cMock)
+
+	existingApp := &model.ApplicationProcessedDTO{ID: "app-1", Name: "App"}
+	updatedApp := &model.ApplicationProcessedDTO{
+		ID:        "app-1",
+		Name:      "App",
+		Assertion: &model.AssertionConfig{UserAttributes: []string{"email"}},
+	}
+
+	// createMissingConsentElements fails via ValidateConsentElements returning an error
+	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", mock.Anything).
+		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+
+	result := svc.syncConsentPurposeOnUpdate(context.Background(), existingApp, updatedApp)
+
+	s.NotNil(result)
+}
+
+func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_NoPurposes_CreatePurposeError() {
+	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
+	svc := newTestApplicationServiceWithConsent(cMock)
+
+	existingApp := &model.ApplicationProcessedDTO{ID: "app-1", Name: "App"}
+	updatedApp := &model.ApplicationProcessedDTO{
+		ID:        "app-1",
+		Name:      "App",
+		Assertion: &model.AssertionConfig{UserAttributes: []string{"email"}},
+	}
+
+	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", mock.Anything).
+		Return([]string{"email"}, nil)
+	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
+		Return([]consent.ConsentPurpose{}, nil)
+	// CreateConsentPurpose fails
+	cMock.EXPECT().CreateConsentPurpose(mock.Anything, "default", mock.Anything).
+		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+
+	result := svc.syncConsentPurposeOnUpdate(context.Background(), existingApp, updatedApp)
+
+	s.NotNil(result)
+}
+
+func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_ExistingPurposes_DeletePurposesError() {
+	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
+	svc := newTestApplicationServiceWithConsent(cMock)
+
+	existingApp := &model.ApplicationProcessedDTO{ID: "app-1", Name: "App"}
+	// No attributes in updatedApp → deleteConsentPurposes will be called
+	updatedApp := &model.ApplicationProcessedDTO{ID: "app-1", Name: "App"}
+
+	// First call in syncConsentPurposeOnUpdate: returns an existing purpose
+	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
+		Return([]consent.ConsentPurpose{{ID: "p1", Name: "App"}}, nil).Once()
+	// Second call inside deleteConsentPurposes: returns an error
+	cMock.EXPECT().ListConsentPurposes(mock.Anything, "default", "app-1").
+		Return(nil, &serviceerror.InternalServerErrorWithI18n).Once()
+
+	result := svc.syncConsentPurposeOnUpdate(context.Background(), existingApp, updatedApp)
+
+	s.NotNil(result)
+}
+
+func (s *ApplicationServiceConsentTestSuite) TestSyncConsentPurposeOnUpdate_UpdatePurposeError() {
 	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
 	svc := newTestApplicationServiceWithConsent(cMock)
 
@@ -572,7 +598,7 @@ func (s *ApplicationServiceConsentTestSuite) TestUpdateConsentPurpose_UpdatePurp
 	cMock.EXPECT().UpdateConsentPurpose(mock.Anything, "default", "p1", mock.Anything).
 		Return(nil, &serviceerror.InternalServerErrorWithI18n)
 
-	result := svc.updateConsentPurpose(context.Background(), existingApp, updatedApp)
+	result := svc.syncConsentPurposeOnUpdate(context.Background(), existingApp, updatedApp)
 
 	s.NotNil(result)
 }

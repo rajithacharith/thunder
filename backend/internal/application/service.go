@@ -167,7 +167,7 @@ func (as *applicationService) CreateApplication(ctx context.Context, app *model.
 		}
 
 		// Sync consent purpose for the application creation.
-		if app.LoginConsent.Enabled && as.consentService.IsEnabled() {
+		if as.consentService.IsEnabled() {
 			if svcErr := as.syncConsentPurposeOnCreate(txCtx, processedDTO); svcErr != nil {
 				innerSvcErr = svcErr
 				return fmt.Errorf("consent sync failed")
@@ -284,9 +284,7 @@ func (as *applicationService) ValidateApplication(ctx context.Context, app *mode
 		return nil, nil, svcErr
 	}
 
-	if svcErr := as.validateConsentConfig(app); svcErr != nil {
-		return nil, nil, svcErr
-	}
+	as.validateConsentConfig(app)
 
 	appID := app.ID
 	if appID == "" {
@@ -422,9 +420,7 @@ func (as *applicationService) ValidateApplicationForUpdate(
 		return nil, nil, svcErr
 	}
 
-	if svcErr := as.validateConsentConfig(app); svcErr != nil {
-		return nil, nil, svcErr
-	}
+	as.validateConsentConfig(app)
 
 	inboundAuthConfig, svcErr := as.processInboundAuthConfig(ctx, app, existingApp)
 	if svcErr != nil {
@@ -638,12 +634,11 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 		userInfo, scopeClaims,
 	)
 
-	var existingCert, updatedCert *cert.Certificate
 	var returnCert, returnOAuthCert *model.ApplicationCertificate
 	var innerSvcErr *serviceerror.ServiceError
 	err := as.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		var certErr *serviceerror.ServiceError
-		existingCert, updatedCert, returnCert, certErr = as.updateApplicationCertificate(txCtx, app.ID,
+		returnCert, certErr = as.updateApplicationCertificate(txCtx, appID,
 			app.Certificate, cert.CertificateReferenceTypeApplication)
 		if certErr != nil {
 			innerSvcErr = certErr
@@ -651,7 +646,7 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 		}
 
 		if inboundAuthConfig != nil {
-			_, _, returnOAuthCert, certErr = as.updateApplicationCertificate(
+			returnOAuthCert, certErr = as.updateApplicationCertificate(
 				txCtx, inboundAuthConfig.OAuthAppConfig.ClientID, inboundAuthConfig.OAuthAppConfig.Certificate,
 				cert.CertificateReferenceTypeOAuthApp)
 			if certErr != nil {
@@ -666,12 +661,9 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 			return storeErr
 		}
 
-		// Sync consent purpose for the application update.
-		// This block runs whenever the consent service is enabled — regardless of whether login consent
-		// is being enabled or disabled to avoid leaving stale consent purposes.
+		// Sync consent purpose for the application update
 		if as.consentService.IsEnabled() {
-			if svcErr := as.syncConsentPurposeOnUpdate(txCtx, appID, existingApp, processedDTO,
-				existingCert, updatedCert); svcErr != nil {
+			if svcErr := as.syncConsentPurposeOnUpdate(txCtx, existingApp, processedDTO); svcErr != nil {
 				innerSvcErr = svcErr
 				return fmt.Errorf("consent sync failed")
 			}
@@ -1044,25 +1036,18 @@ func (as *applicationService) validateAllowedUserTypes(allowedUserTypes []string
 }
 
 // validateConsentConfig validates the consent configuration for the application.
-func (as *applicationService) validateConsentConfig(appDTO *model.ApplicationDTO) *serviceerror.ServiceError {
+func (as *applicationService) validateConsentConfig(appDTO *model.ApplicationDTO) {
 	if appDTO.LoginConsent == nil {
 		appDTO.LoginConsent = &model.LoginConsentConfig{
-			Enabled:        false,
 			ValidityPeriod: 0,
 		}
 
-		return nil
-	}
-
-	if appDTO.LoginConsent.Enabled && !as.consentService.IsEnabled() {
-		return &ErrorConsentServiceNotEnabled
+		return
 	}
 
 	if appDTO.LoginConsent.ValidityPeriod < 0 {
 		appDTO.LoginConsent.ValidityPeriod = 0
 	}
-
-	return nil
 }
 
 // validateOAuthParamsForCreateAndUpdate validates the OAuth parameters for creating or updating an application.
@@ -1377,10 +1362,10 @@ func (as *applicationService) getApplicationCertificate(appID string,
 }
 
 // updateApplicationCertificate updates the certificate for the application.
-// It returns the existing certificate, the updated certificate, and the return application certificate details.
+// It returns the updated application certificate details.
 func (as *applicationService) updateApplicationCertificate(ctx context.Context, appID string,
 	certificate *model.ApplicationCertificate, refType cert.CertificateReferenceType) (
-	*cert.Certificate, *cert.Certificate, *model.ApplicationCertificate, *serviceerror.ServiceError) {
+	*model.ApplicationCertificate, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
 	existingCert, certErr := as.certService.GetCertificateByReference(
@@ -1389,12 +1374,12 @@ func (as *applicationService) updateApplicationCertificate(ctx context.Context, 
 		if certErr.Type == serviceerror.ClientErrorType {
 			errorDescription := "Failed to retrieve application certificate: " +
 				certErr.ErrorDescription
-			return nil, nil, nil, serviceerror.CustomServiceError(
+			return nil, serviceerror.CustomServiceError(
 				ErrorCertificateClientError, errorDescription)
 		}
 		logger.Error("Failed to retrieve application certificate", log.Any("serviceError", certErr),
 			log.String("appID", appID))
-		return nil, nil, nil, &ErrorCertificateServerError
+		return nil, &ErrorCertificateServerError
 	}
 
 	var updatedCert *cert.Certificate
@@ -1405,7 +1390,7 @@ func (as *applicationService) updateApplicationCertificate(ctx context.Context, 
 		updatedCert, err = as.getValidatedCertificateForUpdate(appID, "", certificate, refType)
 	}
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
 	// Update the certificate if provided.
@@ -1417,12 +1402,12 @@ func (as *applicationService) updateApplicationCertificate(ctx context.Context, 
 				if svcErr.Type == serviceerror.ClientErrorType {
 					errorDescription := "Failed to update application certificate: " +
 						svcErr.ErrorDescription
-					return nil, nil, nil, serviceerror.CustomServiceError(
+					return nil, serviceerror.CustomServiceError(
 						ErrorCertificateClientError, errorDescription)
 				}
 				logger.Error("Failed to update application certificate", log.Any("serviceError", svcErr),
 					log.String("appID", appID))
-				return nil, nil, nil, &ErrorCertificateServerError
+				return nil, &ErrorCertificateServerError
 			}
 		} else {
 			_, svcErr := as.certService.CreateCertificate(ctx, updatedCert)
@@ -1430,11 +1415,11 @@ func (as *applicationService) updateApplicationCertificate(ctx context.Context, 
 				if svcErr.Type == serviceerror.ClientErrorType {
 					errorDescription := "Failed to create application certificate: " +
 						svcErr.ErrorDescription
-					return nil, nil, nil, serviceerror.CustomServiceError(ErrorCertificateClientError, errorDescription)
+					return nil, serviceerror.CustomServiceError(ErrorCertificateClientError, errorDescription)
 				}
 				logger.Error("Failed to create application certificate", log.Any("serviceError", svcErr),
 					log.String("appID", appID))
-				return nil, nil, nil, &ErrorCertificateServerError
+				return nil, &ErrorCertificateServerError
 			}
 		}
 		returnCert = &model.ApplicationCertificate{
@@ -1449,12 +1434,12 @@ func (as *applicationService) updateApplicationCertificate(ctx context.Context, 
 			if deleteErr != nil {
 				if deleteErr.Type == serviceerror.ClientErrorType {
 					errorDescription := "Failed to delete application certificate: " + deleteErr.ErrorDescription
-					return nil, nil, nil, serviceerror.CustomServiceError(
+					return nil, serviceerror.CustomServiceError(
 						ErrorCertificateClientError, errorDescription)
 				}
 				logger.Error("Failed to delete application certificate", log.Any("serviceError", deleteErr),
 					log.String("appID", appID))
-				return nil, nil, nil, &ErrorCertificateServerError
+				return nil, &ErrorCertificateServerError
 			}
 		}
 
@@ -1464,7 +1449,7 @@ func (as *applicationService) updateApplicationCertificate(ctx context.Context, 
 		}
 	}
 
-	return existingCert, updatedCert, returnCert, nil
+	return returnCert, nil
 }
 
 // getDefaultAssertionConfigFromDeployment creates a default assertion configuration from deployment settings.
@@ -1897,27 +1882,11 @@ func (as *applicationService) syncConsentPurposeOnCreate(
 	return nil
 }
 
-// syncConsentPurposeOnUpdate synchronizes the consent purpose when an application is updated.
-// It updates the existing consent purpose to match the updated application configuration or
-// deletes it if consent is disabled.
-func (as *applicationService) syncConsentPurposeOnUpdate(ctx context.Context, appID string,
-	existingApp *model.ApplicationProcessedDTO, updatedApp *model.ApplicationProcessedDTO,
-	_, _ *cert.Certificate) *serviceerror.ServiceError {
-	var consentSvcErr *serviceerror.ServiceError
-
-	if updatedApp.LoginConsent.Enabled {
-		consentSvcErr = as.updateConsentPurpose(ctx, existingApp, updatedApp)
-	} else {
-		consentSvcErr = as.deleteConsentPurposes(ctx, appID)
-	}
-
-	return consentSvcErr
-}
-
-// updateConsentPurpose updated the consent purpose when an application is updated.
-// It retrieves the existing purpose and updates its content to match the updated application.
-func (as *applicationService) updateConsentPurpose(
-	ctx context.Context, existingAppDTO, updatedAppDTO *model.ApplicationProcessedDTO) *serviceerror.ServiceError {
+// // syncConsentPurposeOnUpdate synchronizes the consent purpose when an application is updated.
+// // It updates the existing consent purpose to match the updated application configuration or
+// // deletes it if all attributes are removed.
+func (as *applicationService) syncConsentPurposeOnUpdate(ctx context.Context,
+	existingAppDTO, updatedAppDTO *model.ApplicationProcessedDTO) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
 	// TODO: Replace with application's actual OU when OU support is added
