@@ -59,6 +59,8 @@ export const ElementTypes = {
   Stack: 'STACK',
   Text: 'TEXT',
   Resend: 'RESEND',
+  Timer: 'TIMER',
+  Consent: 'CONSENT',
 } as const;
 
 export const BlockTypes = {

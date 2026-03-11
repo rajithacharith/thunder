@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ExecutionTypes} from '@/features/flows/models/steps';
 import type {Resource} from '@/features/flows/models/resources';
@@ -44,6 +44,19 @@ vi.mock('react-i18next', () => ({
         'flows:core.executions.passkey.mode.placeholder': 'Select mode',
         'flows:core.executions.passkey.mode.challenge': 'Passkey Challenge',
         'flows:core.executions.passkey.mode.verify': 'Passkey Verify',
+        'flows:core.executions.passkey.mode.registerStart': 'Passkey Register Start',
+        'flows:core.executions.passkey.mode.registerFinish': 'Passkey Register Finish',
+        'flows:core.executions.passkey.relyingPartyId.label': 'Relying Party ID',
+        'flows:core.executions.passkey.relyingPartyId.placeholder': 'Enter relying party ID',
+        'flows:core.executions.passkey.relyingPartyId.hint': 'Relying party identifier hint',
+        'flows:core.executions.passkey.relyingPartyName.label': 'Relying Party Name',
+        'flows:core.executions.passkey.relyingPartyName.placeholder': 'Enter relying party name',
+        'flows:core.executions.passkey.relyingPartyName.hint': 'Relying party name hint',
+        'flows:core.executions.consent.description': 'Configure the consent executor settings.',
+        'flows:core.executions.consent.timeout.label': 'Consent Timeout (seconds)',
+        'flows:core.executions.consent.timeout.placeholder': '0',
+        'flows:core.executions.consent.timeout.hint':
+          'Time in seconds before the consent request expires. Use 0 for no timeout.',
       };
       return translations[key] || key;
     },
@@ -108,16 +121,16 @@ describe('ExecutionExtendedProperties', () => {
 
     it('should render connection selector for Google executor', () => {
       mockIdentityProviders.mockReturnValue({
-        data: [
-          {id: 'google-idp-1', name: 'Google IDP', type: IdentityProviderTypes.GOOGLE},
-        ],
+        data: [{id: 'google-idp-1', name: 'Google IDP', type: IdentityProviderTypes.GOOGLE}],
         isLoading: false,
       });
 
       render(<ExecutionExtendedProperties resource={googleResource} onChange={mockOnChange} />);
 
       expect(screen.getByText('Connection')).toBeInTheDocument();
-      expect(screen.getByText('Select a connection from the following list to link it with the login flow.')).toBeInTheDocument();
+      expect(
+        screen.getByText('Select a connection from the following list to link it with the login flow.'),
+      ).toBeInTheDocument();
     });
 
     it('should show available Google connections in dropdown', async () => {
@@ -142,9 +155,7 @@ describe('ExecutionExtendedProperties', () => {
     it('should call onChange when connection is selected', async () => {
       const user = userEvent.setup();
       mockIdentityProviders.mockReturnValue({
-        data: [
-          {id: 'google-idp-1', name: 'My Google IDP', type: IdentityProviderTypes.GOOGLE},
-        ],
+        data: [{id: 'google-idp-1', name: 'My Google IDP', type: IdentityProviderTypes.GOOGLE}],
         isLoading: false,
       });
 
@@ -159,9 +170,7 @@ describe('ExecutionExtendedProperties', () => {
 
     it('should show error when connection is placeholder', () => {
       mockIdentityProviders.mockReturnValue({
-        data: [
-          {id: 'google-idp-1', name: 'My Google IDP', type: IdentityProviderTypes.GOOGLE},
-        ],
+        data: [{id: 'google-idp-1', name: 'My Google IDP', type: IdentityProviderTypes.GOOGLE}],
         isLoading: false,
       });
 
@@ -183,9 +192,7 @@ describe('ExecutionExtendedProperties', () => {
       mockSelectedNotification.getResourceFieldNotification.mockReturnValue('Custom validation error');
 
       mockIdentityProviders.mockReturnValue({
-        data: [
-          {id: 'google-idp-1', name: 'My Google IDP', type: IdentityProviderTypes.GOOGLE},
-        ],
+        data: [{id: 'google-idp-1', name: 'My Google IDP', type: IdentityProviderTypes.GOOGLE}],
         isLoading: false,
       });
 
@@ -202,7 +209,9 @@ describe('ExecutionExtendedProperties', () => {
 
       render(<ExecutionExtendedProperties resource={googleResource} onChange={mockOnChange} />);
 
-      expect(screen.getByText('No connections available. Please create a connection to link with the login flow.')).toBeInTheDocument();
+      expect(
+        screen.getByText('No connections available. Please create a connection to link with the login flow.'),
+      ).toBeInTheDocument();
     });
 
     it('should disable dropdown while loading', () => {
@@ -234,9 +243,7 @@ describe('ExecutionExtendedProperties', () => {
 
     it('should show selected connection value', () => {
       mockIdentityProviders.mockReturnValue({
-        data: [
-          {id: 'google-idp-1', name: 'My Google IDP', type: IdentityProviderTypes.GOOGLE},
-        ],
+        data: [{id: 'google-idp-1', name: 'My Google IDP', type: IdentityProviderTypes.GOOGLE}],
         isLoading: false,
       });
 
@@ -271,9 +278,7 @@ describe('ExecutionExtendedProperties', () => {
 
     it('should render connection selector for GitHub executor', () => {
       mockIdentityProviders.mockReturnValue({
-        data: [
-          {id: 'github-idp-1', name: 'GitHub IDP', type: IdentityProviderTypes.GITHUB},
-        ],
+        data: [{id: 'github-idp-1', name: 'GitHub IDP', type: IdentityProviderTypes.GITHUB}],
         isLoading: false,
       });
 
@@ -629,11 +634,11 @@ describe('ExecutionExtendedProperties', () => {
     });
 
     it('should show validation error for sender field', () => {
-      (mockSelectedNotification.hasResourceFieldNotification as unknown as ReturnType<typeof vi.fn>).mockImplementation((key: string) =>
-        key === 'sms-otp-executor-1_data.properties.senderId'
+      (mockSelectedNotification.hasResourceFieldNotification as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+        (key: string) => key === 'sms-otp-executor-1_data.properties.senderId',
       );
-      (mockSelectedNotification.getResourceFieldNotification as unknown as ReturnType<typeof vi.fn>).mockImplementation((key: string) =>
-        key === 'sms-otp-executor-1_data.properties.senderId' ? 'Sender ID is invalid' : ''
+      (mockSelectedNotification.getResourceFieldNotification as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+        (key: string) => (key === 'sms-otp-executor-1_data.properties.senderId' ? 'Sender ID is invalid' : ''),
       );
       mockNotificationSenders.mockReturnValue({
         data: [{id: 'sender-1', name: 'Twilio Sender'}],
@@ -691,6 +696,8 @@ describe('ExecutionExtendedProperties', () => {
 
       expect(screen.getByText('Passkey Challenge')).toBeInTheDocument();
       expect(screen.getByText('Passkey Verify')).toBeInTheDocument();
+      expect(screen.getByText('Passkey Register Start')).toBeInTheDocument();
+      expect(screen.getByText('Passkey Register Finish')).toBeInTheDocument();
     });
 
     it('should call onChange with updated data when mode is selected', async () => {
@@ -791,6 +798,229 @@ describe('ExecutionExtendedProperties', () => {
         resourceWithExistingData,
       );
     });
+
+    it('should show relying party fields for challenge mode', () => {
+      const resourceWithChallengeMode = {
+        ...passkeyResource,
+        data: {
+          ...(passkeyResource as unknown as {data: object}).data,
+          action: {
+            executor: {
+              name: ExecutionTypes.PasskeyAuth,
+              mode: 'challenge',
+            },
+          },
+        },
+      } as unknown as Resource;
+
+      render(<ExecutionExtendedProperties resource={resourceWithChallengeMode} onChange={mockOnChange} />);
+
+      expect(screen.getByLabelText('Relying Party ID')).toBeInTheDocument();
+      expect(screen.getByLabelText('Relying Party Name')).toBeInTheDocument();
+    });
+
+    it('should show relying party fields for register_start mode', () => {
+      const resourceWithRegisterStartMode = {
+        ...passkeyResource,
+        data: {
+          ...(passkeyResource as unknown as {data: object}).data,
+          action: {
+            executor: {
+              name: ExecutionTypes.PasskeyAuth,
+              mode: 'register_start',
+            },
+          },
+        },
+      } as unknown as Resource;
+
+      render(<ExecutionExtendedProperties resource={resourceWithRegisterStartMode} onChange={mockOnChange} />);
+
+      expect(screen.getByLabelText('Relying Party ID')).toBeInTheDocument();
+      expect(screen.getByLabelText('Relying Party Name')).toBeInTheDocument();
+    });
+
+    it('should not show relying party fields for verify mode', () => {
+      const resourceWithVerifyMode = {
+        ...passkeyResource,
+        data: {
+          ...(passkeyResource as unknown as {data: object}).data,
+          action: {
+            executor: {
+              name: ExecutionTypes.PasskeyAuth,
+              mode: 'verify',
+            },
+          },
+        },
+      } as unknown as Resource;
+
+      render(<ExecutionExtendedProperties resource={resourceWithVerifyMode} onChange={mockOnChange} />);
+
+      expect(screen.queryByLabelText('Relying Party ID')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Relying Party Name')).not.toBeInTheDocument();
+    });
+
+    it('should call onChange for relying party fields', async () => {
+      const resourceWithChallengeMode = {
+        ...passkeyResource,
+        data: {
+          ...(passkeyResource as unknown as {data: object}).data,
+          action: {
+            executor: {
+              name: ExecutionTypes.PasskeyAuth,
+              mode: 'challenge',
+            },
+          },
+        },
+      } as unknown as Resource;
+
+      render(<ExecutionExtendedProperties resource={resourceWithChallengeMode} onChange={mockOnChange} />);
+
+      fireEvent.change(screen.getByLabelText('Relying Party ID'), {
+        target: {value: 'localhost'},
+      });
+      fireEvent.change(screen.getByLabelText('Relying Party Name'), {
+        target: {value: 'Thunder'},
+      });
+
+      expect(mockOnChange).toHaveBeenCalledWith(
+        'data.properties.relyingPartyId',
+        'localhost',
+        resourceWithChallengeMode,
+      );
+      expect(mockOnChange).toHaveBeenCalledWith(
+        'data.properties.relyingPartyName',
+        'Thunder',
+        resourceWithChallengeMode,
+      );
+    });
+
+    it('should update display label when mode changes to register_start', async () => {
+      const user = userEvent.setup();
+
+      render(<ExecutionExtendedProperties resource={passkeyResource} onChange={mockOnChange} />);
+
+      const modeSelect = screen.getByRole('combobox');
+      await user.click(modeSelect);
+      await user.click(screen.getByText('Passkey Register Start'));
+
+      expect(mockOnChange).toHaveBeenCalledWith(
+        'data',
+        expect.objectContaining({
+          action: expect.objectContaining({
+            executor: expect.objectContaining({
+              mode: 'register_start',
+            }) as unknown,
+          }) as unknown,
+          display: expect.objectContaining({
+            label: 'Start Passkey Registration',
+          }) as unknown,
+        }),
+        passkeyResource,
+      );
+    });
+
+    it('should update display label when mode changes to register_finish', async () => {
+      const user = userEvent.setup();
+
+      render(<ExecutionExtendedProperties resource={passkeyResource} onChange={mockOnChange} />);
+
+      const modeSelect = screen.getByRole('combobox');
+      await user.click(modeSelect);
+      await user.click(screen.getByText('Passkey Register Finish'));
+
+      expect(mockOnChange).toHaveBeenCalledWith(
+        'data',
+        expect.objectContaining({
+          action: expect.objectContaining({
+            executor: expect.objectContaining({
+              mode: 'register_finish',
+            }) as unknown,
+          }) as unknown,
+          display: expect.objectContaining({
+            label: 'Finish Passkey Registration',
+          }) as unknown,
+        }),
+        passkeyResource,
+      );
+    });
+  });
+
+  describe('Consent Executor', () => {
+    const consentResource = {
+      id: 'consent-executor-1',
+      data: {
+        action: {
+          executor: {
+            name: ExecutionTypes.ConsentExecutor,
+          },
+        },
+        properties: {},
+      },
+    } as unknown as Resource;
+
+    it('should render timeout configuration for consent executor', () => {
+      render(<ExecutionExtendedProperties resource={consentResource} onChange={mockOnChange} />);
+
+      expect(screen.getByText('Configure the consent executor settings.')).toBeInTheDocument();
+      expect(screen.getByLabelText('Consent Timeout (seconds)')).toBeInTheDocument();
+      expect(
+        screen.getByText('Time in seconds before the consent request expires. Use 0 for no timeout.'),
+      ).toBeInTheDocument();
+    });
+
+    it('should default timeout to 0 when value is not set', () => {
+      render(<ExecutionExtendedProperties resource={consentResource} onChange={mockOnChange} />);
+
+      expect(screen.getByLabelText('Consent Timeout (seconds)')).toHaveValue(0);
+    });
+
+    it('should call onChange when timeout changes', async () => {
+      const consentResourceWithTimeout = {
+        ...consentResource,
+        data: {
+          ...(consentResource as unknown as {data: object}).data,
+          properties: {
+            timeout: '20',
+          },
+        },
+      } as unknown as Resource;
+
+      render(<ExecutionExtendedProperties resource={consentResourceWithTimeout} onChange={mockOnChange} />);
+
+      const timeoutInput = screen.getByLabelText('Consent Timeout (seconds)');
+      fireEvent.change(timeoutInput, {
+        target: {value: '45'},
+      });
+
+      expect(mockOnChange).toHaveBeenLastCalledWith('data.properties.timeout', '45', consentResourceWithTimeout);
+    });
+
+    it('should normalize empty timeout to 0', () => {
+      render(<ExecutionExtendedProperties resource={consentResource} onChange={mockOnChange} />);
+
+      const timeoutInput = screen.getByLabelText('Consent Timeout (seconds)');
+      fireEvent.change(timeoutInput, {target: {value: ''}});
+
+      expect(mockOnChange).toHaveBeenLastCalledWith('data.properties.timeout', '0', consentResource);
+    });
+
+    it('should clamp negative timeout to 0', () => {
+      render(<ExecutionExtendedProperties resource={consentResource} onChange={mockOnChange} />);
+
+      const timeoutInput = screen.getByLabelText('Consent Timeout (seconds)');
+      fireEvent.change(timeoutInput, {target: {value: '-5'}});
+
+      expect(mockOnChange).toHaveBeenLastCalledWith('data.properties.timeout', '0', consentResource);
+    });
+
+    it('should floor decimal timeout to integer', () => {
+      render(<ExecutionExtendedProperties resource={consentResource} onChange={mockOnChange} />);
+
+      const timeoutInput = screen.getByLabelText('Consent Timeout (seconds)');
+      fireEvent.change(timeoutInput, {target: {value: '3.7'}});
+
+      expect(mockOnChange).toHaveBeenLastCalledWith('data.properties.timeout', '3', consentResource);
+    });
   });
 
   describe('Edge Cases', () => {
@@ -848,9 +1078,7 @@ describe('ExecutionExtendedProperties', () => {
       } as unknown as Resource;
 
       mockIdentityProviders.mockReturnValue({
-        data: [
-          {id: 'google-idp-1', name: 'Google IDP', type: IdentityProviderTypes.GOOGLE},
-        ],
+        data: [{id: 'google-idp-1', name: 'Google IDP', type: IdentityProviderTypes.GOOGLE}],
         isLoading: false,
       });
 

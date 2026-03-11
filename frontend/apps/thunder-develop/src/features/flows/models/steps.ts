@@ -103,6 +103,7 @@ export const ExecutionTypes = {
   SendEmailOTP: 'SendEmailOTPExecutor',
   VerifyEmailOTP: 'VerifyEmailOTPExecutor',
   SMSOTPAuth: 'SMSOTPAuthExecutor',
+  ConsentExecutor: 'ConsentExecutor',
 } as const;
 
 export const ExecutionStepViewTypes = {

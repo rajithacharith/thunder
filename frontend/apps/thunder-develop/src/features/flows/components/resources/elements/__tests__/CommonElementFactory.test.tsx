@@ -150,6 +150,14 @@ vi.mock('../adapters/StackAdapter', () => ({
   ),
 }));
 
+vi.mock('../adapters/TimerAdapter', () => ({
+  default: ({resource}: {resource: Element}) => (
+    <div data-testid="timer-adapter" data-resource-id={resource.id}>
+      Timer Adapter
+    </div>
+  ),
+}));
+
 describe('CommonElementFactory', () => {
   const createMockElement = (overrides: Partial<Element> = {}): Element =>
     ({
@@ -435,10 +443,23 @@ describe('CommonElementFactory', () => {
     });
   });
 
+  describe('Timer Element', () => {
+    it('should render TimerAdapter for Timer type', () => {
+      const timerElement = createMockElement({
+        type: ElementTypes.Timer,
+      });
+
+      render(<CommonElementFactory stepId="step-1" resource={timerElement} />);
+
+      expect(screen.getByTestId('timer-adapter')).toBeInTheDocument();
+      expect(screen.getByTestId('timer-adapter')).toHaveAttribute('data-resource-id', 'element-1');
+    });
+  });
+
   describe('Unknown Element Type', () => {
     it('should return null for unknown element type', () => {
       const unknownElement = createMockElement({
-        type: 'UNKNOWN_TYPE' as typeof ElementTypes[keyof typeof ElementTypes],
+        type: 'UNKNOWN_TYPE' as (typeof ElementTypes)[keyof typeof ElementTypes],
       });
 
       const {container} = render(<CommonElementFactory stepId="step-1" resource={unknownElement} />);

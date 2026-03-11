@@ -69,14 +69,17 @@ describe('elements models', () => {
       expect(ElementTypes.Action).toBe('ACTION');
       expect(ElementTypes.Captcha).toBe('CAPTCHA');
       expect(ElementTypes.Divider).toBe('DIVIDER');
+      expect(ElementTypes.Icon).toBe('ICON');
       expect(ElementTypes.Image).toBe('IMAGE');
       expect(ElementTypes.RichText).toBe('RICH_TEXT');
+      expect(ElementTypes.Stack).toBe('STACK');
       expect(ElementTypes.Text).toBe('TEXT');
       expect(ElementTypes.Resend).toBe('RESEND');
+      expect(ElementTypes.Timer).toBe('TIMER');
     });
 
-    it('should have exactly 18 element types', () => {
-      expect(Object.keys(ElementTypes)).toHaveLength(18);
+    it('should have exactly 20 element types', () => {
+      expect(Object.keys(ElementTypes)).toHaveLength(20);
     });
   });
 

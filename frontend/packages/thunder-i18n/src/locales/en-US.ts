@@ -1466,6 +1466,12 @@ const translations = {
     'core.executions.smsOtp.sender.noSenders':
       'No notification senders available. Please create a notification sender first.',
 
+    // Consent executor
+    'core.executions.consent.description': 'Configure the consent executor settings.',
+    'core.executions.consent.timeout.label': 'Consent Timeout (seconds)',
+    'core.executions.consent.timeout.placeholder': '0',
+    'core.executions.consent.timeout.hint': 'Time in seconds before the consent request expires. Use 0 for no timeout.',
+
     // Passkey executor modes
     'core.executions.passkey.mode.challenge': 'Challenge',
     'core.executions.passkey.mode.verify': 'Verify',

@@ -26,6 +26,8 @@ import {FlowTimer, type FlowTimerRenderProps} from '@asgardeo/react';
 interface TimerAdapterProps {
   /** Duration in seconds until the step expires */
   expiresIn: number;
+  /** Text template with {time} placeholder, resolved from the component label */
+  textTemplate?: string;
 }
 
 /**
@@ -34,17 +36,20 @@ interface TimerAdapterProps {
  * Uses the SDK's `FlowTimer` render-prop component to manage
  * the countdown, then renders oxygen-ui styled text.
  */
-export default function TimerAdapter({expiresIn}: TimerAdapterProps): JSX.Element {
+export default function TimerAdapter({
+  expiresIn,
+  textTemplate = 'Time remaining: {time}',
+}: TimerAdapterProps): JSX.Element {
   return (
     <FlowTimer expiresIn={expiresIn}>
       {({isExpired, formattedTime}: FlowTimerRenderProps) =>
         isExpired ? (
           <Alert severity="warning" sx={{mt: 1}}>
-            <Typography variant="body2">This step has timed out.</Typography>
+            <Typography variant="body2">{formattedTime}</Typography>
           </Alert>
         ) : (
           <Typography variant="body2" color="warning.main" sx={{mt: 1}}>
-            Time remaining: {formattedTime}
+            {textTemplate.replace('{time}', formattedTime)}
           </Typography>
         )
       }

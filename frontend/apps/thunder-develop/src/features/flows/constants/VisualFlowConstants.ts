@@ -84,6 +84,7 @@ class VisualFlowConstants {
     WidgetTypes.GithubFederation,
     WidgetTypes.PasskeyAuthentication,
     WidgetTypes.MagicLink,
+    ElementTypes.Timer,
   ];
 
   public static readonly FLOW_BUILDER_VIEW_ALLOWED_RESOURCE_TYPES: string[] = [
@@ -116,6 +117,7 @@ class VisualFlowConstants {
     WidgetTypes.GithubFederation,
     WidgetTypes.PasskeyAuthentication,
     WidgetTypes.MagicLink,
+    ElementTypes.Timer,
   ];
 
   public static readonly FLOW_BUILDER_FLOW_COMPLETION_VIEW_ALLOWED_RESOURCE_TYPES: string[] = [
@@ -144,6 +146,7 @@ class VisualFlowConstants {
     ElementTypes.RichText,
     ElementTypes.Divider,
     ElementTypes.Image,
+    ElementTypes.Timer,
   ];
 
   public static readonly FLOW_BUILDER_STACK_ALLOWED_RESOURCE_TYPES: string[] = [

@@ -40,7 +40,7 @@ vi.mock('@wso2/oxygen-ui', () => ({
 vi.mock('@asgardeo/react', () => ({
   FlowTimer: ({expiresIn, children}: any) => {
     const isExpired = expiresIn <= 0;
-    const formattedTime = isExpired ? '0:00' : '1:15';
+    const formattedTime = isExpired ? 'Timed out' : '1:15';
 
     return (
       <div data-testid="sdk-flow-timer" data-expires-in={String(expiresIn)}>
@@ -56,7 +56,7 @@ describe('TimerAdapter', () => {
     expect(screen.getByTestId('sdk-flow-timer')).toHaveAttribute('data-expires-in', '45');
   });
 
-  it('renders active countdown text when not expired', () => {
+  it('renders active countdown text with default template when not expired', () => {
     render(<TimerAdapter expiresIn={45} />);
 
     expect(screen.getByTestId('timer-text')).toHaveTextContent('Time remaining: 1:15');
@@ -64,11 +64,17 @@ describe('TimerAdapter', () => {
     expect(screen.queryByTestId('timer-alert')).toBeNull();
   });
 
+  it('renders active countdown text with custom textTemplate', () => {
+    render(<TimerAdapter expiresIn={45} textTemplate="Expires in {time}" />);
+
+    expect(screen.getByTestId('timer-text')).toHaveTextContent('Expires in 1:15');
+  });
+
   it('renders timeout alert when expired', () => {
     render(<TimerAdapter expiresIn={0} />);
 
     expect(screen.getByTestId('timer-alert')).toHaveAttribute('data-severity', 'warning');
-    expect(screen.getByText('This step has timed out.')).toBeInTheDocument();
+    expect(screen.getByText('Timed out')).toBeInTheDocument();
     expect(screen.queryByText(/Time remaining/i)).toBeNull();
   });
 });

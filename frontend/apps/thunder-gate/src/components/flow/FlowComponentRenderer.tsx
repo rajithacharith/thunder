@@ -116,29 +116,34 @@ export default function FlowComponentRenderer({
     );
   }
 
+  // TIMER (standalone countdown timer component)
+  if (comp.type === 'TIMER') {
+    const stepTimeout = additionalData?.stepTimeout;
+    const expiresIn = stepTimeout != null ? Math.max(0, Math.floor((Number(stepTimeout) - Date.now()) / 1000)) : 0;
+    const textTemplate = resolve(comp.label) ?? 'Time remaining: {time}';
+
+    return <TimerAdapter expiresIn={expiresIn} textTemplate={textTemplate} />;
+  }
+
   // BLOCK (form block or trigger block)
-  // When additionalData contains consent/timer data, inject those adapters alongside the block.
+  // When additionalData contains consent data, inject ConsentAdapter alongside the block.
   if ((comp.type as EmbeddedFlowComponentType) === EmbeddedFlowComponentType.Block || comp.type === 'BLOCK') {
     const hasConsent = additionalData?.consentPrompt != null;
     const hasTimer = additionalData?.stepTimeout != null;
+    const stepTimeout = additionalData?.stepTimeout;
+    const expiresIn = stepTimeout != null ? Math.max(0, Math.floor((Number(stepTimeout) - Date.now()) / 1000)) : 0;
+    const isExpiredOnMount = hasTimer && expiresIn <= 0;
 
-    if (hasConsent || hasTimer) {
-      const stepTimeout = additionalData?.stepTimeout;
-      const expiresIn = stepTimeout != null ? Math.max(0, Math.floor((Number(stepTimeout) - Date.now()) / 1000)) : 0;
-      const isExpiredOnMount = hasTimer && expiresIn <= 0;
-
+    if (hasConsent) {
       return (
         <>
-          {hasTimer && <TimerAdapter expiresIn={expiresIn} />}
-          {hasConsent && (
-            <ConsentAdapter
-              consentData={
-                additionalData?.consentPrompt as string | ConsentPurpose[] | {purposes: ConsentPurpose[]} | undefined
-              }
-              formValues={values}
-              onInputChange={onInputChange}
-            />
-          )}
+          <ConsentAdapter
+            consentData={
+              additionalData?.consentPrompt as string | ConsentPurpose[] | {purposes: ConsentPurpose[]} | undefined
+            }
+            formValues={values}
+            onInputChange={onInputChange}
+          />
           <BlockAdapter
             component={component}
             index={index}
@@ -162,7 +167,7 @@ export default function FlowComponentRenderer({
         values={values}
         touched={touched}
         fieldErrors={fieldErrors}
-        isLoading={isLoading}
+        isLoading={isLoading || isExpiredOnMount}
         resolve={resolve}
         onInputChange={onInputChange}
         onSubmit={onSubmit}

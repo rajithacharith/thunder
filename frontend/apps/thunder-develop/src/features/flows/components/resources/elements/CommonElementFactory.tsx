@@ -34,6 +34,8 @@ import IconAdapter from './adapters/IconAdapter';
 import StackAdapter from './adapters/StackAdapter';
 import CaptchaAdapter from './adapters/CaptchaAdapter';
 import ResendButtonAdapter from './adapters/ResendButtonAdapter';
+import TimerAdapter from './adapters/TimerAdapter';
+import ConsentAdapter from './adapters/ConsentAdapter';
 
 /**
  * Props interface of {@link CommonElementFactory}
@@ -95,11 +97,7 @@ function CommonElementFactory({
     }
 
     return (
-      <BlockAdapter
-        resource={resource}
-        availableElements={availableElements}
-        onAddElementToForm={onAddElementToForm}
-      />
+      <BlockAdapter resource={resource} availableElements={availableElements} onAddElementToForm={onAddElementToForm} />
     );
   }
   if (resource.type === ElementTypes.Checkbox) {
@@ -156,6 +154,12 @@ function CommonElementFactory({
   }
   if (resource.type === ElementTypes.Resend) {
     return <ResendButtonAdapter stepId={stepId} resource={resource} />;
+  }
+  if (resource.type === ElementTypes.Timer) {
+    return <TimerAdapter resource={resource} />;
+  }
+  if (resource.type === ElementTypes.Consent) {
+    return <ConsentAdapter />;
   }
 
   return null;
