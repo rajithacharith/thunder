@@ -33,6 +33,8 @@ import {useNavigate} from 'react-router';
 import {useState, useCallback, useMemo, useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
+import GatePreview from '@/components/GatePreview/GatePreview';
+import buildPreviewMock from '@/components/GatePreview/mocks/buildPreviewMock';
 import ConfigureSignInOptions from '../components/create-application/configure-signin-options/ConfigureSignInOptions';
 import ConfigureDesign from '../components/create-application/ConfigureDesign';
 import ConfigureName from '../components/create-application/ConfigureName';
@@ -41,7 +43,6 @@ import ConfigureStack from '../components/create-application/ConfigureStack';
 import ConfigureDetails from '../components/create-application/ConfigureDetails';
 import ShowClientSecret from '../components/create-application/ShowClientSecret';
 import {getDefaultOAuthConfig} from '../models/oauth';
-import Preview from '../components/create-application/Preview';
 import useCreateApplication from '../api/useCreateApplication';
 import type {CreateApplicationRequest} from '../models/requests';
 import type {OAuth2Config} from '../models/oauth';
@@ -661,7 +662,11 @@ export default function ApplicationCreatePage(): JSX.Element {
         {/* Right side - Preview (show from design step onwards, but hide on complete step) */}
         {currentStep !== ApplicationCreateFlowStep.NAME && currentStep !== ApplicationCreateFlowStep.COMPLETE && (
           <Box sx={{flex: '0 0 50%', display: 'flex', flexDirection: 'column', p: 5}}>
-            <Preview appLogo={appLogo} selectedTheme={selectedTheme ?? undefined} integrations={integrations} />
+            <GatePreview
+                theme={selectedTheme}
+                mock={buildPreviewMock(integrations, idpData ?? [])}
+                displayName={appName ?? undefined}
+              />
           </Box>
         )}
       </Box>

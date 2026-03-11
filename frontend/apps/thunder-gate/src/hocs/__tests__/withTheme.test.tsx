@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import type {MouseEventHandler, ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -56,7 +57,7 @@ vi.mock('@asgardeo/react', () => ({
       currentLanguage: string;
       onLanguageChange: (code: string) => void;
       isLoading: boolean;
-    }) => React.ReactNode;
+    }) => ReactNode;
   }) => {
     const props = mockLanguageSwitcherProps;
     return children({...props, onLanguageChange: mockOnLanguageChange});
@@ -66,33 +67,33 @@ vi.mock('@asgardeo/react', () => ({
 // Mock OxygenUI components - capture props passed to theme provider
 vi.mock('@wso2/oxygen-ui', () => ({
   AcrylicOrangeTheme: {palette: {primary: {main: '#ff5700'}}},
-  OxygenUIThemeProvider: ({children, ...rest}: {children: React.ReactNode; theme?: unknown}) => {
+  OxygenUIThemeProvider: ({children, ...rest}: {children: ReactNode; theme?: unknown}) => {
     capturedThemeProviderProps = {...rest};
     return <div data-testid="theme-provider">{children}</div>;
   },
   ColorSchemeToggle: () => <div data-testid="color-scheme-toggle">Toggle</div>,
   CircularProgress: () => <div data-testid="circular-progress">Loading...</div>,
-  Box: ({children}: {children: React.ReactNode}) => <div data-testid="box">{children}</div>,
+  Box: ({children}: {children: ReactNode}) => <div data-testid="box">{children}</div>,
   Button: ({
     children,
     onClick = undefined,
   }: {
-    children: React.ReactNode;
-    onClick?: React.MouseEventHandler<HTMLButtonElement>;
+    children: ReactNode;
+    onClick?: MouseEventHandler<HTMLButtonElement>;
   }) => (
     <button type="button" data-testid="language-button" onClick={onClick}>
       {children}
     </button>
   ),
-  Menu: ({children, open}: {children: React.ReactNode; open: boolean}) =>
+  Menu: ({children, open}: {children: ReactNode; open: boolean}) =>
     open ? <div data-testid="language-menu">{children}</div> : null,
-  MenuItem: ({children, onClick = undefined}: {children: React.ReactNode; onClick?: () => void}) => (
+  MenuItem: ({children, onClick = undefined}: {children: ReactNode; onClick?: () => void}) => (
     // eslint-disable-next-line jsx-a11y/interactive-supports-focus
     <div data-testid="menu-item" role="menuitem" onClick={onClick} onKeyDown={undefined}>
       {children}
     </div>
   ),
-  Typography: ({children}: {children: React.ReactNode}) => <span>{children}</span>,
+  Typography: ({children}: {children: ReactNode}) => <span>{children}</span>,
 }));
 
 // Mock @wso2/oxygen-ui-icons-react
@@ -147,24 +148,24 @@ describe('withTheme', () => {
     expect(screen.queryByTestId('mock-child')).not.toBeInTheDocument();
   });
 
-  it('uses AcrylicOrangeTheme as fallback when transformedTheme is null', () => {
+  it('passes null theme to OxygenUIThemeProvider when useDesign returns null', () => {
     mockUseDesign.mockReturnValue({
       theme: null,
       isLoading: false,
     });
 
     render(<WithThemeComponent />);
-    expect(capturedThemeProviderProps?.theme).toEqual({palette: {primary: {main: '#ff5700'}}});
+    expect(capturedThemeProviderProps?.theme).toBeNull();
   });
 
-  it('uses AcrylicOrangeTheme as fallback when transformedTheme is undefined', () => {
+  it('passes undefined theme to OxygenUIThemeProvider when useDesign returns undefined', () => {
     mockUseDesign.mockReturnValue({
       theme: undefined,
       isLoading: false,
     });
 
     render(<WithThemeComponent />);
-    expect(capturedThemeProviderProps?.theme).toEqual({palette: {primary: {main: '#ff5700'}}});
+    expect(capturedThemeProviderProps?.theme).toBeUndefined();
   });
 
   it('passes transformedTheme to OxygenUIThemeProvider when available', () => {

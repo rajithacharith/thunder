@@ -19,4 +19,4 @@
 // TODO: Remove this once we have more than one export in this file.
 /* eslint-disable import/prefer-default-export */
 
-export {RecursivePartial} from './primitives/recursive-partial';
+export {type RecursivePartial} from './primitives/recursive-partial';

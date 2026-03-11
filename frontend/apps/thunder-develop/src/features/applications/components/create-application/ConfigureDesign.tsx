@@ -16,12 +16,13 @@
  * under the License.
  */
 
-import {Typography, Stack, Button, Avatar, Tooltip, Radio, Card, CardActionArea, useTheme} from '@wso2/oxygen-ui';
+import {Typography, Stack, Button, Avatar, Tooltip, Card, Box, Grid, useTheme} from '@wso2/oxygen-ui';
 import {Palette, Shuffle} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useState, useMemo, useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useGetThemes, useGetTheme, type ThemeListItem, type ThemeConfig} from '@thunder/shared-design';
+import {useGetThemes, useGetTheme, type ThemeListItem, type Theme} from '@thunder/shared-design';
+import ThemeThumbnail from '../../../design/components/themes/ThemeThumbnail';
 import generateAppLogoSuggestions from '../../utils/generateAppLogoSuggestion';
 
 /**
@@ -43,7 +44,7 @@ export interface ConfigureDesignProps {
   /**
    * The currently selected theme configuration (UI theme data only, not API response wrapper)
    */
-  selectedTheme: ThemeConfig | null;
+  selectedTheme: Theme | null;
 
   /**
    * Callback function when a logo is selected
@@ -53,7 +54,7 @@ export interface ConfigureDesignProps {
   /**
    * Callback function when a theme is selected, receives theme ID and config separately
    */
-  onThemeSelect: (themeId: string, themeConfig: ThemeConfig) => void;
+  onThemeSelect: (themeId: string, themeConfig: Theme) => void;
 
   /**
    * Optional callback function when the initial logo is loaded
@@ -96,7 +97,7 @@ export interface ConfigureDesignProps {
  * function OnboardingFlow() {
  *   const [logo, setLogo] = useState<string | null>(null);
  *   const [themeId, setThemeId] = useState<string | null>(null);
- *   const [themeConfig, setThemeConfig] = useState<ThemeConfig | null>(null);
+ *   const [themeConfig, setThemeConfig] = useState<Theme | null>(null);
  *
  *   return (
  *     <ConfigureDesign
@@ -134,10 +135,10 @@ export default function ConfigureDesign({
 
   const hasThemes = Boolean(themesData?.themes?.length);
   const primaryColorLight: string =
-    selectedThemeProp?.colorSchemes?.light?.colors?.primary?.main ?? theme.vars?.palette.primary.main ?? '';
+    selectedThemeProp?.colorSchemes?.light?.palette?.primary?.main ?? theme.vars?.palette.primary.main ?? '';
   const primaryColorDark: string =
-    selectedThemeProp?.colorSchemes?.dark?.colors?.primary?.main ??
-    selectedThemeProp?.colorSchemes?.light?.colors?.primary?.main ??
+    selectedThemeProp?.colorSchemes?.dark?.palette?.primary?.main ??
+    selectedThemeProp?.colorSchemes?.light?.palette?.primary?.main ??
     theme.vars?.palette.primary.main ??
     '';
 
@@ -280,49 +281,47 @@ export default function ConfigureDesign({
         </Stack>
 
         {hasThemes ? (
-          <Stack direction="column" spacing={3}>
-            {/* Theme Cards */}
-            <Stack direction="column" spacing={1}>
-              {themesData?.themes?.map((themeItem: ThemeListItem) => {
-                const isSelected: boolean = selectedThemeId === themeItem.id;
-
-                return (
+          <Grid container spacing={2}>
+            {themesData?.themes?.map((themeItem: ThemeListItem) => {
+              const isSelected: boolean = selectedThemeId === themeItem.id;
+              return (
+                <Grid key={themeItem.id} size={{xs: 2, sm: 3, md: 4, lg: 3}}>
                   <Card
-                    key={themeItem.id}
                     data-testid={`theme-card-${themeItem.id}`}
-                    variant="outlined"
+                    onClick={(): void => handleThemeSelect(themeItem)}
                     sx={{
-                      border: isSelected
-                        ? `2px solid ${theme.vars?.palette.primary.main}`
-                        : `1px solid ${theme.vars?.palette.divider}`,
-                      borderRadius: '8px',
-                      transition: 'all 0.15s ease-in-out',
+                      cursor: 'pointer',
+                      border: isSelected ? `2px solid ${theme.vars?.palette.primary.main}` : undefined,
                       '&:hover': {
-                        borderColor: theme.vars?.palette.primary.main,
+                        borderColor: 'primary.main',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                        transform: 'translateY(-2px)',
                       },
                     }}
                   >
-                    <CardActionArea
-                      onClick={(): void => handleThemeSelect(themeItem)}
-                      sx={{display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, justifyContent: 'flex-start'}}
-                    >
-                      <Radio checked={isSelected} size="small" sx={{p: 0}} />
-                      <Stack direction="column" sx={{minWidth: 0}}>
-                        <Typography variant="body2" fontWeight={isSelected ? 600 : 400} noWrap>
-                          {themeItem.displayName}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" noWrap>
-                          {themeItem.description ?? t('applications:onboarding.configure.design.theme.noDescription')}
-                        </Typography>
-                      </Stack>
-                    </CardActionArea>
+                    <Box sx={{aspectRatio: '4/3', overflow: 'hidden', position: 'relative'}}>
+                      <ThemeThumbnail theme={themeItem} />
+                    </Box>
+                    <Box sx={{px: 1.5, py: 1, borderTop: '1px solid', borderColor: 'divider'}}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: isSelected ? 600 : 500,
+                          fontSize: '0.8125rem',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {themeItem.displayName}
+                      </Typography>
+                    </Box>
                   </Card>
-                );
-              })}
-            </Stack>
-          </Stack>
+                </Grid>
+              );
+            })}
+          </Grid>
         ) : (
-          /* No themes configured - empty state */
           <Stack
             direction="column"
             spacing={2}

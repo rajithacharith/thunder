@@ -19,7 +19,7 @@
 import {render, screen, waitFor} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import userEvent from '@testing-library/user-event';
-import type {ThemeConfig} from '@thunder/shared-design';
+import type {Theme} from '@thunder/shared-design';
 import type {Application} from '../../models/application';
 import ApplicationCreatePage from '../ApplicationCreatePage';
 import ApplicationCreateProvider from '../../contexts/ApplicationCreate/ApplicationCreateProvider';
@@ -156,25 +156,23 @@ vi.mock('../../components/create-application/ConfigureName', () => ({
 
 vi.mock('../../components/create-application/ConfigureDesign', () => ({
   default: ({
+    appLogo,
     onLogoSelect,
     onThemeSelect,
   }: {
     appLogo: string | null;
-    selectedTheme: ThemeConfig | null;
+    selectedTheme: Theme | null;
     onLogoSelect: (logo: string) => void;
     onInitialLogoLoad: (logo: string) => void;
     onReadyChange: (ready: boolean) => void;
-    onThemeSelect?: (themeId: string, themeConfig: ThemeConfig) => void;
+    onThemeSelect?: (themeId: string, themeConfig: Theme) => void;
   }) => (
     <div data-testid="configure-design">
+      {appLogo ? <span data-testid="preview-logo">{appLogo}</span> : null}
       <button type="button" data-testid="logo-select-btn" onClick={() => onLogoSelect('test-logo.png')}>
         Select Logo
       </button>
-      <button
-        type="button"
-        data-testid="select-theme-btn"
-        onClick={() => onThemeSelect?.('theme-1', {} as ThemeConfig)}
-      >
+      <button type="button" data-testid="select-theme-btn" onClick={() => onThemeSelect?.('theme-1', {} as Theme)}>
         Select Theme
       </button>
     </div>
@@ -185,39 +183,41 @@ vi.mock('../../components/create-application/configure-signin-options/ConfigureS
   const useApplicationCreateContextModule = await import('../../hooks/useApplicationCreateContext');
 
   return {
-    default: vi.fn(({
-      integrations,
-      onIntegrationToggle,
-      onReadyChange,
-    }: {
-      integrations: Record<string, boolean>;
-      onIntegrationToggle: (id: string) => void;
-      onReadyChange: (ready: boolean) => void;
-    }) => {
-      const {setSelectedAuthFlow} = useApplicationCreateContextModule.default();
+    default: vi.fn(
+      ({
+        integrations,
+        onIntegrationToggle,
+        onReadyChange,
+      }: {
+        integrations: Record<string, boolean>;
+        onIntegrationToggle: (id: string) => void;
+        onReadyChange: (ready: boolean) => void;
+      }) => {
+        const {setSelectedAuthFlow} = useApplicationCreateContextModule.default();
 
-      setTimeout(() => {
-        setSelectedAuthFlow({
-          id: 'test-flow-id',
-          name: 'Test Flow',
-          flowType: 'AUTHENTICATION',
-          handle: 'test-flow',
-          activeVersion: 1,
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z',
-        });
-        const hasSelection = Object.values(integrations).some((enabled: boolean) => enabled);
-        onReadyChange(hasSelection);
-      }, 0);
+        setTimeout(() => {
+          setSelectedAuthFlow({
+            id: 'test-flow-id',
+            name: 'Test Flow',
+            flowType: 'AUTHENTICATION',
+            handle: 'test-flow',
+            activeVersion: 1,
+            createdAt: '2024-01-01T00:00:00Z',
+            updatedAt: '2024-01-01T00:00:00Z',
+          });
+          const hasSelection = Object.values(integrations).some((enabled: boolean) => enabled);
+          onReadyChange(hasSelection);
+        }, 0);
 
-      return (
-        <div data-testid="configure-sign-in">
-          <button type="button" data-testid="toggle-integration" onClick={() => onIntegrationToggle('basic_auth')}>
-            Toggle Integration
-          </button>
-        </div>
-      );
-    }),
+        return (
+          <div data-testid="configure-sign-in">
+            <button type="button" data-testid="toggle-integration" onClick={() => onIntegrationToggle('basic_auth')}>
+              Toggle Integration
+            </button>
+          </div>
+        );
+      },
+    ),
   };
 });
 
@@ -280,20 +280,8 @@ vi.mock('../../components/create-application/ConfigureDetails', () => ({
   },
 }));
 
-vi.mock('../../components/create-application/Preview', () => ({
-  default: ({
-    appLogo,
-    selectedColor,
-  }: {
-    appLogo: string | null;
-    selectedColor: string;
-    integrations: Record<string, boolean>;
-  }) => (
-    <div data-testid="preview">
-      <div data-testid="preview-logo">{appLogo}</div>
-      <div data-testid="preview-color">{selectedColor}</div>
-    </div>
-  ),
+vi.mock('../../../../components/GatePreview/GatePreview', () => ({
+  default: () => <div data-testid="preview" />,
 }));
 
 vi.mock('../../components/create-application/ShowClientSecret', () => ({
@@ -1184,28 +1172,32 @@ describe('ApplicationCreatePage', () => {
       });
 
       // Override MockConfigureSignInOptions to simulate selection without setting a flow
-      const ConfigureSignInOptionsModule = await import('../../components/create-application/configure-signin-options/ConfigureSignInOptions');
+      const ConfigureSignInOptionsModule = await import(
+        '../../components/create-application/configure-signin-options/ConfigureSignInOptions'
+      );
       const useApplicationCreateContextModule = await import('../../hooks/useApplicationCreateContext');
 
       vi.mocked(ConfigureSignInOptionsModule.default).mockImplementation(
         ({onReadyChange}: {onReadyChange?: (ready: boolean) => void}) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
           const {setSelectedAuthFlow, setIntegrations} = useApplicationCreateContextModule.default();
-          
+
           const handleSetup = () => {
-             // Explicitly set flow to null to trigger generation logic
+            // Explicitly set flow to null to trigger generation logic
             setSelectedAuthFlow(null);
             // Explicitly set integrations
-            setIntegrations({'basic_auth': true});
+            setIntegrations({basic_auth: true});
             onReadyChange?.(true);
           };
 
           return (
             <div data-testid="configure-sign-in">
-              <button type="button" data-testid="setup-flow-generation" onClick={handleSetup}>Setup Flow Generation</button>
+              <button type="button" data-testid="setup-flow-generation" onClick={handleSetup}>
+                Setup Flow Generation
+              </button>
             </div>
           );
-        }
+        },
       );
 
       renderWithProviders();
@@ -1219,10 +1211,10 @@ describe('ApplicationCreatePage', () => {
       await waitFor(() => {
         expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-      
+
       // Trigger setup
       await user.click(screen.getByTestId('setup-flow-generation'));
-      
+
       await user.click(screen.getByRole('button', {name: /continue/i}));
 
       // Experience -> Stack -> Configure
@@ -1243,32 +1235,36 @@ describe('ApplicationCreatePage', () => {
     });
 
     it('should show error when flow generation fails', async () => {
-       // Mock createFlow to fail
-       mockCreateFlow.mockImplementation((_data, {onError}: {onError: (error: Error) => void}) => {
+      // Mock createFlow to fail
+      mockCreateFlow.mockImplementation((_data, {onError}: {onError: (error: Error) => void}) => {
         onError(new Error('Flow generation failed'));
       });
 
-       // Override MockConfigureSignInOptions to simulate selection without setting a flow
-       const ConfigureSignInOptionsModule = await import('../../components/create-application/configure-signin-options/ConfigureSignInOptions');
-       const useApplicationCreateContextModule = await import('../../hooks/useApplicationCreateContext');
+      // Override MockConfigureSignInOptions to simulate selection without setting a flow
+      const ConfigureSignInOptionsModule = await import(
+        '../../components/create-application/configure-signin-options/ConfigureSignInOptions'
+      );
+      const useApplicationCreateContextModule = await import('../../hooks/useApplicationCreateContext');
 
-       vi.mocked(ConfigureSignInOptionsModule.default).mockImplementation(
+      vi.mocked(ConfigureSignInOptionsModule.default).mockImplementation(
         ({onReadyChange}: {onReadyChange?: (ready: boolean) => void}) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
           const {setSelectedAuthFlow, setIntegrations} = useApplicationCreateContextModule.default();
-          
+
           const handleSetup = () => {
-             setSelectedAuthFlow(null);
-             setIntegrations({'basic_auth': true});
-             onReadyChange?.(true);
+            setSelectedAuthFlow(null);
+            setIntegrations({basic_auth: true});
+            onReadyChange?.(true);
           };
 
           return (
             <div data-testid="configure-sign-in">
-               <button type="button" data-testid="setup-flow-generation-error" onClick={handleSetup}>Setup Flow Generation Error</button>
+              <button type="button" data-testid="setup-flow-generation-error" onClick={handleSetup}>
+                Setup Flow Generation Error
+              </button>
             </div>
           );
-        }
+        },
       );
 
       renderWithProviders();
@@ -1277,22 +1273,22 @@ describe('ApplicationCreatePage', () => {
       await user.type(screen.getByTestId('app-name-input'), 'My App');
       await user.click(screen.getByRole('button', {name: /continue/i}));
       await user.click(screen.getByRole('button', {name: /continue/i})); // Design
-      
+
       // Options step
       await waitFor(() => {
         expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
       });
-      
+
       // Trigger setup
       await user.click(screen.getByTestId('setup-flow-generation-error'));
-      
+
       await user.click(screen.getByRole('button', {name: /continue/i})); // Options -> Experience
       await user.click(screen.getByRole('button', {name: /continue/i})); // Experience -> Stack
       await user.click(screen.getByRole('button', {name: /continue/i})); // Stack -> Configure
       await user.click(screen.getByRole('button', {name: /continue/i})); // Configure -> Create
 
       await waitFor(() => {
-         expect(screen.getByText('Flow generation failed')).toBeInTheDocument();
+        expect(screen.getByText('Flow generation failed')).toBeInTheDocument();
       });
     });
   });

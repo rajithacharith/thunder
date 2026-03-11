@@ -16,9 +16,8 @@
  * under the License.
  */
 
-import type {JSX, ComponentType, MouseEvent} from 'react';
-import {useState} from 'react';
-import {useDesign} from '@thunder/shared-design';
+import {useState, type JSX, type ComponentType, type MouseEvent} from 'react';
+import {useDesign, type Theme} from '@thunder/shared-design';
 import {LanguageSwitcher} from '@asgardeo/react';
 import {
   OxygenUIThemeProvider,
@@ -35,10 +34,8 @@ import {ChevronDown} from '@wso2/oxygen-ui-icons-react';
 
 export default function withTheme<P extends object>(WrappedComponent: ComponentType<P>) {
   return function WithTheme(props: P): JSX.Element {
-    const {theme: transformedTheme, isLoading} = useDesign(AcrylicOrangeTheme);
-    const theme = transformedTheme ?? AcrylicOrangeTheme;
+    const {theme, isLoading} = useDesign(AcrylicOrangeTheme as Theme);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
     return (
       <OxygenUIThemeProvider theme={theme}>
         <ColorSchemeToggle

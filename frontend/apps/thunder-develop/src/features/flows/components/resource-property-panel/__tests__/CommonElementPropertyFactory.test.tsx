@@ -25,13 +25,23 @@ import type {Resource} from '../../../models/resources';
 import {ElementTypes} from '../../../models/elements';
 import FlowBuilderElementConstants from '../../../constants/FlowBuilderElementConstants';
 
+vi.mock('@thunder/logger/react', () => ({
+  useLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    withComponent: vi.fn().mockReturnThis(),
+  }),
+}));
+
 // Mock icons package so ICON_NAMES is predictable and icon rendering works
 vi.mock('@wso2/oxygen-ui-icons-react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@wso2/oxygen-ui-icons-react')>();
-  const MockUserIcon = Object.assign(
-    ({size}: {size?: number}) => <svg data-testid="icon-user" data-size={size} />,
-    {displayName: 'User', $$typeof: Symbol.for('react.forward_ref')},
-  );
+  const MockUserIcon = Object.assign(({size}: {size?: number}) => <svg data-testid="icon-user" data-size={size} />, {
+    displayName: 'User',
+    $$typeof: Symbol.for('react.forward_ref'),
+  });
   return {
     ...actual,
     User: MockUserIcon,

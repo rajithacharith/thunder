@@ -120,15 +120,10 @@ describe('useCreateUserType', () => {
   });
 
   it('should set pending state during creation', async () => {
+    let resolveMutation!: (value: {data: ApiUserSchema}) => void;
     mockHttpRequest.mockReturnValue(
-      new Promise((resolve) => {
-        setTimeout(
-          () =>
-            resolve({
-              data: mockUserSchema,
-            }),
-          100,
-        );
+      new Promise<{data: ApiUserSchema}>((resolve) => {
+        resolveMutation = resolve;
       }),
     );
 
@@ -138,6 +133,10 @@ describe('useCreateUserType', () => {
 
     await waitFor(() => {
       expect(result.current.isPending).toBe(true);
+    });
+
+    await act(async () => {
+      resolveMutation({data: mockUserSchema});
     });
 
     await waitFor(() => {

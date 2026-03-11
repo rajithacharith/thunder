@@ -40,6 +40,12 @@ import OrganizationUnitsListPage from './features/organization-units/pages/Organ
 import CreateOrganizationUnitPage from './features/organization-units/pages/CreateOrganizationUnitPage';
 import OrganizationUnitEditPage from './features/organization-units/pages/OrganizationUnitEditPage';
 import OrganizationUnitProvider from './features/organization-units/contexts/OrganizationUnitProvider';
+import DesignPage from './features/design/pages/DesignPage';
+import ThemeBuilderPage from './features/design/pages/ThemeBuilderPage';
+import LayoutBuilderPage from './features/design/pages/LayoutBuilderPage';
+import ThemeBuilderProvider from './features/design/contexts/ThemeBuilder/ThemeBuilderProvider';
+import LayoutBuilderProvider from './features/design/contexts/LayoutBuilder/LayoutBuilderProvider';
+import ThemeCreatePage from './features/design/pages/ThemeCreatePage';
 import TranslationsListPage from './features/translations/pages/TranslationsListPage';
 import TranslationsEditPage from './features/translations/pages/TranslationsEditPage';
 import TranslationCreatePage from './features/translations/pages/TranslationCreatePage';
@@ -157,6 +163,50 @@ export default function App(): JSX.Element {
           }
         >
           <Route index element={<LoginFlowBuilderPage />} />
+        </Route>
+        <Route
+          path="/design"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<DesignPage />} />
+        </Route>
+        <Route
+          path="/design/themes/create"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<ThemeCreatePage />} />
+        </Route>
+        <Route
+          path="/design/themes/:themeId"
+          element={
+            <ProtectedRoute>
+              <ThemeBuilderProvider>
+                <DashboardLayout />
+              </ThemeBuilderProvider>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<ThemeBuilderPage />} />
+        </Route>
+        <Route
+          path="/design/layouts/:layoutId"
+          element={
+            <ProtectedRoute>
+              <LayoutBuilderProvider>
+                <DashboardLayout />
+              </LayoutBuilderProvider>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<LayoutBuilderPage />} />
         </Route>
         <Route
           path="/translations/create"

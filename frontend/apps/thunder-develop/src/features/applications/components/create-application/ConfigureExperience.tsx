@@ -213,7 +213,7 @@ export default function ConfigureExperience({
                         <ExternalLink size={20} />
                         <Typography variant="h6">
                           {t('applications:onboarding.configure.approach.inbuilt.title', {
-                            product: config,
+                            product: productName,
                           })}
                         </Typography>
                       </Stack>
