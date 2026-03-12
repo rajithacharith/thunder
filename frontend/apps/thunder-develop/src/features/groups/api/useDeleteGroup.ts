@@ -17,8 +17,9 @@
  */
 
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig, useToast} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
+import {useTranslation} from 'react-i18next';
 import GroupQueryKeys from '../constants/group-query-keys';
 
 /**
@@ -30,6 +31,8 @@ export default function useDeleteGroup(): UseMutationResult<void, Error, string>
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
   const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
+  const {t} = useTranslation('groups');
+  const {showToast} = useToast();
 
   return useMutation<void, Error, string>({
     mutationFn: async (groupId: string): Promise<void> => {
@@ -44,6 +47,10 @@ export default function useDeleteGroup(): UseMutationResult<void, Error, string>
       queryClient.invalidateQueries({queryKey: [GroupQueryKeys.GROUPS]}).catch(() => {
         // Ignore invalidation errors
       });
+      showToast(t('delete.success'), 'success');
+    },
+    onError: () => {
+      showToast(t('delete.error'), 'error');
     },
   });
 }

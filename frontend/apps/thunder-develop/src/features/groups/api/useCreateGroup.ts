@@ -17,8 +17,9 @@
  */
 
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig, useToast} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
+import {useTranslation} from 'react-i18next';
 import type {Group} from '../models/group';
 import type {CreateGroupRequest} from '../models/requests';
 import GroupQueryKeys from '../constants/group-query-keys';
@@ -32,6 +33,8 @@ export default function useCreateGroup(): UseMutationResult<Group, Error, Create
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
   const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
+  const {t} = useTranslation('groups');
+  const {showToast} = useToast();
 
   return useMutation<Group, Error, CreateGroupRequest>({
     mutationFn: async (groupData: CreateGroupRequest): Promise<Group> => {
@@ -53,6 +56,10 @@ export default function useCreateGroup(): UseMutationResult<Group, Error, Create
       queryClient.invalidateQueries({queryKey: [GroupQueryKeys.GROUPS]}).catch(() => {
         // Ignore invalidation errors
       });
+      showToast(t('create.success'), 'success');
+    },
+    onError: () => {
+      showToast(t('create.error'), 'error');
     },
   });
 }

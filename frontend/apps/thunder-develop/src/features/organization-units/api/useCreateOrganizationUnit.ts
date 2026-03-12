@@ -17,8 +17,9 @@
  */
 
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig, useToast} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
+import {useTranslation} from 'react-i18next';
 import type {OrganizationUnit} from '../models/organization-unit';
 import type {CreateOrganizationUnitRequest} from '../models/requests';
 import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
@@ -60,6 +61,8 @@ export default function useCreateOrganizationUnit(): UseMutationResult<
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
   const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
+  const {t} = useTranslation('organizationUnits');
+  const {showToast} = useToast();
 
   return useMutation<OrganizationUnit, Error, CreateOrganizationUnitRequest>({
     mutationFn: async (data: CreateOrganizationUnitRequest): Promise<OrganizationUnit> => {
@@ -86,6 +89,10 @@ export default function useCreateOrganizationUnit(): UseMutationResult<
       queryClient.invalidateQueries({queryKey: [OrganizationUnitQueryKeys.CHILD_ORGANIZATION_UNITS]}).catch(() => {
         // Ignore invalidation errors
       });
+      showToast(t('create.success'), 'success');
+    },
+    onError: () => {
+      showToast(t('create.error'), 'error');
     },
   });
 }

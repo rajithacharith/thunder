@@ -106,40 +106,44 @@ export default function QuickCopySection({
           />
         </FormControl>
 
-        <FormControl fullWidth>
-          <FormLabel htmlFor="client-id-input">{t('applications:edit.general.labels.clientId')}</FormLabel>
-          <TextField
-            fullWidth
-            id="client-id-input"
-            value={oauth2Config?.client_id ?? ''}
-            InputProps={{
-              readOnly: true,
-              endAdornment: (
-                <InputAdornment position="end">
-                  <Tooltip title={copiedField === 'client_id' ? t('common:actions.copied') : t('common:actions.copy')}>
-                    <IconButton
-                      onClick={() => {
-                        if (oauth2Config?.client_id) {
-                          onCopyToClipboard(oauth2Config.client_id, 'client_id').catch(() => {});
-                        }
-                      }}
-                      edge="end"
+        {oauth2Config?.client_id && (
+          <FormControl fullWidth>
+            <FormLabel htmlFor="client-id-input">{t('applications:edit.general.labels.clientId')}</FormLabel>
+            <TextField
+              fullWidth
+              id="client-id-input"
+              value={oauth2Config?.client_id ?? ''}
+              InputProps={{
+                readOnly: true,
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Tooltip
+                      title={copiedField === 'client_id' ? t('common:actions.copied') : t('common:actions.copy')}
                     >
-                      {copiedField === 'client_id' ? <Check size={16} /> : <Copy size={16} />}
-                    </IconButton>
-                  </Tooltip>
-                </InputAdornment>
-              ),
-            }}
-            helperText={t('applications:edit.general.clientId.hint')}
-            sx={{
-              '& input': {
-                fontFamily: 'monospace',
-                fontSize: '0.875rem',
-              },
-            }}
-          />
-        </FormControl>
+                      <IconButton
+                        onClick={() => {
+                          if (oauth2Config?.client_id) {
+                            onCopyToClipboard(oauth2Config.client_id, 'client_id').catch(() => {});
+                          }
+                        }}
+                        edge="end"
+                      >
+                        {copiedField === 'client_id' ? <Check size={16} /> : <Copy size={16} />}
+                      </IconButton>
+                    </Tooltip>
+                  </InputAdornment>
+                ),
+              }}
+              helperText={t('applications:edit.general.clientId.hint')}
+              sx={{
+                '& input': {
+                  fontFamily: 'monospace',
+                  fontSize: '0.875rem',
+                },
+              }}
+            />
+          </FormControl>
+        )}
       </Stack>
     </SettingsCard>
   );

@@ -117,15 +117,16 @@ vi.mock('@/features/notification-senders/api/useNotificationSenders', () => ({
 }));
 
 // Use vi.hoisted for mocks that need to be referenced in vi.mock
-const {mockToObject, mockGetNodes, mockGetEdges, mockUpdateNodeData, mockFitView, mockUpdateNodeInternals} =
-  vi.hoisted(() => ({
+const {mockToObject, mockGetNodes, mockGetEdges, mockUpdateNodeData, mockFitView, mockUpdateNodeInternals} = vi.hoisted(
+  () => ({
     mockToObject: vi.fn(() => ({viewport: {x: 0, y: 0, zoom: 1}})),
     mockGetNodes: vi.fn((): Node[] => []),
     mockGetEdges: vi.fn((): Edge[] => []),
     mockUpdateNodeData: vi.fn(),
     mockFitView: vi.fn().mockResolvedValue(undefined),
     mockUpdateNodeInternals: vi.fn(),
-  }));
+  }),
+);
 
 vi.mock('@xyflow/react', () => ({
   useReactFlow: () => ({
@@ -141,15 +142,15 @@ vi.mock('@xyflow/react', () => ({
 // Store callbacks for testing
 type DragEndCallback = (event: {
   operation: {
-    source: { data: Record<string, unknown> } | null;
-    target: { id: string; data: Record<string, unknown> } | null;
+    source: {data: Record<string, unknown>} | null;
+    target: {id: string; data: Record<string, unknown>} | null;
   };
   canceled: boolean;
 }) => void;
 type DragOverCallback = (event: {
   operation: {
-    source: { id?: string; data?: Record<string, unknown> } | null;
-    target?: { id: string; data: Record<string, unknown> } | null;
+    source: {id?: string; data?: Record<string, unknown>} | null;
+    target?: {id: string; data: Record<string, unknown>} | null;
   };
 }) => void;
 
@@ -158,7 +159,11 @@ let capturedOnDragOver: DragOverCallback | null = null;
 
 // Mock @dnd-kit/react
 vi.mock('@dnd-kit/react', () => ({
-  DragDropProvider: ({children, onDragEnd, onDragOver}: {
+  DragDropProvider: ({
+    children,
+    onDragEnd,
+    onDragOver,
+  }: {
     children: React.ReactNode;
     onDragEnd?: DragEndCallback;
     onDragOver?: DragOverCallback;
@@ -190,12 +195,18 @@ vi.mock('@dnd-kit/abstract', () => ({
 
 // Mock @wso2/oxygen-ui
 vi.mock('@wso2/oxygen-ui', () => ({
+  Alert: ({children, severity}: any) => (
+    <div data-testid="alert-component" data-severity={severity}>
+      {children}
+    </div>
+  ),
   Box: ({children, className}: any) => (
     <div data-testid="box-component" className={className}>
       {children}
     </div>
   ),
   OxygenUIThemeProvider: ({children}: any) => children,
+  Snackbar: ({children, open}: any) => (open ? <div data-testid="snackbar-component">{children}</div> : null),
 }));
 
 // Mock classnames
@@ -273,7 +284,6 @@ vi.mock('../../../utils/generateResourceId', () => ({
 }));
 
 describe('DecoratedVisualFlow', () => {
-
   const mockBaseResource: Base = {
     id: '',
     type: '',
@@ -333,10 +343,7 @@ describe('DecoratedVisualFlow', () => {
     executors: [],
   };
 
-  const renderWithContext = (
-    ui: React.ReactElement,
-    contextValue: FlowBuilderCoreContextProps = defaultContextValue,
-  ) =>
+  const renderWithContext = (ui: React.ReactElement, contextValue: FlowBuilderCoreContextProps = defaultContextValue) =>
     render(<FlowBuilderCoreContext.Provider value={contextValue}>{ui}</FlowBuilderCoreContext.Provider>);
 
   const defaultProps = {
@@ -968,7 +975,7 @@ describe('DecoratedVisualFlow', () => {
       renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Capture the callback passed to updateNodeData
-      mockUpdateNodeData.mockImplementation((stepId: string, callback: (node: Node) => { components: unknown[] }) => {
+      mockUpdateNodeData.mockImplementation((stepId: string, callback: (node: Node) => {components: unknown[]}) => {
         // Simulate a node with nested components (form with children)
         const mockNode: Node = {
           id: stepId,
@@ -976,7 +983,14 @@ describe('DecoratedVisualFlow', () => {
           data: {
             components: [
               {id: 'button-1', type: 'BUTTON'},
-              {id: 'form-1', type: 'FORM', components: [{id: 'input-1', type: 'TEXT_INPUT'}, {id: 'input-2', type: 'TEXT_INPUT'}]},
+              {
+                id: 'form-1',
+                type: 'FORM',
+                components: [
+                  {id: 'input-1', type: 'TEXT_INPUT'},
+                  {id: 'input-2', type: 'TEXT_INPUT'},
+                ],
+              },
               {id: 'text-1', type: 'TEXT'},
             ],
           },
@@ -1013,7 +1027,7 @@ describe('DecoratedVisualFlow', () => {
       renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Capture the callback passed to updateNodeData
-      mockUpdateNodeData.mockImplementation((stepId: string, callback: (node: Node) => { components: unknown[] }) => {
+      mockUpdateNodeData.mockImplementation((stepId: string, callback: (node: Node) => {components: unknown[]}) => {
         // Simulate a node with no components
         const mockNode: Node = {
           id: stepId,
@@ -1178,9 +1192,7 @@ describe('DecoratedVisualFlow', () => {
         id: 'step-1',
         position: {x: 0, y: 0},
         data: {
-          components: [
-            {id: 'form-1', type: 'BLOCK', components: [{id: 'input-1', type: 'TEXT_INPUT'}]},
-          ],
+          components: [{id: 'form-1', type: 'BLOCK', components: [{id: 'input-1', type: 'TEXT_INPUT'}]}],
         },
       };
       mockGetNodes.mockReturnValue([targetNode]);
@@ -1371,7 +1383,7 @@ describe('DecoratedVisualFlow', () => {
       renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Capture the callback passed to updateNodeData
-      mockUpdateNodeData.mockImplementation((stepId: string, callback: (node: Node) => { components: unknown[] }) => {
+      mockUpdateNodeData.mockImplementation((stepId: string, callback: (node: Node) => {components: unknown[]}) => {
         // Simulate a node with nested components (form with children)
         const mockNode: Node = {
           id: stepId,
@@ -1379,7 +1391,14 @@ describe('DecoratedVisualFlow', () => {
           data: {
             components: [
               {id: 'button-1', type: 'BUTTON'},
-              {id: 'form-1', type: 'FORM', components: [{id: 'input-1', type: 'TEXT_INPUT'}, {id: 'input-2', type: 'TEXT_INPUT'}]},
+              {
+                id: 'form-1',
+                type: 'FORM',
+                components: [
+                  {id: 'input-1', type: 'TEXT_INPUT'},
+                  {id: 'input-2', type: 'TEXT_INPUT'},
+                ],
+              },
               {id: 'divider-1', type: 'DIVIDER'},
             ],
           },
@@ -1414,7 +1433,7 @@ describe('DecoratedVisualFlow', () => {
       renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Capture the callback passed to updateNodeData
-      mockUpdateNodeData.mockImplementation((stepId: string, callback: (node: Node) => { components: unknown[] }) => {
+      mockUpdateNodeData.mockImplementation((stepId: string, callback: (node: Node) => {components: unknown[]}) => {
         // Simulate a node with components that have no nested children
         const mockNode: Node = {
           id: stepId,
@@ -1455,7 +1474,7 @@ describe('DecoratedVisualFlow', () => {
       renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Capture the callback passed to updateNodeData
-      mockUpdateNodeData.mockImplementation((stepId: string, callback: (node: Node) => { components: unknown[] }) => {
+      mockUpdateNodeData.mockImplementation((stepId: string, callback: (node: Node) => {components: unknown[]}) => {
         // Simulate a node with undefined data
         const mockNode: Node = {
           id: stepId,

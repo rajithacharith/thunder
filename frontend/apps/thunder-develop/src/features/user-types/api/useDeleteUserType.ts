@@ -18,7 +18,8 @@
 
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig, useToast} from '@thunder/shared-contexts';
+import {useTranslation} from 'react-i18next';
 import UserTypeQueryKeys from '../constants/userTypeQueryKeys';
 
 /**
@@ -30,6 +31,8 @@ export default function useDeleteUserType(): UseMutationResult<void, Error, stri
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
   const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
+  const {t} = useTranslation('userTypes');
+  const {showToast} = useToast();
 
   return useMutation<void, Error, string>({
     mutationFn: async (userTypeId: string): Promise<void> => {
@@ -47,6 +50,10 @@ export default function useDeleteUserType(): UseMutationResult<void, Error, stri
       queryClient.invalidateQueries({queryKey: [UserTypeQueryKeys.USER_TYPES]}).catch(() => {
         // Ignore invalidation errors
       });
+      showToast(t('delete.success'), 'success');
+    },
+    onError: () => {
+      showToast(t('delete.error'), 'error');
     },
   });
 }

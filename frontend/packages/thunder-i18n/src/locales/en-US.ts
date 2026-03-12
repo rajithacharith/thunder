@@ -388,6 +388,12 @@ const translations = {
     'createWizard.errors.noOuAccess':
       'You do not have permission to access the organization units for the selected user type, and no organization unit could be resolved.',
     'createWizard.errors.childOuProbeFailed': 'Unable to retrieve organization units for the selected user type.',
+    'create.success': 'User created successfully.',
+    'create.error': 'Failed to create user. Please try again.',
+    'update.success': 'User updated successfully.',
+    'update.error': 'Failed to update user. Please try again.',
+    'delete.success': 'User deleted successfully.',
+    'delete.error': 'Failed to delete user. Please try again.',
   },
 
   // ============================================================================
@@ -461,6 +467,12 @@ const translations = {
     'createWizard.general.subtitle': 'Choose an organization unit and set registration preferences',
     'createWizard.properties.title': 'Define your schema properties',
     'createWizard.properties.subtitle': 'Add the fields that make up this user type',
+    'create.success': 'User type created successfully.',
+    'create.error': 'Failed to create user type. Please try again.',
+    'update.success': 'User type updated successfully.',
+    'update.error': 'Failed to update user type. Please try again.',
+    'delete.success': 'User type deleted successfully.',
+    'delete.error': 'Failed to delete user type. Please try again.',
   },
 
   // ============================================================================
@@ -575,6 +587,11 @@ const translations = {
     'edit.customization.labels.theme': 'Theme',
     'edit.customization.theme.placeholder': 'Select a theme',
     'edit.customization.theme.hint': 'The theme applied to this organization unit.',
+    'create.success': 'Organization unit created successfully.',
+    'update.success': 'Organization unit updated successfully.',
+    'update.error': 'Failed to update organization unit. Please try again.',
+    'delete.success': 'Organization unit deleted successfully.',
+    'delete.error': 'Failed to delete organization unit. Please try again.',
   },
 
   // ============================================================================
@@ -669,6 +686,12 @@ const translations = {
     'delete.message': 'Are you sure you want to delete this group?',
     'delete.disclaimer': 'This action cannot be undone. All group associations will be permanently removed.',
     'delete.error': 'Failed to delete group. Please try again.',
+    'create.success': 'Group created successfully.',
+    'update.success': 'Group updated successfully.',
+    'update.error': 'Failed to update group. Please try again.',
+    'delete.success': 'Group deleted successfully.',
+    'addMember.success': 'Member added successfully.',
+    'removeMember.success': 'Member removed successfully.',
   },
 
   // ============================================================================
@@ -1280,6 +1303,13 @@ const translations = {
     'edit.advanced.certificate.placeholder.jwks': 'Enter JWKS JSON',
     'edit.advanced.certificate.hint.jwksUri': 'URL to the JWKS endpoint',
     'edit.advanced.certificate.hint.jwks': 'JSON Web Key Set',
+    'create.success': 'Application created successfully.',
+    'create.error': 'Failed to create application. Please try again.',
+    'update.success': 'Application updated successfully.',
+    'update.error': 'Failed to update application. Please try again.',
+    'delete.success': 'Application deleted successfully.',
+    'delete.error': 'Failed to delete application. Please try again.',
+    'regenerateSecret.snackbar.success': 'Client secret regenerated successfully.',
   },
 
   // ============================================================================

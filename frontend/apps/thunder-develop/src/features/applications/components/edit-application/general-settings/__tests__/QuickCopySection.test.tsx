@@ -86,13 +86,12 @@ describe('QuickCopySection', () => {
       expect(screen.getByDisplayValue('client-123')).toBeInTheDocument();
     });
 
-    it('should render empty client ID field when OAuth2 config is not provided', () => {
+    it('should not render client ID field when OAuth2 config is not provided', () => {
       render(
         <QuickCopySection application={mockApplication} copiedField={null} onCopyToClipboard={mockOnCopyToClipboard} />,
       );
 
-      const clientIdInput = screen.getByLabelText('Client ID');
-      expect(clientIdInput).toHaveAttribute('value', '');
+      expect(screen.queryByLabelText('Client ID')).not.toBeInTheDocument();
     });
 
     it('should render both copy buttons', () => {
@@ -140,16 +139,13 @@ describe('QuickCopySection', () => {
       expect(mockOnCopyToClipboard).toHaveBeenCalledWith('client-123', 'client_id');
     });
 
-    it('should not call onCopyToClipboard when client ID is not available', async () => {
-      const user = userEvent.setup();
+    it('should not render client ID copy button when client ID is not available', () => {
       render(
         <QuickCopySection application={mockApplication} copiedField={null} onCopyToClipboard={mockOnCopyToClipboard} />,
       );
 
       const copyButtons = screen.getAllByRole('button');
-      await user.click(copyButtons[1]);
-
-      expect(mockOnCopyToClipboard).not.toHaveBeenCalled();
+      expect(copyButtons).toHaveLength(1);
     });
 
     it('should handle copy errors gracefully', async () => {
