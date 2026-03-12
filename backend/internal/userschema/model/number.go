@@ -26,10 +26,11 @@ import (
 )
 
 type number struct {
-	required   bool
-	unique     bool
-	credential bool
-	enum       map[float64]struct{}
+	required    bool
+	unique      bool
+	credential  bool
+	displayName string
+	enum        map[float64]struct{}
 }
 
 func (p *number) isRequired() bool {
@@ -84,11 +85,12 @@ func (p *number) validateUniqueness(
 
 func compileNumberProperty(propMap map[string]json.RawMessage) (property, error) {
 	allowedFields := map[string]struct{}{
-		"type":       {},
-		"required":   {},
-		"unique":     {},
-		"credential": {},
-		"enum":       {},
+		"type":        {},
+		"required":    {},
+		"unique":      {},
+		"credential":  {},
+		"displayName": {},
+		"enum":        {},
 	}
 
 	for field := range propMap {
@@ -114,6 +116,12 @@ func compileNumberProperty(propMap map[string]json.RawMessage) (property, error)
 	if raw, exists := propMap["credential"]; exists {
 		if err := json.Unmarshal(raw, &prop.credential); err != nil {
 			return nil, fmt.Errorf("'credential' field must be a boolean")
+		}
+	}
+
+	if raw, exists := propMap["displayName"]; exists {
+		if err := json.Unmarshal(raw, &prop.displayName); err != nil {
+			return nil, fmt.Errorf("'displayName' field must be a string")
 		}
 	}
 

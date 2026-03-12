@@ -182,3 +182,59 @@ func (s *SchemaValidateTestSuite) TestValidNestedObjectAttributes_Pass() {
 	s.Require().NoError(err)
 	s.Require().True(ok)
 }
+
+func (s *SchemaValidateTestSuite) TestDisplayNameOnAllPropertyTypes_CompileSuccess() {
+	schema, err := CompileUserSchema(json.RawMessage(`{
+		"given_name": {"type": "string", "required": true, "displayName": "First Name"},
+		"age": {"type": "number", "displayName": "Age"},
+		"active": {"type": "boolean", "displayName": "Is Active"},
+		"address": {
+			"type": "object",
+			"displayName": "Home Address",
+			"properties": {
+				"city": {"type": "string", "displayName": "City"}
+			}
+		},
+		"tags": {
+			"type": "array",
+			"displayName": "Tags",
+			"items": {"type": "string"}
+		}
+	}`))
+	s.Require().NoError(err)
+	s.Require().NotNil(schema)
+
+	ok, err := schema.Validate(json.RawMessage(`{
+		"given_name": "John",
+		"age": 30,
+		"active": true,
+		"address": {"city": "NYC"},
+		"tags": ["admin"]
+	}`), s.logger)
+	s.Require().NoError(err)
+	s.Require().True(ok)
+}
+
+func (s *SchemaValidateTestSuite) TestDisplayNameWithI18nPattern_CompileSuccess() {
+	schema, err := CompileUserSchema(json.RawMessage(`{
+		"family_name": {"type": "string", "displayName": "{{t(custom:user.familyName)}}"}
+	}`))
+	s.Require().NoError(err)
+	s.Require().NotNil(schema)
+}
+
+func (s *SchemaValidateTestSuite) TestDisplayNameInvalidType_CompileError() {
+	_, err := CompileUserSchema(json.RawMessage(`{
+		"email": {"type": "string", "displayName": 123}
+	}`))
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "'displayName' field must be a string")
+}
+
+func (s *SchemaValidateTestSuite) TestSchemaWithoutDisplayName_CompileSuccess() {
+	schema, err := CompileUserSchema(json.RawMessage(`{
+		"email": {"type": "string", "required": true}
+	}`))
+	s.Require().NoError(err)
+	s.Require().NotNil(schema)
+}
