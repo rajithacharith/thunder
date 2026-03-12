@@ -270,25 +270,6 @@ func (f *fileBasedStore) UpdateOrganizationUnit(ctx context.Context, ou Organiza
 	return errors.New("UpdateOrganizationUnit is not supported in file-based store")
 }
 
-// CheckOrganizationUnitHasChildResources implements organizationUnitStoreInterface.
-func (f *fileBasedStore) CheckOrganizationUnitHasChildResources(ctx context.Context, id string) (bool, error) {
-	// In file-based mode, we check if there are any child OUs
-	list, err := f.GenericFileBasedStore.List()
-	if err != nil {
-		return false, err
-	}
-
-	for _, item := range list {
-		if ou, ok := item.Data.(*OrganizationUnit); ok {
-			if ou.Parent != nil && *ou.Parent == id {
-				return true, nil
-			}
-		}
-	}
-
-	return false, nil
-}
-
 // GetOrganizationUnitChildrenCount implements organizationUnitStoreInterface.
 func (f *fileBasedStore) GetOrganizationUnitChildrenCount(ctx context.Context, id string) (int, error) {
 	list, err := f.GenericFileBasedStore.List()
@@ -343,32 +324,4 @@ func (f *fileBasedStore) GetOrganizationUnitChildrenList(
 	}
 
 	return children[start:end], nil
-}
-
-// GetOrganizationUnitUsersCount implements organizationUnitStoreInterface.
-func (f *fileBasedStore) GetOrganizationUnitUsersCount(ctx context.Context, id string) (int, error) {
-	// In file-based mode, users are not stored with OUs
-	return 0, nil
-}
-
-// GetOrganizationUnitUsersList implements organizationUnitStoreInterface.
-func (f *fileBasedStore) GetOrganizationUnitUsersList(
-	ctx context.Context, id string, limit, offset int,
-) ([]User, error) {
-	// In file-based mode, users are not stored with OUs
-	return []User{}, nil
-}
-
-// GetOrganizationUnitGroupsCount implements organizationUnitStoreInterface.
-func (f *fileBasedStore) GetOrganizationUnitGroupsCount(ctx context.Context, id string) (int, error) {
-	// In file-based mode, groups are not stored with OUs
-	return 0, nil
-}
-
-// GetOrganizationUnitGroupsList implements organizationUnitStoreInterface.
-func (f *fileBasedStore) GetOrganizationUnitGroupsList(
-	ctx context.Context, id string, limit, offset int,
-) ([]Group, error) {
-	// In file-based mode, groups are not stored with OUs
-	return []Group{}, nil
 }

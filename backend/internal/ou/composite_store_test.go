@@ -305,18 +305,6 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_ChildrenOperations() {
 		suite.NoError(err)
 		suite.Equal(3, count) // 2 from DB + 1 from file
 	})
-
-	suite.Run("checks if OU has children in either store", func() {
-		suite.dbStoreMock.On("CheckOrganizationUnitHasChildResources", mock.Anything, "parent-ou").
-			Return(true, nil).
-			Once()
-
-		hasChildren, err := suite.compositeStore.CheckOrganizationUnitHasChildResources(
-			context.Background(), "parent-ou",
-		)
-		suite.NoError(err)
-		suite.True(hasChildren)
-	})
 }
 
 // TestCompositeStore_ListOperations tests list operations include both stores.
@@ -396,16 +384,6 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_ListOperations() {
 
 		suite.dbStoreMock.AssertNotCalled(suite.T(), "GetOrganizationUnitList", mock.Anything)
 		fileStoreMock.AssertNotCalled(suite.T(), "GetOrganizationUnitList", mock.Anything)
-	})
-
-	suite.Run("user/group operations use DB store only", func() {
-		suite.dbStoreMock.On("GetOrganizationUnitUsersCount", mock.Anything, "ou-1").
-			Return(10, nil).
-			Once()
-
-		count, err := suite.compositeStore.GetOrganizationUnitUsersCount(context.Background(), "ou-1")
-		suite.NoError(err)
-		suite.Equal(10, count)
 	})
 }
 
@@ -637,70 +615,6 @@ func TestCompositeStoreCoverageTestSuite(t *testing.T) {
 	suite.Run(t, new(CompositeStoreCoverageTestSuite))
 }
 
-// TestCompositeStore_CheckOrganizationUnitHasChildResources tests child resource detection.
-func (suite *CompositeStoreCoverageTestSuite) TestCompositeStore_CheckOrganizationUnitHasChildResources() {
-	suite.Run("has children in DB store", func() {
-		// File store checked first - returns false (no children)
-		// Then DB store checked - returns true (has children)
-		suite.dbStoreMock.On("CheckOrganizationUnitHasChildResources", mock.Anything, "ou-1").
-			Return(true, nil).
-			Once()
-
-		hasChildren, err := suite.compositeStore.CheckOrganizationUnitHasChildResources(context.Background(), "ou-1")
-		suite.NoError(err)
-		suite.True(hasChildren)
-	})
-
-	suite.Run("has children in file store only", func() {
-		parentID := testCoverageParentOUID
-		err := suite.fileStore.CreateOrganizationUnit(context.Background(), OrganizationUnit{
-			ID:     parentID,
-			Handle: "parent",
-			Name:   "Parent",
-		})
-		suite.NoError(err)
-		err = suite.fileStore.CreateOrganizationUnit(context.Background(), OrganizationUnit{
-			ID:     "child-ou",
-			Handle: "child",
-			Name:   "Child",
-			Parent: &parentID,
-		})
-		suite.NoError(err)
-
-		// File store checked first - returns true (has children)
-		// DB store not called since file store returned true
-		// No mock expectation for dbStore
-
-		hasChildren, err := suite.compositeStore.CheckOrganizationUnitHasChildResources(context.Background(), parentID)
-		suite.NoError(err)
-		suite.True(hasChildren)
-	})
-
-	suite.Run("no children in either store", func() {
-		suite.dbStoreMock.On("CheckOrganizationUnitHasChildResources", mock.Anything, "childless-ou").
-			Return(false, nil).
-			Once()
-
-		hasChildren, err := suite.compositeStore.CheckOrganizationUnitHasChildResources(
-			context.Background(), "childless-ou",
-		)
-		suite.NoError(err)
-		suite.False(hasChildren)
-	})
-
-	suite.Run("propagates DB error", func() {
-		dbErr := errors.New("db error")
-		suite.dbStoreMock.On("CheckOrganizationUnitHasChildResources", mock.Anything, "ou-1").
-			Return(false, dbErr).
-			Once()
-
-		hasChildren, err := suite.compositeStore.CheckOrganizationUnitHasChildResources(context.Background(), "ou-1")
-		suite.Error(err)
-		suite.Equal(dbErr, err)
-		suite.False(hasChildren)
-	})
-}
-
 // TestCompositeStore_GetOrganizationUnitChildrenList tests paginated children retrieval.
 func (suite *CompositeStoreCoverageTestSuite) TestCompositeStore_GetOrganizationUnitChildrenList() {
 	parentID := "parent-ou"
@@ -869,77 +783,6 @@ func (suite *CompositeStoreCoverageTestSuite) TestCompositeStore_GetOrganization
 				suite.Equal("db-handle", child.Handle)
 			}
 		}
-	})
-}
-
-// TestCompositeStore_UserAndGroupOperations tests user/group list operations.
-func (suite *CompositeStoreCoverageTestSuite) TestCompositeStore_UserAndGroupOperations() {
-	suite.Run("retrieves users list from DB store", func() {
-		expectedUsers := []User{
-			{ID: "user-1"},
-			{ID: "user-2"},
-		}
-
-		suite.dbStoreMock.On("GetOrganizationUnitUsersList", mock.Anything, "ou-1", 10, 0).
-			Return(expectedUsers, nil).
-			Once()
-
-		result, err := suite.compositeStore.GetOrganizationUnitUsersList(context.Background(), "ou-1", 10, 0)
-		suite.NoError(err)
-		suite.Equal(expectedUsers, result)
-	})
-
-	suite.Run("retrieves groups count from DB store", func() {
-		suite.dbStoreMock.On("GetOrganizationUnitGroupsCount", mock.Anything, "ou-1").
-			Return(5, nil).
-			Once()
-
-		count, err := suite.compositeStore.GetOrganizationUnitGroupsCount(context.Background(), "ou-1")
-		suite.NoError(err)
-		suite.Equal(5, count)
-	})
-
-	suite.Run("retrieves groups list from DB store", func() {
-		expectedGroups := []Group{
-			{ID: "group-1", Name: "Group 1"},
-			{ID: "group-2", Name: "Group 2"},
-		}
-
-		suite.dbStoreMock.On("GetOrganizationUnitGroupsList", mock.Anything, "ou-1", 10, 0).
-			Return(expectedGroups, nil).
-			Once()
-
-		result, err := suite.compositeStore.GetOrganizationUnitGroupsList(context.Background(), "ou-1", 10, 0)
-		suite.NoError(err)
-		suite.Equal(expectedGroups, result)
-	})
-
-	suite.Run("propagates errors for user/group operations", func() {
-		dbErr := errors.New("db error")
-
-		suite.dbStoreMock.On("GetOrganizationUnitUsersList", mock.Anything, "ou-1", 10, 0).
-			Return([]User{}, dbErr).
-			Once()
-
-		users, err := suite.compositeStore.GetOrganizationUnitUsersList(context.Background(), "ou-1", 10, 0)
-		suite.Error(err)
-		suite.Empty(users)
-
-		suite.dbStoreMock.On("GetOrganizationUnitGroupsCount", mock.Anything, "ou-1").
-			Return(0, dbErr).
-			Once()
-
-		count, err := suite.compositeStore.GetOrganizationUnitGroupsCount(context.Background(), "ou-1")
-		suite.Error(err)
-		suite.Equal(0, count)
-
-		suite.dbStoreMock.On("GetOrganizationUnitGroupsList", mock.Anything, "ou-1", 10, 0).
-			Return([]Group{}, dbErr).
-			Once()
-
-		groups, err := suite.compositeStore.GetOrganizationUnitGroupsList(context.Background(), "ou-1", 10, 0)
-		suite.Error(err)
-		suite.Empty(groups)
 	})
 }
 

@@ -68,8 +68,9 @@ type groupService struct {
 	authzService      sysauthz.SystemAuthorizationServiceInterface
 }
 
-// newGroupService creates a new instance of GroupService with injected dependencies.
-func newGroupService(
+// newGroupServiceWithStore creates a new instance of GroupService with an externally provided store.
+func newGroupServiceWithStore(
+	store groupStoreInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	userService user.UserServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
@@ -77,7 +78,7 @@ func newGroupService(
 	transactioner transaction.Transactioner,
 ) GroupServiceInterface {
 	return &groupService{
-		groupStore:        newGroupStore(),
+		groupStore:        store,
 		ouService:         ouService,
 		userService:       userService,
 		userSchemaService: userSchemaService,

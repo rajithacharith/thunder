@@ -121,16 +121,24 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	}
 	exporters = append(exporters, userSchemaExporter)
 
-	userService, userExporter, err := user.Initialize(mux, ouService, userSchemaService, hashService, ouAuthzService)
+	userService, ouUserResolver, userExporter, err := user.Initialize(
+		mux, ouService, userSchemaService, hashService, ouAuthzService,
+	)
 	if err != nil {
 		logger.Fatal("Failed to initialize UserService", log.Error(err))
 	}
 	exporters = append(exporters, userExporter)
 
-	groupService, err := group.Initialize(mux, ouService, userService, userSchemaService, ouAuthzService)
+	groupService, ouGroupResolver, err := group.Initialize(
+		mux, ouService, userService, userSchemaService, ouAuthzService,
+	)
 	if err != nil {
 		logger.Fatal("Failed to initialize GroupService", log.Error(err))
 	}
+
+	// Two-phase initialization: inject user/group resolvers into OU service.
+	ouService.SetOUUserResolver(ouUserResolver)
+	ouService.SetOUGroupResolver(ouGroupResolver)
 
 	resourceService, resourceExporter, err := resource.Initialize(mux, ouService)
 	if err != nil {
