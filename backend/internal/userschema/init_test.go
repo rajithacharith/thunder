@@ -1092,6 +1092,12 @@ func TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML(t *testing.T) {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
+		Database: config.DatabaseConfig{
+			Config: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{
 				Key: testCryptoKey,
@@ -1146,6 +1152,12 @@ schema: |
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
+		Database: config.DatabaseConfig{
+			Config: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{
 				Key: testCryptoKey,
@@ -1198,6 +1210,12 @@ schema: |
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
+		},
+		Database: config.DatabaseConfig{
+			Config: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
 		},
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{
@@ -1261,6 +1279,12 @@ schema: |
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
+		},
+		Database: config.DatabaseConfig{
+			Config: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
 		},
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{

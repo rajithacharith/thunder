@@ -25,7 +25,6 @@ import (
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
-	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
@@ -42,15 +41,11 @@ func Initialize(
 	storeMode := getUserSchemaStoreMode()
 	userSchemaStore := initializeStore(storeMode)
 
-	// Step 2: Get database transactioner (only needed for mutable modes)
-	var transactioner transaction.Transactioner
-	var err error
-	if storeMode == serverconst.StoreModeComposite || storeMode == serverconst.StoreModeMutable {
-		dbProvider := provider.GetDBProvider()
-		transactioner, err = dbProvider.GetConfigDBTransactioner()
-		if err != nil {
-			return nil, nil, err
-		}
+	// Step 2: Get database transactioner
+	dbProvider := provider.GetDBProvider()
+	transactioner, err := dbProvider.GetConfigDBTransactioner()
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// Step 3: Create service with store

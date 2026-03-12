@@ -496,6 +496,12 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesEnabled_Inval
 				Key: testCryptoKey,
 			},
 		},
+		Database: config.DatabaseConfig{
+			Config: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
@@ -566,6 +572,12 @@ properties:
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{
 				Key: testCryptoKey,
+			},
+		},
+		Database: config.DatabaseConfig{
+			Config: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
 			},
 		},
 		DeclarativeResources: config.DeclarativeResources{
