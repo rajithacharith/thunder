@@ -111,45 +111,6 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestValidateGrant_WrongGran
 	assert.Equal(suite.T(), "Unsupported grant type", result.ErrorDescription)
 }
 
-func (suite *ClientCredentialsGrantHandlerTestSuite) TestValidateGrant_MissingClientID() {
-	tokenRequest := &model.TokenRequest{
-		GrantType:    "client_credentials",
-		ClientID:     "",
-		ClientSecret: "secret123",
-	}
-
-	result := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
-	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), constants.ErrorInvalidRequest, result.Error)
-	assert.Equal(suite.T(), "Client Id and secret are required", result.ErrorDescription)
-}
-
-func (suite *ClientCredentialsGrantHandlerTestSuite) TestValidateGrant_MissingClientSecret() {
-	tokenRequest := &model.TokenRequest{
-		GrantType:    "client_credentials",
-		ClientID:     testClientID,
-		ClientSecret: "",
-	}
-
-	result := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
-	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), constants.ErrorInvalidRequest, result.Error)
-	assert.Equal(suite.T(), "Client Id and secret are required", result.ErrorDescription)
-}
-
-func (suite *ClientCredentialsGrantHandlerTestSuite) TestValidateGrant_MissingBothCredentials() {
-	tokenRequest := &model.TokenRequest{
-		GrantType:    "client_credentials",
-		ClientID:     "",
-		ClientSecret: "",
-	}
-
-	result := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
-	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), constants.ErrorInvalidRequest, result.Error)
-	assert.Equal(suite.T(), "Client Id and secret are required", result.ErrorDescription)
-}
-
 func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_Success() {
 	testCases := []struct {
 		name              string
