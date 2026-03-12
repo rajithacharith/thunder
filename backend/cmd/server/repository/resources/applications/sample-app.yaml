@@ -1,0 +1,70 @@
+# Sample App Application for Testing
+# Sample application demonstrating Thunder authentication
+id: "sample-app"
+name: "Sample App"
+description: "Sample application for testing"
+url: "https://localhost:3000"
+logo_url: "https://localhost:3000/logo.png"
+tos_uri: "https://localhost:3000/terms"
+policy_uri: "https://localhost:3000/privacy"
+contacts:
+  - "admin@example.com"
+  - "support@example.com"
+is_registration_flow_enabled: false
+allowed_user_types:
+  - "Customer"
+user_attributes:
+  - "given_name"
+  - "family_name"
+  - "email"
+  - "groups"
+
+inbound_auth_config:
+  - type: "oauth2"
+    config:
+      client_id: "sample_app_client"
+      redirect_uris:
+        - "https://localhost:3000"
+        - "https://localhost:3000/callback"
+        - "http://localhost:3000"
+        - "http://localhost:3000/callback"
+      grant_types:
+        - "authorization_code"
+      response_types:
+        - "code"
+      token_endpoint_auth_method: "none"
+      pkce_required: true
+      public_client: true
+      scopes:
+        - "openid"
+        - "profile"
+        - "email"
+      token:
+        access_token:
+          validity_period: 3600
+          user_attributes:
+            - "given_name"
+            - "family_name"
+            - "email"
+            - "groups"
+        id_token:
+          validity_period: 3600
+          user_attributes:
+            - "given_name"
+            - "family_name"
+            - "email"
+            - "groups"
+      scope_claims:
+        profile:
+          - "name"
+          - "given_name"
+          - "family_name"
+          - "picture"
+        email:
+          - "email"
+          - "email_verified"
+        phone:
+          - "phone_number"
+          - "phone_number_verified"
+        group:
+          - "groups"

@@ -240,6 +240,8 @@ id: schema-1
 name: Test Schema
 organization_unit_id: ou-1
 allow_self_registration: true
+system_attributes:
+  display: username
 schema: '{"type": "object"}'
 `,
 			want: &UserSchema{
@@ -247,6 +249,7 @@ schema: '{"type": "object"}'
 				Name:                  "Test Schema",
 				OrganizationUnitID:    "ou-1",
 				AllowSelfRegistration: true,
+				SystemAttributes:      &SystemAttributes{Display: "username"},
 				Schema:                json.RawMessage(`{"type": "object"}`),
 			},
 			wantErr: false,
@@ -303,6 +306,8 @@ schema: '{invalid json}'
 				assert.Equal(t, tc.want.Name, result.Name)
 				assert.Equal(t, tc.want.OrganizationUnitID, result.OrganizationUnitID)
 				assert.Equal(t, tc.want.AllowSelfRegistration, result.AllowSelfRegistration)
+				assert.Equal(t, tc.want.SystemAttributes, result.SystemAttributes)
+				assert.Equal(t, tc.want.Schema, result.Schema)
 			}
 		})
 	}

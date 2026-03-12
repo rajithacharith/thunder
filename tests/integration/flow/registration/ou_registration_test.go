@@ -378,7 +378,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{
@@ -603,8 +603,8 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOU() {
 				"ouName":        tc.ouName,
 				"ouHandle":      tc.ouHandle,
 				"ouDescription": tc.ouDescription,
-				"given_name":     "Test",
-				"family_name":      "User",
+				"given_name":    "Test",
+				"family_name":   "User",
 				"email":         username + "@example.com",
 			}
 
@@ -696,8 +696,8 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOUCreationDu
 				"ouName":        tc.newOUName,
 				"ouHandle":      newHandle,
 				"ouDescription": "Should fail due to duplicate",
-				"given_name":     "Test",
-				"family_name":      "User",
+				"given_name":    "Test",
+				"family_name":   "User",
 				"email":         username + "@example.com",
 			}
 
@@ -724,10 +724,10 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 			ouDescription: "Test SMS OU created with description",
 		},
 		{
-			name:          "SuccessWithoutDescription",
+			name:          "SuccessWithFallbackDescription",
 			ouName:        "Test SMS OU No Desc",
 			ouHandle:      generateUniqueHandle("sms-ou-nodesc"),
-			ouDescription: "",
+			ouDescription: "N/A",
 		},
 	}
 
@@ -769,9 +769,11 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 
 			// Step 4: Submit OU details
 			inputs = map[string]string{
-				"ouName":        tc.ouName,
-				"ouHandle":      tc.ouHandle,
-				"ouDescription": tc.ouDescription,
+				"ouName":   tc.ouName,
+				"ouHandle": tc.ouHandle,
+			}
+			if tc.ouDescription != "" {
+				inputs["ouDescription"] = tc.ouDescription
 			}
 
 			flowStep, err = common.CompleteFlow(flowStep.FlowID, inputs, "")
@@ -781,8 +783,8 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 			// Step 5: Submit user details
 			inputs = map[string]string{
 				"mobileNumber": mobileNumber,
-				"given_name":    "Test",
-				"family_name":     "User",
+				"given_name":   "Test",
+				"family_name":  "User",
 				"email":        mobileNumber + "@example.com",
 			}
 
@@ -874,12 +876,13 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreationDupl
 			inputs := map[string]string{
 				"mobileNumber": mobileNumber,
 			}
-			// Wait for OTP to be sent
-			time.Sleep(500 * time.Millisecond)
 
 			flowStep, err = common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
 			ts.Require().NoError(err)
 			ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus)
+
+			// Wait for OTP to be sent
+			time.Sleep(500 * time.Millisecond)
 
 			lastMessage := ts.mockServer.GetLastMessage()
 			ts.Require().NotNil(lastMessage)

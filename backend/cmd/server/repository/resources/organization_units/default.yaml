@@ -1,0 +1,6 @@
+# Default Organization Unit
+# This is the primary organization unit for system resources and admin users
+id: "default"
+name: "Default"
+handle: "default"
+description: "Default organization unit"

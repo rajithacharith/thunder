@@ -23,22 +23,11 @@ services:
       - thunder-db:/data
     restart: "no"
 
-  # Run setup once with the shared database
-  thunder-setup:
-    image: ghcr.io/asgardeo/thunder:latest
-    command: ./setup.sh
-    volumes:
-      - thunder-db:/opt/thunder/repository/database
-    depends_on:
-      thunder-db-init:
-        condition: service_completed_successfully
-    restart: "no"
-
   # Run Thunder server with the shared database
   thunder:
     image: ghcr.io/asgardeo/thunder:latest
     depends_on:
-      thunder-setup:
+      thunder-db-init:
         condition: service_completed_successfully
     ports:
       - "8090:8090"

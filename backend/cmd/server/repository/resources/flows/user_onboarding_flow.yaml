@@ -1,0 +1,124 @@
+name: User Onboarding Flow
+id: default-user-onboarding
+handle: default-user-onboarding
+flowType: USER_ONBOARDING
+nodes:
+- id: start
+  type: START
+  onSuccess: permission_validator
+- id: permission_validator
+  type: TASK_EXECUTION
+  properties:
+    requiredScopes:
+    - system
+  executor:
+    name: PermissionValidator
+  onSuccess: user_type_resolver
+- id: user_type_resolver
+  type: TASK_EXECUTION
+  executor:
+    name: UserTypeResolver
+  onSuccess: prompt_email
+  onIncomplete: prompt_usertype
+- id: prompt_usertype
+  type: PROMPT
+  meta: '{"components":[{"type":"TEXT","id":"heading_usertype","label":"Sign Up","variant":"HEADING_2"},{"type":"BLOCK","id":"block_usertype","components":[{"type":"SELECT","id":"usertype_input","ref":"userType","label":"User Type","placeholder":"Select your user type","required":true,"options":[]},{"type":"ACTION","id":"action_usertype","label":"Continue","variant":"PRIMARY","eventType":"SUBMIT"}]}]}'
+  prompts:
+  - inputs:
+    - ref: usertype_input
+      identifier: userType
+      type: SELECT
+      required: true
+    action:
+      ref: action_usertype
+      nextNode: user_type_resolver
+- id: prompt_email
+  type: PROMPT
+  meta: '{"components":[{"type":"TEXT","id":"text_header_email","label":"User Email","variant":"HEADING_1"},{"type":"BLOCK","id":"block_email","components":[{"id":"input_prompt_email","ref":"email","type":"EMAIL_INPUT","label":"Email","required":true,"placeholder":"Enter email"},{"type":"ACTION","id":"action_submit_email","label":"Next","variant":"PRIMARY","eventType":"SUBMIT"}]}]}'
+  prompts:
+  - inputs:
+    - ref: input_prompt_email
+      identifier: email
+      type: EMAIL_INPUT
+      required: true
+    action:
+      ref: action_submit_email
+      nextNode: invite
+- id: invite
+  type: TASK_EXECUTION
+  inputs:
+  - ref: input_003
+    identifier: inviteToken
+    type: HIDDEN
+    required: true
+  executor:
+    name: InviteExecutor
+  onSuccess: prompt_user_details
+- id: prompt_user_details
+  type: PROMPT
+  meta: '{"components":[{"type":"TEXT","id":"text_header_details","label":"User Details","variant":"HEADING_2"},{"type":"BLOCK","id":"block_user_details","components":[{"id":"input_prompt_username","ref":"username","type":"TEXT_INPUT","label":"Username","required":true,"placeholder":"Enter username"},{"id":"input_prompt_given_name","ref":"given_name","type":"TEXT_INPUT","label":"First Name","required":false,"placeholder":"Enter first name"},{"id":"input_prompt_family_name","ref":"family_name","type":"TEXT_INPUT","label":"Last Name","required":false,"placeholder":"Enter last name"},{"id":"input_prompt_phone","ref":"phone_number","type":"TEXT_INPUT","label":"Phone Number","required":false,"placeholder":"Enter phone number"},{"type":"ACTION","id":"action_submit_details","label":"Next","variant":"PRIMARY","eventType":"SUBMIT"}]}]}'
+  prompts:
+  - inputs:
+    - ref: input_prompt_username
+      identifier: username
+      type: TEXT_INPUT
+      required: true
+    - ref: input_prompt_given_name
+      identifier: given_name
+      type: TEXT_INPUT
+      required: false
+    - ref: input_prompt_family_name
+      identifier: family_name
+      type: TEXT_INPUT
+      required: false
+    - ref: input_prompt_phone
+      identifier: phone_number
+      type: TEXT_INPUT
+      required: false
+    action:
+      ref: action_submit_details
+      nextNode: prompt_credential
+- id: prompt_credential
+  type: PROMPT
+  meta: '{"components":[{"type":"TEXT","id":"text_header_pwd","label":"Set Password","variant":"HEADING_2"},{"type":"BLOCK","id":"block_pwd","components":[{"id":"input_prompt_password","ref":"password","type":"PASSWORD_INPUT","label":"Password","required":true,"placeholder":"Enter password"},{"type":"ACTION","id":"action_submit_pwd","label":"Set Password","variant":"PRIMARY","eventType":"SUBMIT"}]}]}'
+  prompts:
+  - inputs:
+    - ref: input_prompt_password
+      identifier: password
+      type: PASSWORD_INPUT
+      required: true
+    action:
+      ref: action_submit_pwd
+      nextNode: provisioning
+- id: provisioning
+  type: TASK_EXECUTION
+  inputs:
+  - ref: input_email
+    identifier: email
+    type: EMAIL_INPUT
+    required: true
+  - ref: input_username
+    identifier: username
+    type: TEXT_INPUT
+    required: true
+  - ref: input_password
+    identifier: password
+    type: PASSWORD_INPUT
+    required: true
+  - ref: input_given_name
+    identifier: given_name
+    type: TEXT_INPUT
+    required: false
+  - ref: input_family_name
+    identifier: family_name
+    type: TEXT_INPUT
+    required: false
+  - ref: input_phone
+    identifier: phone_number
+    type: TEXT_INPUT
+    required: false
+  executor:
+    name: ProvisioningExecutor
+  onSuccess: end
+- id: end
+  type: END

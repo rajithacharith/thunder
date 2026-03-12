@@ -83,8 +83,8 @@ func (c *compositeThemeStore) CreateTheme(id string, theme CreateThemeRequest) e
 // Checks file store (declarative) first to maintain precedence, then falls back to database store.
 func (c *compositeThemeStore) GetTheme(id string) (Theme, error) {
 	theme, err := declarativeresource.CompositeGetHelper(
-		func() (Theme, error) { return c.fileStore.GetTheme(id) },
 		func() (Theme, error) { return c.dbStore.GetTheme(id) },
+		func() (Theme, error) { return c.fileStore.GetTheme(id) },
 		errThemeNotFound,
 	)
 	return theme, err

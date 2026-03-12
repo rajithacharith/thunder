@@ -45,32 +45,7 @@ Navigate to the extracted directory:
 cd thunder-<version>-<os>-<arch>/
 ```
 
-### Step 3: Setup Thunder
-
-Initialize Thunder with the default configurations and data before starting the server for the first time.
-
-<Tabs groupId="os">
-<TabItem value="unix" label="Linux / macOS">
-
-```bash
-./setup.sh
-```
-
-</TabItem>
-<TabItem value="windows" label="Windows">
-
-```powershell
-.\setup.ps1
-```
-
-</TabItem>
-</Tabs>
-
-:::warning Important
-Note the sample app ID from the log line: `[INFO] Sample App ID: <id>`. You'll need this for configuring the sample application.
-:::
-
-### Step 4: Start Thunder
+### Step 3: Start Thunder
 
 Launch the Thunder server:
 
@@ -128,12 +103,13 @@ docker compose up
 :::note
 This command will automatically:
 - Initialize the database
-- Run the setup process
 - Start the Thunder server
 :::
 
 :::warning Important
-Note the sample app ID from the setup logs: `[INFO] Sample App ID: <id>`. You'll need this for configuring the sample application.
+Use values from declarative YAML files instead of console logs:
+- Sample app ID: `backend/cmd/server/repository/resources/applications/sample-app.yaml` (`id: "sample-app"`)
+- Default admin credentials: `backend/cmd/server/repository/resources/users/admin.yaml`
 :::
 
 :::tip Success

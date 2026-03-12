@@ -455,16 +455,26 @@ Persistence is **automatically enabled** when using SQLite as the database type 
 
 ### Setup Job Parameters
 
-The setup job runs `setup.sh` as a one-time Helm pre-install hook to initialize Thunder with default resources (admin user, organization, etc.).
+Thunder loads declarative resources at startup from `repository/resources/`. The setup job is **optional and disabled by default**.
+
+**When to enable the setup job:**
+- ✅ You need to run custom bootstrap scripts for initialization beyond declarative resources
+- ✅ You need to create resources via API calls during deployment (e.g., users with credentials)
+- ✅ You need custom initialization logic that cannot be expressed in YAML
+
+**When NOT to enable:**
+- ❌ For default applications, users, roles, schemas - use declarative YAML resources instead
+- ❌ For static configuration - use the `configuration` section in this values file
 
 | Name                                   | Description                                                     | Default                      |
 | -------------------------------------- | --------------------------------------------------------------- | ---------------------------- |
-| `setup.enabled`                        | Enable setup job (runs on install via Helm hook)                | `true`                       |
+| `setup.enabled`                        | Enable optional setup job (runs on install via Helm hook)        | `false`                      |
 | `setup.backoffLimit`                   | Number of retries if setup fails                                | `3`                          |
 | `setup.preserveJob`                    | Preserve job after completion (false = delete on success)       | `false`                      |
 | `setup.ttlSecondsAfterFinished`        | Time to keep failed jobs (only if preserveJob=false)            | `86400` (24 hours)           |
 | `setup.debug`                          | Enable debug mode for setup                                     | `false`                      |
-| `setup.args`                           | Additional command-line arguments for setup.sh                  | `[]`                         |
+| `setup.command`                        | Override the setup container command                            | `[]` (uses `/opt/thunder/setup.sh`) |
+| `setup.args`                           | Additional command-line arguments for setup container command   | `[]`                         |
 | `setup.env`                            | Additional environment variables for setup job                  | `[]`                         |
 | `setup.resources.requests.cpu`         | CPU request for setup job                                       | `100m`                       |
 | `setup.resources.requests.memory`      | Memory request for setup job                                    | `50Mi`                       |
@@ -479,14 +489,24 @@ The setup job runs `setup.sh` as a one-time Helm pre-install hook to initialize 
 
 ### Bootstrap Script Parameters
 
-Bootstrap scripts extend Thunder's setup process by adding your own initialization logic. These scripts run as part of the setup job.
+Bootstrap scripts extend Thunder's initialization by adding your own custom logic. These run as part of the setup job **only when `setup.enabled: true`**.
 
-#### Understanding Default Bootstrap Scripts
+#### Understanding Bootstrap Scripts
 
-Thunder provides these default bootstrap scripts in `/opt/thunder/bootstrap/`:
-- **`common.sh`** - Helper functions for logging (`log_info`, `log_success`, `log_warning`, `log_error`) and API calls (`thunder_api_call`)
-- **`01-default-resources.sh`** - Creates admin user, default organization, and Person user schema
-- **`02-sample-resources.sh`** - Creates sample resources for testing
+**Default resources** (applications, users schemas, roles, etc.) are loaded from declarative YAML files in `repository/resources/` at server startup. No setup job is needed for these.
+
+**Bootstrap scripts** are optional and only needed for:
+- Creating resources via API that cannot be declarative (e.g., users with passwords)
+- Running custom initialization logic during Helm deployment
+- Dynamic resource creation based on environment variables or external systems
+
+#### Configuration Parameters
+
+| Name                        | Description                                                                      | Default |
+| --------------------------- | -------------------------------------------------------------------------------- | ------- |
+| `bootstrap.scripts`         | Inline custom bootstrap scripts (key: filename, value: content)                 | `{}`    |
+| `bootstrap.configMap.name`  | Name of external ConfigMap containing bootstrap scripts                          | `""`    |
+| `bootstrap.configMap.files` | List of script filenames to mount from ConfigMap (empty = mount entire ConfigMap) | `[]`    |
 
 #### Configuration Parameters
 
@@ -570,7 +590,7 @@ bootstrap:
     # No files list = mounts entire ConfigMap (replaces all defaults)
 ```
 
-- ⚠️ **Removes ALL default scripts** (`common.sh`, `01-default-resources.sh`, `02-sample-resources.sh`)
+- ⚠️ **Removes all default scripts in `/opt/thunder/bootstrap/`**
 - ⚠️ You MUST provide your own `common.sh` with required helper functions
 - ⚠️ No default admin user, organization, or schemas will be created
 - ✅ Complete control over bootstrap process

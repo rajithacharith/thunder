@@ -150,7 +150,7 @@ var (
 		Type:             serviceerror.ClientErrorType,
 		Code:             "USR-1022",
 		Error:            "Invalid organization unit",
-		ErrorDescription: "Organization unit id must be specified as a valid UUID",
+		ErrorDescription: "Invalid organization unit ID provided or organization unit ID is missing",
 	}
 	// ErrorOrganizationUnitMismatch is returned when the organization unit does not match the user type definition.
 	ErrorOrganizationUnitMismatch = serviceerror.ServiceError{

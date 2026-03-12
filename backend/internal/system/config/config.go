@@ -273,6 +273,16 @@ type IdentityProviderConfig struct {
 	Store string `yaml:"store" json:"store"`
 }
 
+// NotificationConfig holds the notification sender service configuration.
+type NotificationConfig struct {
+	// Store defines the storage mode for notification senders.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
+}
+
 // ApplicationConfig holds the application service configuration.
 type ApplicationConfig struct {
 	// Store defines the storage mode for applications.
@@ -392,6 +402,7 @@ type Config struct {
 	Resource             ResourceConfig         `yaml:"resource" json:"resource"`
 	OrganizationUnit     OrganizationUnitConfig `yaml:"organization_unit" json:"organization_unit"`
 	IdentityProvider     IdentityProviderConfig `yaml:"identity_provider" json:"identity_provider"`
+	Notification         NotificationConfig     `yaml:"notification" json:"notification"`
 	Application          ApplicationConfig      `yaml:"application" json:"application"`
 	UserSchema           UserSchemaConfig       `yaml:"user_schema" json:"user_schema"`
 	Observability        ObservabilityConfig    `yaml:"observability" json:"observability"`

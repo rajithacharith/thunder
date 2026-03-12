@@ -21,9 +21,11 @@ package userschema
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/asgardeo/thunder/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
@@ -35,6 +37,10 @@ type UserValidationTestSuite struct {
 	createdSchemas     []string // Track schemas for cleanup
 	createdUsers       []string // Track users for cleanup
 	organizationUnitID string
+	employeeType       string
+	studentType        string
+	customerType       string
+	teacherType        string
 }
 
 var testUserValidationOU = testutils.OrganizationUnit{
@@ -59,6 +65,11 @@ func (ts *UserValidationTestSuite) SetupSuite() {
 		ts.T().Fatalf("Failed to create test organization unit: %v", err)
 	}
 	ts.organizationUnitID = ouID
+	suffix := fmt.Sprintf("-%d", time.Now().UnixNano())
+	ts.employeeType = "employee" + suffix
+	ts.studentType = "student" + suffix
+	ts.customerType = "customer" + suffix
+	ts.teacherType = "teacher" + suffix
 
 	ts.createEmployeeSchema()
 	ts.createSchemaWithEnum()
@@ -87,7 +98,7 @@ func (ts *UserValidationTestSuite) TestCreateUserWithValidSchema() {
 	// Create a user that conforms to the schema
 	createUserReq := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "employee",
+		Type:             ts.employeeType,
 		Attributes: json.RawMessage(`{
 			"given_name": "John",
 			"family_name": "Doe",
@@ -106,7 +117,7 @@ func (ts *UserValidationTestSuite) TestCreateUserWithInvalidStringType() {
 	// Create a user with invalid string type (number instead of string)
 	createUserReq := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "employee",
+		Type:             ts.employeeType,
 		Attributes: json.RawMessage(`{
 			"given_name": 123,
 			"family_name": "Doe",
@@ -124,7 +135,7 @@ func (ts *UserValidationTestSuite) TestCreateUserWithInvalidBooleanType() {
 	// Create a user with invalid boolean type (string instead of boolean)
 	createUserReq := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "employee",
+		Type:             ts.employeeType,
 		Attributes: json.RawMessage(`{
 			"given_name": "John",
 			"family_name": "Doe",
@@ -142,7 +153,7 @@ func (ts *UserValidationTestSuite) TestCreateUserWithEnumValidation() {
 	// Test valid enum value
 	createUserReq := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "student",
+		Type:             ts.studentType,
 		Attributes: json.RawMessage(`{
 			"name": "Alice",
 			"grade": "A",
@@ -156,7 +167,7 @@ func (ts *UserValidationTestSuite) TestCreateUserWithEnumValidation() {
 	// Test invalid enum value
 	createUserReq2 := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "student",
+		Type:             ts.studentType,
 		Attributes: json.RawMessage(`{
 			"name": "Bob",
 			"grade": "Z",
@@ -172,7 +183,7 @@ func (ts *UserValidationTestSuite) TestCreateUserWithNestedObjectValidation() {
 	// Test valid nested object
 	createUserReq := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "customer",
+		Type:             ts.customerType,
 		Attributes: json.RawMessage(`{
 			"name": "John Smith",
 			"address": {
@@ -189,7 +200,7 @@ func (ts *UserValidationTestSuite) TestCreateUserWithNestedObjectValidation() {
 	// Test invalid nested object (wrong type for zipCode)
 	createUserReq2 := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "customer",
+		Type:             ts.customerType,
 		Attributes: json.RawMessage(`{
 			"name": "Jane Smith",
 			"address": {
@@ -208,7 +219,7 @@ func (ts *UserValidationTestSuite) TestCreateUserWithArrayValidation() {
 	// Test valid array
 	createUserReq := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "teacher",
+		Type:             ts.teacherType,
 		Attributes: json.RawMessage(`{
 			"name": "Prof. Johnson",
 			"subjects": ["Math", "Physics", "Chemistry"]
@@ -221,7 +232,7 @@ func (ts *UserValidationTestSuite) TestCreateUserWithArrayValidation() {
 	// Test invalid array (number instead of string)
 	createUserReq2 := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "teacher",
+		Type:             ts.teacherType,
 		Attributes: json.RawMessage(`{
 			"name": "Prof. Smith",
 			"subjects": ["Math", 123, "Chemistry"]
@@ -236,7 +247,7 @@ func (ts *UserValidationTestSuite) TestUpdateUserWithValidSchema() {
 	// Create a user
 	createUserReq := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "employee",
+		Type:             ts.employeeType,
 		Attributes: json.RawMessage(`{
 			"given_name": "John",
 			"family_name": "Doe",
@@ -251,7 +262,7 @@ func (ts *UserValidationTestSuite) TestUpdateUserWithValidSchema() {
 
 	// Update user with valid data
 	updateUserReq := UpdateUserRequest{
-		Type:             "employee",
+		Type:             ts.employeeType,
 		OrganizationUnit: ts.organizationUnitID,
 		Attributes: json.RawMessage(`{
 			"given_name": "John",
@@ -270,7 +281,7 @@ func (ts *UserValidationTestSuite) TestUpdateUserWithInvalidSchema() {
 	// Create a user
 	createUserReq := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "employee",
+		Type:             ts.employeeType,
 		Attributes: json.RawMessage(`{
 			"given_name": "John",
 			"family_name": "Doe",
@@ -285,7 +296,7 @@ func (ts *UserValidationTestSuite) TestUpdateUserWithInvalidSchema() {
 
 	// Update user with invalid data (wrong type for isManager)
 	updateUserReq := UpdateUserRequest{
-		Type:             "employee",
+		Type:             ts.employeeType,
 		OrganizationUnit: ts.organizationUnitID,
 		Attributes: json.RawMessage(`{
 			"given_name": "John",
@@ -318,7 +329,7 @@ func (ts *UserValidationTestSuite) TestCreateUserWithoutSchema() {
 
 func (ts *UserValidationTestSuite) createEmployeeSchema() string {
 	schema := CreateUserSchemaRequest{
-		Name: "employee",
+		Name: ts.employeeType,
 		Schema: json.RawMessage(`{
 			"given_name": {"type": "string"},
 			"family_name": {"type": "string"},
@@ -333,7 +344,7 @@ func (ts *UserValidationTestSuite) createEmployeeSchema() string {
 
 func (ts *UserValidationTestSuite) createSchemaWithEnum() string {
 	schema := CreateUserSchemaRequest{
-		Name: "student",
+		Name: ts.studentType,
 		Schema: json.RawMessage(`{
 			"name": {"type": "string"},
 			"grade": {"type": "string", "enum": ["A", "B", "C", "D", "F"]},
@@ -346,7 +357,7 @@ func (ts *UserValidationTestSuite) createSchemaWithEnum() string {
 
 func (ts *UserValidationTestSuite) createSchemaWithNestedObject() string {
 	schema := CreateUserSchemaRequest{
-		Name: "customer",
+		Name: ts.customerType,
 		Schema: json.RawMessage(`{
 			"name": {"type": "string"},
 			"address": {
@@ -365,7 +376,7 @@ func (ts *UserValidationTestSuite) createSchemaWithNestedObject() string {
 
 func (ts *UserValidationTestSuite) createSchemaWithArray() string {
 	schema := CreateUserSchemaRequest{
-		Name: "teacher",
+		Name: ts.teacherType,
 		Schema: json.RawMessage(`{
 			"name": {"type": "string"},
 			"subjects": {

@@ -17,7 +17,7 @@ This sample application demonstrates how to integrate Thunder authentication int
 - A running Thunder server instance (default: `https://localhost:8090`)
 - Thunder server configured with appropriate CORS settings
 - SSL certificates (`server.key` and `server.cert`) in the project root
-- The "Customer" user schema and "customers" organization unit created (via `02-sample-resources.sh` bootstrap script)
+- The "Customer" user schema and "customers" organization unit available via Thunder declarative resources
 
 ## Quick Start
 
@@ -49,22 +49,13 @@ cp ../../target/out/.cert/server.key .
 cp ../../target/out/.cert/server.cert .
 ```
 
-### 3. Set Up Sample Resources
-
-Run the bootstrap script to create the required "Customer" user schema and "customers" organization unit:
-
-```bash
-# From the project root
-./backend/cmd/server/bootstrap/02-sample-resources.sh
-```
-
-### 4. Install Dependencies
+### 3. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 5. Start the Development Server
+### 4. Start the Development Server
 
 ```bash
 npm run dev
@@ -159,10 +150,10 @@ This sample interacts with the following Thunder APIs:
 - Check CORS configuration in Thunder's `deployment.yaml`
 
 **Issue**: "User schema not found" error during sign-up
-- Run the `02-sample-resources.sh` bootstrap script to create the "Customer" user schema
+- Ensure Thunder is started with the declarative resource files in `backend/cmd/server/repository/resources/user_schemas/`
 
 **Issue**: "Organization unit not found" error during sign-up
-- Run the `02-sample-resources.sh` bootstrap script to create the "customers" organization unit
+- Ensure Thunder is started with the declarative resource files in `backend/cmd/server/repository/resources/organization_units/`
 
 **Issue**: Sign-up fails with authentication/authorization errors
 - Ensure `THUNDER_SKIP_SECURITY=true` is set when starting the Thunder server

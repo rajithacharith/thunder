@@ -73,8 +73,8 @@ func (s *notificationSenderMgtService) CreateSender(
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationSenderMgtService"))
 	logger.Debug("Creating notification sender", log.String("name", sender.Name))
 
-	if err := declarativeresource.CheckDeclarativeCreate(); err != nil {
-		return nil, err
+	if isDeclarativeModeEnabled() {
+		return nil, &declarativeresource.ErrorDeclarativeResourceCreateOperation
 	}
 
 	if err := validateNotificationSender(sender); err != nil {
@@ -191,8 +191,8 @@ func (s *notificationSenderMgtService) UpdateSender(ctx context.Context, id stri
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationSenderMgtService"))
 	logger.Debug("Updating notification sender", log.String("id", id), log.String("name", sender.Name))
 
-	if err := declarativeresource.CheckDeclarativeUpdate(); err != nil {
-		return nil, err
+	if isDeclarativeModeEnabled() {
+		return nil, &declarativeresource.ErrorDeclarativeResourceUpdateOperation
 	}
 
 	if id == "" {
@@ -244,6 +244,10 @@ func (s *notificationSenderMgtService) UpdateSender(ctx context.Context, id stri
 
 		// Update the sender
 		if err := s.notificationStore.updateSender(txCtx, id, sender); err != nil {
+			if errors.Is(err, ErrNotificationSenderIsImmutable) {
+				dbErr = declarativeresource.ErrorDeclarativeResourceUpdateOperation
+				return err
+			}
 			logger.Error("Failed to update notification sender", log.String("id", id), log.Error(err))
 			dbErr = ErrorInternalServerError
 			return err
@@ -274,8 +278,8 @@ func (s *notificationSenderMgtService) DeleteSender(ctx context.Context, id stri
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationSenderMgtService"))
 	logger.Debug("Deleting notification sender", log.String("id", id))
 
-	if err := declarativeresource.CheckDeclarativeDelete(); err != nil {
-		return err
+	if isDeclarativeModeEnabled() {
+		return &declarativeresource.ErrorDeclarativeResourceDeleteOperation
 	}
 
 	if id == "" {
@@ -285,6 +289,10 @@ func (s *notificationSenderMgtService) DeleteSender(ctx context.Context, id stri
 	var dbErr serviceerror.ServiceError
 	transactErr := s.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := s.notificationStore.deleteSender(txCtx, id); err != nil {
+			if errors.Is(err, ErrNotificationSenderIsImmutable) {
+				dbErr = declarativeresource.ErrorDeclarativeResourceDeleteOperation
+				return err
+			}
 			logger.Error("Failed to delete notification sender", log.String("id", id), log.Error(err))
 			dbErr = ErrorInternalServerError
 			return err

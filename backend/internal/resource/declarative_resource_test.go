@@ -326,7 +326,7 @@ func TestBuildPermissionString(t *testing.T) {
 			},
 			serverIdentifier: "api",
 			delimiter:        ":",
-			expected:         "api:users",
+			expected:         "users",
 		},
 		{
 			name: "nested resource with identifier",
@@ -337,7 +337,7 @@ func TestBuildPermissionString(t *testing.T) {
 			},
 			serverIdentifier: "api",
 			delimiter:        ":",
-			expected:         "api:users:profile",
+			expected:         "users:profile",
 		},
 		{
 			name: "root resource without identifier",
@@ -387,9 +387,9 @@ func TestProcessResourceServer_SetsPermissionsAndDelimiter(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, ":", rs.Delimiter)
-	assert.Equal(t, "api:users", rs.Resources[0].Permission)
-	assert.Equal(t, "api:users:read", rs.Resources[0].Actions[0].Permission)
-	assert.Equal(t, "api:users:profile", rs.Resources[1].Permission)
+	assert.Equal(t, "users", rs.Resources[0].Permission)
+	assert.Equal(t, "users:read", rs.Resources[0].Actions[0].Permission)
+	assert.Equal(t, "users:profile", rs.Resources[1].Permission)
 }
 
 func TestProcessResourceServer_DuplicateHandle(t *testing.T) {
@@ -426,8 +426,8 @@ func TestProcessResource_SetsPermissions(t *testing.T) {
 	err := processResource(resource, resourceHandleMap, "api", ":")
 
 	assert.NoError(t, err)
-	assert.Equal(t, "api:root:child", resource.Permission)
-	assert.Equal(t, "api:root:child:read", resource.Actions[0].Permission)
+	assert.Equal(t, "root:child", resource.Permission)
+	assert.Equal(t, "root:child:read", resource.Actions[0].Permission)
 }
 
 func TestProcessResource_MissingParent(t *testing.T) {
@@ -463,9 +463,9 @@ resources:
 	assert.NoError(t, err)
 	rs, ok := result.(*ResourceServer)
 	assert.True(t, ok)
-	assert.Equal(t, "api:users", rs.Resources[0].Permission)
-	assert.Equal(t, "api:users:read", rs.Resources[0].Actions[0].Permission)
-	assert.Equal(t, "api:users:profile", rs.Resources[1].Permission)
+	assert.Equal(t, "users", rs.Resources[0].Permission)
+	assert.Equal(t, "users:read", rs.Resources[0].Actions[0].Permission)
+	assert.Equal(t, "users:profile", rs.Resources[1].Permission)
 }
 
 func TestParseAndValidateResourceServerWrapper_InvalidYAML(t *testing.T) {

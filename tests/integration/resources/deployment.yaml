@@ -22,6 +22,7 @@ database:
 
 flow:
   max_version_history: 3
+  store: "composite"
 
 passkey:
   allowed_origins:

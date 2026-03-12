@@ -594,7 +594,7 @@ function Package {
     Prepare-Frontend-For-Packaging
     Prepare-Backend-For-Packaging
 
-    # Copy the appropriate startup and setup scripts based on the target OS
+    # Copy the appropriate startup/setup scripts based on the target OS
     if ($GO_OS -eq "windows") {
         Write-Host "Including Windows scripts (start.ps1, setup.ps1)..."
         Copy-Item -Path "start.ps1" -Destination $package_folder -Force
@@ -1463,75 +1463,9 @@ function Run {
     Write-Host "Running frontend apps..."
     Run-Frontend
 
-    # Save original THUNDER_SKIP_SECURITY value and temporarily set to true
-    $script:ORIGINAL_THUNDER_SKIP_SECURITY = $env:THUNDER_SKIP_SECURITY
-    $env:THUNDER_SKIP_SECURITY = "true"
+    # Declarative resources are loaded at backend startup.
+    # No bootstrap/setup script execution is required.
     Run-Backend -ShowFinalOutput $false
-
-    # Run initial data setup
-    Write-Host "⚙️  Running initial data setup..."
-    Write-Host ""
-    
-    # Wait for server to be ready
-    $MAX_RETRIES = 30
-    $RETRY_INTERVAL = 2
-    $retries = 0
-    
-    # Configure TLS to use modern protocols (required for HTTPS requests on Windows)
-    try {
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
-    } catch {
-        # Fallback to TLS 1.2 if TLS 1.3 is not available
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    }
-    
-    Write-Host "[INFO] Waiting for Thunder server to be ready..."
-    while ($retries -lt $MAX_RETRIES) {
-        try {
-            $response = Invoke-WebRequest -Uri "$BASE_URL/health/readiness" -UseBasicParsing -SkipCertificateCheck -ErrorAction Stop
-            if ($response.StatusCode -eq 200) {
-                Write-Host "✓ Server is ready!"
-                break
-            }
-        }
-        catch {
-            # Server not ready yet
-        }
-        
-        $retries++
-        if ($retries -ge $MAX_RETRIES) {
-            Write-Host "❌ Server did not become ready after $MAX_RETRIES attempts"
-            Write-Host "💡 Please ensure the Thunder server is running at $BASE_URL"
-            exit 1
-        }
-        
-        Write-Host "[WAITING] Attempt $retries/$MAX_RETRIES - Server not ready yet, retrying in ${RETRY_INTERVAL}s..."
-        Start-Sleep -Seconds $RETRY_INTERVAL
-    }
-    
-    Write-Host ""
-    
-    # Run the bootstrap script directly with environment variable and arguments
-    $env:THUNDER_API_BASE = $BASE_URL
-    $bootstrapScript = Join-Path $BACKEND_BASE_DIR "cmd/server/bootstrap/01-default-resources.ps1"
-    & $bootstrapScript -DevelopRedirectUris "https://localhost:${DEVELOP_APP_DEFAULT_PORT}/develop"
-
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "❌ Initial data setup failed"
-        Write-Host "💡 Check the logs above for more details"
-        exit 1
-    }
-
-    Write-Host "🔒 Restoring security setting and restarting backend..."
-    # Restore original THUNDER_SKIP_SECURITY value
-    if (![string]::IsNullOrEmpty($script:ORIGINAL_THUNDER_SKIP_SECURITY)) {
-        $env:THUNDER_SKIP_SECURITY = $script:ORIGINAL_THUNDER_SKIP_SECURITY
-    }
-    else {
-        Remove-Item Env:\THUNDER_SKIP_SECURITY -ErrorAction SilentlyContinue
-    }
-    # Start backend with initial output but without final output/wait
-    Start-Backend -ShowFinalOutput $false
 
     Write-Host ""
     Write-Host "🚀 Servers running:"

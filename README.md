@@ -66,25 +66,7 @@ Follow these steps to download the latest release of WSO2 Thunder and run it loc
     cd thunder-<version>-<os>-<arch>/
     ```
 
-3. **Setup the product**
-
-    You need to setup the server with the initial configurations and data before starting the server for the first time.
-
-    If you are using a Linux or macOS machine:
-
-    ```bash
-    ./setup.sh
-    ```
-
-    If you are using a Windows machine:
-
-    ```powershell
-    .\setup.ps1
-    ```
-
-    **Note the id of the sample app indicated with the log line `[INFO] Sample App ID: <id>`.** You'll need it for the sample app configuration.
-
-4. **Start the product**
+3. **Start the product**
 
     If you are using a Linux or macOS machine:
 
@@ -122,10 +104,7 @@ Follow these steps to run WSO2 Thunder using Docker Compose.
 
     This will automatically:
     - Initialize the database
-    - Run the setup process
     - Start the Thunder server
-
-    **Note the id of the sample app indicated with the log line `[INFO] Sample App ID: <id>` in the setup logs.** You'll need it for the sample app configuration.
 
     The product will start on `https://localhost:8090`.
 
@@ -161,7 +140,8 @@ Thunder provides two sample applications to help you get started quickly:
 
 3. **Configure the sample**
 
-    Open `app/runtime.json` and set the `applicationID` to the sample app ID generated during "Setup the product":
+    Open `backend/cmd/server/repository/resources/applications/sample-app.yaml` and use the `id` value (`sample-app`).
+    Then set the same value in `app/runtime.json` as `applicationID`:
 
     ```json
     {
@@ -225,11 +205,12 @@ The React Vanilla sample supports user self-registration and login:
 
 To access the system APIs of Thunder, you need a token with system permissions. Follow the steps below to obtain a system API token.
 
-1. Run the following command, replacing `<application_id>` with the sample app ID generated during "Setup the product."
+1. Run the following command using the application ID from
+     `backend/cmd/server/repository/resources/applications/sample-app.yaml` (`id: "sample-app"`).
 
 ```bash
 curl -k -X POST 'https://localhost:8090/flow/execute' \
-  -d '{"applicationId":"<application_id>","flowType":"AUTHENTICATION"}'
+    -d '{"applicationId":"sample-app","flowType":"AUTHENTICATION"}'
 ```
 2. Extract the `flowId` value from the response.
 ```json

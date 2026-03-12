@@ -4106,9 +4106,13 @@ func (ts *ApplicationAPITestSuite) TestThemeAndLayoutCannotDeleteWhenAssociatedW
 
 // TestApplicationWithAllowedUserTypes tests creating an application with valid allowed_user_types
 func (ts *ApplicationAPITestSuite) TestApplicationWithAllowedUserTypes() {
+	suffix := fmt.Sprintf("-%d", time.Now().UnixNano())
+	employeeType := "employee" + suffix
+	customerType := "customer" + suffix
+
 	// Create test user schemas first
 	employeeSchema := testutils.UserSchema{
-		Name:               "employee",
+		Name:               employeeType,
 		OrganizationUnitId: testOUID,
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
@@ -4120,7 +4124,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithAllowedUserTypes() {
 		},
 	}
 	customerSchema := testutils.UserSchema{
-		Name:               "customer",
+		Name:               customerType,
 		OrganizationUnitId: testOUID,
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
@@ -4150,7 +4154,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithAllowedUserTypes() {
 		Name:                      "App With Allowed User Types",
 		Description:               "Application with allowed user types",
 		IsRegistrationFlowEnabled: false,
-		AllowedUserTypes:          []string{"employee", "customer"},
+		AllowedUserTypes:          []string{employeeType, customerType},
 		Certificate: &ApplicationCert{
 			Type:  "NONE",
 			Value: "",
@@ -4183,7 +4187,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithAllowedUserTypes() {
 	// Verify the application was created with allowed_user_types
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
-	ts.Assert().Equal([]string{"employee", "customer"}, retrievedApp.AllowedUserTypes)
+	ts.Assert().Equal([]string{employeeType, customerType}, retrievedApp.AllowedUserTypes)
 }
 
 // TestApplicationWithInvalidAllowedUserTypes tests creating an application with invalid allowed_user_types

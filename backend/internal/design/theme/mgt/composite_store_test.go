@@ -197,10 +197,9 @@ func (suite *CompositeThemeStoreTestSuite) TestCreateTheme_DBStoreError() {
 	suite.Equal(testErr, err)
 }
 
-// Test GetTheme - From DB store (fallback when not in file store)
+// Test GetTheme - From DB store (preferred when available)
 func (suite *CompositeThemeStoreTestSuite) TestGetTheme_FromDBStore() {
 	expectedTheme := Theme{ID: "theme1", DisplayName: "DB Theme"}
-	suite.mockFileStore.On("GetTheme", "theme1").Return(Theme{}, errThemeNotFound)
 	suite.mockDBStore.On("GetTheme", "theme1").Return(expectedTheme, nil)
 
 	theme, err := suite.store.GetTheme("theme1")
@@ -209,9 +208,10 @@ func (suite *CompositeThemeStoreTestSuite) TestGetTheme_FromDBStore() {
 	suite.Equal(expectedTheme, theme)
 }
 
-// Test GetTheme - From file store (takes precedence)
+// Test GetTheme - From file store (fallback when not in DB store)
 func (suite *CompositeThemeStoreTestSuite) TestGetTheme_FromFileStore() {
 	expectedTheme := Theme{ID: "theme1", DisplayName: "File Theme"}
+	suite.mockDBStore.On("GetTheme", "theme1").Return(Theme{}, errThemeNotFound)
 	suite.mockFileStore.On("GetTheme", "theme1").Return(expectedTheme, nil)
 
 	theme, err := suite.store.GetTheme("theme1")
@@ -222,8 +222,8 @@ func (suite *CompositeThemeStoreTestSuite) TestGetTheme_FromFileStore() {
 
 // Test GetTheme - Not found in either store
 func (suite *CompositeThemeStoreTestSuite) TestGetTheme_NotFound() {
-	suite.mockFileStore.On("GetTheme", "theme1").Return(Theme{}, errThemeNotFound)
 	suite.mockDBStore.On("GetTheme", "theme1").Return(Theme{}, errThemeNotFound)
+	suite.mockFileStore.On("GetTheme", "theme1").Return(Theme{}, errThemeNotFound)
 
 	_, err := suite.store.GetTheme("theme1")
 

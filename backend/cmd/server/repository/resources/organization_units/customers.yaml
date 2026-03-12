@@ -1,0 +1,6 @@
+# Customers Organization Unit
+# Organization unit for customer accounts and sample applications
+id: "customers"
+name: "Customers"
+handle: "customers"
+description: "Organization unit for customer accounts"

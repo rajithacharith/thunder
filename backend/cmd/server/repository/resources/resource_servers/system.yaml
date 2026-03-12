@@ -1,0 +1,52 @@
+# System Resource Server with Hierarchical Permissions
+# Defines the system resources and permissions for Thunder.
+#
+# Note: resources are declared in a flat list using `parent` to build the
+# hierarchy. Permissions are auto-derived from parent chain and handles.
+id: "system"
+name: "System"
+description: "System resource server"
+identifier: "system"
+ou_id: "default"
+delimiter: ":"
+
+resources:
+  - name: "System"
+    handle: "system"
+    description: "System resource"
+
+  - name: "Organization Unit"
+    handle: "ou"
+    parent: "system"
+    description: "Organization unit resource"
+    actions:
+      - name: "View"
+        handle: "view"
+        description: "Read-only access to organization units"
+
+  - name: "User"
+    handle: "user"
+    parent: "system"
+    description: "User resource"
+    actions:
+      - name: "View"
+        handle: "view"
+        description: "Read-only access to users"
+
+  - name: "Group"
+    handle: "group"
+    parent: "system"
+    description: "Group resource"
+    actions:
+      - name: "View"
+        handle: "view"
+        description: "Read-only access to groups"
+
+  - name: "User Schema"
+    handle: "userschema"
+    parent: "system"
+    description: "User schema resource"
+    actions:
+      - name: "View"
+        handle: "view"
+        description: "Read-only access to user schemas"

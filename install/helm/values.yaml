@@ -286,10 +286,12 @@ persistence:
   annotations: {}
 
 # Setup Job configuration
-# Runs setup.sh as a one-time initialization job during Helm install
+# Deprecated for declarative-resource based startup. Keep disabled unless you need custom one-time init behavior.
 setup:
   # Enable setup job (runs on first install only via Helm hook)
-  enabled: true
+  # Default resources are loaded via declarative YAML at server startup.
+  # Enable this only if you need to run custom bootstrap scripts for additional initialization.
+  enabled: false
   # Number of retries if setup fails
   backoffLimit: 3
   # Whether to preserve the setup job after completion
@@ -301,7 +303,14 @@ setup:
   ttlSecondsAfterFinished: 86400  # 24 hours
   # Enable debug mode for setup
   debug: false
-  # Additional command-line arguments for setup.sh
+  # Override the setup container command (default: ["/opt/thunder/setup.sh"])
+  # Use this to run completely custom initialization logic
+  command: []
+    # Example:
+    # - "/bin/sh"
+    # - "-c"
+    # - "echo 'Custom setup' && my-script.sh"
+  # Additional command-line arguments for setup container command
   args: []
     # Example:
     # - "--debug"

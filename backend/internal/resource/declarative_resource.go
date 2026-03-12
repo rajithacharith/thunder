@@ -345,15 +345,10 @@ func processResource(
 func buildPermissionString(
 	res *Resource,
 	resourceHandleMap map[string]*Resource,
-	serverIdentifier string,
+	_ string,
 	delimiter string,
 ) (string, error) {
 	var parts []string
-
-	// Add server identifier if present
-	if serverIdentifier != "" {
-		parts = append(parts, serverIdentifier)
-	}
 
 	// Build parent chain
 	parentChain := []string{}

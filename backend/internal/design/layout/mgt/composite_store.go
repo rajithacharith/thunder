@@ -83,8 +83,8 @@ func (c *compositeLayoutStore) CreateLayout(id string, layout CreateLayoutReques
 // Checks file store (declarative) first to maintain precedence, then falls back to database store.
 func (c *compositeLayoutStore) GetLayout(id string) (Layout, error) {
 	layout, err := declarativeresource.CompositeGetHelper(
-		func() (Layout, error) { return c.fileStore.GetLayout(id) },
 		func() (Layout, error) { return c.dbStore.GetLayout(id) },
+		func() (Layout, error) { return c.fileStore.GetLayout(id) },
 		errLayoutNotFound,
 	)
 	return layout, err

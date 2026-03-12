@@ -21,9 +21,11 @@ package user
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/asgardeo/thunder/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
@@ -66,6 +68,7 @@ type CreateUserByPathRequest struct {
 type UserTreeAPITestSuite struct {
 	suite.Suite
 	testOUID string
+	userType string
 }
 
 func TestUserTreeAPITestSuite(t *testing.T) {
@@ -73,13 +76,17 @@ func TestUserTreeAPITestSuite(t *testing.T) {
 }
 
 func (suite *UserTreeAPITestSuite) SetupSuite() {
+	suite.userType = fmt.Sprintf("employee-%d", time.Now().UnixNano())
+
 	ouID, err := testutils.CreateOrganizationUnit(pathTestOU)
 	if err != nil {
 		suite.T().Fatalf("Failed to create test organization unit during setup: %v", err)
 	}
 
-	testUserSchema.OrganizationUnitId = ouID
-	schemaID, err := testutils.CreateUserType(testUserSchema)
+	uniqueUserSchema := testUserSchema
+	uniqueUserSchema.Name = suite.userType
+	uniqueUserSchema.OrganizationUnitId = ouID
+	schemaID, err := testutils.CreateUserType(uniqueUserSchema)
 	if err != nil {
 		suite.T().Fatalf("Failed to create employee user type during setup: %v", err)
 	}
@@ -147,7 +154,7 @@ func (suite *UserTreeAPITestSuite) TestCreateUserByPath() {
 	client := testutils.GetHTTPClient()
 
 	createRequest := CreateUserByPathRequest{
-		Type:       "employee",
+		Type:       suite.userType,
 		Attributes: json.RawMessage(`{"username": "test.user", "email": "test.user@example.com", "department": "Engineering"}`),
 	}
 
@@ -178,7 +185,7 @@ func (suite *UserTreeAPITestSuite) TestCreateUserByPath() {
 	// Verify the created user
 	suite.NotEmpty(createdUser.ID)
 	suite.Equal(suite.testOUID, createdUser.OrganizationUnit)
-	suite.Equal("employee", createdUser.Type)
+	suite.Equal(suite.userType, createdUser.Type)
 	suite.NotEmpty(createdUser.Attributes)
 
 	// Clean up: delete the created user

@@ -19,8 +19,7 @@ docker compose up
 
 This will automatically:
 1. **Initialize** the database from the image
-2. **Run setup** — bootstraps default resources (admin user, sample apps, etc.)
-3. **Start the server** — Thunder is ready to serve requests
+2. **Start the server** — Thunder is ready to serve requests
 
 Once running, Thunder is available at:
 
@@ -40,10 +39,9 @@ The Compose file defines three services:
 | Service | Description |
 |---|---|
 | `thunder-db-init` | One-shot container that copies the initial database files to a shared volume |
-| `thunder-setup` | One-shot container that bootstraps default resources via `setup.sh` |
-| `thunder` | The Thunder server — starts after setup completes |
+| `thunder` | The Thunder server — starts after DB initialization completes |
 
-The `thunder-db-init` and `thunder-setup` services run once and exit. Only `thunder` stays running.
+The `thunder-db-init` service runs once and exits. Only `thunder` stays running.
 
 ---
 

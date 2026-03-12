@@ -458,9 +458,9 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 			expectedErr: &ErrorInvalidOrganizationUnitID,
 		},
 		{
-			name:     "ReturnsErrorWhenIDInvalid",
+			name:     "ReturnsErrorWhenIDWhitespace",
 			userType: testUserType,
-			ouID:     "invalid-id",
+			ouID:     "   ",
 			setup: func(t *testing.T) (*userService, testMocks) {
 				return &userService{}, testMocks{}
 			},
@@ -3189,10 +3189,16 @@ func TestNewFunctions(t *testing.T) {
 func TestUserService_Validation_EdgeCases(t *testing.T) {
 	service := &userService{}
 
-	t.Run("ValidateOU_InvalidUUID", func(t *testing.T) {
+	t.Run("ValidateOU_NonUUID_NotFound", func(t *testing.T) {
+		mockOU := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+		service := &userService{ouService: mockOU}
+
+		mockOU.On("IsOrganizationUnitExists", mock.Anything, "invalid-uuid").
+			Return(false, (*serviceerror.ServiceError)(nil)).Once()
+
 		err := service.validateOrganizationUnitForUserType(context.Background(), "customer", "invalid-uuid", nil)
 		require.NotNil(t, err)
-		require.Equal(t, ErrorInvalidOrganizationUnitID.Code, err.Code)
+		require.Equal(t, ErrorOrganizationUnitNotFound.Code, err.Code)
 	})
 
 	t.Run("ValidateOU_EmptyOU", func(t *testing.T) {

@@ -451,7 +451,7 @@ function package() {
     prepare_frontend_for_packaging
     prepare_backend_for_packaging
 
-    # Copy the appropriate startup and setup scripts based on the target OS
+    # Copy the appropriate startup/setup scripts based on the target OS
     if [ "$GO_OS" = "windows" ]; then
         echo "Including Windows scripts (start.ps1, setup.ps1)..."
         cp -r "start.ps1" "$DIST_DIR/$PRODUCT_FOLDER"
@@ -933,60 +933,9 @@ function run() {
     echo "Running frontend apps..."
     run_frontend
 
-    # Save original THUNDER_SKIP_SECURITY value and temporarily set to true
-    ORIGINAL_THUNDER_SKIP_SECURITY="${THUNDER_SKIP_SECURITY:-}"
-    export THUNDER_SKIP_SECURITY=true
+    # Declarative resources are loaded at backend startup.
+    # No setup/bootstrap script execution is required.
     run_backend false
-
-    # Run initial data setup
-    echo "⚙️  Running initial data setup..."
-    echo ""
-    
-    # Wait for server to be ready
-    MAX_RETRIES=30
-    RETRY_INTERVAL=2
-    retries=0
-    
-    echo "[INFO] Waiting for Thunder server to be ready..."
-    while [ $retries -lt $MAX_RETRIES ]; do
-        if curl -k -s -f "$BASE_URL/health/readiness" > /dev/null 2>&1; then
-            echo "✓ Server is ready!"
-            break
-        fi
-        
-        retries=$((retries + 1))
-        if [ $retries -ge $MAX_RETRIES ]; then
-            echo "❌ Server did not become ready after $MAX_RETRIES attempts"
-            echo "💡 Please ensure the Thunder server is running at $BASE_URL"
-            exit 1
-        fi
-        
-        echo "[WAITING] Attempt $retries/$MAX_RETRIES - Server not ready yet, retrying in ${RETRY_INTERVAL}s..."
-        sleep $RETRY_INTERVAL
-    done
-    
-    echo ""
-    
-    # Run the bootstrap script directly with environment variable and arguments
-    THUNDER_API_BASE="$BASE_URL" \
-        "$BACKEND_BASE_DIR/cmd/server/bootstrap/01-default-resources.sh" \
-        --develop-redirect-uris "https://localhost:$DEVELOP_APP_DEFAULT_PORT/develop"
-
-    if [ $? -ne 0 ]; then
-        echo "❌ Initial data setup failed"
-        echo "💡 Check the logs above for more details"
-        exit 1
-    fi
-
-    echo "🔒 Restoring security setting and restarting backend..."
-    # Restore original THUNDER_SKIP_SECURITY value
-    if [ -n "$ORIGINAL_THUNDER_SKIP_SECURITY" ]; then
-        export THUNDER_SKIP_SECURITY="$ORIGINAL_THUNDER_SKIP_SECURITY"
-    else
-        unset THUNDER_SKIP_SECURITY
-    fi
-    # Start backend with initial output but without final output/wait
-    start_backend false
 
     echo ""
     echo "🚀 Servers running:"

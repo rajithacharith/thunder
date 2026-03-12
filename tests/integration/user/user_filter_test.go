@@ -20,9 +20,11 @@ package user
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/asgardeo/thunder/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
@@ -122,6 +124,20 @@ func TestUserFilterTestSuite(t *testing.T) {
 
 // SetupSuite creates test organization unit and users for filtering tests
 func (ts *UserFilterTestSuite) SetupSuite() {
+	suffix := fmt.Sprintf("-%d", time.Now().UnixNano())
+	typeMap := map[string]string{}
+	for index := range filterTestUserSchemas {
+		originalName := filterTestUserSchemas[index].Name
+		uniqueName := originalName + suffix
+		typeMap[originalName] = uniqueName
+		filterTestUserSchemas[index].Name = uniqueName
+	}
+	for index := range filterTestUsers {
+		if uniqueType, ok := typeMap[filterTestUsers[index].Type]; ok {
+			filterTestUsers[index].Type = uniqueType
+		}
+	}
+
 	// Create the organization unit for filter tests
 	ouID, err := createOrganizationUnit(filterTestOU)
 	if err != nil {

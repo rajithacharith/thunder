@@ -1,0 +1,12 @@
+id: 0f1b0d2f-6f2f-4b4d-9b57-2f9dbb53f9a0
+type: person
+ou_id: default
+attributes:
+  username: admin
+  email: admin@example.com
+  email_verified: true
+  given_name: Admin
+  family_name: User
+  name: Admin User
+credentials:
+  password: "admin"

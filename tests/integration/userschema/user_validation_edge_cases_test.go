@@ -21,9 +21,11 @@ package userschema
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/asgardeo/thunder/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
@@ -35,6 +37,10 @@ type UserValidationEdgeCasesTestSuite struct {
 	createdSchemas     []string // Track schemas for cleanup
 	createdUsers       []string // Track users for cleanup
 	organizationUnitID string
+	employeeType       string
+	numericType        string
+	statusType         string
+	mixedType          string
 }
 
 var testUserValidationEdgeCasesOU = testutils.OrganizationUnit{
@@ -59,6 +65,11 @@ func (ts *UserValidationEdgeCasesTestSuite) SetupSuite() {
 		ts.T().Fatalf("Failed to create test organization unit: %v", err)
 	}
 	ts.organizationUnitID = ouID
+	suffix := fmt.Sprintf("-%d", time.Now().UnixNano())
+	ts.employeeType = "employee" + suffix
+	ts.numericType = "numeric-user" + suffix
+	ts.statusType = "status-user" + suffix
+	ts.mixedType = "mixed-user" + suffix
 
 	ts.createEmployeeSchema()
 	ts.createSchemaWithNumbers()
@@ -85,7 +96,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithEmptyAttributes() 
 	// Create a user with empty attributes (should succeed - all properties are optional)
 	createUserReq := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "employee",
+		Type:             ts.employeeType,
 		Attributes:       json.RawMessage(`{}`),
 	}
 
@@ -98,7 +109,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithNullAttributes() {
 	// Create a user with null attributes
 	createUserReq := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "employee",
+		Type:             ts.employeeType,
 		// Attributes is nil/null
 	}
 
@@ -111,7 +122,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithPartialAttributes(
 	// Create a user with only some of the schema attributes (should succeed)
 	createUserReq := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "employee",
+		Type:             ts.employeeType,
 		Attributes: json.RawMessage(`{
 			"given_name": "John",
 			"email": "john@company.com"
@@ -127,7 +138,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithExtraAttributes() 
 	// Create a user with extra attributes not defined in schema (should fail - strict validation)
 	createUserReq := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "employee",
+		Type:             ts.employeeType,
 		Attributes: json.RawMessage(`{
 			"given_name": "John",
 			"family_name": "Doe",
@@ -147,7 +158,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithNumberValidation()
 	// Test valid numbers
 	createUserReq := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "numeric-user",
+		Type:             ts.numericType,
 		Attributes: json.RawMessage(`{
 			"age": 25,
 			"salary": 50000.5,
@@ -161,7 +172,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithNumberValidation()
 	// Test invalid number type (string instead of number)
 	createUserReq2 := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "numeric-user",
+		Type:             ts.numericType,
 		Attributes: json.RawMessage(`{
 			"age": "twenty-five",
 			"salary": 50000.5,
@@ -177,7 +188,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithStringEnumValidati
 	// Test valid enum value
 	createUserReq := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "status-user",
+		Type:             ts.statusType,
 		Attributes: json.RawMessage(`{
 			"name": "Alice",
 			"status": "active",
@@ -191,7 +202,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithStringEnumValidati
 	// Test invalid enum value
 	createUserReq2 := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "status-user",
+		Type:             ts.statusType,
 		Attributes: json.RawMessage(`{
 			"name": "Bob",
 			"status": "invalid-status",
@@ -207,7 +218,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithMixedEnumValidatio
 	// Test valid enum values
 	createUserReq := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "mixed-user",
+		Type:             ts.mixedType,
 		Attributes: json.RawMessage(`{
 			"name": "Charlie",
 			"level": 5,
@@ -221,7 +232,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithMixedEnumValidatio
 	// Test invalid enum value for number
 	createUserReq2 := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "mixed-user",
+		Type:             ts.mixedType,
 		Attributes: json.RawMessage(`{
 			"name": "Dave",
 			"level": 99,
@@ -237,7 +248,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestUpdateUserChangeType() {
 	// Create an employee user
 	createUserReq := CreateUserRequest{
 		OrganizationUnit: ts.organizationUnitID,
-		Type:             "employee",
+		Type:             ts.employeeType,
 		Attributes: json.RawMessage(`{
 			"given_name": "John",
 			"family_name": "Doe",
@@ -252,7 +263,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestUpdateUserChangeType() {
 
 	// Update user to different type with valid attributes for new schema
 	updateUserReq := UpdateUserRequest{
-		Type:             "numeric-user",
+		Type:             ts.numericType,
 		OrganizationUnit: ts.organizationUnitID,
 		Attributes: json.RawMessage(`{
 			"age": 30,
@@ -265,7 +276,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestUpdateUserChangeType() {
 
 	// Update user to different type with invalid attributes for new schema
 	updateUserReq2 := UpdateUserRequest{
-		Type:             "numeric-user",
+		Type:             ts.numericType,
 		OrganizationUnit: ts.organizationUnitID,
 		Attributes: json.RawMessage(`{
 			"age": "thirty",
@@ -281,7 +292,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestUpdateUserChangeType() {
 
 func (ts *UserValidationEdgeCasesTestSuite) createEmployeeSchema() string {
 	schema := CreateUserSchemaRequest{
-		Name:               "employee",
+		Name:               ts.employeeType,
 		OrganizationUnitID: ts.organizationUnitID,
 		Schema: json.RawMessage(`{
 			"given_name": {"type": "string"},
@@ -297,7 +308,7 @@ func (ts *UserValidationEdgeCasesTestSuite) createEmployeeSchema() string {
 
 func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithNumbers() string {
 	schema := CreateUserSchemaRequest{
-		Name:               "numeric-user",
+		Name:               ts.numericType,
 		OrganizationUnitID: ts.organizationUnitID,
 		Schema: json.RawMessage(`{
 			"age": {"type": "number"},
@@ -311,7 +322,7 @@ func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithNumbers() string {
 
 func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithStringEnum() string {
 	schema := CreateUserSchemaRequest{
-		Name:               "status-user",
+		Name:               ts.statusType,
 		OrganizationUnitID: ts.organizationUnitID,
 		Schema: json.RawMessage(`{
 			"name": {"type": "string"},
@@ -325,7 +336,7 @@ func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithStringEnum() string 
 
 func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithMixedEnum() string {
 	schema := CreateUserSchemaRequest{
-		Name:               "mixed-user",
+		Name:               ts.mixedType,
 		OrganizationUnitID: ts.organizationUnitID,
 		Schema: json.RawMessage(`{
 			"name": {"type": "string"},

@@ -121,6 +121,23 @@ func (suite *FileBasedStoreTestSuite) TestGetUserSchemaByName() {
 	assert.Equal(suite.T(), schema.Name, retrieved.Name)
 }
 
+func (suite *FileBasedStoreTestSuite) TestGetUserSchemaByName_CaseInsensitive() {
+	schema := UserSchema{
+		ID:                 "schema-1",
+		Name:               "Person",
+		OrganizationUnitID: "ou-1",
+		Schema:             json.RawMessage(testSchemaJSON),
+	}
+
+	err := suite.store.CreateUserSchema(context.Background(), schema)
+	assert.NoError(suite.T(), err)
+
+	retrieved, err := suite.store.GetUserSchemaByName(context.Background(), "person")
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), schema.ID, retrieved.ID)
+	assert.Equal(suite.T(), schema.Name, retrieved.Name)
+}
+
 func (suite *FileBasedStoreTestSuite) TestGetUserSchemaByName_NotFound() {
 	_, err := suite.store.GetUserSchemaByName(context.Background(), "non-existent-name")
 	assert.Error(suite.T(), err)
@@ -219,6 +236,23 @@ func (suite *FileBasedStoreTestSuite) TestDeleteUserSchemaByID_ReturnsError() {
 	err := suite.store.DeleteUserSchemaByID(context.Background(), "schema-1")
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "not supported")
+}
+
+func (suite *FileBasedStoreTestSuite) TestGetDisplayAttributesByNames_CaseInsensitive() {
+	schema := UserSchema{
+		ID:                 "schema-1",
+		Name:               "Person",
+		OrganizationUnitID: "ou-1",
+		SystemAttributes:   &SystemAttributes{Display: "username"},
+		Schema:             json.RawMessage(testSchemaJSON),
+	}
+
+	err := suite.store.CreateUserSchema(context.Background(), schema)
+	assert.NoError(suite.T(), err)
+
+	result, err := suite.store.GetDisplayAttributesByNames(context.Background(), []string{"person"})
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), map[string]string{"person": "username"}, result)
 }
 
 func (suite *FileBasedStoreTestSuite) TestGetUserSchemaListCount() {

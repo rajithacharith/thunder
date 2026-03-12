@@ -20,9 +20,12 @@ package notification
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -32,29 +35,42 @@ import (
 // Initialize creates and configures the notification service components.
 func Initialize(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) (
 	NotificationSenderMgtSvcInterface, OTPServiceInterface, declarativeresource.ResourceExporter, error) {
-	client, err := provider.GetDBProvider().GetConfigDBClient()
-	if err != nil {
-		log.GetLogger().Error("Failed to initialize database client for notification service",
-			log.Error(err))
-		return nil, nil, nil, err
-	}
-	tx, err := client.GetTransactioner()
-	if err != nil {
-		log.GetLogger().Error("Failed to initialize database transactioner for notification service",
-			log.Error(err))
-		return nil, nil, nil, err
-	}
-
 	var notificationStore notificationStoreInterface
-	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
+	var tx transaction.Transactioner
+	storeMode := getNotificationStoreMode()
+
+	if storeMode == serverconst.StoreModeDeclarative {
 		notificationStore = newNotificationFileBasedStore()
 	} else {
-		notificationStore = newNotificationStore()
+		if storeMode == serverconst.StoreModeComposite {
+			fileStore := newNotificationFileBasedStore()
+			notificationStore = newCompositeNotificationStore(fileStore, newNotificationStore())
+			if err := loadDeclarativeResources(fileStore); err != nil {
+				return nil, nil, nil, err
+			}
+		} else {
+			notificationStore = newNotificationStore()
+		}
+
+		client, err := provider.GetDBProvider().GetConfigDBClient()
+		if err != nil {
+			log.GetLogger().Error("Failed to initialize database client for notification service",
+				log.Error(err))
+			return nil, nil, nil, err
+		}
+
+		var txErr error
+		tx, txErr = client.GetTransactioner()
+		if txErr != nil {
+			log.GetLogger().Error("Failed to initialize database transactioner for notification service",
+				log.Error(txErr))
+			return nil, nil, nil, txErr
+		}
 	}
 
 	mgtService := newNotificationSenderMgtService(notificationStore, tx)
 
-	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
+	if storeMode == serverconst.StoreModeDeclarative {
 		if err := loadDeclarativeResources(notificationStore); err != nil {
 			return nil, nil, nil, err
 		}
@@ -67,6 +83,34 @@ func Initialize(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) (
 	// Create and return exporter
 	exporter := newNotificationSenderExporter(mgtService)
 	return mgtService, otpService, exporter, nil
+}
+
+// getNotificationStoreMode determines the store mode for notification senders.
+//
+// Resolution order:
+//  1. If Notification.Store is explicitly configured, use it
+//  2. Otherwise, fall back to global DeclarativeResources.Enabled:
+//     - If enabled: return "declarative"
+//     - If disabled: return "mutable"
+func getNotificationStoreMode() serverconst.StoreMode {
+	cfg := config.GetThunderRuntime().Config
+	if cfg.Notification.Store != "" {
+		mode := serverconst.StoreMode(strings.ToLower(strings.TrimSpace(cfg.Notification.Store)))
+		switch mode {
+		case serverconst.StoreModeMutable, serverconst.StoreModeDeclarative, serverconst.StoreModeComposite:
+			return mode
+		}
+	}
+
+	if declarativeresource.IsDeclarativeModeEnabled() {
+		return serverconst.StoreModeDeclarative
+	}
+
+	return serverconst.StoreModeMutable
+}
+
+func isDeclarativeModeEnabled() bool {
+	return getNotificationStoreMode() == serverconst.StoreModeDeclarative
 }
 
 // registerRoutes registers the HTTP routes for notification services.

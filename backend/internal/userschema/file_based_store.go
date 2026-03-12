@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"sort"
+	"strings"
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
@@ -63,13 +64,22 @@ func (f *userSchemaFileBasedStore) GetUserSchemaByID(ctx context.Context, schema
 
 // GetUserSchemaByName implements userSchemaStoreInterface.
 func (f *userSchemaFileBasedStore) GetUserSchemaByName(ctx context.Context, schemaName string) (UserSchema, error) {
-	data, err := f.GenericFileBasedStore.GetByField(schemaName, func(d interface{}) string {
-		return d.(*UserSchema).Name
-	})
+	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return UserSchema{}, ErrUserSchemaNotFound
 	}
-	return *data.(*UserSchema), nil
+
+	for _, item := range list {
+		schema, ok := item.Data.(*UserSchema)
+		if !ok {
+			continue
+		}
+		if strings.EqualFold(schema.Name, schemaName) {
+			return *schema, nil
+		}
+	}
+
+	return UserSchema{}, ErrUserSchemaNotFound
 }
 
 // GetUserSchemaList implements userSchemaStoreInterface.
@@ -202,9 +212,12 @@ func (f *userSchemaFileBasedStore) GetDisplayAttributesByNames(
 		return map[string]string{}, nil
 	}
 
-	nameSet := make(map[string]struct{}, len(names))
+	nameSet := make(map[string]string, len(names))
 	for _, name := range names {
-		nameSet[name] = struct{}{}
+		lowerName := strings.ToLower(name)
+		if _, exists := nameSet[lowerName]; !exists {
+			nameSet[lowerName] = name
+		}
 	}
 
 	list, err := f.GenericFileBasedStore.List()
@@ -215,11 +228,11 @@ func (f *userSchemaFileBasedStore) GetDisplayAttributesByNames(
 	displayAttrs := make(map[string]string, len(names))
 	for _, item := range list {
 		if schema, ok := item.Data.(*UserSchema); ok {
-			if _, exists := nameSet[schema.Name]; exists {
+			if requestedName, exists := nameSet[strings.ToLower(schema.Name)]; exists {
 				if schema.SystemAttributes != nil {
-					displayAttrs[schema.Name] = schema.SystemAttributes.Display
+					displayAttrs[requestedName] = schema.SystemAttributes.Display
 				} else {
-					displayAttrs[schema.Name] = ""
+					displayAttrs[requestedName] = ""
 				}
 			}
 		}

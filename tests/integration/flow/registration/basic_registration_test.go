@@ -42,7 +42,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{
@@ -188,9 +188,9 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSuccess() {
 		"Email, first name, and last name should be required inputs after first step")
 
 	inputs = map[string]string{
-		"email":     username + "@example.com",
-		"given_name": "Test",
-		"family_name":  "User",
+		"email":       username + "@example.com",
+		"given_name":  "Test",
+		"family_name": "User",
 	}
 	completeFlowStep, err = common.CompleteFlow(completeFlowStep.FlowID, inputs, "action_user_info")
 	if err != nil {
@@ -315,9 +315,9 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowInitialInvali
 		"Email, first name, and last name should be required inputs after first step")
 
 	inputs = map[string]string{
-		"email":     username + "@example.com",
-		"given_name": "Test",
-		"family_name":  "User",
+		"email":       username + "@example.com",
+		"given_name":  "Test",
+		"family_name": "User",
 	}
 	completeFlowStep, err = common.CompleteFlow(completeFlowStep.FlowID, inputs, "action_user_info")
 	if err != nil {
@@ -360,11 +360,11 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSingleRequest
 
 	// Step 1: Initialize the registration flow with credentials in one request
 	inputs := map[string]string{
-		"username":  username,
-		"password":  "testpassword123",
-		"email":     username + "@example.com",
-		"given_name": "Single",
-		"family_name":  "Request",
+		"username":    username,
+		"password":    "testpassword123",
+		"email":       username + "@example.com",
+		"given_name":  "Single",
+		"family_name": "Request",
 	}
 
 	flowStep, err := common.InitiateRegistrationFlow(ts.testAppID, false, inputs, "")
@@ -440,9 +440,9 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlow_WithoutToken
 	ts.Require().NoError(err, "Failed to complete registration flow")
 
 	inputs = map[string]string{
-		"email":     username + "@example.com",
-		"given_name": "Test",
-		"family_name":  "User",
+		"email":       username + "@example.com",
+		"given_name":  "Test",
+		"family_name": "User",
 	}
 	completeFlowStep, err = common.CompleteFlow(completeFlowStep.FlowID, inputs, "action_user_info")
 	ts.Require().NoError(err, "Failed to complete registration flow with additional attributes")
@@ -506,9 +506,9 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlow_WithEmptyUse
 	ts.Require().NoError(err, "Failed to complete registration flow")
 
 	inputs = map[string]string{
-		"email":     username + "@example.com",
-		"given_name": "Test",
-		"family_name":  "User",
+		"email":       username + "@example.com",
+		"given_name":  "Test",
+		"family_name": "User",
 	}
 	completeFlowStep, err = common.CompleteFlow(completeFlowStep.FlowID, inputs, "action_user_info")
 	ts.Require().NoError(err, "Failed to complete registration flow with additional attributes")

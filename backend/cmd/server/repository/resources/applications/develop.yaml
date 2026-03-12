@@ -1,0 +1,71 @@
+# DEVELOP Application - Thunder Developer Console
+# This is the main console application for managing Thunder
+id: "develop"
+name: "Develop"
+description: "Developer application for Thunder"
+url: "http://localhost:3000/develop"
+logo_url: "http://localhost:3000/develop/assets/images/logo-mini.svg"
+auth_flow_id: "develop-app-authentication-flow"
+registration_flow_id: "develop-app-registration-flow"
+is_registration_flow_enabled: false
+allowed_user_types:
+  - "Person"
+user_attributes:
+  - "given_name"
+  - "family_name"
+  - "email"
+  - "groups"
+  - "name"
+  - "ouId"
+
+inbound_auth_config:
+  - type: "oauth2"
+    config:
+      client_id: "DEVELOP"
+      redirect_uris:
+        - "http://localhost:3000/develop"
+        - "http://localhost:3000/develop/callback"
+        - "https://localhost:8090/develop"
+        - "https://localhost:8090/develop/callback"
+        - "http://localhost:8095/develop"
+        - "https://localhost:8095/develop"
+      grant_types:
+        - "authorization_code"
+      response_types:
+        - "code"
+      pkce_required: true
+      token_endpoint_auth_method: "none"
+      public_client: true
+      token:
+        access_token:
+          validity_period: 3600
+          user_attributes:
+            - "given_name"
+            - "family_name"
+            - "email"
+            - "groups"
+            - "name"
+            - "ouId"
+        id_token:
+          validity_period: 3600
+          user_attributes:
+            - "given_name"
+            - "family_name"
+            - "email"
+            - "groups"
+            - "name"
+            - "ouId"
+      scope_claims:
+        profile:
+          - "name"
+          - "given_name"
+          - "family_name"
+          - "picture"
+        email:
+          - "email"
+          - "email_verified"
+        phone:
+          - "phone_number"
+          - "phone_number_verified"
+        group:
+          - "groups"

@@ -466,22 +466,6 @@ func TestValidateUserSchemaDefinitionReturnsErrorWhenOrganizationUnitIDIsEmpty(t
 	require.Contains(t, err.ErrorDescription, "organization unit id must not be empty")
 }
 
-func TestValidateUserSchemaDefinitionReturnsErrorWhenOrganizationUnitIDIsNotUUID(t *testing.T) {
-	validSchema := json.RawMessage(`{"email":{"type":"string"}}`)
-
-	schema := UserSchema{
-		Name:               "test-schema",
-		OrganizationUnitID: "not-a-uuid",
-		Schema:             validSchema,
-	}
-
-	err := validateUserSchemaDefinition(schema)
-
-	require.NotNil(t, err)
-	require.Equal(t, ErrorInvalidUserSchemaRequest.Code, err.Code)
-	require.Contains(t, err.ErrorDescription, "organization unit id is not a valid UUID")
-}
-
 func TestValidateUserSchemaDefinitionReturnsErrorWhenSchemaIsEmpty(t *testing.T) {
 	validOUID := testOUID1
 
@@ -652,15 +636,6 @@ func TestValidateUserSchemaDefinitionWithMultipleValidationErrors(t *testing.T) 
 				Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
 			},
 			expectedError: "user schema name must not be empty",
-		},
-		{
-			name: "Valid name but invalid OU ID format",
-			schema: UserSchema{
-				Name:               "test",
-				OrganizationUnitID: "123",
-				Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
-			},
-			expectedError: "organization unit id is not a valid UUID",
 		},
 		{
 			name: "Valid OU ID but empty schema",
