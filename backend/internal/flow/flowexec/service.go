@@ -44,6 +44,12 @@ type FlowExecServiceInterface interface {
 	InitiateFlow(initContext *FlowInitContext) (string, *serviceerror.ServiceError)
 }
 
+const (
+	defaultAuthFlowExpiry           int64 = 1800  // 30 minutes in seconds
+	defaultRegistrationFlowExpiry   int64 = 3600  // 60 minutes in seconds
+	defaultUserOnboardingFlowExpiry int64 = 86400 // 24 hours in seconds
+)
+
 // flowExecService is the implementation of FlowExecServiceInterface
 type flowExecService struct {
 	flowEngine       flowEngineInterface
@@ -218,6 +224,21 @@ func (s *flowExecService) initContext(ctx context.Context, appID string, flowTyp
 	return &engineCtx, nil
 }
 
+// getFlowExpirySeconds returns the expiry time for a flow in seconds.
+func (s *flowExecService) getFlowExpirySeconds(flowType common.FlowType) int64 {
+	switch flowType {
+	case common.FlowTypeAuthentication:
+		return defaultAuthFlowExpiry
+	case common.FlowTypeRegistration:
+		return defaultRegistrationFlowExpiry
+	case common.FlowTypeUserOnboarding:
+		return defaultUserOnboardingFlowExpiry
+	default:
+		// Fallback to auth flow expiry
+		return defaultAuthFlowExpiry
+	}
+}
+
 // loadPrevContext retrieves the flow context from the store based on the given details.
 func (s *flowExecService) loadPrevContext(ctx context.Context, flowID, action string,
 	inputs map[string]string, logger *log.Logger) (*EngineContext, *serviceerror.ServiceError) {
@@ -348,7 +369,9 @@ func (s *flowExecService) storeContext(ctx *EngineContext, logger *log.Logger) e
 		return fmt.Errorf("flow ID cannot be empty")
 	}
 
-	err := s.flowStore.StoreFlowContext(*ctx)
+	expirySeconds := s.getFlowExpirySeconds(ctx.FlowType)
+
+	err := s.flowStore.StoreFlowContext(*ctx, expirySeconds)
 	if err != nil {
 		return fmt.Errorf("failed to store flow context in database: %w", err)
 	}

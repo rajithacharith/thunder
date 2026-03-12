@@ -21,6 +21,8 @@ package flowexec
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
@@ -29,7 +31,7 @@ import (
 
 // flowStoreInterface defines the methods for flow context storage operations.
 type flowStoreInterface interface {
-	StoreFlowContext(ctx EngineContext) error
+	StoreFlowContext(ctx EngineContext, expirySeconds int64) error
 	GetFlowContext(flowID string) (*FlowContextWithUserDataDB, error)
 	UpdateFlowContext(ctx EngineContext) error
 	DeleteFlowContext(flowID string) error
@@ -50,19 +52,21 @@ func newFlowStore(dbProvider provider.DBProviderInterface) flowStoreInterface {
 }
 
 // StoreFlowContext stores the complete flow context in the database.
-func (s *flowStore) StoreFlowContext(ctx EngineContext) error {
+func (s *flowStore) StoreFlowContext(ctx EngineContext, expirySeconds int64) error {
 	// Convert engine context to database model
 	dbModel, err := FromEngineContext(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to convert engine context to database model: %w", err)
 	}
 
+	expiryTime := time.Now().UTC().Add(time.Duration(expirySeconds) * time.Second)
+
 	queries := []func(tx dbmodel.TxInterface) error{
 		func(tx dbmodel.TxInterface) error {
 			_, err := tx.Exec(QueryCreateFlowContext,
 				dbModel.FlowID, dbModel.AppID, dbModel.Verbose,
 				dbModel.CurrentNodeID, dbModel.CurrentAction, dbModel.GraphID,
-				dbModel.RuntimeData, dbModel.ExecutionHistory, s.deploymentID)
+				dbModel.RuntimeData, dbModel.ExecutionHistory, expiryTime, s.deploymentID)
 			return err
 		},
 		func(tx dbmodel.TxInterface) error {
@@ -84,7 +88,7 @@ func (s *flowStore) GetFlowContext(flowID string) (*FlowContextWithUserDataDB, e
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetFlowContextWithUserData, flowID, s.deploymentID)
+	results, err := dbClient.Query(QueryGetFlowContextWithUserData, flowID, s.deploymentID, time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -190,6 +194,11 @@ func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*
 		return nil, errors.New("failed to parse graph_id as string")
 	}
 
+	expiryTime, err := s.parseTimeField(row["expiry_time"], "expiry_time")
+	if err != nil {
+		return nil, err
+	}
+
 	// Parse optional fields
 	currentNodeID := s.parseOptionalString(row["current_node_id"])
 	currentAction := s.parseOptionalString(row["current_action"])
@@ -224,6 +233,7 @@ func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*
 		Token:               token,
 		AvailableAttributes: availableAttributes,
 		ExecutionHistory:    executionHistory,
+		ExpiryTime:          expiryTime,
 	}, nil
 }
 
@@ -258,4 +268,40 @@ func (s *flowStore) parseBoolean(value interface{}) bool {
 	}
 
 	return false
+}
+
+// parseTimeField safely parses a time field from the database row handling multiple formats.
+// This follows the pattern used in other stores for consistency.
+func (s *flowStore) parseTimeField(field interface{}, fieldName string) (time.Time, error) {
+	const customTimeFormat = "2006-01-02 15:04:05.999999999"
+
+	switch v := field.(type) {
+	case string:
+		// Handle SQLite datetime strings
+		trimmedTime := s.trimTimeString(v)
+		parsedTime, err := time.Parse(customTimeFormat, trimmedTime)
+		if err != nil {
+			// Try alternative ISO 8601 format as fallback
+			parsedTime, err = time.Parse(time.RFC3339, v)
+			if err != nil {
+				return time.Time{}, fmt.Errorf("error parsing %s: %w", fieldName, err)
+			}
+		}
+		return parsedTime, nil
+	case time.Time:
+		return v, nil
+	case nil:
+		return time.Time{}, fmt.Errorf("%s is nil", fieldName)
+	default:
+		return time.Time{}, fmt.Errorf("unexpected type for %s: %T", fieldName, field)
+	}
+}
+
+// trimTimeString trims extra information from a time string to match the expected format.
+func (s *flowStore) trimTimeString(timeStr string) string {
+	parts := strings.SplitN(timeStr, " ", 3)
+	if len(parts) >= 2 {
+		return parts[0] + " " + parts[1]
+	}
+	return timeStr
 }

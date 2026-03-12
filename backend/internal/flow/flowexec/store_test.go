@@ -20,6 +20,7 @@ package flowexec
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -28,6 +29,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/crypto/encrypt"
 	"github.com/asgardeo/thunder/tests/mocks/database/modelmock"
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
@@ -73,14 +75,6 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithToken() {
 
 	// Expect two Exec calls: one for FLOW_CONTEXT, one for FLOW_USER_DATA
 	// Use mock.Anything for pointer parameters since they're created inside FromEngineContext
-	mockTx.On("Exec", QueryCreateFlowContext, "test-flow-id", "test-app-id", false,
-		mock.Anything, mock.Anything, "test-graph-id", mock.Anything, mock.Anything, "test-deployment").Return(nil, nil)
-
-	// Token encryption/decryption is tested in model_test.go, so we just use mock.Anything here
-	mockTx.On("Exec", QueryCreateFlowUserData, "test-flow-id", true, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "test-deployment").
-		Return(nil, nil)
-
 	mockTx.On("Commit").Return(nil)
 
 	store := &flowStore{
@@ -88,6 +82,7 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithToken() {
 		deploymentID: "test-deployment",
 	}
 
+	expirySeconds := int64(1800) // 30 minutes
 	ctx := EngineContext{
 		FlowID:   "test-flow-id",
 		AppID:    "test-app-id",
@@ -105,8 +100,22 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithToken() {
 		Graph:            mockGraph,
 	}
 
+	encryptionSvc := encrypt.GetEncryptionService()
+	_, _ = encryptionSvc.EncryptString(testToken)
+
+	mockTx.On("Exec", QueryCreateFlowContext,
+		mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything, "test-deployment").Return(nil, nil)
+
+	// Token encryption/decryption is tested in model_test.go, so we just use mock.Anything here
+	mockTx.On("Exec", QueryCreateFlowUserData,
+		mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything, "test-deployment").Return(nil, nil)
+
 	// Execute
-	err := store.StoreFlowContext(ctx)
+	err := store.StoreFlowContext(ctx, expirySeconds)
 
 	// Verify
 	s.NoError(err)
@@ -127,13 +136,16 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithoutToken() {
 	mockDBProvider.On("GetRuntimeDBClient").Return(mockDBClient, nil)
 	mockDBClient.On("BeginTx").Return(mockTx, nil)
 
-	mockTx.On("Exec", QueryCreateFlowContext, "test-flow-id", "test-app-id", false,
-		mock.Anything, mock.Anything, "test-graph-id", mock.Anything, mock.Anything, "test-deployment").Return(nil, nil)
+	expirySeconds := int64(1800) // 30 minutes
+
+	mockTx.On("Exec", QueryCreateFlowContext, "test-flow-id", "test-app-id", false, mock.Anything, mock.Anything,
+		"test-graph-id", mock.Anything, mock.Anything, mock.Anything, "test-deployment").Return(nil, nil)
 
 	// Token should be nil when not provided
-	mockTx.On("Exec", QueryCreateFlowUserData, "test-flow-id", false, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "test-deployment").
-		Return(nil, nil)
+	mockTx.On("Exec", QueryCreateFlowUserData,
+		mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything, "test-deployment").Return(nil, nil)
 
 	mockTx.On("Commit").Return(nil)
 
@@ -159,7 +171,7 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithoutToken() {
 	}
 
 	// Execute
-	err := store.StoreFlowContext(ctx)
+	err := store.StoreFlowContext(ctx, expirySeconds)
 
 	// Verify
 	s.NoError(err)
@@ -229,6 +241,8 @@ func (s *StoreTestSuite) TestGetFlowContext_WithToken() {
 	mockGraph.On("GetID").Return("test-graph-id")
 	mockGraph.On("GetType").Return(common.FlowTypeAuthentication)
 
+	expiryTime := time.Now().Add(30 * time.Minute)
+
 	// Create encrypted token
 	ctx := EngineContext{
 		FlowID:   "test-flow-id",
@@ -272,11 +286,13 @@ func (s *StoreTestSuite) TestGetFlowContext_WithToken() {
 			"user_inputs":       "{}",
 			"user_attributes":   "{}",
 			"token":             *dbModel.Token, // Use the encrypted token
+			"expiry_time":       expiryTime,
 		},
 	}
 
 	mockDBProvider.On("GetRuntimeDBClient").Return(mockDBClient, nil)
-	mockDBClient.On("Query", QueryGetFlowContextWithUserData, "test-flow-id", "test-deployment").Return(results, nil)
+	mockDBClient.On("Query", QueryGetFlowContextWithUserData,
+		"test-flow-id", "test-deployment", mock.Anything).Return(results, nil)
 
 	store := &flowStore{
 		dbProvider:   mockDBProvider,
@@ -308,6 +324,8 @@ func (s *StoreTestSuite) TestGetFlowContext_WithoutToken() {
 	mockDBProvider := providermock.NewDBProviderInterfaceMock(s.T())
 	mockDBClient := providermock.NewDBClientInterfaceMock(s.T())
 
+	expiryTime := time.Now().Add(30 * time.Minute)
+
 	results := []map[string]interface{}{
 		{
 			"flow_id":           "test-flow-id",
@@ -325,11 +343,13 @@ func (s *StoreTestSuite) TestGetFlowContext_WithoutToken() {
 			"user_inputs":       "{}",
 			"user_attributes":   "{}",
 			"token":             nil, // No token
+			"expiry_time":       expiryTime,
 		},
 	}
 
 	mockDBProvider.On("GetRuntimeDBClient").Return(mockDBClient, nil)
-	mockDBClient.On("Query", QueryGetFlowContextWithUserData, "test-flow-id", "test-deployment").Return(results, nil)
+	mockDBClient.On("Query", QueryGetFlowContextWithUserData,
+		"test-flow-id", "test-deployment", mock.Anything).Return(results, nil)
 
 	store := &flowStore{
 		dbProvider:   mockDBProvider,
@@ -428,6 +448,8 @@ func (s *StoreTestSuite) TestBuildFlowContextFromResultRow_WithToken() {
 	mockGraph := coremock.NewGraphInterfaceMock(s.T())
 	mockGraph.On("GetID").Return("test-graph-id")
 
+	expiryTime := time.Now().Add(30 * time.Minute)
+
 	ctx := EngineContext{
 		FlowID:   "test-flow-id",
 		AppID:    "test-app-id",
@@ -464,6 +486,7 @@ func (s *StoreTestSuite) TestBuildFlowContextFromResultRow_WithToken() {
 		"user_inputs":       "{}",
 		"user_attributes":   "{}",
 		"token":             *dbModel.Token,
+		"expiry_time":       expiryTime,
 	}
 
 	// Execute
@@ -482,6 +505,8 @@ func (s *StoreTestSuite) TestBuildFlowContextFromResultRow_WithByteToken() {
 	testToken := "byte-token-test" //nolint:gosec // G101: This is test data, not a real credential
 	mockGraph := coremock.NewGraphInterfaceMock(s.T())
 	mockGraph.On("GetID").Return("test-graph-id")
+
+	expiryTime := time.Now().Add(30 * time.Minute)
 
 	ctx := EngineContext{
 		FlowID:   "test-flow-id",
@@ -516,6 +541,7 @@ func (s *StoreTestSuite) TestBuildFlowContextFromResultRow_WithByteToken() {
 		"user_inputs":       "{}",
 		"user_attributes":   "{}",
 		"token":             tokenBytes, // Token as []byte
+		"expiry_time":       expiryTime,
 	}
 
 	// Execute
@@ -555,41 +581,44 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithAvailableAttributes() {
 	mockDBProvider.On("GetRuntimeDBClient").Return(mockDBClient, nil)
 	mockDBClient.On("BeginTx").Return(mockTx, nil)
 
-	// Expect two Exec calls: one for FLOW_CONTEXT, one for FLOW_USER_DATA
-	mockTx.On("Exec", QueryCreateFlowContext, "test-flow-id", "test-app-id", false,
-		mock.Anything, mock.Anything, "test-graph-id", mock.Anything, mock.Anything, "test-deployment").Return(nil, nil)
-
-	// Available attributes serialization is tested in model_test.go, so we just use mock.Anything here
-	mockTx.On("Exec", QueryCreateFlowUserData, "test-flow-id", true, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "test-deployment").
-		Return(nil, nil)
-
-	mockTx.On("Commit").Return(nil)
-
 	store := &flowStore{
 		dbProvider:   mockDBProvider,
 		deploymentID: "test-deployment",
 	}
 
+	expirySeconds := int64(1800) // 30 minutes
 	ctx := EngineContext{
-		FlowID:   "test-flow-id",
-		AppID:    "test-app-id",
-		Verbose:  false,
-		FlowType: common.FlowTypeAuthentication,
+		FlowID:      "test-flow-id",
+		AppID:       "test-app-id",
+		Verbose:     false,
+		FlowType:    common.FlowTypeAuthentication,
+		RuntimeData: map[string]string{"key": "value"},
+		UserInputs:  map[string]string{"input1": "val1"},
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated:     true,
-			UserID:              "user-123",
+			UserID:              "test-user",
 			AvailableAttributes: testAvailableAttributes,
-			Attributes:          map[string]interface{}{},
 		},
-		UserInputs:       map[string]string{},
-		RuntimeData:      map[string]string{},
-		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
-		Graph:            mockGraph,
+		Graph: mockGraph,
 	}
 
+	encryptionSvc := encrypt.GetEncryptionService()
+	_, _ = encryptionSvc.EncryptString("test-token") // This line is not strictly needed here as no token is used
+
+	// Expect two Exec calls: one for FLOW_CONTEXT, one for FLOW_USER_DATA
+	mockTx.On("Exec", QueryCreateFlowContext, "test-flow-id", "test-app-id", false, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "test-deployment").Return(nil, nil)
+
+	// Available attributes serialization is tested in model_test.go, so we just use mock.Anything here
+	mockTx.On("Exec", QueryCreateFlowUserData,
+		mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything, "test-deployment").Return(nil, nil)
+
+	mockTx.On("Commit").Return(nil)
+
 	// Execute
-	err := store.StoreFlowContext(ctx)
+	err := store.StoreFlowContext(ctx, expirySeconds)
 
 	// Verify
 	s.NoError(err)
@@ -687,6 +716,8 @@ func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 	mockGraph.On("GetID").Return("test-graph-id")
 	mockGraph.On("GetType").Return(common.FlowTypeAuthentication)
 
+	expiryTime := time.Now().Add(30 * time.Minute)
+
 	// Create serialized available attributes
 	ctx := EngineContext{
 		FlowID:   "test-flow-id",
@@ -730,11 +761,13 @@ func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 			"user_inputs":          "{}",
 			"user_attributes":      "{}",
 			"available_attributes": *dbModel.AvailableAttributes,
+			"expiry_time":          expiryTime,
 		},
 	}
 
 	mockDBProvider.On("GetRuntimeDBClient").Return(mockDBClient, nil)
-	mockDBClient.On("Query", QueryGetFlowContextWithUserData, "test-flow-id", "test-deployment").Return(results, nil)
+	mockDBClient.On("Query", QueryGetFlowContextWithUserData,
+		"test-flow-id", "test-deployment", mock.Anything).Return(results, nil)
 
 	store := &flowStore{
 		dbProvider:   mockDBProvider,

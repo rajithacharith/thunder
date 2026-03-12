@@ -126,6 +126,7 @@ type FlowContextWithUserDataDB struct {
 	ExecutionHistory    *string
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
+	ExpiryTime          time.Time
 }
 
 // ToEngineContext converts the database model to the flow engine context.
