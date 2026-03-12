@@ -52,6 +52,7 @@
     "@thunder/eslint-plugin-thunder": "workspace:^",
     "@thunder/prettier-config": "workspace:^",
     "@types/node": "catalog:",
+    "@wso2/oxygen-ui": "catalog:",
     "@types/react": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",
@@ -72,6 +73,7 @@
     "tslib": "catalog:"
   },
   "peerDependencies": {
+    "@wso2/oxygen-ui": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"
   }

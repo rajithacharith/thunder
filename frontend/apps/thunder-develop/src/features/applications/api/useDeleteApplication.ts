@@ -17,8 +17,9 @@
  */
 
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig, useToast} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
+import {useTranslation} from 'react-i18next';
 import ApplicationQueryKeys from '../constants/application-query-keys';
 
 /**
@@ -63,6 +64,8 @@ export default function useDeleteApplication(): UseMutationResult<void, Error, s
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
   const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
+  const {t} = useTranslation('applications');
+  const {showToast} = useToast();
 
   return useMutation<void, Error, string>({
     mutationFn: async (applicationId: string): Promise<void> => {
@@ -82,6 +85,10 @@ export default function useDeleteApplication(): UseMutationResult<void, Error, s
       queryClient.invalidateQueries({queryKey: [ApplicationQueryKeys.APPLICATIONS]}).catch(() => {
         // Ignore invalidation errors
       });
+      showToast(t('delete.success'), 'success');
+    },
+    onError: () => {
+      showToast(t('delete.error'), 'error');
     },
   });
 }

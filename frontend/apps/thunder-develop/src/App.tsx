@@ -19,6 +19,7 @@
 import {BrowserRouter, Route, Routes} from 'react-router';
 import type {JSX} from 'react';
 import {ProtectedRoute} from '@asgardeo/react-router';
+import {ToastProvider} from '@thunder/shared-contexts';
 import UsersListPage from './features/users/pages/UsersListPage';
 import CreateUserPage from './features/users/pages/CreateUserPage';
 import ViewUserPage from './features/users/pages/ViewUserPage';
@@ -58,180 +59,182 @@ import GroupCreateProvider from './features/groups/contexts/GroupCreate/GroupCre
 export default function App(): JSX.Element {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<UsersListPage />} />
-          <Route path="users" element={<UsersListPage />} />
-          <Route path="users/:userId" element={<ViewUserPage />} />
-          <Route path="user-types" element={<UserTypesListPage />} />
-          <Route path="user-types/:id" element={<ViewUserTypePage />} />
-          <Route path="integrations" element={<IntegrationsPage />} />
-          <Route path="groups" element={<GroupsListPage />} />
-          <Route path="groups/:groupId" element={<GroupEditPage />} />
-          <Route path="applications" element={<ApplicationsListPage />} />
-          <Route path="applications/:applicationId" element={<ApplicationEditPage />} />
-          <Route path="flows" element={<FlowsListPage />} />
-        </Route>
-        {/* Organization Units - wrapped in OrganizationUnitProvider to preserve tree state across navigation */}
-        <Route
-          path="/organization-units"
-          element={
-            <ProtectedRoute>
-              <OrganizationUnitProvider />
-            </ProtectedRoute>
-          }
-        >
-          <Route element={<DashboardLayout />}>
-            <Route index element={<OrganizationUnitsListPage />} />
-            <Route path=":id" element={<OrganizationUnitEditPage />} />
-          </Route>
-          <Route path="create" element={<FullScreenLayout />}>
-            <Route index element={<CreateOrganizationUnitPage />} />
-          </Route>
-        </Route>
-        <Route
-          path="/groups/create"
-          element={
-            <ProtectedRoute>
-              <GroupCreateProvider>
-                <FullScreenLayout />
-              </GroupCreateProvider>
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<CreateGroupPage />} />
-        </Route>
-        <Route
-          path="/users/create"
-          element={
-            <ProtectedRoute>
-              <UserCreateProvider>
-                <FullScreenLayout />
-              </UserCreateProvider>
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<CreateUserPage />} />
-        </Route>
-        <Route
-          path="/user-types/create"
-          element={
-            <ProtectedRoute>
-              <UserTypeCreateProvider>
-                <FullScreenLayout />
-              </UserTypeCreateProvider>
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<CreateUserTypePage />} />
-        </Route>
-        <Route
-          path="/applications/create"
-          element={
-            <ProtectedRoute>
-              <ApplicationCreateProvider>
-                <FullScreenLayout />
-              </ApplicationCreateProvider>
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<ApplicationCreatePage />} />
-        </Route>
-        <Route
-          path="/flows/signin"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<LoginFlowBuilderPage />} />
-        </Route>
-        <Route
-          path="/flows/signin/:flowId"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<LoginFlowBuilderPage />} />
-        </Route>
-        <Route
-          path="/design"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<DesignPage />} />
-        </Route>
-        <Route
-          path="/design/themes/create"
-          element={
-            <ProtectedRoute>
-              <FullScreenLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<ThemeCreatePage />} />
-        </Route>
-        <Route
-          path="/design/themes/:themeId"
-          element={
-            <ProtectedRoute>
-              <ThemeBuilderProvider>
+      <ToastProvider>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
                 <DashboardLayout />
-              </ThemeBuilderProvider>
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<ThemeBuilderPage />} />
-        </Route>
-        <Route
-          path="/design/layouts/:layoutId"
-          element={
-            <ProtectedRoute>
-              <LayoutBuilderProvider>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<UsersListPage />} />
+            <Route path="users" element={<UsersListPage />} />
+            <Route path="users/:userId" element={<ViewUserPage />} />
+            <Route path="user-types" element={<UserTypesListPage />} />
+            <Route path="user-types/:id" element={<ViewUserTypePage />} />
+            <Route path="integrations" element={<IntegrationsPage />} />
+            <Route path="groups" element={<GroupsListPage />} />
+            <Route path="groups/:groupId" element={<GroupEditPage />} />
+            <Route path="applications" element={<ApplicationsListPage />} />
+            <Route path="applications/:applicationId" element={<ApplicationEditPage />} />
+            <Route path="flows" element={<FlowsListPage />} />
+          </Route>
+          {/* Organization Units - wrapped in OrganizationUnitProvider to preserve tree state across navigation */}
+          <Route
+            path="/organization-units"
+            element={
+              <ProtectedRoute>
+                <OrganizationUnitProvider />
+              </ProtectedRoute>
+            }
+          >
+            <Route element={<DashboardLayout />}>
+              <Route index element={<OrganizationUnitsListPage />} />
+              <Route path=":id" element={<OrganizationUnitEditPage />} />
+            </Route>
+            <Route path="create" element={<FullScreenLayout />}>
+              <Route index element={<CreateOrganizationUnitPage />} />
+            </Route>
+          </Route>
+          <Route
+            path="/groups/create"
+            element={
+              <ProtectedRoute>
+                <GroupCreateProvider>
+                  <FullScreenLayout />
+                </GroupCreateProvider>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<CreateGroupPage />} />
+          </Route>
+          <Route
+            path="/users/create"
+            element={
+              <ProtectedRoute>
+                <UserCreateProvider>
+                  <FullScreenLayout />
+                </UserCreateProvider>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<CreateUserPage />} />
+          </Route>
+          <Route
+            path="/user-types/create"
+            element={
+              <ProtectedRoute>
+                <UserTypeCreateProvider>
+                  <FullScreenLayout />
+                </UserTypeCreateProvider>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<CreateUserTypePage />} />
+          </Route>
+          <Route
+            path="/applications/create"
+            element={
+              <ProtectedRoute>
+                <ApplicationCreateProvider>
+                  <FullScreenLayout />
+                </ApplicationCreateProvider>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<ApplicationCreatePage />} />
+          </Route>
+          <Route
+            path="/flows/signin"
+            element={
+              <ProtectedRoute>
                 <DashboardLayout />
-              </LayoutBuilderProvider>
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<LayoutBuilderPage />} />
-        </Route>
-        <Route
-          path="/translations/create"
-          element={
-            <ProtectedRoute>
-              <TranslationCreateProvider>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<LoginFlowBuilderPage />} />
+          </Route>
+          <Route
+            path="/flows/signin/:flowId"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<LoginFlowBuilderPage />} />
+          </Route>
+          <Route
+            path="/design"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<DesignPage />} />
+          </Route>
+          <Route
+            path="/design/themes/create"
+            element={
+              <ProtectedRoute>
                 <FullScreenLayout />
-              </TranslationCreateProvider>
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<TranslationCreatePage />} />
-        </Route>
-        <Route
-          path="/translations"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<TranslationsListPage />} />
-          <Route path=":language" element={<TranslationsEditPage />} />
-        </Route>
-      </Routes>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<ThemeCreatePage />} />
+          </Route>
+          <Route
+            path="/design/themes/:themeId"
+            element={
+              <ProtectedRoute>
+                <ThemeBuilderProvider>
+                  <DashboardLayout />
+                </ThemeBuilderProvider>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<ThemeBuilderPage />} />
+          </Route>
+          <Route
+            path="/design/layouts/:layoutId"
+            element={
+              <ProtectedRoute>
+                <LayoutBuilderProvider>
+                  <DashboardLayout />
+                </LayoutBuilderProvider>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<LayoutBuilderPage />} />
+          </Route>
+          <Route
+            path="/translations/create"
+            element={
+              <ProtectedRoute>
+                <TranslationCreateProvider>
+                  <FullScreenLayout />
+                </TranslationCreateProvider>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<TranslationCreatePage />} />
+          </Route>
+          <Route
+            path="/translations"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<TranslationsListPage />} />
+            <Route path=":language" element={<TranslationsEditPage />} />
+          </Route>
+        </Routes>
+      </ToastProvider>
     </BrowserRouter>
   );
 }

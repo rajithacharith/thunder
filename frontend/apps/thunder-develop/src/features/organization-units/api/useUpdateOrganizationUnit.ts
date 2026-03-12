@@ -17,8 +17,9 @@
  */
 
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig, useToast} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
+import {useTranslation} from 'react-i18next';
 import type {OrganizationUnit} from '../models/organization-unit';
 import type {UpdateOrganizationUnitRequest} from '../models/requests';
 import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
@@ -68,6 +69,8 @@ export default function useUpdateOrganizationUnit(): UseMutationResult<
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
   const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
+  const {t} = useTranslation('organizationUnits');
+  const {showToast} = useToast();
 
   return useMutation<OrganizationUnit, Error, UpdateOrganizationUnitVariables>({
     mutationFn: async ({id, data}: UpdateOrganizationUnitVariables): Promise<OrganizationUnit> => {
@@ -90,9 +93,15 @@ export default function useUpdateOrganizationUnit(): UseMutationResult<
       queryClient.invalidateQueries({queryKey: [OrganizationUnitQueryKeys.ORGANIZATION_UNITS]}).catch(() => {
         // Ignore invalidation errors
       });
-      queryClient.invalidateQueries({queryKey: [OrganizationUnitQueryKeys.ORGANIZATION_UNIT, variables.id]}).catch(() => {
-        // Ignore invalidation errors
-      });
+      queryClient
+        .invalidateQueries({queryKey: [OrganizationUnitQueryKeys.ORGANIZATION_UNIT, variables.id]})
+        .catch(() => {
+          // Ignore invalidation errors
+        });
+      showToast(t('update.success'), 'success');
+    },
+    onError: () => {
+      showToast(t('update.error'), 'error');
     },
   });
 }

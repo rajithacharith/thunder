@@ -18,7 +18,8 @@
 
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig, useToast} from '@thunder/shared-contexts';
+import {useTranslation} from 'react-i18next';
 import type {ApiUser, CreateUserRequest} from '../types/users';
 import UserQueryKeys from '../constants/user-query-keys';
 
@@ -31,6 +32,8 @@ export default function useCreateUser(): UseMutationResult<ApiUser, Error, Creat
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
   const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
+  const {t} = useTranslation('users');
+  const {showToast} = useToast();
 
   return useMutation<ApiUser, Error, CreateUserRequest>({
     mutationFn: async (userData: CreateUserRequest): Promise<ApiUser> => {
@@ -53,6 +56,10 @@ export default function useCreateUser(): UseMutationResult<ApiUser, Error, Creat
       queryClient.invalidateQueries({queryKey: [UserQueryKeys.USERS]}).catch(() => {
         // Ignore invalidation errors
       });
+      showToast(t('create.success'), 'success');
+    },
+    onError: () => {
+      showToast(t('create.error'), 'error');
     },
   });
 }

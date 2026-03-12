@@ -17,8 +17,9 @@
  */
 
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig, useToast} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
+import {useTranslation} from 'react-i18next';
 import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
 
 /**
@@ -60,6 +61,8 @@ export default function useDeleteOrganizationUnit(): UseMutationResult<void, Err
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
   const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
+  const {t} = useTranslation('organizationUnits');
+  const {showToast} = useToast();
 
   return useMutation<void, Error, string>({
     mutationFn: async (id: string): Promise<void> => {
@@ -83,6 +86,10 @@ export default function useDeleteOrganizationUnit(): UseMutationResult<void, Err
       queryClient.invalidateQueries({queryKey: [OrganizationUnitQueryKeys.CHILD_ORGANIZATION_UNITS]}).catch(() => {
         // Ignore invalidation errors
       });
+      showToast(t('delete.success'), 'success');
+    },
+    onError: () => {
+      showToast(t('delete.error'), 'error');
     },
   });
 }

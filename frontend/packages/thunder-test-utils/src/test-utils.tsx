@@ -27,7 +27,7 @@ import {
 } from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
 import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
-import {ConfigProvider} from '@thunder/shared-contexts';
+import {ConfigProvider, ToastProvider} from '@thunder/shared-contexts';
 import {LoggerProvider, LogLevel} from '@thunder/logger';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
@@ -127,7 +127,9 @@ function Providers({children, queryClient = undefined, config = undefined}: Prov
               transports: [],
             }}
           >
-            <OxygenUIThemeProvider>{children}</OxygenUIThemeProvider>
+            <ToastProvider>
+              <OxygenUIThemeProvider>{children}</OxygenUIThemeProvider>
+            </ToastProvider>
           </LoggerProvider>
         </ConfigProvider>
       </QueryClientProvider>

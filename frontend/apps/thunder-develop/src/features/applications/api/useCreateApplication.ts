@@ -17,8 +17,9 @@
  */
 
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig, useToast} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
+import {useTranslation} from 'react-i18next';
 import type {Application} from '../models/application';
 import type {CreateApplicationRequest} from '../models/requests';
 import ApplicationQueryKeys from '../constants/application-query-keys';
@@ -63,6 +64,8 @@ export default function useCreateApplication(): UseMutationResult<Application, E
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
   const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
+  const {t} = useTranslation('applications');
+  const {showToast} = useToast();
 
   return useMutation<Application, Error, CreateApplicationRequest>({
     mutationFn: async (applicationData: CreateApplicationRequest): Promise<Application> => {
@@ -85,6 +88,10 @@ export default function useCreateApplication(): UseMutationResult<Application, E
       queryClient.invalidateQueries({queryKey: [ApplicationQueryKeys.APPLICATIONS]}).catch(() => {
         // Ignore invalidation errors
       });
+      showToast(t('create.success'), 'success');
+    },
+    onError: () => {
+      showToast(t('create.error'), 'error');
     },
   });
 }

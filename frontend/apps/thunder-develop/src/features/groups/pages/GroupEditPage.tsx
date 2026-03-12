@@ -32,7 +32,6 @@ import {
   CircularProgress,
   Tabs,
   Tab,
-  Snackbar,
   Tooltip,
   PageContent,
   PageTitle,
@@ -40,6 +39,7 @@ import {
 import {ArrowLeft, Copy, Check, Edit, Users} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
+import {useToast} from '@thunder/shared-contexts';
 import useGetGroup from '../api/useGetGroup';
 import useUpdateGroup from '../api/useUpdateGroup';
 import type {Group} from '../models/group';
@@ -72,6 +72,7 @@ export default function GroupEditPage(): JSX.Element {
   const navigate = useNavigate();
   const {t} = useTranslation();
   const logger = useLogger('GroupEditPage');
+  const {showToast} = useToast();
 
   const {data: group, isLoading, error: fetchError, refetch} = useGetGroup(groupId ?? '');
   const updateGroup = useUpdateGroup();
@@ -79,7 +80,6 @@ export default function GroupEditPage(): JSX.Element {
   const [activeTab, setActiveTab] = useState(0);
   const [editedGroup, setEditedGroup] = useState<Partial<Group>>({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
-  const [snackbar, setSnackbar] = useState<{open: boolean; message: string}>({open: false, message: ''});
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [tempName, setTempName] = useState('');
@@ -139,12 +139,10 @@ export default function GroupEditPage(): JSX.Element {
       await refetch();
     } catch (err: unknown) {
       logger.error('Failed to update group', {error: err});
-      setSnackbar({
-        open: true,
-        message: err instanceof Error ? err.message : t('groups:edit.page.error'),
-      });
+      const message = err instanceof Error ? err.message : t('groups:edit.page.saveError');
+      showToast(message, 'error');
     }
-  }, [group, groupId, editedGroup, updateGroup, refetch, logger, t]);
+  }, [group, groupId, editedGroup, updateGroup, refetch, logger, showToast, t]);
 
   const hasChanges = useMemo(() => Object.keys(editedGroup).length > 0, [editedGroup]);
 
@@ -213,9 +211,7 @@ export default function GroupEditPage(): JSX.Element {
     <PageContent>
       {/* Header */}
       <PageTitle>
-        <PageTitle.BackButton component={<Link to={listUrl} />}>
-          {t('groups:edit.page.back')}
-        </PageTitle.BackButton>
+        <PageTitle.BackButton component={<Link to={listUrl} />}>{t('groups:edit.page.back')}</PageTitle.BackButton>
         <PageTitle.Avatar>
           <Avatar>
             <Users size={32} />
@@ -370,10 +366,7 @@ export default function GroupEditPage(): JSX.Element {
                 '&:focus-visible .copy-icon': {opacity: 1},
               }}
             >
-              <Typography
-                variant="caption"
-                sx={{fontFamily: 'monospace', color: 'text.disabled', fontSize: '0.75rem'}}
-              >
+              <Typography variant="caption" sx={{fontFamily: 'monospace', color: 'text.disabled', fontSize: '0.75rem'}}>
                 {group.id}
               </Typography>
               {copiedField === 'groupId' ? (
@@ -420,20 +413,6 @@ export default function GroupEditPage(): JSX.Element {
         onClose={() => setDeleteDialogOpen(false)}
         onSuccess={handleDeleteSuccess}
       />
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={(_event, reason) => {
-          if (reason === 'clickaway') return;
-          setSnackbar((prev) => ({...prev, open: false}));
-        }}
-        anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
-      >
-        <Alert onClose={() => setSnackbar((prev) => ({...prev, open: false}))} severity="error" sx={{width: '100%'}}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
 
       {/* Floating Action Bar */}
       {hasChanges && (

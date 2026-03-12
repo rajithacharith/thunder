@@ -300,7 +300,9 @@ describe('useDataGridLocaleText', () => {
         <div>
           <span data-testid="count">{count}</span>
           <span data-testid="label">{localeText.noRowsLabel}</span>
-          <button type="button" onClick={() => setCount((c) => c + 1)}>increment</button>
+          <button type="button" onClick={() => setCount((c) => c + 1)}>
+            increment
+          </button>
         </div>
       );
     }
@@ -346,9 +348,7 @@ describe('useDataGridLocaleText', () => {
     expect(result.current.toolbarFiltersTooltipActive).toBeUndefined();
 
     // Should have logged a warning in DEV mode
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('dataTable.toolbarFiltersTooltipActive'),
-    );
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.toolbarFiltersTooltipActive'));
 
     import.meta.env.DEV = originalDev;
     consoleSpy.mockRestore();
@@ -379,7 +379,9 @@ describe('useDataGridLocaleText', () => {
     // Mock i18n to return undefined from getResourceBundle to cover the ?? {} fallback
     const i18nModule = await import('i18next');
 
-    vi.spyOn(i18nModule.default, 'getResourceBundle').mockImplementation(() => undefined as unknown as Record<string, unknown>);
+    vi.spyOn(i18nModule.default, 'getResourceBundle').mockImplementation(
+      () => undefined as unknown as Record<string, unknown>,
+    );
 
     const {result} = renderHook(() => useDataGridLocaleText());
 
@@ -424,28 +426,20 @@ describe('useDataGridLocaleText', () => {
     // Mock i18n to return a bundle where ALL function keys are non-function values
     // This covers both the typeof !== 'function' branch AND the DEV warning branch for each key
     const i18nModule = await import('i18next');
-    const originalGetResourceBundle = i18nModule.default.getResourceBundle.bind(i18nModule.default);
 
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    // Ensure DEV mode is enabled so the console.warn path executes
-    const originalDev = import.meta.env.DEV;
-    import.meta.env.DEV = true;
-
-    vi.spyOn(i18nModule.default, 'getResourceBundle').mockImplementation((lng: string, ns: string) => {
-      const bundle = originalGetResourceBundle(lng, ns) as Record<string, unknown>;
-      return {
-        ...bundle,
-        // Override ALL function keys with non-function values to trigger DEV warnings
-        'dataTable.toolbarFiltersTooltipActive': 'not-a-function',
-        'dataTable.columnHeaderFiltersTooltipActive': 42,
-        'dataTable.footerRowSelected': true,
-        'dataTable.footerTotalVisibleRows': [],
-        'dataTable.groupColumn': {},
-        'dataTable.unGroupColumn': 'string-value',
-        'dataTable.paginationDisplayedRows': 0,
-      };
-    });
+    // Return only the non-function overrides — string translations use t(), not getResourceBundle,
+    // so there's no need to spread from the original bundle (which would risk re-entrant spy calls).
+    vi.spyOn(i18nModule.default, 'getResourceBundle').mockReturnValue({
+      'dataTable.toolbarFiltersTooltipActive': 'not-a-function',
+      'dataTable.columnHeaderFiltersTooltipActive': 42,
+      'dataTable.footerRowSelected': true,
+      'dataTable.footerTotalVisibleRows': [],
+      'dataTable.groupColumn': {},
+      'dataTable.unGroupColumn': 'string-value',
+      'dataTable.paginationDisplayedRows': 0,
+    } as unknown as Record<string, unknown>);
 
     const {result} = renderHook(() => useDataGridLocaleText());
 
@@ -458,7 +452,7 @@ describe('useDataGridLocaleText', () => {
     expect(result.current.unGroupColumn).toBeUndefined();
     expect(result.current.paginationDisplayedRows).toBeUndefined();
 
-    // Should have logged warnings for non-function, non-undefined values
+    // Should have logged warnings for non-function, non-undefined values (DEV is true in test env)
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.toolbarFiltersTooltipActive'));
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.columnHeaderFiltersTooltipActive'));
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.footerRowSelected'));
@@ -466,9 +460,5 @@ describe('useDataGridLocaleText', () => {
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.groupColumn'));
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.unGroupColumn'));
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.paginationDisplayedRows'));
-
-    import.meta.env.DEV = originalDev;
-    consoleSpy.mockRestore();
-    vi.restoreAllMocks();
   });
 });

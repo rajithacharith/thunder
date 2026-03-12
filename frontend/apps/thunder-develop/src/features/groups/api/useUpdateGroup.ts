@@ -17,8 +17,9 @@
  */
 
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig, useToast} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
+import {useTranslation} from 'react-i18next';
 import type {Group} from '../models/group';
 import type {UpdateGroupRequest} from '../models/requests';
 import GroupQueryKeys from '../constants/group-query-keys';
@@ -40,6 +41,8 @@ export default function useUpdateGroup(): UseMutationResult<Group, Error, Update
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
   const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
+  const {t} = useTranslation('groups');
+  const {showToast} = useToast();
 
   return useMutation<Group, Error, UpdateGroupVariables>({
     mutationFn: async ({groupId, data}: UpdateGroupVariables): Promise<Group> => {
@@ -67,6 +70,10 @@ export default function useUpdateGroup(): UseMutationResult<Group, Error, Update
       queryClient.invalidateQueries({queryKey: [GroupQueryKeys.GROUP_MEMBERS, groupId]}).catch(() => {
         // Ignore invalidation errors
       });
+      showToast(t('update.success'), 'success');
+    },
+    onError: () => {
+      showToast(t('update.error'), 'error');
     },
   });
 }

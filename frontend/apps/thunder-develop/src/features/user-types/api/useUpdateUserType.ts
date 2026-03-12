@@ -18,7 +18,8 @@
 
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig, useToast} from '@thunder/shared-contexts';
+import {useTranslation} from 'react-i18next';
 import type {ApiUserSchema, UpdateUserSchemaRequest} from '../types/user-types';
 import UserTypeQueryKeys from '../constants/userTypeQueryKeys';
 
@@ -45,6 +46,8 @@ export default function useUpdateUserType(): UseMutationResult<ApiUserSchema, Er
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
   const queryClient: ReturnType<typeof useQueryClient> = useQueryClient();
+  const {t} = useTranslation('userTypes');
+  const {showToast} = useToast();
 
   return useMutation<ApiUserSchema, Error, UpdateUserTypeVariables>({
     mutationFn: async ({userTypeId, data}: UpdateUserTypeVariables): Promise<ApiUserSchema> => {
@@ -63,14 +66,16 @@ export default function useUpdateUserType(): UseMutationResult<ApiUserSchema, Er
       return response.data;
     },
     onSuccess: (_data, variables) => {
-      queryClient
-        .invalidateQueries({queryKey: [UserTypeQueryKeys.USER_TYPE, variables.userTypeId]})
-        .catch(() => {
-          // Ignore invalidation errors
-        });
+      queryClient.invalidateQueries({queryKey: [UserTypeQueryKeys.USER_TYPE, variables.userTypeId]}).catch(() => {
+        // Ignore invalidation errors
+      });
       queryClient.invalidateQueries({queryKey: [UserTypeQueryKeys.USER_TYPES]}).catch(() => {
         // Ignore invalidation errors
       });
+      showToast(t('update.success'), 'success');
+    },
+    onError: () => {
+      showToast(t('update.error'), 'error');
     },
   });
 }

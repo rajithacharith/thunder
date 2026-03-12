@@ -17,8 +17,9 @@
  */
 
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig, useToast} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
+import {useTranslation} from 'react-i18next';
 import type {Application} from '../models/application';
 import type {InboundAuthConfig} from '../models/inbound-auth';
 import ApplicationQueryKeys from '../constants/application-query-keys';
@@ -138,6 +139,8 @@ export default function useRegenerateClientSecret(): UseMutationResult<
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
   const queryClient = useQueryClient();
+  const {t} = useTranslation('applications');
+  const {showToast} = useToast();
 
   return useMutation<RegenerateSecretResult, Error, RegenerateSecretVariables>({
     mutationFn: async ({applicationId}: RegenerateSecretVariables): Promise<RegenerateSecretResult> => {
@@ -200,6 +203,10 @@ export default function useRegenerateClientSecret(): UseMutationResult<
       queryClient.invalidateQueries({queryKey: [ApplicationQueryKeys.APPLICATIONS]}).catch(() => {
         // Ignore invalidation errors
       });
+      showToast(t('regenerateSecret.snackbar.success'), 'success');
+    },
+    onError: () => {
+      showToast(t('regenerateSecret.dialog.error'), 'error');
     },
   });
 }
