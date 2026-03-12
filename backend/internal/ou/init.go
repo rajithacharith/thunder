@@ -24,7 +24,6 @@ import (
 
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
-	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
@@ -41,14 +40,9 @@ func Initialize(
 		return nil, nil, nil, err
 	}
 
-	var transactioner transaction.Transactioner
-	storeMode := getOrganizationUnitStoreMode()
-	if storeMode == serverconst.StoreModeComposite || storeMode == serverconst.StoreModeMutable {
-		var err error
-		transactioner, err = provider.GetDBProvider().GetUserDBTransactioner()
-		if err != nil {
-			return nil, nil, nil, err
-		}
+	transactioner, err := provider.GetDBProvider().GetUserDBTransactioner()
+	if err != nil {
+		return nil, nil, nil, err
 	}
 
 	ouService := newOrganizationUnitService(authzService, ouStore, transactioner)
