@@ -48,6 +48,7 @@ func authenticate(
 	jwtService jwt.JWTServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
 ) (*OAuthClientInfo, *authError) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ClientAuthMiddleware"))
 
 	// Extract all possible auth fields
@@ -126,7 +127,7 @@ func authenticate(
 		return nil, errClientIDMismatch
 	}
 
-	oauthApp, err := appService.GetOAuthApplication(clientID)
+	oauthApp, err := appService.GetOAuthApplication(ctx, clientID)
 	if err != nil || oauthApp == nil {
 		return nil, errInvalidClientCredentials
 	}

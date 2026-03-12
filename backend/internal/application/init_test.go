@@ -38,6 +38,28 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+// newInMemoryDataSource returns a SQLite DataSource that uses a shared in-memory
+// database with a single open connection, ensuring all test operations within a
+// process share the same SQLite instance instead of creating separate databases.
+func newInMemoryDataSource() config.DataSource {
+	return config.DataSource{
+		Type:         "sqlite",
+		Path:         "file::memory:?cache=shared",
+		MaxOpenConns: 1,
+		MaxIdleConns: 1,
+	}
+}
+
+// newTestDBConfig returns a DatabaseConfig where every data source is an
+// in-memory SQLite database suitable for unit tests.
+func newTestDBConfig() config.DatabaseConfig {
+	return config.DatabaseConfig{
+		Config:  newInMemoryDataSource(),
+		Runtime: newInMemoryDataSource(),
+		User:    newInMemoryDataSource(),
+	}
+}
+
 // InitTestSuite contains comprehensive tests for the init.go file.
 // The test suite covers:
 // - Initialize function with declarative resources enabled/disabled
@@ -74,8 +96,9 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled() {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: newTestDBConfig(),
 	}
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
 	mux := http.NewServeMux()
@@ -106,8 +129,9 @@ func (suite *InitTestSuite) TestInitialize_WithMCPServer() {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: newTestDBConfig(),
 	}
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
 	mux := http.NewServeMux()
@@ -500,11 +524,12 @@ func TestInitialize_Standalone(t *testing.T) {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
+		Database: newTestDBConfig(),
 	}
 
 	// Reset and initialize with test config
 	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(t, err)
 
 	defer config.ResetThunderRuntime() // Clean up after test
@@ -539,6 +564,7 @@ func TestInitialize_WithDeclarativeResources_Standalone(t *testing.T) {
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
+		Database: newTestDBConfig(),
 	}
 
 	// Create a temporary directory structure for file-based runtime

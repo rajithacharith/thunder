@@ -25,6 +25,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sync"
 	"testing"
 	"time"
 
@@ -1140,6 +1141,190 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithJWKSCertificate() {
 	err = deleteApplication(appID)
 	if err != nil {
 		ts.T().Logf("Failed to delete test application: %v", err)
+	}
+}
+
+// TestCreateApplicationCertLifecycle verifies that a certificate created with an
+// application is also removed from the database when the application is deleted.
+// This confirms that the cert INSERT and the app INSERT are part of the same
+// database transaction and that cleanup is complete.
+func (ts *ApplicationAPITestSuite) TestCreateApplicationCertLifecycle() {
+	const testClientID = "cert_lifecycle_test_oauth_client"
+	const jwksURI = "https://cert-lifecycle.example.com/.well-known/jwks.json"
+
+	app := Application{
+		Name:                      "Cert Lifecycle Test App",
+		Description:               "Test cert lifecycle atomicity with app lifecycle",
+		URL:                       "https://cert-lifecycle.example.com",
+		AuthFlowID:                defaultAuthFlowID,
+		RegistrationFlowID:        defaultRegistrationFlowID,
+		IsRegistrationFlowEnabled: false,
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://cert-lifecycle.example.com/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "private_key_jwt",
+					PKCERequired:            false,
+					PublicClient:            false,
+					Certificate: &ApplicationCert{
+						Type:  "JWKS_URI",
+						Value: jwksURI,
+					},
+				},
+			},
+		},
+	}
+
+	// Step 1: create the application with a JWKS_URI certificate.
+	appID, err := createApplication(app)
+	ts.Require().NoError(err, "expected application creation to succeed")
+	ts.Require().NotEmpty(appID)
+
+	// Step 2 (SQLite only): verify the cert row was written to the CERTIFICATE table.
+	if testutils.GetDBType() == "sqlite" {
+		query := fmt.Sprintf(
+			"SELECT COUNT(*) FROM CERTIFICATE WHERE REF_TYPE='OAUTH_APP' AND REF_ID='%s';",
+			testClientID,
+		)
+		count, queryErr := testutils.QueryConfigDB(query)
+		ts.Require().NoError(queryErr, "failed to query CERTIFICATE table after creation")
+		ts.Assert().Equal("1", count,
+			"expected exactly 1 cert row in CERTIFICATE after successful app creation; "+
+				"cert and app must be created atomically")
+	}
+
+	// Step 3: delete the application.
+	ts.Require().NoError(deleteApplication(appID), "expected application deletion to succeed")
+
+	// Step 4 (SQLite only): verify the cert row was also removed.
+	// This confirms that the deletion is also transactional and that no orphaned
+	// cert rows are left behind after the application is removed.
+	if testutils.GetDBType() == "sqlite" {
+		query := fmt.Sprintf(
+			"SELECT COUNT(*) FROM CERTIFICATE WHERE REF_TYPE='OAUTH_APP' AND REF_ID='%s';",
+			testClientID,
+		)
+		count, queryErr := testutils.QueryConfigDB(query)
+		ts.Require().NoError(queryErr, "failed to query CERTIFICATE table after deletion")
+		ts.Assert().Equal("0", count,
+			"expected 0 cert rows in CERTIFICATE after app deletion; "+
+				"deleting the app must also clean up its certificate")
+	}
+}
+
+// TestConcurrentApplicationCreationCertAtomicity verifies that when two goroutines
+// simultaneously create applications with the same client_id and JWKS_URI certificate,
+// the final database state contains exactly one certificate row for that client_id.
+//
+// Two potential failure paths exercise the cert rollback guarantee:
+//   - Service-layer pre-check: the second request detects the duplicate client_id
+//     after the first has committed and never enters the transaction – no cert written.
+//   - Mid-transaction DB failure: if the second request passes the pre-check (read
+//     before the first transaction commits) and enters the transaction, its cert INSERT
+//     succeeds but the APP_OAUTH_INBOUND_CONFIG INSERT fails on the PRIMARY KEY
+//     constraint; the transaction is rolled back, removing the cert row.
+//
+// In either path the end-state invariant is the same: the CERTIFICATE table must
+// contain exactly one row for the shared client_id (belonging to the successful app).
+func (ts *ApplicationAPITestSuite) TestConcurrentApplicationCreationCertAtomicity() {
+	const sharedClientID = "cert_test_client"
+	const jwksURI = "https://cert-concurrent.example.com/.well-known/jwks.json"
+
+	makeApp := func(name string) Application {
+		return Application{
+			Name:                      name,
+			Description:               "Concurrent cert atomicity test",
+			URL:                       "https://cert-concurrent.example.com",
+			AuthFlowID:                defaultAuthFlowID,
+			RegistrationFlowID:        defaultRegistrationFlowID,
+			IsRegistrationFlowEnabled: false,
+			InboundAuthConfig: []InboundAuthConfig{
+				{
+					Type: "oauth2",
+					OAuthAppConfig: &OAuthAppConfig{
+						ClientID:                sharedClientID,
+						RedirectURIs:            []string{"https://cert-concurrent.example.com/callback"},
+						GrantTypes:              []string{"authorization_code"},
+						ResponseTypes:           []string{"code"},
+						TokenEndpointAuthMethod: "private_key_jwt",
+						PKCERequired:            false,
+						PublicClient:            false,
+						Certificate: &ApplicationCert{
+							Type:  "JWKS_URI",
+							Value: jwksURI,
+						},
+					},
+				},
+			},
+		}
+	}
+
+	type result struct {
+		id  string
+		err error
+	}
+
+	var wg sync.WaitGroup
+	results := make([]result, 2)
+	start := make(chan struct{})
+
+	for i := 0; i < 2; i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			// Block until the main goroutine signals to start, so both requests
+			// are in-flight concurrently and each has a chance to pass the
+			// service-layer pre-check before the other commits.
+			<-start
+			id, err := createApplication(makeApp(fmt.Sprintf("Cert Concurrent App %d", i)))
+			results[i] = result{id: id, err: err}
+		}()
+	}
+
+	close(start) // fire both goroutines simultaneously
+	wg.Wait()
+
+	// Exactly one creation should succeed.
+	successCount := 0
+	var successID string
+	for _, r := range results {
+		if r.err == nil {
+			successCount++
+			successID = r.id
+		}
+	}
+	ts.Require().Equal(1, successCount,
+		"expected exactly one application creation to succeed when two goroutines"+
+			" race with the same client_id")
+
+	// Cleanup: delete the successfully created application.
+	if successID != "" {
+		defer func() {
+			if err := deleteApplication(successID); err != nil {
+				ts.T().Logf("cleanup: failed to delete concurrent test application: %v", err)
+			}
+		}()
+	}
+
+	// SQLite-only: verify the CERTIFICATE table contains exactly one row for the
+	// shared client_id. Two rows would indicate the losing goroutine's cert INSERT
+	// committed without a matching app row (the pre-refactor bug).
+	if testutils.GetDBType() == "sqlite" {
+		query := fmt.Sprintf(
+			"SELECT COUNT(*) FROM CERTIFICATE WHERE REF_TYPE='OAUTH_APP' AND REF_ID='%s';",
+			sharedClientID,
+		)
+		count, queryErr := testutils.QueryConfigDB(query)
+		ts.Require().NoError(queryErr, "failed to query CERTIFICATE table")
+		ts.Assert().Equal("1", count,
+			"expected exactly 1 cert row for client_id %q; "+
+				"a second row would indicate the losing goroutine's cert was not rolled back",
+			sharedClientID)
 	}
 }
 

@@ -66,7 +66,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_Success_Cli
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", testClientID).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
 		Return(mockApp, nil).Once()
 
 	// Create middleware
@@ -112,7 +112,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_Success_Cli
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", testClientID).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
 		Return(mockApp, nil).Once()
 
 	// Create middleware
@@ -167,7 +167,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_MissingClie
 
 func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_InvalidClient() {
 	// Mock app service to return nil (client not found)
-	suite.mockAppService.On("GetOAuthApplication", "invalid-client").
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, "invalid-client").
 		Return(nil, nil).Once()
 
 	// Create middleware
@@ -207,7 +207,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_InvalidClie
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", testClientID).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
 		Return(mockApp, nil).Once()
 
 	// Create middleware
@@ -240,7 +240,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_InvalidClie
 
 func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_HandlerNotCalledOnAuthFailure() {
 	// Mock app service to return nil (client not found)
-	suite.mockAppService.On("GetOAuthApplication", mock.Anything).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, mock.Anything).
 		Return(nil, nil).Once()
 
 	// Create middleware
@@ -281,7 +281,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_ContextProp
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", testClientID).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
 		Return(mockApp, nil).Once()
 
 	// Create middleware
@@ -320,7 +320,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_ContextProp
 
 func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_BasicAuth_401_IncludesWWWAuthenticate() {
 	// Client not found with Basic auth should include WWW-Authenticate: Basic
-	suite.mockAppService.On("GetOAuthApplication", testClientID).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
 		Return(nil, nil).Once()
 
 	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
@@ -348,7 +348,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_BasicAuth_I
 		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
 	}
 
-	suite.mockAppService.On("GetOAuthApplication", testClientID).
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, testClientID).
 		Return(mockApp, nil).Once()
 
 	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)
@@ -368,7 +368,7 @@ func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_BasicAuth_I
 
 func (suite *ClientAuthMiddlewareTestSuite) TestClientAuthMiddleware_PostAuth_401_NoWWWAuthenticate() {
 	// Client not found with POST body auth should not include WWW-Authenticate
-	suite.mockAppService.On("GetOAuthApplication", "non-existent").
+	suite.mockAppService.On("GetOAuthApplication", mock.Anything, "non-existent").
 		Return(nil, nil).Once()
 
 	middleware := ClientAuthMiddleware(suite.mockAppService, suite.mockJwtService, suite.mockDiscoveryService)

@@ -37,6 +37,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
@@ -46,14 +47,18 @@ import (
 
 // ApplicationServiceInterface defines the interface for the application service.
 type ApplicationServiceInterface interface {
-	CreateApplication(app *model.ApplicationDTO) (*model.ApplicationDTO, *serviceerror.ServiceError)
-	ValidateApplication(app *model.ApplicationDTO) (
+	CreateApplication(
+		ctx context.Context, app *model.ApplicationDTO) (*model.ApplicationDTO, *serviceerror.ServiceError)
+	ValidateApplication(ctx context.Context, app *model.ApplicationDTO) (
 		*model.ApplicationProcessedDTO, *model.InboundAuthConfigDTO, *serviceerror.ServiceError)
-	GetApplicationList() (*model.ApplicationListResponse, *serviceerror.ServiceError)
-	GetOAuthApplication(clientID string) (*model.OAuthAppConfigProcessedDTO, *serviceerror.ServiceError)
-	GetApplication(appID string) (*model.Application, *serviceerror.ServiceError)
-	UpdateApplication(appID string, app *model.ApplicationDTO) (*model.ApplicationDTO, *serviceerror.ServiceError)
-	DeleteApplication(appID string) *serviceerror.ServiceError
+	GetApplicationList(ctx context.Context) (*model.ApplicationListResponse, *serviceerror.ServiceError)
+	GetOAuthApplication(
+		ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, *serviceerror.ServiceError)
+	GetApplication(ctx context.Context, appID string) (*model.Application, *serviceerror.ServiceError)
+	UpdateApplication(
+		ctx context.Context, appID string, app *model.ApplicationDTO) (
+		*model.ApplicationDTO, *serviceerror.ServiceError)
+	DeleteApplication(ctx context.Context, appID string) *serviceerror.ServiceError
 }
 
 // ApplicationService is the default implementation of the ApplicationServiceInterface.
@@ -65,6 +70,7 @@ type applicationService struct {
 	layoutMgtService  layoutmgt.LayoutMgtServiceInterface
 	userSchemaService userschema.UserSchemaServiceInterface
 	consentService    consent.ConsentServiceInterface
+	transactioner     transaction.Transactioner
 }
 
 // newApplicationService creates a new instance of ApplicationService.
@@ -76,6 +82,7 @@ func newApplicationService(
 	layoutMgtService layoutmgt.LayoutMgtServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 	consentService consent.ConsentServiceInterface,
+	transactioner transaction.Transactioner,
 ) ApplicationServiceInterface {
 	return &applicationService{
 		appStore:          appStore,
@@ -85,11 +92,12 @@ func newApplicationService(
 		layoutMgtService:  layoutMgtService,
 		userSchemaService: userSchemaService,
 		consentService:    consentService,
+		transactioner:     transactioner,
 	}
 }
 
 // CreateApplication creates the application.
-func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*model.ApplicationDTO,
+func (as *applicationService) CreateApplication(ctx context.Context, app *model.ApplicationDTO) (*model.ApplicationDTO,
 	*serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 	if app == nil {
@@ -102,12 +110,12 @@ func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 
 	// Check if an application with the same ID exists and is declarative (in composite mode)
 	if app.ID != "" {
-		if as.appStore.IsApplicationDeclarative(app.ID) {
+		if as.appStore.IsApplicationDeclarative(ctx, app.ID) {
 			return nil, &ErrorCannotModifyDeclarativeResource
 		}
 	}
 
-	processedDTO, inboundAuthConfig, svcErr := as.ValidateApplication(app)
+	processedDTO, inboundAuthConfig, svcErr := as.ValidateApplication(ctx, app)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -122,39 +130,58 @@ func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 		return nil, svcErr
 	}
 
-	// Create the application certificate if provided.
-	returnCert, svcErr := as.createApplicationCertificate(appCert)
-	if svcErr != nil {
-		return nil, svcErr
-	}
-
-	returnOAuthCert, svcErr := as.prepareOAuthCertForCreate(appID, returnCert, inboundAuthConfig)
-	if svcErr != nil {
-		return nil, svcErr
-	}
-
-	// Create the application.
-	storeErr := as.appStore.CreateApplication(*processedDTO)
-	if storeErr != nil {
-		logger.Error("Failed to create application", log.Error(storeErr), log.String("appID", appID))
-		if rollbackErr := as.rollbackCertsOnCreateFailure(appID, returnCert, inboundAuthConfig,
-			returnOAuthCert); rollbackErr != nil {
-			return nil, rollbackErr
-		}
-		return nil, &ErrorInternalServerError
-	}
-
-	// Sync consent purpose AFTER the application is durably persisted.
-	// On failure, compensate by deleting the application and the certificate.
-	if app.LoginConsent.Enabled && as.consentService.IsEnabled() {
-		if svcErr := as.syncConsentPurposeOnCreate(processedDTO); svcErr != nil {
-			var oAuthClientID string
-			if inboundAuthConfig != nil && inboundAuthConfig.OAuthAppConfig != nil {
-				oAuthClientID = inboundAuthConfig.OAuthAppConfig.ClientID
-			}
-			as.compensateOnConsentSyncFailure(appID, oAuthClientID, returnCert, returnOAuthCert)
+	// Validate and prepare the OAuth certificate if provided.
+	var oAuthCert *cert.Certificate
+	if inboundAuthConfig != nil && inboundAuthConfig.OAuthAppConfig != nil {
+		oAuthCert, svcErr = as.getValidatedCertificateForCreate(inboundAuthConfig.OAuthAppConfig.ClientID,
+			inboundAuthConfig.OAuthAppConfig.Certificate, cert.CertificateReferenceTypeOAuthApp)
+		if svcErr != nil {
 			return nil, svcErr
 		}
+	}
+
+	// Create certificates, application, and consent purpose atomically within a transaction.
+	var returnCert *model.ApplicationCertificate
+	var returnOAuthCert *model.ApplicationCertificate
+	var innerSvcErr *serviceerror.ServiceError
+	err := as.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		var certErr *serviceerror.ServiceError
+		returnCert, certErr = as.createApplicationCertificate(txCtx, appCert)
+		if certErr != nil {
+			innerSvcErr = certErr
+			return fmt.Errorf("certificate creation failed")
+		}
+
+		if inboundAuthConfig != nil && inboundAuthConfig.OAuthAppConfig != nil {
+			returnOAuthCert, certErr = as.createApplicationCertificate(txCtx, oAuthCert)
+			if certErr != nil {
+				innerSvcErr = certErr
+				return fmt.Errorf("OAuth certificate creation failed")
+			}
+		}
+
+		createErr := as.appStore.CreateApplication(txCtx, *processedDTO)
+		if createErr != nil {
+			logger.Error("Failed to create application", log.Error(createErr), log.String("appID", appID))
+			return createErr
+		}
+
+		// Sync consent purpose for the application creation.
+		if app.LoginConsent.Enabled && as.consentService.IsEnabled() {
+			if svcErr := as.syncConsentPurposeOnCreate(txCtx, processedDTO); svcErr != nil {
+				innerSvcErr = svcErr
+				return fmt.Errorf("consent sync failed")
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		if innerSvcErr != nil {
+			return nil, innerSvcErr
+		}
+		return nil, &ErrorInternalServerError
 	}
 
 	returnApp := &model.ApplicationDTO{
@@ -207,7 +234,7 @@ func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 }
 
 // ValidateApplication validates the application data transfer object.
-func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
+func (as *applicationService) ValidateApplication(ctx context.Context, app *model.ApplicationDTO) (
 	*model.ApplicationProcessedDTO, *model.InboundAuthConfigDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
@@ -217,7 +244,7 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 	if app.Name == "" {
 		return nil, nil, &ErrorInvalidApplicationName
 	}
-	existingApp, appCheckErr := as.appStore.GetApplicationByName(app.Name)
+	existingApp, appCheckErr := as.appStore.GetApplicationByName(ctx, app.Name)
 	if appCheckErr != nil && !errors.Is(appCheckErr, model.ApplicationNotFoundError) {
 		logger.Error("Failed to check existing application by name", log.Error(appCheckErr),
 			log.String("appName", app.Name))
@@ -227,7 +254,7 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 		return nil, nil, &ErrorApplicationAlreadyExistsWithName
 	}
 
-	inboundAuthConfig, svcErr := as.processInboundAuthConfig(app, nil)
+	inboundAuthConfig, svcErr := as.processInboundAuthConfig(ctx, app, nil)
 	if svcErr != nil {
 		return nil, nil, svcErr
 	}
@@ -324,7 +351,8 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 	return processedDTO, inboundAuthConfig, nil
 }
 
-func (as *applicationService) ValidateApplicationForUpdate(appID string, app *model.ApplicationDTO) (
+func (as *applicationService) ValidateApplicationForUpdate(
+	ctx context.Context, appID string, app *model.ApplicationDTO) (
 	*model.ApplicationProcessedDTO, *model.InboundAuthConfigDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
@@ -339,11 +367,11 @@ func (as *applicationService) ValidateApplicationForUpdate(appID string, app *mo
 	}
 
 	// Check if the application is declarative (read-only)
-	if as.appStore.IsApplicationDeclarative(appID) {
+	if as.appStore.IsApplicationDeclarative(ctx, appID) {
 		return nil, nil, &ErrorCannotModifyDeclarativeResource
 	}
 
-	existingApp, appCheckErr := as.appStore.GetApplicationByID(appID)
+	existingApp, appCheckErr := as.appStore.GetApplicationByID(ctx, appID)
 	if appCheckErr != nil {
 		if errors.Is(appCheckErr, model.ApplicationNotFoundError) {
 			return nil, nil, &ErrorApplicationNotFound
@@ -358,7 +386,7 @@ func (as *applicationService) ValidateApplicationForUpdate(appID string, app *mo
 
 	// If the application name is changed, check if an application with the new name already exists.
 	if existingApp.Name != app.Name {
-		existingAppWithName, appCheckErr := as.appStore.GetApplicationByName(app.Name)
+		existingAppWithName, appCheckErr := as.appStore.GetApplicationByName(ctx, app.Name)
 		if appCheckErr != nil && !errors.Is(appCheckErr, model.ApplicationNotFoundError) {
 			logger.Debug("Failed to check existing application by name", log.Error(appCheckErr),
 				log.String("appName", app.Name))
@@ -398,7 +426,7 @@ func (as *applicationService) ValidateApplicationForUpdate(appID string, app *mo
 		return nil, nil, svcErr
 	}
 
-	inboundAuthConfig, svcErr := as.processInboundAuthConfig(app, existingApp)
+	inboundAuthConfig, svcErr := as.processInboundAuthConfig(ctx, app, existingApp)
 	if svcErr != nil {
 		return nil, nil, svcErr
 	}
@@ -407,16 +435,17 @@ func (as *applicationService) ValidateApplicationForUpdate(appID string, app *mo
 }
 
 // GetApplicationList list the applications.
-func (as *applicationService) GetApplicationList() (*model.ApplicationListResponse, *serviceerror.ServiceError) {
+func (as *applicationService) GetApplicationList(
+	ctx context.Context) (*model.ApplicationListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
-	totalCount, err := as.appStore.GetTotalApplicationCount()
+	totalCount, err := as.appStore.GetTotalApplicationCount(ctx)
 	if err != nil {
 		logger.Error("Failed to retrieve total application count", log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
 
-	applications, err := as.appStore.GetApplicationList()
+	applications, err := as.appStore.GetApplicationList(ctx)
 	if err != nil {
 		// Check for composite limit exceeded
 		if errors.Is(err, errResultLimitExceededInCompositeMode) {
@@ -459,14 +488,14 @@ func buildBasicApplicationResponse(app model.BasicApplicationDTO) model.BasicApp
 }
 
 // GetOAuthApplication retrieves the OAuth application based on the client id.
-func (as *applicationService) GetOAuthApplication(clientID string) (*model.OAuthAppConfigProcessedDTO,
-	*serviceerror.ServiceError) {
+func (as *applicationService) GetOAuthApplication(
+	ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, *serviceerror.ServiceError) {
 	if clientID == "" {
 		return nil, &ErrorInvalidClientID
 	}
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
-	oauthApp, err := as.appStore.GetOAuthApplication(clientID)
+	oauthApp, err := as.appStore.GetOAuthApplication(ctx, clientID)
 	if err != nil {
 		if errors.Is(err, model.ApplicationNotFoundError) {
 			return nil, &ErrorApplicationNotFound
@@ -491,13 +520,13 @@ func (as *applicationService) GetOAuthApplication(clientID string) (*model.OAuth
 }
 
 // GetApplication get the application for given app id.
-func (as *applicationService) GetApplication(appID string) (*model.Application,
+func (as *applicationService) GetApplication(ctx context.Context, appID string) (*model.Application,
 	*serviceerror.ServiceError) {
 	if appID == "" {
 		return nil, &ErrorInvalidApplicationID
 	}
 
-	applicationDTO, err := as.appStore.GetApplicationByID(appID)
+	applicationDTO, err := as.appStore.GetApplicationByID(ctx, appID)
 	if err != nil {
 		return nil, as.handleApplicationRetrievalError(err)
 	}
@@ -587,11 +616,11 @@ func (as *applicationService) enrichApplicationWithCertificate(application *mode
 }
 
 // UpdateApplication update the application for given app id.
-func (as *applicationService) UpdateApplication(appID string, app *model.ApplicationDTO) (
+func (as *applicationService) UpdateApplication(ctx context.Context, appID string, app *model.ApplicationDTO) (
 	*model.ApplicationDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
-	existingApp, inboundAuthConfig, svcErr := as.ValidateApplicationForUpdate(appID, app)
+	existingApp, inboundAuthConfig, svcErr := as.ValidateApplicationForUpdate(ctx, appID, app)
 
 	if svcErr != nil {
 		return nil, svcErr
@@ -609,55 +638,53 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		userInfo, scopeClaims,
 	)
 
-	existingCert, updatedCert, returnCert, svcErr := as.updateApplicationCertificate(app.ID, app.Certificate,
-		cert.CertificateReferenceTypeApplication)
-	if svcErr != nil {
-		return nil, svcErr
-	}
-
-	var existingOAuthCert, updatedOAuthCert *cert.Certificate
-	var returnOAuthCert *model.ApplicationCertificate
-
-	if inboundAuthConfig != nil {
-		existingOAuthCert, updatedOAuthCert, returnOAuthCert, svcErr = as.updateApplicationCertificate(
-			inboundAuthConfig.OAuthAppConfig.ClientID, inboundAuthConfig.OAuthAppConfig.Certificate,
-			cert.CertificateReferenceTypeOAuthApp)
-		if svcErr != nil {
-			rollbackErr := as.rollbackApplicationCertificateUpdate(inboundAuthConfig.OAuthAppConfig.ClientID,
-				existingOAuthCert, updatedOAuthCert)
-			if rollbackErr != nil {
-				return nil, rollbackErr
-			}
-			return nil, svcErr
+	var existingCert, updatedCert *cert.Certificate
+	var returnCert, returnOAuthCert *model.ApplicationCertificate
+	var innerSvcErr *serviceerror.ServiceError
+	err := as.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		var certErr *serviceerror.ServiceError
+		existingCert, updatedCert, returnCert, certErr = as.updateApplicationCertificate(txCtx, app.ID,
+			app.Certificate, cert.CertificateReferenceTypeApplication)
+		if certErr != nil {
+			innerSvcErr = certErr
+			return fmt.Errorf("application certificate update failed")
 		}
-	}
 
-	storeErr := as.appStore.UpdateApplication(existingApp, processedDTO)
-	if storeErr != nil {
-		logger.Error("Failed to update application", log.Error(storeErr), log.String("appID", appID))
-
-		rollbackErr := as.rollbackApplicationCertificateUpdate(appID, existingCert, updatedCert)
 		if inboundAuthConfig != nil {
-			if err := as.rollbackApplicationCertificateUpdate(inboundAuthConfig.OAuthAppConfig.ClientID,
-				existingOAuthCert, updatedOAuthCert); err != nil && rollbackErr == nil {
-				rollbackErr = err
+			_, _, returnOAuthCert, certErr = as.updateApplicationCertificate(
+				txCtx, inboundAuthConfig.OAuthAppConfig.ClientID, inboundAuthConfig.OAuthAppConfig.Certificate,
+				cert.CertificateReferenceTypeOAuthApp)
+			if certErr != nil {
+				innerSvcErr = certErr
+				return fmt.Errorf("OAuth certificate update failed")
 			}
 		}
-		if rollbackErr != nil {
-			return nil, rollbackErr
+
+		storeErr := as.appStore.UpdateApplication(txCtx, existingApp, processedDTO)
+		if storeErr != nil {
+			logger.Error("Failed to update application", log.Error(storeErr), log.String("appID", appID))
+			return storeErr
 		}
 
+		// Sync consent purpose for the application update.
+		// This block runs whenever the consent service is enabled — regardless of whether login consent
+		// is being enabled or disabled to avoid leaving stale consent purposes.
+		if as.consentService.IsEnabled() {
+			if svcErr := as.syncConsentPurposeOnUpdate(txCtx, appID, existingApp, processedDTO,
+				existingCert, updatedCert); svcErr != nil {
+				innerSvcErr = svcErr
+				return fmt.Errorf("consent sync failed")
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		if innerSvcErr != nil {
+			return nil, innerSvcErr
+		}
 		return nil, &ErrorInternalServerError
-	}
-
-	// Sync consent purpose for the application update.
-	// This block runs whenever the consent service is enabled — regardless of whether login consent
-	// is being enabled or disabled to avoid leaving stale consent purposes.
-	if as.consentService.IsEnabled() {
-		if svcErr := as.syncConsentPurposeOnUpdate(appID, existingApp, processedDTO,
-			existingCert, updatedCert); svcErr != nil {
-			return nil, svcErr
-		}
 	}
 
 	return as.buildReturnDTOForUpdate(
@@ -793,41 +820,75 @@ func (as *applicationService) buildReturnDTOForUpdate(appID string, app *model.A
 }
 
 // DeleteApplication delete the application for given app id.
-func (as *applicationService) DeleteApplication(appID string) *serviceerror.ServiceError {
+func (as *applicationService) DeleteApplication(ctx context.Context, appID string) *serviceerror.ServiceError {
 	if appID == "" {
 		return &ErrorInvalidApplicationID
 	}
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
 	// Check if the application is declarative (read-only)
-	if as.appStore.IsApplicationDeclarative(appID) {
+	if as.appStore.IsApplicationDeclarative(ctx, appID) {
 		return &ErrorCannotModifyDeclarativeResource
 	}
 
-	// Delete the application from the store
-	appErr := as.appStore.DeleteApplication(appID)
-	if appErr != nil {
-		if errors.Is(appErr, model.ApplicationNotFoundError) {
-			logger.Debug("Application not found for the deletion", log.String("appID", appID))
-			return nil
+	var appNotFound bool
+	var transactionSvcErr *serviceerror.ServiceError
+	err := as.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		existingApp, fetchErr := as.appStore.GetApplicationByID(txCtx, appID)
+		if fetchErr != nil {
+			if errors.Is(fetchErr, model.ApplicationNotFoundError) {
+				appNotFound = true
+				return nil
+			}
+			logger.Error("Error while retrieving the application before deletion", log.Error(fetchErr),
+				log.String("appID", appID))
+			return fetchErr
 		}
-		logger.Error("Error while deleting the application", log.Error(appErr), log.String("appID", appID))
+
+		appErr := as.appStore.DeleteApplication(txCtx, appID)
+		if appErr != nil {
+			if errors.Is(appErr, model.ApplicationNotFoundError) {
+				logger.Debug("Application not found for the deletion", log.String("appID", appID))
+				appNotFound = true
+				return nil
+			}
+			logger.Error("Error while deleting the application", log.Error(appErr), log.String("appID", appID))
+			return appErr
+		}
+
+		if as.consentService.IsEnabled() {
+			if svcErr := as.deleteConsentPurposes(txCtx, appID); svcErr != nil {
+				transactionSvcErr = svcErr
+				return fmt.Errorf("consent deletion failed")
+			}
+		}
+
+		if svcErr := as.deleteApplicationCertificate(txCtx, appID); svcErr != nil {
+			transactionSvcErr = svcErr
+			return fmt.Errorf("application certificate deletion failed")
+		}
+
+		for _, inboundConfig := range existingApp.InboundAuthConfig {
+			if inboundConfig.OAuthAppConfig != nil && inboundConfig.OAuthAppConfig.ClientID != "" {
+				if svcErr := as.deleteOAuthAppCertificate(txCtx, inboundConfig.OAuthAppConfig.ClientID); svcErr != nil {
+					transactionSvcErr = svcErr
+					return fmt.Errorf("OAuth app certificate deletion failed")
+				}
+			}
+		}
+
+		return nil
+	})
+
+	if appNotFound {
+		return nil
+	}
+
+	if err != nil {
+		if transactionSvcErr != nil {
+			return transactionSvcErr
+		}
 		return &ErrorInternalServerError
-	}
-
-	// Delete the application certificate
-	svcErr := as.deleteApplicationCertificate(appID)
-	if svcErr != nil {
-		return svcErr
-	}
-
-	// Delete the consent purposes associated with the application
-	// If consent deletion fails, we log the error but do NOT re-create the schema
-	// since orphaned consent elements are safe and won't cause active harm.
-	if as.consentService.IsEnabled() {
-		if svcErr := as.deleteConsentPurposes(appID); svcErr != nil {
-			return svcErr
-		}
 	}
 
 	return nil
@@ -1062,7 +1123,7 @@ func validateOAuthParamsForCreateAndUpdate(app *model.ApplicationDTO) (*model.In
 
 // processInboundAuthConfig validates and processes inbound auth configuration for
 // creating or updating an application.
-func (as *applicationService) processInboundAuthConfig(app *model.ApplicationDTO,
+func (as *applicationService) processInboundAuthConfig(ctx context.Context, app *model.ApplicationDTO,
 	existingApp *model.ApplicationProcessedDTO) (
 	*model.InboundAuthConfigDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
@@ -1090,7 +1151,7 @@ func (as *applicationService) processInboundAuthConfig(app *model.ApplicationDTO
 			}
 			inboundAuthConfig.OAuthAppConfig.ClientID = generatedClientID
 		} else if clientID != existingClientID {
-			existingAppWithClientID, clientCheckErr := as.appStore.GetOAuthApplication(clientID)
+			existingAppWithClientID, clientCheckErr := as.appStore.GetOAuthApplication(ctx, clientID)
 			if clientCheckErr != nil && !errors.Is(clientCheckErr, model.ApplicationNotFoundError) {
 				logger.Error("Failed to check existing application by client ID", log.Error(clientCheckErr),
 					log.String("clientID", clientID))
@@ -1110,7 +1171,7 @@ func (as *applicationService) processInboundAuthConfig(app *model.ApplicationDTO
 			}
 			inboundAuthConfig.OAuthAppConfig.ClientID = generatedClientID
 		} else {
-			existingAppWithClientID, clientCheckErr := as.appStore.GetOAuthApplication(clientID)
+			existingAppWithClientID, clientCheckErr := as.appStore.GetOAuthApplication(ctx, clientID)
 			if clientCheckErr != nil && !errors.Is(clientCheckErr, model.ApplicationNotFoundError) {
 				logger.Error("Failed to check existing application by client ID", log.Error(clientCheckErr),
 					log.String("clientID", clientID))
@@ -1202,13 +1263,13 @@ func getValidatedCertificateInput(appID, certID string, certificate *model.Appli
 }
 
 // createApplicationCertificate creates a certificate for the application.
-func (as *applicationService) createApplicationCertificate(certificate *cert.Certificate) (
+func (as *applicationService) createApplicationCertificate(ctx context.Context, certificate *cert.Certificate) (
 	*model.ApplicationCertificate, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
 	var returnCert *model.ApplicationCertificate
 	if certificate != nil {
-		_, svcErr := as.certService.CreateCertificate(context.TODO(), certificate)
+		_, svcErr := as.certService.CreateCertificate(ctx, certificate)
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ClientErrorType {
 				errorDescription := "Failed to create application certificate: " +
@@ -1234,105 +1295,39 @@ func (as *applicationService) createApplicationCertificate(certificate *cert.Cer
 	return returnCert, nil
 }
 
-// rollbackAppCertificateCreation rolls back the application certificate creation in case of an error during
-// application creation.
-func (as *applicationService) rollbackAppCertificateCreation(appID string,
-	refType cert.CertificateReferenceType) *serviceerror.ServiceError {
-	deleteErr := as.certService.DeleteCertificateByReference(context.TODO(),
-		refType, appID)
-	if deleteErr != nil {
-		if deleteErr.Type == serviceerror.ClientErrorType {
-			errorDescription := "Failed to rollback application certificate creation: " +
-				deleteErr.ErrorDescription
-			return serviceerror.CustomServiceError(ErrorCertificateClientError, errorDescription)
-		}
-		return &ErrorCertificateServerError
-	}
-
-	return nil
-}
-
-// prepareOAuthCertForCreate validates and creates the OAuth certificate during application creation.
-// If the app-level certificate was already created and an error occurs here, it is rolled back.
-func (as *applicationService) prepareOAuthCertForCreate(appID string, returnCert *model.ApplicationCertificate,
-	inboundAuthConfig *model.InboundAuthConfigDTO) (*model.ApplicationCertificate, *serviceerror.ServiceError) {
-	if inboundAuthConfig == nil || inboundAuthConfig.OAuthAppConfig == nil {
-		return nil, nil
-	}
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
-
-	rollbackAppCert := func() *serviceerror.ServiceError {
-		if returnCert != nil && returnCert.Type != cert.CertificateTypeNone {
-			if deleteErr := as.rollbackAppCertificateCreation(appID,
-				cert.CertificateReferenceTypeApplication); deleteErr != nil {
-				logger.Error("Failed to delete app certificate", log.String("error", deleteErr.Error),
-					log.String("appID", appID))
-				return deleteErr
-			}
-		}
-		return nil
-	}
-
-	oAuthCert, svcErr := as.getValidatedCertificateForCreate(inboundAuthConfig.OAuthAppConfig.ClientID,
-		inboundAuthConfig.OAuthAppConfig.Certificate, cert.CertificateReferenceTypeOAuthApp)
-	if svcErr != nil {
-		if rollbackErr := rollbackAppCert(); rollbackErr != nil {
-			return nil, rollbackErr
-		}
-		return nil, svcErr
-	}
-
-	returnOAuthCert, svcErr := as.createApplicationCertificate(oAuthCert)
-	if svcErr != nil {
-		if rollbackErr := rollbackAppCert(); rollbackErr != nil {
-			return nil, rollbackErr
-		}
-		return nil, svcErr
-	}
-
-	return returnOAuthCert, nil
-}
-
-// rollbackCertsOnCreateFailure rolls back any certificates created during application creation
-// when the application store operation fails. Returns the first rollback error encountered.
-func (as *applicationService) rollbackCertsOnCreateFailure(appID string, returnCert *model.ApplicationCertificate,
-	inboundAuthConfig *model.InboundAuthConfigDTO,
-	returnOAuthCert *model.ApplicationCertificate) *serviceerror.ServiceError {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
-
-	if returnCert != nil && returnCert.Type != cert.CertificateTypeNone {
-		if err := as.rollbackAppCertificateCreation(appID, cert.CertificateReferenceTypeApplication); err != nil {
-			logger.Error("Failed to delete app certificate", log.String("error", err.Error),
-				log.String("appID", appID))
-			return err
-		}
-	}
-
-	if returnOAuthCert != nil && returnOAuthCert.Type != cert.CertificateTypeNone &&
-		inboundAuthConfig != nil && inboundAuthConfig.OAuthAppConfig != nil {
-		if err := as.rollbackAppCertificateCreation(inboundAuthConfig.OAuthAppConfig.ClientID,
-			cert.CertificateReferenceTypeOAuthApp); err != nil {
-			logger.Error("Failed to delete OAuth app certificate", log.String("error", err.Error),
-				log.String("clientID", inboundAuthConfig.OAuthAppConfig.ClientID))
-			return err
-		}
-	}
-
-	return nil
-}
-
 // deleteApplicationCertificate deletes the certificate associated with the application.
-func (as *applicationService) deleteApplicationCertificate(appID string) *serviceerror.ServiceError {
+func (as *applicationService) deleteApplicationCertificate(
+	ctx context.Context, appID string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
 	if certErr := as.certService.DeleteCertificateByReference(
-		context.TODO(), cert.CertificateReferenceTypeApplication, appID); certErr != nil {
+		ctx, cert.CertificateReferenceTypeApplication, appID); certErr != nil {
 		if certErr.Type == serviceerror.ClientErrorType {
 			errorDescription := "Failed to delete application certificate: " +
 				certErr.ErrorDescription
 			return serviceerror.CustomServiceError(ErrorCertificateClientError, errorDescription)
 		}
 		logger.Error("Failed to delete application certificate", log.String("appID", appID),
+			log.Any("serviceError", certErr))
+		return &ErrorCertificateServerError
+	}
+
+	return nil
+}
+
+// deleteOAuthAppCertificate deletes the certificate associated with an OAuth app (by client ID).
+func (as *applicationService) deleteOAuthAppCertificate(
+	ctx context.Context, clientID string) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
+
+	if certErr := as.certService.DeleteCertificateByReference(
+		ctx, cert.CertificateReferenceTypeOAuthApp, clientID); certErr != nil {
+		if certErr.Type == serviceerror.ClientErrorType {
+			errorDescription := "Failed to delete OAuth app certificate: " +
+				certErr.ErrorDescription
+			return serviceerror.CustomServiceError(ErrorCertificateClientError, errorDescription)
+		}
+		logger.Error("Failed to delete OAuth app certificate", log.String("clientID", clientID),
 			log.Any("serviceError", certErr))
 		return &ErrorCertificateServerError
 	}
@@ -1383,13 +1378,13 @@ func (as *applicationService) getApplicationCertificate(appID string,
 
 // updateApplicationCertificate updates the certificate for the application.
 // It returns the existing certificate, the updated certificate, and the return application certificate details.
-func (as *applicationService) updateApplicationCertificate(appID string, certificate *model.ApplicationCertificate,
-	refType cert.CertificateReferenceType) (
+func (as *applicationService) updateApplicationCertificate(ctx context.Context, appID string,
+	certificate *model.ApplicationCertificate, refType cert.CertificateReferenceType) (
 	*cert.Certificate, *cert.Certificate, *model.ApplicationCertificate, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
 	existingCert, certErr := as.certService.GetCertificateByReference(
-		context.TODO(), refType, appID)
+		ctx, refType, appID)
 	if certErr != nil && certErr.Code != cert.ErrorCertificateNotFound.Code {
 		if certErr.Type == serviceerror.ClientErrorType {
 			errorDescription := "Failed to retrieve application certificate: " +
@@ -1417,7 +1412,7 @@ func (as *applicationService) updateApplicationCertificate(appID string, certifi
 	var returnCert *model.ApplicationCertificate
 	if updatedCert != nil {
 		if existingCert != nil {
-			_, svcErr := as.certService.UpdateCertificateByID(context.TODO(), existingCert.ID, updatedCert)
+			_, svcErr := as.certService.UpdateCertificateByID(ctx, existingCert.ID, updatedCert)
 			if svcErr != nil {
 				if svcErr.Type == serviceerror.ClientErrorType {
 					errorDescription := "Failed to update application certificate: " +
@@ -1430,7 +1425,7 @@ func (as *applicationService) updateApplicationCertificate(appID string, certifi
 				return nil, nil, nil, &ErrorCertificateServerError
 			}
 		} else {
-			_, svcErr := as.certService.CreateCertificate(context.TODO(), updatedCert)
+			_, svcErr := as.certService.CreateCertificate(ctx, updatedCert)
 			if svcErr != nil {
 				if svcErr.Type == serviceerror.ClientErrorType {
 					errorDescription := "Failed to create application certificate: " +
@@ -1450,7 +1445,7 @@ func (as *applicationService) updateApplicationCertificate(appID string, certifi
 		if existingCert != nil {
 			// If no new certificate is provided, delete the existing certificate.
 			deleteErr := as.certService.DeleteCertificateByReference(
-				context.TODO(), refType, appID)
+				ctx, refType, appID)
 			if deleteErr != nil {
 				if deleteErr.Type == serviceerror.ClientErrorType {
 					errorDescription := "Failed to delete application certificate: " + deleteErr.ErrorDescription
@@ -1470,59 +1465,6 @@ func (as *applicationService) updateApplicationCertificate(appID string, certifi
 	}
 
 	return existingCert, updatedCert, returnCert, nil
-}
-
-// rollbackApplicationCertificateUpdate rolls back the certificate update for the application in case of an error.
-func (as *applicationService) rollbackApplicationCertificateUpdate(appID string,
-	existingCert, updatedCert *cert.Certificate) *serviceerror.ServiceError {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
-
-	if updatedCert != nil {
-		if existingCert != nil {
-			// Update to the previously existed certificate.
-			_, svcErr := as.certService.UpdateCertificateByID(context.TODO(), existingCert.ID, existingCert)
-			if svcErr != nil {
-				if svcErr.Type == serviceerror.ClientErrorType {
-					errorDescription := "Failed to revert application certificate update: " +
-						svcErr.ErrorDescription
-					return serviceerror.CustomServiceError(ErrorCertificateClientError, errorDescription)
-				}
-				logger.Error("Failed to revert application certificate update", log.Any("serviceError", svcErr),
-					log.String("appID", appID))
-				return &ErrorCertificateServerError
-			}
-		} else { // Delete the newly created certificate.
-			deleteErr := as.certService.DeleteCertificateByReference(
-				context.TODO(), cert.CertificateReferenceTypeApplication, appID)
-			if deleteErr != nil {
-				if deleteErr.Type == serviceerror.ClientErrorType {
-					errorDescription := "Failed to delete application certificate " +
-						"after update failure: " + deleteErr.ErrorDescription
-					return serviceerror.CustomServiceError(ErrorCertificateClientError, errorDescription)
-				}
-				logger.Error("Failed to delete application certificate after update failure",
-					log.Any("serviceError", deleteErr), log.String("appID", appID))
-				return &ErrorCertificateServerError
-			}
-		}
-	} else {
-		if existingCert != nil { // Create the previously existed certificate.
-			_, svcErr := as.certService.CreateCertificate(context.TODO(), existingCert)
-			if svcErr != nil {
-				if svcErr.Type == serviceerror.ClientErrorType {
-					errorDescription := "Failed to revert application certificate creation: " +
-						svcErr.ErrorDescription
-					return serviceerror.CustomServiceError(ErrorCertificateClientError,
-						errorDescription)
-				}
-				logger.Error("Failed to revert application certificate creation", log.Any("serviceError", svcErr),
-					log.String("appID", appID))
-				return &ErrorCertificateServerError
-			}
-		}
-	}
-
-	return nil
 }
 
 // getDefaultAssertionConfigFromDeployment creates a default assertion configuration from deployment settings.
@@ -1907,37 +1849,9 @@ func extractRequestedAttributes(app *model.ApplicationProcessedDTO) map[string]b
 	return attrMap
 }
 
-// compensateOnConsentSyncFailure rolls back an application creation by deleting the application record
-// and any associated certificates after a consent sync failure.
-func (as *applicationService) compensateOnConsentSyncFailure(appID, oAuthClientID string,
-	returnCert, returnOAuthCert *model.ApplicationCertificate) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
-
-	if appDelErr := as.appStore.DeleteApplication(appID); appDelErr != nil {
-		logger.Error("Failed to compensate application creation after consent sync failure",
-			log.String("appID", appID), log.String("error", appDelErr.Error()))
-	}
-
-	if returnCert != nil && returnCert.Type != cert.CertificateTypeNone {
-		if certDelErr := as.rollbackAppCertificateCreation(appID,
-			cert.CertificateReferenceTypeApplication); certDelErr != nil {
-			logger.Error("Failed to compensate certificate after consent sync failure",
-				log.String("appID", appID), log.String("error", certDelErr.Error))
-		}
-	}
-
-	if oAuthClientID != "" && returnOAuthCert != nil && returnOAuthCert.Type != cert.CertificateTypeNone {
-		if oAuthCertDelErr := as.rollbackAppCertificateCreation(oAuthClientID,
-			cert.CertificateReferenceTypeOAuthApp); oAuthCertDelErr != nil {
-			logger.Error("Failed to compensate OAuth certificate after consent sync failure",
-				log.String("clientID", oAuthClientID), log.String("error", oAuthCertDelErr.Error))
-		}
-	}
-}
-
 // syncConsentPurposeOnCreate creates a consent purpose for the application create.
 func (as *applicationService) syncConsentPurposeOnCreate(
-	appDTO *model.ApplicationProcessedDTO) *serviceerror.ServiceError {
+	ctx context.Context, appDTO *model.ApplicationProcessedDTO) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
 	// TODO: Replace with application's actual OU when OU support is added
@@ -1963,7 +1877,7 @@ func (as *applicationService) syncConsentPurposeOnCreate(
 	// Create missing consent elements in case they're not created during user type creation
 	// or by another application. This is to ensure that all required consent elements exist
 	// before creating the consent purpose.
-	if err := as.createMissingConsentElements(context.TODO(), ouID, attributes); err != nil {
+	if err := as.createMissingConsentElements(ctx, ouID, attributes); err != nil {
 		return err
 	}
 
@@ -1976,7 +1890,7 @@ func (as *applicationService) syncConsentPurposeOnCreate(
 		GroupID:     appDTO.ID,
 		Elements:    attributesToPurposeElements(attributesMap),
 	}
-	if _, err := as.consentService.CreateConsentPurpose(context.TODO(), ouID, &purpose); err != nil {
+	if _, err := as.consentService.CreateConsentPurpose(ctx, ouID, &purpose); err != nil {
 		return wrapConsentServiceError(err)
 	}
 
@@ -1986,42 +1900,24 @@ func (as *applicationService) syncConsentPurposeOnCreate(
 // syncConsentPurposeOnUpdate synchronizes the consent purpose when an application is updated.
 // It updates the existing consent purpose to match the updated application configuration or
 // deletes it if consent is disabled.
-func (as *applicationService) syncConsentPurposeOnUpdate(appID string,
+func (as *applicationService) syncConsentPurposeOnUpdate(ctx context.Context, appID string,
 	existingApp *model.ApplicationProcessedDTO, updatedApp *model.ApplicationProcessedDTO,
-	existingCert, updatedCert *cert.Certificate) *serviceerror.ServiceError {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
+	_, _ *cert.Certificate) *serviceerror.ServiceError {
 	var consentSvcErr *serviceerror.ServiceError
 
 	if updatedApp.LoginConsent.Enabled {
-		consentSvcErr = as.updateConsentPurpose(existingApp, updatedApp)
+		consentSvcErr = as.updateConsentPurpose(ctx, existingApp, updatedApp)
 	} else {
-		consentSvcErr = as.deleteConsentPurposes(appID)
+		consentSvcErr = as.deleteConsentPurposes(ctx, appID)
 	}
 
-	if consentSvcErr != nil {
-		if revertErr := as.appStore.UpdateApplication(updatedApp, existingApp); revertErr != nil {
-			logger.Error("Failed to compensate application update after consent sync failure",
-				log.String("appID", appID), log.Error(revertErr))
-		}
-
-		if existingCert != nil || updatedCert != nil {
-			if rollbackErr := as.rollbackApplicationCertificateUpdate(appID, existingCert,
-				updatedCert); rollbackErr != nil {
-				logger.Error("Failed to compensate certificate update after consent sync failure",
-					log.String("appID", appID), log.String("error", rollbackErr.Error))
-			}
-		}
-
-		return consentSvcErr
-	}
-
-	return nil
+	return consentSvcErr
 }
 
 // updateConsentPurpose updated the consent purpose when an application is updated.
 // It retrieves the existing purpose and updates its content to match the updated application.
 func (as *applicationService) updateConsentPurpose(
-	existingAppDTO, updatedAppDTO *model.ApplicationProcessedDTO) *serviceerror.ServiceError {
+	ctx context.Context, existingAppDTO, updatedAppDTO *model.ApplicationProcessedDTO) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
 	// TODO: Replace with application's actual OU when OU support is added
@@ -2045,13 +1941,13 @@ func (as *applicationService) updateConsentPurpose(
 		logger.Debug("Ensuring consent elements exist for all requested attributes",
 			log.String("appID", existingAppDTO.ID), log.Int("requiredAttributesCount", len(requiredAttributes)))
 
-		if err := as.createMissingConsentElements(context.TODO(), ouID, requiredAttributes); err != nil {
+		if err := as.createMissingConsentElements(ctx, ouID, requiredAttributes); err != nil {
 			return err
 		}
 	}
 
 	// Retrieve the existing consent purposes for the application
-	existingPurposes, err := as.consentService.ListConsentPurposes(context.TODO(), ouID, existingAppDTO.ID)
+	existingPurposes, err := as.consentService.ListConsentPurposes(ctx, ouID, existingAppDTO.ID)
 	if err != nil {
 		return wrapConsentServiceError(err)
 	}
@@ -2070,7 +1966,7 @@ func (as *applicationService) updateConsentPurpose(
 				GroupID:     existingAppDTO.ID,
 				Elements:    attributesToPurposeElements(newAttributes),
 			}
-			if _, err := as.consentService.CreateConsentPurpose(context.TODO(), ouID, &purpose); err != nil {
+			if _, err := as.consentService.CreateConsentPurpose(ctx, ouID, &purpose); err != nil {
 				return wrapConsentServiceError(err)
 			}
 		}
@@ -2081,7 +1977,7 @@ func (as *applicationService) updateConsentPurpose(
 	// If all attributes are removed, and a purpose exists, delete it
 	if len(newAttributes) == 0 {
 		logger.Debug("All user attributes removed from the application", log.String("appID", existingAppDTO.ID))
-		if err := as.deleteConsentPurposes(existingAppDTO.ID); err != nil {
+		if err := as.deleteConsentPurposes(ctx, existingAppDTO.ID); err != nil {
 			return err
 		}
 
@@ -2099,7 +1995,7 @@ func (as *applicationService) updateConsentPurpose(
 		GroupID:     existingAppDTO.ID,
 		Elements:    attributesToPurposeElements(newAttributes),
 	}
-	if _, err := as.consentService.UpdateConsentPurpose(context.TODO(), ouID,
+	if _, err := as.consentService.UpdateConsentPurpose(ctx, ouID,
 		existingPurposes[0].ID, &updated); err != nil {
 		return wrapConsentServiceError(err)
 	}
@@ -2108,7 +2004,7 @@ func (as *applicationService) updateConsentPurpose(
 }
 
 // deleteConsentPurposes removes all consent purposes associated with an application.
-func (as *applicationService) deleteConsentPurposes(appID string) *serviceerror.ServiceError {
+func (as *applicationService) deleteConsentPurposes(ctx context.Context, appID string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
 	// TODO: Replace with application's actual OU when OU support is added
@@ -2116,7 +2012,7 @@ func (as *applicationService) deleteConsentPurposes(appID string) *serviceerror.
 
 	logger.Debug("Attempting to delete consent purposes for the application", log.String("appID", appID))
 
-	purposes, err := as.consentService.ListConsentPurposes(context.TODO(), ouID, appID)
+	purposes, err := as.consentService.ListConsentPurposes(ctx, ouID, appID)
 	if err != nil {
 		return wrapConsentServiceError(err)
 	}
@@ -2130,7 +2026,7 @@ func (as *applicationService) deleteConsentPurposes(appID string) *serviceerror.
 	// We assume there is only one consent purpose per application
 	logger.Debug("Deleting consent purpose for the application", log.String("appID", appID),
 		log.Int("purposesCount", len(purposes)))
-	if err := as.consentService.DeleteConsentPurpose(context.TODO(), ouID, purposes[0].ID); err != nil {
+	if err := as.consentService.DeleteConsentPurpose(ctx, ouID, purposes[0].ID); err != nil {
 		// TODO: Default consent service implementation doesn't allow deleting consent purposes with existing consents.
 		//  We need to handle this case gracefully until the consent service supports force delete or cascade delete
 		// for consent purposes.

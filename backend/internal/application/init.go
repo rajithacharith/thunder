@@ -30,7 +30,9 @@ import (
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
@@ -49,14 +51,29 @@ func Initialize(
 	// Step 1: Initialize store structure (without data)
 	appStore := initializeStore()
 
-	// Step 2: Create service with store
+	// Step 2: Get database transactioner
+	client, err := provider.GetDBProvider().GetConfigDBClient()
+	if err != nil {
+		log.GetLogger().Error("Failed to initialize database client for application service",
+			log.Error(err))
+		return nil, nil, err
+	}
+	transactioner, err := client.GetTransactioner()
+	if err != nil {
+		log.GetLogger().Error("Failed to initialize database transactioner for application service",
+			log.Error(err))
+		return nil, nil, err
+	}
+
+	// Step 3: Create service with store
 	appService := newApplicationService(
 		appStore, certService, flowMgtService,
 		themeMgtService, layoutMgtService,
 		userSchemaService, consentService,
+		transactioner,
 	)
 
-	// Step 3: Load declarative resources into store (if applicable)
+	// Step 4: Load declarative resources into store (if applicable)
 	storeMode := getApplicationStoreMode()
 	if storeMode == serverconst.StoreModeComposite || storeMode == serverconst.StoreModeDeclarative {
 		if err := loadDeclarativeResources(appStore, appService); err != nil {
