@@ -601,9 +601,37 @@ func (c *defaultClient) searchConsents(ctx context.Context, ouID string, filter 
 		return nil, &serviceerror.InternalServerErrorWithI18n
 	}
 
+	// Currently the default client does not apply the filtering correctly for some consent statuses (e.g. EXPIRED)
+	// due to the limitations in the consent service API. As a workaround, we apply additional filtering logic here
+	// based on the validity time and status to ensure the expected results are returned to the service layer.
+	// This can be removed once the consent service API is enhanced to support proper filtering by status.
+	statusFilter := map[ConsentStatus]bool{}
+	if filter != nil {
+		for _, status := range filter.ConsentStatuses {
+			statusFilter[status] = true
+		}
+	}
+	applyStatusFilter := len(statusFilter) > 0
+	nowUnix := time.Now().Unix()
+
 	out := make([]Consent, 0, len(result.Data))
 	for _, dto := range result.Data {
-		out = append(out, c.dtoToConsent(&dto))
+		consent := c.dtoToConsent(&dto)
+
+		// Currently the default client doesn't set the expired status for consents based on the validity time
+		// due to the limitations in the consent service API. As a workaround, we set the expired status here
+		// based on the validity time to ensure the expected results are returned
+		if consent.Status == ConsentStatusActive && consent.ValidityTime > 0 && consent.ValidityTime <= nowUnix {
+			consent.Status = ConsentStatusExpired
+		}
+
+		if applyStatusFilter {
+			if _, ok := statusFilter[consent.Status]; !ok {
+				continue
+			}
+		}
+
+		out = append(out, consent)
 	}
 
 	return out, nil
