@@ -25,6 +25,12 @@ import (
 	"github.com/asgardeo/thunder/internal/system/security"
 )
 
+// OU resolve from strategy values.
+const (
+	// ouResolveFromCaller indicates that the caller's OU should be used when creating the user.
+	ouResolveFromCaller = "caller"
+)
+
 // ouResolverExecutor resolves the organization unit for a user being onboarded.
 type ouResolverExecutor struct {
 	core.ExecutorInterface
@@ -47,8 +53,8 @@ func newOUResolverExecutor(flowFactory core.FlowFactoryInterface) *ouResolverExe
 }
 
 // Execute resolves the organization unit for the user being onboarded.
-// If the createInAdminOU node property is true, it sets the ouId runtime data
-// to the admin's organization unit, overriding the default OU from the user type.
+// It reads the "resolveFrom" node property to determine the OU resolution strategy.
+// When set to "caller", it overrides the default OU with the caller's OU from the security context.
 func (e *ouResolverExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
@@ -57,36 +63,52 @@ func (e *ouResolverExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRes
 		RuntimeData: make(map[string]string),
 	}
 
-	// Check if the node property requests creating the user in the admin's OU.
-	if !e.shouldCreateInAdminOU(ctx) {
-		logger.Debug("createInAdminOU not enabled, skipping OU override")
+	resolveFrom := e.getResolveFrom(ctx)
+	if resolveFrom == "" {
+		logger.Debug("resolveFrom not configured, skipping OU override")
 		return execResp, nil
 	}
 
-	// Extract the admin's OU from the security context.
-	adminOUID := security.GetOUID(ctx.Context)
-	if adminOUID == "" {
-		logger.Error("Admin OU not found in security context")
+	switch resolveFrom {
+	case ouResolveFromCaller:
+		return e.resolveFromCaller(ctx, execResp, logger)
+	default:
+		logger.Error("Unsupported resolveFrom value", log.String("resolveFrom", resolveFrom))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Unable to determine admin organization unit"
+		execResp.FailureReason = "Unsupported OU resolution strategy: " + resolveFrom
+		return execResp, nil
+	}
+}
+
+// resolveFromCaller resolves the OU from the caller's security context.
+func (e *ouResolverExecutor) resolveFromCaller(ctx *core.NodeContext,
+	execResp *common.ExecutorResponse, logger *log.Logger) (*common.ExecutorResponse, error) {
+	callerOUID := security.GetOUID(ctx.Context)
+	if callerOUID == "" {
+		logger.Error("Caller OU not found in security context")
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = "Unable to determine caller organization unit"
 		return execResp, nil
 	}
 
-	logger.Debug("Overriding user OU with admin's OU", log.String("adminOUID", adminOUID))
-	execResp.RuntimeData[ouIDKey] = adminOUID
+	logger.Debug("Overriding user OU with caller's OU", log.String("callerOUID", callerOUID))
+	execResp.RuntimeData[ouIDKey] = callerOUID
 
 	return execResp, nil
 }
 
-// shouldCreateInAdminOU checks if the node property "createInAdminOU" is set to true.
-func (e *ouResolverExecutor) shouldCreateInAdminOU(ctx *core.NodeContext) bool {
+// getResolveFrom retrieves the resolveFrom strategy from the node properties.
+func (e *ouResolverExecutor) getResolveFrom(ctx *core.NodeContext) string {
 	if ctx.NodeProperties == nil {
-		return false
+		return ""
 	}
-	val, ok := ctx.NodeProperties[common.NodePropertyCreateInAdminOU]
+	val, ok := ctx.NodeProperties[common.NodePropertyOUResolveFrom]
 	if !ok {
-		return false
+		return ""
 	}
-	boolVal, ok := val.(bool)
-	return ok && boolVal
+	strVal, ok := val.(string)
+	if !ok {
+		return ""
+	}
+	return strVal
 }

@@ -50,11 +50,11 @@ func (suite *OUResolverExecutorTestSuite) SetupTest() {
 	suite.executor = newOUResolverExecutor(suite.mockFlowFactory)
 }
 
-func (suite *OUResolverExecutorTestSuite) TestExecute_CreateInAdminOU_Success() {
-	adminOUID := "admin-ou-123"
+func (suite *OUResolverExecutorTestSuite) TestExecute_ResolveFromCaller_Success() {
+	callerOUID := "caller-ou-123"
 	httpCtx := context.Background()
 	authCtx := security.NewSecurityContextForTest(
-		"admin-user", adminOUID, "token",
+		"caller-user", callerOUID, "token",
 		[]string{"system"}, nil,
 	)
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
@@ -63,7 +63,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_CreateInAdminOU_Success() 
 		FlowID:  "test-flow",
 		Context: httpCtx,
 		NodeProperties: map[string]interface{}{
-			common.NodePropertyCreateInAdminOU: true,
+			common.NodePropertyOUResolveFrom: ouResolveFromCaller,
 		},
 		RuntimeData: map[string]string{
 			defaultOUIDKey: "default-ou-456",
@@ -74,14 +74,14 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_CreateInAdminOU_Success() 
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
-	assert.Equal(suite.T(), adminOUID, resp.RuntimeData[ouIDKey])
+	assert.Equal(suite.T(), callerOUID, resp.RuntimeData[ouIDKey])
 }
 
-func (suite *OUResolverExecutorTestSuite) TestExecute_CreateInAdminOU_AdminOUMissing() {
+func (suite *OUResolverExecutorTestSuite) TestExecute_ResolveFromCaller_CallerOUMissing() {
 	httpCtx := context.Background()
 	// Security context without OU.
 	authCtx := security.NewSecurityContextForTest(
-		"admin-user", "", "token",
+		"caller-user", "", "token",
 		[]string{"system"}, nil,
 	)
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
@@ -90,7 +90,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_CreateInAdminOU_AdminOUMis
 		FlowID:  "test-flow",
 		Context: httpCtx,
 		NodeProperties: map[string]interface{}{
-			common.NodePropertyCreateInAdminOU: true,
+			common.NodePropertyOUResolveFrom: ouResolveFromCaller,
 		},
 	}
 
@@ -98,23 +98,21 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_CreateInAdminOU_AdminOUMis
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Equal(suite.T(), "Unable to determine admin organization unit", resp.FailureReason)
+	assert.Equal(suite.T(), "Unable to determine caller organization unit", resp.FailureReason)
 }
 
-func (suite *OUResolverExecutorTestSuite) TestExecute_CreateInAdminOU_False() {
+func (suite *OUResolverExecutorTestSuite) TestExecute_ResolveFromNotConfigured() {
 	httpCtx := context.Background()
 	authCtx := security.NewSecurityContextForTest(
-		"admin-user", "admin-ou-123", "token",
+		"caller-user", "caller-ou-123", "token",
 		[]string{"system"}, nil,
 	)
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
 	ctx := &core.NodeContext{
-		FlowID:  "test-flow",
-		Context: httpCtx,
-		NodeProperties: map[string]interface{}{
-			common.NodePropertyCreateInAdminOU: false,
-		},
+		FlowID:         "test-flow",
+		Context:        httpCtx,
+		NodeProperties: map[string]interface{}{},
 		RuntimeData: map[string]string{
 			defaultOUIDKey: "default-ou-456",
 		},
@@ -125,6 +123,24 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_CreateInAdminOU_False() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 	assert.Empty(suite.T(), resp.RuntimeData[ouIDKey])
+}
+
+func (suite *OUResolverExecutorTestSuite) TestExecute_UnsupportedResolveFrom() {
+	httpCtx := context.Background()
+
+	ctx := &core.NodeContext{
+		FlowID:  "test-flow",
+		Context: httpCtx,
+		NodeProperties: map[string]interface{}{
+			common.NodePropertyOUResolveFrom: "unsupported",
+		},
+	}
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), "Unsupported OU resolution strategy: unsupported", resp.FailureReason)
 }
 
 func (suite *OUResolverExecutorTestSuite) TestExecute_PropertyMissing() {
@@ -165,10 +181,10 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_NilNodeProperties() {
 	assert.Empty(suite.T(), resp.RuntimeData[ouIDKey])
 }
 
-func (suite *OUResolverExecutorTestSuite) TestExecute_PropertyWrongType_String() {
+func (suite *OUResolverExecutorTestSuite) TestExecute_PropertyWrongType() {
 	httpCtx := context.Background()
 	authCtx := security.NewSecurityContextForTest(
-		"admin-user", "admin-ou-123", "token",
+		"caller-user", "caller-ou-123", "token",
 		[]string{"system"}, nil,
 	)
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
@@ -177,7 +193,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_PropertyWrongType_String()
 		FlowID:  "test-flow",
 		Context: httpCtx,
 		NodeProperties: map[string]interface{}{
-			common.NodePropertyCreateInAdminOU: "true", // String instead of bool.
+			common.NodePropertyOUResolveFrom: 123, // Not a string.
 		},
 	}
 
@@ -193,7 +209,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_NilContext() {
 		FlowID:  "test-flow",
 		Context: nil,
 		NodeProperties: map[string]interface{}{
-			common.NodePropertyCreateInAdminOU: true,
+			common.NodePropertyOUResolveFrom: ouResolveFromCaller,
 		},
 	}
 
@@ -201,7 +217,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_NilContext() {
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Equal(suite.T(), "Unable to determine admin organization unit", resp.FailureReason)
+	assert.Equal(suite.T(), "Unable to determine caller organization unit", resp.FailureReason)
 }
 
 func TestOUResolverExecutorSuite(t *testing.T) {
