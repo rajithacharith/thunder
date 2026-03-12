@@ -20,15 +20,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: ⚙️ Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 'lts/*'
 
       - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v4.2.0
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
           version: 'latest'
           run_install: false
@@ -106,10 +106,10 @@ jobs:
       pull-requests: write
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: 🔎 Dependency Review
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4
         with:
           fail-on-severity: high
           deny-licenses: GPL-3.0-only,GPL-3.0-or-later,AGPL-3.0-only,AGPL-3.0-or-later
@@ -123,7 +123,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: ⚙️ Set up Go Environment
         uses: ./.github/actions/setup-go
@@ -158,13 +158,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           # We need to fetch all branches and commits so that Nx affected has a base to compare against.
           fetch-depth: 0
 
       - name: ⚙️ Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 'lts/*'
 
@@ -173,12 +173,12 @@ jobs:
 
       - name: 🐳 Set SHAs for Nx
         id: set-shas
-        uses: nrwl/nx-set-shas@v3
+        uses: nrwl/nx-set-shas@3e9ad7370203c1e93d109be57f3b72eb0eb511b1 # v4.4.0
         with:
           main-branch-name: "main"
 
       - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v4.2.0
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
           version: 'latest'
           run_install: false
@@ -210,25 +210,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: ⚙️ Set up Go Environment
         uses: ./.github/actions/setup-go
 
       - name: ⚙️ Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 'lts/*'
 
       - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v4.2.0
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
           version: 'latest'
           run_install: false
           cache_dependency_path: frontend/pnpm-lock.yaml
 
       - name: 🗄️ Cache Go Modules
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         id: cache-go-modules
         with:
           path: |
@@ -271,14 +271,14 @@ jobs:
           echo "Built distribution: $DIST_PATH"
 
       - name: 📦 Upload Built Distribution
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: thunder-distribution
           path: target/dist/*.zip
           if-no-files-found: error
 
       - name: 📊 Upload Unit Test Coverage Report to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: backend/coverage_unit.out
@@ -288,7 +288,7 @@ jobs:
           fail_ci_if_error: false
 
       - name: 📦 Archive Unit Coverage Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: unit-coverage-report
           path: backend/coverage_unit.out
@@ -304,15 +304,15 @@ jobs:
         shard: [1, 2, 3, 4]
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: ⚙️ Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 'lts/*'
 
       - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v4.2.0
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
           version: 'latest'
           run_install: false
@@ -353,7 +353,7 @@ jobs:
           done
 
       - name: 📦 Upload thunder-develop coverage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: develop-coverage-shard-${{ matrix.shard }}
           path: frontend/apps/thunder-develop/coverage/lcov.info
@@ -361,7 +361,7 @@ jobs:
 
       - name: 📦 Upload thunder-gate coverage artifact
         if: matrix.shard == 1
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: gate-coverage
           path: frontend/apps/thunder-gate/coverage/lcov.info
@@ -374,16 +374,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: 📥 Download all coverage artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           pattern: develop-coverage-shard-*
           path: coverage/develop
 
       - name: 📥 Download gate coverage artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: gate-coverage
           path: coverage/gate
@@ -393,7 +393,7 @@ jobs:
           cat coverage/develop/develop-coverage-shard-*/lcov.info > coverage/develop-merged-lcov.info
 
       - name: 📊 Upload `@thunder/develop` Unit Test Coverage Report to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/develop-merged-lcov.info
@@ -403,7 +403,7 @@ jobs:
           fail_ci_if_error: false
 
       - name: 📊 Upload `@thunder/gate` Unit Test Coverage Report to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/gate/lcov.info
@@ -418,18 +418,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: ⚙️ Set up Go Environment
         uses: ./.github/actions/setup-go
 
       - name: ⚙️ Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 'lts/*'
 
       - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v4.2.0
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
           version: 'latest'
           run_install: false
@@ -441,7 +441,7 @@ jobs:
           make package_samples OS=$(go env GOOS) ARCH=$(go env GOARCH)
 
       - name: 📦 Upload Built Sample App
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: sample-app-react-sdk
           path: target/dist/sample-app-react-sdk-*.zip
@@ -470,19 +470,19 @@ jobs:
           --health-retries 5
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: ⚙️ Set up Go Environment
         uses: ./.github/actions/setup-go
 
       - name: 📥 Download Unit Coverage Report
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: unit-coverage-report
           path: backend/
 
       - name: 🗄️ Cache Go Modules
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         id: cache-go-modules
         with:
           path: |
@@ -513,7 +513,7 @@ jobs:
           coverage-enabled: true
 
       - name: 📊 Upload Integration Test Coverage Report to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: target/coverage_integration.out
@@ -526,7 +526,7 @@ jobs:
       #   run: ./build.sh merge_coverage
 
       # - name: 📊 Upload Combined Coverage Report to Codecov
-      #   uses: codecov/codecov-action@v4
+      #   uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
       #   with:
       #     token: ${{ secrets.CODECOV_TOKEN }}
       #     files: target/coverage_combined.out
@@ -541,21 +541,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: ⚙️ Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 'lts/*'
 
       - name: 📥 Download Built Distribution
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: thunder-distribution
           path: target/dist/
 
       - name: 📥 Download Built Sample App
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: sample-app-react-sdk
           path: target/dist/
@@ -736,7 +736,7 @@ jobs:
           SAMPLE_APP_USERNAME: ${{ secrets.SAMPLE_APP_USERNAME || 'e2e-test-user' }}
           SAMPLE_APP_PASSWORD: ${{ secrets.SAMPLE_APP_PASSWORD || 'e2e-test-password' }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
@@ -751,8 +751,8 @@ jobs:
     outputs:
       should-run: ${{ steps.filter.outputs.powershell }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
         id: filter
         with:
           base: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || github.event.pull_request.base.sha }}

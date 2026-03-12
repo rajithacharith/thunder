@@ -21,13 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: ⚙️ Set up Go Environment
         uses: ./.github/actions/setup-go
 
       - name: 🗄️ Cache Go Modules
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             ~/.cache/go-build
@@ -70,7 +70,7 @@ jobs:
       fail-fast: false
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: ⚙️ Setup Samples Environment
         uses: ./.github/actions/setup-samples-environment
@@ -88,7 +88,7 @@ jobs:
       fail-fast: false
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: ⚙️ Setup Samples Environment
         uses: ./.github/actions/setup-samples-environment
@@ -103,7 +103,7 @@ jobs:
     if: always()
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: 📊 Check Overall Status
         id: check_status
@@ -150,7 +150,7 @@ jobs:
 
       - name: 🔔 Notify on Failure
         if: steps.check_status.outputs.status == 'failure'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         env:
           BUILD_RESULT: ${{ needs.validate-complete-build.result }}
           LINUX_RESULT: ${{ needs.validate-sample-packaging-linux.result }}
