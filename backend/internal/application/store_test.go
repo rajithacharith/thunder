@@ -2114,3 +2114,1178 @@ func (suite *ApplicationStoreTestSuite) TestDeleteApplication() {
 		suite.Contains(err.Error(), "failed to execute query")
 	})
 }
+
+// TestCreateApplication tests CreateApplication with actual store method calls.
+func (suite *ApplicationStoreTestSuite) TestCreateApplication() {
+	suite.Run("successfully creates application without OAuth", func() {
+		app := suite.createTestApplication()
+		app.InboundAuthConfig = []model.InboundAuthConfigProcessedDTO{} // No OAuth
+
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryCreateApplication,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, testServerID).
+			Return(int64(1), nil).Once()
+
+		err := suite.store.CreateApplication(context.Background(), app)
+
+		suite.NoError(err)
+	})
+
+	suite.Run("successfully creates application with OAuth", func() {
+		app := suite.createTestApplication()
+
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryCreateApplication,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, testServerID).
+			Return(int64(1), nil).Once()
+		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryCreateOAuthApplication,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, testServerID).
+			Return(int64(1), nil).Once()
+
+		err := suite.store.CreateApplication(context.Background(), app)
+
+		suite.NoError(err)
+	})
+
+	suite.Run("returns error when database client fails", func() {
+		app := suite.createTestApplication()
+		suite.mockDBProvider.On("GetConfigDBClient").
+			Return(nil, errors.New("db provider unavailable")).Once()
+
+		err := suite.store.CreateApplication(context.Background(), app)
+
+		suite.Error(err)
+		suite.Contains(err.Error(), "failed to get database client")
+	})
+
+	suite.Run("returns error when execute query fails", func() {
+		app := suite.createTestApplication()
+		app.InboundAuthConfig = []model.InboundAuthConfigProcessedDTO{} // No OAuth
+
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryCreateApplication,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, testServerID).
+			Return(int64(0), errors.New("database insert error")).Once()
+
+		err := suite.store.CreateApplication(context.Background(), app)
+
+		suite.Error(err)
+		suite.Contains(err.Error(), "failed to insert application")
+	})
+
+	suite.Run("returns error when OAuth creation fails", func() {
+		app := suite.createTestApplication()
+
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryCreateApplication,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, testServerID).
+			Return(int64(1), nil).Once()
+		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryCreateOAuthApplication,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, testServerID).
+			Return(int64(0), errors.New("oauth insert error")).Once()
+
+		err := suite.store.CreateApplication(context.Background(), app)
+
+		suite.Error(err)
+		suite.Contains(err.Error(), "oauth insert error")
+	})
+}
+
+// TestGetTotalApplicationCount tests GetTotalApplicationCount with actual store method calls.
+func (suite *ApplicationStoreTestSuite) TestGetTotalApplicationCount() {
+	suite.Run("returns correct count when applications exist", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetApplicationCount, testServerID).
+			Return([]map[string]interface{}{
+				{
+					"total": int64(5),
+				},
+			}, nil).Once()
+
+		count, err := suite.store.GetTotalApplicationCount(context.Background())
+
+		suite.NoError(err)
+		suite.Equal(5, count)
+	})
+
+	suite.Run("returns zero when no applications exist", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetApplicationCount, testServerID).
+			Return([]map[string]interface{}{
+				{
+					"total": int64(0),
+				},
+			}, nil).Once()
+
+		count, err := suite.store.GetTotalApplicationCount(context.Background())
+
+		suite.NoError(err)
+		suite.Equal(0, count)
+	})
+
+	suite.Run("returns zero when query returns empty result", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetApplicationCount, testServerID).
+			Return([]map[string]interface{}{}, nil).Once()
+
+		count, err := suite.store.GetTotalApplicationCount(context.Background())
+
+		suite.NoError(err)
+		suite.Equal(0, count)
+	})
+
+	suite.Run("returns error when database client fails", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").
+			Return(nil, errors.New("db provider unavailable")).Once()
+
+		count, err := suite.store.GetTotalApplicationCount(context.Background())
+
+		suite.Error(err)
+		suite.Equal(0, count)
+		suite.Contains(err.Error(), "failed to get database client")
+	})
+
+	suite.Run("returns error when query fails", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetApplicationCount, testServerID).
+			Return(nil, errors.New("query execution failed")).Once()
+
+		count, err := suite.store.GetTotalApplicationCount(context.Background())
+
+		suite.Error(err)
+		suite.Equal(0, count)
+		suite.Contains(err.Error(), "failed to execute query")
+	})
+
+	suite.Run("returns error when total count is invalid type", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetApplicationCount, testServerID).
+			Return([]map[string]interface{}{
+				{
+					"total": "invalid", // Invalid type
+				},
+			}, nil).Once()
+
+		count, err := suite.store.GetTotalApplicationCount(context.Background())
+
+		suite.Error(err)
+		suite.Equal(0, count)
+		suite.Contains(err.Error(), "failed to parse total count")
+	})
+}
+
+// TestGetApplicationList tests GetApplicationList with actual store method calls.
+func (suite *ApplicationStoreTestSuite) TestGetApplicationList() {
+	suite.Run("returns list of applications", func() {
+		appJSON := map[string]interface{}{
+			"url":      "https://example.com",
+			"logo_url": "https://example.com/logo.png",
+		}
+		appJSONBytes, _ := json.Marshal(appJSON)
+
+		mockRows := []map[string]interface{}{
+			{
+				"id":                           "app1",
+				"app_name":                     "Test App 1",
+				"description":                  "Test description 1",
+				"auth_flow_id":                 "auth_flow_1",
+				"registration_flow_id":         "reg_flow_1",
+				"is_registration_flow_enabled": "1",
+				"app_json":                     string(appJSONBytes),
+				"client_id":                    "client1",
+			},
+			{
+				"id":                           "app2",
+				"app_name":                     "Test App 2",
+				"description":                  "Test description 2",
+				"auth_flow_id":                 "auth_flow_1",
+				"registration_flow_id":         "reg_flow_1",
+				"is_registration_flow_enabled": "0",
+				"app_json":                     string(appJSONBytes),
+				"client_id":                    nil,
+			},
+		}
+
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetApplicationList, testServerID).
+			Return(mockRows, nil).Once()
+
+		apps, err := suite.store.GetApplicationList(context.Background())
+
+		suite.NoError(err)
+		suite.Len(apps, 2)
+		suite.Equal("app1", apps[0].ID)
+		suite.Equal("Test App 1", apps[0].Name)
+		suite.True(apps[0].IsRegistrationFlowEnabled)
+		suite.Equal("app2", apps[1].ID)
+		suite.False(apps[1].IsRegistrationFlowEnabled)
+	})
+
+	suite.Run("returns empty list when no applications exist", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetApplicationList, testServerID).
+			Return([]map[string]interface{}{}, nil).Once()
+
+		apps, err := suite.store.GetApplicationList(context.Background())
+
+		suite.NoError(err)
+		suite.Len(apps, 0)
+	})
+
+	suite.Run("returns error when database client fails", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").
+			Return(nil, errors.New("db provider unavailable")).Once()
+
+		apps, err := suite.store.GetApplicationList(context.Background())
+
+		suite.Error(err)
+		suite.Nil(apps)
+		suite.Contains(err.Error(), "failed to get database client")
+	})
+
+	suite.Run("returns error when query fails", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetApplicationList, testServerID).
+			Return(nil, errors.New("query execution failed")).Once()
+
+		apps, err := suite.store.GetApplicationList(context.Background())
+
+		suite.Error(err)
+		suite.Nil(apps)
+		suite.Contains(err.Error(), "failed to execute query")
+	})
+
+	suite.Run("returns error when row parsing fails", func() {
+		mockRows := []map[string]interface{}{
+			{
+				"id": 123, // Invalid type - should be string
+			},
+		}
+
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetApplicationList, testServerID).
+			Return(mockRows, nil).Once()
+
+		apps, err := suite.store.GetApplicationList(context.Background())
+
+		suite.Error(err)
+		suite.Nil(apps)
+		suite.Contains(err.Error(), "failed to build application from result row")
+	})
+}
+
+// TestGetApplicationByID tests GetApplicationByID with actual store method calls.
+func (suite *ApplicationStoreTestSuite) TestGetApplicationByID() {
+	suite.Run("returns application when found", func() {
+		appJSON := map[string]interface{}{
+			"url":      "https://example.com",
+			"logo_url": "https://example.com/logo.png",
+		}
+		appJSONBytes, _ := json.Marshal(appJSON)
+
+		mockRow := map[string]interface{}{
+			"id":                           "app1",
+			"app_name":                     "Test App 1",
+			"description":                  "Test description",
+			"auth_flow_id":                 "auth_flow_1",
+			"registration_flow_id":         "reg_flow_1",
+			"is_registration_flow_enabled": "1",
+			"app_json":                     string(appJSONBytes),
+			"client_id":                    "client1",
+			"client_secret":                "secret1",
+			"oauth_config_json":            "{}",
+		}
+
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetApplicationByAppID, "app1", testServerID).
+			Return([]map[string]interface{}{mockRow}, nil).Once()
+
+		app, err := suite.store.GetApplicationByID(context.Background(), "app1")
+
+		suite.NoError(err)
+		suite.NotNil(app)
+		suite.Equal("app1", app.ID)
+		suite.Equal("Test App 1", app.Name)
+	})
+
+	suite.Run("returns error when application not found", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetApplicationByAppID,
+			"non-existent", testServerID).Return([]map[string]interface{}{}, nil).Once()
+
+		app, err := suite.store.GetApplicationByID(context.Background(), "non-existent")
+
+		suite.Error(err)
+		suite.Nil(app)
+		suite.Equal(model.ApplicationNotFoundError, err)
+	})
+
+	suite.Run("returns error when database client fails", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").
+			Return(nil, errors.New("db provider unavailable")).Once()
+
+		app, err := suite.store.GetApplicationByID(context.Background(), "app1")
+
+		suite.Error(err)
+		suite.Nil(app)
+		suite.Contains(err.Error(), "failed to get database client")
+	})
+
+	suite.Run("returns error when query fails", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetApplicationByAppID, "app1", testServerID).
+			Return(nil, errors.New("query execution failed")).Once()
+
+		app, err := suite.store.GetApplicationByID(context.Background(), "app1")
+
+		suite.Error(err)
+		suite.Nil(app)
+		suite.Contains(err.Error(), "failed to execute query")
+	})
+}
+
+// TestGetApplicationByName tests GetApplicationByName with actual store method calls.
+func (suite *ApplicationStoreTestSuite) TestGetApplicationByName() {
+	suite.Run("returns application when found by name", func() {
+		appJSON := map[string]interface{}{
+			"url":      "https://example.com",
+			"logo_url": "https://example.com/logo.png",
+		}
+		appJSONBytes, _ := json.Marshal(appJSON)
+
+		mockRow := map[string]interface{}{
+			"id":                           "app1",
+			"app_name":                     "Test Application",
+			"description":                  "Test description",
+			"auth_flow_id":                 "auth_flow_1",
+			"registration_flow_id":         "reg_flow_1",
+			"is_registration_flow_enabled": "1",
+			"app_json":                     string(appJSONBytes),
+			"client_id":                    "client1",
+			"client_secret":                "secret1",
+			"oauth_config_json":            "{}",
+		}
+
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetApplicationByName,
+			"Test Application", testServerID).Return([]map[string]interface{}{mockRow}, nil).Once()
+
+		app, err := suite.store.GetApplicationByName(context.Background(), "Test Application")
+
+		suite.NoError(err)
+		suite.NotNil(app)
+		suite.Equal("app1", app.ID)
+		suite.Equal("Test Application", app.Name)
+	})
+
+	suite.Run("returns error when application not found by name", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetApplicationByName,
+			"Non-Existent", testServerID).Return([]map[string]interface{}{}, nil).Once()
+
+		app, err := suite.store.GetApplicationByName(context.Background(), "Non-Existent")
+
+		suite.Error(err)
+		suite.Nil(app)
+		suite.Equal(model.ApplicationNotFoundError, err)
+	})
+
+	suite.Run("returns error when database client fails", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").
+			Return(nil, errors.New("db provider unavailable")).Once()
+
+		app, err := suite.store.GetApplicationByName(context.Background(), "Test App")
+
+		suite.Error(err)
+		suite.Nil(app)
+		suite.Contains(err.Error(), "failed to get database client")
+	})
+}
+
+// TestUpdateApplication tests UpdateApplication with actual store method calls.
+func (suite *ApplicationStoreTestSuite) TestUpdateApplication() {
+	existingApp := suite.createTestApplication()
+	updatedApp := suite.createTestApplication()
+	updatedApp.Name = "Updated App Name"
+
+	suite.Run("successfully updates application without OAuth changes", func() {
+		// Both have OAuth
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryUpdateApplicationByAppID,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, testServerID).
+			Return(int64(1), nil).Once()
+		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryUpdateOAuthApplicationByAppID,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, testServerID).
+			Return(int64(1), nil).Once()
+
+		err := suite.store.UpdateApplication(context.Background(), &existingApp, &updatedApp)
+
+		suite.NoError(err)
+	})
+
+	suite.Run("successfully removes OAuth when not in updated app", func() {
+		appWithoutOAuth := updatedApp
+		appWithoutOAuth.InboundAuthConfig = []model.InboundAuthConfigProcessedDTO{}
+
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryUpdateApplicationByAppID,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, testServerID).
+			Return(int64(1), nil).Once()
+		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryDeleteOAuthApplicationByClientID,
+			mock.Anything, testServerID).
+			Return(int64(1), nil).Once()
+
+		err := suite.store.UpdateApplication(context.Background(), &existingApp, &appWithoutOAuth)
+
+		suite.NoError(err)
+	})
+
+	suite.Run("successfully adds OAuth when not in existing app", func() {
+		appWithoutOAuth := existingApp
+		appWithoutOAuth.InboundAuthConfig = []model.InboundAuthConfigProcessedDTO{}
+
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryUpdateApplicationByAppID,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, testServerID).
+			Return(int64(1), nil).Once()
+		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryCreateOAuthApplication,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, testServerID).
+			Return(int64(1), nil).Once()
+
+		err := suite.store.UpdateApplication(context.Background(), &appWithoutOAuth, &updatedApp)
+
+		suite.NoError(err)
+	})
+
+	suite.Run("returns error when database client fails", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").
+			Return(nil, errors.New("db provider unavailable")).Once()
+
+		err := suite.store.UpdateApplication(context.Background(), &existingApp, &updatedApp)
+
+		suite.Error(err)
+		suite.Contains(err.Error(), "failed to get database client")
+	})
+
+	suite.Run("returns error when update query fails", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryUpdateApplicationByAppID,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything, testServerID).
+			Return(int64(0), errors.New("database update error")).Once()
+
+		err := suite.store.UpdateApplication(context.Background(), &existingApp, &updatedApp)
+
+		suite.Error(err)
+		suite.Contains(err.Error(), "failed to update application")
+	})
+}
+
+// TestParseBoolFromCount tests the parseBoolFromCount helper function.
+func (suite *ApplicationStoreTestSuite) TestParseBoolFromCount() {
+	suite.Run("returns true when count is greater than zero", func() {
+		results := []map[string]interface{}{
+			{
+				"count": int64(1),
+			},
+		}
+
+		result, err := parseBoolFromCount(results)
+
+		suite.NoError(err)
+		suite.True(result)
+	})
+
+	suite.Run("returns false when count is zero", func() {
+		results := []map[string]interface{}{
+			{
+				"count": int64(0),
+			},
+		}
+
+		result, err := parseBoolFromCount(results)
+
+		suite.NoError(err)
+		suite.False(result)
+	})
+
+	suite.Run("returns false when results are empty", func() {
+		results := []map[string]interface{}{}
+
+		result, err := parseBoolFromCount(results)
+
+		suite.NoError(err)
+		suite.False(result)
+	})
+
+	suite.Run("returns error when count is invalid type", func() {
+		results := []map[string]interface{}{
+			{
+				"count": "invalid",
+			},
+		}
+
+		result, err := parseBoolFromCount(results)
+
+		suite.Error(err)
+		suite.False(result)
+		suite.Contains(err.Error(), "failed to parse count from query result")
+	})
+}
+
+// TestExtractStringFromJSON tests the extractStringFromJSON helper function.
+func (suite *ApplicationStoreTestSuite) TestExtractStringFromJSON() {
+	suite.Run("extracts string value successfully", func() {
+		data := map[string]interface{}{
+			"key": "value",
+		}
+
+		result, err := extractStringFromJSON(data, "key")
+
+		suite.NoError(err)
+		suite.Equal("value", result)
+	})
+
+	suite.Run("returns empty string when key is nil", func() {
+		data := map[string]interface{}{
+			"key": nil,
+		}
+
+		result, err := extractStringFromJSON(data, "key")
+
+		suite.NoError(err)
+		suite.Equal("", result)
+	})
+
+	suite.Run("returns empty string when key not exists", func() {
+		data := map[string]interface{}{}
+
+		result, err := extractStringFromJSON(data, "key")
+
+		suite.NoError(err)
+		suite.Equal("", result)
+	})
+
+	suite.Run("returns error when value is not a string", func() {
+		data := map[string]interface{}{
+			"key": 123,
+		}
+
+		result, err := extractStringFromJSON(data, "key")
+
+		suite.Error(err)
+		suite.Equal("", result)
+		suite.Contains(err.Error(), "failed to parse key from app JSON")
+	})
+}
+
+// TestExtractStringArrayFromJSON tests the extractStringArrayFromJSON helper function.
+func (suite *ApplicationStoreTestSuite) TestExtractStringArrayFromJSON() {
+	suite.Run("extracts string array successfully", func() {
+		data := map[string]interface{}{
+			"items": []interface{}{"value1", "value2", "value3"},
+		}
+
+		result, err := extractStringArrayFromJSON(data, "items")
+
+		suite.NoError(err)
+		suite.Len(result, 3)
+		suite.Equal([]string{"value1", "value2", "value3"}, result)
+	})
+
+	suite.Run("returns empty array when key is nil", func() {
+		data := map[string]interface{}{
+			"items": nil,
+		}
+
+		result, err := extractStringArrayFromJSON(data, "items")
+
+		suite.NoError(err)
+		suite.Len(result, 0)
+	})
+
+	suite.Run("returns empty array when key not exists", func() {
+		data := map[string]interface{}{}
+
+		result, err := extractStringArrayFromJSON(data, "items")
+
+		suite.NoError(err)
+		suite.Len(result, 0)
+	})
+
+	suite.Run("returns error when array contains non-string element", func() {
+		data := map[string]interface{}{
+			"items": []interface{}{"value1", 123, "value3"},
+		}
+
+		result, err := extractStringArrayFromJSON(data, "items")
+
+		suite.Error(err)
+		suite.Nil(result)
+		suite.Contains(err.Error(), "failed to parse items from app JSON")
+		suite.Contains(err.Error(), "item at index 1 is not a string")
+	})
+
+	suite.Run("returns error when value is not an array", func() {
+		data := map[string]interface{}{
+			"items": "not an array",
+		}
+
+		result, err := extractStringArrayFromJSON(data, "items")
+
+		suite.Error(err)
+		suite.Nil(result)
+		suite.Contains(err.Error(), "failed to parse items from app JSON")
+	})
+}
+
+// TestExtractAssertionConfigFromJSON tests the extractAssertionConfigFromJSON helper function.
+func (suite *ApplicationStoreTestSuite) TestExtractAssertionConfigFromJSON() {
+	suite.Run("extracts assertion config successfully", func() {
+		data := map[string]interface{}{
+			"assertion": map[string]interface{}{
+				"validity_period": float64(3600),
+				"user_attributes": []interface{}{"email", "name"},
+			},
+		}
+
+		result := extractAssertionConfigFromJSON(data)
+
+		suite.NotNil(result)
+		suite.Equal(int64(3600), result.ValidityPeriod)
+		suite.Len(result.UserAttributes, 2)
+		suite.Equal([]string{"email", "name"}, result.UserAttributes)
+	})
+
+	suite.Run("returns nil when assertion key not exists", func() {
+		data := map[string]interface{}{}
+
+		result := extractAssertionConfigFromJSON(data)
+
+		suite.Nil(result)
+	})
+
+	suite.Run("returns nil when assertion is nil", func() {
+		data := map[string]interface{}{
+			"assertion": nil,
+		}
+
+		result := extractAssertionConfigFromJSON(data)
+
+		suite.Nil(result)
+	})
+
+	suite.Run("returns nil when assertion is not a map", func() {
+		data := map[string]interface{}{
+			"assertion": "not a map",
+		}
+
+		result := extractAssertionConfigFromJSON(data)
+
+		suite.Nil(result)
+	})
+
+	suite.Run("extracts assertion config with only validity period", func() {
+		data := map[string]interface{}{
+			"assertion": map[string]interface{}{
+				"validity_period": float64(1800),
+			},
+		}
+
+		result := extractAssertionConfigFromJSON(data)
+
+		suite.NotNil(result)
+		suite.Equal(int64(1800), result.ValidityPeriod)
+		suite.Len(result.UserAttributes, 0)
+	})
+
+	suite.Run("ignores non-string user attributes", func() {
+		data := map[string]interface{}{
+			"assertion": map[string]interface{}{
+				"validity_period": float64(3600),
+				"user_attributes": []interface{}{"email", 123, "name"},
+			},
+		}
+
+		result := extractAssertionConfigFromJSON(data)
+
+		suite.NotNil(result)
+		suite.Len(result.UserAttributes, 2) // Only "email" and "name", 123 is skipped
+		suite.Equal([]string{"email", "name"}, result.UserAttributes)
+	})
+}
+
+// TestExtractLoginConsentConfigFromJSON tests the extractLoginConsentConfigFromJSON helper function.
+func (suite *ApplicationStoreTestSuite) TestExtractLoginConsentConfigFromJSON() {
+	suite.Run("extracts login consent config successfully", func() {
+		data := map[string]interface{}{
+			"login_consent": map[string]interface{}{
+				"validity_period": float64(7200),
+			},
+		}
+
+		result := extractLoginConsentConfigFromJSON(data)
+
+		suite.NotNil(result)
+		suite.Equal(int64(7200), result.ValidityPeriod)
+	})
+
+	suite.Run("returns nil when login_consent key not exists", func() {
+		data := map[string]interface{}{}
+
+		result := extractLoginConsentConfigFromJSON(data)
+
+		suite.Nil(result)
+	})
+
+	suite.Run("returns nil when login_consent is nil", func() {
+		data := map[string]interface{}{
+			"login_consent": nil,
+		}
+
+		result := extractLoginConsentConfigFromJSON(data)
+
+		suite.Nil(result)
+	})
+
+	suite.Run("returns nil when login_consent is not a map", func() {
+		data := map[string]interface{}{
+			"login_consent": "not a map",
+		}
+
+		result := extractLoginConsentConfigFromJSON(data)
+
+		suite.Nil(result)
+	})
+
+	suite.Run("defaults validity period to zero when not provided", func() {
+		data := map[string]interface{}{
+			"login_consent": map[string]interface{}{},
+		}
+
+		result := extractLoginConsentConfigFromJSON(data)
+
+		suite.NotNil(result)
+		suite.Equal(int64(0), result.ValidityPeriod)
+	})
+
+	suite.Run("ignores invalid validity period type", func() {
+		data := map[string]interface{}{
+			"login_consent": map[string]interface{}{
+				"validity_period": "not a number",
+			},
+		}
+
+		result := extractLoginConsentConfigFromJSON(data)
+
+		suite.NotNil(result)
+		suite.Equal(int64(0), result.ValidityPeriod)
+	})
+}
+
+// TestGetOAuthApplication tests GetOAuthApplication with actual store method calls.
+func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication() {
+	const defaultClientID = "test-client"
+
+	suite.Run("returns OAuth application when found", func() {
+		clientID := "test-client-123"
+		oauthJSON := map[string]interface{}{
+			"redirect_uris":              []interface{}{"https://example.com/callback"},
+			"grant_types":                []interface{}{"authorization_code"},
+			"response_types":             []interface{}{"code"},
+			"token_endpoint_auth_method": "client_secret_post",
+			"pkce_required":              true,
+			"public_client":              false,
+			"scopes":                     []interface{}{"openid", "profile"},
+			"token": map[string]interface{}{
+				"access_token": map[string]interface{}{
+					"validity_period": float64(7200),
+					"user_attributes": []interface{}{"sub", "email"},
+				},
+				"id_token": map[string]interface{}{
+					"validity_period": float64(3600),
+					"user_attributes": []interface{}{"sub"},
+				},
+			},
+		}
+		oauthJSONBytes, _ := json.Marshal(oauthJSON)
+
+		mockRow := map[string]interface{}{
+			"app_id":            "app-123",
+			"client_secret":     "hashed-secret",
+			"oauth_config_json": string(oauthJSONBytes),
+		}
+
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetOAuthApplicationByClientID,
+			clientID, testServerID).Return([]map[string]interface{}{mockRow}, nil).Once()
+
+		result, err := suite.store.GetOAuthApplication(context.Background(), clientID)
+
+		suite.NoError(err)
+		suite.NotNil(result)
+		suite.Equal(clientID, result.ClientID)
+		suite.Equal("app-123", result.AppID)
+		suite.Equal("hashed-secret", result.HashedClientSecret)
+		suite.True(result.PKCERequired)
+		suite.False(result.PublicClient)
+		suite.NotNil(result.Token)
+		suite.NotNil(result.Token.AccessToken)
+		suite.Equal(int64(7200), result.Token.AccessToken.ValidityPeriod)
+	})
+
+	suite.Run("returns error when OAuth application not found", func() {
+		clientID := "non-existent-client"
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetOAuthApplicationByClientID,
+			clientID, testServerID).Return([]map[string]interface{}{}, nil).Once()
+
+		result, err := suite.store.GetOAuthApplication(context.Background(), clientID)
+
+		suite.Error(err)
+		suite.Nil(result)
+		suite.Equal(model.ApplicationNotFoundError, err)
+	})
+
+	suite.Run("returns error when database client fails", func() {
+		clientID := defaultClientID
+		suite.mockDBProvider.On("GetConfigDBClient").
+			Return(nil, errors.New("db provider unavailable")).Once()
+
+		result, err := suite.store.GetOAuthApplication(context.Background(), clientID)
+
+		suite.Error(err)
+		suite.Nil(result)
+		suite.Contains(err.Error(), "failed to get database client")
+	})
+
+	suite.Run("returns error when query fails", func() {
+		clientID := defaultClientID
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetOAuthApplicationByClientID,
+			clientID, testServerID).Return(nil, errors.New("query execution failed")).Once()
+
+		result, err := suite.store.GetOAuthApplication(context.Background(), clientID)
+
+		suite.Error(err)
+		suite.Nil(result)
+	})
+
+	suite.Run("returns error when app_id is invalid type", func() {
+		clientID := defaultClientID
+		mockRow := map[string]interface{}{
+			"app_id":            123, // Invalid type
+			"client_secret":     "hashed-secret",
+			"oauth_config_json": "{}",
+		}
+
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetOAuthApplicationByClientID,
+			clientID, testServerID).Return([]map[string]interface{}{mockRow}, nil).Once()
+
+		result, err := suite.store.GetOAuthApplication(context.Background(), clientID)
+
+		suite.Error(err)
+		suite.Nil(result)
+		suite.Contains(err.Error(), "failed to parse app_id as string")
+	})
+
+	suite.Run("returns error when client_secret is invalid type", func() {
+		clientID := defaultClientID
+		mockRow := map[string]interface{}{
+			"app_id":            "app-123",
+			"client_secret":     123, // Invalid type
+			"oauth_config_json": "{}",
+		}
+
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetOAuthApplicationByClientID,
+			clientID, testServerID).Return([]map[string]interface{}{mockRow}, nil).Once()
+
+		result, err := suite.store.GetOAuthApplication(context.Background(), clientID)
+
+		suite.Error(err)
+		suite.Nil(result)
+		suite.Contains(err.Error(), "failed to parse client_secret as string")
+	})
+
+	suite.Run("returns error when oauth_config_json is invalid type", func() {
+		clientID := defaultClientID
+		mockRow := map[string]interface{}{
+			"app_id":            "app-123",
+			"client_secret":     "hashed-secret",
+			"oauth_config_json": 12345, // Invalid type
+		}
+
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetOAuthApplicationByClientID,
+			clientID, testServerID).Return([]map[string]interface{}{mockRow}, nil).Once()
+
+		result, err := suite.store.GetOAuthApplication(context.Background(), clientID)
+
+		suite.Error(err)
+		suite.Nil(result)
+		suite.Contains(err.Error(), "failed to parse oauth_config_json as string or []byte")
+	})
+
+	suite.Run("returns error when oauth_config_json is malformed", func() {
+		clientID := defaultClientID
+		mockRow := map[string]interface{}{
+			"app_id":            "app-123",
+			"client_secret":     "hashed-secret",
+			"oauth_config_json": "{invalid json",
+		}
+
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetOAuthApplicationByClientID,
+			clientID, testServerID).Return([]map[string]interface{}{mockRow}, nil).Once()
+
+		result, err := suite.store.GetOAuthApplication(context.Background(), clientID)
+
+		suite.Error(err)
+		suite.Nil(result)
+		suite.Contains(err.Error(), "failed to unmarshal oauth config JSON")
+	})
+
+	suite.Run("handles nil oauth_config_json gracefully", func() {
+		clientID := defaultClientID
+		mockRow := map[string]interface{}{
+			"app_id":            "app-123",
+			"client_secret":     "hashed-secret",
+			"oauth_config_json": nil,
+		}
+
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetOAuthApplicationByClientID,
+			clientID, testServerID).Return([]map[string]interface{}{mockRow}, nil).Once()
+
+		result, err := suite.store.GetOAuthApplication(context.Background(), clientID)
+
+		suite.NoError(err)
+		suite.NotNil(result)
+		suite.Equal(clientID, result.ClientID)
+		// Empty config should be handled
+		suite.Len(result.GrantTypes, 0)
+		suite.Len(result.ResponseTypes, 0)
+	})
+
+	suite.Run("returns OAuth application with UserInfo config", func() {
+		clientID := "test-client-userinfo"
+		oauthJSON := map[string]interface{}{
+			"redirect_uris":              []interface{}{"https://example.com/callback"},
+			"grant_types":                []interface{}{"authorization_code"},
+			"response_types":             []interface{}{"code"},
+			"token_endpoint_auth_method": "client_secret_post",
+			"user_info": map[string]interface{}{
+				"response_type":   "jwt",
+				"user_attributes": []interface{}{"email", "name"},
+			},
+		}
+		oauthJSONBytes, _ := json.Marshal(oauthJSON)
+
+		mockRow := map[string]interface{}{
+			"app_id":            "app-with-userinfo",
+			"client_secret":     "hashed-secret",
+			"oauth_config_json": string(oauthJSONBytes),
+		}
+
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("QueryContext", mock.Anything, queryGetOAuthApplicationByClientID,
+			clientID, testServerID).Return([]map[string]interface{}{mockRow}, nil).Once()
+
+		result, err := suite.store.GetOAuthApplication(context.Background(), clientID)
+
+		suite.NoError(err)
+		suite.NotNil(result)
+		suite.NotNil(result.UserInfo)
+	})
+}
+
+// TestGetAppJSONDataBytes_WithLoginConsent tests including login consent in JSON.
+func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_WithLoginConsent() {
+	app := suite.createTestApplication()
+	app.LoginConsent = &model.LoginConsentConfig{
+		ValidityPeriod: 5400,
+	}
+
+	jsonBytes, err := getAppJSONDataBytes(&app)
+
+	suite.NoError(err)
+	suite.NotNil(jsonBytes)
+
+	var result map[string]interface{}
+	err = json.Unmarshal(jsonBytes, &result)
+	suite.NoError(err)
+
+	loginConsent, ok := result["login_consent"].(map[string]interface{})
+	suite.True(ok)
+	suite.Equal(float64(5400), loginConsent["validity_period"])
+}
+
+// TestGetAppJSONDataBytes_WithAllowedUserTypes tests including allowed_user_types in JSON.
+func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_WithAllowedUserTypes() {
+	app := suite.createTestApplication()
+	app.AllowedUserTypes = []string{"admin", "user"}
+
+	jsonBytes, err := getAppJSONDataBytes(&app)
+
+	suite.NoError(err)
+	suite.NotNil(jsonBytes)
+
+	var result map[string]interface{}
+	err = json.Unmarshal(jsonBytes, &result)
+	suite.NoError(err)
+
+	allowedUserTypes, ok := result["allowed_user_types"].([]interface{})
+	suite.True(ok)
+	suite.Len(allowedUserTypes, 2)
+	suite.Equal("admin", allowedUserTypes[0])
+	suite.Equal("user", allowedUserTypes[1])
+}
+
+// TestGetOAuthConfigJSONBytes_WithUserInfo tests OAuth config with UserInfo settings.
+func (suite *ApplicationStoreTestSuite) TestGetOAuthConfigJSONBytes_WithUserInfo() {
+	app := suite.createTestApplication()
+	inboundAuthConfig := app.InboundAuthConfig[0]
+	inboundAuthConfig.OAuthAppConfig.UserInfo = &model.UserInfoConfig{
+		ResponseType:   "jwt",
+		UserAttributes: []string{"email", "name"},
+	}
+
+	jsonBytes, err := getOAuthConfigJSONBytes(inboundAuthConfig)
+
+	suite.NoError(err)
+	suite.NotNil(jsonBytes)
+
+	var result map[string]interface{}
+	err = json.Unmarshal(jsonBytes, &result)
+	suite.NoError(err)
+
+	userInfo, ok := result["user_info"].(map[string]interface{})
+	suite.True(ok)
+	suite.Equal("jwt", userInfo["response_type"])
+
+	userAttrs, ok := userInfo["user_attributes"].([]interface{})
+	suite.True(ok)
+	suite.Len(userAttrs, 2)
+}
+
+// TestBuildBasicApplicationFromResultRow_WithLogoURLInJSON tests extracting logo_url from JSON.
+func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_WithLogoURLInJSON() {
+	appJSON := map[string]interface{}{
+		"logo_url": "https://example.com/logo.png",
+	}
+	appJSONBytes, _ := json.Marshal(appJSON)
+
+	row := map[string]interface{}{
+		"id":                           "app1",
+		"app_name":                     "Test App 1",
+		"description":                  "Test description",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
+		"is_registration_flow_enabled": "1",
+		"app_json":                     string(appJSONBytes),
+	}
+
+	result, err := buildBasicApplicationFromResultRow(row)
+
+	suite.NoError(err)
+	suite.Equal("https://example.com/logo.png", result.LogoURL)
+}
+
+// TestUpdateApplication_WithNoOAuthInBoth tests updating app with no OAuth in both existing and updated.
+func (suite *ApplicationStoreTestSuite) TestUpdateApplication_WithNoOAuthInBoth() {
+	existingApp := suite.createTestApplication()
+	existingApp.InboundAuthConfig = []model.InboundAuthConfigProcessedDTO{} // No OAuth
+
+	updatedApp := existingApp
+	updatedApp.Name = "Updated Name"
+
+	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryUpdateApplicationByAppID,
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, testServerID).
+		Return(int64(1), nil).Once()
+
+	err := suite.store.UpdateApplication(context.Background(), &existingApp, &updatedApp)
+
+	suite.NoError(err)
+}
+
+// TestCreateApplication_WithNilThemeAndLayout tests creating app without theme and layout IDs.
+func (suite *ApplicationStoreTestSuite) TestCreateApplication_WithNilThemeAndLayout() {
+	app := suite.createTestApplication()
+	app.ThemeID = ""                                                // Empty theme ID
+	app.LayoutID = ""                                               // Empty layout ID
+	app.InboundAuthConfig = []model.InboundAuthConfigProcessedDTO{} // No OAuth
+
+	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryCreateApplication,
+		app.ID, app.Name, app.Description, app.AuthFlowID, app.RegistrationFlowID,
+		mock.Anything, nil, nil, mock.Anything, testServerID).
+		Return(int64(1), nil).Once()
+
+	err := suite.store.CreateApplication(context.Background(), app)
+
+	suite.NoError(err)
+}
+
+// TestBuildApplicationFromResultRow_WithAllowedUserTypes tests extracting allowed_user_types.
+func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithAllowedUserTypes() {
+	appJSON := map[string]interface{}{
+		"url":                "https://example.com",
+		"logo_url":           "https://example.com/logo.png",
+		"allowed_user_types": []interface{}{"admin", "user", "guest"},
+	}
+	appJSONBytes, _ := json.Marshal(appJSON)
+
+	row := map[string]interface{}{
+		"id":                           "app1",
+		"app_name":                     "Test App 1",
+		"description":                  "Test description",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
+		"is_registration_flow_enabled": "1",
+		"app_json":                     string(appJSONBytes),
+	}
+
+	result, err := buildApplicationFromResultRow(row)
+
+	suite.NoError(err)
+	suite.NotNil(result.AllowedUserTypes)
+	suite.Len(result.AllowedUserTypes, 3)
+	suite.Equal([]string{"admin", "user", "guest"}, result.AllowedUserTypes)
+}
+
+// TestBuildApplicationFromResultRow_WithInvalidAllowedUserTypesType tests handling invalid allowed_user_types type.
+func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithInvalidAllowedUserTypesType() {
+	appJSON := map[string]interface{}{
+		"url":                "https://example.com",
+		"logo_url":           "https://example.com/logo.png",
+		"allowed_user_types": "not an array", // Invalid type
+	}
+	appJSONBytes, _ := json.Marshal(appJSON)
+
+	row := map[string]interface{}{
+		"id":                           "app1",
+		"app_name":                     "Test App 1",
+		"description":                  "Test description",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
+		"is_registration_flow_enabled": "1",
+		"app_json":                     string(appJSONBytes),
+	}
+
+	result, err := buildApplicationFromResultRow(row)
+
+	suite.Error(err)
+	suite.Equal(model.ApplicationProcessedDTO{}, result)
+	suite.Contains(err.Error(), "failed to parse allowed_user_types from app JSON")
+}

@@ -561,7 +561,6 @@ func retrieveAndValidateApplicationDetails(ts *ApplicationAPITestSuite, expected
 	// Ensure login consent config is set in expected app if it's null
 	if appForComparison.LoginConsent == nil {
 		appForComparison.LoginConsent = &LoginConsentConfig{
-			Enabled:        false,
 			ValidityPeriod: 0,
 		}
 	}
