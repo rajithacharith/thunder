@@ -242,7 +242,8 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Fl
 	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
-	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything).Return("", &serviceerror.InternalServerError)
+	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything, mock.Anything).
+		Return("", &serviceerror.InternalServerError)
 
 	svc := suite.newService()
 	result, authErr := svc.HandleInitialAuthorizationRequest(context.Background(), suite.testMsg())
@@ -260,7 +261,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Su
 	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
-	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything).Return("test-flow-id", nil)
+	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything, mock.Anything).Return("test-flow-id", nil)
 	suite.mockAuthReqStore.EXPECT().AddRequest(mock.Anything, mock.Anything).Return(testAuthID, nil)
 
 	svc := suite.newService()
@@ -279,7 +280,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_In
 	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
-	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything).Return("test-flow-id", nil)
+	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything, mock.Anything).Return("test-flow-id", nil)
 	suite.mockAuthReqStore.EXPECT().AddRequest(mock.Anything, mock.Anything).Return(testAuthID, nil)
 
 	msg := &OAuthMessage{
@@ -305,7 +306,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Em
 	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
-	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything).Return("test-flow-id", nil)
+	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything, mock.Anything).Return("test-flow-id", nil)
 	suite.mockAuthReqStore.EXPECT().AddRequest(mock.Anything, mock.Anything).Return(testAuthID, nil)
 
 	msg := &OAuthMessage{
@@ -330,7 +331,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Wi
 	suite.mockAppService.EXPECT().GetOAuthApplication(mock.Anything, "test-client-id").Return(app, nil)
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
-	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything).Return("test-flow-id", nil)
+	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything, mock.Anything).Return("test-flow-id", nil)
 	suite.mockAuthReqStore.EXPECT().AddRequest(mock.Anything, mock.Anything).Return(testAuthID, nil)
 
 	msg := &OAuthMessage{

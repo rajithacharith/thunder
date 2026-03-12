@@ -255,7 +255,7 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 		RuntimeData:   runtimeData,
 	}
 
-	flowID, flowErr := as.flowExecService.InitiateFlow(flowInitCtx)
+	flowID, flowErr := as.flowExecService.InitiateFlow(context.TODO(), flowInitCtx)
 	if flowErr != nil {
 		as.logger.Error("Failed to initiate authentication flow",
 			log.String("error_code", flowErr.Code))

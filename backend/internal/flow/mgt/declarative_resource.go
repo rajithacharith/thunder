@@ -62,7 +62,7 @@ func (e *flowGraphExporter) GetParameterizerType() string {
 
 // GetAllResourceIDs retrieves all flow graph IDs.
 func (e *flowGraphExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
-	flows, err := e.service.ListFlows(10000, 0, common.FlowType(""))
+	flows, err := e.service.ListFlows(ctx, 10000, 0, common.FlowType(""))
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (e *flowGraphExporter) GetAllResourceIDs(ctx context.Context) ([]string, *s
 func (e *flowGraphExporter) GetResourceByID(ctx context.Context, id string) (
 	interface{}, string, *serviceerror.ServiceError,
 ) {
-	flow, err := e.service.GetFlow(id)
+	flow, err := e.service.GetFlow(ctx, id)
 	if err != nil {
 		return nil, "", err
 	}
