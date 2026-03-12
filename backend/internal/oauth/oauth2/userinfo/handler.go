@@ -56,7 +56,8 @@ func (h *userInfoHandler) HandleUserInfo(w http.ResponseWriter, r *http.Request)
 			w.Header().Set(serverconst.WWWAuthenticateHeaderName, serverconst.TokenTypeBearer)
 			w.WriteHeader(http.StatusUnauthorized)
 		} else {
-			writeBearerError(w, constants.ErrorInvalidRequest, err.Error(), http.StatusBadRequest)
+			writeBearerError(w, constants.ErrorInvalidRequest,
+				"Invalid or malformed Bearer token", http.StatusBadRequest)
 		}
 		return
 	}
@@ -87,7 +88,7 @@ func (h *userInfoHandler) writeServiceErrorResponse(w http.ResponseWriter, svcEr
 
 	switch svcErr.Type {
 	case serviceerror.ClientErrorType:
-		if svcErr == &errorInsufficientScope {
+		if svcErr.Code == errorInsufficientScope.Code {
 			statusCode = http.StatusForbidden
 		} else {
 			statusCode = http.StatusUnauthorized

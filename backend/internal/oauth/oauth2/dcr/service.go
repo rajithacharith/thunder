@@ -71,7 +71,13 @@ func (ds *dcrService) RegisterClient(request *DCRRegistrationRequest) (
 
 	createdApp, err := ds.appService.CreateApplication(context.TODO(), appDTO)
 	if err != nil {
-		logger.Error("Failed to create application via Application service", log.String("error", err.Error))
+		if err.Type == serviceerror.ServerErrorType {
+			logger.Error("Failed to create application via Application service",
+				log.String("error_code", err.Code))
+			return nil, &ErrorServerError
+		}
+		logger.Debug("Failed to create application via Application service",
+			log.String("error_code", err.Code))
 		return nil, ds.mapApplicationErrorToDCRError(err)
 	}
 

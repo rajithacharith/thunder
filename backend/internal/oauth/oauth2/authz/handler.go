@@ -70,7 +70,8 @@ func (ah *authorizeHandler) HandleAuthorizeGetRequest(w http.ResponseWriter, r *
 			}
 			redirectURI, err := oauth2utils.GetURIWithQueryParams(authErr.ClientRedirectURI, queryParams)
 			if err != nil {
-				ah.redirectToErrorPage(w, r, oauth2const.ErrorServerError, "Failed to redirect to login page")
+				ah.logger.Error("Failed to construct client redirect URI", log.Error(err))
+				ah.redirectToErrorPage(w, r, oauth2const.ErrorServerError, "Failed to process authorization request")
 				return
 			}
 			http.Redirect(w, r, redirectURI, http.StatusFound)
@@ -98,6 +99,10 @@ func (ah *authorizeHandler) HandleAuthCallbackPostRequest(w http.ResponseWriter,
 
 		redirectURI, authErr := ah.authZService.HandleAuthorizationCallback(authID, assertion)
 		if authErr != nil {
+			if authErr.SendErrorToClient {
+				ah.writeAuthZResponseToClientRedirect(w, authErr)
+				return
+			}
 			ah.writeAuthZResponseToErrorPage(w, authErr.Code, authErr.Message, authErr.State)
 			return
 		}
@@ -145,7 +150,7 @@ func (ah *authorizeHandler) getOAuthMessage(r *http.Request, w http.ResponseWrit
 // getOAuthMessageForGetRequest extracts the OAuth message from an authorization GET request.
 func (ah *authorizeHandler) getOAuthMessageForGetRequest(r *http.Request) (*OAuthMessage, error) {
 	if err := r.ParseForm(); err != nil {
-		return nil, errors.New("failed to parse form data: " + err.Error())
+		return nil, fmt.Errorf("failed to parse form data: %w", err)
 	}
 
 	queryParams := make(map[string]string)
@@ -208,10 +213,11 @@ func (ah *authorizeHandler) redirectToLoginPage(w http.ResponseWriter, r *http.R
 
 	redirectURI, err := getLoginPageRedirectURI(queryParams)
 	if err != nil {
-		logger.Error("Failed to construct login page URL: " + err.Error())
+		logger.Error("Failed to construct login page URL", log.Error(err))
+		ah.redirectToErrorPage(w, r, oauth2const.ErrorServerError, "Failed to process authorization request")
 		return
 	}
-	logger.Debug("Redirecting to login page: " + redirectURI)
+	logger.Debug("Redirecting to login page")
 
 	http.Redirect(w, r, redirectURI, http.StatusFound)
 }
@@ -244,11 +250,11 @@ func (ah *authorizeHandler) redirectToErrorPage(w http.ResponseWriter, r *http.R
 
 	redirectURL, err := getErrorPageRedirectURL(code, msg)
 	if err != nil {
-		logger.Error("Failed to construct error page URL: " + err.Error())
+		logger.Error("Failed to construct error page URL", log.Error(err))
 		http.Error(w, "Failed to redirect to error page", http.StatusInternalServerError)
 		return
 	}
-	logger.Debug("Redirecting to error page: " + redirectURL)
+	logger.Debug("Redirecting to error page")
 
 	http.Redirect(w, r, redirectURL, http.StatusFound)
 }
@@ -279,6 +285,28 @@ func (ah *authorizeHandler) writeAuthZResponseToErrorPage(w http.ResponseWriter,
 			http.Error(w, "Failed to redirect to error page", http.StatusInternalServerError)
 			return
 		}
+	}
+
+	ah.writeAuthZResponse(w, redirectURI)
+}
+
+// writeAuthZResponseToClientRedirect writes the authorization error response redirecting to the
+// client's registered redirect URI.
+func (ah *authorizeHandler) writeAuthZResponseToClientRedirect(w http.ResponseWriter, authErr *AuthorizationError) {
+	queryParams := map[string]string{
+		oauth2const.RequestParamError:            authErr.Code,
+		oauth2const.RequestParamErrorDescription: authErr.Message,
+	}
+	if authErr.State != "" {
+		queryParams[oauth2const.RequestParamState] = authErr.State
+	}
+
+	redirectURI, err := oauth2utils.GetURIWithQueryParams(authErr.ClientRedirectURI, queryParams)
+	if err != nil {
+		ah.logger.Error("Failed to construct client redirect URI", log.Error(err))
+		ah.writeAuthZResponseToErrorPage(w, oauth2const.ErrorServerError,
+			"Failed to process authorization request", authErr.State)
+		return
 	}
 
 	ah.writeAuthZResponse(w, redirectURI)

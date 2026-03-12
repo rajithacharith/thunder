@@ -118,7 +118,7 @@ func (ts *tokenService) ProcessTokenRequest(
 			500, "Failed to get grant handler", startTime)
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorServerError,
-			ErrorDescription: "Something went wrong",
+			ErrorDescription: "Failed to process token request",
 		}
 	}
 
@@ -161,6 +161,9 @@ func (ts *tokenService) ProcessTokenRequest(
 			}
 			publishTokenIssuanceFailedEvent(ts.observabilitySvc, ctx, clientID, grantTypeStr, scopeStr,
 				code, tokenError.ErrorDescription, startTime)
+			if tokenError.Error == constants.ErrorServerError {
+				tokenError.ErrorDescription = "Failed to process token request"
+			}
 		}
 		return nil, tokenError
 	}
@@ -169,7 +172,7 @@ func (ts *tokenService) ProcessTokenRequest(
 			500, "Grant handler returned empty response", startTime)
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorServerError,
-			ErrorDescription: "Something went wrong",
+			ErrorDescription: "Failed to process token request",
 		}
 	}
 
@@ -186,7 +189,7 @@ func (ts *tokenService) ProcessTokenRequest(
 				500, "Failed to get refresh grant handler", startTime)
 			return nil, &model.ErrorResponse{
 				Error:            constants.ErrorServerError,
-				ErrorDescription: "Something went wrong",
+				ErrorDescription: "Failed to process token request",
 			}
 		}
 		refreshGrantHandlerTyped, ok := refreshGrantHandler.(granthandlers.RefreshTokenGrantHandlerInterface)
@@ -197,7 +200,7 @@ func (ts *tokenService) ProcessTokenRequest(
 				500, "Internal Server Error", startTime)
 			return nil, &model.ErrorResponse{
 				Error:            constants.ErrorServerError,
-				ErrorDescription: "Something went wrong",
+				ErrorDescription: "Failed to process token request",
 			}
 		}
 
@@ -210,6 +213,9 @@ func (ts *tokenService) ProcessTokenRequest(
 		if refreshTokenError != nil && refreshTokenError.Error != "" {
 			publishTokenIssuanceFailedEvent(ts.observabilitySvc, ctx, clientID, grantTypeStr, scopeStr,
 				500, refreshTokenError.ErrorDescription, startTime)
+			if refreshTokenError.Error == constants.ErrorServerError {
+				refreshTokenError.ErrorDescription = "Failed to process token request"
+			}
 			return nil, refreshTokenError
 		}
 	}

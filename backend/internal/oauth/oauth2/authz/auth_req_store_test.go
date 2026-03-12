@@ -28,8 +28,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/asgardeo/thunder/internal/system/log"
-
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/system/config"
 
@@ -70,7 +68,6 @@ func (suite *AuthorizationRequestStoreTestSuite) SetupTest() {
 		dbProvider:     suite.mockdbProvider,
 		validityPeriod: 10 * time.Minute,
 		deploymentID:   testDeploymentID,
-		logger:         log.GetLogger().With(log.String(log.LoggerKeyComponentName, "AuthorizationRequestStore")),
 	}
 
 	suite.testAuthRequestContext = authRequestContext{
@@ -113,7 +110,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestAddRequest_Success() {
 		testDeploymentID).
 		Return(int64(1), nil)
 
-	identifier := suite.store.AddRequest(suite.testAuthRequestContext)
+	identifier, err := suite.store.AddRequest(suite.testAuthRequestContext)
+	assert.NoError(suite.T(), err)
 	assert.NotEmpty(suite.T(), identifier)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
@@ -123,7 +121,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestAddRequest_Success() {
 func (suite *AuthorizationRequestStoreTestSuite) TestAddRequest_DBClientError() {
 	suite.mockdbProvider.On("GetRuntimeDBClient").Return(nil, errors.New("db client error"))
 
-	identifier := suite.store.AddRequest(suite.testAuthRequestContext)
+	identifier, err := suite.store.AddRequest(suite.testAuthRequestContext)
+	assert.Error(suite.T(), err)
 	assert.Empty(suite.T(), identifier)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
@@ -136,7 +135,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestAddRequest_ExecuteError() {
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(int64(0), errors.New("execute error"))
 
-	identifier := suite.store.AddRequest(suite.testAuthRequestContext)
+	identifier, err := suite.store.AddRequest(suite.testAuthRequestContext)
+	assert.Error(suite.T(), err)
 	assert.Empty(suite.T(), identifier)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
@@ -161,7 +161,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestAddRequest_JSONMarshalingEr
 		testDeploymentID).
 		Return(int64(1), nil)
 
-	identifier := suite.store.AddRequest(suite.testAuthRequestContext)
+	identifier, err := suite.store.AddRequest(suite.testAuthRequestContext)
+	assert.NoError(suite.T(), err)
 	assert.NotEmpty(suite.T(), identifier)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
@@ -195,7 +196,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_Success() {
 			},
 		}, nil)
 
-	ok, result := suite.store.GetRequest("test-request-id")
+	ok, result, err := suite.store.GetRequest("test-request-id")
+	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), ok)
 	assert.Equal(suite.T(), "test-state", result.OAuthParameters.State)
 	assert.Equal(suite.T(), "test-client-id", result.OAuthParameters.ClientID)
@@ -212,14 +214,16 @@ func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_Success() {
 }
 
 func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_EmptyKey() {
-	ok, _ := suite.store.GetRequest("")
+	ok, _, err := suite.store.GetRequest("")
+	assert.NoError(suite.T(), err)
 	assert.False(suite.T(), ok)
 }
 
 func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_DBClientError() {
 	suite.mockdbProvider.On("GetRuntimeDBClient").Return(nil, errors.New("db client error"))
 
-	ok, _ := suite.store.GetRequest("test-request-id")
+	ok, _, err := suite.store.GetRequest("test-request-id")
+	assert.Error(suite.T(), err)
 	assert.False(suite.T(), ok)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
@@ -231,7 +235,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_QueryError() {
 	suite.mockDBClient.On("Query", queryGetAuthRequest, "test-request-id", mock.Anything, testDeploymentID).
 		Return(nil, errors.New("query error"))
 
-	ok, _ := suite.store.GetRequest("test-request-id")
+	ok, _, err := suite.store.GetRequest("test-request-id")
+	assert.Error(suite.T(), err)
 	assert.False(suite.T(), ok)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
@@ -244,7 +249,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_NoResults() {
 	suite.mockDBClient.On("Query", queryGetAuthRequest, "test-request-id", mock.Anything, testDeploymentID).
 		Return([]map[string]interface{}{}, nil)
 
-	ok, _ := suite.store.GetRequest("test-request-id")
+	ok, _, err := suite.store.GetRequest("test-request-id")
+	assert.NoError(suite.T(), err)
 	assert.False(suite.T(), ok)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
@@ -258,7 +264,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_Expired() {
 	suite.mockDBClient.On("Query", queryGetAuthRequest, "test-request-id", mock.Anything, testDeploymentID).
 		Return([]map[string]interface{}{}, nil)
 
-	ok, _ := suite.store.GetRequest("test-request-id")
+	ok, _, err := suite.store.GetRequest("test-request-id")
+	assert.NoError(suite.T(), err)
 	assert.False(suite.T(), ok)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
@@ -277,7 +284,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_MissingRequestDa
 			},
 		}, nil)
 
-	ok, _ := suite.store.GetRequest("test-request-id")
+	ok, _, err := suite.store.GetRequest("test-request-id")
+	assert.Error(suite.T(), err)
 	assert.False(suite.T(), ok)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
@@ -296,7 +304,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_EmptyRequestData
 			},
 		}, nil)
 
-	ok, _ := suite.store.GetRequest("test-request-id")
+	ok, _, err := suite.store.GetRequest("test-request-id")
+	assert.Error(suite.T(), err)
 	assert.False(suite.T(), ok)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
@@ -324,7 +333,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_RequestDataAsByt
 			},
 		}, nil)
 
-	ok, result := suite.store.GetRequest("test-request-id")
+	ok, result, err := suite.store.GetRequest("test-request-id")
+	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), ok)
 	assert.Equal(suite.T(), "test-state", result.OAuthParameters.State)
 	assert.Equal(suite.T(), "test-client-id", result.OAuthParameters.ClientID)
@@ -345,7 +355,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_InvalidRequestDa
 			},
 		}, nil)
 
-	ok, _ := suite.store.GetRequest("test-request-id")
+	ok, _, err := suite.store.GetRequest("test-request-id")
+	assert.Error(suite.T(), err)
 	assert.False(suite.T(), ok)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
@@ -374,7 +385,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_EmptyScopes() {
 			},
 		}, nil)
 
-	ok, result := suite.store.GetRequest("test-request-id")
+	ok, result, err := suite.store.GetRequest("test-request-id")
+	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), ok)
 	assert.Equal(suite.T(), []string{}, result.OAuthParameters.StandardScopes)
 	assert.Equal(suite.T(), []string{}, result.OAuthParameters.PermissionScopes)
@@ -406,7 +418,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_NilScopes() {
 			},
 		}, nil)
 
-	ok, result := suite.store.GetRequest("test-request-id")
+	ok, result, err := suite.store.GetRequest("test-request-id")
+	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), ok)
 	assert.Equal(suite.T(), []string{}, result.OAuthParameters.StandardScopes)
 	assert.Equal(suite.T(), []string{}, result.OAuthParameters.PermissionScopes)
@@ -437,7 +450,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_StringScopes() {
 			},
 		}, nil)
 
-	ok, result := suite.store.GetRequest("test-request-id")
+	ok, result, err := suite.store.GetRequest("test-request-id")
+	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), ok)
 	assert.Equal(suite.T(), []string{"openid", "profile"}, result.OAuthParameters.StandardScopes)
 	assert.Equal(suite.T(), []string{"read", "write"}, result.OAuthParameters.PermissionScopes)
@@ -452,7 +466,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestClearRequest_Success() {
 	suite.mockDBClient.On("Execute", queryDeleteAuthRequest, "test-request-id", testDeploymentID).
 		Return(int64(1), nil)
 
-	suite.store.ClearRequest("test-request-id")
+	err := suite.store.ClearRequest("test-request-id")
+	assert.NoError(suite.T(), err)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
 	suite.mockDBClient.AssertExpectations(suite.T())
@@ -460,7 +475,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestClearRequest_Success() {
 
 func (suite *AuthorizationRequestStoreTestSuite) TestClearRequest_EmptyKey() {
 	// Should return early without calling DB
-	suite.store.ClearRequest("")
+	err := suite.store.ClearRequest("")
+	assert.NoError(suite.T(), err)
 
 	// No expectations set, so this should pass
 }
@@ -468,7 +484,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestClearRequest_EmptyKey() {
 func (suite *AuthorizationRequestStoreTestSuite) TestClearRequest_DBClientError() {
 	suite.mockdbProvider.On("GetRuntimeDBClient").Return(nil, errors.New("db client error"))
 
-	suite.store.ClearRequest("test-request-id")
+	err := suite.store.ClearRequest("test-request-id")
+	assert.Error(suite.T(), err)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
 }
@@ -479,7 +496,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestClearRequest_ExecuteError()
 	suite.mockDBClient.On("Execute", queryDeleteAuthRequest, "test-request-id", testDeploymentID).
 		Return(int64(0), errors.New("execute error"))
 
-	suite.store.ClearRequest("test-request-id")
+	err := suite.store.ClearRequest("test-request-id")
+	assert.Error(suite.T(), err)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
 	suite.mockDBClient.AssertExpectations(suite.T())
@@ -578,7 +596,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_EmptyByteArray()
 			},
 		}, nil)
 
-	ok, _ := suite.store.GetRequest("test-request-id")
+	ok, _, err := suite.store.GetRequest("test-request-id")
+	assert.Error(suite.T(), err)
 	assert.False(suite.T(), ok)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
@@ -597,7 +616,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_RequestDataAsUne
 			},
 		}, nil)
 
-	ok, _ := suite.store.GetRequest("test-request-id")
+	ok, _, err := suite.store.GetRequest("test-request-id")
+	assert.Error(suite.T(), err)
 	assert.False(suite.T(), ok)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
@@ -645,7 +665,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_AllOptionalField
 			},
 		}, nil)
 
-	ok, result := suite.store.GetRequest("test-request-id")
+	ok, result, err := suite.store.GetRequest("test-request-id")
+	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), ok)
 	assert.Equal(suite.T(), "test-state", result.OAuthParameters.State)
 	assert.Empty(suite.T(), result.OAuthParameters.ClientID)
@@ -680,7 +701,8 @@ func (suite *AuthorizationRequestStoreTestSuite) TestGetRequest_NonStringScopes(
 			},
 		}, nil)
 
-	ok, result := suite.store.GetRequest("test-request-id")
+	ok, result, err := suite.store.GetRequest("test-request-id")
+	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), ok)
 	assert.Equal(suite.T(), "test-state", result.OAuthParameters.State)
 	assert.Equal(suite.T(), []string{}, result.OAuthParameters.StandardScopes)   // Should default to empty
@@ -732,7 +754,8 @@ func (suite *AuthorizationRequestStoreTestSuite) testGetRequestWithInvalidScopes
 			},
 		}, nil)
 
-	ok, result := suite.store.GetRequest("test-request-id")
+	ok, result, err := suite.store.GetRequest("test-request-id")
+	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), ok)
 	assertFn(result)
 

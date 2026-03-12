@@ -138,7 +138,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_ServiceErrors() {
 			grantType:     "client_credentials",
 			errCode:       constants.ErrorUnauthorizedClient,
 			errDesc:       "The client is not authorized to use this grant type",
-			expectedCode:  http.StatusUnauthorized,
+			expectedCode:  http.StatusBadRequest,
 			expectedError: "unauthorized_client",
 		},
 	}

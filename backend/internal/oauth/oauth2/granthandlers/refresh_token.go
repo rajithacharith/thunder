@@ -88,7 +88,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 	// Validate refresh token using token validator
 	refreshTokenClaims, err := h.tokenValidator.ValidateRefreshToken(tokenRequest.RefreshToken, tokenRequest.ClientID)
 	if err != nil {
-		logger.Error("Failed to validate refresh token", log.Error(err))
+		logger.Debug("Failed to validate refresh token", log.Error(err))
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorInvalidGrant,
 			ErrorDescription: "Invalid refresh token",
@@ -138,7 +138,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 			logger.Error("Failed to generate ID token", log.Error(idErr))
 			return nil, &model.ErrorResponse{
 				Error:            constants.ErrorServerError,
-				ErrorDescription: "Failed to generate ID token",
+				ErrorDescription: "Failed to generate token",
 			}
 		}
 		tokenResponse.IDToken = *idToken
@@ -155,7 +155,6 @@ func (h *refreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 			refreshTokenClaims.GrantType, newTokenScopes, refreshTokenClaims.ClaimsRequest,
 			refreshTokenClaims.ClaimsLocales)
 		if errResp != nil && errResp.Error != "" {
-			errResp.ErrorDescription = "Error while issuing refresh token: " + errResp.ErrorDescription
 			logger.Error("Failed to issue refresh token", log.String("error", errResp.Error))
 			return nil, errResp
 		}

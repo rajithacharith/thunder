@@ -82,21 +82,6 @@ func (s *JWKSHandlerTestSuite) TestHandleJWKSRequest_Success() {
 	s.mockService.AssertExpectations(s.T())
 }
 
-func (s *JWKSHandlerTestSuite) TestHandleJWKSRequest_ServiceError() {
-	req := httptest.NewRequest(http.MethodGet, "/oauth2/jwks", nil)
-	rr := httptest.NewRecorder()
-
-	svcErr := serviceerror.CustomServiceError(serviceerror.InternalServerError, "Failed to get JWKS")
-	s.mockService.On("GetJWKS").Return(nil, svcErr)
-
-	s.handler.HandleJWKSRequest(rr, req)
-
-	assert.Equal(s.T(), http.StatusInternalServerError, rr.Code)
-	assert.Equal(s.T(), "application/json", rr.Header().Get("Content-Type"))
-	assert.Contains(s.T(), rr.Body.String(), svcErr.Code)
-	s.mockService.AssertExpectations(s.T())
-}
-
 func (s *JWKSHandlerTestSuite) TestHandleJWKSRequest_ClientError() {
 	req := httptest.NewRequest(http.MethodGet, "/oauth2/jwks", nil)
 	rr := httptest.NewRecorder()
@@ -113,5 +98,20 @@ func (s *JWKSHandlerTestSuite) TestHandleJWKSRequest_ClientError() {
 
 	assert.Equal(s.T(), http.StatusBadRequest, rr.Code)
 	assert.Equal(s.T(), "application/json", rr.Header().Get("Content-Type"))
+	s.mockService.AssertExpectations(s.T())
+}
+
+func (s *JWKSHandlerTestSuite) TestHandleJWKSRequest_ServiceError() {
+	req := httptest.NewRequest(http.MethodGet, "/oauth2/jwks", nil)
+	rr := httptest.NewRecorder()
+
+	svcErr := serviceerror.CustomServiceError(serviceerror.InternalServerError, "Failed to get JWKS")
+	s.mockService.On("GetJWKS").Return(nil, svcErr)
+
+	s.handler.HandleJWKSRequest(rr, req)
+
+	assert.Equal(s.T(), http.StatusInternalServerError, rr.Code)
+	assert.Equal(s.T(), "application/json", rr.Header().Get("Content-Type"))
+	assert.Contains(s.T(), rr.Body.String(), svcErr.Code)
 	s.mockService.AssertExpectations(s.T())
 }

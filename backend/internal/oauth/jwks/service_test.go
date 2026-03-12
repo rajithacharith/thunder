@@ -144,7 +144,7 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_NoCertificatesFound() {
 	resp, svcErr := suite.jwksService.GetJWKS()
 	assert.Nil(suite.T(), resp)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), ErrorNoCertificateFound.Code, svcErr.Code)
+	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *JWKSServiceTestSuite) TestGetJWKS_UnsupportedPublicKeyType() {
@@ -257,7 +257,7 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_OnlyUnsupportedKeys() {
 	resp, svcErr := suite.jwksService.GetJWKS()
 	assert.Nil(suite.T(), resp)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), ErrorNoCertificateFound.Code, svcErr.Code)
+	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *JWKSServiceTestSuite) TestGetJWKS_RSA_ZeroExponent() {

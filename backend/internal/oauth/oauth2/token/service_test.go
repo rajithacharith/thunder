@@ -252,6 +252,37 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_HandleGrantError() {
 	assert.Equal(suite.T(), "invalid_grant", errResp.Error)
 }
 
+func (suite *TokenServiceTestSuite) TestProcessTokenRequest_HandleGrantServerError_NormalizesDescription() {
+	req := &model.TokenRequest{
+		ClientID:  "test-client-id",
+		GrantType: string(constants.GrantTypeAuthorizationCode),
+		Code:      "test-code",
+		Scope:     "openid",
+	}
+	app := suite.defaultApp()
+
+	suite.mockGrantProvider.ExpectedCalls = nil
+	suite.mockGrantProvider.
+		On("GetGrantHandler", constants.GrantTypeAuthorizationCode).
+		Return(suite.mockGrantHandler, nil)
+
+	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, app).Return(nil)
+	suite.mockScopeValidator.On("ValidateScopes", "openid", "test-client-id").Return("openid", nil)
+	suite.mockGrantHandler.
+		On("HandleGrant", mock.Anything, app).
+		Return(nil, &model.ErrorResponse{
+			Error:            constants.ErrorServerError,
+			ErrorDescription: "Failed to generate token",
+		})
+
+	svc := suite.newService()
+	_, errResp := svc.ProcessTokenRequest(context.Background(), req, app)
+
+	assert.NotNil(suite.T(), errResp)
+	assert.Equal(suite.T(), constants.ErrorServerError, errResp.Error)
+	assert.Equal(suite.T(), "Failed to process token request", errResp.ErrorDescription)
+}
+
 func (suite *TokenServiceTestSuite) TestProcessTokenRequest_Success() {
 	req := &model.TokenRequest{
 		ClientID:  "test-client-id",
@@ -404,6 +435,7 @@ func (suite *TokenServiceTestSuite) TestProcessTokenRequest_RefreshTokenIssuance
 
 	assert.NotNil(suite.T(), errResp)
 	assert.Equal(suite.T(), "server_error", errResp.Error)
+	assert.Equal(suite.T(), "Failed to process token request", errResp.ErrorDescription)
 }
 
 func (suite *TokenServiceTestSuite) TestProcessTokenRequest_RefreshTokenHandlerNotFound() {

@@ -328,7 +328,7 @@ func (ts *AuthzTestSuite) TestBasicAuthorizationRequest() {
 			Scope:          "openid",
 			State:          "test_state_456",
 			ExpectedStatus: http.StatusFound,
-			ExpectedError:  "invalid_client",
+			ExpectedError:  "invalid_request",
 		},
 		{
 			Name:           "Invalid Response Type",

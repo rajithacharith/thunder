@@ -165,7 +165,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_In
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), authErr)
-	assert.Equal(suite.T(), oauth2const.ErrorInvalidClient, authErr.Code)
+	assert.Equal(suite.T(), oauth2const.ErrorInvalidRequest, authErr.Code)
 }
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_InvalidClaimsParameter() {
@@ -241,6 +241,9 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Fl
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), authErr)
 	assert.Equal(suite.T(), oauth2const.ErrorServerError, authErr.Code)
+	assert.True(suite.T(), authErr.SendErrorToClient)
+	assert.Equal(suite.T(), "https://client.example.com/callback", authErr.ClientRedirectURI)
+	assert.Equal(suite.T(), "test-state", authErr.State)
 }
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Success() {
@@ -249,7 +252,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Su
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
 	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything).Return("test-flow-id", nil)
-	suite.mockAuthReqStore.EXPECT().AddRequest(mock.Anything).Return(testAuthID)
+	suite.mockAuthReqStore.EXPECT().AddRequest(mock.Anything).Return(testAuthID, nil)
 
 	svc := suite.newService()
 	result, authErr := svc.HandleInitialAuthorizationRequest(suite.testMsg())
@@ -268,7 +271,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_In
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
 	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything).Return("test-flow-id", nil)
-	suite.mockAuthReqStore.EXPECT().AddRequest(mock.Anything).Return(testAuthID)
+	suite.mockAuthReqStore.EXPECT().AddRequest(mock.Anything).Return(testAuthID, nil)
 
 	msg := &OAuthMessage{
 		RequestType: oauth2const.TypeInitialAuthorizationRequest,
@@ -294,7 +297,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Em
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
 	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything).Return("test-flow-id", nil)
-	suite.mockAuthReqStore.EXPECT().AddRequest(mock.Anything).Return(testAuthID)
+	suite.mockAuthReqStore.EXPECT().AddRequest(mock.Anything).Return(testAuthID, nil)
 
 	msg := &OAuthMessage{
 		RequestType: oauth2const.TypeInitialAuthorizationRequest,
@@ -319,7 +322,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Wi
 	suite.mockValidator.On("validateInitialAuthorizationRequest", mock.Anything, app).
 		Return(false, "", "")
 	suite.mockFlowExecService.EXPECT().InitiateFlow(mock.Anything).Return("test-flow-id", nil)
-	suite.mockAuthReqStore.EXPECT().AddRequest(mock.Anything).Return(testAuthID)
+	suite.mockAuthReqStore.EXPECT().AddRequest(mock.Anything).Return(testAuthID, nil)
 
 	msg := &OAuthMessage{
 		RequestType: oauth2const.TypeInitialAuthorizationRequest,
@@ -340,7 +343,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Wi
 }
 
 func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_InvalidAuthID() {
-	suite.mockAuthReqStore.EXPECT().GetRequest("invalid-key").Return(false, authRequestContext{})
+	suite.mockAuthReqStore.EXPECT().GetRequest("invalid-key").Return(false, authRequestContext{}, nil)
 
 	svc := suite.newService()
 	redirectURI, authErr := svc.HandleAuthorizationCallback("invalid-key", "test-assertion")
@@ -348,6 +351,18 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_InvalidA
 	assert.Empty(suite.T(), redirectURI)
 	assert.NotNil(suite.T(), authErr)
 	assert.Equal(suite.T(), oauth2const.ErrorInvalidRequest, authErr.Code)
+}
+
+func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_StoreError() {
+	suite.mockAuthReqStore.EXPECT().GetRequest("db-fail-key").
+		Return(false, authRequestContext{}, errors.New("db connection error"))
+
+	svc := suite.newService()
+	redirectURI, authErr := svc.HandleAuthorizationCallback("db-fail-key", "test-assertion")
+
+	assert.Empty(suite.T(), redirectURI)
+	assert.NotNil(suite.T(), authErr)
+	assert.Equal(suite.T(), oauth2const.ErrorServerError, authErr.Code)
 }
 
 func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_MissingAssertion() {
@@ -358,8 +373,8 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_MissingA
 			State:       "test-state",
 		},
 	}
-	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx)
-	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID)
+	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx, nil)
+	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID).Return(nil)
 
 	svc := suite.newService()
 	redirectURI, authErr := svc.HandleAuthorizationCallback(testAuthID, "")
@@ -368,6 +383,8 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_MissingA
 	assert.NotNil(suite.T(), authErr)
 	assert.Equal(suite.T(), oauth2const.ErrorInvalidRequest, authErr.Code)
 	assert.Equal(suite.T(), "test-state", authErr.State)
+	assert.True(suite.T(), authErr.SendErrorToClient)
+	assert.Equal(suite.T(), "https://client.example.com/callback", authErr.ClientRedirectURI)
 }
 
 func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_InvalidAssertionSignature() {
@@ -378,8 +395,8 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_InvalidA
 			State:       "test-state",
 		},
 	}
-	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx)
-	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID)
+	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx, nil)
+	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID).Return(nil)
 	suite.mockJWTService.EXPECT().VerifyJWT("invalid-assertion", "", "").Return(&jwt.ErrorInvalidTokenSignature)
 
 	svc := suite.newService()
@@ -389,6 +406,8 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_InvalidA
 	assert.NotNil(suite.T(), authErr)
 	assert.Equal(suite.T(), oauth2const.ErrorInvalidRequest, authErr.Code)
 	assert.Equal(suite.T(), "test-state", authErr.State)
+	assert.True(suite.T(), authErr.SendErrorToClient)
+	assert.Equal(suite.T(), "https://client.example.com/callback", authErr.ClientRedirectURI)
 }
 
 func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_FailedToDecodeAssertion() {
@@ -399,8 +418,8 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_FailedTo
 			State:       "test-state",
 		},
 	}
-	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx)
-	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID)
+	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx, nil)
+	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID).Return(nil)
 	// VerifyJWT succeeds but "not.valid.jwt" cannot be decoded as a valid JWT payload.
 	suite.mockJWTService.EXPECT().VerifyJWT("not.valid.jwt", "", "").Return(nil)
 
@@ -409,7 +428,11 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_FailedTo
 
 	assert.Empty(suite.T(), redirectURI)
 	assert.NotNil(suite.T(), authErr)
+	assert.Equal(suite.T(), oauth2const.ErrorServerError, authErr.Code)
+	assert.Equal(suite.T(), "Failed to process authorization request", authErr.Message)
 	assert.Equal(suite.T(), "test-state", authErr.State)
+	assert.True(suite.T(), authErr.SendErrorToClient)
+	assert.Equal(suite.T(), "https://client.example.com/callback", authErr.ClientRedirectURI)
 }
 
 func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_PersistAuthCodeError() {
@@ -420,8 +443,8 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_PersistA
 			State:       "test-state",
 		},
 	}
-	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx)
-	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID)
+	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx, nil)
+	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID).Return(nil)
 	suite.mockJWTService.EXPECT().VerifyJWT(svcJWTWithIat, "", "").Return(nil)
 	suite.mockAuthzCodeStore.EXPECT().InsertAuthorizationCode(mock.Anything).Return(errors.New("db error"))
 
@@ -432,6 +455,8 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_PersistA
 	assert.NotNil(suite.T(), authErr)
 	assert.Equal(suite.T(), oauth2const.ErrorServerError, authErr.Code)
 	assert.Equal(suite.T(), "test-state", authErr.State)
+	assert.True(suite.T(), authErr.SendErrorToClient)
+	assert.Equal(suite.T(), "https://client.example.com/callback", authErr.ClientRedirectURI)
 }
 
 func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_Success() {
@@ -441,8 +466,8 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_Success(
 			RedirectURI: "https://client.example.com/callback",
 		},
 	}
-	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx)
-	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID)
+	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx, nil)
+	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID).Return(nil)
 	suite.mockJWTService.EXPECT().VerifyJWT(svcJWTWithIat, "", "").Return(nil)
 	suite.mockAuthzCodeStore.EXPECT().InsertAuthorizationCode(mock.Anything).Return(nil)
 
@@ -462,8 +487,8 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_WithStat
 			State:       "test-state-123",
 		},
 	}
-	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx)
-	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID)
+	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx, nil)
+	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID).Return(nil)
 	suite.mockJWTService.EXPECT().VerifyJWT(svcJWTWithIat, "", "").Return(nil)
 	suite.mockAuthzCodeStore.EXPECT().InsertAuthorizationCode(mock.Anything).Return(nil)
 
@@ -485,8 +510,8 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_EmptyAut
 			PermissionScopes: []string{"read", "write"},
 		},
 	}
-	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx)
-	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID)
+	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx, nil)
+	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID).Return(nil)
 	suite.mockJWTService.EXPECT().VerifyJWT(svcJWTWithIat, "", "").Return(nil)
 	suite.mockAuthzCodeStore.EXPECT().InsertAuthorizationCode(mock.Anything).Return(nil)
 
@@ -505,8 +530,8 @@ func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_CreateAu
 			RedirectURI: "https://client.example.com/callback",
 		},
 	}
-	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx)
-	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID)
+	suite.mockAuthReqStore.EXPECT().GetRequest(testAuthID).Return(true, authCtx, nil)
+	suite.mockAuthReqStore.EXPECT().ClearRequest(testAuthID).Return(nil)
 	suite.mockJWTService.EXPECT().VerifyJWT(svcJWTMinimal, "", "").Return(nil)
 
 	svc := suite.newService()
@@ -533,7 +558,7 @@ func (suite *AuthorizeServiceTestSuite) TestGetAuthorizationCodeDetails_NotFound
 	suite.mockAuthzCodeStore.EXPECT().ConsumeAuthorizationCode("client-id", "invalid-code").
 		Return(false, nil)
 	suite.mockAuthzCodeStore.EXPECT().GetAuthorizationCode("client-id", "invalid-code").
-		Return(nil, ErrAuthorizationCodeNotFound)
+		Return(nil, errAuthorizationCodeNotFound)
 
 	svc := suite.newService()
 	result, err := svc.GetAuthorizationCodeDetails("client-id", "invalid-code")

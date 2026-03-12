@@ -89,10 +89,10 @@ func (s *TokenIntrospectionHandlerTestSuite) TestHandleIntrospect_ParseFormError
 	// Execute the handler - should attempt to write error response despite encoding failure
 	s.handler.HandleIntrospect(bw, req)
 
-	// Verify that the handler attempted to set headers (Content-Type will be text/plain after http.Error fallback)
+	// Verify that the handler attempted to set headers
 	assert.NotNil(s.T(), bw.Header())
-	// After encoding fails, http.Error() is called which sets Content-Type to text/plain
-	assert.Contains(s.T(), bw.Header().Get("Content-Type"), "text/plain")
+	// WriteJSONError sets Content-Type to application/json before attempting to encode
+	assert.Contains(s.T(), bw.Header().Get("Content-Type"), "application/json")
 }
 
 func (s *TokenIntrospectionHandlerTestSuite) TestHandleIntrospect_MissingToken() {
@@ -118,10 +118,10 @@ func (s *TokenIntrospectionHandlerTestSuite) TestHandleIntrospect_MissingToken_E
 	// Execute the handler - should attempt to write error response despite encoding failure
 	s.handler.HandleIntrospect(bw, req)
 
-	// Verify that the handler attempted to set headers (Content-Type will be text/plain after http.Error fallback)
+	// Verify that the handler attempted to set headers
 	assert.NotNil(s.T(), bw.Header())
-	// After encoding fails, http.Error() is called which sets Content-Type to text/plain
-	assert.Contains(s.T(), bw.Header().Get("Content-Type"), "text/plain")
+	// WriteJSONError sets Content-Type to application/json before attempting to encode
+	assert.Contains(s.T(), bw.Header().Get("Content-Type"), "application/json")
 }
 
 func (s *TokenIntrospectionHandlerTestSuite) TestHandleIntrospect_IntrospectionError() {
@@ -138,7 +138,7 @@ func (s *TokenIntrospectionHandlerTestSuite) TestHandleIntrospect_IntrospectionE
 	s.handler.HandleIntrospect(rr, req)
 	assert.Equal(s.T(), http.StatusInternalServerError, rr.Code)
 	assert.Contains(s.T(), rr.Body.String(), constants.ErrorServerError)
-	assert.Contains(s.T(), rr.Body.String(), "Server error while introspecting token")
+	assert.Contains(s.T(), rr.Body.String(), "An unexpected error occurred while processing the request")
 	s.introspectionServiceMock.AssertExpectations(s.T())
 }
 

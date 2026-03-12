@@ -27,7 +27,7 @@ var (
 		Type:             serviceerror.ClientErrorType,
 		Code:             "invalid_client_metadata",
 		Error:            "Invalid request format",
-		ErrorDescription: "The request format is invalid",
+		ErrorDescription: "The request body is missing or has an invalid format",
 	}
 
 	// ErrorInvalidRedirectURI is the standard error for redirect URI issues

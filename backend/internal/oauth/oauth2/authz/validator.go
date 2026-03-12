@@ -60,7 +60,7 @@ func (av *authorizationValidator) validateInitialAuthorizationRequest(msg *OAuth
 
 	// Validate the redirect URI against the registered application.
 	if err := oauthApp.ValidateRedirectURI(redirectURI); err != nil {
-		logger.Error("Validation failed for redirect URI", log.Error(err))
+		logger.Debug("Validation failed for redirect URI", log.Error(err))
 		return false, constants.ErrorInvalidRequest, "Invalid redirect URI"
 	}
 
@@ -99,7 +99,7 @@ func (av *authorizationValidator) validateInitialAuthorizationRequest(msg *OAuth
 		// Validate code challenge format and method if PKCE parameters are present
 		if codeChallenge != "" {
 			if err := pkce.ValidateCodeChallenge(codeChallenge, codeChallengeMethod); err != nil {
-				return true, constants.ErrorInvalidRequest, "Invalid PKCE parameters"
+				return true, constants.ErrorInvalidRequest, "Invalid code_challenge or code_challenge_method parameter"
 			}
 		}
 	}
@@ -113,7 +113,7 @@ func (av *authorizationValidator) validateInitialAuthorizationRequest(msg *OAuth
 	resource := msg.RequestQueryParams[constants.RequestParamResource]
 	if resource != "" {
 		if err := validateResourceParameter(resource); err != nil {
-			return true, constants.ErrorInvalidTarget, err.Error()
+			return true, constants.ErrorInvalidTarget, "Invalid resource parameter"
 		}
 	}
 
@@ -142,14 +142,14 @@ func validateResourceParameter(resource string) error {
 // validatePromptParameter validates the OIDC prompt parameter.
 func validatePromptParameter(prompt string) (bool, string, string) {
 	if strings.TrimSpace(prompt) == "" {
-		return true, constants.ErrorInvalidRequest, "Invalid prompt parameter value"
+		return true, constants.ErrorInvalidRequest, "The prompt parameter cannot be empty"
 	}
 
 	values := strings.Fields(prompt)
 
 	for _, v := range values {
 		if !slices.Contains(constants.ValidPromptValues, v) {
-			return true, constants.ErrorInvalidRequest, "Invalid prompt parameter value"
+			return true, constants.ErrorInvalidRequest, "Unsupported prompt parameter value"
 		}
 	}
 

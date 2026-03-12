@@ -420,7 +420,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_IssueRefreshToke
 	assert.Nil(suite.T(), response)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorServerError, err.Error)
-	assert.Contains(suite.T(), err.ErrorDescription, "Error while issuing refresh token")
+	assert.Equal(suite.T(), "Failed to generate refresh token", err.ErrorDescription)
 }
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_ExtractIatClaimError() {
@@ -607,7 +607,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_IDTokenGeneratio
 	assert.Nil(suite.T(), response)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorServerError, err.Error)
-	assert.Equal(suite.T(), "Failed to generate ID token", err.ErrorDescription)
+	assert.Equal(suite.T(), "Failed to generate token", err.ErrorDescription)
 }
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_IDTokenWithRenewOnGrant() {

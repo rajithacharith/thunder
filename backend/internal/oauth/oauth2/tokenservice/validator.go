@@ -53,7 +53,7 @@ func (tv *tokenValidator) ValidateAccessToken(token string) (*AccessTokenClaims,
 	// Verify signature and standard claims.
 	expectedIss := config.GetThunderRuntime().Config.JWT.Issuer
 	if err := tv.jwtService.VerifyJWT(token, "", expectedIss); err != nil {
-		return nil, fmt.Errorf("access token verification failed: %v", err)
+		return nil, fmt.Errorf("access token verification failed: %v", err.Error)
 	}
 
 	// Validate the typ header.
@@ -109,7 +109,7 @@ func (tv *tokenValidator) ValidateAccessToken(token string) (*AccessTokenClaims,
 // ValidateRefreshToken validates a refresh token and extracts the claims.
 func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*RefreshTokenClaims, error) {
 	if err := tv.jwtService.VerifyJWT(token, "", ""); err != nil {
-		return nil, fmt.Errorf("invalid refresh token: %v", err)
+		return nil, fmt.Errorf("invalid refresh token: %v", err.Error)
 	}
 
 	claims, err := jwt.DecodeJWTPayload(token)
@@ -248,7 +248,7 @@ func (tv *tokenValidator) verifyTokenSignatureByIssuer(
 	if issuers[issuer] {
 		svcErr := tv.jwtService.VerifyJWTSignature(token)
 		if svcErr != nil {
-			return fmt.Errorf("failed to verify token signature: %v", svcErr)
+			return fmt.Errorf("failed to verify token signature: %v", svcErr.Error)
 		}
 		return nil
 	}

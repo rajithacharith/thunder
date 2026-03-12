@@ -222,7 +222,7 @@ func (suite *AuthorizationCodeStoreTestSuite) TestGetAuthorizationCode_NoResults
 
 	result, err := suite.store.GetAuthorizationCode("test-client-id", "test-code")
 	assert.Error(suite.T(), err)
-	assert.Equal(suite.T(), ErrAuthorizationCodeNotFound, err)
+	assert.Equal(suite.T(), errAuthorizationCodeNotFound, err)
 	assert.Nil(suite.T(), result)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())
@@ -242,7 +242,7 @@ func (suite *AuthorizationCodeStoreTestSuite) TestGetAuthorizationCode_EmptyCode
 
 	result, err := suite.store.GetAuthorizationCode("test-client-id", "test-code")
 	assert.Error(suite.T(), err)
-	assert.Equal(suite.T(), ErrAuthorizationCodeNotFound, err)
+	assert.Equal(suite.T(), errAuthorizationCodeNotFound, err)
 	assert.Nil(suite.T(), result)
 
 	suite.mockdbProvider.AssertExpectations(suite.T())

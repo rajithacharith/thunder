@@ -18,8 +18,6 @@
 
 package authz
 
-import "errors"
-
 // Authorization code states.
 const (
 	AuthCodeStateActive   = "ACTIVE"
@@ -27,6 +25,3 @@ const (
 	AuthCodeStateExpired  = "EXPIRED"
 	AuthCodeStateRevoked  = "REVOKED"
 )
-
-// ErrAuthorizationCodeNotFound is returned when an authorization code is not found in the database.
-var ErrAuthorizationCodeNotFound = errors.New("authorization code not found")

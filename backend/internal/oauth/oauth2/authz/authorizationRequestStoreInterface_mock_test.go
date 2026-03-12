@@ -36,7 +36,7 @@ func (_m *authorizationRequestStoreInterfaceMock) EXPECT() *authorizationRequest
 }
 
 // AddRequest provides a mock function for the type authorizationRequestStoreInterfaceMock
-func (_mock *authorizationRequestStoreInterfaceMock) AddRequest(value authRequestContext) string {
+func (_mock *authorizationRequestStoreInterfaceMock) AddRequest(value authRequestContext) (string, error) {
 	ret := _mock.Called(value)
 
 	if len(ret) == 0 {
@@ -44,12 +44,21 @@ func (_mock *authorizationRequestStoreInterfaceMock) AddRequest(value authReques
 	}
 
 	var r0 string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(authRequestContext) (string, error)); ok {
+		return returnFunc(value)
+	}
 	if returnFunc, ok := ret.Get(0).(func(authRequestContext) string); ok {
 		r0 = returnFunc(value)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	return r0
+	if returnFunc, ok := ret.Get(1).(func(authRequestContext) error); ok {
+		r1 = returnFunc(value)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }
 
 // authorizationRequestStoreInterfaceMock_AddRequest_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddRequest'
@@ -76,20 +85,31 @@ func (_c *authorizationRequestStoreInterfaceMock_AddRequest_Call) Run(run func(v
 	return _c
 }
 
-func (_c *authorizationRequestStoreInterfaceMock_AddRequest_Call) Return(s string) *authorizationRequestStoreInterfaceMock_AddRequest_Call {
-	_c.Call.Return(s)
+func (_c *authorizationRequestStoreInterfaceMock_AddRequest_Call) Return(s string, err error) *authorizationRequestStoreInterfaceMock_AddRequest_Call {
+	_c.Call.Return(s, err)
 	return _c
 }
 
-func (_c *authorizationRequestStoreInterfaceMock_AddRequest_Call) RunAndReturn(run func(value authRequestContext) string) *authorizationRequestStoreInterfaceMock_AddRequest_Call {
+func (_c *authorizationRequestStoreInterfaceMock_AddRequest_Call) RunAndReturn(run func(value authRequestContext) (string, error)) *authorizationRequestStoreInterfaceMock_AddRequest_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ClearRequest provides a mock function for the type authorizationRequestStoreInterfaceMock
-func (_mock *authorizationRequestStoreInterfaceMock) ClearRequest(key string) {
-	_mock.Called(key)
-	return
+func (_mock *authorizationRequestStoreInterfaceMock) ClearRequest(key string) error {
+	ret := _mock.Called(key)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ClearRequest")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(string) error); ok {
+		r0 = returnFunc(key)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
 }
 
 // authorizationRequestStoreInterfaceMock_ClearRequest_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ClearRequest'
@@ -116,18 +136,18 @@ func (_c *authorizationRequestStoreInterfaceMock_ClearRequest_Call) Run(run func
 	return _c
 }
 
-func (_c *authorizationRequestStoreInterfaceMock_ClearRequest_Call) Return() *authorizationRequestStoreInterfaceMock_ClearRequest_Call {
-	_c.Call.Return()
+func (_c *authorizationRequestStoreInterfaceMock_ClearRequest_Call) Return(err error) *authorizationRequestStoreInterfaceMock_ClearRequest_Call {
+	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *authorizationRequestStoreInterfaceMock_ClearRequest_Call) RunAndReturn(run func(key string)) *authorizationRequestStoreInterfaceMock_ClearRequest_Call {
-	_c.Run(run)
+func (_c *authorizationRequestStoreInterfaceMock_ClearRequest_Call) RunAndReturn(run func(key string) error) *authorizationRequestStoreInterfaceMock_ClearRequest_Call {
+	_c.Call.Return(run)
 	return _c
 }
 
 // GetRequest provides a mock function for the type authorizationRequestStoreInterfaceMock
-func (_mock *authorizationRequestStoreInterfaceMock) GetRequest(key string) (bool, authRequestContext) {
+func (_mock *authorizationRequestStoreInterfaceMock) GetRequest(key string) (bool, authRequestContext, error) {
 	ret := _mock.Called(key)
 
 	if len(ret) == 0 {
@@ -136,7 +156,8 @@ func (_mock *authorizationRequestStoreInterfaceMock) GetRequest(key string) (boo
 
 	var r0 bool
 	var r1 authRequestContext
-	if returnFunc, ok := ret.Get(0).(func(string) (bool, authRequestContext)); ok {
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(string) (bool, authRequestContext, error)); ok {
 		return returnFunc(key)
 	}
 	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
@@ -149,7 +170,12 @@ func (_mock *authorizationRequestStoreInterfaceMock) GetRequest(key string) (boo
 	} else {
 		r1 = ret.Get(1).(authRequestContext)
 	}
-	return r0, r1
+	if returnFunc, ok := ret.Get(2).(func(string) error); ok {
+		r2 = returnFunc(key)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
 }
 
 // authorizationRequestStoreInterfaceMock_GetRequest_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRequest'
@@ -176,12 +202,12 @@ func (_c *authorizationRequestStoreInterfaceMock_GetRequest_Call) Run(run func(k
 	return _c
 }
 
-func (_c *authorizationRequestStoreInterfaceMock_GetRequest_Call) Return(b bool, authRequestContextMoqParam authRequestContext) *authorizationRequestStoreInterfaceMock_GetRequest_Call {
-	_c.Call.Return(b, authRequestContextMoqParam)
+func (_c *authorizationRequestStoreInterfaceMock_GetRequest_Call) Return(b bool, authRequestContextMoqParam authRequestContext, err error) *authorizationRequestStoreInterfaceMock_GetRequest_Call {
+	_c.Call.Return(b, authRequestContextMoqParam, err)
 	return _c
 }
 
-func (_c *authorizationRequestStoreInterfaceMock_GetRequest_Call) RunAndReturn(run func(key string) (bool, authRequestContext)) *authorizationRequestStoreInterfaceMock_GetRequest_Call {
+func (_c *authorizationRequestStoreInterfaceMock_GetRequest_Call) RunAndReturn(run func(key string) (bool, authRequestContext, error)) *authorizationRequestStoreInterfaceMock_GetRequest_Call {
 	_c.Call.Return(run)
 	return _c
 }

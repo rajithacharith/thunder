@@ -164,7 +164,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_MissingGr
 	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
-	assert.Equal(suite.T(), "Missing grant type", err.ErrorDescription)
+	assert.Equal(suite.T(), "Missing grant_type parameter", err.ErrorDescription)
 }
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_UnsupportedGrantType() {
@@ -203,7 +203,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_MissingCl
 	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorInvalidClient, err.Error)
-	assert.Equal(suite.T(), "Client Id is required", err.ErrorDescription)
+	assert.Equal(suite.T(), "client_id is required", err.ErrorDescription)
 }
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_MissingRedirectURI() {
@@ -913,7 +913,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_IDTokenGene
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorServerError, err.Error)
-	assert.Equal(suite.T(), "Failed to generate ID token", err.ErrorDescription)
+	assert.Equal(suite.T(), "Failed to generate token", err.ErrorDescription)
 
 	suite.mockAuthzService.AssertExpectations(suite.T())
 	suite.mockUserService.AssertExpectations(suite.T())

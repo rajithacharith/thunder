@@ -121,7 +121,7 @@ func (acs *authorizationCodeStore) GetAuthorizationCode(clientID, authCode strin
 		return nil, fmt.Errorf("error while retrieving authorization code: %w", err)
 	}
 	if len(results) == 0 {
-		return nil, ErrAuthorizationCodeNotFound
+		return nil, errAuthorizationCodeNotFound
 	}
 	row := results[0]
 
@@ -165,7 +165,7 @@ func buildAuthorizationCodeFromResultRow(row map[string]interface{}) (*Authoriza
 		return nil, errors.New("code ID is of unexpected type")
 	}
 	if codeID == "" {
-		return nil, ErrAuthorizationCodeNotFound
+		return nil, errAuthorizationCodeNotFound
 	}
 
 	authorizationCode, ok := row[columnNameAuthorizationCode].(string)
