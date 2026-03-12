@@ -143,6 +143,8 @@ const (
 	NodePropertyAllowAuthenticationWithoutLocalUser = "allowAuthenticationWithoutLocalUser"
 	// NodePropertyAllowRegistrationWithExistingUser indicates whether registration is allowed with an existing user
 	NodePropertyAllowRegistrationWithExistingUser = "allowRegistrationWithExistingUser"
+	// NodePropertyCreateInAdminOU indicates whether to create the user in the admin's organization unit
+	NodePropertyCreateInAdminOU = "createInAdminOU"
 )
 
 const (

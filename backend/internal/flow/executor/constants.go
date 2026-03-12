@@ -42,6 +42,7 @@ const (
 	ExecutorNameInviteExecutor      = "InviteExecutor"
 	ExecutorNameCredentialSetter    = "CredentialSetter"
 	ExecutorNameConsent             = "ConsentExecutor"
+	ExecutorNameOUResolver          = "OUResolverExecutor"
 )
 
 // Executor mode constants
