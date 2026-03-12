@@ -690,6 +690,50 @@ func (s *DefaultClientTestSuite) TestSearchConsents_EmptyFilter_Success() {
 	s.Empty(result)
 }
 
+func (s *DefaultClientTestSuite) TestSearchConsents_ExpiredStatusFilter_ValidityTimeNormalization() {
+	nowUnix := time.Now().Unix()
+	tests := []struct {
+		name string
+		data []consentResponseDTO
+	}{
+		{
+			name: "converts active consent to expired when validity time has elapsed",
+			data: []consentResponseDTO{
+				{ID: "c-expired", Type: "authentication", Status: "ACTIVE", ValidityTime: nowUnix - 60},
+				{ID: "c-active", Type: "authentication", Status: "ACTIVE", ValidityTime: nowUnix + 3600},
+			},
+		},
+		{
+			name: "does not convert non-active consent status",
+			data: []consentResponseDTO{
+				{ID: "c-revoked", Type: "authentication", Status: "REVOKED", ValidityTime: nowUnix - 60},
+				{ID: "c-expired", Type: "authentication", Status: "ACTIVE", ValidityTime: nowUnix - 60},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		s.Run(tc.name, func() {
+			httpMock := httpmock.NewHTTPClientInterfaceMock(s.T())
+			c := newTestClient(s.T(), httpMock)
+
+			respBody := consentSearchResponseDTO{Data: tc.data}
+			httpMock.EXPECT().Do(mock.AnythingOfType("*http.Request")).
+				Return(buildHTTPResponse(s.T(), http.StatusOK, respBody), nil)
+
+			result, svcErr := c.searchConsents(context.Background(), "ou1", &ConsentSearchFilter{
+				ConsentStatuses: []ConsentStatus{ConsentStatusExpired},
+			})
+
+			s.Nil(svcErr)
+			s.Len(result, 1)
+			s.Equal("c-expired", result[0].ID)
+			s.Equal(ConsentStatusExpired, result[0].Status)
+		})
+	}
+}
+
 // ----- validateConsent -----
 
 func (s *DefaultClientTestSuite) TestValidateConsent_Valid() {
