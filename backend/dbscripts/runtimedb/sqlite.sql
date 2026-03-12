@@ -7,12 +7,11 @@ CREATE TABLE AUTHORIZATION_CODE (
     STATE VARCHAR(50) NOT NULL,
     AUTHZ_DATA TEXT NOT NULL,
     TIME_CREATED DATETIME NOT NULL,
-    EXPIRY_TIME DATETIME NOT NULL,
-    UNIQUE (CODE_ID, DEPLOYMENT_ID)
+    EXPIRY_TIME DATETIME NOT NULL
 );
 
--- Index for deployment isolation on AUTHORIZATION_CODE
-CREATE INDEX idx_authorization_code_deployment_id ON AUTHORIZATION_CODE (DEPLOYMENT_ID);
+-- Composite index for authorization code lookup by client + code + deployment (hot login-path query)
+CREATE INDEX idx_authz_code_client_code_deployment ON AUTHORIZATION_CODE (CLIENT_ID, AUTHORIZATION_CODE, DEPLOYMENT_ID);
 
 -- Table to store OAuth2 authorization request context
 CREATE TABLE AUTHORIZATION_REQUEST (
@@ -24,11 +23,11 @@ CREATE TABLE AUTHORIZATION_REQUEST (
     PRIMARY KEY (AUTH_ID, DEPLOYMENT_ID)
 );
 
--- Index for deployment isolation on AUTHORIZATION_REQUEST
-CREATE INDEX idx_authorization_request_deployment_id ON AUTHORIZATION_REQUEST (DEPLOYMENT_ID);
-
--- Index for expiry time on AUTHORIZATION_REQUEST
+-- Index for expiry time on AUTHORIZATION_REQUEST (supports cleanup and expiry checks)
 CREATE INDEX idx_authorization_request_expiry_time ON AUTHORIZATION_REQUEST (EXPIRY_TIME);
+
+-- Index for expiry time on AUTHORIZATION_CODE (supports cleanup and expiry checks)
+CREATE INDEX idx_authz_code_expiry_time ON AUTHORIZATION_CODE (EXPIRY_TIME);
 
 -- Table to store flow context metadata and state
 CREATE TABLE FLOW_CONTEXT (
@@ -71,9 +70,6 @@ CREATE TABLE FLOW_USER_DATA (
     FOREIGN KEY (FLOW_ID, DEPLOYMENT_ID) REFERENCES FLOW_CONTEXT(FLOW_ID, DEPLOYMENT_ID) ON DELETE CASCADE
 );
 
--- Index for deployment isolation on FLOW_USER_DATA
-CREATE INDEX idx_flow_user_data_deployment_id ON FLOW_USER_DATA (DEPLOYMENT_ID);
-
 -- Table to store WebAuthn session data
 CREATE TABLE WEBAUTHN_SESSION (
     SESSION_KEY VARCHAR(255) NOT NULL,
@@ -85,9 +81,6 @@ CREATE TABLE WEBAUTHN_SESSION (
     EXPIRY_TIME DATETIME NOT NULL,
     PRIMARY KEY (SESSION_KEY, DEPLOYMENT_ID)
 );
-
--- Index for deployment isolation on WEBAUTHN_SESSION
-CREATE INDEX idx_webauthn_session_deployment_id ON WEBAUTHN_SESSION (DEPLOYMENT_ID);
 
 -- Index for expiry time on WEBAUTHN_SESSION
 CREATE INDEX idx_webauthn_session_expiry_time ON WEBAUTHN_SESSION (EXPIRY_TIME);

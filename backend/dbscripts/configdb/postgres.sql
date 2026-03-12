@@ -12,8 +12,8 @@ CREATE TABLE USER_SCHEMAS (
     UNIQUE (NAME, DEPLOYMENT_ID)
 );
 
--- Index for deployment isolation on USER_SCHEMAS
-CREATE INDEX idx_user_schemas_deployment_id ON USER_SCHEMAS (DEPLOYMENT_ID);
+-- Composite index for deployment + OU-based user schema lookups
+CREATE INDEX idx_user_schemas_deployment_ou ON USER_SCHEMAS (DEPLOYMENT_ID, OU_ID);
 
 -- Table to store Roles
 CREATE TABLE "ROLE" (
@@ -24,12 +24,11 @@ CREATE TABLE "ROLE" (
     DESCRIPTION         VARCHAR(255),
     CREATED_AT          TIMESTAMPTZ DEFAULT NOW(),
     UPDATED_AT          TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE (ID, DEPLOYMENT_ID),
     CONSTRAINT unique_role_ou_name UNIQUE (OU_ID, NAME, DEPLOYMENT_ID)
 );
 
--- Index for deployment isolation on ROLE
-CREATE INDEX idx_role_deployment_id ON "ROLE" (DEPLOYMENT_ID);
+-- Composite index for deployment + OU lookups (supports UNIQUE constraint checks)
+CREATE INDEX idx_role_ou_deployment ON "ROLE" (DEPLOYMENT_ID, OU_ID);
 
 -- Table to store Role permissions
 CREATE TABLE ROLE_PERMISSION (
@@ -42,10 +41,8 @@ CREATE TABLE ROLE_PERMISSION (
     FOREIGN KEY (ROLE_ID) REFERENCES "ROLE" (ID) ON DELETE CASCADE
 );
 
-
 -- Index for resource server queries with deployment isolation on ROLE_PERMISSION
 CREATE INDEX idx_role_permission_resource_server ON ROLE_PERMISSION (RESOURCE_SERVER_ID, DEPLOYMENT_ID);
-
 
 -- Table to store Role assignments (to users and groups)
 CREATE TABLE ROLE_ASSIGNMENT (
@@ -59,17 +56,6 @@ CREATE TABLE ROLE_ASSIGNMENT (
     FOREIGN KEY (ROLE_ID) REFERENCES "ROLE" (ID) ON DELETE CASCADE
 );
 
--- Index for deployment isolation on ROLE_ASSIGNMENT
-CREATE INDEX idx_role_assignment_deployment_id ON ROLE_ASSIGNMENT (DEPLOYMENT_ID);
-
--- Indexes for authorization queries
-
--- Index for finding all roles assigned to a specific assignee
-CREATE INDEX idx_role_assignment_assignee
-ON ROLE_ASSIGNMENT (ASSIGNEE_ID, ASSIGNEE_TYPE);
-
-
-
 -- Table to store theme configurations.
 CREATE TABLE THEME (
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
@@ -78,8 +64,7 @@ CREATE TABLE THEME (
     DESCRIPTION VARCHAR(512),
     THEME JSONB NOT NULL,
     CREATED_AT TIMESTAMPTZ DEFAULT NOW(),
-    UPDATED_AT TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE (ID, DEPLOYMENT_ID)
+    UPDATED_AT TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Index for deployment isolation on THEME
@@ -93,8 +78,7 @@ CREATE TABLE LAYOUT (
     DESCRIPTION VARCHAR(512),
     LAYOUT JSONB NOT NULL,
     CREATED_AT TIMESTAMPTZ DEFAULT NOW(),
-    UPDATED_AT TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE (ID, DEPLOYMENT_ID)
+    UPDATED_AT TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Index for deployment isolation on LAYOUT
@@ -112,13 +96,12 @@ CREATE TABLE APPLICATION (
     THEME_ID VARCHAR(36),
     LAYOUT_ID VARCHAR(36),
     APP_JSON JSONB,
-    UNIQUE (ID, DEPLOYMENT_ID),
     FOREIGN KEY (THEME_ID) REFERENCES THEME(ID) ON DELETE RESTRICT,
     FOREIGN KEY (LAYOUT_ID) REFERENCES LAYOUT(ID) ON DELETE RESTRICT
 );
 
--- Index for deployment isolation on APPLICATION
-CREATE INDEX idx_application_deployment_id ON APPLICATION (DEPLOYMENT_ID);
+-- Composite index for name-based application lookups
+CREATE INDEX idx_application_name_deployment ON APPLICATION (DEPLOYMENT_ID, APP_NAME);
 
 -- Index for efficient lookups of applications by theme.
 CREATE INDEX idx_application_theme_id ON APPLICATION(THEME_ID);
@@ -137,8 +120,8 @@ CREATE TABLE APP_OAUTH_INBOUND_CONFIG (
     FOREIGN KEY (APP_ID) REFERENCES APPLICATION(ID) ON DELETE CASCADE
 );
 
--- Index for deployment isolation on APP_OAUTH_INBOUND_CONFIG
-CREATE INDEX idx_app_oauth_inbound_config_deployment_id ON APP_OAUTH_INBOUND_CONFIG (DEPLOYMENT_ID);
+-- Index for APP_ID lookups on APP_OAUTH_INBOUND_CONFIG (UPDATE/DELETE by app ID, and JOIN in application list)
+CREATE INDEX idx_app_oauth_app_id ON APP_OAUTH_INBOUND_CONFIG (APP_ID);
 
 -- Table to store identity providers.
 CREATE TABLE IDP (
@@ -152,8 +135,8 @@ CREATE TABLE IDP (
     UPDATED_AT TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Index for deployment isolation on IDP
-CREATE INDEX idx_idp_deployment_id ON IDP (DEPLOYMENT_ID);
+-- Composite index for name-based IDP lookups
+CREATE INDEX idx_idp_name_deployment ON IDP (DEPLOYMENT_ID, NAME);
 
 -- Table to store notification senders.
 CREATE TABLE NOTIFICATION_SENDER (
@@ -168,8 +151,8 @@ CREATE TABLE NOTIFICATION_SENDER (
     UPDATED_AT TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Index for deployment isolation on NOTIFICATION_SENDER
-CREATE INDEX idx_notification_sender_deployment_id ON NOTIFICATION_SENDER (DEPLOYMENT_ID);
+-- Composite index for name-based notification sender lookups
+CREATE INDEX idx_notification_sender_name_deployment ON NOTIFICATION_SENDER (DEPLOYMENT_ID, NAME);
 
 -- Table to store certificates associated with various entities.
 CREATE TABLE CERTIFICATE (
@@ -184,9 +167,6 @@ CREATE TABLE CERTIFICATE (
     UNIQUE (REF_TYPE, REF_ID, DEPLOYMENT_ID)
 );
 
--- Index for deployment isolation on CERTIFICATE
-CREATE INDEX idx_certificate_deployment_id ON CERTIFICATE (DEPLOYMENT_ID);
-
 -- Table to store resource servers.
 CREATE TABLE RESOURCE_SERVER (
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
@@ -198,12 +178,11 @@ CREATE TABLE RESOURCE_SERVER (
     PROPERTIES JSONB,
     CREATED_AT TIMESTAMPTZ DEFAULT NOW(),
     UPDATED_AT TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE (ID, DEPLOYMENT_ID),
     UNIQUE (OU_ID, NAME, DEPLOYMENT_ID)
 );
 
--- Index for deployment isolation on RESOURCE_SERVER
-CREATE INDEX idx_resource_server_deployment_id ON RESOURCE_SERVER (DEPLOYMENT_ID);
+-- Composite index for name-based resource server lookups
+CREATE INDEX idx_resource_server_name_deployment ON RESOURCE_SERVER (DEPLOYMENT_ID, NAME);
 
 -- Unique constraint: Resource server identifier must be unique per deployment (when not null)
 CREATE UNIQUE INDEX uq_resource_server_identifier
@@ -223,7 +202,6 @@ CREATE TABLE RESOURCE (
     PROPERTIES JSONB,
     CREATED_AT TIMESTAMPTZ DEFAULT NOW(),
     UPDATED_AT TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE (ID, DEPLOYMENT_ID),
 
     FOREIGN KEY (RESOURCE_SERVER_ID)
         REFERENCES RESOURCE_SERVER(ID)
@@ -235,8 +213,8 @@ CREATE TABLE RESOURCE (
         ON UPDATE CASCADE
 );
 
--- Index for deployment isolation on RESOURCE
-CREATE INDEX idx_resource_deployment_id ON RESOURCE (DEPLOYMENT_ID);
+-- Composite index for resource server + deployment queries (list, count, and handle checks)
+CREATE INDEX idx_resource_server_deployment ON RESOURCE (RESOURCE_SERVER_ID, DEPLOYMENT_ID);
 
 -- Unique constraint: Resource handle must be unique under the same parent per deployment
 CREATE UNIQUE INDEX uq_resource_handle_with_parent
@@ -272,8 +250,8 @@ CREATE TABLE ACTION (
         ON UPDATE CASCADE
 );
 
--- Index for deployment isolation on ACTION
-CREATE INDEX idx_action_deployment_id ON ACTION (DEPLOYMENT_ID);
+-- Composite index for action list/count queries filtered by resource server + deployment + resource
+CREATE INDEX idx_action_server_deployment ON ACTION (RESOURCE_SERVER_ID, DEPLOYMENT_ID, RESOURCE_ID);
 
 -- Unique constraint: Server-level action handles must be unique per resource server per deployment
 CREATE UNIQUE INDEX uq_action_server_handle
@@ -295,15 +273,11 @@ CREATE TABLE FLOW (
     ACTIVE_VERSION INTEGER NOT NULL,
     CREATED_AT TIMESTAMPTZ DEFAULT NOW(),
     UPDATED_AT TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE (ID, DEPLOYMENT_ID),
     UNIQUE (HANDLE, FLOW_TYPE, DEPLOYMENT_ID)
 );
 
--- Index for deployment isolation on FLOW
-CREATE INDEX idx_flow_deployment_id ON FLOW (DEPLOYMENT_ID);
-
--- Index for flow type on FLOW
-CREATE INDEX idx_flow_type ON FLOW (FLOW_TYPE);
+-- Composite index for flow type + deployment queries
+CREATE INDEX idx_flow_type_deployment ON FLOW (DEPLOYMENT_ID, FLOW_TYPE);
 
 -- Table to store flow version history
 CREATE TABLE FLOW_VERSION (
@@ -318,10 +292,6 @@ CREATE TABLE FLOW_VERSION (
         ON DELETE CASCADE
 );
 
--- Index for deployment isolation on FLOW_VERSION
-CREATE INDEX idx_flow_version_deployment_id ON FLOW_VERSION (DEPLOYMENT_ID);
-
-
 -- Table to store i18n translations
 CREATE TABLE TRANSLATION (
     DEPLOYMENT_ID   VARCHAR(255) NOT NULL,
@@ -331,12 +301,8 @@ CREATE TABLE TRANSLATION (
     VALUE           TEXT NOT NULL,
     CREATED_AT      TIMESTAMPTZ DEFAULT NOW(),
     UPDATED_AT      TIMESTAMPTZ DEFAULT NOW(),
-    PRIMARY KEY (MESSAGE_KEY, LANGUAGE_CODE, NAMESPACE, DEPLOYMENT_ID)
+    PRIMARY KEY (DEPLOYMENT_ID, NAMESPACE, MESSAGE_KEY, LANGUAGE_CODE)
 );
 
-
--- Index for efficient namespace-based lookups
-CREATE INDEX idx_translation_namespace ON TRANSLATION (DEPLOYMENT_ID, NAMESPACE);
-
 -- Index for efficient language and namespace combination lookups
-CREATE INDEX idx_translation_lang_namespace ON TRANSLATION (DEPLOYMENT_ID, LANGUAGE_CODE, NAMESPACE);
+CREATE INDEX idx_translation_lang_namespace ON TRANSLATION (DEPLOYMENT_ID, LANGUAGE_CODE);
