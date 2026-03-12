@@ -150,16 +150,16 @@ func (_c *flowStoreInterfaceMock_GetFlowContext_Call) RunAndReturn(run func(flow
 }
 
 // StoreFlowContext provides a mock function for the type flowStoreInterfaceMock
-func (_mock *flowStoreInterfaceMock) StoreFlowContext(ctx flowexec.EngineContext) error {
-	ret := _mock.Called(ctx)
+func (_mock *flowStoreInterfaceMock) StoreFlowContext(ctx flowexec.EngineContext, expirySeconds int64) error {
+	ret := _mock.Called(ctx, expirySeconds)
 
 	if len(ret) == 0 {
 		panic("no return value specified for StoreFlowContext")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(flowexec.EngineContext) error); ok {
-		r0 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(flowexec.EngineContext, int64) error); ok {
+		r0 = returnFunc(ctx, expirySeconds)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -173,18 +173,24 @@ type flowStoreInterfaceMock_StoreFlowContext_Call struct {
 
 // StoreFlowContext is a helper method to define mock.On call
 //   - ctx flowexec.EngineContext
-func (_e *flowStoreInterfaceMock_Expecter) StoreFlowContext(ctx interface{}) *flowStoreInterfaceMock_StoreFlowContext_Call {
-	return &flowStoreInterfaceMock_StoreFlowContext_Call{Call: _e.mock.On("StoreFlowContext", ctx)}
+//   - expirySeconds int64
+func (_e *flowStoreInterfaceMock_Expecter) StoreFlowContext(ctx interface{}, expirySeconds interface{}) *flowStoreInterfaceMock_StoreFlowContext_Call {
+	return &flowStoreInterfaceMock_StoreFlowContext_Call{Call: _e.mock.On("StoreFlowContext", ctx, expirySeconds)}
 }
 
-func (_c *flowStoreInterfaceMock_StoreFlowContext_Call) Run(run func(ctx flowexec.EngineContext)) *flowStoreInterfaceMock_StoreFlowContext_Call {
+func (_c *flowStoreInterfaceMock_StoreFlowContext_Call) Run(run func(ctx flowexec.EngineContext, expirySeconds int64)) *flowStoreInterfaceMock_StoreFlowContext_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 flowexec.EngineContext
 		if args[0] != nil {
 			arg0 = args[0].(flowexec.EngineContext)
 		}
+		var arg1 int64
+		if args[1] != nil {
+			arg1 = args[1].(int64)
+		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -195,7 +201,7 @@ func (_c *flowStoreInterfaceMock_StoreFlowContext_Call) Return(err error) *flowS
 	return _c
 }
 
-func (_c *flowStoreInterfaceMock_StoreFlowContext_Call) RunAndReturn(run func(ctx flowexec.EngineContext) error) *flowStoreInterfaceMock_StoreFlowContext_Call {
+func (_c *flowStoreInterfaceMock_StoreFlowContext_Call) RunAndReturn(run func(ctx flowexec.EngineContext, expirySeconds int64) error) *flowStoreInterfaceMock_StoreFlowContext_Call {
 	_c.Call.Return(run)
 	return _c
 }

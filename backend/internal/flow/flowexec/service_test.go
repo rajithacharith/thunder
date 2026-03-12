@@ -237,7 +237,7 @@ func TestInitiateFlowSuccessScenarios(t *testing.T) {
 						return false
 					}
 					return true
-				})).Return(nil)
+				}), mock.Anything).Return(nil)
 			} else {
 				mockAppService.EXPECT().GetApplication(appID).Return(mockApp, nil)
 				mockFlowMgtSvc.EXPECT().GetGraph("auth-graph-1").Return(testGraph, nil)
@@ -258,7 +258,7 @@ func TestInitiateFlowSuccessScenarios(t *testing.T) {
 						return false
 					}
 					return true
-				})).Return(nil)
+				}), mock.Anything).Return(nil)
 			}
 
 			// Execute
@@ -362,7 +362,8 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 				mockFlowMgtSvc.EXPECT().GetGraph("auth-graph-1").Return(testGraph, nil)
 
 				// Mock store to return error
-				mockStore.EXPECT().StoreFlowContext(mock.AnythingOfType("EngineContext")).Return(assert.AnError)
+				mockStore.EXPECT().StoreFlowContext(
+					mock.AnythingOfType("EngineContext"), mock.Anything).Return(assert.AnError)
 			},
 			expectedErrorCode: serviceerror.InternalServerError.Code,
 		},
@@ -403,6 +404,44 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 			assert.Equal(t, tt.expectedErrorCode, svcErr.Code)
 
 			// All mocks automatically verified by mockery
+		})
+	}
+}
+
+func TestGetFlowExpirySeconds(t *testing.T) {
+	service := &flowExecService{}
+
+	tests := []struct {
+		name     string
+		flowType common.FlowType
+		expected int64
+	}{
+		{
+			name:     "Authentication flow",
+			flowType: common.FlowTypeAuthentication,
+			expected: defaultAuthFlowExpiry,
+		},
+		{
+			name:     "Registration flow",
+			flowType: common.FlowTypeRegistration,
+			expected: defaultRegistrationFlowExpiry,
+		},
+		{
+			name:     "User onboarding flow",
+			flowType: common.FlowTypeUserOnboarding,
+			expected: defaultUserOnboardingFlowExpiry,
+		},
+		{
+			name:     "Unknown flow type (fallback)",
+			flowType: common.FlowType("UNKNOWN_FLOW"),
+			expected: defaultAuthFlowExpiry,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := service.getFlowExpirySeconds(tt.flowType)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
