@@ -143,6 +143,9 @@ const (
 	NodePropertyAllowAuthenticationWithoutLocalUser = "allowAuthenticationWithoutLocalUser"
 	// NodePropertyAllowRegistrationWithExistingUser indicates whether registration is allowed with an existing user
 	NodePropertyAllowRegistrationWithExistingUser = "allowRegistrationWithExistingUser"
+	// NodePropertyOUResolveFrom specifies the strategy for resolving the organization unit.
+	// Supported values: "caller" (use the caller's OU).
+	NodePropertyOUResolveFrom = "resolveFrom"
 )
 
 const (
