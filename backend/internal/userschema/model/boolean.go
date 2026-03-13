@@ -27,7 +27,8 @@ import (
 
 // boolean represents a boolean property in the user schema.
 type boolean struct {
-	required bool
+	required    bool
+	displayName string
 }
 
 func (p *boolean) isRequired() bool {
@@ -63,8 +64,9 @@ func (p *boolean) validateUniqueness(
 
 func compileBooleanProperty(propMap map[string]json.RawMessage) (property, error) {
 	allowedFields := map[string]struct{}{
-		"type":     {},
-		"required": {},
+		"type":        {},
+		"required":    {},
+		"displayName": {},
 	}
 
 	for field := range propMap {
@@ -78,6 +80,12 @@ func compileBooleanProperty(propMap map[string]json.RawMessage) (property, error
 	if raw, exists := propMap["required"]; exists {
 		if err := json.Unmarshal(raw, &prop.required); err != nil {
 			return nil, fmt.Errorf("'required' field must be a boolean")
+		}
+	}
+
+	if raw, exists := propMap["displayName"]; exists {
+		if err := json.Unmarshal(raw, &prop.displayName); err != nil {
+			return nil, fmt.Errorf("'displayName' field must be a string")
 		}
 	}
 

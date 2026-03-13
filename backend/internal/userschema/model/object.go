@@ -26,8 +26,9 @@ import (
 )
 
 type object struct {
-	required   bool
-	properties map[string]property
+	required    bool
+	displayName string
+	properties  map[string]property
 }
 
 func (p *object) isRequired() bool {
@@ -120,9 +121,10 @@ func (p *object) validateUniqueness(
 
 func compileObjectProperty(propMap map[string]json.RawMessage) (property, error) {
 	allowedFields := map[string]struct{}{
-		"type":       {},
-		"properties": {},
-		"required":   {},
+		"type":        {},
+		"properties":  {},
+		"required":    {},
+		"displayName": {},
 	}
 
 	for field := range propMap {
@@ -138,6 +140,12 @@ func compileObjectProperty(propMap map[string]json.RawMessage) (property, error)
 	if raw, exists := propMap["required"]; exists {
 		if err := json.Unmarshal(raw, &prop.required); err != nil {
 			return nil, fmt.Errorf("'required' field must be a boolean")
+		}
+	}
+
+	if raw, exists := propMap["displayName"]; exists {
+		if err := json.Unmarshal(raw, &prop.displayName); err != nil {
+			return nil, fmt.Errorf("'displayName' field must be a string")
 		}
 	}
 
