@@ -22,16 +22,25 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
 
-func TestResolveDisplayAttributePaths_DeduplicatesTypes(t *testing.T) {
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+// DisplayUtilTestSuite tests the display attribute resolution utility functions.
+type DisplayUtilTestSuite struct {
+	suite.Suite
+}
+
+func TestDisplayUtilTestSuite(t *testing.T) {
+	suite.Run(t, new(DisplayUtilTestSuite))
+}
+
+func (suite *DisplayUtilTestSuite) TestResolveDisplayAttributePaths_DeduplicatesTypes() {
+	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 	schemaMock.On("GetDisplayAttributesByNames", mock.Anything,
 		mock.MatchedBy(func(names []string) bool {
 			if len(names) != 2 {
@@ -44,33 +53,34 @@ func TestResolveDisplayAttributePaths_DeduplicatesTypes(t *testing.T) {
 
 	result := ResolveDisplayAttributePaths(context.Background(),
 		[]string{"employee", "contractor", "employee"}, schemaMock, nil)
-	assert.Equal(t, "email", result["employee"])
-	assert.Equal(t, "name", result["contractor"])
+	suite.Equal("email", result["employee"])
+	suite.Equal("name", result["contractor"])
 }
 
-func TestResolveDisplayAttributePaths_NilSchemaService(t *testing.T) {
+func (suite *DisplayUtilTestSuite) TestResolveDisplayAttributePaths_NilSchemaService() {
 	result := ResolveDisplayAttributePaths(context.Background(), []string{"employee"}, nil, nil)
-	assert.Nil(t, result)
+	suite.Nil(result)
 }
 
-func TestResolveDisplayAttributePaths_EmptyTypes(t *testing.T) {
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+func (suite *DisplayUtilTestSuite) TestResolveDisplayAttributePaths_EmptyTypes() {
+	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 	result := ResolveDisplayAttributePaths(context.Background(), []string{}, schemaMock, nil)
-	assert.Nil(t, result)
+	suite.Nil(result)
 }
 
-func TestResolveDisplayAttributePaths_AllEmptyStrings(t *testing.T) {
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+func (suite *DisplayUtilTestSuite) TestResolveDisplayAttributePaths_AllEmptyStrings() {
+	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 	result := ResolveDisplayAttributePaths(context.Background(), []string{"", ""}, schemaMock, nil)
-	assert.Nil(t, result)
+	suite.Nil(result)
 }
 
-func TestResolveDisplayAttributePaths_SchemaServiceError(t *testing.T) {
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+func (suite *DisplayUtilTestSuite) TestResolveDisplayAttributePaths_SchemaServiceError() {
+	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
-		Return((map[string]string)(nil), &serviceerror.ServiceError{Code: "500", Error: "schema unavailable"})
+		Return((map[string]string)(nil),
+			&serviceerror.ServiceError{Code: "500", Error: "schema unavailable"})
 
 	logger := log.GetLogger()
 	result := ResolveDisplayAttributePaths(context.Background(), []string{"employee"}, schemaMock, logger)
-	assert.Nil(t, result)
+	suite.Nil(result)
 }

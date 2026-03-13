@@ -20,9 +20,15 @@ package utils
 
 import "fmt"
 
+// QueryParamInclude is the query parameter name for the include parameter.
+const QueryParamInclude = "include"
+
+// IncludeValueDisplay is the value for the include query parameter to request display attributes.
+const IncludeValueDisplay = "display"
+
 // IncludeDisplayQuery is the query string fragment appended to pagination links
 // when the include=display parameter is active.
-const IncludeDisplayQuery = "&include=display"
+const IncludeDisplayQuery = "&" + QueryParamInclude + "=" + IncludeValueDisplay
 
 // DisplayQueryParam returns IncludeDisplayQuery if includeDisplay is true, empty string otherwise.
 func DisplayQueryParam(includeDisplay bool) string {

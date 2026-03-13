@@ -73,7 +73,7 @@ func Initialize(
 	registerRoutes(mux, userHandler)
 
 	// Create resolver for OU package to query user data without cross-DB access
-	ouUserResolver := newOUUserResolver(userStore)
+	ouUserResolver := newOUUserResolver(userStore, userSchemaService)
 
 	// Create and return exporter
 	exporter := newUserExporter(userService)

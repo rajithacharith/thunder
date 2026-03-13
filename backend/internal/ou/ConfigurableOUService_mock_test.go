@@ -1219,46 +1219,6 @@ func (_c *ConfigurableOUServiceMock_SetOUUserResolver_Call) RunAndReturn(run fun
 	return _c
 }
 
-// SetUserSchemaService provides a mock function for the type ConfigurableOUServiceMock
-func (_mock *ConfigurableOUServiceMock) SetUserSchemaService(service DisplayAttributeResolver) {
-	_mock.Called(service)
-	return
-}
-
-// ConfigurableOUServiceMock_SetUserSchemaService_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetUserSchemaService'
-type ConfigurableOUServiceMock_SetUserSchemaService_Call struct {
-	*mock.Call
-}
-
-// SetUserSchemaService is a helper method to define mock.On call
-//   - service DisplayAttributeResolver
-func (_e *ConfigurableOUServiceMock_Expecter) SetUserSchemaService(service interface{}) *ConfigurableOUServiceMock_SetUserSchemaService_Call {
-	return &ConfigurableOUServiceMock_SetUserSchemaService_Call{Call: _e.mock.On("SetUserSchemaService", service)}
-}
-
-func (_c *ConfigurableOUServiceMock_SetUserSchemaService_Call) Run(run func(service DisplayAttributeResolver)) *ConfigurableOUServiceMock_SetUserSchemaService_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 DisplayAttributeResolver
-		if args[0] != nil {
-			arg0 = args[0].(DisplayAttributeResolver)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *ConfigurableOUServiceMock_SetUserSchemaService_Call) Return() *ConfigurableOUServiceMock_SetUserSchemaService_Call {
-	_c.Call.Return()
-	return _c
-}
-
-func (_c *ConfigurableOUServiceMock_SetUserSchemaService_Call) RunAndReturn(run func(service DisplayAttributeResolver)) *ConfigurableOUServiceMock_SetUserSchemaService_Call {
-	_c.Run(run)
-	return _c
-}
-
 // UpdateOrganizationUnit provides a mock function for the type ConfigurableOUServiceMock
 func (_mock *ConfigurableOUServiceMock) UpdateOrganizationUnit(ctx context.Context, id string, request OrganizationUnitRequest) (OrganizationUnit, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, id, request)

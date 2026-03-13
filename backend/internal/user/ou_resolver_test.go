@@ -20,12 +20,16 @@ package user
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
 
 func TestOUUserResolver_GetUserCountByOUID(t *testing.T) {
@@ -34,7 +38,7 @@ func TestOUUserResolver_GetUserCountByOUID(t *testing.T) {
 		store.On("GetUserListCountByOUIDs", context.Background(), []string{"ou-1"}, (map[string]interface{})(nil)).
 			Return(5, nil).Once()
 
-		resolver := newOUUserResolver(store)
+		resolver := newOUUserResolver(store, nil)
 		count, err := resolver.GetUserCountByOUID(context.Background(), "ou-1")
 
 		require.NoError(t, err)
@@ -46,7 +50,7 @@ func TestOUUserResolver_GetUserCountByOUID(t *testing.T) {
 		store.On("GetUserListCountByOUIDs", context.Background(), []string{"ou-1"}, (map[string]interface{})(nil)).
 			Return(0, errors.New("db error")).Once()
 
-		resolver := newOUUserResolver(store)
+		resolver := newOUUserResolver(store, nil)
 		count, err := resolver.GetUserCountByOUID(context.Background(), "ou-1")
 
 		require.Error(t, err)
@@ -60,8 +64,8 @@ func TestOUUserResolver_GetUserListByOUID(t *testing.T) {
 		store.On("GetUserListByOUIDs", context.Background(), []string{"ou-1"}, 10, 0, (map[string]interface{})(nil)).
 			Return([]User{{ID: "user-1"}, {ID: "user-2"}}, nil).Once()
 
-		resolver := newOUUserResolver(store)
-		users, err := resolver.GetUserListByOUID(context.Background(), "ou-1", 10, 0)
+		resolver := newOUUserResolver(store, nil)
+		users, err := resolver.GetUserListByOUID(context.Background(), "ou-1", 10, 0, false)
 
 		require.NoError(t, err)
 		require.Len(t, users, 2)
@@ -74,8 +78,8 @@ func TestOUUserResolver_GetUserListByOUID(t *testing.T) {
 		store.On("GetUserListByOUIDs", context.Background(), []string{"ou-1"}, 10, 0, (map[string]interface{})(nil)).
 			Return([]User(nil), errors.New("db error")).Once()
 
-		resolver := newOUUserResolver(store)
-		users, err := resolver.GetUserListByOUID(context.Background(), "ou-1", 10, 0)
+		resolver := newOUUserResolver(store, nil)
+		users, err := resolver.GetUserListByOUID(context.Background(), "ou-1", 10, 0, false)
 
 		require.Error(t, err)
 		require.Nil(t, users)
@@ -86,10 +90,85 @@ func TestOUUserResolver_GetUserListByOUID(t *testing.T) {
 		store.On("GetUserListByOUIDs", context.Background(), []string{"ou-1"}, 10, 0, (map[string]interface{})(nil)).
 			Return([]User{}, nil).Once()
 
-		resolver := newOUUserResolver(store)
-		users, err := resolver.GetUserListByOUID(context.Background(), "ou-1", 10, 0)
+		resolver := newOUUserResolver(store, nil)
+		users, err := resolver.GetUserListByOUID(context.Background(), "ou-1", 10, 0, false)
 
 		require.NoError(t, err)
 		require.Empty(t, users)
+	})
+
+	t.Run("with display resolution", func(t *testing.T) {
+		store := newUserStoreInterfaceMock(t)
+		store.On("GetUserListByOUIDs", context.Background(), []string{"ou-1"}, 10, 0, (map[string]interface{})(nil)).
+			Return([]User{
+				{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"email":"alice@example.com"}`)},
+				{ID: "user-2", Type: "contractor", Attributes: json.RawMessage(`{"profile":{"fullName":"Bob Smith"}}`)},
+			}, nil).Once()
+
+		schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+		schemaMock.On("GetDisplayAttributesByNames", mock.Anything,
+			mock.MatchedBy(func(names []string) bool {
+				if len(names) != 2 {
+					return false
+				}
+				has := map[string]bool{names[0]: true, names[1]: true}
+				return has["employee"] && has["contractor"]
+			})).Return(map[string]string{
+			"employee":   "email",
+			"contractor": "profile.fullName",
+		}, (*serviceerror.ServiceError)(nil)).Once()
+
+		resolver := newOUUserResolver(store, schemaMock)
+		users, err := resolver.GetUserListByOUID(context.Background(), "ou-1", 10, 0, true)
+
+		require.NoError(t, err)
+		require.Len(t, users, 2)
+		require.Equal(t, "employee", users[0].Type)
+		require.Equal(t, "alice@example.com", users[0].Display)
+		require.Equal(t, "contractor", users[1].Type)
+		require.Equal(t, "Bob Smith", users[1].Display)
+	})
+
+	t.Run("display fallback to ID on schema error", func(t *testing.T) {
+		store := newUserStoreInterfaceMock(t)
+		store.On("GetUserListByOUIDs", context.Background(), []string{"ou-1"}, 10, 0, (map[string]interface{})(nil)).
+			Return([]User{
+				{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"email":"alice@example.com"}`)},
+			}, nil).Once()
+
+		schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+		schemaErr := &serviceerror.ServiceError{Code: "500", Error: "schema unavailable"}
+		schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
+			Return((map[string]string)(nil), schemaErr).Once()
+
+		resolver := newOUUserResolver(store, schemaMock)
+		users, err := resolver.GetUserListByOUID(context.Background(), "ou-1", 10, 0, true)
+
+		require.NoError(t, err)
+		require.Len(t, users, 1)
+		require.Equal(t, "employee", users[0].Type)
+		// Falls back to user ID when schema service fails
+		require.Equal(t, "user-1", users[0].Display)
+	})
+
+	t.Run("display fallback to ID on attribute mismatch", func(t *testing.T) {
+		store := newUserStoreInterfaceMock(t)
+		store.On("GetUserListByOUIDs", context.Background(), []string{"ou-1"}, 10, 0, (map[string]interface{})(nil)).
+			Return([]User{
+				{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"name":"Alice"}`)},
+			}, nil).Once()
+
+		schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+		schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
+			Return(map[string]string{"employee": "email"}, (*serviceerror.ServiceError)(nil)).Once()
+
+		resolver := newOUUserResolver(store, schemaMock)
+		users, err := resolver.GetUserListByOUID(context.Background(), "ou-1", 10, 0, true)
+
+		require.NoError(t, err)
+		require.Len(t, users, 1)
+		require.Equal(t, "employee", users[0].Type)
+		// Falls back to user ID when attribute path doesn't match
+		require.Equal(t, "user-1", users[0].Display)
 	})
 }

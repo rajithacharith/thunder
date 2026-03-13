@@ -84,17 +84,15 @@ type ConfigurableOUService interface {
 	OrganizationUnitServiceInterface
 	SetOUUserResolver(resolver OUUserResolver)
 	SetOUGroupResolver(resolver OUGroupResolver)
-	SetUserSchemaService(service DisplayAttributeResolver)
 }
 
 // OrganizationUnitService provides organization unit management operations.
 type organizationUnitService struct {
-	authzService      sysauthz.SystemAuthorizationServiceInterface
-	ouStore           organizationUnitStoreInterface
-	transactioner     transaction.Transactioner
-	userResolver      OUUserResolver
-	groupResolver     OUGroupResolver
-	userSchemaService DisplayAttributeResolver
+	authzService  sysauthz.SystemAuthorizationServiceInterface
+	ouStore       organizationUnitStoreInterface
+	transactioner transaction.Transactioner
+	userResolver  OUUserResolver
+	groupResolver OUGroupResolver
 }
 
 func (ous *organizationUnitService) SetOUUserResolver(resolver OUUserResolver) {
@@ -103,10 +101,6 @@ func (ous *organizationUnitService) SetOUUserResolver(resolver OUUserResolver) {
 
 func (ous *organizationUnitService) SetOUGroupResolver(resolver OUGroupResolver) {
 	ous.groupResolver = resolver
-}
-
-func (ous *organizationUnitService) SetUserSchemaService(service DisplayAttributeResolver) {
-	ous.userSchemaService = service
 }
 
 // newOrganizationUnitService creates a new instance of OrganizationUnitService.
@@ -823,7 +817,7 @@ func (ous *organizationUnitService) GetOrganizationUnitUsers(
 	items, totalCount, svcErr := ous.getResourceListWithExistenceCheck(
 		ctx, id, limit, offset, "users",
 		func(ctx context.Context, id string, limit, offset int) (interface{}, error) {
-			return ous.userResolver.GetUserListByOUID(ctx, id, limit, offset)
+			return ous.userResolver.GetUserListByOUID(ctx, id, limit, offset, includeDisplay)
 		},
 		ous.userResolver.GetUserCountByOUID,
 		false, // No composite error mapping for users
@@ -834,12 +828,9 @@ func (ous *organizationUnitService) GetOrganizationUnitUsers(
 
 	users, ok := items.([]User)
 	if !ok {
-		return nil, &ErrorInternalServerError
-	}
-
-	if includeDisplay {
 		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
-		ous.populateUserDisplayNames(ctx, users, logger)
+		logger.Error("Failed to cast user list response for organization unit", log.String("ouID", id))
+		return nil, &ErrorInternalServerError
 	}
 
 	base := fmt.Sprintf("/organization-units/%s/users", id)
@@ -1110,22 +1101,6 @@ func buildUserListResponse(
 		Count:        len(users),
 		Links:        utils.BuildPaginationLinks(base, limit, offset, totalCount, displayQuery),
 	}, nil
-}
-
-// populateUserDisplayNames resolves display names for a slice of users in-place.
-// It batch-fetches display attribute paths from the user schema service and extracts the
-// display value from each user's attributes. Falls back to user ID if extraction fails.
-func (ous *organizationUnitService) populateUserDisplayNames(ctx context.Context, users []User, logger *log.Logger) {
-	userTypes := make([]string, 0, len(users))
-	for _, u := range users {
-		userTypes = append(userTypes, u.Type)
-	}
-
-	displayAttrPaths := resolveDisplayAttributePaths(ctx, userTypes, ous.userSchemaService, logger)
-
-	for i := range users {
-		users[i].Display = utils.ResolveDisplay(users[i].ID, users[i].Type, users[i].Attributes, displayAttrPaths)
-	}
 }
 
 func buildGroupListResponse(

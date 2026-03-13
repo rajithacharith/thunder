@@ -136,10 +136,9 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 		logger.Fatal("Failed to initialize GroupService", log.Error(err))
 	}
 
-	// Two-phase initialization: inject user/group resolvers and user schema service into OU service.
+	// Two-phase initialization: inject user/group resolvers into OU service.
 	ouService.SetOUUserResolver(ouUserResolver)
 	ouService.SetOUGroupResolver(ouGroupResolver)
-	ouService.SetUserSchemaService(userSchemaService)
 
 	resourceService, resourceExporter, err := resource.Initialize(mux, ouService)
 	if err != nil {

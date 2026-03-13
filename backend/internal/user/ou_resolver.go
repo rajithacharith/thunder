@@ -22,18 +22,24 @@ import (
 	"context"
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/utils"
+	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 // ouUserResolverAdapter implements oupkg.OUUserResolver using the user store.
 // This adapter allows the OU package to query user data without directly
 // accessing the USER table, breaking the cross-DB access boundary.
 type ouUserResolverAdapter struct {
-	store userStoreInterface
+	store             userStoreInterface
+	userSchemaService userschema.UserSchemaServiceInterface
 }
 
 // newOUUserResolver creates a new OUUserResolver backed by the given user store.
-func newOUUserResolver(store userStoreInterface) oupkg.OUUserResolver {
-	return &ouUserResolverAdapter{store: store}
+func newOUUserResolver(
+	store userStoreInterface, userSchemaService userschema.UserSchemaServiceInterface,
+) oupkg.OUUserResolver {
+	return &ouUserResolverAdapter{store: store, userSchemaService: userSchemaService}
 }
 
 // GetUserCountByOUID returns the count of users belonging to the given organization unit.
@@ -42,22 +48,40 @@ func (a *ouUserResolverAdapter) GetUserCountByOUID(ctx context.Context, ouID str
 }
 
 // GetUserListByOUID returns a paginated list of users belonging to the given organization unit.
+// When includeDisplay is true, display names are resolved from user attributes using the schema service.
 func (a *ouUserResolverAdapter) GetUserListByOUID(
-	ctx context.Context, ouID string, limit, offset int,
+	ctx context.Context, ouID string, limit, offset int, includeDisplay bool,
 ) ([]oupkg.User, error) {
 	users, err := a.store.GetUserListByOUIDs(ctx, []string{ouID}, limit, offset, nil)
 	if err != nil {
 		return nil, err
 	}
 
+	var displayAttrPaths map[string]string
+	if includeDisplay {
+		displayAttrPaths = resolveOUUserDisplayPaths(ctx, users, a.userSchemaService)
+	}
+
 	result := make([]oupkg.User, len(users))
 	for i, u := range users {
-		result[i] = oupkg.User{
-			ID:         u.ID,
-			Type:       u.Type,
-			Attributes: u.Attributes,
+		result[i] = oupkg.User{ID: u.ID, Type: u.Type}
+		if includeDisplay {
+			result[i].Display = utils.ResolveDisplay(u.ID, u.Type, u.Attributes, displayAttrPaths)
 		}
 	}
 
 	return result, nil
+}
+
+// resolveOUUserDisplayPaths collects user types and resolves their display attribute paths.
+func resolveOUUserDisplayPaths(
+	ctx context.Context, users []User, schemaService userschema.UserSchemaServiceInterface,
+) map[string]string {
+	userTypes := make([]string, 0, len(users))
+	for _, u := range users {
+		userTypes = append(userTypes, u.Type)
+	}
+
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "OUUserResolver"))
+	return ResolveDisplayAttributePaths(ctx, userTypes, schemaService, logger)
 }

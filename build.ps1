@@ -972,7 +972,7 @@ function Test-Unit {
         
         if ($gotestsum) {
             Write-Host "Running unit tests with coverage using gotestsum..."
-            & gotestsum -- -v "-coverprofile=coverage_unit.out" "-covermode=atomic" "-coverpkg=$coverpkg" ./...
+            & gotestsum -- -v -count=1 "-coverprofile=coverage_unit.out" "-covermode=atomic" "-coverpkg=$coverpkg" ./...
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "There are unit test failures."
                 exit 1
@@ -980,7 +980,7 @@ function Test-Unit {
         }
         else {
             Write-Host "Running unit tests with coverage using go test..."
-            & go test -v "-coverprofile=coverage_unit.out" "-covermode=atomic" "-coverpkg=$coverpkg" ./...
+            & go test -v -count=1 "-coverprofile=coverage_unit.out" "-covermode=atomic" "-coverpkg=$coverpkg" ./...
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "There are unit test failures."
                 exit 1
