@@ -23,7 +23,6 @@ import {
   Stack,
   Typography,
   Button,
-  Paper,
   CircularProgress,
   Alert,
   Avatar,
@@ -43,6 +42,7 @@ import useUpdateApplication from '../api/useUpdateApplication';
 import type {Application} from '../models/application';
 import type {OAuth2Config} from '../models/oauth';
 import LogoUpdateModal from '../../../components/LogoUpdateModal';
+import UnsavedChangesBar from '../../../components/UnsavedChangesBar';
 import IntegrationGuides from '../components/edit-application/integration-guides/IntegrationGuides';
 import EditGeneralSettings from '../components/edit-application/general-settings/EditGeneralSettings';
 import EditFlowsSettings from '../components/edit-application/flows-settings/EditFlowsSettings';
@@ -464,58 +464,17 @@ export default function ApplicationEditPage() {
 
       {/* Floating Action Bar */}
       {hasChanges && (
-        <Paper
-          sx={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            p: 2,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 2,
-            borderRadius: '12px 12px 0 0',
-            boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.1)',
-            zIndex: 1000,
-            bgcolor: 'background.paper',
+        <UnsavedChangesBar
+          message={t('applications:edit.page.unsavedChanges')}
+          resetLabel={t('applications:edit.page.reset')}
+          saveLabel={t('applications:edit.page.save')}
+          savingLabel={t('applications:edit.page.saving')}
+          isSaving={updateApplication.isPending}
+          onReset={() => setEditedApp({})}
+          onSave={() => {
+            handleSave().catch(() => {});
           }}
-        >
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Typography variant="body2" sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-              <Box
-                component="span"
-                sx={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  border: '2px solid',
-                  borderColor: 'warning.main',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                }}
-              >
-                !
-              </Box>
-              {t('applications:edit.page.unsavedChanges')}
-            </Typography>
-            <Button variant="outlined" color="error" onClick={() => setEditedApp({})}>
-              {t('applications:edit.page.reset')}
-            </Button>
-            <Button
-              variant="contained"
-              onClick={() => {
-                handleSave().catch(() => {});
-              }}
-              disabled={updateApplication.isPending}
-            >
-              {updateApplication.isPending ? t('applications:edit.page.saving') : t('applications:edit.page.save')}
-            </Button>
-          </Stack>
-        </Paper>
+        />
       )}
     </PageContent>
   );

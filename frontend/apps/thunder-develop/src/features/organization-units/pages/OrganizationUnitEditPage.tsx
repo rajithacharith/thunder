@@ -26,7 +26,6 @@ import {
   Typography,
   Button,
   TextField,
-  Paper,
   Alert,
   IconButton,
   CircularProgress,
@@ -51,6 +50,7 @@ import EditUsers from '../components/edit-organization-unit/user-settings/EditUs
 import EditGroups from '../components/edit-organization-unit/group-settings/EditGroupSettings';
 import EditCustomization from '../components/edit-organization-unit/customization-settings/EditCustomizationSettings';
 import LogoUpdateModal from '../../../components/LogoUpdateModal';
+import UnsavedChangesBar from '../../../components/UnsavedChangesBar';
 
 interface TabPanelProps {
   children?: ReactNode;
@@ -463,61 +463,18 @@ export default function OrganizationUnitEditPage(): JSX.Element {
 
       {/* Floating Action Bar */}
       {hasChanges && (
-        <Paper
-          sx={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            p: 2,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 2,
-            borderRadius: '12px 12px 0 0',
-            boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.1)',
-            zIndex: 1000,
-            bgcolor: 'background.paper',
+        <UnsavedChangesBar
+          message={t('organizationUnits:edit.actions.unsavedChanges.label')}
+          resetLabel={t('organizationUnits:edit.actions.reset.label')}
+          saveLabel={t('organizationUnits:edit.actions.save.label')}
+          savingLabel={t('organizationUnits:edit.actions.saving.label')}
+          isSaving={updateOrganizationUnit.isPending}
+          onReset={() => setEditedOU({})}
+          onSave={() => {
+            // Errors are handled in handleSave
+            handleSave().catch(() => {});
           }}
-        >
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Typography variant="body2" sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-              <Box
-                component="span"
-                sx={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  border: '2px solid',
-                  borderColor: 'warning.main',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                }}
-              >
-                !
-              </Box>
-              {t('organizationUnits:edit.actions.unsavedChanges.label')}
-            </Typography>
-            <Button variant="outlined" color="error" onClick={() => setEditedOU({})}>
-              {t('organizationUnits:edit.actions.reset.label')}
-            </Button>
-            <Button
-              variant="contained"
-              onClick={() => {
-                // Errors are handled in handleSave
-                handleSave().catch(() => {});
-              }}
-              disabled={updateOrganizationUnit.isPending}
-            >
-              {updateOrganizationUnit.isPending
-                ? t('organizationUnits:edit.actions.saving.label')
-                : t('organizationUnits:edit.actions.save.label')}
-            </Button>
-          </Stack>
-        </Paper>
+        />
       )}
     </PageContent>
   );

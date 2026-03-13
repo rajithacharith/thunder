@@ -101,7 +101,6 @@ export default function AccessSection({
   const {
     control,
     formState: {errors},
-    watch,
   } = useForm<GeneralSettingsFormData>({
     resolver: zodResolver(generalSettingsSchema),
     mode: 'onChange',
@@ -109,14 +108,6 @@ export default function AccessSection({
       url: editedApp.url ?? application.url ?? '',
     },
   });
-
-  const url = watch('url');
-
-  useEffect(() => {
-    if (url !== (editedApp.url ?? application.url ?? '')) {
-      onFieldChange('url', url);
-    }
-  }, [url, editedApp.url, application.url, onFieldChange]);
 
   useEffect(() => {
     if (oauth2Config?.redirect_uris) {
@@ -153,7 +144,8 @@ export default function AccessSection({
   };
 
   const handleRemoveUri = (index: number) => {
-    setRedirectUris((prev) => prev.filter((_, i) => i !== index));
+    const newUris = redirectUris.filter((_, i) => i !== index);
+    setRedirectUris(newUris);
     setUriErrors((prev) => {
       const newErrors = {...prev};
       delete newErrors[index];
@@ -171,6 +163,20 @@ export default function AccessSection({
 
       return reindexed;
     });
+
+    if (!oauth2Config) return;
+    const validUris = newUris.filter((uri) => uri.trim() !== '');
+    const updatedConfig = {
+      ...oauth2Config,
+      redirect_uris: validUris,
+    };
+    const updatedInboundAuth = application.inbound_auth_config?.map((config) => {
+      if (config.type === 'oauth2') {
+        return {...config, config: updatedConfig};
+      }
+      return config;
+    });
+    onFieldChange('inbound_auth_config', updatedInboundAuth);
   };
 
   const handleUriChange = (index: number, value: string) => {
@@ -265,6 +271,10 @@ export default function AccessSection({
             render={({field}) => (
               <TextField
                 {...field}
+                onChange={(e) => {
+                  field.onChange(e);
+                  onFieldChange('url', e.target.value);
+                }}
                 fullWidth
                 id="application-url-input"
                 placeholder="https://example.com"
@@ -284,7 +294,9 @@ export default function AccessSection({
 
             <Stack spacing={2} id="redirect-uris-section">
               {redirectUris.map((uri, index) => (
-                <Stack key={uri} direction="row" spacing={1} alignItems="flex-start">
+                // IMPORTANT: Do not remove the suppression since it affects functionality.
+                // eslint-disable-next-line react/no-array-index-key
+                <Stack key={index} direction="row" spacing={1} alignItems="flex-start">
                   <FormControl fullWidth required sx={{flex: 1}}>
                     <TextField
                       fullWidth

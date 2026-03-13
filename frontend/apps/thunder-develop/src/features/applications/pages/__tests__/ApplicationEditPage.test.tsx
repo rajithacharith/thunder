@@ -136,6 +136,38 @@ vi.mock('../../../../components/LogoUpdateModal', () => ({
   ),
 }));
 
+vi.mock('../../../../components/UnsavedChangesBar', () => ({
+  default: vi.fn(
+    ({
+      message,
+      resetLabel,
+      saveLabel,
+      savingLabel,
+      isSaving,
+      onReset,
+      onSave,
+    }: {
+      message: string;
+      resetLabel: string;
+      saveLabel: string;
+      savingLabel: string;
+      isSaving: boolean;
+      onReset: () => void;
+      onSave: () => void;
+    }) => (
+      <div data-testid="unsaved-changes-bar">
+        <span>{message}</span>
+        <button type="button" onClick={onReset}>
+          {resetLabel}
+        </button>
+        <button type="button" onClick={onSave} disabled={isSaving}>
+          {isSaving ? savingLabel : saveLabel}
+        </button>
+      </div>
+    ),
+  ),
+}));
+
 const mockUseGetApplication = useGetApplication as ReturnType<typeof vi.fn>;
 const mockUseUpdateApplication = useUpdateApplication as ReturnType<typeof vi.fn>;
 const mockGetTemplateMetadata = getTemplateMetadata as ReturnType<typeof vi.fn>;
