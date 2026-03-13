@@ -21,8 +21,8 @@ catalog:
   '@vitest/browser-playwright': 4.0.17
   playwright: 1.58.1
   '@vitest/coverage-istanbul': 4.0.17
-  '@wso2/oxygen-ui': 0.8.0
-  '@wso2/oxygen-ui-icons-react': 0.8.0
+  '@wso2/oxygen-ui': 0.8.2
+  '@wso2/oxygen-ui-icons-react': 0.8.2
   babel-plugin-react-compiler: 19.1.0-rc.3
   clsx: 2.1.1
   dayjs: 1.11.18
