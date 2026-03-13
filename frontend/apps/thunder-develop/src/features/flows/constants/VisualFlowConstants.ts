@@ -84,6 +84,7 @@ class VisualFlowConstants {
     WidgetTypes.GithubFederation,
     WidgetTypes.PasskeyAuthentication,
     WidgetTypes.MagicLink,
+    WidgetTypes.SelfSignUpLink,
     ElementTypes.Timer,
   ];
 
@@ -117,6 +118,7 @@ class VisualFlowConstants {
     WidgetTypes.GithubFederation,
     WidgetTypes.PasskeyAuthentication,
     WidgetTypes.MagicLink,
+    WidgetTypes.SelfSignUpLink,
     ElementTypes.Timer,
   ];
 

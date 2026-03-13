@@ -19,22 +19,21 @@
 import {$isLinkNode, TOGGLE_LINK_COMMAND} from '@lexical/link';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import {mergeRegister} from '@lexical/utils';
-import {$getSelection, $isRangeSelection, CLICK_COMMAND, KEY_ESCAPE_COMMAND, SELECTION_CHANGE_COMMAND} from 'lexical';
-import type {CommandListenerPriority, EditorState, ElementNode, BaseSelection, TextNode} from 'lexical';
 import {
-  type ChangeEvent,
-  type KeyboardEvent,
-  type ReactElement,
-  type MouseEvent as ReactMouseEvent,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+  $getSelection,
+  $isRangeSelection,
+  $isTextNode,
+  CLICK_COMMAND,
+  KEY_ESCAPE_COMMAND,
+  SELECTION_CHANGE_COMMAND,
+} from 'lexical';
+import type {CommandListenerPriority, EditorState, ElementNode, BaseSelection, TextNode} from 'lexical';
+import {type ChangeEvent, type KeyboardEvent, type ReactElement, useCallback, useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {useTranslation} from 'react-i18next';
-import {Box, Button, Card, IconButton, Link, MenuItem, Select, TextField} from '@wso2/oxygen-ui';
-import {EditIcon, SaveIcon, X} from '@wso2/oxygen-ui-icons-react';
+import {Box, Button, Card, IconButton, InputAdornment, TextField, Tooltip} from '@wso2/oxygen-ui';
+import {AlignLeft, Link2, SquareFunction} from '@wso2/oxygen-ui-icons-react';
+import DynamicValuePopover from '../../DynamicValuePopover';
 import getSelectedNode from '../utils/getSelectedNode';
 import TOGGLE_SAFE_LINK_COMMAND from './commands';
 
@@ -131,6 +130,13 @@ const getPlaceholderUrl = (url: string): string => {
     return selectedOption ? selectedOption.placeholder : '';
   }
 
+  // Template URLs doesn't need the `http(s)://` prefix, so we return the raw URL which may contain the template.
+  const templateMatch: RegExpExecArray | null = /(\{\{(?:meta|t)\([^)]+\)\}\})/.exec(url);
+
+  if (templateMatch) {
+    return templateMatch[1];
+  }
+
   return url;
 };
 
@@ -143,9 +149,10 @@ function LinkEditor(): ReactElement {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [linkUrl, setLinkUrl] = useState('');
-  const [isEditMode, setEditMode] = useState(false);
+  const [linkText, setLinkText] = useState('');
   const [lastSelection, setLastSelection] = useState<BaseSelection | null>(null);
-  const [selectedUrlType, setSelectedUrlType] = useState<string>('CUSTOM');
+  const [isDynamicValuePopoverOpen, setIsDynamicValuePopoverOpen] = useState<boolean>(false);
+  const dynamicValueBtnRef = useRef<HTMLButtonElement>(null);
 
   const {t} = useTranslation();
 
@@ -168,16 +175,15 @@ function LinkEditor(): ReactElement {
         const url: string = parent.getURL();
 
         setLinkUrl(getPlaceholderUrl(url));
-        setSelectedUrlType(determineUrlType(url));
+        setLinkText(parent.getTextContent());
       } else if ($isLinkNode(node)) {
         const url: string = node.getURL();
 
         setLinkUrl(getPlaceholderUrl(url));
-        setSelectedUrlType(determineUrlType(url));
+        setLinkText(node.getTextContent());
       } else {
         setLinkUrl('');
-        setSelectedUrlType('CUSTOM');
-        setEditMode(false);
+        setLinkText('');
         if (editorElem) {
           positionEditorElement(editorElem, null);
         }
@@ -228,48 +234,10 @@ function LinkEditor(): ReactElement {
         positionEditorElement(editorElem, null);
       }
       setLastSelection(null);
-      setEditMode(false);
       setLinkUrl('');
+      setLinkText('');
     }
   }, [editor]);
-
-  /**
-   * Handles URL type selection change.
-   */
-  const handleUrlTypeChange = (event: {target: {value: unknown}}): void => {
-    const newType: string = event.target.value as string;
-
-    setSelectedUrlType(newType);
-
-    if (newType !== 'CUSTOM') {
-      const selectedOption: PredefinedUrlOption | undefined = PREDEFINED_URLS.find(
-        (option: PredefinedUrlOption) => option.value === newType,
-      );
-
-      if (selectedOption) {
-        setLinkUrl(selectedOption.placeholder);
-        editor.dispatchCommand(TOGGLE_SAFE_LINK_COMMAND, selectedOption.value);
-      }
-    } else {
-      setLinkUrl('https://');
-      editor.dispatchCommand(TOGGLE_SAFE_LINK_COMMAND, 'https://');
-    }
-  };
-
-  /**
-   * Gets the current URL for editing mode.
-   */
-  const getCurrentUrl = (): string => {
-    if (selectedUrlType !== 'CUSTOM') {
-      const selectedOption: PredefinedUrlOption | undefined = PREDEFINED_URLS.find(
-        (option: PredefinedUrlOption) => option.value === selectedUrlType,
-      );
-
-      return selectedOption ? selectedOption.value : linkUrl;
-    }
-
-    return linkUrl;
-  };
 
   /**
    * Sets up event listeners for window resize and scroll to update the link editor position.
@@ -315,13 +283,14 @@ function LinkEditor(): ReactElement {
         editor.registerCommand(
           KEY_ESCAPE_COMMAND,
           () => {
-            if (isEditMode) {
-              setEditMode(false);
-
-              return true;
+            if (editorRef.current) {
+              positionEditorElement(editorRef.current, null);
             }
+            setLastSelection(null);
+            setLinkUrl('');
+            setLinkText('');
 
-            return false;
+            return true;
           },
           LowPriority,
         ),
@@ -359,7 +328,7 @@ function LinkEditor(): ReactElement {
           HighPriority,
         ),
       ),
-    [editor, updateLinkEditor, isEditMode],
+    [editor, updateLinkEditor],
   );
 
   /**
@@ -371,23 +340,40 @@ function LinkEditor(): ReactElement {
     });
   }, [editor, updateLinkEditor]);
 
-  /**
-   * Focuses the input field when in edit mode.
-   */
-  useEffect(() => {
-    if (isEditMode && inputRef?.current) {
-      inputRef.current.focus();
-    }
-  }, [isEditMode]);
-
   const handleClose = useCallback(() => {
     if (editorRef.current) {
       positionEditorElement(editorRef.current, null);
     }
     setLastSelection(null);
-    setEditMode(false);
     setLinkUrl('');
+    setLinkText('');
   }, []);
+
+  const handleApply = useCallback(() => {
+    if (lastSelection !== null && linkUrl !== '') {
+      editor.dispatchCommand(TOGGLE_SAFE_LINK_COMMAND, linkUrl);
+      // Update the display text of the link node if it changed.
+      if (linkText) {
+        editor.update(() => {
+          const selection: BaseSelection | null = $getSelection();
+
+          if ($isRangeSelection(selection)) {
+            const node: TextNode | ElementNode = getSelectedNode(selection);
+            const linkNode: ElementNode | null = $isLinkNode(node) ? node : node.getParent();
+
+            if ($isLinkNode(linkNode)) {
+              const firstChild = linkNode.getFirstChild();
+
+              if ($isTextNode(firstChild)) {
+                firstChild.setTextContent(linkText);
+              }
+            }
+          }
+        });
+      }
+    }
+    handleClose();
+  }, [editor, handleClose, lastSelection, linkUrl, linkText]);
 
   return (
     <Card
@@ -397,103 +383,82 @@ function LinkEditor(): ReactElement {
         position: 'absolute',
         right: 1.25,
         zIndex: 1200,
-        maxWidth: 350,
+        width: 280,
         padding: 1,
         display: 'flex',
         flexDirection: 'column',
         gap: 1,
       }}
     >
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Box component="span" sx={{fontSize: '14px', fontWeight: 500}}>
-          {isEditMode
-            ? t('flows:core.elements.richText.linkEditor.editLink')
-            : t('flows:core.elements.richText.linkEditor.viewLink')}
-        </Box>
-        <IconButton size="small" onClick={handleClose}>
-          <X size={16} />
-        </IconButton>
-      </Box>
-      {isEditMode ? (
-        <Box width="100%" display="flex" flexDirection="column" gap={1}>
-          {PREDEFINED_URLS.length > 0 && (
-            <Select
-              value={selectedUrlType}
-              label={t('flows:core.elements.richText.linkEditor.urlTypeLabel')}
-              onChange={handleUrlTypeChange}
-              size="small"
-            >
-              {PREDEFINED_URLS.map((option: PredefinedUrlOption) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {t(option.label)}
-                </MenuItem>
-              ))}
-            </Select>
-          )}
-          <TextField
-            inputRef={inputRef}
-            fullWidth
-            value={linkUrl}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              setLinkUrl(event.target.value);
-            }}
-            placeholder={t('flows:core.elements.richText.linkEditor.placeholder')}
-            onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                if (lastSelection !== null) {
-                  const currentUrl: string = getCurrentUrl();
-
-                  if (currentUrl !== '') {
-                    editor.dispatchCommand(TOGGLE_SAFE_LINK_COMMAND, currentUrl);
-                  }
-                  setEditMode(false);
-                }
-              } else if (event.key === 'Escape') {
-                event.preventDefault();
-                setEditMode(false);
-              }
-            }}
-          />
-          <Button
-            size="small"
-            variant="outlined"
-            sx={{
-              marginTop: 2,
-            }}
-            onClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
+      <TextField
+        fullWidth
+        size="small"
+        value={linkText}
+        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+          setLinkText(event.target.value);
+        }}
+        placeholder={t('flows:core.elements.richText.linkEditor.textPlaceholder')}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <AlignLeft size={16} />
+            </InputAdornment>
+          ),
+        }}
+      />
+      <Box display="flex" gap={1} alignItems="center">
+        <TextField
+          inputRef={inputRef}
+          fullWidth
+          size="small"
+          value={linkUrl}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+            setLinkUrl(event.target.value);
+          }}
+          placeholder={t('flows:core.elements.richText.linkEditor.placeholder')}
+          onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
+            if (event.key === 'Enter') {
               event.preventDefault();
-              if (lastSelection !== null) {
-                const currentUrl: string = getCurrentUrl();
-
-                if (currentUrl !== '') {
-                  editor.dispatchCommand(TOGGLE_SAFE_LINK_COMMAND, currentUrl);
-                }
-              }
-              setEditMode(false);
-            }}
-            startIcon={<SaveIcon size={20} />}
-          >
-            {t('common:save')}
-          </Button>
-        </Box>
-      ) : (
-        <Box width="100%" display="flex" flexDirection="column" gap={1}>
-          <Link
-            paddingTop={1}
-            paddingBottom={3}
-            paddingLeft={2}
-            href={linkUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {linkUrl}
-          </Link>
-          <Button size="small" variant="outlined" onClick={() => setEditMode(true)} startIcon={<EditIcon size={20} />}>
-            {t('common:edit')}
-          </Button>
-        </Box>
-      )}
+              handleApply();
+            } else if (event.key === 'Escape') {
+              event.preventDefault();
+              handleClose();
+            }
+          }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Link2 size={16} />
+              </InputAdornment>
+            ),
+            endAdornment: (
+              <InputAdornment position="end">
+                <Tooltip title={t('flows:core.elements.textPropertyField.tooltip.configureDynamicValue')}>
+                  <IconButton
+                    ref={dynamicValueBtnRef}
+                    onClick={() => setIsDynamicValuePopoverOpen((prev) => !prev)}
+                    size="small"
+                    edge="end"
+                  >
+                    <SquareFunction size={16} />
+                  </IconButton>
+                </Tooltip>
+              </InputAdornment>
+            ),
+          }}
+        />
+        <Button size="small" variant="outlined" onClick={handleApply}>
+          {t('flows:core.elements.richText.linkEditor.apply')}
+        </Button>
+      </Box>
+      <DynamicValuePopover
+        open={isDynamicValuePopoverOpen}
+        anchorEl={dynamicValueBtnRef.current}
+        propertyKey="linkUrl"
+        onClose={() => setIsDynamicValuePopoverOpen(false)}
+        value={linkUrl}
+        onChange={(newValue: string) => setLinkUrl(newValue)}
+      />
     </Card>
   );
 }
@@ -536,6 +501,7 @@ const CustomLinkPlugin = (): ReactElement => {
     [editor],
   );
 
+  // TODO: Refactor this to use `Popover` from Oxygen UI instead.
   return createPortal(<LinkEditor />, document.body);
 };
 

@@ -30,6 +30,7 @@ export {default as merge} from './object/merge';
 // Template Pattern Utilities
 export {default as isI18nTemplatePattern, I18N_PATTERN, I18N_KEY_PATTERN} from './template/isI18nTemplatePattern';
 export {default as isMetaTemplatePattern, META_PATTERN, META_KEY_PATTERN} from './template/isMetaTemplatePattern';
+export {default as containsMetaTemplate, replaceMetaTemplate} from './template/containsMetaTemplate';
 export {
   default as parseTemplateLiteral,
   TEMPLATE_LITERAL_REGEX,

@@ -75,6 +75,13 @@
                             "resourceType": "ELEMENT",
                             "type": "ACTION",
                             "variant": "PRIMARY"
+                        },
+                        {
+                            "category": "DISPLAY",
+                            "id": "rich-text-signup",
+                            "resourceType": "ELEMENT",
+                            "type": "RICH_TEXT",
+                            "label": "<p class=\"rich-text-paragraph\"><span class=\"rich-text-pre-wrap\">Don't have an account? </span><a href=\"{{meta(application.signUpUrl)}}\" class=\"rich-text-link\"><span class=\"rich-text-pre-wrap\">Sign up</span></a></p>"
                         }
                     ]
                 }

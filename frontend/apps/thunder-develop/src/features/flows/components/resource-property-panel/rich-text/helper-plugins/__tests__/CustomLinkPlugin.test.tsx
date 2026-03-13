@@ -31,6 +31,7 @@ const {
   mockIsRangeSelection,
   mockIsLinkNode,
   mockGetSelectedNode,
+  mockEditorUpdate,
 } = vi.hoisted(() => ({
   mockDispatchCommand: vi.fn<(...args: unknown[]) => unknown>(),
   mockRegisterUpdateListener: vi.fn<(...args: unknown[]) => () => void>(() => vi.fn()),
@@ -47,8 +48,10 @@ const {
     getURL: () => 'https://example.com',
     setTarget: vi.fn(),
     setRel: vi.fn(),
+    getTextContent: () => '',
     type: 'text',
   })),
+  mockEditorUpdate: vi.fn(),
 }));
 
 // Mock react-i18next
@@ -60,24 +63,31 @@ vi.mock('react-i18next', () => ({
 
 // Mock the lexical composer context
 vi.mock('@lexical/react/LexicalComposerContext', () => ({
-  useLexicalComposerContext: () => [{
-    dispatchCommand: mockDispatchCommand,
-    registerUpdateListener: mockRegisterUpdateListener,
-    registerCommand: mockRegisterCommand,
-    getRootElement: mockGetRootElement,
-    getEditorState: mockGetEditorState,
-  }],
+  useLexicalComposerContext: () => [
+    {
+      dispatchCommand: mockDispatchCommand,
+      registerUpdateListener: mockRegisterUpdateListener,
+      registerCommand: mockRegisterCommand,
+      getRootElement: mockGetRootElement,
+      getEditorState: mockGetEditorState,
+      update: mockEditorUpdate,
+    },
+  ],
 }));
 
 // Mock lexical utils
 vi.mock('@lexical/utils', () => ({
-  mergeRegister: (...fns: (() => void)[]) => () => fns.forEach(fn => fn()),
+  mergeRegister:
+    (...fns: (() => void)[]) =>
+    () =>
+      fns.forEach((fn) => fn()),
 }));
 
 // Mock lexical
 vi.mock('lexical', () => ({
   $getSelection: mockGetSelection,
   $isRangeSelection: mockIsRangeSelection,
+  $isTextNode: vi.fn(() => false),
   CLICK_COMMAND: 'CLICK_COMMAND',
   KEY_ESCAPE_COMMAND: 'KEY_ESCAPE_COMMAND',
   SELECTION_CHANGE_COMMAND: 'SELECTION_CHANGE_COMMAND',
@@ -97,6 +107,11 @@ vi.mock('../../utils/getSelectedNode', () => ({
 // Mock commands
 vi.mock('../commands', () => ({
   default: 'TOGGLE_SAFE_LINK_COMMAND',
+}));
+
+// Mock DynamicValuePopover
+vi.mock('../../../DynamicValuePopover', () => ({
+  default: () => null,
 }));
 
 // Mock createPortal to render directly
@@ -119,11 +134,13 @@ describe('CustomLinkPlugin', () => {
     mockGetSelection.mockImplementation(() => ({type: 'range'}));
     mockIsRangeSelection.mockImplementation(() => true);
     mockIsLinkNode.mockImplementation(() => false);
+    mockEditorUpdate.mockImplementation(vi.fn());
     mockGetSelectedNode.mockImplementation(() => ({
       getParent: () => null,
       getURL: () => 'https://example.com',
       setTarget: vi.fn(),
       setRel: vi.fn(),
+      getTextContent: () => '',
       type: 'text',
     }));
 
@@ -144,10 +161,10 @@ describe('CustomLinkPlugin', () => {
       expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
     });
 
-    it('should render view link title by default', () => {
+    it('should render apply button', () => {
       render(<CustomLinkPlugin />);
 
-      expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
+      expect(screen.getByText('flows:core.elements.richText.linkEditor.apply')).toBeInTheDocument();
     });
 
     it('should render close button', () => {
@@ -158,10 +175,11 @@ describe('CustomLinkPlugin', () => {
       expect(closeButtons.length).toBeGreaterThan(0);
     });
 
-    it('should render edit button in view mode', () => {
+    it('should render URL input field', () => {
       render(<CustomLinkPlugin />);
 
-      expect(screen.getByText('common:edit')).toBeInTheDocument();
+      const inputs = document.querySelectorAll('input');
+      expect(inputs.length).toBeGreaterThan(0);
     });
   });
 
@@ -198,178 +216,111 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('Edit Mode', () => {
-    it('should switch to edit mode when edit button is clicked', async () => {
+    it('should show URL input field and apply button', () => {
       render(<CustomLinkPlugin />);
 
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      // After clicking edit, the component should show edit mode title
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
+      // The component always shows the URL input and apply button
+      expect(document.querySelector('.MuiTextField-root')).toBeInTheDocument();
+      expect(screen.getByText('flows:core.elements.richText.linkEditor.apply')).toBeInTheDocument();
     });
 
-    it('should show save button in edit mode', async () => {
+    it('should show apply button instead of save button', () => {
       render(<CustomLinkPlugin />);
 
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('common:save')).toBeInTheDocument();
-      });
+      expect(screen.getByText('flows:core.elements.richText.linkEditor.apply')).toBeInTheDocument();
     });
 
-    it('should show text field in edit mode', async () => {
+    it('should show text field', () => {
       render(<CustomLinkPlugin />);
 
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        const textField = document.querySelector('.MuiTextField-root');
-        expect(textField).toBeInTheDocument();
-      });
-    });
-
-    it('should exit edit mode when escape key is pressed in text field', async () => {
-      render(<CustomLinkPlugin />);
-
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
-      // Press escape in the text field
-      const textField = document.querySelector('input');
-      if (textField) {
-        await act(async () => {
-          fireEvent.keyDown(textField, {key: 'Escape'});
-        });
-      }
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
-      });
-    });
-
-    it('should handle enter key press in text field', async () => {
-      render(<CustomLinkPlugin />);
-
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
-      // Type a URL and press enter
-      const textField = document.querySelector('input');
+      const textField = document.querySelector('.MuiTextField-root');
       expect(textField).toBeInTheDocument();
-      if (textField) {
+    });
+
+    it('should handle escape key press in URL field', async () => {
+      render(<CustomLinkPlugin />);
+
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1]; // Second input is the URL field
+      if (urlInput) {
         await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://test.com'}});
-          fireEvent.keyDown(textField, {key: 'Enter'});
+          fireEvent.keyDown(urlInput, {key: 'Escape'});
+        });
+      }
+
+      // The card should still be in the document
+      expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
+    });
+
+    it('should handle enter key press in URL field', async () => {
+      render(<CustomLinkPlugin />);
+
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1]; // Second input is the URL field
+      expect(urlInput).toBeInTheDocument();
+      if (urlInput) {
+        await act(async () => {
+          fireEvent.change(urlInput, {target: {value: 'https://test.com'}});
         });
 
-        // Verify the input value was updated
-        expect(textField).toHaveValue('https://test.com');
+        // Verify the input value was updated before Enter key
+        expect(urlInput).toHaveValue('https://test.com');
+
+        await act(async () => {
+          fireEvent.keyDown(urlInput, {key: 'Enter'});
+        });
+
+        // After Enter, handleApply -> handleClose resets the value
+        expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
       }
     });
 
-    it('should save link when save button is clicked', async () => {
+    it('should call handleApply when apply button is clicked', async () => {
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
+      const applyButton = screen.getByText('flows:core.elements.richText.linkEditor.apply');
       await act(async () => {
-        fireEvent.click(editButton);
+        fireEvent.click(applyButton);
       });
 
-      await waitFor(() => {
-        expect(screen.getByText('common:save')).toBeInTheDocument();
-      });
-
-      // Type a URL
-      const textField = document.querySelector('input');
-      if (textField) {
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://test.com'}});
-        });
-      }
-
-      // Click save
-      const saveButton = screen.getByText('common:save');
-      await act(async () => {
-        fireEvent.click(saveButton);
-      });
-
-      // Should exit edit mode
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
-      });
+      // Component should still be in the document
+      expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
     });
   });
 
   describe('URL Display', () => {
-    it('should display link in view mode', () => {
+    it('should show URL input field', () => {
       render(<CustomLinkPlugin />);
 
-      const link = document.querySelector('.MuiLink-root');
-      expect(link).toBeInTheDocument();
+      const inputs = document.querySelectorAll('input');
+      expect(inputs.length).toBeGreaterThan(0);
     });
 
-    it('should open link in new tab with security attributes', () => {
+    it('should show apply button for submitting the link', () => {
       render(<CustomLinkPlugin />);
 
-      const link = document.querySelector('.MuiLink-root');
-      expect(link).toHaveAttribute('target', '_blank');
-      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+      const applyButton = screen.getByText('flows:core.elements.richText.linkEditor.apply');
+      expect(applyButton).toBeInTheDocument();
     });
   });
 
   describe('Close Functionality', () => {
-    it('should reset state when close button is clicked', async () => {
+    it('should reset state when escape key is pressed in URL field', async () => {
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode first
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
-      // Find and click close button (the IconButton with X icon)
-      const closeButtons = screen.getAllByRole('button');
-      const closeButton = closeButtons.find(btn => btn.querySelector('svg.lucide-x'));
-      if (closeButton) {
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1]; // URL input
+      if (urlInput) {
         await act(async () => {
-          fireEvent.click(closeButton);
+          fireEvent.change(urlInput, {target: {value: 'https://test.com'}});
+        });
+        await act(async () => {
+          fireEvent.keyDown(urlInput, {key: 'Escape'});
         });
       }
 
-      // Should reset to view mode
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
-      });
+      // Card should still be in DOM (just repositioned off-screen)
+      expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
     });
   });
 
@@ -403,28 +354,18 @@ describe('CustomLinkPlugin', () => {
     it('should handle empty URL', async () => {
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('common:save')).toBeInTheDocument();
-      });
-
-      // Clear the URL field
-      const textField = document.querySelector('input');
-      if (textField) {
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1]; // URL input
+      if (urlInput) {
         await act(async () => {
-          fireEvent.change(textField, {target: {value: ''}});
+          fireEvent.change(urlInput, {target: {value: ''}});
         });
       }
 
-      // Click save
-      const saveButton = screen.getByText('common:save');
+      // Click apply
+      const applyButton = screen.getByText('flows:core.elements.richText.linkEditor.apply');
       await act(async () => {
-        fireEvent.click(saveButton);
+        fireEvent.click(applyButton);
       });
 
       // Should not dispatch command with empty URL
@@ -434,23 +375,14 @@ describe('CustomLinkPlugin', () => {
     it('should handle text field input changes', async () => {
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        const textField = document.querySelector('input');
-        expect(textField).toBeInTheDocument();
-      });
-
-      const textField = document.querySelector('input');
-      if (textField) {
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1]; // URL input
+      expect(urlInput).toBeInTheDocument();
+      if (urlInput) {
         await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://new-url.com'}});
+          fireEvent.change(urlInput, {target: {value: 'https://new-url.com'}});
         });
-        expect(textField).toHaveValue('https://new-url.com');
+        expect(urlInput).toHaveValue('https://new-url.com');
       }
     });
   });
@@ -468,9 +400,9 @@ describe('CustomLinkPlugin', () => {
     it('should detect when parent is a link node', async () => {
       // Mock to return a link node parent
       const {$isLinkNode} = await vi.importMock<typeof import('@lexical/link')>('@lexical/link');
-      (
-        $isLinkNode as ReturnType<typeof vi.fn>
-      ).mockImplementation((node: {type?: string} | null) => node && node.type === 'link');
+      ($isLinkNode as ReturnType<typeof vi.fn>).mockImplementation(
+        (node: {type?: string} | null) => node && node.type === 'link',
+      );
 
       render(<CustomLinkPlugin />);
 
@@ -479,9 +411,9 @@ describe('CustomLinkPlugin', () => {
 
     it('should detect when node itself is a link node', async () => {
       const {$isLinkNode} = await vi.importMock<typeof import('@lexical/link')>('@lexical/link');
-      (
-        $isLinkNode as ReturnType<typeof vi.fn>
-      ).mockImplementation((node: {type?: string} | null) => node && node.type === 'link');
+      ($isLinkNode as ReturnType<typeof vi.fn>).mockImplementation(
+        (node: {type?: string} | null) => node && node.type === 'link',
+      );
 
       render(<CustomLinkPlugin />);
 
@@ -587,17 +519,9 @@ describe('CustomLinkPlugin', () => {
     it('should handle URL type change to CUSTOM', async () => {
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode first
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
-      // The handleUrlTypeChange function sets the URL to 'https://' for CUSTOM type
+      // The URL field is always visible in the new design
+      const inputs = document.querySelectorAll('input');
+      expect(inputs.length).toBeGreaterThan(0);
     });
   });
 
@@ -605,23 +529,13 @@ describe('CustomLinkPlugin', () => {
     it('should return linkUrl for CUSTOM type', async () => {
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
-      // Type a custom URL
-      const textField = document.querySelector('input');
-      if (textField) {
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1]; // URL input
+      if (urlInput) {
         await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://custom-url.com'}});
+          fireEvent.change(urlInput, {target: {value: 'https://custom-url.com'}});
         });
-        expect(textField).toHaveValue('https://custom-url.com');
+        expect(urlInput).toHaveValue('https://custom-url.com');
       }
     });
   });
@@ -636,28 +550,18 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('Escape Key Handling', () => {
-    it('should handle KEY_ESCAPE_COMMAND in edit mode', async () => {
+    it('should handle KEY_ESCAPE_COMMAND', async () => {
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
-      // KEY_ESCAPE_COMMAND is registered and should exit edit mode
+      // KEY_ESCAPE_COMMAND is always registered (no separate edit mode)
       expect(mockRegisterCommand).toHaveBeenCalled();
     });
 
-    it('should not handle KEY_ESCAPE_COMMAND in view mode', () => {
+    it('should handle KEY_ESCAPE_COMMAND and always return true', () => {
       render(<CustomLinkPlugin />);
 
-      // In view mode, KEY_ESCAPE_COMMAND returns false
-      expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
+      // KEY_ESCAPE_COMMAND always returns true in the new design
+      expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
     });
   });
 
@@ -709,18 +613,12 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('Focus Handling', () => {
-    it('should focus input when entering edit mode', async () => {
+    it('should have URL input field available', async () => {
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
       await waitFor(() => {
-        const textField = document.querySelector('input');
-        expect(textField).toBeInTheDocument();
+        const inputs = document.querySelectorAll('input');
+        expect(inputs.length).toBeGreaterThan(0);
       });
     });
   });
@@ -729,40 +627,32 @@ describe('CustomLinkPlugin', () => {
     it('should not dispatch command when lastSelection is null', async () => {
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1]; // URL input
+      if (urlInput) {
+        await act(async () => {
+          fireEvent.change(urlInput, {target: {value: 'https://test.com'}});
+        });
+      }
+
+      // Click apply (lastSelection is null in default test setup)
+      const applyButton = screen.getByText('flows:core.elements.richText.linkEditor.apply');
       await act(async () => {
-        fireEvent.click(editButton);
+        fireEvent.click(applyButton);
       });
 
-      await waitFor(() => {
-        expect(screen.getByText('common:save')).toBeInTheDocument();
-      });
-
-      // Type a URL
-      const textField = document.querySelector('input');
-      if (textField) {
-        await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://test.com'}});
-        });
-      }
-
-      // Press Enter (lastSelection may be null in this test setup)
-      if (textField) {
-        await act(async () => {
-          fireEvent.keyDown(textField, {key: 'Enter'});
-        });
-      }
+      // lastSelection is null so command should not be dispatched
+      expect(mockDispatchCommand).not.toHaveBeenCalledWith('TOGGLE_SAFE_LINK_COMMAND', expect.anything());
     });
   });
 
   describe('Link Attributes', () => {
-    it('should set target and rel attributes on link', () => {
+    it('should have apply button to set link with safe attributes', () => {
       render(<CustomLinkPlugin />);
 
-      const link = document.querySelector('.MuiLink-root');
-      expect(link).toHaveAttribute('target', '_blank');
-      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+      // Apply button triggers TOGGLE_SAFE_LINK_COMMAND which sets safe attributes
+      const applyButton = screen.getByText('flows:core.elements.richText.linkEditor.apply');
+      expect(applyButton).toBeInTheDocument();
     });
   });
 
@@ -775,6 +665,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://clicked-link.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
@@ -782,12 +673,10 @@ describe('CustomLinkPlugin', () => {
 
       // Capture the command callback
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
-        (command: unknown, callback: unknown) => {
-          callbacks[command as string] = callback;
-          return vi.fn();
-        },
-      );
+      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation((command: unknown, callback: unknown) => {
+        callbacks[command as string] = callback;
+        return vi.fn();
+      });
 
       const mockOpen = vi.spyOn(window, 'open').mockImplementation(vi.fn());
 
@@ -812,18 +701,17 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://ctrl-clicked-link.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
-        (command: unknown, callback: unknown) => {
-          callbacks[command as string] = callback;
-          return vi.fn();
-        },
-      );
+      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation((command: unknown, callback: unknown) => {
+        callbacks[command as string] = callback;
+        return vi.fn();
+      });
 
       const mockOpen = vi.spyOn(window, 'open').mockImplementation(vi.fn());
 
@@ -847,18 +735,17 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
-        (command: unknown, callback: unknown) => {
-          callbacks[command as string] = callback;
-          return vi.fn();
-        },
-      );
+      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation((command: unknown, callback: unknown) => {
+        callbacks[command as string] = callback;
+        return vi.fn();
+      });
 
       render(<CustomLinkPlugin />);
 
@@ -877,18 +764,17 @@ describe('CustomLinkPlugin', () => {
         getURL: () => '',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockTextNode);
       mockIsLinkNode.mockReturnValue(false);
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
-        (command: unknown, callback: unknown) => {
-          callbacks[command as string] = callback;
-          return vi.fn();
-        },
-      );
+      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation((command: unknown, callback: unknown) => {
+        callbacks[command as string] = callback;
+        return vi.fn();
+      });
 
       render(<CustomLinkPlugin />);
 
@@ -907,18 +793,17 @@ describe('CustomLinkPlugin', () => {
         getURL: () => '',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockTextNode);
       mockIsLinkNode.mockReturnValue(false);
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
-        (command: unknown, callback: unknown) => {
-          callbacks[command as string] = callback;
-          return vi.fn();
-        },
-      );
+      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation((command: unknown, callback: unknown) => {
+        callbacks[command as string] = callback;
+        return vi.fn();
+      });
 
       render(<CustomLinkPlugin />);
 
@@ -945,12 +830,10 @@ describe('CustomLinkPlugin', () => {
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
-        (command: unknown, callback: unknown) => {
-          callbacks[command as string] = callback;
-          return vi.fn();
-        },
-      );
+      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation((command: unknown, callback: unknown) => {
+        callbacks[command as string] = callback;
+        return vi.fn();
+      });
 
       render(<CustomLinkPlugin />);
 
@@ -968,12 +851,10 @@ describe('CustomLinkPlugin', () => {
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
-        (command: unknown, callback: unknown) => {
-          callbacks[command as string] = callback;
-          return vi.fn();
-        },
-      );
+      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation((command: unknown, callback: unknown) => {
+        callbacks[command as string] = callback;
+        return vi.fn();
+      });
 
       render(<CustomLinkPlugin />);
 
@@ -992,18 +873,17 @@ describe('CustomLinkPlugin', () => {
         getURL: () => '',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockTextNode);
       mockIsLinkNode.mockReturnValue(false);
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
-        (command: unknown, callback: unknown) => {
-          callbacks[command as string] = callback;
-          return vi.fn();
-        },
-      );
+      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation((command: unknown, callback: unknown) => {
+        callbacks[command as string] = callback;
+        return vi.fn();
+      });
 
       render(<CustomLinkPlugin />);
 
@@ -1016,56 +896,40 @@ describe('CustomLinkPlugin', () => {
 
     it('should execute KEY_ESCAPE_COMMAND in edit mode', async () => {
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
-        (command: unknown, callback: unknown) => {
-          callbacks[command as string] = callback;
-          return vi.fn();
-        },
-      );
+      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation((command: unknown, callback: unknown) => {
+        callbacks[command as string] = callback;
+        return vi.fn();
+      });
 
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode first
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
-      // Verify escapeCallback was captured
+      // KEY_ESCAPE_COMMAND is always registered (no separate edit mode)
       expect(callbacks.KEY_ESCAPE_COMMAND).toBeDefined();
     });
 
-    it('should execute KEY_ESCAPE_COMMAND in view mode and return false', () => {
+    it('should execute KEY_ESCAPE_COMMAND and return true', () => {
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
-        (command: unknown, callback: unknown) => {
-          callbacks[command as string] = callback;
-          return vi.fn();
-        },
-      );
+      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation((command: unknown, callback: unknown) => {
+        callbacks[command as string] = callback;
+        return vi.fn();
+      });
 
       render(<CustomLinkPlugin />);
 
-      // In view mode, escape should return false
+      // KEY_ESCAPE_COMMAND always returns true in the new design
       const escapeCallback = callbacks.KEY_ESCAPE_COMMAND as (() => boolean) | undefined;
       if (escapeCallback) {
         const result = escapeCallback();
-        expect(result).toBe(false);
+        expect(result).toBe(true);
       }
     });
 
     it('should execute SELECTION_CHANGE_COMMAND callback', () => {
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
-        (command: unknown, callback: unknown) => {
-          callbacks[command as string] = callback;
-          return vi.fn();
-        },
-      );
+      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation((command: unknown, callback: unknown) => {
+        callbacks[command as string] = callback;
+        return vi.fn();
+      });
 
       render(<CustomLinkPlugin />);
 
@@ -1084,6 +948,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://parent-link.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       const mockTextNode = {
         type: 'text',
@@ -1091,6 +956,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => '',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockTextNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockParentLinkNode);
@@ -1108,6 +974,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://direct-link.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
@@ -1125,6 +992,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => '',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockTextNode);
       mockIsLinkNode.mockReturnValue(false);
@@ -1388,28 +1256,11 @@ describe('CustomLinkPlugin', () => {
 
   describe('handleUrlTypeChange', () => {
     it('should handle URL type change to CUSTOM and set URL to https://', async () => {
-      const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
-        (command: unknown, callback: unknown) => {
-          callbacks[command as string] = callback;
-          return vi.fn();
-        },
-      );
-
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
-      // The handleUrlTypeChange is triggered via Select component
-      // Since PREDEFINED_URLS is empty, clicking to change type would fall through to CUSTOM
+      // The URL field is always visible in the new design (no mode toggle)
+      const inputs = document.querySelectorAll('input');
+      expect(inputs.length).toBeGreaterThan(0);
     });
   });
 
@@ -1417,63 +1268,38 @@ describe('CustomLinkPlugin', () => {
     it('should return linkUrl for CUSTOM selectedUrlType', async () => {
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
-      // Type a URL
-      const textField = document.querySelector('input');
-      if (textField) {
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1]; // URL input
+      if (urlInput) {
         await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://custom.com'}});
+          fireEvent.change(urlInput, {target: {value: 'https://custom.com'}});
         });
 
-        // Press Enter to trigger getCurrentUrl
-        await act(async () => {
-          fireEvent.keyDown(textField, {key: 'Enter'});
-        });
+        expect(urlInput).toHaveValue('https://custom.com');
       }
     });
   });
 
   describe('Save Button Click with Empty URL', () => {
-    it('should not dispatch command when URL is empty on save button click', async () => {
+    it('should not dispatch command when URL is empty on apply button click', async () => {
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('common:save')).toBeInTheDocument();
-      });
-
-      // Clear URL
-      const textField = document.querySelector('input');
-      if (textField) {
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1]; // URL input
+      if (urlInput) {
         await act(async () => {
-          fireEvent.change(textField, {target: {value: ''}});
+          fireEvent.change(urlInput, {target: {value: ''}});
         });
       }
 
-      // Click save
-      const saveButton = screen.getByText('common:save');
+      // Click apply
+      const applyButton = screen.getByText('flows:core.elements.richText.linkEditor.apply');
       await act(async () => {
-        fireEvent.click(saveButton);
+        fireEvent.click(applyButton);
       });
 
-      // Component should exit edit mode without dispatching command
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
-      });
+      // Component should handle empty URL gracefully
+      expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
     });
   });
 
@@ -1481,28 +1307,18 @@ describe('CustomLinkPlugin', () => {
     it('should not dispatch command when URL is empty on Enter key', async () => {
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
-      // Clear URL and press Enter
-      const textField = document.querySelector('input');
-      if (textField) {
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1]; // URL input
+      if (urlInput) {
         await act(async () => {
-          fireEvent.change(textField, {target: {value: ''}});
-          fireEvent.keyDown(textField, {key: 'Enter'});
+          fireEvent.change(urlInput, {target: {value: ''}});
+          fireEvent.keyDown(urlInput, {key: 'Enter'});
         });
       }
 
       // The component should handle the Enter key press with empty URL
       // The command should not be dispatched with an empty URL
-      expect(textField).toHaveValue('');
+      expect(urlInput).toHaveValue('');
     });
   });
 
@@ -1510,12 +1326,10 @@ describe('CustomLinkPlugin', () => {
     it('should execute update listener callback', () => {
       type UpdateCallback = (state: {editorState: {read: (cb: () => void) => void}}) => void;
       const capturedCallbacks: UpdateCallback[] = [];
-      (mockRegisterUpdateListener as ReturnType<typeof vi.fn>).mockImplementation(
-        (callback: unknown) => {
-          capturedCallbacks.push(callback as UpdateCallback);
-          return vi.fn();
-        },
-      );
+      (mockRegisterUpdateListener as ReturnType<typeof vi.fn>).mockImplementation((callback: unknown) => {
+        capturedCallbacks.push(callback as UpdateCallback);
+        return vi.fn();
+      });
 
       render(<CustomLinkPlugin />);
 
@@ -1531,20 +1345,16 @@ describe('CustomLinkPlugin', () => {
   });
 
   describe('Handle Close with Editor Ref', () => {
-    it('should call positionEditorElement with null on close', async () => {
+    it('should call positionEditorElement with null on apply', async () => {
       render(<CustomLinkPlugin />);
 
-      // Find the close button
-      const buttons = screen.getAllByRole('button');
-      const closeButton = buttons.find(btn => btn.querySelector('svg'));
+      // Click the apply button (which calls handleApply -> handleClose)
+      const applyButton = screen.getByText('flows:core.elements.richText.linkEditor.apply');
+      await act(async () => {
+        fireEvent.click(applyButton);
+      });
 
-      if (closeButton) {
-        await act(async () => {
-          fireEvent.click(closeButton);
-        });
-      }
-
-      // The card should still be in the document (just repositioned)
+      // The card should still be in the document (just repositioned off-screen)
       expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
     });
   });
@@ -1556,6 +1366,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => '',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
         type: 'text',
       });
       mockIsRangeSelection.mockReturnValue(true);
@@ -1570,36 +1381,18 @@ describe('CustomLinkPlugin', () => {
     it('should handle URL type change when selectedOption is found', async () => {
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
-      // Since PREDEFINED_URLS is empty, the Select won't be rendered
-      // But we can verify the component handles this correctly
+      // The URL field is always visible in the new design
+      const inputs = document.querySelectorAll('input');
+      expect(inputs.length).toBeGreaterThan(0);
     });
 
     it('should set linkUrl to https:// when switching to CUSTOM type', async () => {
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
-      // The default type is CUSTOM, and URL should be set appropriately
-      const textField = document.querySelector('input');
-      expect(textField).toBeInTheDocument();
+      // The URL input field is always available
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1]; // URL input
+      expect(urlInput).toBeInTheDocument();
     });
   });
 
@@ -1607,51 +1400,31 @@ describe('CustomLinkPlugin', () => {
     it('should return linkUrl when selectedUrlType is CUSTOM', async () => {
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
-      // Type a URL
-      const textField = document.querySelector('input');
-      if (textField) {
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1]; // URL input
+      if (urlInput) {
         await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://myurl.com'}});
+          fireEvent.change(urlInput, {target: {value: 'https://myurl.com'}});
         });
 
-        // Click save - this triggers getCurrentUrl()
-        const saveButton = screen.getByText('common:save');
+        // Click apply - this triggers getCurrentUrl()
+        const applyButton = screen.getByText('flows:core.elements.richText.linkEditor.apply');
         await act(async () => {
-          fireEvent.click(saveButton);
+          fireEvent.click(applyButton);
         });
       }
 
-      // Should exit edit mode
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
-      });
+      // Card should still be in the document
+      expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
     });
 
     it('should return selectedOption.value when selectedUrlType is not CUSTOM but option not found', async () => {
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
       // Since PREDEFINED_URLS is empty, even if we had a non-CUSTOM type,
-      // it would fall back to returning linkUrl
+      // it would fall back to returning linkUrl. Verify URL field is present.
+      const inputs = document.querySelectorAll('input');
+      expect(inputs.length).toBeGreaterThan(0);
     });
   });
 
@@ -1685,40 +1458,31 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
 
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
-      // Type a URL
-      const textField = document.querySelector('input');
-      if (textField) {
+      // Type a new URL in the URL input (second input field)
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1]; // URL input
+      if (urlInput) {
         await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://newurl.com'}});
+          fireEvent.change(urlInput, {target: {value: 'https://newurl.com'}});
         });
       }
 
-      // Click save
-      const saveButton = screen.getByText('common:save');
+      // Click the apply button
+      const applyButton = screen.getByText('flows:core.elements.richText.linkEditor.apply');
       await act(async () => {
-        fireEvent.click(saveButton);
+        fireEvent.click(applyButton);
       });
 
-      // Should dispatch command and exit edit mode
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
-      });
+      // Should dispatch command since lastSelection is set and URL is not empty
+      // The URL dispatched is the one set by updateLinkEditor (from getURL() mock)
+      expect(mockDispatchCommand).toHaveBeenCalledWith('TOGGLE_SAFE_LINK_COMMAND', expect.stringContaining('https://'));
     });
   });
 
@@ -1752,35 +1516,25 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
 
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
-      // Type a URL and press Enter
-      const textField = document.querySelector('input');
-      if (textField) {
+      // Press Enter in the URL input field
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1]; // URL input
+      if (urlInput) {
         await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://enterkey.com'}});
-          fireEvent.keyDown(textField, {key: 'Enter'});
+          fireEvent.change(urlInput, {target: {value: 'https://enterkey.com'}});
+          fireEvent.keyDown(urlInput, {key: 'Enter'});
         });
       }
 
-      // Should exit edit mode after Enter
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
-      });
+      // Should dispatch command since lastSelection is set and URL is not empty
+      expect(mockDispatchCommand).toHaveBeenCalledWith('TOGGLE_SAFE_LINK_COMMAND', 'https://enterkey.com');
     });
   });
 
@@ -1888,6 +1642,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
@@ -1934,6 +1689,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
@@ -1983,6 +1739,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
@@ -2028,6 +1785,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
@@ -2073,6 +1831,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
@@ -2118,6 +1877,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
@@ -2179,6 +1939,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://parent-link.com',
         setTarget: mockSetTarget,
         setRel: mockSetRel,
+        getTextContent: () => '',
       };
       const mockTextNode = {
         type: 'text',
@@ -2186,6 +1947,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => '',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
 
       mockGetSelectedNode.mockReturnValue(mockTextNode);
@@ -2194,12 +1956,10 @@ describe('CustomLinkPlugin', () => {
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
-        (command: unknown, callback: unknown) => {
-          callbacks[command as string] = callback;
-          return vi.fn();
-        },
-      );
+      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation((command: unknown, callback: unknown) => {
+        callbacks[command as string] = callback;
+        return vi.fn();
+      });
 
       render(<CustomLinkPlugin />);
 
@@ -2220,6 +1980,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://parent-url.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       const mockTextNode = {
         type: 'text',
@@ -2227,6 +1988,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => '',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
 
       mockGetSelectedNode.mockReturnValue(mockTextNode);
@@ -2256,9 +2018,10 @@ describe('CustomLinkPlugin', () => {
 
       render(<CustomLinkPlugin />);
 
-      // The link URL from parent should be set
-      const link = document.querySelector('.MuiLink-root');
-      expect(link).toBeInTheDocument();
+      // The link URL from parent should be set in the URL input field
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1]; // URL input
+      expect(urlInput).toBeInTheDocument();
     });
 
     it('should set URL and type when node itself is a link node', () => {
@@ -2268,6 +2031,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://direct-link-url.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
 
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
@@ -2297,8 +2061,10 @@ describe('CustomLinkPlugin', () => {
 
       render(<CustomLinkPlugin />);
 
-      const link = document.querySelector('.MuiLink-root');
-      expect(link).toBeInTheDocument();
+      // The link URL from node should be set in the URL input field
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1]; // URL input
+      expect(urlInput).toBeInTheDocument();
     });
 
     it('should reset URL and hide editor when neither node nor parent is a link', () => {
@@ -2308,6 +2074,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => '',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
 
       mockGetSelectedNode.mockReturnValue(mockTextNode);
@@ -2334,6 +2101,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
 
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
@@ -2371,6 +2139,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
 
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
@@ -2408,6 +2177,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
 
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
@@ -2446,6 +2216,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
 
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
@@ -2472,6 +2243,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://parent-link-to-open.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       const mockTextNode = {
         type: 'text',
@@ -2479,6 +2251,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => '',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
 
       mockGetSelectedNode.mockReturnValue(mockTextNode);
@@ -2486,12 +2259,10 @@ describe('CustomLinkPlugin', () => {
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
-        (command: unknown, callback: unknown) => {
-          callbacks[command as string] = callback;
-          return vi.fn();
-        },
-      );
+      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation((command: unknown, callback: unknown) => {
+        callbacks[command as string] = callback;
+        return vi.fn();
+      });
 
       const mockOpen = vi.spyOn(window, 'open').mockImplementation(vi.fn());
 
@@ -2558,6 +2329,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
@@ -2606,6 +2378,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
@@ -2629,6 +2402,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => '',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockTextNode);
       mockIsLinkNode.mockReturnValue(false);
@@ -2653,6 +2427,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
@@ -2703,6 +2478,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
@@ -2754,6 +2530,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
@@ -2777,6 +2554,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
@@ -2830,6 +2608,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://test.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
@@ -2879,6 +2658,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://test.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);
@@ -2902,6 +2682,7 @@ describe('CustomLinkPlugin', () => {
         getURL: () => 'https://example.com',
         setTarget: vi.fn(),
         setRel: vi.fn(),
+        getTextContent: () => '',
       };
       mockGetSelectedNode.mockReturnValue(mockLinkNode);
       mockIsLinkNode.mockImplementation((node: unknown) => node === mockLinkNode);

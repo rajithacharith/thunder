@@ -50,6 +50,7 @@ export const WidgetTypes = {
   GithubFederation: 'GITHUB_FEDERATION',
   PasskeyAuthentication: 'PASSKEY_AUTHENTICATION',
   MagicLink: 'MAGIC_LINK',
+  SelfSignUpLink: 'SELF_SIGN_UP_LINK',
 } as const;
 
 export type WidgetTypes = (typeof WidgetTypes)[keyof typeof WidgetTypes];

@@ -49,10 +49,12 @@ vi.mock('@thunder/shared-branding', () => ({
 }));
 
 // Mock useTemplateLiteralResolver
+const mockResolveAll = vi.fn().mockImplementation((template: string) => template);
 vi.mock('@thunder/shared-hooks', () => ({
   useTemplateLiteralResolver: () => ({
     resolve: (key: string) => key,
-    resolveAll: (key: string) => key,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    resolveAll: (...args: [string, Record<string, (key: string) => string | undefined>?]) => mockResolveAll(...args),
   }),
 }));
 
@@ -95,6 +97,8 @@ interface MockSignInRenderProps {
   components: MockFlowComponent[];
   error: {message?: string} | null;
   isInitialized: boolean;
+  meta?: Record<string, unknown>;
+  additionalData?: Record<string, unknown>;
 }
 
 interface MockSignUpRenderProps {
@@ -108,6 +112,7 @@ const createMockSignInRenderProps = (overrides: Partial<MockSignInRenderProps> =
   components: [],
   error: null,
   isInitialized: true,
+  meta: {},
   ...overrides,
 });
 
@@ -148,6 +153,7 @@ vi.mock('@asgardeo/react', async () => {
 describe('SignInBox', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockResolveAll.mockImplementation((template: string) => template);
     mockUseDesign.mockReturnValue({
       isDesignEnabled: false,
     });
@@ -496,26 +502,44 @@ describe('SignInBox', () => {
   });
 
   it('renders sign up redirect link when signup components exist', () => {
-    mockSignUpRenderProps = createMockSignUpRenderProps({
-      components: [{id: 'signup-form', type: 'BLOCK'}],
+    mockResolveAll.mockImplementation(
+      (template: string, handlers?: Record<string, (key: string) => string | undefined>) =>
+        template.replace(/\{\{meta\(([^)]+)\)\}\}/g, (_match, path: string) => handlers?.meta?.(path) ?? _match),
+    );
+    mockSignInRenderProps = createMockSignInRenderProps({
+      meta: {is_registration_flow_enabled: 'true'},
+      components: [
+        {
+          id: 'rich-text-signup',
+          type: 'RICH_TEXT',
+          label: '<p>Don\'t have an account? <a href="{{meta(application.signUpUrl)}}">Sign up</a></p>',
+        },
+      ],
     });
     render(<SignInBox />);
     expect(screen.getByText('Sign up')).toBeInTheDocument();
   });
 
   it('navigates to sign up page when clicking sign up link', async () => {
-    mockSignUpRenderProps = createMockSignUpRenderProps({
-      components: [{id: 'signup-form', type: 'BLOCK'}],
+    mockResolveAll.mockImplementation(
+      (template: string, handlers?: Record<string, (key: string) => string | undefined>) =>
+        template.replace(/\{\{meta\(([^)]+)\)\}\}/g, (_match, path: string) => handlers?.meta?.(path) ?? _match),
+    );
+    mockSignInRenderProps = createMockSignInRenderProps({
+      meta: {is_registration_flow_enabled: 'true'},
+      components: [
+        {
+          id: 'rich-text-signup',
+          type: 'RICH_TEXT',
+          label: '<p>Don\'t have an account? <a href="{{meta(application.signUpUrl)}}">Sign up</a></p>',
+        },
+      ],
     });
     render(<SignInBox />);
 
     const signUpLink = screen.getByText('Sign up');
-    await userEvent.click(signUpLink);
-
-    // Navigate is called with /signup or /signup with query params
-    expect(mockNavigate).toHaveBeenCalled();
-    const navigateCalls = mockNavigate.mock.calls;
-    expect(navigateCalls[0][0]).toMatch(/^\/signup/);
+    // Sign-up link is now a plain anchor using the fallback URL
+    expect(signUpLink.closest('a')).toHaveAttribute('href', '/signup');
   });
 
   it('renders correctly when design is enabled', () => {
@@ -642,24 +666,25 @@ describe('SignInBox', () => {
   });
 
   it('navigates to sign up with query params preserved', async () => {
-    vi.mock('react-router', async () => {
-      const actual = await vi.importActual('react-router');
-      return {
-        ...actual,
-        useNavigate: () => mockNavigate,
-        useSearchParams: () => [new URLSearchParams('client_id=test&redirect_uri=http://example.com'), vi.fn()],
-      };
-    });
-
-    mockSignUpRenderProps = createMockSignUpRenderProps({
-      components: [{id: 'signup-form', type: 'BLOCK'}],
+    mockResolveAll.mockImplementation(
+      (template: string, handlers?: Record<string, (key: string) => string | undefined>) =>
+        template.replace(/\{\{meta\(([^)]+)\)\}\}/g, (_match, path: string) => handlers?.meta?.(path) ?? _match),
+    );
+    mockSignInRenderProps = createMockSignInRenderProps({
+      meta: {is_registration_flow_enabled: 'true'},
+      components: [
+        {
+          id: 'rich-text-signup',
+          type: 'RICH_TEXT',
+          label: '<p>Don\'t have an account? <a href="{{meta(application.signUpUrl)}}">Sign up</a></p>',
+        },
+      ],
     });
 
     render(<SignInBox />);
     const signUpLink = screen.getByText('Sign up');
-    await userEvent.click(signUpLink);
-
-    expect(mockNavigate).toHaveBeenCalled();
+    // Sign-up link is now a plain anchor using the fallback URL
+    expect(signUpLink.closest('a')).toHaveAttribute('href', '/signup');
   });
 
   it('handles password input change', async () => {
@@ -1926,16 +1951,25 @@ describe('SignInBox', () => {
   });
 
   it('handles sign up link navigation', async () => {
-    mockSignUpRenderProps = createMockSignUpRenderProps({
-      components: [{id: 'signup-form', type: 'BLOCK'}],
+    mockResolveAll.mockImplementation(
+      (template: string, handlers?: Record<string, (key: string) => string | undefined>) =>
+        template.replace(/\{\{meta\(([^)]+)\)\}\}/g, (_match, path: string) => handlers?.meta?.(path) ?? _match),
+    );
+    mockSignInRenderProps = createMockSignInRenderProps({
+      meta: {is_registration_flow_enabled: 'true'},
+      components: [
+        {
+          id: 'rich-text-signup',
+          type: 'RICH_TEXT',
+          label: '<p>Don\'t have an account? <a href="{{meta(application.signUpUrl)}}">Sign up</a></p>',
+        },
+      ],
     });
     render(<SignInBox />);
 
     const signUpLink = screen.getByText('Sign up');
-    await userEvent.click(signUpLink);
-
-    // Navigate is called (with or without query params depending on mock state)
-    expect(mockNavigate).toHaveBeenCalled();
+    // Sign-up link is now a plain anchor using the fallback URL
+    expect(signUpLink.closest('a')).toHaveAttribute('href', '/signup');
   });
 
   it('renders social login trigger with missing label and image', () => {

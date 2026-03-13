@@ -1111,5 +1111,41 @@
         ]
       }
     }
+  },
+  {
+    "resourceType": "WIDGET",
+    "category": "COMPOSITE",
+    "type": "SELF_SIGN_UP_LINK",
+    "display": {
+      "label": "Self Sign Up Link",
+      "description": "A rich text link to redirect users to the self-registration page",
+      "image": "UserPlus",
+      "showOnResourcePanel": true
+    },
+    "config": {
+      "data": {
+        "__generationMeta__": {
+          "strategy": "MERGE_WITH_DROP_POINT"
+        },
+        "steps": [
+          {
+            "__generationMeta__": {
+              "strategy": "MERGE_WITH_DROP_POINT"
+            },
+            "type": "VIEW",
+            "data": {
+              "components": [
+                {
+                  "category": "DISPLAY",
+                  "type": "RICH_TEXT",
+                  "id": "{{ID}}",
+                  "label": "<p class=\"rich-text-paragraph\"><span class=\"rich-text-pre-wrap\">Don't have an account? </span><a href=\"{{meta(application.signUpUrl)}}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"rich-text-link\"><span class=\"rich-text-pre-wrap\">Sign up</span></a></p>"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
   }
 ]

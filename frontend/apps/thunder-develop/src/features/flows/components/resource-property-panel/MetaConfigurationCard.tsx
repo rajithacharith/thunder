@@ -46,6 +46,7 @@ const COMMON_META_FIELDS: string[] = [
   'application.description',
   'application.loginPageUrl',
   'application.logoUrl',
+  'application.signUpUrl',
   'ou.name',
   'ou.handle',
   'ou.description',

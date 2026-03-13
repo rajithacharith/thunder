@@ -17,28 +17,17 @@
  */
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import type {JSX} from 'react';
-import {
-  Box,
-  Button,
-  Alert,
-  Typography,
-  styled,
-  Paper,
-  ColorSchemeImage,
-  Stack,
-  CircularProgress,
-} from '@wso2/oxygen-ui';
+import {Box, Alert, styled, Paper, ColorSchemeImage, Stack, CircularProgress} from '@wso2/oxygen-ui';
 import {useState} from 'react';
-import {EmbeddedFlowComponentType, SignIn, SignUp, type EmbeddedFlowComponent} from '@asgardeo/react';
+import {EmbeddedFlowComponentType, SignIn, type EmbeddedFlowComponent} from '@asgardeo/react';
 import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import {TemplateLiteralType} from '@thunder/utils';
-import {useNavigate, useSearchParams} from 'react-router';
-import {Trans, useTranslation} from 'react-i18next';
-import ROUTES from '../../constants/routes';
+import {useSearchParams} from 'react-router';
+import {useTranslation} from 'react-i18next';
 import FlowComponentRenderer from '../flow/FlowComponentRenderer';
+import generateFallbackSignUpUrl from '../../utils/generateFallbackSignUpUrl';
 
 const StyledPaper = styled(Paper)(({theme}) => ({
   display: 'flex',
@@ -53,10 +42,11 @@ const StyledPaper = styled(Paper)(({theme}) => ({
 }));
 
 export default function SignInBox(): JSX.Element {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const {resolve, resolveAll} = useTemplateLiteralResolver();
   const {t} = useTranslation();
+
+  const signUpFallbackUrl = generateFallbackSignUpUrl(searchParams);
 
   const [formInputs, setFormInputs] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -141,6 +131,7 @@ export default function SignInBox(): JSX.Element {
                             fieldErrors={fieldErrors}
                             isLoading={isLoading}
                             additionalData={additionalData}
+                            signUpFallbackUrl={signUpFallbackUrl}
                             resolve={(template) =>
                               resolveAll(template, {
                                 [TemplateLiteralType.TRANSLATION]: t,
@@ -183,47 +174,6 @@ export default function SignInBox(): JSX.Element {
             )
           }
         </SignIn>
-
-        <SignUp>
-          {({components}: any) => {
-            if (components && components.length > 0) {
-              return (
-                <Typography sx={{textAlign: 'center', mt: 2}}>
-                  <Trans i18nKey="signin:redirect.to.signup">
-                    Don&apos;t have an account?
-                    <Button
-                      variant="text"
-                      onClick={() => {
-                        const currentParams: string = searchParams.toString();
-                        const createUrl: string = currentParams
-                          ? `${ROUTES.AUTH.SIGN_UP}?${currentParams}`
-                          : ROUTES.AUTH.SIGN_UP;
-
-                        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                        navigate(createUrl);
-                      }}
-                      sx={{
-                        p: 0,
-                        minWidth: 'auto',
-                        textTransform: 'none',
-                        color: 'primary.main',
-                        textDecoration: 'underline',
-                        '&:hover': {
-                          textDecoration: 'underline',
-                          backgroundColor: 'transparent',
-                        },
-                      }}
-                    >
-                      Sign up
-                    </Button>
-                  </Trans>
-                </Typography>
-              );
-            }
-
-            return null;
-          }}
-        </SignUp>
       </StyledPaper>
     </Stack>
   );
