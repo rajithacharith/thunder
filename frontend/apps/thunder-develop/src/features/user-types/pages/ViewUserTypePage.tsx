@@ -782,12 +782,13 @@ export default function ViewUserTypePage() {
                             }
                           />
                         </Tooltip>
-                        {(property.type === 'string' || property.type === 'number' || property.type === 'enum') && !property.credential && (
+                        {(property.type === 'string' || property.type === 'number' || property.type === 'enum') && (
                           <Tooltip title={t('userTypes:tooltips.unique', 'Each user must have a distinct value for this field')} placement="top" arrow>
                             <FormControlLabel
                               control={
                                 <Checkbox
                                   checked={property.unique}
+                                  disabled={property.credential}
                                   onChange={(e) => handlePropertyChange(property.id, 'unique', e.target.checked)}
                                 />
                               }
