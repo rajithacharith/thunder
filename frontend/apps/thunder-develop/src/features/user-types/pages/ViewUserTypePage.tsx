@@ -53,11 +53,13 @@ import {
   PageTitle,
 } from '@wso2/oxygen-ui';
 import {ArrowLeft, Edit, Save, X, Trash2, Check} from '@wso2/oxygen-ui-icons-react';
+import {useResolveDisplayName} from '@thunder/shared-hooks';
 import useGetUserType from '../api/useGetUserType';
 import useUpdateUserType from '../api/useUpdateUserType';
 import useDeleteUserType from '../api/useDeleteUserType';
 import useGetOrganizationUnits from '../../organization-units/api/useGetOrganizationUnits';
 import type {PropertyDefinition, UserSchemaDefinition, PropertyType, SchemaPropertyInput} from '../types/user-types';
+import I18nTextInput from '../components/create-user-type/I18nTextInput';
 
 export default function ViewUserTypePage() {
   const navigate = useNavigate();
@@ -67,6 +69,7 @@ export default function ViewUserTypePage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const {resolveDisplayName} = useResolveDisplayName({handlers: {t}});
 
   const {data: userType, isLoading: isUserTypeLoading, error: userTypeError} = useGetUserType(id);
   const updateUserTypeMutation = useUpdateUserType();
@@ -108,6 +111,7 @@ export default function ViewUserTypePage() {
     const props: SchemaPropertyInput[] = Object.entries(schema).map(([key, value], index) => ({
       id: `${index}`,
       name: key,
+      displayName: 'displayName' in value ? (value.displayName ?? '') : '',
       type: value.type,
       required: value.required ?? false,
       unique: 'unique' in value ? (value.unique ?? false) : false,
@@ -222,6 +226,7 @@ export default function ViewUserTypePage() {
         const propDef: Partial<PropertyDefinition> = {
           type: actualType,
           required: prop.required,
+          ...(prop.displayName.trim() ? {displayName: prop.displayName.trim()} : {}),
         };
 
         if (prop.type === 'string' || prop.type === 'number' || prop.type === 'enum') {
@@ -499,7 +504,9 @@ export default function ViewUserTypePage() {
                         </Typography>
                       );
                     }
-                    return value;
+                    const matchedProp = eligibleDisplayProperties.find((p) => p.name.trim() === value);
+                    const resolved = matchedProp?.displayName ? resolveDisplayName(matchedProp.displayName) : '';
+                    return resolved && resolved !== value ? `${resolved} (${value})` : value;
                   }}
                 >
                   <MenuItem value="">
@@ -507,11 +514,15 @@ export default function ViewUserTypePage() {
                       {t('common:none', 'None')}
                     </Typography>
                   </MenuItem>
-                  {eligibleDisplayProperties.map((prop) => (
-                    <MenuItem key={prop.id} value={prop.name.trim()}>
-                      {prop.name.trim()}
-                    </MenuItem>
-                  ))}
+                  {eligibleDisplayProperties.map((prop) => {
+                    const propName = prop.name.trim();
+                    const resolved = prop.displayName ? resolveDisplayName(prop.displayName) : '';
+                    return (
+                      <MenuItem key={prop.id} value={propName}>
+                        {resolved && resolved !== propName ? `${resolved} (${propName})` : propName}
+                      </MenuItem>
+                    );
+                  })}
                 </Select>
               )}
             </Box>
@@ -533,7 +544,8 @@ export default function ViewUserTypePage() {
               <Table sx={{'& .MuiTableCell-root': {py: 2}}}>
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{fontWeight: 600}}>Property Name</TableCell>
+                    <TableCell sx={{fontWeight: 600}}>{t('userTypes:propertyName')}</TableCell>
+                    <TableCell sx={{fontWeight: 600}}>{t('userTypes:displayName', 'Display Name')}</TableCell>
                     <TableCell sx={{fontWeight: 600}}>Type</TableCell>
                     <TableCell sx={{fontWeight: 600}}>Required</TableCell>
                     <TableCell sx={{fontWeight: 600}}>Unique</TableCell>
@@ -547,6 +559,16 @@ export default function ViewUserTypePage() {
                         <Typography variant="body2" sx={{fontWeight: 500}}>
                           {key}
                         </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const resolved = value.displayName ? resolveDisplayName(value.displayName) : '';
+                          return (
+                            <Typography variant="body2" color={resolved ? 'text.primary' : 'text.secondary'}>
+                              {resolved || '-'}
+                            </Typography>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>
                         <Typography
@@ -653,6 +675,14 @@ export default function ViewUserTypePage() {
                         </Select>
                       </FormControl>
                     </Box>
+
+                    <I18nTextInput
+                      label={t('userTypes:displayName', 'Display Name')}
+                      value={property.displayName}
+                      onChange={(newValue: string) => handlePropertyChange(property.id, 'displayName', newValue)}
+                      placeholder={t('userTypes:displayNamePlaceholder', 'e.g., First Name')}
+                      defaultNewKey={name.trim() && property.name.trim() ? `${name.trim()}.${property.name.trim()}` : undefined}
+                    />
 
                     <Stack direction="row" spacing={2}>
                       <FormControlLabel

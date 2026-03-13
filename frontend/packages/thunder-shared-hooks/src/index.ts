@@ -18,6 +18,8 @@
 
 export {default as useTemplateLiteralResolver, type TemplateLiteralResolverResult} from './useTemplateLiteralResolver';
 
+export {default as useResolveDisplayName, type ResolveDisplayNameResult} from './useResolveDisplayName';
+
 export {
   default as useCopyToClipboard,
   type UseCopyToClipboardOptions,

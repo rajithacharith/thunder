@@ -30,6 +30,7 @@ import CredentialFieldInput from '../components/CredentialFieldInput';
  * @param fieldDef - The property definition from the schema
  * @param control - React Hook Form control object
  * @param errors - Form validation errors
+ * @param resolveDisplayName - Optional callback to resolve display name (handles plain strings and i18n patterns)
  * @returns A rendered form field component or null for unsupported types
  */
 const renderSchemaField = <T extends Record<string, unknown>>(
@@ -37,9 +38,15 @@ const renderSchemaField = <T extends Record<string, unknown>>(
   fieldDef: PropertyDefinition,
   control: Control<T>,
   errors: FieldErrors<T>,
+  resolveDisplayName?: (displayName: string) => string,
 ) => {
   const isRequired = fieldDef.required ?? false;
-  const fieldLabel = fieldName;
+
+  let fieldLabel = fieldName;
+  if (fieldDef.displayName) {
+    const resolved = resolveDisplayName?.(fieldDef.displayName);
+    fieldLabel = (resolved !== '' ? resolved : undefined) ?? fieldDef.displayName;
+  }
 
   // String fields
   if (fieldDef.type === 'string') {

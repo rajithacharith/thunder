@@ -36,6 +36,7 @@ const INITIAL_STATE = {
     {
       id: '1',
       name: '',
+      displayName: '',
       type: 'string' as const,
       required: false,
       unique: false,

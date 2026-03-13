@@ -21,6 +21,7 @@ import {useForm} from 'react-hook-form';
 import {Box, Stack, Typography} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
+import {useResolveDisplayName} from '@thunder/shared-hooks';
 import type {ApiUserSchema} from '../../types/users';
 import renderSchemaField from '../../utils/renderSchemaField';
 
@@ -50,6 +51,7 @@ export default function ConfigureUserDetails({
   onReadyChange = undefined,
 }: ConfigureUserDetailsProps): JSX.Element {
   const {t} = useTranslation();
+  const {resolveDisplayName} = useResolveDisplayName({handlers: {t}});
 
   const {
     control,
@@ -86,7 +88,7 @@ export default function ConfigureUserDetails({
       <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
         {schema.schema &&
           Object.entries(schema.schema).map(([fieldName, fieldDef]) =>
-            renderSchemaField(fieldName, fieldDef, control, errors),
+            renderSchemaField(fieldName, fieldDef, control, errors, resolveDisplayName),
           )}
       </Box>
     </Stack>

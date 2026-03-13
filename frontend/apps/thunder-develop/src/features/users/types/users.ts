@@ -134,6 +134,7 @@ export interface UserGroupListResponse {
 export interface BasePropertyDefinition {
   type: string;
   required?: boolean;
+  displayName?: string;
 }
 
 /**

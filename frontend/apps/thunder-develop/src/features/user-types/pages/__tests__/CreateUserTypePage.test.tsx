@@ -83,9 +83,13 @@ vi.mock('../../../organization-units/components/OrganizationUnitTreePicker', () 
   ),
 }));
 
-vi.mock('@thunder/utils', () => ({
-  generateRandomHumanReadableIdentifiers: () => ['Alpha Users', 'Beta Users', 'Gamma Users'],
-}));
+vi.mock('@thunder/utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/utils')>();
+  return {
+    ...actual,
+    generateRandomHumanReadableIdentifiers: () => ['Alpha Users', 'Beta Users', 'Gamma Users'],
+  };
+});
 
 /**
  * Helper to render the wizard page wrapped in provider.

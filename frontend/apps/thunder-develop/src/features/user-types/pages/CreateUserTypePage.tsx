@@ -162,6 +162,7 @@ export default function CreateUserTypePage(): JSX.Element {
       const propDef: Partial<PropertyDefinition> = {
         type: actualType,
         required: prop.required,
+        ...(prop.displayName.trim() ? {displayName: prop.displayName.trim()} : {}),
       };
 
       if (actualType === 'string' || actualType === 'number') {
@@ -268,6 +269,7 @@ export default function CreateUserTypePage(): JSX.Element {
             displayAttribute={displayAttribute}
             onDisplayAttributeChange={setDisplayAttribute}
             onReadyChange={handlePropertiesStepReadyChange}
+            userTypeName={name.trim()}
           />
         );
       default:

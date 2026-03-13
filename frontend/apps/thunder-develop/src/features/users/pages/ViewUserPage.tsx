@@ -39,6 +39,7 @@ import {
 import {ArrowLeft, Edit, Save, X, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
+import {useResolveDisplayName} from '@thunder/shared-hooks';
 import useGetUser from '../api/useGetUser';
 import useGetUserSchemas from '../api/useGetUserSchemas';
 import useGetUserSchema from '../api/useGetUserSchema';
@@ -52,7 +53,9 @@ export default function ViewUserPage() {
   const navigate = useNavigate();
   const {t} = useTranslation();
   const logger = useLogger('ViewUserPage');
+  const {resolveDisplayName} = useResolveDisplayName({handlers: {t}});
   const {userId} = useParams<{userId: string}>();
+
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -292,10 +295,17 @@ export default function ViewUserPage() {
                     displayValue = '-';
                   }
 
+                  const fieldDef = userSchema?.schema?.[key];
+                  let attributeLabel = key;
+                  if (fieldDef?.displayName) {
+                    const resolved = resolveDisplayName(fieldDef.displayName);
+                    attributeLabel = resolved || key;
+                  }
+
                   return (
                     <Box key={key}>
                       <Typography variant="caption" color="text.secondary">
-                        {key}
+                        {attributeLabel}
                       </Typography>
                       <Typography variant="body1">{displayValue}</Typography>
                     </Box>
@@ -323,7 +333,7 @@ export default function ViewUserPage() {
               {userSchema?.schema ? (
                 Object.entries(userSchema.schema)
                   .filter(([, fieldDef]) => !((fieldDef.type === 'string' || fieldDef.type === 'number') && fieldDef.credential))
-                  .map(([fieldName, fieldDef]) => renderSchemaField(fieldName, fieldDef, control, errors))
+                  .map(([fieldName, fieldDef]) => renderSchemaField(fieldName, fieldDef, control, errors, resolveDisplayName))
               ) : (
                 <Typography variant="body2" color="text.secondary">
                   No schema available for editing
