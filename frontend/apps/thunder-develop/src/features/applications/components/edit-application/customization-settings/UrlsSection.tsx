@@ -18,7 +18,6 @@
 
 import {Box, Stack, Typography, TextField} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
-import {useEffect} from 'react';
 import {useForm, Controller} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
@@ -71,7 +70,6 @@ export default function UrlsSection({application, editedApp, onFieldChange}: Url
   const {
     control,
     formState: {errors},
-    watch,
   } = useForm<UrlsFormData>({
     resolver: zodResolver(urlsSchema),
     mode: 'onChange',
@@ -80,21 +78,6 @@ export default function UrlsSection({application, editedApp, onFieldChange}: Url
       policyUri: editedApp.policy_uri ?? application.policy_uri ?? '',
     },
   });
-
-  const tosUri = watch('tosUri');
-  const policyUri = watch('policyUri');
-
-  useEffect(() => {
-    if (tosUri !== (editedApp.tos_uri ?? application.tos_uri ?? '')) {
-      onFieldChange('tos_uri', tosUri);
-    }
-  }, [tosUri, editedApp.tos_uri, application.tos_uri, onFieldChange]);
-
-  useEffect(() => {
-    if (policyUri !== (editedApp.policy_uri ?? application.policy_uri ?? '')) {
-      onFieldChange('policy_uri', policyUri);
-    }
-  }, [policyUri, editedApp.policy_uri, application.policy_uri, onFieldChange]);
 
   return (
     <SettingsCard
@@ -112,6 +95,10 @@ export default function UrlsSection({application, editedApp, onFieldChange}: Url
             render={({field}) => (
               <TextField
                 {...field}
+                onChange={(e) => {
+                  field.onChange(e);
+                  onFieldChange('tos_uri', e.target.value);
+                }}
                 fullWidth
                 placeholder={t('applications:edit.customization.tosUri.placeholder')}
                 error={!!errors.tosUri}
@@ -131,6 +118,10 @@ export default function UrlsSection({application, editedApp, onFieldChange}: Url
             render={({field}) => (
               <TextField
                 {...field}
+                onChange={(e) => {
+                  field.onChange(e);
+                  onFieldChange('policy_uri', e.target.value);
+                }}
                 fullWidth
                 placeholder={t('applications:edit.customization.policyUri.placeholder')}
                 error={!!errors.policyUri}

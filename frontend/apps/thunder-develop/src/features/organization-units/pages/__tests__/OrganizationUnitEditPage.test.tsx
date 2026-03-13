@@ -137,6 +137,39 @@ vi.mock('../../../../components/LogoUpdateModal', () => ({
   ),
 }));
 
+// Mock UnsavedChangesBar
+vi.mock('../../../../components/UnsavedChangesBar', () => ({
+  default: vi.fn(
+    ({
+      message,
+      resetLabel,
+      saveLabel,
+      savingLabel,
+      isSaving,
+      onReset,
+      onSave,
+    }: {
+      message: string;
+      resetLabel: string;
+      saveLabel: string;
+      savingLabel: string;
+      isSaving: boolean;
+      onReset: () => void;
+      onSave: () => void;
+    }) => (
+      <div data-testid="unsaved-changes-bar">
+        <span>{message}</span>
+        <button type="button" onClick={onReset}>
+          {resetLabel}
+        </button>
+        <button type="button" onClick={onSave} disabled={isSaving}>
+          {isSaving ? savingLabel : saveLabel}
+        </button>
+      </div>
+    ),
+  ),
+}));
+
 // Mock translations
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -1071,45 +1104,41 @@ describe('OrganizationUnitEditPage', () => {
   });
 
   describe('Edited OU Fallbacks', () => {
-    it(
-      'should display edited name when re-editing after a name change',
-      async () => {
-        renderWithProviders(<OrganizationUnitEditPage />);
+    it('should display edited name when re-editing after a name change', async () => {
+      renderWithProviders(<OrganizationUnitEditPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+      });
+
+      // First edit: change name
+      const editButtons = screen.getAllByRole('button');
+      const nameEditButton = editButtons.find(
+        (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
+      );
+
+      if (nameEditButton) {
+        fireEvent.click(nameEditButton);
+        const nameInput = screen.getByDisplayValue('Test Organization Unit');
+        fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
+        fireEvent.blur(nameInput);
 
         await waitFor(() => {
-          expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+          expect(screen.getByText('Updated Name')).toBeInTheDocument();
         });
 
-        // First edit: change name
-        const editButtons = screen.getAllByRole('button');
-        const nameEditButton = editButtons.find(
-          (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
+        // Second edit: the input should show the edited name
+        const editButtons2 = screen.getAllByRole('button');
+        const nameEditButton2 = editButtons2.find(
+          (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Updated Name'),
         );
 
-        if (nameEditButton) {
-          fireEvent.click(nameEditButton);
-          const nameInput = screen.getByDisplayValue('Test Organization Unit');
-          fireEvent.change(nameInput, {target: {value: 'Updated Name'}});
-          fireEvent.blur(nameInput);
-
-          await waitFor(() => {
-            expect(screen.getByText('Updated Name')).toBeInTheDocument();
-          });
-
-          // Second edit: the input should show the edited name
-          const editButtons2 = screen.getAllByRole('button');
-          const nameEditButton2 = editButtons2.find(
-            (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Updated Name'),
-          );
-
-          if (nameEditButton2) {
-            fireEvent.click(nameEditButton2);
-            expect(screen.getByDisplayValue('Updated Name')).toBeInTheDocument();
-          }
+        if (nameEditButton2) {
+          fireEvent.click(nameEditButton2);
+          expect(screen.getByDisplayValue('Updated Name')).toBeInTheDocument();
         }
-      },
-      15_000,
-    );
+      }
+    }, 15_000);
 
     it('should display edited description when re-editing after a description change', async () => {
       renderWithProviders(<OrganizationUnitEditPage />);
