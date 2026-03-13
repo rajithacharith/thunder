@@ -89,7 +89,7 @@ export default function ManageGroupsSection({organizationUnitId}: ManageGroupsSe
       },
       {
         field: 'name',
-        headerName: t('organizationUnits:edit.users.sections.manage.listing.columns.name'),
+        headerName: t('organizationUnits:edit.groups.sections.manage.listing.columns.name'),
         flex: 1,
         minWidth: 200,
       },
