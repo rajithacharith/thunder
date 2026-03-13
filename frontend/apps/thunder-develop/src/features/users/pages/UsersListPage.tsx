@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {useNavigate} from 'react-router';
+import {useNavigate, useSearchParams} from 'react-router';
 import {Stack, TextField, Button, InputAdornment, PageContent, PageTitle} from '@wso2/oxygen-ui';
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import {Plus, Search, Mail} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
@@ -29,8 +29,16 @@ export default function UsersListPage() {
   const navigate = useNavigate();
   const {t} = useTranslation();
   const logger = useLogger('UsersListPage');
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('invite') === 'true') {
+      setIsInviteDialogOpen(true);
+      setSearchParams({}, {replace: true});
+    }
+  }, [searchParams, setSearchParams]);
 
   const handleOpenInviteDialog = () => {
     setIsInviteDialogOpen(true);

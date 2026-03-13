@@ -2046,6 +2046,59 @@ const translations = {
     'common.item_card.actions.open_in_builder.label': 'Open in builder',
     'common.section_header.badges.coming_soon.label': 'COMING SOON',
   },
+
+  // ============================================================================
+  // Home namespace - Getting Started / home page translations
+  // ============================================================================
+  home: {
+    // Greeting header
+    'greeting.hello': 'Hello,',
+    'greeting.fallback_name': 'there',
+    'greeting.subtitle': 'What do you want to secure today?',
+
+    // Start Building section
+    'start_building.hero.title': 'Integrate {{product}} into your application',
+    'start_building.hero.description': 'Add secure sign-in, token management, and user sessions to your app in minutes.',
+    'start_building.hero.actions.create.label': 'Create Application',
+    'start_building.frameworks.label': 'Start with a framework',
+
+    // Next Steps section
+    'next_steps.section.title': 'Quick Links',
+
+    // Invite Members card
+    'next_steps.invite_members.title': 'Invite Members',
+    'next_steps.invite_members.description': 'Add collaborators to help manage your organization and act as a backup.',
+    'next_steps.invite_members.actions.primary.label': 'Add User',
+    'next_steps.invite_members.actions.secondary.label': 'Invite User',
+    'next_steps.invite_members.status.count': '{{count}} member',
+    'next_steps.invite_members.status.count_other': '{{count}} members',
+    'next_steps.invite_members.status.empty': 'No members yet — add collaborators',
+
+    // Login Box card
+    'next_steps.login_box.title': 'Sign-in Box',
+    'next_steps.login_box.description':
+      'Build themes and attach them to your applications to personalise the sign-in experience.',
+    'next_steps.login_box.actions.primary.label': 'Open Design Studio',
+
+    // Social Login card
+    'next_steps.social_login.title': 'Social Integrations',
+    'next_steps.social_login.description':
+      'Let users sign in with their favourite identity providers — Google, GitHub, and more.',
+
+    // Multi-factor Authentication card
+    'next_steps.mfa.title': 'Multi-factor Authentication',
+    'next_steps.mfa.description': 'Protect users by enabling an additional verification factor to the sign-in process.',
+    'next_steps.mfa.actions.primary.label': 'Configure Flows',
+
+    // Start Building dynamic
+    'start_building.hero.status.app_count': '{{count}} application',
+    'start_building.hero.status.app_count_other': '{{count}} applications',
+    'start_building.hero.actions.view_apps.label': 'Create Applications',
+
+    // Feature status labels
+    'feature_status.new': 'New',
+    'feature_status.coming_soon': 'Coming Soon',
+  },
 } as const;
 
 export default translations;
