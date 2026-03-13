@@ -77,7 +77,7 @@ func (client *DBClient) QueryContext(
 	args ...interface{},
 ) ([]map[string]interface{}, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DBClient"))
-	logger.Info("Executing query", log.String("queryID", query.GetID()))
+	logger.Debug("Executing query", log.String("queryID", query.GetID()))
 
 	sqlQuery := query.GetQuery(client.dbType)
 
@@ -140,7 +140,7 @@ func (client *DBClient) Execute(query model.DBQuery, args ...interface{}) (int64
 // If a transaction exists in the context, it will be used automatically.
 func (client *DBClient) ExecuteContext(ctx context.Context, query model.DBQuery, args ...interface{}) (int64, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DBClient"))
-	logger.Info("Executing query", log.String("queryID", query.GetID()))
+	logger.Debug("Executing query", log.String("queryID", query.GetID()))
 
 	sqlQuery := query.GetQuery(client.dbType)
 
