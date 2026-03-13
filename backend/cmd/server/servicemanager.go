@@ -189,7 +189,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	var emailClient email.EmailClientInterface
 	emailClient, err = email.Initialize()
 	if err != nil {
-		logger.Warn("Email client not configured. "+
+		logger.Debug("Email client not configured. "+
 			"EmailExecutor will be registered but will not send emails.", log.Error(err))
 		emailClient = nil
 	}
