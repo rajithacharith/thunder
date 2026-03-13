@@ -47,6 +47,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/internal/system/email"
 	"github.com/asgardeo/thunder/internal/system/export"
 	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	"github.com/asgardeo/thunder/internal/system/jose"
@@ -185,9 +186,16 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 
 	// Initialize flow and executor services.
 	flowFactory, graphCache := flowcore.Initialize()
+	var emailClient email.EmailClientInterface
+	emailClient, err = email.Initialize()
+	if err != nil {
+		logger.Warn("Email client not configured. "+
+			"EmailExecutor will be registered but will not send emails.", log.Error(err))
+		emailClient = nil
+	}
 	execRegistry := executor.Initialize(flowFactory, ouService,
 		idpService, otpService, jwtService, authSvcRegistry, authZService, userSchemaService, observabilitySvc,
-		groupService, roleService, userProvider, attributeCacheService)
+		groupService, roleService, userProvider, attributeCacheService, emailClient)
 
 	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(mux, mcpServer, flowFactory, execRegistry, graphCache)
 	if err != nil {

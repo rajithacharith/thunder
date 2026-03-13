@@ -88,7 +88,9 @@ func (e *inviteExecutor) executeGenerate(ctx *core.NodeContext) (*common.Executo
 	inviteLink := e.generateInviteLink(ctx, inviteToken)
 
 	execResp.RuntimeData[common.RuntimeKeyStoredInviteToken] = inviteToken
+	execResp.RuntimeData[common.RuntimeKeyInviteLink] = inviteLink
 	execResp.AdditionalData[common.DataInviteLink] = inviteLink
+
 	execResp.Status = common.ExecComplete
 	return execResp, nil
 }

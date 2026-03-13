@@ -94,6 +94,7 @@ function InviteUserContent({
     handleInputChange,
     handleSubmit,
     isInviteGenerated,
+    isEmailSent,
     inviteLink,
     copyInviteLink,
     inviteLinkCopied,
@@ -365,13 +366,45 @@ function InviteUserContent({
     );
   }
 
-  // Invite generated
+  // Email sent successfully
+  if (isInviteGenerated && isEmailSent) {
+    return (
+      <Box>
+        <Alert severity="success" sx={{mb: 3}}>
+          <AlertTitle>{t('users:inviteEmailSent', 'Invite Email Sent!')}</AlertTitle>
+          {t(
+            'users:inviteEmailSentDescription',
+            'An invite email has been sent to the user to complete their registration.',
+          )}
+        </Alert>
+        <Box sx={{display: 'flex', gap: 2, justifyContent: 'flex-end'}}>
+          <Button variant="outlined" onClick={handleClose}>
+            {t('common:actions.close', 'Close')}
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setActiveStep(0);
+              resetFlow();
+            }}
+          >
+            {t('users:inviteAnother', 'Invite Another User')}
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
+
+  // Invite link generated but email not sent - show copy link fallback
   if (isInviteGenerated && inviteLink) {
     return (
       <Box>
         <Alert severity="success" sx={{mb: 3}}>
           <AlertTitle>{t('users:inviteLinkGenerated', 'Invite Link Generated!')}</AlertTitle>
-          {t('users:inviteLinkDescription', 'Share this link with the user to complete their registration.')}
+          {t(
+            'users:inviteLinkDescription',
+            'Share this link with the user to complete their registration.',
+          )}
         </Alert>
         <Box sx={{mb: 3}}>
           <Typography variant="body2" sx={{mb: 1}}>
@@ -393,9 +426,7 @@ function InviteUserContent({
             />
             <IconButton
               onClick={() => {
-                if (copyInviteLink) {
-                  copyInviteLink().catch(() => {});
-                }
+                copyInviteLink().catch(() => undefined);
                 handleCopy();
               }}
               color={copied || inviteLinkCopied ? 'success' : 'primary'}

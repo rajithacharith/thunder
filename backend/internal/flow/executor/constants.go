@@ -40,6 +40,7 @@ const (
 	ExecutorNameHTTPRequest         = "HTTPRequestExecutor"
 	ExecutorNameUserTypeResolver    = "UserTypeResolver"
 	ExecutorNameInviteExecutor      = "InviteExecutor"
+	ExecutorNameEmailExecutor       = "EmailExecutor"
 	ExecutorNameCredentialSetter    = "CredentialSetter"
 	ExecutorNameConsent             = "ConsentExecutor"
 	ExecutorNameOUResolver          = "OUResolverExecutor"
@@ -95,6 +96,7 @@ var nonUserAttributes = []string{"userID", "code", "nonce", "state", "flowID",
 	userTypeKey, ouIDKey, defaultOUIDKey, userInputOuName, userInputOuHandle, userInputOuDesc, userInputInviteToken,
 	common.RuntimeKeyUserEligibleForProvisioning, common.RuntimeKeySkipProvisioning,
 	common.RuntimeKeyUserAutoProvisioned, common.RuntimeKeyStoredInviteToken,
+	common.RuntimeKeyInviteLink,
 	common.RuntimeKeyConsentID, common.RuntimeKeyStepTimeout, userInputConsentDecisions,
 	common.RuntimeKeyConsentedAttributes, common.RuntimeKeyConsentSessionToken,
 	"applicationId", "idpId", "senderId"}
