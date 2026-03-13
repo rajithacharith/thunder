@@ -59,6 +59,17 @@ export default function DashboardLayout(): ReactNode {
   const appRoutes = useMemo(
     () => [
       {
+        category: '',
+        routes: [
+          {
+            id: 'home',
+            text: t('navigation:pages.home'),
+            icon: <Building />,
+            path: '/home',
+          },
+        ],
+      },
+      {
         category: t('navigation:categories.resources'),
         routes: [
           {

@@ -35,6 +35,10 @@ const NamespaceConstants = {
    * Namespace for custom flow translations (e.g., user-defined or dynamic flows)
    */
   CUSTOM_NAMESPACE: 'custom',
+  /**
+   * Namespace for home page translations
+   */
+  HOME: 'home',
 } as const;
 
 export default NamespaceConstants;

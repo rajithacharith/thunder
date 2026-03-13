@@ -55,6 +55,7 @@ import GroupsListPage from './features/groups/pages/GroupsListPage';
 import GroupEditPage from './features/groups/pages/GroupEditPage';
 import CreateGroupPage from './features/groups/pages/CreateGroupPage';
 import GroupCreateProvider from './features/groups/contexts/GroupCreate/GroupCreateProvider';
+import HomePage from './features/home/pages/HomePage';
 
 export default function App(): JSX.Element {
   return (
@@ -69,7 +70,8 @@ export default function App(): JSX.Element {
               </ProtectedRoute>
             }
           >
-            <Route index element={<UsersListPage />} />
+            <Route index element={<HomePage />} />
+            <Route path="home" element={<HomePage />} />
             <Route path="users" element={<UsersListPage />} />
             <Route path="users/:userId" element={<ViewUserPage />} />
             <Route path="user-types" element={<UserTypesListPage />} />
