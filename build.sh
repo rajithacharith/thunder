@@ -693,10 +693,10 @@ function test_unit() {
     # Run gotestsum if available, otherwise fallback to go test
     if command -v gotestsum &> /dev/null; then
         echo "Running unit tests with coverage using gotestsum..."
-        gotestsum -- -v -coverprofile=coverage_unit.out -covermode=atomic -coverpkg="$coverpkg" ./... || { echo "There are unit test failures."; exit 1; }
+        gotestsum -- -v -count=1 -coverprofile=coverage_unit.out -covermode=atomic -coverpkg="$coverpkg" ./... || { echo "There are unit test failures."; exit 1; }
     else
         echo "Running unit tests with coverage using go test..."
-        go test -v -coverprofile=coverage_unit.out -covermode=atomic -coverpkg="$coverpkg" ./... || { echo "There are unit test failures."; exit 1; }
+        go test -v -count=1 -coverprofile=coverage_unit.out -covermode=atomic -coverpkg="$coverpkg" ./... || { echo "There are unit test failures."; exit 1; }
     fi
     
     echo "Unit test coverage profile generated in: backend/coverage_unit.out"

@@ -193,7 +193,7 @@ func (rh *roleHandler) HandleRoleAssignmentsGetRequest(w http.ResponseWriter, r 
 	}
 
 	// Parse include parameter to check if display names should be included
-	includeDisplay := r.URL.Query().Get("include") == "display"
+	includeDisplay := r.URL.Query().Get(sysutils.QueryParamInclude) == sysutils.IncludeValueDisplay
 
 	serviceResponse, svcErr := rh.roleService.GetRoleAssignments(ctx, id, limit, offset, includeDisplay)
 	if svcErr != nil {

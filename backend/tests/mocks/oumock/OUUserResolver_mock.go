@@ -105,8 +105,8 @@ func (_c *OUUserResolverMock_GetUserCountByOUID_Call) RunAndReturn(run func(ctx 
 }
 
 // GetUserListByOUID provides a mock function for the type OUUserResolverMock
-func (_mock *OUUserResolverMock) GetUserListByOUID(ctx context.Context, ouID string, limit int, offset int) ([]ou.User, error) {
-	ret := _mock.Called(ctx, ouID, limit, offset)
+func (_mock *OUUserResolverMock) GetUserListByOUID(ctx context.Context, ouID string, limit int, offset int, includeDisplay bool) ([]ou.User, error) {
+	ret := _mock.Called(ctx, ouID, limit, offset, includeDisplay)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserListByOUID")
@@ -114,18 +114,18 @@ func (_mock *OUUserResolverMock) GetUserListByOUID(ctx context.Context, ouID str
 
 	var r0 []ou.User
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int) ([]ou.User, error)); ok {
-		return returnFunc(ctx, ouID, limit, offset)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int, bool) ([]ou.User, error)); ok {
+		return returnFunc(ctx, ouID, limit, offset, includeDisplay)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int) []ou.User); ok {
-		r0 = returnFunc(ctx, ouID, limit, offset)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int, bool) []ou.User); ok {
+		r0 = returnFunc(ctx, ouID, limit, offset, includeDisplay)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]ou.User)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int, int) error); ok {
-		r1 = returnFunc(ctx, ouID, limit, offset)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int, int, bool) error); ok {
+		r1 = returnFunc(ctx, ouID, limit, offset, includeDisplay)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -142,11 +142,12 @@ type OUUserResolverMock_GetUserListByOUID_Call struct {
 //   - ouID string
 //   - limit int
 //   - offset int
-func (_e *OUUserResolverMock_Expecter) GetUserListByOUID(ctx interface{}, ouID interface{}, limit interface{}, offset interface{}) *OUUserResolverMock_GetUserListByOUID_Call {
-	return &OUUserResolverMock_GetUserListByOUID_Call{Call: _e.mock.On("GetUserListByOUID", ctx, ouID, limit, offset)}
+//   - includeDisplay bool
+func (_e *OUUserResolverMock_Expecter) GetUserListByOUID(ctx interface{}, ouID interface{}, limit interface{}, offset interface{}, includeDisplay interface{}) *OUUserResolverMock_GetUserListByOUID_Call {
+	return &OUUserResolverMock_GetUserListByOUID_Call{Call: _e.mock.On("GetUserListByOUID", ctx, ouID, limit, offset, includeDisplay)}
 }
 
-func (_c *OUUserResolverMock_GetUserListByOUID_Call) Run(run func(ctx context.Context, ouID string, limit int, offset int)) *OUUserResolverMock_GetUserListByOUID_Call {
+func (_c *OUUserResolverMock_GetUserListByOUID_Call) Run(run func(ctx context.Context, ouID string, limit int, offset int, includeDisplay bool)) *OUUserResolverMock_GetUserListByOUID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -164,11 +165,16 @@ func (_c *OUUserResolverMock_GetUserListByOUID_Call) Run(run func(ctx context.Co
 		if args[3] != nil {
 			arg3 = args[3].(int)
 		}
+		var arg4 bool
+		if args[4] != nil {
+			arg4 = args[4].(bool)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
+			arg4,
 		)
 	})
 	return _c
@@ -179,7 +185,7 @@ func (_c *OUUserResolverMock_GetUserListByOUID_Call) Return(users []ou.User, err
 	return _c
 }
 
-func (_c *OUUserResolverMock_GetUserListByOUID_Call) RunAndReturn(run func(ctx context.Context, ouID string, limit int, offset int) ([]ou.User, error)) *OUUserResolverMock_GetUserListByOUID_Call {
+func (_c *OUUserResolverMock_GetUserListByOUID_Call) RunAndReturn(run func(ctx context.Context, ouID string, limit int, offset int, includeDisplay bool) ([]ou.User, error)) *OUUserResolverMock_GetUserListByOUID_Call {
 	_c.Call.Return(run)
 	return _c
 }

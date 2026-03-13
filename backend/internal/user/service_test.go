@@ -691,7 +691,7 @@ func TestUserService_GetUsersByPath_HandlesOUServiceErrors(t *testing.T) {
 					Return(oupkg.OrganizationUnit{ID: "ou-id"}, (*serviceerror.ServiceError)(nil)).
 					Once()
 				ouServiceMock.
-					On("GetOrganizationUnitUsers", mock.Anything, "ou-id", 10, 0).
+					On("GetOrganizationUnitUsers", mock.Anything, "ou-id", 10, 0, false).
 					Return((*oupkg.UserListResponse)(nil), &serviceerror.ServiceError{
 						Type: serviceerror.ClientErrorType,
 						Code: oupkg.ErrorInvalidLimit.Code,
@@ -3097,7 +3097,7 @@ func TestUserService_GetUsersByPath(t *testing.T) {
 	ctx := context.Background()
 
 	mockOU.On("GetOrganizationUnitByPath", mock.Anything, "root").Return(oupkg.OrganizationUnit{ID: "ou-1"}, nil).Once()
-	mockOU.On("GetOrganizationUnitUsers", mock.Anything, "ou-1", 10, 0).Return(&oupkg.UserListResponse{
+	mockOU.On("GetOrganizationUnitUsers", mock.Anything, "ou-1", 10, 0, false).Return(&oupkg.UserListResponse{
 		TotalResults: 20,
 		Users:        []oupkg.User{{ID: "u1"}},
 	}, nil).Once()
@@ -3122,7 +3122,7 @@ func TestUserService_GetUsersByPath_WithIncludeDisplay(t *testing.T) {
 
 	mockOU.On("GetOrganizationUnitByPath", mock.Anything, "root").
 		Return(oupkg.OrganizationUnit{ID: "ou-1"}, nil).Once()
-	mockOU.On("GetOrganizationUnitUsers", mock.Anything, "ou-1", 10, 0).
+	mockOU.On("GetOrganizationUnitUsers", mock.Anything, "ou-1", 10, 0, false).
 		Return(&oupkg.UserListResponse{
 			TotalResults: 2,
 			Users:        []oupkg.User{{ID: "u1"}},
@@ -3154,7 +3154,7 @@ func TestUserService_GetUsersByPath_WithIncludeDisplay_BatchFetchError(t *testin
 
 	mockOU.On("GetOrganizationUnitByPath", mock.Anything, "root").
 		Return(oupkg.OrganizationUnit{ID: "ou-1"}, nil).Once()
-	mockOU.On("GetOrganizationUnitUsers", mock.Anything, "ou-1", 10, 0).
+	mockOU.On("GetOrganizationUnitUsers", mock.Anything, "ou-1", 10, 0, false).
 		Return(&oupkg.UserListResponse{
 			TotalResults: 1,
 			StartIndex:   1,
@@ -5055,6 +5055,58 @@ func TestPopulateUserDisplayNames_MultipleTypes(t *testing.T) {
 	service.populateUserDisplayNames(context.Background(), users, nil)
 	require.Equal(t, "Alice", users[0].Display)
 	require.Equal(t, "bob@example.com", users[1].Display)
+}
+
+// GetUsersByIDs Tests
+
+func TestUserService_GetUsersByIDs_EmptyInput(t *testing.T) {
+	service := &userService{}
+	result, err := service.GetUsersByIDs(context.Background(), []string{})
+	require.Nil(t, err)
+	require.Empty(t, result)
+}
+
+func TestUserService_GetUsersByIDs_Success(t *testing.T) {
+	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("GetUsersByIDs", mock.Anything, []string{"user-1", "user-2"}).
+		Return([]User{
+			{ID: "user-1", Type: "employee"},
+			{ID: "user-2", Type: "contractor"},
+		}, nil).Once()
+
+	service := &userService{userStore: storeMock}
+	result, err := service.GetUsersByIDs(context.Background(), []string{"user-1", "user-2"})
+	require.Nil(t, err)
+	require.Len(t, result, 2)
+	require.Equal(t, "user-1", result["user-1"].ID)
+	require.Equal(t, "user-2", result["user-2"].ID)
+}
+
+func TestUserService_GetUsersByIDs_DeduplicatesInput(t *testing.T) {
+	storeMock := newUserStoreInterfaceMock(t)
+	// Should receive deduplicated IDs
+	storeMock.On("GetUsersByIDs", mock.Anything, []string{"user-1", "user-2"}).
+		Return([]User{
+			{ID: "user-1", Type: "employee"},
+			{ID: "user-2", Type: "contractor"},
+		}, nil).Once()
+
+	service := &userService{userStore: storeMock}
+	result, err := service.GetUsersByIDs(context.Background(), []string{"user-1", "user-2", "user-1"})
+	require.Nil(t, err)
+	require.Len(t, result, 2)
+}
+
+func TestUserService_GetUsersByIDs_StoreError(t *testing.T) {
+	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("GetUsersByIDs", mock.Anything, []string{"user-1"}).
+		Return([]User(nil), errors.New("db error")).Once()
+
+	service := &userService{userStore: storeMock}
+	result, err := service.GetUsersByIDs(context.Background(), []string{"user-1"})
+	require.Nil(t, result)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorInternalServerError, *err)
 }
 
 // GetUserList with includeDisplay Tests

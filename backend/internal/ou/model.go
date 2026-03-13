@@ -74,7 +74,9 @@ type OrganizationUnitListResponse struct {
 
 // User represents a user with basic information for OU endpoints.
 type User struct {
-	ID string `json:"id"`
+	ID      string `json:"id"`
+	Type    string `json:"type,omitempty"`
+	Display string `json:"display,omitempty"`
 }
 
 // Group represents a group with basic information for OU endpoints.
@@ -96,7 +98,7 @@ type UserListResponse struct {
 // without requiring direct import of the user package.
 type OUUserResolver interface {
 	GetUserCountByOUID(ctx context.Context, ouID string) (int, error)
-	GetUserListByOUID(ctx context.Context, ouID string, limit, offset int) ([]User, error)
+	GetUserListByOUID(ctx context.Context, ouID string, limit, offset int, includeDisplay bool) ([]User, error)
 }
 
 // OUGroupResolver provides access to group data for an organization unit

@@ -16,19 +16,16 @@
  * under the License.
  */
 
-package user
+package utils
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
+
+// --- ExtractDisplayValue tests ---
 
 func TestExtractDisplayValue_TopLevel(t *testing.T) {
 	attrs := json.RawMessage(`{"email":"alice@example.com"}`)
@@ -87,70 +84,44 @@ func TestExtractDisplayValue_PartialPath(t *testing.T) {
 	assert.Equal(t, "", ExtractDisplayValue(attrs, "profile.name"))
 }
 
-func TestResolveUserDisplay_WithDisplayAttr(t *testing.T) {
+// --- ResolveDisplay tests ---
+
+func TestResolveDisplay_WithDisplayAttr(t *testing.T) {
 	attrs := json.RawMessage(`{"email":"alice@example.com"}`)
 	paths := map[string]string{"employee": "email"}
-	assert.Equal(t, "alice@example.com", ResolveUserDisplay("user-1", "employee", attrs, paths))
+	assert.Equal(t, "alice@example.com", ResolveDisplay("user-1", "employee", attrs, paths))
 }
 
-func TestResolveUserDisplay_FallbackToID(t *testing.T) {
+func TestResolveDisplay_FallbackToID(t *testing.T) {
 	attrs := json.RawMessage(`{"name":"Alice"}`)
 	paths := map[string]string{"employee": "nonexistent"}
-	assert.Equal(t, "user-1", ResolveUserDisplay("user-1", "employee", attrs, paths))
+	assert.Equal(t, "user-1", ResolveDisplay("user-1", "employee", attrs, paths))
 }
 
-func TestResolveUserDisplay_NilPaths(t *testing.T) {
-	assert.Equal(t, "user-1", ResolveUserDisplay("user-1", "employee", nil, nil))
+func TestResolveDisplay_NilPaths(t *testing.T) {
+	assert.Equal(t, "user-1", ResolveDisplay("user-1", "employee", nil, nil))
 }
 
-func TestResolveUserDisplay_EmptyType(t *testing.T) {
+func TestResolveDisplay_EmptyType(t *testing.T) {
 	attrs := json.RawMessage(`{"email":"alice@example.com"}`)
 	paths := map[string]string{"employee": "email"}
-	assert.Equal(t, "user-1", ResolveUserDisplay("user-1", "", attrs, paths))
+	assert.Equal(t, "user-1", ResolveDisplay("user-1", "", attrs, paths))
 }
 
-func TestResolveUserDisplay_NestedPath(t *testing.T) {
+func TestResolveDisplay_NestedPath(t *testing.T) {
 	attrs := json.RawMessage(`{"profile":{"fullName":"Alice Smith"}}`)
 	paths := map[string]string{"employee": "profile.fullName"}
-	assert.Equal(t, "Alice Smith", ResolveUserDisplay("user-1", "employee", attrs, paths))
+	assert.Equal(t, "Alice Smith", ResolveDisplay("user-1", "employee", attrs, paths))
 }
 
-func TestResolveDisplayAttributePaths_DeduplicatesTypes(t *testing.T) {
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-	schemaMock.On("GetDisplayAttributesByNames", mock.Anything,
-		mock.MatchedBy(func(names []string) bool {
-			return len(names) == 2
-		})).Return(map[string]string{"employee": "email", "contractor": "name"},
-		(*serviceerror.ServiceError)(nil))
-
-	result := ResolveDisplayAttributePaths(context.Background(),
-		[]string{"employee", "contractor", "employee"}, schemaMock, nil)
-	assert.Equal(t, "email", result["employee"])
-	assert.Equal(t, "name", result["contractor"])
+func TestResolveDisplay_UnknownType(t *testing.T) {
+	attrs := json.RawMessage(`{"email":"alice@example.com"}`)
+	paths := map[string]string{"employee": "email"}
+	assert.Equal(t, "user-1", ResolveDisplay("user-1", "contractor", attrs, paths))
 }
 
-func TestResolveDisplayAttributePaths_NilSchemaService(t *testing.T) {
-	result := ResolveDisplayAttributePaths(context.Background(), []string{"employee"}, nil, nil)
-	assert.Nil(t, result)
-}
-
-func TestResolveDisplayAttributePaths_EmptyTypes(t *testing.T) {
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-	result := ResolveDisplayAttributePaths(context.Background(), []string{}, schemaMock, nil)
-	assert.Nil(t, result)
-}
-
-func TestResolveDisplayAttributePaths_AllEmptyStrings(t *testing.T) {
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-	result := ResolveDisplayAttributePaths(context.Background(), []string{"", ""}, schemaMock, nil)
-	assert.Nil(t, result)
-}
-
-func TestResolveDisplayAttributePaths_SchemaServiceError(t *testing.T) {
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
-		Return((map[string]string)(nil), &serviceerror.ServiceError{Code: "500", Error: "schema unavailable"})
-
-	result := ResolveDisplayAttributePaths(context.Background(), []string{"employee"}, schemaMock, nil)
-	assert.Nil(t, result)
+func TestResolveDisplay_EmptyPathValue(t *testing.T) {
+	attrs := json.RawMessage(`{"email":"alice@example.com"}`)
+	paths := map[string]string{"employee": ""}
+	assert.Equal(t, "user-1", ResolveDisplay("user-1", "employee", attrs, paths))
 }

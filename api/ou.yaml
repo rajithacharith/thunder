@@ -399,6 +399,7 @@ paths:
             format: uuid
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/offsetQueryParam'
+        - $ref: '#/components/parameters/includeQueryParam'
       responses:
         "200":
           description: List of users in the organization unit
@@ -412,7 +413,9 @@ paths:
                 count: 2
                 users:
                   - id: "3f9d5c8e-3c56-4f09-a1db-bb3d5e3f4b5d"
+                    display: "John Doe"
                   - id: "9f4bc2ee-8d1e-4e21-a3b4-17d9b612e320"
+                    display: "Jane Smith"
                 links:
                   - href: "organization-units/afc77cfd-620b-4cf0-a31c-7377b0ea8902/users?offset=2&limit=2"
                     rel: "next"
@@ -953,6 +956,7 @@ paths:
           example: "engineering/frontend"
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/offsetQueryParam'
+        - $ref: '#/components/parameters/includeQueryParam'
       responses:
         "200":
           description: List of users in the organization unit
@@ -966,7 +970,9 @@ paths:
                 count: 2
                 users:
                   - id: "3f9d5c8e-3c56-4f09-a1db-bb3d5e3f4b5d"
+                    display: "John Doe"
                   - id: "9f4bc2ee-8d1e-4e21-a3b4-17d9b612e320"
+                    display: "Jane Smith"
                 links:
                   - href: "organization-units/tree/engineering/frontend/users?offset=2&limit=2"
                     rel: "next"
@@ -1123,6 +1129,20 @@ components:
       schema:
         type: integer
         default: 0
+    includeQueryParam:
+      in: query
+      name: include
+      required: false
+      description: |
+        Specifies additional information to include in the response.
+        Supported values: `display` - includes a display name for each user,
+        resolved from the schema-configured display attribute. Falls back to
+        the user ID when no display attribute is configured or the value
+        cannot be resolved.
+      schema:
+        type: string
+        enum:
+          - display
 
   schemas:
     OrganizationUnitBasic:
@@ -1159,6 +1179,13 @@ components:
         id:
           type: string
           format: uuid
+        display:
+          type: string
+          description: >-
+            Display name of the user, resolved from the schema-configured
+            display attribute. Falls back to the user ID when no display
+            attribute is configured or the value cannot be resolved. Only
+            included when include=display is specified.
 
     Group:
       type: object

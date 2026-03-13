@@ -1696,7 +1696,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 					Return(true, nil).Once()
 			},
 			resolverSetup: func(ur *OUUserResolverMock) {
-				ur.On("GetUserListByOUID", mock.Anything, "ou-1", 5, 0).
+				ur.On("GetUserListByOUID", mock.Anything, "ou-1", 5, 0, false).
 					Return([]User(nil), errors.New("list")).Once()
 			},
 			wantErr: &ErrorInternalServerError,
@@ -1709,7 +1709,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 					Return(true, nil).Once()
 			},
 			resolverSetup: func(ur *OUUserResolverMock) {
-				ur.On("GetUserListByOUID", mock.Anything, "ou-1", 5, 0).
+				ur.On("GetUserListByOUID", mock.Anything, "ou-1", 5, 0, false).
 					Return([]User{{ID: "user-1"}}, nil).Once()
 				ur.On("GetUserCountByOUID", mock.Anything, "ou-1").
 					Return(0, errors.New("count")).Once()
@@ -1724,7 +1724,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 					Return(true, nil).Once()
 			},
 			resolverSetup: func(ur *OUUserResolverMock) {
-				ur.On("GetUserListByOUID", mock.Anything, "ou-1", 5, 0).
+				ur.On("GetUserListByOUID", mock.Anything, "ou-1", 5, 0, false).
 					Return([]User{{ID: "user-1"}, {ID: "user-2"}}, nil).Once()
 				ur.On("GetUserCountByOUID", mock.Anything, "ou-1").
 					Return(2, nil).Once()
@@ -1752,7 +1752,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 			service := suite.newServiceWithResolvers(
 				store, newAllowAllAuthz(suite.T()), userRes, nil,
 			)
-			resp, err := service.GetOrganizationUnitUsers(context.Background(), "ou-1", tc.limit, tc.offset)
+			resp, err := service.GetOrganizationUnitUsers(context.Background(), "ou-1", tc.limit, tc.offset, false)
 
 			if tc.wantErr != nil {
 				suite.Require().Nil(resp)
@@ -1768,6 +1768,147 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 			}
 		})
 	}
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitUsers_WithDisplay() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	store.On("IsOrganizationUnitExists", mock.Anything, "ou-1").
+		Return(true, nil).Once()
+
+	userRes := NewOUUserResolverMock(suite.T())
+	userRes.On("GetUserListByOUID", mock.Anything, "ou-1", 5, 0, true).
+		Return([]User{
+			{ID: "user-1", Type: "employee", Display: "alice@example.com"},
+			{ID: "user-2", Type: "contractor", Display: "Bob Smith"},
+		}, nil).Once()
+	userRes.On("GetUserCountByOUID", mock.Anything, "ou-1").
+		Return(2, nil).Once()
+
+	service := suite.newServiceWithResolvers(
+		store, newAllowAllAuthz(suite.T()), userRes, nil,
+	)
+
+	resp, err := service.GetOrganizationUnitUsers(context.Background(), "ou-1", 5, 0, true)
+	suite.Require().Nil(err)
+	suite.Require().Len(resp.Users, 2)
+	suite.Equal("employee", resp.Users[0].Type)
+	suite.Equal("alice@example.com", resp.Users[0].Display)
+	suite.Equal("contractor", resp.Users[1].Type)
+	suite.Equal("Bob Smith", resp.Users[1].Display)
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitUsers_WithDisplay_FallbackToID() {
+	// When the resolver cannot resolve a display attribute (schema error or attribute mismatch),
+	// it falls back to the user ID. The OU service simply passes through whatever the resolver returns.
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	store.On("IsOrganizationUnitExists", mock.Anything, "ou-1").
+		Return(true, nil).Once()
+
+	userRes := NewOUUserResolverMock(suite.T())
+	userRes.On("GetUserListByOUID", mock.Anything, "ou-1", 5, 0, true).
+		Return([]User{
+			{ID: "user-1", Type: "employee", Display: "user-1"},
+		}, nil).Once()
+	userRes.On("GetUserCountByOUID", mock.Anything, "ou-1").
+		Return(1, nil).Once()
+
+	service := suite.newServiceWithResolvers(
+		store, newAllowAllAuthz(suite.T()), userRes, nil,
+	)
+
+	resp, err := service.GetOrganizationUnitUsers(context.Background(), "ou-1", 5, 0, true)
+	suite.Require().Nil(err)
+	suite.Require().Len(resp.Users, 1)
+	suite.Equal("user-1", resp.Users[0].Display)
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitUsers_AccessDenied() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(suite.T())
+	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
+		Return(false, nil).Once()
+
+	userRes := NewOUUserResolverMock(suite.T())
+	service := suite.newServiceWithResolvers(store, authzMock, userRes, nil)
+
+	resp, err := service.GetOrganizationUnitUsers(context.Background(), "ou-1", 5, 0, false)
+	suite.Require().Nil(resp)
+	suite.Require().Equal(serviceerror.ErrorUnauthorized, *err)
+
+	// Verify no store or resolver calls were made
+	store.AssertNumberOfCalls(suite.T(), "IsOrganizationUnitExists", 0)
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitGroups_AccessDenied() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(suite.T())
+	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
+		Return(false, nil).Once()
+
+	groupRes := new(OUGroupResolverMock)
+	service := suite.newServiceWithResolvers(store, authzMock, nil, groupRes)
+
+	resp, err := service.GetOrganizationUnitGroups(context.Background(), "ou-1", 5, 0)
+	suite.Require().Nil(resp)
+	suite.Require().Equal(serviceerror.ErrorUnauthorized, *err)
+
+	store.AssertNumberOfCalls(suite.T(), "IsOrganizationUnitExists", 0)
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitUsers_AuthzError() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(suite.T())
+	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
+		Return(false, &serviceerror.ServiceError{Code: "500", Error: "authz service unavailable"}).Once()
+
+	userRes := NewOUUserResolverMock(suite.T())
+	service := suite.newServiceWithResolvers(store, authzMock, userRes, nil)
+
+	resp, err := service.GetOrganizationUnitUsers(context.Background(), "ou-1", 5, 0, false)
+	suite.Require().Nil(resp)
+	suite.Require().Equal(ErrorInternalServerError, *err)
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitChildren_AccessDenied() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(suite.T())
+	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
+		Return(false, nil).Once()
+
+	service := suite.newService(store, authzMock)
+
+	resp, err := service.GetOrganizationUnitChildren(context.Background(), "ou-1", 5, 0)
+	suite.Require().Nil(resp)
+	suite.Require().Equal(serviceerror.ErrorUnauthorized, *err)
+
+	store.AssertNumberOfCalls(suite.T(), "IsOrganizationUnitExists", 0)
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitChildren_AuthzError() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(suite.T())
+	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
+		Return(false, &serviceerror.ServiceError{Code: "500", Error: "authz service unavailable"}).Once()
+
+	service := suite.newService(store, authzMock)
+
+	resp, err := service.GetOrganizationUnitChildren(context.Background(), "ou-1", 5, 0)
+	suite.Require().Nil(resp)
+	suite.Require().Equal(ErrorInternalServerError, *err)
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitGroups_AuthzError() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(suite.T())
+	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
+		Return(false, &serviceerror.ServiceError{Code: "500", Error: "authz service unavailable"}).Once()
+
+	groupRes := new(OUGroupResolverMock)
+	service := suite.newServiceWithResolvers(store, authzMock, nil, groupRes)
+
+	resp, err := service.GetOrganizationUnitGroups(context.Background(), "ou-1", 5, 0)
+	suite.Require().Nil(resp)
+	suite.Require().Equal(ErrorInternalServerError, *err)
 }
 
 // runResolverPathListTests runs common path-based list tests for user/group resolver-backed endpoints.
@@ -1796,6 +1937,17 @@ func (suite *OrganizationUnitServiceTestSuite) runResolverPathListTests(
 		suite.Require().Equal(ErrorOrganizationUnitNotFound, *err)
 	})
 
+	suite.Run("store error", func() {
+		store := newOrganizationUnitStoreInterfaceMock(suite.T())
+		store.On("GetOrganizationUnitByPath", mock.Anything, []string{"root"}).
+			Return(OrganizationUnit{}, errors.New("db connection failed")).Once()
+
+		service := suite.newService(store, newAllowAllAuthz(suite.T()))
+		resp, err := invoke(service, "root", 5, 0)
+		suite.Require().Nil(resp)
+		suite.Require().Equal(ErrorInternalServerError, *err)
+	})
+
 	suite.Run("success", func() {
 		store := newOrganizationUnitStoreInterfaceMock(suite.T())
 		store.On("GetOrganizationUnitByPath", mock.Anything, []string{"root"}).
@@ -1817,16 +1969,54 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 	suite.runResolverPathListTests("   ",
 		func() (OUUserResolver, OUGroupResolver) {
 			userRes := new(OUUserResolverMock)
-			userRes.On("GetUserListByOUID", mock.Anything, "ou-1", 5, 0).
+			userRes.On("GetUserListByOUID", mock.Anything, "ou-1", 5, 0, false).
 				Return([]User{}, nil).Once()
 			userRes.On("GetUserCountByOUID", mock.Anything, "ou-1").
 				Return(0, nil).Once()
 			return userRes, nil
 		},
 		func(svc *organizationUnitService, path string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
-			return svc.GetOrganizationUnitUsersByPath(context.Background(), path, limit, offset)
+			return svc.GetOrganizationUnitUsersByPath(context.Background(), path, limit, offset, false)
 		},
 	)
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitUsersByPath_WithDisplay() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	store.On("GetOrganizationUnitByPath", mock.Anything, []string{"engineering"}).
+		Return(OrganizationUnit{ID: "ou-1"}, nil).Once()
+	store.On("IsOrganizationUnitExists", mock.Anything, "ou-1").
+		Return(true, nil).Once()
+
+	userRes := NewOUUserResolverMock(suite.T())
+	userRes.On("GetUserListByOUID", mock.Anything, "ou-1", 2, 0, true).
+		Return([]User{
+			{ID: "user-1", Type: "employee", Display: "alice@example.com"},
+			{ID: "user-2", Type: "employee", Display: "bob@example.com"},
+		}, nil).Once()
+	userRes.On("GetUserCountByOUID", mock.Anything, "ou-1").
+		Return(4, nil).Once()
+
+	service := suite.newServiceWithResolvers(
+		store, newAllowAllAuthz(suite.T()), userRes, nil,
+	)
+
+	resp, err := service.GetOrganizationUnitUsersByPath(
+		context.Background(), "engineering", 2, 0, true,
+	)
+	suite.Require().Nil(err)
+	suite.Require().Len(resp.Users, 2)
+	suite.Equal("employee", resp.Users[0].Type)
+	suite.Equal("alice@example.com", resp.Users[0].Display)
+	suite.Equal("employee", resp.Users[1].Type)
+	suite.Equal("bob@example.com", resp.Users[1].Display)
+
+	// Verify pagination links preserve the include=display query parameter
+	suite.Require().NotEmpty(resp.Links)
+	for _, link := range resp.Links {
+		suite.Contains(link.Href, "include=display",
+			"pagination link %q should preserve include=display", link.Rel)
+	}
 }
 
 func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitGroups() {
@@ -1924,7 +2114,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 
 func (suite *OrganizationUnitServiceTestSuite) TestOUService_BuildUserListResponse() {
 	users := []User{{ID: "u1"}, {ID: "u2"}}
-	resp, err := buildUserListResponse("/organization-units", users, 10, 5, 0)
+	resp, err := buildUserListResponse("/organization-units", users, 10, 5, 0, false)
 	suite.Nil(err)
 	suite.NotNil(resp)
 	suite.Equal(10, resp.TotalResults)

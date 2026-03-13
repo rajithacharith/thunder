@@ -2663,6 +2663,7 @@ paths:
             format: uuid
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
+        - $ref: "#/components/parameters/includeQueryParam"
       responses:
         "200":
           description: List of members in the group
@@ -4271,6 +4272,7 @@ paths:
             format: uuid
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
+        - $ref: "#/components/parameters/includeQueryParam"
       responses:
         "200":
           description: List of users in the organization unit
@@ -4284,7 +4286,9 @@ paths:
                 count: 2
                 users:
                   - id: 3f9d5c8e-3c56-4f09-a1db-bb3d5e3f4b5d
+                    display: John Doe
                   - id: 9f4bc2ee-8d1e-4e21-a3b4-17d9b612e320
+                    display: Jane Smith
                 links:
                   - href: organization-units/afc77cfd-620b-4cf0-a31c-7377b0ea8902/users?offset=2&limit=2
                     rel: next
@@ -4859,6 +4863,7 @@ paths:
           example: engineering/frontend
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
+        - $ref: "#/components/parameters/includeQueryParam"
       responses:
         "200":
           description: List of users in the organization unit
@@ -4872,7 +4877,9 @@ paths:
                 count: 2
                 users:
                   - id: 3f9d5c8e-3c56-4f09-a1db-bb3d5e3f4b5d
+                    display: John Doe
                   - id: 9f4bc2ee-8d1e-4e21-a3b4-17d9b612e320
+                    display: Jane Smith
                 links:
                   - href: organization-units/tree/engineering/frontend/users?offset=2&limit=2
                     rel: next
@@ -7179,16 +7186,7 @@ paths:
           schema:
             type: string
             format: uuid
-        - in: query
-          name: include
-          required: false
-          schema:
-            type: string
-            enum:
-              - display
-          description: |
-            Optional parameter to include additional information.
-            - `display` - Include display names for users and groups
+        - $ref: "#/components/parameters/includeQueryParam"
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
       responses:
@@ -7417,6 +7415,7 @@ paths:
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
         - $ref: "#/components/parameters/filterParam"
+        - $ref: "#/components/parameters/includeQueryParam"
       responses:
         "200":
           description: List of users
@@ -7871,6 +7870,7 @@ paths:
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
         - $ref: "#/components/parameters/filterParam"
+        - $ref: "#/components/parameters/includeQueryParam"
       responses:
         "200":
           description: List of users in the organization unit
@@ -11157,6 +11157,15 @@ components:
           enum:
             - user
             - group
+        display:
+          type: string
+          readOnly: true
+          description: Display name of the member (only included when include=display
+            query parameter is used). For users, resolved from the
+            schema-configured display attribute (`systemAttributes.display`);
+            falls back to the user ID if the attribute is not configured, the
+            path does not exist, or the value is empty. For groups, the group
+            name is used.
     Group:
       type: object
       required:
@@ -11677,6 +11686,14 @@ components:
         attributes:
           type: object
           additionalProperties: true
+        display:
+          type: string
+          readOnly: true
+          description: Display name of the user (only included when include=display query
+            parameter is used). Resolved from the schema-configured display
+            attribute (`systemAttributes.display`). Falls back to the user ID if
+            no display attribute is configured, the configured attribute path
+            does not exist in the user's data, or the attribute value is empty.
     CreateOrganizationUnitByHandleRequest:
       type: object
       required:
@@ -12399,8 +12416,12 @@ components:
           description: Type of entity being assigned (user or group)
         display:
           type: string
+          readOnly: true
           description: Display name of the user or group (only included when
-            include=display query parameter is used)
+            include=display query parameter is used). For users, resolved from
+            the schema-configured display attribute; falls back to the user ID
+            if the attribute is not configured, the path does not exist, or the
+            value is empty. For groups, the group name is used.
     AssignmentInput:
       type: object
       required:
@@ -13182,6 +13203,22 @@ components:
       schema:
         type: string
         format: uuid
+    includeQueryParam:
+      in: query
+      name: include
+      required: false
+      schema:
+        type: string
+        enum:
+          - display
+      description: >
+        Optional parameter to include additional information.
+
+        - `display` - Include display names for users. The display value is
+        resolved from the schema-configured display attribute
+        (`systemAttributes.display`). Falls back to the user ID if no display
+        attribute is configured, the configured attribute path does not exist in
+        the user's data, or the attribute value is empty.
     languagePathParam:
       name: language
       in: path

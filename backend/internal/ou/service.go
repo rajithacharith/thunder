@@ -64,10 +64,10 @@ type OrganizationUnitServiceInterface interface {
 		ctx context.Context, handlePath string, limit, offset int,
 	) (*OrganizationUnitListResponse, *serviceerror.ServiceError)
 	GetOrganizationUnitUsers(
-		ctx context.Context, id string, limit, offset int,
+		ctx context.Context, id string, limit, offset int, includeDisplay bool,
 	) (*UserListResponse, *serviceerror.ServiceError)
 	GetOrganizationUnitUsersByPath(
-		ctx context.Context, handlePath string, limit, offset int,
+		ctx context.Context, handlePath string, limit, offset int, includeDisplay bool,
 	) (*UserListResponse, *serviceerror.ServiceError)
 	GetOrganizationUnitGroups(
 		ctx context.Context, id string, limit, offset int,
@@ -805,7 +805,7 @@ func (ous *organizationUnitService) checkOUAccess(
 
 // GetOrganizationUnitUsers retrieves a list of users for a given organization unit ID.
 func (ous *organizationUnitService) GetOrganizationUnitUsers(
-	ctx context.Context, id string, limit, offset int,
+	ctx context.Context, id string, limit, offset int, includeDisplay bool,
 ) (*UserListResponse, *serviceerror.ServiceError) {
 	if svcErr := ous.checkOUAccess(ctx, security.ActionReadUser, id); svcErr != nil {
 		return nil, svcErr
@@ -817,7 +817,7 @@ func (ous *organizationUnitService) GetOrganizationUnitUsers(
 	items, totalCount, svcErr := ous.getResourceListWithExistenceCheck(
 		ctx, id, limit, offset, "users",
 		func(ctx context.Context, id string, limit, offset int) (interface{}, error) {
-			return ous.userResolver.GetUserListByOUID(ctx, id, limit, offset)
+			return ous.userResolver.GetUserListByOUID(ctx, id, limit, offset, includeDisplay)
 		},
 		ous.userResolver.GetUserCountByOUID,
 		false, // No composite error mapping for users
@@ -826,8 +826,15 @@ func (ous *organizationUnitService) GetOrganizationUnitUsers(
 		return nil, svcErr
 	}
 
+	users, ok := items.([]User)
+	if !ok {
+		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
+		logger.Error("Failed to cast user list response for organization unit", log.String("ouID", id))
+		return nil, &ErrorInternalServerError
+	}
+
 	base := fmt.Sprintf("/organization-units/%s/users", id)
-	return buildUserListResponse(base, items, totalCount, limit, offset)
+	return buildUserListResponse(base, users, totalCount, limit, offset, includeDisplay)
 }
 
 // GetOrganizationUnitGroups retrieves a list of groups for a given organization unit ID.
@@ -905,7 +912,7 @@ func (ous *organizationUnitService) GetOrganizationUnitChildrenByPath(
 
 // GetOrganizationUnitUsersByPath retrieves a list of users by hierarchical handle path.
 func (ous *organizationUnitService) GetOrganizationUnitUsersByPath(
-	ctx context.Context, handlePath string, limit, offset int,
+	ctx context.Context, handlePath string, limit, offset int, includeDisplay bool,
 ) (*UserListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Getting organization unit users by path", log.String("path", handlePath))
@@ -924,7 +931,7 @@ func (ous *organizationUnitService) GetOrganizationUnitUsersByPath(
 		return nil, &ErrorInternalServerError
 	}
 
-	return ous.GetOrganizationUnitUsers(ctx, ou.ID, limit, offset)
+	return ous.GetOrganizationUnitUsers(ctx, ou.ID, limit, offset, includeDisplay)
 }
 
 // GetOrganizationUnitGroupsByPath retrieves a list of groups by hierarchical handle path.
@@ -1084,18 +1091,15 @@ func (ous *organizationUnitService) getResourceListWithExistenceCheck(
 }
 
 func buildUserListResponse(
-	base string, items interface{}, totalCount, limit, offset int,
+	base string, users []User, totalCount, limit, offset int, includeDisplay bool,
 ) (*UserListResponse, *serviceerror.ServiceError) {
-	users, ok := items.([]User)
-	if !ok {
-		return nil, &ErrorInternalServerError
-	}
+	displayQuery := utils.DisplayQueryParam(includeDisplay)
 	return &UserListResponse{
 		TotalResults: totalCount,
 		Users:        users,
 		StartIndex:   offset + 1,
 		Count:        len(users),
-		Links:        utils.BuildPaginationLinks(base, limit, offset, totalCount, ""),
+		Links:        utils.BuildPaginationLinks(base, limit, offset, totalCount, displayQuery),
 	}, nil
 }
 
