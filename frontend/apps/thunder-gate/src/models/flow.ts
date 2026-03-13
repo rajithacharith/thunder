@@ -129,4 +129,9 @@ export interface FlowComponentRendererProps {
   maxImageSize?: number;
   /** Additional step data from the flow response */
   additionalData?: Record<string, unknown>;
+  /**
+   * Fallback sign-up URL used when the flow meta contains a sign-up URL template
+   * but `application.signUpUrl` is absent from the meta object.
+   */
+  signUpFallbackUrl?: string;
 }

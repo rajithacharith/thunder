@@ -21,6 +21,7 @@ import {Box, Button} from '@wso2/oxygen-ui';
 import {EmbeddedFlowComponentType, EmbeddedFlowEventType, type EmbeddedFlowComponent} from '@asgardeo/react';
 import {useTranslation} from 'react-i18next';
 import getIntegrationIcon from '../../../utils/getIntegrationIcon';
+import RichTextAdapter from './RichTextAdapter';
 import TextInputAdapter from './TextInputAdapter';
 import PasswordInputAdapter from './PasswordInputAdapter';
 import OtpInputAdapter from './OtpInputAdapter';
@@ -42,6 +43,8 @@ interface BlockContext {
   hasMultipleSubmits?: boolean;
   /** ID of the primary submit action that stays as type="submit" */
   primarySubmitId?: string;
+  /** Fallback sign-up URL for RICH_TEXT elements that embed `application.signUpUrl` */
+  signUpFallbackUrl?: string;
 }
 
 interface SubmitButtonAdapterProps {
@@ -179,6 +182,17 @@ function renderFormSubComponent(
 
   if (sub.type === 'SELECT') {
     return <SelectAdapter key={sub.id ?? compIndex} {...fieldProps} />;
+  }
+
+  if (sub.type === 'RICH_TEXT') {
+    return (
+      <RichTextAdapter
+        key={sub.id ?? compIndex}
+        component={sub}
+        resolve={ctx.resolve}
+        signUpFallbackUrl={ctx.signUpFallbackUrl}
+      />
+    );
   }
 
   if (

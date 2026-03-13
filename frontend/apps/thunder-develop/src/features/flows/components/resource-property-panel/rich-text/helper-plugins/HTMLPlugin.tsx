@@ -100,6 +100,10 @@ function HTMLPlugin({onChange, resource, disabled = false}: HTMLPluginProps): Re
    */
   const postProcessHTML = (html: string): string => {
     let processedHtml = html;
+
+    // Restore template URLs that were previously mangled by Lexical's URL formatter
+    // (which prepends https:// to URLs without a protocol, e.g. {{meta(...)}} → https://{{meta(...)}}/).
+    processedHtml = processedHtml.replace(/href="https?:\/\/(\{\{(?:meta|t)\([^)]+\)\}\})\/?"/g, 'href="$1"');
     // Reverse text alignment class replacements.
     TEXT_ALIGN_TYPES.forEach((textAlign) => {
       processedHtml = processedHtml.replaceAll(
@@ -168,7 +172,11 @@ function HTMLPlugin({onChange, resource, disabled = false}: HTMLPluginProps): Re
       editorState.read(() => {
         updateType.current = UPDATE_TYPES.INTERNAL;
 
-        const htmlString: string = $generateHtmlFromNodes(editor);
+        let htmlString: string = $generateHtmlFromNodes(editor);
+
+        // Lexical's formatUrl prepends https:// to template URLs (e.g. {{meta(...)}}) during
+        // HTML serialization. Strip the prefix so the raw template is preserved in storage.
+        htmlString = htmlString.replace(/href="https?:\/\/(\{\{(?:meta|t)\([^)]+\)\}\})\/?"/g, 'href="$1"');
 
         const processedHTML: string = preProcessHTML(htmlString);
 

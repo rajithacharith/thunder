@@ -24,7 +24,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
+import {render, screen, fireEvent, act} from '@testing-library/react';
 import type React from 'react';
 
 // Use vi.hoisted for mock functions
@@ -67,18 +67,23 @@ vi.mock('react-i18next', () => ({
 
 // Mock the lexical composer context
 vi.mock('@lexical/react/LexicalComposerContext', () => ({
-  useLexicalComposerContext: () => [{
-    dispatchCommand: mockDispatchCommand,
-    registerUpdateListener: mockRegisterUpdateListener,
-    registerCommand: mockRegisterCommand,
-    getRootElement: mockGetRootElement,
-    getEditorState: mockGetEditorState,
-  }],
+  useLexicalComposerContext: () => [
+    {
+      dispatchCommand: mockDispatchCommand,
+      registerUpdateListener: mockRegisterUpdateListener,
+      registerCommand: mockRegisterCommand,
+      getRootElement: mockGetRootElement,
+      getEditorState: mockGetEditorState,
+    },
+  ],
 }));
 
 // Mock lexical utils
 vi.mock('@lexical/utils', () => ({
-  mergeRegister: (...fns: (() => void)[]) => () => fns.forEach(fn => fn()),
+  mergeRegister:
+    (...fns: (() => void)[]) =>
+    () =>
+      fns.forEach((fn) => fn()),
 }));
 
 // Mock lexical
@@ -132,6 +137,7 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
     mockGetSelectedNode.mockImplementation(() => ({
       getParent: () => null,
       getURL: () => 'https://example.com',
+      getTextContent: () => '',
       setTarget: vi.fn(),
       setRel: vi.fn(),
       type: 'text',
@@ -154,6 +160,7 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
         type: 'link',
         getParent: () => ({type: 'paragraph'}),
         getURL: () => 'https://any-custom-url.com',
+        getTextContent: () => 'link text',
         setTarget: vi.fn(),
         setRel: vi.fn(),
       };
@@ -183,9 +190,8 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
 
       render(<CustomLinkPlugin />);
 
-      // The link should be displayed (determineUrlType returns CUSTOM for any URL)
-      const link = document.querySelector('.MuiLink-root');
-      expect(link).toBeInTheDocument();
+      // The component renders the editing card (determineUrlType returns CUSTOM for any URL)
+      expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
     });
 
     it('should exercise determineUrlType when URL matches no predefined option', () => {
@@ -194,6 +200,7 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
         type: 'link',
         getParent: () => ({type: 'paragraph'}),
         getURL: () => 'https://random-url.com',
+        getTextContent: () => 'link text',
         setTarget: vi.fn(),
         setRel: vi.fn(),
       };
@@ -215,6 +222,7 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
         type: 'link',
         getParent: () => ({type: 'paragraph'}),
         getURL: () => testUrl,
+        getTextContent: () => 'link text',
         setTarget: vi.fn(),
         setRel: vi.fn(),
       };
@@ -244,29 +252,22 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
 
       render(<CustomLinkPlugin />);
 
-      // The link should display the URL itself as placeholder
-      const link = document.querySelector('.MuiLink-root');
-      expect(link).toBeInTheDocument();
+      // The component renders the editing card; placeholder URL value is set in the input
+      expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
     });
   });
 
   describe('handleUrlTypeChange function behavior', () => {
     it('should set URL to https:// when switching to CUSTOM type', async () => {
       // This tests the else branch behavior when newType is CUSTOM
+      // Since PREDEFINED_URLS is empty, all URLs are treated as CUSTOM type
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
+      // Verify the component renders the editing interface directly
+      expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
 
       // Since PREDEFINED_URLS is empty, Select won't render
-      // But we verify the component is in edit mode correctly
+      // Verify the component renders the URL input field
       const textField = document.querySelector('input');
       expect(textField).toBeInTheDocument();
     });
@@ -277,35 +278,27 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
       // This tests the else branch that returns linkUrl
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      // The component renders the editing interface directly
+      expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
-      // Type a custom URL
-      const textField = document.querySelector('input');
-      if (textField) {
+      // Type a custom URL into the URL input field (second input)
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1];
+      if (urlInput) {
         await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://test-current-url.com'}});
+          fireEvent.change(urlInput, {target: {value: 'https://test-current-url.com'}});
         });
-        expect(textField).toHaveValue('https://test-current-url.com');
+        expect(urlInput).toHaveValue('https://test-current-url.com');
 
-        // Click save to trigger getCurrentUrl
-        const saveButton = screen.getByText('common:save');
+        // Click apply to submit the link (getCurrentUrl returns linkUrl for CUSTOM type)
+        const applyButton = screen.getByText('flows:core.elements.richText.linkEditor.apply');
         await act(async () => {
-          fireEvent.click(saveButton);
+          fireEvent.click(applyButton);
         });
       }
 
-      // Should exit edit mode
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
-      });
+      // Card should still be present in the DOM
+      expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
     });
   });
 
@@ -314,15 +307,8 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
       // This tests the conditional rendering when PREDEFINED_URLS is empty
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
+      // The component renders the editing interface directly
+      expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
 
       // Select should NOT be rendered since PREDEFINED_URLS is empty
       const select = document.querySelector('.MuiSelect-root');
@@ -336,6 +322,7 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
         type: 'link',
         getParent: () => ({type: 'paragraph'}),
         getURL: () => '',
+        getTextContent: () => '',
         setTarget: vi.fn(),
         setRel: vi.fn(),
       };
@@ -353,6 +340,7 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
         type: 'link',
         getParent: () => ({type: 'paragraph'}),
         getURL: () => 'https://example.com/path?query=value&other=test#hash',
+        getTextContent: () => 'link text',
         setTarget: vi.fn(),
         setRel: vi.fn(),
       };
@@ -370,6 +358,7 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
         type: 'link',
         getParent: () => ({type: 'paragraph'}),
         getURL: () => 'https://example.com/路径/页面',
+        getTextContent: () => 'link text',
         setTarget: vi.fn(),
         setRel: vi.fn(),
       };
@@ -387,67 +376,55 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
     it('should handle rapid URL type changes', async () => {
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      // The component renders the editing interface directly
+      expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
-      // Type multiple URLs rapidly
-      const textField = document.querySelector('input');
-      if (textField) {
+      // Type multiple URLs rapidly into the URL input field (second input)
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1];
+      if (urlInput) {
         await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://url1.com'}});
+          fireEvent.change(urlInput, {target: {value: 'https://url1.com'}});
         });
         await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://url2.com'}});
+          fireEvent.change(urlInput, {target: {value: 'https://url2.com'}});
         });
         await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://final-url.com'}});
+          fireEvent.change(urlInput, {target: {value: 'https://final-url.com'}});
         });
-        expect(textField).toHaveValue('https://final-url.com');
+        expect(urlInput).toHaveValue('https://final-url.com');
       }
     });
 
     it('should handle save with valid URL after initially empty', async () => {
       render(<CustomLinkPlugin />);
 
-      // Enter edit mode
-      const editButton = screen.getByText('common:edit');
-      await act(async () => {
-        fireEvent.click(editButton);
-      });
+      // The component renders the editing interface directly
+      expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.editLink')).toBeInTheDocument();
-      });
-
-      const textField = document.querySelector('input');
-      if (textField) {
+      // Use the URL input field (second input)
+      const inputs = document.querySelectorAll('input');
+      const urlInput = inputs[1];
+      if (urlInput) {
         // Clear the field first
         await act(async () => {
-          fireEvent.change(textField, {target: {value: ''}});
+          fireEvent.change(urlInput, {target: {value: ''}});
         });
         // Then add a valid URL
         await act(async () => {
-          fireEvent.change(textField, {target: {value: 'https://valid-url.com'}});
+          fireEvent.change(urlInput, {target: {value: 'https://valid-url.com'}});
         });
-        expect(textField).toHaveValue('https://valid-url.com');
+        expect(urlInput).toHaveValue('https://valid-url.com');
 
-        // Save
-        const saveButton = screen.getByText('common:save');
+        // Apply the link
+        const applyButton = screen.getByText('flows:core.elements.richText.linkEditor.apply');
         await act(async () => {
-          fireEvent.click(saveButton);
+          fireEvent.click(applyButton);
         });
       }
 
-      await waitFor(() => {
-        expect(screen.getByText('flows:core.elements.richText.linkEditor.viewLink')).toBeInTheDocument();
-      });
+      // Card should still be present in the DOM
+      expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
     });
   });
 });

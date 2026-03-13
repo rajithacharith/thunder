@@ -1602,7 +1602,9 @@ const translations = {
     'core.elements.richText.placeholder': 'Enter text here...',
     'core.elements.richText.resolvedI18nValue': 'Resolved i18n value',
     'core.elements.richText.linkEditor.urlTypeLabel': 'URL Type',
-    'core.elements.richText.linkEditor.placeholder': 'Enter URL',
+    'core.elements.richText.linkEditor.placeholder': 'Type or paste a link',
+    'core.elements.richText.linkEditor.textPlaceholder': 'Text',
+    'core.elements.richText.linkEditor.apply': 'Apply',
     'core.elements.richText.linkEditor.editLink': 'Edit Link',
     'core.elements.richText.linkEditor.viewLink': 'Link',
 

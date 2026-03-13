@@ -76,6 +76,7 @@ export default function FlowComponentRenderer({
   onValidate,
   maxImageSize,
   additionalData,
+  signUpFallbackUrl,
 }: FlowComponentRendererProps): JSX.Element | null {
   const comp = component as FlowComponent;
 
@@ -86,7 +87,7 @@ export default function FlowComponentRenderer({
 
   // RICH_TEXT
   if (comp.type === 'RICH_TEXT') {
-    return <RichTextAdapter component={comp} resolve={resolve} />;
+    return <RichTextAdapter component={comp} resolve={resolve} signUpFallbackUrl={signUpFallbackUrl} />;
   }
 
   // IMAGE
@@ -112,6 +113,7 @@ export default function FlowComponentRenderer({
         onInputChange={onInputChange}
         onSubmit={onSubmit}
         onValidate={onValidate}
+        signUpFallbackUrl={signUpFallbackUrl}
       />
     );
   }
@@ -155,6 +157,7 @@ export default function FlowComponentRenderer({
             onInputChange={onInputChange}
             onSubmit={onSubmit}
             onValidate={onValidate}
+            signUpFallbackUrl={signUpFallbackUrl}
           />
         </>
       );
@@ -172,6 +175,7 @@ export default function FlowComponentRenderer({
         onInputChange={onInputChange}
         onSubmit={onSubmit}
         onValidate={onValidate}
+        signUpFallbackUrl={signUpFallbackUrl}
       />
     );
   }
