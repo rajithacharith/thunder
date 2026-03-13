@@ -24,6 +24,8 @@ import UsersListPage from '../UsersListPage';
 
 const mockNavigate = vi.fn();
 const mockLoggerError = vi.fn();
+let mockInviteParam = '';
+const mockSetSearchParams = vi.fn();
 
 // Mock logger
 vi.mock('@thunder/logger/react', () => ({
@@ -82,16 +84,13 @@ vi.mock('react-router', async () => {
   return {
     ...actual,
     useNavigate: () => mockNavigate,
+    useSearchParams: () => [new URLSearchParams(mockInviteParam), mockSetSearchParams],
   };
 });
 
 // Mock the UsersList component
 vi.mock('../../components/UsersList', () => ({
-  default: () => (
-    <div data-testid="users-list">
-      Users List Component
-    </div>
-  ),
+  default: () => <div data-testid="users-list">Users List Component</div>,
 }));
 
 // Mock useTemplateLiteralResolver
@@ -134,6 +133,8 @@ describe('UsersListPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockLoggerError.mockReset();
+    mockInviteParam = '';
+    mockSetSearchParams.mockReset();
   });
 
   it('renders page title', () => {
@@ -270,6 +271,16 @@ describe('UsersListPage', () => {
 
     // Verify the onSuccess callback was captured and can be called
     expect(capturedOnSuccess).toBeDefined();
+  });
+
+  it('opens invite dialog when invite=true search param is present', async () => {
+    mockInviteParam = 'invite=true';
+    render(<UsersListPage />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+    expect(mockSetSearchParams).toHaveBeenCalledWith({}, {replace: true});
   });
 
   it('handles navigation error gracefully', async () => {
