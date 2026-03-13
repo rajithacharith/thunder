@@ -25,6 +25,7 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
+  Trans: ({i18nKey}: {i18nKey: string}) => i18nKey,
 }));
 
 vi.mock('@thunder/shared-design', () => ({
@@ -122,7 +123,8 @@ describe('EditCustomizationSettings', () => {
       );
 
       // Verify theme from application
-      expect(screen.getByRole('combobox')).toHaveValue('Default Theme');
+      const themeCombobox = screen.getByPlaceholderText('applications:edit.customization.theme.placeholder');
+      expect(themeCombobox).toHaveValue('Default Theme');
 
       // Verify URLs from application
       const tosField = screen.getByPlaceholderText('applications:edit.customization.tosUri.placeholder');
@@ -130,9 +132,8 @@ describe('EditCustomizationSettings', () => {
       expect(tosField).toHaveValue('https://example.com/terms');
       expect(policyField).toHaveValue('https://example.com/privacy');
 
-      // Verify contacts from application
-      const contactsField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
-      expect(contactsField).toHaveValue('contact@example.com');
+      // Verify contact chip from application
+      expect(screen.getByText('contact@example.com')).toBeInTheDocument();
     });
 
     it('should propagate editedApp prop to all sections', () => {
@@ -152,7 +153,8 @@ describe('EditCustomizationSettings', () => {
       );
 
       // Verify edited theme
-      expect(screen.getByRole('combobox')).toHaveValue('Dark Theme');
+      const themeCombobox = screen.getByPlaceholderText('applications:edit.customization.theme.placeholder');
+      expect(themeCombobox).toHaveValue('Dark Theme');
 
       // Verify edited URLs
       const tosField = screen.getByPlaceholderText('applications:edit.customization.tosUri.placeholder');
@@ -160,9 +162,8 @@ describe('EditCustomizationSettings', () => {
       expect(tosField).toHaveValue('https://edited.com/terms');
       expect(policyField).toHaveValue('https://edited.com/privacy');
 
-      // Verify edited contacts
-      const contactsField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
-      expect(contactsField).toHaveValue('edited@example.com');
+      // Verify edited contact chip
+      expect(screen.getByText('edited@example.com')).toBeInTheDocument();
     });
 
     it('should propagate onFieldChange callback to all sections', () => {
@@ -198,7 +199,8 @@ describe('EditCustomizationSettings', () => {
       );
 
       // Should fall back to application values
-      expect(screen.getByRole('combobox')).toHaveValue('Default Theme');
+      const themeCombobox = screen.getByPlaceholderText('applications:edit.customization.theme.placeholder');
+      expect(themeCombobox).toHaveValue('Default Theme');
     });
   });
 });
