@@ -299,28 +299,24 @@ To try out the Client Credentials flow, follow these steps:
 
 ---
 
-<details>
-<summary><h2>🛠️ Build the Product from Source</h2></summary>
+## Star History
 
-### Prerequisites
-
-- Go 1.26+
-- Node.js 24+
+[![Star History Chart](https://api.star-history.com/svg?repos=asgardeo/thunder&type=date&legend=top-left)](https://www.star-history.com/#asgardeo/thunder&type=date&legend=top-left)
 
 ---
 
-- Build the product with tests using the following command:
+## Contributing
 
-    ```bash
-    make all
-    ```
+Please refer to the [Contributing Guide](https://asgardeo.github.io/thunder/docs/next/community/contributing/overview) for the different ways to contribute to this project and the relevant guidelines.
 
-</details>
+For code contributions, refer to the [Contributing Code](https://asgardeo.github.io/thunder/docs/next/community/contributing/contributing-code/prerequisites) section for details on the prerequisites and instructions for running Thunder in development mode.
 
----
+## Documentation
+
+Please refer to the [Documentation](https://asgardeo.github.io/thunder/docs/guides/introduction) for additional guidance on getting started with Thunder and exploring its features, concepts, and usage.
 
 <details>
-<summary><h2>🔧 Advanced Setup & Configuration</h2></summary>
+<summary><h2>Advanced Setup & Configuration</h2></summary>
 
 <details>
 <summary><h3>Running with PostgreSQL Database</h3></summary>
@@ -402,23 +398,9 @@ The product will now use the PostgreSQL database for its operations.
 
 </details>
 
----
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=asgardeo/thunder&type=date&legend=top-left)](https://www.star-history.com/#asgardeo/thunder&type=date&legend=top-left)
-
-## 🤝 Contributing
-
-Please refer to the [CONTRIBUTING.md](https://asgardeo.github.io/thunder/docs/community/contributing/overview/) for guidelines on how to contribute to this project.
-
-## Documentation
-
-Please refer to the [Documentation](https://asgardeo.github.io/thunder/docs/guides/introduction) for more information.
-
 ## License
 
 Licenses this source under the Apache License, Version 2.0 ([LICENSE](LICENSE)), You may not use this file except in compliance with the License.
 
 ---------------------------------------------------------------------------
-(c) Copyright 2025 WSO2 LLC.
+(c) Copyright 2026 WSO2 LLC.
