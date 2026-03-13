@@ -16,11 +16,12 @@
  * under the License.
  */
 
-import {TextField} from '@wso2/oxygen-ui';
-import {useTranslation} from 'react-i18next';
-import {useEffect} from 'react';
-import {useForm, Controller} from 'react-hook-form';
+import {Autocomplete, Chip, TextField} from '@wso2/oxygen-ui';
+import {useTranslation, Trans} from 'react-i18next';
+import {useState} from 'react';
+import {z} from 'zod';
 import type {Application} from '../../../models/application';
+import Kbd from '../../../../../components/Kbd';
 import SettingsCard from '../../../../../components/SettingsCard';
 
 /**
@@ -46,9 +47,10 @@ interface ContactsSectionProps {
 /**
  * Section component for configuring application contact information.
  *
- * Provides a multiline text field for entering contact email addresses.
- * Multiple emails should be comma-separated.
- * Changes are automatically converted to array format and synced to parent.
+ * Provides a creatable Autocomplete field where contacts are added as chips.
+ * Type an email address and press Enter to add it. Invalid emails are rejected
+ * with an inline error message.
+ * Changes are sent to the parent as a string array.
  *
  * @param props - Component props
  * @returns Contact information input UI within a SettingsCard
@@ -56,46 +58,51 @@ interface ContactsSectionProps {
 export default function ContactsSection({application, editedApp, onFieldChange}: ContactsSectionProps) {
   const {t} = useTranslation();
 
-  const {control, watch} = useForm({
-    mode: 'onChange',
-    defaultValues: {
-      contacts: (editedApp.contacts ?? application.contacts ?? []).join(', '),
-    },
-  });
+  const [inputError, setInputError] = useState('');
 
-  const contacts = watch('contacts');
+  const emailSchema = z.string().email();
 
-  /**
-   * Effect to synchronize contact information changes from the form.
-   */
-  useEffect(() => {
-    const currentContacts = (editedApp.contacts ?? application.contacts ?? []).join(', ');
-    if (contacts !== currentContacts) {
-      const contactsArray =
-        contacts
-          ?.split(',')
-          .map((c) => c.trim())
-          .filter((c) => c) ?? [];
-      onFieldChange('contacts', contactsArray);
+  const contacts = editedApp.contacts ?? application.contacts ?? [];
+
+  const handleChange = (_event: unknown, newValue: string[], reason: string) => {
+    if (reason === 'createOption') {
+      const candidate = newValue[newValue.length - 1];
+      const result = emailSchema.safeParse(candidate);
+      if (!result.success) {
+        setInputError(t('applications:edit.general.contacts.error.invalid'));
+        return;
+      }
     }
-  }, [contacts, editedApp.contacts, application.contacts, onFieldChange]);
+    setInputError('');
+    onFieldChange('contacts', newValue);
+  };
 
   return (
     <SettingsCard
       title={t('applications:edit.general.sections.contacts')}
       description={t('applications:edit.general.sections.contacts.description')}
     >
-      <Controller
-        name="contacts"
-        control={control}
-        render={({field}) => (
+      <Autocomplete
+        multiple
+        freeSolo
+        fullWidth
+        options={[]}
+        value={contacts}
+        onChange={handleChange}
+        onInputChange={() => {
+          if (inputError) setInputError('');
+        }}
+        renderTags={(value, getTagProps) =>
+          value.map((option, index) => <Chip label={option} {...getTagProps({index})} key={option} />)
+        }
+        renderInput={(params) => (
           <TextField
-            {...field}
-            fullWidth
-            multiline
-            rows={2}
+            {...params}
             placeholder={t('applications:edit.general.contacts.placeholder')}
-            helperText={t('applications:edit.general.contacts.hint')}
+            error={!!inputError}
+            helperText={
+              inputError || <Trans i18nKey="applications:edit.general.contacts.hint" components={[<Kbd />]} />
+            }
           />
         )}
       />

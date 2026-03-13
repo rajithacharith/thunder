@@ -25,6 +25,8 @@ import LoginBoxCard from './cards/LoginBoxCard';
 import MFACard from './cards/MFACard';
 import SocialLoginCard from './cards/SocialLoginCard';
 
+const MotionBox = motion.create(Box);
+
 const containerVariants = {
   hidden: {},
   visible: {
@@ -56,24 +58,24 @@ export default function NextStepsSection(): JSX.Element {
         animate="visible"
       >
         <Grid size={{xs: 12, sm: 6}}>
-          <motion.div variants={cardVariants}>
+          <MotionBox variants={cardVariants} sx={{height: '100%'}}>
             <InviteMembersCard />
-          </motion.div>
+          </MotionBox>
         </Grid>
         <Grid size={{xs: 12, sm: 6}}>
-          <motion.div variants={cardVariants}>
+          <MotionBox variants={cardVariants} sx={{height: '100%'}}>
             <LoginBoxCard />
-          </motion.div>
+          </MotionBox>
         </Grid>
         <Grid size={{xs: 12, sm: 6}}>
-          <motion.div variants={cardVariants}>
+          <MotionBox variants={cardVariants} sx={{height: '100%'}}>
             <SocialLoginCard />
-          </motion.div>
+          </MotionBox>
         </Grid>
         <Grid size={{xs: 12, sm: 6}}>
-          <motion.div variants={cardVariants}>
+          <MotionBox variants={cardVariants} sx={{height: '100%'}}>
             <MFACard />
-          </motion.div>
+          </MotionBox>
         </Grid>
       </Grid>
     </Box>
