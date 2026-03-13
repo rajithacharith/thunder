@@ -20,6 +20,7 @@ import {useState, useCallback} from 'react';
 import type {JSX} from 'react';
 import {Stack} from '@wso2/oxygen-ui';
 import type {Application} from '../../../models/application';
+import {TokenEndpointAuthMethods} from '../../../models/oauth';
 import type {OAuth2Config} from '../../../models/oauth';
 import QuickCopySection from './QuickCopySection';
 import AccessSection from './AccessSection';
@@ -84,6 +85,10 @@ export default function EditGeneralSettings({
   const [secretDialogOpen, setSecretDialogOpen] = useState(false);
   const [newClientSecret, setNewClientSecret] = useState<string>('');
 
+  const isConfidentialClient =
+    oauth2Config?.token_endpoint_auth_method === TokenEndpointAuthMethods.CLIENT_SECRET_BASIC ||
+    oauth2Config?.token_endpoint_auth_method === TokenEndpointAuthMethods.CLIENT_SECRET_POST;
+
   const handleRegenerateClick = useCallback((): void => {
     setRegenerateDialogOpen(true);
   }, []);
@@ -113,7 +118,7 @@ export default function EditGeneralSettings({
           oauth2Config={oauth2Config}
           onFieldChange={onFieldChange}
         />
-        <DangerZoneSection onRegenerateClick={handleRegenerateClick} />
+        {isConfidentialClient && <DangerZoneSection onRegenerateClick={handleRegenerateClick} />}
       </Stack>
 
       {/* Regenerate Client Secret Confirmation Dialog */}

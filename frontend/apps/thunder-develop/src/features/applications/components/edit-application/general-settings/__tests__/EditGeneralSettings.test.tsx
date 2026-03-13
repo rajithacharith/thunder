@@ -114,6 +114,7 @@ describe('EditGeneralSettings', () => {
   const mockOAuth2Config: OAuth2Config = {
     client_id: 'client-123',
     client_secret: 'secret-456',
+    token_endpoint_auth_method: 'client_secret_basic',
   } as OAuth2Config;
 
   beforeEach(() => {
@@ -276,12 +277,13 @@ describe('EditGeneralSettings', () => {
   });
 
   describe('Layout', () => {
-    it('should render sections in correct order', () => {
+    it('should render sections in correct order for confidential clients', () => {
       const {container} = render(
         <EditGeneralSettings
           application={mockApplication}
           editedApp={{}}
           onFieldChange={mockOnFieldChange}
+          oauth2Config={mockOAuth2Config}
           copiedField={null}
           onCopyToClipboard={mockOnCopyToClipboard}
         />,
@@ -293,12 +295,88 @@ describe('EditGeneralSettings', () => {
       expect(sections[2]).toHaveAttribute('data-testid', 'danger-zone-section');
     });
 
-    it('should render DangerZoneSection', () => {
+    it('should render DangerZoneSection for confidential client', () => {
       render(
         <EditGeneralSettings
           application={mockApplication}
           editedApp={{}}
           onFieldChange={mockOnFieldChange}
+          oauth2Config={mockOAuth2Config}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+        />,
+      );
+
+      expect(screen.getByTestId('danger-zone-section')).toBeInTheDocument();
+    });
+
+    it('should not render DangerZoneSection for public client (none auth method)', () => {
+      const publicClientConfig: OAuth2Config = {
+        client_id: 'public-client-123',
+        token_endpoint_auth_method: 'none',
+      } as OAuth2Config;
+
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          oauth2Config={publicClientConfig}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+        />,
+      );
+
+      expect(screen.queryByTestId('danger-zone-section')).not.toBeInTheDocument();
+    });
+
+    it('should not render DangerZoneSection when no oauth2Config provided', () => {
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+        />,
+      );
+
+      expect(screen.queryByTestId('danger-zone-section')).not.toBeInTheDocument();
+    });
+
+    it('should not render DangerZoneSection for private_key_jwt auth method', () => {
+      const pkjwtClientConfig: OAuth2Config = {
+        client_id: 'pkjwt-client-123',
+        token_endpoint_auth_method: 'private_key_jwt',
+      } as OAuth2Config;
+
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          oauth2Config={pkjwtClientConfig}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+        />,
+      );
+
+      expect(screen.queryByTestId('danger-zone-section')).not.toBeInTheDocument();
+    });
+
+    it('should render DangerZoneSection for client_secret_post auth method', () => {
+      const postClientConfig: OAuth2Config = {
+        client_id: 'post-client-123',
+        client_secret: 'secret-456',
+        token_endpoint_auth_method: 'client_secret_post',
+      } as OAuth2Config;
+
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          oauth2Config={postClientConfig}
           copiedField={null}
           onCopyToClipboard={mockOnCopyToClipboard}
         />,
@@ -315,6 +393,7 @@ describe('EditGeneralSettings', () => {
           application={mockApplication}
           editedApp={{}}
           onFieldChange={mockOnFieldChange}
+          oauth2Config={mockOAuth2Config}
           copiedField={null}
           onCopyToClipboard={mockOnCopyToClipboard}
         />,
@@ -332,6 +411,7 @@ describe('EditGeneralSettings', () => {
           application={mockApplication}
           editedApp={{}}
           onFieldChange={mockOnFieldChange}
+          oauth2Config={mockOAuth2Config}
           copiedField={null}
           onCopyToClipboard={mockOnCopyToClipboard}
         />,
@@ -349,6 +429,7 @@ describe('EditGeneralSettings', () => {
           application={mockApplication}
           editedApp={{}}
           onFieldChange={mockOnFieldChange}
+          oauth2Config={mockOAuth2Config}
           copiedField={null}
           onCopyToClipboard={mockOnCopyToClipboard}
         />,
@@ -371,6 +452,7 @@ describe('EditGeneralSettings', () => {
           application={mockApplication}
           editedApp={{}}
           onFieldChange={mockOnFieldChange}
+          oauth2Config={mockOAuth2Config}
           copiedField={null}
           onCopyToClipboard={mockOnCopyToClipboard}
         />,
@@ -392,6 +474,7 @@ describe('EditGeneralSettings', () => {
           application={mockApplication}
           editedApp={{}}
           onFieldChange={mockOnFieldChange}
+          oauth2Config={mockOAuth2Config}
           copiedField={null}
           onCopyToClipboard={mockOnCopyToClipboard}
         />,
