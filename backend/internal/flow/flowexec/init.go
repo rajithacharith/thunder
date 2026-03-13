@@ -37,16 +37,21 @@ func Initialize(
 	applicationService application.ApplicationServiceInterface,
 	executorRegistry executor.ExecutorRegistryInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
-) FlowExecServiceInterface {
+) (FlowExecServiceInterface, error) {
 	dbProvider := dbprovider.GetDBProvider()
+	transactioner, err := dbProvider.GetRuntimeDBTransactioner()
+	if err != nil {
+		return nil, err
+	}
 	flowStore := newFlowStore(dbProvider)
 	flowEngine := newFlowEngine(executorRegistry, observabilitySvc)
-	flowExecService := newFlowExecService(flowMgtService, flowStore, flowEngine, applicationService, observabilitySvc)
+	flowExecService := newFlowExecService(flowMgtService, flowStore, flowEngine, applicationService,
+		observabilitySvc, transactioner)
 
 	handler := newFlowExecutionHandler(flowExecService)
 	registerRoutes(mux, handler)
 
-	return flowExecService
+	return flowExecService, nil
 }
 
 func registerRoutes(mux *http.ServeMux, handler *flowExecutionHandler) {

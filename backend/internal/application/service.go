@@ -259,10 +259,10 @@ func (as *applicationService) ValidateApplication(ctx context.Context, app *mode
 		return nil, nil, svcErr
 	}
 
-	if svcErr := as.validateAuthFlowID(app); svcErr != nil {
+	if svcErr := as.validateAuthFlowID(ctx, app); svcErr != nil {
 		return nil, nil, svcErr
 	}
-	if svcErr := as.validateRegistrationFlowID(app); svcErr != nil {
+	if svcErr := as.validateRegistrationFlowID(ctx, app); svcErr != nil {
 		return nil, nil, svcErr
 	}
 
@@ -395,10 +395,10 @@ func (as *applicationService) ValidateApplicationForUpdate(
 		}
 	}
 
-	if svcErr := as.validateAuthFlowID(app); svcErr != nil {
+	if svcErr := as.validateAuthFlowID(ctx, app); svcErr != nil {
 		return nil, nil, svcErr
 	}
-	if svcErr := as.validateRegistrationFlowID(app); svcErr != nil {
+	if svcErr := as.validateRegistrationFlowID(ctx, app); svcErr != nil {
 		return nil, nil, svcErr
 	}
 
@@ -888,14 +888,15 @@ func (as *applicationService) DeleteApplication(ctx context.Context, appID strin
 
 // validateAuthFlowID validates the auth flow ID for the application.
 // If the flow ID is not provided, it sets the default authentication flow ID.
-func (as *applicationService) validateAuthFlowID(app *model.ApplicationDTO) *serviceerror.ServiceError {
+func (as *applicationService) validateAuthFlowID(
+	ctx context.Context, app *model.ApplicationDTO) *serviceerror.ServiceError {
 	if app.AuthFlowID != "" {
-		isValidFlow := as.flowMgtService.IsValidFlow(app.AuthFlowID)
+		isValidFlow := as.flowMgtService.IsValidFlow(ctx, app.AuthFlowID)
 		if !isValidFlow {
 			return &ErrorInvalidAuthFlowID
 		}
 	} else {
-		defaultFlowID, svcErr := as.getDefaultAuthFlowID()
+		defaultFlowID, svcErr := as.getDefaultAuthFlowID(ctx)
 		if svcErr != nil {
 			return svcErr
 		}
@@ -907,17 +908,18 @@ func (as *applicationService) validateAuthFlowID(app *model.ApplicationDTO) *ser
 
 // validateRegistrationFlowID validates the registration flow ID for the application.
 // If the ID is not provided, it attempts to infer it from the equivalent auth flow ID.
-func (as *applicationService) validateRegistrationFlowID(app *model.ApplicationDTO) *serviceerror.ServiceError {
+func (as *applicationService) validateRegistrationFlowID(
+	ctx context.Context, app *model.ApplicationDTO) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
 	if app.RegistrationFlowID != "" {
-		isValidFlow := as.flowMgtService.IsValidFlow(app.RegistrationFlowID)
+		isValidFlow := as.flowMgtService.IsValidFlow(ctx, app.RegistrationFlowID)
 		if !isValidFlow {
 			return &ErrorInvalidRegistrationFlowID
 		}
 	} else {
 		// Try to get the equivalent registration flow for the auth flow
-		authFlow, svcErr := as.flowMgtService.GetFlow(app.AuthFlowID)
+		authFlow, svcErr := as.flowMgtService.GetFlow(ctx, app.AuthFlowID)
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ServerErrorType {
 				logger.Error("Error while retrieving auth flow definition",
@@ -928,7 +930,7 @@ func (as *applicationService) validateRegistrationFlowID(app *model.ApplicationD
 		}
 
 		registrationFlow, svcErr := as.flowMgtService.GetFlowByHandle(
-			authFlow.Handle, flowcommon.FlowTypeRegistration)
+			ctx, authFlow.Handle, flowcommon.FlowTypeRegistration)
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ServerErrorType {
 				logger.Error("Error while retrieving registration flow definition by handle",
@@ -994,6 +996,7 @@ func (as *applicationService) validateAllowedUserTypes(
 	offset := 0
 
 	for {
+		// Runtime context is used to avoid authorization checks when fetching user schemas.
 		userSchemaList, svcErr := as.userSchemaService.GetUserSchemaList(
 			security.WithRuntimeContext(ctx), limit, offset)
 		if svcErr != nil {
@@ -1176,12 +1179,12 @@ func (as *applicationService) processInboundAuthConfig(ctx context.Context, app 
 }
 
 // getDefaultAuthFlowID retrieves the default authentication flow ID from the configuration.
-func (as *applicationService) getDefaultAuthFlowID() (string, *serviceerror.ServiceError) {
+func (as *applicationService) getDefaultAuthFlowID(ctx context.Context) (string, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
 	defaultAuthFlowHandle := config.GetThunderRuntime().Config.Flow.DefaultAuthFlowHandle
 	defaultAuthFlow, svcErr := as.flowMgtService.GetFlowByHandle(
-		defaultAuthFlowHandle, flowcommon.FlowTypeAuthentication)
+		ctx, defaultAuthFlowHandle, flowcommon.FlowTypeAuthentication)
 
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ServerErrorType {

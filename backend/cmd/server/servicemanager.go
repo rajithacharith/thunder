@@ -237,8 +237,11 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// Initialize export service with collected exporters
 	_ = export.Initialize(mux, exporters)
 
-	flowExecService := flowexec.Initialize(mux, flowMgtService, applicationService, execRegistry,
+	flowExecService, err := flowexec.Initialize(mux, flowMgtService, applicationService, execRegistry,
 		observabilitySvc)
+	if err != nil {
+		logger.Fatal("Failed to initialize flow execution service", log.Error(err))
+	}
 
 	// Initialize OAuth services.
 	err = oauth.Initialize(mux, applicationService, userService, jwtService, flowExecService, observabilitySvc,

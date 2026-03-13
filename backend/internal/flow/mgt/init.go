@@ -29,6 +29,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
@@ -46,9 +47,14 @@ func Initialize(
 		return nil, nil, err
 	}
 
+	transactioner, err := provider.GetDBProvider().GetConfigDBTransactioner()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	inferenceService := newFlowInferenceService()
 	graphBuilder := newGraphBuilder(flowFactory, executorRegistry, graphCache)
-	service := newFlowMgtService(store, inferenceService, graphBuilder, executorRegistry, compositeStore)
+	service := newFlowMgtService(store, inferenceService, graphBuilder, executorRegistry, compositeStore, transactioner)
 
 	handler := newFlowMgtHandler(service)
 	registerRoutes(mux, handler)
