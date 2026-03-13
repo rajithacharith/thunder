@@ -39,6 +39,7 @@ vi.mock('react-i18next', () => ({
       const translations: Record<string, string> = {
         'organizationUnits:edit.users.sections.manage.title': 'Manage Users',
         'organizationUnits:edit.users.sections.manage.description': 'View and manage users in this organization unit',
+        'organizationUnits:edit.users.sections.manage.listing.columns.name': 'Display Name',
         'organizationUnits:edit.users.sections.manage.listing.columns.id': 'User ID',
         'organizationUnits:edit.users.sections.manage.listing.columns.type': 'Type',
       };
@@ -49,8 +50,8 @@ vi.mock('react-i18next', () => ({
 
 describe('ManageUsersSection', () => {
   const mockUsers: ApiUser[] = [
-    {id: 'user-1', type: 'internal', organizationUnit: 'ou-123'},
-    {id: 'user-2', type: 'external', organizationUnit: 'ou-123'},
+    {id: 'user-1', type: 'internal', organizationUnit: 'ou-123', display: 'John Doe'},
+    {id: 'user-2', type: 'external', organizationUnit: 'ou-123', display: 'Jane Smith'},
     {id: 'user-3', type: 'internal', organizationUnit: 'ou-123'},
   ];
 
@@ -70,7 +71,7 @@ describe('ManageUsersSection', () => {
     expect(screen.getByText('View and manage users in this organization unit')).toBeInTheDocument();
   });
 
-  it('should render data grid with users', () => {
+  it('should render data grid with users showing display names', () => {
     mockUseGetOrganizationUnitUsers.mockReturnValue({
       data: {users: mockUsers},
       isLoading: false,
@@ -79,9 +80,24 @@ describe('ManageUsersSection', () => {
     renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
 
     expect(screen.getByRole('grid')).toBeInTheDocument();
-    expect(screen.getByText('user-1')).toBeInTheDocument();
-    expect(screen.getByText('user-2')).toBeInTheDocument();
-    expect(screen.getByText('user-3')).toBeInTheDocument();
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
+    expect(screen.getByText('Jane Smith')).toBeInTheDocument();
+    // user-3 has no display, should fall back to id
+    expect(screen.getAllByText('user-3').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('should show initials in avatar', () => {
+    mockUseGetOrganizationUnitUsers.mockReturnValue({
+      data: {users: mockUsers},
+      isLoading: false,
+    });
+
+    renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
+
+    expect(screen.getByText('JD')).toBeInTheDocument();
+    expect(screen.getByText('JS')).toBeInTheDocument();
+    // user-3 falls back to id 'user-3', initials would be 'U'
+    expect(screen.getByText('U')).toBeInTheDocument();
   });
 
   it('should render column headers', () => {
@@ -92,6 +108,7 @@ describe('ManageUsersSection', () => {
 
     renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
 
+    expect(screen.getByText('Display Name')).toBeInTheDocument();
     expect(screen.getByText('User ID')).toBeInTheDocument();
     expect(screen.getByText('Type')).toBeInTheDocument();
   });
@@ -106,7 +123,6 @@ describe('ManageUsersSection', () => {
 
     const grid = screen.getByRole('grid');
     expect(grid).toBeInTheDocument();
-    // DataGrid shows loading overlay when isLoading is true
   });
 
   it('should handle empty users list', () => {
@@ -118,7 +134,6 @@ describe('ManageUsersSection', () => {
     renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
 
     expect(screen.getByRole('grid')).toBeInTheDocument();
-    // Grid should show "No rows" message
   });
 
   it('should handle null users data', () => {
@@ -156,5 +171,17 @@ describe('ManageUsersSection', () => {
 
     expect(internalCells.length).toBeGreaterThan(0);
     expect(externalCells.length).toBeGreaterThan(0);
+  });
+
+  it('should show user IDs in the grid', () => {
+    mockUseGetOrganizationUnitUsers.mockReturnValue({
+      data: {users: mockUsers},
+      isLoading: false,
+    });
+
+    renderWithProviders(<ManageUsersSection organizationUnitId="ou-123" />);
+
+    expect(screen.getByText('user-1')).toBeInTheDocument();
+    expect(screen.getByText('user-2')).toBeInTheDocument();
   });
 });

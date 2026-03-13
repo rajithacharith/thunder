@@ -574,11 +574,12 @@ const translations = {
     'edit.users.sections.manage.description': 'View users belonging to this organization unit',
     'edit.users.sections.manage.listing.columns.id': 'User ID',
     'edit.users.sections.manage.listing.columns.type': 'User Type',
-    'edit.users.sections.manage.listing.columns.name': 'Group Name',
+    'edit.users.sections.manage.listing.columns.name': 'Display Name',
 
     // Groups Section
     'edit.groups.sections.manage.title': 'Groups',
     'edit.groups.sections.manage.description': 'View groups belonging to this organization unit',
+    'edit.groups.sections.manage.listing.columns.name': 'Group Name',
     'edit.groups.sections.manage.listing.columns.id': 'Group ID',
 
     // Customization tab

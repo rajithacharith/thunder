@@ -17,8 +17,7 @@
  */
 
 import {useMemo, type JSX} from 'react';
-import {Box, DataGrid, Avatar, useTheme} from '@wso2/oxygen-ui';
-import {User} from '@wso2/oxygen-ui-icons-react';
+import {Box, DataGrid, Avatar} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
 import SettingsCard from '@/components/SettingsCard';
 import useDataGridLocaleText from '../../../../../hooks/useDataGridLocaleText';
@@ -35,11 +34,22 @@ interface ManageUsersSectionProps {
   organizationUnitId: string;
 }
 
+const getInitials = (name?: string) => {
+  if (!name) return '?';
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+};
+
 /**
  * Section component for managing users belonging to an organization unit.
  *
  * Displays a DataGrid of users with:
- * - Avatar icon
+ * - Avatar with initials
+ * - Display Name (falls back to User ID)
  * - User ID
  * - User Type
  *
@@ -48,7 +58,6 @@ interface ManageUsersSectionProps {
  */
 export default function ManageUsersSection({organizationUnitId}: ManageUsersSectionProps): JSX.Element {
   const {t} = useTranslation();
-  const theme = useTheme();
   const dataGridLocaleText = useDataGridLocaleText();
 
   const {data: usersData, isLoading} = useGetOrganizationUnitUsers(organizationUnitId);
@@ -61,47 +70,53 @@ export default function ManageUsersSection({organizationUnitId}: ManageUsersSect
         width: 70,
         sortable: false,
         filterable: false,
-        renderCell: (): JSX.Element => (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-            }}
-          >
-            <Avatar
+        renderCell: (params: DataGrid.GridRenderCellParams<ApiUser>): JSX.Element => {
+          const displayVal = params.row.display ?? params.row.id;
+
+          return (
+            <Box
               sx={{
-                p: 0.5,
-                backgroundColor: theme.vars?.palette.grey[500],
-                width: 30,
-                height: 30,
-                fontSize: '0.875rem',
-                ...theme.applyStyles('dark', {
-                  backgroundColor: theme.vars?.palette.grey[900],
-                }),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
               }}
             >
-              <User size={14} />
-            </Avatar>
-          </Box>
-        ),
+              <Avatar
+                sx={{
+                  width: 30,
+                  height: 30,
+                  bgcolor: 'primary.main',
+                  fontSize: '0.875rem',
+                }}
+              >
+                {getInitials(displayVal)}
+              </Avatar>
+            </Box>
+          );
+        },
       },
       {
         field: 'display',
-        headerName: t('organizationUnits:edit.users.sections.manage.listing.columns.id'),
+        headerName: t('organizationUnits:edit.users.sections.manage.listing.columns.name'),
         flex: 1,
         minWidth: 200,
         valueGetter: (_value: unknown, row: ApiUser) => row.display ?? row.id,
       },
       {
+        field: 'id',
+        headerName: t('organizationUnits:edit.users.sections.manage.listing.columns.id'),
+        flex: 1,
+        minWidth: 250,
+      },
+      {
         field: 'type',
         headerName: t('organizationUnits:edit.users.sections.manage.listing.columns.type'),
-        flex: 1,
-        minWidth: 150,
+        flex: 0.6,
+        minWidth: 120,
       },
     ],
-    [t, theme],
+    [t],
   );
 
   return (
