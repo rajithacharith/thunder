@@ -97,6 +97,9 @@ run:
 run_backend:
 	./build.sh run_backend $(OS) $(ARCH)
 
+debug_backend:
+	./build.sh debug_backend $(OS) $(ARCH)
+
 run_frontend:
 	./build.sh run_frontend $(OS) $(ARCH)
 
@@ -160,6 +163,7 @@ help:
 	@echo "  test                          - Run all tests (unit and integration)."
 	@echo "  run                           - Build and run the Thunder server locally."
 	@echo "  run_backend                   - Build and run the Thunder backend locally."
+	@echo "  debug_backend                 - Build and run the Thunder backend locally in debug mode."
 	@echo "  run_frontend                  - Build and run the frontend applications locally."
 	@echo "  run_docs                      - Run the documentation development server with live reload."
 	@echo "  docker-build                  - Build single-arch Docker image with version tag."
@@ -180,7 +184,7 @@ help:
 .PHONY: test_unit test_integration build_with_coverage build_with_coverage_only test
 .PHONY: help go_install_tool
 .PHONY: lint lint_backend lint_frontend golangci-lint mockery install-mockery
-.PHONY: run_backend run_frontend run_docs
+.PHONY: run_backend debug_backend run_frontend run_docs
 
 define go_install_tool
 	cd /tmp && \

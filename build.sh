@@ -1025,8 +1025,13 @@ function run() {
     wait $BACKEND_PID 2>/dev/null
 }
 
+function debug_backend() {
+    run_backend true true
+}
+
 function run_backend() {
     local show_final_output=${1:-true}
+    local debug=${2:-false}
 
     echo "=== Ensuring server certificates exist ==="
     ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "server"
@@ -1041,11 +1046,12 @@ function run_backend() {
     echo "Initializing databases..."
     initialize_databases
 
-    start_backend "$show_final_output"
+    start_backend "$show_final_output" "$debug"
 }
 
 function start_backend() {
     local show_final_output=${1:-true}
+    local debug=${2:-false}
 
     # Kill known ports
     function kill_port() {
@@ -1055,9 +1061,18 @@ function start_backend() {
 
     kill_port $PORT
 
-    echo "=== Starting backend on $BASE_URL ==="
-    go run -C "$BACKEND_DIR" . &
-    BACKEND_PID=$!
+    if [ "$debug" = "true" ]; then
+        echo "=== Starting backend on $BASE_URL in debug mode ==="
+        (
+            cd "$BACKEND_DIR" || exit 1
+            dlv debug --headless --listen=127.0.0.1:2345 --api-version=2 --accept-multiclient --continue -- .
+        ) &
+        BACKEND_PID=$!
+    else
+        echo "=== Starting backend on $BASE_URL ==="
+        go run -C "$BACKEND_DIR" . &
+        BACKEND_PID=$!
+    fi
 
     if [ "$show_final_output" = "true" ]; then
         echo ""
@@ -1174,6 +1189,9 @@ case "$1" in
     run_backend)
         run_backend
         ;;
+    debug_backend)
+        debug_backend
+        ;;
     run_frontend)
         run_frontend
         ;;
@@ -1195,6 +1213,7 @@ case "$1" in
         echo "  test                     - Run all tests (unit and integration)"
         echo "  run                      - Run the Thunder server for development (with automatic initial data setup)"
         echo "  run_backend              - Run the Thunder backend for development"
+        echo "  debug_backend            - Run the Thunder backend for development in debug mode"
         echo "  run_frontend             - Run the Thunder frontend for development"
         echo "  run_docs                 - Run the documentation development server with live reload"
         exit 1
