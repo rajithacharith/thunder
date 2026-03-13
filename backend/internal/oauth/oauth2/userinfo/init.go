@@ -25,6 +25,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/user"
@@ -38,8 +39,11 @@ func Initialize(
 	applicationService application.ApplicationServiceInterface,
 	userService user.UserServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
+	transactioner transaction.Transactioner,
 ) userInfoServiceInterface {
-	userInfoService := newUserInfoService(jwtService, tokenValidator, applicationService, userService, ouService)
+	userInfoService := newUserInfoService(
+		jwtService, tokenValidator, applicationService, userService, ouService, transactioner,
+	)
 	userInfoHandler := newUserInfoHandler(userInfoService)
 	registerRoutes(mux, userInfoHandler)
 	return userInfoService

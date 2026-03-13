@@ -20,6 +20,7 @@
 package introspect
 
 import (
+	"context"
 	"errors"
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
@@ -29,7 +30,7 @@ import (
 
 // TokenIntrospectionServiceInterface defines the interface for OAuth 2.0 token introspection.
 type TokenIntrospectionServiceInterface interface {
-	IntrospectToken(token, tokenTypeHint string) (*IntrospectResponse, error)
+	IntrospectToken(ctx context.Context, token, tokenTypeHint string) (*IntrospectResponse, error)
 }
 
 // tokenIntrospectionService implements the TokenIntrospectionServiceInterface.
@@ -46,7 +47,9 @@ func newTokenIntrospectionService(jwtService jwt.JWTServiceInterface) TokenIntro
 
 // IntrospectToken validates and introspects the token. It only returns an error if a server error occurs.
 // All other failures are treated as inactive token as defined in the RFC 7662.
-func (s *tokenIntrospectionService) IntrospectToken(token, tokenTypeHint string) (*IntrospectResponse, error) {
+func (s *tokenIntrospectionService) IntrospectToken(
+	ctx context.Context, token, tokenTypeHint string,
+) (*IntrospectResponse, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "TokenIntrospectionService"))
 
 	if token == "" {

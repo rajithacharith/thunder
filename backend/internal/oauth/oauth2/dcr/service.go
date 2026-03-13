@@ -20,8 +20,8 @@ package dcr
 
 import (
 	"context"
-
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/application"
@@ -29,29 +29,37 @@ import (
 	"github.com/asgardeo/thunder/internal/cert"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	oauthutils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
 // DCRServiceInterface defines the interface for the DCR service.
 type DCRServiceInterface interface {
-	RegisterClient(request *DCRRegistrationRequest) (*DCRRegistrationResponse, *serviceerror.ServiceError)
+	RegisterClient(
+		ctx context.Context, request *DCRRegistrationRequest,
+	) (*DCRRegistrationResponse, *serviceerror.ServiceError)
 }
 
 // dcrService is the default implementation of DCRServiceInterface.
 type dcrService struct {
-	appService application.ApplicationServiceInterface
+	appService    application.ApplicationServiceInterface
+	transactioner transaction.Transactioner
 }
 
 // newDCRService creates a new instance of dcrService.
-func newDCRService(appService application.ApplicationServiceInterface) DCRServiceInterface {
+func newDCRService(
+	appService application.ApplicationServiceInterface,
+	transactioner transaction.Transactioner,
+) DCRServiceInterface {
 	return &dcrService{
-		appService: appService,
+		appService:    appService,
+		transactioner: transactioner,
 	}
 }
 
 // RegisterClient registers a new OAuth client using Dynamic Client Registration.
-func (ds *dcrService) RegisterClient(request *DCRRegistrationRequest) (
+func (ds *dcrService) RegisterClient(ctx context.Context, request *DCRRegistrationRequest) (
 	*DCRRegistrationResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DCRService"))
 
@@ -63,28 +71,46 @@ func (ds *dcrService) RegisterClient(request *DCRRegistrationRequest) (
 		return nil, &ErrorJWKSConfigurationConflict
 	}
 
-	appDTO, err := ds.convertDCRToApplication(request)
-	if err != nil {
-		logger.Error("Failed to convert DCR request to application DTO", log.String("error", err.Error))
+	appDTO, svcErr := ds.convertDCRToApplication(request)
+	if svcErr != nil {
+		logger.Error("Failed to convert DCR request to application DTO", log.String("error", svcErr.Error))
 		return nil, &ErrorServerError
 	}
 
-	createdApp, err := ds.appService.CreateApplication(context.TODO(), appDTO)
-	if err != nil {
-		if err.Type == serviceerror.ServerErrorType {
-			logger.Error("Failed to create application via Application service",
-				log.String("error_code", err.Code))
-			return nil, &ErrorServerError
-		}
-		logger.Debug("Failed to create application via Application service",
-			log.String("error_code", err.Code))
-		return nil, ds.mapApplicationErrorToDCRError(err)
-	}
+	var response *DCRRegistrationResponse
+	var capturedErr *serviceerror.ServiceError
 
-	response, err := ds.convertApplicationToDCRResponse(createdApp, request.ClientName)
+	err := ds.transactioner.Transact(ctx, func(ctx context.Context) error {
+		createdApp, svcErr := ds.appService.CreateApplication(ctx, appDTO)
+		if svcErr != nil {
+			if svcErr.Type == serviceerror.ServerErrorType {
+				logger.Error("Failed to create application via Application service",
+					log.String("error_code", svcErr.Code))
+				capturedErr = &ErrorServerError
+				return errors.New("failed to create application")
+			}
+			logger.Debug("Failed to create application via Application service",
+				log.String("error_code", svcErr.Code))
+			capturedErr = ds.mapApplicationErrorToDCRError(svcErr)
+			return errors.New("failed to create application")
+		}
+
+		var convErr *serviceerror.ServiceError
+		response, convErr = ds.convertApplicationToDCRResponse(createdApp, request.ClientName)
+		if convErr != nil {
+			logger.Error("Failed to convert application to DCR response", log.String("error", convErr.Error))
+			capturedErr = convErr
+			return errors.New("conversion failed")
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		logger.Error("Failed to convert application to DCR response", log.String("error", err.Error))
-		return nil, err
+		if capturedErr != nil {
+			return nil, capturedErr
+		}
+		return nil, &ErrorServerError
 	}
 
 	return response, nil

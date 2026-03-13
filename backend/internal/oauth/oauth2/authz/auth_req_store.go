@@ -19,6 +19,7 @@
 package authz
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -38,9 +39,9 @@ type authRequestContext struct {
 
 // authorizationRequestStoreInterface defines the interface for authorization request storage.
 type authorizationRequestStoreInterface interface {
-	AddRequest(value authRequestContext) (string, error)
-	GetRequest(key string) (bool, authRequestContext, error)
-	ClearRequest(key string) error
+	AddRequest(ctx context.Context, value authRequestContext) (string, error)
+	GetRequest(ctx context.Context, key string) (bool, authRequestContext, error)
+	ClearRequest(ctx context.Context, key string) error
 }
 
 // authorizationRequestStore provides the authorization request store functionality using database.
@@ -60,7 +61,7 @@ func newAuthorizationRequestStore() authorizationRequestStoreInterface {
 }
 
 // AddRequest adds an authorization request context entry to the store.
-func (authzRS *authorizationRequestStore) AddRequest(value authRequestContext) (string, error) {
+func (authzRS *authorizationRequestStore) AddRequest(ctx context.Context, value authRequestContext) (string, error) {
 	dbClient, err := authzRS.dbProvider.GetRuntimeDBClient()
 	if err != nil {
 		return "", fmt.Errorf("failed to get database client: %w", err)
@@ -80,7 +81,7 @@ func (authzRS *authorizationRequestStore) AddRequest(value authRequestContext) (
 		return "", fmt.Errorf("failed to marshal request context to JSON: %w", err)
 	}
 
-	_, err = dbClient.Execute(queryInsertAuthRequest, key, jsonDataBytes, expiryTime, authzRS.deploymentID)
+	_, err = dbClient.ExecuteContext(ctx, queryInsertAuthRequest, key, jsonDataBytes, expiryTime, authzRS.deploymentID)
 	if err != nil {
 		return "", fmt.Errorf("failed to insert authorization request: %w", err)
 	}
@@ -89,7 +90,8 @@ func (authzRS *authorizationRequestStore) AddRequest(value authRequestContext) (
 }
 
 // GetRequest retrieves an authorization request context entry from the store.
-func (authzRS *authorizationRequestStore) GetRequest(key string) (bool, authRequestContext, error) {
+func (authzRS *authorizationRequestStore) GetRequest(
+	ctx context.Context, key string) (bool, authRequestContext, error) {
 	if key == "" {
 		return false, authRequestContext{}, nil
 	}
@@ -101,7 +103,7 @@ func (authzRS *authorizationRequestStore) GetRequest(key string) (bool, authRequ
 
 	// Check expiry by comparing with current time
 	now := time.Now()
-	results, err := dbClient.Query(queryGetAuthRequest, key, now, authzRS.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryGetAuthRequest, key, now, authzRS.deploymentID)
 	if err != nil {
 		return false, authRequestContext{}, fmt.Errorf("failed to query authorization request: %w", err)
 	}
@@ -120,7 +122,7 @@ func (authzRS *authorizationRequestStore) GetRequest(key string) (bool, authRequ
 }
 
 // ClearRequest removes a specific authorization request context entry from the store.
-func (authzRS *authorizationRequestStore) ClearRequest(key string) error {
+func (authzRS *authorizationRequestStore) ClearRequest(ctx context.Context, key string) error {
 	if key == "" {
 		return nil
 	}
@@ -130,7 +132,7 @@ func (authzRS *authorizationRequestStore) ClearRequest(key string) error {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	_, err = dbClient.Execute(queryDeleteAuthRequest, key, authzRS.deploymentID)
+	_, err = dbClient.ExecuteContext(ctx, queryDeleteAuthRequest, key, authzRS.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to delete authorization request: %w", err)
 	}

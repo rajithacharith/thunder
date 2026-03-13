@@ -19,6 +19,7 @@
 package granthandlers
 
 import (
+	"context"
 	"net/url"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
@@ -47,7 +48,7 @@ func newTokenExchangeGrantHandler(
 }
 
 // ValidateGrant validates the token exchange grant type request.
-func (h *tokenExchangeGrantHandler) ValidateGrant(tokenRequest *model.TokenRequest,
+func (h *tokenExchangeGrantHandler) ValidateGrant(ctx context.Context, tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO) *model.ErrorResponse {
 	if constants.GrantType(tokenRequest.GrantType) != constants.GrantTypeTokenExchange {
 		return &model.ErrorResponse{
@@ -138,7 +139,7 @@ func (h *tokenExchangeGrantHandler) ValidateGrant(tokenRequest *model.TokenReque
 }
 
 // HandleGrant handles the token exchange grant type.
-func (h *tokenExchangeGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
+func (h *tokenExchangeGrantHandler) HandleGrant(ctx context.Context, tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO) (
 	*model.TokenResponseDTO, *model.ErrorResponse) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "TokenExchangeGrantHandler"))

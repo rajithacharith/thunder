@@ -35,6 +35,7 @@ import (
 	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -43,9 +44,11 @@ import (
 
 // AuthorizeServiceInterface defines the interface for authorization services.
 type AuthorizeServiceInterface interface {
-	GetAuthorizationCodeDetails(clientID string, code string) (*AuthorizationCode, error)
-	HandleInitialAuthorizationRequest(msg *OAuthMessage) (*AuthorizationInitResult, *AuthorizationError)
-	HandleAuthorizationCallback(authID string, assertion string) (string, *AuthorizationError)
+	GetAuthorizationCodeDetails(ctx context.Context, clientID string, code string) (*AuthorizationCode, error)
+	HandleInitialAuthorizationRequest(
+		ctx context.Context, msg *OAuthMessage,
+	) (*AuthorizationInitResult, *AuthorizationError)
+	HandleAuthorizationCallback(ctx context.Context, authID string, assertion string) (string, *AuthorizationError)
 }
 
 // authorizeService implements the AuthorizeService for managing OAuth2 authorization flows.
@@ -56,6 +59,7 @@ type authorizeService struct {
 	authReqStore    authorizationRequestStoreInterface
 	jwtService      jwt.JWTServiceInterface
 	flowExecService flowexec.FlowExecServiceInterface
+	transactioner   transaction.Transactioner
 	logger          *log.Logger
 }
 
@@ -66,6 +70,7 @@ func newAuthorizeService(
 	flowExecService flowexec.FlowExecServiceInterface,
 	authCodeStore AuthorizationCodeStoreInterface,
 	authReqStore authorizationRequestStoreInterface,
+	transactioner transaction.Transactioner,
 ) AuthorizeServiceInterface {
 	return &authorizeService{
 		appService:      appService,
@@ -74,42 +79,54 @@ func newAuthorizeService(
 		authReqStore:    authReqStore,
 		jwtService:      jwtService,
 		flowExecService: flowExecService,
+		transactioner:   transactioner,
 		logger:          log.GetLogger().With(log.String(log.LoggerKeyComponentName, "AuthorizeService")),
 	}
 }
 
 // GetAuthorizationCodeDetails atomically consumes and retrieves the authorization code.
-func (as *authorizeService) GetAuthorizationCodeDetails(clientID string, code string) (*AuthorizationCode, error) {
-	consumed, err := as.authCodeStore.ConsumeAuthorizationCode(clientID, code)
-	if err != nil {
-		as.logger.Error("error consuming authorization code", log.Error(err))
-		return nil, errors.New("failed to consume authorization code")
-	}
-
-	authCode, err := as.authCodeStore.GetAuthorizationCode(clientID, code)
-	if err != nil {
-		if errors.Is(err, errAuthorizationCodeNotFound) {
-			return nil, errors.New("invalid authorization code")
+func (as *authorizeService) GetAuthorizationCodeDetails(
+	ctx context.Context, clientID string, code string,
+) (*AuthorizationCode, error) {
+	var authCode *AuthorizationCode
+	err := as.transactioner.Transact(ctx, func(ctx context.Context) error {
+		consumed, err := as.authCodeStore.ConsumeAuthorizationCode(ctx, clientID, code)
+		if err != nil {
+			as.logger.Error("error consuming authorization code", log.Error(err))
+			return errors.New("failed to consume authorization code")
 		}
-		as.logger.Error("error retrieving authorization code", log.Error(err))
-		return nil, errors.New("failed to retrieve authorization code")
+
+		authCode, err = as.authCodeStore.GetAuthorizationCode(ctx, clientID, code)
+		if err != nil {
+			if errors.Is(err, errAuthorizationCodeNotFound) {
+				return errors.New("invalid authorization code")
+			}
+			as.logger.Error("error retrieving authorization code", log.Error(err))
+			return errors.New("failed to retrieve authorization code")
+		}
+
+		if consumed {
+			return nil
+		}
+
+		if authCode.State == AuthCodeStateInactive {
+			// TODO: Revoke all access tokens already granted for this authorization code.
+			return errors.New("authorization code already used")
+		}
+
+		return errors.New("invalid authorization code")
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
-	if consumed {
-		return authCode, nil
-	}
-
-	if authCode.State == AuthCodeStateInactive {
-		// TODO: Revoke all access tokens already granted for this authorization code.
-		return nil, errors.New("authorization code already used")
-	}
-
-	return nil, errors.New("invalid authorization code")
+	return authCode, nil
 }
 
 // HandleInitialAuthorizationRequest processes an initial authorization request from the client.
 // Returns the query params needed to redirect to the login page, or a structured authorization error.
-func (as *authorizeService) HandleInitialAuthorizationRequest(msg *OAuthMessage) (
+func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Context, msg *OAuthMessage) (
 	*AuthorizationInitResult, *AuthorizationError) {
 	// Extract required parameters.
 	clientID := msg.RequestQueryParams[oauth2const.RequestParamClientID]
@@ -256,7 +273,7 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(msg *OAuthMessage)
 	}
 
 	// Store authorization request context in the store.
-	identifier, storeErr := as.authReqStore.AddRequest(authRequestCtx)
+	identifier, storeErr := as.authReqStore.AddRequest(ctx, authRequestCtx)
 	if storeErr != nil {
 		as.logger.Error("Failed to store authorization request context", log.Error(storeErr))
 		return nil, &AuthorizationError{
@@ -296,16 +313,162 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(msg *OAuthMessage)
 
 // HandleAuthorizationCallback processes the callback assertion from the flow engine.
 // Returns the client redirect URI (with authorization code) on success, or a structured error.
-func (as *authorizeService) HandleAuthorizationCallback(authID string, assertion string) (
+func (as *authorizeService) HandleAuthorizationCallback(ctx context.Context, authID string, assertion string) (
 	string, *AuthorizationError) {
-	// Load the authorization request context.
-	authRequestCtx, err := as.loadAuthRequestContext(authID)
-	if err != nil {
-		if errors.Is(err, errAuthRequestNotFound) {
-			return "", &AuthorizationError{
-				Code:    oauth2const.ErrorInvalidRequest,
-				Message: "Invalid authorization request",
+	var redirectURI string
+	var authErr *AuthorizationError
+
+	err := as.transactioner.Transact(ctx, func(ctx context.Context) error {
+		// Load the authorization request context.
+		authRequestCtx, err := as.loadAuthRequestContext(ctx, authID)
+		if err != nil {
+			if errors.Is(err, errAuthRequestNotFound) {
+				authErr = &AuthorizationError{
+					Code:    oauth2const.ErrorInvalidRequest,
+					Message: "Invalid authorization request",
+				}
+				return err
 			}
+
+			authErr = &AuthorizationError{
+				Code:    oauth2const.ErrorServerError,
+				Message: "Failed to process authorization request",
+			}
+			return err
+		}
+
+		if assertion == "" {
+			authErr = &AuthorizationError{
+				Code:              oauth2const.ErrorInvalidRequest,
+				Message:           "Invalid authorization request",
+				SendErrorToClient: true,
+				ClientRedirectURI: authRequestCtx.OAuthParameters.RedirectURI,
+				State:             authRequestCtx.OAuthParameters.State,
+			}
+			return errors.New("assertion is empty")
+		}
+
+		// Verify the assertion.
+		if err := as.verifyAssertion(assertion); err != nil {
+			as.logger.Debug("Assertion verification failed", log.Error(err))
+			authErr = &AuthorizationError{
+				Code:              oauth2const.ErrorInvalidRequest,
+				Message:           "Authorization request failed",
+				SendErrorToClient: true,
+				ClientRedirectURI: authRequestCtx.OAuthParameters.RedirectURI,
+				State:             authRequestCtx.OAuthParameters.State,
+			}
+			return err
+		}
+
+		// Decode user attributes from the assertion.
+		claims, authTime, err := decodeAttributesFromAssertion(assertion)
+		if err != nil {
+			as.logger.Error("Failed to decode user attributes from assertion", log.Error(err))
+			authErr = &AuthorizationError{
+				Code:              oauth2const.ErrorServerError,
+				Message:           "Failed to process authorization request",
+				SendErrorToClient: true,
+				ClientRedirectURI: authRequestCtx.OAuthParameters.RedirectURI,
+				State:             authRequestCtx.OAuthParameters.State,
+			}
+			return err
+		}
+
+		if claims.userID == "" {
+			as.logger.Error("User ID is empty after decoding assertion")
+			authErr = &AuthorizationError{
+				Code:              oauth2const.ErrorServerError,
+				Message:           "Authorization request failed",
+				SendErrorToClient: true,
+				ClientRedirectURI: authRequestCtx.OAuthParameters.RedirectURI,
+				State:             authRequestCtx.OAuthParameters.State,
+			}
+			return errors.New("user ID is empty")
+		}
+
+		// Validate sub claim constraint if specified in claims parameter.
+		// If sub claim is requested with a value constraint and doesn't match, authentication must fail.
+		hasOpenIDScope := slices.Contains(authRequestCtx.OAuthParameters.StandardScopes, oauth2const.ScopeOpenID)
+		if hasOpenIDScope {
+			if err := validateSubClaimConstraint(
+				authRequestCtx.OAuthParameters.ClaimsRequest, claims.userID,
+			); err != nil {
+				as.logger.Debug("Sub claim validation failed", log.Error(err))
+				authErr = &AuthorizationError{
+					Code:              oauth2const.ErrorAccessDenied,
+					Message:           "Authorization request failed",
+					SendErrorToClient: true,
+					ClientRedirectURI: authRequestCtx.OAuthParameters.RedirectURI,
+					State:             authRequestCtx.OAuthParameters.State,
+				}
+				return err
+			}
+		}
+
+		// Extract authorized permissions for permission scopes.
+		// Overwrite the non-OIDC scopes in auth request context with the authorized scopes from the assertion.
+		if claims.authorizedPermissions != "" {
+			authRequestCtx.OAuthParameters.PermissionScopes = utils.ParseStringArray(
+				claims.authorizedPermissions, " ")
+		} else {
+			// Clear permission scopes if no authorized permissions in assertion.
+			authRequestCtx.OAuthParameters.PermissionScopes = []string{}
+		}
+
+		// Generate the authorization code.
+		authzCode, err := createAuthorizationCode(authRequestCtx, &claims, authTime)
+		if err != nil {
+			as.logger.Error("Failed to generate authorization code", log.Error(err))
+			authErr = &AuthorizationError{
+				Code:              oauth2const.ErrorServerError,
+				Message:           "Failed to process authorization request",
+				SendErrorToClient: true,
+				ClientRedirectURI: authRequestCtx.OAuthParameters.RedirectURI,
+				State:             authRequestCtx.OAuthParameters.State,
+			}
+			return err
+		}
+
+		// Persist the authorization code.
+		if persistErr := as.authCodeStore.InsertAuthorizationCode(ctx, authzCode); persistErr != nil {
+			as.logger.Error("Failed to persist authorization code", log.Error(persistErr))
+			authErr = &AuthorizationError{
+				Code:              oauth2const.ErrorServerError,
+				Message:           "Failed to process authorization request",
+				SendErrorToClient: true,
+				ClientRedirectURI: authRequestCtx.OAuthParameters.RedirectURI,
+				State:             authRequestCtx.OAuthParameters.State,
+			}
+			return persistErr
+		}
+
+		// Construct the redirect URI with the authorization code.
+		queryParams := map[string]string{
+			"code": authzCode.Code,
+		}
+		if authRequestCtx.OAuthParameters.State != "" {
+			queryParams[oauth2const.RequestParamState] = authRequestCtx.OAuthParameters.State
+		}
+		redirectURI, err = oauth2utils.GetURIWithQueryParams(authzCode.RedirectURI, queryParams)
+		if err != nil {
+			as.logger.Error("Failed to construct redirect URI", log.Error(err))
+			authErr = &AuthorizationError{
+				Code:              oauth2const.ErrorServerError,
+				Message:           "Failed to process authorization request",
+				SendErrorToClient: true,
+				ClientRedirectURI: authRequestCtx.OAuthParameters.RedirectURI,
+				State:             authRequestCtx.OAuthParameters.State,
+			}
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		if authErr != nil {
+			return "", authErr
 		}
 		return "", &AuthorizationError{
 			Code:    oauth2const.ErrorServerError,
@@ -313,128 +476,12 @@ func (as *authorizeService) HandleAuthorizationCallback(authID string, assertion
 		}
 	}
 
-	if assertion == "" {
-		return "", &AuthorizationError{
-			Code:              oauth2const.ErrorInvalidRequest,
-			Message:           "Invalid authorization request",
-			SendErrorToClient: true,
-			ClientRedirectURI: authRequestCtx.OAuthParameters.RedirectURI,
-			State:             authRequestCtx.OAuthParameters.State,
-		}
-	}
-
-	// Verify the assertion.
-	if err := as.verifyAssertion(assertion); err != nil {
-		as.logger.Debug("Assertion verification failed", log.Error(err))
-		return "", &AuthorizationError{
-			Code:              oauth2const.ErrorInvalidRequest,
-			Message:           "Authorization request failed",
-			SendErrorToClient: true,
-			ClientRedirectURI: authRequestCtx.OAuthParameters.RedirectURI,
-			State:             authRequestCtx.OAuthParameters.State,
-		}
-	}
-
-	// Decode user attributes from the assertion.
-	claims, authTime, err := decodeAttributesFromAssertion(assertion)
-	if err != nil {
-		as.logger.Error("Failed to decode user attributes from assertion", log.Error(err))
-		return "", &AuthorizationError{
-			Code:              oauth2const.ErrorServerError,
-			Message:           "Failed to process authorization request",
-			SendErrorToClient: true,
-			ClientRedirectURI: authRequestCtx.OAuthParameters.RedirectURI,
-			State:             authRequestCtx.OAuthParameters.State,
-		}
-	}
-
-	if claims.userID == "" {
-		as.logger.Error("User ID is empty after decoding assertion")
-		return "", &AuthorizationError{
-			Code:              oauth2const.ErrorServerError,
-			Message:           "Authorization request failed",
-			SendErrorToClient: true,
-			ClientRedirectURI: authRequestCtx.OAuthParameters.RedirectURI,
-			State:             authRequestCtx.OAuthParameters.State,
-		}
-	}
-
-	// Validate sub claim constraint if specified in claims parameter.
-	// If sub claim is requested with a value constraint and doesn't match, authentication must fail.
-	hasOpenIDScope := slices.Contains(authRequestCtx.OAuthParameters.StandardScopes, oauth2const.ScopeOpenID)
-	if hasOpenIDScope {
-		if err := validateSubClaimConstraint(authRequestCtx.OAuthParameters.ClaimsRequest, claims.userID); err != nil {
-			as.logger.Debug("Sub claim validation failed", log.Error(err))
-			return "", &AuthorizationError{
-				Code:              oauth2const.ErrorAccessDenied,
-				Message:           "Authorization request failed",
-				SendErrorToClient: true,
-				ClientRedirectURI: authRequestCtx.OAuthParameters.RedirectURI,
-				State:             authRequestCtx.OAuthParameters.State,
-			}
-		}
-	}
-
-	// Extract authorized permissions for permission scopes.
-	// Overwrite the non-OIDC scopes in auth request context with the authorized scopes from the assertion.
-	if claims.authorizedPermissions != "" {
-		authRequestCtx.OAuthParameters.PermissionScopes = utils.ParseStringArray(
-			claims.authorizedPermissions, " ")
-	} else {
-		// Clear permission scopes if no authorized permissions in assertion.
-		authRequestCtx.OAuthParameters.PermissionScopes = []string{}
-	}
-
-	// Generate the authorization code.
-	authzCode, err := createAuthorizationCode(authRequestCtx, &claims, authTime)
-	if err != nil {
-		as.logger.Error("Failed to generate authorization code", log.Error(err))
-		return "", &AuthorizationError{
-			Code:              oauth2const.ErrorServerError,
-			Message:           "Failed to process authorization request",
-			SendErrorToClient: true,
-			ClientRedirectURI: authRequestCtx.OAuthParameters.RedirectURI,
-			State:             authRequestCtx.OAuthParameters.State,
-		}
-	}
-
-	// Persist the authorization code.
-	if persistErr := as.authCodeStore.InsertAuthorizationCode(authzCode); persistErr != nil {
-		as.logger.Error("Failed to persist authorization code", log.Error(persistErr))
-		return "", &AuthorizationError{
-			Code:              oauth2const.ErrorServerError,
-			Message:           "Failed to process authorization request",
-			SendErrorToClient: true,
-			ClientRedirectURI: authRequestCtx.OAuthParameters.RedirectURI,
-			State:             authRequestCtx.OAuthParameters.State,
-		}
-	}
-
-	// Construct the redirect URI with the authorization code.
-	queryParams := map[string]string{
-		"code": authzCode.Code,
-	}
-	if authRequestCtx.OAuthParameters.State != "" {
-		queryParams[oauth2const.RequestParamState] = authRequestCtx.OAuthParameters.State
-	}
-	redirectURI, err := oauth2utils.GetURIWithQueryParams(authzCode.RedirectURI, queryParams)
-	if err != nil {
-		as.logger.Error("Failed to construct redirect URI", log.Error(err))
-		return "", &AuthorizationError{
-			Code:              oauth2const.ErrorServerError,
-			Message:           "Failed to process authorization request",
-			SendErrorToClient: true,
-			ClientRedirectURI: authRequestCtx.OAuthParameters.RedirectURI,
-			State:             authRequestCtx.OAuthParameters.State,
-		}
-	}
-
 	return redirectURI, nil
 }
 
 // loadAuthRequestContext loads the authorization request context from the store using the auth ID.
-func (as *authorizeService) loadAuthRequestContext(authID string) (*authRequestContext, error) {
-	ok, authRequestCtx, err := as.authReqStore.GetRequest(authID)
+func (as *authorizeService) loadAuthRequestContext(ctx context.Context, authID string) (*authRequestContext, error) {
+	ok, authRequestCtx, err := as.authReqStore.GetRequest(ctx, authID)
 	if err != nil {
 		as.logger.Error("Failed to retrieve authorization request context", log.Error(err))
 		return nil, errors.New("failed to retrieve authorization request context")
@@ -445,7 +492,7 @@ func (as *authorizeService) loadAuthRequestContext(authID string) (*authRequestC
 	}
 
 	// Remove the authorization request context after retrieval.
-	if clearErr := as.authReqStore.ClearRequest(authID); clearErr != nil {
+	if clearErr := as.authReqStore.ClearRequest(ctx, authID); clearErr != nil {
 		as.logger.Error("Failed to clear authorization request context", log.Error(clearErr))
 	}
 	return &authRequestCtx, nil

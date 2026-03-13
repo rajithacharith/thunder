@@ -53,12 +53,13 @@ func newAuthorizeHandler(authZService AuthorizeServiceInterface) AuthorizeHandle
 
 // HandleAuthorizeGetRequest handles the GET request for OAuth2 authorization.
 func (ah *authorizeHandler) HandleAuthorizeGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	oAuthMessage := ah.getOAuthMessage(r, w)
 	if oAuthMessage == nil {
 		return
 	}
 
-	result, authErr := ah.authZService.HandleInitialAuthorizationRequest(oAuthMessage)
+	result, authErr := ah.authZService.HandleInitialAuthorizationRequest(ctx, oAuthMessage)
 	if authErr != nil {
 		if authErr.SendErrorToClient {
 			queryParams := map[string]string{
@@ -87,6 +88,7 @@ func (ah *authorizeHandler) HandleAuthorizeGetRequest(w http.ResponseWriter, r *
 // HandleAuthCallbackPostRequest handles the POST request for OAuth2 auth callback.
 // This endpoint receives the assertion from the flow engine after successful authentication.
 func (ah *authorizeHandler) HandleAuthCallbackPostRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	oAuthMessage := ah.getOAuthMessage(r, w)
 	if oAuthMessage == nil {
 		return
@@ -97,7 +99,7 @@ func (ah *authorizeHandler) HandleAuthCallbackPostRequest(w http.ResponseWriter,
 		authID := oAuthMessage.AuthID
 		assertion := oAuthMessage.RequestBodyParams[oauth2const.Assertion]
 
-		redirectURI, authErr := ah.authZService.HandleAuthorizationCallback(authID, assertion)
+		redirectURI, authErr := ah.authZService.HandleAuthorizationCallback(ctx, authID, assertion)
 		if authErr != nil {
 			if authErr.SendErrorToClient {
 				ah.writeAuthZResponseToClientRedirect(w, authErr)

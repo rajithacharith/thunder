@@ -84,6 +84,10 @@ func (suite *AuthorizeHandlerTestSuite) SetupTest() {
 	suite.handler = newAuthorizeHandler(suite.mockAuthzService).(*authorizeHandler)
 }
 
+func (suite *AuthorizeHandlerTestSuite) TearDownTest() {
+	config.ResetThunderRuntime()
+}
+
 func (suite *AuthorizeHandlerTestSuite) TestnewAuthorizeHandler() {
 	mockSvc := NewAuthorizeServiceInterfaceMock(suite.T())
 	handler := newAuthorizeHandler(mockSvc)
@@ -198,7 +202,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizeGetRequest_Success() 
 			oauth2const.FlowID: "test-flow-id",
 		},
 	}
-	suite.mockAuthzService.EXPECT().HandleInitialAuthorizationRequest(mock.Anything).Return(result, nil)
+	suite.mockAuthzService.EXPECT().HandleInitialAuthorizationRequest(mock.Anything, mock.Anything).Return(result, nil)
 
 	req := httptest.NewRequest("GET",
 		"/oauth2/authorize?client_id=test-client&redirect_uri=https://example.com/callback&response_type=code", nil)
@@ -217,7 +221,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizeGetRequest_ServiceErr
 		Message:           "Missing client_id parameter",
 		SendErrorToClient: false,
 	}
-	suite.mockAuthzService.EXPECT().HandleInitialAuthorizationRequest(mock.Anything).Return(nil, authErr)
+	suite.mockAuthzService.EXPECT().HandleInitialAuthorizationRequest(mock.Anything, mock.Anything).Return(nil, authErr)
 
 	req := httptest.NewRequest("GET", "/oauth2/authorize?client_id=&redirect_uri=", nil)
 	rr := httptest.NewRecorder()
@@ -237,7 +241,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizeGetRequest_ServiceErr
 		ClientRedirectURI: "https://client.example.com/callback",
 		State:             "test-state",
 	}
-	suite.mockAuthzService.EXPECT().HandleInitialAuthorizationRequest(mock.Anything).Return(nil, authErr)
+	suite.mockAuthzService.EXPECT().HandleInitialAuthorizationRequest(mock.Anything, mock.Anything).Return(nil, authErr)
 
 	reqURL := "/oauth2/authorize?client_id=test-client" +
 		"&redirect_uri=https://client.example.com/callback&response_type=invalid"
@@ -263,7 +267,9 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizeGetRequest_GetOAuthMe
 
 func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_Success() {
 	redirectURI := "https://client.example.com/callback?code=test-code&state=test-state"
-	suite.mockAuthzService.EXPECT().HandleAuthorizationCallback(testAuthID, "test-assertion").Return(redirectURI, nil)
+	suite.mockAuthzService.EXPECT().
+		HandleAuthorizationCallback(mock.Anything, testAuthID, "test-assertion").
+		Return(redirectURI, nil)
 
 	postData := AuthZPostRequest{
 		AuthID:    testAuthID,
@@ -290,7 +296,9 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_Servic
 		Message: "Invalid authorization request",
 		State:   "test-state",
 	}
-	suite.mockAuthzService.EXPECT().HandleAuthorizationCallback(testAuthID, "test-assertion").Return("", authErr)
+	suite.mockAuthzService.EXPECT().
+		HandleAuthorizationCallback(mock.Anything, testAuthID, "test-assertion").
+		Return("", authErr)
 
 	postData := AuthZPostRequest{
 		AuthID:    testAuthID,
@@ -320,7 +328,8 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthCallbackPostRequest_Servic
 		SendErrorToClient: true,
 		ClientRedirectURI: "https://client.example.com/callback",
 	}
-	suite.mockAuthzService.EXPECT().HandleAuthorizationCallback(testAuthID, "test-assertion").Return("", authErr)
+	suite.mockAuthzService.EXPECT().HandleAuthorizationCallback(mock.Anything, testAuthID, "test-assertion").
+		Return("", authErr)
 
 	postData := AuthZPostRequest{
 		AuthID:    testAuthID,

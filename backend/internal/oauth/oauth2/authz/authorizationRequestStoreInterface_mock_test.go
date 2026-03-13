@@ -5,6 +5,8 @@
 package authz
 
 import (
+	"context"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -36,8 +38,8 @@ func (_m *authorizationRequestStoreInterfaceMock) EXPECT() *authorizationRequest
 }
 
 // AddRequest provides a mock function for the type authorizationRequestStoreInterfaceMock
-func (_mock *authorizationRequestStoreInterfaceMock) AddRequest(value authRequestContext) (string, error) {
-	ret := _mock.Called(value)
+func (_mock *authorizationRequestStoreInterfaceMock) AddRequest(ctx context.Context, value authRequestContext) (string, error) {
+	ret := _mock.Called(ctx, value)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AddRequest")
@@ -45,16 +47,16 @@ func (_mock *authorizationRequestStoreInterfaceMock) AddRequest(value authReques
 
 	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(authRequestContext) (string, error)); ok {
-		return returnFunc(value)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, authRequestContext) (string, error)); ok {
+		return returnFunc(ctx, value)
 	}
-	if returnFunc, ok := ret.Get(0).(func(authRequestContext) string); ok {
-		r0 = returnFunc(value)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, authRequestContext) string); ok {
+		r0 = returnFunc(ctx, value)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(authRequestContext) error); ok {
-		r1 = returnFunc(value)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, authRequestContext) error); ok {
+		r1 = returnFunc(ctx, value)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -67,19 +69,25 @@ type authorizationRequestStoreInterfaceMock_AddRequest_Call struct {
 }
 
 // AddRequest is a helper method to define mock.On call
+//   - ctx context.Context
 //   - value authRequestContext
-func (_e *authorizationRequestStoreInterfaceMock_Expecter) AddRequest(value interface{}) *authorizationRequestStoreInterfaceMock_AddRequest_Call {
-	return &authorizationRequestStoreInterfaceMock_AddRequest_Call{Call: _e.mock.On("AddRequest", value)}
+func (_e *authorizationRequestStoreInterfaceMock_Expecter) AddRequest(ctx interface{}, value interface{}) *authorizationRequestStoreInterfaceMock_AddRequest_Call {
+	return &authorizationRequestStoreInterfaceMock_AddRequest_Call{Call: _e.mock.On("AddRequest", ctx, value)}
 }
 
-func (_c *authorizationRequestStoreInterfaceMock_AddRequest_Call) Run(run func(value authRequestContext)) *authorizationRequestStoreInterfaceMock_AddRequest_Call {
+func (_c *authorizationRequestStoreInterfaceMock_AddRequest_Call) Run(run func(ctx context.Context, value authRequestContext)) *authorizationRequestStoreInterfaceMock_AddRequest_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 authRequestContext
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(authRequestContext)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 authRequestContext
+		if args[1] != nil {
+			arg1 = args[1].(authRequestContext)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -90,22 +98,22 @@ func (_c *authorizationRequestStoreInterfaceMock_AddRequest_Call) Return(s strin
 	return _c
 }
 
-func (_c *authorizationRequestStoreInterfaceMock_AddRequest_Call) RunAndReturn(run func(value authRequestContext) (string, error)) *authorizationRequestStoreInterfaceMock_AddRequest_Call {
+func (_c *authorizationRequestStoreInterfaceMock_AddRequest_Call) RunAndReturn(run func(ctx context.Context, value authRequestContext) (string, error)) *authorizationRequestStoreInterfaceMock_AddRequest_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ClearRequest provides a mock function for the type authorizationRequestStoreInterfaceMock
-func (_mock *authorizationRequestStoreInterfaceMock) ClearRequest(key string) error {
-	ret := _mock.Called(key)
+func (_mock *authorizationRequestStoreInterfaceMock) ClearRequest(ctx context.Context, key string) error {
+	ret := _mock.Called(ctx, key)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ClearRequest")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string) error); ok {
-		r0 = returnFunc(key)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, key)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -118,19 +126,25 @@ type authorizationRequestStoreInterfaceMock_ClearRequest_Call struct {
 }
 
 // ClearRequest is a helper method to define mock.On call
+//   - ctx context.Context
 //   - key string
-func (_e *authorizationRequestStoreInterfaceMock_Expecter) ClearRequest(key interface{}) *authorizationRequestStoreInterfaceMock_ClearRequest_Call {
-	return &authorizationRequestStoreInterfaceMock_ClearRequest_Call{Call: _e.mock.On("ClearRequest", key)}
+func (_e *authorizationRequestStoreInterfaceMock_Expecter) ClearRequest(ctx interface{}, key interface{}) *authorizationRequestStoreInterfaceMock_ClearRequest_Call {
+	return &authorizationRequestStoreInterfaceMock_ClearRequest_Call{Call: _e.mock.On("ClearRequest", ctx, key)}
 }
 
-func (_c *authorizationRequestStoreInterfaceMock_ClearRequest_Call) Run(run func(key string)) *authorizationRequestStoreInterfaceMock_ClearRequest_Call {
+func (_c *authorizationRequestStoreInterfaceMock_ClearRequest_Call) Run(run func(ctx context.Context, key string)) *authorizationRequestStoreInterfaceMock_ClearRequest_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -141,14 +155,14 @@ func (_c *authorizationRequestStoreInterfaceMock_ClearRequest_Call) Return(err e
 	return _c
 }
 
-func (_c *authorizationRequestStoreInterfaceMock_ClearRequest_Call) RunAndReturn(run func(key string) error) *authorizationRequestStoreInterfaceMock_ClearRequest_Call {
+func (_c *authorizationRequestStoreInterfaceMock_ClearRequest_Call) RunAndReturn(run func(ctx context.Context, key string) error) *authorizationRequestStoreInterfaceMock_ClearRequest_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetRequest provides a mock function for the type authorizationRequestStoreInterfaceMock
-func (_mock *authorizationRequestStoreInterfaceMock) GetRequest(key string) (bool, authRequestContext, error) {
-	ret := _mock.Called(key)
+func (_mock *authorizationRequestStoreInterfaceMock) GetRequest(ctx context.Context, key string) (bool, authRequestContext, error) {
+	ret := _mock.Called(ctx, key)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetRequest")
@@ -157,21 +171,21 @@ func (_mock *authorizationRequestStoreInterfaceMock) GetRequest(key string) (boo
 	var r0 bool
 	var r1 authRequestContext
 	var r2 error
-	if returnFunc, ok := ret.Get(0).(func(string) (bool, authRequestContext, error)); ok {
-		return returnFunc(key)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, authRequestContext, error)); ok {
+		return returnFunc(ctx, key)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = returnFunc(key)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, key)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) authRequestContext); ok {
-		r1 = returnFunc(key)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) authRequestContext); ok {
+		r1 = returnFunc(ctx, key)
 	} else {
 		r1 = ret.Get(1).(authRequestContext)
 	}
-	if returnFunc, ok := ret.Get(2).(func(string) error); ok {
-		r2 = returnFunc(key)
+	if returnFunc, ok := ret.Get(2).(func(context.Context, string) error); ok {
+		r2 = returnFunc(ctx, key)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -184,19 +198,25 @@ type authorizationRequestStoreInterfaceMock_GetRequest_Call struct {
 }
 
 // GetRequest is a helper method to define mock.On call
+//   - ctx context.Context
 //   - key string
-func (_e *authorizationRequestStoreInterfaceMock_Expecter) GetRequest(key interface{}) *authorizationRequestStoreInterfaceMock_GetRequest_Call {
-	return &authorizationRequestStoreInterfaceMock_GetRequest_Call{Call: _e.mock.On("GetRequest", key)}
+func (_e *authorizationRequestStoreInterfaceMock_Expecter) GetRequest(ctx interface{}, key interface{}) *authorizationRequestStoreInterfaceMock_GetRequest_Call {
+	return &authorizationRequestStoreInterfaceMock_GetRequest_Call{Call: _e.mock.On("GetRequest", ctx, key)}
 }
 
-func (_c *authorizationRequestStoreInterfaceMock_GetRequest_Call) Run(run func(key string)) *authorizationRequestStoreInterfaceMock_GetRequest_Call {
+func (_c *authorizationRequestStoreInterfaceMock_GetRequest_Call) Run(run func(ctx context.Context, key string)) *authorizationRequestStoreInterfaceMock_GetRequest_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -207,7 +227,7 @@ func (_c *authorizationRequestStoreInterfaceMock_GetRequest_Call) Return(b bool,
 	return _c
 }
 
-func (_c *authorizationRequestStoreInterfaceMock_GetRequest_Call) RunAndReturn(run func(key string) (bool, authRequestContext, error)) *authorizationRequestStoreInterfaceMock_GetRequest_Call {
+func (_c *authorizationRequestStoreInterfaceMock_GetRequest_Call) RunAndReturn(run func(ctx context.Context, key string) (bool, authRequestContext, error)) *authorizationRequestStoreInterfaceMock_GetRequest_Call {
 	_c.Call.Return(run)
 	return _c
 }

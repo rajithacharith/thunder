@@ -27,6 +27,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
@@ -83,7 +84,7 @@ func (s *DCRHandlerTestSuite) TestHandleDCRRegistration_ServiceError() {
 	}
 
 	serviceErr := &ErrorInvalidRedirectURI
-	s.mockService.On("RegisterClient", request).Return(nil, serviceErr)
+	s.mockService.On("RegisterClient", mock.Anything, request).Return(nil, serviceErr)
 
 	requestJSON, _ := json.Marshal(request)
 	req := httptest.NewRequest(http.MethodPost, "/oauth2/dcr", bytes.NewReader(requestJSON))
@@ -109,7 +110,7 @@ func (s *DCRHandlerTestSuite) TestHandleDCRRegistration_ClientError() {
 		Error:            "Invalid client metadata",
 		ErrorDescription: "Invalid grant type",
 	}
-	s.mockService.On("RegisterClient", request).Return(nil, serviceErr)
+	s.mockService.On("RegisterClient", mock.Anything, request).Return(nil, serviceErr)
 
 	requestJSON, _ := json.Marshal(request)
 	req := httptest.NewRequest(http.MethodPost, "/oauth2/dcr", bytes.NewReader(requestJSON))
@@ -134,7 +135,7 @@ func (s *DCRHandlerTestSuite) TestHandleDCRRegistration_ServerError() {
 	}
 
 	serviceErr := &ErrorServerError
-	s.mockService.On("RegisterClient", request).Return(nil, serviceErr)
+	s.mockService.On("RegisterClient", mock.Anything, request).Return(nil, serviceErr)
 
 	requestJSON, _ := json.Marshal(request)
 	req := httptest.NewRequest(http.MethodPost, "/oauth2/dcr", bytes.NewReader(requestJSON))
@@ -164,7 +165,7 @@ func (s *DCRHandlerTestSuite) TestHandleDCRRegistration_UnknownErrorType() {
 		Error:            "Unknown error",
 		ErrorDescription: "An unknown error occurred",
 	}
-	s.mockService.On("RegisterClient", request).Return(nil, serviceErr)
+	s.mockService.On("RegisterClient", mock.Anything, request).Return(nil, serviceErr)
 
 	requestJSON, _ := json.Marshal(request)
 	req := httptest.NewRequest(http.MethodPost, "/oauth2/dcr", bytes.NewReader(requestJSON))
@@ -194,7 +195,7 @@ func (s *DCRHandlerTestSuite) TestHandleDCRRegistration_Success() {
 		GrantTypes:   []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
 	}
 
-	s.mockService.On("RegisterClient", request).Return(response, (*serviceerror.ServiceError)(nil))
+	s.mockService.On("RegisterClient", mock.Anything, request).Return(response, (*serviceerror.ServiceError)(nil))
 
 	requestJSON, _ := json.Marshal(request)
 	req := httptest.NewRequest(http.MethodPost, "/oauth2/dcr", bytes.NewReader(requestJSON))
@@ -360,7 +361,7 @@ func TestHandleDCRRegistration_ClosedDCR_WithSystemPermission(t *testing.T) {
 		GrantTypes:   []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
 	}
 	response := &DCRRegistrationResponse{ClientID: "new-client"}
-	mockService.On("RegisterClient", request).Return(response, (*serviceerror.ServiceError)(nil))
+	mockService.On("RegisterClient", mock.Anything, request).Return(response, (*serviceerror.ServiceError)(nil))
 
 	requestJSON, _ := json.Marshal(request)
 	req := httptest.NewRequest(http.MethodPost, "/oauth2/dcr/register", bytes.NewReader(requestJSON))

@@ -280,7 +280,7 @@ func (as *applicationService) ValidateApplication(ctx context.Context, app *mode
 		return nil, nil, &ErrorInvalidLogoURL
 	}
 
-	if svcErr := as.validateAllowedUserTypes(app.AllowedUserTypes); svcErr != nil {
+	if svcErr := as.validateAllowedUserTypes(ctx, app.AllowedUserTypes); svcErr != nil {
 		return nil, nil, svcErr
 	}
 
@@ -416,7 +416,7 @@ func (as *applicationService) ValidateApplicationForUpdate(
 		return nil, nil, &ErrorInvalidLogoURL
 	}
 
-	if svcErr := as.validateAllowedUserTypes(app.AllowedUserTypes); svcErr != nil {
+	if svcErr := as.validateAllowedUserTypes(ctx, app.AllowedUserTypes); svcErr != nil {
 		return nil, nil, svcErr
 	}
 
@@ -505,7 +505,7 @@ func (as *applicationService) GetOAuthApplication(
 		return nil, &ErrorApplicationNotFound
 	}
 
-	certificate, certErr := as.getApplicationCertificate(clientID, cert.CertificateReferenceTypeOAuthApp)
+	certificate, certErr := as.getApplicationCertificate(ctx, clientID, cert.CertificateReferenceTypeOAuthApp)
 	if certErr != nil {
 		return nil, certErr
 	}
@@ -575,7 +575,7 @@ func (as *applicationService) GetApplication(ctx context.Context, appID string) 
 		application.InboundAuthConfig = inboundAuthConfigs
 	}
 
-	return as.enrichApplicationWithCertificate(application)
+	return as.enrichApplicationWithCertificate(ctx, application)
 }
 
 // handleApplicationRetrievalError handles common error scenarios when retrieving applications from the
@@ -588,9 +588,9 @@ func (as *applicationService) handleApplicationRetrievalError(err error) *servic
 }
 
 // enrichApplicationWithCertificate retrieves and adds the certificate to the application.
-func (as *applicationService) enrichApplicationWithCertificate(application *model.Application) (
+func (as *applicationService) enrichApplicationWithCertificate(ctx context.Context, application *model.Application) (
 	*model.Application, *serviceerror.ServiceError) {
-	appCert, certErr := as.getApplicationCertificate(application.ID, cert.CertificateReferenceTypeApplication)
+	appCert, certErr := as.getApplicationCertificate(ctx, application.ID, cert.CertificateReferenceTypeApplication)
 	if certErr != nil {
 		return nil, certErr
 	}
@@ -599,7 +599,7 @@ func (as *applicationService) enrichApplicationWithCertificate(application *mode
 	// Enrich OAuth config certificate for each inbound auth config.
 	for i, inboundAuthConfig := range application.InboundAuthConfig {
 		if inboundAuthConfig.Type == model.OAuthInboundAuthType && inboundAuthConfig.OAuthAppConfig != nil {
-			oauthCert, oauthCertErr := as.getApplicationCertificate(inboundAuthConfig.OAuthAppConfig.ClientID,
+			oauthCert, oauthCertErr := as.getApplicationCertificate(ctx, inboundAuthConfig.OAuthAppConfig.ClientID,
 				cert.CertificateReferenceTypeOAuthApp)
 			if oauthCertErr != nil {
 				return nil, oauthCertErr
@@ -980,7 +980,8 @@ func (as *applicationService) validateLayoutID(layoutID string) *serviceerror.Se
 
 // validateAllowedUserTypes validates that all user types in allowed_user_types exist in the system.
 // TODO: Refine validation logic from user schema service.
-func (as *applicationService) validateAllowedUserTypes(allowedUserTypes []string) *serviceerror.ServiceError {
+func (as *applicationService) validateAllowedUserTypes(
+	ctx context.Context, allowedUserTypes []string) *serviceerror.ServiceError {
 	if len(allowedUserTypes) == 0 {
 		return nil
 	}
@@ -993,10 +994,8 @@ func (as *applicationService) validateAllowedUserTypes(allowedUserTypes []string
 	offset := 0
 
 	for {
-		// TODO: Pass context from the caller and remove creating the runtime context
-		// Runtime context is created to avoid authorization checks
 		userSchemaList, svcErr := as.userSchemaService.GetUserSchemaList(
-			security.WithRuntimeContext(context.TODO()), limit, offset)
+			security.WithRuntimeContext(ctx), limit, offset)
 		if svcErr != nil {
 			logger.Error("Failed to retrieve user schema list for validation",
 				log.String("error", svcErr.Error), log.String("code", svcErr.Code))
@@ -1322,12 +1321,12 @@ func (as *applicationService) deleteOAuthAppCertificate(
 
 // getApplicationCertificate retrieves the certificate associated with the application based
 // on the reference type (application or OAuth app).
-func (as *applicationService) getApplicationCertificate(appID string,
+func (as *applicationService) getApplicationCertificate(ctx context.Context, appID string,
 	refType cert.CertificateReferenceType) (*model.ApplicationCertificate, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
 	certificate, certErr := as.certService.GetCertificateByReference(
-		context.TODO(), refType, appID)
+		ctx, refType, appID)
 
 	if certErr != nil {
 		if certErr.Code == cert.ErrorCertificateNotFound.Code {

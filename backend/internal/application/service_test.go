@@ -2013,7 +2013,8 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_NotFound() {
 		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(nil, svcErr)
 
-	result, err := service.getApplicationCertificate(testServiceAppID, cert.CertificateReferenceTypeApplication)
+	result, err := service.getApplicationCertificate(context.Background(), testServiceAppID,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), err)
@@ -2026,7 +2027,8 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_NilCertificate() {
 	mockCertService.EXPECT().GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication,
 		testServiceAppID).Return(nil, nil)
 
-	result, err := service.getApplicationCertificate(testServiceAppID, cert.CertificateReferenceTypeApplication)
+	result, err := service.getApplicationCertificate(context.Background(), testServiceAppID,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), err)
@@ -2045,7 +2047,8 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_Success() {
 		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(certificate, nil)
 
-	result, err := service.getApplicationCertificate(testServiceAppID, cert.CertificateReferenceTypeApplication)
+	result, err := service.getApplicationCertificate(context.Background(), testServiceAppID,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), err)
@@ -2290,7 +2293,8 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_ClientError() {
 		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(nil, svcErr)
 
-	result, err := service.getApplicationCertificate(testServiceAppID, cert.CertificateReferenceTypeApplication)
+	result, err := service.getApplicationCertificate(context.Background(), testServiceAppID,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -2307,7 +2311,8 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_ServerError() {
 		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(nil, svcErr)
 
-	result, err := service.getApplicationCertificate(testServiceAppID, cert.CertificateReferenceTypeApplication)
+	result, err := service.getApplicationCertificate(context.Background(), testServiceAppID,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -2437,7 +2442,8 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_ClientError_NonNotF
 		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(nil, svcErr)
 
-	result, err := service.getApplicationCertificate(testServiceAppID, cert.CertificateReferenceTypeApplication)
+	result, err := service.getApplicationCertificate(context.Background(), testServiceAppID,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -2633,7 +2639,7 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Error() {
 		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(nil, svcErr)
 
-	result, err := service.enrichApplicationWithCertificate(app)
+	result, err := service.enrichApplicationWithCertificate(context.Background(), app)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -2656,7 +2662,7 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Success() {
 		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(certificate, nil)
 
-	result, err := service.enrichApplicationWithCertificate(app)
+	result, err := service.enrichApplicationWithCertificate(context.Background(), app)
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), err)
@@ -3697,7 +3703,7 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyString() {
 
 	// Test with empty string in allowedUserTypes
 	allowedUserTypes := []string{""}
-	svcErr := serviceWithMock.validateAllowedUserTypes(allowedUserTypes)
+	svcErr := serviceWithMock.validateAllowedUserTypes(context.Background(), allowedUserTypes)
 
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorInvalidUserType, svcErr)
@@ -3735,7 +3741,7 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyStringWithValid
 
 	// Test with empty string and valid user type
 	allowedUserTypes := []string{"", "validUserType"}
-	svcErr := serviceWithMock.validateAllowedUserTypes(allowedUserTypes)
+	svcErr := serviceWithMock.validateAllowedUserTypes(context.Background(), allowedUserTypes)
 
 	// Should still fail because empty string is invalid
 	assert.NotNil(suite.T(), svcErr)

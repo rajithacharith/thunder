@@ -20,6 +20,7 @@
 package clientauth
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -43,12 +44,12 @@ import (
 // It extracts credentials, validates them, and returns OAuthClientInfo on success.
 // Returns an authError on failure.
 func authenticate(
+	ctx context.Context,
 	r *http.Request,
 	appService application.ApplicationServiceInterface,
 	jwtService jwt.JWTServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
 ) (*OAuthClientInfo, *authError) {
-	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ClientAuthMiddleware"))
 
 	// Extract all possible auth fields
@@ -139,7 +140,7 @@ func authenticate(
 	// Validate credentials based on method
 	switch detectedMethod {
 	case constants.TokenEndpointAuthMethodPrivateKeyJWT:
-		if err := validateClientAssertion(oauthApp, jwtService, discoveryService, clientID,
+		if err := validateClientAssertion(ctx, oauthApp, jwtService, discoveryService, clientID,
 			clientAssertion); err != nil {
 			logger.Debug("Invalid client assertion: " + err.Error())
 			return nil, errInvalidClientAssertion
@@ -218,6 +219,7 @@ func extractClientIDFromAssertion(assertion string) (string, *authError) {
 
 // validateClientAssertion validates the provided client assertion JWT using the configured certificate and JWT service.
 func validateClientAssertion(
+	ctx context.Context,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
 	jwtService jwt.JWTServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
@@ -227,7 +229,7 @@ func validateClientAssertion(
 	}
 
 	// Get token endpoint from discovery service for aud validation
-	tokenEndpoint := discoveryService.GetOAuth2AuthorizationServerMetadata().TokenEndpoint
+	tokenEndpoint := discoveryService.GetOAuth2AuthorizationServerMetadata(ctx).TokenEndpoint
 
 	if oauthApp.Certificate.Type == cert.CertificateTypeJWKSURI {
 		if err := jwtService.VerifyJWTWithJWKS(clientAssertion, oauthApp.Certificate.Value, tokenEndpoint,

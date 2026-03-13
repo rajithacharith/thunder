@@ -19,6 +19,7 @@
 package dcr
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -42,21 +43,28 @@ func TestDCRServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(DCRServiceTestSuite))
 }
 
+// MockTransactioner is a simple implementation of Transactioner for testing.
+type MockTransactioner struct{}
+
+func (m *MockTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) error {
+	return txFunc(ctx)
+}
+
 func (s *DCRServiceTestSuite) SetupTest() {
 	s.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(s.T())
-	s.service = newDCRService(s.mockAppService)
+	s.service = newDCRService(s.mockAppService, &MockTransactioner{})
 }
 
 // TestNewDCRService tests the service constructor
 func (s *DCRServiceTestSuite) TestNewDCRService() {
-	service := newDCRService(s.mockAppService)
+	service := newDCRService(s.mockAppService, &MockTransactioner{})
 	s.NotNil(service)
 	s.Implements((*DCRServiceInterface)(nil), service)
 }
 
 // TestRegisterClient_NilRequest tests nil request handling
 func (s *DCRServiceTestSuite) TestRegisterClient_NilRequest() {
-	response, err := s.service.RegisterClient(nil)
+	response, err := s.service.RegisterClient(context.Background(), nil)
 
 	s.Nil(response)
 	s.NotNil(err)
@@ -72,7 +80,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_JWKSConflict() {
 		JWKS:         map[string]interface{}{"keys": []interface{}{}},
 	}
 
-	response, err := s.service.RegisterClient(request)
+	response, err := s.service.RegisterClient(context.Background(), request)
 
 	s.Nil(response)
 	s.NotNil(err)
@@ -106,7 +114,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ClientNameProvided() {
 		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(appDTO, (*serviceerror.ServiceError)(nil))
 
-	response, err := s.service.RegisterClient(request)
+	response, err := s.service.RegisterClient(context.Background(), request)
 
 	s.NotNil(response)
 	s.Nil(err)
@@ -146,7 +154,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_JWKSUriProvided() {
 		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(appDTO, (*serviceerror.ServiceError)(nil))
 
-	response, err := s.service.RegisterClient(request)
+	response, err := s.service.RegisterClient(context.Background(), request)
 
 	s.NotNil(response)
 	s.Nil(err)
@@ -170,7 +178,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ApplicationServiceError() {
 	s.mockAppService.On("CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO")).
 		Return(nil, appServiceErr)
 
-	response, err := s.service.RegisterClient(request)
+	response, err := s.service.RegisterClient(context.Background(), request)
 
 	s.Nil(response)
 	s.NotNil(err)
@@ -244,7 +252,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ConvertDCRToApplicationError() 
 		Code: "APP-5001",
 	})
 
-	response, err := s.service.RegisterClient(request)
+	response, err := s.service.RegisterClient(context.Background(), request)
 
 	s.Nil(response)
 	s.NotNil(err)
@@ -281,7 +289,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ConvertApplicationToDCRResponse
 		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(appDTO, (*serviceerror.ServiceError)(nil))
 
-	response, err := s.service.RegisterClient(request)
+	response, err := s.service.RegisterClient(context.Background(), request)
 
 	s.Nil(response)
 	s.NotNil(err)
@@ -319,7 +327,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_WithJWKS() {
 		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(appDTO, (*serviceerror.ServiceError)(nil))
 
-	response, err := s.service.RegisterClient(request)
+	response, err := s.service.RegisterClient(context.Background(), request)
 
 	s.NotNil(response)
 	s.Nil(err)
@@ -353,7 +361,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_WithScope() {
 		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(appDTO, (*serviceerror.ServiceError)(nil))
 
-	response, err := s.service.RegisterClient(request)
+	response, err := s.service.RegisterClient(context.Background(), request)
 
 	s.NotNil(response)
 	s.Nil(err)
@@ -377,7 +385,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_EmptyInboundAuthConfig() {
 		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(appDTO, (*serviceerror.ServiceError)(nil))
 
-	response, err := s.service.RegisterClient(request)
+	response, err := s.service.RegisterClient(context.Background(), request)
 
 	s.NotNil(response)
 	s.Nil(err)

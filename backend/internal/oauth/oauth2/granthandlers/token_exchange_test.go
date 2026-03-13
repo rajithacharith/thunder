@@ -19,6 +19,7 @@
 package granthandlers
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -208,7 +209,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_Success() {
 		SubjectTokenType: string(constants.TokenTypeIdentifierAccessToken),
 	}
 
-	result := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
+	result := suite.handler.ValidateGrant(context.Background(), tokenRequest, suite.oauthApp)
 	assert.Nil(suite.T(), result)
 }
 
@@ -220,7 +221,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_WrongGrantTyp
 		SubjectTokenType: string(constants.TokenTypeIdentifierAccessToken),
 	}
 
-	result := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
+	result := suite.handler.ValidateGrant(context.Background(), tokenRequest, suite.oauthApp)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), constants.ErrorUnsupportedGrantType, result.Error)
 	assert.Equal(suite.T(), "Unsupported grant type", result.ErrorDescription)
@@ -234,7 +235,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_MissingSubjec
 		SubjectTokenType: string(constants.TokenTypeIdentifierAccessToken),
 	}
 
-	result := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
+	result := suite.handler.ValidateGrant(context.Background(), tokenRequest, suite.oauthApp)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, result.Error)
 	assert.Equal(suite.T(), "Missing required parameter: subject_token", result.ErrorDescription)
@@ -248,7 +249,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_MissingSubjec
 		SubjectTokenType: "",
 	}
 
-	result := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
+	result := suite.handler.ValidateGrant(context.Background(), tokenRequest, suite.oauthApp)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, result.Error)
 	assert.Equal(suite.T(), "Missing required parameter: subject_token_type", result.ErrorDescription)
@@ -262,7 +263,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_UnsupportedSu
 		SubjectTokenType: "urn:ietf:params:oauth:token-type:saml2",
 	}
 
-	result := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
+	result := suite.handler.ValidateGrant(context.Background(), tokenRequest, suite.oauthApp)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, result.Error)
 	assert.Contains(suite.T(), result.ErrorDescription, "Unsupported subject_token_type")
@@ -278,7 +279,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_MissingActorT
 		ActorTokenType:   "",
 	}
 
-	result := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
+	result := suite.handler.ValidateGrant(context.Background(), tokenRequest, suite.oauthApp)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, result.Error)
 	assert.Equal(suite.T(), "actor_token_type is required when actor_token is provided", result.ErrorDescription)
@@ -294,7 +295,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_UnsupportedAc
 		ActorTokenType:   "urn:ietf:params:oauth:token-type:saml1",
 	}
 
-	result := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
+	result := suite.handler.ValidateGrant(context.Background(), tokenRequest, suite.oauthApp)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, result.Error)
 	assert.Contains(suite.T(), result.ErrorDescription, "Unsupported actor_token_type")
@@ -310,7 +311,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_ActorTokenTyp
 		ActorTokenType:   string(constants.TokenTypeIdentifierAccessToken),
 	}
 
-	result := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
+	result := suite.handler.ValidateGrant(context.Background(), tokenRequest, suite.oauthApp)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, result.Error)
 	assert.Equal(suite.T(), "actor_token_type must not be provided without actor_token", result.ErrorDescription)
@@ -325,7 +326,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_InvalidResour
 		Resource:         "not-a-valid-uri",
 	}
 
-	result := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
+	result := suite.handler.ValidateGrant(context.Background(), tokenRequest, suite.oauthApp)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, result.Error)
 	assert.Contains(suite.T(), result.ErrorDescription, "Invalid resource parameter")
@@ -340,7 +341,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_ResourceURIWi
 		Resource:         "https://api.example.com/resource#fragment",
 	}
 
-	result := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
+	result := suite.handler.ValidateGrant(context.Background(), tokenRequest, suite.oauthApp)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, result.Error)
 	assert.Contains(suite.T(), result.ErrorDescription, "must not contain a fragment component")
@@ -355,7 +356,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_ValidResource
 		Resource:         "https://api.example.com/resource",
 	}
 
-	result := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
+	result := suite.handler.ValidateGrant(context.Background(), tokenRequest, suite.oauthApp)
 	assert.Nil(suite.T(), result)
 }
 
@@ -368,7 +369,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_UnsupportedRe
 		RequestedTokenType: "urn:ietf:params:oauth:token-type:saml2",
 	}
 
-	result := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
+	result := suite.handler.ValidateGrant(context.Background(), tokenRequest, suite.oauthApp)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, result.Error)
 	assert.Contains(suite.T(), result.ErrorDescription, "Unsupported requested_token_type")
@@ -423,7 +424,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_Basic()
 		},
 	}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -448,7 +449,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_WithSco
 
 	suite.setupSuccessfulJWTMockWithScope(subjectToken, testClientID, testScopeReadWrite, now)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -509,7 +510,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_WithAct
 		ClientID:  testClientID,
 	}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -576,7 +577,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_WithAct
 		ClientID:  testClientID,
 	}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -596,7 +597,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_WithAud
 
 	suite.setupSuccessfulJWTMock(subjectToken, "https://api.example.com", now)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -616,7 +617,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_WithRes
 
 	suite.setupSuccessfulJWTMock(subjectToken, "https://resource.example.com", now)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -637,7 +638,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_WithMul
 
 	suite.setupSuccessfulJWTMockWithScope(subjectToken, testClientID, testScopeReadWrite, now)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -693,7 +694,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_Preserv
 		},
 	}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -726,7 +727,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectT
 	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
 		Return(nil, errors.New("invalid subject token signature: invalid signature"))
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
@@ -752,7 +753,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectT
 	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
 		Return(nil, errors.New("missing or invalid 'sub' claim"))
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
@@ -772,7 +773,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectT
 	suite.mockTokenValidator.On("ValidateSubjectToken", "invalid.jwt.format", suite.oauthApp).
 		Return(nil, errors.New("invalid token format"))
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
@@ -793,7 +794,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectT
 	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
 		Return(nil, errors.New("token has expired"))
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
@@ -814,7 +815,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectT
 	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
 		Return(nil, errors.New("token not yet valid"))
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
@@ -858,7 +859,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidActorTok
 	suite.mockTokenValidator.On("ValidateSubjectToken", actorToken, suite.oauthApp).
 		Return(nil, errors.New("invalid subject token signature: invalid signature"))
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
@@ -905,7 +906,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidScope() 
 		ClientID:  testClientID,
 	}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	// Should succeed with only valid scopes filtered in
 	assert.Nil(suite.T(), errResp)
@@ -941,7 +942,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ScopeEscalation
 			NestedAct:      nil,
 		}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
@@ -976,7 +977,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_JWTGenerationEr
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).
 		Return(nil, errors.New("failed to sign token"))
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
@@ -1024,7 +1025,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_UsesDefaultConf
 			ClientID:  testClientID,
 		}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, oauthAppNoConfig)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, oauthAppNoConfig)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -1065,7 +1066,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_WithJWT
 			ClientID:  testClientID,
 		}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -1082,7 +1083,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_UnsupportedID
 		RequestedTokenType: string(constants.TokenTypeIdentifierIDToken),
 	}
 
-	errResp := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
+	errResp := suite.handler.ValidateGrant(context.Background(), tokenRequest, suite.oauthApp)
 	assert.NotNil(suite.T(), errResp)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errResp.Error)
 	assert.Contains(suite.T(), errResp.ErrorDescription, "Unsupported requested_token_type")
@@ -1099,7 +1100,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_UnsupportedRe
 	}
 
 	// Test ValidateGrant first (which is called before HandleGrant in production)
-	errResp := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
+	errResp := suite.handler.ValidateGrant(context.Background(), tokenRequest, suite.oauthApp)
 	assert.NotNil(suite.T(), errResp)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, errResp.Error)
 	assert.Contains(suite.T(), errResp.ErrorDescription, "Unsupported requested_token_type")
@@ -1162,7 +1163,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_CompleteTokenExchan
 		},
 	}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	// RFC 8693 Section 2.2: Verify required response parameters
 	assert.Nil(suite.T(), errResp)
@@ -1216,7 +1217,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_AudiencePriority() 
 		ClientID:  testClientID,
 	}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -1302,7 +1303,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_ActorDelegationChai
 		ClientID:  testClientID,
 	}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -1389,7 +1390,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_WithAct
 		ClientID:  testClientID,
 	}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -1434,7 +1435,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_ScopeDownscopingEnf
 		ClientID:  testClientID,
 	}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -1451,7 +1452,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_ResourceParameterVa
 		Resource:         "https://api.example.com/v1/resource",
 	}
 
-	result := suite.handler.ValidateGrant(tokenRequest, suite.oauthApp)
+	result := suite.handler.ValidateGrant(context.Background(), tokenRequest, suite.oauthApp)
 	assert.Nil(suite.T(), result)
 }
 
@@ -1491,13 +1492,13 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_NoTokenLinkage() {
 			ClientID:  testClientID,
 		}, nil)
 
-	result1, errResp1 := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result1, errResp1 := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp1)
 	assert.NotNil(suite.T(), result1)
 
 	// Use same subject token again - should succeed (no linkage/invalidation)
-	result2, errResp2 := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result2, errResp2 := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp2)
 	assert.NotNil(suite.T(), result2)
@@ -1561,7 +1562,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_ClaimPreservation()
 		},
 	}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -1681,7 +1682,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ThunderAuthAsse
 		ClientID:  testClientID,
 	}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -1713,7 +1714,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ThunderAuthAsse
 	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
 		Return(nil, fmt.Errorf("auth assertion audience mismatch"))
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
@@ -1744,7 +1745,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ThunderAuthAsse
 	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
 		Return(nil, fmt.Errorf("thunder auth assertion is missing 'aud' claim"))
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), errResp)
@@ -1793,7 +1794,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ThunderAuthAsse
 		ClientID:  testClientID,
 	}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)
@@ -1846,7 +1847,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ThunderAuthAsse
 		ClientID:  testClientID,
 	}, nil)
 
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
 
 	assert.Nil(suite.T(), errResp)
 	assert.NotNil(suite.T(), result)

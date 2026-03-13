@@ -26,6 +26,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/granthandlers"
 	"github.com/asgardeo/thunder/internal/oauth/scope"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/observability"
@@ -40,8 +41,9 @@ func Initialize(
 	scopeValidator scope.ScopeValidatorInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
 	discoveryService discovery.DiscoveryServiceInterface,
+	transactioner transaction.Transactioner,
 ) TokenHandlerInterface {
-	tokenSvc := newTokenService(grantHandlerProvider, scopeValidator, observabilitySvc)
+	tokenSvc := newTokenService(grantHandlerProvider, scopeValidator, observabilitySvc, transactioner)
 	tokenHandler := newTokenHandler(tokenSvc, observabilitySvc)
 	registerRoutes(mux, tokenHandler, appService, jwtService, discoveryService)
 	return tokenHandler

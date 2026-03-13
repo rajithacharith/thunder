@@ -40,6 +40,7 @@ type InitTestSuite struct {
 	mockAppService     *applicationmock.ApplicationServiceInterfaceMock
 	mockUserService    *usersvcmock.UserServiceInterfaceMock
 	mockOUService      *oumock.OrganizationUnitServiceInterfaceMock
+	mockTransactioner  *MockTransactioner
 }
 
 func TestInitTestSuite(t *testing.T) {
@@ -52,6 +53,7 @@ func (suite *InitTestSuite) SetupTest() {
 	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
 	suite.mockUserService = usersvcmock.NewUserServiceInterfaceMock(suite.T())
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+	suite.mockTransactioner = &MockTransactioner{}
 }
 
 func (suite *InitTestSuite) TestInitialize() {
@@ -59,7 +61,7 @@ func (suite *InitTestSuite) TestInitialize() {
 
 	service := Initialize(mux, suite.mockJWTService,
 		suite.mockTokenValidator, suite.mockAppService,
-		suite.mockUserService, suite.mockOUService)
+		suite.mockUserService, suite.mockOUService, suite.mockTransactioner)
 
 	assert.NotNil(suite.T(), service)
 }
@@ -67,9 +69,9 @@ func (suite *InitTestSuite) TestInitialize() {
 func (suite *InitTestSuite) TestInitialize_RegistersRoutes() {
 	mux := http.NewServeMux()
 
-	_ = Initialize(mux, suite.mockJWTService,
+	Initialize(mux, suite.mockJWTService,
 		suite.mockTokenValidator, suite.mockAppService,
-		suite.mockUserService, suite.mockOUService)
+		suite.mockUserService, suite.mockOUService, suite.mockTransactioner)
 
 	// Verify that the routes are registered by attempting to get a handler for them.
 	// The pattern includes the method because of CORS middleware wrapping.

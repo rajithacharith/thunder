@@ -31,6 +31,7 @@ import (
 	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -51,6 +52,7 @@ type userInfoService struct {
 	applicationService application.ApplicationServiceInterface
 	userService        user.UserServiceInterface
 	ouService          ou.OrganizationUnitServiceInterface
+	transactioner      transaction.Transactioner
 	logger             *log.Logger
 }
 
@@ -61,6 +63,7 @@ func newUserInfoService(
 	applicationService application.ApplicationServiceInterface,
 	userService user.UserServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
+	transactioner transaction.Transactioner,
 ) userInfoServiceInterface {
 	return &userInfoService{
 		jwtService:         jwtService,
@@ -68,6 +71,7 @@ func newUserInfoService(
 		applicationService: applicationService,
 		userService:        userService,
 		ouService:          ouService,
+		transactioner:      transactioner,
 		logger:             log.GetLogger().With(log.String(log.LoggerKeyComponentName, serviceLoggerComponentName)),
 	}
 }

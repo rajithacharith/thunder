@@ -38,9 +38,12 @@ func Initialize(
 	flowExecService flowexec.FlowExecServiceInterface,
 	tokenBuilder tokenservice.TokenBuilderInterface,
 	tokenValidator tokenservice.TokenValidatorInterface,
-) GrantHandlerProviderInterface {
-	authzService := authz.Initialize(mux, applicationService, jwtService, flowExecService)
+) (GrantHandlerProviderInterface, error) {
+	authzService, err := authz.Initialize(mux, applicationService, jwtService, flowExecService)
+	if err != nil {
+		return nil, err
+	}
 	grantHandlerProvider := newGrantHandlerProvider(
 		jwtService, userService, authzService, tokenBuilder, tokenValidator)
-	return grantHandlerProvider
+	return grantHandlerProvider, nil
 }
