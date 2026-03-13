@@ -27,6 +27,7 @@
 interface BasePropertyDefinition {
   required?: boolean;
   unique?: boolean;
+  displayName?: string;
 }
 
 /**
@@ -202,6 +203,7 @@ export type UIPropertyType = PropertyType | 'enum';
 export interface SchemaPropertyInput {
   id: string;
   name: string;
+  displayName: string;
   type: UIPropertyType;
   required: boolean;
   unique: boolean;

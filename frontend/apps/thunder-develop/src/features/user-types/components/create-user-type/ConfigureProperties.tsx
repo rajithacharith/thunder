@@ -38,7 +38,10 @@ import {Plus, Trash2, Info} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useCallback, useEffect, useMemo, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
+import {useResolveDisplayName} from '@thunder/shared-hooks';
+
 import type {SchemaPropertyInput, UIPropertyType} from '../../types/user-types';
+import I18nTextInput from './I18nTextInput';
 
 /**
  * Props for the {@link ConfigureProperties} component.
@@ -53,6 +56,7 @@ export interface ConfigurePropertiesProps {
   displayAttribute: string;
   onDisplayAttributeChange: (displayAttribute: string) => void;
   onReadyChange?: (isReady: boolean) => void;
+  userTypeName?: string;
 }
 
 /**
@@ -68,8 +72,11 @@ export default function ConfigureProperties({
   displayAttribute,
   onDisplayAttributeChange,
   onReadyChange = undefined,
+  userTypeName = undefined,
 }: ConfigurePropertiesProps): JSX.Element {
   const {t} = useTranslation();
+  const {resolveDisplayName} = useResolveDisplayName({handlers: {t}});
+
   const nextId = useRef(properties.length + 1);
 
   // Eligible properties for display attribute: string/enum type, non-credential, with a name
@@ -123,6 +130,7 @@ export default function ConfigureProperties({
     const newProperty: SchemaPropertyInput = {
       id,
       name: '',
+      displayName: '',
       type: 'string',
       required: false,
       unique: false,
@@ -265,6 +273,17 @@ export default function ConfigureProperties({
                 <MenuItem value="enum">{t('userTypes:types.enum')}</MenuItem>
               </Select>
             </FormControl>
+          </Box>
+
+          {/* Display Name with i18n support */}
+          <Box sx={{mt: 2}}>
+            <I18nTextInput
+              label={t('userTypes:displayName', 'Display Name')}
+              value={property.displayName}
+              onChange={(newValue: string) => handlePropertyChange(property.id, 'displayName', newValue)}
+              placeholder={t('userTypes:displayNamePlaceholder', 'e.g., First Name')}
+              defaultNewKey={userTypeName && property.name.trim() ? `${userTypeName}.${property.name.trim()}` : undefined}
+            />
           </Box>
 
           {/* Checkbox options with info tooltips */}
@@ -418,7 +437,9 @@ export default function ConfigureProperties({
                     </Typography>
                   );
                 }
-                return value;
+                const matchedProp = eligibleDisplayProperties.find((p) => p.name.trim() === value);
+                const resolved = matchedProp?.displayName ? resolveDisplayName(matchedProp.displayName) : '';
+                return resolved && resolved !== value ? `${resolved} (${value})` : value;
               }}
             >
               <MenuItem value="">
@@ -426,11 +447,15 @@ export default function ConfigureProperties({
                   {t('common:none', 'None')}
                 </Typography>
               </MenuItem>
-              {eligibleDisplayProperties.map((prop) => (
-                <MenuItem key={prop.id} value={prop.name.trim()}>
-                  {prop.name.trim()}
-                </MenuItem>
-              ))}
+              {eligibleDisplayProperties.map((prop) => {
+                const name = prop.name.trim();
+                const resolved = prop.displayName ? resolveDisplayName(prop.displayName) : '';
+                return (
+                  <MenuItem key={prop.id} value={name}>
+                    {resolved && resolved !== name ? `${resolved} (${name})` : name}
+                  </MenuItem>
+                );
+              })}
             </Select>
           </FormControl>
         </Paper>
