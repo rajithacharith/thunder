@@ -368,7 +368,7 @@ describe('ViewUserTypePage', () => {
         expect(screen.getByRole('button', {name: /save changes/i})).toBeInTheDocument();
       });
 
-      const requiredCheckboxes = screen.getAllByRole('checkbox', {name: /required/i});
+      const requiredCheckboxes = screen.getAllByRole('checkbox', {name: /users must provide a value/i});
       const firstCheckbox = requiredCheckboxes[0];
 
       const isInitiallyChecked = firstCheckbox.getAttribute('checked') !== null;
@@ -541,6 +541,12 @@ describe('ViewUserTypePage', () => {
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
 
+      // Change type to Enum so the enum input appears
+      const typeSelect = getPropertyTypeSelect();
+      await user.click(typeSelect);
+      const enumOption = await screen.findByRole('option', {name: 'Enum'});
+      await user.click(enumOption);
+
       const enumInput = screen.getByPlaceholderText(/add value and press enter/i);
       await user.type(enumInput, 'ACTIVE');
 
@@ -578,6 +584,12 @@ describe('ViewUserTypePage', () => {
       render(<ViewUserTypePage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
+
+      // Change type to Enum so enum chips and input appear
+      const typeSelect = getPropertyTypeSelect();
+      await user.click(typeSelect);
+      const enumOption = await screen.findByRole('option', {name: 'Enum'});
+      await user.click(enumOption);
 
       const activeChip = screen.getByText('ACTIVE').closest('.MuiChip-root');
       const deleteButton = within(activeChip as HTMLElement).getByTestId('CancelIcon');
@@ -623,7 +635,7 @@ describe('ViewUserTypePage', () => {
       expect(regexInput).toHaveValue('^[a-z]+$');
     });
 
-    it('property name field is disabled in edit mode', async () => {
+    it('property name field is editable in edit mode', async () => {
       const user = userEvent.setup();
       render(<ViewUserTypePage />);
 
@@ -631,7 +643,7 @@ describe('ViewUserTypePage', () => {
 
       const propertyNameInputs = screen.getAllByPlaceholderText(/e.g., email, age, address/i);
       propertyNameInputs.forEach((input) => {
-        expect(input).toBeDisabled();
+        expect(input).toBeEnabled();
       });
     });
   });
@@ -783,6 +795,12 @@ describe('ViewUserTypePage', () => {
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
 
+      // Change type to Enum so the enum input appears
+      const typeSelect = getPropertyTypeSelect();
+      await user.click(typeSelect);
+      const enumOption = await screen.findByRole('option', {name: 'Enum'});
+      await user.click(enumOption);
+
       const enumInput = screen.getByPlaceholderText(/add value and press enter/i);
       await user.type(enumInput, 'ACTIVE{Enter}');
 
@@ -818,7 +836,7 @@ describe('ViewUserTypePage', () => {
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
 
-      const uniqueCheckbox = screen.getByRole('checkbox', {name: /unique/i});
+      const uniqueCheckbox = screen.getByRole('checkbox', {name: /each user must have a distinct value/i});
       await user.click(uniqueCheckbox);
 
       await waitFor(() => {
@@ -1068,7 +1086,7 @@ describe('ViewUserTypePage', () => {
       await waitFor(() => {
         expect(typeSelect).toHaveTextContent('Boolean');
         // Unique checkbox should not be visible for boolean type
-        expect(screen.queryByRole('checkbox', {name: /unique/i})).not.toBeInTheDocument();
+        expect(screen.queryByRole('checkbox', {name: /each user must have a distinct value/i})).not.toBeInTheDocument();
       });
     });
 
@@ -1098,6 +1116,12 @@ describe('ViewUserTypePage', () => {
       render(<ViewUserTypePage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
+
+      // Change type to Enum so the enum input and Add button appear
+      const typeSelect = getPropertyTypeSelect();
+      await user.click(typeSelect);
+      const enumOption = await screen.findByRole('option', {name: 'Enum'});
+      await user.click(enumOption);
 
       const addButton = screen.getByRole('button', {name: /^add$/i});
       await user.click(addButton);
@@ -1430,6 +1454,12 @@ describe('ViewUserTypePage', () => {
       render(<ViewUserTypePage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
+
+      // Change type to Enum so the enum input appears
+      const typeSelect = getPropertyTypeSelect();
+      await user.click(typeSelect);
+      const enumOption = await screen.findByRole('option', {name: 'Enum'});
+      await user.click(enumOption);
 
       // Add a new enum value
       const enumInput = screen.getByPlaceholderText(/add value and press enter/i);

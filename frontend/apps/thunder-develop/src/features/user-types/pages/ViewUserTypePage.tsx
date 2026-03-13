@@ -17,7 +17,7 @@
  */
 
 import {Link, useNavigate, useParams} from 'react-router';
-import {useState, useEffect, useMemo} from 'react';
+import {useState, useEffect, useMemo, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
 import {
@@ -43,6 +43,8 @@ import {
   Checkbox,
   FormControlLabel,
   Chip,
+  IconButton,
+  Tooltip,
   Table,
   TableBody,
   TableCell,
@@ -52,7 +54,7 @@ import {
   PageContent,
   PageTitle,
 } from '@wso2/oxygen-ui';
-import {ArrowLeft, Edit, Save, X, Trash2, Check} from '@wso2/oxygen-ui-icons-react';
+import {ArrowLeft, Edit, Save, X, Trash2, Check, Plus, Info} from '@wso2/oxygen-ui-icons-react';
 import {useResolveDisplayName} from '@thunder/shared-hooks';
 import useGetUserType from '../api/useGetUserType';
 import useUpdateUserType from '../api/useUpdateUserType';
@@ -88,6 +90,7 @@ export default function ViewUserTypePage() {
   const [enumInput, setEnumInput] = useState<Record<string, string>>({});
   const [validationError, setValidationError] = useState<string | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const nextPropertyId = useRef(0);
   const organizationUnits = useMemo(
     () => organizationUnitsResponse?.organizationUnits ?? [],
     [organizationUnitsResponse],
@@ -107,19 +110,30 @@ export default function ViewUserTypePage() {
     [properties],
   );
 
+  // Clear display attribute if the selected property becomes ineligible (e.g. marked as credential)
+  useEffect(() => {
+    if (displayAttribute) {
+      const eligibleNames = eligibleDisplayProperties.map((p) => p.name.trim());
+      if (!eligibleNames.includes(displayAttribute)) {
+        setDisplayAttribute('');
+      }
+    }
+  }, [eligibleDisplayProperties, displayAttribute]);
+
   const convertSchemaToProperties = (schema: UserSchemaDefinition) => {
-    const props: SchemaPropertyInput[] = Object.entries(schema).map(([key, value], index) => ({
+    const schemaProperties: SchemaPropertyInput[] = Object.entries(schema).map(([key, value], index) => ({
       id: `${index}`,
       name: key,
       displayName: 'displayName' in value ? (value.displayName ?? '') : '',
-      type: value.type,
+      type: value.type === 'string' && 'enum' in value && Array.isArray(value.enum) && value.enum.length > 0 ? 'enum' : value.type,
       required: value.required ?? false,
       unique: 'unique' in value ? (value.unique ?? false) : false,
       credential: 'credential' in value ? (value.credential ?? false) : false,
       enum: 'enum' in value ? (value.enum ?? []) : [],
       regex: 'regex' in value ? (value.regex ?? '') : '',
     }));
-    setProperties(props);
+    nextPropertyId.current = schemaProperties.length + 1;
+    setProperties(schemaProperties);
   };
 
   useEffect(() => {
@@ -158,6 +172,30 @@ export default function ViewUserTypePage() {
     setSnackbarOpen(false);
   };
 
+  const handleAddProperty = () => {
+    const newId = String(nextPropertyId.current);
+    nextPropertyId.current += 1;
+    const newProperty: SchemaPropertyInput = {
+      id: newId,
+      name: '',
+      displayName: '',
+      type: 'string',
+      required: false,
+      unique: false,
+      credential: false,
+      enum: [],
+      regex: '',
+    };
+    setProperties([...properties, newProperty]);
+  };
+
+  const handleRemoveProperty = (propertyId: string) => {
+    setProperties(properties.filter((prop) => prop.id !== propertyId));
+    const newEnumInput = {...enumInput};
+    delete newEnumInput[propertyId];
+    setEnumInput(newEnumInput);
+  };
+
   const handlePropertyChange = <K extends keyof SchemaPropertyInput>(
     propertyId: string,
     field: K,
@@ -170,10 +208,14 @@ export default function ViewUserTypePage() {
               ...prop,
               [field]: value,
               ...(field === 'type' && {
-                enum: [],
+                enum: (value as string) === 'enum' ? prop.enum : [],
                 regex: '',
                 unique:
-                  (value as PropertyType) === 'string' || (value as PropertyType) === 'number' ? prop.unique : false,
+                  (value as string) === 'string' || (value as string) === 'number' || (value as string) === 'enum'
+                    ? prop.unique
+                    : false,
+                credential:
+                  (value as string) === 'string' || (value as string) === 'number' ? prop.credential : false,
               }),
             }
           : prop,
@@ -232,6 +274,9 @@ export default function ViewUserTypePage() {
         if (prop.type === 'string' || prop.type === 'number' || prop.type === 'enum') {
           if (prop.unique) {
             (propDef as {unique?: boolean}).unique = true;
+          }
+          if (prop.credential) {
+            (propDef as {credential?: boolean}).credential = true;
           }
         }
 
@@ -549,6 +594,7 @@ export default function ViewUserTypePage() {
                     <TableCell sx={{fontWeight: 600}}>Type</TableCell>
                     <TableCell sx={{fontWeight: 600}}>Required</TableCell>
                     <TableCell sx={{fontWeight: 600}}>Unique</TableCell>
+                    <TableCell sx={{fontWeight: 600}}>{t('userTypes:credential', 'Credential')}</TableCell>
                     <TableCell sx={{fontWeight: 600}}>Constraints</TableCell>
                   </TableRow>
                 </TableHead>
@@ -601,6 +647,15 @@ export default function ViewUserTypePage() {
                         )}
                       </TableCell>
                       <TableCell>
+                        {'credential' in value && value.credential ? (
+                          <Check size={18} color="red" />
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            -
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <Stack spacing={0.5}>
                           {'enum' in value && value.enum && value.enum.length > 0 && (
                             <Typography variant="body2" sx={{fontSize: '0.875rem'}}>
@@ -620,7 +675,7 @@ export default function ViewUserTypePage() {
                                 sx={{
                                   fontFamily: 'monospace',
                                   fontSize: '0.75rem',
-                                  bgcolor: 'grey.100',
+                                  bgcolor: 'action.hover',
                                   px: 0.5,
                                   py: 0.25,
                                   borderRadius: 0.5,
@@ -646,81 +701,157 @@ export default function ViewUserTypePage() {
             // Edit Mode - Display form fields
             <Box>
               {properties.map((property) => (
-                <Paper key={property.id} variant="outlined" sx={{p: 3, mb: 2}}>
-                  <Stack spacing={2}>
-                    <Box sx={{display: 'grid', gridTemplateColumns: {xs: '1fr', md: '1fr 1fr'}, gap: 2}}>
-                      <FormControl fullWidth>
-                        <FormLabel>Property Name</FormLabel>
-                        <TextField
-                          value={property.name}
-                          onChange={(e) => handlePropertyChange(property.id, 'name', e.target.value)}
-                          placeholder="e.g., email, age, address"
+                  <Paper
+                    key={property.id}
+                    variant="outlined"
+                    sx={{
+                      position: 'relative',
+                      p: 3,
+                      mb: 2,
+                      borderRadius: 2,
+                      transition: 'border-color 0.2s',
+                      '&:hover': {borderColor: 'primary.main'},
+                      '&:hover .property-delete-btn': {opacity: 1},
+                    }}
+                  >
+                    {/* Remove button - visible on hover */}
+                    {properties.length > 1 && (
+                      <Tooltip title={t('userTypes:removeProperty', 'Remove property')}>
+                        <IconButton
+                          className="property-delete-btn"
                           size="small"
-                          disabled
-                        />
-                      </FormControl>
-
-                      <FormControl fullWidth>
-                        <FormLabel>Type</FormLabel>
-                        <Select
-                          value={property.type}
-                          onChange={(e) => handlePropertyChange(property.id, 'type', e.target.value as PropertyType)}
-                          size="small"
+                          color="error"
+                          onClick={() => handleRemoveProperty(property.id)}
+                          sx={{position: 'absolute', top: 8, right: 8, opacity: 0, transition: 'opacity 0.2s'}}
                         >
-                          <MenuItem value="string">String</MenuItem>
-                          <MenuItem value="number">Number</MenuItem>
-                          <MenuItem value="boolean">Boolean</MenuItem>
-                          <MenuItem value="array">Array</MenuItem>
-                          <MenuItem value="object">Object</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </Box>
+                          <Trash2 size={16} />
+                        </IconButton>
+                      </Tooltip>
+                    )}
 
-                    <I18nTextInput
-                      label={t('userTypes:displayName', 'Display Name')}
-                      value={property.displayName}
-                      onChange={(newValue: string) => handlePropertyChange(property.id, 'displayName', newValue)}
-                      placeholder={t('userTypes:displayNamePlaceholder', 'e.g., First Name')}
-                      defaultNewKey={name.trim() && property.name.trim() ? `${name.trim()}.${property.name.trim()}` : undefined}
-                    />
-
-                    <Stack direction="row" spacing={2}>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={property.required}
-                            onChange={(e) => handlePropertyChange(property.id, 'required', e.target.checked)}
-                          />
-                        }
-                        label="Required"
-                      />
-                      {(property.type === 'string' || property.type === 'number') && (
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={property.unique}
-                              onChange={(e) => handlePropertyChange(property.id, 'unique', e.target.checked)}
-                            />
-                          }
-                          label="Unique"
-                        />
-                      )}
-                    </Stack>
-
-                    {property.type === 'string' && (
-                      <>
+                    <Stack spacing={2}>
+                      <Box sx={{display: 'grid', gridTemplateColumns: {xs: '1fr', md: '1fr 1fr'}, gap: 2}}>
                         <FormControl fullWidth>
-                          <FormLabel>Regular Expression Pattern (Optional)</FormLabel>
+                          <FormLabel>{t('userTypes:propertyName')}</FormLabel>
                           <TextField
-                            value={property.regex}
-                            onChange={(e) => handlePropertyChange(property.id, 'regex', e.target.value)}
-                            placeholder="e.g., ^[a-zA-Z0-9]+$"
+                            value={property.name}
+                            onChange={(e) => handlePropertyChange(property.id, 'name', e.target.value)}
+                            placeholder={t('userTypes:propertyNamePlaceholder', 'e.g., email, age, address')}
                             size="small"
                           />
                         </FormControl>
 
                         <FormControl fullWidth>
-                          <FormLabel>Allowed Values (Enum) - Optional</FormLabel>
+                          <FormLabel>{t('userTypes:propertyType', 'Type')}</FormLabel>
+                          <Select
+                            value={property.type}
+                            onChange={(e) => handlePropertyChange(property.id, 'type', e.target.value as PropertyType)}
+                            size="small"
+                          >
+                            <MenuItem value="string">{t('userTypes:types.string', 'String')}</MenuItem>
+                            <MenuItem value="number">{t('userTypes:types.number', 'Number')}</MenuItem>
+                            <MenuItem value="boolean">{t('userTypes:types.boolean', 'Boolean')}</MenuItem>
+                            <MenuItem value="enum">{t('userTypes:types.enum', 'Enum')}</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Box>
+
+                      <I18nTextInput
+                        label={t('userTypes:displayName', 'Display Name')}
+                        value={property.displayName}
+                        onChange={(newValue: string) => handlePropertyChange(property.id, 'displayName', newValue)}
+                        placeholder={t('userTypes:displayNamePlaceholder', 'e.g., First Name')}
+                        defaultNewKey={name.trim() && property.name.trim() ? `${name.trim()}.${property.name.trim()}` : undefined}
+                      />
+
+                      {/* Checkbox options with info tooltips */}
+                      <Box sx={{display: 'flex', gap: 3}}>
+                        <Tooltip title={t('userTypes:tooltips.required', 'This field must be provided when creating a user')} placement="top" arrow>
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={property.required}
+                                onChange={(e) => handlePropertyChange(property.id, 'required', e.target.checked)}
+                              />
+                            }
+                            label={
+                              <Stack direction="row" alignItems="center" spacing={0.5}>
+                                <span>{t('common:form.required', 'Required')}</span>
+                                <Info size={14} color="inherit" />
+                              </Stack>
+                            }
+                          />
+                        </Tooltip>
+                        {(property.type === 'string' || property.type === 'number' || property.type === 'enum') && !property.credential && (
+                          <Tooltip title={t('userTypes:tooltips.unique', 'Each user must have a distinct value for this field')} placement="top" arrow>
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  checked={property.unique}
+                                  onChange={(e) => handlePropertyChange(property.id, 'unique', e.target.checked)}
+                                />
+                              }
+                              label={
+                                <Stack direction="row" alignItems="center" spacing={0.5}>
+                                  <span>{t('userTypes:unique', 'Unique')}</span>
+                                  <Info size={14} color="inherit" />
+                                </Stack>
+                              }
+                            />
+                          </Tooltip>
+                        )}
+                        {(property.type === 'string' || property.type === 'number') && (
+                          <Tooltip title={t('userTypes:tooltips.credential', 'Values will be hashed and not returned in API responses')} placement="top" arrow>
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  checked={property.credential}
+                                  onChange={({target: {checked}}) => {
+                                    setProperties(
+                                      properties.map((prop) =>
+                                        prop.id === property.id
+                                          ? {...prop, credential: checked, ...(checked && {unique: false})}
+                                          : prop,
+                                      ),
+                                    );
+                                  }}
+                                />
+                              }
+                              label={
+                                <Stack direction="row" alignItems="center" spacing={0.5}>
+                                  <span>{t('userTypes:credential', 'Credential')}</span>
+                                  <Info size={14} color="inherit" />
+                                </Stack>
+                              }
+                            />
+                          </Tooltip>
+                        )}
+                      </Box>
+
+                      {/* Credential indicator */}
+                      {property.credential && (
+                        <Alert severity="info" variant="outlined">
+                          {t('userTypes:credentialHint', 'This field will be treated as a secret. Values will be hashed and cannot be retrieved.')}
+                        </Alert>
+                      )}
+
+                      {/* String: regex pattern */}
+                      {property.type === 'string' && (
+                        <FormControl fullWidth>
+                          <FormLabel>{t('userTypes:regexPattern', 'Regular Expression Pattern (Optional)')}</FormLabel>
+                          <TextField
+                            value={property.regex}
+                            onChange={(e) => handlePropertyChange(property.id, 'regex', e.target.value)}
+                            placeholder={t('userTypes:regexPlaceholder', 'e.g., ^[a-zA-Z0-9]+$')}
+                            size="small"
+                          />
+                        </FormControl>
+                      )}
+
+                      {/* Enum: value input + chips */}
+                      {property.type === 'enum' && (
+                        <FormControl fullWidth>
+                          <FormLabel>{t('userTypes:enumValues', 'Allowed Values (Enum)')}</FormLabel>
                           <Box sx={{display: 'flex', gap: 1, mb: 1}}>
                             <TextField
                               value={enumInput[property.id] ?? ''}
@@ -731,12 +862,12 @@ export default function ViewUserTypePage() {
                                   handleAddEnumValue(property.id);
                                 }
                               }}
-                              placeholder="Add value and press Enter"
+                              placeholder={t('userTypes:enumPlaceholder', 'Add value and press Enter')}
                               size="small"
                               fullWidth
                             />
                             <Button variant="outlined" size="small" onClick={() => handleAddEnumValue(property.id)}>
-                              Add
+                              {t('common:actions.add', 'Add')}
                             </Button>
                           </Box>
                           {property.enum.length > 0 && (
@@ -752,11 +883,26 @@ export default function ViewUserTypePage() {
                             </Stack>
                           )}
                         </FormControl>
-                      </>
-                    )}
-                  </Stack>
-                </Paper>
+                      )}
+                    </Stack>
+                  </Paper>
               ))}
+
+              {/* Add Property Button */}
+              <Button
+                variant="outlined"
+                startIcon={<Plus size={16} />}
+                onClick={handleAddProperty}
+                fullWidth
+                sx={{
+                  py: 1.5,
+                  mb: 2,
+                  borderStyle: 'dashed',
+                  '&:hover': {borderStyle: 'dashed'},
+                }}
+              >
+                {t('userTypes:addProperty', 'Add Property')}
+              </Button>
 
               {/* Update Error Display */}
               {updateUserTypeMutation.error && (
