@@ -180,9 +180,10 @@ func (ouh *organizationUnitHandler) HandleOUChildrenListRequest(w http.ResponseW
 // HandleOUUsersListRequest handles the list users in organization unit request.
 func (ouh *organizationUnitHandler) HandleOUUsersListRequest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	includeDisplay := r.URL.Query().Get("include") == "display"
 	ouh.handleResourceListRequest(w, r, "users",
 		func(id string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
-			return ouh.service.GetOrganizationUnitUsers(ctx, id, limit, offset)
+			return ouh.service.GetOrganizationUnitUsers(ctx, id, limit, offset, includeDisplay)
 		})
 }
 
@@ -476,9 +477,10 @@ func (ouh *organizationUnitHandler) HandleOUChildrenListByPathRequest(w http.Res
 // HandleOUUsersListByPathRequest handles the list users in organization unit by path request.
 func (ouh *organizationUnitHandler) HandleOUUsersListByPathRequest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	includeDisplay := r.URL.Query().Get("include") == "display"
 	ouh.handleResourceListByPathRequest(w, r, "users",
 		func(path string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
-			return ouh.service.GetOrganizationUnitUsersByPath(ctx, path, limit, offset)
+			return ouh.service.GetOrganizationUnitUsersByPath(ctx, path, limit, offset, includeDisplay)
 		})
 }
 

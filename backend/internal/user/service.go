@@ -227,7 +227,7 @@ func (us *userService) GetUsersByPath(
 		return nil, err
 	}
 
-	ouResponse, svcErr := us.ouService.GetOrganizationUnitUsers(ctx, organizationUnitID, limit, offset)
+	ouResponse, svcErr := us.ouService.GetOrganizationUnitUsers(ctx, organizationUnitID, limit, offset, false)
 	if svcErr != nil {
 		return nil, mapOUServiceError(
 			svcErr,
@@ -281,7 +281,7 @@ func (us *userService) GetUsersByPath(
 				if u, ok := userMap[ouUser.ID]; ok {
 					users[i] = User{
 						ID:      u.ID,
-						Display: ResolveUserDisplay(u.ID, u.Type, u.Attributes, displayAttrPaths),
+						Display: utils.ResolveDisplay(u.ID, u.Type, u.Attributes, displayAttrPaths),
 					}
 				} else {
 					users[i] = User{ID: ouUser.ID}
@@ -1346,7 +1346,7 @@ func (us *userService) populateUserDisplayNames(ctx context.Context, users []Use
 
 	// Resolve display for each user.
 	for i := range users {
-		users[i].Display = ResolveUserDisplay(
+		users[i].Display = utils.ResolveDisplay(
 			users[i].ID, users[i].Type, users[i].Attributes, displayAttrPaths)
 	}
 }

@@ -99,6 +99,47 @@ func (suite *SliceUtilTestSuite) TestUniqueStrings() {
 	}
 }
 
+func (suite *SliceUtilTestSuite) TestUniqueNonEmptyStrings() {
+	tests := []struct {
+		name     string
+		input    []string
+		expected []string
+	}{
+		{
+			name:     "Normal with duplicates",
+			input:    []string{"a", "b", "a", "c"},
+			expected: []string{"a", "b", "c"},
+		},
+		{
+			name:     "Empty strings filtered",
+			input:    []string{"a", "", "b", ""},
+			expected: []string{"a", "b"},
+		},
+		{
+			name:     "All empty strings",
+			input:    []string{"", ""},
+			expected: nil,
+		},
+		{
+			name:     "Empty slice",
+			input:    []string{},
+			expected: nil,
+		},
+		{
+			name:     "Single element",
+			input:    []string{"x"},
+			expected: []string{"x"},
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			result := UniqueNonEmptyStrings(tt.input)
+			assert.Equal(suite.T(), tt.expected, result)
+		})
+	}
+}
+
 func (suite *SliceUtilTestSuite) TestDeepCopyMapOfStrings() {
 	tests := []struct {
 		name     string

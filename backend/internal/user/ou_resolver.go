@@ -52,7 +52,11 @@ func (a *ouUserResolverAdapter) GetUserListByOUID(
 
 	result := make([]oupkg.User, len(users))
 	for i, u := range users {
-		result[i] = oupkg.User{ID: u.ID}
+		result[i] = oupkg.User{
+			ID:         u.ID,
+			Type:       u.Type,
+			Attributes: u.Attributes,
+		}
 	}
 
 	return result, nil

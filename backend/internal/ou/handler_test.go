@@ -1476,6 +1476,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListBy
 					mock.Anything,
 					mock.Anything,
 					mock.Anything,
+					mock.Anything,
 				)
 			},
 		},
@@ -1498,7 +1499,25 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListBy
 					mock.Anything,
 					mock.Anything,
 					mock.Anything,
+					mock.Anything,
 				)
+			},
+		},
+		{
+			name:           "service error",
+			url:            "/organization-units/tree/" + defaultOUPath + "/users",
+			pathParamKey:   "path",
+			pathParamValue: defaultOUPath,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On("GetOrganizationUnitUsersByPath",
+						mock.Anything, defaultOUPath,
+						serverconst.DefaultPageSize, 0, false).
+					Return((*UserListResponse)(nil), &ErrorInternalServerError).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusInternalServerError, recorder.Code)
 			},
 		},
 		{
@@ -1511,7 +1530,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListBy
 				serviceMock.
 					On("GetOrganizationUnitUsersByPath",
 						mock.Anything, defaultOUPath,
-						serverconst.DefaultPageSize, 0).
+						serverconst.DefaultPageSize, 0, false).
 					Return(&UserListResponse{}, nil).
 					Once()
 			},
@@ -1527,7 +1546,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListBy
 			pathParamValue: defaultOUPath,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitUsersByPath", mock.Anything, defaultOUPath, 2, 1).
+					On("GetOrganizationUnitUsersByPath", mock.Anything, defaultOUPath, 2, 1, false).
 					Return(&UserListResponse{TotalResults: 3}, nil).
 					Once()
 			},
@@ -1567,6 +1586,23 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGroupsListB
 					mock.Anything,
 					mock.Anything,
 				)
+			},
+		},
+		{
+			name:           "groups service error",
+			url:            "/organization-units/tree/" + defaultOUPath + "/groups",
+			pathParamKey:   "path",
+			pathParamValue: defaultOUPath,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On("GetOrganizationUnitGroupsByPath",
+						mock.Anything, defaultOUPath,
+						serverconst.DefaultPageSize, 0).
+					Return((*GroupListResponse)(nil), &ErrorInternalServerError).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusInternalServerError, recorder.Code)
 			},
 		},
 		{
@@ -1614,6 +1650,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListRe
 					mock.Anything,
 					mock.Anything,
 					mock.Anything,
+					mock.Anything,
 				)
 			},
 		},
@@ -1636,6 +1673,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListRe
 					mock.Anything,
 					mock.Anything,
 					mock.Anything,
+					mock.Anything,
 				)
 			},
 		},
@@ -1648,7 +1686,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListRe
 				serviceMock.
 					On("GetOrganizationUnitUsers",
 						mock.Anything, defaultOURequestID,
-						serverconst.DefaultPageSize, 0).
+						serverconst.DefaultPageSize, 0, false).
 					Return((*UserListResponse)(nil), &ErrorInternalServerError).
 					Once()
 			},
@@ -1669,7 +1707,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListRe
 				serviceMock.
 					On("GetOrganizationUnitUsers",
 						mock.Anything, defaultOURequestID,
-						serverconst.DefaultPageSize, 0).
+						serverconst.DefaultPageSize, 0, false).
 					Return(&UserListResponse{}, nil).
 					Once()
 			},
@@ -1685,7 +1723,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListRe
 			pathParamValue: defaultOURequestID,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitUsers", mock.Anything, defaultOURequestID, 2, 1).
+					On("GetOrganizationUnitUsers", mock.Anything, defaultOURequestID, 2, 1, false).
 					Return(&UserListResponse{TotalResults: 1}, nil).
 					Once()
 			},
@@ -1701,6 +1739,77 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListRe
 	suite.runHandlerTestCases(testCases,
 		func(handler *organizationUnitHandler, writer http.ResponseWriter, req *http.Request) {
 			handler.HandleOUUsersListRequest(writer, req)
+		})
+}
+
+func (suite *OrganizationUnitHandlerTestSuite) buildIncludeDisplayTestCases(
+	baseURL, paramKey, paramValue, serviceMethod string,
+) []ouHandlerTestCase {
+	return []ouHandlerTestCase{
+		{
+			name:           "include=display passes true to service",
+			url:            baseURL + "?limit=10&include=display",
+			pathParamKey:   paramKey,
+			pathParamValue: paramValue,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On(serviceMethod, mock.Anything, paramValue, 10, 0, true).
+					Return(&UserListResponse{
+						TotalResults: 1,
+						Users:        []User{{ID: "user-1", Display: "Alice"}},
+					}, nil).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusOK, recorder.Code)
+				var resp UserListResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
+				suite.Equal("Alice", resp.Users[0].Display)
+			},
+		},
+		{
+			name:           "invalid include value passes false to service",
+			url:            baseURL + "?limit=10&include=invalid",
+			pathParamKey:   paramKey,
+			pathParamValue: paramValue,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On(serviceMethod, mock.Anything, paramValue, 10, 0, false).
+					Return(&UserListResponse{
+						TotalResults: 1,
+						Users:        []User{{ID: "user-1"}},
+					}, nil).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusOK, recorder.Code)
+				var resp UserListResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
+				suite.Equal("", resp.Users[0].Display)
+			},
+		},
+	}
+}
+
+func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListRequest_WithIncludeDisplay() {
+	testCases := suite.buildIncludeDisplayTestCases(
+		"/organization-units/"+defaultOURequestID+"/users",
+		"id", defaultOURequestID, "GetOrganizationUnitUsers",
+	)
+	suite.runHandlerTestCases(testCases,
+		func(handler *organizationUnitHandler, writer http.ResponseWriter, req *http.Request) {
+			handler.HandleOUUsersListRequest(writer, req)
+		})
+}
+
+func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListByPathRequest_WithIncludeDisplay() {
+	testCases := suite.buildIncludeDisplayTestCases(
+		"/organization-units/tree/"+defaultOUPath+"/users",
+		"path", defaultOUPath, "GetOrganizationUnitUsersByPath",
+	)
+	suite.runHandlerTestCases(testCases,
+		func(handler *organizationUnitHandler, writer http.ResponseWriter, req *http.Request) {
+			handler.HandleOUUsersListByPathRequest(writer, req)
 		})
 }
 

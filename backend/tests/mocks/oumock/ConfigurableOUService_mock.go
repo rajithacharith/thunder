@@ -766,8 +766,8 @@ func (_c *ConfigurableOUServiceMock_GetOrganizationUnitList_Call) RunAndReturn(r
 }
 
 // GetOrganizationUnitUsers provides a mock function for the type ConfigurableOUServiceMock
-func (_mock *ConfigurableOUServiceMock) GetOrganizationUnitUsers(ctx context.Context, id string, limit int, offset int) (*ou.UserListResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(ctx, id, limit, offset)
+func (_mock *ConfigurableOUServiceMock) GetOrganizationUnitUsers(ctx context.Context, id string, limit int, offset int, includeDisplay bool) (*ou.UserListResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, id, limit, offset, includeDisplay)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetOrganizationUnitUsers")
@@ -775,18 +775,18 @@ func (_mock *ConfigurableOUServiceMock) GetOrganizationUnitUsers(ctx context.Con
 
 	var r0 *ou.UserListResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int) (*ou.UserListResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(ctx, id, limit, offset)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int, bool) (*ou.UserListResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, id, limit, offset, includeDisplay)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int) *ou.UserListResponse); ok {
-		r0 = returnFunc(ctx, id, limit, offset)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int, bool) *ou.UserListResponse); ok {
+		r0 = returnFunc(ctx, id, limit, offset, includeDisplay)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*ou.UserListResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int, int) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(ctx, id, limit, offset)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int, int, bool) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, id, limit, offset, includeDisplay)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -805,11 +805,12 @@ type ConfigurableOUServiceMock_GetOrganizationUnitUsers_Call struct {
 //   - id string
 //   - limit int
 //   - offset int
-func (_e *ConfigurableOUServiceMock_Expecter) GetOrganizationUnitUsers(ctx interface{}, id interface{}, limit interface{}, offset interface{}) *ConfigurableOUServiceMock_GetOrganizationUnitUsers_Call {
-	return &ConfigurableOUServiceMock_GetOrganizationUnitUsers_Call{Call: _e.mock.On("GetOrganizationUnitUsers", ctx, id, limit, offset)}
+//   - includeDisplay bool
+func (_e *ConfigurableOUServiceMock_Expecter) GetOrganizationUnitUsers(ctx interface{}, id interface{}, limit interface{}, offset interface{}, includeDisplay interface{}) *ConfigurableOUServiceMock_GetOrganizationUnitUsers_Call {
+	return &ConfigurableOUServiceMock_GetOrganizationUnitUsers_Call{Call: _e.mock.On("GetOrganizationUnitUsers", ctx, id, limit, offset, includeDisplay)}
 }
 
-func (_c *ConfigurableOUServiceMock_GetOrganizationUnitUsers_Call) Run(run func(ctx context.Context, id string, limit int, offset int)) *ConfigurableOUServiceMock_GetOrganizationUnitUsers_Call {
+func (_c *ConfigurableOUServiceMock_GetOrganizationUnitUsers_Call) Run(run func(ctx context.Context, id string, limit int, offset int, includeDisplay bool)) *ConfigurableOUServiceMock_GetOrganizationUnitUsers_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -827,11 +828,16 @@ func (_c *ConfigurableOUServiceMock_GetOrganizationUnitUsers_Call) Run(run func(
 		if args[3] != nil {
 			arg3 = args[3].(int)
 		}
+		var arg4 bool
+		if args[4] != nil {
+			arg4 = args[4].(bool)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
+			arg4,
 		)
 	})
 	return _c
@@ -842,14 +848,14 @@ func (_c *ConfigurableOUServiceMock_GetOrganizationUnitUsers_Call) Return(userLi
 	return _c
 }
 
-func (_c *ConfigurableOUServiceMock_GetOrganizationUnitUsers_Call) RunAndReturn(run func(ctx context.Context, id string, limit int, offset int) (*ou.UserListResponse, *serviceerror.ServiceError)) *ConfigurableOUServiceMock_GetOrganizationUnitUsers_Call {
+func (_c *ConfigurableOUServiceMock_GetOrganizationUnitUsers_Call) RunAndReturn(run func(ctx context.Context, id string, limit int, offset int, includeDisplay bool) (*ou.UserListResponse, *serviceerror.ServiceError)) *ConfigurableOUServiceMock_GetOrganizationUnitUsers_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetOrganizationUnitUsersByPath provides a mock function for the type ConfigurableOUServiceMock
-func (_mock *ConfigurableOUServiceMock) GetOrganizationUnitUsersByPath(ctx context.Context, handlePath string, limit int, offset int) (*ou.UserListResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(ctx, handlePath, limit, offset)
+func (_mock *ConfigurableOUServiceMock) GetOrganizationUnitUsersByPath(ctx context.Context, handlePath string, limit int, offset int, includeDisplay bool) (*ou.UserListResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, handlePath, limit, offset, includeDisplay)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetOrganizationUnitUsersByPath")
@@ -857,18 +863,18 @@ func (_mock *ConfigurableOUServiceMock) GetOrganizationUnitUsersByPath(ctx conte
 
 	var r0 *ou.UserListResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int) (*ou.UserListResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(ctx, handlePath, limit, offset)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int, bool) (*ou.UserListResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, handlePath, limit, offset, includeDisplay)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int) *ou.UserListResponse); ok {
-		r0 = returnFunc(ctx, handlePath, limit, offset)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int, bool) *ou.UserListResponse); ok {
+		r0 = returnFunc(ctx, handlePath, limit, offset, includeDisplay)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*ou.UserListResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int, int) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(ctx, handlePath, limit, offset)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int, int, bool) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, handlePath, limit, offset, includeDisplay)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -887,11 +893,12 @@ type ConfigurableOUServiceMock_GetOrganizationUnitUsersByPath_Call struct {
 //   - handlePath string
 //   - limit int
 //   - offset int
-func (_e *ConfigurableOUServiceMock_Expecter) GetOrganizationUnitUsersByPath(ctx interface{}, handlePath interface{}, limit interface{}, offset interface{}) *ConfigurableOUServiceMock_GetOrganizationUnitUsersByPath_Call {
-	return &ConfigurableOUServiceMock_GetOrganizationUnitUsersByPath_Call{Call: _e.mock.On("GetOrganizationUnitUsersByPath", ctx, handlePath, limit, offset)}
+//   - includeDisplay bool
+func (_e *ConfigurableOUServiceMock_Expecter) GetOrganizationUnitUsersByPath(ctx interface{}, handlePath interface{}, limit interface{}, offset interface{}, includeDisplay interface{}) *ConfigurableOUServiceMock_GetOrganizationUnitUsersByPath_Call {
+	return &ConfigurableOUServiceMock_GetOrganizationUnitUsersByPath_Call{Call: _e.mock.On("GetOrganizationUnitUsersByPath", ctx, handlePath, limit, offset, includeDisplay)}
 }
 
-func (_c *ConfigurableOUServiceMock_GetOrganizationUnitUsersByPath_Call) Run(run func(ctx context.Context, handlePath string, limit int, offset int)) *ConfigurableOUServiceMock_GetOrganizationUnitUsersByPath_Call {
+func (_c *ConfigurableOUServiceMock_GetOrganizationUnitUsersByPath_Call) Run(run func(ctx context.Context, handlePath string, limit int, offset int, includeDisplay bool)) *ConfigurableOUServiceMock_GetOrganizationUnitUsersByPath_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -909,11 +916,16 @@ func (_c *ConfigurableOUServiceMock_GetOrganizationUnitUsersByPath_Call) Run(run
 		if args[3] != nil {
 			arg3 = args[3].(int)
 		}
+		var arg4 bool
+		if args[4] != nil {
+			arg4 = args[4].(bool)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
+			arg4,
 		)
 	})
 	return _c
@@ -924,7 +936,7 @@ func (_c *ConfigurableOUServiceMock_GetOrganizationUnitUsersByPath_Call) Return(
 	return _c
 }
 
-func (_c *ConfigurableOUServiceMock_GetOrganizationUnitUsersByPath_Call) RunAndReturn(run func(ctx context.Context, handlePath string, limit int, offset int) (*ou.UserListResponse, *serviceerror.ServiceError)) *ConfigurableOUServiceMock_GetOrganizationUnitUsersByPath_Call {
+func (_c *ConfigurableOUServiceMock_GetOrganizationUnitUsersByPath_Call) RunAndReturn(run func(ctx context.Context, handlePath string, limit int, offset int, includeDisplay bool) (*ou.UserListResponse, *serviceerror.ServiceError)) *ConfigurableOUServiceMock_GetOrganizationUnitUsersByPath_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1204,6 +1216,46 @@ func (_c *ConfigurableOUServiceMock_SetOUUserResolver_Call) Return() *Configurab
 }
 
 func (_c *ConfigurableOUServiceMock_SetOUUserResolver_Call) RunAndReturn(run func(resolver ou.OUUserResolver)) *ConfigurableOUServiceMock_SetOUUserResolver_Call {
+	_c.Run(run)
+	return _c
+}
+
+// SetUserSchemaService provides a mock function for the type ConfigurableOUServiceMock
+func (_mock *ConfigurableOUServiceMock) SetUserSchemaService(service ou.DisplayAttributeResolver) {
+	_mock.Called(service)
+	return
+}
+
+// ConfigurableOUServiceMock_SetUserSchemaService_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetUserSchemaService'
+type ConfigurableOUServiceMock_SetUserSchemaService_Call struct {
+	*mock.Call
+}
+
+// SetUserSchemaService is a helper method to define mock.On call
+//   - service ou.DisplayAttributeResolver
+func (_e *ConfigurableOUServiceMock_Expecter) SetUserSchemaService(service interface{}) *ConfigurableOUServiceMock_SetUserSchemaService_Call {
+	return &ConfigurableOUServiceMock_SetUserSchemaService_Call{Call: _e.mock.On("SetUserSchemaService", service)}
+}
+
+func (_c *ConfigurableOUServiceMock_SetUserSchemaService_Call) Run(run func(service ou.DisplayAttributeResolver)) *ConfigurableOUServiceMock_SetUserSchemaService_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 ou.DisplayAttributeResolver
+		if args[0] != nil {
+			arg0 = args[0].(ou.DisplayAttributeResolver)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *ConfigurableOUServiceMock_SetUserSchemaService_Call) Return() *ConfigurableOUServiceMock_SetUserSchemaService_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *ConfigurableOUServiceMock_SetUserSchemaService_Call) RunAndReturn(run func(service ou.DisplayAttributeResolver)) *ConfigurableOUServiceMock_SetUserSchemaService_Call {
 	_c.Run(run)
 	return _c
 }

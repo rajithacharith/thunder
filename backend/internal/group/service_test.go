@@ -33,6 +33,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
+	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	"github.com/asgardeo/thunder/tests/mocks/sysauthzmock"
@@ -2290,7 +2291,7 @@ func TestResolveUserDisplay_WithDisplayAttr(t *testing.T) {
 		Attributes: json.RawMessage(`{"email":"alice@example.com"}`),
 	}
 	paths := map[string]string{"employee": "email"}
-	require.Equal(t, "alice@example.com", user.ResolveUserDisplay(u.ID, u.Type, u.Attributes, paths))
+	require.Equal(t, "alice@example.com", utils.ResolveDisplay(u.ID, u.Type, u.Attributes, paths))
 }
 
 func TestResolveUserDisplay_FallbackToID(t *testing.T) {
@@ -2300,12 +2301,12 @@ func TestResolveUserDisplay_FallbackToID(t *testing.T) {
 		Attributes: json.RawMessage(`{"name":"Alice"}`),
 	}
 	paths := map[string]string{"employee": "nonexistent"}
-	require.Equal(t, "user-1", user.ResolveUserDisplay(u.ID, u.Type, u.Attributes, paths))
+	require.Equal(t, "user-1", utils.ResolveDisplay(u.ID, u.Type, u.Attributes, paths))
 }
 
 func TestResolveUserDisplay_NilPaths(t *testing.T) {
 	u := &user.User{ID: "user-1", Type: "employee"}
-	require.Equal(t, "user-1", user.ResolveUserDisplay(u.ID, u.Type, u.Attributes, nil))
+	require.Equal(t, "user-1", utils.ResolveDisplay(u.ID, u.Type, u.Attributes, nil))
 }
 
 // populateMemberDisplayNames Tests

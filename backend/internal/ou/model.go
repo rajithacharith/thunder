@@ -20,7 +20,9 @@ package ou
 
 import (
 	"context"
+	"encoding/json"
 
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
@@ -74,7 +76,10 @@ type OrganizationUnitListResponse struct {
 
 // User represents a user with basic information for OU endpoints.
 type User struct {
-	ID string `json:"id"`
+	ID         string          `json:"id"`
+	Type       string          `json:"-"`
+	Attributes json.RawMessage `json:"-"`
+	Display    string          `json:"display,omitempty"`
 }
 
 // Group represents a group with basic information for OU endpoints.
@@ -90,6 +95,14 @@ type UserListResponse struct {
 	Count        int          `json:"count"`
 	Users        []User       `json:"users"`
 	Links        []utils.Link `json:"links"`
+}
+
+// DisplayAttributeResolver provides access to display attribute paths for user schemas
+// without requiring direct import of the userschema package (which would cause an import cycle).
+type DisplayAttributeResolver interface {
+	GetDisplayAttributesByNames(
+		ctx context.Context, names []string,
+	) (map[string]string, *serviceerror.ServiceError)
 }
 
 // OUUserResolver provides access to user data for an organization unit

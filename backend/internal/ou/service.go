@@ -64,10 +64,10 @@ type OrganizationUnitServiceInterface interface {
 		ctx context.Context, handlePath string, limit, offset int,
 	) (*OrganizationUnitListResponse, *serviceerror.ServiceError)
 	GetOrganizationUnitUsers(
-		ctx context.Context, id string, limit, offset int,
+		ctx context.Context, id string, limit, offset int, includeDisplay bool,
 	) (*UserListResponse, *serviceerror.ServiceError)
 	GetOrganizationUnitUsersByPath(
-		ctx context.Context, handlePath string, limit, offset int,
+		ctx context.Context, handlePath string, limit, offset int, includeDisplay bool,
 	) (*UserListResponse, *serviceerror.ServiceError)
 	GetOrganizationUnitGroups(
 		ctx context.Context, id string, limit, offset int,
@@ -84,15 +84,17 @@ type ConfigurableOUService interface {
 	OrganizationUnitServiceInterface
 	SetOUUserResolver(resolver OUUserResolver)
 	SetOUGroupResolver(resolver OUGroupResolver)
+	SetUserSchemaService(service DisplayAttributeResolver)
 }
 
 // OrganizationUnitService provides organization unit management operations.
 type organizationUnitService struct {
-	authzService  sysauthz.SystemAuthorizationServiceInterface
-	ouStore       organizationUnitStoreInterface
-	transactioner transaction.Transactioner
-	userResolver  OUUserResolver
-	groupResolver OUGroupResolver
+	authzService      sysauthz.SystemAuthorizationServiceInterface
+	ouStore           organizationUnitStoreInterface
+	transactioner     transaction.Transactioner
+	userResolver      OUUserResolver
+	groupResolver     OUGroupResolver
+	userSchemaService DisplayAttributeResolver
 }
 
 func (ous *organizationUnitService) SetOUUserResolver(resolver OUUserResolver) {
@@ -101,6 +103,10 @@ func (ous *organizationUnitService) SetOUUserResolver(resolver OUUserResolver) {
 
 func (ous *organizationUnitService) SetOUGroupResolver(resolver OUGroupResolver) {
 	ous.groupResolver = resolver
+}
+
+func (ous *organizationUnitService) SetUserSchemaService(service DisplayAttributeResolver) {
+	ous.userSchemaService = service
 }
 
 // newOrganizationUnitService creates a new instance of OrganizationUnitService.
@@ -805,7 +811,7 @@ func (ous *organizationUnitService) checkOUAccess(
 
 // GetOrganizationUnitUsers retrieves a list of users for a given organization unit ID.
 func (ous *organizationUnitService) GetOrganizationUnitUsers(
-	ctx context.Context, id string, limit, offset int,
+	ctx context.Context, id string, limit, offset int, includeDisplay bool,
 ) (*UserListResponse, *serviceerror.ServiceError) {
 	if svcErr := ous.checkOUAccess(ctx, security.ActionReadUser, id); svcErr != nil {
 		return nil, svcErr
@@ -826,8 +832,18 @@ func (ous *organizationUnitService) GetOrganizationUnitUsers(
 		return nil, svcErr
 	}
 
+	users, ok := items.([]User)
+	if !ok {
+		return nil, &ErrorInternalServerError
+	}
+
+	if includeDisplay {
+		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
+		ous.populateUserDisplayNames(ctx, users, logger)
+	}
+
 	base := fmt.Sprintf("/organization-units/%s/users", id)
-	return buildUserListResponse(base, items, totalCount, limit, offset)
+	return buildUserListResponse(base, users, totalCount, limit, offset, includeDisplay)
 }
 
 // GetOrganizationUnitGroups retrieves a list of groups for a given organization unit ID.
@@ -905,7 +921,7 @@ func (ous *organizationUnitService) GetOrganizationUnitChildrenByPath(
 
 // GetOrganizationUnitUsersByPath retrieves a list of users by hierarchical handle path.
 func (ous *organizationUnitService) GetOrganizationUnitUsersByPath(
-	ctx context.Context, handlePath string, limit, offset int,
+	ctx context.Context, handlePath string, limit, offset int, includeDisplay bool,
 ) (*UserListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Getting organization unit users by path", log.String("path", handlePath))
@@ -924,7 +940,7 @@ func (ous *organizationUnitService) GetOrganizationUnitUsersByPath(
 		return nil, &ErrorInternalServerError
 	}
 
-	return ous.GetOrganizationUnitUsers(ctx, ou.ID, limit, offset)
+	return ous.GetOrganizationUnitUsers(ctx, ou.ID, limit, offset, includeDisplay)
 }
 
 // GetOrganizationUnitGroupsByPath retrieves a list of groups by hierarchical handle path.
@@ -1084,19 +1100,32 @@ func (ous *organizationUnitService) getResourceListWithExistenceCheck(
 }
 
 func buildUserListResponse(
-	base string, items interface{}, totalCount, limit, offset int,
+	base string, users []User, totalCount, limit, offset int, includeDisplay bool,
 ) (*UserListResponse, *serviceerror.ServiceError) {
-	users, ok := items.([]User)
-	if !ok {
-		return nil, &ErrorInternalServerError
-	}
+	displayQuery := utils.DisplayQueryParam(includeDisplay)
 	return &UserListResponse{
 		TotalResults: totalCount,
 		Users:        users,
 		StartIndex:   offset + 1,
 		Count:        len(users),
-		Links:        utils.BuildPaginationLinks(base, limit, offset, totalCount, ""),
+		Links:        utils.BuildPaginationLinks(base, limit, offset, totalCount, displayQuery),
 	}, nil
+}
+
+// populateUserDisplayNames resolves display names for a slice of users in-place.
+// It batch-fetches display attribute paths from the user schema service and extracts the
+// display value from each user's attributes. Falls back to user ID if extraction fails.
+func (ous *organizationUnitService) populateUserDisplayNames(ctx context.Context, users []User, logger *log.Logger) {
+	userTypes := make([]string, 0, len(users))
+	for _, u := range users {
+		userTypes = append(userTypes, u.Type)
+	}
+
+	displayAttrPaths := resolveDisplayAttributePaths(ctx, userTypes, ous.userSchemaService, logger)
+
+	for i := range users {
+		users[i].Display = utils.ResolveDisplay(users[i].ID, users[i].Type, users[i].Attributes, displayAttrPaths)
+	}
 }
 
 func buildGroupListResponse(

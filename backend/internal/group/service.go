@@ -673,7 +673,7 @@ func (gs *groupService) populateMemberDisplayNames(ctx context.Context, members 
 		case MemberTypeUser:
 			if usersMap != nil {
 				if u, ok := usersMap[members[i].ID]; ok {
-					members[i].Display = user.ResolveUserDisplay(u.ID, u.Type, u.Attributes, displayAttrPaths)
+					members[i].Display = utils.ResolveDisplay(u.ID, u.Type, u.Attributes, displayAttrPaths)
 					continue
 				}
 			}

@@ -20,6 +20,7 @@ package ou
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -1752,7 +1753,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 			service := suite.newServiceWithResolvers(
 				store, newAllowAllAuthz(suite.T()), userRes, nil,
 			)
-			resp, err := service.GetOrganizationUnitUsers(context.Background(), "ou-1", tc.limit, tc.offset)
+			resp, err := service.GetOrganizationUnitUsers(context.Background(), "ou-1", tc.limit, tc.offset, false)
 
 			if tc.wantErr != nil {
 				suite.Require().Nil(resp)
@@ -1768,6 +1769,210 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 			}
 		})
 	}
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitUsers_WithDisplay() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	store.On("IsOrganizationUnitExists", mock.Anything, "ou-1").
+		Return(true, nil).Once()
+
+	userRes := NewOUUserResolverMock(suite.T())
+	userRes.On("GetUserListByOUID", mock.Anything, "ou-1", 5, 0).
+		Return([]User{
+			{
+				ID:         "user-1",
+				Type:       "employee",
+				Attributes: json.RawMessage(`{"email":"alice@example.com"}`),
+			},
+			{
+				ID:         "user-2",
+				Type:       "contractor",
+				Attributes: json.RawMessage(`{"profile":{"fullName":"Bob Smith"}}`),
+			},
+		}, nil).Once()
+	userRes.On("GetUserCountByOUID", mock.Anything, "ou-1").
+		Return(2, nil).Once()
+
+	schemaMock := NewDisplayAttributeResolverMock(suite.T())
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything,
+		mock.MatchedBy(func(names []string) bool {
+			if len(names) != 2 {
+				return false
+			}
+			has := map[string]bool{names[0]: true, names[1]: true}
+			return has["employee"] && has["contractor"]
+		})).Return(map[string]string{
+		"employee":   "email",
+		"contractor": "profile.fullName",
+	}, (*serviceerror.ServiceError)(nil)).Once()
+
+	service := suite.newServiceWithResolvers(
+		store, newAllowAllAuthz(suite.T()), userRes, nil,
+	)
+	service.userSchemaService = schemaMock
+
+	resp, err := service.GetOrganizationUnitUsers(context.Background(), "ou-1", 5, 0, true)
+	suite.Require().Nil(err)
+	suite.Require().Len(resp.Users, 2)
+	suite.Equal("alice@example.com", resp.Users[0].Display)
+	suite.Equal("Bob Smith", resp.Users[1].Display)
+
+	schemaMock.AssertExpectations(suite.T())
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitUsers_WithDisplay_FallbackToID() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	store.On("IsOrganizationUnitExists", mock.Anything, "ou-1").
+		Return(true, nil).Once()
+
+	userRes := NewOUUserResolverMock(suite.T())
+	userRes.On("GetUserListByOUID", mock.Anything, "ou-1", 5, 0).
+		Return([]User{
+			{
+				ID:         "user-1",
+				Type:       "employee",
+				Attributes: json.RawMessage(`{"name":"Alice"}`),
+			},
+		}, nil).Once()
+	userRes.On("GetUserCountByOUID", mock.Anything, "ou-1").
+		Return(1, nil).Once()
+
+	schemaMock := NewDisplayAttributeResolverMock(suite.T())
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
+		Return(map[string]string{"employee": "email"}, (*serviceerror.ServiceError)(nil)).Once()
+
+	service := suite.newServiceWithResolvers(
+		store, newAllowAllAuthz(suite.T()), userRes, nil,
+	)
+	service.userSchemaService = schemaMock
+
+	resp, err := service.GetOrganizationUnitUsers(context.Background(), "ou-1", 5, 0, true)
+	suite.Require().Nil(err)
+	suite.Require().Len(resp.Users, 1)
+	// Falls back to user ID when attribute path doesn't match
+	suite.Equal("user-1", resp.Users[0].Display)
+
+	schemaMock.AssertExpectations(suite.T())
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitUsers_WithDisplay_SchemaError() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	store.On("IsOrganizationUnitExists", mock.Anything, "ou-1").
+		Return(true, nil).Once()
+
+	userRes := NewOUUserResolverMock(suite.T())
+	userRes.On("GetUserListByOUID", mock.Anything, "ou-1", 5, 0).
+		Return([]User{
+			{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"email":"alice@example.com"}`)},
+		}, nil).Once()
+	userRes.On("GetUserCountByOUID", mock.Anything, "ou-1").
+		Return(1, nil).Once()
+
+	schemaMock := NewDisplayAttributeResolverMock(suite.T())
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
+		Return(nil, &serviceerror.ServiceError{Code: "500", Error: "schema unavailable"}).Once()
+
+	service := suite.newServiceWithResolvers(
+		store, newAllowAllAuthz(suite.T()), userRes, nil,
+	)
+	service.userSchemaService = schemaMock
+
+	resp, err := service.GetOrganizationUnitUsers(context.Background(), "ou-1", 5, 0, true)
+	suite.Require().Nil(err)
+	suite.Require().Len(resp.Users, 1)
+	// Falls back to user ID when schema service fails
+	suite.Equal("user-1", resp.Users[0].Display)
+
+	schemaMock.AssertExpectations(suite.T())
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitUsers_AccessDenied() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(suite.T())
+	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
+		Return(false, nil).Once()
+
+	userRes := NewOUUserResolverMock(suite.T())
+	service := suite.newServiceWithResolvers(store, authzMock, userRes, nil)
+
+	resp, err := service.GetOrganizationUnitUsers(context.Background(), "ou-1", 5, 0, false)
+	suite.Require().Nil(resp)
+	suite.Require().Equal(serviceerror.ErrorUnauthorized, *err)
+
+	// Verify no store or resolver calls were made
+	store.AssertNumberOfCalls(suite.T(), "IsOrganizationUnitExists", 0)
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitGroups_AccessDenied() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(suite.T())
+	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
+		Return(false, nil).Once()
+
+	groupRes := new(OUGroupResolverMock)
+	service := suite.newServiceWithResolvers(store, authzMock, nil, groupRes)
+
+	resp, err := service.GetOrganizationUnitGroups(context.Background(), "ou-1", 5, 0)
+	suite.Require().Nil(resp)
+	suite.Require().Equal(serviceerror.ErrorUnauthorized, *err)
+
+	store.AssertNumberOfCalls(suite.T(), "IsOrganizationUnitExists", 0)
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitUsers_AuthzError() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(suite.T())
+	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
+		Return(false, &serviceerror.ServiceError{Code: "500", Error: "authz service unavailable"}).Once()
+
+	userRes := NewOUUserResolverMock(suite.T())
+	service := suite.newServiceWithResolvers(store, authzMock, userRes, nil)
+
+	resp, err := service.GetOrganizationUnitUsers(context.Background(), "ou-1", 5, 0, false)
+	suite.Require().Nil(resp)
+	suite.Require().Equal(ErrorInternalServerError, *err)
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitChildren_AccessDenied() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(suite.T())
+	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
+		Return(false, nil).Once()
+
+	service := suite.newService(store, authzMock)
+
+	resp, err := service.GetOrganizationUnitChildren(context.Background(), "ou-1", 5, 0)
+	suite.Require().Nil(resp)
+	suite.Require().Equal(serviceerror.ErrorUnauthorized, *err)
+
+	store.AssertNumberOfCalls(suite.T(), "IsOrganizationUnitExists", 0)
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitChildren_AuthzError() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(suite.T())
+	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
+		Return(false, &serviceerror.ServiceError{Code: "500", Error: "authz service unavailable"}).Once()
+
+	service := suite.newService(store, authzMock)
+
+	resp, err := service.GetOrganizationUnitChildren(context.Background(), "ou-1", 5, 0)
+	suite.Require().Nil(resp)
+	suite.Require().Equal(ErrorInternalServerError, *err)
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitGroups_AuthzError() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(suite.T())
+	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
+		Return(false, &serviceerror.ServiceError{Code: "500", Error: "authz service unavailable"}).Once()
+
+	groupRes := new(OUGroupResolverMock)
+	service := suite.newServiceWithResolvers(store, authzMock, nil, groupRes)
+
+	resp, err := service.GetOrganizationUnitGroups(context.Background(), "ou-1", 5, 0)
+	suite.Require().Nil(resp)
+	suite.Require().Equal(ErrorInternalServerError, *err)
 }
 
 // runResolverPathListTests runs common path-based list tests for user/group resolver-backed endpoints.
@@ -1794,6 +1999,17 @@ func (suite *OrganizationUnitServiceTestSuite) runResolverPathListTests(
 		resp, err := invoke(service, "root", 5, 0)
 		suite.Require().Nil(resp)
 		suite.Require().Equal(ErrorOrganizationUnitNotFound, *err)
+	})
+
+	suite.Run("store error", func() {
+		store := newOrganizationUnitStoreInterfaceMock(suite.T())
+		store.On("GetOrganizationUnitByPath", mock.Anything, []string{"root"}).
+			Return(OrganizationUnit{}, errors.New("db connection failed")).Once()
+
+		service := suite.newService(store, newAllowAllAuthz(suite.T()))
+		resp, err := invoke(service, "root", 5, 0)
+		suite.Require().Nil(resp)
+		suite.Require().Equal(ErrorInternalServerError, *err)
 	})
 
 	suite.Run("success", func() {
@@ -1824,9 +2040,60 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 			return userRes, nil
 		},
 		func(svc *organizationUnitService, path string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
-			return svc.GetOrganizationUnitUsersByPath(context.Background(), path, limit, offset)
+			return svc.GetOrganizationUnitUsersByPath(context.Background(), path, limit, offset, false)
 		},
 	)
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitUsersByPath_WithDisplay() {
+	store := newOrganizationUnitStoreInterfaceMock(suite.T())
+	store.On("GetOrganizationUnitByPath", mock.Anything, []string{"engineering"}).
+		Return(OrganizationUnit{ID: "ou-1"}, nil).Once()
+	store.On("IsOrganizationUnitExists", mock.Anything, "ou-1").
+		Return(true, nil).Once()
+
+	userRes := NewOUUserResolverMock(suite.T())
+	userRes.On("GetUserListByOUID", mock.Anything, "ou-1", 2, 0).
+		Return([]User{
+			{
+				ID:         "user-1",
+				Type:       "employee",
+				Attributes: json.RawMessage(`{"email":"alice@example.com"}`),
+			},
+			{
+				ID:         "user-2",
+				Type:       "employee",
+				Attributes: json.RawMessage(`{"email":"bob@example.com"}`),
+			},
+		}, nil).Once()
+	userRes.On("GetUserCountByOUID", mock.Anything, "ou-1").
+		Return(4, nil).Once()
+
+	schemaMock := NewDisplayAttributeResolverMock(suite.T())
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
+		Return(map[string]string{"employee": "email"}, (*serviceerror.ServiceError)(nil)).Once()
+
+	service := suite.newServiceWithResolvers(
+		store, newAllowAllAuthz(suite.T()), userRes, nil,
+	)
+	service.userSchemaService = schemaMock
+
+	resp, err := service.GetOrganizationUnitUsersByPath(
+		context.Background(), "engineering", 2, 0, true,
+	)
+	suite.Require().Nil(err)
+	suite.Require().Len(resp.Users, 2)
+	suite.Equal("alice@example.com", resp.Users[0].Display)
+	suite.Equal("bob@example.com", resp.Users[1].Display)
+
+	// Verify pagination links preserve the include=display query parameter
+	suite.Require().NotEmpty(resp.Links)
+	for _, link := range resp.Links {
+		suite.Contains(link.Href, "include=display",
+			"pagination link %q should preserve include=display", link.Rel)
+	}
+
+	schemaMock.AssertExpectations(suite.T())
 }
 
 func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitGroups() {
@@ -1924,7 +2191,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 
 func (suite *OrganizationUnitServiceTestSuite) TestOUService_BuildUserListResponse() {
 	users := []User{{ID: "u1"}, {ID: "u2"}}
-	resp, err := buildUserListResponse("/organization-units", users, 10, 5, 0)
+	resp, err := buildUserListResponse("/organization-units", users, 10, 5, 0, false)
 	suite.Nil(err)
 	suite.NotNil(resp)
 	suite.Equal(10, resp.TotalResults)

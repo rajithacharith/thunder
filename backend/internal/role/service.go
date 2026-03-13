@@ -718,7 +718,7 @@ func (rs *roleService) populateDisplayNames(
 		case AssigneeTypeUser:
 			if usersMap != nil {
 				if u, ok := usersMap[assignments[i].ID]; ok {
-					serviceAssignments[i].Display = user.ResolveUserDisplay(
+					serviceAssignments[i].Display = utils.ResolveDisplay(
 						u.ID, u.Type, u.Attributes, displayAttrPaths)
 					continue
 				}
