@@ -103,6 +103,17 @@ describe('InviteMembersCard', () => {
       expect(screen.getByText('BJ')).toBeInTheDocument();
     });
 
+    it('renders first two characters for a single-word display name', () => {
+      mockUseGetUsers.mockReturnValue({
+        isLoading: false,
+        data: {totalResults: 2, users: [{id: 'u1', display: 'Alice'}]},
+      });
+
+      render(<InviteMembersCard />);
+
+      expect(screen.getByText('AL')).toBeInTheDocument();
+    });
+
     it('renders an extra count when totalResults exceeds the avatar limit', () => {
       const manyUsers = Array.from({length: 5}, (_, i) => ({id: `u${i}`, display: `User ${i}`}));
       mockUseGetUsers.mockReturnValue({isLoading: false, data: {totalResults: 8, users: manyUsers}});
