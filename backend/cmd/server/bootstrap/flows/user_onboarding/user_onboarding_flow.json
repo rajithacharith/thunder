@@ -140,6 +140,18 @@
                 "name": "InviteExecutor",
                 "mode": "generate"
             },
+            "onSuccess": "send_invite_email"
+        },
+        {
+            "id": "send_invite_email",
+            "type": "TASK_EXECUTION",
+            "properties": {
+                "emailTemplate": "USER_INVITE"
+            },
+            "executor": {
+                "name": "EmailExecutor",
+                "mode": "send"
+            },
             "onSuccess": "invite_verify"
         },
         {

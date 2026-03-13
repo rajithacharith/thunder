@@ -54,6 +54,7 @@ const mockInviteUserRenderProps: InviteUserRenderProps = {
   handleInputBlur: mockHandleInputBlur,
   handleSubmit: mockHandleSubmit,
   isInviteGenerated: false,
+  isEmailSent: false,
   inviteLink: undefined,
   copyInviteLink: mockCopyInviteLink,
   inviteLinkCopied: false,
@@ -386,17 +387,15 @@ describe('InviteUserDialog', () => {
     expect(screen.getByText('Failed to invite user')).toBeInTheDocument();
   });
 
-  it('displays invite link when invite is generated', () => {
-    const inviteLink = 'https://example.com/invite?token=abc123';
+  it('displays invite email sent when invite is generated', () => {
     Object.assign(mockInviteUserRenderProps, {
       isInviteGenerated: true,
-      inviteLink,
+      isEmailSent: true,
     });
 
     render(<InviteUserDialog open onClose={mockOnClose} onSuccess={mockOnSuccess} />);
 
-    expect(screen.getByText(/Invite Link Generated!/i)).toBeInTheDocument();
-    expect(screen.getByDisplayValue(inviteLink)).toBeInTheDocument();
+    expect(screen.getByText(/Invite Email Sent!/i)).toBeInTheDocument();
   });
 
   it('calls onSuccess when invite link is generated', async () => {
@@ -413,22 +412,7 @@ describe('InviteUserDialog', () => {
     });
   });
 
-  it('copies invite link when copy button is clicked', async () => {
-    const user = userEvent.setup();
-    const inviteLink = 'https://example.com/invite?token=abc123';
-    Object.assign(mockInviteUserRenderProps, {
-      isInviteGenerated: true,
-      inviteLink,
-      inviteLinkCopied: false,
-    });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
-
-    const copyButton = screen.getByRole('button', {name: /copy/i});
-    await user.click(copyButton);
-
-    expect(mockCopyInviteLink).toHaveBeenCalled();
-  });
 
   it('resets flow when "Invite Another User" is clicked', async () => {
     const user = userEvent.setup();
@@ -898,20 +882,7 @@ describe('InviteUserDialog', () => {
     });
   });
 
-  it('displays check icon when invite link is already copied', () => {
-    const inviteLink = 'https://example.com/invite?token=abc123';
-    Object.assign(mockInviteUserRenderProps, {
-      isInviteGenerated: true,
-      inviteLink,
-      inviteLinkCopied: true, // Already copied via SDK
-    });
 
-    render(<InviteUserDialog open onClose={mockOnClose} />);
-
-    // The copy button should show check icon when inviteLinkCopied is true
-    const copyButton = screen.getByRole('button', {name: /copy/i});
-    expect(copyButton).toBeInTheDocument();
-  });
 
   it('closes dialog from invite generated screen', async () => {
     const user = userEvent.setup();
@@ -1464,26 +1435,7 @@ describe('InviteUserDialog', () => {
     expect(option).toBeInTheDocument();
   });
 
-  it('handles copyInviteLink returning undefined', async () => {
-    const user = userEvent.setup();
-    const inviteLink = 'https://example.com/invite?token=abc123';
 
-    // Set copyInviteLink to undefined
-    Object.assign(mockInviteUserRenderProps, {
-      isInviteGenerated: true,
-      inviteLink,
-      inviteLinkCopied: false,
-      copyInviteLink: undefined,
-    });
-
-    render(<InviteUserDialog open onClose={mockOnClose} />);
-
-    const copyButton = screen.getByRole('button', {name: /copy/i});
-    await user.click(copyButton);
-
-    // Should not crash when copyInviteLink is undefined
-    expect(copyButton).toBeInTheDocument();
-  });
 
   it('renders SELECT with selected value showing label', async () => {
     const selectComponent: EmbeddedFlowComponent = {

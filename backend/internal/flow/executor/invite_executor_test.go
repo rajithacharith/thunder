@@ -72,13 +72,12 @@ func (suite *InviteExecutorTestSuite) TearDownTest() {
 	config.ResetThunderRuntime()
 }
 
-func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_GenerateToken() {
+func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode() {
 	ctx := &core.NodeContext{
-		FlowID:         "test-flow-id",
-		ExecutorMode:   ExecutorModeGenerate,
-		UserInputs:     make(map[string]string),
-		RuntimeData:    make(map[string]string),
-		NodeProperties: make(map[string]interface{}),
+		FlowID:       "test-flow-id",
+		ExecutorMode: ExecutorModeGenerate,
+		UserInputs:   make(map[string]string),
+		RuntimeData:  make(map[string]string),
 	}
 
 	resp, err := suite.executor.Execute(ctx)
@@ -88,6 +87,9 @@ func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_GenerateToken() {
 	assert.NotEmpty(suite.T(), resp.RuntimeData[common.RuntimeKeyStoredInviteToken])
 	assert.Contains(suite.T(), resp.AdditionalData[common.DataInviteLink], "inviteToken=")
 	assert.Contains(suite.T(), resp.AdditionalData[common.DataInviteLink], "flowId=test-flow-id")
+	// Verify invite link is stored in runtime data for downstream executors
+	assert.NotEmpty(suite.T(), resp.RuntimeData[common.RuntimeKeyInviteLink])
+	assert.Equal(suite.T(), resp.AdditionalData[common.DataInviteLink], resp.RuntimeData[common.RuntimeKeyInviteLink])
 }
 
 func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_Idempotency() {
@@ -99,7 +101,6 @@ func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_Idempotency() {
 		RuntimeData: map[string]string{
 			common.RuntimeKeyStoredInviteToken: existingToken,
 		},
-		NodeProperties: make(map[string]interface{}),
 	}
 
 	resp, err := suite.executor.Execute(ctx)

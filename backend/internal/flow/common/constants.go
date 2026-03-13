@@ -133,6 +133,8 @@ const (
 	DataStepTimeout = "stepTimeout"
 	// DataInviteLink is the key used for the invite link in the flow response additional data.
 	DataInviteLink = "inviteLink"
+	// DataEmailSent is the key used to indicate that an email was sent successfully in the flow response.
+	DataEmailSent = "emailSent"
 )
 
 // DefaultHTTPTimeout defines the default timeout duration for HTTP requests.
@@ -173,6 +175,8 @@ const (
 	RuntimeKeyStoredInviteToken = "storedInviteToken"
 	// RuntimeKeyUserAttributesCacheTTLSeconds indicates the TTL of the user attributes cache.
 	RuntimeKeyUserAttributesCacheTTLSeconds = "user_attributes_cache_ttl_seconds"
+	// RuntimeKeyInviteLink holds the generated invite link for downstream executors (e.g., EmailExecutor).
+	RuntimeKeyInviteLink = "inviteLink"
 )
 
 // TODO: Define a go type for InputType when formalizing input types

@@ -53,6 +53,7 @@ const mockInviteUserRenderProps: InviteUserRenderProps = {
   handleInputBlur: mockHandleInputBlur,
   handleSubmit: mockHandleSubmit,
   isInviteGenerated: false,
+  isEmailSent: false,
   inviteLink: undefined,
   copyInviteLink: mockCopyInviteLink,
   inviteLinkCopied: false,
