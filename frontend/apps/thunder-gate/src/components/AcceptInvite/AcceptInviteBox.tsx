@@ -92,7 +92,7 @@ export default function AcceptInviteBox(): JSX.Element {
             // eslint-disable-next-line no-console
             console.error('Invite acceptance error:', error);
           }}
-          onFlowChange={(response: any) => {
+          onFlowChange={(response: {failureReason?: string}) => {
             setFlowError(response?.failureReason ?? null);
           }}
         >

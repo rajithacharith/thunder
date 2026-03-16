@@ -93,6 +93,8 @@ func Initialize(
 		flowFactory, userProvider))
 	reg.RegisterExecutor(ExecutorNameConsent, newConsentExecutor(flowFactory, authRegistry.ConsentEnforcerService))
 	reg.RegisterExecutor(ExecutorNameOUResolver, newOUResolverExecutor(flowFactory))
+	reg.RegisterExecutor(ExecutorNameAttributeUniquenessValidator, newAttributeUniquenessValidator(
+		flowFactory, userSchemaService, userProvider))
 
 	return reg
 }

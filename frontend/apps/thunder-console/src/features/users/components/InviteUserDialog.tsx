@@ -641,7 +641,7 @@ export default function InviteUserDialog({open, onClose, onSuccess = undefined}:
             logger.error('User onboarding error', {error});
           }}
           onFlowChange={(response: any) => {
-            setFlowError(response?.failureReason ?? null);
+            setFlowError((response?.failureReason as string | null) ?? null);
           }}
         >
           {(props: InviteUserRenderProps) => (
