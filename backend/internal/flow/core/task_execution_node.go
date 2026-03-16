@@ -125,6 +125,11 @@ func (n *taskExecutionNode) Execute(ctx *NodeContext) (*common.NodeResponse, *se
 			nodeResp.RuntimeData = make(map[string]string)
 		}
 		nodeResp.RuntimeData["failureReason"] = nodeResp.FailureReason
+
+		// Clear user inputs consumed by this executor
+		for _, input := range n.inputs {
+			delete(ctx.UserInputs, input.Identifier)
+		}
 	} else if nodeResp.Status == common.NodeStatusIncomplete && n.onIncomplete != "" {
 		// Executor requires user input - forward to dedicated prompt node
 		// Change status to Forward so engine forwards execution to onIncomplete node
