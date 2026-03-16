@@ -75,6 +75,7 @@ export interface InviteUserDialogProps {
 
 interface InviteUserContentProps {
   props: InviteUserRenderProps;
+  flowError: string | null;
   getOptionValue: (option: unknown) => string;
   getOptionLabel: (option: unknown) => string;
   handleClose: () => void;
@@ -101,6 +102,7 @@ function InviteUserContent({
     resetFlow,
     isValid: propsIsValid,
   },
+  flowError,
   getOptionValue,
   getOptionLabel,
   handleClose,
@@ -333,22 +335,12 @@ function InviteUserContent({
   const {
     control,
     formState: {errors, isValid},
-    setValue,
     reset,
   } = useForm({
     resolver: zodResolver(formSchema),
     mode: 'onChange',
     defaultValues: values ?? {},
   });
-
-  // Sync react-hook-form with SDK component values
-  useEffect(() => {
-    if (values) {
-      Object.entries(values).forEach(([key, value]) => {
-        setValue(key, String(value));
-      });
-    }
-  }, [values, setValue]);
 
   // Reset form when flow resets
   useEffect(() => {
@@ -483,10 +475,10 @@ function InviteUserContent({
 
   return (
     <>
-      {error && (
+      {(flowError ?? error) && (
         <Alert severity="error" sx={{mb: 2}}>
           <AlertTitle>{t('users:errors.failed.title', 'Error')}</AlertTitle>
-          {error.message ?? t('users:errors.failed.description', 'An error occurred.')}
+          {flowError ?? error?.message ?? t('users:errors.failed.description', 'An error occurred.')}
         </Alert>
       )}
       <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
@@ -584,6 +576,7 @@ export default function InviteUserDialog({open, onClose, onSuccess = undefined}:
   const logger = useLogger('InviteUserDialog');
   const [copied, setCopied] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
+  const [flowError, setFlowError] = useState<string | null>(null);
 
   const handleCopy = () => {
     setCopied(true);
@@ -647,10 +640,14 @@ export default function InviteUserDialog({open, onClose, onSuccess = undefined}:
           onError={(error: Error) => {
             logger.error('User onboarding error', {error});
           }}
+          onFlowChange={(response: any) => {
+            setFlowError((response?.failureReason as string | null) ?? null);
+          }}
         >
           {(props: InviteUserRenderProps) => (
             <InviteUserContent
               props={props}
+              flowError={flowError}
               getOptionValue={getOptionValue}
               getOptionLabel={getOptionLabel}
               handleClose={handleClose}

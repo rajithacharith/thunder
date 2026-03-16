@@ -128,10 +128,19 @@
                     ],
                     "action": {
                         "ref": "action_submit_email",
-                        "nextNode": "invite_generate"
+                        "nextNode": "check_email_uniqueness"
                     }
                 }
             ]
+        },
+        {
+            "id": "check_email_uniqueness",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AttributeUniquenessValidator"
+            },
+            "onSuccess": "invite_generate",
+            "onIncomplete": "prompt_email"
         },
         {
             "id": "invite_generate",
@@ -259,10 +268,19 @@
                     ],
                     "action": {
                         "ref": "action_submit_details",
-                        "nextNode": "prompt_credential"
+                        "nextNode": "check_user_details_uniqueness"
                     }
                 }
             ]
+        },
+        {
+            "id": "check_user_details_uniqueness",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AttributeUniquenessValidator"
+            },
+            "onSuccess": "prompt_credential",
+            "onIncomplete": "prompt_user_details"
         },
         {
             "id": "prompt_credential",
