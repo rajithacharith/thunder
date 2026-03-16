@@ -712,13 +712,85 @@ else {
 Write-Host ""
 
 # ============================================================================
+# Create Administrator Group
+# ============================================================================
+
+Log-Info "Creating administrator group..."
+
+if (-not $DEFAULT_OU_ID) {
+    Log-Error "Default OU ID is not available. Cannot create administrator group."
+    exit 1
+}
+
+if (-not $ADMIN_USER_ID) {
+    Log-Error "Admin user ID is not available. Cannot create administrator group with user membership."
+    exit 1
+}
+
+$administratorGroupData = @{
+    name = "Administrators"
+    description = "System Administrators group"
+    organizationUnitId = $DEFAULT_OU_ID
+    members = @(
+        @{
+            id = $ADMIN_USER_ID
+            type = "user"
+        }
+    )
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/groups" -Data $administratorGroupData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "Administrator group created successfully"
+    $body = $response.Body | ConvertFrom-Json
+    $ADMIN_GROUP_ID = $body.id
+    if ($ADMIN_GROUP_ID) {
+        Log-Info "Administrator group ID: $ADMIN_GROUP_ID"
+    }
+    else {
+        Log-Error "Could not extract administrator group ID from response"
+        exit 1
+    }
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "Administrator group already exists, retrieving ID..."
+    $response = Invoke-ThunderApi -Method GET -Endpoint "/groups/tree/default?limit=200"
+
+    if ($response.StatusCode -eq 200) {
+        $body = $response.Body | ConvertFrom-Json
+        $adminGroup = $body.groups | Where-Object { $_.name -eq "Administrators" } | Select-Object -First 1
+
+        if ($adminGroup) {
+            $ADMIN_GROUP_ID = $adminGroup.id
+            Log-Success "Found administrator group ID: $ADMIN_GROUP_ID"
+        }
+        else {
+            Log-Error "Could not find administrator group in response"
+            exit 1
+        }
+    }
+    else {
+        Log-Error "Failed to fetch groups under default OU (HTTP $($response.StatusCode))"
+        exit 1
+    }
+}
+else {
+    Log-Error "Failed to create administrator group (HTTP $($response.StatusCode))"
+    Write-Host "Response: $($response.Body)"
+    exit 1
+}
+
+Write-Host ""
+
+# ============================================================================
 # Create Admin Role
 # ============================================================================
 
 Log-Info "Creating admin role with 'system' permission..."
 
-if (-not $ADMIN_USER_ID) {
-    Log-Error "Admin user ID is not available. Cannot create role."
+if (-not $ADMIN_GROUP_ID) {
+    Log-Error "Administrator group ID is not available. Cannot create role."
     exit 1
 }
 
@@ -744,8 +816,8 @@ $roleData = @{
     )
     assignments = @(
         @{
-            id = $ADMIN_USER_ID
-            type = "user"
+            id = $ADMIN_GROUP_ID
+            type = "group"
         }
     )
 } | ConvertTo-Json -Depth 10
@@ -753,7 +825,7 @@ $roleData = @{
 $response = Invoke-ThunderApi -Method POST -Endpoint "/roles" -Data $roleData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
-    Log-Success "Admin role created and assigned to admin user"
+    Log-Success "Admin role created and assigned to administrator group"
     $body = $response.Body | ConvertFrom-Json
     $ADMIN_ROLE_ID = $body.id
     if ($ADMIN_ROLE_ID) {
@@ -1304,5 +1376,5 @@ Write-Host ""
 Log-Info "👤 Admin credentials:"
 Log-Info "   Username: admin"
 Log-Info "   Password: admin"
-Log-Info "   Role: Administrator (system permission)"
+Log-Info "   Role: Administrator (system permission via Administrators group)"
 Write-Host ""
