@@ -647,6 +647,80 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithEmptyFailureReasonAnd
 	s.Empty(resp.NextNodeID, "NextNodeID should not be set when FailureReason is empty")
 }
 
+func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureClearsNodeInputs() {
+	mockExec := NewExecutorInterfaceMock(s.T())
+
+	inputs := []common.Input{
+		{Identifier: "email", Required: true},
+	}
+
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	execNode.SetOnFailure("prompt-email")
+	execNode.(*taskExecutionNode).inputs = inputs
+
+	mockExec.On("GetName").Return("test-executor").Once()
+	mockExec.On("Execute", mock.Anything).Return(
+		&common.ExecutorResponse{
+			Status:        common.ExecFailure,
+			FailureReason: "A user with this email already exists",
+		}, nil,
+	).Once()
+
+	execNode.SetExecutor(mockExec)
+
+	ctx := &NodeContext{
+		FlowID: "test-flow",
+		UserInputs: map[string]string{
+			"email": "existing@example.com",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusForward, resp.Status)
+	s.Equal("prompt-email", resp.NextNodeID)
+	s.Equal("A user with this email already exists", resp.RuntimeData["failureReason"])
+	s.Empty(ctx.UserInputs["email"], "Email should be cleared from UserInputs on onFailure")
+}
+
+func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureNoNodeInputsPreservesUserInputs() {
+	mockExec := NewExecutorInterfaceMock(s.T())
+
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	execNode.SetOnFailure("error-handler")
+	// No inputs configured on the node
+
+	mockExec.On("GetName").Return("test-executor").Once()
+	mockExec.On("Execute", mock.Anything).Return(
+		&common.ExecutorResponse{
+			Status:        common.ExecFailure,
+			FailureReason: "SOME_ERROR",
+		}, nil,
+	).Once()
+
+	execNode.SetExecutor(mockExec)
+
+	ctx := &NodeContext{
+		FlowID: "test-flow",
+		UserInputs: map[string]string{
+			"email": "user@example.com",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusForward, resp.Status)
+	s.Equal("error-handler", resp.NextNodeID)
+	s.Equal("user@example.com", ctx.UserInputs["email"],
+		"UserInputs should be preserved when no node inputs are configured")
+}
+
 func (s *TaskExecutionNodeTestSuite) TestOnIncomplete() {
 	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
 	execNode, ok := node.(ExecutorBackedNodeInterface)
