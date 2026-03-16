@@ -229,7 +229,7 @@ configuration:
 
   # Cache configuration
   cache:
-    disabled: false
+    disabled: true
     type: "inmemory"
     size: 1000
     ttl: 3600
