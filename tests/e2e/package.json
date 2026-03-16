@@ -50,5 +50,8 @@
   },
   "dependencies": {
     "dotenv": "17.2.3"
+  },
+  "overrides": {
+    "flatted": ">=3.4.1"
   }
 }

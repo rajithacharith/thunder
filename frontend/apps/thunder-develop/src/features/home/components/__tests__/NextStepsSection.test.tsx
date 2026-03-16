@@ -33,6 +33,9 @@ vi.mock('framer-motion', async () => {
     motion: {
       ...((actual as {motion: object}).motion ?? {}),
       div: ({children, ...rest}: React.HTMLAttributes<HTMLDivElement>) => <div {...rest}>{children}</div>,
+      create:
+        () =>
+        ({children, ...rest}: React.HTMLAttributes<HTMLDivElement>) => <div {...rest}>{children}</div>,
     },
   };
 });

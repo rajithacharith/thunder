@@ -1162,8 +1162,9 @@ const translations = {
     'edit.general.applicationId.hint': 'Unique identifier for your application',
     'edit.general.clientId.hint': 'OAuth2 client identifier used for authentication',
     'edit.general.noUserTypes': 'No user types configured',
-    'edit.general.contacts.placeholder': 'admin@example.com, support@example.com',
-    'edit.general.contacts.hint': 'Enter email addresses separated by commas',
+    'edit.general.contacts.placeholder': 'Type an email and press Enter',
+    'edit.general.contacts.hint': 'Type a valid email address and press <0>Enter</0> to add it',
+    'edit.general.contacts.error.invalid': 'Please enter a valid email address',
     'edit.general.redirectUris.title': 'Authorized redirect URIs',
     'edit.general.redirectUris.description': 'For use with requests from a web server',
     'edit.general.redirectUris.tooltip': 'OAuth2 redirect URIs where users will be redirected after authentication',
@@ -2058,7 +2059,8 @@ const translations = {
 
     // Start Building section
     'start_building.hero.title': 'Integrate {{product}} into your application',
-    'start_building.hero.description': 'Add secure sign-in, token management, and user sessions to your app in minutes.',
+    'start_building.hero.description':
+      'Add secure sign-in, token management, and user sessions to your app in minutes.',
     'start_building.hero.actions.create.label': 'Create Application',
     'start_building.frameworks.label': 'Start with a framework',
 
