@@ -755,7 +755,7 @@ if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
 }
 elseif ($response.StatusCode -eq 409) {
     Log-Warning "Administrator group already exists, retrieving ID..."
-    $response = Invoke-ThunderApi -Method GET -Endpoint "/groups/tree/default?limit=200"
+    $response = Invoke-ThunderApi -Method GET -Endpoint "/groups/tree/default?limit=100"
 
     if ($response.StatusCode -eq 200) {
         $body = $response.Body | ConvertFrom-Json
