@@ -688,7 +688,7 @@ if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
     fi
 elif [[ "$HTTP_CODE" == "409" ]]; then
     log_warning "Administrator group already exists, retrieving ID..."
-    RESPONSE=$(thunder_api_call GET "/groups/tree/default?limit=200")
+    RESPONSE=$(thunder_api_call GET "/groups/tree/default?limit=100")
     HTTP_CODE="${RESPONSE: -3}"
     BODY="${RESPONSE%???}"
 
