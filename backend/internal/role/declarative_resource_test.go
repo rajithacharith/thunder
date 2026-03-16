@@ -71,8 +71,8 @@ func (suite *RoleExporterTestSuite) TestGetResourceRules() {
 func (suite *RoleExporterTestSuite) TestGetAllResourceIDs_SinglePage() {
 	roleList := &RoleList{
 		Roles: []Role{
-			{ID: "role1", Name: "Admin", OrganizationUnitID: "ou1"},
-			{ID: "role2", Name: "Viewer", OrganizationUnitID: "ou1"},
+			{ID: "role1", Name: "Admin", OUID: "ou1"},
+			{ID: "role2", Name: "Viewer", OUID: "ou1"},
 		},
 		TotalResults: 2,
 	}
@@ -99,13 +99,13 @@ func (suite *RoleExporterTestSuite) TestGetAllResourceIDs_SinglePage() {
 func (suite *RoleExporterTestSuite) TestGetAllResourceIDs_MultiplePages() {
 	page1 := &RoleList{
 		Roles: []Role{
-			{ID: "role1", Name: "Admin", OrganizationUnitID: "ou1"},
+			{ID: "role1", Name: "Admin", OUID: "ou1"},
 		},
 		TotalResults: 2,
 	}
 	page2 := &RoleList{
 		Roles: []Role{
-			{ID: "role2", Name: "Viewer", OrganizationUnitID: "ou1"},
+			{ID: "role2", Name: "Viewer", OUID: "ou1"},
 		},
 		TotalResults: 2,
 	}
@@ -131,8 +131,8 @@ func (suite *RoleExporterTestSuite) TestGetAllResourceIDs_MultiplePages() {
 func (suite *RoleExporterTestSuite) TestGetAllResourceIDs_ExcludesDeclarativeRoles() {
 	roleList := &RoleList{
 		Roles: []Role{
-			{ID: "role1", Name: "Admin", OrganizationUnitID: "ou1"},
-			{ID: "role-declarative", Name: "Declarative Role", OrganizationUnitID: "ou1"},
+			{ID: "role1", Name: "Admin", OUID: "ou1"},
+			{ID: "role-declarative", Name: "Declarative Role", OUID: "ou1"},
 		},
 		TotalResults: 2,
 	}
@@ -172,7 +172,7 @@ func (suite *RoleExporterTestSuite) TestGetAllResourceIDs_ErrorOnGetRoleList() {
 func (suite *RoleExporterTestSuite) TestGetAllResourceIDs_ErrorOnIsRoleDeclarative() {
 	roleList := &RoleList{
 		Roles: []Role{
-			{ID: "role1", Name: "Admin", OrganizationUnitID: "ou1"},
+			{ID: "role1", Name: "Admin", OUID: "ou1"},
 		},
 		TotalResults: 1,
 	}
@@ -191,10 +191,10 @@ func (suite *RoleExporterTestSuite) TestGetAllResourceIDs_ErrorOnIsRoleDeclarati
 // Test GetResourceByID - success
 func (suite *RoleExporterTestSuite) TestGetResourceByID_Success() {
 	roleWithPerms := &RoleWithPermissions{
-		ID:                 "role1",
-		Name:               "Admin",
-		Description:        "Admin role",
-		OrganizationUnitID: "ou1",
+		ID:          "role1",
+		Name:        "Admin",
+		Description: "Admin role",
+		OUID:        "ou1",
 		Permissions: []ResourcePermissions{
 			{ResourceServerID: "rs1", Permissions: []string{"read", "write"}},
 		},
@@ -247,9 +247,9 @@ func (suite *RoleExporterTestSuite) TestGetResourceByID_ErrorOnGetRoleWithPermis
 // Test ValidateResource - success
 func (suite *RoleExporterTestSuite) TestValidateResource_Success() {
 	resource := &RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 	}
 	logger := log.GetLogger()
 
@@ -293,7 +293,7 @@ assignments:
 	assert.Equal(suite.T(), "role1", role.ID)
 	assert.Equal(suite.T(), "Admin", role.Name)
 	assert.Equal(suite.T(), "Admin role", role.Description)
-	assert.Equal(suite.T(), "ou1", role.OrganizationUnitID)
+	assert.Equal(suite.T(), "ou1", role.OUID)
 	assert.Len(suite.T(), role.Permissions, 1)
 	assert.Len(suite.T(), role.Assignments, 1)
 }
@@ -330,9 +330,9 @@ ou_id: ou1
 // Test validateRoleWrapper - valid role
 func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_ValidRole() {
 	role := &RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 		Permissions: []ResourcePermissions{
 			{ResourceServerID: "rs1", Permissions: []string{"read"}},
 		},
@@ -350,8 +350,8 @@ func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_ValidRole() {
 // Test validateRoleWrapper - missing ID
 func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_MissingID() {
 	role := &RoleWithPermissionsAndAssignments{
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		Name: "Admin",
+		OUID: "ou1",
 	}
 
 	err := validateRoleWrapper(role, nil, nil)
@@ -363,8 +363,8 @@ func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_MissingID() {
 // Test validateRoleWrapper - missing name
 func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_MissingName() {
 	role := &RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		OUID: "ou1",
 	}
 
 	err := validateRoleWrapper(role, nil, nil)
@@ -374,7 +374,7 @@ func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_MissingName() {
 }
 
 // Test validateRoleWrapper - missing organization unit ID
-func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_MissingOrganizationUnitID() {
+func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_MissingOUID() {
 	role := &RoleWithPermissionsAndAssignments{
 		ID:   "role1",
 		Name: "Admin",
@@ -389,9 +389,9 @@ func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_MissingOrganizationU
 // Test validateRoleWrapper - invalid assignment type
 func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_InvalidAssignmentType() {
 	role := &RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 		Assignments: []RoleAssignment{
 			{ID: "user1", Type: "invalid"},
 		},
@@ -406,9 +406,9 @@ func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_InvalidAssignmentTyp
 // Test validateRoleWrapper - missing assignment ID
 func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_MissingAssignmentID() {
 	role := &RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 		Assignments: []RoleAssignment{
 			{Type: AssigneeTypeUser},
 		},
@@ -423,9 +423,9 @@ func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_MissingAssignmentID(
 // Test validateRoleWrapper - missing resource server ID
 func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_MissingResourceServerID() {
 	role := &RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 		Permissions: []ResourcePermissions{
 			{Permissions: []string{"read"}},
 		},

@@ -44,7 +44,7 @@ describe('useGetUser', () => {
 
   const mockUser: ApiUser = {
     id: 'user-1',
-    organizationUnit: 'ou-1',
+    ouId: 'ou-1',
     type: 'Employee',
     attributes: {username: 'john', email: 'john@test.com'},
   };

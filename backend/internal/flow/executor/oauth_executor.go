@@ -445,10 +445,10 @@ func (o *oAuthExecutor) getContextUserForAuthentication(ctx *core.NodeContext,
 	// User found, proceed with authentication
 	execResp.Status = common.ExecComplete
 	authenticatedUser := authncm.AuthenticatedUser{
-		IsAuthenticated:    true,
-		UserID:             internalUser.UserID,
-		OrganizationUnitID: internalUser.OrganizationUnitID,
-		UserType:           internalUser.UserType,
+		IsAuthenticated: true,
+		UserID:          internalUser.UserID,
+		OUID:            internalUser.OuID,
+		UserType:        internalUser.UserType,
 	}
 
 	return &authenticatedUser, nil
@@ -487,10 +487,10 @@ func (o *oAuthExecutor) getContextUserForRegistration(ctx *core.NodeContext,
 		execResp.RuntimeData[common.RuntimeKeySkipProvisioning] = dataValueTrue
 
 		return &authncm.AuthenticatedUser{
-			IsAuthenticated:    true,
-			UserID:             internalUser.UserID,
-			OrganizationUnitID: internalUser.OrganizationUnitID,
-			UserType:           internalUser.UserType,
+			IsAuthenticated: true,
+			UserID:          internalUser.UserID,
+			OUID:            internalUser.OuID,
+			UserType:        internalUser.UserType,
 		}, nil
 	}
 
@@ -552,7 +552,7 @@ func (o *oAuthExecutor) resolveUserTypeForAutoProvisioning(ctx *core.NodeContext
 	// Proceed with the single resolved user type
 	// Add userType and ouID to runtime data
 	execResp.RuntimeData[userTypeKey] = selfRegEnabledSchemas[0].Name
-	execResp.RuntimeData[defaultOUIDKey] = selfRegEnabledSchemas[0].OrganizationUnitID
+	execResp.RuntimeData[defaultOUIDKey] = selfRegEnabledSchemas[0].OuID
 	return nil
 }
 

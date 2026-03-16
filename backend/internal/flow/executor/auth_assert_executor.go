@@ -215,9 +215,9 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 	ouAttributesConfigured := slices.Contains(requiredAttributes, oauth2const.ClaimOUID) ||
 		slices.Contains(requiredAttributes, oauth2const.ClaimOUName) ||
 		slices.Contains(requiredAttributes, oauth2const.ClaimOUHandle)
-	if ouAttributesConfigured && ctx.AuthenticatedUser.OrganizationUnitID != "" {
+	if ouAttributesConfigured && ctx.AuthenticatedUser.OUID != "" {
 		if err := a.appendOUDetailsToClaims(
-			ctx.Context, ctx.AuthenticatedUser.OrganizationUnitID, jwtClaims, requiredAttributes); err != nil {
+			ctx.Context, ctx.AuthenticatedUser.OUID, jwtClaims, requiredAttributes); err != nil {
 			return "", err
 		}
 	}

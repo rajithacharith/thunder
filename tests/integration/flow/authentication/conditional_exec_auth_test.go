@@ -224,7 +224,7 @@ func (ts *ConditionalExecAuthFlowTestSuite) SetupSuite() {
 	conditionalExecPreCreatedOUID = ouID
 
 	// Create user schema with self-registration enabled
-	conditionalExecUserSchema.OrganizationUnitId = conditionalExecPreCreatedOUID
+	conditionalExecUserSchema.OuID = conditionalExecPreCreatedOUID
 	schemaID, err := testutils.CreateUserType(conditionalExecUserSchema)
 	ts.Require().NoError(err, "Failed to create conditional exec user schema")
 	conditionalExecUserSchemaID = schemaID
@@ -243,7 +243,7 @@ func (ts *ConditionalExecAuthFlowTestSuite) SetupSuite() {
 
 	existingUser := testutils.User{
 		Type:             conditionalExecUserSchema.Name,
-		OrganizationUnit: conditionalExecPreCreatedOUID,
+		OuID:             conditionalExecPreCreatedOUID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 	existingUserID, err := testutils.CreateUser(existingUser)

@@ -305,7 +305,7 @@ func (ts *GoogleRegistrationFlowTestSuite) SetupSuite() {
 	googleRegTestOUID = ouID
 
 	// Create user schema
-	googleRegUserSchema.OrganizationUnitId = googleRegTestOUID
+	googleRegUserSchema.OuID = googleRegTestOUID
 	googleRegUserSchema.AllowSelfRegistration = true
 	schemaID, err := testutils.CreateUserType(googleRegUserSchema)
 	ts.Require().NoError(err, "Failed to create Google user schema")

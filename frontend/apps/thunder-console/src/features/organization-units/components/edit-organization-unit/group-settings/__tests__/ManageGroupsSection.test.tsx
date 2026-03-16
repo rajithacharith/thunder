@@ -49,9 +49,9 @@ vi.mock('react-i18next', () => ({
 
 describe('ManageGroupsSection', () => {
   const mockGroups: Group[] = [
-    {id: 'group-1', name: 'Developers', organizationUnit: 'ou-123'},
-    {id: 'group-2', name: 'Designers', organizationUnit: 'ou-123'},
-    {id: 'group-3', name: 'Product Managers', organizationUnit: 'ou-123'},
+    {id: 'group-1', name: 'Developers', ouId: 'ou-123'},
+    {id: 'group-2', name: 'Designers', ouId: 'ou-123'},
+    {id: 'group-3', name: 'Product Managers', ouId: 'ou-123'},
   ];
 
   beforeEach(() => {

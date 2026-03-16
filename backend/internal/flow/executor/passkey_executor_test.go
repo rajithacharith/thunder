@@ -285,10 +285,10 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_Success() {
 	attrs := map[string]interface{}{"email": "test@example.com"}
 	attrsJSON, _ := json.Marshal(attrs)
 	testUser := &userprovider.User{
-		UserID:             testPasskeyUserID,
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
-		Attributes:         attrsJSON,
+		UserID:     testPasskeyUserID,
+		OuID:       "ou-123",
+		UserType:   "INTERNAL",
+		Attributes: attrsJSON,
 	}
 	suite.mockUserProvider.On("GetUser", testPasskeyUserID).Return(testUser, nil)
 
@@ -537,10 +537,10 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_Success_Aut
 	attrs := map[string]interface{}{"email": "test@example.com"}
 	attrsJSON, _ := json.Marshal(attrs)
 	testUser := &userprovider.User{
-		UserID:             testPasskeyUserID,
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
-		Attributes:         attrsJSON,
+		UserID:     testPasskeyUserID,
+		OuID:       "ou-123",
+		UserType:   "INTERNAL",
+		Attributes: attrsJSON,
 	}
 	suite.mockUserProvider.On("GetUser", testPasskeyUserID).Return(testUser, nil)
 
@@ -729,10 +729,10 @@ func (suite *PasskeyAuthExecutorTestSuite) TestGetAuthenticatedUser_Success() {
 	attrs := map[string]interface{}{"email": "test@example.com", "name": "Test User"}
 	attrsJSON, _ := json.Marshal(attrs)
 	testUser := &userprovider.User{
-		UserID:             testPasskeyUserID,
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
-		Attributes:         attrsJSON,
+		UserID:     testPasskeyUserID,
+		OuID:       "ou-123",
+		UserType:   "INTERNAL",
+		Attributes: attrsJSON,
 	}
 	suite.mockUserProvider.On("GetUser", testPasskeyUserID).Return(testUser, nil)
 
@@ -742,7 +742,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestGetAuthenticatedUser_Success() {
 	assert.NotNil(suite.T(), authUser)
 	assert.True(suite.T(), authUser.IsAuthenticated)
 	assert.Equal(suite.T(), testPasskeyUserID, authUser.UserID)
-	assert.Equal(suite.T(), "ou-123", authUser.OrganizationUnitID)
+	assert.Equal(suite.T(), "ou-123", authUser.OUID)
 	assert.Equal(suite.T(), "INTERNAL", authUser.UserType)
 	assert.Equal(suite.T(), "test@example.com", authUser.Attributes["email"])
 }
@@ -778,10 +778,10 @@ func (suite *PasskeyAuthExecutorTestSuite) TestGetAuthenticatedUser_InvalidJSON(
 	}
 
 	testUser := &userprovider.User{
-		UserID:             testPasskeyUserID,
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
-		Attributes:         json.RawMessage(`invalid json`),
+		UserID:     testPasskeyUserID,
+		OuID:       "ou-123",
+		UserType:   "INTERNAL",
+		Attributes: json.RawMessage(`invalid json`),
 	}
 	suite.mockUserProvider.On("GetUser", testPasskeyUserID).Return(testUser, nil)
 
@@ -1024,10 +1024,10 @@ func (suite *PasskeyAuthExecutorTestSuite) TestGetAuthenticatedUser_UserIDFromCo
 	attrs := map[string]interface{}{"email": "test@example.com"}
 	attrsJSON, _ := json.Marshal(attrs)
 	testUser := &userprovider.User{
-		UserID:             testPasskeyUserID,
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
-		Attributes:         attrsJSON,
+		UserID:     testPasskeyUserID,
+		OuID:       "ou-123",
+		UserType:   "INTERNAL",
+		Attributes: attrsJSON,
 	}
 	suite.mockUserProvider.On("GetUser", testPasskeyUserID).Return(testUser, nil)
 

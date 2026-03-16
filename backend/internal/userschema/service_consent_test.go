@@ -500,9 +500,9 @@ func (s *UserSchemaServiceConsentTestSuite) TestCreateUserSchema_ConsentSyncFail
 	storeMock.On("DeleteUserSchemaByID", mock.Anything, mock.Anything).Return(nil).Maybe()
 
 	request := CreateUserSchemaRequest{
-		Name:               "test-schema",
-		OrganizationUnitID: testOUID1,
-		Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
+		Name:   "test-schema",
+		OuID:   testOUID1,
+		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
 	result, svcErr := svc.CreateUserSchema(context.Background(), request)
@@ -537,10 +537,10 @@ func (s *UserSchemaServiceConsentTestSuite) TestUpdateUserSchema_ConsentSyncFail
 	}
 
 	existingSchema := UserSchema{
-		ID:                 "schema-id",
-		Name:               "test-schema",
-		OrganizationUnitID: testOUID1,
-		Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
+		ID:     "schema-id",
+		Name:   "test-schema",
+		OuID:   testOUID1,
+		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
 	storeMock.On("IsUserSchemaDeclarative", "schema-id").Return(false)
@@ -554,9 +554,9 @@ func (s *UserSchemaServiceConsentTestSuite) TestUpdateUserSchema_ConsentSyncFail
 		Return(nil, &serviceerror.InternalServerErrorWithI18n)
 
 	request := UpdateUserSchemaRequest{
-		Name:               "test-schema",
-		OrganizationUnitID: testOUID1,
-		Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
+		Name:   "test-schema",
+		OuID:   testOUID1,
+		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
 	result, svcErr := svc.UpdateUserSchema(context.Background(), "schema-id", request)
@@ -590,10 +590,10 @@ func (s *UserSchemaServiceConsentTestSuite) TestDeleteUserSchema_ConsentEnabled_
 	}
 
 	existingSchema := UserSchema{
-		ID:                 "schema-id",
-		Name:               "test-schema",
-		OrganizationUnitID: testOUID1,
-		Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
+		ID:     "schema-id",
+		Name:   "test-schema",
+		OuID:   testOUID1,
+		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
 	storeMock.On("GetUserSchemaByID", mock.Anything, "schema-id").Return(existingSchema, nil)

@@ -45,46 +45,46 @@ type AssignmentRequest struct {
 
 // RoleSummaryResponse represents the basic information of a role.
 type RoleSummaryResponse struct {
-	ID                 string `json:"id"`
-	Name               string `json:"name"`
-	Description        string `json:"description,omitempty"`
-	OrganizationUnitID string `json:"ouId"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	OuID        string `json:"ouId"`
 }
 
 // RoleResponse represents a complete role with permissions.
 type RoleResponse struct {
-	ID                 string                `json:"id"`
-	Name               string                `json:"name"`
-	Description        string                `json:"description,omitempty"`
-	OrganizationUnitID string                `json:"ouId"`
-	Permissions        []ResourcePermissions `json:"permissions"`
+	ID          string                `json:"id"`
+	Name        string                `json:"name"`
+	Description string                `json:"description,omitempty"`
+	OuID        string                `json:"ouId"`
+	Permissions []ResourcePermissions `json:"permissions"`
 }
 
 // CreateRoleRequest represents the request body for creating a role.
 type CreateRoleRequest struct {
-	Name               string                `json:"name"`
-	Description        string                `json:"description,omitempty"`
-	OrganizationUnitID string                `json:"ouId"`
-	Permissions        []ResourcePermissions `json:"permissions"`
-	Assignments        []AssignmentRequest   `json:"assignments,omitempty"`
+	Name        string                `json:"name"`
+	Description string                `json:"description,omitempty"`
+	OuID        string                `json:"ouId"`
+	Permissions []ResourcePermissions `json:"permissions"`
+	Assignments []AssignmentRequest   `json:"assignments,omitempty"`
 }
 
 // CreateRoleResponse represents the response body for creating a role.
 type CreateRoleResponse struct {
-	ID                 string                `json:"id"`
-	Name               string                `json:"name"`
-	Description        string                `json:"description,omitempty"`
-	OrganizationUnitID string                `json:"ouId"`
-	Permissions        []ResourcePermissions `json:"permissions"`
-	Assignments        []AssignmentResponse  `json:"assignments,omitempty"`
+	ID          string                `json:"id"`
+	Name        string                `json:"name"`
+	Description string                `json:"description,omitempty"`
+	OuID        string                `json:"ouId"`
+	Permissions []ResourcePermissions `json:"permissions"`
+	Assignments []AssignmentResponse  `json:"assignments,omitempty"`
 }
 
 // UpdateRoleRequest represents the request body for updating a role.
 type UpdateRoleRequest struct {
-	Name               string                `json:"name"`
-	Description        string                `json:"description,omitempty"`
-	OrganizationUnitID string                `json:"ouId"`
-	Permissions        []ResourcePermissions `json:"permissions"`
+	Name        string                `json:"name"`
+	Description string                `json:"description,omitempty"`
+	OuID        string                `json:"ouId"`
+	Permissions []ResourcePermissions `json:"permissions"`
 }
 
 // AssignmentsRequest represents the request body for adding or removing assignments.
@@ -120,21 +120,21 @@ type ResourcePermissions struct {
 
 // RoleCreationDetail represents the parameters for creating a role.
 type RoleCreationDetail struct {
-	Name               string
-	Description        string
-	OrganizationUnitID string
-	Permissions        []ResourcePermissions
-	Assignments        []RoleAssignment
+	Name        string
+	Description string
+	OUID        string
+	Permissions []ResourcePermissions
+	Assignments []RoleAssignment
 }
 
 // RoleWithPermissionsAndAssignments represents the parameters for creating a role.
 type RoleWithPermissionsAndAssignments struct {
-	ID                 string
-	Name               string
-	Description        string
-	OrganizationUnitID string
-	Permissions        []ResourcePermissions
-	Assignments        []RoleAssignment
+	ID          string
+	Name        string
+	Description string
+	OUID        string
+	Permissions []ResourcePermissions
+	Assignments []RoleAssignment
 }
 
 // RoleAssignment represents an assignment used internally by the service layer.
@@ -152,27 +152,27 @@ type RoleAssignmentWithDisplay struct {
 
 // Role represents basic role information used internally by the service layer.
 type Role struct {
-	ID                 string
-	Name               string
-	Description        string
-	OrganizationUnitID string
+	ID          string
+	Name        string
+	Description string
+	OUID        string
 }
 
 // RoleWithPermissions represents complete role details used internally by the service layer.
 type RoleWithPermissions struct {
-	ID                 string
-	Name               string
-	Description        string
-	OrganizationUnitID string
-	Permissions        []ResourcePermissions
+	ID          string
+	Name        string
+	Description string
+	OUID        string
+	Permissions []ResourcePermissions
 }
 
 // RoleUpdateDetail represents the parameters for creating a role.
 type RoleUpdateDetail struct {
-	Name               string
-	Description        string
-	OrganizationUnitID string
-	Permissions        []ResourcePermissions
+	Name        string
+	Description string
+	OUID        string
+	Permissions []ResourcePermissions
 }
 
 // RoleList represents the result of listing roles.

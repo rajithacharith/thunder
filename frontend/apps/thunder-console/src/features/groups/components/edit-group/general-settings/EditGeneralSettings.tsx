@@ -66,7 +66,7 @@ export default function EditGeneralSettings({group, onDeleteClick}: EditGeneralS
       >
         <TextField
           label={t('groups:edit.general.sections.organizationUnit.title')}
-          value={group.organizationUnitId}
+          value={group.ouId}
           fullWidth
           size="small"
           slotProps={{
@@ -80,7 +80,7 @@ export default function EditGeneralSettings({group, onDeleteClick}: EditGeneralS
                     <IconButton
                       aria-label={t('groups:edit.general.sections.quickCopy.copyOrganizationUnitId')}
                       onClick={() => {
-                        handleCopyToClipboard(group.organizationUnitId, 'ouId').catch(() => {});
+                        handleCopyToClipboard(group.ouId, 'ouId').catch(() => {});
                       }}
                       edge="end"
                     >

@@ -57,7 +57,7 @@ func (suite *ResourceAPITestSuite) SetupSuite() {
 		Name:               "Resource Test Server",
 		Description:        "Resource server for resource testing",
 		Identifier:         "resource-test-server",
-		OrganizationUnitID: ouID,
+		OuID: ouID,
 	}
 	rsID, err := createResourceServer(rsReq)
 	suite.Require().NoError(err, "Failed to create test resource server")
@@ -488,7 +488,7 @@ func (suite *ResourceAPITestSuite) TestResourcePermissionDerivationWithCustomDel
 	delimiter := "."
 	rsReq := CreateResourceServerRequest{
 		Name:               "Custom Delimiter Server",
-		OrganizationUnitID: suite.ouID,
+		OuID: suite.ouID,
 		Delimiter:          &delimiter,
 	}
 	customRsID, err := createResourceServer(rsReq)

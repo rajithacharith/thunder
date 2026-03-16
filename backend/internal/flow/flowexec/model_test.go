@@ -353,11 +353,11 @@ func (s *ModelTestSuite) TestFromEngineContext_PreservesOtherFields() {
 			"runtime1": "val1",
 		},
 		AuthenticatedUser: authncm.AuthenticatedUser{
-			IsAuthenticated:    true,
-			UserID:             "user-abc",
-			OrganizationUnitID: "org-xyz",
-			UserType:           "admin",
-			Token:              testToken,
+			IsAuthenticated: true,
+			UserID:          "user-abc",
+			OUID:            "org-xyz",
+			UserType:        "admin",
+			Token:           testToken,
 			Attributes: map[string]interface{}{
 				"attr1": "value1",
 			},
@@ -382,8 +382,8 @@ func (s *ModelTestSuite) TestFromEngineContext_PreservesOtherFields() {
 	s.True(dbModel.IsAuthenticated)
 	s.NotNil(dbModel.UserID)
 	s.Equal("user-abc", *dbModel.UserID)
-	s.NotNil(dbModel.OrganizationUnitID)
-	s.Equal("org-xyz", *dbModel.OrganizationUnitID)
+	s.NotNil(dbModel.OUID)
+	s.Equal("org-xyz", *dbModel.OUID)
 	s.NotNil(dbModel.UserType)
 	s.Equal("admin", *dbModel.UserType)
 	s.NotNil(dbModel.UserInputs)

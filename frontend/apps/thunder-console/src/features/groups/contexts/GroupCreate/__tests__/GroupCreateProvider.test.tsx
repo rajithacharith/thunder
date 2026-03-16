@@ -31,7 +31,7 @@ function TestConsumer() {
       <div data-testid="current-step">{context.currentStep}</div>
       <div data-testid="name">{context.name || 'empty'}</div>
       <div data-testid="description">{context.description || 'empty'}</div>
-      <div data-testid="organization-unit-id">{context.organizationUnitId || 'empty'}</div>
+      <div data-testid="organization-unit-id">{context.ouId || 'empty'}</div>
       <div data-testid="error">{context.error ?? 'null'}</div>
 
       <button type="button" onClick={() => context.setCurrentStep(GroupCreateFlowStep.ORGANIZATION_UNIT)}>
@@ -43,7 +43,7 @@ function TestConsumer() {
       <button type="button" onClick={() => context.setDescription('A test description')}>
         Set Description
       </button>
-      <button type="button" onClick={() => context.setOrganizationUnitId('ou-123')}>
+      <button type="button" onClick={() => context.setOuId('ou-123')}>
         Set OU Id
       </button>
       <button type="button" onClick={() => context.setError('Test error')}>
@@ -117,7 +117,7 @@ describe('GroupCreateProvider', () => {
     expect(screen.getByTestId('description')).toHaveTextContent('A test description');
   });
 
-  it('updates organizationUnitId when setOrganizationUnitId is called', async () => {
+  it('updates ouId when setOuId is called', async () => {
     const user = userEvent.setup();
 
     render(

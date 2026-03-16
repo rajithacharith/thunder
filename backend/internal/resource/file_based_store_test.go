@@ -60,10 +60,10 @@ func (s *FileBasedResourceStoreTestSuite) TestNewFileBasedResourceStore() {
 
 func (s *FileBasedResourceStoreTestSuite) TestCreateResourceServer_ReturnsImmutableError() {
 	rs := ResourceServer{
-		ID:                 "rs1",
-		Name:               "Test Server",
-		OrganizationUnitID: "ou1",
-		Delimiter:          ":",
+		ID:        "rs1",
+		Name:      "Test Server",
+		OUID:      "ou1",
+		Delimiter: ":",
 	}
 
 	err := s.store.CreateResourceServer(s.ctx, "rs1", rs)
@@ -136,10 +136,10 @@ func (s *FileBasedResourceStoreTestSuite) TestIsResourceServerDeclarative_Exists
 
 	// Create a test resource server
 	rs := &ResourceServer{
-		ID:                 "rs-test-declarative",
-		Name:               "Test Server",
-		OrganizationUnitID: "ou1",
-		Delimiter:          ":",
+		ID:        "rs-test-declarative",
+		Name:      "Test Server",
+		OUID:      "ou1",
+		Delimiter: ":",
 	}
 	err := fileStore.Create("rs-test-declarative", rs)
 	assert.NoError(s.T(), err)
@@ -293,10 +293,10 @@ func (s *FileBasedResourceStoreTestSuite) TestGetResourceAndLists_WithData() {
 
 	parentID := "rs-data_root"
 	rs := &ResourceServer{
-		ID:                 "rs-data",
-		Name:               "Data Server",
-		OrganizationUnitID: "ou1",
-		Delimiter:          ":",
+		ID:        "rs-data",
+		Name:      "Data Server",
+		OUID:      "ou1",
+		Delimiter: ":",
 		Resources: []Resource{
 			{
 				Name:        "Root",
@@ -360,10 +360,10 @@ func (s *FileBasedResourceStoreTestSuite) TestGetActionListAndCounts_WithData() 
 
 	parentID := "rs-data_root"
 	rs := &ResourceServer{
-		ID:                 "rs-data",
-		Name:               "Data Server",
-		OrganizationUnitID: "ou1",
-		Delimiter:          ":",
+		ID:        "rs-data",
+		Name:      "Data Server",
+		OUID:      "ou1",
+		Delimiter: ":",
 		Resources: []Resource{
 			{
 				Name:   "Root",
@@ -416,10 +416,10 @@ func (s *FileBasedResourceStoreTestSuite) TestCheckActionHandleExists_WithData()
 	assert.True(s.T(), ok)
 
 	rs := &ResourceServer{
-		ID:                 "rs-data",
-		Name:               "Data Server",
-		OrganizationUnitID: "ou1",
-		Delimiter:          ":",
+		ID:        "rs-data",
+		Name:      "Data Server",
+		OUID:      "ou1",
+		Delimiter: ":",
 		Resources: []Resource{
 			{
 				Name:   "Root",
@@ -459,13 +459,13 @@ func (s *FileBasedResourceStoreTestSuite) TestCheckResourceHasDependencies_Alway
 func (s *FileBasedResourceStoreTestSuite) TestCreateAndGetResourceServer() {
 	// Use the internal Create method (implements Storer interface)
 	processedDTO := &ResourceServer{
-		ID:                 "rs-test",
-		Name:               "Test Server",
-		Description:        "A test server",
-		Identifier:         "test-server",
-		OrganizationUnitID: "ou1",
-		Delimiter:          ":",
-		Resources:          []Resource{},
+		ID:          "rs-test",
+		Name:        "Test Server",
+		Description: "A test server",
+		Identifier:  "test-server",
+		OUID:        "ou1",
+		Delimiter:   ":",
+		Resources:   []Resource{},
 	}
 
 	fileStore, ok := s.store.(*fileBasedResourceStore)
@@ -492,16 +492,16 @@ func (s *FileBasedResourceStoreTestSuite) TestGetResourceServerList_WithData() {
 
 	// Add test data
 	rs1 := &ResourceServer{
-		ID:                 "rs-test-1",
-		Name:               "Server Test 1",
-		OrganizationUnitID: "ou1",
-		Delimiter:          ":",
+		ID:        "rs-test-1",
+		Name:      "Server Test 1",
+		OUID:      "ou1",
+		Delimiter: ":",
 	}
 	rs2 := &ResourceServer{
-		ID:                 "rs-test-2",
-		Name:               "Server Test 2",
-		OrganizationUnitID: "ou1",
-		Delimiter:          ":",
+		ID:        "rs-test-2",
+		Name:      "Server Test 2",
+		OUID:      "ou1",
+		Delimiter: ":",
 	}
 
 	err = fileStore.Create("rs-test-1", rs1)
@@ -534,10 +534,10 @@ func (s *FileBasedResourceStoreTestSuite) TestCheckResourceServerNameExists_With
 	assert.True(s.T(), ok)
 
 	rs := &ResourceServer{
-		ID:                 "rs-test",
-		Name:               "Unique Server Name",
-		OrganizationUnitID: "ou1",
-		Delimiter:          ":",
+		ID:        "rs-test",
+		Name:      "Unique Server Name",
+		OUID:      "ou1",
+		Delimiter: ":",
 	}
 
 	err := fileStore.Create("rs-test", rs)
@@ -559,11 +559,11 @@ func (s *FileBasedResourceStoreTestSuite) TestCheckResourceServerIdentifierExist
 	assert.True(s.T(), ok)
 
 	rs := &ResourceServer{
-		ID:                 "rs-test",
-		Name:               "Test Server",
-		Identifier:         "unique-identifier",
-		OrganizationUnitID: "ou1",
-		Delimiter:          ":",
+		ID:         "rs-test",
+		Name:       "Test Server",
+		Identifier: "unique-identifier",
+		OUID:       "ou1",
+		Delimiter:  ":",
 	}
 
 	err := fileStore.Create("rs-test", rs)

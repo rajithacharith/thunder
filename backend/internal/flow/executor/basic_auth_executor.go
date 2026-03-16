@@ -225,7 +225,7 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	return &authncm.AuthenticatedUser{
 		IsAuthenticated:     true,
 		UserID:              authnResult.UserID,
-		OrganizationUnitID:  authnResult.OrganizationUnitID,
+		OUID:                authnResult.OuID,
 		UserType:            authnResult.UserType,
 		Attributes:          userAttributes,
 		AvailableAttributes: authnResult.AvailableAttributes,

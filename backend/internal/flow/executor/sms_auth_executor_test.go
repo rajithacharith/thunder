@@ -199,10 +199,10 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_MFA_AddsMobileNu
 			userAttributeMobileNumber: "+1234567890",
 		},
 		AuthenticatedUser: authncm.AuthenticatedUser{
-			IsAuthenticated:    true,
-			UserID:             "user-123",
-			OrganizationUnitID: "ou-123",
-			UserType:           "INTERNAL",
+			IsAuthenticated: true,
+			UserID:          "user-123",
+			OUID:            "ou-123",
+			UserType:        "INTERNAL",
 			Attributes: map[string]interface{}{
 				"email": "test@example.com",
 				// Mobile number NOT in attributes yet
@@ -251,10 +251,10 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_A
 	}
 
 	userFromStore := &userprovider.User{
-		UserID:             "user-123",
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
-		Attributes:         attrsJSON,
+		UserID:     "user-123",
+		OuID:       "ou-123",
+		UserType:   "INTERNAL",
+		Attributes: attrsJSON,
 	}
 
 	suite.mockUserProvider.On("GetUser", "user-123").Return(userFromStore, nil)
@@ -297,10 +297,10 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_P
 	}
 
 	userFromStore := &userprovider.User{
-		UserID:             "user-123",
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
-		Attributes:         attrsJSON,
+		UserID:     "user-123",
+		OuID:       "ou-123",
+		UserType:   "INTERNAL",
+		Attributes: attrsJSON,
 	}
 
 	suite.mockUserProvider.On("GetUser", "user-123").Return(userFromStore, nil)
@@ -338,10 +338,10 @@ func (suite *SMSAuthExecutorTestSuite) TestGetUserMobileNumber_NotFoundInAttribu
 	}
 
 	userFromStore := &userprovider.User{
-		UserID:             "user-123",
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
-		Attributes:         attrsJSON,
+		UserID:     "user-123",
+		OuID:       "ou-123",
+		UserType:   "INTERNAL",
+		Attributes: attrsJSON,
 	}
 
 	suite.mockUserProvider.On("GetUser", "user-123").Return(userFromStore, nil)
@@ -365,11 +365,11 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_MFA_NilAttribute
 			userAttributeMobileNumber: "+1234567890",
 		},
 		AuthenticatedUser: authncm.AuthenticatedUser{
-			IsAuthenticated:    true,
-			UserID:             "user-123",
-			OrganizationUnitID: "ou-123",
-			UserType:           "INTERNAL",
-			Attributes:         nil, // Explicitly nil
+			IsAuthenticated: true,
+			UserID:          "user-123",
+			OUID:            "ou-123",
+			UserType:        "INTERNAL",
+			Attributes:      nil, // Explicitly nil
 		},
 	}
 
@@ -409,10 +409,10 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_N
 	}
 
 	userFromStore := &userprovider.User{
-		UserID:             "user-123",
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
-		Attributes:         attrsJSON, // null JSON
+		UserID:     "user-123",
+		OuID:       "ou-123",
+		UserType:   "INTERNAL",
+		Attributes: attrsJSON, // null JSON
 	}
 
 	suite.mockUserProvider.On("GetUser", "user-123").Return(userFromStore, nil)

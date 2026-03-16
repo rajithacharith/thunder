@@ -27,7 +27,7 @@ export interface CreateGroupRequest {
   /** Optional description */
   description?: string;
   /** ID of the organization unit this group belongs to */
-  organizationUnitId: string;
+  ouId: string;
   /** Optional initial members */
   members?: Member[];
 }
@@ -41,7 +41,7 @@ export interface UpdateGroupRequest {
   /** Optional description */
   description?: string;
   /** ID of the organization unit this group belongs to */
-  organizationUnitId: string;
+  ouId: string;
   /** Members of the group */
   members?: Member[];
 }

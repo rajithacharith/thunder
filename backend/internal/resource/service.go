@@ -133,10 +133,10 @@ func (rs *resourceService) CreateResourceServer(
 	}
 
 	// Validate organization unit exists
-	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, resourceServer.OrganizationUnitID)
+	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, resourceServer.OUID)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
-			rs.logger.Debug("Organization unit not found", log.String("ouID", resourceServer.OrganizationUnitID))
+			rs.logger.Debug("Organization unit not found", log.String("ouID", resourceServer.OUID))
 			return nil, &ErrorOrganizationUnitNotFound
 		}
 		rs.logger.Error("Failed to validate organization unit", log.String("error", svcErr.Error))
@@ -187,12 +187,12 @@ func (rs *resourceService) CreateResourceServer(
 		}
 
 		createdRS = &ResourceServer{
-			ID:                 id,
-			Name:               resourceServer.Name,
-			Description:        resourceServer.Description,
-			Identifier:         resourceServer.Identifier,
-			OrganizationUnitID: resourceServer.OrganizationUnitID,
-			Delimiter:          resourceServer.Delimiter,
+			ID:          id,
+			Name:        resourceServer.Name,
+			Description: resourceServer.Description,
+			Identifier:  resourceServer.Identifier,
+			OUID:        resourceServer.OUID,
+			Delimiter:   resourceServer.Delimiter,
 		}
 		return nil
 	}); err != nil {
@@ -294,7 +294,7 @@ func (rs *resourceService) UpdateResourceServer(
 	resourceServer.Delimiter = existingResServer.Delimiter
 
 	// Validate organization unit
-	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, resourceServer.OrganizationUnitID)
+	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, resourceServer.OUID)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
 			return nil, &ErrorOrganizationUnitNotFound
@@ -336,12 +336,12 @@ func (rs *resourceService) UpdateResourceServer(
 		}
 
 		updatedRS = &ResourceServer{
-			ID:                 id,
-			Name:               resourceServer.Name,
-			Description:        resourceServer.Description,
-			Identifier:         resourceServer.Identifier,
-			OrganizationUnitID: resourceServer.OrganizationUnitID,
-			Delimiter:          resourceServer.Delimiter,
+			ID:          id,
+			Name:        resourceServer.Name,
+			Description: resourceServer.Description,
+			Identifier:  resourceServer.Identifier,
+			OUID:        resourceServer.OUID,
+			Delimiter:   resourceServer.Delimiter,
 		}
 		return nil
 	}); err != nil {
@@ -1121,7 +1121,7 @@ func (rs *resourceService) validateResourceServerCreate(resourceServer ResourceS
 	if resourceServer.Name == "" {
 		return &ErrorInvalidRequestFormat
 	}
-	if resourceServer.OrganizationUnitID == "" {
+	if resourceServer.OUID == "" {
 		return &ErrorInvalidRequestFormat
 	}
 	if resourceServer.Delimiter != "" {
@@ -1137,7 +1137,7 @@ func (rs *resourceService) validateResourceServerUpdate(resourceServer ResourceS
 	if resourceServer.Name == "" {
 		return &ErrorInvalidRequestFormat
 	}
-	if resourceServer.OrganizationUnitID == "" {
+	if resourceServer.OUID == "" {
 		return &ErrorInvalidRequestFormat
 	}
 	return nil

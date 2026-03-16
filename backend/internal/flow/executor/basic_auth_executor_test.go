@@ -164,10 +164,10 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow(
 	}
 
 	authenticateResult := &authnprovider.AuthnResult{
-		UserID:             testUserID,
-		UserType:           "person",
-		OrganizationUnitID: "ou-123",
-		Token:              "test-token",
+		UserID:   testUserID,
+		UserType: "person",
+		OuID:     "ou-123",
+		Token:    "test-token",
 		AvailableAttributes: &authnprovider.AvailableAttributes{
 			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
 				"username": {},
@@ -214,10 +214,10 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute(
 		suite.T(), ExecutorNameBasicAuth, originalInputs)
 
 	authenticatedUser := &authnprovider.AuthnResult{
-		UserID:             testUserID,
-		UserType:           "person",
-		OrganizationUnitID: "ou-123",
-		Token:              "test-token",
+		UserID:   testUserID,
+		UserType: "person",
+		OuID:     "ou-123",
+		Token:    "test-token",
 		AvailableAttributes: &authnprovider.AvailableAttributes{
 			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
 				"email": {},
@@ -291,10 +291,10 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttribu
 		suite.T(), ExecutorNameBasicAuth, customInputs)
 
 	authenticatedUser := &authnprovider.AuthnResult{
-		UserID:             testUserID,
-		UserType:           "person",
-		OrganizationUnitID: "ou-123",
-		Token:              "test-token",
+		UserID:   testUserID,
+		UserType: "person",
+		OuID:     "ou-123",
+		Token:    "test-token",
 		AvailableAttributes: &authnprovider.AvailableAttributes{
 			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
 				"email": {},
@@ -496,10 +496,10 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_SuccessfulAuth
 	}
 
 	authenticatedUser := &authnprovider.AuthnResult{
-		UserID:             testUserID,
-		UserType:           "person",
-		OrganizationUnitID: "ou-123",
-		Token:              "test-token",
+		UserID:   testUserID,
+		UserType: "person",
+		OuID:     "ou-123",
+		Token:    "test-token",
 		AvailableAttributes: &authnprovider.AvailableAttributes{
 			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
 				"email": {},
@@ -523,7 +523,7 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_SuccessfulAuth
 	assert.NotNil(suite.T(), result)
 	assert.True(suite.T(), result.IsAuthenticated)
 	assert.Equal(suite.T(), testUserID, result.UserID)
-	assert.Equal(suite.T(), "ou-123", result.OrganizationUnitID)
+	assert.Equal(suite.T(), "ou-123", result.OUID)
 	assert.Equal(suite.T(), "person", result.UserType)
 	assert.Contains(suite.T(), result.AvailableAttributes.Attributes, "email")
 	assert.Contains(suite.T(), result.AvailableAttributes.Attributes, "phone")
@@ -545,10 +545,10 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_Success_WithFe
 	}
 
 	authenticateResult := &authnprovider.AuthnResult{
-		UserID:             testUserID,
-		UserType:           "person",
-		OrganizationUnitID: "ou-123",
-		Token:              "test-token",
+		UserID:   testUserID,
+		UserType: "person",
+		OuID:     "ou-123",
+		Token:    "test-token",
 		AvailableAttributes: &authnprovider.AvailableAttributes{
 			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
 				"username": {},
@@ -601,10 +601,10 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_Authentication
 	}
 
 	authenticatedUser := &authnprovider.AuthnResult{
-		UserID:             testUserID,
-		UserType:           "person",
-		OrganizationUnitID: "ou-123",
-		Token:              "test-token",
+		UserID:   testUserID,
+		UserType: "person",
+		OuID:     "ou-123",
+		Token:    "test-token",
 		AvailableAttributes: &authnprovider.AvailableAttributes{
 			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
 				"email": {},

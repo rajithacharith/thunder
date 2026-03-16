@@ -246,10 +246,10 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 
 	// Test the validator function directly without mocks
 	testRole := &RoleWithPermissionsAndAssignments{
-		ID:                 "test-role",
-		Name:               "Test Role",
-		Description:        "A test role",
-		OrganizationUnitID: "ou-default",
+		ID:          "test-role",
+		Name:        "Test Role",
+		Description: "A test role",
+		OUID:        "ou-default",
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: "rs-default",
@@ -271,9 +271,9 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesIDEx
 
 	// Add a role with explicit ID
 	testRole := &RoleWithPermissionsAndAssignments{
-		ID:                 "extracted-id",
-		Name:               "ID Test",
-		OrganizationUnitID: "ou-default",
+		ID:   "extracted-id",
+		Name: "ID Test",
+		OUID: "ou-default",
 	}
 	err := fileStore.GenericFileBasedStore.Create(testRole.ID, testRole)
 	suite.NoError(err)
@@ -316,7 +316,7 @@ assignments:
 	suite.True(ok)
 	suite.Equal("parser-test-role", role.ID)
 	suite.Equal("Parser Test Role", role.Name)
-	suite.Equal("ou-default", role.OrganizationUnitID)
+	suite.Equal("ou-default", role.OUID)
 	suite.Len(role.Permissions, 1)
 	suite.Equal("api-server", role.Permissions[0].ResourceServerID)
 	suite.Len(role.Assignments, 1)
@@ -331,8 +331,8 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 
 	// Test missing ID
 	roleNoID := &RoleWithPermissionsAndAssignments{
-		Name:               "No ID",
-		OrganizationUnitID: "ou1",
+		Name: "No ID",
+		OUID: "ou1",
 	}
 	err := validateRoleWrapper(roleNoID, fileStore, nil)
 	suite.Error(err)
@@ -340,14 +340,14 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 
 	// Test missing Name
 	roleNoName := &RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		OUID: "ou1",
 	}
 	err = validateRoleWrapper(roleNoName, fileStore, nil)
 	suite.Error(err)
 	suite.Contains(err.Error(), "role name is required")
 
-	// Test missing OrganizationUnitID
+	// Test missing OUID
 	roleNoOU := &RoleWithPermissionsAndAssignments{
 		ID:   "role1",
 		Name: "Test Role",
@@ -364,9 +364,9 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 
 	// Test role with valid user assignment
 	roleValidUser := &RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Test Role",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Test Role",
+		OUID: "ou1",
 		Assignments: []RoleAssignment{
 			{ID: "user1", Type: AssigneeTypeUser},
 		},
@@ -376,9 +376,9 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 
 	// Test role with valid group assignment
 	roleValidGroup := &RoleWithPermissionsAndAssignments{
-		ID:                 "role2",
-		Name:               "Test Role 2",
-		OrganizationUnitID: "ou1",
+		ID:   "role2",
+		Name: "Test Role 2",
+		OUID: "ou1",
 		Assignments: []RoleAssignment{
 			{ID: "group1", Type: AssigneeTypeGroup},
 		},
@@ -388,9 +388,9 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 
 	// Test role with invalid assignment type
 	roleInvalidType := &RoleWithPermissionsAndAssignments{
-		ID:                 "role3",
-		Name:               "Test Role 3",
-		OrganizationUnitID: "ou1",
+		ID:   "role3",
+		Name: "Test Role 3",
+		OUID: "ou1",
 		Assignments: []RoleAssignment{
 			{ID: "invalid1", Type: "invalid_type"},
 		},
@@ -401,9 +401,9 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 
 	// Test role with missing assignment ID
 	roleNoAssignmentID := &RoleWithPermissionsAndAssignments{
-		ID:                 "role4",
-		Name:               "Test Role 4",
-		OrganizationUnitID: "ou1",
+		ID:   "role4",
+		Name: "Test Role 4",
+		OUID: "ou1",
 		Assignments: []RoleAssignment{
 			{Type: AssigneeTypeUser},
 		},
@@ -420,9 +420,9 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 
 	// Test role with missing resource_server_id
 	roleNoResourceServer := &RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Test Role",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Test Role",
+		OUID: "ou1",
 		Permissions: []ResourcePermissions{
 			{Permissions: []string{"read"}},
 		},
@@ -433,9 +433,9 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 
 	// Test role with valid permission
 	roleValidPermission := &RoleWithPermissionsAndAssignments{
-		ID:                 "role2",
-		Name:               "Test Role 2",
-		OrganizationUnitID: "ou1",
+		ID:   "role2",
+		Name: "Test Role 2",
+		OUID: "ou1",
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: "api-server",
@@ -454,9 +454,9 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 
 	// Add a role to file store
 	existingRole := &RoleWithPermissionsAndAssignments{
-		ID:                 "duplicate-role",
-		Name:               "Existing",
-		OrganizationUnitID: "ou1",
+		ID:   "duplicate-role",
+		Name: "Existing",
+		OUID: "ou1",
 	}
 	err := fileStore.GenericFileBasedStore.Create(existingRole.ID, existingRole)
 	suite.NoError(err)
@@ -475,9 +475,9 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 	mockDbStore := newRoleStoreInterfaceMock(suite.T())
 
 	role := &RoleWithPermissionsAndAssignments{
-		ID:                 "db-duplicate",
-		Name:               "Test",
-		OrganizationUnitID: "ou1",
+		ID:   "db-duplicate",
+		Name: "Test",
+		OUID: "ou1",
 	}
 
 	// Mock database store to indicate role exists
@@ -497,9 +497,9 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 	mockDbStore := newRoleStoreInterfaceMock(suite.T())
 
 	role := &RoleWithPermissionsAndAssignments{
-		ID:                 "db-error-role",
-		Name:               "Test",
-		OrganizationUnitID: "ou1",
+		ID:   "db-error-role",
+		Name: "Test",
+		OUID: "ou1",
 	}
 
 	// Mock database store to return error
@@ -516,9 +516,9 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestLoadDeclarativeResourcesVali
 // TestRoleFromDeclarativeData tests roleFromDeclarativeData function with various type assertions.
 func (suite *LoadDeclarativeResourcesTestSuite) TestRoleFromDeclarativeDataPointerType() {
 	role := &RoleWithPermissionsAndAssignments{
-		ID:                 "test1",
-		Name:               "Test",
-		OrganizationUnitID: "ou1",
+		ID:   "test1",
+		Name: "Test",
+		OUID: "ou1",
 	}
 
 	result, err := roleFromDeclarativeData("test1", role)
@@ -531,9 +531,9 @@ func (suite *LoadDeclarativeResourcesTestSuite) TestRoleFromDeclarativeDataPoint
 // TestRoleFromDeclarativeDataValueType tests rejection of value types.
 func (suite *LoadDeclarativeResourcesTestSuite) TestRoleFromDeclarativeDataValueType() {
 	role := RoleWithPermissionsAndAssignments{
-		ID:                 "test2",
-		Name:               "Test Value",
-		OrganizationUnitID: "ou1",
+		ID:   "test2",
+		Name: "Test Value",
+		OUID: "ou1",
 	}
 
 	result, err := roleFromDeclarativeData("test2", role)

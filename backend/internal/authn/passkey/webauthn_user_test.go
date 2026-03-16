@@ -77,10 +77,10 @@ func (suite *WebAuthnUserTestSuite) TestWebAuthnUser_Methods() {
 func (suite *WebAuthnUserTestSuite) TestNewWebAuthnUserFromCoreUser_WithFullAttributes() {
 	attrs := json.RawMessage(`{"given_name":"John","family_name":"Doe","username":"johndoe"}`)
 	coreUser := &user.User{
-		ID:               "user123",
-		Type:             "person",
-		OrganizationUnit: "org123",
-		Attributes:       attrs,
+		ID:         "user123",
+		Type:       "person",
+		OuID:       "org123",
+		Attributes: attrs,
 	}
 	credentials := []webauthnCredential{}
 

@@ -111,7 +111,7 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit: %v", err)
 	}
-	scopeTestUserSchema.OrganizationUnitId = scopeTestOUID
+	scopeTestUserSchema.OuID = scopeTestOUID
 
 	// Create user schema
 	scopeUserSchemaID, err = testutils.CreateUserType(scopeTestUserSchema)
@@ -133,7 +133,7 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 
 	// Create user with role
 	userWithRole := testutils.User{
-		OrganizationUnit: scopeTestOUID,
+		OuID:             scopeTestOUID,
 		Type:             "authz-test-person",
 		Attributes: json.RawMessage(`{
 			"username": "oauth_authorized_user",
@@ -150,7 +150,7 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 
 	// Create user without role
 	userNoRole := testutils.User{
-		OrganizationUnit: scopeTestOUID,
+		OuID:             scopeTestOUID,
 		Type:             "authz-test-person",
 		Attributes: json.RawMessage(`{
 			"username": "oauth_unauthorized_user",
@@ -167,7 +167,7 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 
 	// Create user to be assigned to the authz group
 	userWithGroup := testutils.User{
-		OrganizationUnit: scopeTestOUID,
+		OuID:             scopeTestOUID,
 		Type:             "authz-test-person",
 		Attributes: json.RawMessage(`{
 			"username": "oauth_authorized_group_user",
@@ -186,7 +186,7 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 	group := testutils.Group{
 		Name:               "OAuth_DocumentEditors",
 		Description:        "Group for document editors (OAuth test)",
-		OrganizationUnitId: scopeTestOUID,
+		OuID:               scopeTestOUID,
 		Members: []testutils.Member{
 			{
 				Id:   scopeUserWithGroup,
@@ -204,7 +204,7 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 		Name:               "OAuth Document Management System",
 		Description:        "System for managing documents via OAuth",
 		Identifier:         "oauth-document-mgmt",
-		OrganizationUnitID: scopeTestOUID,
+		OuID:               scopeTestOUID,
 	}
 	actions := []testutils.Action{
 		{
@@ -227,7 +227,7 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 	role := testutils.Role{
 		Name:               "OAuth_DocumentEditor",
 		Description:        "Can read and write documents (OAuth test)",
-		OrganizationUnitID: scopeTestOUID,
+		OuID:               scopeTestOUID,
 		Permissions: []testutils.ResourcePermissions{
 			{
 				ResourceServerID: scopeTestResourceServer,
@@ -606,7 +606,7 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithRequiredAttributes() 
 	}`
 
 	user := testutils.User{
-		OrganizationUnit: scopeTestOUID,
+		OuID:             scopeTestOUID,
 		Type:             "authz-test-person",
 		Attributes:       json.RawMessage(userAttributesJSON),
 	}

@@ -21,16 +21,16 @@ import type {Group, GroupListResponse} from '../group';
 
 describe('Group Models', () => {
   describe('Group', () => {
-    it('should have required id, name, and organizationUnit properties', () => {
+    it('should have required id, name, and ouId properties', () => {
       const group: Group = {
         id: '7a1b2c3d-4e5f-6789-abcd-ef0123456789',
         name: 'Developers',
-        organizationUnit: '550e8400-e29b-41d4-a716-446655440000',
+        ouId: '550e8400-e29b-41d4-a716-446655440000',
       };
 
       expect(group.id).toBe('7a1b2c3d-4e5f-6789-abcd-ef0123456789');
       expect(group.name).toBe('Developers');
-      expect(group.organizationUnit).toBe('550e8400-e29b-41d4-a716-446655440000');
+      expect(group.ouId).toBe('550e8400-e29b-41d4-a716-446655440000');
     });
   });
 
@@ -40,7 +40,7 @@ describe('Group Models', () => {
         totalResults: 1,
         startIndex: 0,
         count: 1,
-        groups: [{id: 'group-1', name: 'Developers', organizationUnit: 'ou-id'}],
+        groups: [{id: 'group-1', name: 'Developers', ouId: 'ou-id'}],
       };
 
       expect(response).toHaveProperty('totalResults');
@@ -65,9 +65,9 @@ describe('Group Models', () => {
 
     it('should accept array of Group', () => {
       const mockGroups: Group[] = [
-        {id: '1', name: 'Developers', organizationUnit: 'ou-1'},
-        {id: '2', name: 'Designers', organizationUnit: 'ou-1'},
-        {id: '3', name: 'Managers', organizationUnit: 'ou-1'},
+        {id: '1', name: 'Developers', ouId: 'ou-1'},
+        {id: '2', name: 'Designers', ouId: 'ou-1'},
+        {id: '3', name: 'Managers', ouId: 'ou-1'},
       ];
 
       const response: GroupListResponse = {

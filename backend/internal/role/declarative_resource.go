@@ -103,12 +103,12 @@ func (e *roleExporter) GetResourceByID(
 	}
 
 	role := &RoleWithPermissionsAndAssignments{
-		ID:                 roleWithPermissions.ID,
-		Name:               roleWithPermissions.Name,
-		Description:        roleWithPermissions.Description,
-		OrganizationUnitID: roleWithPermissions.OrganizationUnitID,
-		Permissions:        roleWithPermissions.Permissions,
-		Assignments:        assignments,
+		ID:          roleWithPermissions.ID,
+		Name:        roleWithPermissions.Name,
+		Description: roleWithPermissions.Description,
+		OUID:        roleWithPermissions.OUID,
+		Permissions: roleWithPermissions.Permissions,
+		Assignments: assignments,
 	}
 
 	return role, role.Name, nil
@@ -176,12 +176,12 @@ func parseToRoleWrapper(data []byte) (interface{}, error) {
 type roleDeclarativePermission ResourcePermissions
 
 type roleDeclarativeResource struct {
-	ID                 string                      `yaml:"id"`
-	Name               string                      `yaml:"name"`
-	Description        string                      `yaml:"description,omitempty"`
-	OrganizationUnitID string                      `yaml:"ou_id"`
-	Permissions        []roleDeclarativePermission `yaml:"permissions"`
-	Assignments        []RoleAssignment            `yaml:"assignments,omitempty"`
+	ID          string                      `yaml:"id"`
+	Name        string                      `yaml:"name"`
+	Description string                      `yaml:"description,omitempty"`
+	OUID        string                      `yaml:"ou_id"`
+	Permissions []roleDeclarativePermission `yaml:"permissions"`
+	Assignments []RoleAssignment            `yaml:"assignments,omitempty"`
 }
 
 // toResourcePermissions converts roleDeclarativePermission to ResourcePermissions.
@@ -202,12 +202,12 @@ func parseToRole(data []byte) (*RoleWithPermissionsAndAssignments, error) {
 	}
 
 	role := &RoleWithPermissionsAndAssignments{
-		ID:                 roleResource.ID,
-		Name:               roleResource.Name,
-		Description:        roleResource.Description,
-		OrganizationUnitID: roleResource.OrganizationUnitID,
-		Permissions:        permissions,
-		Assignments:        roleResource.Assignments,
+		ID:          roleResource.ID,
+		Name:        roleResource.Name,
+		Description: roleResource.Description,
+		OUID:        roleResource.OUID,
+		Permissions: permissions,
+		Assignments: roleResource.Assignments,
 	}
 
 	return role, nil
@@ -226,7 +226,7 @@ func validateRoleWrapper(data interface{}, fileStore *fileBasedStore, dbStore ro
 	if role.Name == "" {
 		return fmt.Errorf("role name is required")
 	}
-	if role.OrganizationUnitID == "" {
+	if role.OUID == "" {
 		return fmt.Errorf("organization unit ID is required")
 	}
 

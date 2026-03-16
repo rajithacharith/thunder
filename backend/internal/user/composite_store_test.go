@@ -80,17 +80,17 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserList() {
 	ctx := context.Background()
 
 	dbUser := User{
-		ID:               "user-db-1",
-		OrganizationUnit: "ou-1",
-		Type:             "default",
-		Attributes:       json.RawMessage(`{"name":"DB User"}`),
+		ID:         "user-db-1",
+		OuID:       "ou-1",
+		Type:       "default",
+		Attributes: json.RawMessage(`{"name":"DB User"}`),
 	}
 
 	fileUser := User{
-		ID:               "user-file-1",
-		OrganizationUnit: "ou-1",
-		Type:             "default",
-		Attributes:       json.RawMessage(`{"name":"File User"}`),
+		ID:         "user-file-1",
+		OuID:       "ou-1",
+		Type:       "default",
+		Attributes: json.RawMessage(`{"name":"File User"}`),
 	}
 
 	// DB store contains database users
@@ -111,8 +111,8 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserListCountByOUIDs
 	ctx := context.Background()
 	ouIDs := []string{"ou-1"}
 
-	user1 := User{ID: "user-1", OrganizationUnit: "ou-1"}
-	user2 := User{ID: "user-1", OrganizationUnit: "ou-1"}
+	user1 := User{ID: "user-1", OuID: "ou-1"}
+	user2 := User{ID: "user-1", OuID: "ou-1"}
 
 	suite.mockDBStore.On("GetUserListCountByOUIDs", ctx, ouIDs, mock.Anything).Return(1, nil)
 	suite.mockFileStore.On("GetUserListCountByOUIDs", ctx, ouIDs, mock.Anything).Return(1, nil)
@@ -131,8 +131,8 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserListByOUIDs() {
 	ctx := context.Background()
 	ouIDs := []string{"ou-1"}
 
-	user1 := User{ID: "user-db-1", OrganizationUnit: "ou-1", Type: "default"}
-	user2 := User{ID: "user-file-1", OrganizationUnit: "ou-1", Type: "default"}
+	user1 := User{ID: "user-db-1", OuID: "ou-1", Type: "default"}
+	user2 := User{ID: "user-file-1", OuID: "ou-1", Type: "default"}
 
 	suite.mockDBStore.On("GetUserListCountByOUIDs", ctx, ouIDs, mock.Anything).Return(1, nil)
 	suite.mockFileStore.On("GetUserListCountByOUIDs", ctx, ouIDs, mock.Anything).Return(1, nil)
@@ -151,10 +151,10 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_CreateUser() {
 	ctx := context.Background()
 
 	user := User{
-		ID:               "new-user",
-		OrganizationUnit: "ou-1",
-		Type:             "default",
-		Attributes:       json.RawMessage(`{"name":"New User"}`),
+		ID:         "new-user",
+		OuID:       "ou-1",
+		Type:       "default",
+		Attributes: json.RawMessage(`{"name":"New User"}`),
 	}
 
 	credentials := Credentials{
@@ -238,10 +238,10 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUser_FromDB() {
 	ctx := context.Background()
 
 	user := User{
-		ID:               "user-db-1",
-		OrganizationUnit: "ou-1",
-		Type:             "default",
-		Attributes:       json.RawMessage(`{"name":"DB User"}`),
+		ID:         "user-db-1",
+		OuID:       "ou-1",
+		Type:       "default",
+		Attributes: json.RawMessage(`{"name":"DB User"}`),
 	}
 
 	// DB store returns it, file store is not called
@@ -260,10 +260,10 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_UpdateUser() {
 	ctx := context.Background()
 
 	user := &User{
-		ID:               "user-1",
-		OrganizationUnit: "ou-1",
-		Type:             "default",
-		Attributes:       json.RawMessage(`{"name":"Updated User"}`),
+		ID:         "user-1",
+		OuID:       "ou-1",
+		Type:       "default",
+		Attributes: json.RawMessage(`{"name":"Updated User"}`),
 	}
 
 	suite.mockDBStore.On("UpdateUser", ctx, user).Return(nil)
@@ -433,7 +433,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_ValidateUserIDsInOUs() 
 			ouIDs:   []string{"ou-1"},
 			dbGetUser: func() {
 				suite.mockDBStore.On("GetUser", ctx, "usr-001").
-					Return(User{ID: "usr-001", OrganizationUnit: "ou-1"}, nil).Once()
+					Return(User{ID: "usr-001", OuID: "ou-1"}, nil).Once()
 			},
 			wantOutOfScope: []string{},
 		},
@@ -443,7 +443,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_ValidateUserIDsInOUs() 
 			ouIDs:   []string{"ou-2"},
 			dbGetUser: func() {
 				suite.mockDBStore.On("GetUser", ctx, "usr-001").
-					Return(User{ID: "usr-001", OrganizationUnit: "ou-1"}, nil).Once()
+					Return(User{ID: "usr-001", OuID: "ou-1"}, nil).Once()
 			},
 			wantOutOfScope: []string{"usr-001"},
 		},
@@ -467,7 +467,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_ValidateUserIDsInOUs() 
 				suite.mockDBStore.On("GetUser", ctx, "usr-file").
 					Return(User{}, ErrUserNotFound).Once()
 				suite.mockFileStore.On("GetUser", ctx, "usr-file").
-					Return(User{ID: "usr-file", OrganizationUnit: "ou-1"}, nil).Once()
+					Return(User{ID: "usr-file", OuID: "ou-1"}, nil).Once()
 			},
 			wantOutOfScope: []string{},
 		},
@@ -477,9 +477,9 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_ValidateUserIDsInOUs() 
 			ouIDs:   []string{"ou-1"},
 			dbGetUser: func() {
 				suite.mockDBStore.On("GetUser", ctx, "usr-001").
-					Return(User{ID: "usr-001", OrganizationUnit: "ou-1"}, nil).Once()
+					Return(User{ID: "usr-001", OuID: "ou-1"}, nil).Once()
 				suite.mockDBStore.On("GetUser", ctx, "usr-002").
-					Return(User{ID: "usr-002", OrganizationUnit: "ou-2"}, nil).Once()
+					Return(User{ID: "usr-002", OuID: "ou-2"}, nil).Once()
 			},
 			wantOutOfScope: []string{"usr-002"},
 		},

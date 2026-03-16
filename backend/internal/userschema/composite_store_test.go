@@ -72,16 +72,16 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserSchemaByID() {
 			setupDBStore: func() {
 				suite.dbStoreMock.On("GetUserSchemaByID", ctx, "db-schema-1").
 					Return(UserSchema{
-						ID:                 "db-schema-1",
-						Name:               "DB Schema",
-						OrganizationUnitID: "ou-1",
+						ID:   "db-schema-1",
+						Name: "DB Schema",
+						OuID: "ou-1",
 					}, nil).
 					Once()
 			},
 			want: UserSchema{
-				ID:                 "db-schema-1",
-				Name:               "DB Schema",
-				OrganizationUnitID: "ou-1",
+				ID:   "db-schema-1",
+				Name: "DB Schema",
+				OuID: "ou-1",
 			},
 		},
 		{
@@ -90,9 +90,9 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserSchemaByID() {
 			setupFileStore: func() {
 				// Add schema to file store
 				err := suite.fileStore.CreateUserSchema(ctx, UserSchema{
-					ID:                 "file-schema-1",
-					Name:               "File Schema",
-					OrganizationUnitID: "ou-1",
+					ID:   "file-schema-1",
+					Name: "File Schema",
+					OuID: "ou-1",
 				})
 				suite.NoError(err)
 			},
@@ -102,9 +102,9 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserSchemaByID() {
 					Once()
 			},
 			want: UserSchema{
-				ID:                 "file-schema-1",
-				Name:               "File Schema",
-				OrganizationUnitID: "ou-1",
+				ID:   "file-schema-1",
+				Name: "File Schema",
+				OuID: "ou-1",
 			},
 		},
 		{
@@ -160,16 +160,16 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserSchemaByName() {
 			setupDBStore: func() {
 				suite.dbStoreMock.On("GetUserSchemaByName", ctx, "DBSchema").
 					Return(UserSchema{
-						ID:                 "db-schema-1",
-						Name:               "DBSchema",
-						OrganizationUnitID: "ou-1",
+						ID:   "db-schema-1",
+						Name: "DBSchema",
+						OuID: "ou-1",
 					}, nil).
 					Once()
 			},
 			want: UserSchema{
-				ID:                 "db-schema-1",
-				Name:               "DBSchema",
-				OrganizationUnitID: "ou-1",
+				ID:   "db-schema-1",
+				Name: "DBSchema",
+				OuID: "ou-1",
 			},
 		},
 		{
@@ -178,9 +178,9 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserSchemaByName() {
 			setupFileStore: func() {
 				// Add schema to file store
 				err := suite.fileStore.CreateUserSchema(ctx, UserSchema{
-					ID:                 "file-schema-1",
-					Name:               "FileSchema",
-					OrganizationUnitID: "ou-1",
+					ID:   "file-schema-1",
+					Name: "FileSchema",
+					OuID: "ou-1",
 				})
 				suite.NoError(err)
 			},
@@ -190,9 +190,9 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserSchemaByName() {
 					Once()
 			},
 			want: UserSchema{
-				ID:                 "file-schema-1",
-				Name:               "FileSchema",
-				OrganizationUnitID: "ou-1",
+				ID:   "file-schema-1",
+				Name: "FileSchema",
+				OuID: "ou-1",
 			},
 		},
 		{
@@ -235,9 +235,9 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_IsUserSchemaDeclarative
 	const fileSchema1ID = "file-schema-1"
 	// Setup: Add schema to file store
 	err := suite.fileStore.CreateUserSchema(ctx, UserSchema{
-		ID:                 fileSchema1ID,
-		Name:               "File Schema",
-		OrganizationUnitID: "ou-1",
+		ID:   fileSchema1ID,
+		Name: "File Schema",
+		OuID: "ou-1",
 	})
 	suite.NoError(err)
 
@@ -253,9 +253,9 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_CreateUserSchema() {
 	ctx := context.Background()
 
 	schema := UserSchema{
-		ID:                 "new-schema",
-		Name:               "New Schema",
-		OrganizationUnitID: "ou-1",
+		ID:   "new-schema",
+		Name: "New Schema",
+		OuID: "ou-1",
 	}
 
 	suite.dbStoreMock.On("CreateUserSchema", ctx, schema).
@@ -273,9 +273,9 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_UpdateUserSchemaByID() 
 
 	schemaID := "schema-1"
 	schema := UserSchema{
-		ID:                 schemaID,
-		Name:               "Updated Schema",
-		OrganizationUnitID: "ou-1",
+		ID:   schemaID,
+		Name: "Updated Schema",
+		OuID: "ou-1",
 	}
 
 	suite.dbStoreMock.On("UpdateUserSchemaByID", ctx, schemaID, schema).
@@ -310,9 +310,9 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserSchemaList() {
 
 	// Test that retrieves from file store (which doesn't require complex mocking)
 	err := suite.fileStore.CreateUserSchema(ctx, UserSchema{
-		ID:                 "file-schema-1",
-		Name:               "File Schema 1",
-		OrganizationUnitID: "ou-1",
+		ID:   "file-schema-1",
+		Name: "File Schema 1",
+		OuID: "ou-1",
 	})
 	suite.NoError(err)
 
@@ -325,9 +325,9 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserSchemaList() {
 	suite.dbStoreMock.On("GetUserSchemaList", ctx, dbCount, 0).
 		Return([]UserSchemaListItem{
 			{
-				ID:                 "db-schema-1",
-				Name:               "DB Schema 1",
-				OrganizationUnitID: "ou-1",
+				ID:   "db-schema-1",
+				Name: "DB Schema 1",
+				OuID: "ou-1",
 			},
 		}, nil).
 		Once()
@@ -381,16 +381,16 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserSchemaListCount(
 
 	// Setup: Add schema to file store
 	err := suite.fileStore.CreateUserSchema(ctx, UserSchema{
-		ID:                 "file-schema-1",
-		Name:               "File Schema 1",
-		OrganizationUnitID: "ou-1",
+		ID:   "file-schema-1",
+		Name: "File Schema 1",
+		OuID: "ou-1",
 	})
 	suite.NoError(err)
 
 	err = suite.fileStore.CreateUserSchema(ctx, UserSchema{
-		ID:                 "file-schema-2",
-		Name:               "File Schema 2",
-		OrganizationUnitID: "ou-1",
+		ID:   "file-schema-2",
+		Name: "File Schema 2",
+		OuID: "ou-1",
 	})
 	suite.NoError(err)
 
@@ -472,16 +472,16 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserSchemaListCountB
 
 	// Setup: Add schema to file store
 	err := suite.fileStore.CreateUserSchema(ctx, UserSchema{
-		ID:                 "file-schema-1",
-		Name:               "File Schema",
-		OrganizationUnitID: "ou-1",
+		ID:   "file-schema-1",
+		Name: "File Schema",
+		OuID: "ou-1",
 	})
 	suite.NoError(err)
 
 	err = suite.fileStore.CreateUserSchema(ctx, UserSchema{
-		ID:                 "file-schema-2",
-		Name:               "File Schema 2",
-		OrganizationUnitID: "ou-2",
+		ID:   "file-schema-2",
+		Name: "File Schema 2",
+		OuID: "ou-2",
 	})
 	suite.NoError(err)
 
@@ -506,9 +506,9 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserSchemaListByOUID
 
 	// Setup file store
 	err := suite.fileStore.CreateUserSchema(ctx, UserSchema{
-		ID:                 "file-schema-1",
-		Name:               "File Schema 1",
-		OrganizationUnitID: "ou-1",
+		ID:   "file-schema-1",
+		Name: "File Schema 1",
+		OuID: "ou-1",
 	})
 	suite.NoError(err)
 
@@ -520,9 +520,9 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetUserSchemaListByOUID
 	suite.dbStoreMock.On("GetUserSchemaListByOUIDs", ctx, ouIDs, dbCount, 0).
 		Return([]UserSchemaListItem{
 			{
-				ID:                 "db-schema-1",
-				Name:               "DB Schema 1",
-				OrganizationUnitID: "ou-1",
+				ID:   "db-schema-1",
+				Name: "DB Schema 1",
+				OuID: "ou-1",
 			},
 		}, nil).
 		Once()

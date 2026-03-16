@@ -1496,7 +1496,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Success() {
 	mockSchema := &userschema.UserSchema{
 		ID:                    "schema1",
 		Name:                  "Test Schema",
-		OrganizationUnitID:    "ou1",
+		OuID:                  "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte(`{"type":"object","properties":{"email":{"type":"string"}}}`),
 	}
@@ -1527,7 +1527,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Multiple() {
 	mockSchema1 := &userschema.UserSchema{
 		ID:                    "schema1",
 		Name:                  "Customer Schema",
-		OrganizationUnitID:    "ou1",
+		OuID:                  "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte(`{"type":"object","properties":{"email":{"type":"string"}}}`),
 	}
@@ -1535,7 +1535,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Multiple() {
 	mockSchema2 := &userschema.UserSchema{
 		ID:                    "schema2",
 		Name:                  "Employee Schema",
-		OrganizationUnitID:    "ou1",
+		OuID:                  "ou1",
 		AllowSelfRegistration: false,
 		Schema:                []byte(`{"type":"object","properties":{"empId":{"type":"string"}}}`),
 	}
@@ -1564,7 +1564,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Wildcard() {
 	mockSchema1 := &userschema.UserSchema{
 		ID:                    "schema1",
 		Name:                  "Customer Schema",
-		OrganizationUnitID:    "ou1",
+		OuID:                  "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte(`{"type":"object","properties":{"email":{"type":"string"}}}`),
 	}
@@ -1572,7 +1572,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Wildcard() {
 	mockSchema2 := &userschema.UserSchema{
 		ID:                    "schema2",
 		Name:                  "Employee Schema",
-		OrganizationUnitID:    "ou1",
+		OuID:                  "ou1",
 		AllowSelfRegistration: false,
 		Schema:                []byte(`{"type":"object","properties":{"empId":{"type":"string"}}}`),
 	}
@@ -1581,8 +1581,8 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Wildcard() {
 		TotalResults: 2,
 		Count:        2,
 		Schemas: []userschema.UserSchemaListItem{
-			{ID: "schema1", Name: "Customer Schema", OrganizationUnitID: "ou1"},
-			{ID: "schema2", Name: "Employee Schema", OrganizationUnitID: "ou1"},
+			{ID: "schema1", Name: "Customer Schema", OuID: "ou1"},
+			{ID: "schema2", Name: "Employee Schema", OuID: "ou1"},
 		},
 	}
 
@@ -1633,7 +1633,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_EmptyName() {
 	mockSchema := &userschema.UserSchema{
 		ID:                    "schema-no-name",
 		Name:                  "", // Empty name
-		OrganizationUnitID:    "ou1",
+		OuID:                  "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte(`{"type":"object"}`),
 	}
@@ -1659,7 +1659,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_NoSchema() {
 	mockSchema := &userschema.UserSchema{
 		ID:                    "schema-no-def",
 		Name:                  "Empty Schema",
-		OrganizationUnitID:    "ou1",
+		OuID:                  "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte{}, // Empty schema
 	}
@@ -1688,7 +1688,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_WildcardPartialFailur
 	mockSchema1 := &userschema.UserSchema{
 		ID:                    "schema1",
 		Name:                  "Customer Schema",
-		OrganizationUnitID:    "ou1",
+		OuID:                  "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte(`{"type":"object"}`),
 	}
@@ -1696,7 +1696,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_WildcardPartialFailur
 	mockSchema3 := &userschema.UserSchema{
 		ID:                    "schema3",
 		Name:                  "Partner Schema",
-		OrganizationUnitID:    "ou1",
+		OuID:                  "ou1",
 		AllowSelfRegistration: false,
 		Schema:                []byte(`{"type":"object"}`),
 	}
@@ -2066,7 +2066,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_UserSchema(
 	mockSchema := &userschema.UserSchema{
 		ID:                    schemaID,
 		Name:                  "Test Schema",
-		OrganizationUnitID:    "ou1",
+		OuID:                  "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte(`{"type":"object","properties":{"email":{"type":"string"}}}`),
 	}

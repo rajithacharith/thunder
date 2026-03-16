@@ -44,7 +44,7 @@ describe('useUpdateGroup', () => {
     id: 'g1',
     name: 'Updated Group',
     description: 'Updated desc',
-    organizationUnitId: 'ou1',
+    ouId: 'ou1',
   };
 
   beforeEach(() => {
@@ -61,7 +61,7 @@ describe('useUpdateGroup', () => {
 
     result.current.mutate({
       groupId: 'g1',
-      data: {name: 'Updated Group', description: 'Updated desc', organizationUnitId: 'ou1'},
+      data: {name: 'Updated Group', description: 'Updated desc', ouId: 'ou1'},
     });
 
     await waitFor(() => {
@@ -83,7 +83,7 @@ describe('useUpdateGroup', () => {
 
     result.current.mutate({
       groupId: 'g1',
-      data: {name: 'Updated', organizationUnitId: 'ou1'},
+      data: {name: 'Updated', ouId: 'ou1'},
     });
 
     await waitFor(() => {

@@ -104,7 +104,7 @@ export default function GroupEditPage(): JSX.Element {
     const updatedData = {
       name: editedGroup.name ?? group.name,
       description: 'description' in editedGroup ? editedGroup.description : group.description,
-      organizationUnitId: group.organizationUnitId,
+      ouId: group.ouId,
     };
 
     try {

@@ -34,13 +34,13 @@ import (
 // user listing, OU user listing, group members listing, and role assignments.
 type DisplayAttributeTestSuite struct {
 	suite.Suite
-	client             *http.Client
-	organizationUnitID string
-	createdSchemas     []string
-	createdUsers       []string
-	createdGroups      []string
-	createdRoles       []string
-	resourceServerID   string
+	client           *http.Client
+	oUID             string
+	createdSchemas   []string
+	createdUsers     []string
+	createdGroups    []string
+	createdRoles     []string
+	resourceServerID string
 }
 
 var displayTestOU = testutils.OrganizationUnit{
@@ -61,14 +61,14 @@ func (ts *DisplayAttributeTestSuite) SetupSuite() {
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit: %v", err)
 	}
-	ts.organizationUnitID = ouID
+	ts.oUID = ouID
 
 	// Create resource server for role tests
 	rs := testutils.ResourceServer{
-		Name:               "Display Attr Test RS",
-		Description:        "Resource server for display attribute testing",
-		Identifier:         "display-attr-test-rs",
-		OrganizationUnitID: ts.organizationUnitID,
+		Name:        "Display Attr Test RS",
+		Description: "Resource server for display attribute testing",
+		Identifier:  "display-attr-test-rs",
+		OuID:        ts.oUID,
 	}
 	action := testutils.Action{
 		Name:        "Read",
@@ -108,9 +108,9 @@ func (ts *DisplayAttributeTestSuite) TearDownSuite() {
 			ts.T().Logf("Failed to delete resource server %s: %v", ts.resourceServerID, err)
 		}
 	}
-	if ts.organizationUnitID != "" {
-		if err := testutils.DeleteOrganizationUnit(ts.organizationUnitID); err != nil {
-			ts.T().Logf("Failed to delete organization unit %s: %v", ts.organizationUnitID, err)
+	if ts.oUID != "" {
+		if err := testutils.DeleteOrganizationUnit(ts.oUID); err != nil {
+			ts.T().Logf("Failed to delete organization unit %s: %v", ts.oUID, err)
 		}
 	}
 }
@@ -121,10 +121,10 @@ func (ts *DisplayAttributeTestSuite) TearDownSuite() {
 // attribute can be set as the display attribute.
 func (ts *DisplayAttributeTestSuite) TestCreateSchemaWithDisplayAttribute_SingleEligible() {
 	schema := CreateUserSchemaRequest{
-		Name:               "display-single-eligible",
-		OrganizationUnitID: ts.organizationUnitID,
-		SystemAttributes:   &SystemAttributes{Display: "email"},
-		Schema:             json.RawMessage(`{"email": {"type": "string"}}`),
+		Name:             "display-single-eligible",
+		OuID:             ts.oUID,
+		SystemAttributes: &SystemAttributes{Display: "email"},
+		Schema:           json.RawMessage(`{"email": {"type": "string"}}`),
 	}
 
 	createdSchema := ts.createSchemaExpectSuccess(schema)
@@ -138,9 +138,9 @@ func (ts *DisplayAttributeTestSuite) TestCreateSchemaWithDisplayAttribute_Single
 // attributes exist, an explicit displayAttribute can be set.
 func (ts *DisplayAttributeTestSuite) TestCreateSchemaWithDisplayAttribute_MultipleEligible() {
 	schema := CreateUserSchemaRequest{
-		Name:               "display-multiple-eligible",
-		OrganizationUnitID: ts.organizationUnitID,
-		SystemAttributes:   &SystemAttributes{Display: "given_name"},
+		Name:             "display-multiple-eligible",
+		OuID:             ts.oUID,
+		SystemAttributes: &SystemAttributes{Display: "given_name"},
 		Schema: json.RawMessage(`{
 			"email": {"type": "string"},
 			"given_name": {"type": "string"},
@@ -159,10 +159,10 @@ func (ts *DisplayAttributeTestSuite) TestCreateSchemaWithDisplayAttribute_Multip
 // attribute as display returns 400.
 func (ts *DisplayAttributeTestSuite) TestCreateSchemaWithDisplayAttribute_NonExistent() {
 	schema := CreateUserSchemaRequest{
-		Name:               "display-nonexistent-attr",
-		OrganizationUnitID: ts.organizationUnitID,
-		SystemAttributes:   &SystemAttributes{Display: "nonexistent_field"},
-		Schema:             json.RawMessage(`{"email": {"type": "string"}}`),
+		Name:             "display-nonexistent-attr",
+		OuID:             ts.oUID,
+		SystemAttributes: &SystemAttributes{Display: "nonexistent_field"},
+		Schema:           json.RawMessage(`{"email": {"type": "string"}}`),
 	}
 
 	ts.createSchemaExpectError(schema, http.StatusBadRequest)
@@ -172,10 +172,10 @@ func (ts *DisplayAttributeTestSuite) TestCreateSchemaWithDisplayAttribute_NonExi
 // type (boolean) as display returns 400.
 func (ts *DisplayAttributeTestSuite) TestCreateSchemaWithDisplayAttribute_NonString() {
 	schema := CreateUserSchemaRequest{
-		Name:               "display-non-string",
-		OrganizationUnitID: ts.organizationUnitID,
-		SystemAttributes:   &SystemAttributes{Display: "is_active"},
-		Schema:             json.RawMessage(`{"is_active": {"type": "boolean"}, "email": {"type": "string"}}`),
+		Name:             "display-non-string",
+		OuID:             ts.oUID,
+		SystemAttributes: &SystemAttributes{Display: "is_active"},
+		Schema:           json.RawMessage(`{"is_active": {"type": "boolean"}, "email": {"type": "string"}}`),
 	}
 
 	ts.createSchemaExpectError(schema, http.StatusBadRequest)
@@ -185,9 +185,9 @@ func (ts *DisplayAttributeTestSuite) TestCreateSchemaWithDisplayAttribute_NonStr
 // attribute as display returns 400.
 func (ts *DisplayAttributeTestSuite) TestCreateSchemaWithDisplayAttribute_Credential() {
 	schema := CreateUserSchemaRequest{
-		Name:               "display-credential-attr",
-		OrganizationUnitID: ts.organizationUnitID,
-		SystemAttributes:   &SystemAttributes{Display: "password"},
+		Name:             "display-credential-attr",
+		OuID:             ts.oUID,
+		SystemAttributes: &SystemAttributes{Display: "password"},
 		Schema: json.RawMessage(`{
 			"email": {"type": "string"},
 			"password": {"type": "string", "credential": true}
@@ -201,10 +201,10 @@ func (ts *DisplayAttributeTestSuite) TestCreateSchemaWithDisplayAttribute_Creden
 // can be set as display (numbers are displayable).
 func (ts *DisplayAttributeTestSuite) TestCreateSchemaWithDisplayAttribute_NumberType() {
 	schema := CreateUserSchemaRequest{
-		Name:               "display-number-type",
-		OrganizationUnitID: ts.organizationUnitID,
-		SystemAttributes:   &SystemAttributes{Display: "employee_id"},
-		Schema:             json.RawMessage(`{"employee_id": {"type": "number"}, "email": {"type": "string"}}`),
+		Name:             "display-number-type",
+		OuID:             ts.oUID,
+		SystemAttributes: &SystemAttributes{Display: "employee_id"},
+		Schema:           json.RawMessage(`{"employee_id": {"type": "number"}, "email": {"type": "string"}}`),
 	}
 
 	createdSchema := ts.createSchemaExpectSuccess(schema)
@@ -218,9 +218,9 @@ func (ts *DisplayAttributeTestSuite) TestCreateSchemaWithDisplayAttribute_Number
 // using dot notation can be set as display.
 func (ts *DisplayAttributeTestSuite) TestCreateSchemaWithDisplayAttribute_NestedAttribute() {
 	schema := CreateUserSchemaRequest{
-		Name:               "display-nested-attr",
-		OrganizationUnitID: ts.organizationUnitID,
-		SystemAttributes:   &SystemAttributes{Display: "profile.name"},
+		Name:             "display-nested-attr",
+		OuID:             ts.oUID,
+		SystemAttributes: &SystemAttributes{Display: "profile.name"},
 		Schema: json.RawMessage(`{
 			"profile": {
 				"type": "object",
@@ -243,9 +243,9 @@ func (ts *DisplayAttributeTestSuite) TestCreateSchemaWithDisplayAttribute_Nested
 func (ts *DisplayAttributeTestSuite) TestUpdateSchemaDisplayAttribute() {
 	// Create schema with email as display
 	createReq := CreateUserSchemaRequest{
-		Name:               "display-update-test",
-		OrganizationUnitID: ts.organizationUnitID,
-		SystemAttributes:   &SystemAttributes{Display: "email"},
+		Name:             "display-update-test",
+		OuID:             ts.oUID,
+		SystemAttributes: &SystemAttributes{Display: "email"},
 		Schema: json.RawMessage(`{
 			"email": {"type": "string"},
 			"given_name": {"type": "string"}
@@ -258,9 +258,9 @@ func (ts *DisplayAttributeTestSuite) TestUpdateSchemaDisplayAttribute() {
 
 	// Update to given_name as display
 	updateReq := UpdateUserSchemaRequest{
-		Name:               "display-update-test",
-		OrganizationUnitID: ts.organizationUnitID,
-		SystemAttributes:   &SystemAttributes{Display: "given_name"},
+		Name:             "display-update-test",
+		OuID:             ts.oUID,
+		SystemAttributes: &SystemAttributes{Display: "given_name"},
 		Schema: json.RawMessage(`{
 			"email": {"type": "string"},
 			"given_name": {"type": "string"}
@@ -298,9 +298,9 @@ func (ts *DisplayAttributeTestSuite) TestUpdateSchemaDisplayAttribute() {
 func (ts *DisplayAttributeTestSuite) TestUserListingWithDisplay() {
 	// Create schema with display attribute set to email
 	schemaReq := CreateUserSchemaRequest{
-		Name:               "display-user-listing",
-		OrganizationUnitID: ts.organizationUnitID,
-		SystemAttributes:   &SystemAttributes{Display: "email"},
+		Name:             "display-user-listing",
+		OuID:             ts.oUID,
+		SystemAttributes: &SystemAttributes{Display: "email"},
 		Schema: json.RawMessage(`{
 			"email": {"type": "string"},
 			"given_name": {"type": "string"},
@@ -313,9 +313,9 @@ func (ts *DisplayAttributeTestSuite) TestUserListingWithDisplay() {
 
 	// Create a user with this schema
 	user := testutils.User{
-		OrganizationUnit: ts.organizationUnitID,
-		Type:             "display-user-listing",
-		Attributes:       json.RawMessage(`{"email": "display-test@example.com", "given_name": "DisplayTest", "password": "TestPass123!"}`),
+		OuID:       ts.oUID,
+		Type:       "display-user-listing",
+		Attributes: json.RawMessage(`{"email": "display-test@example.com", "given_name": "DisplayTest", "password": "TestPass123!"}`),
 	}
 	userID, err := testutils.CreateUser(user)
 	ts.Require().NoError(err)
@@ -342,9 +342,9 @@ func (ts *DisplayAttributeTestSuite) TestUserListingWithDisplay() {
 func (ts *DisplayAttributeTestSuite) TestOUUserListingWithDisplay() {
 	// Create schema with display attribute
 	schemaReq := CreateUserSchemaRequest{
-		Name:               "display-ou-listing",
-		OrganizationUnitID: ts.organizationUnitID,
-		SystemAttributes:   &SystemAttributes{Display: "given_name"},
+		Name:             "display-ou-listing",
+		OuID:             ts.oUID,
+		SystemAttributes: &SystemAttributes{Display: "given_name"},
 		Schema: json.RawMessage(`{
 			"email": {"type": "string"},
 			"given_name": {"type": "string"},
@@ -357,22 +357,22 @@ func (ts *DisplayAttributeTestSuite) TestOUUserListingWithDisplay() {
 
 	// Create a user
 	user := testutils.User{
-		OrganizationUnit: ts.organizationUnitID,
-		Type:             "display-ou-listing",
-		Attributes:       json.RawMessage(`{"email": "ou-display@example.com", "given_name": "OUDisplay", "password": "TestPass123!"}`),
+		OuID:       ts.oUID,
+		Type:       "display-ou-listing",
+		Attributes: json.RawMessage(`{"email": "ou-display@example.com", "given_name": "OUDisplay", "password": "TestPass123!"}`),
 	}
 	userID, err := testutils.CreateUser(user)
 	ts.Require().NoError(err)
 	ts.createdUsers = append(ts.createdUsers, userID)
 
 	// Test: GET /organization-units/{id}/users without include=display
-	ouUsersWithout := ts.getOUUserList(ts.organizationUnitID, "")
+	ouUsersWithout := ts.getOUUserList(ts.oUID, "")
 	foundWithout := ts.findOUUserInList(ouUsersWithout, userID)
 	ts.Require().NotNil(foundWithout, "User should be in OU user list")
 	ts.Assert().Empty(foundWithout.Display, "Display should be empty without include=display")
 
 	// Test: GET /organization-units/{id}/users?include=display
-	ouUsersWith := ts.getOUUserList(ts.organizationUnitID, "display")
+	ouUsersWith := ts.getOUUserList(ts.oUID, "display")
 	foundWith := ts.findOUUserInList(ouUsersWith, userID)
 	ts.Require().NotNil(foundWith, "User should be in OU user list")
 	ts.Assert().Equal("OUDisplay", foundWith.Display,
@@ -386,9 +386,9 @@ func (ts *DisplayAttributeTestSuite) TestOUUserListingWithDisplay() {
 func (ts *DisplayAttributeTestSuite) TestGroupMembersWithDisplay() {
 	// Create schema with display attribute
 	schemaReq := CreateUserSchemaRequest{
-		Name:               "display-group-member",
-		OrganizationUnitID: ts.organizationUnitID,
-		SystemAttributes:   &SystemAttributes{Display: "email"},
+		Name:             "display-group-member",
+		OuID:             ts.oUID,
+		SystemAttributes: &SystemAttributes{Display: "email"},
 		Schema: json.RawMessage(`{
 			"email": {"type": "string"},
 			"given_name": {"type": "string"},
@@ -401,9 +401,9 @@ func (ts *DisplayAttributeTestSuite) TestGroupMembersWithDisplay() {
 
 	// Create a user
 	user := testutils.User{
-		OrganizationUnit: ts.organizationUnitID,
-		Type:             "display-group-member",
-		Attributes:       json.RawMessage(`{"email": "group-display@example.com", "given_name": "GroupUser", "password": "TestPass123!"}`),
+		OuID:       ts.oUID,
+		Type:       "display-group-member",
+		Attributes: json.RawMessage(`{"email": "group-display@example.com", "given_name": "GroupUser", "password": "TestPass123!"}`),
 	}
 	userID, err := testutils.CreateUser(user)
 	ts.Require().NoError(err)
@@ -438,9 +438,9 @@ func (ts *DisplayAttributeTestSuite) TestGroupMembersWithDisplay() {
 func (ts *DisplayAttributeTestSuite) TestRoleAssignmentsWithDisplayAttribute() {
 	// Create schema with display attribute
 	schemaReq := CreateUserSchemaRequest{
-		Name:               "display-role-assign",
-		OrganizationUnitID: ts.organizationUnitID,
-		SystemAttributes:   &SystemAttributes{Display: "email"},
+		Name:             "display-role-assign",
+		OuID:             ts.oUID,
+		SystemAttributes: &SystemAttributes{Display: "email"},
 		Schema: json.RawMessage(`{
 			"email": {"type": "string"},
 			"given_name": {"type": "string"},
@@ -453,9 +453,9 @@ func (ts *DisplayAttributeTestSuite) TestRoleAssignmentsWithDisplayAttribute() {
 
 	// Create a user
 	user := testutils.User{
-		OrganizationUnit: ts.organizationUnitID,
-		Type:             "display-role-assign",
-		Attributes:       json.RawMessage(`{"email": "role-display@example.com", "given_name": "RoleUser", "password": "TestPass123!"}`),
+		OuID:       ts.oUID,
+		Type:       "display-role-assign",
+		Attributes: json.RawMessage(`{"email": "role-display@example.com", "given_name": "RoleUser", "password": "TestPass123!"}`),
 	}
 	userID, err := testutils.CreateUser(user)
 	ts.Require().NoError(err)
@@ -463,9 +463,9 @@ func (ts *DisplayAttributeTestSuite) TestRoleAssignmentsWithDisplayAttribute() {
 
 	// Create a group
 	group := testutils.Group{
-		Name:               "Display Role Test Group",
-		Description:        "Group for display attribute role testing",
-		OrganizationUnitId: ts.organizationUnitID,
+		Name:        "Display Role Test Group",
+		Description: "Group for display attribute role testing",
+		OuID:        ts.oUID,
 	}
 	groupID, err := testutils.CreateGroup(group)
 	ts.Require().NoError(err)
@@ -473,8 +473,8 @@ func (ts *DisplayAttributeTestSuite) TestRoleAssignmentsWithDisplayAttribute() {
 
 	// Create a role with both user and group assignments
 	roleReq := roleCreateRequest{
-		Name:               "Display Attr Test Role",
-		OrganizationUnitID: ts.organizationUnitID,
+		Name: "Display Attr Test Role",
+		OuID: ts.oUID,
 		Permissions: []resourcePermissions{
 			{
 				ResourceServerID: ts.resourceServerID,
@@ -530,11 +530,11 @@ type userListResponse struct {
 }
 
 type userItem struct {
-	ID               string          `json:"id"`
-	OrganizationUnit string          `json:"organizationUnit,omitempty"`
-	Type             string          `json:"type,omitempty"`
-	Attributes       json.RawMessage `json:"attributes,omitempty"`
-	Display          string          `json:"display,omitempty"`
+	ID         string          `json:"id"`
+	OuID       string          `json:"ouId,omitempty"`
+	Type       string          `json:"type,omitempty"`
+	Attributes json.RawMessage `json:"attributes,omitempty"`
+	Display    string          `json:"display,omitempty"`
 }
 
 type ouUserItem struct {
@@ -580,10 +580,10 @@ type resourcePermissions struct {
 }
 
 type roleCreateRequest struct {
-	Name               string                `json:"name"`
-	OrganizationUnitID string                `json:"ouId"`
-	Permissions        []resourcePermissions `json:"permissions"`
-	Assignments        []roleAssignment      `json:"assignments,omitempty"`
+	Name        string                `json:"name"`
+	OuID        string                `json:"ouId"`
+	Permissions []resourcePermissions `json:"permissions"`
+	Assignments []roleAssignment      `json:"assignments,omitempty"`
 }
 
 type roleCreateResponse struct {
@@ -756,10 +756,10 @@ func (ts *DisplayAttributeTestSuite) createGroupWithMembers(name string, members
 	ts.T().Helper()
 
 	reqBody := map[string]interface{}{
-		"name":               name,
-		"description":        "Group for display attribute testing",
-		"organizationUnitId": ts.organizationUnitID,
-		"members":            members,
+		"name":        name,
+		"description": "Group for display attribute testing",
+		"ouId":        ts.oUID,
+		"members":     members,
 	}
 
 	jsonData, err := json.Marshal(reqBody)

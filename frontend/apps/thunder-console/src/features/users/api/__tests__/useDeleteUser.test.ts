@@ -183,7 +183,7 @@ describe('useDeleteUser', () => {
     // Pre-populate cache with user
     queryClient.setQueryData([UserQueryKeys.USER, userId], {
       id: userId,
-      organizationUnit: 'ou-1',
+      ouId: 'ou-1',
       type: 'Employee',
       attributes: {username: 'john'},
     });
@@ -215,7 +215,7 @@ describe('useDeleteUser', () => {
       users: [
         {
           id: userId,
-          organizationUnit: 'ou-1',
+          ouId: 'ou-1',
           type: 'Employee',
           attributes: {username: 'john'},
         },
@@ -359,8 +359,8 @@ describe('useDeleteUser', () => {
     const user2Id = 'user-2';
 
     // Pre-populate cache with two users
-    const user1Data = {id: user1Id, organizationUnit: 'ou-1', type: 'Employee'};
-    const user2Data = {id: user2Id, organizationUnit: 'ou-1', type: 'Employee'};
+    const user1Data = {id: user1Id, ouId: 'ou-1', type: 'Employee'};
+    const user2Data = {id: user2Id, ouId: 'ou-1', type: 'Employee'};
 
     const {result, queryClient} = renderHook(() => useDeleteUser());
 

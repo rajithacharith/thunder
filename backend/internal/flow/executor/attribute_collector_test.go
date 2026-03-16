@@ -185,19 +185,19 @@ func (suite *AttributeCollectorTestSuite) TestExecute_Success() {
 	}
 
 	existingUser := &userprovider.User{
-		UserID:             testUserID,
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
-		Attributes:         json.RawMessage(`{}`),
+		UserID:     testUserID,
+		OuID:       "ou-123",
+		UserType:   "INTERNAL",
+		Attributes: json.RawMessage(`{}`),
 	}
 
 	updatedAttrs := map[string]interface{}{"email": "test@example.com"}
 	updatedAttrsJSON, _ := json.Marshal(updatedAttrs)
 	updatedUser := &userprovider.User{
-		UserID:             testUserID,
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
-		Attributes:         updatedAttrsJSON,
+		UserID:     testUserID,
+		OuID:       "ou-123",
+		UserType:   "INTERNAL",
+		Attributes: updatedAttrsJSON,
 	}
 
 	suite.mockUserProvider.On("GetUser", testUserID).Return(existingUser, nil)
@@ -224,10 +224,10 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UpdateUserFails() {
 	}
 
 	existingUser := &userprovider.User{
-		UserID:             testUserID,
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
-		Attributes:         json.RawMessage(`{}`),
+		UserID:     testUserID,
+		OuID:       "ou-123",
+		UserType:   "INTERNAL",
+		Attributes: json.RawMessage(`{}`),
 	}
 
 	suite.mockUserProvider.On("GetUser", testUserID).Return(existingUser, nil)
@@ -364,10 +364,10 @@ func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_NewAttributes
 	}
 
 	existingUser := &userprovider.User{
-		UserID:             testUserID,
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
-		Attributes:         json.RawMessage(`{}`),
+		UserID:     testUserID,
+		OuID:       "ou-123",
+		UserType:   "INTERNAL",
+		Attributes: json.RawMessage(`{}`),
 	}
 
 	updateRequired, updatedUser, err := suite.executor.getUpdatedUserObject(ctx, existingUser)
@@ -390,10 +390,10 @@ func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_NoNewAttribut
 	}
 
 	existingUser := &userprovider.User{
-		UserID:             testUserID,
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
-		Attributes:         json.RawMessage(`{"existing": "value"}`),
+		UserID:     testUserID,
+		OuID:       "ou-123",
+		UserType:   "INTERNAL",
+		Attributes: json.RawMessage(`{"existing": "value"}`),
 	}
 
 	updateRequired, updatedUser, err := suite.executor.getUpdatedUserObject(ctx, existingUser)
@@ -413,10 +413,10 @@ func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_MergeAttribut
 	}
 
 	existingUser := &userprovider.User{
-		UserID:             testUserID,
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
-		Attributes:         existingAttrsJSON,
+		UserID:     testUserID,
+		OuID:       "ou-123",
+		UserType:   "INTERNAL",
+		Attributes: existingAttrsJSON,
 	}
 
 	updateRequired, updatedUser, err := suite.executor.getUpdatedUserObject(ctx, existingUser)

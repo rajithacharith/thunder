@@ -37,7 +37,7 @@ type Assignment struct {
 type CreateRoleRequest struct {
 	Name               string                `json:"name"`
 	Description        string                `json:"description,omitempty"`
-	OrganizationUnitID string                `json:"ouId"`
+	OuID               string                `json:"ouId"`
 	Permissions        []ResourcePermissions `json:"permissions"`
 	Assignments        []Assignment          `json:"assignments,omitempty"`
 }
@@ -46,7 +46,7 @@ type CreateRoleRequest struct {
 type UpdateRoleRequest struct {
 	Name               string                `json:"name"`
 	Description        string                `json:"description,omitempty"`
-	OrganizationUnitID string                `json:"ouId"`
+	OuID               string                `json:"ouId"`
 	Permissions        []ResourcePermissions `json:"permissions"`
 }
 
@@ -55,7 +55,7 @@ type Role struct {
 	ID                 string                `json:"id"`
 	Name               string                `json:"name"`
 	Description        string                `json:"description,omitempty"`
-	OrganizationUnitID string                `json:"ouId"`
+	OuID               string                `json:"ouId"`
 	Permissions        []ResourcePermissions `json:"permissions"`
 	Assignments        []Assignment          `json:"assignments,omitempty"`
 }
@@ -65,7 +65,7 @@ type RoleSummary struct {
 	ID                 string `json:"id"`
 	Name               string `json:"name"`
 	Description        string `json:"description,omitempty"`
-	OrganizationUnitID string `json:"ouId"`
+	OuID               string `json:"ouId"`
 }
 
 // Link represents a pagination link

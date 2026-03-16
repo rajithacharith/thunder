@@ -228,7 +228,7 @@ func (suite *GroupTreeAPITestSuite) TestCreateGroupByPath() {
 	// Verify the created group
 	suite.Equal(pathTestGroup.Name, createdGroup.Name)
 	suite.Equal(pathTestGroup.Description, createdGroup.Description)
-	suite.Equal(pathTestOUID, createdGroup.OrganizationUnitId)
+	suite.Equal(pathTestOUID, createdGroup.OuID)
 	suite.Equal(len(pathTestGroup.Members), len(createdGroup.Members))
 
 	// Store the group ID for cleanup

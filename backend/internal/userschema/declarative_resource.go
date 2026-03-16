@@ -187,7 +187,7 @@ func parseToUserSchemaDTO(data []byte) (*UserSchema, error) {
 	schemaDTO := &UserSchema{
 		ID:                    schemaRequest.ID,
 		Name:                  schemaRequest.Name,
-		OrganizationUnitID:    schemaRequest.OrganizationUnitID,
+		OuID:                  schemaRequest.OUID,
 		AllowSelfRegistration: schemaRequest.AllowSelfRegistration,
 		SystemAttributes:      schemaRequest.SystemAttributes,
 		Schema:                []byte(schemaRequest.Schema),
@@ -216,16 +216,16 @@ func validateUserSchema(schemaDTO *UserSchema, ouService oupkg.OrganizationUnitS
 		return fmt.Errorf("user schema ID is required")
 	}
 
-	if strings.TrimSpace(schemaDTO.OrganizationUnitID) == "" {
+	if strings.TrimSpace(schemaDTO.OuID) == "" {
 		return fmt.Errorf("organization unit ID is required for user schema '%s'", schemaDTO.Name)
 	}
 
 	// Validate organization unit exists
 	_, err := ouService.GetOrganizationUnit(
-		security.WithRuntimeContext(context.Background()), schemaDTO.OrganizationUnitID)
+		security.WithRuntimeContext(context.Background()), schemaDTO.OuID)
 	if err != nil {
 		return fmt.Errorf("organization unit '%s' not found for user schema '%s'",
-			schemaDTO.OrganizationUnitID, schemaDTO.Name)
+			schemaDTO.OuID, schemaDTO.Name)
 	}
 
 	// Validate schema definition is present and valid.

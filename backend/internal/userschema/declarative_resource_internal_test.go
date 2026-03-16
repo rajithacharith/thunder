@@ -47,10 +47,10 @@ func TestValidateUserSchema(t *testing.T) {
 		{
 			name: "valid schema",
 			schema: &UserSchema{
-				ID:                 "schema-1",
-				Name:               "Valid Schema",
-				OrganizationUnitID: "ou-1",
-				Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
+				ID:     "schema-1",
+				Name:   "Valid Schema",
+				OuID:   "ou-1",
+				Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 			},
 			setupMock: func() {
 				mockOUService.EXPECT().GetOrganizationUnit(mock.Anything, "ou-1").
@@ -62,9 +62,9 @@ func TestValidateUserSchema(t *testing.T) {
 		{
 			name: "missing name",
 			schema: &UserSchema{
-				ID:                 "schema-1",
-				Name:               "",
-				OrganizationUnitID: "ou-1",
+				ID:   "schema-1",
+				Name: "",
+				OuID: "ou-1",
 			},
 			setupMock: func() {},
 			wantErr:   true,
@@ -73,9 +73,9 @@ func TestValidateUserSchema(t *testing.T) {
 		{
 			name: "whitespace only name",
 			schema: &UserSchema{
-				ID:                 "schema-1",
-				Name:               "   ",
-				OrganizationUnitID: "ou-1",
+				ID:   "schema-1",
+				Name: "   ",
+				OuID: "ou-1",
 			},
 			setupMock: func() {},
 			wantErr:   true,
@@ -84,9 +84,9 @@ func TestValidateUserSchema(t *testing.T) {
 		{
 			name: "missing ID",
 			schema: &UserSchema{
-				ID:                 "",
-				Name:               "Valid Schema",
-				OrganizationUnitID: "ou-1",
+				ID:   "",
+				Name: "Valid Schema",
+				OuID: "ou-1",
 			},
 			setupMock: func() {},
 			wantErr:   true,
@@ -95,9 +95,9 @@ func TestValidateUserSchema(t *testing.T) {
 		{
 			name: "whitespace only ID",
 			schema: &UserSchema{
-				ID:                 "   ",
-				Name:               "Valid Schema",
-				OrganizationUnitID: "ou-1",
+				ID:   "   ",
+				Name: "Valid Schema",
+				OuID: "ou-1",
 			},
 			setupMock: func() {},
 			wantErr:   true,
@@ -106,9 +106,9 @@ func TestValidateUserSchema(t *testing.T) {
 		{
 			name: "missing organization unit ID",
 			schema: &UserSchema{
-				ID:                 "schema-1",
-				Name:               "Valid Schema",
-				OrganizationUnitID: "",
+				ID:   "schema-1",
+				Name: "Valid Schema",
+				OuID: "",
 			},
 			setupMock: func() {},
 			wantErr:   true,
@@ -117,9 +117,9 @@ func TestValidateUserSchema(t *testing.T) {
 		{
 			name: "whitespace only organization unit ID",
 			schema: &UserSchema{
-				ID:                 "schema-1",
-				Name:               "Valid Schema",
-				OrganizationUnitID: "   ",
+				ID:   "schema-1",
+				Name: "Valid Schema",
+				OuID: "   ",
 			},
 			setupMock: func() {},
 			wantErr:   true,
@@ -128,10 +128,10 @@ func TestValidateUserSchema(t *testing.T) {
 		{
 			name: "organization unit not found",
 			schema: &UserSchema{
-				ID:                 "schema-1",
-				Name:               "Valid Schema",
-				OrganizationUnitID: "nonexistent",
-				Schema:             json.RawMessage(`{"type": "object"}`),
+				ID:     "schema-1",
+				Name:   "Valid Schema",
+				OuID:   "nonexistent",
+				Schema: json.RawMessage(`{"type": "object"}`),
 			},
 			setupMock: func() {
 				mockOUService.EXPECT().GetOrganizationUnit(mock.Anything, "nonexistent").
@@ -144,10 +144,10 @@ func TestValidateUserSchema(t *testing.T) {
 		{
 			name: "invalid schema JSON",
 			schema: &UserSchema{
-				ID:                 "schema-1",
-				Name:               "Invalid Schema",
-				OrganizationUnitID: "ou-1",
-				Schema:             json.RawMessage(`{invalid json}`),
+				ID:     "schema-1",
+				Name:   "Invalid Schema",
+				OuID:   "ou-1",
+				Schema: json.RawMessage(`{invalid json}`),
 			},
 			setupMock: func() {
 				mockOUService.EXPECT().GetOrganizationUnit(mock.Anything, "ou-1").
@@ -160,10 +160,10 @@ func TestValidateUserSchema(t *testing.T) {
 		{
 			name: "empty schema definition rejected",
 			schema: &UserSchema{
-				ID:                 "schema-1",
-				Name:               "Valid Schema",
-				OrganizationUnitID: "ou-1",
-				Schema:             json.RawMessage(``),
+				ID:     "schema-1",
+				Name:   "Valid Schema",
+				OuID:   "ou-1",
+				Schema: json.RawMessage(``),
 			},
 			setupMock: func() {
 				mockOUService.EXPECT().GetOrganizationUnit(mock.Anything, "ou-1").
@@ -197,10 +197,10 @@ func TestValidateUserSchemaWrapper(t *testing.T) {
 
 	t.Run("valid type", func(t *testing.T) {
 		schema := &UserSchema{
-			ID:                 "schema-1",
-			Name:               "Valid Schema",
-			OrganizationUnitID: "ou-1",
-			Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
+			ID:     "schema-1",
+			Name:   "Valid Schema",
+			OuID:   "ou-1",
+			Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 		}
 
 		mockOUService.EXPECT().GetOrganizationUnit(mock.Anything, "ou-1").
@@ -245,7 +245,7 @@ schema: '{"type": "object"}'
 			want: &UserSchema{
 				ID:                    "schema-1",
 				Name:                  "Test Schema",
-				OrganizationUnitID:    "ou-1",
+				OuID:                  "ou-1",
 				AllowSelfRegistration: true,
 				Schema:                json.RawMessage(`{"type": "object"}`),
 			},
@@ -262,7 +262,7 @@ schema: '{}'
 			want: &UserSchema{
 				ID:                    "schema-2",
 				Name:                  "Minimal Schema",
-				OrganizationUnitID:    "ou-1",
+				OuID:                  "ou-1",
 				AllowSelfRegistration: false,
 				Schema:                json.RawMessage(`{}`),
 			},
@@ -301,7 +301,7 @@ schema: '{invalid json}'
 				assert.NoError(t, err)
 				assert.Equal(t, tc.want.ID, result.ID)
 				assert.Equal(t, tc.want.Name, result.Name)
-				assert.Equal(t, tc.want.OrganizationUnitID, result.OrganizationUnitID)
+				assert.Equal(t, tc.want.OuID, result.OuID)
 				assert.Equal(t, tc.want.AllowSelfRegistration, result.AllowSelfRegistration)
 			}
 		})
@@ -313,7 +313,7 @@ func TestParseToUserSchemaDTOWrapper(t *testing.T) {
 	yaml := `
 id: schema-1
 name: Test Schema
-organizationUnitId: ou-1
+oUId: ou-1
 schema: '{"type": "object"}'
 `
 	result, err := parseToUserSchemaDTOWrapper([]byte(yaml))
@@ -459,10 +459,10 @@ func TestValidateUserSchema_OUServiceError(t *testing.T) {
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
 	schema := &UserSchema{
-		ID:                 "schema-1",
-		Name:               "Valid Schema",
-		OrganizationUnitID: "ou-1",
-		Schema:             json.RawMessage(`{"type": "object"}`),
+		ID:     "schema-1",
+		Name:   "Valid Schema",
+		OuID:   "ou-1",
+		Schema: json.RawMessage(`{"type": "object"}`),
 	}
 
 	// Simulate a service error (not just not found)

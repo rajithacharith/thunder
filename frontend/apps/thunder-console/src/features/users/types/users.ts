@@ -38,7 +38,7 @@ export interface ApiError {
  */
 export interface ApiUser {
   id: string;
-  organizationUnit: string;
+  ouId: string;
   type: string;
   attributes?: Record<string, unknown>;
   display?: string;
@@ -74,7 +74,7 @@ export interface UserListResponse {
  * Create user request payload
  */
 export interface CreateUserRequest {
-  organizationUnit: string;
+  ouId: string;
   type: string;
   groups?: string[];
   attributes?: Record<string, unknown>;
@@ -84,7 +84,7 @@ export interface CreateUserRequest {
  * Update user request payload
  */
 export interface UpdateUserRequest {
-  organizationUnit?: string;
+  ouId?: string;
   type?: string;
   groups?: string[];
   attributes?: Record<string, unknown>;
@@ -94,7 +94,7 @@ export interface UpdateUserRequest {
  * Create user by path request payload
  */
 export interface CreateUserByPathRequest {
-  organizationUnit?: string; // Optional - can be inferred from path
+  ouId?: string; // Optional - can be inferred from path
   type: string;
   groups?: string[];
   attributes?: Record<string, unknown>;
@@ -106,7 +106,7 @@ export interface CreateUserByPathRequest {
 export interface AuthenticateUserResponse {
   id: string;
   type: string;
-  organizationUnit: string;
+  ouId: string;
 }
 
 /**

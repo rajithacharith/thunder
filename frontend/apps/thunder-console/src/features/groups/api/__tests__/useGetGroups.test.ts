@@ -45,8 +45,8 @@ describe('useGetGroups', () => {
     startIndex: 0,
     count: 2,
     groups: [
-      {id: 'g1', name: 'Group One', organizationUnitId: 'ou1'},
-      {id: 'g2', name: 'Group Two', description: 'Desc', organizationUnitId: 'ou2'},
+      {id: 'g1', name: 'Group One', ouId: 'ou1'},
+      {id: 'g2', name: 'Group Two', description: 'Desc', ouId: 'ou2'},
     ],
   };
 

@@ -289,7 +289,7 @@ func (ts *SMSRegistrationFlowTestSuite) SetupSuite() {
 	ts.testOUID = ouID
 
 	// Create test user schema for SMS tests
-	smsRegTestUserSchema.OrganizationUnitId = ts.testOUID
+	smsRegTestUserSchema.OuID = ts.testOUID
 	schemaID, err := testutils.CreateUserType(smsRegTestUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)

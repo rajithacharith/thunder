@@ -2,6 +2,13 @@ server:
   hostname: "localhost"
   port: 8090
 
+gate_client:
+  hostname: "localhost"
+  port: 5190
+  scheme: "https"
+  login_path: "/gate/signin"
+  error_path: "/error"
+
 tls:
   min_version: "1.3"
   cert_file: "repository/resources/security/server.cert"
@@ -46,6 +53,8 @@ jwt:
 cors:
   allowed_origins:
     - "https://localhost:3000"
+    - "https://localhost:5190"
+    - "https://localhost:5191"
 
 passkey:
   allowed_origins:

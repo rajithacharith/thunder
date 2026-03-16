@@ -180,7 +180,7 @@ func (ts *SensitiveInputCleanupTestSuite) SetupSuite() {
 	ts.ouID = ouID
 
 	// Create test user schema
-	sensitiveCleanupUserSchema.OrganizationUnitId = ts.ouID
+	sensitiveCleanupUserSchema.OuID = ts.ouID
 	schemaID, err := testutils.CreateUserType(sensitiveCleanupUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
@@ -202,7 +202,7 @@ func (ts *SensitiveInputCleanupTestSuite) SetupSuite() {
 
 	// Create test user with the created OU
 	testUser := sensitiveCleanupTestUser
-	testUser.OrganizationUnit = ts.ouID
+	testUser.OuID = ts.ouID
 	userIDs, err := testutils.CreateMultipleUsers(testUser)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user during setup: %v", err)

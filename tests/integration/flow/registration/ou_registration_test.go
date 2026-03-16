@@ -431,7 +431,7 @@ func (ts *OURegistrationFlowTestSuite) SetupSuite() {
 	ts.smsFlowTestOUID = smsOUID
 
 	// Create dynamic user schema
-	dynamicUserSchema.OrganizationUnitId = ts.basicFlowTestOUID
+	dynamicUserSchema.OuID = ts.basicFlowTestOUID
 	dynamicUserSchema.AllowSelfRegistration = true
 	schemaID, err := testutils.CreateUserType(dynamicUserSchema)
 	if err != nil {
@@ -623,7 +623,7 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOU() {
 			ts.Require().NotNil(user)
 
 			if user != nil {
-				ts.Require().Equal(jwtClaims.OuID, user.OrganizationUnit)
+				ts.Require().Equal(jwtClaims.OuID, user.OuID)
 				ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.ID)
 			}
 
@@ -801,7 +801,7 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 			ts.Require().NotNil(user)
 
 			if user != nil {
-				ts.Require().Equal(jwtClaims.OuID, user.OrganizationUnit)
+				ts.Require().Equal(jwtClaims.OuID, user.OuID)
 				ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.ID)
 			}
 

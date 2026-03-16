@@ -114,7 +114,7 @@ const mockGroup = {
   id: 'g1',
   name: 'Test Group',
   description: 'A test group',
-  organizationUnitId: 'ou-1',
+  ouId: 'ou-1',
   members: [],
 };
 
@@ -508,7 +508,7 @@ describe('GroupEditPage', () => {
         data: {
           name: 'New Name',
           description: 'A test group',
-          organizationUnitId: 'ou-1',
+          ouId: 'ou-1',
         },
       });
     });

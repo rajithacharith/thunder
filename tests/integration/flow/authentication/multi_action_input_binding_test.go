@@ -215,7 +215,7 @@ func (ts *MultiActionInputBindingTestSuite) SetupSuite() {
 	multiActionInputBindingTestOUID = ouID
 
 	// Create test user schema within the OU
-	multiActionInputBindingUserSchema.OrganizationUnitId = multiActionInputBindingTestOUID
+	multiActionInputBindingUserSchema.OuID = multiActionInputBindingTestOUID
 	schemaID, err := testutils.CreateUserType(multiActionInputBindingUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema: %v", err)
@@ -224,7 +224,7 @@ func (ts *MultiActionInputBindingTestSuite) SetupSuite() {
 
 	// Create test user with the created OU
 	testUser := testUserMultiActionInputBinding
-	testUser.OrganizationUnit = multiActionInputBindingTestOUID
+	testUser.OuID = multiActionInputBindingTestOUID
 	userID, err := testutils.CreateUser(testUser)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user: %v", err)

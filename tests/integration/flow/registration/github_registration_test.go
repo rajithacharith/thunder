@@ -330,7 +330,7 @@ func (ts *GithubRegistrationFlowTestSuite) SetupSuite() {
 	githubRegTestOUID = ouID
 
 	// Create user schema
-	githubRegUserSchema.OrganizationUnitId = githubRegTestOUID
+	githubRegUserSchema.OuID = githubRegTestOUID
 	githubRegUserSchema.AllowSelfRegistration = true
 	schemaID, err := testutils.CreateUserType(githubRegUserSchema)
 	ts.Require().NoError(err, "Failed to create GitHub user schema")

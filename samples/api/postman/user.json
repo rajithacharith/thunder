@@ -36,7 +36,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"organizationUnit\": \"{{organization-unit-id}}\",\n    \"type\": \"person\",\n    \"attributes\": {\n        \"age\": 34,\n        \"roles\": [\n            \"admin\",\n            \"user\"\n        ],\n        \"address\": {\n            \"city\": \"Colombo\",\n            \"zip\": \"00100\"\n        }\n    }\n}",
+					"raw": "{\n    \"ouId\": \"{{organization-unit-id}}\",\n    \"type\": \"person\",\n    \"attributes\": {\n        \"age\": 34,\n        \"roles\": [\n            \"admin\",\n            \"user\"\n        ],\n        \"address\": {\n            \"city\": \"Colombo\",\n            \"zip\": \"00100\"\n        }\n    }\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -90,7 +90,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"organizationUnit\": \"{{organization-unit-id}}\",\n    \"type\": \"employee\",\n    \"attributes\": {\n        \"age\": 37,\n        \"roles\": [\n            \"admin\",\n            \"user\"\n        ],\n        \"address\": {\n            \"city\": \"Colombo\",\n            \"zip\": \"00100\"\n        }\n    }\n}",
+					"raw": "{\n    \"ouId\": \"{{organization-unit-id}}\",\n    \"type\": \"employee\",\n    \"attributes\": {\n        \"age\": 37,\n        \"roles\": [\n            \"admin\",\n            \"user\"\n        ],\n        \"address\": {\n            \"city\": \"Colombo\",\n            \"zip\": \"00100\"\n        }\n    }\n}",
 					"options": {
 						"raw": {
 							"language": "json"

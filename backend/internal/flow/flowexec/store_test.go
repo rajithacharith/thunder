@@ -367,11 +367,11 @@ func (s *StoreTestSuite) TestStoreAndRetrieve_TokenRoundTrip() {
 		Verbose:  true,
 		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
-			IsAuthenticated:    true,
-			UserID:             "integration-user-123",
-			OrganizationUnitID: "integration-org-456",
-			UserType:           "premium",
-			Token:              originalToken,
+			IsAuthenticated: true,
+			UserID:          "integration-user-123",
+			OUID:            "integration-org-456",
+			UserType:        "premium",
+			Token:           originalToken,
 			Attributes: map[string]interface{}{
 				"email": "integration@test.com",
 				"role":  "admin",
@@ -411,7 +411,7 @@ func (s *StoreTestSuite) TestStoreAndRetrieve_TokenRoundTrip() {
 	s.Equal(originalCtx.Verbose, retrievedCtx.Verbose)
 	s.Equal(originalCtx.AuthenticatedUser.IsAuthenticated, retrievedCtx.AuthenticatedUser.IsAuthenticated)
 	s.Equal(originalCtx.AuthenticatedUser.UserID, retrievedCtx.AuthenticatedUser.UserID)
-	s.Equal(originalCtx.AuthenticatedUser.OrganizationUnitID, retrievedCtx.AuthenticatedUser.OrganizationUnitID)
+	s.Equal(originalCtx.AuthenticatedUser.OUID, retrievedCtx.AuthenticatedUser.OUID)
 	s.Equal(originalCtx.AuthenticatedUser.UserType, retrievedCtx.AuthenticatedUser.UserType)
 
 	// Most importantly, verify the token was decrypted correctly

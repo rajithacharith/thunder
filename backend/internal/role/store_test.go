@@ -265,9 +265,9 @@ func (suite *RoleStoreTestSuite) TestCreateRole() {
 			name:   "Success",
 			roleID: "role1",
 			roleDetail: RoleCreationDetail{
-				Name:               "Test Role",
-				Description:        "Test Description",
-				OrganizationUnitID: "ou1",
+				Name:        "Test Role",
+				Description: "Test Description",
+				OUID:        "ou1",
 				Permissions: []ResourcePermissions{
 					{ResourceServerID: "rs1", Permissions: []string{"perm1", "perm2"}},
 				},
@@ -290,9 +290,9 @@ func (suite *RoleStoreTestSuite) TestCreateRole() {
 			name:   "MultipleResourceServers",
 			roleID: "role1",
 			roleDetail: RoleCreationDetail{
-				Name:               "Test Role",
-				Description:        "Test Description",
-				OrganizationUnitID: "ou1",
+				Name:        "Test Role",
+				Description: "Test Description",
+				OUID:        "ou1",
 				Permissions: []ResourcePermissions{
 					{ResourceServerID: "rs1", Permissions: []string{"perm1"}},
 					{ResourceServerID: "rs2", Permissions: []string{"perm2", "perm3"}},
@@ -316,11 +316,11 @@ func (suite *RoleStoreTestSuite) TestCreateRole() {
 			name:   "ExecError",
 			roleID: "role1",
 			roleDetail: RoleCreationDetail{
-				Name:               "Test Role",
-				Description:        "Test Description",
-				OrganizationUnitID: "ou1",
-				Permissions:        []ResourcePermissions{},
-				Assignments:        []RoleAssignment{},
+				Name:        "Test Role",
+				Description: "Test Description",
+				OUID:        "ou1",
+				Permissions: []ResourcePermissions{},
+				Assignments: []RoleAssignment{},
 			},
 			setupMocks: func() {
 				execError := errors.New("insert failed")
@@ -338,9 +338,9 @@ func (suite *RoleStoreTestSuite) TestCreateRole() {
 			name:   "PermissionError",
 			roleID: "role1",
 			roleDetail: RoleCreationDetail{
-				Name:               "Test Role",
-				Description:        "Test Description",
-				OrganizationUnitID: "ou1",
+				Name:        "Test Role",
+				Description: "Test Description",
+				OUID:        "ou1",
 				Permissions: []ResourcePermissions{
 					{ResourceServerID: "rs1", Permissions: []string{"perm1"}},
 				},
@@ -364,11 +364,11 @@ func (suite *RoleStoreTestSuite) TestCreateRole() {
 			name:   "AssignmentError",
 			roleID: "role1",
 			roleDetail: RoleCreationDetail{
-				Name:               "Test Role",
-				Description:        "Test Description",
-				OrganizationUnitID: "ou1",
-				Permissions:        []ResourcePermissions{},
-				Assignments:        []RoleAssignment{{ID: "user1", Type: AssigneeTypeUser}},
+				Name:        "Test Role",
+				Description: "Test Description",
+				OUID:        "ou1",
+				Permissions: []ResourcePermissions{},
+				Assignments: []RoleAssignment{{ID: "user1", Type: AssigneeTypeUser}},
 			},
 			setupMocks: func() {
 				assignError := errors.New("assignment insert failed")
@@ -840,9 +840,9 @@ func (suite *RoleStoreTestSuite) TestUpdateRole() {
 			name:   "Success",
 			roleID: "role1",
 			roleDetail: RoleUpdateDetail{
-				Name:               "Updated Role",
-				Description:        "Updated Description",
-				OrganizationUnitID: "ou1",
+				Name:        "Updated Role",
+				Description: "Updated Description",
+				OUID:        "ou1",
 				Permissions: []ResourcePermissions{
 					{ResourceServerID: "rs1", Permissions: []string{"perm1"}},
 				},
@@ -865,10 +865,10 @@ func (suite *RoleStoreTestSuite) TestUpdateRole() {
 			name:   "NotFound",
 			roleID: "nonexistent",
 			roleDetail: RoleUpdateDetail{
-				Name:               "Updated Role",
-				Description:        "Updated Description",
-				OrganizationUnitID: "ou1",
-				Permissions:        []ResourcePermissions{},
+				Name:        "Updated Role",
+				Description: "Updated Description",
+				OUID:        "ou1",
+				Permissions: []ResourcePermissions{},
 			},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
@@ -883,9 +883,9 @@ func (suite *RoleStoreTestSuite) TestUpdateRole() {
 			name:   "MultipleResourceServers",
 			roleID: "role1",
 			roleDetail: RoleUpdateDetail{
-				Name:               "Updated Role",
-				Description:        "Updated Description",
-				OrganizationUnitID: "ou1",
+				Name:        "Updated Role",
+				Description: "Updated Description",
+				OUID:        "ou1",
 				Permissions: []ResourcePermissions{
 					{ResourceServerID: "rs1", Permissions: []string{"perm1"}},
 					{ResourceServerID: "rs2", Permissions: []string{"perm2"}},
@@ -912,10 +912,10 @@ func (suite *RoleStoreTestSuite) TestUpdateRole() {
 			name:   "DeletePermissionsError",
 			roleID: "role1",
 			roleDetail: RoleUpdateDetail{
-				Name:               "Updated Role",
-				Description:        "Updated Description",
-				OrganizationUnitID: "ou1",
-				Permissions:        []ResourcePermissions{},
+				Name:        "Updated Role",
+				Description: "Updated Description",
+				OUID:        "ou1",
+				Permissions: []ResourcePermissions{},
 			},
 			setupMocks: func() {
 				deleteError := errors.New("delete permissions failed")
@@ -934,9 +934,9 @@ func (suite *RoleStoreTestSuite) TestUpdateRole() {
 			name:   "AddPermissionsError",
 			roleID: "role1",
 			roleDetail: RoleUpdateDetail{
-				Name:               "Updated Role",
-				Description:        "Updated Description",
-				OrganizationUnitID: "ou1",
+				Name:        "Updated Role",
+				Description: "Updated Description",
+				OUID:        "ou1",
 				Permissions: []ResourcePermissions{
 					{ResourceServerID: "rs1", Permissions: []string{"perm1"}},
 				},
@@ -1410,7 +1410,7 @@ func (suite *RoleStoreTestSuite) TestBuildRoleBasicInfoFromResultRow_Success() {
 	suite.Equal("role1", role.ID)
 	suite.Equal("Admin", role.Name)
 	suite.Equal("Admin role", role.Description)
-	suite.Equal("ou1", role.OrganizationUnitID)
+	suite.Equal("ou1", role.OUID)
 }
 
 func (suite *RoleStoreTestSuite) TestBuildRoleBasicInfoFromResultRow_InvalidData() {

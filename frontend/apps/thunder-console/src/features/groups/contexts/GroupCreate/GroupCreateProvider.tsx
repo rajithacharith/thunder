@@ -30,7 +30,7 @@ const INITIAL_STATE = {
   currentStep: GroupCreateFlowStep.NAME as GroupCreateFlowStep,
   name: '',
   description: '',
-  organizationUnitId: '',
+  ouId: '',
   error: null as string | null,
 };
 
@@ -44,14 +44,14 @@ export default function GroupCreateProvider({children}: PropsWithChildren) {
   const [currentStep, setCurrentStep] = useState<GroupCreateFlowStep>(INITIAL_STATE.currentStep);
   const [name, setName] = useState<string>(INITIAL_STATE.name);
   const [description, setDescription] = useState<string>(INITIAL_STATE.description);
-  const [organizationUnitId, setOrganizationUnitId] = useState<string>(INITIAL_STATE.organizationUnitId);
+  const [ouId, setOuId] = useState<string>(INITIAL_STATE.ouId);
   const [error, setError] = useState<string | null>(INITIAL_STATE.error);
 
   const reset = useCallback((): void => {
     setCurrentStep(INITIAL_STATE.currentStep);
     setName(INITIAL_STATE.name);
     setDescription(INITIAL_STATE.description);
-    setOrganizationUnitId(INITIAL_STATE.organizationUnitId);
+    setOuId(INITIAL_STATE.ouId);
     setError(INITIAL_STATE.error);
   }, []);
 
@@ -63,13 +63,13 @@ export default function GroupCreateProvider({children}: PropsWithChildren) {
       setName,
       description,
       setDescription,
-      organizationUnitId,
-      setOrganizationUnitId,
+      ouId,
+      setOuId,
       error,
       setError,
       reset,
     }),
-    [currentStep, name, description, organizationUnitId, error, reset],
+    [currentStep, name, description, ouId, error, reset],
   );
 
   return <GroupCreateContext.Provider value={contextValue}>{children}</GroupCreateContext.Provider>;

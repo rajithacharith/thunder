@@ -112,7 +112,7 @@ func (suite *GithubAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err, "Failed to create test organization unit")
 	suite.ouID = ouID
 
-	githubUserSchema.OrganizationUnitId = suite.ouID
+	githubUserSchema.OuID = suite.ouID
 	schemaID, err := testutils.CreateUserType(githubUserSchema)
 	suite.Require().NoError(err, "Failed to create GitHub user schema")
 	suite.userSchemaID = schemaID
@@ -131,7 +131,7 @@ func (suite *GithubAuthTestSuite) SetupSuite() {
 
 	user := testutils.User{
 		Type:             githubUserSchema.Name,
-		OrganizationUnit: suite.ouID,
+		OuID:             suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 
@@ -340,7 +340,7 @@ func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowSuccess() {
 
 	suite.NotEmpty(authResponse.ID, "Response should contain user ID")
 	suite.NotEmpty(authResponse.Type, "Response should contain user type")
-	suite.NotEmpty(authResponse.OrganizationUnit, "Response should contain organization unit")
+	suite.NotEmpty(authResponse.OuID, "Response should contain organization unit")
 	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
 	suite.NotEmpty(authResponse.Assertion, "Response should contain assertion token by default")
 }
@@ -440,7 +440,7 @@ func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowWithSkipAssertionFal
 
 	suite.NotEmpty(authResponse.ID, "Response should contain user ID")
 	suite.NotEmpty(authResponse.Type, "Response should contain user type")
-	suite.NotEmpty(authResponse.OrganizationUnit, "Response should contain organization unit")
+	suite.NotEmpty(authResponse.OuID, "Response should contain organization unit")
 	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
 	suite.NotEmpty(authResponse.Assertion, "Response should contain assertion token when skip_assertion is false")
 }
@@ -501,7 +501,7 @@ func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowWithSkipAssertionTru
 
 	suite.NotEmpty(authResponse.ID, "Response should contain user ID")
 	suite.NotEmpty(authResponse.Type, "Response should contain user type")
-	suite.NotEmpty(authResponse.OrganizationUnit, "Response should contain organization unit")
+	suite.NotEmpty(authResponse.OuID, "Response should contain organization unit")
 	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
 	suite.Empty(authResponse.Assertion, "Response should not contain assertion token when skip_assertion is true")
 }

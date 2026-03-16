@@ -182,7 +182,7 @@ func (suite *DeclarativeResourceTestSuite) TestUserExporter_GetResourceByID() {
 
 	attrs := json.RawMessage(`{"username":"alice"}`)
 	mockSvc.On("GetUser", context.Background(), "user-1").
-		Return(&User{ID: "user-1", Type: "person", OrganizationUnit: "ou-1", Attributes: attrs}, nil)
+		Return(&User{ID: "user-1", Type: "person", OuID: "ou-1", Attributes: attrs}, nil)
 
 	resource, name, err := exporter.GetResourceByID(context.Background(), "user-1")
 	suite.Nil(err)
@@ -272,10 +272,10 @@ func (suite *DeclarativeResourceTestSuite) TestValidateResource_MissingUsername(
 	exporter := newUserExporter(NewUserServiceInterfaceMock(suite.T()))
 
 	resource := &userDeclarativeResource{
-		ID:               "user-1",
-		Type:             "person",
-		OrganizationUnit: "ou-1",
-		Attributes:       map[string]interface{}{},
+		ID:         "user-1",
+		Type:       "person",
+		OuID:       "ou-1",
+		Attributes: map[string]interface{}{},
 	}
 
 	_, err := exporter.ValidateResource(resource, "user-1", log.GetLogger())
@@ -286,7 +286,7 @@ func (suite *DeclarativeResourceTestSuite) TestValidateUserWrapper_Success() {
 	fileStore := &userFileBasedStore{
 		GenericFileBasedStore: declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeUser),
 	}
-	user := User{ID: "user-1", Type: "person", OrganizationUnit: "ou-1"}
+	user := User{ID: "user-1", Type: "person", OuID: "ou-1"}
 	attrs, err := json.Marshal(map[string]interface{}{"username": "alice"})
 	suite.NoError(err)
 	user.Attributes = attrs
@@ -303,7 +303,7 @@ func (suite *DeclarativeResourceTestSuite) TestValidateUserWrapper_DuplicateFile
 	fileStore := &userFileBasedStore{
 		GenericFileBasedStore: declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeUser),
 	}
-	user := User{ID: "user-1", Type: "person", OrganizationUnit: "ou-1"}
+	user := User{ID: "user-1", Type: "person", OuID: "ou-1"}
 	attrs, err := json.Marshal(map[string]interface{}{"username": "alice"})
 	suite.NoError(err)
 	user.Attributes = attrs
@@ -320,7 +320,7 @@ func (suite *DeclarativeResourceTestSuite) TestValidateUserWrapper_DBError() {
 	fileStore := &userFileBasedStore{
 		GenericFileBasedStore: declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeUser),
 	}
-	user := User{ID: "user-1", Type: "person", OrganizationUnit: "ou-1"}
+	user := User{ID: "user-1", Type: "person", OuID: "ou-1"}
 	attrs, err := json.Marshal(map[string]interface{}{"username": "alice"})
 	suite.NoError(err)
 	user.Attributes = attrs

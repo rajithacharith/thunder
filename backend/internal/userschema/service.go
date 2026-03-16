@@ -191,10 +191,10 @@ func (us *userSchemaService) CreateUserSchema(
 
 	// Validate the schema definition
 	schemaToValidate := UserSchema{
-		Name:               request.Name,
-		OrganizationUnitID: request.OrganizationUnitID,
-		SystemAttributes:   request.SystemAttributes,
-		Schema:             request.Schema,
+		Name:             request.Name,
+		OuID:             request.OuID,
+		SystemAttributes: request.SystemAttributes,
+		Schema:           request.Schema,
 	}
 	if validationErr := validateUserSchemaDefinition(schemaToValidate); validationErr != nil {
 		logger.Debug("User schema validation failed", log.String("name", request.Name))
@@ -203,13 +203,13 @@ func (us *userSchemaService) CreateUserSchema(
 
 	// Ensure organization unit exists
 	if svcErr := us.ensureOrganizationUnitExists(
-		ctx, request.OrganizationUnitID, logger); svcErr != nil {
+		ctx, request.OuID, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
 	// Check authorization
 	if svcErr := us.checkUserSchemaAccess(
-		ctx, security.ActionCreateUserSchema, request.OrganizationUnitID); svcErr != nil {
+		ctx, security.ActionCreateUserSchema, request.OuID); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -230,7 +230,7 @@ func (us *userSchemaService) CreateUserSchema(
 	userSchema := UserSchema{
 		ID:                    id,
 		Name:                  request.Name,
-		OrganizationUnitID:    request.OrganizationUnitID,
+		OuID:                  request.OuID,
 		AllowSelfRegistration: request.AllowSelfRegistration,
 		SystemAttributes:      request.SystemAttributes,
 		Schema:                request.Schema,
@@ -280,7 +280,7 @@ func (us *userSchemaService) GetUserSchema(
 
 	// Check authorization
 	if svcErr := us.checkUserSchemaAccess(
-		ctx, security.ActionReadUserSchema, userSchema.OrganizationUnitID); svcErr != nil {
+		ctx, security.ActionReadUserSchema, userSchema.OuID); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -307,7 +307,7 @@ func (us *userSchemaService) GetUserSchemaByName(
 
 	// Check authorization
 	if svcErr := us.checkUserSchemaAccess(
-		ctx, security.ActionReadUserSchema, userSchema.OrganizationUnitID); svcErr != nil {
+		ctx, security.ActionReadUserSchema, userSchema.OuID); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -330,10 +330,10 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 
 	// Validate the schema definition
 	schemaToValidate := UserSchema{
-		Name:               request.Name,
-		OrganizationUnitID: request.OrganizationUnitID,
-		SystemAttributes:   request.SystemAttributes,
-		Schema:             request.Schema,
+		Name:             request.Name,
+		OuID:             request.OuID,
+		SystemAttributes: request.SystemAttributes,
+		Schema:           request.Schema,
 	}
 	if validationErr := validateUserSchemaDefinition(schemaToValidate); validationErr != nil {
 		logger.Debug("User schema validation failed", log.String("id", schemaID))
@@ -342,7 +342,7 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 
 	// Ensure organization unit exists
 	if svcErr := us.ensureOrganizationUnitExists(
-		ctx, request.OrganizationUnitID, logger); svcErr != nil {
+		ctx, request.OuID, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -356,14 +356,14 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 
 	// Check authorization
 	if svcErr := us.checkUserSchemaAccess(
-		ctx, security.ActionUpdateUserSchema, existingSchema.OrganizationUnitID); svcErr != nil {
+		ctx, security.ActionUpdateUserSchema, existingSchema.OuID); svcErr != nil {
 		return nil, svcErr
 	}
 
 	// If OU is being changed, validate access to the target OU as well.
-	if request.OrganizationUnitID != existingSchema.OrganizationUnitID {
+	if request.OuID != existingSchema.OuID {
 		if svcErr := us.checkUserSchemaAccess(
-			ctx, security.ActionUpdateUserSchema, request.OrganizationUnitID); svcErr != nil {
+			ctx, security.ActionUpdateUserSchema, request.OuID); svcErr != nil {
 			return nil, svcErr
 		}
 	}
@@ -380,7 +380,7 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 	userSchema := UserSchema{
 		ID:                    schemaID,
 		Name:                  request.Name,
-		OrganizationUnitID:    request.OrganizationUnitID,
+		OuID:                  request.OuID,
 		AllowSelfRegistration: request.AllowSelfRegistration,
 		SystemAttributes:      request.SystemAttributes,
 		Schema:                request.Schema,
@@ -437,7 +437,7 @@ func (us *userSchemaService) DeleteUserSchema(ctx context.Context, schemaID stri
 
 	// Check authorization against the schema's OU.
 	if svcErr := us.checkUserSchemaAccess(
-		ctx, security.ActionDeleteUserSchema, existingSchema.OrganizationUnitID); svcErr != nil {
+		ctx, security.ActionDeleteUserSchema, existingSchema.OuID); svcErr != nil {
 		return svcErr
 	}
 
@@ -658,7 +658,7 @@ func (us *userSchemaService) getAccessibleResources(
 // ensureOrganizationUnitExists validates that the provided organization unit exists using the OU service.
 func (us *userSchemaService) ensureOrganizationUnitExists(
 	ctx context.Context,
-	organizationUnitID string,
+	oUID string,
 	logger *log.Logger,
 ) *serviceerror.ServiceError {
 	if us.ouService == nil {
@@ -666,16 +666,16 @@ func (us *userSchemaService) ensureOrganizationUnitExists(
 		return &ErrorInternalServerError
 	}
 
-	exists, svcErr := us.ouService.IsOrganizationUnitExists(ctx, organizationUnitID)
+	exists, svcErr := us.ouService.IsOrganizationUnitExists(ctx, oUID)
 	if svcErr != nil {
 		logger.Error("Failed to verify organization unit existence",
-			log.String("organizationUnitID", organizationUnitID), log.Any("error", svcErr))
+			log.String("oUID", oUID), log.Any("error", svcErr))
 		return &ErrorInternalServerError
 	}
 
 	if !exists {
 		logger.Debug("Organization unit does not exist",
-			log.String("organizationUnitID", organizationUnitID))
+			log.String("oUID", oUID))
 		return invalidSchemaRequestError("organization unit id does not exist")
 	}
 
@@ -752,14 +752,14 @@ func validateUserSchemaDefinition(schema UserSchema) *serviceerror.ServiceError 
 		return invalidSchemaRequestError("user schema name must not be empty")
 	}
 
-	if schema.OrganizationUnitID == "" {
+	if schema.OuID == "" {
 		logger.Debug("User schema validation failed: organization unit ID is empty")
 		return invalidSchemaRequestError("organization unit id must not be empty")
 	}
 
-	if !utils.IsValidUUID(schema.OrganizationUnitID) {
+	if !utils.IsValidUUID(schema.OuID) {
 		logger.Debug("User schema validation failed: invalid organization unit ID format",
-			log.String("ouId", schema.OrganizationUnitID))
+			log.String("ouId", schema.OuID))
 		return invalidSchemaRequestError("organization unit id is not a valid UUID")
 	}
 

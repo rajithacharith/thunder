@@ -87,7 +87,7 @@ func (ts *BasicRegistrationFlowTestSuite) SetupSuite() {
 	ts.testOUID = ouID
 
 	// Create test user schema
-	testUserSchema.OrganizationUnitId = ts.testOUID
+	testUserSchema.OuID = ts.testOUID
 	schemaID, err := testutils.CreateUserType(testUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
@@ -230,7 +230,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSuccess() {
 func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowDuplicateUser() {
 	// Create a test user first
 	testUser := testutils.User{
-		OrganizationUnit: ts.testOUID,
+		OuID:             ts.testOUID,
 		Type:             testUserSchema.Name,
 		Attributes: json.RawMessage(`{
 			"username": "duplicateuser",

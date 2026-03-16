@@ -828,7 +828,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"organizationUnit\": \"{{demoOuId}}\",\n    \"type\": \"{{demoSchemaName}}\",\n    \"attributes\": {\n        \"username\": \"{{demoLoginUser1Username}}\",\n        \"password\": \"{{demoLoginUser1Password}}\",\n        \"email\": \"{{demoLoginUser1Email}}\",\n        \"given_name\": \"Jane\",\n        \"family_name\": \"Doe\",\n        \"mobileNumber\": \"{{demoLoginUser1Mobile}}\"\n    }\n}",
+              "raw": "{\n    \"ouId\": \"{{demoOuId}}\",\n    \"type\": \"{{demoSchemaName}}\",\n    \"attributes\": {\n        \"username\": \"{{demoLoginUser1Username}}\",\n        \"password\": \"{{demoLoginUser1Password}}\",\n        \"email\": \"{{demoLoginUser1Email}}\",\n        \"given_name\": \"Jane\",\n        \"family_name\": \"Doe\",\n        \"mobileNumber\": \"{{demoLoginUser1Mobile}}\"\n    }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -863,7 +863,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"organizationUnit\": \"{{demoOuId}}\",\n    \"type\": \"{{demoSchemaName}}\",\n    \"attributes\": {\n        \"sub\": \"{{demoGoogleUserSub}}\",\n        \"email\": \"{{demoGoogleUserEmail}}\",\n        \"userSource\": \"Google\"\n    }\n}",
+              "raw": "{\n    \"ouId\": \"{{demoOuId}}\",\n    \"type\": \"{{demoSchemaName}}\",\n    \"attributes\": {\n        \"sub\": \"{{demoGoogleUserSub}}\",\n        \"email\": \"{{demoGoogleUserEmail}}\",\n        \"userSource\": \"Google\"\n    }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -898,7 +898,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"organizationUnit\": \"{{demoOuId}}\",\n    \"type\": \"{{demoSchemaName}}\",\n    \"attributes\": {\n        \"sub\": \"{{demoGithubUserSub}}\",\n        \"email\": \"{{demoGithubUserEmail}}\",\n        \"userSource\": \"Github\"\n    }\n}",
+              "raw": "{\n    \"ouId\": \"{{demoOuId}}\",\n    \"type\": \"{{demoSchemaName}}\",\n    \"attributes\": {\n        \"sub\": \"{{demoGithubUserSub}}\",\n        \"email\": \"{{demoGithubUserEmail}}\",\n        \"userSource\": \"Github\"\n    }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -933,7 +933,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"organizationUnit\": \"{{demoOuId}}\",\n    \"type\": \"{{demoSchemaName}}\",\n    \"attributes\": {\n        \"sub\": \"{{demoAsgardeoUserSub}}\",\n        \"email\": \"{{demoAsgardeoUserEmail}}\",\n        \"userSource\": \"Asgardeo\"\n    }\n}",
+              "raw": "{\n    \"ouId\": \"{{demoOuId}}\",\n    \"type\": \"{{demoSchemaName}}\",\n    \"attributes\": {\n        \"sub\": \"{{demoAsgardeoUserSub}}\",\n        \"email\": \"{{demoAsgardeoUserEmail}}\",\n        \"userSource\": \"Asgardeo\"\n    }\n}",
               "options": {
                 "raw": {
                   "language": "json"

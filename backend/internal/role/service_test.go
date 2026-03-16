@@ -115,8 +115,8 @@ func (suite *RoleServiceTestSuite) TearDownTest() {
 // GetRoleList Tests
 func (suite *RoleServiceTestSuite) TestGetRoleList_Success() {
 	expectedRoles := []Role{
-		{ID: "role1", Name: "Admin", OrganizationUnitID: "ou1"},
-		{ID: "role2", Name: "User", OrganizationUnitID: "ou1"},
+		{ID: "role1", Name: "Admin", OUID: "ou1"},
+		{ID: "role2", Name: "User", OUID: "ou1"},
 	}
 
 	suite.mockStore.On("GetRoleListCount", mock.Anything).Return(2, nil)
@@ -197,10 +197,10 @@ func (suite *RoleServiceTestSuite) TestGetRoleList_StoreErrors() {
 // CreateRole Tests
 func (suite *RoleServiceTestSuite) TestCreateRole_Success() {
 	request := RoleCreationDetail{
-		Name:               "Test Role",
-		Description:        "Test Description",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1", "perm2"}}},
+		Name:        "Test Role",
+		Description: "Test Description",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1", "perm2"}}},
 		Assignments: []RoleAssignment{
 			{ID: testUserID1, Type: AssigneeTypeUser},
 		},
@@ -224,7 +224,7 @@ func (suite *RoleServiceTestSuite) TestCreateRole_Success() {
 	suite.NotNil(result)
 	suite.Equal("Test Role", result.Name)
 	suite.Equal("Test Description", result.Description)
-	suite.Equal("ou1", result.OrganizationUnitID)
+	suite.Equal("ou1", result.OUID)
 	suite.Equal(1, len(result.Permissions))
 	suite.Equal(2, len(result.Permissions[0].Permissions))
 	// Verify permission validation was called
@@ -241,7 +241,7 @@ func (suite *RoleServiceTestSuite) TestCreateRole_ValidationErrors() {
 		{
 			name: "MissingName",
 			request: RoleCreationDetail{
-				OrganizationUnitID: "ou1",
+				OUID: "ou1",
 				Permissions: []ResourcePermissions{{
 					ResourceServerID: "rs1",
 					Permissions:      []string{"perm1"},
@@ -263,20 +263,20 @@ func (suite *RoleServiceTestSuite) TestCreateRole_ValidationErrors() {
 		{
 			name: "InvalidAssignmentType",
 			request: RoleCreationDetail{
-				Name:               "Role",
-				OrganizationUnitID: "ou1",
-				Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
-				Assignments:        []RoleAssignment{{ID: testUserID1, Type: "invalid"}},
+				Name:        "Role",
+				OUID:        "ou1",
+				Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+				Assignments: []RoleAssignment{{ID: testUserID1, Type: "invalid"}},
 			},
 			errCode: ErrorInvalidRequestFormat.Code,
 		},
 		{
 			name: "EmptyAssignmentID",
 			request: RoleCreationDetail{
-				Name:               "Role",
-				OrganizationUnitID: "ou1",
-				Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
-				Assignments:        []RoleAssignment{{ID: "", Type: AssigneeTypeUser}},
+				Name:        "Role",
+				OUID:        "ou1",
+				Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+				Assignments: []RoleAssignment{{ID: "", Type: AssigneeTypeUser}},
 			},
 			errCode: ErrorInvalidRequestFormat.Code,
 		},
@@ -302,9 +302,9 @@ func (suite *RoleServiceTestSuite) TestCreateRole_PermissionValidationErrors() {
 		{
 			name: "InvalidPermissions",
 			request: RoleCreationDetail{
-				Name:               "Test Role",
-				OrganizationUnitID: "ou1",
-				Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+				Name:        "Test Role",
+				OUID:        "ou1",
+				Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 			},
 			setupMocks: func() {
 				suite.mockResourceService.On("ValidatePermissions", mock.Anything,
@@ -316,9 +316,9 @@ func (suite *RoleServiceTestSuite) TestCreateRole_PermissionValidationErrors() {
 		{
 			name: "PermissionValidationServiceError",
 			request: RoleCreationDetail{
-				Name:               "Test Role",
-				OrganizationUnitID: "ou1",
-				Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+				Name:        "Test Role",
+				OUID:        "ou1",
+				Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 			},
 			setupMocks: func() {
 				suite.mockResourceService.On("ValidatePermissions", mock.Anything,
@@ -330,9 +330,9 @@ func (suite *RoleServiceTestSuite) TestCreateRole_PermissionValidationErrors() {
 		{
 			name: "EmptyResourceServerID",
 			request: RoleCreationDetail{
-				Name:               "Test Role",
-				OrganizationUnitID: "ou1",
-				Permissions:        []ResourcePermissions{{ResourceServerID: "", Permissions: []string{"perm1"}}},
+				Name:        "Test Role",
+				OUID:        "ou1",
+				Permissions: []ResourcePermissions{{ResourceServerID: "", Permissions: []string{"perm1"}}},
 			},
 			setupMocks: func() {
 				// Resource service should not be called for empty resource server ID
@@ -342,10 +342,10 @@ func (suite *RoleServiceTestSuite) TestCreateRole_PermissionValidationErrors() {
 		{
 			name: "EmptyPermissionsArray",
 			request: RoleCreationDetail{
-				Name:               "Test Role",
-				Description:        "Test Description",
-				OrganizationUnitID: "ou1",
-				Permissions:        []ResourcePermissions{},
+				Name:        "Test Role",
+				Description: "Test Description",
+				OUID:        "ou1",
+				Permissions: []ResourcePermissions{},
 			},
 			setupMocks: func() {
 				ou := oupkg.OrganizationUnit{ID: "ou1"}
@@ -362,9 +362,9 @@ func (suite *RoleServiceTestSuite) TestCreateRole_PermissionValidationErrors() {
 		{
 			name: "MultipleResourceServers",
 			request: RoleCreationDetail{
-				Name:               "Test Role",
-				Description:        "Test Description",
-				OrganizationUnitID: "ou1",
+				Name:        "Test Role",
+				Description: "Test Description",
+				OUID:        "ou1",
 				Permissions: []ResourcePermissions{
 					{ResourceServerID: "rs1", Permissions: []string{"perm1"}},
 					{ResourceServerID: "rs2", Permissions: []string{"perm2"}},
@@ -411,9 +411,9 @@ func (suite *RoleServiceTestSuite) TestCreateRole_PermissionValidationErrors() {
 
 func (suite *RoleServiceTestSuite) TestCreateRole_OrganizationUnitNotFound() {
 	request := RoleCreationDetail{
-		Name:               "Test Role",
-		OrganizationUnitID: "nonexistent",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Name:        "Test Role",
+		OUID:        "nonexistent",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	suite.mockResourceService.On("ValidatePermissions", mock.Anything,
@@ -430,10 +430,10 @@ func (suite *RoleServiceTestSuite) TestCreateRole_OrganizationUnitNotFound() {
 
 func (suite *RoleServiceTestSuite) TestCreateRole_InvalidUserID() {
 	request := RoleCreationDetail{
-		Name:               "Test Role",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
-		Assignments:        []RoleAssignment{{ID: "invalid_user", Type: AssigneeTypeUser}},
+		Name:        "Test Role",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Assignments: []RoleAssignment{{ID: "invalid_user", Type: AssigneeTypeUser}},
 	}
 
 	// Assignment validation now happens before OU and name checks
@@ -452,10 +452,10 @@ func (suite *RoleServiceTestSuite) TestCreateRole_InvalidUserID() {
 
 func (suite *RoleServiceTestSuite) TestCreateRole_InvalidGroupID() {
 	request := RoleCreationDetail{
-		Name:               "Test Role",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
-		Assignments:        []RoleAssignment{{ID: "invalid_group", Type: AssigneeTypeGroup}},
+		Name:        "Test Role",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Assignments: []RoleAssignment{{ID: "invalid_group", Type: AssigneeTypeGroup}},
 	}
 
 	// Assignment validation now happens before OU and name checks
@@ -474,9 +474,9 @@ func (suite *RoleServiceTestSuite) TestCreateRole_InvalidGroupID() {
 
 func (suite *RoleServiceTestSuite) TestCreateRole_StoreError() {
 	request := RoleCreationDetail{
-		Name:               "Test Role",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Name:        "Test Role",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	ou := oupkg.OrganizationUnit{ID: "ou1"}
@@ -498,9 +498,9 @@ func (suite *RoleServiceTestSuite) TestCreateRole_StoreError() {
 
 func (suite *RoleServiceTestSuite) TestCreateRole_NameConflict() {
 	request := RoleCreationDetail{
-		Name:               "Test Role",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Name:        "Test Role",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	ou := oupkg.OrganizationUnit{ID: "ou1"}
@@ -519,9 +519,9 @@ func (suite *RoleServiceTestSuite) TestCreateRole_NameConflict() {
 
 func (suite *RoleServiceTestSuite) TestCreateRole_CheckNameExistsError() {
 	request := RoleCreationDetail{
-		Name:               "Test Role",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Name:        "Test Role",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	ou := oupkg.OrganizationUnit{ID: "ou1"}
@@ -558,8 +558,8 @@ func (suite *RoleServiceTestSuite) TestCreateRole_DeclarativeMode_Denied() {
 	defer config.ResetThunderRuntime()
 
 	request := RoleCreationDetail{
-		Name:               "Test Role",
-		OrganizationUnitID: "ou1",
+		Name: "Test Role",
+		OUID: "ou1",
 	}
 
 	result, err := suite.service.CreateRole(context.Background(), request)
@@ -587,9 +587,9 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_DeclarativeMode_Denied() {
 	defer config.ResetThunderRuntime()
 
 	request := RoleUpdateDetail{
-		Name:               "Updated Role",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Name:        "Updated Role",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	suite.mockResourceService.On("ValidatePermissions", mock.Anything,
@@ -607,11 +607,11 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_DeclarativeMode_Denied() {
 // GetRoleWithPermissions Tests
 func (suite *RoleServiceTestSuite) TestGetRole_Success() {
 	expectedRole := RoleWithPermissions{
-		ID:                 "role1",
-		Name:               "Admin",
-		Description:        "Administrator role",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1", "perm2"}}},
+		ID:          "role1",
+		Name:        "Admin",
+		Description: "Administrator role",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1", "perm2"}}},
 	}
 
 	suite.mockStore.On("GetRole", mock.Anything,
@@ -658,9 +658,9 @@ func (suite *RoleServiceTestSuite) TestGetRole_StoreError() {
 // UpdateRole Tests
 func (suite *RoleServiceTestSuite) TestUpdateRole_MissingRoleID() {
 	request := RoleUpdateDetail{
-		Name:               "New Name",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Name:        "New Name",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	result, err := suite.service.UpdateRoleWithPermissions(context.Background(), "", request)
@@ -679,7 +679,7 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_ValidationErrors() {
 		{
 			name: "MissingName",
 			request: RoleUpdateDetail{
-				OrganizationUnitID: "ou1",
+				OUID: "ou1",
 				Permissions: []ResourcePermissions{{
 					ResourceServerID: "rs1",
 					Permissions:      []string{"perm1"},
@@ -712,9 +712,9 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_ValidationErrors() {
 
 func (suite *RoleServiceTestSuite) TestUpdateRole_GetRoleError() {
 	request := RoleUpdateDetail{
-		Name:               "New Name",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Name:        "New Name",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	suite.mockResourceService.On("ValidatePermissions", mock.Anything,
@@ -731,9 +731,9 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_GetRoleError() {
 
 func (suite *RoleServiceTestSuite) TestUpdateRole_OUNotFound() {
 	request := RoleUpdateDetail{
-		Name:               "New Name",
-		OrganizationUnitID: "nonexistent_ou",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Name:        "New Name",
+		OUID:        "nonexistent_ou",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	suite.mockResourceService.On("ValidatePermissions", mock.Anything,
@@ -752,9 +752,9 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_OUNotFound() {
 
 func (suite *RoleServiceTestSuite) TestUpdateRole_OUServiceError() {
 	request := RoleUpdateDetail{
-		Name:               "New Name",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Name:        "New Name",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	suite.mockResourceService.On("ValidatePermissions", mock.Anything,
@@ -773,9 +773,9 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_OUServiceError() {
 
 func (suite *RoleServiceTestSuite) TestUpdateRole_UpdateStoreError() {
 	request := RoleUpdateDetail{
-		Name:               "New Name",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Name:        "New Name",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	ou := oupkg.OrganizationUnit{ID: "ou1"}
@@ -800,10 +800,10 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_UpdateStoreError() {
 func (suite *RoleServiceTestSuite) TestUpdateRole_Success() {
 	// This test also verifies permission validation is called correctly during update
 	request := RoleUpdateDetail{
-		Name:               "New Name",
-		Description:        "Updated description",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1", "perm2"}}},
+		Name:        "New Name",
+		Description: "Updated description",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1", "perm2"}}},
 	}
 
 	ou := oupkg.OrganizationUnit{ID: "ou1"}
@@ -831,9 +831,9 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_Success() {
 
 func (suite *RoleServiceTestSuite) TestUpdateRole_RoleNotFound() {
 	request := RoleUpdateDetail{
-		Name:               "New Name",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Name:        "New Name",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	suite.mockResourceService.On("ValidatePermissions", mock.Anything,
@@ -850,9 +850,9 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_RoleNotFound() {
 
 func (suite *RoleServiceTestSuite) TestUpdateRole_NameConflict() {
 	request := RoleUpdateDetail{
-		Name:               "Conflicting Name",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Name:        "Conflicting Name",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	ou := oupkg.OrganizationUnit{ID: "ou1"}
@@ -874,9 +874,9 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_NameConflict() {
 
 func (suite *RoleServiceTestSuite) TestUpdateRole_CheckNameExistsError() {
 	request := RoleUpdateDetail{
-		Name:               "New Name",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Name:        "New Name",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	ou := oupkg.OrganizationUnit{ID: "ou1"}
@@ -906,9 +906,9 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_PermissionValidationErrors() {
 		{
 			name: "InvalidPermissionsOnUpdate",
 			request: RoleUpdateDetail{
-				Name:               "Updated Role",
-				OrganizationUnitID: "ou1",
-				Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+				Name:        "Updated Role",
+				OUID:        "ou1",
+				Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 			},
 			setupMocks: func() {
 				// Permission validation happens before IsRoleExist check in UpdateRole
@@ -921,9 +921,9 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_PermissionValidationErrors() {
 		{
 			name: "PermissionValidationServiceError",
 			request: RoleUpdateDetail{
-				Name:               "Updated Role",
-				OrganizationUnitID: "ou1",
-				Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+				Name:        "Updated Role",
+				OUID:        "ou1",
+				Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 			},
 			setupMocks: func() {
 				// Permission validation happens before IsRoleExist check in UpdateRole
@@ -936,9 +936,9 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_PermissionValidationErrors() {
 		{
 			name: "EmptyResourceServerIDOnUpdate",
 			request: RoleUpdateDetail{
-				Name:               "Updated Role",
-				OrganizationUnitID: "ou1",
-				Permissions:        []ResourcePermissions{{ResourceServerID: "", Permissions: []string{"perm1"}}},
+				Name:        "Updated Role",
+				OUID:        "ou1",
+				Permissions: []ResourcePermissions{{ResourceServerID: "", Permissions: []string{"perm1"}}},
 			},
 			setupMocks: func() {
 				// Resource service should not be called for empty resource server ID
@@ -949,9 +949,9 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_PermissionValidationErrors() {
 		{
 			name: "MultipleResourceServersOnUpdate",
 			request: RoleUpdateDetail{
-				Name:               "Updated Role",
-				Description:        "Updated description",
-				OrganizationUnitID: "ou1",
+				Name:        "Updated Role",
+				Description: "Updated description",
+				OUID:        "ou1",
 				Permissions: []ResourcePermissions{
 					{ResourceServerID: "rs1", Permissions: []string{"perm1"}},
 					{ResourceServerID: "rs2", Permissions: []string{"perm2"}},
@@ -980,10 +980,10 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_PermissionValidationErrors() {
 		{
 			name: "EmptyPermissionsArrayOnUpdate",
 			request: RoleUpdateDetail{
-				Name:               "Updated Role",
-				Description:        "Updated description",
-				OrganizationUnitID: "ou1",
-				Permissions:        []ResourcePermissions{},
+				Name:        "Updated Role",
+				Description: "Updated description",
+				OUID:        "ou1",
+				Permissions: []ResourcePermissions{},
 			},
 			setupMocks: func() {
 				ou := oupkg.OrganizationUnit{ID: "ou1"}
@@ -1686,10 +1686,10 @@ func (suite *RoleServiceTestSuite) TestRemoveAssignments_DeclarativeMode_Denied(
 // validateAssignmentIDs Tests
 func (suite *RoleServiceTestSuite) TestValidateAssignmentIDs_UserServiceError() {
 	request := RoleCreationDetail{
-		Name:               "Test Role",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
-		Assignments:        []RoleAssignment{{ID: "user1", Type: AssigneeTypeUser}},
+		Name:        "Test Role",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Assignments: []RoleAssignment{{ID: "user1", Type: AssigneeTypeUser}},
 	}
 
 	// Assignment validation now happens before OU and name checks
@@ -1708,10 +1708,10 @@ func (suite *RoleServiceTestSuite) TestValidateAssignmentIDs_UserServiceError() 
 
 func (suite *RoleServiceTestSuite) TestValidateAssignmentIDs_GroupServiceError() {
 	request := RoleCreationDetail{
-		Name:               "Test Role",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
-		Assignments:        []RoleAssignment{{ID: "group1", Type: AssigneeTypeGroup}},
+		Name:        "Test Role",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Assignments: []RoleAssignment{{ID: "group1", Type: AssigneeTypeGroup}},
 	}
 
 	// Assignment validation now happens before OU and name checks

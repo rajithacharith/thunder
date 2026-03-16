@@ -31,9 +31,9 @@ import (
 
 type CreateUserSchemaTestSuite struct {
 	suite.Suite
-	client             *http.Client
-	createdSchemas     []string // Track schemas for cleanup
-	organizationUnitID string
+	client         *http.Client
+	createdSchemas []string // Track schemas for cleanup
+	oUID           string
 }
 
 var testUserSchemaAPICreateOU = testutils.OrganizationUnit{
@@ -56,7 +56,7 @@ func (ts *CreateUserSchemaTestSuite) SetupSuite() {
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit: %v", err)
 	}
-	ts.organizationUnitID = ouID
+	ts.oUID = ouID
 }
 
 func (ts *CreateUserSchemaTestSuite) TearDownSuite() {
@@ -66,9 +66,9 @@ func (ts *CreateUserSchemaTestSuite) TearDownSuite() {
 	}
 
 	// Clean up created organization units
-	if ts.organizationUnitID != "" {
-		if err := testutils.DeleteOrganizationUnit(ts.organizationUnitID); err != nil {
-			ts.T().Logf("Failed to delete test organization unit %s: %v", ts.organizationUnitID, err)
+	if ts.oUID != "" {
+		if err := testutils.DeleteOrganizationUnit(ts.oUID); err != nil {
+			ts.T().Logf("Failed to delete test organization unit %s: %v", ts.oUID, err)
 		}
 	}
 }
@@ -85,7 +85,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchema() {
             "isManager": {"type": "boolean"}
         }`),
 	}
-	schema.OrganizationUnitID = ts.organizationUnitID
+	schema.OuID = ts.oUID
 
 	jsonData, err := json.Marshal(schema)
 	if err != nil {
@@ -173,7 +173,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithComplexSchema() {
             }
         }`),
 	}
-	schema.OrganizationUnitID = ts.organizationUnitID
+	schema.OuID = ts.oUID
 
 	jsonData, err := json.Marshal(schema)
 	if err != nil {
@@ -221,7 +221,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithDuplicateName() {
 		Name:   "duplicate-name-test",
 		Schema: json.RawMessage(`{"field1": {"type": "string"}}`),
 	}
-	schema1.OrganizationUnitID = ts.organizationUnitID
+	schema1.OuID = ts.oUID
 
 	createdID := ts.createSchemaHelper(schema1)
 	ts.createdSchemas = append(ts.createdSchemas, createdID)
@@ -231,7 +231,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithDuplicateName() {
 		Name:   "duplicate-name-test", // Same name
 		Schema: json.RawMessage(`{"field2": {"type": "string"}}`),
 	}
-	schema2.OrganizationUnitID = ts.organizationUnitID
+	schema2.OuID = ts.oUID
 
 	jsonData, err := json.Marshal(schema2)
 	if err != nil {
@@ -269,13 +269,13 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithDuplicateName() {
 
 // TestCreateUserSchemasWithSharedOuID ensures multiple schemas can share the same OU.
 func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemasWithSharedOuID() {
-	sharedOuID := ts.organizationUnitID
+	sharedOuID := ts.oUID
 
 	firstSchema := CreateUserSchemaRequest{
 		Name:   "shared-ou-schema-one",
 		Schema: json.RawMessage(`{"username": {"type": "string", "required": true}}`),
 	}
-	firstSchema.OrganizationUnitID = sharedOuID
+	firstSchema.OuID = sharedOuID
 
 	secondSchema := CreateUserSchemaRequest{
 		Name: "shared-ou-schema-two",
@@ -284,7 +284,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemasWithSharedOuID() {
             "enabled": {"type": "boolean"}
         }`),
 	}
-	secondSchema.OrganizationUnitID = sharedOuID
+	secondSchema.OuID = sharedOuID
 
 	firstID := ts.createSchemaHelper(firstSchema)
 	ts.createdSchemas = append(ts.createdSchemas, firstID)
@@ -315,7 +315,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemasWithSharedOuID() {
 		ts.T().Fatalf("Failed to unmarshal schema response: %v", err)
 	}
 
-	ts.Assert().Equal(sharedOuID, retrievedSchema.OrganizationUnitID,
+	ts.Assert().Equal(sharedOuID, retrievedSchema.OuID,
 		"Schema should retain the shared OU ID")
 }
 
@@ -394,7 +394,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithoutContentType() {
 		Name:   "no-content-type-test",
 		Schema: json.RawMessage(`{"field": {"type": "string"}}`),
 	}
-	schema.OrganizationUnitID = ts.organizationUnitID
+	schema.OuID = ts.oUID
 
 	jsonData, err := json.Marshal(schema)
 	if err != nil {
@@ -431,8 +431,8 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithoutContentType() {
 
 // Helper function to create a schema and return its ID
 func (ts *CreateUserSchemaTestSuite) createSchemaHelper(schema CreateUserSchemaRequest) string {
-	if schema.OrganizationUnitID == "" {
-		schema.OrganizationUnitID = ts.organizationUnitID
+	if schema.OuID == "" {
+		schema.OuID = ts.oUID
 	}
 
 	jsonData, err := json.Marshal(schema)

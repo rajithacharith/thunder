@@ -94,13 +94,13 @@ func (e *resourceServerExporter) GetResourceByID(ctx context.Context, id string)
 
 	// Build ResourceServer with nested structure
 	rs := &ResourceServer{
-		ID:                 server.ID,
-		Name:               server.Name,
-		Description:        server.Description,
-		Identifier:         server.Identifier,
-		OrganizationUnitID: server.OrganizationUnitID,
-		Delimiter:          server.Delimiter,
-		Resources:          []Resource{},
+		ID:          server.ID,
+		Name:        server.Name,
+		Description: server.Description,
+		Identifier:  server.Identifier,
+		OUID:        server.OUID,
+		Delimiter:   server.Delimiter,
+		Resources:   []Resource{},
 	}
 
 	// Get all resources for this server (parent=nil for root resources)
@@ -188,7 +188,7 @@ func (e *resourceServerExporter) ValidateResource(
 func (e *resourceServerExporter) GetResourceRules() *declarativeresource.ResourceRules {
 	return &declarativeresource.ResourceRules{
 		Variables: []string{
-			"OrganizationUnitID",
+			"OUID",
 			"Identifier",
 		},
 		ArrayVariables: []string{},
@@ -275,7 +275,7 @@ func parseToResourceServer(data []byte) (*ResourceServer, error) {
 	if rs.Name == "" {
 		return nil, fmt.Errorf("resource server name cannot be empty")
 	}
-	if rs.OrganizationUnitID == "" {
+	if rs.OUID == "" {
 		return nil, fmt.Errorf("resource server organization unit ID cannot be empty")
 	}
 

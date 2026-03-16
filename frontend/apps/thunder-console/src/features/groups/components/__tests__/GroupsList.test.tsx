@@ -118,8 +118,8 @@ describe('GroupsList', () => {
     startIndex: 0,
     count: 2,
     groups: [
-      {id: 'g1', name: 'Group One', description: 'First group', organizationUnitId: 'ou1'},
-      {id: 'g2', name: 'Group Two', organizationUnitId: 'ou2'},
+      {id: 'g1', name: 'Group One', description: 'First group', ouId: 'ou1'},
+      {id: 'g2', name: 'Group Two', ouId: 'ou2'},
     ],
   };
 

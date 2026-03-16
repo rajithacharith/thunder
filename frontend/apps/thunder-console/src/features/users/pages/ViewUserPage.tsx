@@ -127,7 +127,7 @@ export default function ViewUserPage() {
   };
 
   const onSubmit = async (data: UpdateUserFormData) => {
-    const organizationUnitId = schemaOuId ?? user?.organizationUnit;
+    const organizationUnitId = schemaOuId ?? user?.ouId;
 
     if (!userId || !organizationUnitId || !user?.type) return;
 
@@ -135,7 +135,7 @@ export default function ViewUserPage() {
       setIsSubmitting(true);
 
       const requestBody = {
-        organizationUnit: organizationUnitId,
+        ouId: organizationUnitId,
         type: user.type,
         attributes: data,
       };

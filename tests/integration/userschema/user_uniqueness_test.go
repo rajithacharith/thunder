@@ -32,10 +32,10 @@ import (
 // UserUniquenessTestSuite contains tests for user uniqueness validation
 type UserUniquenessTestSuite struct {
 	suite.Suite
-	client             *http.Client
-	createdSchemas     []string // Track schemas for cleanup
-	createdUsers       []string // Track users for cleanup
-	organizationUnitID string
+	client         *http.Client
+	createdSchemas []string // Track schemas for cleanup
+	createdUsers   []string // Track users for cleanup
+	oUID           string
 }
 
 var testUserUniquenessValidationOU = testutils.OrganizationUnit{
@@ -59,7 +59,7 @@ func (ts *UserUniquenessTestSuite) SetupSuite() {
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit: %v", err)
 	}
-	ts.organizationUnitID = ouID
+	ts.oUID = ouID
 }
 
 func (ts *UserUniquenessTestSuite) TearDownSuite() {
@@ -72,9 +72,9 @@ func (ts *UserUniquenessTestSuite) TearDownSuite() {
 		ts.deleteSchema(schemaID)
 	}
 	// Finally clean up created organization unit
-	if ts.organizationUnitID != "" {
-		if err := testutils.DeleteOrganizationUnit(ts.organizationUnitID); err != nil {
-			ts.T().Logf("Failed to delete test organization unit %s: %v", ts.organizationUnitID, err)
+	if ts.oUID != "" {
+		if err := testutils.DeleteOrganizationUnit(ts.oUID); err != nil {
+			ts.T().Logf("Failed to delete test organization unit %s: %v", ts.oUID, err)
 		}
 	}
 }
@@ -87,8 +87,8 @@ func (ts *UserUniquenessTestSuite) TestCreateUserWithUniqueConstraintViolation()
 
 	// Create first user - should succeed
 	createUserReq1 := CreateUserRequest{
-		OrganizationUnit: ts.organizationUnitID,
-		Type:             "unique-employee",
+		OuID: ts.oUID,
+		Type: "unique-employee",
 		Attributes: json.RawMessage(`{
 			"username": "john_doe",
 			"email": "john.doe@company.com",
@@ -102,8 +102,8 @@ func (ts *UserUniquenessTestSuite) TestCreateUserWithUniqueConstraintViolation()
 
 	// Try to create second user with same username (unique field) - should fail
 	createUserReq2 := CreateUserRequest{
-		OrganizationUnit: ts.organizationUnitID,
-		Type:             "unique-employee",
+		OuID: ts.oUID,
+		Type: "unique-employee",
 		Attributes: json.RawMessage(`{
 			"username": "john_doe",
 			"email": "jane.smith@company.com",
@@ -116,8 +116,8 @@ func (ts *UserUniquenessTestSuite) TestCreateUserWithUniqueConstraintViolation()
 
 	// Try to create third user with same email (unique field) - should fail
 	createUserReq3 := CreateUserRequest{
-		OrganizationUnit: ts.organizationUnitID,
-		Type:             "unique-employee",
+		OuID: ts.oUID,
+		Type: "unique-employee",
 		Attributes: json.RawMessage(`{
 			"username": "alice_brown",
 			"email": "john.doe@company.com",
@@ -130,8 +130,8 @@ func (ts *UserUniquenessTestSuite) TestCreateUserWithUniqueConstraintViolation()
 
 	// Try to create fourth user with same employeeId (unique field) - should fail
 	createUserReq4 := CreateUserRequest{
-		OrganizationUnit: ts.organizationUnitID,
-		Type:             "unique-employee",
+		OuID: ts.oUID,
+		Type: "unique-employee",
 		Attributes: json.RawMessage(`{
 			"username": "bob_wilson",
 			"email": "bob.wilson@company.com",
@@ -144,8 +144,8 @@ func (ts *UserUniquenessTestSuite) TestCreateUserWithUniqueConstraintViolation()
 
 	// Create user with all different unique values - should succeed
 	createUserReq5 := CreateUserRequest{
-		OrganizationUnit: ts.organizationUnitID,
-		Type:             "unique-employee",
+		OuID: ts.oUID,
+		Type: "unique-employee",
 		Attributes: json.RawMessage(`{
 			"username": "charlie_davis",
 			"email": "charlie.davis@company.com",
@@ -162,8 +162,8 @@ func (ts *UserUniquenessTestSuite) TestCreateUserWithUniqueConstraintViolation()
 
 func (ts *UserUniquenessTestSuite) createSchemaWithUniqueFields() string {
 	schema := CreateUserSchemaRequest{
-		Name:               "unique-employee",
-		OrganizationUnitID: ts.organizationUnitID,
+		Name: "unique-employee",
+		OuID: ts.oUID,
 		Schema: json.RawMessage(`{
 			"username": {"type": "string", "unique": true},
 			"email": {"type": "string", "unique": true},

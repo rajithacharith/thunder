@@ -70,10 +70,10 @@ func (suite *AuthenticationHandlerTestSuite) testIDPAuthFinishSuccess(
 		Code:          "auth_code_123",
 	}
 	authResponse := &common.AuthenticationResponse{
-		ID:               "user123",
-		Type:             "person",
-		OrganizationUnit: "test-ou",
-		Assertion:        "jwt-token",
+		ID:        "user123",
+		Type:      "person",
+		OuID:      "test-ou",
+		Assertion: "jwt-token",
 	}
 
 	suite.mockService.On("FinishIDPAuthentication", mock.Anything, idpType, authRequest.SessionToken,
@@ -105,10 +105,10 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestSuc
 		"credentials": credentials,
 	}
 	authResponse := &common.AuthenticationResponse{
-		ID:               "user123",
-		Type:             "person",
-		OrganizationUnit: "test-ou",
-		Assertion:        "jwt-token",
+		ID:        "user123",
+		Type:      "person",
+		OuID:      "test-ou",
+		Assertion: "jwt-token",
 	}
 
 	suite.mockService.On("AuthenticateWithCredentials", mock.Anything, identifiers, credentials,
@@ -141,9 +141,9 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestWit
 		"skip_assertion": true,
 	}
 	authResponse := &common.AuthenticationResponse{
-		ID:               "user123",
-		Type:             "person",
-		OrganizationUnit: "test-ou",
+		ID:   "user123",
+		Type: "person",
+		OuID: "test-ou",
 	}
 
 	suite.mockService.On("AuthenticateWithCredentials", mock.Anything, identifiers, credentials,
@@ -177,10 +177,10 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestWit
 		"assertion":   existingAssertion,
 	}
 	authResponse := &common.AuthenticationResponse{
-		ID:               "user123",
-		Type:             "person",
-		OrganizationUnit: "test-ou",
-		Assertion:        "updated.jwt.token",
+		ID:        "user123",
+		Type:      "person",
+		OuID:      "test-ou",
+		Assertion: "updated.jwt.token",
 	}
 
 	suite.mockService.On("AuthenticateWithCredentials", mock.Anything, identifiers, credentials,
@@ -384,10 +384,10 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleVerifySMSOTPRequestSucces
 		OTP:           "123456",
 	}
 	authResponse := &common.AuthenticationResponse{
-		ID:               "user123",
-		Type:             "person",
-		OrganizationUnit: "test-ou",
-		Assertion:        "jwt-token",
+		ID:        "user123",
+		Type:      "person",
+		OuID:      "test-ou",
+		Assertion: "jwt-token",
 	}
 
 	suite.mockService.On("VerifyOTP", mock.Anything, otpRequest.SessionToken,
@@ -599,9 +599,9 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleGithubAuthFinishRequestSu
 		Code:          "auth_code_123",
 	}
 	authResponse := &common.AuthenticationResponse{
-		ID:               "user123",
-		Type:             "person",
-		OrganizationUnit: "test-ou",
+		ID:   "user123",
+		Type: "person",
+		OuID: "test-ou",
 	}
 
 	suite.mockService.On("FinishIDPAuthentication", mock.Anything, idp.IDPTypeGitHub, authRequest.SessionToken,
@@ -1003,10 +1003,10 @@ func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyFinishRequestSucce
 		Assertion:     "",
 	}
 	authResponse := &common.AuthenticationResponse{
-		ID:               "user123",
-		Type:             "person",
-		OrganizationUnit: "test-ou",
-		Assertion:        "jwt-token",
+		ID:        "user123",
+		Type:      "person",
+		OuID:      "test-ou",
+		Assertion: "jwt-token",
 	}
 
 	suite.mockService.On("FinishPasskeyAuthentication",

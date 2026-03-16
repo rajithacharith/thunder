@@ -101,7 +101,7 @@ func (ts *ClaimsParameterTestSuite) SetupSuite() {
 	ts.ouID = ouID
 
 	// Create user schema
-	testUserSchema.OrganizationUnitId = ts.ouID
+	testUserSchema.OuID = ts.ouID
 	schemaID, err := testutils.CreateUserType(testUserSchema)
 	ts.Require().NoError(err, "Failed to create test user schema")
 	ts.userSchemaID = schemaID
@@ -163,7 +163,7 @@ func (ts *ClaimsParameterTestSuite) createTestUser() string {
 
 	user := testutils.User{
 		Type:             "claims-test-person",
-		OrganizationUnit: ts.ouID,
+		OuID:             ts.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 

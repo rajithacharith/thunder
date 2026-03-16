@@ -50,9 +50,9 @@ vi.mock('react-i18next', () => ({
 
 describe('ManageUsersSection', () => {
   const mockUsers: ApiUser[] = [
-    {id: 'user-1', type: 'internal', organizationUnit: 'ou-123', display: 'John Doe'},
-    {id: 'user-2', type: 'external', organizationUnit: 'ou-123', display: 'Jane Smith'},
-    {id: 'user-3', type: 'internal', organizationUnit: 'ou-123'},
+    {id: 'user-1', type: 'internal', ouId: 'ou-123', display: 'John Doe'},
+    {id: 'user-2', type: 'external', ouId: 'ou-123', display: 'Jane Smith'},
+    {id: 'user-3', type: 'internal', ouId: 'ou-123'},
   ];
 
   beforeEach(() => {

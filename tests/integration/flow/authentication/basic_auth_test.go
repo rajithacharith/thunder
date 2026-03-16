@@ -228,7 +228,7 @@ func (ts *BasicAuthFlowTestSuite) SetupSuite() {
 	ts.ouID = ouID
 
 	// Create test user schema
-	testUserSchema.OrganizationUnitId = ts.ouID
+	testUserSchema.OuID = ts.ouID
 	schemaID, err := testutils.CreateUserType(testUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
@@ -254,7 +254,7 @@ func (ts *BasicAuthFlowTestSuite) SetupSuite() {
 
 	// Create test user with the created OU
 	testUser := testUser
-	testUser.OrganizationUnit = ts.ouID
+	testUser.OuID = ts.ouID
 	userIDs, err := testutils.CreateMultipleUsers(testUser)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user during setup: %v", err)

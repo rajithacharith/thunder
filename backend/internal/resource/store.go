@@ -98,7 +98,7 @@ func (s *resourceStore) CreateResourceServer(ctx context.Context, id string, rs 
 			ctx,
 			queryCreateResourceServer,
 			id,
-			rs.OrganizationUnitID,
+			rs.OUID,
 			rs.Name,
 			rs.Description,
 			resolveIdentifier(rs.Identifier),
@@ -179,7 +179,7 @@ func (s *resourceStore) UpdateResourceServer(ctx context.Context, id string, rs 
 		_, err := dbClient.ExecuteContext(
 			ctx,
 			queryUpdateResourceServer,
-			rs.OrganizationUnitID,
+			rs.OUID,
 			rs.Name,
 			rs.Description,
 			resolveIdentifier(rs.Identifier),
@@ -874,7 +874,7 @@ func buildResourceServerFromResultRow(row map[string]interface{}) (ResourceServe
 	}
 
 	if ouID, ok := row["ou_id"].(string); ok {
-		rs.OrganizationUnitID = ouID
+		rs.OUID = ouID
 	} else {
 		return rs, fmt.Errorf("ou_id field is missing or invalid")
 	}

@@ -50,14 +50,14 @@ func (suite *RoleFileBasedStoreTestSuite) seedRole(role RoleWithPermissionsAndAs
 
 func (suite *RoleFileBasedStoreTestSuite) TestGetRoleListCountAndList() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 	})
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role2",
-		Name:               "Viewer",
-		OrganizationUnitID: "ou1",
+		ID:   "role2",
+		Name: "Viewer",
+		OUID: "ou1",
 	})
 
 	count, err := suite.store.GetRoleListCount(context.Background())
@@ -84,10 +84,10 @@ func (suite *RoleFileBasedStoreTestSuite) TestGetRoleListCountAndList() {
 
 func (suite *RoleFileBasedStoreTestSuite) TestGetRoleAndExistence() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		ID:          "role1",
+		Name:        "Admin",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	})
 
 	role, err := suite.store.GetRole(context.Background(), "role1")
@@ -107,9 +107,9 @@ func (suite *RoleFileBasedStoreTestSuite) TestGetRoleAndExistence() {
 
 func (suite *RoleFileBasedStoreTestSuite) TestGetRoleAssignmentsAndCount() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 		Assignments: []RoleAssignment{
 			{ID: "user1", Type: AssigneeTypeUser},
 			{ID: "group1", Type: AssigneeTypeGroup},
@@ -130,14 +130,14 @@ func (suite *RoleFileBasedStoreTestSuite) TestGetRoleAssignmentsAndCount() {
 
 func (suite *RoleFileBasedStoreTestSuite) TestCheckRoleNameExists() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 	})
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role2",
-		Name:               "Admin",
-		OrganizationUnitID: "ou2",
+		ID:   "role2",
+		Name: "Admin",
+		OUID: "ou2",
 	})
 
 	exists, err := suite.store.CheckRoleNameExists(context.Background(), "ou1", "Admin")
@@ -153,14 +153,14 @@ func (suite *RoleFileBasedStoreTestSuite) TestCheckRoleNameExists() {
 
 func (suite *RoleFileBasedStoreTestSuite) TestCheckRoleNameExistsExcludingID() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 	})
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role2",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role2",
+		Name: "Admin",
+		OUID: "ou1",
 	})
 
 	exists, err := suite.store.CheckRoleNameExistsExcludingID(context.Background(), "ou1", "Admin", "role1")
@@ -175,9 +175,9 @@ func (suite *RoleFileBasedStoreTestSuite) TestCheckRoleNameExistsExcludingID() {
 
 	// Test case where the only matching role is the excluded ID (should return false)
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role3",
-		Name:               "Admin",
-		OrganizationUnitID: "ou3",
+		ID:   "role3",
+		Name: "Admin",
+		OUID: "ou3",
 	})
 
 	exists, err = suite.store.CheckRoleNameExistsExcludingID(context.Background(), "ou3", "Admin", "role3")
@@ -188,9 +188,9 @@ func (suite *RoleFileBasedStoreTestSuite) TestCheckRoleNameExistsExcludingID() {
 
 func (suite *RoleFileBasedStoreTestSuite) TestGetAuthorizedPermissions() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 		Assignments: []RoleAssignment{
 			{ID: "user1", Type: AssigneeTypeUser},
 			{ID: "group1", Type: AssigneeTypeGroup},
@@ -214,15 +214,15 @@ func (suite *RoleFileBasedStoreTestSuite) TestGetAuthorizedPermissions() {
 func (suite *RoleFileBasedStoreTestSuite) TestImmutability() {
 	// Seed a role for testing
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "immutable-role",
-		Name:               "Test Role",
-		OrganizationUnitID: "ou1",
+		ID:   "immutable-role",
+		Name: "Test Role",
+		OUID: "ou1",
 	})
 
 	// Test CreateRole returns error
 	err := suite.store.CreateRole(context.Background(), "new-role", RoleCreationDetail{
-		Name:               "New Role",
-		OrganizationUnitID: "ou1",
+		Name: "New Role",
+		OUID: "ou1",
 	})
 	suite.Error(err)
 
@@ -252,9 +252,9 @@ func (suite *RoleFileBasedStoreTestSuite) TestImmutability() {
 func (suite *RoleFileBasedStoreTestSuite) TestIsRoleDeclarative() {
 	// Seed a role
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "declarative-role",
-		Name:               "Declarative Role",
-		OrganizationUnitID: "ou1",
+		ID:   "declarative-role",
+		Name: "Declarative Role",
+		OUID: "ou1",
 	})
 
 	// Test IsRoleDeclarative returns true for seeded role
@@ -271,10 +271,10 @@ func (suite *RoleFileBasedStoreTestSuite) TestIsRoleDeclarative() {
 // TestCreate_ImplementsStorer tests the Create method from the declarativeresource.Storer interface
 func (suite *RoleFileBasedStoreTestSuite) TestCreate_ImplementsStorer() {
 	role := &RoleWithPermissionsAndAssignments{
-		ID:                 "test-role-create",
-		Name:               "Test Role Create",
-		Description:        "Test create implementation",
-		OrganizationUnitID: "ou1",
+		ID:          "test-role-create",
+		Name:        "Test Role Create",
+		Description: "Test create implementation",
+		OUID:        "ou1",
 	}
 
 	err := suite.store.Create("test-role-create", role)
@@ -297,8 +297,8 @@ func (suite *RoleFileBasedStoreTestSuite) TestCreate_InvalidData() {
 // TestCreate_SetsIDFromParameter tests Create sets ID from parameter if not in data
 func (suite *RoleFileBasedStoreTestSuite) TestCreate_SetsIDFromParameter() {
 	role := &RoleWithPermissionsAndAssignments{
-		Name:               "Role with ID from param",
-		OrganizationUnitID: "ou1",
+		Name: "Role with ID from param",
+		OUID: "ou1",
 		// ID is empty, should be set from parameter
 	}
 

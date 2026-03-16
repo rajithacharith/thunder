@@ -73,7 +73,7 @@ describe('EditMembersSettings', () => {
   const mockGroup: Group = {
     id: 'g1',
     name: 'Test Group',
-    organizationUnitId: 'ou1',
+    ouId: 'ou1',
   };
 
   beforeEach(() => {

@@ -174,11 +174,11 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 	}
 
 	authenticatedUser := authncm.AuthenticatedUser{
-		IsAuthenticated:    true,
-		UserID:             createdUser.UserID,
-		OrganizationUnitID: createdUser.OrganizationUnitID,
-		UserType:           createdUser.UserType,
-		Attributes:         retAttributes,
+		IsAuthenticated: true,
+		UserID:          createdUser.UserID,
+		OUID:            createdUser.OuID,
+		UserType:        createdUser.UserType,
+		Attributes:      retAttributes,
 	}
 	execResp.AuthenticatedUser = authenticatedUser
 	execResp.Status = common.ExecComplete
@@ -316,8 +316,8 @@ func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
 	}
 
 	newUser := userprovider.User{
-		OrganizationUnitID: ouID,
-		UserType:           userType,
+		OuID:     ouID,
+		UserType: userType,
 	}
 
 	// Convert the user attributes to JSON.

@@ -2358,11 +2358,11 @@ paths:
                   - id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
                     name: Sports
                     description: Sports group
-                    organizationUnitId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
+                    ouId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
                   - id: 257e528f-eb24-48b6-884d-20460e190957
                     name: Managers
                     description: Manager group
-                    organizationUnitId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
+                    ouId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
                 links:
                   - href: groups?offset=2&limit=2
                     rel: next
@@ -2411,7 +2411,7 @@ paths:
             example:
               name: Sports
               description: Sports group
-              organizationUnitId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
+              ouId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
               members:
                 - type: user
                   id: 7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c
@@ -2430,7 +2430,7 @@ paths:
                 id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
                 name: Sports
                 description: Sports group
-                organizationUnitId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
+                ouId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
         "400":
           description: Bad request
           content:
@@ -2496,7 +2496,7 @@ paths:
                 id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
                 name: Sports
                 description: Sports group
-                organizationUnitId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
+                ouId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
         "400":
           description: Bad request
           content:
@@ -2544,7 +2544,7 @@ paths:
             example:
               name: Activities
               description: Activities group
-              organizationUnitId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
+              ouId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
       responses:
         "200":
           description: Group updated
@@ -2556,7 +2556,7 @@ paths:
                 id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
                 name: Activities
                 description: Activities group
-                organizationUnitId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
+                ouId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
         "400":
           description: Bad request
           content:
@@ -2754,7 +2754,7 @@ paths:
                 id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
                 name: Engineering
                 description: Engineering group
-                organizationUnitId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
+                ouId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
         "400":
           description: Bad request
           content:
@@ -2830,7 +2830,7 @@ paths:
                 id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
                 name: Engineering
                 description: Engineering group
-                organizationUnitId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
+                ouId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
         "400":
           description: Bad request
           content:
@@ -2907,11 +2907,11 @@ paths:
                   - id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
                     name: Sports
                     description: Sports group
-                    organizationUnitId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
+                    ouId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
                   - id: 257e528f-eb24-48b6-884d-20460e190957
                     name: Managers
                     description: Manager group
-                    organizationUnitId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
+                    ouId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
                 links:
                   - href: groups/tree/engineering/frontend?offset=2&limit=2
                     rel: next
@@ -3014,7 +3014,7 @@ paths:
                 id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
                 name: Sports
                 description: Sports group
-                organizationUnitId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
+                ouId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
         "400":
           description: Bad request
           content:
@@ -7429,7 +7429,7 @@ paths:
                 count: 3
                 users:
                   - id: 9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3
-                    organizationUnit: 456e8400-e29b-41d4-a716-446655440001
+                    ouId: 456e8400-e29b-41d4-a716-446655440001
                     type: customer
                     attributes:
                       age: 24
@@ -7442,7 +7442,7 @@ paths:
                         - email
                         - sms
                   - id: 039bda67-a80d-4b7b-ac0f-36db85332089
-                    organizationUnit: 456e8400-e29b-41d4-a716-446655440001
+                    ouId: 456e8400-e29b-41d4-a716-446655440001
                     type: customer
                     attributes:
                       age: 31
@@ -7454,7 +7454,7 @@ paths:
                       contactPreferences:
                         - sms
                   - id: e1b6ba6c-deb2-4d24-87b0-bbf79fa4487c
-                    organizationUnit: 26eec421-f1bb-4deb-a5d3-9ab6554c2ae6
+                    ouId: 26eec421-f1bb-4deb-a5d3-9ab6554c2ae6
                     type: employee
                     attributes:
                       username: alice.wu
@@ -7503,7 +7503,7 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateUserRequest"
             example:
-              organizationUnit: 456e8400-e29b-41d4-a716-446655440001
+              ouId: 456e8400-e29b-41d4-a716-446655440001
               type: customer
               groups:
                 - 550e8400-e29b-41d4-a716-446655440000
@@ -7527,7 +7527,7 @@ paths:
                 $ref: "#/components/schemas/User"
               example:
                 id: 9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3
-                organizationUnit: 456e8400-e29b-41d4-a716-446655440001
+                ouId: 456e8400-e29b-41d4-a716-446655440001
                 type: customer
                 attributes:
                   age: 24
@@ -7613,7 +7613,7 @@ paths:
                 $ref: "#/components/schemas/User"
               example:
                 id: 9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3
-                organizationUnit: 456e8400-e29b-41d4-a716-446655440001
+                ouId: 456e8400-e29b-41d4-a716-446655440001
                 type: customer
                 attributes:
                   age: 24
@@ -7648,7 +7648,7 @@ paths:
             schema:
               $ref: "#/components/schemas/UpdateUserRequest"
             example:
-              organizationUnit: 456e8400-e29b-41d4-a716-446655440001
+              ouId: 456e8400-e29b-41d4-a716-446655440001
               type: customer
               groups:
                 - 550e8400-e29b-41d4-a716-446655440000
@@ -7670,7 +7670,7 @@ paths:
                 $ref: "#/components/schemas/User"
               example:
                 id: 9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3
-                organizationUnit: 456e8400-e29b-41d4-a716-446655440001
+                ouId: 456e8400-e29b-41d4-a716-446655440001
                 type: customer
                 attributes:
                   age: 25
@@ -7792,10 +7792,10 @@ paths:
                 groups:
                   - id: 550e8400-e29b-41d4-a716-446655440000
                     name: Premium Customers
-                    organizationUnit: 456e8400-e29b-41d4-a716-446655440001
+                    ouId: 456e8400-e29b-41d4-a716-446655440001
                   - id: 660e8400-e29b-41d4-a716-446655440001
                     name: Mobile App Users
-                    organizationUnit: 456e8400-e29b-41d4-a716-446655440001
+                    ouId: 456e8400-e29b-41d4-a716-446655440001
                 links:
                   - href: users/9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3/groups?offset=2&limit=2
                     rel: next
@@ -7973,7 +7973,6 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateUserByPathRequest"
             example:
-              organizationUnit: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
               type: employee
               groups:
                 - 880e8400-e29b-41d4-a716-446655440003
@@ -7993,7 +7992,7 @@ paths:
                 $ref: "#/components/schemas/User"
               example:
                 id: 7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c
-                organizationUnit: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
+                ouId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
                 type: employee
                 attributes:
                   username: john.doe
@@ -8094,7 +8093,7 @@ paths:
                 $ref: "#/components/schemas/User"
               example:
                 id: e1b6ba6c-deb2-4d24-87b0-bbf79fa4487c
-                organizationUnit: 26eec421-f1bb-4deb-a5d3-9ab6554c2ae6
+                ouId: 26eec421-f1bb-4deb-a5d3-9ab6554c2ae6
                 type: employee
                 attributes:
                   username: alice.wu
@@ -8158,7 +8157,7 @@ paths:
                 $ref: "#/components/schemas/User"
               example:
                 id: e1b6ba6c-deb2-4d24-87b0-bbf79fa4487c
-                organizationUnit: 26eec421-f1bb-4deb-a5d3-9ab6554c2ae6
+                ouId: 26eec421-f1bb-4deb-a5d3-9ab6554c2ae6
                 type: employee
                 attributes:
                   username: alice.wu
@@ -11181,13 +11180,13 @@ components:
       type: object
       required:
         - name
-        - organizationUnitId
+        - ouId
       properties:
         name:
           type: string
         description:
           type: string
-        organizationUnitId:
+        ouId:
           type: string
           format: uuid
         members:
@@ -11198,13 +11197,13 @@ components:
       type: object
       required:
         - name
-        - organizationUnitId
+        - ouId
       properties:
         name:
           type: string
         description:
           type: string
-        organizationUnitId:
+        ouId:
           type: string
           format: uuid
     GroupListResponse:
@@ -11678,7 +11677,7 @@ components:
         id:
           type: string
           format: uuid
-        organizationUnit:
+        ouId:
           type: string
           format: uuid
         type:
@@ -12624,7 +12623,7 @@ components:
       required:
         - id
         - name
-        - organizationUnit
+        - ouId
       properties:
         id:
           type: string
@@ -12633,7 +12632,7 @@ components:
         name:
           type: string
           description: The name of the group
-        organizationUnit:
+        ouId:
           type: string
           format: uuid
           description: The organization unit ID that the group belongs to
@@ -12690,10 +12689,10 @@ components:
     CreateUserRequest:
       type: object
       required:
-        - organizationUnit
+        - ouId
         - type
       properties:
-        organizationUnit:
+        ouId:
           type: string
           format: uuid
           description: The organization unit ID where the user will be created
@@ -12715,7 +12714,7 @@ components:
     UpdateUserRequest:
       type: object
       properties:
-        organizationUnit:
+        ouId:
           type: string
           format: uuid
           description: The organization unit ID where the user belongs

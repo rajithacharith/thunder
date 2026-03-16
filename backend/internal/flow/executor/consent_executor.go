@@ -323,7 +323,7 @@ func buildAugmentedAvailableAttributes(ctx *core.NodeContext) *authnprovider.Ava
 	if ctx.AuthenticatedUser.UserType != "" {
 		augmented[oauth2const.ClaimUserType] = &authnprovider.AttributeMetadataResponse{}
 	}
-	if ctx.AuthenticatedUser.OrganizationUnitID != "" {
+	if ctx.AuthenticatedUser.OUID != "" {
 		augmented[oauth2const.ClaimOUID] = &authnprovider.AttributeMetadataResponse{}
 		augmented[oauth2const.ClaimOUName] = &authnprovider.AttributeMetadataResponse{}
 		augmented[oauth2const.ClaimOUHandle] = &authnprovider.AttributeMetadataResponse{}

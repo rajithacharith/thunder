@@ -126,7 +126,7 @@ func (suite *StoreTestSuite) TestGetUserSchemaListByOUIDs() {
 				{
 					ID:                    "schema-2",
 					Name:                  "Schema 2",
-					OrganizationUnitID:    "ou-1",
+					OuID:                  "ou-1",
 					AllowSelfRegistration: true,
 				},
 			},
@@ -157,7 +157,7 @@ func (suite *StoreTestSuite) TestGetUserSchemaListByOUIDs() {
 				{
 					ID:                    "schema-1",
 					Name:                  "Schema 1",
-					OrganizationUnitID:    "ou-1",
+					OuID:                  "ou-1",
 					AllowSelfRegistration: false,
 				},
 			},

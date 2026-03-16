@@ -31,7 +31,7 @@ import (
 type AuthenticatedUser struct {
 	IsAuthenticated     bool
 	UserID              string
-	OrganizationUnitID  string
+	OUID                string
 	UserType            string
 	Attributes          map[string]interface{}
 	AvailableAttributes *authnprovider.AvailableAttributes
@@ -49,10 +49,10 @@ type AuthenticationContext struct {
 
 // AuthenticationResponse represents the response after successful authentication.
 type AuthenticationResponse struct {
-	ID               string
-	Type             string
-	OrganizationUnit string
-	Assertion        string
+	ID        string
+	Type      string
+	OuID      string
+	Assertion string
 }
 
 // AuthenticatorMeta represents an authenticator's metadata including authentication factors.

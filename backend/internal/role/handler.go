@@ -64,7 +64,12 @@ func (rh *roleHandler) HandleRoleListRequest(w http.ResponseWriter, r *http.Requ
 	// Convert service response to HTTP response
 	roles := make([]RoleSummaryResponse, 0, len(roleList.Roles))
 	for _, role := range roleList.Roles {
-		roles = append(roles, RoleSummaryResponse(role))
+		roles = append(roles, RoleSummaryResponse{
+			ID:          role.ID,
+			Name:        role.Name,
+			Description: role.Description,
+			OuID:        role.OUID,
+		})
 	}
 
 	roleListResponse := &RoleListResponse{
@@ -148,7 +153,12 @@ func (rh *roleHandler) HandleRolePutRequest(w http.ResponseWriter, r *http.Reque
 	sanitizedRequest := rh.sanitizeUpdateRoleRequest(updateRequest)
 
 	// Convert HTTP request to service request
-	serviceRequest := RoleUpdateDetail(sanitizedRequest)
+	serviceRequest := RoleUpdateDetail{
+		Name:        sanitizedRequest.Name,
+		Description: sanitizedRequest.Description,
+		OUID:        sanitizedRequest.OuID,
+		Permissions: sanitizedRequest.Permissions,
+	}
 
 	serviceRole, svcErr := rh.roleService.UpdateRoleWithPermissions(ctx, id, serviceRequest)
 	if svcErr != nil {
@@ -311,9 +321,9 @@ func handleError(w http.ResponseWriter,
 // sanitizeCreateRoleRequest sanitizes the create role request input.
 func (rh *roleHandler) sanitizeCreateRoleRequest(request *CreateRoleRequest) CreateRoleRequest {
 	sanitized := CreateRoleRequest{
-		Name:               sysutils.SanitizeString(request.Name),
-		Description:        sysutils.SanitizeString(request.Description),
-		OrganizationUnitID: sysutils.SanitizeString(request.OrganizationUnitID),
+		Name:        sysutils.SanitizeString(request.Name),
+		Description: sysutils.SanitizeString(request.Description),
+		OuID:        sysutils.SanitizeString(request.OuID),
 	}
 
 	if request.Permissions != nil {
@@ -346,9 +356,9 @@ func (rh *roleHandler) sanitizeCreateRoleRequest(request *CreateRoleRequest) Cre
 // sanitizeUpdateRoleRequest sanitizes the update role request input.
 func (rh *roleHandler) sanitizeUpdateRoleRequest(request *UpdateRoleRequest) UpdateRoleRequest {
 	sanitized := UpdateRoleRequest{
-		Name:               sysutils.SanitizeString(request.Name),
-		Description:        sysutils.SanitizeString(request.Description),
-		OrganizationUnitID: sysutils.SanitizeString(request.OrganizationUnitID),
+		Name:        sysutils.SanitizeString(request.Name),
+		Description: sysutils.SanitizeString(request.Description),
+		OuID:        sysutils.SanitizeString(request.OuID),
 	}
 
 	if request.Permissions != nil {
@@ -421,22 +431,22 @@ func (rh *roleHandler) toRoleCreationDetail(req CreateRoleRequest) RoleCreationD
 	}
 
 	return RoleCreationDetail{
-		Name:               req.Name,
-		Description:        req.Description,
-		OrganizationUnitID: req.OrganizationUnitID,
-		Permissions:        req.Permissions,
-		Assignments:        serviceAssignments,
+		Name:        req.Name,
+		Description: req.Description,
+		OUID:        req.OuID,
+		Permissions: req.Permissions,
+		Assignments: serviceAssignments,
 	}
 }
 
 // toHTTPRole converts service layer RoleWithPermissions to HTTP Role.
 func (rh *roleHandler) toHTTPRoleResponse(role *RoleWithPermissions) *RoleResponse {
 	return &RoleResponse{
-		ID:                 role.ID,
-		Name:               role.Name,
-		Description:        role.Description,
-		OrganizationUnitID: role.OrganizationUnitID,
-		Permissions:        role.Permissions,
+		ID:          role.ID,
+		Name:        role.Name,
+		Description: role.Description,
+		OuID:        role.OUID,
+		Permissions: role.Permissions,
 	}
 }
 
@@ -451,12 +461,12 @@ func (rh *roleHandler) toHTTPCreateRoleResponse(role *RoleWithPermissionsAndAssi
 	}
 
 	return &CreateRoleResponse{
-		ID:                 role.ID,
-		Name:               role.Name,
-		Description:        role.Description,
-		OrganizationUnitID: role.OrganizationUnitID,
-		Permissions:        role.Permissions,
-		Assignments:        httpAssignments,
+		ID:          role.ID,
+		Name:        role.Name,
+		Description: role.Description,
+		OuID:        role.OUID,
+		Permissions: role.Permissions,
+		Assignments: httpAssignments,
 	}
 }
 

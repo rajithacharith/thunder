@@ -130,7 +130,7 @@ func (f *userFileBasedStore) GetUserListCountByOUIDs(
 
 	count := 0
 	for _, resource := range resources {
-		if _, ok := ouIDSet[resource.User.OrganizationUnit]; !ok {
+		if _, ok := ouIDSet[resource.User.OuID]; !ok {
 			continue
 		}
 		if matchesFilters(resource.User.Attributes, filters) {
@@ -156,7 +156,7 @@ func (f *userFileBasedStore) GetUserListByOUIDs(
 
 	users := make([]User, 0)
 	for _, resource := range resources {
-		if _, ok := ouIDSet[resource.User.OrganizationUnit]; !ok {
+		if _, ok := ouIDSet[resource.User.OuID]; !ok {
 			continue
 		}
 		if matchesFilters(resource.User.Attributes, filters) {
@@ -303,7 +303,7 @@ func (f *userFileBasedStore) ValidateUserIDsInOUs(
 			}
 			return nil, err
 		}
-		if !ouSet[u.OrganizationUnit] {
+		if !ouSet[u.OuID] {
 			outOfScope = append(outOfScope, id)
 		}
 	}

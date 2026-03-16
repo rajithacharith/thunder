@@ -44,7 +44,7 @@ describe('useGetGroup', () => {
     id: 'g1',
     name: 'Test Group',
     description: 'A test group',
-    organizationUnitId: 'ou1',
+    ouId: 'ou1',
     members: [{id: 'u1', type: 'user'}],
   };
 

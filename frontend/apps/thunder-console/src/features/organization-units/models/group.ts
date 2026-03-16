@@ -24,14 +24,14 @@
  *
  * @public
  * @remarks
- * Groups are scoped to a specific organization unit via the `organizationUnit` field.
+ * Groups are scoped to a specific organization unit via the `ouId` field.
  *
  * @example
  * ```typescript
  * const group: Group = {
  *   id: '7a1b2c3d-4e5f-6789-abcd-ef0123456789',
  *   name: 'Developers',
- *   organizationUnit: '550e8400-e29b-41d4-a716-446655440000'
+ *   ouId: '550e8400-e29b-41d4-a716-446655440000'
  * };
  * ```
  */
@@ -52,7 +52,7 @@ export interface Group {
    * ID of the organization unit this group belongs to
    * @example '550e8400-e29b-41d4-a716-446655440000'
    */
-  organizationUnit: string;
+  ouId: string;
 }
 
 /**
@@ -71,7 +71,7 @@ export interface Group {
  *   startIndex: 0,
  *   count: 5,
  *   groups: [
- *     { id: 'group-1', name: 'Developers', organizationUnit: 'ou-id' }
+ *     { id: 'group-1', name: 'Developers', ouId: 'ou-id' }
  *   ]
  * };
  * ```

@@ -345,7 +345,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupList() {
 				for idx, expected := range tc.wantGroups {
 					suite.Require().Equal(expected.id, groups[idx].ID)
 					suite.Require().Equal(expected.name, groups[idx].Name)
-					suite.Require().Equal(expected.ouID, groups[idx].OrganizationUnitID)
+					suite.Require().Equal(expected.ouID, groups[idx].OUID)
 				}
 			}
 
@@ -395,7 +395,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroup() {
 			},
 			assertGroup: func(group GroupDAO) {
 				suite.Require().Equal("Engineering", group.Name)
-				suite.Require().Equal("ou-1", group.OrganizationUnitID)
+				suite.Require().Equal("ou-1", group.OUID)
 			},
 		},
 		{
@@ -763,10 +763,10 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMemberCount() {
 
 func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 	groupDAO := GroupDAO{
-		ID:                 "grp-001",
-		Name:               "Engineering",
-		Description:        "Core",
-		OrganizationUnitID: "ou-1",
+		ID:          "grp-001",
+		Name:        "Engineering",
+		Description: "Core",
+		OUID:        "ou-1",
 	}
 
 	groupMinimal := GroupDAO{ID: "grp-001"}
@@ -795,7 +795,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						mock.Anything,
 						QueryUpdateGroup,
 						groupDAO.ID,
-						groupDAO.OrganizationUnitID,
+						groupDAO.OUID,
 						groupDAO.Name,
 						groupDAO.Description,
 						testDeploymentID,
@@ -836,7 +836,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						mock.Anything,
 						QueryUpdateGroup,
 						groupMinimal.ID,
-						groupMinimal.OrganizationUnitID,
+						groupMinimal.OUID,
 						groupMinimal.Name,
 						groupMinimal.Description,
 						testDeploymentID,
@@ -863,7 +863,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						mock.Anything,
 						QueryUpdateGroup,
 						groupDAO.ID,
-						groupDAO.OrganizationUnitID,
+						groupDAO.OUID,
 						groupDAO.Name,
 						groupDAO.Description,
 						testDeploymentID,

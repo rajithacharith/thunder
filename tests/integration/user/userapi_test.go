@@ -46,7 +46,7 @@ type groupMember struct {
 type groupCreateRequest struct {
 	Name               string        `json:"name"`
 	Description        string        `json:"description,omitempty"`
-	OrganizationUnitID string        `json:"organizationUnitId"`
+	OuID               string        `json:"ouId"`
 	Members            []groupMember `json:"members,omitempty"`
 }
 
@@ -122,7 +122,7 @@ func (ts *UserAPITestSuite) SetupSuite() {
 	}
 	testOUID = ouID
 
-	userSchema.OrganizationUnitId = testOUID
+	userSchema.OuID = testOUID
 	schemaID, err := testutils.CreateUserType(userSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create user schema during setup: %v", err)
@@ -131,7 +131,7 @@ func (ts *UserAPITestSuite) SetupSuite() {
 
 	// Update user template with the created OU ID
 	testUser := testUser
-	testUser.OrganizationUnit = testOUID
+	testUser.OuID = testOUID
 
 	// Create the test user
 	userID, err := createUser(testUser)
@@ -142,7 +142,7 @@ func (ts *UserAPITestSuite) SetupSuite() {
 
 	// Create a group and add the created user as a member
 	groupToCreate := testGroup
-	groupToCreate.OrganizationUnitID = testOUID
+	groupToCreate.OuID = testOUID
 	groupToCreate.Members = []groupMember{
 		{
 			ID:   createdUserID,
@@ -245,7 +245,7 @@ func (ts *UserAPITestSuite) TestUserListing() {
 	var foundCreatedUser bool
 	expectedUser := testutils.User{
 		ID:               createdUserID,
-		OrganizationUnit: testOUID,
+		OuID:             testOUID,
 		Type:             testUser.Type,
 		Attributes:       testUser.Attributes,
 	}
@@ -347,7 +347,7 @@ func (ts *UserAPITestSuite) TestUserGetByID() {
 	}
 	expectedUser := testutils.User{
 		ID:               createdUserID,
-		OrganizationUnit: testOUID,
+		OuID:             testOUID,
 		Type:             testUser.Type,
 		Attributes:       testUser.Attributes,
 	}
@@ -363,7 +363,7 @@ func (ts *UserAPITestSuite) TestUserUpdate() {
 
 	// Update user template with the created OU ID
 	userToUpdate := userUpdate
-	userToUpdate.OrganizationUnit = testOUID
+	userToUpdate.OuID = testOUID
 
 	userJSON, err := json.Marshal(userToUpdate)
 	if err != nil {
@@ -392,7 +392,7 @@ func (ts *UserAPITestSuite) TestUserUpdate() {
 	// Validate the update by retrieving the user
 	retrieveAndValidateUserDetails(ts, testutils.User{
 		ID:               createdUserID,
-		OrganizationUnit: userToUpdate.OrganizationUnit,
+		OuID:             userToUpdate.OuID,
 		Type:             userToUpdate.Type,
 		Attributes:       userToUpdate.Attributes,
 	})
@@ -453,8 +453,8 @@ func (ts *UserAPITestSuite) TestUserGroupsListing() {
 			if group.Name != testGroup.Name {
 				ts.T().Fatalf("Expected group name %s, got %s", testGroup.Name, group.Name)
 			}
-			if group.OrganizationUnitID != "" && group.OrganizationUnitID != testOUID {
-				ts.T().Fatalf("Expected group OU %s, got %s", testOUID, group.OrganizationUnitID)
+			if group.OuID != "" && group.OuID != testOUID {
+				ts.T().Fatalf("Expected group OU %s, got %s", testOUID, group.OuID)
 			}
 			break
 		}

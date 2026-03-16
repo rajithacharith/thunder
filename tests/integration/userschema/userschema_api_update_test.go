@@ -31,10 +31,10 @@ import (
 
 type UpdateUserSchemaTestSuite struct {
 	suite.Suite
-	client             *http.Client
-	testSchemaID       string
-	anotherSchemaID    string
-	organizationUnitID string
+	client          *http.Client
+	testSchemaID    string
+	anotherSchemaID string
+	oUID            string
 }
 
 var testUserSchemaAPIUpdateOU = testutils.OrganizationUnit{
@@ -56,7 +56,7 @@ func (ts *UpdateUserSchemaTestSuite) SetupSuite() {
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit: %v", err)
 	}
-	ts.organizationUnitID = ouID
+	ts.oUID = ouID
 
 	// Create test schemas for update tests
 	schema1 := CreateUserSchemaRequest{
@@ -65,7 +65,7 @@ func (ts *UpdateUserSchemaTestSuite) SetupSuite() {
 			"originalField": {"type": "string"}
 		}`),
 	}
-	schema1.OrganizationUnitID = ts.organizationUnitID
+	schema1.OuID = ts.oUID
 
 	schema2 := CreateUserSchemaRequest{
 		Name: "update-test-schema-2",
@@ -73,7 +73,7 @@ func (ts *UpdateUserSchemaTestSuite) SetupSuite() {
 			"anotherField": {"type": "string"}
 		}`),
 	}
-	schema2.OrganizationUnitID = ts.organizationUnitID
+	schema2.OuID = ts.oUID
 
 	ts.testSchemaID = ts.createTestSchema(schema1)
 	ts.anotherSchemaID = ts.createTestSchema(schema2)
@@ -89,9 +89,9 @@ func (ts *UpdateUserSchemaTestSuite) TearDownSuite() {
 	}
 
 	// Clean up created organization units
-	if ts.organizationUnitID != "" {
-		if err := testutils.DeleteOrganizationUnit(ts.organizationUnitID); err != nil {
-			ts.T().Logf("Failed to delete test organization unit %s: %v", ts.organizationUnitID, err)
+	if ts.oUID != "" {
+		if err := testutils.DeleteOrganizationUnit(ts.oUID); err != nil {
+			ts.T().Logf("Failed to delete test organization unit %s: %v", ts.oUID, err)
 		}
 	}
 }
@@ -111,7 +111,7 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchema() {
             }
         }`),
 	}
-	updateRequest.OrganizationUnitID = ts.organizationUnitID
+	updateRequest.OuID = ts.oUID
 
 	jsonData, err := json.Marshal(updateRequest)
 	if err != nil {
@@ -157,7 +157,7 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaNotFound() {
 		Name:   "updated-name",
 		Schema: json.RawMessage(`{"field": {"type": "string"}}`),
 	}
-	updateRequest.OrganizationUnitID = ts.organizationUnitID
+	updateRequest.OuID = ts.oUID
 
 	jsonData, err := json.Marshal(updateRequest)
 	if err != nil {
@@ -200,7 +200,7 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithNameConflict() {
 		Name:   "update-test-schema-2", // Name of another existing schema
 		Schema: json.RawMessage(`{"conflictField": {"type": "string"}}`),
 	}
-	updateRequest.OrganizationUnitID = ts.organizationUnitID
+	updateRequest.OuID = ts.oUID
 
 	jsonData, err := json.Marshal(updateRequest)
 	if err != nil {
@@ -350,7 +350,7 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithComplexData() {
 			}
 		}`),
 	}
-	updateRequest.OrganizationUnitID = ts.organizationUnitID
+	updateRequest.OuID = ts.oUID
 
 	jsonData, err := json.Marshal(updateRequest)
 	if err != nil {
@@ -390,8 +390,8 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithComplexData() {
 
 // Helper function to create a test schema
 func (ts *UpdateUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaRequest) string {
-	if schema.OrganizationUnitID == "" {
-		schema.OrganizationUnitID = ts.organizationUnitID
+	if schema.OuID == "" {
+		schema.OuID = ts.oUID
 	}
 
 	jsonData, err := json.Marshal(schema)

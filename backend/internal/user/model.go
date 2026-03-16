@@ -27,11 +27,11 @@ import (
 
 // User represents a user in the system.
 type User struct {
-	ID               string          `json:"id,omitempty"`
-	OrganizationUnit string          `json:"organizationUnit,omitempty"`
-	Type             string          `json:"type,omitempty"`
-	Attributes       json.RawMessage `json:"attributes,omitempty"`
-	Display          string          `json:"display,omitempty"`
+	ID         string          `json:"id,omitempty"`
+	OuID       string          `json:"ouId,omitempty"`
+	Type       string          `json:"type,omitempty"`
+	Attributes json.RawMessage `json:"attributes,omitempty"`
+	Display    string          `json:"display,omitempty"`
 }
 
 // Credential represents the credentials of a user.
@@ -58,9 +58,9 @@ type UserListResponse struct {
 
 // UserGroup represents a group with basic information for user endpoints.
 type UserGroup struct {
-	ID                 string `json:"id"`
-	Name               string `json:"name"`
-	OrganizationUnitID string `json:"organizationUnit"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	OuID string `json:"ouId"`
 }
 
 // UserGroupListResponse represents the response for listing groups that a user belongs to.
@@ -74,18 +74,18 @@ type UserGroupListResponse struct {
 
 // CreateUserRequest represents the request body for creating a user.
 type CreateUserRequest struct {
-	OrganizationUnit string          `json:"organizationUnit"`
-	Type             string          `json:"type"`
-	Groups           []string        `json:"groups,omitempty"`
-	Attributes       json.RawMessage `json:"attributes,omitempty"`
+	OuID       string          `json:"ouId"`
+	Type       string          `json:"type"`
+	Groups     []string        `json:"groups,omitempty"`
+	Attributes json.RawMessage `json:"attributes,omitempty"`
 }
 
 // UpdateUserRequest represents the request body for updating a user.
 type UpdateUserRequest struct {
-	OrganizationUnit string          `json:"organizationUnit,omitempty"`
-	Type             string          `json:"type,omitempty"`
-	Groups           []string        `json:"groups,omitempty"`
-	Attributes       json.RawMessage `json:"attributes,omitempty"`
+	OuID       string          `json:"ouId,omitempty"`
+	Type       string          `json:"type,omitempty"`
+	Groups     []string        `json:"groups,omitempty"`
+	Attributes json.RawMessage `json:"attributes,omitempty"`
 }
 
 // UpdateSelfUserRequest represents the request body for updating the authenticated user.
@@ -102,7 +102,7 @@ type CreateUserByPathRequest struct {
 
 // AuthenticateUserResponse represents the response body for authenticating a user.
 type AuthenticateUserResponse struct {
-	ID               string `json:"id"`
-	Type             string `json:"type"`
-	OrganizationUnit string `json:"organizationUnit"`
+	ID   string `json:"id"`
+	Type string `json:"type"`
+	OuID string `json:"ouId"`
 }

@@ -52,7 +52,7 @@ func matchResourceServer(expected ResourceServer) interface{} {
 		return actual.Name == expected.Name &&
 			actual.Description == expected.Description &&
 			actual.Identifier == expected.Identifier &&
-			actual.OrganizationUnitID == expected.OrganizationUnitID &&
+			actual.OUID == expected.OUID &&
 			actual.Delimiter != "" // Delimiter should be set
 	})
 }
@@ -168,10 +168,10 @@ func (suite *ResourceServiceTestSuite) TestNewResourceService_InvalidDelimiter()
 
 func (suite *ResourceServiceTestSuite) TestCreateResourceServer_Success() {
 	rs := ResourceServer{
-		Name:               "test-rs",
-		Description:        "Test resource server",
-		Identifier:         "test-identifier",
-		OrganizationUnitID: "ou-123",
+		Name:        "test-rs",
+		Description: "Test resource server",
+		Identifier:  "test-identifier",
+		OUID:        "ou-123",
 	}
 
 	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
@@ -205,17 +205,17 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_ValidationErrors
 	}{
 		{
 			name:           "EmptyName",
-			resourceServer: ResourceServer{Name: "", OrganizationUnitID: "ou-123"},
+			resourceServer: ResourceServer{Name: "", OUID: "ou-123"},
 			expectedError:  ErrorInvalidRequestFormat,
 		},
 		{
 			name:           "EmptyOU",
-			resourceServer: ResourceServer{Name: "test-rs", OrganizationUnitID: ""},
+			resourceServer: ResourceServer{Name: "test-rs", OUID: ""},
 			expectedError:  ErrorInvalidRequestFormat,
 		},
 		{
 			name:           "InvalidDelimiter",
-			resourceServer: ResourceServer{Name: "test-rs", Delimiter: "::", OrganizationUnitID: "ou-123"},
+			resourceServer: ResourceServer{Name: "test-rs", Delimiter: "::", OUID: "ou-123"},
 			expectedError:  ErrorInvalidDelimiter,
 		},
 	}
@@ -233,8 +233,8 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_ValidationErrors
 
 func (suite *ResourceServiceTestSuite) TestCreateResourceServer_OUNotFound() {
 	rs := ResourceServer{
-		Name:               "test-rs",
-		OrganizationUnitID: "ou-123",
+		Name: "test-rs",
+		OUID: "ou-123",
 	}
 
 	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
@@ -250,8 +250,8 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_OUNotFound() {
 
 func (suite *ResourceServiceTestSuite) TestCreateResourceServer_OUServiceError() {
 	rs := ResourceServer{
-		Name:               "test-rs",
-		OrganizationUnitID: "ou-123",
+		Name: "test-rs",
+		OUID: "ou-123",
 	}
 
 	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
@@ -266,8 +266,8 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_OUServiceError()
 
 func (suite *ResourceServiceTestSuite) TestCreateResourceServer_NameConflict() {
 	rs := ResourceServer{
-		Name:               "test-rs",
-		OrganizationUnitID: "ou-123",
+		Name: "test-rs",
+		OUID: "ou-123",
 	}
 
 	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
@@ -285,9 +285,9 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_NameConflict() {
 
 func (suite *ResourceServiceTestSuite) TestCreateResourceServer_StoreError() {
 	rs := ResourceServer{
-		Name:               "test-rs",
-		OrganizationUnitID: "ou-123",
-		Identifier:         "", // Empty identifier - no need to check
+		Name:       "test-rs",
+		OUID:       "ou-123",
+		Identifier: "", // Empty identifier - no need to check
 	}
 
 	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
@@ -309,9 +309,9 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_StoreError() {
 
 func (suite *ResourceServiceTestSuite) TestCreateResourceServer_IdentifierConflict() {
 	rs := ResourceServer{
-		Name:               "test-rs",
-		Identifier:         "test-identifier",
-		OrganizationUnitID: "ou-123",
+		Name:       "test-rs",
+		Identifier: "test-identifier",
+		OUID:       "ou-123",
 	}
 
 	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
@@ -332,8 +332,8 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_IdentifierConfli
 
 func (suite *ResourceServiceTestSuite) TestCreateResourceServer_CheckNameError() {
 	rs := ResourceServer{
-		Name:               "test-rs",
-		OrganizationUnitID: "ou-123",
+		Name: "test-rs",
+		OUID: "ou-123",
 	}
 
 	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
@@ -351,9 +351,9 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_CheckNameError()
 
 func (suite *ResourceServiceTestSuite) TestCreateResourceServer_CheckIdentifierError() {
 	rs := ResourceServer{
-		Name:               "test-rs",
-		Identifier:         "test-identifier",
-		OrganizationUnitID: "ou-123",
+		Name:       "test-rs",
+		Identifier: "test-identifier",
+		OUID:       "ou-123",
 	}
 
 	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
@@ -374,10 +374,10 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_CheckIdentifierE
 
 func (suite *ResourceServiceTestSuite) TestGetResourceServer_Success() {
 	expectedRS := ResourceServer{
-		ID:                 "rs-123",
-		Name:               "test-rs",
-		Description:        "Test",
-		OrganizationUnitID: "ou-123",
+		ID:          "rs-123",
+		Name:        "test-rs",
+		Description: "Test",
+		OUID:        "ou-123",
 	}
 
 	suite.mockStore.On("GetResourceServer", mock.Anything,
@@ -445,18 +445,18 @@ func (suite *ResourceServiceTestSuite) TestGetResourceServerList_Success() {
 
 func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_Success() {
 	rs := ResourceServer{
-		Name:               "updated-rs",
-		Description:        "Updated",
-		OrganizationUnitID: "ou-123",
+		Name:        "updated-rs",
+		Description: "Updated",
+		OUID:        "ou-123",
 	}
 
 	existingRS := ResourceServer{
-		ID:                 "rs-123",
-		Name:               "old-name",
-		Description:        "Old",
-		Identifier:         "identifier",
-		OrganizationUnitID: "ou-123",
-		Delimiter:          ":",
+		ID:          "rs-123",
+		Name:        "old-name",
+		Description: "Old",
+		Identifier:  "identifier",
+		OUID:        "ou-123",
+		Delimiter:   ":",
 	}
 
 	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
@@ -483,8 +483,8 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_Success() {
 
 func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_NotFound() {
 	rs := ResourceServer{
-		Name:               "test-rs",
-		OrganizationUnitID: "ou-123",
+		Name: "test-rs",
+		OUID: "ou-123",
 	}
 
 	suite.mockStore.On("GetResourceServer", mock.Anything,
@@ -507,19 +507,19 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_ValidationErrors
 		{
 			name:           "MissingID",
 			id:             "",
-			resourceServer: ResourceServer{Name: "test-rs", OrganizationUnitID: "ou-123"},
+			resourceServer: ResourceServer{Name: "test-rs", OUID: "ou-123"},
 			expectedError:  ErrorMissingID,
 		},
 		{
 			name:           "EmptyName",
 			id:             "rs-123",
-			resourceServer: ResourceServer{Name: "", OrganizationUnitID: "ou-123"},
+			resourceServer: ResourceServer{Name: "", OUID: "ou-123"},
 			expectedError:  ErrorInvalidRequestFormat,
 		},
 		{
 			name:           "EmptyOU",
 			id:             "rs-123",
-			resourceServer: ResourceServer{Name: "test-rs", OrganizationUnitID: ""},
+			resourceServer: ResourceServer{Name: "test-rs", OUID: ""},
 			expectedError:  ErrorInvalidRequestFormat,
 		},
 	}
@@ -537,14 +537,14 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_ValidationErrors
 
 func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_OUNotFound() {
 	rs := ResourceServer{
-		Name:               "test-rs",
-		OrganizationUnitID: "ou-123",
+		Name: "test-rs",
+		OUID: "ou-123",
 	}
 
 	existingRS := ResourceServer{
-		ID:                 "rs-123",
-		Name:               "test-rs",
-		OrganizationUnitID: "ou-old",
+		ID:   "rs-123",
+		Name: "test-rs",
+		OUID: "ou-old",
 	}
 
 	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
@@ -562,14 +562,14 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_OUNotFound() {
 
 func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_OUServiceError() {
 	rs := ResourceServer{
-		Name:               "test-rs",
-		OrganizationUnitID: "ou-123",
+		Name: "test-rs",
+		OUID: "ou-123",
 	}
 
 	existingRS := ResourceServer{
-		ID:                 "rs-123",
-		Name:               "test-rs",
-		OrganizationUnitID: "ou-old",
+		ID:   "rs-123",
+		Name: "test-rs",
+		OUID: "ou-old",
 	}
 
 	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
@@ -587,14 +587,14 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_OUServiceError()
 
 func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_NameConflict() {
 	rs := ResourceServer{
-		Name:               "test-rs",
-		OrganizationUnitID: "ou-123",
+		Name: "test-rs",
+		OUID: "ou-123",
 	}
 
 	existingRS := ResourceServer{
-		ID:                 "rs-123",
-		Name:               "old-name",
-		OrganizationUnitID: "ou-123",
+		ID:   "rs-123",
+		Name: "old-name",
+		OUID: "ou-123",
 	}
 
 	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
@@ -615,16 +615,16 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_NameConflict() {
 
 func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_IdentifierConflict() {
 	rs := ResourceServer{
-		Name:               "test-rs",
-		Identifier:         "test-identifier",
-		OrganizationUnitID: "ou-123",
+		Name:       "test-rs",
+		Identifier: "test-identifier",
+		OUID:       "ou-123",
 	}
 
 	existingRS := ResourceServer{
-		ID:                 "rs-123",
-		Name:               "test-rs",
-		Identifier:         "old-identifier",
-		OrganizationUnitID: "ou-123",
+		ID:         "rs-123",
+		Name:       "test-rs",
+		Identifier: "old-identifier",
+		OUID:       "ou-123",
 	}
 
 	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
@@ -645,16 +645,16 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_IdentifierConfli
 
 func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_CheckIdentifierError() {
 	rs := ResourceServer{
-		Name:               "test-rs",
-		Identifier:         "test-identifier",
-		OrganizationUnitID: "ou-123",
+		Name:       "test-rs",
+		Identifier: "test-identifier",
+		OUID:       "ou-123",
 	}
 
 	existingRS := ResourceServer{
-		ID:                 "rs-123",
-		Name:               "test-rs",
-		Identifier:         "old-identifier",
-		OrganizationUnitID: "ou-123",
+		ID:         "rs-123",
+		Name:       "test-rs",
+		Identifier: "old-identifier",
+		OUID:       "ou-123",
 	}
 
 	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
@@ -675,14 +675,14 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_CheckIdentifierE
 
 func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_StoreError() {
 	rs := ResourceServer{
-		Name:               "test-rs",
-		OrganizationUnitID: "ou-123",
+		Name: "test-rs",
+		OUID: "ou-123",
 	}
 
 	existingRS := ResourceServer{
-		ID:                 "rs-123",
-		Name:               "test-rs",
-		OrganizationUnitID: "ou-123",
+		ID:   "rs-123",
+		Name: "test-rs",
+		OUID: "ou-123",
 	}
 
 	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
@@ -703,8 +703,8 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_StoreError() {
 
 func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_GetResourceServerStoreError() {
 	rs := ResourceServer{
-		Name:               "updated-name",
-		OrganizationUnitID: "ou-123",
+		Name: "updated-name",
+		OUID: "ou-123",
 	}
 
 	// Mock GetResourceServer to return generic database error (not errResourceServerNotFound)
@@ -4343,9 +4343,9 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_ImmutableDeclara
 	// Test that updating a declarative resource server returns an immutability error
 	resourceServerID := declarativeRSID
 	updateReq := ResourceServer{
-		ID:                 resourceServerID,
-		Name:               "Updated Name",
-		OrganizationUnitID: "ou-1",
+		ID:   resourceServerID,
+		Name: "Updated Name",
+		OUID: "ou-1",
 	}
 
 	// Mock IsResourceServerDeclarative to return true
@@ -4369,17 +4369,17 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_MutableResource(
 	// Test that updating a non-declarative resource server succeeds
 	resourceServerID := "mutable-rs"
 	updateReq := ResourceServer{
-		ID:                 resourceServerID,
-		Name:               "Updated Name",
-		OrganizationUnitID: "ou-1",
-		Identifier:         "updated-identifier",
+		ID:         resourceServerID,
+		Name:       "Updated Name",
+		OUID:       "ou-1",
+		Identifier: "updated-identifier",
 	}
 
 	existingRS := ResourceServer{
-		ID:                 resourceServerID,
-		Name:               "Original Name",
-		OrganizationUnitID: "ou-1",
-		Identifier:         "original-identifier",
+		ID:         resourceServerID,
+		Name:       "Original Name",
+		OUID:       "ou-1",
+		Identifier: "original-identifier",
 	}
 
 	// Mock IsResourceServerDeclarative to return false

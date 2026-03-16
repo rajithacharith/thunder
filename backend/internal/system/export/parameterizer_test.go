@@ -1694,7 +1694,7 @@ func TestUserSchemaImportExportSymmetry(t *testing.T) {
 	type UserSchema struct {
 		ID                    string          `yaml:"id"`
 		Name                  string          `yaml:"name"`
-		OrganizationUnitID    string          `yaml:"organization_unit_id"`
+		OUID                  string          `yaml:"organization_unit_id"`
 		AllowSelfRegistration bool            `yaml:"allow_self_registration,omitempty"`
 		Schema                json.RawMessage `yaml:"schema"`
 	}
@@ -1703,7 +1703,7 @@ func TestUserSchemaImportExportSymmetry(t *testing.T) {
 	type UserSchemaRequestWithID struct {
 		ID                    string `yaml:"id"`
 		Name                  string `yaml:"name"`
-		OrganizationUnitID    string `yaml:"organization_unit_id"`
+		OUID                  string `yaml:"organization_unit_id"`
 		AllowSelfRegistration bool   `yaml:"allow_self_registration,omitempty"`
 		Schema                string `yaml:"schema"` // Note: This is a string, not json.RawMessage
 	}
@@ -1712,7 +1712,7 @@ func TestUserSchemaImportExportSymmetry(t *testing.T) {
 	originalSchema := UserSchema{
 		ID:                    "93e861d5-531a-4495-b373-e3db5250e76a",
 		Name:                  "Person",
-		OrganizationUnitID:    "14abcc09-4a7f-417e-be47-88e332148a82",
+		OUID:                  "14abcc09-4a7f-417e-be47-88e332148a82",
 		AllowSelfRegistration: true,
 		Schema: json.RawMessage(
 			`{"username":{"type":"string","required":true,"unique":true},"email":{"type":"string","required":true}}`),
@@ -1733,7 +1733,7 @@ func TestUserSchemaImportExportSymmetry(t *testing.T) {
 	// Verify the imported values match the original
 	assert.Equal(t, originalSchema.ID, importedSchema.ID)
 	assert.Equal(t, originalSchema.Name, importedSchema.Name)
-	assert.Equal(t, originalSchema.OrganizationUnitID, importedSchema.OrganizationUnitID)
+	assert.Equal(t, originalSchema.OUID, importedSchema.OUID)
 	assert.Equal(t, originalSchema.AllowSelfRegistration, importedSchema.AllowSelfRegistration)
 
 	// Verify the schema is a string (as required by import format)
@@ -1768,7 +1768,7 @@ func TestUserSchemaExportFormat(t *testing.T) {
 	type UserSchema struct {
 		ID                    string          `yaml:"id"`
 		Name                  string          `yaml:"name"`
-		OrganizationUnitID    string          `yaml:"organization_unit_id"`
+		OUID                  string          `yaml:"organization_unit_id"`
 		AllowSelfRegistration bool            `yaml:"allow_self_registration,omitempty"`
 		Schema                json.RawMessage `yaml:"schema"`
 	}
@@ -1776,7 +1776,7 @@ func TestUserSchemaExportFormat(t *testing.T) {
 	schema := UserSchema{
 		ID:                    "test-id",
 		Name:                  "TestSchema",
-		OrganizationUnitID:    "test-ou",
+		OUID:                  "test-ou",
 		AllowSelfRegistration: false,
 		Schema:                json.RawMessage(`{"field1":"value1"}`),
 	}

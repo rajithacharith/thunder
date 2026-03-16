@@ -87,7 +87,7 @@ func (f *userSchemaFileBasedStore) GetUserSchemaList(
 			listItem := UserSchemaListItem{
 				ID:                    schema.ID,
 				Name:                  schema.Name,
-				OrganizationUnitID:    schema.OrganizationUnitID,
+				OuID:                  schema.OuID,
 				AllowSelfRegistration: schema.AllowSelfRegistration,
 				SystemAttributes:      schema.SystemAttributes,
 			}
@@ -130,11 +130,11 @@ func (f *userSchemaFileBasedStore) GetUserSchemaListByOUIDs(
 	var filtered []UserSchemaListItem
 	for _, item := range list {
 		if schema, ok := item.Data.(*UserSchema); ok {
-			if _, exists := ouIDSet[schema.OrganizationUnitID]; exists {
+			if _, exists := ouIDSet[schema.OuID]; exists {
 				filtered = append(filtered, UserSchemaListItem{
 					ID:                    schema.ID,
 					Name:                  schema.Name,
-					OrganizationUnitID:    schema.OrganizationUnitID,
+					OuID:                  schema.OuID,
 					AllowSelfRegistration: schema.AllowSelfRegistration,
 					SystemAttributes:      schema.SystemAttributes,
 				})
@@ -175,7 +175,7 @@ func (f *userSchemaFileBasedStore) GetUserSchemaListCountByOUIDs(ctx context.Con
 	count := 0
 	for _, item := range list {
 		if schema, ok := item.Data.(*UserSchema); ok {
-			if _, exists := ouIDSet[schema.OrganizationUnitID]; exists {
+			if _, exists := ouIDSet[schema.OuID]; exists {
 				count++
 			}
 		}

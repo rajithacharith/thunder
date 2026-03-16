@@ -127,7 +127,7 @@ func (ts *GroupAuthzTestSuite) SetupSuite() {
 	// ---- 2. Create user schema for user-manager in OU1 ----
 	schemaOU1ID, err := testutils.CreateUserType(testutils.UserSchema{
 		Name:               userSchemaOU1Name,
-		OrganizationUnitId: ts.groupOU1ID,
+		OuID: ts.groupOU1ID,
 		Schema: map[string]interface{}{
 			"username":     map[string]interface{}{"type": "string"},
 			"password":     map[string]interface{}{"type": "string", "credential": true},
@@ -140,7 +140,7 @@ func (ts *GroupAuthzTestSuite) SetupSuite() {
 	// ---- 3. Create the user-manager in OU1 ----
 	userMgrID, err := testutils.CreateUser(testutils.User{
 		Type:             userSchemaOU1Name,
-		OrganizationUnit: ts.groupOU1ID,
+		OuID: ts.groupOU1ID,
 		Attributes: json.RawMessage(fmt.Sprintf(
 			`{"username": %q, "password": %q, "display_name": "Group Manager"}`,
 			groupMgrUsername, groupMgrPassword,
@@ -152,7 +152,7 @@ func (ts *GroupAuthzTestSuite) SetupSuite() {
 	// ---- 3b. Create a plain member user in OU1 (used in membership authz tests) ----
 	memberOU1ID, err := testutils.CreateUser(testutils.User{
 		Type:             userSchemaOU1Name,
-		OrganizationUnit: ts.groupOU1ID,
+		OuID: ts.groupOU1ID,
 		Attributes: json.RawMessage(fmt.Sprintf(
 			`{"username": %q, "password": %q, "display_name": "Member OU1"}`,
 			memberOU1Username, memberOU1Password,
@@ -164,7 +164,7 @@ func (ts *GroupAuthzTestSuite) SetupSuite() {
 	// ---- 3c. Create a user schema for OU2 ----
 	schemaOU2ID, err := testutils.CreateUserType(testutils.UserSchema{
 		Name:               memberSchemaOU2Name,
-		OrganizationUnitId: ts.groupOU2ID,
+		OuID: ts.groupOU2ID,
 		Schema: map[string]interface{}{
 			"username":     map[string]interface{}{"type": "string"},
 			"password":     map[string]interface{}{"type": "string", "credential": true},
@@ -177,7 +177,7 @@ func (ts *GroupAuthzTestSuite) SetupSuite() {
 	// ---- 3d. Create a plain member user in OU2 (used in membership authz tests) ----
 	memberOU2ID, err := testutils.CreateUser(testutils.User{
 		Type:             memberSchemaOU2Name,
-		OrganizationUnit: ts.groupOU2ID,
+		OuID: ts.groupOU2ID,
 		Attributes: json.RawMessage(fmt.Sprintf(
 			`{"username": %q, "password": %q, "display_name": "Member OU2"}`,
 			memberOU2Username, memberOU2Password,
@@ -190,7 +190,7 @@ func (ts *GroupAuthzTestSuite) SetupSuite() {
 	targetOU1ID, err := testutils.CreateGroup(testutils.Group{
 		Name:               "authz-target-ou1",
 		Description:        "Target Group OU1",
-		OrganizationUnitId: ts.groupOU1ID,
+		OuID: ts.groupOU1ID,
 	})
 	ts.Require().NoError(err, "create target group in OU1")
 	ts.targetGroupOU1ID = targetOU1ID
@@ -198,7 +198,7 @@ func (ts *GroupAuthzTestSuite) SetupSuite() {
 	deletableID, err := testutils.CreateGroup(testutils.Group{
 		Name:               "authz-deletable-ou1",
 		Description:        "Deletable Group OU1",
-		OrganizationUnitId: ts.groupOU1ID,
+		OuID: ts.groupOU1ID,
 	})
 	ts.Require().NoError(err, "create deletable group in OU1")
 	ts.deletableGroupOU1ID = deletableID
@@ -206,7 +206,7 @@ func (ts *GroupAuthzTestSuite) SetupSuite() {
 	targetOU2ID, err := testutils.CreateGroup(testutils.Group{
 		Name:               "authz-target-ou2",
 		Description:        "Target Group OU2",
-		OrganizationUnitId: ts.groupOU2ID,
+		OuID: ts.groupOU2ID,
 	})
 	ts.Require().NoError(err, "create target group in OU2")
 	ts.targetGroupOU2ID = targetOU2ID
@@ -218,7 +218,7 @@ func (ts *GroupAuthzTestSuite) SetupSuite() {
 	// ---- 6. Create a role with system:group permission and assign to the user-manager ----
 	roleID, err := testutils.CreateRole(testutils.Role{
 		Name:               groupMgrRoleName,
-		OrganizationUnitID: ts.groupOU1ID,
+		OuID: ts.groupOU1ID,
 		Permissions: []testutils.ResourcePermissions{
 			{
 				ResourceServerID: systemRSID,
@@ -379,7 +379,7 @@ func (ts *GroupAuthzTestSuite) TestGetGroupInOtherOU() {
 // TestCreateGroupInOwnOU verifies the group-manager can create a group in their own OU.
 func (ts *GroupAuthzTestSuite) TestCreateGroupInOwnOU() {
 	payload, err := json.Marshal(map[string]interface{}{
-		"organizationUnitId": ts.groupOU1ID,
+		"ouId": ts.groupOU1ID,
 		"name":               "authz-created-group",
 		"description":        "Created Group",
 	})
@@ -403,7 +403,7 @@ func (ts *GroupAuthzTestSuite) TestCreateGroupInOwnOU() {
 // TestCreateGroupInOtherOU verifies the group-manager is denied creating a group in OU2.
 func (ts *GroupAuthzTestSuite) TestCreateGroupInOtherOU() {
 	payload, err := json.Marshal(map[string]interface{}{
-		"organizationUnitId": ts.groupOU2ID,
+		"ouId": ts.groupOU2ID,
 		"name":               "authz-denied-group",
 		"description":        "Denied Group",
 	})
@@ -419,7 +419,7 @@ func (ts *GroupAuthzTestSuite) TestCreateGroupInOtherOU() {
 // TestUpdateGroupInOwnOU verifies the group-manager can update a group in their own OU.
 func (ts *GroupAuthzTestSuite) TestUpdateGroupInOwnOU() {
 	payload, err := json.Marshal(map[string]interface{}{
-		"organizationUnitId": ts.groupOU1ID,
+		"ouId": ts.groupOU1ID,
 		"name":               "authz-target-ou1",
 		"description":        "Updated Description",
 	})
@@ -435,7 +435,7 @@ func (ts *GroupAuthzTestSuite) TestUpdateGroupInOwnOU() {
 // TestUpdateGroupInOtherOU verifies the group-manager is denied updating a group in OU2.
 func (ts *GroupAuthzTestSuite) TestUpdateGroupInOtherOU() {
 	payload, err := json.Marshal(map[string]interface{}{
-		"organizationUnitId": ts.groupOU2ID,
+		"ouId": ts.groupOU2ID,
 		"name":               "Should Not Update",
 	})
 	ts.Require().NoError(err)
