@@ -19,7 +19,6 @@
 package executor
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -504,7 +503,7 @@ func (s *smsOTPAuthExecutor) generateAndSendOTP(mobileNumber string, ctx *core.N
 		Channel:   string(notifcommon.ChannelTypeSMS),
 	}
 
-	sendResult, svcErr := s.otpService.SendOTP(context.TODO(), sendOTPRequest)
+	sendResult, svcErr := s.otpService.SendOTP(ctx.Context, sendOTPRequest)
 	if svcErr != nil {
 		return fmt.Errorf("failed to send OTP: %s", svcErr.ErrorDescription)
 	}
@@ -579,7 +578,7 @@ func (s *smsOTPAuthExecutor) validateOTP(ctx *core.NodeContext, execResp *common
 		OTPCode:      providedOTP,
 	}
 
-	verifyResult, svcErr := s.otpService.VerifyOTP(context.TODO(), verifyOTPRequest)
+	verifyResult, svcErr := s.otpService.VerifyOTP(ctx.Context, verifyOTPRequest)
 	if svcErr != nil {
 		logger.Error("Failed to verify OTP", log.String("userID", userID), log.Any("serviceError", svcErr))
 		return fmt.Errorf("failed to verify OTP: %s", svcErr.ErrorDescription)

@@ -20,6 +20,7 @@
 package github
 
 import (
+	"context"
 	"slices"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
@@ -64,21 +65,22 @@ func newGithubOAuthAuthnService(idpSvc idp.IDPServiceInterface,
 }
 
 // BuildAuthorizeURL constructs the authorization request URL for GitHub OAuth authentication.
-func (g *githubOAuthAuthnService) BuildAuthorizeURL(idpID string) (string, *serviceerror.ServiceError) {
-	return g.internal.BuildAuthorizeURL(idpID)
+func (g *githubOAuthAuthnService) BuildAuthorizeURL(
+	ctx context.Context, idpID string) (string, *serviceerror.ServiceError) {
+	return g.internal.BuildAuthorizeURL(ctx, idpID)
 }
 
 // ExchangeCodeForToken exchanges the authorization code for a token with GitHub.
-func (g *githubOAuthAuthnService) ExchangeCodeForToken(idpID, code string, validateResponse bool) (
+func (g *githubOAuthAuthnService) ExchangeCodeForToken(ctx context.Context, idpID, code string, validateResponse bool) (
 	*authnoauth.TokenResponse, *serviceerror.ServiceError) {
-	return g.internal.ExchangeCodeForToken(idpID, code, validateResponse)
+	return g.internal.ExchangeCodeForToken(ctx, idpID, code, validateResponse)
 }
 
 // FetchUserInfo retrieves user information from the Github API, ensuring email resolution if necessary.
-func (g *githubOAuthAuthnService) FetchUserInfo(idpID, accessToken string) (
+func (g *githubOAuthAuthnService) FetchUserInfo(ctx context.Context, idpID, accessToken string) (
 	map[string]interface{}, *serviceerror.ServiceError) {
 	logger := g.logger
-	oAuthClientConfig, svcErr := g.internal.GetOAuthClientConfig(idpID)
+	oAuthClientConfig, svcErr := g.internal.GetOAuthClientConfig(ctx, idpID)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -153,9 +155,9 @@ func (g *githubOAuthAuthnService) GetInternalUser(sub string) (*userprovider.Use
 }
 
 // GetOAuthClientConfig retrieves and validates the OAuth client configuration for the given identity provider ID.
-func (g *githubOAuthAuthnService) GetOAuthClientConfig(idpID string) (
+func (g *githubOAuthAuthnService) GetOAuthClientConfig(ctx context.Context, idpID string) (
 	*authnoauth.OAuthClientConfig, *serviceerror.ServiceError) {
-	return g.internal.GetOAuthClientConfig(idpID)
+	return g.internal.GetOAuthClientConfig(ctx, idpID)
 }
 
 // getMetadata returns the authenticator metadata for GitHub OAuth authenticator.

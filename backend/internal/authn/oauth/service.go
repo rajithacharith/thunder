@@ -39,11 +39,12 @@ const (
 
 // OAuthAuthnCoreServiceInterface defines the core contract for OAuth based authenticator services.
 type OAuthAuthnCoreServiceInterface interface {
-	BuildAuthorizeURL(idpID string) (string, *serviceerror.ServiceError)
-	ExchangeCodeForToken(idpID, code string, validateResponse bool) (*TokenResponse, *serviceerror.ServiceError)
-	FetchUserInfo(idpID, accessToken string) (map[string]interface{}, *serviceerror.ServiceError)
+	BuildAuthorizeURL(ctx context.Context, idpID string) (string, *serviceerror.ServiceError)
+	ExchangeCodeForToken(ctx context.Context, idpID, code string, validateResponse bool) (
+		*TokenResponse, *serviceerror.ServiceError)
+	FetchUserInfo(ctx context.Context, idpID, accessToken string) (map[string]interface{}, *serviceerror.ServiceError)
 	GetInternalUser(sub string) (*userprovider.User, *serviceerror.ServiceError)
-	GetOAuthClientConfig(idpID string) (*OAuthClientConfig, *serviceerror.ServiceError)
+	GetOAuthClientConfig(ctx context.Context, idpID string) (*OAuthClientConfig, *serviceerror.ServiceError)
 }
 
 // OAuthAuthnServiceInterface defines the contract for OAuth based authenticator services.
@@ -86,14 +87,14 @@ func NewOAuthAuthnService(httpClient syshttp.HTTPClientInterface,
 }
 
 // GetOAuthClientConfig retrieves the OAuth client configuration for the given identity provider ID.
-func (s *oAuthAuthnService) GetOAuthClientConfig(idpID string) (
+func (s *oAuthAuthnService) GetOAuthClientConfig(ctx context.Context, idpID string) (
 	*OAuthClientConfig, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("idpId", idpID))
 	if strings.TrimSpace(idpID) == "" {
 		return nil, &ErrorEmptyIdpID
 	}
 
-	idp, svcErr := s.idpService.GetIdentityProvider(context.TODO(), idpID)
+	idp, svcErr := s.idpService.GetIdentityProvider(ctx, idpID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			return nil, serviceerror.CustomServiceError(ErrorClientErrorWhileRetrievingIDP,
@@ -117,11 +118,11 @@ func (s *oAuthAuthnService) GetOAuthClientConfig(idpID string) (
 }
 
 // BuildAuthorizeURL constructs the authorization request URL for the external identity provider.
-func (s *oAuthAuthnService) BuildAuthorizeURL(idpID string) (string, *serviceerror.ServiceError) {
+func (s *oAuthAuthnService) BuildAuthorizeURL(ctx context.Context, idpID string) (string, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("idpId", idpID))
 	logger.Debug("Building authorize URL")
 
-	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(idpID)
+	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(ctx, idpID)
 	if svcErr != nil {
 		return "", svcErr
 	}
@@ -158,7 +159,7 @@ func (s *oAuthAuthnService) BuildAuthorizeURL(idpID string) (string, *serviceerr
 
 // ExchangeCodeForToken exchanges the authorization code for a token with the external identity provider
 // and validates the token response if validateResponse is true.
-func (s *oAuthAuthnService) ExchangeCodeForToken(idpID, code string, validateResponse bool) (
+func (s *oAuthAuthnService) ExchangeCodeForToken(ctx context.Context, idpID, code string, validateResponse bool) (
 	*TokenResponse, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("idpId", idpID))
 	logger.Debug("Exchanging authorization code for token")
@@ -167,7 +168,7 @@ func (s *oAuthAuthnService) ExchangeCodeForToken(idpID, code string, validateRes
 		return nil, &ErrorEmptyAuthorizationCode
 	}
 
-	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(idpID)
+	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(ctx, idpID)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -216,9 +217,9 @@ func (s *oAuthAuthnService) ValidateTokenResponse(idpID string, tokenResp *Token
 }
 
 // FetchUserInfo retrieves user information from the external identity provider.
-func (s *oAuthAuthnService) FetchUserInfo(idpID, accessToken string) (
+func (s *oAuthAuthnService) FetchUserInfo(ctx context.Context, idpID, accessToken string) (
 	map[string]interface{}, *serviceerror.ServiceError) {
-	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(idpID)
+	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(ctx, idpID)
 	if svcErr != nil {
 		return nil, svcErr
 	}

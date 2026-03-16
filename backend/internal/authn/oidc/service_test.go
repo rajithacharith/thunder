@@ -19,7 +19,10 @@
 package oidc
 
 import (
+	"context"
 	"testing"
+
+	"github.com/stretchr/testify/mock"
 
 	"github.com/stretchr/testify/suite"
 
@@ -81,9 +84,9 @@ func (suite *OIDCAuthnServiceTestSuite) TestGetOAuthClientConfigWithOpenIDScope(
 		ClientSecret: "secret",
 		Scopes:       []string{"openid", "profile", "email"},
 	}
-	suite.mockOAuthService.On("GetOAuthClientConfig", idpID).Return(config, nil)
+	suite.mockOAuthService.On("GetOAuthClientConfig", mock.Anything, idpID).Return(config, nil)
 
-	result, err := suite.service.GetOAuthClientConfig(idpID)
+	result, err := suite.service.GetOAuthClientConfig(context.Background(), idpID)
 	suite.Nil(err)
 	suite.NotNil(result)
 
@@ -102,9 +105,9 @@ func (suite *OIDCAuthnServiceTestSuite) TestGetOAuthClientConfigWithoutOpenIDSco
 		ClientSecret: "secret",
 		Scopes:       []string{"profile"},
 	}
-	suite.mockOAuthService.On("GetOAuthClientConfig", idpID).Return(config, nil)
+	suite.mockOAuthService.On("GetOAuthClientConfig", mock.Anything, idpID).Return(config, nil)
 
-	result, err := suite.service.GetOAuthClientConfig(idpID)
+	result, err := suite.service.GetOAuthClientConfig(context.Background(), idpID)
 	suite.Nil(err)
 	suite.NotNil(result)
 
@@ -115,9 +118,9 @@ func (suite *OIDCAuthnServiceTestSuite) TestGetOAuthClientConfigWithoutOpenIDSco
 
 func (suite *OIDCAuthnServiceTestSuite) TestBuildAuthorizeURLSuccess() {
 	expectedURL := "https://example.com/authorize?client_id=test"
-	suite.mockOAuthService.On("BuildAuthorizeURL", testOIDCIDPID).Return(expectedURL, nil)
+	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, testOIDCIDPID).Return(expectedURL, nil)
 
-	url, err := suite.service.BuildAuthorizeURL(testOIDCIDPID)
+	url, err := suite.service.BuildAuthorizeURL(context.Background(), testOIDCIDPID)
 	suite.Nil(err)
 	suite.Equal(expectedURL, url)
 }
@@ -127,9 +130,9 @@ func (suite *OIDCAuthnServiceTestSuite) TestBuildAuthorizeURLError() {
 		Code:             "ERROR",
 		ErrorDescription: "Failed to build URL",
 	}
-	suite.mockOAuthService.On("BuildAuthorizeURL", testOIDCIDPID).Return("", svcErr)
+	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, testOIDCIDPID).Return("", svcErr)
 
-	url, err := suite.service.BuildAuthorizeURL(testOIDCIDPID)
+	url, err := suite.service.BuildAuthorizeURL(context.Background(), testOIDCIDPID)
 	suite.Empty(url)
 	suite.NotNil(err)
 	suite.Equal(svcErr.Code, err.Code)
@@ -151,10 +154,13 @@ func (suite *OIDCAuthnServiceTestSuite) TestExchangeCodeForTokenSuccess() {
 					IDToken:     "id_token",
 					TokenType:   "Bearer",
 				}
-				suite.mockOAuthService.On("ExchangeCodeForToken", testOIDCIDPID, code, false).Return(tokenResp, nil)
-				suite.mockOAuthService.On("GetOAuthClientConfig", testOIDCIDPID).Return(&oauth.OAuthClientConfig{
+				suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, testOIDCIDPID, code, false).
+					Return(tokenResp, nil)
+				cfg := &oauth.OAuthClientConfig{
 					OAuthEndpoints: oauth.OAuthEndpoints{JwksEndpoint: "https://example.com/jwks"},
-				}, nil)
+				}
+				suite.mockOAuthService.On("GetOAuthClientConfig", mock.Anything, testOIDCIDPID).
+					Return(cfg, nil)
 				suite.mockJWTService.On("VerifyJWTWithJWKS", "id_token",
 					"https://example.com/jwks", "", "").Return(nil)
 			},
@@ -169,7 +175,8 @@ func (suite *OIDCAuthnServiceTestSuite) TestExchangeCodeForTokenSuccess() {
 					IDToken:     "id_token",
 					TokenType:   "Bearer",
 				}
-				suite.mockOAuthService.On("ExchangeCodeForToken", testOIDCIDPID, code, false).Return(tokenResp, nil)
+				suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, testOIDCIDPID, code, false).
+					Return(tokenResp, nil)
 			},
 		},
 	}
@@ -188,7 +195,9 @@ func (suite *OIDCAuthnServiceTestSuite) TestExchangeCodeForTokenSuccess() {
 
 			tc.setupMocks()
 
-			result, err := suite.service.ExchangeCodeForToken(testOIDCIDPID, "auth_code", tc.validateResponse)
+			result, err := suite.service.ExchangeCodeForToken(context.Background(), testOIDCIDPID, "auth_code",
+				tc.validateResponse)
+
 			suite.Nil(err)
 			suite.NotNil(result)
 			suite.Equal("access_token", result.AccessToken)
@@ -206,9 +215,11 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseSuccess() {
 			name:            "WithIDTokenValidation",
 			validateIDToken: true,
 			setupMocks: func() {
-				suite.mockOAuthService.On("GetOAuthClientConfig", testOIDCIDPID).Return(&oauth.OAuthClientConfig{
+				cfg := &oauth.OAuthClientConfig{
 					OAuthEndpoints: oauth.OAuthEndpoints{JwksEndpoint: "https://example.com/jwks"},
-				}, nil)
+				}
+				suite.mockOAuthService.On("GetOAuthClientConfig", mock.Anything, testOIDCIDPID).
+					Return(cfg, nil)
 				suite.mockJWTService.On("VerifyJWTWithJWKS", "id_token",
 					"https://example.com/jwks", "", "").Return(nil)
 			},
@@ -239,7 +250,8 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseSuccess() {
 				IDToken:     "id_token",
 				TokenType:   "Bearer",
 			}
-			err := suite.service.ValidateTokenResponse(testOIDCIDPID, tokenResp, tc.validateIDToken)
+			err := suite.service.ValidateTokenResponse(
+				context.Background(), testOIDCIDPID, tokenResp, tc.validateIDToken)
 			suite.Nil(err)
 		})
 	}
@@ -266,7 +278,7 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseWithError() {
 
 	for _, tc := range tests {
 		suite.Run(tc.name, func() {
-			err := suite.service.ValidateTokenResponse(testOIDCIDPID, tc.resp, false)
+			err := suite.service.ValidateTokenResponse(context.Background(), testOIDCIDPID, tc.resp, false)
 			suite.NotNil(err)
 			suite.Equal(oauth.ErrorInvalidTokenResponse.Code, err.Code)
 		})
@@ -281,9 +293,11 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 		{
 			name: "WithJWKSEndpoint",
 			setupMocks: func() {
-				suite.mockOAuthService.On("GetOAuthClientConfig", testOIDCIDPID).Return(&oauth.OAuthClientConfig{
+				cfg := &oauth.OAuthClientConfig{
 					OAuthEndpoints: oauth.OAuthEndpoints{JwksEndpoint: "https://example.com/jwks"},
-				}, nil)
+				}
+				suite.mockOAuthService.On("GetOAuthClientConfig", mock.Anything, testOIDCIDPID).
+					Return(cfg, nil)
 				suite.mockJWTService.On("VerifyJWTWithJWKS", "valid_id_token",
 					"https://example.com/jwks", "", "").Return(nil)
 			},
@@ -291,9 +305,11 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 		{
 			name: "WithoutJWKSEndpoint",
 			setupMocks: func() {
-				suite.mockOAuthService.On("GetOAuthClientConfig", testOIDCIDPID).Return(&oauth.OAuthClientConfig{
+				cfg := &oauth.OAuthClientConfig{
 					OAuthEndpoints: oauth.OAuthEndpoints{},
-				}, nil)
+				}
+				suite.mockOAuthService.On("GetOAuthClientConfig", mock.Anything, testOIDCIDPID).
+					Return(cfg, nil)
 			},
 		},
 	}
@@ -312,14 +328,14 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 
 			tc.setupMocks()
 
-			err := suite.service.ValidateIDToken(testOIDCIDPID, "valid_id_token")
+			err := suite.service.ValidateIDToken(context.Background(), testOIDCIDPID, "valid_id_token")
 			suite.Nil(err)
 		})
 	}
 }
 
 func (suite *OIDCAuthnServiceTestSuite) TestValidateIDTokenEmptyToken() {
-	err := suite.service.ValidateIDToken(testOIDCIDPID, "")
+	err := suite.service.ValidateIDToken(context.Background(), testOIDCIDPID, "")
 	suite.NotNil(err)
 	suite.Equal(ErrorInvalidIDToken.Code, err.Code)
 }
@@ -349,9 +365,9 @@ func (suite *OIDCAuthnServiceTestSuite) TestFetchUserInfoSuccess() {
 		"sub":   "user123",
 		"email": "user@example.com",
 	}
-	suite.mockOAuthService.On("FetchUserInfo", testOIDCIDPID, accessToken).Return(userInfo, nil)
+	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, testOIDCIDPID, accessToken).Return(userInfo, nil)
 
-	result, err := suite.service.FetchUserInfo(testOIDCIDPID, accessToken)
+	result, err := suite.service.FetchUserInfo(context.Background(), testOIDCIDPID, accessToken)
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(userInfo["sub"], result["sub"])
@@ -372,10 +388,10 @@ func (suite *OIDCAuthnServiceTestSuite) TestGetInternalUserSuccess() {
 }
 
 func (suite *OIDCAuthnServiceTestSuite) TestExchangeCodeForTokenInternalError() {
-	suite.mockOAuthService.On("ExchangeCodeForToken", testOIDCIDPID, "auth_code", false).
+	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, testOIDCIDPID, "auth_code", false).
 		Return(nil, &serviceerror.ServiceError{Code: "INT-ERR"})
 
-	result, err := suite.service.ExchangeCodeForToken(testOIDCIDPID, "auth_code", false)
+	result, err := suite.service.ExchangeCodeForToken(context.Background(), testOIDCIDPID, "auth_code", false)
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal("INT-ERR", err.Code)
@@ -394,7 +410,7 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseValidateIDToken
 	suite.service.internal = suite.mockOAuthService
 
 	// GetOAuthClientConfig returns a config with jwks endpoint
-	suite.mockOAuthService.On("GetOAuthClientConfig", testOIDCIDPID).Return(&oauth.OAuthClientConfig{
+	suite.mockOAuthService.On("GetOAuthClientConfig", mock.Anything, testOIDCIDPID).Return(&oauth.OAuthClientConfig{
 		OAuthEndpoints: oauth.OAuthEndpoints{JwksEndpoint: "https://example.com/jwks"},
 	}, nil)
 
@@ -408,7 +424,7 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseValidateIDToken
 		})
 
 	tokenResp := &oauth.TokenResponse{AccessToken: "access", IDToken: "id_token"}
-	err := suite.service.ValidateTokenResponse(testOIDCIDPID, tokenResp, true)
+	err := suite.service.ValidateTokenResponse(context.Background(), testOIDCIDPID, tokenResp, true)
 	suite.NotNil(err)
 	suite.Equal(ErrorInvalidIDTokenSignature.Code, err.Code)
 }
@@ -446,10 +462,10 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateIDTokenWithJWKSEndpoint() {
 		},
 	}
 
-	suite.mockOAuthService.On("GetOAuthClientConfig", testOIDCIDPID).Return(config, nil)
+	suite.mockOAuthService.On("GetOAuthClientConfig", mock.Anything, testOIDCIDPID).Return(config, nil)
 	suite.mockJWTService.On("VerifyJWTWithJWKS", idToken, "https://idp.com/jwks", "", "").Return(nil)
 
-	err := suite.service.ValidateIDToken(testOIDCIDPID, idToken)
+	err := suite.service.ValidateIDToken(context.Background(), testOIDCIDPID, idToken)
 	suite.Nil(err)
 }
 
@@ -468,9 +484,9 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateIDTokenWithoutJWKSEndpoint()
 		},
 	}
 
-	suite.mockOAuthService.On("GetOAuthClientConfig", testOIDCIDPID).Return(config, nil)
+	suite.mockOAuthService.On("GetOAuthClientConfig", mock.Anything, testOIDCIDPID).Return(config, nil)
 	// VerifyJWTWithJWKS should not be called when JWKS endpoint is empty
 
-	err := suite.service.ValidateIDToken(testOIDCIDPID, idToken)
+	err := suite.service.ValidateIDToken(context.Background(), testOIDCIDPID, idToken)
 	suite.Nil(err)
 }

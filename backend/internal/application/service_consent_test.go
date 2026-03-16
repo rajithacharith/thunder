@@ -264,7 +264,7 @@ func (s *ApplicationServiceConsentTestSuite) TestCreateMissingConsentElements_Em
 	cMock := consentmock.NewConsentServiceInterfaceMock(s.T())
 	svc := newTestApplicationServiceWithConsent(cMock)
 
-	result := svc.createMissingConsentElements(context.TODO(), "default", []string{})
+	result := svc.createMissingConsentElements(context.Background(), "default", []string{})
 
 	s.Nil(result)
 }
@@ -277,7 +277,7 @@ func (s *ApplicationServiceConsentTestSuite) TestCreateMissingConsentElements_Al
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", names).
 		Return([]string{"email", "phone"}, nil)
 
-	result := svc.createMissingConsentElements(context.TODO(), "default", names)
+	result := svc.createMissingConsentElements(context.Background(), "default", names)
 
 	s.Nil(result)
 }
@@ -297,7 +297,7 @@ func (s *ApplicationServiceConsentTestSuite) TestCreateMissingConsentElements_So
 	cMock.EXPECT().CreateConsentElements(mock.Anything, "default", expectedInput).
 		Return([]consent.ConsentElement{{ID: "e1", Name: "phone"}}, nil)
 
-	result := svc.createMissingConsentElements(context.TODO(), "default", names)
+	result := svc.createMissingConsentElements(context.Background(), "default", names)
 
 	s.Nil(result)
 }
@@ -310,7 +310,7 @@ func (s *ApplicationServiceConsentTestSuite) TestCreateMissingConsentElements_Va
 	cMock.EXPECT().ValidateConsentElements(mock.Anything, "default", names).
 		Return(nil, &serviceerror.InternalServerErrorWithI18n)
 
-	result := svc.createMissingConsentElements(context.TODO(), "default", names)
+	result := svc.createMissingConsentElements(context.Background(), "default", names)
 
 	s.NotNil(result)
 	s.Equal(serviceerror.ServerErrorType, result.Type)
@@ -327,7 +327,7 @@ func (s *ApplicationServiceConsentTestSuite) TestCreateMissingConsentElements_Cr
 	cMock.EXPECT().CreateConsentElements(mock.Anything, "default", mock.Anything).
 		Return(nil, &serviceerror.InternalServerErrorWithI18n)
 
-	result := svc.createMissingConsentElements(context.TODO(), "default", names)
+	result := svc.createMissingConsentElements(context.Background(), "default", names)
 
 	s.NotNil(result)
 	s.Equal(serviceerror.ServerErrorType, result.Type)

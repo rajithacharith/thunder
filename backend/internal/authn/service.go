@@ -60,9 +60,9 @@ type AuthenticationServiceInterface interface {
 		string, *serviceerror.ServiceError)
 	VerifyOTP(ctx context.Context, sessionToken string, skipAssertion bool, existingAssertion, otp string) (
 		*common.AuthenticationResponse, *serviceerror.ServiceError)
-	StartIDPAuthentication(requestedType idp.IDPType, idpID string) (
+	StartIDPAuthentication(ctx context.Context, requestedType idp.IDPType, idpID string) (
 		*IDPAuthInitData, *serviceerror.ServiceError)
-	FinishIDPAuthentication(requestedType idp.IDPType, sessionToken string, skipAssertion bool,
+	FinishIDPAuthentication(ctx context.Context, requestedType idp.IDPType, sessionToken string, skipAssertion bool,
 		existingAssertion, code string) (*common.AuthenticationResponse, *serviceerror.ServiceError)
 	// Passkey methods
 	StartPasskeyRegistration(ctx context.Context, userID, relyingPartyID, relyingPartyName string,
@@ -233,7 +233,7 @@ func (as *authenticationService) VerifyOTP(ctx context.Context, sessionToken str
 }
 
 // StartIDPAuthentication initiates authentication against an IDP.
-func (as *authenticationService) StartIDPAuthentication(requestedType idp.IDPType, idpID string) (
+func (as *authenticationService) StartIDPAuthentication(ctx context.Context, requestedType idp.IDPType, idpID string) (
 	*IDPAuthInitData, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Starting IDP authentication", log.String("idpId", idpID))
@@ -242,7 +242,7 @@ func (as *authenticationService) StartIDPAuthentication(requestedType idp.IDPTyp
 		return nil, &common.ErrorInvalidIDPID
 	}
 
-	identityProvider, svcErr := as.idpService.GetIdentityProvider(context.TODO(), idpID)
+	identityProvider, svcErr := as.idpService.GetIdentityProvider(ctx, idpID)
 	if svcErr != nil {
 		return nil, as.handleIDPServiceError(idpID, svcErr, logger)
 	}
@@ -255,13 +255,13 @@ func (as *authenticationService) StartIDPAuthentication(requestedType idp.IDPTyp
 	var redirectURL string
 	switch identityProvider.Type {
 	case idp.IDPTypeOAuth:
-		redirectURL, svcErr = as.oauthService.BuildAuthorizeURL(idpID)
+		redirectURL, svcErr = as.oauthService.BuildAuthorizeURL(ctx, idpID)
 	case idp.IDPTypeOIDC:
-		redirectURL, svcErr = as.oidcService.BuildAuthorizeURL(idpID)
+		redirectURL, svcErr = as.oidcService.BuildAuthorizeURL(ctx, idpID)
 	case idp.IDPTypeGoogle:
-		redirectURL, svcErr = as.googleService.BuildAuthorizeURL(idpID)
+		redirectURL, svcErr = as.googleService.BuildAuthorizeURL(ctx, idpID)
 	case idp.IDPTypeGitHub:
-		redirectURL, svcErr = as.githubService.BuildAuthorizeURL(idpID)
+		redirectURL, svcErr = as.githubService.BuildAuthorizeURL(ctx, idpID)
 	default:
 		logger.Error("Unsupported IDP type", log.String("idpId", idpID),
 			log.String("type", string(identityProvider.Type)))
@@ -286,8 +286,9 @@ func (as *authenticationService) StartIDPAuthentication(requestedType idp.IDPTyp
 }
 
 // FinishIDPAuthentication completes authentication against an IDP.
-func (as *authenticationService) FinishIDPAuthentication(requestedType idp.IDPType, sessionToken string,
-	skipAssertion bool, existingAssertion, code string) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
+func (as *authenticationService) FinishIDPAuthentication(ctx context.Context, requestedType idp.IDPType,
+	sessionToken string, skipAssertion bool, existingAssertion, code string) (
+	*common.AuthenticationResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Finishing IDP authentication")
 
@@ -312,13 +313,13 @@ func (as *authenticationService) FinishIDPAuthentication(requestedType idp.IDPTy
 	var user *userprovider.User
 	switch sessionData.IDPType {
 	case idp.IDPTypeOAuth:
-		_, user, svcErr = as.finishOAuthAuthentication(sessionData.IDPID, code, logger)
+		_, user, svcErr = as.finishOAuthAuthentication(ctx, sessionData.IDPID, code, logger)
 	case idp.IDPTypeOIDC:
-		_, user, svcErr = as.finishOIDCAuthentication(sessionData.IDPID, code, logger)
+		_, user, svcErr = as.finishOIDCAuthentication(ctx, sessionData.IDPID, code, logger)
 	case idp.IDPTypeGoogle:
-		_, user, svcErr = as.finishGoogleAuthentication(sessionData.IDPID, code, logger)
+		_, user, svcErr = as.finishGoogleAuthentication(ctx, sessionData.IDPID, code, logger)
 	case idp.IDPTypeGitHub:
-		_, user, svcErr = as.finishGithubAuthentication(sessionData.IDPID, code, logger)
+		_, user, svcErr = as.finishGithubAuthentication(ctx, sessionData.IDPID, code, logger)
 	default:
 		logger.Error("Unsupported IDP type in session", log.String("idpId", sessionData.IDPID),
 			log.String("type", string(sessionData.IDPType)))
@@ -494,14 +495,14 @@ func (as *authenticationService) extractClaimsFromAssertion(assertion string,
 }
 
 // finishOAuthAuthentication handles OAuth authentication completion.
-func (as *authenticationService) finishOAuthAuthentication(idpID, code string, logger *log.Logger) (
-	string, *userprovider.User, *serviceerror.ServiceError) {
-	tokenResp, svcErr := as.oauthService.ExchangeCodeForToken(idpID, code, true)
+func (as *authenticationService) finishOAuthAuthentication(ctx context.Context, idpID, code string,
+	logger *log.Logger) (string, *userprovider.User, *serviceerror.ServiceError) {
+	tokenResp, svcErr := as.oauthService.ExchangeCodeForToken(ctx, idpID, code, true)
 	if svcErr != nil {
 		return "", nil, svcErr
 	}
 
-	userInfo, svcErr := as.oauthService.FetchUserInfo(idpID, tokenResp.AccessToken)
+	userInfo, svcErr := as.oauthService.FetchUserInfo(ctx, idpID, tokenResp.AccessToken)
 	if svcErr != nil {
 		return "", nil, svcErr
 	}
@@ -520,9 +521,9 @@ func (as *authenticationService) finishOAuthAuthentication(idpID, code string, l
 }
 
 // finishOIDCAuthentication handles OIDC authentication completion.
-func (as *authenticationService) finishOIDCAuthentication(idpID, code string, logger *log.Logger) (
-	string, *userprovider.User, *serviceerror.ServiceError) {
-	tokenResp, svcErr := as.oidcService.ExchangeCodeForToken(idpID, code, true)
+func (as *authenticationService) finishOIDCAuthentication(ctx context.Context, idpID, code string,
+	logger *log.Logger) (string, *userprovider.User, *serviceerror.ServiceError) {
+	tokenResp, svcErr := as.oidcService.ExchangeCodeForToken(ctx, idpID, code, true)
 	if svcErr != nil {
 		return "", nil, svcErr
 	}
@@ -549,9 +550,9 @@ func (as *authenticationService) finishOIDCAuthentication(idpID, code string, lo
 }
 
 // finishGoogleAuthentication handles Google authentication completion.
-func (as *authenticationService) finishGoogleAuthentication(idpID, code string, logger *log.Logger) (
-	string, *userprovider.User, *serviceerror.ServiceError) {
-	tokenResp, svcErr := as.googleService.ExchangeCodeForToken(idpID, code, true)
+func (as *authenticationService) finishGoogleAuthentication(ctx context.Context, idpID, code string,
+	logger *log.Logger) (string, *userprovider.User, *serviceerror.ServiceError) {
+	tokenResp, svcErr := as.googleService.ExchangeCodeForToken(ctx, idpID, code, true)
 	if svcErr != nil {
 		return "", nil, svcErr
 	}
@@ -578,14 +579,14 @@ func (as *authenticationService) finishGoogleAuthentication(idpID, code string, 
 }
 
 // finishGithubAuthentication handles GitHub authentication completion.
-func (as *authenticationService) finishGithubAuthentication(idpID, code string, logger *log.Logger) (
-	string, *userprovider.User, *serviceerror.ServiceError) {
-	tokenResp, svcErr := as.githubService.ExchangeCodeForToken(idpID, code, true)
+func (as *authenticationService) finishGithubAuthentication(ctx context.Context, idpID, code string,
+	logger *log.Logger) (string, *userprovider.User, *serviceerror.ServiceError) {
+	tokenResp, svcErr := as.githubService.ExchangeCodeForToken(ctx, idpID, code, true)
 	if svcErr != nil {
 		return "", nil, svcErr
 	}
 
-	userInfo, svcErr := as.githubService.FetchUserInfo(idpID, tokenResp.AccessToken)
+	userInfo, svcErr := as.githubService.FetchUserInfo(ctx, idpID, tokenResp.AccessToken)
 	if svcErr != nil {
 		return "", nil, svcErr
 	}

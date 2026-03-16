@@ -251,7 +251,7 @@ func validateApplicationWrapper(
 	}
 
 	// Check for duplicate ID in the file store
-	exists, err := fileStore.IsApplicationExists(context.TODO(), app.ID)
+	exists, err := fileStore.IsApplicationExists(context.Background(), app.ID)
 	if err != nil {
 		return fmt.Errorf("failed to check application existence: %w", err)
 	}
@@ -262,7 +262,7 @@ func validateApplicationWrapper(
 
 	// COMPOSITE MODE: Check for duplicate ID in the database store
 	if dbStore != nil {
-		exists, err := dbStore.IsApplicationExists(context.TODO(), app.ID)
+		exists, err := dbStore.IsApplicationExists(context.Background(), app.ID)
 		if err != nil {
 			return fmt.Errorf("failed to check application existence: %w", err)
 		}

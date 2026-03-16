@@ -36,7 +36,7 @@ const serviceLogger = "DesignResolveService"
 // DesignResolveServiceInterface defines the interface for the design resolve service.
 type DesignResolveServiceInterface interface {
 	ResolveDesign(
-		resolveType common.DesignResolveType, id string,
+		ctx context.Context, resolveType common.DesignResolveType, id string,
 	) (*common.DesignResponse, *serviceerror.ServiceError)
 }
 
@@ -66,7 +66,7 @@ func newDesignResolveService(
 // ResolveDesign resolves a design configuration by type and ID.
 // TODO: Add support for OU type and fallback logic.
 func (drs *designResolveService) ResolveDesign(
-	resolveType common.DesignResolveType, id string,
+	ctx context.Context, resolveType common.DesignResolveType, id string,
 ) (*common.DesignResponse, *serviceerror.ServiceError) {
 	if resolveType == "" {
 		return nil, &common.ErrorInvalidResolveType
@@ -87,7 +87,7 @@ func (drs *designResolveService) ResolveDesign(
 		return nil, &serviceerror.InternalServerError
 	}
 
-	app, svcErr := drs.applicationService.GetApplication(context.TODO(), id)
+	app, svcErr := drs.applicationService.GetApplication(ctx, id)
 	if svcErr != nil {
 		// Convert application service errors to design resolve errors
 		if svcErr.Code == application.ErrorInvalidApplicationID.Code {

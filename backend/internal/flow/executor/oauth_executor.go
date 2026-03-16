@@ -162,7 +162,7 @@ func (o *oAuthExecutor) BuildAuthorizeFlow(ctx *core.NodeContext, execResp *comm
 		return err
 	}
 
-	authorizeURL, svcErr := o.authService.BuildAuthorizeURL(idpID)
+	authorizeURL, svcErr := o.authService.BuildAuthorizeURL(ctx.Context, idpID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
@@ -176,7 +176,7 @@ func (o *oAuthExecutor) BuildAuthorizeFlow(ctx *core.NodeContext, execResp *comm
 	}
 
 	// Get the idp name for additional data
-	idpName, err := o.getIDPName(idpID)
+	idpName, err := o.getIDPName(ctx.Context, idpID)
 	if err != nil {
 		return fmt.Errorf("failed to get idp name: %w", err)
 	}
@@ -285,7 +285,7 @@ func (o *oAuthExecutor) ExchangeCodeForToken(ctx *core.NodeContext, execResp *co
 		return nil, err
 	}
 
-	tokenResp, svcErr := o.authService.ExchangeCodeForToken(idpID, code, true)
+	tokenResp, svcErr := o.authService.ExchangeCodeForToken(ctx.Context, idpID, code, true)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
@@ -319,7 +319,7 @@ func (o *oAuthExecutor) GetUserInfo(ctx *core.NodeContext, execResp *common.Exec
 		return nil, err
 	}
 
-	userInfo, svcErr := o.authService.FetchUserInfo(idpID, accessToken)
+	userInfo, svcErr := o.authService.FetchUserInfo(ctx.Context, idpID, accessToken)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
@@ -348,11 +348,11 @@ func (o *oAuthExecutor) GetIdpID(ctx *core.NodeContext) (string, error) {
 }
 
 // getIDPName retrieves the name of the identity provider using its ID.
-func (o *oAuthExecutor) getIDPName(idpID string) (string, error) {
+func (o *oAuthExecutor) getIDPName(ctx context.Context, idpID string) (string, error) {
 	logger := o.logger
 	logger.Debug("Retrieving IDP name for the given IDP ID")
 
-	idp, svcErr := o.idpService.GetIdentityProvider(context.TODO(), idpID)
+	idp, svcErr := o.idpService.GetIdentityProvider(ctx, idpID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			return "", fmt.Errorf("failed to get identity provider: %s", svcErr.ErrorDescription)
