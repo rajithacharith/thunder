@@ -41,6 +41,8 @@ var (
 	scopeTestRoleID         string
 	scopeUserWithRole       string
 	scopeUserNoRole         string
+	scopeUserWithGroup      string
+	scopeGroupID            string
 	scopeUserSchemaID       string
 	scopeTestResourceServer string
 	scopeTestUserSchema     = testutils.UserSchema{
@@ -163,6 +165,40 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 		ts.T().Fatalf("Failed to create user without role: %v", err)
 	}
 
+	// Create user to be assigned to the authz group
+	userWithGroup := testutils.User{
+		OrganizationUnit: scopeTestOUID,
+		Type:             "authz-test-person",
+		Attributes: json.RawMessage(`{
+			"username": "oauth_authorized_group_user",
+			"password": "SecurePass123!",
+			"email": "oauth_authorized_group@test.com",
+			"given_name": "OAuth",
+			"family_name": "Authorized"
+		}`),
+	}
+	scopeUserWithGroup, err = testutils.CreateUser(userWithGroup)
+	if err != nil {
+		ts.T().Fatalf("Failed to create user with group: %v", err)
+	}
+
+	// Create group and assign user to group
+	group := testutils.Group{
+		Name:               "OAuth_DocumentEditors",
+		Description:        "Group for document editors (OAuth test)",
+		OrganizationUnitId: scopeTestOUID,
+		Members: []testutils.Member{
+			{
+				Id:   scopeUserWithGroup,
+				Type: "user",
+			},
+		},
+	}
+	scopeGroupID, err = testutils.CreateGroup(group)
+	if err != nil {
+		ts.T().Fatalf("Failed to create group: %v", err)
+	}
+
 	// Create resource server with actions for permissions
 	resourceServer := testutils.ResourceServer{
 		Name:               "OAuth Document Management System",
@@ -200,6 +236,7 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 		},
 		Assignments: []testutils.Assignment{
 			{ID: scopeUserWithRole, Type: "user"},
+			{ID: scopeGroupID, Type: "group"},
 		},
 	}
 	scopeTestRoleID, err = testutils.CreateRole(role)
@@ -225,6 +262,18 @@ func (ts *OAuthAuthzScopeTestSuite) TearDownSuite() {
 	if scopeUserNoRole != "" {
 		if err := testutils.DeleteUser(scopeUserNoRole); err != nil {
 			ts.T().Logf("Failed to delete user without role: %v", err)
+		}
+	}
+
+	if scopeUserWithGroup != "" {
+		if err := testutils.DeleteUser(scopeUserWithGroup); err != nil {
+			ts.T().Logf("Failed to delete user with group: %v", err)
+		}
+	}
+
+	if scopeGroupID != "" {
+		if err := testutils.DeleteGroup(scopeGroupID); err != nil {
+			ts.T().Logf("Failed to delete group: %v", err)
 		}
 	}
 
@@ -259,64 +308,39 @@ func (ts *OAuthAuthzScopeTestSuite) TearDownSuite() {
 	}
 }
 
-// TestOAuthAuthzFlow_WithAuthorizedScopes tests complete OAuth flow with authorized scopes
-func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithAuthorizedScopes() {
-	// Step 1: Initiate OAuth authorization request
-	scope := "openid read write"
-	state := "test_state_with_scopes"
+// TestOAuthAuthzFlow_WithAuthorizedScopesWithRoleUserAssignment tests the complete OAuth flow for a user
+// with role assignment and verifies that the access token contains the authorized scopes based
+//
+//	on the user's role permissions.
+func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithAuthorizedScopesWithRoleUserAssignment() {
+	ts.testOAuthAuthzFlow_WithAuthorizedScopes("oauth_authorized_user")
+}
 
-	authResp, err := testutils.InitiateAuthorizationFlow(scopeTestClientID, scopeTestRedirectURI,
-		"code", scope, state)
-	ts.Require().NoError(err, "Failed to initiate authorization")
-	ts.Require().NotNil(authResp, "Authorization response should not be nil")
+// TestOAuthAuthzFlow_WithAuthorizedScopesWithRoleGroupAssignment tests the complete OAuth flow for a user
+// with group assignment and verifies that the access token contains the authorized scopes based
+// on the user's group role permissions.
+func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithAuthorizedScopesWithRoleGroupAssignment() {
+	ts.testOAuthAuthzFlow_WithAuthorizedScopes("oauth_authorized_group_user")
+}
 
-	// Step 2: Extract auth ID and flow ID from redirect
-	location := authResp.Header.Get("Location")
-	ts.Require().NotEmpty(location, "Location header should not be empty")
+// testOAuthAuthzFlow_WithAuthorizedScopes tests complete OAuth flow with authorized scopes
+func (ts *OAuthAuthzScopeTestSuite) testOAuthAuthzFlow_WithAuthorizedScopes(username string) {
+	// Step 1: Execute full OAuth flow and obtain token for authorized user
+	tokenResp, err := testutils.ObtainAccessTokenWithPassword(
+		scopeTestClientID,
+		scopeTestRedirectURI,
+		"openid read write",
+		username,
+		"SecurePass123!",
+		false,
+		scopeTestClientSecret,
+	)
+	ts.Require().NoError(err, "Failed to obtain access token")
+	ts.Require().NotNil(tokenResp, "Token response should not be nil")
+	ts.Require().NotEmpty(tokenResp.AccessToken, "Access token should not be empty")
 
-	authId, flowID, err := testutils.ExtractAuthData(location)
-	ts.Require().NoError(err, "Failed to extract auth ID")
-	ts.Require().NotEmpty(authId, "Auth ID should not be empty")
-	ts.Require().NotEmpty(flowID, "Flow ID should not be empty")
-
-	// Step 3: Initiate authentication flow
-	_, err = testutils.ExecuteAuthenticationFlow(flowID, nil, "")
-	ts.Require().NoError(err, "Failed to initiate authentication flow")
-
-	// Step 4: Execute authentication flow with authorized user
-	flowInputs := map[string]string{
-		"username": "oauth_authorized_user",
-		"password": "SecurePass123!",
-	}
-
-	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, flowInputs, "action_001")
-	ts.Require().NoError(err, "Failed to execute authentication flow")
-	ts.Require().NotNil(flowStep, "Flow step should not be nil")
-	ts.Require().Equal("COMPLETE", flowStep.FlowStatus, "Flow should be complete")
-	ts.Require().NotEmpty(flowStep.Assertion, "Assertion should not be empty")
-
-	// Step 5: Complete authorization with assertion
-	authzResponse, err := testutils.CompleteAuthorization(authId, flowStep.Assertion)
-	ts.Require().NoError(err, "Failed to complete authorization")
-	ts.Require().NotNil(authzResponse, "Authorization response should not be nil")
-	ts.Require().NotEmpty(authzResponse.RedirectURI, "Redirect URI should not be empty")
-
-	// Step 6: Extract authorization code
-	code, err := testutils.ExtractAuthorizationCode(authzResponse.RedirectURI)
-	ts.Require().NoError(err, "Failed to extract authorization code")
-	ts.Require().NotEmpty(code, "Authorization code should not be empty")
-
-	// Step 7: Exchange code for token
-	tokenResult, err := testutils.RequestToken(scopeTestClientID, scopeTestClientSecret, code,
-		scopeTestRedirectURI, "authorization_code")
-	ts.Require().NoError(err, "Failed to exchange code for token")
-	ts.Require().NotNil(tokenResult, "Token result should not be nil")
-	ts.Require().Equal(http.StatusOK, tokenResult.StatusCode, "Token endpoint should return 200")
-	ts.Require().NotNil(tokenResult.Token, "Token response should not be nil")
-	ts.Require().NotEmpty(tokenResult.Token.AccessToken, "Access token should not be empty")
-
-	// Step 8: Decode access token and verify scopes
-	claims, err := testutils.DecodeJWT(tokenResult.Token.AccessToken)
+	// Step 2: Decode access token and verify scopes
+	claims, err := testutils.DecodeJWT(tokenResp.AccessToken)
 	ts.Require().NoError(err, "Failed to decode access token")
 	ts.Require().NotNil(claims, "Claims should not be nil")
 
@@ -336,62 +360,22 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithAuthorizedScopes() {
 
 // TestOAuthAuthzFlow_WithNoAuthorizedScopes tests OAuth flow when user has no custom scopes
 func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithNoAuthorizedScopes() {
-	// Step 1: Initiate OAuth authorization request
-	scope := "openid read write"
-	state := "test_state_no_scopes"
+	// Step 1: Execute full OAuth flow and obtain token for user without role assignments
+	tokenResp, err := testutils.ObtainAccessTokenWithPassword(
+		scopeTestClientID,
+		scopeTestRedirectURI,
+		"openid read write",
+		"oauth_unauthorized_user",
+		"SecurePass123!",
+		false,
+		scopeTestClientSecret,
+	)
+	ts.Require().NoError(err, "Failed to obtain access token")
+	ts.Require().NotNil(tokenResp, "Token response should not be nil")
+	ts.Require().NotEmpty(tokenResp.AccessToken, "Access token should not be empty")
 
-	authResp, err := testutils.InitiateAuthorizationFlow(scopeTestClientID, scopeTestRedirectURI,
-		"code", scope, state)
-	ts.Require().NoError(err, "Failed to initiate authorization")
-	ts.Require().NotNil(authResp, "Authorization response should not be nil")
-
-	// Step 2: Extract auth ID and flow ID from redirect
-	location := authResp.Header.Get("Location")
-	ts.Require().NotEmpty(location, "Location header should not be empty")
-
-	authId, flowID, err := testutils.ExtractAuthData(location)
-	ts.Require().NoError(err, "Failed to extract auth ID")
-	ts.Require().NotEmpty(authId, "Auth ID should not be empty")
-	ts.Require().NotEmpty(flowID, "Flow ID should not be empty")
-
-	// Step 2: Initiate authentication flow
-	_, err = testutils.ExecuteAuthenticationFlow(flowID, nil, "")
-	ts.Require().NoError(err, "Failed to initiate authentication flow")
-
-	// Step 4: Execute authentication flow with unauthorized user (no role)
-	flowInputs := map[string]string{
-		"username": "oauth_unauthorized_user",
-		"password": "SecurePass123!",
-	}
-
-	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, flowInputs, "action_001")
-	ts.Require().NoError(err, "Failed to execute authentication flow")
-	ts.Require().NotNil(flowStep, "Flow step should not be nil")
-	ts.Require().Equal("COMPLETE", flowStep.FlowStatus, "Flow should be complete")
-	ts.Require().NotEmpty(flowStep.Assertion, "Assertion should not be empty")
-
-	// Step 5: Complete authorization with assertion
-	authzResponse, err := testutils.CompleteAuthorization(authId, flowStep.Assertion)
-	ts.Require().NoError(err, "Failed to complete authorization")
-	ts.Require().NotNil(authzResponse, "Authorization response should not be nil")
-	ts.Require().NotEmpty(authzResponse.RedirectURI, "Redirect URI should not be empty")
-
-	// Step 6: Extract authorization code
-	code, err := testutils.ExtractAuthorizationCode(authzResponse.RedirectURI)
-	ts.Require().NoError(err, "Failed to extract authorization code")
-	ts.Require().NotEmpty(code, "Authorization code should not be empty")
-
-	// Step 7: Exchange code for token
-	tokenResult, err := testutils.RequestToken(scopeTestClientID, scopeTestClientSecret, code,
-		scopeTestRedirectURI, "authorization_code")
-	ts.Require().NoError(err, "Failed to exchange code for token")
-	ts.Require().NotNil(tokenResult, "Token result should not be nil")
-	ts.Require().Equal(http.StatusOK, tokenResult.StatusCode, "Token endpoint should return 200")
-	ts.Require().NotNil(tokenResult.Token, "Token response should not be nil")
-	ts.Require().NotEmpty(tokenResult.Token.AccessToken, "Access token should not be empty")
-
-	// Step 8: Decode access token and verify scopes
-	claims, err := testutils.DecodeJWT(tokenResult.Token.AccessToken)
+	// Step 2: Decode access token and verify scopes
+	claims, err := testutils.DecodeJWT(tokenResp.AccessToken)
 	ts.Require().NoError(err, "Failed to decode access token")
 	ts.Require().NotNil(claims, "Claims should not be nil")
 
@@ -434,7 +418,7 @@ func (ts *OAuthAuthzScopeTestSuite) createOAuthApplication(authFlowID string) (s
 					"redirect_uris":              []string{scopeTestRedirectURI},
 					"grant_types":                []string{"authorization_code", "refresh_token"},
 					"response_types":             []string{"code"},
-					"token_endpoint_auth_method": "client_secret_basic",
+					"token_endpoint_auth_method": "client_secret_post",
 				},
 			},
 		},

@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,14 +29,18 @@ import (
 	authzsvc "github.com/asgardeo/thunder/internal/authz"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/authzmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
+	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
 // createTestAuthzExecutor creates an authorization executor with mocks for testing
 func createTestAuthzExecutor(t *testing.T,
-	mockAuthzService *authzmock.AuthorizationServiceInterfaceMock) *authorizationExecutor {
+	mockAuthzService *authzmock.AuthorizationServiceInterfaceMock,
+	mockUserProvider *userprovidermock.UserProviderInterfaceMock) *authorizationExecutor {
 	mockFlowFactory := coremock.NewFlowFactoryInterfaceMock(t)
 
 	// Mock the CreateExecutor method to return a base executor
@@ -43,7 +48,7 @@ func createTestAuthzExecutor(t *testing.T,
 		[]common.Input{}, []common.Input{}).
 		Return(createMockExecutor(t, "AuthorizationExecutor", common.ExecutorTypeUtility))
 
-	return newAuthorizationExecutor(mockFlowFactory, mockAuthzService)
+	return newAuthorizationExecutor(mockFlowFactory, mockAuthzService, mockUserProvider)
 }
 
 // createMockExecutor creates a mock executor for testing purposes
@@ -58,7 +63,8 @@ func createMockExecutor(t *testing.T, name string, executorType common.ExecutorT
 
 func TestNewAuthorizationExecutor(t *testing.T) {
 	mockAuthzService := authzmock.NewAuthorizationServiceInterfaceMock(t)
-	executor := createTestAuthzExecutor(t, mockAuthzService)
+	mockUserProvider := userprovidermock.NewUserProviderInterfaceMock(t)
+	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	assert.NotNil(t, executor)
 	assert.Equal(t, "AuthorizationExecutor", executor.GetName())
@@ -69,7 +75,8 @@ func TestNewAuthorizationExecutor(t *testing.T) {
 func TestAuthorizationExecutor_Execute_Success(t *testing.T) {
 	// Setup
 	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
-	executor := createTestAuthzExecutor(t, mockAuthzService)
+	mockUserProvider := new(userprovidermock.UserProviderInterfaceMock)
+	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
 		FlowID:   "test-flow",
@@ -116,7 +123,8 @@ func TestAuthorizationExecutor_Execute_Success(t *testing.T) {
 func TestAuthorizationExecutor_Execute_PartialPermissions(t *testing.T) {
 	// Setup - user requests multiple permissions but only gets some
 	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
-	executor := createTestAuthzExecutor(t, mockAuthzService)
+	mockUserProvider := new(userprovidermock.UserProviderInterfaceMock)
+	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
 		FlowID:   "test-flow",
@@ -129,6 +137,11 @@ func TestAuthorizationExecutor_Execute_PartialPermissions(t *testing.T) {
 			requestedPermissionsKey: "read:documents write:documents delete:documents",
 		},
 	}
+
+	mockUserProvider.On("GetUserGroups", "user123",
+		oauth2const.DefaultGroupListLimit, 0).Return(&userprovider.UserGroupListResponse{
+		Groups: []userprovider.UserGroup{},
+	}, nil).Maybe()
 
 	// User only has read permission
 	mockAuthzService.On("GetAuthorizedPermissions", mock.Anything).Return(
@@ -150,7 +163,8 @@ func TestAuthorizationExecutor_Execute_PartialPermissions(t *testing.T) {
 func TestAuthorizationExecutor_Execute_NoPermissions(t *testing.T) {
 	// Setup - user has no permissions at all
 	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
-	executor := createTestAuthzExecutor(t, mockAuthzService)
+	mockUserProvider := new(userprovidermock.UserProviderInterfaceMock)
+	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
 		FlowID:   "test-flow",
@@ -163,6 +177,11 @@ func TestAuthorizationExecutor_Execute_NoPermissions(t *testing.T) {
 			requestedPermissionsKey: "read:documents write:documents",
 		},
 	}
+
+	mockUserProvider.On("GetUserGroups", "user123",
+		oauth2const.DefaultGroupListLimit, 0).Return(&userprovider.UserGroupListResponse{
+		Groups: []userprovider.UserGroup{},
+	}, nil).Maybe()
 
 	mockAuthzService.On("GetAuthorizedPermissions", mock.Anything).Return(
 		&authzsvc.GetAuthorizedPermissionsResponse{
@@ -183,7 +202,8 @@ func TestAuthorizationExecutor_Execute_NoPermissions(t *testing.T) {
 func TestAuthorizationExecutor_Execute_NotAuthenticated(t *testing.T) {
 	// Setup - user not authenticated
 	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
-	executor := createTestAuthzExecutor(t, mockAuthzService)
+	mockUserProvider := new(userprovidermock.UserProviderInterfaceMock)
+	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
 		FlowID:   "test-flow",
@@ -209,7 +229,8 @@ func TestAuthorizationExecutor_Execute_NotAuthenticated(t *testing.T) {
 func TestAuthorizationExecutor_Execute_ServiceError(t *testing.T) {
 	// Setup - service returns error
 	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
-	executor := createTestAuthzExecutor(t, mockAuthzService)
+	mockUserProvider := new(userprovidermock.UserProviderInterfaceMock)
+	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
 		FlowID:   "test-flow",
@@ -222,6 +243,11 @@ func TestAuthorizationExecutor_Execute_ServiceError(t *testing.T) {
 			requestedPermissionsKey: "read:documents write:documents",
 		},
 	}
+
+	mockUserProvider.On("GetUserGroups", "user123",
+		oauth2const.DefaultGroupListLimit, 0).Return(&userprovider.UserGroupListResponse{
+		Groups: []userprovider.UserGroup{},
+	}, nil).Maybe()
 
 	mockAuthzService.On("GetAuthorizedPermissions", mock.Anything).Return(
 		nil, &serviceerror.ServiceError{Error: "service error"})
@@ -236,12 +262,49 @@ func TestAuthorizationExecutor_Execute_ServiceError(t *testing.T) {
 	mockAuthzService.AssertExpectations(t)
 }
 
+func TestAuthorizationExecutor_Execute_GroupExtractionError(t *testing.T) {
+	// Setup - user group retrieval fails and execution should fail before authz service call
+	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
+	mockUserProvider := new(userprovidermock.UserProviderInterfaceMock)
+	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
+
+	ctx := &core.NodeContext{
+		FlowID:   "test-flow",
+		FlowType: common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "user123",
+			Attributes:      map[string]interface{}{},
+		},
+		RuntimeData: map[string]string{
+			requestedPermissionsKey: "read:documents write:documents",
+		},
+	}
+
+	mockUserProvider.On("GetUserGroups", "user123", oauth2const.DefaultGroupListLimit, 0).Return(
+		nil, userprovider.NewUserProviderError(
+			userprovider.ErrorCodeSystemError,
+			"failed to retrieve groups",
+			"failed to retrieve groups"))
+
+	// Execute
+	resp, err := executor.Execute(ctx)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+
+	mockAuthzService.AssertNotCalled(t, "GetAuthorizedPermissions")
+	mockUserProvider.AssertExpectations(t)
+}
+
 func TestAuthorizationExecutor_Execute_NoRequestedPermissions(t *testing.T) {
 	// This test verifies behavior when extractRequestedPermissions returns empty
 	// The service should NOT be called, and should return early with ExecComplete
 
 	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
-	executor := createTestAuthzExecutor(t, mockAuthzService)
+	mockUserProvider := new(userprovidermock.UserProviderInterfaceMock)
+	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
 		FlowID:   "test-flow",
@@ -267,7 +330,8 @@ func TestAuthorizationExecutor_Execute_NoRequestedPermissions(t *testing.T) {
 
 func TestAuthorizationExecutor_ExtractGroupIDs_FromAttributes(t *testing.T) {
 	mockAuthzService := authzmock.NewAuthorizationServiceInterfaceMock(t)
-	executor := createTestAuthzExecutor(t, mockAuthzService)
+	mockUserProvider := userprovidermock.NewUserProviderInterfaceMock(t)
+	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	tests := []struct {
 		name       string
@@ -311,7 +375,8 @@ func TestAuthorizationExecutor_ExtractGroupIDs_FromAttributes(t *testing.T) {
 				RuntimeData: make(map[string]string),
 			}
 
-			groupIDs := executor.extractGroupIDs(ctx)
+			groupIDs, err := executor.extractGroupIDs(ctx)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, groupIDs)
 		})
 	}
@@ -319,7 +384,8 @@ func TestAuthorizationExecutor_ExtractGroupIDs_FromAttributes(t *testing.T) {
 
 func TestAuthorizationExecutor_ExtractGroupIDs_FromRuntimeData(t *testing.T) {
 	mockAuthzService := authzmock.NewAuthorizationServiceInterfaceMock(t)
-	executor := createTestAuthzExecutor(t, mockAuthzService)
+	mockUserProvider := userprovidermock.NewUserProviderInterfaceMock(t)
+	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
 		AuthenticatedUser: authncm.AuthenticatedUser{
@@ -330,7 +396,8 @@ func TestAuthorizationExecutor_ExtractGroupIDs_FromRuntimeData(t *testing.T) {
 		},
 	}
 
-	groupIDs := executor.extractGroupIDs(ctx)
+	groupIDs, err := executor.extractGroupIDs(ctx)
+	assert.NoError(t, err)
 	assert.Equal(t, []string{"runtime-group1", "runtime-group2"}, groupIDs)
 }
 
@@ -402,7 +469,8 @@ func TestExtractRequestedPermissions(t *testing.T) {
 
 func TestAuthorizationExecutor_ExtractGroupIDs_WithNoGroups(t *testing.T) {
 	mockAuthzService := authzmock.NewAuthorizationServiceInterfaceMock(t)
-	executor := createTestAuthzExecutor(t, mockAuthzService)
+	mockUserProvider := userprovidermock.NewUserProviderInterfaceMock(t)
+	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
 		AuthenticatedUser: authncm.AuthenticatedUser{
@@ -413,13 +481,20 @@ func TestAuthorizationExecutor_ExtractGroupIDs_WithNoGroups(t *testing.T) {
 		RuntimeData: make(map[string]string),
 	}
 
-	groupIDs := executor.extractGroupIDs(ctx)
+	mockUserProvider.On("GetUserGroups", "user123",
+		oauth2const.DefaultGroupListLimit, 0).Return(&userprovider.UserGroupListResponse{
+		Groups: []userprovider.UserGroup{},
+	}, nil).Maybe()
+
+	groupIDs, err := executor.extractGroupIDs(ctx)
+	assert.NoError(t, err)
 	assert.Empty(t, groupIDs)
 }
 
 func TestAuthorizationExecutor_Execute_WithMultipleGroups(t *testing.T) {
 	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
-	executor := createTestAuthzExecutor(t, mockAuthzService)
+	mockUserProvider := new(userprovidermock.UserProviderInterfaceMock)
+	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
 		FlowID:   "test-flow",
@@ -496,7 +571,8 @@ func TestSetAuthorizedPermissions(t *testing.T) {
 func TestAuthorizationExecutor_Execute_RegistrationFlow_UnauthenticatedWithoutPermissions(t *testing.T) {
 	// Setup - registration flow with unauthenticated user and no requested permissions
 	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
-	executor := createTestAuthzExecutor(t, mockAuthzService)
+	mockUserProvider := new(userprovidermock.UserProviderInterfaceMock)
+	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
 		FlowID:   "test-registration-flow",
@@ -522,7 +598,8 @@ func TestAuthorizationExecutor_Execute_RegistrationFlow_UnauthenticatedWithoutPe
 func TestAuthorizationExecutor_Execute_RegistrationFlow_UnauthenticatedWithPermissions(t *testing.T) {
 	// Setup - registration flow with unauthenticated user but WITH requested permissions
 	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
-	executor := createTestAuthzExecutor(t, mockAuthzService)
+	mockUserProvider := new(userprovidermock.UserProviderInterfaceMock)
+	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
 		FlowID:   "test-registration-flow",
@@ -550,7 +627,8 @@ func TestAuthorizationExecutor_Execute_RegistrationFlow_UnauthenticatedWithPermi
 func TestAuthorizationExecutor_Execute_RegistrationFlow_AuthenticatedWithPermissions(t *testing.T) {
 	// Setup - registration flow with authenticated user (edge case but possible)
 	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
-	executor := createTestAuthzExecutor(t, mockAuthzService)
+	mockUserProvider := new(userprovidermock.UserProviderInterfaceMock)
+	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
 		FlowID:   "test-registration-flow",
@@ -592,7 +670,8 @@ func TestAuthorizationExecutor_Execute_RegistrationFlow_AuthenticatedWithPermiss
 func TestAuthorizationExecutor_Execute_NonRegistrationFlow_UnauthenticatedShouldFail(t *testing.T) {
 	// Setup - non-registration flow types should fail if unauthenticated
 	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
-	executor := createTestAuthzExecutor(t, mockAuthzService)
+	mockUserProvider := new(userprovidermock.UserProviderInterfaceMock)
+	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	testCases := []struct {
 		name     string
@@ -633,4 +712,60 @@ func TestAuthorizationExecutor_Execute_NonRegistrationFlow_UnauthenticatedShould
 			mockAuthzService.AssertNotCalled(t, "GetAuthorizedPermissions")
 		})
 	}
+}
+
+func TestAuthorizationExecutor_ExtractGroupIDs_FromUserService(t *testing.T) {
+	mockAuthzService := authzmock.NewAuthorizationServiceInterfaceMock(t)
+	mockUserProvider := userprovidermock.NewUserProviderInterfaceMock(t)
+	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
+
+	ctx := &core.NodeContext{
+		Context: context.Background(),
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "test-user-123",
+			Attributes:      map[string]interface{}{}, // No groups in attributes
+		},
+		RuntimeData: make(map[string]string), // No groups in runtime data
+	}
+
+	mockUserProvider.On("GetUserGroups", "test-user-123",
+		oauth2const.DefaultGroupListLimit, 0).Return(&userprovider.UserGroupListResponse{
+		Groups: []userprovider.UserGroup{
+			{ID: "svc-group-1"},
+			{ID: "svc-group-2"},
+		},
+	}, nil)
+
+	groupIDs, err := executor.extractGroupIDs(ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"svc-group-1", "svc-group-2"}, groupIDs)
+	mockUserProvider.AssertExpectations(t)
+}
+
+func TestAuthorizationExecutor_ExtractGroupIDs_FromUserService_Error(t *testing.T) {
+	mockAuthzService := authzmock.NewAuthorizationServiceInterfaceMock(t)
+	mockUserProvider := userprovidermock.NewUserProviderInterfaceMock(t)
+	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
+
+	ctx := &core.NodeContext{
+		Context: context.Background(),
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "test-user-err",
+			Attributes:      map[string]interface{}{}, // No groups in attributes
+		},
+		RuntimeData: make(map[string]string), // No groups in runtime data
+	}
+
+	mockUserProvider.On("GetUserGroups", "test-user-err", oauth2const.DefaultGroupListLimit, 0).Return(
+		nil, userprovider.NewUserProviderError(
+			userprovider.ErrorCodeSystemError,
+			"failed to retrieve groups",
+			"failed to retrieve groups"))
+
+	groupIDs, err := executor.extractGroupIDs(ctx)
+	assert.Error(t, err)
+	assert.Nil(t, groupIDs)
+	mockUserProvider.AssertExpectations(t)
 }

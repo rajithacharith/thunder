@@ -125,10 +125,17 @@ type GroupMember struct {
 
 // Group represents a group in the system
 type Group struct {
-	ID                 string `json:"id,omitempty"`
-	Name               string `json:"name"`
-	Description        string `json:"description,omitempty"`
-	OrganizationUnitId string `json:"organizationUnitId,omitempty"`
+	ID                 string   `json:"id,omitempty"`
+	Name               string   `json:"name"`
+	Description        string   `json:"description,omitempty"`
+	OrganizationUnitId string   `json:"organizationUnitId,omitempty"`
+	Members            []Member `json:"members,omitempty"`
+}
+
+// Member represents a member of a group (either user or another group).
+type Member struct {
+	Id   string `json:"id"`
+	Type string `json:"type"` // "user" or "group"
 }
 
 // Assignment represents a role assignment

@@ -392,8 +392,15 @@ func ValidateOAuth2ErrorRedirect(location string, expectedError string,
 
 // ObtainAccessTokenWithPassword performs the complete OAuth authorization code flow with password
 // authentication and returns a TokenResponse with the access token and expiry information.
+// clientSecret is optional and can be provided for confidential clients 
+// and use client_secret_post authentication in the token request.
 func ObtainAccessTokenWithPassword(clientID, redirectURI, scope, username, password string,
-	usePKCE bool) (*TokenResponse, error) {
+	usePKCE bool, optionalParams ...string) (*TokenResponse, error) {
+	clientSecret := ""
+	if len(optionalParams) > 0 {
+		clientSecret = optionalParams[0]
+	}
+
 	var codeVerifier string
 	var codeChallenge string
 
@@ -473,7 +480,7 @@ func ObtainAccessTokenWithPassword(clientID, redirectURI, scope, username, passw
 	}
 
 	// Step 7: Exchange code for token with PKCE verifier
-	tokenResult, err := RequestTokenWithPKCE(clientID, "", code, redirectURI, "authorization_code",
+	tokenResult, err := RequestTokenWithPKCE(clientID, clientSecret, code, redirectURI, "authorization_code",
 		codeVerifier)
 	if err != nil {
 		return nil, fmt.Errorf("failed to request token: %w", err)
