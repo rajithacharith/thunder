@@ -220,14 +220,6 @@
                                 "placeholder": "{{ t(onboarding:forms.user_details.fields.last_name.placeholder) }}"
                             },
                             {
-                                "id": "input_prompt_phone",
-                                "ref": "phone_number",
-                                "type": "TEXT_INPUT",
-                                "label": "{{ t(onboarding:forms.user_details.fields.phone_number.label) }}",
-                                "required": false,
-                                "placeholder": "{{ t(onboarding:forms.user_details.fields.phone_number.placeholder) }}"
-                            },
-                            {
                                 "type": "ACTION",
                                 "id": "action_submit_details",
                                 "label": "{{ t(onboarding:forms.user_details.actions.next.label) }}",
@@ -256,12 +248,6 @@
                         {
                             "ref": "input_prompt_family_name",
                             "identifier": "family_name",
-                            "type": "TEXT_INPUT",
-                            "required": false
-                        },
-                        {
-                            "ref": "input_prompt_phone",
-                            "identifier": "phone_number",
                             "type": "TEXT_INPUT",
                             "required": false
                         }
@@ -364,12 +350,6 @@
                 {
                     "ref": "input_family_name",
                     "identifier": "family_name",
-                    "type": "TEXT_INPUT",
-                    "required": false
-                },
-                {
-                    "ref": "input_phone",
-                    "identifier": "phone_number",
                     "type": "TEXT_INPUT",
                     "required": false
                 }
