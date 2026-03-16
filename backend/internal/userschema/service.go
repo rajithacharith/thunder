@@ -64,6 +64,9 @@ type UserSchemaServiceInterface interface {
 	GetCredentialAttributes(
 		ctx context.Context, userType string,
 	) ([]string, *serviceerror.ServiceError)
+	GetUniqueAttributes(
+		ctx context.Context, userType string,
+	) ([]string, *serviceerror.ServiceError)
 	GetDisplayAttributesByNames(
 		ctx context.Context, names []string,
 	) (map[string]string, *serviceerror.ServiceError)
@@ -558,6 +561,23 @@ func (us *userSchemaService) GetCredentialAttributes(
 	}
 
 	return compiledSchema.GetCredentialAttributes(), nil
+}
+
+// GetUniqueAttributes returns the names of schema properties marked as unique for a given user type.
+func (us *userSchemaService) GetUniqueAttributes(
+	ctx context.Context, userType string,
+) ([]string, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
+
+	compiledSchema, err := us.getCompiledSchemaForUserType(ctx, userType, logger)
+	if err != nil {
+		if errors.Is(err, ErrUserSchemaNotFound) {
+			return nil, &ErrorUserSchemaNotFound
+		}
+		return nil, logAndReturnServerError(logger, "Failed to load user schema for unique attributes", err)
+	}
+
+	return compiledSchema.GetUniqueAttributes(), nil
 }
 
 // GetDisplayAttributesByNames returns display attributes for multiple user schemas by name.

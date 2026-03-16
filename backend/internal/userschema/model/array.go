@@ -44,6 +44,10 @@ func (p *array) isDisplayable() bool {
 	return false
 }
 
+func (p *array) isUnique() bool {
+	return false
+}
+
 func (p *array) validateValue(value interface{}, path string, logger *log.Logger) (bool, error) {
 	arrayValue, ok := value.([]interface{})
 	if !ok {

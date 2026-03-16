@@ -43,6 +43,10 @@ func (p *object) isDisplayable() bool {
 	return false
 }
 
+func (p *object) isUnique() bool {
+	return false
+}
+
 func (p *object) validateValue(value interface{}, path string, logger *log.Logger) (bool, error) {
 	valueMap, ok := value.(map[string]interface{})
 	if !ok {

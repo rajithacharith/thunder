@@ -869,6 +869,93 @@ func (s *GetCredentialAttributesTestSuite) TestStoreError_ReturnsInternalError()
 	s.Require().Equal(ErrorInternalServerError, *svcErr)
 }
 
+type GetUniqueAttributesTestSuite struct {
+	suite.Suite
+}
+
+func TestGetUniqueAttributesTestSuite(t *testing.T) {
+	suite.Run(t, new(GetUniqueAttributesTestSuite))
+}
+
+func (s *GetUniqueAttributesTestSuite) TestReturnsUniqueFieldNames() {
+	storeMock := newUserSchemaStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetUserSchemaByName", context.Background(), "customer").
+		Return(UserSchema{
+			Schema: json.RawMessage(
+				`{"email":{"type":"string","unique":true},` +
+					`"username":{"type":"string","unique":true},` +
+					`"given_name":{"type":"string"}}`,
+			),
+		}, nil).
+		Once()
+
+	service := &userSchemaService{
+		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	fields, svcErr := service.GetUniqueAttributes(context.Background(), "customer")
+
+	s.Require().Nil(svcErr)
+	sort.Strings(fields)
+	s.Require().Equal([]string{"email", "username"}, fields)
+}
+
+func (s *GetUniqueAttributesTestSuite) TestNoUniqueAttributes_ReturnsEmpty() {
+	storeMock := newUserSchemaStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetUserSchemaByName", context.Background(), "customer").
+		Return(UserSchema{
+			Schema: json.RawMessage(`{"given_name":{"type":"string"},"age":{"type":"number"}}`),
+		}, nil).
+		Once()
+
+	service := &userSchemaService{
+		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	fields, svcErr := service.GetUniqueAttributes(context.Background(), "customer")
+
+	s.Require().Nil(svcErr)
+	s.Require().Empty(fields)
+}
+
+func (s *GetUniqueAttributesTestSuite) TestSchemaNotFound_ReturnsError() {
+	storeMock := newUserSchemaStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetUserSchemaByName", context.Background(), "unknown").
+		Return(UserSchema{}, ErrUserSchemaNotFound).
+		Once()
+
+	service := &userSchemaService{
+		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	fields, svcErr := service.GetUniqueAttributes(context.Background(), "unknown")
+
+	s.Require().Nil(fields)
+	s.Require().NotNil(svcErr)
+	s.Require().Equal(ErrorUserSchemaNotFound, *svcErr)
+}
+
+func (s *GetUniqueAttributesTestSuite) TestEmptyUserType_ReturnsError() {
+	storeMock := newUserSchemaStoreInterfaceMock(s.T())
+
+	service := &userSchemaService{
+		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	fields, svcErr := service.GetUniqueAttributes(context.Background(), "")
+
+	s.Require().Nil(fields)
+	s.Require().NotNil(svcErr)
+	s.Require().Equal(ErrorUserSchemaNotFound, *svcErr)
+}
+
 // ----- DeleteUserSchema Tests -----
 
 func TestDeleteUserSchema(t *testing.T) {

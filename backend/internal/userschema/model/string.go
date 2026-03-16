@@ -35,6 +35,10 @@ type str struct {
 	pattern     *regexp.Regexp
 }
 
+func (p *str) isUnique() bool {
+	return p.unique
+}
+
 func (p *str) isRequired() bool {
 	return p.required
 }
