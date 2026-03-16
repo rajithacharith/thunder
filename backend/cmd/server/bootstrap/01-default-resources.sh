@@ -647,13 +647,79 @@ fi
 echo ""
 
 # ============================================================================
+# Create Administrator Group
+# ============================================================================
+
+log_info "Creating administrator group..."
+
+if [[ -z "$DEFAULT_OU_ID" ]]; then
+    log_error "Default OU ID is not available. Cannot create administrator group."
+    exit 1
+fi
+
+if [[ -z "$ADMIN_USER_ID" ]]; then
+    log_error "Admin user ID is not available. Cannot create administrator group with user membership."
+    exit 1
+fi
+
+RESPONSE=$(thunder_api_call POST "/groups" "{
+  \"name\": \"Administrators\",
+  \"description\": \"System administrators group\",
+    \"organizationUnitId\": \"${DEFAULT_OU_ID}\",
+    \"members\": [
+        {
+            \"id\": \"${ADMIN_USER_ID}\",
+            \"type\": \"user\"
+        }
+    ]
+}")
+
+HTTP_CODE="${RESPONSE: -3}"
+BODY="${RESPONSE%???}"
+
+if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
+    log_success "Administrator group created successfully"
+    ADMIN_GROUP_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+    if [[ -n "$ADMIN_GROUP_ID" ]]; then
+        log_info "Administrator group ID: $ADMIN_GROUP_ID"
+    else
+        log_error "Could not extract administrator group ID from response"
+        exit 1
+    fi
+elif [[ "$HTTP_CODE" == "409" ]]; then
+    log_warning "Administrator group already exists, retrieving ID..."
+    RESPONSE=$(thunder_api_call GET "/groups/tree/default?limit=200")
+    HTTP_CODE="${RESPONSE: -3}"
+    BODY="${RESPONSE%???}"
+
+    if [[ "$HTTP_CODE" == "200" ]]; then
+        ADMIN_GROUP_ID=$(echo "$BODY" | sed 's/},{/}\n{/g' | grep '"name":"Administrators"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+        if [[ -n "$ADMIN_GROUP_ID" ]]; then
+            log_success "Found administrator group ID: $ADMIN_GROUP_ID"
+        else
+            log_error "Could not find administrator group in response"
+            exit 1
+        fi
+    else
+        log_error "Failed to fetch groups under default OU (HTTP $HTTP_CODE)"
+        exit 1
+    fi
+else
+    log_error "Failed to create administrator group (HTTP $HTTP_CODE)"
+    echo "Response: $BODY"
+    exit 1
+fi
+
+echo ""
+
+# ============================================================================
 # Create Admin Role
 # ============================================================================
 
 log_info "Creating admin role with 'system' permission..."
 
-if [[ -z "$ADMIN_USER_ID" ]]; then
-    log_error "Admin user ID is not available. Cannot create role."
+if [[ -z "$ADMIN_GROUP_ID" ]]; then
+    log_error "Administrator group ID is not available. Cannot create role."
     exit 1
 fi
 
@@ -679,8 +745,8 @@ RESPONSE=$(thunder_api_call POST "/roles" "{
   ],
   \"assignments\": [
     {
-      \"id\": \"${ADMIN_USER_ID}\",
-      \"type\": \"user\"
+            \"id\": \"${ADMIN_GROUP_ID}\",
+            \"type\": \"group\"
     }
   ]
 }")
@@ -689,7 +755,7 @@ HTTP_CODE="${RESPONSE: -3}"
 BODY="${RESPONSE%???}"
 
 if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
-    log_success "Admin role created and assigned to admin user"
+    log_success "Admin role created and assigned to administrator group"
     ADMIN_ROLE_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
     if [[ -n "$ADMIN_ROLE_ID" ]]; then
         log_info "Admin role ID: $ADMIN_ROLE_ID"
@@ -1270,5 +1336,5 @@ echo ""
 log_info "👤 Admin credentials:"
 log_info "   Username: admin"
 log_info "   Password: admin"
-log_info "   Role: Administrator (system permission)"
+log_info "   Role: Administrator (system permission via Administrators group)"
 echo ""
