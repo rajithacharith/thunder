@@ -1425,6 +1425,225 @@ describe('ViewUserTypePage', () => {
     });
   });
 
+  describe('Credential Support', () => {
+    it('displays credential column in view mode', () => {
+      const userTypeWithCredential: ApiUserSchema = {
+        id: 'schema-123',
+        name: 'Test Schema',
+        ouId: 'root-ou',
+        allowSelfRegistration: false,
+        schema: {
+          password: {
+            type: 'string',
+            required: true,
+            credential: true,
+          },
+          email: {
+            type: 'string',
+            required: true,
+          },
+        },
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithCredential,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      render(<ViewUserTypePage />);
+
+      expect(screen.getByText('Credential')).toBeInTheDocument();
+    });
+
+    it('allows toggling credential checkbox in edit mode', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      await user.click(screen.getByRole('button', {name: /edit/i}));
+
+      // email is string type, so credential checkbox should appear
+      const credentialCheckboxes = screen.getAllByRole('checkbox', {name: /values will be hashed/i});
+      expect(credentialCheckboxes.length).toBeGreaterThan(0);
+
+      await user.click(credentialCheckboxes[0]);
+
+      await waitFor(() => {
+        expect(credentialCheckboxes[0]).toBeChecked();
+      });
+    });
+
+    it('disables unique checkbox when credential is checked', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      await user.click(screen.getByRole('button', {name: /edit/i}));
+
+      // Find the unique checkbox for email (first string property)
+      const uniqueCheckboxes = screen.getAllByRole('checkbox', {name: /each user must have a distinct value/i});
+      const credentialCheckboxes = screen.getAllByRole('checkbox', {name: /values will be hashed/i});
+
+      // Initially unique should be enabled
+      expect(uniqueCheckboxes[0]).not.toBeDisabled();
+
+      // Toggle credential on
+      await user.click(credentialCheckboxes[0]);
+
+      await waitFor(() => {
+        expect(uniqueCheckboxes[0]).toBeDisabled();
+      });
+    });
+
+    it('clears unique when credential is enabled', async () => {
+      const user = userEvent.setup();
+
+      const userTypeWithUnique: ApiUserSchema = {
+        id: 'schema-123',
+        name: 'Test Schema',
+        ouId: 'root-ou',
+        allowSelfRegistration: false,
+        schema: {
+          email: {
+            type: 'string',
+            required: true,
+            unique: true,
+          },
+        },
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithUnique,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      render(<ViewUserTypePage />);
+
+      await user.click(screen.getByRole('button', {name: /edit/i}));
+
+      const uniqueCheckbox = screen.getByRole('checkbox', {name: /each user must have a distinct value/i});
+      const credentialCheckbox = screen.getByRole('checkbox', {name: /values will be hashed/i});
+
+      expect(uniqueCheckbox).toBeChecked();
+
+      // Toggle credential on — should clear unique
+      await user.click(credentialCheckbox);
+
+      await waitFor(() => {
+        expect(uniqueCheckbox).not.toBeChecked();
+        expect(uniqueCheckbox).toBeDisabled();
+      });
+    });
+
+    it('shows credential hint when credential is checked', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      await user.click(screen.getByRole('button', {name: /edit/i}));
+
+      const credentialCheckboxes = screen.getAllByRole('checkbox', {name: /values will be hashed/i});
+      await user.click(credentialCheckboxes[0]);
+
+      await waitFor(() => {
+        expect(screen.getByText(/this field will be treated as a secret/i)).toBeInTheDocument();
+      });
+    });
+
+    it('saves schema with credential flag', async () => {
+      const user = userEvent.setup();
+
+      const userTypeWithSingleString: ApiUserSchema = {
+        id: 'schema-123',
+        name: 'Test Schema',
+        ouId: 'root-ou',
+        allowSelfRegistration: false,
+        schema: {
+          password: {
+            type: 'string',
+            required: true,
+          },
+        },
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithSingleString,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
+
+      render(<ViewUserTypePage />);
+
+      await user.click(screen.getByRole('button', {name: /edit/i}));
+
+      const credentialCheckbox = screen.getByRole('checkbox', {name: /values will be hashed/i});
+      await user.click(credentialCheckbox);
+
+      await user.click(screen.getByRole('button', {name: /save changes/i}));
+
+      await waitFor(() => {
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
+            schema: expect.objectContaining({
+              password: expect.objectContaining({
+                credential: true,
+              }) as Record<string, unknown>,
+            }) as Record<string, unknown>,
+          }),
+        });
+      });
+    });
+  });
+
+  describe('Add and Remove Properties', () => {
+    it('adds a new property when add button is clicked', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      await user.click(screen.getByRole('button', {name: /edit/i}));
+
+      // Count initial property name inputs
+      const initialInputs = screen.getAllByRole('textbox').filter(
+        (el) => (el as HTMLInputElement).value === 'email' || (el as HTMLInputElement).value === 'age' || (el as HTMLInputElement).value === 'isActive',
+      );
+      const initialCount = initialInputs.length;
+
+      // Click add property button
+      const addButton = screen.getByRole('button', {name: /add property/i});
+      await user.click(addButton);
+
+      // Should have one more property
+      await waitFor(() => {
+        const typeSelects = getPropertyTypeSelects();
+        expect(typeSelects.length).toBe(initialCount + 1);
+      });
+    });
+
+    it('removes a property when delete button is clicked', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      await user.click(screen.getByRole('button', {name: /edit/i}));
+
+      const typeSelectsBefore = getPropertyTypeSelects();
+      const countBefore = typeSelectsBefore.length;
+
+      // Find and click a remove property button
+      const removeButtons = screen.getAllByRole('button', {name: /remove property/i});
+      await user.click(removeButtons[0]);
+
+      await waitFor(() => {
+        const typeSelectsAfter = getPropertyTypeSelects();
+        expect(typeSelectsAfter.length).toBe(countBefore - 1);
+      });
+    });
+  });
+
   describe('Schema Property Handling with Enum Type', () => {
     it('saves schema with enum type converted to string', async () => {
       const user = userEvent.setup();

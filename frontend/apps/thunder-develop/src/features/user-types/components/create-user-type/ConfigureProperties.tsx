@@ -159,6 +159,8 @@ export default function ConfigureProperties({
           ? {
               ...prop,
               [field]: value,
+              // Clear unique when credential is enabled
+              ...(field === 'credential' && value && {unique: false}),
               // Reset type-specific fields when type changes
               ...(field === 'type' && {
                 enum: (value as UIPropertyType) === 'enum' ? prop.enum : [],
@@ -310,6 +312,7 @@ export default function ConfigureProperties({
                   control={
                     <Checkbox
                       checked={property.unique}
+                      disabled={property.credential}
                       onChange={(e) => handlePropertyChange(property.id, 'unique', e.target.checked)}
                     />
                   }
