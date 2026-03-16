@@ -28,9 +28,11 @@ import (
 	"time"
 
 	consentauthn "github.com/asgardeo/thunder/internal/authn/consent"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/consent"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
@@ -124,11 +126,11 @@ func (e *consentExecutor) checkConsent(ctx *core.NodeContext, execResp *common.E
 	logger.Debug("Checking if user consent is required")
 
 	essentialAttributes, optionalAttributes := e.getRequiredAttributes(ctx)
+	availableAttributes := buildAugmentedAvailableAttributes(ctx)
 
 	// Resolve consent to determine if any required consents are missing and need to be prompted
 	promptData, svcErr := e.consentEnforcer.ResolveConsent(
-		ctx.Context, ouID, appID, userID, essentialAttributes, optionalAttributes,
-		ctx.AuthenticatedUser.AvailableAttributes)
+		ctx.Context, ouID, appID, userID, essentialAttributes, optionalAttributes, availableAttributes)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Client error while resolving user consent", log.Any("error", svcErr))
@@ -293,6 +295,47 @@ func (e *consentExecutor) getRequiredAttributes(ctx *core.NodeContext) (
 	}
 
 	return essentialAttributes, optionalAttributes
+}
+
+// buildAugmentedAvailableAttributes returns an AvailableAttributes value augmented with
+// special attribute keys (groups, userType, ouId, ouName, ouHandle) that are present by
+// construction in the authenticated user context but are never included in AvailableAttributes
+// by authentication providers.
+func buildAugmentedAvailableAttributes(ctx *core.NodeContext) *authnprovider.AvailableAttributes {
+	base := ctx.AuthenticatedUser.AvailableAttributes
+
+	var baseAttrs map[string]*authnprovider.AttributeMetadataResponse
+	var baseVerifications map[string]*authnprovider.VerificationResponse
+	if base != nil {
+		baseAttrs = base.Attributes
+		baseVerifications = base.Verifications
+	}
+
+	// Shallow-copy existing entries so we never mutate the original
+	augmented := make(map[string]*authnprovider.AttributeMetadataResponse, len(baseAttrs))
+	for k, v := range baseAttrs {
+		augmented[k] = v
+	}
+
+	// Inject special attribute keys.
+	// Value is set to empty since the consent enforcer only checks for presence of the key, and the actual values
+	// can be obtained from the authenticated user context if needed
+	if ctx.AuthenticatedUser.UserType != "" {
+		augmented[oauth2const.ClaimUserType] = &authnprovider.AttributeMetadataResponse{}
+	}
+	if ctx.AuthenticatedUser.OrganizationUnitID != "" {
+		augmented[oauth2const.ClaimOUID] = &authnprovider.AttributeMetadataResponse{}
+		augmented[oauth2const.ClaimOUName] = &authnprovider.AttributeMetadataResponse{}
+		augmented[oauth2const.ClaimOUHandle] = &authnprovider.AttributeMetadataResponse{}
+	}
+	if ctx.AuthenticatedUser.UserID != "" {
+		augmented[oauth2const.UserAttributeGroups] = &authnprovider.AttributeMetadataResponse{}
+	}
+
+	return &authnprovider.AvailableAttributes{
+		Attributes:    augmented,
+		Verifications: baseVerifications,
+	}
 }
 
 // collectConsentedAttributes extracts all approved attribute names from a consent record.

@@ -48,8 +48,9 @@ import (
 )
 
 const (
-	testEmail     = "test@example.com"
-	testNameValue = "Test"
+	testEmail      = "test@example.com"
+	testNameValue  = "Test"
+	testAssertOUID = "ou-789"
 )
 
 type AuthAssertExecutorTestSuite struct {
@@ -580,7 +581,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated:    true,
 			UserID:             "user-123",
-			OrganizationUnitID: "ou-789",
+			OrganizationUnitID: testAssertOUID,
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
@@ -590,15 +591,15 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 		},
 	}
 
-	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-789").Return(ou.OrganizationUnit{
-		ID:     "ou-789",
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, testAssertOUID).Return(ou.OrganizationUnit{
+		ID:     testAssertOUID,
 		Name:   "Engineering",
 		Handle: "eng",
 	}, nil)
 
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
-			return claims[oauth2const.ClaimOUID] == "ou-789" &&
+			return claims[oauth2const.ClaimOUID] == testAssertOUID &&
 				claims[oauth2const.ClaimOUName] == "Engineering" &&
 				claims[oauth2const.ClaimOUHandle] == "eng"
 		}), mock.Anything).Return("jwt-token", int64(3600), nil)
