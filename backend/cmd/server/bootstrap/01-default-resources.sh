@@ -1148,7 +1148,7 @@ RESPONSE=$(thunder_api_call POST "/applications" "{
   \"name\": \"Console\",
   \"description\": \"Management application for Thunder\",
   \"url\": \"${PUBLIC_URL}/console\",
-  \"logo_url\": \"${PUBLIC_URL}/console/assets/images/logo-mini.svg\",
+  \"logo_url\": \"emoji:👨‍💻\",
   \"auth_flow_id\": \"${CONSOLE_AUTH_FLOW_ID}\",
   \"registration_flow_id\": \"${CONSOLE_REG_FLOW_ID}\",
   \"is_registration_flow_enabled\": false,

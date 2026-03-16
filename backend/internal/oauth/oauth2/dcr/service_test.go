@@ -193,9 +193,9 @@ func (s *DCRServiceTestSuite) TestMapApplicationErrorToDCRError() {
 		expectedDCRCode string
 	}{
 		{
-			name:            "Redirect URI Error APP-1006",
+			name:            "Invalid Logo URL Error APP-1006",
 			appErrCode:      "APP-1006",
-			expectedDCRCode: ErrorInvalidRedirectURI.Code,
+			expectedDCRCode: ErrorInvalidClientMetadata.Code,
 		},
 		{
 			name:            "Redirect URI Error APP-1014",

@@ -100,6 +100,8 @@ export default function createParserOptions(
 
   const defaultPatterns: string[] = [
     'public/*.js',
+    'scripts/*.js',
+    'scripts/*.mjs',
     '.*.js',
     '.*.cjs',
     '*.js',

@@ -121,12 +121,16 @@ vi.mock('../../components/edit-application/integration-guides/IntegrationGuides'
   default: vi.fn(() => <div data-testid="integration-guides">Integration Guides</div>),
 }));
 
-vi.mock('../../../../components/LogoUpdateModal', () => ({
+vi.mock('../../../../components/EmojiPicker/EmojiPicker', () => ({
+  default: vi.fn(() => null),
+}));
+
+vi.mock('../../../../components/ResourceLogoDialog', () => ({
   default: vi.fn(
-    ({open, onLogoUpdate, onClose}: {open: boolean; onLogoUpdate: (url: string) => void; onClose: () => void}) => (
-      <div data-testid="logo-update-modal" style={{display: open ? 'block' : 'none'}}>
-        <button type="button" onClick={() => onLogoUpdate('https://example.com/new-logo.png')}>
-          Update Logo
+    ({open, onClose, onSelect}: {open: boolean; onClose: () => void; onSelect: (value: string) => void}) => (
+      <div data-testid="emoji-picker" style={{display: open ? 'block' : 'none'}}>
+        <button type="button" onClick={() => onSelect('emoji:🚀')}>
+          Select Icon
         </button>
         <button type="button" onClick={onClose}>
           Close
@@ -601,7 +605,7 @@ describe('ApplicationEditPage', () => {
       renderComponent();
 
       // Modal should be in the DOM (hidden by default)
-      expect(screen.getByTestId('logo-update-modal')).toBeInTheDocument();
+      expect(screen.getByTestId('emoji-picker')).toBeInTheDocument();
     });
 
     it('should open logo modal when avatar is clicked', async () => {
@@ -613,7 +617,7 @@ describe('ApplicationEditPage', () => {
       await user.click(avatar);
 
       await waitFor(() => {
-        const modal = screen.getByTestId('logo-update-modal');
+        const modal = screen.getByTestId('emoji-picker');
         expect(modal).toHaveStyle({display: 'block'});
       });
     });
@@ -627,9 +631,9 @@ describe('ApplicationEditPage', () => {
       await user.click(avatar);
 
       // Click update logo button in modal
-      const modal = screen.getByTestId('logo-update-modal');
-      const updateLogoButton = within(modal).getByRole('button', {name: /update logo/i});
-      await user.click(updateLogoButton);
+      const modal = screen.getByTestId('emoji-picker');
+      const selectIconButton = within(modal).getByRole('button', {name: /select icon/i});
+      await user.click(selectIconButton);
 
       await waitFor(() => {
         // Should show unsaved changes since logo was updated
@@ -638,7 +642,7 @@ describe('ApplicationEditPage', () => {
 
       // Modal should be closed
       await waitFor(() => {
-        const closedModal = screen.getByTestId('logo-update-modal');
+        const closedModal = screen.getByTestId('emoji-picker');
         expect(closedModal).toHaveStyle({display: 'none'});
       });
     });
@@ -656,7 +660,7 @@ describe('ApplicationEditPage', () => {
       await user.click(closeButton);
 
       await waitFor(() => {
-        const modal = screen.getByTestId('logo-update-modal');
+        const modal = screen.getByTestId('emoji-picker');
         expect(modal).toHaveStyle({display: 'none'});
       });
     });
@@ -1142,7 +1146,7 @@ describe('ApplicationEditPage', () => {
       fireEvent.click(screen.getByRole('button', {name: 'Update Logo'}));
 
       await waitFor(() => {
-        expect(screen.getByTestId('logo-update-modal')).toHaveStyle({display: 'block'});
+        expect(screen.getByTestId('emoji-picker')).toHaveStyle({display: 'block'});
       });
     });
   });
@@ -1276,13 +1280,13 @@ describe('ApplicationEditPage', () => {
       const avatar = screen.getByRole('img');
       await user.click(avatar);
 
-      const logoModal = screen.getByTestId('logo-update-modal');
-      const updateLogoButton = within(logoModal).getByRole('button', {name: /update logo/i});
-      await user.click(updateLogoButton);
+      const logoModal = screen.getByTestId('emoji-picker');
+      const selectIconButton = within(logoModal).getByRole('button', {name: /select icon/i});
+      await user.click(selectIconButton);
 
       await waitFor(() => {
-        const updatedAvatar = screen.getByRole('img');
-        expect(updatedAvatar).toHaveAttribute('src', 'https://example.com/new-logo.png');
+        // Avatar now displays the selected emoji '🚀' (from mock)
+        expect(screen.getByText('🚀')).toBeInTheDocument();
       });
     });
 

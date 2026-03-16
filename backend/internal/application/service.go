@@ -276,7 +276,7 @@ func (as *applicationService) ValidateApplication(ctx context.Context, app *mode
 	if app.URL != "" && !sysutils.IsValidURI(app.URL) {
 		return nil, nil, &ErrorInvalidApplicationURL
 	}
-	if app.LogoURL != "" && !sysutils.IsValidURI(app.LogoURL) {
+	if app.LogoURL != "" && !sysutils.IsValidLogoURI(app.LogoURL) {
 		return nil, nil, &ErrorInvalidLogoURL
 	}
 
@@ -412,7 +412,7 @@ func (as *applicationService) ValidateApplicationForUpdate(
 	if app.URL != "" && !sysutils.IsValidURI(app.URL) {
 		return nil, nil, &ErrorInvalidApplicationURL
 	}
-	if app.LogoURL != "" && !sysutils.IsValidURI(app.LogoURL) {
+	if app.LogoURL != "" && !sysutils.IsValidLogoURI(app.LogoURL) {
 		return nil, nil, &ErrorInvalidLogoURL
 	}
 

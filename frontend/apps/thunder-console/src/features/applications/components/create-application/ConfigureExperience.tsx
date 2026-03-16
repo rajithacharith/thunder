@@ -297,7 +297,7 @@ export default function ConfigureExperience({
               {userTypes.map((userType) => {
                 const isSelected = selectedUserTypes.includes(userType.name);
                 return (
-                  <Grid size={{xs: 12, sm: 6, md: 4}} key={userType.id}>
+                  <Grid size={{xs: 12, sm: 12, md: 12, lg: 6, xl: 3}} key={userType.id}>
                     <Card
                       variant="outlined"
                       onClick={() => {
@@ -306,11 +306,11 @@ export default function ConfigureExperience({
                           : [...selectedUserTypes, userType.name];
                         onUserTypesChange(newSelection);
                       }}
+                      sx={{height: '100%'}}
                     >
                       <CardActionArea
                         sx={{
-                          height: 120,
-                          width: 120,
+                          height: '100%',
                           cursor: 'pointer',
                           border: 1,
                           borderColor: isSelected ? 'primary.main' : 'divider',

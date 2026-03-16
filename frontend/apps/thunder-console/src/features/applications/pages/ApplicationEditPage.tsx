@@ -25,7 +25,6 @@ import {
   Button,
   CircularProgress,
   Alert,
-  Avatar,
   IconButton,
   TextField,
   Chip,
@@ -41,7 +40,7 @@ import useGetApplication from '../api/useGetApplication';
 import useUpdateApplication from '../api/useUpdateApplication';
 import type {Application} from '../models/application';
 import type {OAuth2Config} from '../models/oauth';
-import LogoUpdateModal from '../../../components/LogoUpdateModal';
+import ResourceAvatar from '../../../components/ResourceAvatar';
 import UnsavedChangesBar from '../../../components/UnsavedChangesBar';
 import IntegrationGuides from '../components/edit-application/integration-guides/IntegrationGuides';
 import EditGeneralSettings from '../components/edit-application/general-settings/EditGeneralSettings';
@@ -82,7 +81,6 @@ export default function ApplicationEditPage() {
   const updateApplication = useUpdateApplication();
 
   const [activeTab, setActiveTab] = useState(0);
-  const [isLogoModalOpen, setIsLogoModalOpen] = useState(false);
   const [editedApp, setEditedApp] = useState<Partial<Application>>({});
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -197,41 +195,13 @@ export default function ApplicationEditPage() {
         <PageTitle.BackButton component={<Link to="/applications" />}>
           {t('applications:edit.page.back')}
         </PageTitle.BackButton>
-        <PageTitle.Avatar sx={{position: 'relative', overflow: 'visible'}}>
-          <Avatar
-            src={editedApp.logo_url ?? application.logo_url}
-            slotProps={{
-              img: {
-                onError: (e: SyntheticEvent<HTMLImageElement>) => {
-                  e.currentTarget.style.display = 'none';
-                },
-              },
-            }}
-            sx={{
-              cursor: 'pointer',
-              '&:hover': {
-                opacity: 0.8,
-              },
-            }}
-            onClick={() => setIsLogoModalOpen(true)}
-          >
-            <AppWindow />
-          </Avatar>
-          <IconButton
-            size="small"
-            aria-label={t('applications:edit.page.logoUpdate.label')}
-            sx={{
-              position: 'absolute',
-              bottom: -4,
-              right: -4,
-              bgcolor: 'background.paper',
-              boxShadow: 1,
-              '&:hover': {bgcolor: 'action.hover'},
-            }}
-            onClick={() => setIsLogoModalOpen(true)}
-          >
-            <Edit size={14} />
-          </IconButton>
+        <PageTitle.Avatar sx={{overflow: 'visible'}}>
+          <ResourceAvatar
+            value={editedApp.logo_url ?? application.logo_url}
+            fallbackIcon={<AppWindow />}
+            editAriaLabel={t('applications:edit.page.logoUpdate.label')}
+            onSelect={(newLogoUrl: string) => setEditedApp((prev) => ({...prev, logo_url: newLogoUrl}))}
+          />
         </PageTitle.Avatar>
         <PageTitle.Header>
           <Stack direction="row" alignItems="center" spacing={1} mb={1}>
@@ -450,17 +420,6 @@ export default function ApplicationEditPage() {
           />
         </TabPanel>
       </>
-
-      {/* Logo Update Modal */}
-      <LogoUpdateModal
-        open={isLogoModalOpen}
-        onClose={() => setIsLogoModalOpen(false)}
-        currentLogoUrl={editedApp.logo_url ?? application.logo_url}
-        onLogoUpdate={(newLogoUrl: string) => {
-          setEditedApp({...editedApp, logo_url: newLogoUrl});
-          setIsLogoModalOpen(false);
-        }}
-      />
 
       {/* Floating Action Bar */}
       {hasChanges && (

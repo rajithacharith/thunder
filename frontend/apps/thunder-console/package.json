@@ -22,8 +22,9 @@
     "directory": "frontend/apps/thunder-console"
   },
   "scripts": {
-    "dev": "vite",
+    "codegen:emojis": "node scripts/update-emojis.mjs",
     "build": "tsc -b && vite build",
+    "dev": "vite",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "preview": "vite preview",

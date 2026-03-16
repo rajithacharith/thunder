@@ -32,6 +32,7 @@ import PluginRegistry from '../../plugins/PluginRegistry';
 import FlowEventTypes from '../../models/extension';
 import type {StepData} from '../../models/steps';
 import type {Element} from '../../models/elements';
+import {ElementTypes} from '../../models/elements';
 
 /**
  * Props interface of {@link ResourceProperties}
@@ -96,23 +97,46 @@ function ResourceProperties(): ReactElement {
       return {} as Properties;
     }
 
-    const props: Properties = {} as Properties;
+    const accumulated: Properties = {} as Properties;
 
     // Extract top-level editable properties (new format)
     // Note: startIcon and endIcon are handled by ButtonExtendedProperties, not displayed here
-    const topLevelEditableProps = ['label', 'hint', 'placeholder', 'required', 'src', 'alt', 'width', 'height', 'items', 'direction', 'gap', 'align', 'justify', 'name', 'size', 'color'];
+    const topLevelEditableProps = [
+      'label',
+      'hint',
+      'placeholder',
+      'required',
+      'src',
+      'alt',
+      'width',
+      'height',
+      'items',
+      'direction',
+      'gap',
+      'align',
+      'justify',
+      'name',
+      'size',
+      'color',
+    ];
     const resourceWithProps = lastInteractedResource as Resource & Record<string, unknown>;
     topLevelEditableProps.forEach((key) => {
       if (resourceWithProps[key] !== undefined && !ResourcePropertyPanelConstants.EXCLUDED_PROPERTIES.includes(key)) {
-        (props as Record<string, unknown>)[key] = resourceWithProps[key];
+        (accumulated as Record<string, unknown>)[key] = resourceWithProps[key];
       }
     });
+
+    // Ensure TEXT elements always expose `align` so the dropdown is visible
+    // even for elements that were created before `align` was added as a default.
+    if (lastInteractedResource.type === ElementTypes.Text && (accumulated as Record<string, unknown>).align === undefined) {
+      (accumulated as Record<string, unknown>).align = 'left';
+    }
 
     // Also extract from config for backwards compatibility
     if (lastInteractedResource.config) {
       Object.keys(lastInteractedResource.config).forEach((key: string) => {
         if (!ResourcePropertyPanelConstants.EXCLUDED_PROPERTIES.includes(key)) {
-          (props as Record<string, unknown>)[key] = (
+          (accumulated as Record<string, unknown>)[key] = (
             lastInteractedResource.config as unknown as Record<string, unknown>
           )[key];
         }
@@ -122,11 +146,11 @@ function ResourceProperties(): ReactElement {
     PluginRegistry.getInstance().executeSync(
       FlowEventTypes.ON_PROPERTY_PANEL_OPEN,
       lastInteractedResource,
-      props,
+      accumulated,
       lastInteractedStepId,
     );
 
-    return cloneDeep(props);
+    return cloneDeep(accumulated);
   }, [lastInteractedResource, lastInteractedStepId]);
 
   const changeSelectedVariant = useCallback((selected: string, element?: Partial<Element>) => {
@@ -259,7 +283,26 @@ function ResourceProperties(): ReactElement {
         const updatedResource: Resource = cloneDeep(currentResource);
 
         // Top-level editable properties are set directly on the resource
-        const topLevelEditableProps = ['label', 'hint', 'placeholder', 'required', 'src', 'alt', 'width', 'height', 'startIcon', 'endIcon', 'items', 'direction', 'gap', 'align', 'justify', 'name', 'size', 'color'];
+        const topLevelEditableProps = [
+          'label',
+          'hint',
+          'placeholder',
+          'required',
+          'src',
+          'alt',
+          'width',
+          'height',
+          'startIcon',
+          'endIcon',
+          'items',
+          'direction',
+          'gap',
+          'align',
+          'justify',
+          'name',
+          'size',
+          'color',
+        ];
         if (propertyKey === 'data') {
           // When propertyKey is exactly 'data', replace the entire data object
           updatedResource.data = newValue as StepData;

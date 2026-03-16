@@ -18,7 +18,8 @@
 
 import type {ResourcePropertiesProps} from '@/features/flows/context/FlowBuilderCoreProvider';
 import {useState, useEffect, type ReactElement} from 'react';
-import {FormLabel, MenuItem, Select} from '@wso2/oxygen-ui';
+import {useTranslation} from 'react-i18next';
+import {FormControl, FormLabel, MenuItem, Select} from '@wso2/oxygen-ui';
 import isEmpty from 'lodash-es/isEmpty';
 import type {FieldKey, FieldValue} from '@/features/flows/models/base';
 import {ExecutionTypes, StepCategories, StepTypes} from '@/features/flows/models/steps';
@@ -43,6 +44,7 @@ function ResourceProperties({
   onChange,
   onVariantChange,
 }: ResourcePropertiesProps): ReactElement | null {
+  const {t} = useTranslation();
   // Adapter to handle onChange with proper type preservation
   const handleChange = (propertyKey: string, newValue: unknown, changedResource: unknown): void => {
     // Preserve boolean values, objects, convert strings and numbers to string, default to empty string
@@ -232,6 +234,20 @@ function ResourceProperties({
               propertyValue={(resource as Element & {label?: string}).label ?? ''}
               onChange={(_key, value, res) => handleChange('label', value, res)}
             />
+            <FormControl fullWidth size="small">
+              <FormLabel htmlFor="align-select">{t('flows:core.elements.text.align.label')}</FormLabel>
+              <Select
+                id="align-select"
+                value={(resource as Element & {align?: string}).align ?? 'left'}
+                onChange={(e) => handleChange('align', e.target.value, resource)}
+              >
+                {(['left', 'center', 'right', 'justify', 'inherit'] as const).map((opt) => (
+                  <MenuItem key={opt} value={opt}>
+                    {t(`flows:core.elements.text.align.options.${opt}`)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </>
         );
       }

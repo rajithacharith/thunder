@@ -121,13 +121,18 @@ vi.mock('../../../../hooks/useDataGridLocaleText', () => ({
   default: () => ({}),
 }));
 
-// Mock LogoUpdateModal
-vi.mock('../../../../components/LogoUpdateModal', () => ({
+// Mock EmojiPicker
+vi.mock('../../../../components/EmojiPicker/EmojiPicker', () => ({
+  default: vi.fn(() => null),
+}));
+
+// Mock ResourceLogoDialog so we can control open/close state from the tests
+vi.mock('../../../../components/ResourceLogoDialog', () => ({
   default: vi.fn(
-    ({open, onLogoUpdate, onClose}: {open: boolean; onLogoUpdate: (url: string) => void; onClose: () => void}) => (
-      <div data-testid="logo-update-modal" style={{display: open ? 'block' : 'none'}}>
-        <button type="button" onClick={() => onLogoUpdate('https://example.com/new-logo.png')}>
-          Update Logo
+    ({open, onClose, onSelect}: {open: boolean; onClose: () => void; onSelect: (value: string) => void}) => (
+      <div data-testid="emoji-picker" style={{display: open ? 'block' : 'none'}}>
+        <button type="button" onClick={() => onSelect('emoji:🚀')}>
+          Select Icon
         </button>
         <button type="button" onClick={onClose}>
           Close
@@ -963,7 +968,7 @@ describe('OrganizationUnitEditPage', () => {
       fireEvent.click(avatar);
 
       await waitFor(() => {
-        const modal = screen.getByTestId('logo-update-modal');
+        const modal = screen.getByTestId('emoji-picker');
         expect(modal).toHaveStyle({display: 'block'});
       });
     });
@@ -983,10 +988,10 @@ describe('OrganizationUnitEditPage', () => {
       fireEvent.click(avatar);
 
       await waitFor(() => {
-        expect(screen.getByTestId('logo-update-modal')).toHaveStyle({display: 'block'});
+        expect(screen.getByTestId('emoji-picker')).toHaveStyle({display: 'block'});
       });
 
-      fireEvent.click(screen.getByText('Update Logo'));
+      fireEvent.click(screen.getByText('Select Icon'));
 
       await waitFor(() => {
         expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
@@ -996,74 +1001,87 @@ describe('OrganizationUnitEditPage', () => {
 
   describe('Logo Update Modal', () => {
     it('should open logo modal when edit icon button is clicked', async () => {
+      mockUseGetOrganizationUnit.mockReturnValue({
+        data: {
+          ...mockOrganizationUnit,
+          logo_url: 'emoji:🚀',
+        },
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
       renderWithProviders(<OrganizationUnitEditPage />);
 
-      const editButtons = screen.getAllByRole('button');
-      const logoEditButton = editButtons.find(
-        (btn) => btn.getAttribute('aria-label') === 'organizationUnits:edit.page.logoUpdate.label',
-      );
+      const logoEditButton = await screen.findByLabelText('organizationUnits:edit.page.logoUpdate.label');
+      fireEvent.click(logoEditButton);
 
-      if (logoEditButton) {
-        fireEvent.click(logoEditButton);
-
-        await waitFor(() => {
-          const modal = screen.getByTestId('logo-update-modal');
-          expect(modal).toHaveStyle({display: 'block'});
-        });
-      }
+      await waitFor(() => {
+        const modal = screen.getByTestId('emoji-picker');
+        expect(modal).toHaveStyle({display: 'block'});
+      });
     });
 
     it('should close logo modal when close button is clicked', async () => {
+      mockUseGetOrganizationUnit.mockReturnValue({
+        data: {
+          ...mockOrganizationUnit,
+          logo_url: 'emoji:🚀',
+        },
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
       renderWithProviders(<OrganizationUnitEditPage />);
 
       // Open the modal via logo edit icon button
-      const editButtons = screen.getAllByRole('button');
-      const logoEditButton = editButtons.find(
-        (btn) => btn.getAttribute('aria-label') === 'organizationUnits:edit.page.logoUpdate.label',
-      );
-
-      expect(logoEditButton).toBeInTheDocument();
-      fireEvent.click(logoEditButton!);
+      const logoEditButton = await screen.findByLabelText('organizationUnits:edit.page.logoUpdate.label');
+      fireEvent.click(logoEditButton);
 
       await waitFor(() => {
-        expect(screen.getByTestId('logo-update-modal')).toHaveStyle({display: 'block'});
+        expect(screen.getByTestId('emoji-picker')).toHaveStyle({display: 'block'});
       });
 
       // Close the modal
       fireEvent.click(screen.getByText('Close'));
 
       await waitFor(() => {
-        expect(screen.getByTestId('logo-update-modal')).toHaveStyle({display: 'none'});
+        expect(screen.getByTestId('emoji-picker')).toHaveStyle({display: 'none'});
       });
     });
 
     it('should update logo and close modal when logo is updated', async () => {
+      mockUseGetOrganizationUnit.mockReturnValue({
+        data: {
+          ...mockOrganizationUnit,
+          logo_url: 'emoji:🚀',
+        },
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
       renderWithProviders(<OrganizationUnitEditPage />);
 
       // Open the modal
-      const editButtons = screen.getAllByRole('button');
-      const logoEditButton = editButtons.find(
-        (btn) => btn.getAttribute('aria-label') === 'organizationUnits:edit.page.logoUpdate.label',
-      );
+      const logoEditButton = await screen.findByLabelText('organizationUnits:edit.page.logoUpdate.label');
+      fireEvent.click(logoEditButton);
 
-      if (logoEditButton) {
-        fireEvent.click(logoEditButton);
+      await waitFor(() => {
+        expect(screen.getByTestId('emoji-picker')).toHaveStyle({display: 'block'});
+      });
 
-        await waitFor(() => {
-          expect(screen.getByTestId('logo-update-modal')).toHaveStyle({display: 'block'});
-        });
+      // Click update logo
+      fireEvent.click(screen.getByText('Select Icon'));
 
-        // Click update logo
-        fireEvent.click(screen.getByText('Update Logo'));
+      // Modal should close
+      await waitFor(() => {
+        expect(screen.getByTestId('emoji-picker')).toHaveStyle({display: 'none'});
+      });
 
-        // Modal should close
-        await waitFor(() => {
-          expect(screen.getByTestId('logo-update-modal')).toHaveStyle({display: 'none'});
-        });
-
-        // Should show unsaved changes
-        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
-      }
+      // Should show unsaved changes
+      expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
     });
   });
 

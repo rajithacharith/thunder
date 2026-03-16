@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, fireEvent, waitFor, within, renderWithProviders} from '@thunder/test-utils';
+import {screen, fireEvent, waitFor, within, renderWithProviders, act} from '@thunder/test-utils';
 import OrganizationUnitsTreeView from '../OrganizationUnitsTreeView';
 import type {OrganizationUnitListResponse} from '../../models/responses';
 
@@ -1004,6 +1004,205 @@ describe('OrganizationUnitsTreeView', () => {
       expect(stableLogger.error).toHaveBeenCalledWith('Failed to navigate to create organization unit page', {
         error: expect.objectContaining({message: 'Navigation failed'}) as Error,
       });
+    });
+  });
+
+  it('should load more root items when the root load more button is clicked', async () => {
+    const paginatedData: OrganizationUnitListResponse = {
+      totalResults: 50,
+      startIndex: 1,
+      count: 2,
+      organizationUnits: [
+        {id: 'ou-1', handle: 'root', name: 'Root Organization', description: null, parent: null},
+        {id: 'ou-2', handle: 'engineering', name: 'Engineering', description: null, parent: null},
+      ],
+    };
+
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: paginatedData,
+      isLoading: false,
+      error: null,
+    });
+
+    mockHttpRequest.mockResolvedValue({
+      data: {
+        totalResults: 50,
+        startIndex: 3,
+        count: 2,
+        organizationUnits: [
+          {id: 'ou-3', handle: 'marketing', name: 'Marketing', description: null, parent: null},
+          {id: 'ou-4', handle: 'sales', name: 'Sales', description: null, parent: null},
+        ],
+      },
+    });
+
+    renderWithProviders(<OrganizationUnitsTreeView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Load more')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Load more'));
+
+    await waitFor(() => {
+      expect(mockHttpRequest).toHaveBeenCalled();
+    });
+  });
+
+  it('should append new items when root load more succeeds and still has more', async () => {
+    const paginatedData: OrganizationUnitListResponse = {
+      totalResults: 5,
+      startIndex: 1,
+      count: 2,
+      organizationUnits: [
+        {id: 'ou-1', handle: 'root', name: 'Root Organization', description: null, parent: null},
+        {id: 'ou-2', handle: 'engineering', name: 'Engineering', description: null, parent: null},
+      ],
+    };
+
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: paginatedData,
+      isLoading: false,
+      error: null,
+    });
+
+    mockHttpRequest.mockResolvedValue({
+      data: {
+        totalResults: 5,
+        startIndex: 3,
+        count: 2,
+        organizationUnits: [
+          {id: 'ou-3', handle: 'marketing', name: 'Marketing', description: null, parent: null},
+          {id: 'ou-4', handle: 'sales', name: 'Sales', description: null, parent: null},
+        ],
+      },
+    });
+
+    renderWithProviders(<OrganizationUnitsTreeView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Load more')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Load more'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Marketing')).toBeInTheDocument();
+    });
+  });
+
+  it('should log error when root load more fetch fails', async () => {
+    const paginatedData: OrganizationUnitListResponse = {
+      totalResults: 50,
+      startIndex: 1,
+      count: 2,
+      organizationUnits: [
+        {id: 'ou-1', handle: 'root', name: 'Root Organization', description: null, parent: null},
+        {id: 'ou-2', handle: 'engineering', name: 'Engineering', description: null, parent: null},
+      ],
+    };
+
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: paginatedData,
+      isLoading: false,
+      error: null,
+    });
+
+    mockHttpRequest.mockRejectedValue(new Error('Root load more failed'));
+
+    renderWithProviders(<OrganizationUnitsTreeView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Load more')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Load more'));
+
+    await waitFor(() => {
+      expect(stableLogger.error).toHaveBeenCalledWith('Failed to load more root organization units', expect.anything());
+    });
+  });
+
+  it('should close the snackbar automatically after the auto-hide duration', async () => {
+    mockDeleteMutate.mockImplementation((_id: string, options: {onSuccess: () => void}) => {
+      options.onSuccess();
+    });
+
+    renderWithProviders(<OrganizationUnitsTreeView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    const actionButtons = screen.getAllByLabelText('Actions');
+    fireEvent.click(actionButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Delete'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+    });
+
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByText('Delete'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Organization unit deleted successfully')).toBeInTheDocument();
+    });
+
+    await waitFor(
+      () => {
+        expect(screen.queryByText('Organization unit deleted successfully')).not.toBeInTheDocument();
+      },
+      {timeout: 7000},
+    );
+  });
+
+  it('should close the snackbar when clicking outside (clickaway)', async () => {
+    mockDeleteMutate.mockImplementation((_id: string, options: {onSuccess: () => void}) => {
+      options.onSuccess();
+    });
+
+    renderWithProviders(<OrganizationUnitsTreeView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    const actionButtons = screen.getAllByLabelText('Actions');
+    fireEvent.click(actionButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Delete'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+    });
+
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByText('Delete'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Organization unit deleted successfully')).toBeInTheDocument();
+    });
+
+    act(() => {
+      fireEvent.click(document.body);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Organization unit deleted successfully')).not.toBeInTheDocument();
     });
   });
 });

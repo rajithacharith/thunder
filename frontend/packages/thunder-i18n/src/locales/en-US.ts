@@ -879,6 +879,7 @@ const translations = {
     'onboarding.configure.design.subtitle': 'Customize the appearance of your application',
     'onboarding.configure.design.logo.title': 'Application Logo',
     'onboarding.configure.design.logo.shuffle': 'Shuffle',
+    'onboarding.configure.design.logo.chooseLogo': 'Choose logo or emoji',
     'onboarding.configure.design.theme.title': 'Theme',
     'onboarding.configure.design.theme.emptyState': 'No themes configured',
     'onboarding.configure.design.theme.noDescription': 'No description',
@@ -1114,16 +1115,6 @@ const translations = {
     'edit.advanced.certificate.type.none': 'None',
     'edit.advanced.certificate.type.jwks': 'JWKS (Inline JSON Web Key Set)',
     'edit.advanced.certificate.type.jwksUri': 'JWKS URI (URL to JWKS endpoint)',
-    // Logo update modal
-    'logoModal.title': 'Update Application Logo',
-    'logoModal.preview.title': 'Preview',
-    'logoModal.customUrl.title': 'Custom Logo URL',
-    'logoModal.customUrl.placeholder': 'https://example.com/logo.png',
-    'logoModal.customUrl.hint': 'Enter a direct URL to your custom logo image',
-    'logoModal.logos.title': 'Application Logo',
-    'logoModal.logos.shuffle': 'Shuffle',
-    'logoModal.cancel': 'Cancel',
-    'logoModal.update': 'Update Logo',
 
     /* -------------------- Edit page -------------------- */
     // Common
@@ -1421,6 +1412,29 @@ const translations = {
     'fields.username.placeholder': 'Enter your username',
     'fields.usertype.label': 'User Type',
     'fields.usertype.placeholder': 'Select User Type',
+
+    // Emoji picker
+    'emoji_picker.search.placeholder': 'Search emojis...',
+    'emoji_picker.search.label': 'Search emojis',
+    'emoji_picker.empty_state.message': 'No emojis found for "{{search}}"',
+    'emoji_picker.categories.smileys_emotion': 'Smileys & Emotion',
+    'emoji_picker.categories.people_body': 'People & Body',
+    'emoji_picker.categories.animals_nature': 'Animals & Nature',
+    'emoji_picker.categories.food_drink': 'Food & Drink',
+    'emoji_picker.categories.travel_places': 'Travel & Places',
+    'emoji_picker.categories.activities': 'Activities',
+    'emoji_picker.categories.objects': 'Objects',
+    'emoji_picker.categories.symbols': 'Symbols',
+    'emoji_picker.categories.flags': 'Flags',
+
+    // Resource logo dialog
+    'resource_logo_dialog.title': 'Choose a Logo',
+    'resource_logo_dialog.divider.or': 'Or',
+    'resource_logo_dialog.url_section.label': 'Use a custom image URL',
+    'resource_logo_dialog.url_section.placeholder': 'https://example.com/logo.png',
+    'resource_logo_dialog.url_section.helper_text': 'Enter a direct URL to a custom logo image',
+    'resource_logo_dialog.actions.cancel': 'Cancel',
+    'resource_logo_dialog.actions.select': 'Select',
   },
 
   // ============================================================================
@@ -1608,6 +1622,14 @@ const translations = {
     'core.elements.richText.linkEditor.apply': 'Apply',
     'core.elements.richText.linkEditor.editLink': 'Edit Link',
     'core.elements.richText.linkEditor.viewLink': 'Link',
+
+    // Elements - text element
+    'core.elements.text.align.label': 'Align',
+    'core.elements.text.align.options.left': 'Left',
+    'core.elements.text.align.options.center': 'Center',
+    'core.elements.text.align.options.right': 'Right',
+    'core.elements.text.align.options.justify': 'Justify',
+    'core.elements.text.align.options.inherit': 'Inherit',
 
     // Elements - text property field
     'core.elements.textPropertyField.placeholder': 'Enter {{propertyName}}',

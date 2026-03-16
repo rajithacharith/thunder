@@ -281,6 +281,45 @@ describe('ResourceProperties', () => {
     });
   });
 
+  describe('Text Element align default', () => {
+    it('should inject align="left" for Text elements that have no align property', () => {
+      const textResource: Base = {
+        ...mockBaseResource,
+        type: ElementTypes.Text,
+      } as Base;
+
+      const contextWithText = createContextValue({
+        lastInteractedResource: textResource,
+      });
+
+      render(<ResourceProperties />, {wrapper: createWrapper(contextWithText)});
+
+      const propertiesDiv = screen.getByTestId('properties');
+      const properties = JSON.parse(propertiesDiv.textContent ?? '{}') as Record<string, unknown>;
+
+      expect(properties.align).toBe('left');
+    });
+
+    it('should not override align when Text element already has an align value', () => {
+      const textResource: Base = {
+        ...mockBaseResource,
+        type: ElementTypes.Text,
+        align: 'center',
+      } as Base & {align: string};
+
+      const contextWithText = createContextValue({
+        lastInteractedResource: textResource,
+      });
+
+      render(<ResourceProperties />, {wrapper: createWrapper(contextWithText)});
+
+      const propertiesDiv = screen.getByTestId('properties');
+      const properties = JSON.parse(propertiesDiv.textContent ?? '{}') as Record<string, unknown>;
+
+      expect(properties.align).toBe('center');
+    });
+  });
+
   describe('Empty Resource', () => {
     it('should handle empty config object', () => {
       const resourceWithEmptyConfig: Base = {
