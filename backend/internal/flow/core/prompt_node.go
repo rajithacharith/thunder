@@ -78,6 +78,11 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 			logger.Debug("Prompt node is handling a failure", log.String("failureReason", failureReason))
 			nodeResp.FailureReason = failureReason
 			delete(ctx.RuntimeData, "failureReason")
+			// Clear this prompt's inputs and current action
+			for _, input := range n.getAllInputs() {
+				delete(ctx.UserInputs, input.Identifier)
+			}
+			ctx.CurrentAction = ""
 		}
 	}
 

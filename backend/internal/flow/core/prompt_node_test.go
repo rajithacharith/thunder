@@ -571,6 +571,71 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason() {
 	s.NotContains(ctx.RuntimeData, "failureReason", "Should delete failure reason from runtime data")
 }
 
+func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason_ClearsUserInputs() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "username", Required: true},
+				{Identifier: "password", Required: true},
+			},
+			Action: &common.Action{Ref: "submit", NextNode: "next"},
+		},
+	})
+
+	// User submitted inputs, but downstream task failed - routed back with failureReason
+	ctx := &NodeContext{
+		FlowID: "test-flow",
+		UserInputs: map[string]string{
+			"username": "takenuser",
+			"password": "secret",
+		},
+		RuntimeData: map[string]string{
+			"failureReason": "A user with this username already exists",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusIncomplete, resp.Status)
+	s.Equal("A user with this username already exists", resp.FailureReason)
+	s.NotContains(ctx.UserInputs, "username", "Prompt inputs should be cleared to force re-prompt")
+	s.NotContains(ctx.UserInputs, "password", "Prompt inputs should be cleared to force re-prompt")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason_ClearsCurrentAction() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "email", Required: true},
+			},
+			Action: &common.Action{Ref: "submit", NextNode: "next"},
+		},
+	})
+
+	ctx := &NodeContext{
+		FlowID:        "test-flow",
+		CurrentAction: "submit",
+		UserInputs: map[string]string{
+			"email": "existing@example.com",
+		},
+		RuntimeData: map[string]string{
+			"failureReason": "A user with this email already exists",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusIncomplete, resp.Status)
+	s.Equal("A user with this email already exists", resp.FailureReason)
+	s.Equal("", ctx.CurrentAction, "CurrentAction should be cleared to force re-prompt")
+}
+
 func (s *PromptOnlyNodeTestSuite) TestExecuteWithEmptyFailureReason() {
 	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
 	promptNode := node.(PromptNodeInterface)
