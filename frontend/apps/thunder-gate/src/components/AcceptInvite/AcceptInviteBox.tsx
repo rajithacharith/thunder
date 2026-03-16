@@ -23,6 +23,7 @@
 /* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 
 import type {JSX} from 'react';
+import {useState} from 'react';
 import {
   Box,
   Alert,
@@ -59,6 +60,7 @@ export default function AcceptInviteBox(): JSX.Element {
   const {resolve} = useTemplateLiteralResolver();
   const {t} = useTranslation();
   const {getServerUrl} = useConfig();
+  const [flowError, setFlowError] = useState<string | null>(null);
 
   const baseUrl = getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string);
 
@@ -90,14 +92,17 @@ export default function AcceptInviteBox(): JSX.Element {
             // eslint-disable-next-line no-console
             console.error('Invite acceptance error:', error);
           }}
+          onFlowChange={(response: any) => {
+            setFlowError(response?.failureReason ?? null);
+          }}
         >
           {({
-            values,
             fieldErrors,
             error,
             touched,
             isLoading,
             components,
+            values,
             handleInputChange,
             handleSubmit,
             isComplete,
@@ -147,10 +152,10 @@ export default function AcceptInviteBox(): JSX.Element {
 
             return (
               <>
-                {error && (
+                {(flowError ?? error) && (
                   <Alert severity="error" sx={{mb: 2}}>
                     <AlertTitle>{t('invite:errors.failed.title', 'Error')}</AlertTitle>
-                    {error.message ?? t('invite:errors.failed.description', 'An error occurred.')}
+                    {flowError ?? error?.message ?? t('invite:errors.failed.description', 'An error occurred.')}
                   </Alert>
                 )}
                 {components?.length > 0 && (
