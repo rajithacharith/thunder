@@ -6,7 +6,7 @@ Shared testing utilities for ⚡️ Thunder applications. Provides common test s
 
 - **Unified Test Setup** - Common test configuration for Vitest, jsdom, and React Testing Library
 - **Custom Render Functions** - Pre-configured render with all necessary providers (QueryClient, Router, Config, Logger, Theme)
-- **App Configuration** - Configurable settings for different Thunder apps (develop, gate)
+- **App Configuration** - Configurable settings for different Thunder apps (console, gate)
 - **Ready-to-Use Mocks** - Common mocks for i18n, IntersectionObserver, ResizeObserver, and more
 - **Re-exported Utilities** - Convenient re-exports from @testing-library/react and user-event
 
@@ -55,17 +55,17 @@ Create `src/test/setup.ts` in your app:
 import '@thunder/test-utils/setup';
 import { configureTestUtils } from '@thunder/test-utils';
 
-// Configure for your app (example for thunder-gate)
+// Configure for your app (example for gate)
 configureTestUtils({
   base: '/gate',
   clientId: 'GATE',
 });
 ```
 
-For `thunder-develop`, you can skip `configureTestUtils` as it uses the default configuration:
+For `console`, you can skip `configureTestUtils` as it uses the default configuration:
 
 ```typescript
-// Import shared test setup (defaults to '/develop' and 'DEVELOP')
+// Import shared test setup (defaults to '/console' and 'CONSOLE')
 import '@thunder/test-utils/setup';
 ```
 
@@ -228,8 +228,8 @@ import { mockUseDataGridLocaleText } from '@thunder/test-utils/mocks';
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `base` | `string` | `/develop` | Base path for the application |
-| `clientId` | `string` | `DEVELOP` | Client ID for the application |
+| `base` | `string` | `/console` | Base path for the application |
+| `clientId` | `string` | `CONSOLE` | Client ID for the application |
 | `hostname` | `string` | `localhost` | Server hostname |
 | `port` | `number` | `8090` | Server port |
 | `httpOnly` | `boolean` | `false` | Whether to use HTTP only |
@@ -336,12 +336,12 @@ The custom render functions wrap components with the following providers:
 
 ## App-Specific Setup
 
-### Thunder Develop
+### Thunder Console
 
 ```typescript
 // src/test/setup.ts
 import '@thunder/test-utils/setup';
-// Uses default config: base='/develop', clientId='DEVELOP'
+// Uses default config: base='/console', clientId='CONSOLE'
 ```
 
 ### Thunder Gate

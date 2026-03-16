@@ -322,7 +322,7 @@ const translations = {
     'pages.dashboard': 'Dashboard',
     'pages.flows': 'Flows',
     'pages.translations': 'Translations',
-    'breadcrumb.develop': 'Develop',
+    'breadcrumb.console': 'Console',
   },
 
   // ============================================================================
@@ -721,7 +721,7 @@ const translations = {
   // Dashboard namespace - Dashboard feature translations
   // ============================================================================
   dashboard: {
-    welcomeMessage: 'Welcome to Thunder Develop',
+    welcomeMessage: 'Welcome to Thunder Console',
     totalUsers: 'Total Users',
     activeUsers: 'Active Users',
     totalApplications: 'Total Applications',

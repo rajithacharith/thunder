@@ -112,11 +112,11 @@ jobs:
           }
 
       # TODO: Re-enable frontend tests after E2E issues are resolved
-      # - name: 🧪 Run Thunder-Develop Tests
-      #   working-directory: frontend/apps/thunder-develop
+      # - name: 🧪 Run Console Tests
+      #   working-directory: frontend/apps/thunder-console
       #   run: pnpm test:coverage
 
-      # - name: 🧪 Run Thunder-Gate Tests
+      # - name: 🧪 Run Gate Tests
       #   working-directory: frontend/apps/thunder-gate
       #   run: pnpm test:coverage
 

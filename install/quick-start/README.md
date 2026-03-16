@@ -25,9 +25,9 @@ This will automatically:
 Once running, Thunder is available at:
 
 | URL | Description |
-|---|---|
+|------|-------------|
 | `https://localhost:8090` | Thunder Server |
-| `https://localhost:8090/develop` | Developer Console |
+| `https://localhost:8090/console` | Thunder Console |
 
 > **Default credentials:** `admin` / `admin`
 
@@ -70,7 +70,7 @@ The Docker image bakes in default configuration files. You can override them wit
 | File in container | Purpose |
 |---|---|
 | `/opt/thunder/repository/conf/deployment.yaml` | Backend server — bind address, public URL, CORS, Gate client redirect |
-| `/opt/thunder/apps/develop/config.js` | Developer Console frontend |
+| `/opt/thunder/apps/console/config.js` | Management Console frontend |
 | `/opt/thunder/apps/gate/config.js` | Gate login app frontend |
 
 ### Step 1: Create Your Configuration Files
@@ -81,7 +81,7 @@ Create the following three files in the same directory as `docker-compose.yml`:
 .
 ├── docker-compose.yml
 ├── deployment.yaml       ← backend configuration
-├── develop-config.js     ← Developer Console configuration
+├── console-config.js     ← Thunder Console configuration
 └── gate-config.js        ← Gate login app configuration
 ```
 
@@ -110,13 +110,13 @@ passkey:
 # Other configurations...
 ```
 
-#### `develop-config.js`
+#### `console-config.js`
 
 ```js
 window.__THUNDER_RUNTIME_CONFIG__ = {
   client: {
-    base: '/develop',
-    client_id: 'DEVELOP',
+    base: '/console',
+    client_id: 'CONSOLE',
     scopes: ['openid', 'profile', 'email', 'system'],
   },
   server: {
@@ -157,7 +157,7 @@ services:
     volumes:
       # ...
       - ./deployment.yaml:/opt/thunder/repository/conf/deployment.yaml:ro
-      - ./develop-config.js:/opt/thunder/apps/develop/config.js:ro
+      - ./console-config.js:/opt/thunder/apps/console/config.js:ro
       - ./gate-config.js:/opt/thunder/apps/gate/config.js:ro
 ```
 

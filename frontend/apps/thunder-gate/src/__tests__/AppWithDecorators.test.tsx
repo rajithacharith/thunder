@@ -50,7 +50,7 @@ vi.mock('@thunder/i18n/locales/en-US', () => ({
   default: {common: {}, navigation: {}},
 }));
 
-describe('AppWithDecorators (thunder-gate)', () => {
+describe('AppWithDecorators (gate)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

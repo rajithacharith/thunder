@@ -19,17 +19,17 @@
 /**
  * User Management E2E Tests
  *
- * Tests for user CRUD operations in the Developer Portal.
+ * Tests for user CRUD operations in the Console.
  * Uses Page Object Model pattern via fixtures.
  *
  * Required environment variables:
- * - BASE_URL: Developer portal base URL
+ * - BASE_URL: Console base URL
  * - TEST_USER_USERNAME: Base username for test user creation
  * - ADMIN_USERNAME: Admin credentials for authentication
  * - ADMIN_PASSWORD: Admin password for authentication
  */
 
-import { test, type UserFormData } from "../../fixtures/developer-portal";
+import { test, type UserFormData } from "../../fixtures/console";
 
 const baseUsername = process.env.TEST_USER_USERNAME as string;
 

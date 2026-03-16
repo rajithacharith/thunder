@@ -34,7 +34,7 @@
  *     resources: {
  *       'en-US': {
  *         common: enUS.common,
- *         develop: enUS.develop,
+ *         console: enUS.console,
  *         gate: enUS.gate,
  *       },
  *     },

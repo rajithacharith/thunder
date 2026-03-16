@@ -57,14 +57,14 @@ export interface ServerConfig {
 export interface ClientConfig {
   /**
    * Base path for the client application.
-   * @example "/develop", "/admin", "/my-app"
+   * @example "/console", "/admin", "/my-app"
    */
   base: string;
 
   /**
    * Unique identifier for the client application, used for authentication
    * and authorization with identity providers like Asgardeo.
-   * @example "DEVELOP", "thunder-admin", "my-app-client-id"
+   * @example "CONSOLE", "thunder-admin", "my-app-client-id"
    */
   client_id: string;
 
@@ -147,7 +147,7 @@ export interface ThunderConfig {
  * // In public/config.js
  * window.__THUNDER_RUNTIME_CONFIG__ = {
  *   client: {
- *     client_id: 'DEVELOP'
+ *     client_id: 'CONSOLE'
  *   },
  *   server: {
  *     hostname: 'localhost',
