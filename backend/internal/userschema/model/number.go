@@ -33,6 +33,10 @@ type number struct {
 	enum        map[float64]struct{}
 }
 
+func (p *number) isUnique() bool {
+	return p.unique
+}
+
 func (p *number) isRequired() bool {
 	return p.required
 }

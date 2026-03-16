@@ -44,6 +44,7 @@ type property interface {
 	isRequired() bool
 	isCredential() bool
 	isDisplayable() bool
+	isUnique() bool
 	validateValue(value interface{}, path string, logger *log.Logger) (bool, error)
 	validateUniqueness(value interface{}, path string,
 		identifyUser func(map[string]interface{}) (*string, error), logger *log.Logger) (bool, error)
@@ -116,6 +117,18 @@ func (cs *Schema) GetCredentialAttributes() []string {
 	var fields []string
 	for name, prop := range cs.properties {
 		if prop.isCredential() {
+			fields = append(fields, name)
+		}
+	}
+
+	return fields
+}
+
+// GetUniqueAttributes returns the names of top-level properties marked as unique.
+func (cs *Schema) GetUniqueAttributes() []string {
+	var fields []string
+	for name, prop := range cs.properties {
+		if prop.isUnique() {
 			fields = append(fields, name)
 		}
 	}
