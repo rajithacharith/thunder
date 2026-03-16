@@ -131,6 +131,7 @@ catalogs:
       version: 4.3.6
 
 overrides:
+  flatted@3.3.3: '>=3.4.0'
   minimatch@10.1.1: '>=10.2.1'
   vite: npm:rolldown-vite@7.1.14
   nx>axios: '>=1.13.5'
@@ -252,7 +253,7 @@ importers:
         specifier: ^2.8.2
         version: 2.8.2
 
-  apps/thunder-develop:
+  apps/thunder-console:
     dependencies:
       '@asgardeo/react':
         specifier: 'catalog:'
@@ -7149,8 +7150,8 @@ packages:
     resolution: {integrity: sha512-b6suED+5/3rTpUBdG1gupIl8MPFCAMA0QXwmljLhvCUKcUvdE4gWky9zpuGCcXHOsz4J9wPGNWq6OKpmIzz3hQ==}
     hasBin: true
 
-  flatted@3.3.3:
-    resolution: {integrity: sha512-GX+ysw4PBCz0PzosHDepZGANEuFCMLrnRTiEy9McGjmkCQYwRq4A/X786G/fjM/+OjsWSU1ZrY5qyARZmO/uwg==}
+  flatted@3.4.1:
+    resolution: {integrity: sha512-IxfVbRFVlV8V/yRaGzk0UVIcsKKHMSfYw66T/u4nTwlWteQePsxe//LjudR1AMX4tZW3WFCh3Zqa/sjlqpbURQ==}
 
   focus-trap@7.8.0:
     resolution: {integrity: sha512-/yNdlIkpWbM0ptxno3ONTuf+2g318kh2ez3KSeZN5dZ8YC6AAmgeWz+GasYYiBJPFaYcSAPeu4GfhUaChzIJXA==}
@@ -10087,6 +10088,7 @@ packages:
   rolldown-vite@7.1.14:
     resolution: {integrity: sha512-eSiiRJmovt8qDJkGyZuLnbxAOAdie6NCmmd0NkTC0RJI9duiSBTfr8X2mBYJOUFzxQa2USaHmL99J9uMxkjCyw==}
     engines: {node: ^20.19.0 || >=22.12.0}
+    deprecated: Use 7.3.1 for migration purposes. For the most recent updates, migrate to Vite 8 once you're ready.
     hasBin: true
     peerDependencies:
       '@types/node': ^20.19.0 || >=22.12.0
@@ -15726,7 +15728,7 @@ snapshots:
       '@scalar/themes': 0.14.0
       '@scalar/types': 0.6.3
       '@scalar/workspace-store': 0.32.1(typescript@5.6.3)
-      flatted: 3.3.3
+      flatted: 3.4.1
       type-fest: 5.4.4
       vue: 3.5.28(typescript@5.6.3)
       yaml: 2.8.2
@@ -15738,7 +15740,7 @@ snapshots:
   '@scalar/object-utils@1.2.26':
     dependencies:
       '@scalar/helpers': 0.2.12
-      flatted: 3.3.3
+      flatted: 3.4.1
       just-clone: 6.2.0
       ts-deepmerge: 7.0.3
 
@@ -19151,13 +19153,13 @@ snapshots:
 
   flat-cache@3.2.0:
     dependencies:
-      flatted: 3.3.3
+      flatted: 3.4.1
       keyv: 4.5.4
       rimraf: 3.0.2
 
   flat@5.0.2: {}
 
-  flatted@3.3.3: {}
+  flatted@3.4.1: {}
 
   focus-trap@7.8.0:
     dependencies:

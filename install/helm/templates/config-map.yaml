@@ -24,4 +24,4 @@ metadata:
 data:
   deployment.yaml: {{ tpl (.Files.Get "conf/deployment.yaml") . | quote }}
   gate-config.js: {{ tpl (.Files.Get "conf/apps/gate/config.js") . | quote }}
-  develop-config.js: {{ tpl (.Files.Get "conf/apps/develop/config.js") . | quote }}
+  console-config.js: {{ tpl (.Files.Get "conf/apps/console/config.js") . | quote }}

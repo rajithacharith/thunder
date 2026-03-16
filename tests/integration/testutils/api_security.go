@@ -73,7 +73,7 @@ func isPublicEndpoint(path string) bool {
 		"/.well-known/openid-configuration",
 		"/.well-known/oauth-authorization-server",
 		"/gate/",    // Gate application (login UI)
-		"/develop/", // Develop application
+		"/console/", // Console application
 		"/error",
 	}
 
@@ -109,7 +109,7 @@ func GetHTTPClientWithToken(token string) *http.Client {
 	})
 }
 
-// GetHTTPClientForUser obtains a token using password grant (via DEVELOP app) and returns an HTTP client that
+// GetHTTPClientForUser obtains a token using password grant (via CONSOLE app) and returns an HTTP client that
 // injects that token. This keeps token generation out of individual tests.
 func GetHTTPClientForUser(username, password string) (*http.Client, error) {
 	if username == "" || password == "" {
@@ -117,8 +117,8 @@ func GetHTTPClientForUser(username, password string) (*http.Client, error) {
 	}
 
 	tokenResp, err := ObtainAccessTokenWithPassword(
-		"DEVELOP",
-		"https://localhost:8095/develop",
+		"CONSOLE",
+		"https://localhost:8095/console",
 		"openid",
 		username,
 		password,
@@ -135,13 +135,13 @@ func GetHTTPClientForUser(username, password string) (*http.Client, error) {
 	return GetHTTPClientWithToken(tokenResp.AccessToken), nil
 }
 
-// ObtainAdminAccessToken obtains an admin access token using the DEVELOP app and stores it globally
+// ObtainAdminAccessToken obtains an admin access token using the CONSOLE app and stores it globally
 func ObtainAdminAccessToken() error {
 	log.Println("Obtaining admin access token...")
 	var err error
 	adminTokenState, err = ObtainAccessTokenWithPassword(
-		"DEVELOP",
-		"https://localhost:8095/develop",
+		"CONSOLE",
+		"https://localhost:8095/console",
 		"system",
 		"admin",
 		"admin",
@@ -214,7 +214,7 @@ func RefreshTokenIfNeeded() error {
 
 	// Refresh the token
 	var err error
-	adminTokenState, err = RefreshAccessTokenWithClientCredentialsInBody("DEVELOP", "", refreshToken)
+	adminTokenState, err = RefreshAccessTokenWithClientCredentialsInBody("CONSOLE", "", refreshToken)
 	if err != nil {
 		return fmt.Errorf("failed to refresh access token: %w", err)
 	}

@@ -79,8 +79,8 @@ Import the `environment.json` file into Postman and fill in the required values.
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `MGT_TOKEN_APP_CLIENT_ID` | Client ID of the management app | `DEVELOP` |
-| `MGT_TOKEN_APP_REDIRECT_URI` | Redirect URI for the management app | `https://localhost:8090/develop` |
+| `MGT_TOKEN_APP_CLIENT_ID` | Client ID of the management app | `CONSOLE` |
+| `MGT_TOKEN_APP_REDIRECT_URI` | Redirect URI for the management app | `https://localhost:8090/console` |
 | `MGT_TOKEN_SCOPE` | OAuth scopes to request | `system` |
 | `ADMIN_USERNAME` | Admin username for authentication | `admin` |
 | `ADMIN_PASSWORD` | Admin password for authentication | `admin` |

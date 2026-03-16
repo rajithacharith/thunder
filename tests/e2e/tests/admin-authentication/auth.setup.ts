@@ -17,7 +17,7 @@
  */
 
 /**
- * Authentication Setup for Developer Portal E2E Tests
+ * Authentication Setup for Console E2E Tests
  *
  * This setup file performs admin login and saves the authentication state
  * (cookies, localStorage, sessionStorage) to a JSON file. Other tests can
@@ -26,18 +26,18 @@
  * Required environment variables:
  * - ADMIN_USERNAME: Admin user login name
  * - ADMIN_PASSWORD: Admin user password
- * - BASE_URL: Developer portal base URL
+ * - BASE_URL: Console base URL
  *
  * @see https://playwright.dev/docs/auth
  */
 
-import { setup, routes } from "../../fixtures/developer-portal";
+import { setup, routes } from "../../fixtures/console";
 import path from "path";
 import fs from "fs";
 import { Timeouts } from "../../constants/timeouts";
 
 /** Path to save authentication state */
-const AUTH_FILE = path.join(__dirname, "../../playwright/.auth/devportal-admin.json");
+const AUTH_FILE = path.join(__dirname, "../../playwright/.auth/console-admin.json");
 
 setup("Admin login test", async ({ page, context, signinPage }) => {
   const authDir = path.dirname(AUTH_FILE);

@@ -553,17 +553,17 @@ func TestRegisterStaticFileHandlers(t *testing.T) {
 	logger := log.GetLogger()
 	tmpDir := t.TempDir()
 
-	// Create gate and develop directories
+	// Create gate and console directories
 	gateDir := filepath.Join(tmpDir, "apps", "gate")
-	developDir := filepath.Join(tmpDir, "apps", "develop")
+	consoleDir := filepath.Join(tmpDir, "apps", "console")
 	err := os.MkdirAll(gateDir, 0o750)
 	assert.NoError(t, err)
-	err = os.MkdirAll(developDir, 0o750)
+	err = os.MkdirAll(consoleDir, 0o750)
 	assert.NoError(t, err)
 
 	// Create index.html files
 	requireWriteFile(t, filepath.Join(gateDir, "index.html"), []byte("gate app"))
-	requireWriteFile(t, filepath.Join(developDir, "index.html"), []byte("develop app"))
+	requireWriteFile(t, filepath.Join(consoleDir, "index.html"), []byte("console app"))
 
 	t.Run("registers handlers for existing directories", func(t *testing.T) {
 		mux := http.NewServeMux()
@@ -576,12 +576,12 @@ func TestRegisterStaticFileHandlers(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rr.Code)
 		assert.Contains(t, rr.Body.String(), "gate app")
 
-		// Test develop handler
-		req = httptest.NewRequest(http.MethodGet, "/develop/", nil)
+		// Test console handler
+		req = httptest.NewRequest(http.MethodGet, "/console/", nil)
 		rr = httptest.NewRecorder()
 		mux.ServeHTTP(rr, req)
 		assert.Equal(t, http.StatusOK, rr.Code)
-		assert.Contains(t, rr.Body.String(), "develop app")
+		assert.Contains(t, rr.Body.String(), "console app")
 	})
 
 	t.Run("handles missing directories gracefully", func(t *testing.T) {

@@ -54,7 +54,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-describe('withI18n (thunder-gate)', () => {
+describe('withI18n (gate)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

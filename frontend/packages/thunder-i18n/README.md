@@ -7,7 +7,7 @@ Internationalization (i18n) package for Thunder applications using react-i18next
 - **Type-safe translations** - Full TypeScript support with autocomplete
 - **React hooks** - Easy-to-use hooks for translations
 - **Namespace organization** - Organized by app and feature for better maintainability
-- **Multiple apps support** - Shared translations for develop, gate, and other Thunder apps
+- **Multiple apps support** - Shared translations for console, gate, and other Thunder apps
 
 ## Installation
 
@@ -184,7 +184,7 @@ const translations = {
 
 ## Usage Examples
 
-### Example: Thunder Develop - Users Page
+### Example: Thunder Console - Users Page
 
 ```tsx
 import { useTranslation } from 'react-i18next';
@@ -407,9 +407,9 @@ pnpm lint
 
 ## Integration Guide
 
-### Thunder Develop App
+### Thunder Console App
 
-Complete integration example for `apps/thunder-develop/src/main.tsx`:
+Complete integration example for `apps/thunder-console/src/main.tsx`:
 
 ```tsx
 import * as ReactDOM from 'react-dom/client';
