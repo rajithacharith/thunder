@@ -48,10 +48,11 @@ func newDesignResolveHandler(resolveService DesignResolveServiceInterface) *desi
 
 // HandleResolveRequest handles the resolve design configuration request.
 func (rh *designResolveHandler) HandleResolveRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	resolveType := common.DesignResolveType(strings.ToUpper(r.URL.Query().Get("type")))
 	id := r.URL.Query().Get("id")
 
-	designResponse, svcErr := rh.resolveService.ResolveDesign(resolveType, id)
+	designResponse, svcErr := rh.resolveService.ResolveDesign(ctx, resolveType, id)
 	if svcErr != nil {
 		rh.handleError(w, svcErr)
 		return

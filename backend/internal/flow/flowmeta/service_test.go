@@ -130,7 +130,8 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_APP_Success() {
 	suite.mockAppService.On("GetApplication", mock.Anything, appID).Return(mockApp, nil)
 	suite.mockOUService.On("GetOrganizationUnitList", mock.Anything, 1, 0).Return(mockOUList, nil)
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, ouID).Return(mockOU, nil)
-	suite.mockDesignResolve.On("ResolveDesign", common.DesignResolveTypeAPP, appID).Return(mockDesign, nil)
+	suite.mockDesignResolve.On("ResolveDesign", mock.Anything, common.DesignResolveTypeAPP, appID).
+		Return(mockDesign, nil)
 	suite.mockI18nService.On("ResolveTranslations", language, namespace).Return(mockTranslations, nil)
 	suite.mockI18nService.On("ListLanguages").Return([]string{"en", "es"}, nil)
 
@@ -177,7 +178,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_OU_Success() {
 	}
 
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, ouID).Return(mockOU, nil)
-	suite.mockDesignResolve.On("ResolveDesign", common.DesignResolveTypeOU, ouID).Return(mockDesign, nil)
+	suite.mockDesignResolve.On("ResolveDesign", mock.Anything, common.DesignResolveTypeOU, ouID).Return(mockDesign, nil)
 	suite.mockI18nService.On("ResolveTranslations", "en-US", "").Return(mockTranslations, nil)
 	suite.mockI18nService.On("ListLanguages").Return([]string{"en"}, nil)
 
@@ -269,7 +270,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_DesignResolveError_Co
 	suite.mockAppService.On("GetApplication", mock.Anything, appID).Return(mockApp, nil)
 	suite.mockOUService.On("GetOrganizationUnitList", mock.Anything, 1, 0).Return(mockOUList, nil)
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, ouID).Return(mockOU, nil)
-	suite.mockDesignResolve.On("ResolveDesign", common.DesignResolveTypeAPP, appID).
+	suite.mockDesignResolve.On("ResolveDesign", mock.Anything, common.DesignResolveTypeAPP, appID).
 		Return(nil, &serviceerror.InternalServerError)
 	suite.mockI18nService.On("ResolveTranslations", "en-US", "").
 		Return(&i18nmgt.LanguageTranslationsResponse{
@@ -301,7 +302,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_I18nError_ContinuesWi
 	}
 
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, ouID).Return(mockOU, nil)
-	suite.mockDesignResolve.On("ResolveDesign", common.DesignResolveTypeOU, ouID).
+	suite.mockDesignResolve.On("ResolveDesign", mock.Anything, common.DesignResolveTypeOU, ouID).
 		Return(&common.DesignResponse{
 			Theme:  json.RawMessage(`{}`),
 			Layout: json.RawMessage(`{}`),

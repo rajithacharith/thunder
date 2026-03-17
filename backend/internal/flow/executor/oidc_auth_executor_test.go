@@ -83,7 +83,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestExecute_CodeNotProvided_BuildsAuthor
 		},
 	}
 
-	suite.mockOIDCService.On("BuildAuthorizeURL", "idp-123").
+	suite.mockOIDCService.On("BuildAuthorizeURL", mock.Anything, "idp-123").
 		Return("https://oidc.provider.com/authorize?client_id=abc&scope=openid", nil)
 
 	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, "idp-123").
@@ -140,13 +140,13 @@ func (suite *OIDCAuthExecutorTestSuite) TestExecute_CodeProvided_ValidIDToken_Au
 		Scopes: []string{"openid"},
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt_123").
 		Return(idTokenClaims, nil)
 	suite.mockOIDCService.On("GetInternalUser", "user-sub-123").
 		Return(existingUser, nil)
-	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, "idp-123").
 		Return(oauthConfig, nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -203,13 +203,13 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_ValidIDToken
 		Scopes: []string{"openid"},
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
 	suite.mockOIDCService.On("GetInternalUser", "user-sub-456").
 		Return(existingUser, nil)
-	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, "idp-123").
 		Return(oauthConfig, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -251,7 +251,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_InvalidNonce
 		"nonce": "different_nonce_456",
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
@@ -294,7 +294,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoSubClaim()
 		"name":  "Test User",
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
@@ -342,7 +342,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_Registration
 		Scopes: []string{"openid"},
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
@@ -351,7 +351,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_Registration
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
 		})
-	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, "idp-123").
 		Return(oauthConfig, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -392,7 +392,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AuthFlow_Use
 		"sub": "unknown-user",
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
@@ -444,7 +444,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_UserAlreadyE
 		OrganizationUnitID: "ou-789",
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
@@ -591,15 +591,15 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_WithAddition
 		Scopes: []string{"openid", "profile", "email"},
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
 	suite.mockOIDCService.On("GetInternalUser", "user-sub-123").
 		Return(existingUser, nil)
-	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, "idp-123").
 		Return(oauthConfig, nil)
-	suite.mockOIDCService.On("FetchUserInfo", "idp-123", "access_token_123").
+	suite.mockOIDCService.On("FetchUserInfo", mock.Anything, "idp-123", "access_token_123").
 		Return(userInfo, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -680,13 +680,13 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_FiltersNonUs
 		Scopes: []string{"openid"},
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
 	suite.mockOIDCService.On("GetInternalUser", "user-sub-123").
 		Return(existingUser, nil)
-	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, "idp-123").
 		Return(oauthConfig, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -747,13 +747,13 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailInIDTok
 		Scopes: []string{"openid"},
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
 	suite.mockOIDCService.On("GetInternalUser", "user-sub-789").
 		Return(existingUser, nil)
-	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, "idp-123").
 		Return(oauthConfig, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -808,13 +808,13 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoEmailInIDT
 		Scopes: []string{"openid"},
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
 	suite.mockOIDCService.On("GetInternalUser", "user-sub-789").
 		Return(existingUser, nil)
-	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, "idp-123").
 		Return(oauthConfig, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -869,13 +869,13 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmptyEmailIn
 		Scopes: []string{"openid"},
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
 	suite.mockOIDCService.On("GetInternalUser", "user-sub-789").
 		Return(existingUser, nil)
-	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, "idp-123").
 		Return(oauthConfig, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -925,7 +925,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_Registration
 		Scopes: []string{"openid"},
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
@@ -934,7 +934,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_Registration
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
 		})
-	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, "idp-123").
 		Return(oauthConfig, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -996,15 +996,15 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailFromUse
 		Scopes: []string{"openid", "profile", "email"},
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
 	suite.mockOIDCService.On("GetInternalUser", "user-sub-789").
 		Return(existingUser, nil)
-	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, "idp-123").
 		Return(oauthConfig, nil)
-	suite.mockOIDCService.On("FetchUserInfo", "idp-123", "access_token_123").
+	suite.mockOIDCService.On("FetchUserInfo", mock.Anything, "idp-123", "access_token_123").
 		Return(userInfo, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -1059,13 +1059,13 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailInIDTok
 		Scopes: []string{"openid"},
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
 	suite.mockOIDCService.On("GetInternalUser", "user-sub-999").
 		Return(existingUser, nil)
-	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, "idp-123").
 		Return(oauthConfig, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -1122,7 +1122,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWit
 		Scopes: []string{"openid"},
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
@@ -1137,7 +1137,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWit
 			AllowSelfRegistration: true,
 			OrganizationUnitID:    "ou-123",
 		}, nil)
-	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, "idp-123").
 		Return(oauthConfig, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -1186,7 +1186,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventAuthW
 		"iat": float64(1234567000),
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
@@ -1250,13 +1250,13 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowRegistr
 		Scopes: []string{"openid"},
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
 	suite.mockOIDCService.On("GetInternalUser", "existing-user-sub").
 		Return(existingUser, nil)
-	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, "idp-123").
 		Return(oauthConfig, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -1309,7 +1309,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventRegis
 		UserType:           "INTERNAL",
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
@@ -1383,7 +1383,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestGetContextUserAttributes_OAuthClient
 				RuntimeData:    make(map[string]string),
 			}
 
-			suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
+			suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, "idp-123").
 				Return(nil, tt.serviceError)
 
 			attributes, err := suite.executor.(*oidcAuthExecutor).getContextUserAttributes(
@@ -1432,7 +1432,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestGetContextUserAttributes_OnlyOpenIDS
 		Scopes: []string{"openid"},
 	}
 
-	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, "idp-123").
 		Return(oauthConfig, nil)
 
 	attributes, err := suite.executor.(*oidcAuthExecutor).getContextUserAttributes(
@@ -1489,7 +1489,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NonStringSub
 		"aud": "client-123",
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)

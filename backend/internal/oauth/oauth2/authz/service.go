@@ -159,7 +159,7 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 	}
 
 	// Retrieve the OAuth application based on the client ID.
-	app, svcErr := as.appService.GetOAuthApplication(context.TODO(), clientID)
+	app, svcErr := as.appService.GetOAuthApplication(ctx, clientID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ServerErrorType {
 			as.logger.Error("Failed to retrieve OAuth application",
@@ -257,7 +257,7 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 		RuntimeData:   runtimeData,
 	}
 
-	flowID, flowErr := as.flowExecService.InitiateFlow(context.TODO(), flowInitCtx)
+	flowID, flowErr := as.flowExecService.InitiateFlow(ctx, flowInitCtx)
 	if flowErr != nil {
 		as.logger.Error("Failed to initiate authentication flow",
 			log.String("error_code", flowErr.Code))

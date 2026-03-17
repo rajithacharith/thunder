@@ -41,7 +41,7 @@ func newFileBasedStore() organizationUnitStoreInterface {
 // Create implements declarativeresource.Storer interface for resource loader
 func (f *fileBasedStore) Create(id string, data interface{}) error {
 	ou := data.(*OrganizationUnit)
-	return f.CreateOrganizationUnit(context.TODO(), *ou)
+	return f.CreateOrganizationUnit(context.Background(), *ou)
 }
 
 // CreateOrganizationUnit implements organizationUnitStoreInterface.

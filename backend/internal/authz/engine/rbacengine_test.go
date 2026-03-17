@@ -19,6 +19,7 @@
 package engine
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -57,7 +58,7 @@ func (suite *RBACEngineTestSuite) TestGetAuthorizedPermissions_Success() {
 	suite.mockRoleService.On("GetAuthorizedPermissions", mock.Anything, userID, groupIDs, requestedPermissions).
 		Return(authorizedPermissions, nil)
 
-	result, err := suite.engine.GetAuthorizedPermissions(userID, groupIDs, requestedPermissions)
+	result, err := suite.engine.GetAuthorizedPermissions(context.Background(), userID, groupIDs, requestedPermissions)
 
 	suite.Nil(err)
 	suite.Equal(authorizedPermissions, result)
@@ -72,7 +73,7 @@ func (suite *RBACEngineTestSuite) TestGetAuthorizedPermissions_UserOnly() {
 	suite.mockRoleService.On("GetAuthorizedPermissions", mock.Anything, userID, groupIDs, requestedPermissions).
 		Return(authorizedPermissions, nil)
 
-	result, err := suite.engine.GetAuthorizedPermissions(userID, groupIDs, requestedPermissions)
+	result, err := suite.engine.GetAuthorizedPermissions(context.Background(), userID, groupIDs, requestedPermissions)
 
 	suite.Nil(err)
 	suite.Equal(authorizedPermissions, result)
@@ -87,7 +88,7 @@ func (suite *RBACEngineTestSuite) TestGetAuthorizedPermissions_GroupsOnly() {
 	suite.mockRoleService.On("GetAuthorizedPermissions", mock.Anything, userID, groupIDs, requestedPermissions).
 		Return(authorizedPermissions, nil)
 
-	result, err := suite.engine.GetAuthorizedPermissions(userID, groupIDs, requestedPermissions)
+	result, err := suite.engine.GetAuthorizedPermissions(context.Background(), userID, groupIDs, requestedPermissions)
 
 	suite.Nil(err)
 	suite.Equal(authorizedPermissions, result)
@@ -102,7 +103,7 @@ func (suite *RBACEngineTestSuite) TestGetAuthorizedPermissions_NoAuthorizedPermi
 	suite.mockRoleService.On("GetAuthorizedPermissions", mock.Anything, userID, groupIDs, requestedPermissions).
 		Return(authorizedPermissions, nil)
 
-	result, err := suite.engine.GetAuthorizedPermissions(userID, groupIDs, requestedPermissions)
+	result, err := suite.engine.GetAuthorizedPermissions(context.Background(), userID, groupIDs, requestedPermissions)
 
 	suite.Nil(err)
 	suite.Empty(result)
@@ -123,7 +124,7 @@ func (suite *RBACEngineTestSuite) TestGetAuthorizedPermissions_RoleServiceError(
 	suite.mockRoleService.On("GetAuthorizedPermissions", mock.Anything, userID, groupIDs, requestedPermissions).
 		Return([]string(nil), roleServiceError)
 
-	result, err := suite.engine.GetAuthorizedPermissions(userID, groupIDs, requestedPermissions)
+	result, err := suite.engine.GetAuthorizedPermissions(context.Background(), userID, groupIDs, requestedPermissions)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -138,7 +139,7 @@ func (suite *RBACEngineTestSuite) TestGetAuthorizedPermissions_AllPermissionsAut
 	suite.mockRoleService.On("GetAuthorizedPermissions", mock.Anything, userID, groupIDs, requestedPermissions).
 		Return(requestedPermissions, nil)
 
-	result, err := suite.engine.GetAuthorizedPermissions(userID, groupIDs, requestedPermissions)
+	result, err := suite.engine.GetAuthorizedPermissions(context.Background(), userID, groupIDs, requestedPermissions)
 
 	suite.Nil(err)
 	suite.Equal(requestedPermissions, result)

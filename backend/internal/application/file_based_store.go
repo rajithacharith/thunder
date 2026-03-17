@@ -35,7 +35,7 @@ type fileBasedStore struct {
 // Create implements declarativeresource.Storer interface for resource loader
 func (f *fileBasedStore) Create(id string, data interface{}) error {
 	app := data.(*model.ApplicationProcessedDTO)
-	return f.CreateApplication(context.TODO(), *app)
+	return f.CreateApplication(context.Background(), *app)
 }
 
 // CreateApplication implements applicationStoreInterface.

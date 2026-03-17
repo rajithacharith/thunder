@@ -76,7 +76,7 @@ func (suite *AuthenticationHandlerTestSuite) testIDPAuthFinishSuccess(
 		Assertion:        "jwt-token",
 	}
 
-	suite.mockService.On("FinishIDPAuthentication", idpType, authRequest.SessionToken,
+	suite.mockService.On("FinishIDPAuthentication", mock.Anything, idpType, authRequest.SessionToken,
 		authRequest.SkipAssertion, authRequest.Assertion, authRequest.Code).Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
@@ -454,7 +454,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleGoogleAuthStartRequestSuc
 		SessionToken: testSessionTkn,
 	}
 
-	suite.mockService.On("StartIDPAuthentication", idp.IDPTypeGoogle, authRequest.IDPID).
+	suite.mockService.On("StartIDPAuthentication", mock.Anything, idp.IDPTypeGoogle, authRequest.IDPID).
 		Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
@@ -486,7 +486,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleGoogleAuthStartRequestSer
 	}
 	serviceError := &common.ErrorInvalidIDPID
 
-	suite.mockService.On("StartIDPAuthentication", idp.IDPTypeGoogle, authRequest.IDPID).
+	suite.mockService.On("StartIDPAuthentication", mock.Anything, idp.IDPTypeGoogle, authRequest.IDPID).
 		Return(nil, serviceError)
 
 	body, _ := json.Marshal(authRequest)
@@ -524,7 +524,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleGoogleAuthFinishRequestSe
 	}
 	serviceError := &common.ErrorInvalidSessionToken
 
-	suite.mockService.On("FinishIDPAuthentication", idp.IDPTypeGoogle, mock.Anything, mock.Anything,
+	suite.mockService.On("FinishIDPAuthentication", mock.Anything, idp.IDPTypeGoogle, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything).Return(nil, serviceError)
 
 	body, _ := json.Marshal(authRequest)
@@ -549,7 +549,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleGithubAuthStartRequestSuc
 		SessionToken: testSessionTkn,
 	}
 
-	suite.mockService.On("StartIDPAuthentication", idp.IDPTypeGitHub, authRequest.IDPID).
+	suite.mockService.On("StartIDPAuthentication", mock.Anything, idp.IDPTypeGitHub, authRequest.IDPID).
 		Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
@@ -580,7 +580,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleGithubAuthStartRequestSer
 	}
 	serviceError := &common.ErrorClientErrorWhileRetrievingIDP
 
-	suite.mockService.On("StartIDPAuthentication", idp.IDPTypeGitHub, authRequest.IDPID).
+	suite.mockService.On("StartIDPAuthentication", mock.Anything, idp.IDPTypeGitHub, authRequest.IDPID).
 		Return(nil, serviceError)
 
 	body, _ := json.Marshal(authRequest)
@@ -604,7 +604,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleGithubAuthFinishRequestSu
 		OrganizationUnit: "test-ou",
 	}
 
-	suite.mockService.On("FinishIDPAuthentication", idp.IDPTypeGitHub, authRequest.SessionToken,
+	suite.mockService.On("FinishIDPAuthentication", mock.Anything, idp.IDPTypeGitHub, authRequest.SessionToken,
 		authRequest.SkipAssertion, authRequest.Assertion, authRequest.Code).Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
@@ -643,7 +643,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleGithubAuthFinishRequestSe
 		ErrorDescription: "Internal error description",
 	}
 
-	suite.mockService.On("FinishIDPAuthentication", idp.IDPTypeGitHub, mock.Anything, mock.Anything,
+	suite.mockService.On("FinishIDPAuthentication", mock.Anything, idp.IDPTypeGitHub, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything).Return(nil, serviceError)
 
 	body, _ := json.Marshal(authRequest)
@@ -664,7 +664,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleStandardOAuthStartRequest
 		SessionToken: testSessionTkn,
 	}
 
-	suite.mockService.On("StartIDPAuthentication", idp.IDPTypeOAuth, authRequest.IDPID).
+	suite.mockService.On("StartIDPAuthentication", mock.Anything, idp.IDPTypeOAuth, authRequest.IDPID).
 		Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
@@ -695,7 +695,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleStandardOAuthStartRequest
 	}
 	serviceError := &common.ErrorInvalidIDPType
 
-	suite.mockService.On("StartIDPAuthentication", idp.IDPTypeOAuth, authRequest.IDPID).
+	suite.mockService.On("StartIDPAuthentication", mock.Anything, idp.IDPTypeOAuth, authRequest.IDPID).
 		Return(nil, serviceError)
 
 	body, _ := json.Marshal(authRequest)
@@ -729,7 +729,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleStandardOAuthFinishReques
 	}
 	serviceError := &common.ErrorEmptyAuthCode
 
-	suite.mockService.On("FinishIDPAuthentication", idp.IDPTypeOAuth, mock.Anything, mock.Anything,
+	suite.mockService.On("FinishIDPAuthentication", mock.Anything, idp.IDPTypeOAuth, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything).Return(nil, serviceError)
 
 	body, _ := json.Marshal(authRequest)

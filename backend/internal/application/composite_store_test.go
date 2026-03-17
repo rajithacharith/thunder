@@ -89,7 +89,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetApplicationByID() {
 			appID: "file-app-1",
 			setupFileStore: func() {
 				// Add app to file store
-				err := suite.fileStore.CreateApplication(context.TODO(), model.ApplicationProcessedDTO{
+				err := suite.fileStore.CreateApplication(context.Background(), model.ApplicationProcessedDTO{
 					ID:   "file-app-1",
 					Name: "File App",
 				})
@@ -126,7 +126,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetApplicationByID() {
 			tc.setupFileStore()
 			tc.setupDBStore()
 
-			got, err := suite.compositeStore.GetApplicationByID(context.TODO(), tc.appID)
+			got, err := suite.compositeStore.GetApplicationByID(context.Background(), tc.appID)
 
 			if tc.wantErr {
 				suite.Error(err)
@@ -150,7 +150,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetApplicationByName() 
 			}, nil).
 			Once()
 
-		got, err := suite.compositeStore.GetApplicationByName(context.TODO(), "DB App")
+		got, err := suite.compositeStore.GetApplicationByName(context.Background(), "DB App")
 		suite.NoError(err)
 		suite.Equal("db-app-1", got.ID)
 		suite.Equal("DB App", got.Name)
@@ -159,7 +159,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetApplicationByName() 
 	suite.Run("retrieves from file store when not in DB", func() {
 		suite.SetupTest() // Fresh setup
 
-		err := suite.fileStore.CreateApplication(context.TODO(), model.ApplicationProcessedDTO{
+		err := suite.fileStore.CreateApplication(context.Background(), model.ApplicationProcessedDTO{
 			ID:   "file-app-1",
 			Name: "File App",
 		})
@@ -169,7 +169,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetApplicationByName() 
 			Return(nil, model.ApplicationNotFoundError).
 			Once()
 
-		got, err := suite.compositeStore.GetApplicationByName(context.TODO(), "File App")
+		got, err := suite.compositeStore.GetApplicationByName(context.Background(), "File App")
 		suite.NoError(err)
 		suite.Equal("file-app-1", got.ID)
 		suite.Equal("File App", got.Name)
@@ -180,7 +180,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetApplicationByName() 
 			Return(nil, model.ApplicationNotFoundError).
 			Once()
 
-		got, err := suite.compositeStore.GetApplicationByName(context.TODO(), "Nonexistent")
+		got, err := suite.compositeStore.GetApplicationByName(context.Background(), "Nonexistent")
 		suite.Error(err)
 		suite.Nil(got)
 		suite.True(errors.Is(err, model.ApplicationNotFoundError))
@@ -196,7 +196,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetOAuthApplication() {
 			}, nil).
 			Once()
 
-		got, err := suite.compositeStore.GetOAuthApplication(context.TODO(), "client-123")
+		got, err := suite.compositeStore.GetOAuthApplication(context.Background(), "client-123")
 		suite.NoError(err)
 		suite.Equal("client-123", got.ClientID)
 	})
@@ -206,7 +206,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetOAuthApplication() {
 			Return(nil, model.ApplicationNotFoundError).
 			Once()
 
-		got, err := suite.compositeStore.GetOAuthApplication(context.TODO(), "client-456")
+		got, err := suite.compositeStore.GetOAuthApplication(context.Background(), "client-456")
 		suite.Error(err)
 		suite.Nil(got)
 	})
@@ -224,7 +224,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_CreateApplication() {
 			Return(nil).
 			Once()
 
-		err := suite.compositeStore.CreateApplication(context.TODO(), app)
+		err := suite.compositeStore.CreateApplication(context.Background(), app)
 		suite.NoError(err)
 	})
 
@@ -239,7 +239,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_CreateApplication() {
 			Return(dbErr).
 			Once()
 
-		err := suite.compositeStore.CreateApplication(context.TODO(), app)
+		err := suite.compositeStore.CreateApplication(context.Background(), app)
 		suite.Error(err)
 		suite.Equal(dbErr, err)
 	})
@@ -261,7 +261,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_UpdateApplication() {
 			Return(nil).
 			Once()
 
-		err := suite.compositeStore.UpdateApplication(context.TODO(), existing, updated)
+		err := suite.compositeStore.UpdateApplication(context.Background(), existing, updated)
 		suite.NoError(err)
 	})
 
@@ -278,7 +278,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_UpdateApplication() {
 			Return(dbErr).
 			Once()
 
-		err := suite.compositeStore.UpdateApplication(context.TODO(), existing, updated)
+		err := suite.compositeStore.UpdateApplication(context.Background(), existing, updated)
 		suite.Error(err)
 		suite.Equal(dbErr, err)
 	})
@@ -291,7 +291,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_DeleteApplication() {
 			Return(nil).
 			Once()
 
-		err := suite.compositeStore.DeleteApplication(context.TODO(), "app-1")
+		err := suite.compositeStore.DeleteApplication(context.Background(), "app-1")
 		suite.NoError(err)
 	})
 
@@ -301,7 +301,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_DeleteApplication() {
 			Return(dbErr).
 			Once()
 
-		err := suite.compositeStore.DeleteApplication(context.TODO(), "app-2")
+		err := suite.compositeStore.DeleteApplication(context.Background(), "app-2")
 		suite.Error(err)
 		suite.Equal(dbErr, err)
 	})
@@ -315,7 +315,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_IsApplicationExists() {
 			Return(true, nil).
 			Once()
 
-		exists, err := suite.compositeStore.IsApplicationExists(context.TODO(), "db-app-1")
+		exists, err := suite.compositeStore.IsApplicationExists(context.Background(), "db-app-1")
 		suite.NoError(err)
 		suite.True(exists)
 		suite.dbStoreMock.AssertExpectations(suite.T())
@@ -325,14 +325,14 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_IsApplicationExists() {
 		suite.SetupTest() // Fresh setup
 
 		// Add app to file store
-		err := suite.fileStore.CreateApplication(context.TODO(), model.ApplicationProcessedDTO{
+		err := suite.fileStore.CreateApplication(context.Background(), model.ApplicationProcessedDTO{
 			ID:   "file-app-1",
 			Name: "File App",
 		})
 		suite.NoError(err)
 
 		// DB mock should NOT be called since file store has it
-		exists, err := suite.compositeStore.IsApplicationExists(context.TODO(), "file-app-1")
+		exists, err := suite.compositeStore.IsApplicationExists(context.Background(), "file-app-1")
 		suite.NoError(err)
 		suite.True(exists)
 	})
@@ -342,7 +342,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_IsApplicationExists() {
 			Return(false, nil).
 			Once()
 
-		exists, err := suite.compositeStore.IsApplicationExists(context.TODO(), "nonexistent")
+		exists, err := suite.compositeStore.IsApplicationExists(context.Background(), "nonexistent")
 		suite.NoError(err)
 		suite.False(exists)
 		suite.dbStoreMock.AssertExpectations(suite.T())
@@ -354,7 +354,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_IsApplicationExists() {
 			Return(false, dbErr).
 			Once()
 
-		exists, err := suite.compositeStore.IsApplicationExists(context.TODO(), "error-app")
+		exists, err := suite.compositeStore.IsApplicationExists(context.Background(), "error-app")
 		suite.Error(err)
 		suite.Equal(dbErr, err)
 		suite.False(exists)
@@ -369,7 +369,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_IsApplicationExistsByNa
 			Return(true, nil).
 			Once()
 
-		exists, err := suite.compositeStore.IsApplicationExistsByName(context.TODO(), "App Name")
+		exists, err := suite.compositeStore.IsApplicationExistsByName(context.Background(), "App Name")
 		suite.NoError(err)
 		suite.True(exists)
 	})
@@ -377,13 +377,13 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_IsApplicationExistsByNa
 	suite.Run("name exists in file store", func() {
 		suite.SetupTest() // Fresh setup
 
-		err := suite.fileStore.CreateApplication(context.TODO(), model.ApplicationProcessedDTO{
+		err := suite.fileStore.CreateApplication(context.Background(), model.ApplicationProcessedDTO{
 			ID:   "file-app-1",
 			Name: "Unique App Name",
 		})
 		suite.NoError(err)
 
-		exists, err := suite.compositeStore.IsApplicationExistsByName(context.TODO(), "Unique App Name")
+		exists, err := suite.compositeStore.IsApplicationExistsByName(context.Background(), "Unique App Name")
 		suite.NoError(err)
 		suite.True(exists)
 	})
@@ -393,7 +393,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_IsApplicationExistsByNa
 			Return(false, nil).
 			Once()
 
-		exists, err := suite.compositeStore.IsApplicationExistsByName(context.TODO(), "Nonexistent Name")
+		exists, err := suite.compositeStore.IsApplicationExistsByName(context.Background(), "Nonexistent Name")
 		suite.NoError(err)
 		suite.False(exists)
 	})
@@ -405,23 +405,23 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_IsApplicationDeclarativ
 		suite.SetupTest() // Fresh setup
 
 		// Add app to file store
-		err := suite.fileStore.CreateApplication(context.TODO(), model.ApplicationProcessedDTO{
+		err := suite.fileStore.CreateApplication(context.Background(), model.ApplicationProcessedDTO{
 			ID:   "immutable-app-1",
 			Name: "Declarative App",
 		})
 		suite.NoError(err)
 
-		isDeclarative := suite.compositeStore.IsApplicationDeclarative(context.TODO(), "immutable-app-1")
+		isDeclarative := suite.compositeStore.IsApplicationDeclarative(context.Background(), "immutable-app-1")
 		suite.True(isDeclarative)
 	})
 
 	suite.Run("returns false for mutable app (not in file store)", func() {
-		isDeclarative := suite.compositeStore.IsApplicationDeclarative(context.TODO(), "db-app-1")
+		isDeclarative := suite.compositeStore.IsApplicationDeclarative(context.Background(), "db-app-1")
 		suite.False(isDeclarative)
 	})
 
 	suite.Run("returns false for non-existent app", func() {
-		isDeclarative := suite.compositeStore.IsApplicationDeclarative(context.TODO(), "nonexistent")
+		isDeclarative := suite.compositeStore.IsApplicationDeclarative(context.Background(), "nonexistent")
 		suite.False(isDeclarative)
 	})
 }
@@ -433,7 +433,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetTotalApplicationCoun
 			Return(5, nil).
 			Once()
 
-		count, err := suite.compositeStore.GetTotalApplicationCount(context.TODO())
+		count, err := suite.compositeStore.GetTotalApplicationCount(context.Background())
 		suite.NoError(err)
 		suite.Equal(5, count)
 	})
@@ -442,11 +442,11 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetTotalApplicationCoun
 		suite.SetupTest() // Fresh setup
 
 		// Add apps to file store
-		_ = suite.fileStore.CreateApplication(context.TODO(), model.ApplicationProcessedDTO{
+		_ = suite.fileStore.CreateApplication(context.Background(), model.ApplicationProcessedDTO{
 			ID:   "file-app-1",
 			Name: "File App 1",
 		})
-		_ = suite.fileStore.CreateApplication(context.TODO(), model.ApplicationProcessedDTO{
+		_ = suite.fileStore.CreateApplication(context.Background(), model.ApplicationProcessedDTO{
 			ID:   "file-app-2",
 			Name: "File App 2",
 		})
@@ -455,7 +455,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetTotalApplicationCoun
 			Return(3, nil).
 			Once()
 
-		count, err := suite.compositeStore.GetTotalApplicationCount(context.TODO())
+		count, err := suite.compositeStore.GetTotalApplicationCount(context.Background())
 		suite.NoError(err)
 		suite.Equal(5, count) // 3 from DB + 2 from file
 	})
@@ -466,7 +466,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetTotalApplicationCoun
 			Return(0, dbErr).
 			Once()
 
-		count, err := suite.compositeStore.GetTotalApplicationCount(context.TODO())
+		count, err := suite.compositeStore.GetTotalApplicationCount(context.Background())
 		suite.Error(err)
 		suite.Equal(dbErr, err)
 		suite.Equal(0, count)
@@ -495,13 +495,13 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetApplicationList() {
 
 		// Add file apps
 		for _, app := range fileApps {
-			_ = suite.fileStore.CreateApplication(context.TODO(), model.ApplicationProcessedDTO{
+			_ = suite.fileStore.CreateApplication(context.Background(), model.ApplicationProcessedDTO{
 				ID:   app.ID,
 				Name: app.Name,
 			})
 		}
 
-		list, err := suite.compositeStore.GetApplicationList(context.TODO())
+		list, err := suite.compositeStore.GetApplicationList(context.Background())
 		suite.NoError(err)
 		suite.Len(list, 3)
 
@@ -531,12 +531,12 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetApplicationList() {
 			Once()
 
 		// Add to file store with same ID
-		_ = suite.fileStore.CreateApplication(context.TODO(), model.ApplicationProcessedDTO{
+		_ = suite.fileStore.CreateApplication(context.Background(), model.ApplicationProcessedDTO{
 			ID:   "app-1",
 			Name: "File Version",
 		})
 
-		list, err := suite.compositeStore.GetApplicationList(context.TODO())
+		list, err := suite.compositeStore.GetApplicationList(context.Background())
 		suite.NoError(err)
 		suite.Len(list, 1)
 		suite.Equal("DB Version", list[0].Name)
@@ -549,7 +549,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_GetApplicationList() {
 			Return(0, dbErr).
 			Once()
 
-		list, err := suite.compositeStore.GetApplicationList(context.TODO())
+		list, err := suite.compositeStore.GetApplicationList(context.Background())
 		suite.Error(err)
 		suite.Nil(list)
 	})

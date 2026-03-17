@@ -19,6 +19,7 @@
 package resolve
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -34,15 +35,16 @@ import (
 // Mock for DesignResolveServiceInterface
 type mockDesignResolveService struct {
 	resolveDesignFn func(
+		ctx context.Context,
 		resolveType common.DesignResolveType,
 		id string,
 	) (*common.DesignResponse, *serviceerror.ServiceError)
 }
 
 func (m *mockDesignResolveService) ResolveDesign(
-	resolveType common.DesignResolveType, id string,
+	ctx context.Context, resolveType common.DesignResolveType, id string,
 ) (*common.DesignResponse, *serviceerror.ServiceError) {
-	return m.resolveDesignFn(resolveType, id)
+	return m.resolveDesignFn(ctx, resolveType, id)
 }
 
 // Test Suite
@@ -63,6 +65,7 @@ func (suite *ResolveHandlerTestSuite) TestHandleResolveRequest_Success() {
 
 	mockService := &mockDesignResolveService{
 		resolveDesignFn: func(
+			ctx context.Context,
 			resolveType common.DesignResolveType,
 			id string,
 		) (*common.DesignResponse, *serviceerror.ServiceError) {
@@ -89,6 +92,7 @@ func (suite *ResolveHandlerTestSuite) TestHandleResolveRequest_CaseInsensitiveTy
 
 	mockService := &mockDesignResolveService{
 		resolveDesignFn: func(
+			ctx context.Context,
 			resolveType common.DesignResolveType,
 			id string,
 		) (*common.DesignResponse, *serviceerror.ServiceError) {
@@ -110,6 +114,7 @@ func (suite *ResolveHandlerTestSuite) TestHandleResolveRequest_CaseInsensitiveTy
 func (suite *ResolveHandlerTestSuite) TestHandleResolveRequest_InvalidResolveType() {
 	mockService := &mockDesignResolveService{
 		resolveDesignFn: func(
+			ctx context.Context,
 			resolveType common.DesignResolveType,
 			id string,
 		) (*common.DesignResponse, *serviceerror.ServiceError) {
@@ -130,6 +135,7 @@ func (suite *ResolveHandlerTestSuite) TestHandleResolveRequest_InvalidResolveTyp
 func (suite *ResolveHandlerTestSuite) TestHandleResolveRequest_MissingID() {
 	mockService := &mockDesignResolveService{
 		resolveDesignFn: func(
+			ctx context.Context,
 			resolveType common.DesignResolveType,
 			id string,
 		) (*common.DesignResponse, *serviceerror.ServiceError) {
@@ -150,6 +156,7 @@ func (suite *ResolveHandlerTestSuite) TestHandleResolveRequest_MissingID() {
 func (suite *ResolveHandlerTestSuite) TestHandleResolveRequest_UnsupportedType() {
 	mockService := &mockDesignResolveService{
 		resolveDesignFn: func(
+			ctx context.Context,
 			resolveType common.DesignResolveType,
 			id string,
 		) (*common.DesignResponse, *serviceerror.ServiceError) {
@@ -170,6 +177,7 @@ func (suite *ResolveHandlerTestSuite) TestHandleResolveRequest_UnsupportedType()
 func (suite *ResolveHandlerTestSuite) TestHandleResolveRequest_ApplicationNotFound() {
 	mockService := &mockDesignResolveService{
 		resolveDesignFn: func(
+			ctx context.Context,
 			resolveType common.DesignResolveType,
 			id string,
 		) (*common.DesignResponse, *serviceerror.ServiceError) {
@@ -190,6 +198,7 @@ func (suite *ResolveHandlerTestSuite) TestHandleResolveRequest_ApplicationNotFou
 func (suite *ResolveHandlerTestSuite) TestHandleResolveRequest_ApplicationHasNoDesign() {
 	mockService := &mockDesignResolveService{
 		resolveDesignFn: func(
+			ctx context.Context,
 			resolveType common.DesignResolveType,
 			id string,
 		) (*common.DesignResponse, *serviceerror.ServiceError) {
@@ -210,6 +219,7 @@ func (suite *ResolveHandlerTestSuite) TestHandleResolveRequest_ApplicationHasNoD
 func (suite *ResolveHandlerTestSuite) TestHandleResolveRequest_InternalServerError() {
 	mockService := &mockDesignResolveService{
 		resolveDesignFn: func(
+			ctx context.Context,
 			resolveType common.DesignResolveType,
 			id string,
 		) (*common.DesignResponse, *serviceerror.ServiceError) {

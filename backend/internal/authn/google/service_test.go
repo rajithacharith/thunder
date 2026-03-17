@@ -19,10 +19,14 @@
 package google
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"testing"
+
 	"time"
+
+	"github.com/stretchr/testify/mock"
 
 	"github.com/stretchr/testify/suite"
 
@@ -73,9 +77,9 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) SetupTest() {
 
 func (suite *GoogleOIDCAuthnServiceTestSuite) TestBuildAuthorizeURLSuccess() {
 	expectedURL := "https://accounts.google.com/o/oauth2/v2/auth?client_id=test"
-	suite.mockOIDCService.On("BuildAuthorizeURL", testGoogleIDPID).Return(expectedURL, nil)
+	suite.mockOIDCService.On("BuildAuthorizeURL", mock.Anything, testGoogleIDPID).Return(expectedURL, nil)
 
-	url, err := suite.service.BuildAuthorizeURL(testGoogleIDPID)
+	url, err := suite.service.BuildAuthorizeURL(context.Background(), testGoogleIDPID)
 	suite.Nil(err)
 	suite.Equal(expectedURL, url)
 }
@@ -86,10 +90,10 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestExchangeCodeForTokenSuccess() 
 		IDToken:     "id_token",
 		TokenType:   "Bearer",
 	}
-	suite.mockOIDCService.On("ExchangeCodeForToken", testGoogleIDPID, testAuthCode, false).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, testGoogleIDPID, testAuthCode, false).
 		Return(tokenResp, nil)
 
-	result, err := suite.service.ExchangeCodeForToken(testGoogleIDPID, testAuthCode, false)
+	result, err := suite.service.ExchangeCodeForToken(context.Background(), testGoogleIDPID, testAuthCode, false)
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(tokenResp.AccessToken, result.AccessToken)
@@ -118,23 +122,23 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestExchangeCodeForTokenWithValida
 		OAuthEndpoints: oauth.OAuthEndpoints{},
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", testGoogleIDPID, testAuthCode, false).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, testGoogleIDPID, testAuthCode, false).
 		Return(tokenResp, nil)
-	suite.mockOIDCService.On("ValidateTokenResponse", testGoogleIDPID, tokenResp, false).
+	suite.mockOIDCService.On("ValidateTokenResponse", mock.Anything, testGoogleIDPID, tokenResp, false).
 		Return(nil)
-	suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(oAuthConfig, nil)
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).Return(oAuthConfig, nil)
 
-	result, err := suite.service.ExchangeCodeForToken(testGoogleIDPID, testAuthCode, true)
+	result, err := suite.service.ExchangeCodeForToken(context.Background(), testGoogleIDPID, testAuthCode, true)
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(tokenResp.AccessToken, result.AccessToken)
 }
 
 func (suite *GoogleOIDCAuthnServiceTestSuite) TestExchangeCodeForTokenFailure() {
-	suite.mockOIDCService.On("ExchangeCodeForToken", testGoogleIDPID, testAuthCode, false).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, testGoogleIDPID, testAuthCode, false).
 		Return(nil, &serviceerror.ServiceError{Code: "TOKEN-001"})
 
-	result, err := suite.service.ExchangeCodeForToken(testGoogleIDPID, testAuthCode, false)
+	result, err := suite.service.ExchangeCodeForToken(context.Background(), testGoogleIDPID, testAuthCode, false)
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal("TOKEN-001", err.Code)
@@ -162,13 +166,13 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestExchangeCodeForTokenValidation
 		OAuthEndpoints: oauth.OAuthEndpoints{},
 	}
 
-	suite.mockOIDCService.On("ExchangeCodeForToken", testGoogleIDPID, testAuthCode, false).
+	suite.mockOIDCService.On("ExchangeCodeForToken", mock.Anything, testGoogleIDPID, testAuthCode, false).
 		Return(tokenResp, nil)
-	suite.mockOIDCService.On("ValidateTokenResponse", testGoogleIDPID, tokenResp, false).
+	suite.mockOIDCService.On("ValidateTokenResponse", mock.Anything, testGoogleIDPID, tokenResp, false).
 		Return(nil)
-	suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(oAuthConfig, nil)
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).Return(oAuthConfig, nil)
 
-	result, err := suite.service.ExchangeCodeForToken(testGoogleIDPID, testAuthCode, true)
+	result, err := suite.service.ExchangeCodeForToken(context.Background(), testGoogleIDPID, testAuthCode, true)
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(oidc.ErrorInvalidIDToken.Code, err.Code)
@@ -197,11 +201,11 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateTokenResponseSuccess()
 		OAuthEndpoints: oauth.OAuthEndpoints{},
 	}
 
-	suite.mockOIDCService.On("ValidateTokenResponse", testGoogleIDPID, tokenResp, false).
+	suite.mockOIDCService.On("ValidateTokenResponse", mock.Anything, testGoogleIDPID, tokenResp, false).
 		Return(nil)
-	suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(oAuthConfig, nil)
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).Return(oAuthConfig, nil)
 
-	err := suite.service.ValidateTokenResponse(testGoogleIDPID, tokenResp)
+	err := suite.service.ValidateTokenResponse(context.Background(), testGoogleIDPID, tokenResp)
 	suite.Nil(err)
 }
 
@@ -212,10 +216,10 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateTokenResponseInternalV
 		TokenType:   "Bearer",
 	}
 
-	suite.mockOIDCService.On("ValidateTokenResponse", testGoogleIDPID, tokenResp, false).
+	suite.mockOIDCService.On("ValidateTokenResponse", mock.Anything, testGoogleIDPID, tokenResp, false).
 		Return(&serviceerror.ServiceError{Code: "VALIDATION-001"})
 
-	err := suite.service.ValidateTokenResponse(testGoogleIDPID, tokenResp)
+	err := suite.service.ValidateTokenResponse(context.Background(), testGoogleIDPID, tokenResp)
 	suite.NotNil(err)
 	suite.Equal("VALIDATION-001", err.Code)
 }
@@ -242,11 +246,11 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateTokenResponseIDTokenVa
 		OAuthEndpoints: oauth.OAuthEndpoints{},
 	}
 
-	suite.mockOIDCService.On("ValidateTokenResponse", testGoogleIDPID, tokenResp, false).
+	suite.mockOIDCService.On("ValidateTokenResponse", mock.Anything, testGoogleIDPID, tokenResp, false).
 		Return(nil)
-	suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(oAuthConfig, nil)
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).Return(oAuthConfig, nil)
 
-	err := suite.service.ValidateTokenResponse(testGoogleIDPID, tokenResp)
+	err := suite.service.ValidateTokenResponse(context.Background(), testGoogleIDPID, tokenResp)
 	suite.NotNil(err)
 	suite.Equal(oidc.ErrorInvalidIDToken.Code, err.Code)
 }
@@ -275,7 +279,8 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 				OAuthEndpoints: oauth.OAuthEndpoints{},
 			},
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+					Return(config, nil).Once()
 			},
 		},
 		{
@@ -293,7 +298,8 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 				OAuthEndpoints: oauth.OAuthEndpoints{},
 			},
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+					Return(config, nil).Once()
 			},
 		},
 		{
@@ -313,7 +319,8 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 				},
 			},
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+					Return(config, nil).Once()
 				suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", idToken, config.OAuthEndpoints.JwksEndpoint).
 					Return(nil).Once()
 			},
@@ -339,7 +346,8 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 				},
 			},
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+					Return(config, nil).Once()
 				suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", idToken, config.OAuthEndpoints.JwksEndpoint).
 					Return(nil).Once()
 			},
@@ -359,7 +367,8 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 				OAuthEndpoints: oauth.OAuthEndpoints{},
 			},
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+					Return(config, nil).Once()
 			},
 		},
 		{
@@ -380,7 +389,8 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 				},
 			},
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+					Return(config, nil).Once()
 			},
 		},
 	}
@@ -390,7 +400,7 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 			idToken := generateTestJWT(tc.claims)
 			tc.setupMocks(idToken, tc.oAuthConfig)
 
-			err := suite.service.ValidateIDToken(testGoogleIDPID, idToken)
+			err := suite.service.ValidateIDToken(context.Background(), testGoogleIDPID, idToken)
 			suite.Nil(err)
 		})
 	}
@@ -398,6 +408,23 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 
 func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenWithFailure() {
 	now := time.Now()
+
+	hostedDomainConfig := &oauth.OAuthClientConfig{
+		ClientID:     testClientID,
+		ClientSecret: "test-secret",
+		OAuthEndpoints: oauth.OAuthEndpoints{
+			JwksEndpoint: "https://www.googleapis.com/oauth2/v3/certs",
+		},
+		AdditionalParams: map[string]string{
+			"hd": "example.com",
+		},
+	}
+	hostedDomainSetupMocks := func(idToken string, config *oauth.OAuthClientConfig) {
+		suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+			Return(config, nil).Once()
+		suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", idToken, config.OAuthEndpoints.JwksEndpoint).
+			Return(nil).Once()
+	}
 
 	testCases := []struct {
 		name                string
@@ -430,7 +457,7 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenWithFailure() {
 			},
 			expectedErrorCode: "CONFIG-001",
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
 					Return(nil, &serviceerror.ServiceError{Code: "CONFIG-001"}).Once()
 			},
 		},
@@ -451,7 +478,8 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenWithFailure() {
 			},
 			expectedErrorCode: oidc.ErrorInvalidIDTokenSignature.Code,
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+					Return(config, nil).Once()
 				suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", idToken, config.OAuthEndpoints.JwksEndpoint).
 					Return(&serviceerror.ServiceError{
 						Type:             serviceerror.ServerErrorType,
@@ -471,7 +499,8 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenWithFailure() {
 			},
 			expectedErrorCode: oidc.ErrorInvalidIDToken.Code,
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+					Return(config, nil).Once()
 			},
 		},
 		{
@@ -490,7 +519,8 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenWithFailure() {
 			expectedErrorCode:   oidc.ErrorInvalidIDToken.Code,
 			expectedErrContains: "issuer",
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+					Return(config, nil).Once()
 			},
 		},
 		{
@@ -507,7 +537,8 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenWithFailure() {
 			},
 			expectedErrorCode: oidc.ErrorInvalidIDToken.Code,
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+					Return(config, nil).Once()
 			},
 		},
 		{
@@ -526,7 +557,8 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenWithFailure() {
 			expectedErrorCode:   oidc.ErrorInvalidIDToken.Code,
 			expectedErrContains: "audience",
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+					Return(config, nil).Once()
 			},
 		},
 		{
@@ -543,7 +575,8 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenWithFailure() {
 			},
 			expectedErrorCode: oidc.ErrorInvalidIDToken.Code,
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+					Return(config, nil).Once()
 			},
 		},
 		{
@@ -562,7 +595,8 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenWithFailure() {
 			expectedErrorCode:   oidc.ErrorInvalidIDToken.Code,
 			expectedErrContains: "expired",
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+					Return(config, nil).Once()
 			},
 		},
 		{
@@ -580,7 +614,8 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenWithFailure() {
 			expectedErrorCode:   oidc.ErrorInvalidIDToken.Code,
 			expectedErrContains: "expiration",
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+					Return(config, nil).Once()
 			},
 		},
 		{
@@ -599,7 +634,8 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenWithFailure() {
 			expectedErrorCode:   oidc.ErrorInvalidIDToken.Code,
 			expectedErrContains: "expiration",
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+					Return(config, nil).Once()
 			},
 		},
 		{
@@ -618,7 +654,8 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenWithFailure() {
 			expectedErrorCode:   oidc.ErrorInvalidIDToken.Code,
 			expectedErrContains: "future",
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+					Return(config, nil).Once()
 			},
 		},
 		{
@@ -636,7 +673,8 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenWithFailure() {
 			expectedErrorCode:   oidc.ErrorInvalidIDToken.Code,
 			expectedErrContains: "iat",
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+					Return(config, nil).Once()
 			},
 		},
 		{
@@ -655,7 +693,8 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenWithFailure() {
 			expectedErrorCode:   oidc.ErrorInvalidIDToken.Code,
 			expectedErrContains: "iat",
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
+				suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).
+					Return(config, nil).Once()
 			},
 		},
 		{
@@ -667,23 +706,10 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenWithFailure() {
 				"iat": float64(now.Add(-1 * time.Minute).Unix()),
 				"hd":  "wrongdomain.com",
 			},
-			oAuthConfig: &oauth.OAuthClientConfig{
-				ClientID:     testClientID,
-				ClientSecret: "test-secret",
-				OAuthEndpoints: oauth.OAuthEndpoints{
-					JwksEndpoint: "https://www.googleapis.com/oauth2/v3/certs",
-				},
-				AdditionalParams: map[string]string{
-					"hd": "example.com",
-				},
-			},
+			oAuthConfig:         hostedDomainConfig,
 			expectedErrorCode:   oidc.ErrorInvalidIDToken.Code,
 			expectedErrContains: "hosted domain",
-			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
-				suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", idToken, config.OAuthEndpoints.JwksEndpoint).
-					Return(nil).Once()
-			},
+			setupMocks:          hostedDomainSetupMocks,
 		},
 		{
 			name: "HostedDomainWrongType",
@@ -694,23 +720,10 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenWithFailure() {
 				"iat": float64(now.Add(-1 * time.Minute).Unix()),
 				"hd":  123,
 			},
-			oAuthConfig: &oauth.OAuthClientConfig{
-				ClientID:     testClientID,
-				ClientSecret: "test-secret",
-				OAuthEndpoints: oauth.OAuthEndpoints{
-					JwksEndpoint: "https://www.googleapis.com/oauth2/v3/certs",
-				},
-				AdditionalParams: map[string]string{
-					"hd": "example.com",
-				},
-			},
+			oAuthConfig:         hostedDomainConfig,
 			expectedErrorCode:   oidc.ErrorInvalidIDToken.Code,
 			expectedErrContains: "hosted domain",
-			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
-				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
-				suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", idToken, config.OAuthEndpoints.JwksEndpoint).
-					Return(nil).Once()
-			},
+			setupMocks:          hostedDomainSetupMocks,
 		},
 	}
 
@@ -728,7 +741,7 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenWithFailure() {
 			tc.setupMocks(idToken, tc.oAuthConfig)
 
 			// Execute test
-			err := suite.service.ValidateIDToken(testGoogleIDPID, idToken)
+			err := suite.service.ValidateIDToken(context.Background(), testGoogleIDPID, idToken)
 
 			// Assertions
 			suite.NotNil(err)
@@ -762,9 +775,9 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestFetchUserInfoSuccess() {
 		"sub":   "user123",
 		"email": "user@gmail.com",
 	}
-	suite.mockOIDCService.On("FetchUserInfo", testGoogleIDPID, accessToken).Return(userInfo, nil)
+	suite.mockOIDCService.On("FetchUserInfo", mock.Anything, testGoogleIDPID, accessToken).Return(userInfo, nil)
 
-	result, err := suite.service.FetchUserInfo(testGoogleIDPID, accessToken)
+	result, err := suite.service.FetchUserInfo(context.Background(), testGoogleIDPID, accessToken)
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(userInfo["sub"], result["sub"])
@@ -823,9 +836,9 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDToken_Leeway_Expired
 		OAuthEndpoints: oauth.OAuthEndpoints{},
 	}
 
-	suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(oAuthConfig, nil).Once()
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).Return(oAuthConfig, nil).Once()
 
-	err := suite.service.ValidateIDToken(testGoogleIDPID, idToken)
+	err := suite.service.ValidateIDToken(context.Background(), testGoogleIDPID, idToken)
 	suite.Nil(err)
 }
 
@@ -847,9 +860,9 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDToken_Leeway_Expired
 		OAuthEndpoints: oauth.OAuthEndpoints{},
 	}
 
-	suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(oAuthConfig, nil).Once()
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).Return(oAuthConfig, nil).Once()
 
-	err := suite.service.ValidateIDToken(testGoogleIDPID, idToken)
+	err := suite.service.ValidateIDToken(context.Background(), testGoogleIDPID, idToken)
 	suite.NotNil(err)
 	suite.Equal(oidc.ErrorInvalidIDToken.Code, err.Code)
 	suite.Contains(err.ErrorDescription, "expired")
@@ -873,9 +886,9 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDToken_Leeway_IssuedI
 		OAuthEndpoints: oauth.OAuthEndpoints{},
 	}
 
-	suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(oAuthConfig, nil).Once()
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).Return(oAuthConfig, nil).Once()
 
-	err := suite.service.ValidateIDToken(testGoogleIDPID, idToken)
+	err := suite.service.ValidateIDToken(context.Background(), testGoogleIDPID, idToken)
 	suite.Nil(err)
 }
 
@@ -897,9 +910,9 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDToken_Leeway_IssuedI
 		OAuthEndpoints: oauth.OAuthEndpoints{},
 	}
 
-	suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(oAuthConfig, nil).Once()
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).Return(oAuthConfig, nil).Once()
 
-	err := suite.service.ValidateIDToken(testGoogleIDPID, idToken)
+	err := suite.service.ValidateIDToken(context.Background(), testGoogleIDPID, idToken)
 	suite.NotNil(err)
 	suite.Equal(oidc.ErrorInvalidIDToken.Code, err.Code)
 	suite.Contains(err.ErrorDescription, "future")
@@ -932,9 +945,9 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDToken_Leeway_ZeroLee
 		OAuthEndpoints: oauth.OAuthEndpoints{},
 	}
 
-	suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(oAuthConfig, nil).Once()
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).Return(oAuthConfig, nil).Once()
 
-	err := suite.service.ValidateIDToken(testGoogleIDPID, idToken)
+	err := suite.service.ValidateIDToken(context.Background(), testGoogleIDPID, idToken)
 	suite.NotNil(err)
 	suite.Equal(oidc.ErrorInvalidIDToken.Code, err.Code)
 	suite.Contains(err.ErrorDescription, "expired")
@@ -969,9 +982,9 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDToken_Leeway_IatExac
 		OAuthEndpoints: oauth.OAuthEndpoints{},
 	}
 
-	suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(oAuthConfig, nil).Once()
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).Return(oAuthConfig, nil).Once()
 
-	err := suite.service.ValidateIDToken(testGoogleIDPID, idToken)
+	err := suite.service.ValidateIDToken(context.Background(), testGoogleIDPID, idToken)
 	suite.Nil(err)
 }
 
@@ -1004,9 +1017,9 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDToken_Leeway_IatJust
 		OAuthEndpoints: oauth.OAuthEndpoints{},
 	}
 
-	suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(oAuthConfig, nil).Once()
+	suite.mockOIDCService.On("GetOAuthClientConfig", mock.Anything, testGoogleIDPID).Return(oAuthConfig, nil).Once()
 
-	err := suite.service.ValidateIDToken(testGoogleIDPID, idToken)
+	err := suite.service.ValidateIDToken(context.Background(), testGoogleIDPID, idToken)
 	suite.NotNil(err)
 	suite.Equal(oidc.ErrorInvalidIDToken.Code, err.Code)
 	suite.Contains(err.ErrorDescription, "future")

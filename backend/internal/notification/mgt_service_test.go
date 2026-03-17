@@ -83,7 +83,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender() {
 		return s.Name == sender.Name && s.ID != ""
 	})).Return(nil).Once()
 
-	result, err := suite.service.CreateSender(context.TODO(), sender)
+	result, err := suite.service.CreateSender(context.Background(), sender)
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(sender.Name, result.Name)
@@ -165,7 +165,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender_WithFailure
 				tc.setupMock(mockStore, sender)
 			}
 
-			result, err := svc.CreateSender(context.TODO(), sender)
+			result, err := svc.CreateSender(context.Background(), sender)
 			require := require.New(t)
 			require.Nil(result)
 			require.NotNil(err)
@@ -185,7 +185,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestListSenders() {
 
 	suite.mockStore.EXPECT().listSenders(mock.Anything).Return(senders, nil).Once()
 
-	result, err := suite.service.ListSenders(context.TODO())
+	result, err := suite.service.ListSenders(context.Background())
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Len(result, 2)
@@ -194,7 +194,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestListSenders() {
 func (suite *NotificationSenderMgtServiceTestSuite) TestListSenders_EmptyList() {
 	suite.mockStore.EXPECT().listSenders(mock.Anything).Return([]common.NotificationSenderDTO{}, nil).Once()
 
-	result, err := suite.service.ListSenders(context.TODO())
+	result, err := suite.service.ListSenders(context.Background())
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Len(result, 0)
@@ -203,7 +203,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestListSenders_EmptyList() 
 func (suite *NotificationSenderMgtServiceTestSuite) TestListSenders_StoreError() {
 	suite.mockStore.EXPECT().listSenders(mock.Anything).Return(nil, errors.New("database error")).Once()
 
-	result, err := suite.service.ListSenders(context.TODO())
+	result, err := suite.service.ListSenders(context.Background())
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
@@ -214,7 +214,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestGetSender() {
 	sender.ID = testSenderID
 	suite.mockStore.EXPECT().getSenderByID(mock.Anything, testSenderID).Return(&sender, nil).Once()
 
-	result, err := suite.service.GetSender(context.TODO(), testSenderID)
+	result, err := suite.service.GetSender(context.Background(), testSenderID)
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(testSenderID, result.ID)
@@ -223,13 +223,13 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestGetSender() {
 func (suite *NotificationSenderMgtServiceTestSuite) TestGetSender_NotFound() {
 	suite.mockStore.EXPECT().getSenderByID(mock.Anything, testSenderID).Return(nil, nil).Once()
 
-	result, err := suite.service.GetSender(context.TODO(), testSenderID)
+	result, err := suite.service.GetSender(context.Background(), testSenderID)
 	suite.Nil(err)
 	suite.Nil(result)
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) TestGetSender_EmptyID() {
-	result, err := suite.service.GetSender(context.TODO(), "")
+	result, err := suite.service.GetSender(context.Background(), "")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -239,7 +239,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestGetSender_EmptyID() {
 func (suite *NotificationSenderMgtServiceTestSuite) TestGetSender_StoreError() {
 	suite.mockStore.EXPECT().getSenderByID(mock.Anything, testSenderID).Return(nil, errors.New("database error")).Once()
 
-	result, err := suite.service.GetSender(context.TODO(), testSenderID)
+	result, err := suite.service.GetSender(context.Background(), testSenderID)
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
@@ -285,7 +285,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestGetSenderByName() {
 				tc.setup(mockStore)
 			}
 
-			result, err := svc.GetSenderByName(context.TODO(), tc.arg)
+			result, err := svc.GetSenderByName(context.Background(), tc.arg)
 			require := require.New(t)
 			require.Nil(err)
 			if tc.wantName == "" {
@@ -334,7 +334,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestGetSenderByName_WithFail
 				tc.setup(mockStore)
 			}
 
-			result, err := svc.GetSenderByName(context.TODO(), tc.arg)
+			result, err := svc.GetSenderByName(context.Background(), tc.arg)
 			require := require.New(t)
 			require.Nil(result)
 			require.NotNil(err)
@@ -399,7 +399,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender() {
 
 			tc.setupMock(mockStore, sender)
 
-			result, err := svc.UpdateSender(context.TODO(), testSenderID, sender)
+			result, err := svc.UpdateSender(context.Background(), testSenderID, sender)
 			require := require.New(t)
 			require.Nil(err)
 			require.NotNil(result)
@@ -527,7 +527,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_WithFailure
 			sender = tc.inputMod(sender)
 
 			if tc.name == "EmptyID" {
-				result, err := svc.UpdateSender(context.TODO(), "", sender)
+				result, err := svc.UpdateSender(context.Background(), "", sender)
 				require := require.New(t)
 				require.Nil(result)
 				require.NotNil(err)
@@ -539,7 +539,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_WithFailure
 				tc.setupMock(mockStore, sender)
 			}
 
-			result, err := svc.UpdateSender(context.TODO(), testSenderID, sender)
+			result, err := svc.UpdateSender(context.Background(), testSenderID, sender)
 			require := require.New(t)
 			require.Nil(result)
 			require.NotNil(err)
@@ -551,19 +551,20 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_WithFailure
 
 func (suite *NotificationSenderMgtServiceTestSuite) TestDeleteSender() {
 	suite.mockStore.EXPECT().deleteSender(mock.Anything, testSenderID).Return(nil).Once()
-	err := suite.service.DeleteSender(context.TODO(), testSenderID)
+	err := suite.service.DeleteSender(context.Background(), testSenderID)
 	suite.Nil(err)
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) TestDeleteSender_EmptyID() {
-	err := suite.service.DeleteSender(context.TODO(), "")
+	err := suite.service.DeleteSender(context.Background(), "")
 	suite.NotNil(err)
 	suite.Equal(ErrorInvalidSenderID.Code, err.Code)
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) TestDeleteSender_StoreError() {
-	suite.mockStore.EXPECT().deleteSender(context.TODO(), testSenderID).Return(errors.New("database error")).Once()
-	err := suite.service.DeleteSender(context.TODO(), testSenderID)
+	suite.mockStore.EXPECT().deleteSender(context.Background(), testSenderID).
+		Return(errors.New("database error")).Once()
+	err := suite.service.DeleteSender(context.Background(), testSenderID)
 	suite.NotNil(err)
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
 }
@@ -580,7 +581,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender_Declarative
 	config.GetThunderRuntime().Config.DeclarativeResources.Enabled = true
 
 	sender := suite.getValidTwilioSender()
-	result, err := suite.service.CreateSender(context.TODO(), sender)
+	result, err := suite.service.CreateSender(context.Background(), sender)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -599,7 +600,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_Declarative
 	config.GetThunderRuntime().Config.DeclarativeResources.Enabled = true
 
 	sender := suite.getValidTwilioSender()
-	result, err := suite.service.UpdateSender(context.TODO(), testSenderID, sender)
+	result, err := suite.service.UpdateSender(context.Background(), testSenderID, sender)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -617,7 +618,7 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestDeleteSender_Declarative
 	// Enable declarative resources
 	config.GetThunderRuntime().Config.DeclarativeResources.Enabled = true
 
-	err := suite.service.DeleteSender(context.TODO(), testSenderID)
+	err := suite.service.DeleteSender(context.Background(), testSenderID)
 
 	suite.NotNil(err)
 	suite.Equal("DCR-1003", err.Code)

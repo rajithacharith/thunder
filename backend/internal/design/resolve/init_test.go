@@ -19,6 +19,7 @@
 package resolve
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -59,6 +60,7 @@ func (suite *InitTestSuite) TestRegisterRoutes() {
 	mux := http.NewServeMux()
 	mockService := &mockDesignResolveService{
 		resolveDesignFn: func(
+			ctx context.Context,
 			resolveType common.DesignResolveType,
 			id string,
 		) (*common.DesignResponse, *serviceerror.ServiceError) {

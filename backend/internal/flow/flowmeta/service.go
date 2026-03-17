@@ -193,7 +193,7 @@ func (fms *flowMetaService) GetFlowMetadata(
 		designID = ouID
 	}
 
-	designResp, svcErr := fms.designResolve.ResolveDesign(designType, designID)
+	designResp, svcErr := fms.designResolve.ResolveDesign(ctx, designType, designID)
 	if svcErr != nil {
 		// Design is optional, log and continue with empty design
 		fms.logger.Debug("Failed to get design configuration",

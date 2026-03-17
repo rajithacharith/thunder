@@ -103,7 +103,7 @@ func (s *userInfoService) GetUserInfo(
 		return nil, svcErr
 	}
 
-	oauthApp := s.getOAuthApp(tokenClaims)
+	oauthApp := s.getOAuthApp(ctx, tokenClaims)
 
 	// Extract allowed user attributes
 	var allowedUserAttributes []string
@@ -223,13 +223,14 @@ func (s *userInfoService) validateOpenIDScope(scopes []string) *serviceerror.Ser
 }
 
 // getOAuthApp retrieves the OAuth application configuration if client_id is present in claims.
-func (s *userInfoService) getOAuthApp(claims map[string]interface{}) *appmodel.OAuthAppConfigProcessedDTO {
+func (s *userInfoService) getOAuthApp(
+	ctx context.Context, claims map[string]interface{}) *appmodel.OAuthAppConfigProcessedDTO {
 	clientID, ok := claims["client_id"].(string)
 	if !ok || clientID == "" {
 		return nil
 	}
 
-	app, err := s.applicationService.GetOAuthApplication(context.TODO(), clientID)
+	app, err := s.applicationService.GetOAuthApplication(ctx, clientID)
 	if err != nil || app == nil {
 		return nil
 	}

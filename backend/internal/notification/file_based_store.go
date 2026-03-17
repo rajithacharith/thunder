@@ -34,7 +34,7 @@ type notificationFileBasedStore struct {
 // Create implements declarativeresource.Storer interface for resource loader
 func (f *notificationFileBasedStore) Create(id string, data interface{}) error {
 	sender := data.(*common.NotificationSenderDTO)
-	return f.createSender(context.TODO(), *sender)
+	return f.createSender(context.Background(), *sender)
 }
 
 // createSender implements notificationStoreInterface.
