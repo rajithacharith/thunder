@@ -83,8 +83,22 @@ func (c *compositeThemeStore) CreateTheme(id string, theme CreateThemeRequest) e
 // Checks database store first, then falls back to file store (declarative).
 func (c *compositeThemeStore) GetTheme(id string) (Theme, error) {
 	theme, err := declarativeresource.CompositeGetHelper(
-		func() (Theme, error) { return c.dbStore.GetTheme(id) },
-		func() (Theme, error) { return c.fileStore.GetTheme(id) },
+		func() (Theme, error) {
+			theme, err := c.dbStore.GetTheme(id)
+			if err != nil {
+				return Theme{}, err
+			}
+			theme.IsReadOnly = false
+			return theme, nil
+		},
+		func() (Theme, error) {
+			theme, err := c.fileStore.GetTheme(id)
+			if err != nil {
+				return Theme{}, err
+			}
+			theme.IsReadOnly = true
+			return theme, nil
+		},
 		errThemeNotFound,
 	)
 	return theme, err
@@ -162,18 +176,20 @@ func mergeAndDeduplicateThemes(dbThemes, fileThemes []Theme) []Theme {
 	merged := make([]Theme, 0, len(dbThemes)+len(fileThemes))
 
 	// Add file-based (declarative) themes first (they take precedence)
-	for _, theme := range fileThemes {
-		if !seen[theme.ID] {
-			merged = append(merged, theme)
-			seen[theme.ID] = true
+	for i := range fileThemes {
+		if !seen[fileThemes[i].ID] {
+			fileThemes[i].IsReadOnly = true
+			merged = append(merged, fileThemes[i])
+			seen[fileThemes[i].ID] = true
 		}
 	}
 
 	// Add database themes (skip if already added from file store)
-	for _, theme := range dbThemes {
-		if !seen[theme.ID] {
-			merged = append(merged, theme)
-			seen[theme.ID] = true
+	for i := range dbThemes {
+		if !seen[dbThemes[i].ID] {
+			dbThemes[i].IsReadOnly = false
+			merged = append(merged, dbThemes[i])
+			seen[dbThemes[i].ID] = true
 		}
 	}
 

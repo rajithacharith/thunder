@@ -205,7 +205,9 @@ func (suite *CompositeLayoutStoreTestSuite) TestGetLayout_FromDBStore() {
 	layout, err := suite.store.GetLayout("layout1")
 
 	suite.NoError(err)
-	suite.Equal(expectedLayout, layout)
+	suite.Equal(expectedLayout.ID, layout.ID)
+	suite.Equal(expectedLayout.DisplayName, layout.DisplayName)
+	suite.False(layout.IsReadOnly)
 }
 
 // Test GetLayout - From file store (fallback when not in DB store)
@@ -217,7 +219,9 @@ func (suite *CompositeLayoutStoreTestSuite) TestGetLayout_FromFileStore() {
 	layout, err := suite.store.GetLayout("layout1")
 
 	suite.NoError(err)
-	suite.Equal(expectedLayout, layout)
+	suite.Equal(expectedLayout.ID, layout.ID)
+	suite.Equal(expectedLayout.DisplayName, layout.DisplayName)
+	suite.True(layout.IsReadOnly)
 }
 
 // Test GetLayout - Not found in either store

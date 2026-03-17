@@ -21,7 +21,6 @@ package user
 import (
 	"context"
 	"errors"
-	"sort"
 	"strings"
 
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
@@ -330,27 +329,23 @@ func (c *compositeUserStore) ValidateUserIDsInOUs(
 // mergeAndDeduplicateUsers merges and deduplicates users from two lists.
 // Database users take precedence over file-based users when IDs conflict.
 func mergeAndDeduplicateUsers(dbUsers, fileUsers []User) []User {
-	userMap := make(map[string]User)
+	seen := make(map[string]bool)
+	result := make([]User, 0, len(dbUsers)+len(fileUsers))
 
-	// Add file users first
-	for _, user := range fileUsers {
-		userMap[user.ID] = user
+	// Add database users first (they take precedence) - mark as mutable (IsReadOnly=false)
+	for i := range dbUsers {
+		dbUsers[i].IsReadOnly = false
+		result = append(result, dbUsers[i])
+		seen[dbUsers[i].ID] = true
 	}
 
-	// Add/overwrite with db users (db takes precedence)
-	for _, user := range dbUsers {
-		userMap[user.ID] = user
-	}
-
-	ids := make([]string, 0, len(userMap))
-	for id := range userMap {
-		ids = append(ids, id)
-	}
-	sort.Strings(ids)
-
-	result := make([]User, 0, len(ids))
-	for _, id := range ids {
-		result = append(result, userMap[id])
+	// Add file-based users only if not already seen - mark as immutable (IsReadOnly=true)
+	for i := range fileUsers {
+		if !seen[fileUsers[i].ID] {
+			fileUsers[i].IsReadOnly = true
+			result = append(result, fileUsers[i])
+			seen[fileUsers[i].ID] = true
+		}
 	}
 
 	return result

@@ -263,7 +263,7 @@ type BasicApplicationResponse struct {
 	ThemeID                   string `json:"themeId,omitempty" jsonschema:"Theme ID."`
 	LayoutID                  string `json:"layoutId,omitempty" jsonschema:"Layout ID."`
 	Template                  string `json:"template,omitempty" jsonschema:"Application Template."`
-	IsReadOnly                bool   `json:"isReadOnly,omitempty" jsonschema:"Indicates if the application is read-only (declarative/immutable)."`
+	IsReadOnly                bool   `json:"isReadOnly" jsonschema:"Indicates if the application is read-only (declarative/immutable)."`
 }
 
 // ApplicationListResponse represents the response structure for listing applications.

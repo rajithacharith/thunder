@@ -29,6 +29,7 @@ type Layout struct {
 	Layout      json.RawMessage `json:"layout" yaml:"layout"`
 	CreatedAt   string          `json:"createdAt" yaml:"createdAt,omitempty"`
 	UpdatedAt   string          `json:"updatedAt" yaml:"updatedAt,omitempty"`
+	IsReadOnly  bool            `json:"isReadOnly" yaml:"isReadOnly"`
 }
 
 // LayoutListItem represents a layout item in the list response.
@@ -39,6 +40,7 @@ type LayoutListItem struct {
 	Description string `json:"description,omitempty"`
 	CreatedAt   string `json:"createdAt"`
 	UpdatedAt   string `json:"updatedAt"`
+	IsReadOnly  bool   `json:"isReadOnly"`
 }
 
 // CreateLayoutRequest represents the request body for creating a layout configuration.

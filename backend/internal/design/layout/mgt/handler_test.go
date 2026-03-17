@@ -155,6 +155,7 @@ func (suite *LayoutHandlerTestSuite) TestHandleLayoutPostRequest_Success() {
 		DisplayName: "New Layout",
 		Description: "A new layout",
 		Layout:      json.RawMessage(`{"structure": "grid"}`),
+		IsReadOnly:  true,
 	}
 
 	mockSvc := &mockLayoutService{
@@ -181,6 +182,7 @@ func (suite *LayoutHandlerTestSuite) TestHandleLayoutPostRequest_Success() {
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "layout-new", response.ID)
+	assert.True(suite.T(), response.IsReadOnly)
 }
 
 // Test HandleLayoutPostRequest - Invalid JSON body
@@ -224,6 +226,7 @@ func (suite *LayoutHandlerTestSuite) TestHandleLayoutGetRequest_Success() {
 		DisplayName: "Test Layout",
 		Description: "A test layout",
 		Layout:      json.RawMessage(`{"structure": "centered"}`),
+		IsReadOnly:  true,
 	}
 
 	mockSvc := &mockLayoutService{
@@ -246,6 +249,7 @@ func (suite *LayoutHandlerTestSuite) TestHandleLayoutGetRequest_Success() {
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "layout-123", response.ID)
+	assert.True(suite.T(), response.IsReadOnly)
 }
 
 // Test HandleLayoutGetRequest - Not found
@@ -274,6 +278,7 @@ func (suite *LayoutHandlerTestSuite) TestHandleLayoutPutRequest_Success() {
 		DisplayName: "Updated Layout",
 		Description: "Updated desc",
 		Layout:      json.RawMessage(`{"structure": "flex"}`),
+		IsReadOnly:  true,
 	}
 
 	mockSvc := &mockLayoutService{
@@ -297,6 +302,11 @@ func (suite *LayoutHandlerTestSuite) TestHandleLayoutPutRequest_Success() {
 	mux.ServeHTTP(w, req)
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var response Layout
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
+	assert.True(suite.T(), response.IsReadOnly)
 }
 
 // Test HandleLayoutPutRequest - Invalid JSON
