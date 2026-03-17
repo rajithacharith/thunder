@@ -249,7 +249,7 @@ func (ds *dcrService) mapApplicationErrorToDCRError(appErr *serviceerror.Service
 
 	switch appErr.Code {
 	// Redirect URI related errors
-	case "APP-1006", "APP-1014", "APP-1015":
+	case "APP-1014", "APP-1015":
 		dcrErr.Code = ErrorInvalidRedirectURI.Code
 	// Server errors
 	case "APP-5001", "APP-5002":

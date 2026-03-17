@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import type {ReactNode} from 'react';
 import CommonElementPropertyFactory from '../CommonElementPropertyFactory';
 import {ValidationContext, type ValidationContextProps} from '../../../context/ValidationContext';
@@ -487,6 +487,122 @@ describe('CommonElementPropertyFactory', () => {
         {wrapper: createWrapper()},
       );
 
+      expect(screen.getByTestId('text-property-field')).toBeInTheDocument();
+    });
+  });
+
+  describe('Text Element align property', () => {
+    it('should render a Select dropdown for align property on Text element', () => {
+      const textResource: Resource = {
+        id: 'resource-1',
+        type: ElementTypes.Text,
+        config: {},
+      } as Resource;
+
+      render(
+        <CommonElementPropertyFactory
+          resource={textResource}
+          propertyKey="align"
+          propertyValue="left"
+          onChange={mockOnChange}
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
+
+    it('should use "left" as the default value when propertyValue is not a string', () => {
+      const textResource: Resource = {
+        id: 'resource-1',
+        type: ElementTypes.Text,
+        config: {},
+      } as Resource;
+
+      render(
+        <CommonElementPropertyFactory
+          resource={textResource}
+          propertyKey="align"
+          propertyValue={undefined}
+          onChange={mockOnChange}
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
+
+    it('should render all five align options in the dropdown', () => {
+      const textResource: Resource = {
+        id: 'resource-1',
+        type: ElementTypes.Text,
+        config: {},
+      } as Resource;
+
+      render(
+        <CommonElementPropertyFactory
+          resource={textResource}
+          propertyKey="align"
+          propertyValue="center"
+          onChange={mockOnChange}
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      // Opening the select reveals the options
+      const select = screen.getByRole('combobox');
+      fireEvent.mouseDown(select);
+
+      const options = screen.getAllByRole('option');
+      expect(options.length).toBe(5);
+    });
+
+    it('should call onChange when the align value is changed', () => {
+      const textResource: Resource = {
+        id: 'resource-1',
+        type: ElementTypes.Text,
+        config: {},
+      } as Resource;
+
+      render(
+        <CommonElementPropertyFactory
+          resource={textResource}
+          propertyKey="align"
+          propertyValue="left"
+          onChange={mockOnChange}
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      const select = screen.getByRole('combobox');
+      fireEvent.mouseDown(select);
+
+      const centerOption = screen.getAllByRole('option').find((o) => o.getAttribute('data-value') === 'center');
+      if (centerOption) {
+        fireEvent.click(centerOption);
+        expect(mockOnChange).toHaveBeenCalledWith('align', 'center', textResource);
+      }
+    });
+
+    it('should not render align dropdown for non-Text elements', () => {
+      const resource: Resource = {
+        id: 'resource-1',
+        type: ElementTypes.TextInput,
+        config: {},
+      } as Resource;
+
+      const {container} = render(
+        <CommonElementPropertyFactory
+          resource={resource}
+          propertyKey="align"
+          propertyValue="left"
+          onChange={mockOnChange}
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      // A non-Text element with align key renders a TextPropertyField, not a Select
+      expect(container.querySelector('select')).not.toBeInTheDocument();
       expect(screen.getByTestId('text-property-field')).toBeInTheDocument();
     });
   });

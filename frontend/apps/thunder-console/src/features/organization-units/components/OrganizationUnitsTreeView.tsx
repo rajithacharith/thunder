@@ -22,7 +22,6 @@ import {useNavigate} from 'react-router';
 import {useLogger} from '@thunder/logger/react';
 import {
   Box,
-  Avatar,
   IconButton,
   Typography,
   CircularProgress,
@@ -34,12 +33,14 @@ import {
   ListItemIcon,
   ListItemText,
   useTheme,
+  Avatar,
 } from '@wso2/oxygen-ui';
 import {Building, EllipsisVertical, Pencil, Plus, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useConfig} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
 import {useQueryClient} from '@tanstack/react-query';
+import ResourceAvatar from '../../../components/ResourceAvatar';
 import useGetOrganizationUnits from '../api/useGetOrganizationUnits';
 import fetchChildOrganizationUnits from '../api/fetchChildOrganizationUnits';
 import fetchOrganizationUnits from '../api/fetchOrganizationUnits';
@@ -114,7 +115,9 @@ function CustomTreeItem(allProps: CustomTreeItemProps): JSX.Element {
     !isAddChildButton &&
     !isLoadMoreItem &&
     (itemData?.isPlaceholder ??
-      (itemId.endsWith(OrganizationUnitTreeConstants.PLACEHOLDER_SUFFIX) || itemId.endsWith(OrganizationUnitTreeConstants.ERROR_SUFFIX) || itemId.endsWith(OrganizationUnitTreeConstants.EMPTY_SUFFIX)));
+      (itemId.endsWith(OrganizationUnitTreeConstants.PLACEHOLDER_SUFFIX) ||
+        itemId.endsWith(OrganizationUnitTreeConstants.ERROR_SUFFIX) ||
+        itemId.endsWith(OrganizationUnitTreeConstants.EMPTY_SUFFIX)));
   const isItemLoading = loadingItemsProp?.has(itemId);
 
   if (isLoadMoreItem) {
@@ -293,9 +296,7 @@ function CustomTreeItem(allProps: CustomTreeItemProps): JSX.Element {
     <>
       <TreeView.TreeItem
         {...treeItemProps}
-        {...(isItemLoading
-          ? {slots: {collapseIcon: TreeViewLoadingIcon, expandIcon: TreeViewLoadingIcon}}
-          : {})}
+        {...(isItemLoading ? {slots: {collapseIcon: TreeViewLoadingIcon, expandIcon: TreeViewLoadingIcon}} : {})}
         label={
           <Box
             sx={{
@@ -304,18 +305,16 @@ function CustomTreeItem(allProps: CustomTreeItemProps): JSX.Element {
               gap: 1.5,
             }}
           >
-            <Avatar
+            <ResourceAvatar
+              value={itemData?.logo_url}
+              size={32}
+              fallbackIcon={<Building size={14} />}
               sx={{
                 p: 0.5,
                 backgroundColor: theme?.vars?.palette.primary.main,
-                width: 32,
-                height: 32,
-                fontSize: '0.875rem',
+                fontSize: '1rem',
               }}
-              src={itemData?.logo_url}
-            >
-              <Building size={14} />
-            </Avatar>
+            />
             <Box sx={{flexGrow: 1, minWidth: 0}}>
               <Typography variant="body2" sx={{fontWeight: 500, lineHeight: 1.3}}>
                 {labelStr}
@@ -429,9 +428,16 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
   const fetchChildPage = useCallback(
     async (parentId: string, offset: number): Promise<OrganizationUnitListResponse> =>
       queryClient.fetchQuery<OrganizationUnitListResponse>({
-        queryKey: [OrganizationUnitQueryKeys.CHILD_ORGANIZATION_UNITS, parentId, {limit: OrganizationUnitTreeConstants.PAGE_SIZE, offset}],
+        queryKey: [
+          OrganizationUnitQueryKeys.CHILD_ORGANIZATION_UNITS,
+          parentId,
+          {limit: OrganizationUnitTreeConstants.PAGE_SIZE, offset},
+        ],
         queryFn: async (): Promise<OrganizationUnitListResponse> =>
-          fetchChildOrganizationUnits(http, getServerUrl(), parentId, {limit: OrganizationUnitTreeConstants.PAGE_SIZE, offset}),
+          fetchChildOrganizationUnits(http, getServerUrl(), parentId, {
+            limit: OrganizationUnitTreeConstants.PAGE_SIZE,
+            offset,
+          }),
         staleTime: 0,
       }),
     [getServerUrl, queryClient, http],
@@ -471,9 +477,7 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
       try {
         const childItems = await fetchChildItems(parentId);
 
-        setChildOffsets((prev) => new Map(prev).set(parentId, childItems.filter(
-          (c) => !c.isPlaceholder,
-        ).length));
+        setChildOffsets((prev) => new Map(prev).set(parentId, childItems.filter((c) => !c.isPlaceholder).length));
         // Update tree items, mark as loaded, then expand in one synchronous block.
         // The node stays collapsed until this point, so it opens directly with real children.
         setTreeItems((prev) => updateTreeItemChildren(prev, parentId, childItems));
@@ -503,46 +507,49 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
     [fetchChildItems, setTreeItems, setLoadedItems, setExpandedItems, logger, t],
   );
 
-  const handleRootLoadMore = useCallback(
-    async (): Promise<void> => {
-      if (rootLoadMoreLoadingRef.current) return;
+  const handleRootLoadMore = useCallback(async (): Promise<void> => {
+    if (rootLoadMoreLoadingRef.current) return;
 
-      setRootLoadMoreLoading(true);
+    setRootLoadMoreLoading(true);
 
-      try {
-        const result = await queryClient.fetchQuery<OrganizationUnitListResponse>({
-          queryKey: [OrganizationUnitQueryKeys.ORGANIZATION_UNITS, {limit: OrganizationUnitTreeConstants.PAGE_SIZE, offset: rootOffset}],
-          queryFn: async (): Promise<OrganizationUnitListResponse> =>
-            fetchOrganizationUnits(http, getServerUrl(), {limit: OrganizationUnitTreeConstants.PAGE_SIZE, offset: rootOffset}),
-          staleTime: 0,
+    try {
+      const result = await queryClient.fetchQuery<OrganizationUnitListResponse>({
+        queryKey: [
+          OrganizationUnitQueryKeys.ORGANIZATION_UNITS,
+          {limit: OrganizationUnitTreeConstants.PAGE_SIZE, offset: rootOffset},
+        ],
+        queryFn: async (): Promise<OrganizationUnitListResponse> =>
+          fetchOrganizationUnits(http, getServerUrl(), {
+            limit: OrganizationUnitTreeConstants.PAGE_SIZE,
+            offset: rootOffset,
+          }),
+        staleTime: 0,
+      });
+
+      const newItems = buildTreeItems(result.organizationUnits);
+      const loadedSoFar = rootOffset + result.organizationUnits.length;
+
+      if (loadedSoFar < result.totalResults) {
+        newItems.push({
+          id: OrganizationUnitTreeConstants.ROOT_LOAD_MORE_ID,
+          label: '',
+          handle: '',
+          isPlaceholder: true,
         });
-
-        const newItems = buildTreeItems(result.organizationUnits);
-        const loadedSoFar = rootOffset + result.organizationUnits.length;
-
-        if (loadedSoFar < result.totalResults) {
-          newItems.push({
-            id: OrganizationUnitTreeConstants.ROOT_LOAD_MORE_ID,
-            label: '',
-            handle: '',
-            isPlaceholder: true,
-          });
-        }
-
-        setRootOffset(loadedSoFar);
-        setTreeItems((prev) => {
-          const withoutLoadMore = prev.filter((item) => item.id !== OrganizationUnitTreeConstants.ROOT_LOAD_MORE_ID);
-
-          return [...withoutLoadMore, ...newItems];
-        });
-      } catch (_error: unknown) {
-        logger.error('Failed to load more root organization units', {error: _error});
-      } finally {
-        setRootLoadMoreLoading(false);
       }
-    },
-    [rootOffset, getServerUrl, queryClient, http, setTreeItems, logger],
-  );
+
+      setRootOffset(loadedSoFar);
+      setTreeItems((prev) => {
+        const withoutLoadMore = prev.filter((item) => item.id !== OrganizationUnitTreeConstants.ROOT_LOAD_MORE_ID);
+
+        return [...withoutLoadMore, ...newItems];
+      });
+    } catch (_error: unknown) {
+      logger.error('Failed to load more root organization units', {error: _error});
+    } finally {
+      setRootLoadMoreLoading(false);
+    }
+  }, [rootOffset, getServerUrl, queryClient, http, setTreeItems, logger]);
 
   const handleLoadMore = useCallback(
     async (parentId: string): Promise<void> => {
@@ -650,25 +657,22 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
     [expandLevel],
   );
 
-  const buildRootTreeItems = useCallback(
-    (response: OrganizationUnitListResponse): OrganizationUnitTreeItem[] => {
-      const items = buildTreeItems(response.organizationUnits);
+  const buildRootTreeItems = useCallback((response: OrganizationUnitListResponse): OrganizationUnitTreeItem[] => {
+    const items = buildTreeItems(response.organizationUnits);
 
-      if (response.organizationUnits.length < response.totalResults) {
-        items.push({
-          id: OrganizationUnitTreeConstants.ROOT_LOAD_MORE_ID,
-          label: '',
-          handle: '',
-          isPlaceholder: true,
-        });
-      }
+    if (response.organizationUnits.length < response.totalResults) {
+      items.push({
+        id: OrganizationUnitTreeConstants.ROOT_LOAD_MORE_ID,
+        label: '',
+        handle: '',
+        isPlaceholder: true,
+      });
+    }
 
-      setRootOffset(response.organizationUnits.length);
+    setRootOffset(response.organizationUnits.length);
 
-      return items;
-    },
-    [],
-  );
+    return items;
+  }, []);
 
   // Rebuild tree when query data is available and either the tree is empty (after
   // reset) or the data has changed since the last build (fresh fetch after mutation).

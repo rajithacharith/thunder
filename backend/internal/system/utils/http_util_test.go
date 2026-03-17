@@ -144,6 +144,107 @@ func (suite *HTTPUtilTestSuite) TestParseURL() {
 	}
 }
 
+func (suite *HTTPUtilTestSuite) TestIsValidLogoURI() {
+	testCases := []struct {
+		name     string
+		uri      string
+		expected bool
+	}{
+		{
+			name:     "EmptyString",
+			uri:      "",
+			expected: false,
+		},
+		{
+			name:     "HTTPSUrl",
+			uri:      "https://example.com/logo.png",
+			expected: true,
+		},
+		{
+			name:     "HTTPUrl",
+			uri:      "http://example.com/logo.png",
+			expected: true,
+		},
+		{
+			name:     "DataURI",
+			uri:      "data:image/png;base64,abc123",
+			expected: true,
+		},
+		{
+			name:     "BlobURI",
+			uri:      "blob:https://example.com/uuid",
+			expected: true,
+		},
+		{
+			name:     "AbsolutePath",
+			uri:      "/images/logo.png",
+			expected: true,
+		},
+		{
+			name:     "RelativePath",
+			uri:      "./logo.png",
+			expected: false,
+		},
+		{
+			name:     "RelativePathNoSlash",
+			uri:      "logo.png",
+			expected: false,
+		},
+		{
+			name:     "InvalidURI",
+			uri:      "://invalid",
+			expected: false,
+		},
+		{
+			name:     "JavascriptScheme",
+			uri:      "javascript:alert(1)",
+			expected: false,
+		},
+		{
+			name:     "FileScheme",
+			uri:      "file:///etc/passwd",
+			expected: false,
+		},
+		{
+			name:     "FTPScheme",
+			uri:      "ftp://example.com/logo.png",
+			expected: false,
+		},
+		{
+			name:     "EmojiURI",
+			uri:      "emoji:smile",
+			expected: true,
+		},
+		{
+			name:     "HTTPWithoutHost",
+			uri:      "http:///no-host",
+			expected: false,
+		},
+		{
+			name:     "HTTPSWithoutHost",
+			uri:      "https:///no-host",
+			expected: false,
+		},
+		{
+			name:     "JavaScriptScheme",
+			uri:      "javascript:alert(1)",
+			expected: false,
+		},
+		{
+			name:     "FileScheme",
+			uri:      "file:///etc/passwd",
+			expected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			result := IsValidLogoURI(tc.uri)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
+
 func (suite *HTTPUtilTestSuite) TestGetURIWithQueryParams() {
 	testCases := []struct {
 		name        string

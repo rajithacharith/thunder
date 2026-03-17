@@ -1615,7 +1615,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_FieldValidationE
 			app: &model.ApplicationDTO{
 				Name:       "Test App",
 				AuthFlowID: "valid-auth-flow-id",
-				LogoURL:    "invalid-logo-url",
+				LogoURL:    "://invalid",
 			},
 			setupMocks:    func(_ *thememock.ThemeMgtServiceInterfaceMock) {},
 			expectedError: &ErrorInvalidLogoURL,
@@ -3116,7 +3116,7 @@ func (suite *ServiceTestSuite) TestValidateApplication_InvalidLogoURL() {
 
 	app := &model.ApplicationDTO{
 		Name:       "Test App",
-		LogoURL:    "not-a-valid-uri",
+		LogoURL:    "://invalid",
 		AuthFlowID: "edc013d0-e893-4dc0-990c-3e1d203e005b",
 	}
 

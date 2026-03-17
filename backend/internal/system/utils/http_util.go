@@ -79,6 +79,31 @@ func IsValidURI(uri string) bool {
 	return true
 }
 
+// IsValidLogoURI checks if the provided URI is valid for use as a logo URL.
+// It enforces a scheme allowlist: http/https require a non-empty host, data/blob/emoji
+// schemes are always accepted, and relative paths (no scheme, non-empty path) are accepted.
+// All other schemes (e.g. javascript, file) are rejected.
+func IsValidLogoURI(uri string) bool {
+	if uri == "" {
+		return false
+	}
+	parsed, err := url.Parse(uri)
+	if err != nil {
+		return false
+	}
+	switch parsed.Scheme {
+	case "http", "https":
+		return parsed.Host != ""
+	case "data", "blob", "emoji":
+		return true
+	case "":
+		// Accept relative paths (no scheme, but path must start with /)
+		return strings.HasPrefix(parsed.Path, "/")
+	default:
+		return false
+	}
+}
+
 // GetURIWithQueryParams constructs a URI with the given query parameters.
 func GetURIWithQueryParams(uri string, queryParams map[string]string) (string, error) {
 	// Parse the URI.

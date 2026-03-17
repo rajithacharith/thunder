@@ -440,7 +440,6 @@ export default function ApplicationCreatePage(): JSX.Element {
             themeId={themeId}
             selectedTheme={selectedTheme}
             onLogoSelect={handleLogoSelect}
-            onInitialLogoLoad={handleLogoSelect}
             onThemeSelect={(id, config) => {
               setThemeId(id);
               setSelectedTheme(config);
@@ -663,10 +662,14 @@ export default function ApplicationCreatePage(): JSX.Element {
         {currentStep !== ApplicationCreateFlowStep.NAME && currentStep !== ApplicationCreateFlowStep.COMPLETE && (
           <Box sx={{flex: '0 0 50%', display: 'flex', flexDirection: 'column', p: 5}}>
             <GatePreview
-                theme={selectedTheme}
-                mock={buildPreviewMock(integrations, idpData ?? [])}
-                displayName={appName ?? undefined}
-              />
+              theme={selectedTheme}
+              mock={buildPreviewMock(integrations, idpData ?? [], {
+                application: {
+                  logo_url: appLogo!,
+                },
+              })}
+              displayName={appName ?? undefined}
+            />
           </Box>
         )}
       </Box>

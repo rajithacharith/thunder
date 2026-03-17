@@ -21,6 +21,12 @@ import type {IdentityProvider} from '@/features/integrations/models/identity-pro
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
 import {IdentityProviderTypes} from '@/features/integrations/models/identity-provider';
 
+interface PreviewMeta {
+  application?: {
+    logo_url?: string;
+  };
+}
+
 const IDP_ICONS: Record<string, string> = {
   GOOGLE: 'assets/images/icons/google.svg',
   GITHUB: 'assets/images/icons/github.svg',
@@ -47,6 +53,7 @@ const DEFAULT_IDENTITY_PROVIDERS: IdentityProvider[] = [
 export default function buildPreviewMock(
   integrations: Record<string, boolean> = DEFAULT_INTEGRATIONS,
   identityProviders: IdentityProvider[] = DEFAULT_IDENTITY_PROVIDERS,
+  meta: PreviewMeta = {},
 ): EmbeddedFlowComponent[] {
   const hasBasicAuth: boolean = integrations[AuthenticatorTypes.BASIC_AUTH] ?? false;
   const hasPasskey: boolean = integrations[AuthenticatorTypes.PASSKEY] ?? false;
@@ -57,14 +64,27 @@ export default function buildPreviewMock(
 
   const components: Record<string, unknown>[] = [];
 
+  // App Logo
+  components.push({
+    alt: '',
+    category: 'DISPLAY',
+    id: 'app_logo',
+    resourceType: 'ELEMENT',
+    src: meta?.application?.logo_url ?? '',
+    type: 'IMAGE',
+    width: '60px',
+    height: '60px',
+  });
+
   // Heading
   components.push({
+    align: 'center',
     category: 'DISPLAY',
     id: 'text_heading',
     label: '{{t(signin:heading)}}',
     resourceType: 'ELEMENT',
     type: 'TEXT',
-    variant: 'HEADING_3',
+    variant: 'HEADING_1',
   });
 
   // Basic auth block

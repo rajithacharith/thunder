@@ -60,9 +60,10 @@ vi.mock('@thunder/shared-hooks', () => ({
 
 // Mock react-router hooks
 const mockNavigate = vi.fn();
+let mockSearchParams: URLSearchParams = new URLSearchParams();
 vi.mock('react-router', () => ({
   useNavigate: () => mockNavigate,
-  useSearchParams: () => [new URLSearchParams(), vi.fn()],
+  useSearchParams: () => [mockSearchParams, vi.fn()],
 }));
 
 // Mock getIntegrationIcon
@@ -157,6 +158,7 @@ describe('SignInBox', () => {
     mockUseDesign.mockReturnValue({
       isDesignEnabled: false,
     });
+    mockSearchParams = new URLSearchParams();
     mockSignInRenderProps = createMockSignInRenderProps();
     mockSignUpRenderProps = createMockSignUpRenderProps();
   });
@@ -685,6 +687,31 @@ describe('SignInBox', () => {
     const signUpLink = screen.getByText('Sign up');
     // Sign-up link is now a plain anchor using the fallback URL
     expect(signUpLink.closest('a')).toHaveAttribute('href', '/signup');
+  });
+
+  it('preserves existing query params in the sign-up fallback URL', () => {
+    mockSearchParams = new URLSearchParams({client_id: 'test-client', app_id: 'myapp'});
+    mockResolveAll.mockImplementation(
+      (template: string, handlers?: Record<string, (key: string) => string | undefined>) =>
+        template.replace(/\{\{meta\(([^)]+)\)\}\}/g, (_match, path: string) => handlers?.meta?.(path) ?? _match),
+    );
+    mockSignInRenderProps = createMockSignInRenderProps({
+      meta: {is_registration_flow_enabled: 'true'},
+      components: [
+        {
+          id: 'rich-text-signup',
+          type: 'RICH_TEXT',
+          label: '<p>Don\'t have an account? <a href="{{meta(application.signUpUrl)}}">Sign up</a></p>',
+        },
+      ],
+    });
+
+    render(<SignInBox />);
+    const signUpLink = screen.getByText('Sign up');
+    const href = signUpLink.closest('a')?.getAttribute('href') ?? '';
+    expect(href).toContain('/signup');
+    expect(href).toContain('client_id=test-client');
+    expect(href).toContain('app_id=myapp');
   });
 
   it('handles password input change', async () => {

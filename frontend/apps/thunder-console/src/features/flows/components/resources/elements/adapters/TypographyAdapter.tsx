@@ -57,6 +57,7 @@ interface TypographyConfig {
 export interface TypographyElement extends Element<TypographyConfig> {
   variant: (typeof TypographyVariants)[keyof typeof TypographyVariants];
   label?: string;
+  align?: 'inherit' | 'left' | 'center' | 'right' | 'justify';
 }
 
 /**
@@ -113,33 +114,20 @@ function TypographyAdapter({resource}: TypographyAdapterPropsInterface): ReactEl
   const typographyElement = resource as TypographyElement;
   const variantStr = resource?.variant as string | undefined;
 
-  const config: TypographyProps = useMemo(() => {
-    if (
-      variantStr === TypographyVariants.H1 ||
-      variantStr === TypographyVariants.H2 ||
-      variantStr === TypographyVariants.H3 ||
-      variantStr === TypographyVariants.H4 ||
-      variantStr === TypographyVariants.H5 ||
-      variantStr === TypographyVariants.H6
-    ) {
-      return {textAlign: 'center'};
-    }
-    return {};
-  }, [variantStr]);
+  const config: TypographyProps = useMemo(() => ({}), []);
 
   const muiVariant = variantStr ? VARIANT_TO_MUI_MAP[variantStr] : undefined;
+  const align = typographyElement?.align;
 
   const rawLabel = typographyElement?.label ?? '';
-  const labelNode: ReactNode = containsTemplateLiteral(rawLabel)
-    ? <TemplatePlaceholder value={rawLabel} t={t} />
-    : (resolve(rawLabel, {t}) ?? rawLabel);
+  const labelNode: ReactNode = containsTemplateLiteral(rawLabel) ? (
+    <TemplatePlaceholder value={rawLabel} t={t} />
+  ) : (
+    (resolve(rawLabel, {t}) ?? rawLabel)
+  );
 
   return (
-    <Typography
-      variant={muiVariant}
-      style={typographyConfig?.styles}
-      {...config}
-    >
+    <Typography variant={muiVariant} align={align} style={typographyConfig?.styles} {...config}>
       {labelNode}
     </Typography>
   );

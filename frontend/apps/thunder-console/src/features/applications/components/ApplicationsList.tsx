@@ -19,9 +19,10 @@
 import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useNavigate} from 'react-router';
 import {useLogger} from '@thunder/logger/react';
-import {Box, Avatar, Chip, IconButton, Tooltip, Typography, ListingTable, DataGrid, useTheme} from '@wso2/oxygen-ui';
+import {Box, Chip, IconButton, Tooltip, Typography, ListingTable, DataGrid, useTheme} from '@wso2/oxygen-ui';
 import {AppWindow, Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
+import ResourceAvatar from '../../../components/ResourceAvatar';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import useGetApplications from '../api/useGetApplications';
 import type {BasicApplication} from '../models/application';
@@ -71,27 +72,18 @@ export default function ApplicationsList(): JSX.Element {
           <ListingTable.CellIcon
             sx={{width: '100%'}}
             icon={
-              <Avatar
-                src={params.row.logo_url}
-                slotProps={{
-                  img: {
-                    onError: (e: React.SyntheticEvent<HTMLImageElement>) => {
-                      e.currentTarget.src = '';
-                    },
-                  },
-                }}
+              <ResourceAvatar
+                value={params.row.logo_url}
+                size={30}
+                fallbackIcon={<AppWindow size={14} />}
                 sx={{
                   backgroundColor: theme.vars?.palette.grey[500],
-                  width: 30,
-                  height: 30,
-                  fontSize: '0.875rem',
+                  fontSize: '1rem',
                   ...theme.applyStyles('dark', {
                     backgroundColor: theme.vars?.palette.grey[900],
                   }),
                 }}
-              >
-                <AppWindow size={14} />
-              </Avatar>
+              />
             }
             primary={params.row.name}
             secondary={params.row.description}

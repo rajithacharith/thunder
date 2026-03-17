@@ -20,7 +20,6 @@ import {useState, useCallback, useMemo} from 'react';
 import type {ReactNode, SyntheticEvent, JSX} from 'react';
 import {useNavigate, useParams, useLocation, Link} from 'react-router';
 import {
-  Avatar,
   Box,
   Stack,
   Typography,
@@ -49,7 +48,7 @@ import EditChildOrganizationUnitSettings from '../components/edit-organization-u
 import EditUsers from '../components/edit-organization-unit/user-settings/EditUserSettings';
 import EditGroups from '../components/edit-organization-unit/group-settings/EditGroupSettings';
 import EditCustomization from '../components/edit-organization-unit/customization-settings/EditCustomizationSettings';
-import LogoUpdateModal from '../../../components/LogoUpdateModal';
+import ResourceAvatar from '../../../components/ResourceAvatar';
 import UnsavedChangesBar from '../../../components/UnsavedChangesBar';
 
 interface TabPanelProps {
@@ -88,7 +87,6 @@ export default function OrganizationUnitEditPage(): JSX.Element {
   const {resetTreeState} = useOrganizationUnit();
 
   const [activeTab, setActiveTab] = useState(0);
-  const [isLogoModalOpen, setIsLogoModalOpen] = useState(false);
   const [editedOU, setEditedOU] = useState<Partial<OrganizationUnit>>({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [snackbar, setSnackbar] = useState<{open: boolean; message: string}>({open: false, message: ''});
@@ -214,41 +212,13 @@ export default function OrganizationUnitEditPage(): JSX.Element {
         <PageTitle.BackButton component={<Link to={fromOU ? `/organization-units/${fromOU.id}` : listUrl} />}>
           {backButtonText}
         </PageTitle.BackButton>
-        <PageTitle.Avatar sx={{position: 'relative', overflow: 'visible'}}>
-          <Avatar
-            src={editedOU.logo_url ?? organizationUnit.logo_url ?? undefined}
-            slotProps={{
-              img: {
-                onError: (e: SyntheticEvent<HTMLImageElement>) => {
-                  e.currentTarget.style.display = 'none';
-                },
-              },
-            }}
-            sx={{
-              cursor: 'pointer',
-              '&:hover': {
-                opacity: 0.8,
-              },
-            }}
-            onClick={() => setIsLogoModalOpen(true)}
-          >
-            <Building size={32} />
-          </Avatar>
-          <IconButton
-            size="small"
-            aria-label={t('organizationUnits:edit.page.logoUpdate.label')}
-            sx={{
-              position: 'absolute',
-              bottom: -4,
-              right: -4,
-              bgcolor: 'background.paper',
-              boxShadow: 1,
-              '&:hover': {bgcolor: 'action.hover'},
-            }}
-            onClick={() => setIsLogoModalOpen(true)}
-          >
-            <Edit size={14} />
-          </IconButton>
+        <PageTitle.Avatar sx={{overflow: 'visible'}}>
+          <ResourceAvatar
+            value={editedOU.logo_url ?? organizationUnit.logo_url ?? undefined}
+            fallbackIcon={<Building size={32} />}
+            editAriaLabel={t('organizationUnits:edit.page.logoUpdate.label')}
+            onSelect={(newLogoUrl: string) => setEditedOU((prev) => ({...prev, logo_url: newLogoUrl}))}
+          />
         </PageTitle.Avatar>
         <PageTitle.Header>
           <Stack direction="row" alignItems="center" spacing={1} mb={1}>
@@ -429,17 +399,6 @@ export default function OrganizationUnitEditPage(): JSX.Element {
           />
         </TabPanel>
       </>
-
-      {/* Logo Update Modal */}
-      <LogoUpdateModal
-        open={isLogoModalOpen}
-        onClose={() => setIsLogoModalOpen(false)}
-        currentLogoUrl={editedOU.logo_url ?? organizationUnit.logo_url ?? undefined}
-        onLogoUpdate={(newLogoUrl: string) => {
-          handleFieldChange('logo_url', newLogoUrl);
-          setIsLogoModalOpen(false);
-        }}
-      />
 
       {/* Delete Dialog */}
       <OrganizationUnitDeleteDialog

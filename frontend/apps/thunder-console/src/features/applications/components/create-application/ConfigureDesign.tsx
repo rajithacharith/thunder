@@ -16,14 +16,15 @@
  * under the License.
  */
 
-import {Typography, Stack, Button, Avatar, Tooltip, Card, Box, Grid, useTheme} from '@wso2/oxygen-ui';
-import {Palette, Shuffle} from '@wso2/oxygen-ui-icons-react';
+import {Typography, Stack, Button, Card, Box, Grid, useTheme} from '@wso2/oxygen-ui';
+import {Palette, Shuffle, Plus} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useState, useMemo, useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useGetThemes, useGetTheme, type ThemeListItem, type Theme} from '@thunder/shared-design';
 import ThemeThumbnail from '../../../design/components/themes/ThemeThumbnail';
-import generateAppLogoSuggestions from '../../utils/generateAppLogoSuggestion';
+import generateIconSuggestions from '../../../../utils/generateIconSuggestions';
+import ResourceAvatar from '../../../../components/ResourceAvatar';
 
 /**
  * Props for the {@link ConfigureDesign} component.
@@ -32,7 +33,7 @@ import generateAppLogoSuggestions from '../../utils/generateAppLogoSuggestion';
  */
 export interface ConfigureDesignProps {
   /**
-   * URL of the currently selected application logo
+   * URL or emoji of the currently selected application logo.
    */
   appLogo: string | null;
 
@@ -57,11 +58,6 @@ export interface ConfigureDesignProps {
   onThemeSelect: (themeId: string, themeConfig: Theme) => void;
 
   /**
-   * Optional callback function when the initial logo is loaded
-   */
-  onInitialLogoLoad?: (logoUrl: string) => void;
-
-  /**
    * Callback function to broadcast whether this step is ready to proceed
    */
   onReadyChange?: (isReady: boolean) => void;
@@ -72,48 +68,12 @@ export interface ConfigureDesignProps {
  * application creation onboarding flow.
  *
  * This component allows users to customize their application's visual identity by:
- * 1. Selecting a logo from AI-generated avatar suggestions (with shuffle capability)
+ * 1. Selecting a logo from random emoji suggestions (with shuffle capability) or
+ *    opening the full EmojiPicker modal via the "+" button
  * 2. Selecting a theme from available theme configurations
  *
- * The component displays a grid of logo avatars for selection, with the ability to
- * shuffle logos for new suggestions. It fetches available themes and displays them
- * as selectable cards. The step is always ready since default selections are provided.
- *
  * @param props - The component props
- * @param props.appLogo - The currently selected logo URL
- * @param props.themeId - The currently selected theme ID
- * @param props.selectedTheme - The currently selected theme configuration
- * @param props.onLogoSelect - Callback when logo is selected
- * @param props.onThemeSelect - Callback when theme is selected (receives ID and config)
- * @param props.onInitialLogoLoad - Optional callback when initial logo loads
- * @param props.onReadyChange - Optional callback for step readiness
- *
  * @returns JSX element displaying the design customization interface
- *
- * @example
- * ```tsx
- * import ConfigureDesign from './ConfigureDesign';
- *
- * function OnboardingFlow() {
- *   const [logo, setLogo] = useState<string | null>(null);
- *   const [themeId, setThemeId] = useState<string | null>(null);
- *   const [themeConfig, setThemeConfig] = useState<Theme | null>(null);
- *
- *   return (
- *     <ConfigureDesign
- *       appLogo={logo}
- *       themeId={themeId}
- *       selectedTheme={themeConfig}
- *       onLogoSelect={setLogo}
- *       onThemeSelect={(id, config) => {
- *         setThemeId(id);
- *         setThemeConfig(config);
- *       }}
- *       onInitialLogoLoad={(url) => console.log('Initial logo:', url)}
- *     />
- *   );
- * }
- * ```
  *
  * @public
  */
@@ -123,7 +83,6 @@ export default function ConfigureDesign({
   selectedTheme: selectedThemeProp,
   onLogoSelect,
   onThemeSelect,
-  onInitialLogoLoad = undefined,
   onReadyChange = undefined,
 }: ConfigureDesignProps): JSX.Element {
   const {t} = useTranslation();
@@ -145,24 +104,25 @@ export default function ConfigureDesign({
   const [logoSeed, setLogoSeed] = useState<number>(0);
 
   // logoSeed is intentionally used as a dependency to trigger logo regeneration on shuffle
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const logoSuggestions: string[] = useMemo((): string[] => generateAppLogoSuggestions(8), [logoSeed]);
+  const logoSuggestions: string[] = useMemo((): string[] => generateIconSuggestions(8), [logoSeed]);
+
+  // Derived: true when appLogo was chosen via the full picker (URL, or an emoji not in the inline suggestions)
+  const isCustomLogo: boolean =
+    Boolean(appLogo) && (!appLogo!.startsWith('emoji:') || !logoSuggestions.includes(appLogo!.slice(6)));
 
   /**
-   * Set the first logo as default when component mounts, or when the currently selected
-   * logo is no longer available in the shuffled suggestions.
+   * Auto-select the first logo when component mounts.
    */
   useEffect((): void => {
-    if (logoSuggestions.length > 0 && onInitialLogoLoad) {
-      // Only auto-select if there's no current selection, or current selection is not in the new suggestions
-      if (!appLogo || !logoSuggestions.includes(appLogo)) {
-        onInitialLogoLoad(logoSuggestions[0]);
-      }
+    if (logoSuggestions.length > 0 && !appLogo) {
+      onLogoSelect(`emoji:${logoSuggestions[0]}`);
     }
-  }, [logoSuggestions, onInitialLogoLoad, appLogo]);
+  }, [logoSuggestions, appLogo, onLogoSelect]);
 
   /**
-   * Auto-select the first theme when themes load and none is selected yet
+   * Auto-select the first theme when themes load and none is selected yet.
    */
   useEffect((): void => {
     if (themesData?.themes?.length && !selectedThemeId) {
@@ -171,7 +131,7 @@ export default function ConfigureDesign({
   }, [themesData, selectedThemeId]);
 
   /**
-   * Notify parent when theme details load
+   * Notify parent when theme details load.
    */
   useEffect((): void => {
     if (selectedThemeDetails) {
@@ -180,7 +140,7 @@ export default function ConfigureDesign({
   }, [selectedThemeDetails, onThemeSelect]);
 
   /**
-   * Broadcast readiness - Design step is always ready since it has default values
+   * Broadcast readiness — Design step is always ready since it has default values.
    */
   useEffect((): void => {
     if (onReadyChange) {
@@ -192,22 +152,12 @@ export default function ConfigureDesign({
     setLogoSeed((prev: number): number => prev + 1);
   };
 
-  const handleLogoSelect = (logoUrl: string): void => {
-    onLogoSelect(logoUrl);
+  const handleLogoSelect = (logoValue: string): void => {
+    onLogoSelect(logoValue);
   };
 
   const handleThemeSelect = (themeItem: ThemeListItem): void => {
     setSelectedThemeId(themeItem.id);
-  };
-
-  const getAnimalName = (logoUrl: string): string => {
-    const match: RegExpExecArray | null = /\/([a-z]+)_lg\.png$/.exec(logoUrl);
-
-    if (match) {
-      return match[1].charAt(0).toUpperCase() + match[1].slice(1);
-    }
-
-    return t('common:dictionary.unknown');
   };
 
   return (
@@ -236,40 +186,65 @@ export default function ConfigureDesign({
           </Button>
         </Stack>
 
-        {/* Logo Preview and Suggestions - Inline */}
-        <Stack direction="row" sx={{flexWrap: 'wrap', gap: 2}}>
-          {logoSuggestions.map((logoUrl: string) => {
-            const isSelected: boolean = appLogo === logoUrl;
+        {/* Inline emoji suggestions + "+" to open full picker */}
+        <Stack direction="row" sx={{flexWrap: 'wrap', gap: 2}} alignItems="center">
+          {logoSuggestions.map((emoji: string) => {
+            const isSelected: boolean = appLogo === `emoji:${emoji}`;
 
             return (
-              <Tooltip key={logoUrl} title={getAnimalName(logoUrl)} placement="top">
-                <Avatar
-                  src={logoUrl}
-                  onClick={(): void => handleLogoSelect(logoUrl)}
-                  sx={{
-                    width: isSelected ? 70 : 50,
-                    height: isSelected ? 70 : 50,
-                    cursor: 'pointer',
-                    border: isSelected
-                      ? `2px solid ${theme.vars?.palette.primary.main}`
-                      : `1px solid ${theme.vars?.palette.divider}`,
-                    p: 1,
-                    '&:hover': {
-                      transform: 'scale(1.1)',
-                      borderColor: theme.vars?.palette.primary.main,
-                    },
-                    transition: 'all 0.2s ease-in-out',
-                    ...theme.applyStyles('light', {
-                      backgroundColor: isSelected ? primaryColorLight : theme.vars?.palette.grey[600],
-                    }),
-                    ...theme.applyStyles('dark', {
-                      backgroundColor: isSelected ? primaryColorDark : theme.vars?.palette.grey[600],
-                    }),
-                  }}
-                />
-              </Tooltip>
+              <ResourceAvatar
+                key={emoji}
+                value={emoji}
+                size={isSelected ? 70 : 50}
+                onClick={(): void => handleLogoSelect(`emoji:${emoji}`)}
+                sx={{
+                  cursor: 'pointer',
+                  border: isSelected
+                    ? `2px solid ${theme.vars?.palette.primary.main}`
+                    : `1px solid ${theme.vars?.palette.divider}`,
+                  p: 1,
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    transform: 'scale(1.1)',
+                    borderColor: theme.vars?.palette.primary.main,
+                  },
+                  ...theme.applyStyles('light', {
+                    backgroundColor: isSelected ? primaryColorLight : theme.vars?.palette.grey[600],
+                  }),
+                  ...theme.applyStyles('dark', {
+                    backgroundColor: isSelected ? primaryColorDark : theme.vars?.palette.grey[600],
+                  }),
+                }}
+              />
             );
           })}
+
+          {/* Button to open full picker — shows selected custom logo when one is active */}
+          <ResourceAvatar
+            value={isCustomLogo ? appLogo! : undefined}
+            fallbackIcon={<Plus size={20} />}
+            size={isCustomLogo ? 70 : 50}
+            onSelect={handleLogoSelect}
+            editAriaLabel={t('applications:onboarding.configure.design.logo.chooseLogo')}
+            sx={{
+              border: isCustomLogo
+                ? `2px solid ${theme.vars?.palette.primary.main}`
+                : `1px dashed ${theme.vars?.palette.divider}`,
+              color: 'text.secondary',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                borderColor: theme.vars?.palette.primary.main,
+                color: 'primary.main',
+                bgcolor: isCustomLogo ? undefined : 'action.hover',
+              },
+              ...(isCustomLogo
+                ? {
+                    ...theme.applyStyles('light', {backgroundColor: primaryColorLight}),
+                    ...theme.applyStyles('dark', {backgroundColor: primaryColorDark}),
+                  }
+                : {bgcolor: 'transparent'}),
+            }}
+          />
         </Stack>
       </Stack>
 

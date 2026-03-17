@@ -204,6 +204,7 @@
         "variant": "TEXT",
         "eventType": "TRIGGER",
         "label": "Text Button",
+        "align": "center",
         "display": {
           "label": "Text Button",
           "image": "assets/images/icons/button.svg"
@@ -250,6 +251,7 @@
         "type": "TEXT",
         "variant": "HEADING_1",
         "label": "Heading 1",
+        "align": "left",
         "display": {
           "label": "Heading 1",
           "image": null
@@ -261,6 +263,7 @@
         "type": "TEXT",
         "variant": "HEADING_2",
         "label": "Heading 2",
+        "align": "left",
         "display": {
           "label": "Heading 2",
           "image": null
@@ -272,6 +275,7 @@
         "type": "TEXT",
         "variant": "HEADING_3",
         "label": "Heading 3",
+        "align": "left",
         "display": {
           "label": "Heading 3",
           "image": null
@@ -283,6 +287,7 @@
         "type": "TEXT",
         "variant": "HEADING_4",
         "label": "Heading 4",
+        "align": "left",
         "display": {
           "label": "Heading 4",
           "image": null
@@ -294,6 +299,7 @@
         "type": "TEXT",
         "variant": "HEADING_5",
         "label": "Heading 5",
+        "align": "left",
         "display": {
           "label": "Heading 5",
           "image": null
@@ -305,6 +311,7 @@
         "type": "TEXT",
         "variant": "HEADING_6",
         "label": "Heading 6",
+        "align": "left",
         "display": {
           "label": "Heading 6",
           "image": null
@@ -316,6 +323,7 @@
         "type": "TEXT",
         "variant": "BODY_1",
         "label": "Body Text",
+        "align": "left",
         "display": {
           "label": "Body 1",
           "image": null
@@ -327,6 +335,7 @@
         "type": "TEXT",
         "variant": "BODY_2",
         "label": "Body Text - Muted",
+        "align": "left",
         "display": {
           "label": "Body 2",
           "image": null

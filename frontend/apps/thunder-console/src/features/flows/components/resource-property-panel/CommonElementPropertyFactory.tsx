@@ -17,7 +17,17 @@
  */
 
 import {type ComponentType, type ReactElement, useState, useCallback} from 'react';
-import {Autocomplete, type AutocompleteRenderInputParams, Box, TextField} from '@wso2/oxygen-ui';
+import {useTranslation} from 'react-i18next';
+import {
+  Autocomplete,
+  type AutocompleteRenderInputParams,
+  Box,
+  FormControl,
+  FormLabel,
+  MenuItem,
+  Select,
+  TextField,
+} from '@wso2/oxygen-ui';
 import startCase from 'lodash-es/startCase';
 import {useLogger} from '@thunder/logger/react';
 import type {Resource} from '../../models/resources';
@@ -26,6 +36,8 @@ import RichTextWithTranslation from './rich-text/RichTextWithTranslation';
 import CheckboxPropertyField from './CheckboxPropertyField';
 import TextPropertyField from './TextPropertyField';
 import FlowBuilderElementConstants from '../../constants/FlowBuilderElementConstants';
+
+const TEXT_ALIGN_VALUES = ['left', 'center', 'right', 'justify', 'inherit'] as const;
 
 // ---------------------------------------------------------------------------
 // Lazy icon loading — loaded once on first picker open, then cached.
@@ -181,6 +193,7 @@ function CommonElementPropertyFactory({
   onChange,
   ...rest
 }: CommonElementPropertyFactoryPropsInterface): ReactElement | null {
+  const {t} = useTranslation();
   if (propertyKey === 'label') {
     if (resource.type === ElementTypes.RichText) {
       return (
@@ -201,6 +214,25 @@ function CommonElementPropertyFactory({
         propertyValue={propertyValue}
         onChange={onChange}
       />
+    );
+  }
+
+  if (resource.type === ElementTypes.Text && propertyKey === 'align') {
+    return (
+      <FormControl fullWidth size="small">
+        <FormLabel htmlFor={propertyKey}>{t('flows:core.elements.text.align.label')}</FormLabel>
+        <Select
+          id={propertyKey}
+          value={typeof propertyValue === 'string' ? propertyValue : 'left'}
+          onChange={(e) => onChange(propertyKey, e.target.value, resource)}
+        >
+          {TEXT_ALIGN_VALUES.map((value) => (
+            <MenuItem key={value} value={value}>
+              {t(`flows:core.elements.text.align.options.${value}`)}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
     );
   }
 
