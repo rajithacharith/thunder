@@ -93,8 +93,7 @@ func (as *authorizeService) GetAuthorizationCodeDetails(
 	err := as.transactioner.Transact(ctx, func(ctx context.Context) error {
 		consumed, err := as.authCodeStore.ConsumeAuthorizationCode(ctx, clientID, code)
 		if err != nil {
-			as.logger.Error("error consuming authorization code", log.Error(err))
-			return errors.New("failed to consume authorization code")
+			return err
 		}
 
 		authCode, err = as.authCodeStore.GetAuthorizationCode(ctx, clientID, code)
@@ -102,8 +101,7 @@ func (as *authorizeService) GetAuthorizationCodeDetails(
 			if errors.Is(err, errAuthorizationCodeNotFound) {
 				return errors.New("invalid authorization code")
 			}
-			as.logger.Error("error retrieving authorization code", log.Error(err))
-			return errors.New("failed to retrieve authorization code")
+			return err
 		}
 
 		if consumed {
@@ -119,6 +117,7 @@ func (as *authorizeService) GetAuthorizationCodeDetails(
 	})
 
 	if err != nil {
+		as.logger.Error("Failed to get authorization code details", log.Error(err))
 		return nil, err
 	}
 
@@ -366,7 +365,6 @@ func (as *authorizeService) HandleAuthorizationCallback(ctx context.Context, aut
 		// Decode user attributes from the assertion.
 		claims, authTime, err := decodeAttributesFromAssertion(assertion)
 		if err != nil {
-			as.logger.Error("Failed to decode user attributes from assertion", log.Error(err))
 			authErr = &AuthorizationError{
 				Code:              oauth2const.ErrorServerError,
 				Message:           "Failed to process authorization request",
@@ -378,7 +376,6 @@ func (as *authorizeService) HandleAuthorizationCallback(ctx context.Context, aut
 		}
 
 		if claims.userID == "" {
-			as.logger.Error("User ID is empty after decoding assertion")
 			authErr = &AuthorizationError{
 				Code:              oauth2const.ErrorServerError,
 				Message:           "Authorization request failed",
@@ -421,7 +418,6 @@ func (as *authorizeService) HandleAuthorizationCallback(ctx context.Context, aut
 		// Generate the authorization code.
 		authzCode, err := createAuthorizationCode(authRequestCtx, &claims, authTime)
 		if err != nil {
-			as.logger.Error("Failed to generate authorization code", log.Error(err))
 			authErr = &AuthorizationError{
 				Code:              oauth2const.ErrorServerError,
 				Message:           "Failed to process authorization request",
@@ -434,7 +430,6 @@ func (as *authorizeService) HandleAuthorizationCallback(ctx context.Context, aut
 
 		// Persist the authorization code.
 		if persistErr := as.authCodeStore.InsertAuthorizationCode(ctx, authzCode); persistErr != nil {
-			as.logger.Error("Failed to persist authorization code", log.Error(persistErr))
 			authErr = &AuthorizationError{
 				Code:              oauth2const.ErrorServerError,
 				Message:           "Failed to process authorization request",
@@ -454,7 +449,6 @@ func (as *authorizeService) HandleAuthorizationCallback(ctx context.Context, aut
 		}
 		redirectURI, err = oauth2utils.GetURIWithQueryParams(authzCode.RedirectURI, queryParams)
 		if err != nil {
-			as.logger.Error("Failed to construct redirect URI", log.Error(err))
 			authErr = &AuthorizationError{
 				Code:              oauth2const.ErrorServerError,
 				Message:           "Failed to process authorization request",
@@ -468,10 +462,14 @@ func (as *authorizeService) HandleAuthorizationCallback(ctx context.Context, aut
 		return nil
 	})
 
-	if err != nil {
-		if authErr != nil {
-			return "", authErr
+	if authErr != nil {
+		if authErr.Code == oauth2const.ErrorServerError {
+			as.logger.Error("Failed to process authorization callback", log.Error(err))
 		}
+		return "", authErr
+	}
+	if err != nil {
+		as.logger.Error("Failed to process authorization callback", log.Error(err))
 		return "", &AuthorizationError{
 			Code:    oauth2const.ErrorServerError,
 			Message: "Failed to process authorization request",

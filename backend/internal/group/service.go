@@ -295,16 +295,12 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 				capturedSvcErr = &ErrorGroupNameConflict
 				return errors.New("rollback for group name conflict")
 			}
-			logger.Error("Failed to check group name conflict", log.Error(err))
-			capturedSvcErr = &ErrorInternalServerError
-			return errors.New("rollback for internal server error")
+			return err
 		}
 
 		groupDaoID, err := utils.GenerateUUIDv7()
 		if err != nil {
-			logger.Error("Failed to generate UUID", log.Error(err))
-			capturedSvcErr = &serviceerror.InternalServerError
-			return errors.New("rollback for UUID generation failure")
+			return err
 		}
 
 		groupDAO := GroupDAO{
@@ -316,8 +312,6 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 		}
 
 		if err := gs.groupStore.CreateGroup(txCtx, groupDAO); err != nil {
-			logger.Error("Failed to create group", log.Error(err))
-			capturedSvcErr = &ErrorInternalServerError
 			return err
 		}
 
@@ -331,6 +325,7 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 	}
 
 	if err != nil {
+		logger.Error("Failed to create group", log.Error(err), log.String("name", request.Name))
 		return nil, &ErrorInternalServerError
 	}
 
@@ -422,8 +417,6 @@ func (gs *groupService) UpdateGroup(
 				capturedSvcErr = &ErrorGroupNotFound
 				return errors.New("rollback for group not found")
 			}
-			logger.Error("Failed to retrieve group", log.String("id", groupID), log.Error(err))
-			capturedSvcErr = &ErrorInternalServerError
 			return err
 		}
 
@@ -469,8 +462,6 @@ func (gs *groupService) UpdateGroup(
 					capturedSvcErr = &ErrorGroupNameConflict
 					return errors.New("rollback for group name conflict")
 				}
-				logger.Error("Failed to check group name conflict during update", log.Error(err))
-				capturedSvcErr = &ErrorInternalServerError
 				return err
 			}
 		}
@@ -483,8 +474,6 @@ func (gs *groupService) UpdateGroup(
 		}
 
 		if err := gs.groupStore.UpdateGroup(txCtx, updatedGroupDAO); err != nil {
-			logger.Error("Failed to update group", log.Error(err))
-			capturedSvcErr = &ErrorInternalServerError
 			return err
 		}
 
@@ -498,6 +487,7 @@ func (gs *groupService) UpdateGroup(
 	}
 
 	if err != nil {
+		logger.Error("Failed to update group", log.Error(err), log.String("groupID", groupID))
 		return nil, &ErrorInternalServerError
 	}
 
@@ -524,8 +514,6 @@ func (gs *groupService) DeleteGroup(ctx context.Context, groupID string) *servic
 				capturedSvcErr = &ErrorGroupNotFound
 				return errors.New("rollback for group not found")
 			}
-			logger.Error("Failed to retrieve group", log.String("id", groupID), log.Error(err))
-			capturedSvcErr = &ErrorInternalServerError
 			return err
 		}
 
@@ -540,8 +528,6 @@ func (gs *groupService) DeleteGroup(ctx context.Context, groupID string) *servic
 		}
 
 		if err := gs.groupStore.DeleteGroup(txCtx, groupID); err != nil {
-			logger.Error("Failed to delete group", log.String("id", groupID), log.Error(err))
-			capturedSvcErr = &ErrorInternalServerError
 			return err
 		}
 		return nil
@@ -552,6 +538,7 @@ func (gs *groupService) DeleteGroup(ctx context.Context, groupID string) *servic
 	}
 
 	if err != nil {
+		logger.Error("Failed to delete group", log.Error(err), log.String("groupID", groupID))
 		return &ErrorInternalServerError
 	}
 
@@ -719,8 +706,6 @@ func (gs *groupService) AddGroupMembers(
 				capturedSvcErr = &ErrorGroupNotFound
 				return errors.New("rollback for group not found")
 			}
-			logger.Error("Failed to check group existence", log.String("id", groupID), log.Error(err))
-			capturedSvcErr = &ErrorInternalServerError
 			return err
 		}
 
@@ -761,8 +746,6 @@ func (gs *groupService) AddGroupMembers(
 
 		groupDAO, err := gs.groupStore.GetGroup(txCtx, groupID)
 		if err != nil {
-			logger.Error("Failed to retrieve updated group", log.String("id", groupID), log.Error(err))
-			capturedSvcErr = &ErrorInternalServerError
 			return err
 		}
 		updatedGroupDAO = groupDAO
@@ -813,8 +796,6 @@ func (gs *groupService) RemoveGroupMembers(
 				capturedSvcErr = &ErrorGroupNotFound
 				return errors.New("rollback for group not found")
 			}
-			logger.Error("Failed to check group existence", log.String("id", groupID), log.Error(err))
-			capturedSvcErr = &ErrorInternalServerError
 			return err
 		}
 
@@ -834,8 +815,6 @@ func (gs *groupService) RemoveGroupMembers(
 
 		groupDAO, err := gs.groupStore.GetGroup(txCtx, groupID)
 		if err != nil {
-			logger.Error("Failed to retrieve updated group", log.String("id", groupID), log.Error(err))
-			capturedSvcErr = &ErrorInternalServerError
 			return err
 		}
 		updatedGroupDAO = groupDAO

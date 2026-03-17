@@ -873,20 +873,12 @@ func (us *userService) batchUpdateUserCredentials(
 				return errors.New("rollback for user not found")
 			}
 
-			capturedSvcErr = logErrorAndReturnServerError(
-				logger,
-				"Failed to retrieve existing user credentials",
-				err,
-				log.String("userID", userID),
-			)
-			return errors.New("rollback for database error")
+			return err
 		}
 
 		// Get schema credential attributes for the user's type
 		if us.userSchemaService == nil {
-			logger.Error("User schema service is not configured for user operations")
-			capturedSvcErr = &ErrorInternalServerError
-			return errors.New("rollback for nil schema service")
+			return errors.New("user schema service not configured")
 		}
 
 		schemaCredentialAttributes, svcErr := us.userSchemaService.GetCredentialAttributes(txCtx, existingUser.Type)
@@ -895,11 +887,7 @@ func (us *userService) batchUpdateUserCredentials(
 				capturedSvcErr = &ErrorUserSchemaNotFound
 				return errors.New("rollback for schema not found")
 			}
-			capturedSvcErr = logErrorAndReturnServerError(
-				logger, "Failed to get credential attributes from schema",
-				fmt.Errorf("schema service error: %s", svcErr.ErrorDescription),
-				log.String("userID", userID))
-			return errors.New("rollback for schema error")
+			return fmt.Errorf("schema service error: %s", svcErr.ErrorDescription)
 		}
 
 		// Build set of valid credential field names
@@ -956,10 +944,6 @@ func (us *userService) batchUpdateUserCredentials(
 	}
 
 	if err != nil {
-		if errors.Is(err, ErrUserNotFound) {
-			logger.Debug("User not found", log.String("userID", userID))
-			return &ErrorUserNotFound
-		}
 		return logErrorAndReturnServerError(
 			logger,
 			"Failed to update user credentials",

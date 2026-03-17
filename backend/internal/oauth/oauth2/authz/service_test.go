@@ -614,7 +614,7 @@ func (suite *AuthorizeServiceTestSuite) TestGetAuthorizationCodeDetails_ConsumeE
 
 	assert.Nil(suite.T(), result)
 	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "failed to consume authorization code")
+	assert.Contains(suite.T(), err.Error(), "database error")
 }
 
 func (suite *AuthorizeServiceTestSuite) TestGetAuthorizationCodeDetails_NotFound() {
@@ -642,7 +642,7 @@ func (suite *AuthorizeServiceTestSuite) TestGetAuthorizationCodeDetails_GetError
 
 	assert.Nil(suite.T(), result)
 	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "failed to retrieve authorization code")
+	assert.Contains(suite.T(), err.Error(), "db error")
 }
 
 func (suite *AuthorizeServiceTestSuite) TestGetAuthorizationCodeDetails_Success() {
