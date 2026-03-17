@@ -17,6 +17,7 @@
  */
 
 import {useEffect, useMemo, useState, useCallback} from 'react';
+import getInitials from '@/utils/getInitials';
 import {useNavigate} from 'react-router';
 import {
   Avatar,
@@ -101,16 +102,6 @@ export default function UsersList() {
       setDeleteDialogOpen(false);
       logger.error('Failed to delete user', {error: err, userId: selectedUserId});
     }
-  };
-
-  const getInitials = (name?: string) => {
-    if (!name) return '?';
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
   };
 
   const columns: DataGrid.GridColDef<UserWithDetails>[] = useMemo(

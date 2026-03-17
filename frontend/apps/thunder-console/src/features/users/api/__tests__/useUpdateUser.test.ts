@@ -136,15 +136,10 @@ describe('useUpdateUser', () => {
   });
 
   it('should set pending state during update', async () => {
+    let resolveRequest!: (value: {data: ApiUser}) => void;
     mockHttpRequest.mockReturnValue(
       new Promise((resolve) => {
-        setTimeout(
-          () =>
-            resolve({
-              data: mockUser,
-            }),
-          100,
-        );
+        resolveRequest = resolve;
       }),
     );
 
@@ -156,12 +151,14 @@ describe('useUpdateUser', () => {
       expect(result.current.isPending).toBe(true);
     });
 
-    await waitFor(
-      () => {
-        expect(result.current.isSuccess).toBe(true);
-      },
-      {timeout: 200},
-    );
+    // Now resolve the request
+    await act(async () => {
+      resolveRequest({data: mockUser});
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
 
     expect(result.current.isPending).toBe(false);
   });

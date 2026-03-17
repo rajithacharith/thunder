@@ -19,70 +19,62 @@
 import {useState, type JSX} from 'react';
 import {Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Alert} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
-import {getDisplayNameForCode, useDeleteTranslations} from '@thunder/i18n';
+import useDeleteUserType from '../../api/useDeleteUserType';
 
-export interface TranslationDeleteDialogProps {
-  /**
-   * Whether the dialog is open
-   */
+export interface UserTypeDeleteDialogProps {
   open: boolean;
-  /**
-   * The language code to delete translations for
-   */
-  language: string | null;
-  /**
-   * Callback when the dialog should be closed
-   */
+  userTypeId: string | null;
   onClose: () => void;
-  /**
-   * Callback when translations are successfully deleted
-   */
   onSuccess?: () => void;
 }
 
 /**
- * Dialog component for confirming deletion of all custom translations for a language.
+ * Dialog component for confirming user type deletion.
  */
-export default function TranslationDeleteDialog({
+export default function UserTypeDeleteDialog({
   open,
-  language,
+  userTypeId,
   onClose,
   onSuccess = undefined,
-}: TranslationDeleteDialogProps): JSX.Element {
-  const {t} = useTranslation('translations');
-  const deleteTranslations = useDeleteTranslations();
+}: UserTypeDeleteDialogProps): JSX.Element {
+  const {t} = useTranslation();
+  const deleteUserType = useDeleteUserType();
   const [error, setError] = useState<string | null>(null);
 
-  const displayName = language ? getDisplayNameForCode(language) : '';
-
   const handleCancel = (): void => {
-    if (deleteTranslations.isPending) return;
+    if (deleteUserType.isPending) return;
     setError(null);
     onClose();
   };
 
   const handleConfirm = (): void => {
-    if (!language) return;
+    if (!userTypeId) return;
 
-    deleteTranslations.mutate(language, {
+    setError(null);
+    deleteUserType.mutate(userTypeId, {
       onSuccess: (): void => {
         setError(null);
         onClose();
         onSuccess?.();
       },
-      onError: () => {
-        setError(t('delete.error'));
+      onError: (err: Error) => {
+        setError(err.message ?? t('userTypes:delete.error', 'Failed to delete user type'));
       },
     });
   };
 
   return (
     <Dialog open={open} onClose={handleCancel} maxWidth="sm" fullWidth>
-      <DialogTitle>{t('delete.title')}</DialogTitle>
+      <DialogTitle>{t('userTypes:delete.title', 'Delete User Type')}</DialogTitle>
       <DialogContent>
-        <DialogContentText sx={{mb: 2}}>{t('delete.message', {language: displayName ?? language})}</DialogContentText>
+        <DialogContentText sx={{mb: 2}}>
+          {t(
+            'userTypes:delete.message',
+            'Are you sure you want to delete this user type? This action cannot be undone and may affect existing users of this type.',
+          )}
+        </DialogContentText>
         <Alert severity="warning" sx={{mb: 2}}>
-          {t('delete.disclaimer')}
+          {t('userTypes:delete.disclaimer', 'All associated schema definitions will be permanently removed.')}
         </Alert>
         {error && (
           <Alert severity="error" sx={{mt: 2}}>
@@ -91,11 +83,16 @@ export default function TranslationDeleteDialog({
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleCancel} disabled={deleteTranslations.isPending}>
+        <Button onClick={handleCancel} disabled={deleteUserType.isPending}>
           {t('common:actions.cancel')}
         </Button>
-        <Button onClick={handleConfirm} color="error" variant="contained" disabled={deleteTranslations.isPending}>
-          {deleteTranslations.isPending ? t('common:status.deleting') : t('common:actions.delete')}
+        <Button
+          onClick={handleConfirm}
+          color="error"
+          variant="contained"
+          disabled={deleteUserType.isPending || !userTypeId}
+        >
+          {deleteUserType.isPending ? t('common:status.deleting', 'Deleting...') : t('common:actions.delete')}
         </Button>
       </DialogActions>
     </Dialog>

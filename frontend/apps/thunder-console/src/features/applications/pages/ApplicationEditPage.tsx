@@ -36,6 +36,7 @@ import {
 import {ArrowLeft, AppWindow, Edit} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger';
+import CopyableId from '../../../components/CopyableId';
 import useGetApplication from '../api/useGetApplication';
 import useUpdateApplication from '../api/useUpdateApplication';
 import type {Application} from '../models/application';
@@ -325,6 +326,9 @@ export default function ApplicationEditPage() {
                 </Box>
               ) : null;
             })()}
+
+          {/* Application ID */}
+          <CopyableId value={application.id} copyLabel={t('applications:edit.page.copyApplicationId', 'Copy Application ID')} />
         </PageTitle.SubHeader>
       </PageTitle>
 

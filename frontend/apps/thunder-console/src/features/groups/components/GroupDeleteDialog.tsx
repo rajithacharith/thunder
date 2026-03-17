@@ -42,6 +42,7 @@ export default function GroupDeleteDialog({
   const [error, setError] = useState<string | null>(null);
 
   const handleCancel = (): void => {
+    if (deleteGroup.isPending) return;
     setError(null);
     onClose();
   };

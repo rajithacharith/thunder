@@ -19,6 +19,7 @@
 import {useMemo, type JSX} from 'react';
 import {Box, DataGrid, Avatar} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
+import getInitials from '@/utils/getInitials';
 import SettingsCard from '@/components/SettingsCard';
 import useDataGridLocaleText from '../../../../../hooks/useDataGridLocaleText';
 import useGetOrganizationUnitUsers from '../../../api/useGetOrganizationUnitUsers';
@@ -33,16 +34,6 @@ interface ManageUsersSectionProps {
    */
   organizationUnitId: string;
 }
-
-const getInitials = (name?: string) => {
-  if (!name) return '?';
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-};
 
 /**
  * Section component for managing users belonging to an organization unit.

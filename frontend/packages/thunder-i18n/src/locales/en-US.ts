@@ -52,6 +52,7 @@ const translations = {
     'actions.done': 'Done',
     'actions.refresh': 'Refresh',
     'actions.copy': 'Copy',
+    'actions.copyId': 'Copy ID',
     'actions.copied': 'Copied!',
     'actions.download': 'Download',
     'actions.upload': 'Upload',
@@ -365,6 +366,7 @@ const translations = {
     // Edit page
     'manageUser.title': 'Manage User',
     'manageUser.subtitle': 'View and manage user information',
+    'manageUser.back': 'Back to Users',
 
     // Create page
     'createUser.title': 'Create User',
@@ -392,6 +394,9 @@ const translations = {
     'create.error': 'Failed to create user. Please try again.',
     'update.success': 'User updated successfully.',
     'update.error': 'Failed to update user. Please try again.',
+    'delete.title': 'Delete User',
+    'delete.message': 'Are you sure you want to delete this user? This action cannot be undone.',
+    'delete.disclaimer': 'All associated data will be permanently removed.',
     'delete.success': 'User deleted successfully.',
     'delete.error': 'Failed to delete user. Please try again.',
   },
@@ -451,12 +456,34 @@ const translations = {
     'manageUserType.title': 'Manage User Type',
     'manageUserType.subtitle': 'View and manage user type information',
 
+    // Edit page (new UI)
+    'edit.back': 'Back to User Types',
+    'edit.editName': 'Edit user type name',
+    'edit.copyId': 'Copy user type ID',
+    'edit.tabs.general': 'General',
+    'edit.tabs.schema': 'Schema',
+    'edit.unsavedChanges': 'You have unsaved changes',
+    'edit.saveError': 'Failed to save user type',
+    'edit.loadError': 'Failed to load user type information',
+    'edit.notFound': 'User type not found',
+    'edit.general.organizationUnit.title': 'Organization Unit',
+    'edit.general.organizationUnit.description': 'The organization unit this user type belongs to.',
+    'edit.general.selfRegistration.title': 'Self Registration',
+    'edit.general.selfRegistration.description': 'Allow users to self-register with this user type.',
+    'edit.general.selfRegistration.enabledHint': 'Users can register themselves as this user type.',
+    'edit.general.displayAttribute.title': 'Display Attribute',
+    'edit.general.displayAttribute.description': 'The attribute used to display user identity.',
+    'edit.general.dangerZone.title': 'Danger Zone',
+    'edit.general.dangerZone.description': 'Irreversible actions for this user type.',
+    'edit.general.dangerZone.deleteUserType': 'Delete User Type',
+    'edit.general.dangerZone.deleteUserTypeDescription': 'Permanently delete this user type and all associated schema definitions. This action cannot be undone.',
+
     // Create page
     'createUserType.title': 'Create User Type',
     'createUserType.subtitle': 'Add a new user type to your organization',
 
     // Create wizard steps
-    'createWizard.steps.name': 'Name',
+    'createWizard.steps.name': 'Create a User Type',
     'createWizard.steps.general': 'General',
     'createWizard.steps.properties': 'Properties',
     'createWizard.name.title': "Let's name your user type",
@@ -471,8 +498,15 @@ const translations = {
     'create.error': 'Failed to create user type. Please try again.',
     'update.success': 'User type updated successfully.',
     'update.error': 'Failed to update user type. Please try again.',
+    'delete.title': 'Delete User Type',
+    'delete.message': 'Are you sure you want to delete this user type? This action cannot be undone and may affect existing users of this type.',
+    'delete.disclaimer': 'All associated schema definitions will be permanently removed.',
     'delete.success': 'User type deleted successfully.',
     'delete.error': 'Failed to delete user type. Please try again.',
+    'removeCredentialDialog.title': 'Remove Credential Flag',
+    'removeCredentialDialog.description':
+      'Removing the credential flag will cause this field to no longer be hashed or protected. Existing hashed values may become inaccessible. Are you sure you want to proceed?',
+    'removeCredentialDialog.confirm': 'Remove Credential',
   },
 
   // ============================================================================
@@ -517,6 +551,7 @@ const translations = {
     'edit.page.error': 'Failed to load organization unit',
     'edit.page.notFound': 'Organization unit not found',
     'edit.page.logoUpdate.label': 'Update Logo',
+    'edit.page.copyOuId': 'Copy Organization Unit ID',
     'edit.page.back': 'Back to Organization Units',
     'edit.page.backToOU': 'Back to {{name}}',
     'edit.page.description.empty': 'No description',
@@ -665,6 +700,7 @@ const translations = {
     // Members settings
     'edit.members.sections.manage.title': 'Members',
     'edit.members.sections.manage.description': 'Manage the members of this group',
+    'edit.members.sections.manage.listing.columns.name': 'Name',
     'edit.members.sections.manage.listing.columns.id': 'Member ID',
     'edit.members.sections.manage.listing.columns.type': 'Type',
     'edit.members.sections.manage.addMember': 'Add Member',
@@ -1122,6 +1158,7 @@ const translations = {
     'edit.page.notFound': 'Application not found',
     'edit.page.back': 'Back to Applications',
     'edit.page.logoUpdate.label': 'Update Logo',
+    'edit.page.copyApplicationId': 'Copy Application ID',
     'edit.page.description.empty': 'No description',
     'edit.page.description.placeholder': 'Add a description',
     'edit.page.tabs.overview': 'Guide',

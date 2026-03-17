@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useState, useCallback, useMemo, useRef, useEffect} from 'react';
+import {useState, useCallback, useMemo} from 'react';
 import type {ReactNode, SyntheticEvent, JSX} from 'react';
 import {Link, useNavigate, useParams} from 'react-router';
 import {
@@ -32,14 +32,14 @@ import {
   CircularProgress,
   Tabs,
   Tab,
-  Tooltip,
   PageContent,
   PageTitle,
 } from '@wso2/oxygen-ui';
-import {ArrowLeft, Copy, Check, Edit, Users} from '@wso2/oxygen-ui-icons-react';
+import {ArrowLeft, Edit, Users} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
 import {useToast} from '@thunder/shared-contexts';
+import CopyableId from '../../../components/CopyableId';
 import useGetGroup from '../api/useGetGroup';
 import useUpdateGroup from '../api/useUpdateGroup';
 import type {Group} from '../models/group';
@@ -84,29 +84,6 @@ export default function GroupEditPage(): JSX.Element {
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [tempName, setTempName] = useState('');
   const [tempDescription, setTempDescription] = useState('');
-  const [copiedField, setCopiedField] = useState<string | null>(null);
-  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (copyTimeoutRef.current) {
-        clearTimeout(copyTimeoutRef.current);
-      }
-    },
-    [],
-  );
-
-  const handleCopyToClipboard = useCallback(async (text: string, fieldName: string): Promise<void> => {
-    await navigator.clipboard.writeText(text);
-    setCopiedField(fieldName);
-    if (copyTimeoutRef.current) {
-      clearTimeout(copyTimeoutRef.current);
-    }
-    copyTimeoutRef.current = setTimeout(() => {
-      setCopiedField(null);
-    }, 2000);
-  }, []);
-
   const listUrl = '/groups';
 
   const handleBack = async (): Promise<void> => {
@@ -331,51 +308,7 @@ export default function GroupEditPage(): JSX.Element {
           </Stack>
 
           {/* Group ID */}
-          <Tooltip
-            title={
-              copiedField === 'groupId'
-                ? t('common:actions.copied')
-                : t('groups:edit.general.sections.quickCopy.copyGroupId')
-            }
-            placement="right"
-          >
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing={0.5}
-              role="button"
-              tabIndex={0}
-              onClick={() => {
-                handleCopyToClipboard(group.id, 'groupId').catch((error: unknown) => {
-                  logger.error('Failed to copy group ID', error instanceof Error ? error : {error});
-                });
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleCopyToClipboard(group.id, 'groupId').catch((error: unknown) => {
-                    logger.error('Failed to copy group ID', error instanceof Error ? error : {error});
-                  });
-                }
-              }}
-              sx={{
-                cursor: 'pointer',
-                width: 'fit-content',
-                mt: 0.5,
-                '&:hover .copy-icon': {opacity: 1},
-                '&:focus-visible .copy-icon': {opacity: 1},
-              }}
-            >
-              <Typography variant="caption" sx={{fontFamily: 'monospace', color: 'text.disabled', fontSize: '0.75rem'}}>
-                {group.id}
-              </Typography>
-              {copiedField === 'groupId' ? (
-                <Check size={12} color="var(--mui-palette-success-main)" />
-              ) : (
-                <Copy size={12} className="copy-icon" style={{opacity: 0.4}} />
-              )}
-            </Stack>
-          </Tooltip>
+          <CopyableId value={group.id} copyLabel={t('groups:edit.general.sections.quickCopy.copyGroupId')} />
         </PageTitle.SubHeader>
       </PageTitle>
 

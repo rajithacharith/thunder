@@ -210,4 +210,8 @@ export interface SchemaPropertyInput {
   credential: boolean;
   enum: string[];
   regex: string;
+  /** Preserved array item definition for round-trip fidelity. */
+  items?: ArrayItemDefinition;
+  /** Preserved nested object properties for round-trip fidelity. */
+  properties?: Record<string, PropertyDefinition>;
 }

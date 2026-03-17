@@ -54,6 +54,7 @@ export default function FlowDeleteDialog({
   const [error, setError] = useState<string | null>(null);
 
   const handleCancel = (): void => {
+    if (deleteFlow.isPending) return;
     setError(null);
     onClose();
   };

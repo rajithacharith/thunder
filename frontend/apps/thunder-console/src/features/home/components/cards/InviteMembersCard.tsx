@@ -21,18 +21,11 @@ import {UsersRound} from '@wso2/oxygen-ui-icons-react';
 import {motion} from 'framer-motion';
 import {useTranslation} from 'react-i18next';
 import type {JSX} from 'react';
+import getInitials from '@/utils/getInitials';
 import useGetUsers from '../../../users/api/useGetUsers';
 import HomeNextStepCard from './HomeNextStepCard';
 
 const AVATAR_LIMIT = 5;
-
-function getInitials(display?: string): string {
-  const normalized = display?.trim();
-  if (!normalized) return '?';
-  const parts = normalized.split(/\s+/);
-  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  return normalized.slice(0, 2).toUpperCase();
-}
 
 const avatarVariants = {
   hidden: {opacity: 0, scale: 0.6},

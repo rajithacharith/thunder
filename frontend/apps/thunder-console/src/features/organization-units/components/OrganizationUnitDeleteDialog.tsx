@@ -70,6 +70,7 @@ export default function OrganizationUnitDeleteDialog({
   const deleteOrganizationUnit = useDeleteOrganizationUnit();
 
   const handleCancel = (): void => {
+    if (deleteOrganizationUnit.isPending) return;
     onClose();
   };
 

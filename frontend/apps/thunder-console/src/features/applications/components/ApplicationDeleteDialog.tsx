@@ -54,6 +54,7 @@ export default function ApplicationDeleteDialog({
   const [error, setError] = useState<string | null>(null);
 
   const handleCancel = (): void => {
+    if (deleteApplication.isPending) return;
     setError(null);
     onClose();
   };
