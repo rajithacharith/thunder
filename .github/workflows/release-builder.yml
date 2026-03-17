@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g., v1.0.0). Leave empty to use version.txt'
+        description: 'Release version (e.g., X for v0.X.0, X.Y for v0.X.Y, or X.Y.Z for v0.Y.Z). Leave empty to use version.txt'
         required: false
         type: string
       prerelease:
@@ -33,6 +33,7 @@ permissions:
 
 env:
   GOFLAGS: "-mod=readonly"
+  RELEASE_MAJOR_VERSION: 0
 
 jobs:
   build-thunder:
@@ -51,11 +52,38 @@ jobs:
       - name: 📝 Determine Release Version
         id: get_version
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
-            # Use manually provided version
-            VERSION="${{ github.event.inputs.version }}"
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            # Manual trigger - always use input values for flags
             PRERELEASE="${{ github.event.inputs.prerelease }}"
             RUN_PERF_TEST="${{ github.event.inputs.run_performance_test }}"
+            INPUT_VERSION="${{ github.event.inputs.version }}"
+            MAJOR="${{ env.RELEASE_MAJOR_VERSION }}"
+
+            if [ -n "$INPUT_VERSION" ]; then
+              # Handle manually provided version
+              if [[ $INPUT_VERSION =~ ^v?[0-9]+\.([0-9]+)\.([0-9]+) ]]; then
+                # Full format (vX.Y.Z) -> Parse and use MAJOR
+                MINOR="${BASH_REMATCH[1]}"
+                PATCH="${BASH_REMATCH[2]}"
+                VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+              elif [[ $INPUT_VERSION =~ ^[0-9]+\.[0-9]+$ ]]; then
+                # minor.patch format (X.Y) -> v0.X.Y
+                VERSION="v${MAJOR}.${INPUT_VERSION}"
+              elif [[ $INPUT_VERSION =~ ^[0-9]+$ ]]; then
+                # minor format (X) -> v0.X.0
+                VERSION="v${MAJOR}.${INPUT_VERSION}.0"
+              else
+                echo "❌ Error: Invalid version format '$INPUT_VERSION'. Use 'X', 'X.Y', or 'vX.Y.Z'"
+                exit 1
+              fi
+            else
+              # Manual run without version - read from version.txt
+              if [ ! -f version.txt ] || [ -z "$(cat version.txt | tr -d '[:space:]')" ]; then
+                echo "❌ Error: version.txt not found or empty"
+                exit 1
+              fi
+              VERSION=$(tr -d '[:space:]' < version.txt)
+            fi
           else
             # Scheduled run or manual run without version - read from version.txt
             if [ ! -f version.txt ] || [ -z "$(cat version.txt | tr -d '[:space:]')" ]; then
@@ -69,7 +97,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "prerelease=$PRERELEASE" >> $GITHUB_OUTPUT
           echo "run_performance_test=$RUN_PERF_TEST" >> $GITHUB_OUTPUT
-          echo "✅ Using version: $VERSION"
+          echo "✅ Using version: $VERSION (Prerelease: $PRERELEASE, Perf Test: $RUN_PERF_TEST)"
 
       - name: ✅ Validate Release Version
         run: |
@@ -415,18 +443,19 @@ jobs:
           # Parse version components (handle both X.Y and X.Y.Z formats)
           if [[ $RELEASE_VERSION =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
             # X.Y.Z format
-            MAJOR="${BASH_REMATCH[1]}"
             MINOR="${BASH_REMATCH[2]}"
             PATCH="${BASH_REMATCH[3]}"
           elif [[ $RELEASE_VERSION =~ ^([0-9]+)\.([0-9]+) ]]; then
             # X.Y format
-            MAJOR="${BASH_REMATCH[1]}"
             MINOR="${BASH_REMATCH[2]}"
             PATCH="0"
           else
             echo "❌ Error: Unable to parse version format: $RELEASE_VERSION"
             exit 1
           fi
+          
+          # Use fixed major version
+          MAJOR="${{ env.RELEASE_MAJOR_VERSION }}"
           
           # Bump minor version
           NEXT_MINOR=$((MINOR + 1))
