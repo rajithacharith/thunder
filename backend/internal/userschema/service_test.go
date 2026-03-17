@@ -105,7 +105,7 @@ func TestCreateUserSchemaReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
 
 	request := CreateUserSchemaRequest{
 		Name:   "test-schema",
-		OuID:   ouID,
+		OUID:   ouID,
 		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
@@ -146,7 +146,7 @@ func TestCreateUserSchemaReturnsInternalErrorWhenOUValidationFails(t *testing.T)
 
 	request := CreateUserSchemaRequest{
 		Name:   "test-schema",
-		OuID:   ouID,
+		OUID:   ouID,
 		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
@@ -186,7 +186,7 @@ func TestUpdateUserSchemaReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
 
 	request := UpdateUserSchemaRequest{
 		Name:   "test-schema",
-		OuID:   ouID,
+		OUID:   ouID,
 		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
@@ -424,7 +424,7 @@ func TestValidateUserSchemaDefinitionSuccess(t *testing.T) {
 
 	schema := UserSchema{
 		Name:   "test-schema",
-		OuID:   validOUID,
+		OUID:   validOUID,
 		Schema: validSchema,
 	}
 
@@ -439,7 +439,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorWhenNameIsEmpty(t *testing.T) {
 
 	schema := UserSchema{
 		Name:   "",
-		OuID:   validOUID,
+		OUID:   validOUID,
 		Schema: validSchema,
 	}
 
@@ -455,7 +455,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorWhenOUIDIsEmpty(t *testing.T) {
 
 	schema := UserSchema{
 		Name:   "test-schema",
-		OuID:   "",
+		OUID:   "",
 		Schema: validSchema,
 	}
 
@@ -471,7 +471,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorWhenOUIDIsNotUUID(t *testing.T)
 
 	schema := UserSchema{
 		Name:   "test-schema",
-		OuID:   "not-a-uuid",
+		OUID:   "not-a-uuid",
 		Schema: validSchema,
 	}
 
@@ -487,7 +487,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorWhenSchemaIsEmpty(t *testing.T)
 
 	schema := UserSchema{
 		Name:   "test-schema",
-		OuID:   validOUID,
+		OUID:   validOUID,
 		Schema: json.RawMessage{},
 	}
 
@@ -503,7 +503,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorWhenSchemaIsNil(t *testing.T) {
 
 	schema := UserSchema{
 		Name:   "test-schema",
-		OuID:   validOUID,
+		OUID:   validOUID,
 		Schema: nil,
 	}
 
@@ -520,7 +520,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorWhenSchemaCompilationFails(t *t
 
 	schema := UserSchema{
 		Name:   "test-schema",
-		OuID:   validOUID,
+		OUID:   validOUID,
 		Schema: invalidSchema,
 	}
 
@@ -537,7 +537,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorForInvalidJSON(t *testing.T) {
 
 	schema := UserSchema{
 		Name:   "test-schema",
-		OuID:   validOUID,
+		OUID:   validOUID,
 		Schema: invalidSchema,
 	}
 
@@ -553,7 +553,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorForEmptySchemaObject(t *testing
 
 	schema := UserSchema{
 		Name:   "test-schema",
-		OuID:   validOUID,
+		OUID:   validOUID,
 		Schema: emptySchema,
 	}
 
@@ -596,7 +596,7 @@ func TestValidateUserSchemaDefinitionWithComplexSchema(t *testing.T) {
 
 	schema := UserSchema{
 		Name:   "complex-schema",
-		OuID:   validOUID,
+		OUID:   validOUID,
 		Schema: complexSchema,
 	}
 
@@ -611,7 +611,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorForMissingTypeField(t *testing.
 
 	schema := UserSchema{
 		Name:   "test-schema",
-		OuID:   validOUID,
+		OUID:   validOUID,
 		Schema: schemaWithoutType,
 	}
 
@@ -628,7 +628,7 @@ func TestValidateUserSchemaDefinitionReturnsErrorForInvalidType(t *testing.T) {
 
 	schema := UserSchema{
 		Name:   "test-schema",
-		OuID:   validOUID,
+		OUID:   validOUID,
 		Schema: schemaWithInvalidType,
 	}
 
@@ -648,7 +648,7 @@ func TestValidateUserSchemaDefinitionWithMultipleValidationErrors(t *testing.T) 
 			name: "Empty name and empty OU ID",
 			schema: UserSchema{
 				Name:   "",
-				OuID:   "",
+				OUID:   "",
 				Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 			},
 			expectedError: "user schema name must not be empty",
@@ -657,7 +657,7 @@ func TestValidateUserSchemaDefinitionWithMultipleValidationErrors(t *testing.T) 
 			name: "Valid name but invalid OU ID format",
 			schema: UserSchema{
 				Name:   "test",
-				OuID:   "123",
+				OUID:   "123",
 				Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 			},
 			expectedError: "organization unit id is not a valid UUID",
@@ -666,7 +666,7 @@ func TestValidateUserSchemaDefinitionWithMultipleValidationErrors(t *testing.T) 
 			name: "Valid OU ID but empty schema",
 			schema: UserSchema{
 				Name:   "test",
-				OuID:   testOUID1,
+				OUID:   testOUID1,
 				Schema: json.RawMessage{},
 			},
 			expectedError: "schema definition must not be empty",
@@ -687,7 +687,7 @@ func TestValidateUserSchemaDefinitionWithMultipleValidationErrors(t *testing.T) 
 func TestValidateUserSchemaDefinitionWithValidDisplayAttribute(t *testing.T) {
 	schema := UserSchema{
 		Name:             "test-schema",
-		OuID:             testOUID1,
+		OUID:             testOUID1,
 		SystemAttributes: &SystemAttributes{Display: "email"},
 		Schema:           json.RawMessage(`{"email":{"type":"string"}}`),
 	}
@@ -700,7 +700,7 @@ func TestValidateUserSchemaDefinitionWithValidDisplayAttribute(t *testing.T) {
 func TestValidateUserSchemaDefinitionRejectsNonExistentDisplayAttribute(t *testing.T) {
 	schema := UserSchema{
 		Name:             "test-schema",
-		OuID:             testOUID1,
+		OUID:             testOUID1,
 		SystemAttributes: &SystemAttributes{Display: "unknown"},
 		Schema:           json.RawMessage(`{"email":{"type":"string"}}`),
 	}
@@ -714,7 +714,7 @@ func TestValidateUserSchemaDefinitionRejectsNonExistentDisplayAttribute(t *testi
 func TestValidateUserSchemaDefinitionRejectsNonDisplayableDisplayAttribute(t *testing.T) {
 	schema := UserSchema{
 		Name:             "test-schema",
-		OuID:             testOUID1,
+		OUID:             testOUID1,
 		SystemAttributes: &SystemAttributes{Display: "active"},
 		Schema:           json.RawMessage(`{"active":{"type":"boolean"}}`),
 	}
@@ -728,7 +728,7 @@ func TestValidateUserSchemaDefinitionRejectsNonDisplayableDisplayAttribute(t *te
 func TestValidateUserSchemaDefinitionRejectsCredentialDisplayAttribute(t *testing.T) {
 	schema := UserSchema{
 		Name:             "test-schema",
-		OuID:             testOUID1,
+		OUID:             testOUID1,
 		SystemAttributes: &SystemAttributes{Display: "password"},
 		Schema:           json.RawMessage(`{"password":{"type":"string","credential":true}}`),
 	}
@@ -742,7 +742,7 @@ func TestValidateUserSchemaDefinitionRejectsCredentialDisplayAttribute(t *testin
 func TestValidateUserSchemaDefinitionWithNilSystemAttributes(t *testing.T) {
 	schema := UserSchema{
 		Name:   "test-schema",
-		OuID:   testOUID1,
+		OUID:   testOUID1,
 		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
@@ -995,7 +995,7 @@ func TestDeleteUserSchema(t *testing.T) {
 			storeMock := newUserSchemaStoreInterfaceMock(t)
 			storeMock.On("GetUserSchemaByID", mock.Anything, tc.schemaID).Return(UserSchema{
 				ID:     tc.schemaID,
-				OuID:   testOUID1,
+				OUID:   testOUID1,
 				Schema: tc.schema,
 			}, nil).Once()
 			storeMock.On("IsUserSchemaDeclarative", tc.schemaID).Return(false).Once()
@@ -1130,7 +1130,7 @@ func TestCreateUserSchemaReturnsErrorForInvalidDisplayAttribute(t *testing.T) {
 
 	request := CreateUserSchemaRequest{
 		Name:             "test-schema",
-		OuID:             testOUID1,
+		OUID:             testOUID1,
 		Schema:           json.RawMessage(`{"email":{"type":"string"}}`),
 		SystemAttributes: &SystemAttributes{Display: "nonexistent"},
 	}
@@ -1163,7 +1163,7 @@ func TestUpdateUserSchemaReturnsErrorForInvalidDisplayAttribute(t *testing.T) {
 
 	request := UpdateUserSchemaRequest{
 		Name:             "test-schema",
-		OuID:             testOUID1,
+		OUID:             testOUID1,
 		Schema:           json.RawMessage(`{"email":{"type":"string"}}`),
 		SystemAttributes: &SystemAttributes{Display: "nonexistent"},
 	}

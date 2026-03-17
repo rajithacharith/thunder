@@ -94,7 +94,7 @@ func (ts *SilverTestSuite) SetupSuite() {
 	ts.oUID = ouID
 
 	// Create user schema
-	userSchema.OuID = ts.oUID
+	userSchema.OUID = ts.oUID
 	schemaID, err := testutils.CreateUserType(userSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema: %v", err)
@@ -102,7 +102,7 @@ func (ts *SilverTestSuite) SetupSuite() {
 	ts.userSchemaID = schemaID
 
 	// Create user
-	user.OuID = ts.oUID
+	user.OUID = ts.oUID
 	userID, err := testutils.CreateUser(user)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user: %v", err)

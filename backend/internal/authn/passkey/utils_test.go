@@ -273,7 +273,7 @@ func (suite *UtilsTestSuite) TestExtractCoreUser_WithFullAttributes() {
 	testUser := &user.User{
 		ID:         testUserID,
 		Type:       "person",
-		OuID:       "org123",
+		OUID:       "org123",
 		Attributes: attrs,
 	}
 

@@ -263,11 +263,11 @@ func (h *userSchemaHandler) sanitizeCreateUserSchemaRequest(
 	request CreateUserSchemaRequest,
 ) CreateUserSchemaRequest {
 	sanitizedName := sysutils.SanitizeString(request.Name)
-	sanitizedOUID := sysutils.SanitizeString(request.OuID)
+	sanitizedOUID := sysutils.SanitizeString(request.OUID)
 
 	return CreateUserSchemaRequest{
 		Name:                  sanitizedName,
-		OuID:                  sanitizedOUID,
+		OUID:                  sanitizedOUID,
 		AllowSelfRegistration: request.AllowSelfRegistration,
 		SystemAttributes:      sanitizeSystemAttributes(request.SystemAttributes),
 		Schema:                request.Schema,
@@ -282,7 +282,7 @@ func (h *userSchemaHandler) sanitizeUpdateUserSchemaRequest(
 
 	originalName := request.Name
 	sanitizedName := sysutils.SanitizeString(request.Name)
-	sanitizedOUID := sysutils.SanitizeString(request.OuID)
+	sanitizedOUID := sysutils.SanitizeString(request.OUID)
 
 	if originalName != sanitizedName {
 		logger.Debug("Sanitized user schema name in update request",
@@ -292,7 +292,7 @@ func (h *userSchemaHandler) sanitizeUpdateUserSchemaRequest(
 
 	return UpdateUserSchemaRequest{
 		Name:                  sanitizedName,
-		OuID:                  sanitizedOUID,
+		OUID:                  sanitizedOUID,
 		AllowSelfRegistration: request.AllowSelfRegistration,
 		SystemAttributes:      sanitizeSystemAttributes(request.SystemAttributes),
 		Schema:                request.Schema,

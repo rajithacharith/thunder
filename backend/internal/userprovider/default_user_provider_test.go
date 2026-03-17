@@ -83,7 +83,7 @@ func (suite *DefaultUserProviderTestSuite) TestGetUser() {
 	expectedUser := &user.User{
 		ID:         userID,
 		Type:       "customer",
-		OuID:       "ou1",
+		OUID:       "ou1",
 		Attributes: json.RawMessage(`{"attr":"val"}`),
 	}
 
@@ -95,7 +95,7 @@ func (suite *DefaultUserProviderTestSuite) TestGetUser() {
 	suite.Nil(err)
 	suite.Equal(userID, u.UserID)
 	suite.Equal("customer", u.UserType)
-	suite.Equal("ou1", u.OuID)
+	suite.Equal("ou1", u.OUID)
 
 	// Test Not Found
 	suite.mockService.On("GetUser", mock.Anything, userID).Return(nil, &user.ErrorUserNotFound).
@@ -114,7 +114,7 @@ func (suite *DefaultUserProviderTestSuite) TestGetUserGroups() {
 
 	groupListResponse := &user.UserGroupListResponse{
 		Groups: []user.UserGroup{
-			{ID: "g1", Name: "Group 1", OuID: "ou1"},
+			{ID: "g1", Name: "Group 1", OUID: "ou1"},
 		},
 		Links: []utils.Link{
 			{Href: "/groups/next", Rel: "next"},
@@ -131,7 +131,7 @@ func (suite *DefaultUserProviderTestSuite) TestGetUserGroups() {
 	suite.Equal(1, len(resp.Groups))
 	suite.Equal("g1", resp.Groups[0].ID)
 	suite.Equal("Group 1", resp.Groups[0].Name)
-	suite.Equal("ou1", resp.Groups[0].OuID)
+	suite.Equal("ou1", resp.Groups[0].OUID)
 
 	// Test User Not Found
 	suite.mockService.On("GetUserGroups", mock.Anything, userID, limit, offset).Return(nil, &user.ErrorUserNotFound).
@@ -148,14 +148,14 @@ func (suite *DefaultUserProviderTestSuite) TestUpdateUser() {
 	updateUser := &User{
 		UserID:     userID,
 		UserType:   "customer",
-		OuID:       "ou1",
+		OUID:       "ou1",
 		Attributes: json.RawMessage(`{"updated":"true"}`),
 	}
 
 	backendUser := &user.User{
 		ID:         userID,
 		Type:       "customer",
-		OuID:       "ou1",
+		OUID:       "ou1",
 		Attributes: json.RawMessage(`{"updated":"true"}`),
 	}
 
@@ -194,14 +194,14 @@ func (suite *DefaultUserProviderTestSuite) TestUpdateUser() {
 func (suite *DefaultUserProviderTestSuite) TestCreateUser() {
 	newUser := &User{
 		UserType:   "customer",
-		OuID:       "ou1",
+		OUID:       "ou1",
 		Attributes: json.RawMessage(`{"new":"true"}`),
 	}
 
 	createdBackendUser := &user.User{
 		ID:         testUserID,
 		Type:       "customer",
-		OuID:       "ou1",
+		OUID:       "ou1",
 		Attributes: json.RawMessage(`{"new":"true"}`),
 	}
 

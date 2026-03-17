@@ -251,7 +251,7 @@ func (ts *GoogleRegistrationGroupRoleTestSuite) SetupSuite() {
 	googleRegGroupRoleTestOUID = ouID
 
 	// Create user schema
-	googleRegGroupRoleUserSchema.OuID = googleRegGroupRoleTestOUID
+	googleRegGroupRoleUserSchema.OUID = googleRegGroupRoleTestOUID
 	googleRegGroupRoleUserSchema.AllowSelfRegistration = true
 	schemaID, err := testutils.CreateUserType(googleRegGroupRoleUserSchema)
 	ts.Require().NoError(err, "Failed to create user schema")
@@ -261,7 +261,7 @@ func (ts *GoogleRegistrationGroupRoleTestSuite) SetupSuite() {
 	testGroup := testutils.Group{
 		Name:               "Provisioned Users Group",
 		Description:        "Group for testing user provisioning with group assignment",
-		OuID:               googleRegGroupRoleTestOUID,
+		OUID:               googleRegGroupRoleTestOUID,
 	}
 	groupID, err := testutils.CreateGroup(testGroup)
 	ts.Require().NoError(err, "Failed to create test group")
@@ -272,7 +272,7 @@ func (ts *GoogleRegistrationGroupRoleTestSuite) SetupSuite() {
 	testRole := testutils.Role{
 		Name:               "Provisioned Users Role",
 		Description:        "Role for testing user provisioning with role assignment",
-		OuID:               googleRegGroupRoleTestOUID,
+		OUID:               googleRegGroupRoleTestOUID,
 		Permissions:        []testutils.ResourcePermissions{},
 	}
 	roleID, err := testutils.CreateRole(testRole)

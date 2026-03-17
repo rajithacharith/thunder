@@ -215,7 +215,7 @@ func (suite *PasskeyAuthTestSuite) SetupSuite() {
 	suite.ouID = ouID
 
 	// Create user schema
-	passkeyUserSchema.OuID = suite.ouID
+	passkeyUserSchema.OUID = suite.ouID
 	schemaID, err := testutils.CreateUserType(passkeyUserSchema)
 	if err != nil {
 		suite.T().Fatalf("Failed to create user schema during setup: %v", err)
@@ -233,7 +233,7 @@ func (suite *PasskeyAuthTestSuite) SetupSuite() {
 
 	user := testutils.User{
 		Type:             "passkey_user",
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 

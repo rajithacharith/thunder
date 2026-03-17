@@ -513,7 +513,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestGetInternalUserSuccess() {
 	user := &userprovider.User{
 		UserID:   userID,
 		UserType: "person",
-		OuID:     "test-ou",
+		OUID:     "test-ou",
 	}
 
 	suite.mockUserProvider.On("IdentifyUser", mock.MatchedBy(

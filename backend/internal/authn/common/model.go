@@ -51,7 +51,7 @@ type AuthenticationContext struct {
 type AuthenticationResponse struct {
 	ID        string
 	Type      string
-	OuID      string
+	OUID      string
 	Assertion string
 }
 

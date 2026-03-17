@@ -257,11 +257,11 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 		return nil, err
 	}
 
-	if err := gs.validateOU(ctx, request.OuID); err != nil {
+	if err := gs.validateOU(ctx, request.OUID); err != nil {
 		return nil, err
 	}
 
-	if err := gs.checkGroupAccess(ctx, security.ActionCreateGroup, request.OuID, ""); err != nil {
+	if err := gs.checkGroupAccess(ctx, security.ActionCreateGroup, request.OUID, ""); err != nil {
 		return nil, err
 	}
 
@@ -289,7 +289,7 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 
 	err := gs.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := gs.groupStore.CheckGroupNameConflictForCreate(
-			txCtx, request.Name, request.OuID); err != nil {
+			txCtx, request.Name, request.OUID); err != nil {
 			if errors.Is(err, ErrGroupNameConflict) {
 				logger.Debug("Group name conflict detected", log.String("name", request.Name))
 				capturedSvcErr = &ErrorGroupNameConflict
@@ -307,7 +307,7 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 			ID:          groupDaoID,
 			Name:        request.Name,
 			Description: request.Description,
-			OUID:        request.OuID,
+			OUID:        request.OUID,
 			Members:     request.Members,
 		}
 
@@ -357,7 +357,7 @@ func (gs *groupService) CreateGroupByPath(
 	createRequest := CreateGroupRequest{
 		Name:        request.Name,
 		Description: request.Description,
-		OuID:        ou.ID,
+		OUID:        ou.ID,
 		Members:     request.Members,
 	}
 
@@ -424,11 +424,11 @@ func (gs *groupService) UpdateGroup(
 		updateOUID := existingGroupDAO.OUID
 
 		if gs.isOrganizationUnitChanged(existingGroup, request) {
-			if err := gs.validateOU(txCtx, request.OuID); err != nil {
+			if err := gs.validateOU(txCtx, request.OUID); err != nil {
 				capturedSvcErr = err
 				return errors.New("rollback for invalid OU")
 			}
-			updateOUID = request.OuID
+			updateOUID = request.OUID
 		}
 
 		if err := gs.checkGroupAccess(
@@ -453,9 +453,9 @@ func (gs *groupService) UpdateGroup(
 			}
 		}
 
-		if existingGroup.Name != request.Name || existingGroup.OuID != request.OuID {
+		if existingGroup.Name != request.Name || existingGroup.OUID != request.OUID {
 			err := gs.groupStore.CheckGroupNameConflictForUpdate(
-				txCtx, request.Name, request.OuID, groupID)
+				txCtx, request.Name, request.OUID, groupID)
 			if err != nil {
 				if errors.Is(err, ErrGroupNameConflict) {
 					logger.Debug("Group name conflict detected during update", log.String("name", request.Name))
@@ -842,7 +842,7 @@ func (gs *groupService) validateCreateGroupRequest(request CreateGroupRequest) *
 		return &ErrorInvalidRequestFormat
 	}
 
-	if request.OuID == "" {
+	if request.OUID == "" {
 		return &ErrorInvalidRequestFormat
 	}
 
@@ -864,7 +864,7 @@ func (gs *groupService) validateUpdateGroupRequest(request UpdateGroupRequest) *
 		return &ErrorInvalidRequestFormat
 	}
 
-	if request.OuID == "" {
+	if request.OUID == "" {
 		return &ErrorInvalidRequestFormat
 	}
 
@@ -886,7 +886,7 @@ func validateMemberTypes(members []Member) *serviceerror.ServiceError {
 
 // isOrganizationUnitChanged checks if the organization unit of the group has changed during an update.
 func (gs *groupService) isOrganizationUnitChanged(existingGroup Group, request UpdateGroupRequest) bool {
-	return existingGroup.OuID != request.OuID
+	return existingGroup.OUID != request.OUID
 }
 
 // validateOU validates that provided organization unit ID exist.
@@ -1026,23 +1026,12 @@ func (gs *groupService) GetGroupsByIDs(
 
 // convertGroupDAOToGroup constructs a Group from a GroupDAO.
 func convertGroupDAOToGroup(groupDAO GroupDAO) Group {
-	return Group{
-		ID:          groupDAO.ID,
-		Name:        groupDAO.Name,
-		Description: groupDAO.Description,
-		OuID:        groupDAO.OUID,
-		Members:     groupDAO.Members,
-	}
+	return Group(groupDAO)
 }
 
 // buildGroupBasic constructs a GroupBasic from a GroupBasicDAO.
 func buildGroupBasic(groupDAO GroupBasicDAO) GroupBasic {
-	return GroupBasic{
-		ID:          groupDAO.ID,
-		Name:        groupDAO.Name,
-		Description: groupDAO.Description,
-		OuID:        groupDAO.OUID,
-	}
+	return GroupBasic(groupDAO)
 }
 
 // validatePaginationParams validates pagination parameters.
@@ -1063,7 +1052,7 @@ func (gs *groupService) checkGroupAccess(
 
 	actionCtx := sysauthz.ActionContext{
 		ResourceType: security.ResourceTypeGroup,
-		OuID:         ouID,
+		OUID:         ouID,
 		ResourceID:   groupID,
 	}
 

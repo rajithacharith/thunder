@@ -276,7 +276,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) SetupSuite() {
 	promptActionsTestOUID = ouID
 
 	// Create test user schema within the OU
-	promptActionsUserSchema.OuID = promptActionsTestOUID
+	promptActionsUserSchema.OUID = promptActionsTestOUID
 	schemaID, err := testutils.CreateUserType(promptActionsUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
@@ -294,9 +294,9 @@ func (ts *PromptActionsAndMFAFlowTestSuite) SetupSuite() {
 
 	// Create test users with the created OU
 	userWithMobile := testUserWithMobilePromptActions
-	userWithMobile.OuID = promptActionsTestOUID
+	userWithMobile.OUID = promptActionsTestOUID
 	userWithoutMobile := testUserWithoutMobilePromptActions
-	userWithoutMobile.OuID = promptActionsTestOUID
+	userWithoutMobile.OUID = promptActionsTestOUID
 
 	userIDs, err := testutils.CreateMultipleUsers(userWithMobile, userWithoutMobile)
 	if err != nil {

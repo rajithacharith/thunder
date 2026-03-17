@@ -268,8 +268,8 @@ func (ts *GetUserSchemaTestSuite) TestGetUserSchemaResponseHeaders() {
 
 // Helper function to create a test schema
 func (ts *GetUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaRequest) string {
-	if schema.OuID == "" {
-		schema.OuID = ts.oUID
+	if schema.OUID == "" {
+		schema.OUID = ts.oUID
 	}
 
 	jsonData, err := json.Marshal(schema)

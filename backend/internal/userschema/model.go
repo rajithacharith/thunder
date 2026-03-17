@@ -36,7 +36,7 @@ type SystemAttributes struct {
 type UserSchema struct {
 	ID                    string            `json:"id,omitempty" yaml:"id,omitempty"`
 	Name                  string            `json:"name,omitempty" yaml:"name"`
-	OuID                  string            `json:"ouId" yaml:"organization_unit_id"`
+	OUID                  string            `json:"ouId" yaml:"organization_unit_id"`
 	AllowSelfRegistration bool              `json:"allowSelfRegistration" yaml:"allow_self_registration,omitempty"`
 	SystemAttributes      *SystemAttributes `json:"systemAttributes,omitempty" yaml:"system_attributes,omitempty"`
 	Schema                json.RawMessage   `json:"schema,omitempty" yaml:"schema"`
@@ -46,7 +46,7 @@ type UserSchema struct {
 type UserSchemaListItem struct {
 	ID                    string            `json:"id,omitempty"`
 	Name                  string            `json:"name,omitempty"`
-	OuID                  string            `json:"ouId"`
+	OUID                  string            `json:"ouId"`
 	AllowSelfRegistration bool              `json:"allowSelfRegistration"`
 	SystemAttributes      *SystemAttributes `json:"systemAttributes,omitempty"`
 	IsReadOnly            bool              `json:"isReadOnly,omitempty"`
@@ -70,7 +70,7 @@ type UserSchemaListResponse struct {
 // CreateUserSchemaRequest represents the request body for creating a user schema.
 type CreateUserSchemaRequest struct {
 	Name                  string            `json:"name"`
-	OuID                  string            `json:"ouId"`
+	OUID                  string            `json:"ouId"`
 	AllowSelfRegistration bool              `json:"allowSelfRegistration,omitempty"`
 	SystemAttributes      *SystemAttributes `json:"systemAttributes,omitempty"`
 	Schema                json.RawMessage   `json:"schema"`
@@ -79,7 +79,7 @@ type CreateUserSchemaRequest struct {
 // UpdateUserSchemaRequest represents the request body for updating a user schema.
 type UpdateUserSchemaRequest struct {
 	Name                  string            `json:"name"`
-	OuID                  string            `json:"ouId"`
+	OUID                  string            `json:"ouId"`
 	AllowSelfRegistration bool              `json:"allowSelfRegistration,omitempty"`
 	SystemAttributes      *SystemAttributes `json:"systemAttributes,omitempty"`
 	Schema                json.RawMessage   `json:"schema"`

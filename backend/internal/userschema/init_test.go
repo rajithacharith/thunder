@@ -337,7 +337,7 @@ schema: |
 	suite.NotNil(schemaDTO)
 	suite.Equal("schema-001", schemaDTO.ID)
 	suite.Equal("Employee Schema", schemaDTO.Name)
-	suite.Equal("550e8400-e29b-41d4-a716-446655440000", schemaDTO.OuID)
+	suite.Equal("550e8400-e29b-41d4-a716-446655440000", schemaDTO.OUID)
 	suite.True(schemaDTO.AllowSelfRegistration)
 	suite.NotEmpty(schemaDTO.Schema)
 }
@@ -363,7 +363,7 @@ schema: |
 	suite.NotNil(schemaDTO)
 	suite.Equal("minimal-schema", schemaDTO.ID)
 	suite.Equal("Minimal Schema", schemaDTO.Name)
-	suite.Equal("550e8400-e29b-41d4-a716-446655440000", schemaDTO.OuID)
+	suite.Equal("550e8400-e29b-41d4-a716-446655440000", schemaDTO.OUID)
 	suite.False(schemaDTO.AllowSelfRegistration)
 	suite.NotEmpty(schemaDTO.Schema)
 }
@@ -819,7 +819,7 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 			schema: UserSchema{
 				ID:     "valid-schema-001",
 				Name:   "Valid Schema",
-				OuID:   "550e8400-e29b-41d4-a716-446655440000",
+				OUID:   "550e8400-e29b-41d4-a716-446655440000",
 				Schema: []byte(`{"email":{"type":"string","required":true}}`),
 			},
 			shouldBeValid: true,
@@ -829,7 +829,7 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 			schema: UserSchema{
 				ID:     "invalid-001",
 				Name:   "",
-				OuID:   "550e8400-e29b-41d4-a716-446655440000",
+				OUID:   "550e8400-e29b-41d4-a716-446655440000",
 				Schema: []byte(`{"email":{"type":"string"}}`),
 			},
 			shouldBeValid: false,
@@ -840,7 +840,7 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 			schema: UserSchema{
 				ID:     "invalid-002",
 				Name:   "Test Schema",
-				OuID:   "",
+				OUID:   "",
 				Schema: []byte(`{"email":{"type":"string"}}`),
 			},
 			shouldBeValid: false,
@@ -851,7 +851,7 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 			schema: UserSchema{
 				ID:     "invalid-003",
 				Name:   "Test Schema",
-				OuID:   "not-a-valid-uuid",
+				OUID:   "not-a-valid-uuid",
 				Schema: []byte(`{"email":{"type":"string"}}`),
 			},
 			shouldBeValid: false,
@@ -862,7 +862,7 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 			schema: UserSchema{
 				ID:     "invalid-004",
 				Name:   "Test Schema",
-				OuID:   "550e8400-e29b-41d4-a716-446655440000",
+				OUID:   "550e8400-e29b-41d4-a716-446655440000",
 				Schema: []byte{},
 			},
 			shouldBeValid: false,
@@ -873,7 +873,7 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 			schema: UserSchema{
 				ID:     "invalid-005",
 				Name:   "Test Schema",
-				OuID:   "550e8400-e29b-41d4-a716-446655440000",
+				OUID:   "550e8400-e29b-41d4-a716-446655440000",
 				Schema: []byte(`{"email":"not-an-object"}`),
 			},
 			shouldBeValid: false,

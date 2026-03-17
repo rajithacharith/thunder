@@ -62,7 +62,7 @@ func (suite *RestAuthnProviderTestSuite) TestAuthenticate_Success() {
 			UserID:   "user123",
 			Token:    "token123",
 			UserType: "customer",
-			OuID:     "ou1",
+			OUID:     "ou1",
 		}
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resp)

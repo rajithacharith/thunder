@@ -69,15 +69,15 @@ type authorizationPolicy interface {
 type ouMembershipPolicy struct{}
 
 // isActionAllowed returns:
-//   - PolicyDecisionNotApplicable when the action context carries no OuID.
+//   - PolicyDecisionNotApplicable when the action context carries no OUID.
 //   - PolicyDecisionAllowed when the caller's OU matches the resource's OU.
 //   - PolicyDecisionDenied when the caller's OU does not match.
 func (p *ouMembershipPolicy) isActionAllowed(ctx context.Context,
 	actionCtx *ActionContext) (policyDecision, *serviceerror.ServiceError) {
-	if actionCtx == nil || actionCtx.OuID == "" {
+	if actionCtx == nil || actionCtx.OUID == "" {
 		return policyDecisionNotApplicable, nil
 	}
-	if security.GetOUID(ctx) == actionCtx.OuID {
+	if security.GetOUID(ctx) == actionCtx.OUID {
 		return policyDecisionAllowed, nil
 	}
 	return policyDecisionDenied, nil
@@ -107,25 +107,25 @@ type ouInheritancePolicy struct {
 }
 
 // isActionAllowed returns:
-//   - PolicyDecisionNotApplicable when the action context carries no OuID.
+//   - PolicyDecisionNotApplicable when the action context carries no OUID.
 //   - PolicyDecisionAllowed when the resource's OU is the same as or an ancestor of the
 //     caller's OU (i.e. the resource was defined at or above the caller's level).
 //   - PolicyDecisionDenied when the caller is outside the resource's OU subtree.
 func (p *ouInheritancePolicy) isActionAllowed(ctx context.Context,
 	actionCtx *ActionContext) (policyDecision, *serviceerror.ServiceError) {
-	if actionCtx == nil || actionCtx.OuID == "" {
+	if actionCtx == nil || actionCtx.OUID == "" {
 		return policyDecisionNotApplicable, nil
 	}
 	callerOUID := security.GetOUID(ctx)
 	if callerOUID == "" {
 		return policyDecisionDenied, nil
 	}
-	if callerOUID == actionCtx.OuID {
+	if callerOUID == actionCtx.OUID {
 		return policyDecisionAllowed, nil
 	}
 	// Allow if the resource's OU is an ancestor of the caller's OU.
 	// i.e. the caller belongs to one of its descendants.
-	isAncestor, svcErr := p.resolver.IsAncestor(ctx, actionCtx.OuID, callerOUID)
+	isAncestor, svcErr := p.resolver.IsAncestor(ctx, actionCtx.OUID, callerOUID)
 	if svcErr != nil {
 		return policyDecisionDenied, svcErr
 	}

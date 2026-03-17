@@ -501,7 +501,7 @@ func (s *UserSchemaServiceConsentTestSuite) TestCreateUserSchema_ConsentSyncFail
 
 	request := CreateUserSchemaRequest{
 		Name:   "test-schema",
-		OuID:   testOUID1,
+		OUID:   testOUID1,
 		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
@@ -539,7 +539,7 @@ func (s *UserSchemaServiceConsentTestSuite) TestUpdateUserSchema_ConsentSyncFail
 	existingSchema := UserSchema{
 		ID:     "schema-id",
 		Name:   "test-schema",
-		OuID:   testOUID1,
+		OUID:   testOUID1,
 		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
@@ -555,7 +555,7 @@ func (s *UserSchemaServiceConsentTestSuite) TestUpdateUserSchema_ConsentSyncFail
 
 	request := UpdateUserSchemaRequest{
 		Name:   "test-schema",
-		OuID:   testOUID1,
+		OUID:   testOUID1,
 		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
@@ -592,7 +592,7 @@ func (s *UserSchemaServiceConsentTestSuite) TestDeleteUserSchema_ConsentEnabled_
 	existingSchema := UserSchema{
 		ID:     "schema-id",
 		Name:   "test-schema",
-		OuID:   testOUID1,
+		OUID:   testOUID1,
 		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 

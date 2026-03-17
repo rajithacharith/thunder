@@ -140,7 +140,7 @@ func (suite *CredentialsAuthTestSuite) SetupSuite() {
 	suite.ouID = ouID
 
 	for userType, schema := range credentialUserSchemas {
-		schema.OuID = suite.ouID
+		schema.OUID = suite.ouID
 		schemaID, err := testutils.CreateUserType(schema)
 		if err != nil {
 			suite.T().Fatalf("Failed to create user schema %s during setup: %v", userType, err)
@@ -196,7 +196,7 @@ func (suite *CredentialsAuthTestSuite) SetupSuite() {
 
 		user := testutils.User{
 			Type:             tu.userType,
-			OuID:             suite.ouID,
+			OUID:             suite.ouID,
 			Attributes:       json.RawMessage(attributesJSON),
 		}
 
@@ -290,7 +290,7 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithMobilePassword() {
 
 	suite.NotEmpty(response.ID, "Response should contain user ID")
 	suite.Equal("mobile_password", response.Type, "Response should contain correct user type")
-	suite.Equal(suite.ouID, response.OuID, "Response should contain correct organization unit")
+	suite.Equal(suite.ouID, response.OUID, "Response should contain correct organization unit")
 	suite.Equal(suite.users["mobile_password"], response.ID, "Response should contain the correct user ID")
 }
 
@@ -343,7 +343,7 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithMultipleAttributes() 
 
 			suite.NotEmpty(response.ID, "Response should contain user ID")
 			suite.Equal("multiple_attributes", response.Type, "Response should contain correct user type")
-			suite.Equal(suite.ouID, response.OuID, "Response should contain correct organization unit")
+			suite.Equal(suite.ouID, response.OUID, "Response should contain correct organization unit")
 			suite.Equal(suite.users["multiple_attributes"], response.ID, "Response should contain the correct user ID")
 			suite.NotEmpty(response.Assertion, "Response should contain assertion token by default")
 		})
@@ -663,7 +663,7 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithDifferentAttributeCom
 				suite.Require().NoError(err, "Failed to send authenticate request")
 				suite.Equal(http.StatusOK, statusCode, "Expected status 200 for successful authentication")
 				if tc.expectedUserID != "" {
-					suite.Equal(suite.ouID, response.OuID, "Response should contain correct organization unit")
+					suite.Equal(suite.ouID, response.OUID, "Response should contain correct organization unit")
 					suite.Equal(suite.users[tc.expectedUserID], response.ID, "Response should contain the correct user ID")
 				}
 			} else {
@@ -693,7 +693,7 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithSkipAssertionFalse() 
 
 	suite.NotEmpty(response.ID, "Response should contain user ID")
 	suite.Equal("username_password", response.Type, "Response should contain correct user type")
-	suite.Equal(suite.ouID, response.OuID, "Response should contain correct organization unit")
+	suite.Equal(suite.ouID, response.OUID, "Response should contain correct organization unit")
 	suite.Equal(suite.users["username_password"], response.ID, "Response should contain the correct user ID")
 	suite.NotEmpty(response.Assertion, "Response should contain assertion token when skip_assertion is false")
 }
@@ -716,7 +716,7 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithSkipAssertionTrue() {
 
 	suite.NotEmpty(response.ID, "Response should contain user ID")
 	suite.Equal("username_password", response.Type, "Response should contain correct user type")
-	suite.Equal(suite.ouID, response.OuID, "Response should contain correct organization unit")
+	suite.Equal(suite.ouID, response.OUID, "Response should contain correct organization unit")
 	suite.Equal(suite.users["username_password"], response.ID, "Response should contain the correct user ID")
 	suite.Empty(response.Assertion, "Response should not contain assertion token when skip_assertion is true")
 }
@@ -910,7 +910,7 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionMult
 	// The updated assertion should still maintain user information
 	suite.Equal(firstResponse.ID, secondResponse.ID, "User ID should remain the same")
 	suite.Equal(firstResponse.Type, secondResponse.Type, "User type should remain the same")
-	suite.Equal(firstResponse.OuID, secondResponse.OuID,
+	suite.Equal(firstResponse.OUID, secondResponse.OUID,
 		"Organization unit should remain the same")
 }
 

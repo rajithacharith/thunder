@@ -64,7 +64,7 @@ func (p *defaultUserProvider) GetUser(userID string) (*User, *UserProviderError)
 	return &User{
 		UserID:     userResult.ID,
 		UserType:   userResult.Type,
-		OuID:       userResult.OuID,
+		OUID:       userResult.OUID,
 		Attributes: userResult.Attributes,
 	}, nil
 }
@@ -86,7 +86,7 @@ func (p *defaultUserProvider) GetUserGroups(userID string, limit, offset int) (*
 		groups[i] = UserGroup{
 			ID:   g.ID,
 			Name: g.Name,
-			OuID: g.OuID,
+			OUID: g.OUID,
 		}
 	}
 
@@ -115,7 +115,7 @@ func (p *defaultUserProvider) UpdateUser(userID string, userUpdateConfig *User) 
 	}
 	updatedUser := &user.User{
 		ID:         userID,
-		OuID:       userUpdateConfig.OuID,
+		OUID:       userUpdateConfig.OUID,
 		Type:       userUpdateConfig.UserType,
 		Attributes: userUpdateConfig.Attributes,
 	}
@@ -139,7 +139,7 @@ func (p *defaultUserProvider) UpdateUser(userID string, userUpdateConfig *User) 
 	return &User{
 		UserID:     userResult.ID,
 		UserType:   userResult.Type,
-		OuID:       userResult.OuID,
+		OUID:       userResult.OUID,
 		Attributes: userResult.Attributes,
 	}, nil
 }
@@ -151,7 +151,7 @@ func (p *defaultUserProvider) CreateUser(userCreateConfig *User) (*User, *UserPr
 			"User create configuration cannot be nil")
 	}
 	newUser := &user.User{
-		OuID:       userCreateConfig.OuID,
+		OUID:       userCreateConfig.OUID,
 		Type:       userCreateConfig.UserType,
 		Attributes: userCreateConfig.Attributes,
 	}
@@ -177,7 +177,7 @@ func (p *defaultUserProvider) CreateUser(userCreateConfig *User) (*User, *UserPr
 	return &User{
 		UserID:     userResult.ID,
 		UserType:   userResult.Type,
-		OuID:       userResult.OuID,
+		OUID:       userResult.OUID,
 		Attributes: userResult.Attributes,
 	}, nil
 }

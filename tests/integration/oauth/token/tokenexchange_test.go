@@ -83,7 +83,7 @@ func (ts *TokenExchangeTestSuite) SetupSuite() {
 	ts.oUID = ts.createTestOrganizationUnit()
 
 	// Create user schema for person type
-	testUserSchema.OuID = ts.oUID
+	testUserSchema.OUID = ts.oUID
 	schemaID, err := testutils.CreateUserType(testUserSchema)
 	ts.Require().NoError(err, "Failed to create test user schema")
 	ts.userSchemaID = schemaID
@@ -187,7 +187,7 @@ func (ts *TokenExchangeTestSuite) createTestUser() string {
 
 	user := testutils.User{
 		Type:       "token-test-person",
-		OuID:       ts.oUID,
+		OUID:       ts.oUID,
 		Attributes: json.RawMessage(attributesJSON),
 	}
 

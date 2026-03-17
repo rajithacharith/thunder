@@ -183,7 +183,7 @@ func (ts *UserTreeValidationTestSuite) createEmployeeSchema() (string, string) {
 			"isManager": {"type": "boolean"}
 		}`),
 	}
-	schema.OuID = ts.ou1ID
+	schema.OUID = ts.ou1ID
 
 	schemaID := ts.createSchema(schema)
 	return schemaID, schemaName
@@ -218,7 +218,7 @@ func (ts *UserTreeValidationTestSuite) createComplexSchema() (string, string) {
 			}
 		}`),
 	}
-	schema.OuID = ts.ou1ID
+	schema.OUID = ts.ou1ID
 
 	schemaID := ts.createSchema(schema)
 	return schemaID, schemaName

@@ -233,7 +233,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_Succ
 			userSchema := &userschema.UserSchema{
 				ID:                    "schema-123",
 				Name:                  tc.providedUserType,
-				OuID:                  tc.expectedOUID,
+				OUID:                  tc.expectedOUID,
 				AllowSelfRegistration: true,
 			}
 			suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, tc.providedUserType).
@@ -270,7 +270,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_NoOU
 	userSchema := &userschema.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
-		OuID:                  "",
+		OUID:                  "",
 		AllowSelfRegistration: true,
 	}
 	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
@@ -378,7 +378,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_Succes
 	userSchema := &userschema.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
-		OuID:                  "ou-123",
+		OUID:                  "ou-123",
 		AllowSelfRegistration: true,
 	}
 	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
@@ -411,7 +411,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_NoOU()
 	userSchema := &userschema.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
-		OuID:                  "",
+		OUID:                  "",
 		AllowSelfRegistration: true,
 	}
 	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
@@ -473,7 +473,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Pro
 		userSchema := &userschema.UserSchema{
 			ID:                    "schema-" + userType,
 			Name:                  userType,
-			OuID:                  "ou-" + userType,
+			OUID:                  "ou-" + userType,
 			AllowSelfRegistration: true,
 		}
 		suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, userType).
@@ -518,7 +518,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_EmptyUserTypeInput() {
 		userSchema := &userschema.UserSchema{
 			ID:                    "schema-" + userType,
 			Name:                  userType,
-			OuID:                  "ou-" + userType,
+			OUID:                  "ou-" + userType,
 			AllowSelfRegistration: true,
 		}
 		suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, userType).
@@ -558,7 +558,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_Self
 	userSchema := &userschema.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
-		OuID:                  "ou-123",
+		OUID:                  "ou-123",
 		AllowSelfRegistration: false,
 	}
 	suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "employee").
@@ -589,7 +589,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_SelfRe
 	userSchema := &userschema.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
-		OuID:                  "ou-123",
+		OUID:                  "ou-123",
 		AllowSelfRegistration: false,
 	}
 	suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "employee").
@@ -621,19 +621,19 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Onl
 	employeeSchema := &userschema.UserSchema{
 		ID:                    "schema-employee",
 		Name:                  "employee",
-		OuID:                  "ou-employee",
+		OUID:                  "ou-employee",
 		AllowSelfRegistration: false,
 	}
 	customerSchema := &userschema.UserSchema{
 		ID:                    "schema-customer",
 		Name:                  "customer",
-		OuID:                  "ou-customer",
+		OUID:                  "ou-customer",
 		AllowSelfRegistration: true,
 	}
 	partnerSchema := &userschema.UserSchema{
 		ID:                    "schema-partner",
 		Name:                  "partner",
-		OuID:                  "ou-partner",
+		OUID:                  "ou-partner",
 		AllowSelfRegistration: false,
 	}
 
@@ -671,13 +671,13 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_NoS
 	employeeSchema := &userschema.UserSchema{
 		ID:                    "schema-employee",
 		Name:                  "employee",
-		OuID:                  "ou-employee",
+		OUID:                  "ou-employee",
 		AllowSelfRegistration: false,
 	}
 	customerSchema := &userschema.UserSchema{
 		ID:                    "schema-customer",
 		Name:                  "customer",
-		OuID:                  "ou-customer",
+		OUID:                  "ou-customer",
 		AllowSelfRegistration: false,
 	}
 
@@ -712,7 +712,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Sch
 	employeeSchema := &userschema.UserSchema{
 		ID:                    "schema-employee",
 		Name:                  "employee",
-		OuID:                  "ou-employee",
+		OUID:                  "ou-employee",
 		AllowSelfRegistration: true,
 	}
 	svcErr := &serviceerror.ServiceError{
@@ -741,7 +741,7 @@ func (suite *UserTypeResolverTestSuite) TestGetUserSchemaAndOU_Success() {
 	userSchema := &userschema.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
-		OuID:                  "ou-123",
+		OUID:                  "ou-123",
 		AllowSelfRegistration: true,
 	}
 	suite.mockUserSchemaService.On("GetUserSchemaByName", context.Background(), "employee").
@@ -762,7 +762,7 @@ func (suite *UserTypeResolverTestSuite) TestGetUserSchemaAndOU_NoOUFound() {
 	userSchema := &userschema.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
-		OuID:                  "",
+		OUID:                  "",
 		AllowSelfRegistration: true,
 	}
 	suite.mockUserSchemaService.On("GetUserSchemaByName", context.Background(), "employee").
@@ -813,7 +813,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeP
 	userSchema := &userschema.UserSchema{
 		ID:   "schema-123",
 		Name: "employee",
-		OuID: "ou-123",
+		OUID: "ou-123",
 	}
 	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(userSchema, nil)

@@ -306,7 +306,7 @@ func (a *attributeCollector) getUpdatedUserObject(ctx *core.NodeContext,
 
 	updatedUser := &userprovider.User{
 		UserID:   userData.UserID,
-		OuID:     userData.OuID,
+		OUID:     userData.OUID,
 		UserType: userData.UserType,
 	}
 

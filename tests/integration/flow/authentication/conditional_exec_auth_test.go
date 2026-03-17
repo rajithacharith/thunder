@@ -224,7 +224,7 @@ func (ts *ConditionalExecAuthFlowTestSuite) SetupSuite() {
 	conditionalExecPreCreatedOUID = ouID
 
 	// Create user schema with self-registration enabled
-	conditionalExecUserSchema.OuID = conditionalExecPreCreatedOUID
+	conditionalExecUserSchema.OUID = conditionalExecPreCreatedOUID
 	schemaID, err := testutils.CreateUserType(conditionalExecUserSchema)
 	ts.Require().NoError(err, "Failed to create conditional exec user schema")
 	conditionalExecUserSchemaID = schemaID
@@ -243,7 +243,7 @@ func (ts *ConditionalExecAuthFlowTestSuite) SetupSuite() {
 
 	existingUser := testutils.User{
 		Type:             conditionalExecUserSchema.Name,
-		OuID:             conditionalExecPreCreatedOUID,
+		OUID:             conditionalExecPreCreatedOUID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 	existingUserID, err := testutils.CreateUser(existingUser)
@@ -464,10 +464,10 @@ func (ts *ConditionalExecAuthFlowTestSuite) TestExecuteConditionalNodes() {
 	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
 	ts.Require().Equal(conditionalExecTestAppID, jwtClaims.Aud, "JWT aud should match app ID")
 	ts.Require().Equal(conditionalExecUserSchema.Name, jwtClaims.UserType, "JWT userType should match schema")
-	ts.Require().NotEmpty(jwtClaims.OuID, "JWT ouId should not be empty")
+	ts.Require().NotEmpty(jwtClaims.OUID, "JWT ouId should not be empty")
 
 	// Verify the created OU
-	createdOU, err := testutils.GetOrganizationUnit(jwtClaims.OuID)
+	createdOU, err := testutils.GetOrganizationUnit(jwtClaims.OUID)
 	ts.Require().NoError(err, "Failed to get created OU")
 	ts.Require().Equal("Conditional Exec OU", createdOU.Name, "Created OU name should match")
 	ts.Require().Equal(conditionalExecNewOUHandle, createdOU.Handle, "Created OU handle should match")

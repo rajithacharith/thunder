@@ -659,7 +659,7 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	authenticatedUser := &authncm.AuthenticatedUser{
 		IsAuthenticated: true,
 		UserID:          user.UserID,
-		OUID:            user.OuID,
+		OUID:            user.OUID,
 		UserType:        user.UserType,
 		Attributes:      attrs,
 	}

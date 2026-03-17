@@ -155,13 +155,13 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success() {
 
 	createdUser := &userprovider.User{
 		UserID:     testNewUserID,
-		OuID:       testOUID,
+		OUID:       testOUID,
 		UserType:   testUserType,
 		Attributes: attrsJSON,
 	}
 
 	suite.mockUserProvider.On("CreateUser", mock.MatchedBy(func(u *userprovider.User) bool {
-		return u.OuID == testOUID && u.UserType == testUserType
+		return u.OUID == testOUID && u.UserType == testUserType
 	})).Return(createdUser, nil)
 
 	// Mock group assignment
@@ -520,7 +520,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_SkipProvisioning_Proceed
 
 	createdUser := &userprovider.User{
 		UserID:     testNewUserID,
-		OuID:       testOUID,
+		OUID:       testOUID,
 		UserType:   testUserType,
 		Attributes: attrsJSON,
 	}
@@ -528,7 +528,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_SkipProvisioning_Proceed
 	suite.mockUserProvider.On("IdentifyUser", attrs).Return(nil,
 		userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
 	suite.mockUserProvider.On("CreateUser", mock.MatchedBy(func(u *userprovider.User) bool {
-		return u.OuID == testOUID && u.UserType == testUserType
+		return u.OUID == testOUID && u.UserType == testUserType
 	})).Return(createdUser, nil)
 
 	// No group/role assignment mocks - assignments should be skipped
@@ -577,7 +577,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_UserEligibleForProvision
 
 	createdUser := &userprovider.User{
 		UserID:     "user-provisioned",
-		OuID:       testOUID,
+		OUID:       testOUID,
 		UserType:   testUserType,
 		Attributes: attrsJSON,
 	}
@@ -585,7 +585,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_UserEligibleForProvision
 	suite.mockUserProvider.On("IdentifyUser", attrs).Return(nil,
 		userprovider.NewUserProviderError(userprovider.ErrorCodeUserNotFound, "", ""))
 	suite.mockUserProvider.On("CreateUser", mock.MatchedBy(func(u *userprovider.User) bool {
-		return u.OuID == testOUID && u.UserType == testUserType
+		return u.OUID == testOUID && u.UserType == testUserType
 	})).Return(createdUser, nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -623,7 +623,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_UserAutoProvisionedFlag_
 
 	createdUser := &userprovider.User{
 		UserID:     testNewUserID,
-		OuID:       testOUID,
+		OUID:       testOUID,
 		UserType:   testUserType,
 		Attributes: attrsJSON,
 	}
@@ -743,7 +743,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_MissingInputs() {
 		runtimeData map[string]string
 	}{
 		{
-			name: "MissingOuID",
+			name: "MissingOUID",
 			runtimeData: map[string]string{
 				userTypeKey: testUserType,
 			},
@@ -812,7 +812,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CreateUserFailures() {
 			name: "CreatedUserHasEmptyID",
 			createdUser: &userprovider.User{
 				UserID:     "",
-				OuID:       testOUID,
+				OUID:       testOUID,
 				UserType:   testUserType,
 				Attributes: []byte(`{"username":"newuser"}`),
 			},
@@ -860,14 +860,14 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CreateUserFailures() {
 	}
 }
 
-func (suite *ProvisioningExecutorTestSuite) TestGetOuID() {
+func (suite *ProvisioningExecutorTestSuite) TestGetOUID() {
 	tests := []struct {
 		name        string
 		runtimeData map[string]string
 		expected    string
 	}{
 		{
-			name: "FromOuIDKey",
+			name: "FromOUIDKey",
 			runtimeData: map[string]string{
 				ouIDKey:        "ou-from-ouIDKey",
 				defaultOUIDKey: "ou-from-defaultOUIDKey",
@@ -894,7 +894,7 @@ func (suite *ProvisioningExecutorTestSuite) TestGetOuID() {
 				RuntimeData: tt.runtimeData,
 			}
 
-			ouID := suite.executor.getOuID(ctx)
+			ouID := suite.executor.getOUID(ctx)
 
 			assert.Equal(suite.T(), tt.expected, ouID)
 		})
@@ -991,7 +991,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_GroupAssignmentF
 
 	createdUser := &userprovider.User{
 		UserID:     testNewUserID,
-		OuID:       testOUID,
+		OUID:       testOUID,
 		UserType:   testUserType,
 		Attributes: attrsJSON,
 	}
@@ -1046,7 +1046,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_BothGroupAndRole
 
 	createdUser := &userprovider.User{
 		UserID:     testNewUserID,
-		OuID:       testOUID,
+		OUID:       testOUID,
 		UserType:   testUserType,
 		Attributes: attrsJSON,
 	}
@@ -1102,7 +1102,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_RoleAssignmentFa
 
 	createdUser := &userprovider.User{
 		UserID:     testNewUserID,
-		OuID:       testOUID,
+		OUID:       testOUID,
 		UserType:   testUserType,
 		Attributes: attrsJSON,
 	}
@@ -1159,7 +1159,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_GroupWithExistingMembers
 
 	createdUser := &userprovider.User{
 		UserID:     testNewUserID,
-		OuID:       testOUID,
+		OUID:       testOUID,
 		UserType:   testUserType,
 		Attributes: attrsJSON,
 	}
@@ -1213,7 +1213,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_AuthFlow_AutoProvisionin
 
 	createdUser := &userprovider.User{
 		UserID:     "user-provisioned",
-		OuID:       testOUID,
+		OUID:       testOUID,
 		UserType:   testUserType,
 		Attributes: attrsJSON,
 	}
@@ -1269,13 +1269,13 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success_WithGroupAndRole
 
 	createdUser := &userprovider.User{
 		UserID:     testNewUserID,
-		OuID:       testOUID,
+		OUID:       testOUID,
 		UserType:   testUserType,
 		Attributes: attrsJSON,
 	}
 
 	suite.mockUserProvider.On("CreateUser", mock.MatchedBy(func(u *userprovider.User) bool {
-		return u.OuID == testOUID && u.UserType == testUserType
+		return u.OUID == testOUID && u.UserType == testUserType
 	})).Return(createdUser, nil)
 
 	// Mock group assignment

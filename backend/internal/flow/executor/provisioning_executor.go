@@ -176,7 +176,7 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 	authenticatedUser := authncm.AuthenticatedUser{
 		IsAuthenticated: true,
 		UserID:          createdUser.UserID,
-		OUID:            createdUser.OuID,
+		OUID:            createdUser.OUID,
 		UserType:        createdUser.UserType,
 		Attributes:      retAttributes,
 	}
@@ -306,7 +306,7 @@ func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
 	logger := p.logger.With(log.String(log.LoggerKeyFlowID, nodeCtx.FlowID))
 	logger.Debug("Creating the user account")
 
-	ouID := p.getOuID(nodeCtx)
+	ouID := p.getOUID(nodeCtx)
 	if ouID == "" {
 		return nil, fmt.Errorf("organization unit ID not found")
 	}
@@ -316,7 +316,7 @@ func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
 	}
 
 	newUser := userprovider.User{
-		OuID:     ouID,
+		OUID:     ouID,
 		UserType: userType,
 	}
 
@@ -338,8 +338,8 @@ func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
 	return retUser, nil
 }
 
-// getOuID retrieves the organization unit ID from runtime data.
-func (p *provisioningExecutor) getOuID(ctx *core.NodeContext) string {
+// getOUID retrieves the organization unit ID from runtime data.
+func (p *provisioningExecutor) getOUID(ctx *core.NodeContext) string {
 	ouID := ""
 	// Check for ouId in runtime data
 	if val, ok := ctx.RuntimeData[ouIDKey]; ok && val != "" {

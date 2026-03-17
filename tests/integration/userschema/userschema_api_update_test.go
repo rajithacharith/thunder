@@ -65,7 +65,7 @@ func (ts *UpdateUserSchemaTestSuite) SetupSuite() {
 			"originalField": {"type": "string"}
 		}`),
 	}
-	schema1.OuID = ts.oUID
+	schema1.OUID = ts.oUID
 
 	schema2 := CreateUserSchemaRequest{
 		Name: "update-test-schema-2",
@@ -73,7 +73,7 @@ func (ts *UpdateUserSchemaTestSuite) SetupSuite() {
 			"anotherField": {"type": "string"}
 		}`),
 	}
-	schema2.OuID = ts.oUID
+	schema2.OUID = ts.oUID
 
 	ts.testSchemaID = ts.createTestSchema(schema1)
 	ts.anotherSchemaID = ts.createTestSchema(schema2)
@@ -111,7 +111,7 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchema() {
             }
         }`),
 	}
-	updateRequest.OuID = ts.oUID
+	updateRequest.OUID = ts.oUID
 
 	jsonData, err := json.Marshal(updateRequest)
 	if err != nil {
@@ -157,7 +157,7 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaNotFound() {
 		Name:   "updated-name",
 		Schema: json.RawMessage(`{"field": {"type": "string"}}`),
 	}
-	updateRequest.OuID = ts.oUID
+	updateRequest.OUID = ts.oUID
 
 	jsonData, err := json.Marshal(updateRequest)
 	if err != nil {
@@ -200,7 +200,7 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithNameConflict() {
 		Name:   "update-test-schema-2", // Name of another existing schema
 		Schema: json.RawMessage(`{"conflictField": {"type": "string"}}`),
 	}
-	updateRequest.OuID = ts.oUID
+	updateRequest.OUID = ts.oUID
 
 	jsonData, err := json.Marshal(updateRequest)
 	if err != nil {
@@ -350,7 +350,7 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithComplexData() {
 			}
 		}`),
 	}
-	updateRequest.OuID = ts.oUID
+	updateRequest.OUID = ts.oUID
 
 	jsonData, err := json.Marshal(updateRequest)
 	if err != nil {
@@ -390,8 +390,8 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithComplexData() {
 
 // Helper function to create a test schema
 func (ts *UpdateUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaRequest) string {
-	if schema.OuID == "" {
-		schema.OuID = ts.oUID
+	if schema.OUID == "" {
+		schema.OUID = ts.oUID
 	}
 
 	jsonData, err := json.Marshal(schema)

@@ -26,7 +26,7 @@ type ResourceServerResponse struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	Identifier  string `json:"identifier,omitempty"`
-	OuID        string `json:"ouId"`
+	OUID        string `json:"ouId"`
 	Delimiter   string `json:"delimiter"`
 	IsReadOnly  bool   `json:"isReadOnly,omitempty"`
 }
@@ -88,7 +88,7 @@ type CreateResourceServerRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	Identifier  string `json:"identifier,omitempty"`
-	OuID        string `json:"ouId"`
+	OUID        string `json:"ouId"`
 	Delimiter   string `json:"delimiter,omitempty"`
 }
 
@@ -97,7 +97,7 @@ type UpdateResourceServerRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	Identifier  string `json:"identifier,omitempty"`
-	OuID        string `json:"ouId"`
+	OUID        string `json:"ouId"`
 }
 
 // CreateResourceRequest represents the request to create a resource.

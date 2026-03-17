@@ -48,7 +48,7 @@ type RoleSummaryResponse struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
-	OuID        string `json:"ouId"`
+	OUID        string `json:"ouId"`
 }
 
 // RoleResponse represents a complete role with permissions.
@@ -56,7 +56,7 @@ type RoleResponse struct {
 	ID          string                `json:"id"`
 	Name        string                `json:"name"`
 	Description string                `json:"description,omitempty"`
-	OuID        string                `json:"ouId"`
+	OUID        string                `json:"ouId"`
 	Permissions []ResourcePermissions `json:"permissions"`
 }
 
@@ -64,7 +64,7 @@ type RoleResponse struct {
 type CreateRoleRequest struct {
 	Name        string                `json:"name"`
 	Description string                `json:"description,omitempty"`
-	OuID        string                `json:"ouId"`
+	OUID        string                `json:"ouId"`
 	Permissions []ResourcePermissions `json:"permissions"`
 	Assignments []AssignmentRequest   `json:"assignments,omitempty"`
 }
@@ -74,7 +74,7 @@ type CreateRoleResponse struct {
 	ID          string                `json:"id"`
 	Name        string                `json:"name"`
 	Description string                `json:"description,omitempty"`
-	OuID        string                `json:"ouId"`
+	OUID        string                `json:"ouId"`
 	Permissions []ResourcePermissions `json:"permissions"`
 	Assignments []AssignmentResponse  `json:"assignments,omitempty"`
 }
@@ -83,7 +83,7 @@ type CreateRoleResponse struct {
 type UpdateRoleRequest struct {
 	Name        string                `json:"name"`
 	Description string                `json:"description,omitempty"`
-	OuID        string                `json:"ouId"`
+	OUID        string                `json:"ouId"`
 	Permissions []ResourcePermissions `json:"permissions"`
 }
 

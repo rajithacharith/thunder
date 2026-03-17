@@ -164,7 +164,7 @@ func (as *authenticationService) AuthenticateWithCredentials(ctx context.Context
 	authResponse := &common.AuthenticationResponse{
 		ID:   authUser.UserID,
 		Type: authUser.UserType,
-		OuID: authUser.OuID,
+		OUID: authUser.OUID,
 	}
 
 	// Generate assertion if not skipped
@@ -184,7 +184,7 @@ func (as *authenticationService) AuthenticateWithCredentials(ctx context.Context
 		authenticatedUser := &userprovider.User{
 			UserID:     authUser.UserID,
 			UserType:   authUser.UserType,
-			OuID:       authUser.OuID,
+			OUID:       authUser.OUID,
 			Attributes: authUserAttributesJSON,
 		}
 		svcErr = as.validateAndAppendAuthAssertion(authResponse, authenticatedUser, common.AuthenticatorCredentials,
@@ -217,7 +217,7 @@ func (as *authenticationService) VerifyOTP(ctx context.Context, sessionToken str
 	authResponse := &common.AuthenticationResponse{
 		ID:   user.UserID,
 		Type: user.UserType,
-		OuID: user.OuID,
+		OUID: user.OUID,
 	}
 
 	// Generate assertion if not skipped
@@ -333,7 +333,7 @@ func (as *authenticationService) FinishIDPAuthentication(ctx context.Context, re
 	authResponse := &common.AuthenticationResponse{
 		ID:   user.UserID,
 		Type: user.UserType,
-		OuID: user.OuID,
+		OUID: user.OUID,
 	}
 
 	// Generate assertion if not skipped
@@ -397,8 +397,8 @@ func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *co
 	if user.UserType != "" {
 		jwtClaims["userType"] = user.UserType
 	}
-	if user.OuID != "" {
-		jwtClaims["ouId"] = user.OuID
+	if user.OUID != "" {
+		jwtClaims["ouId"] = user.OUID
 	}
 
 	// Get authentication assertion result
@@ -807,7 +807,7 @@ func (as *authenticationService) FinishPasskeyAuthentication(ctx context.Context
 		userForAssertion := &userprovider.User{
 			UserID:     authResponse.ID,
 			UserType:   authResponse.Type,
-			OuID:       authResponse.OuID,
+			OUID:       authResponse.OUID,
 			Attributes: nil, // Attributes not needed for assertion generation from passkey finish
 		}
 

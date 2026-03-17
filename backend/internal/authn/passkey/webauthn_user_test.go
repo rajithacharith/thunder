@@ -79,7 +79,7 @@ func (suite *WebAuthnUserTestSuite) TestNewWebAuthnUserFromCoreUser_WithFullAttr
 	coreUser := &user.User{
 		ID:         "user123",
 		Type:       "person",
-		OuID:       "org123",
+		OUID:       "org123",
 		Attributes: attrs,
 	}
 	credentials := []webauthnCredential{}

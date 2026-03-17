@@ -42,7 +42,7 @@ type GroupBasic struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
-	OuID        string `json:"ouId"`
+	OUID        string `json:"ouId"`
 }
 
 // GroupBasicDAO represents a data access object for basic group information,
@@ -58,7 +58,7 @@ type Group struct {
 	ID          string   `json:"id"`
 	Name        string   `json:"name"`
 	Description string   `json:"description,omitempty"`
-	OuID        string   `json:"ouId"`
+	OUID        string   `json:"ouId"`
 	Members     []Member `json:"members,omitempty"`
 }
 
@@ -80,7 +80,7 @@ type MembersRequest struct {
 type CreateGroupRequest struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description,omitempty"`
-	OuID        string   `json:"ouId"`
+	OUID        string   `json:"ouId"`
 	Members     []Member `json:"members,omitempty"`
 }
 
@@ -88,7 +88,7 @@ type CreateGroupRequest struct {
 type UpdateGroupRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
-	OuID        string `json:"ouId"`
+	OUID        string `json:"ouId"`
 }
 
 // GroupListResponse represents the response for listing groups with pagination.

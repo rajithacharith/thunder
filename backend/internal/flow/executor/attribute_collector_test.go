@@ -186,7 +186,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_Success() {
 
 	existingUser := &userprovider.User{
 		UserID:     testUserID,
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 		UserType:   "INTERNAL",
 		Attributes: json.RawMessage(`{}`),
 	}
@@ -195,7 +195,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_Success() {
 	updatedAttrsJSON, _ := json.Marshal(updatedAttrs)
 	updatedUser := &userprovider.User{
 		UserID:     testUserID,
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 		UserType:   "INTERNAL",
 		Attributes: updatedAttrsJSON,
 	}
@@ -225,7 +225,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UpdateUserFails() {
 
 	existingUser := &userprovider.User{
 		UserID:     testUserID,
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 		UserType:   "INTERNAL",
 		Attributes: json.RawMessage(`{}`),
 	}
@@ -365,7 +365,7 @@ func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_NewAttributes
 
 	existingUser := &userprovider.User{
 		UserID:     testUserID,
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 		UserType:   "INTERNAL",
 		Attributes: json.RawMessage(`{}`),
 	}
@@ -391,7 +391,7 @@ func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_NoNewAttribut
 
 	existingUser := &userprovider.User{
 		UserID:     testUserID,
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 		UserType:   "INTERNAL",
 		Attributes: json.RawMessage(`{"existing": "value"}`),
 	}
@@ -414,7 +414,7 @@ func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_MergeAttribut
 
 	existingUser := &userprovider.User{
 		UserID:     testUserID,
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 		UserType:   "INTERNAL",
 		Attributes: existingAttrsJSON,
 	}

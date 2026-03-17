@@ -370,7 +370,7 @@ func (suite *UserStoreTestSuite) TestCreateUser() {
 
 	user := User{
 		ID:         svcTestUserID1,
-		OuID:       "ou-1",
+		OUID:       "ou-1",
 		Type:       "customer",
 		Attributes: json.RawMessage(attributesBytes),
 	}
@@ -378,7 +378,7 @@ func (suite *UserStoreTestSuite) TestCreateUser() {
 
 	// Expect insert query
 	suite.mockDB.On("ExecuteContext", mock.Anything, QueryCreateUser,
-		user.ID, user.OuID, user.Type, string(attributesBytes), "{}", testDeploymentID).
+		user.ID, user.OUID, user.Type, string(attributesBytes), "{}", testDeploymentID).
 		Return(int64(1), nil)
 
 	// Expect indexed attributes sync
@@ -399,14 +399,14 @@ func (suite *UserStoreTestSuite) TestGetUser() {
 
 	expectedUser := User{
 		ID:         userID,
-		OuID:       "ou-1",
+		OUID:       "ou-1",
 		Type:       "customer",
 		Attributes: json.RawMessage(attributesBytes),
 	}
 
 	row := map[string]interface{}{
 		"id":         expectedUser.ID,
-		"ou_id":      expectedUser.OuID,
+		"ou_id":      expectedUser.OUID,
 		"type":       expectedUser.Type,
 		"attributes": string(attributesBytes),
 	}
@@ -435,14 +435,14 @@ func (suite *UserStoreTestSuite) TestUpdateUser() {
 
 	user := &User{
 		ID:         svcTestUserID1,
-		OuID:       "ou-1",
+		OUID:       "ou-1",
 		Type:       "customer",
 		Attributes: json.RawMessage(attributesBytes),
 	}
 
 	// Expect update query
 	suite.mockDB.On("ExecuteContext", mock.Anything, QueryUpdateUserByUserID,
-		user.ID, user.OuID, user.Type, string(attributesBytes), testDeploymentID).
+		user.ID, user.OUID, user.Type, string(attributesBytes), testDeploymentID).
 		Return(int64(1), nil)
 
 	// Expect delete indexed attributes query

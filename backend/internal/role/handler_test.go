@@ -113,7 +113,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRolePostRequest_Success() {
 	request := CreateRoleRequest{
 		Name:        "Test Role",
 		Description: "Description",
-		OuID:        "ou1",
+		OUID:        "ou1",
 		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
@@ -157,7 +157,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRolePostRequest_InvalidJSON() {
 func (suite *RoleHandlerTestSuite) TestHandleRolePostRequest_ServiceError() {
 	request := CreateRoleRequest{
 		Name:        "Test Role",
-		OuID:        "ou1",
+		OUID:        "ou1",
 		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
@@ -228,7 +228,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleGetRequest_NotFound() {
 func (suite *RoleHandlerTestSuite) TestHandleRolePutRequest_Success() {
 	request := UpdateRoleRequest{
 		Name:        "Updated Role",
-		OuID:        "ou1",
+		OUID:        "ou1",
 		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1", "perm2"}}},
 	}
 
@@ -479,7 +479,7 @@ func (suite *RoleHandlerTestSuite) TestParsePaginationParams() {
 func (suite *RoleHandlerTestSuite) TestHandleRolePutRequest_MissingID() {
 	request := UpdateRoleRequest{
 		Name:        "Updated Role",
-		OuID:        "ou1",
+		OUID:        "ou1",
 		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
@@ -499,7 +499,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRolePutRequest_MissingID() {
 func (suite *RoleHandlerTestSuite) TestHandleRolePutRequest_RoleNotFound() {
 	request := UpdateRoleRequest{
 		Name:        "Updated Role",
-		OuID:        "ou1",
+		OUID:        "ou1",
 		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
@@ -686,7 +686,7 @@ func (suite *RoleHandlerTestSuite) TestSanitizeCreateRoleRequest() {
 	request := &CreateRoleRequest{
 		Name:        "  Test Role  ",
 		Description: "  Description  ",
-		OuID:        "  ou1  ",
+		OUID:        "  ou1  ",
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: "  rs1  ",
@@ -702,7 +702,7 @@ func (suite *RoleHandlerTestSuite) TestSanitizeCreateRoleRequest() {
 
 	suite.Equal("Test Role", sanitized.Name)
 	suite.Equal("Description", sanitized.Description)
-	suite.Equal("ou1", sanitized.OuID)
+	suite.Equal("ou1", sanitized.OUID)
 	suite.Equal("rs1", sanitized.Permissions[0].ResourceServerID)
 	suite.Equal("perm1", sanitized.Permissions[0].Permissions[0])
 	suite.Equal("user1", sanitized.Assignments[0].ID)
@@ -711,14 +711,14 @@ func (suite *RoleHandlerTestSuite) TestSanitizeCreateRoleRequest() {
 func (suite *RoleHandlerTestSuite) TestSanitizeUpdateRoleRequest() {
 	request := &UpdateRoleRequest{
 		Name:        "  Updated Name  ",
-		OuID:        "  ou2  ",
+		OUID:        "  ou2  ",
 		Permissions: []ResourcePermissions{{ResourceServerID: "  rs2  ", Permissions: []string{"  perm3  "}}},
 	}
 
 	sanitized := suite.handler.sanitizeUpdateRoleRequest(request)
 
 	suite.Equal("Updated Name", sanitized.Name)
-	suite.Equal("ou2", sanitized.OuID)
+	suite.Equal("ou2", sanitized.OUID)
 	suite.Equal("rs2", sanitized.Permissions[0].ResourceServerID)
 	suite.Equal("perm3", sanitized.Permissions[0].Permissions[0])
 }

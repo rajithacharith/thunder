@@ -254,7 +254,7 @@ func (ts *HTTPRequestRegistrationFlowTestSuite) SetupSuite() {
 	httpRequestRegTestOUID = ouID
 
 	// Create test user schema within the test OU
-	httpRequestRegTestUserSchema.OuID = httpRequestRegTestOUID
+	httpRequestRegTestUserSchema.OUID = httpRequestRegTestOUID
 	httpRequestRegTestUserSchema.AllowSelfRegistration = true
 	schemaID, err := testutils.CreateUserType(httpRequestRegTestUserSchema)
 	if err != nil {

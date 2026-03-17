@@ -78,7 +78,7 @@ func (suite *UserTreeAPITestSuite) SetupSuite() {
 		suite.T().Fatalf("Failed to create test organization unit during setup: %v", err)
 	}
 
-	testUserSchema.OuID = ouID
+	testUserSchema.OUID = ouID
 	schemaID, err := testutils.CreateUserType(testUserSchema)
 	if err != nil {
 		suite.T().Fatalf("Failed to create employee user type during setup: %v", err)
@@ -177,7 +177,7 @@ func (suite *UserTreeAPITestSuite) TestCreateUserByPath() {
 
 	// Verify the created user
 	suite.NotEmpty(createdUser.ID)
-	suite.Equal(suite.testOUID, createdUser.OuID)
+	suite.Equal(suite.testOUID, createdUser.OUID)
 	suite.Equal("employee", createdUser.Type)
 	suite.NotEmpty(createdUser.Attributes)
 

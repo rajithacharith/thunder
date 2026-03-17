@@ -167,7 +167,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_GetCredentialsError
 	testUser := &user.User{
 		ID:   testUserID,
 		Type: "person",
-		OuID: "org123",
+		OUID: "org123",
 	}
 
 	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
@@ -337,7 +337,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_GetCredentialsErr
 	testUser := &user.User{
 		ID:   testUserID,
 		Type: "person",
-		OuID: "org123",
+		OUID: "org123",
 	}
 
 	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
@@ -364,7 +364,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_NoCredentialsFoun
 	testUser := &user.User{
 		ID:   testUserID,
 		Type: "person",
-		OuID: "org123",
+		OUID: "org123",
 	}
 
 	emptyCredentials := []user.Credential{}
@@ -905,7 +905,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_StoreSessionError()
 	testUser := &user.User{
 		ID:   testUserID,
 		Type: "person",
-		OuID: "org123",
+		OUID: "org123",
 	}
 
 	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
@@ -2086,7 +2086,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_BuildAuthRespons
 	testUser := &user.User{
 		ID:   testUserID,
 		Type: "person",
-		OuID: "org123",
+		OUID: "org123",
 	}
 
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).
@@ -2595,7 +2595,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_WithRelyingPartyNam
 	testUser := &user.User{
 		ID:   testUserID,
 		Type: "person",
-		OuID: "org123",
+		OUID: "org123",
 	}
 
 	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
@@ -2754,7 +2754,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_Usernameless_Suc
 	testUser := &user.User{
 		ID:   testUserID,
 		Type: "person",
-		OuID: "org123",
+		OUID: "org123",
 	}
 
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).
@@ -3103,7 +3103,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ValidatePasskeyL
 	testUser := &user.User{
 		ID:   testUserID,
 		Type: "person",
-		OuID: "org123",
+		OUID: "org123",
 	}
 
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).
@@ -3154,7 +3154,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ValidateLogin_Re
 	testUser := &user.User{
 		ID:   testUserID,
 		Type: "person",
-		OuID: "org123",
+		OUID: "org123",
 	}
 
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).

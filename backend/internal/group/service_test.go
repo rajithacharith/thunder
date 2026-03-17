@@ -490,7 +490,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 				authzMock.On("IsActionAllowed", mock.Anything, security.ActionListGroups,
-					&sysauthz.ActionContext{OuID: testOUID1, ResourceType: security.ResourceTypeGroup}).
+					&sysauthz.ActionContext{OUID: testOUID1, ResourceType: security.ResourceTypeGroup}).
 					Return(false, (*serviceerror.ServiceError)(nil))
 				return authzMock
 			},
@@ -569,7 +569,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 			request: CreateGroupRequest{
 				Name:        "engineering",
 				Description: "Engineers",
-				OuID:        "ou-001",
+				OUID:        "ou-001",
 				Members: []Member{
 					{ID: "usr-001", Type: MemberTypeUser},
 					{ID: "grp-002", Type: MemberTypeGroup},
@@ -604,7 +604,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 			name: "invalid organization unit",
 			request: CreateGroupRequest{
 				Name: "engineering",
-				OuID: "ou-unknown",
+				OUID: "ou-unknown",
 			},
 			setup: func(args *setupArgs) {
 				args.ou.On("IsOrganizationUnitExists", mock.Anything, "ou-unknown").
@@ -620,7 +620,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 			name: "invalid user IDs",
 			request: CreateGroupRequest{
 				Name:    "engineering",
-				OuID:    "ou-001",
+				OUID:    "ou-001",
 				Members: []Member{{ID: "usr-invalid", Type: MemberTypeUser}},
 			},
 			setup: func(args *setupArgs) {
@@ -640,7 +640,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 			name: "name conflict",
 			request: CreateGroupRequest{
 				Name: "engineering",
-				OuID: "ou-001",
+				OUID: "ou-001",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("CheckGroupNameConflictForCreate", mock.Anything, "engineering", "ou-001").
@@ -659,7 +659,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 			name: "conflict check error",
 			request: CreateGroupRequest{
 				Name: "engineering",
-				OuID: "ou-001",
+				OUID: "ou-001",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("CheckGroupNameConflictForCreate", mock.Anything, "engineering", "ou-001").
@@ -678,7 +678,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 			name: "create error",
 			request: CreateGroupRequest{
 				Name: "engineering",
-				OuID: "ou-001",
+				OUID: "ou-001",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("CheckGroupNameConflictForCreate", mock.Anything, "engineering", "ou-001").
@@ -700,7 +700,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 			name: "organization unit service error",
 			request: CreateGroupRequest{
 				Name: "engineering",
-				OuID: "ou-001",
+				OUID: "ou-001",
 			},
 			setup: func(args *setupArgs) {
 				args.ou.On("IsOrganizationUnitExists", mock.Anything, "ou-001").
@@ -714,7 +714,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 			name: "access denied",
 			request: CreateGroupRequest{
 				Name: "developers",
-				OuID: testOUID1,
+				OUID: testOUID1,
 			},
 			setup: func(args *setupArgs) {
 				args.ou.On("IsOrganizationUnitExists", mock.Anything, testOUID1).
@@ -723,7 +723,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 				authzMock.On("IsActionAllowed", mock.Anything, security.ActionCreateGroup,
-					&sysauthz.ActionContext{OuID: testOUID1, ResourceType: security.ResourceTypeGroup}).
+					&sysauthz.ActionContext{OUID: testOUID1, ResourceType: security.ResourceTypeGroup}).
 					Return(false, (*serviceerror.ServiceError)(nil))
 				return authzMock
 			},
@@ -937,7 +937,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroup() {
 					mock.Anything,
 					security.ActionReadGroup,
 					&sysauthz.ActionContext{
-						OuID:         testOUID1,
+						OUID:         testOUID1,
 						ResourceType: security.ResourceTypeGroup,
 						ResourceID:   "grp-001",
 					},
@@ -1020,7 +1020,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			request: UpdateGroupRequest{
 				Name:        "new-name",
 				Description: "New desc",
-				OuID:        "ou-new",
+				OUID:        "ou-new",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
@@ -1046,7 +1046,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			groupID: "grp-001",
 			request: UpdateGroupRequest{
 				Name: "new-name",
-				OuID: "ou-new",
+				OUID: "ou-new",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
@@ -1066,7 +1066,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			groupID: "grp-001",
 			request: UpdateGroupRequest{
 				Name: "name",
-				OuID: "ou",
+				OUID: "ou",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
@@ -1080,7 +1080,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			groupID: "grp-001",
 			request: UpdateGroupRequest{
 				Name: "name",
-				OuID: "ou",
+				OUID: "ou",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
@@ -1094,7 +1094,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			groupID: "grp-001",
 			request: UpdateGroupRequest{
 				Name: "name",
-				OuID: "ou-new",
+				OUID: "ou-new",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
@@ -1111,7 +1111,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			groupID: "grp-001",
 			request: UpdateGroupRequest{
 				Name: "new",
-				OuID: "ou",
+				OUID: "ou",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
@@ -1128,7 +1128,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			groupID: "grp-001",
 			request: UpdateGroupRequest{
 				Name: "new",
-				OuID: "ou",
+				OUID: "ou",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
@@ -1148,7 +1148,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			groupID: "grp-001",
 			request: UpdateGroupRequest{
 				Name: "new-name",
-				OuID: testOUID1,
+				OUID: testOUID1,
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
@@ -1161,7 +1161,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 					mock.Anything,
 					security.ActionUpdateGroup,
 					&sysauthz.ActionContext{
-						OuID:         testOUID1,
+						OUID:         testOUID1,
 						ResourceType: security.ResourceTypeGroup,
 						ResourceID:   "grp-001",
 					},
@@ -1175,7 +1175,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			groupID: "grp-001",
 			request: UpdateGroupRequest{
 				Name: "new-name",
-				OuID: testOUID2,
+				OUID: testOUID2,
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
@@ -1190,7 +1190,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 					mock.Anything,
 					security.ActionUpdateGroup,
 					&sysauthz.ActionContext{
-						OuID:         testOUID1,
+						OUID:         testOUID1,
 						ResourceType: security.ResourceTypeGroup,
 						ResourceID:   "grp-001",
 					},
@@ -1200,7 +1200,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 					mock.Anything,
 					security.ActionUpdateGroup,
 					&sysauthz.ActionContext{
-						OuID:         testOUID2,
+						OUID:         testOUID2,
 						ResourceType: security.ResourceTypeGroup,
 						ResourceID:   "grp-001",
 					},
@@ -1337,7 +1337,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 					mock.Anything,
 					security.ActionDeleteGroup,
 					&sysauthz.ActionContext{
-						OuID:         testOUID1,
+						OUID:         testOUID1,
 						ResourceType: security.ResourceTypeGroup,
 						ResourceID:   "grp-001",
 					},
@@ -1504,7 +1504,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers() {
 					mock.Anything,
 					security.ActionReadGroup,
 					&sysauthz.ActionContext{
-						OuID:         testOUID1,
+						OUID:         testOUID1,
 						ResourceType: security.ResourceTypeGroup,
 						ResourceID:   "grp-001",
 					},
@@ -1624,7 +1624,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateCreateGroupRequest(
 			name: "invalid member type",
 			request: CreateGroupRequest{
 				Name:    "name",
-				OuID:    "ou",
+				OUID:    "ou",
 				Members: []Member{{ID: "id", Type: "invalid"}},
 			},
 			wantErr: true,
@@ -1633,7 +1633,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateCreateGroupRequest(
 			name: "missing member id",
 			request: CreateGroupRequest{
 				Name:    "name",
-				OuID:    "ou",
+				OUID:    "ou",
 				Members: []Member{{ID: "", Type: MemberTypeUser}},
 			},
 			wantErr: true,
@@ -1642,7 +1642,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateCreateGroupRequest(
 			name: "valid request",
 			request: CreateGroupRequest{
 				Name:    "name",
-				OuID:    "ou",
+				OUID:    "ou",
 				Members: []Member{{ID: "usr-1", Type: MemberTypeUser}},
 			},
 			wantErr: false,
@@ -1671,7 +1671,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateUpdateGroupRequest(
 			name: "valid request",
 			request: UpdateGroupRequest{
 				Name: "name",
-				OuID: "ou",
+				OUID: "ou",
 			},
 			wantErr: false,
 		},
@@ -2100,7 +2100,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_AddGroupMembers() {
 					mock.Anything,
 					security.ActionUpdateGroup,
 					&sysauthz.ActionContext{
-						OuID:         testOUID1,
+						OUID:         testOUID1,
 						ResourceType: security.ResourceTypeGroup,
 						ResourceID:   "grp-001",
 					},
@@ -2234,7 +2234,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_RemoveGroupMembers() {
 					mock.Anything,
 					security.ActionUpdateGroup,
 					&sysauthz.ActionContext{
-						OuID:         testOUID1,
+						OUID:         testOUID1,
 						ResourceType: security.ResourceTypeGroup,
 						ResourceID:   "grp-001",
 					},

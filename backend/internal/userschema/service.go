@@ -192,7 +192,7 @@ func (us *userSchemaService) CreateUserSchema(
 	// Validate the schema definition
 	schemaToValidate := UserSchema{
 		Name:             request.Name,
-		OuID:             request.OuID,
+		OUID:             request.OUID,
 		SystemAttributes: request.SystemAttributes,
 		Schema:           request.Schema,
 	}
@@ -203,13 +203,13 @@ func (us *userSchemaService) CreateUserSchema(
 
 	// Ensure organization unit exists
 	if svcErr := us.ensureOrganizationUnitExists(
-		ctx, request.OuID, logger); svcErr != nil {
+		ctx, request.OUID, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
 	// Check authorization
 	if svcErr := us.checkUserSchemaAccess(
-		ctx, security.ActionCreateUserSchema, request.OuID); svcErr != nil {
+		ctx, security.ActionCreateUserSchema, request.OUID); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -230,7 +230,7 @@ func (us *userSchemaService) CreateUserSchema(
 	userSchema := UserSchema{
 		ID:                    id,
 		Name:                  request.Name,
-		OuID:                  request.OuID,
+		OUID:                  request.OUID,
 		AllowSelfRegistration: request.AllowSelfRegistration,
 		SystemAttributes:      request.SystemAttributes,
 		Schema:                request.Schema,
@@ -280,7 +280,7 @@ func (us *userSchemaService) GetUserSchema(
 
 	// Check authorization
 	if svcErr := us.checkUserSchemaAccess(
-		ctx, security.ActionReadUserSchema, userSchema.OuID); svcErr != nil {
+		ctx, security.ActionReadUserSchema, userSchema.OUID); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -307,7 +307,7 @@ func (us *userSchemaService) GetUserSchemaByName(
 
 	// Check authorization
 	if svcErr := us.checkUserSchemaAccess(
-		ctx, security.ActionReadUserSchema, userSchema.OuID); svcErr != nil {
+		ctx, security.ActionReadUserSchema, userSchema.OUID); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -331,7 +331,7 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 	// Validate the schema definition
 	schemaToValidate := UserSchema{
 		Name:             request.Name,
-		OuID:             request.OuID,
+		OUID:             request.OUID,
 		SystemAttributes: request.SystemAttributes,
 		Schema:           request.Schema,
 	}
@@ -342,7 +342,7 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 
 	// Ensure organization unit exists
 	if svcErr := us.ensureOrganizationUnitExists(
-		ctx, request.OuID, logger); svcErr != nil {
+		ctx, request.OUID, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -356,14 +356,14 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 
 	// Check authorization
 	if svcErr := us.checkUserSchemaAccess(
-		ctx, security.ActionUpdateUserSchema, existingSchema.OuID); svcErr != nil {
+		ctx, security.ActionUpdateUserSchema, existingSchema.OUID); svcErr != nil {
 		return nil, svcErr
 	}
 
 	// If OU is being changed, validate access to the target OU as well.
-	if request.OuID != existingSchema.OuID {
+	if request.OUID != existingSchema.OUID {
 		if svcErr := us.checkUserSchemaAccess(
-			ctx, security.ActionUpdateUserSchema, request.OuID); svcErr != nil {
+			ctx, security.ActionUpdateUserSchema, request.OUID); svcErr != nil {
 			return nil, svcErr
 		}
 	}
@@ -380,7 +380,7 @@ func (us *userSchemaService) UpdateUserSchema(ctx context.Context, schemaID stri
 	userSchema := UserSchema{
 		ID:                    schemaID,
 		Name:                  request.Name,
-		OuID:                  request.OuID,
+		OUID:                  request.OUID,
 		AllowSelfRegistration: request.AllowSelfRegistration,
 		SystemAttributes:      request.SystemAttributes,
 		Schema:                request.Schema,
@@ -437,7 +437,7 @@ func (us *userSchemaService) DeleteUserSchema(ctx context.Context, schemaID stri
 
 	// Check authorization against the schema's OU.
 	if svcErr := us.checkUserSchemaAccess(
-		ctx, security.ActionDeleteUserSchema, existingSchema.OuID); svcErr != nil {
+		ctx, security.ActionDeleteUserSchema, existingSchema.OUID); svcErr != nil {
 		return svcErr
 	}
 
@@ -630,7 +630,7 @@ func (us *userSchemaService) checkUserSchemaAccess(
 		return nil
 	}
 	allowed, svcErr := us.authzService.IsActionAllowed(ctx, action,
-		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUserSchema, OuID: ouID})
+		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUserSchema, OUID: ouID})
 	if svcErr != nil {
 		return &ErrorInternalServerError
 	}
@@ -752,14 +752,14 @@ func validateUserSchemaDefinition(schema UserSchema) *serviceerror.ServiceError 
 		return invalidSchemaRequestError("user schema name must not be empty")
 	}
 
-	if schema.OuID == "" {
+	if schema.OUID == "" {
 		logger.Debug("User schema validation failed: organization unit ID is empty")
 		return invalidSchemaRequestError("organization unit id must not be empty")
 	}
 
-	if !utils.IsValidUUID(schema.OuID) {
+	if !utils.IsValidUUID(schema.OUID) {
 		logger.Debug("User schema validation failed: invalid organization unit ID format",
-			log.String("ouId", schema.OuID))
+			log.String("ouId", schema.OUID))
 		return invalidSchemaRequestError("organization unit id is not a valid UUID")
 	}
 

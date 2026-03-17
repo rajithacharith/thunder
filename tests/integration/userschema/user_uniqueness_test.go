@@ -87,7 +87,7 @@ func (ts *UserUniquenessTestSuite) TestCreateUserWithUniqueConstraintViolation()
 
 	// Create first user - should succeed
 	createUserReq1 := CreateUserRequest{
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Type: "unique-employee",
 		Attributes: json.RawMessage(`{
 			"username": "john_doe",
@@ -102,7 +102,7 @@ func (ts *UserUniquenessTestSuite) TestCreateUserWithUniqueConstraintViolation()
 
 	// Try to create second user with same username (unique field) - should fail
 	createUserReq2 := CreateUserRequest{
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Type: "unique-employee",
 		Attributes: json.RawMessage(`{
 			"username": "john_doe",
@@ -116,7 +116,7 @@ func (ts *UserUniquenessTestSuite) TestCreateUserWithUniqueConstraintViolation()
 
 	// Try to create third user with same email (unique field) - should fail
 	createUserReq3 := CreateUserRequest{
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Type: "unique-employee",
 		Attributes: json.RawMessage(`{
 			"username": "alice_brown",
@@ -130,7 +130,7 @@ func (ts *UserUniquenessTestSuite) TestCreateUserWithUniqueConstraintViolation()
 
 	// Try to create fourth user with same employeeId (unique field) - should fail
 	createUserReq4 := CreateUserRequest{
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Type: "unique-employee",
 		Attributes: json.RawMessage(`{
 			"username": "bob_wilson",
@@ -144,7 +144,7 @@ func (ts *UserUniquenessTestSuite) TestCreateUserWithUniqueConstraintViolation()
 
 	// Create user with all different unique values - should succeed
 	createUserReq5 := CreateUserRequest{
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Type: "unique-employee",
 		Attributes: json.RawMessage(`{
 			"username": "charlie_davis",
@@ -163,7 +163,7 @@ func (ts *UserUniquenessTestSuite) TestCreateUserWithUniqueConstraintViolation()
 func (ts *UserUniquenessTestSuite) createSchemaWithUniqueFields() string {
 	schema := CreateUserSchemaRequest{
 		Name: "unique-employee",
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Schema: json.RawMessage(`{
 			"username": {"type": "string", "unique": true},
 			"email": {"type": "string", "unique": true},

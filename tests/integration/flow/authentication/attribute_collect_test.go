@@ -216,7 +216,7 @@ func (ts *AttributeCollectFlowTestSuite) SetupSuite() {
 	attrCollectTestOUID = ouID
 
 	// Create test user schema within the OU
-	attrCollectUserSchema.OuID = attrCollectTestOUID
+	attrCollectUserSchema.OUID = attrCollectTestOUID
 	schemaID, err := testutils.CreateUserType(attrCollectUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
@@ -238,13 +238,13 @@ func (ts *AttributeCollectFlowTestSuite) SetupSuite() {
 
 	// Create users with the created OU ID
 	testUserNoAttributes := testUserNoAttributes
-	testUserNoAttributes.OuID = attrCollectTestOUID
+	testUserNoAttributes.OUID = attrCollectTestOUID
 	testUserPartialAttributes := testUserPartialAttributes
-	testUserPartialAttributes.OuID = attrCollectTestOUID
+	testUserPartialAttributes.OUID = attrCollectTestOUID
 	testUserFullAttributes := testUserFullAttributes
-	testUserFullAttributes.OuID = attrCollectTestOUID
+	testUserFullAttributes.OUID = attrCollectTestOUID
 	testUserNoAttributes2 := testUserNoAttributes2
-	testUserNoAttributes2.OuID = attrCollectTestOUID
+	testUserNoAttributes2.OUID = attrCollectTestOUID
 
 	// Setup test data
 	ts.testData = []AttributeCollectTestData{

@@ -61,7 +61,7 @@ func (s *SelfUserEndpointsSuite) SetupSuite() {
 
 	schema := testutils.UserSchema{
 		Name:                  s.userType,
-		OuID:                  ouID,
+		OUID:                  ouID,
 		AllowSelfRegistration: true,
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{"type": "string", "required": true, "unique": true},
@@ -81,7 +81,7 @@ func (s *SelfUserEndpointsSuite) SetupSuite() {
 	s.Require().NoError(err)
 
 	userID, err := testutils.CreateUser(testutils.User{
-		OuID:             ouID,
+		OUID:             ouID,
 		Type:             s.userType,
 		Attributes:       attrs,
 	})

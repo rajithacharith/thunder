@@ -782,7 +782,7 @@ func (ous *organizationUnitService) checkOUAccess(
 	ctx context.Context, action security.Action, ouID string,
 ) *serviceerror.ServiceError {
 	allowed, svcErr := ous.authzService.IsActionAllowed(ctx, action,
-		&sysauthz.ActionContext{ResourceType: security.ResourceTypeOU, OuID: ouID})
+		&sysauthz.ActionContext{ResourceType: security.ResourceTypeOU, OUID: ouID})
 	if svcErr != nil {
 		return &ErrorInternalServerError
 	}

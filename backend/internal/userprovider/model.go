@@ -24,7 +24,7 @@ import "encoding/json"
 type User struct {
 	UserID     string          `json:"userId"`
 	UserType   string          `json:"userType"`
-	OuID       string          `json:"ouId"`
+	OUID       string          `json:"ouId"`
 	Attributes json.RawMessage `json:"attributes,omitempty"`
 }
 
@@ -38,7 +38,7 @@ type Link struct {
 type UserGroup struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
-	OuID string `json:"ouId"`
+	OUID string `json:"ouId"`
 }
 
 // UserGroupListResponse represents a response containing a list of user groups.

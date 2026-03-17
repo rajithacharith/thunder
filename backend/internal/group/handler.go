@@ -398,7 +398,7 @@ func (gh *groupHandler) sanitizeCreateGroupRequest(request *CreateGroupRequest) 
 	sanitized := CreateGroupRequest{
 		Name:        sysutils.SanitizeString(request.Name),
 		Description: sysutils.SanitizeString(request.Description),
-		OuID:        sysutils.SanitizeString(request.OuID),
+		OUID:        sysutils.SanitizeString(request.OUID),
 	}
 
 	if request.Members != nil {
@@ -419,7 +419,7 @@ func (gh *groupHandler) sanitizeUpdateGroupRequest(request *UpdateGroupRequest) 
 	return UpdateGroupRequest{
 		Name:        sysutils.SanitizeString(request.Name),
 		Description: sysutils.SanitizeString(request.Description),
-		OuID:        sysutils.SanitizeString(request.OuID),
+		OUID:        sysutils.SanitizeString(request.OUID),
 	}
 }
 

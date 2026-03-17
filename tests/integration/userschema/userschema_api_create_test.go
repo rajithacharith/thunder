@@ -85,7 +85,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchema() {
             "isManager": {"type": "boolean"}
         }`),
 	}
-	schema.OuID = ts.oUID
+	schema.OUID = ts.oUID
 
 	jsonData, err := json.Marshal(schema)
 	if err != nil {
@@ -173,7 +173,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithComplexSchema() {
             }
         }`),
 	}
-	schema.OuID = ts.oUID
+	schema.OUID = ts.oUID
 
 	jsonData, err := json.Marshal(schema)
 	if err != nil {
@@ -221,7 +221,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithDuplicateName() {
 		Name:   "duplicate-name-test",
 		Schema: json.RawMessage(`{"field1": {"type": "string"}}`),
 	}
-	schema1.OuID = ts.oUID
+	schema1.OUID = ts.oUID
 
 	createdID := ts.createSchemaHelper(schema1)
 	ts.createdSchemas = append(ts.createdSchemas, createdID)
@@ -231,7 +231,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithDuplicateName() {
 		Name:   "duplicate-name-test", // Same name
 		Schema: json.RawMessage(`{"field2": {"type": "string"}}`),
 	}
-	schema2.OuID = ts.oUID
+	schema2.OUID = ts.oUID
 
 	jsonData, err := json.Marshal(schema2)
 	if err != nil {
@@ -267,15 +267,15 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithDuplicateName() {
 	ts.Assert().NotEmpty(errorResp.Message, "Error should have message")
 }
 
-// TestCreateUserSchemasWithSharedOuID ensures multiple schemas can share the same OU.
-func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemasWithSharedOuID() {
-	sharedOuID := ts.oUID
+// TestCreateUserSchemasWithSharedOUID ensures multiple schemas can share the same OU.
+func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemasWithSharedOUID() {
+	sharedOUID := ts.oUID
 
 	firstSchema := CreateUserSchemaRequest{
 		Name:   "shared-ou-schema-one",
 		Schema: json.RawMessage(`{"username": {"type": "string", "required": true}}`),
 	}
-	firstSchema.OuID = sharedOuID
+	firstSchema.OUID = sharedOUID
 
 	secondSchema := CreateUserSchemaRequest{
 		Name: "shared-ou-schema-two",
@@ -284,7 +284,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemasWithSharedOuID() {
             "enabled": {"type": "boolean"}
         }`),
 	}
-	secondSchema.OuID = sharedOuID
+	secondSchema.OUID = sharedOUID
 
 	firstID := ts.createSchemaHelper(firstSchema)
 	ts.createdSchemas = append(ts.createdSchemas, firstID)
@@ -315,7 +315,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemasWithSharedOuID() {
 		ts.T().Fatalf("Failed to unmarshal schema response: %v", err)
 	}
 
-	ts.Assert().Equal(sharedOuID, retrievedSchema.OuID,
+	ts.Assert().Equal(sharedOUID, retrievedSchema.OUID,
 		"Schema should retain the shared OU ID")
 }
 
@@ -394,7 +394,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithoutContentType() {
 		Name:   "no-content-type-test",
 		Schema: json.RawMessage(`{"field": {"type": "string"}}`),
 	}
-	schema.OuID = ts.oUID
+	schema.OUID = ts.oUID
 
 	jsonData, err := json.Marshal(schema)
 	if err != nil {
@@ -431,8 +431,8 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithoutContentType() {
 
 // Helper function to create a schema and return its ID
 func (ts *CreateUserSchemaTestSuite) createSchemaHelper(schema CreateUserSchemaRequest) string {
-	if schema.OuID == "" {
-		schema.OuID = ts.oUID
+	if schema.OUID == "" {
+		schema.OUID = ts.oUID
 	}
 
 	jsonData, err := json.Marshal(schema)

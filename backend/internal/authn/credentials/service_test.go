@@ -82,7 +82,7 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateSuccess() {
 	providerResponse := &authnprovider.AuthnResult{
 		UserID:              userID,
 		UserType:            userType,
-		OuID:                orgUnit,
+		OUID:                orgUnit,
 		Token:               userToken,
 		AvailableAttributes: availableAttributes,
 	}
@@ -94,7 +94,7 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateSuccess() {
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(userID, result.UserID)
-	suite.Equal(orgUnit, result.OuID)
+	suite.Equal(orgUnit, result.OUID)
 	suite.Equal(userType, result.UserType)
 	suite.Equal(userToken, result.Token)
 	suite.Equal(availableAttributes, result.AvailableAttributes)
@@ -128,7 +128,7 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateWithNilMetadata()
 	providerResponse := &authnprovider.AuthnResult{
 		UserID:              userID,
 		UserType:            userType,
-		OuID:                orgUnit,
+		OUID:                orgUnit,
 		Token:               userToken,
 		AvailableAttributes: availableAttributes,
 	}
@@ -274,7 +274,7 @@ func (suite *CredentialsAuthnServiceTestSuite) TestGetAttributesSuccess() {
 	expectedResult := &authnprovider.GetAttributesResult{
 		UserID:   "user123",
 		UserType: "person",
-		OuID:     "ou1",
+		OUID:     "ou1",
 		AttributesResponse: &authnprovider.AttributesResponse{
 			Attributes: map[string]*authnprovider.AttributeResponse{
 				"attr1": {Value: "val1"},
@@ -294,7 +294,7 @@ func (suite *CredentialsAuthnServiceTestSuite) TestGetAttributesSuccess() {
 	suite.NotNil(result)
 	suite.Equal(expectedResult.UserID, result.UserID)
 	suite.Equal(expectedResult.UserType, result.UserType)
-	suite.Equal(expectedResult.OuID, result.OuID)
+	suite.Equal(expectedResult.OUID, result.OUID)
 	suite.Equal(expectedResult.AttributesResponse, result.AttributesResponse)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
@@ -311,7 +311,7 @@ func (suite *CredentialsAuthnServiceTestSuite) TestGetAttributesWithNilMetadata(
 	expectedResult := &authnprovider.GetAttributesResult{
 		UserID:   "user123",
 		UserType: "person",
-		OuID:     "ou1",
+		OUID:     "ou1",
 		AttributesResponse: &authnprovider.AttributesResponse{
 			Attributes: map[string]*authnprovider.AttributeResponse{
 				"attr1": {Value: "val1"},

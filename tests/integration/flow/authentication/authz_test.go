@@ -211,7 +211,7 @@ func (ts *FlowAuthzTestSuite) SetupSuite() {
 	}
 
 	// Create user schema within the test organization unit
-	authzTestUserSchema.OuID = authzTestOUID
+	authzTestUserSchema.OUID = authzTestOUID
 	authzUserSchemaID, err = testutils.CreateUserType(authzTestUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create user schema during setup: %v", err)
@@ -231,7 +231,7 @@ func (ts *FlowAuthzTestSuite) SetupSuite() {
 
 	// Create user with role
 	userWithRoleCopy := userWithRole
-	userWithRoleCopy.OuID = authzTestOUID
+	userWithRoleCopy.OUID = authzTestOUID
 	authzUserWithRole, err = testutils.CreateUser(userWithRoleCopy)
 	if err != nil {
 		ts.T().Fatalf("Failed to create user with role during setup: %v", err)
@@ -239,7 +239,7 @@ func (ts *FlowAuthzTestSuite) SetupSuite() {
 
 	// Create user without role
 	userNoRoleCopy := userNoRole
-	userNoRoleCopy.OuID = authzTestOUID
+	userNoRoleCopy.OUID = authzTestOUID
 	authzUserNoRole, err = testutils.CreateUser(userNoRoleCopy)
 	if err != nil {
 		ts.T().Fatalf("Failed to create user without role during setup: %v", err)
@@ -250,7 +250,7 @@ func (ts *FlowAuthzTestSuite) SetupSuite() {
 		Name:               "Document Management System",
 		Description:        "System for managing documents",
 		Identifier:         "document-mgmt",
-		OuID:               authzTestOUID,
+		OUID:               authzTestOUID,
 	}
 	actions := []testutils.Action{
 		{
@@ -271,7 +271,7 @@ func (ts *FlowAuthzTestSuite) SetupSuite() {
 
 	// Create role with user assignment
 	roleToCreate := documentEditorRole
-	roleToCreate.OuID = authzTestOUID
+	roleToCreate.OUID = authzTestOUID
 	roleToCreate.Permissions = []testutils.ResourcePermissions{
 		{
 			ResourceServerID: authzTestResourceServer,

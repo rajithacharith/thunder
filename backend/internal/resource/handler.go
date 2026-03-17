@@ -76,7 +76,7 @@ func (h *resourceHandler) HandleResourceServerPostRequest(w http.ResponseWriter,
 		Name:        sanitized.Name,
 		Description: sanitized.Description,
 		Identifier:  sanitized.Identifier,
-		OUID:        sanitized.OuID,
+		OUID:        sanitized.OUID,
 		Delimiter:   sanitized.Delimiter,
 	}
 
@@ -119,7 +119,7 @@ func (h *resourceHandler) HandleResourceServerPutRequest(w http.ResponseWriter, 
 		Name:        sanitized.Name,
 		Description: sanitized.Description,
 		Identifier:  sanitized.Identifier,
-		OUID:        sanitized.OuID,
+		OUID:        sanitized.OUID,
 	}
 
 	result, svcErr := h.resourceService.UpdateResourceServer(ctx, id, serviceReq)
@@ -544,7 +544,7 @@ func sanitizeCreateResourceServerRequest(req *CreateResourceServerRequest) Creat
 		Name:        sysutils.SanitizeString(req.Name),
 		Description: sysutils.SanitizeString(req.Description),
 		Identifier:  sysutils.SanitizeString(req.Identifier),
-		OuID:        sysutils.SanitizeString(req.OuID),
+		OUID:        sysutils.SanitizeString(req.OUID),
 		Delimiter:   sysutils.SanitizeString(req.Delimiter),
 	}
 }
@@ -555,7 +555,7 @@ func sanitizeUpdateResourceServerRequest(req *UpdateResourceServerRequest) Updat
 		Name:        sysutils.SanitizeString(req.Name),
 		Description: sysutils.SanitizeString(req.Description),
 		Identifier:  sysutils.SanitizeString(req.Identifier),
-		OuID:        sysutils.SanitizeString(req.OuID),
+		OUID:        sysutils.SanitizeString(req.OUID),
 	}
 }
 
@@ -610,7 +610,7 @@ func toResourceServerResponse(rs *ResourceServer) *ResourceServerResponse {
 		Name:        rs.Name,
 		Description: rs.Description,
 		Identifier:  rs.Identifier,
-		OuID:        rs.OUID,
+		OUID:        rs.OUID,
 		Delimiter:   rs.Delimiter,
 		IsReadOnly:  rs.IsReadOnly,
 	}

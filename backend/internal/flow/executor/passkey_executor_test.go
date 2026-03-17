@@ -286,7 +286,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_Success() {
 	attrsJSON, _ := json.Marshal(attrs)
 	testUser := &userprovider.User{
 		UserID:     testPasskeyUserID,
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 		UserType:   "INTERNAL",
 		Attributes: attrsJSON,
 	}
@@ -538,7 +538,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_Success_Aut
 	attrsJSON, _ := json.Marshal(attrs)
 	testUser := &userprovider.User{
 		UserID:     testPasskeyUserID,
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 		UserType:   "INTERNAL",
 		Attributes: attrsJSON,
 	}
@@ -730,7 +730,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestGetAuthenticatedUser_Success() {
 	attrsJSON, _ := json.Marshal(attrs)
 	testUser := &userprovider.User{
 		UserID:     testPasskeyUserID,
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 		UserType:   "INTERNAL",
 		Attributes: attrsJSON,
 	}
@@ -779,7 +779,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestGetAuthenticatedUser_InvalidJSON(
 
 	testUser := &userprovider.User{
 		UserID:     testPasskeyUserID,
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 		UserType:   "INTERNAL",
 		Attributes: json.RawMessage(`invalid json`),
 	}
@@ -1025,7 +1025,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestGetAuthenticatedUser_UserIDFromCo
 	attrsJSON, _ := json.Marshal(attrs)
 	testUser := &userprovider.User{
 		UserID:     testPasskeyUserID,
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 		UserType:   "INTERNAL",
 		Attributes: attrsJSON,
 	}

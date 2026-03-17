@@ -152,7 +152,7 @@ func (suite *IndexedAttributesTestSuite) SetupSuite() {
 
 	// Create user schemas
 	for userType, schema := range indexedAttributesUserSchemas {
-		schema.OuID = suite.ouID
+		schema.OUID = suite.ouID
 		schemaID, err := testutils.CreateUserType(schema)
 		if err != nil {
 			suite.T().Fatalf("Failed to create user schema %s during setup: %v", userType, err)
@@ -198,7 +198,7 @@ func (suite *IndexedAttributesTestSuite) TestCreateUserWithAllIndexedAttributes(
 
 	user := testutils.User{
 		Type:             "all_indexed",
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 
@@ -233,7 +233,7 @@ func (suite *IndexedAttributesTestSuite) TestCreateUserWithPartialIndexedAttribu
 
 	user := testutils.User{
 		Type:             "partial_indexed",
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 
@@ -266,7 +266,7 @@ func (suite *IndexedAttributesTestSuite) TestCreateUserWithNoIndexedAttributes()
 
 	user := testutils.User{
 		Type:             "no_indexed",
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 
@@ -297,7 +297,7 @@ func (suite *IndexedAttributesTestSuite) TestCreateUserWithComplexTypes() {
 
 	user := testutils.User{
 		Type:             "mixed_types",
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 
@@ -340,7 +340,7 @@ func (suite *IndexedAttributesTestSuite) TestUpdateUserAddIndexedAttribute() {
 
 	user := testutils.User{
 		Type:             "partial_indexed",
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 
@@ -367,7 +367,7 @@ func (suite *IndexedAttributesTestSuite) TestUpdateUserAddIndexedAttribute() {
 
 	updatedUser := testutils.User{
 		Type:             "partial_indexed",
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(updatedAttrsJSON),
 	}
 
@@ -398,7 +398,7 @@ func (suite *IndexedAttributesTestSuite) TestUpdateUserModifyIndexedAttributeVal
 
 	user := testutils.User{
 		Type:             "partial_indexed",
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 
@@ -424,7 +424,7 @@ func (suite *IndexedAttributesTestSuite) TestUpdateUserModifyIndexedAttributeVal
 
 	updatedUser := testutils.User{
 		Type:             "partial_indexed",
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(updatedAttrsJSON),
 	}
 
@@ -456,7 +456,7 @@ func (suite *IndexedAttributesTestSuite) TestUpdateUserRemoveIndexedAttribute() 
 
 	user := testutils.User{
 		Type:             "all_indexed",
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 
@@ -483,7 +483,7 @@ func (suite *IndexedAttributesTestSuite) TestUpdateUserRemoveIndexedAttribute() 
 
 	updatedUser := testutils.User{
 		Type:             "all_indexed",
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(updatedAttrsJSON),
 	}
 
@@ -517,7 +517,7 @@ func (suite *IndexedAttributesTestSuite) TestAuthenticateWithSingleIndexedAttrib
 
 	user := testutils.User{
 		Type:             "partial_indexed",
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 
@@ -561,7 +561,7 @@ func (suite *IndexedAttributesTestSuite) TestAuthenticateWithSingleIndexedAttrib
 
 	user := testutils.User{
 		Type:             "partial_indexed",
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 
@@ -605,7 +605,7 @@ func (suite *IndexedAttributesTestSuite) TestAuthenticateWithSingleIndexedAttrib
 
 	user := testutils.User{
 		Type:             "all_indexed",
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 
@@ -650,7 +650,7 @@ func (suite *IndexedAttributesTestSuite) TestAuthenticateWithMultipleIndexedAttr
 
 	user := testutils.User{
 		Type:             "all_indexed",
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 
@@ -697,7 +697,7 @@ func (suite *IndexedAttributesTestSuite) TestAuthenticateWithMixedIndexedAndNonI
 
 	user := testutils.User{
 		Type:             "partial_indexed",
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 
@@ -741,7 +741,7 @@ func (suite *IndexedAttributesTestSuite) TestAuthenticateWithOnlyNonIndexedAttri
 
 	user := testutils.User{
 		Type:             "no_indexed",
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 
@@ -787,7 +787,7 @@ func (suite *IndexedAttributesTestSuite) TestAuthenticateWithDifferentIndexedAtt
 
 	user := testutils.User{
 		Type:             "all_indexed",
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 

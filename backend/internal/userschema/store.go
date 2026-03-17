@@ -241,7 +241,7 @@ func (s *userSchemaStore) CreateUserSchema(ctx context.Context, userSchema UserS
 		queryCreateUserSchema,
 		userSchema.ID,
 		userSchema.Name,
-		userSchema.OuID,
+		userSchema.OUID,
 		userSchema.AllowSelfRegistration,
 		string(userSchema.Schema),
 		sysAttrs,
@@ -308,7 +308,7 @@ func (s *userSchemaStore) UpdateUserSchemaByID(ctx context.Context, schemaID str
 		ctx,
 		queryUpdateUserSchemaByID,
 		userSchema.Name,
-		userSchema.OuID,
+		userSchema.OUID,
 		userSchema.AllowSelfRegistration,
 		string(userSchema.Schema),
 		sysAttrs,
@@ -437,7 +437,7 @@ func parseUserSchemaFromRow(row map[string]interface{}) (UserSchema, error) {
 	userSchema := UserSchema{
 		ID:                    schemaID,
 		Name:                  name,
-		OuID:                  oUID,
+		OUID:                  oUID,
 		AllowSelfRegistration: allowSelfRegistration,
 		SystemAttributes:      systemAttributes,
 		Schema:                json.RawMessage(schemaDef),
@@ -476,7 +476,7 @@ func parseUserSchemaListItemFromRow(row map[string]interface{}) (UserSchemaListI
 	userSchemaListItem := UserSchemaListItem{
 		ID:                    schemaID,
 		Name:                  name,
-		OuID:                  oUID,
+		OUID:                  oUID,
 		AllowSelfRegistration: allowSelfRegistration,
 		SystemAttributes:      systemAttributes,
 	}

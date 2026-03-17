@@ -28,7 +28,7 @@ import (
 // User represents a user in the system.
 type User struct {
 	ID         string          `json:"id,omitempty"`
-	OuID       string          `json:"ouId,omitempty"`
+	OUID       string          `json:"ouId,omitempty"`
 	Type       string          `json:"type,omitempty"`
 	Attributes json.RawMessage `json:"attributes,omitempty"`
 	Display    string          `json:"display,omitempty"`
@@ -60,7 +60,7 @@ type UserListResponse struct {
 type UserGroup struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
-	OuID string `json:"ouId"`
+	OUID string `json:"ouId"`
 }
 
 // UserGroupListResponse represents the response for listing groups that a user belongs to.
@@ -74,7 +74,7 @@ type UserGroupListResponse struct {
 
 // CreateUserRequest represents the request body for creating a user.
 type CreateUserRequest struct {
-	OuID       string          `json:"ouId"`
+	OUID       string          `json:"ouId"`
 	Type       string          `json:"type"`
 	Groups     []string        `json:"groups,omitempty"`
 	Attributes json.RawMessage `json:"attributes,omitempty"`
@@ -82,7 +82,7 @@ type CreateUserRequest struct {
 
 // UpdateUserRequest represents the request body for updating a user.
 type UpdateUserRequest struct {
-	OuID       string          `json:"ouId,omitempty"`
+	OUID       string          `json:"ouId,omitempty"`
 	Type       string          `json:"type,omitempty"`
 	Groups     []string        `json:"groups,omitempty"`
 	Attributes json.RawMessage `json:"attributes,omitempty"`
@@ -104,5 +104,5 @@ type CreateUserByPathRequest struct {
 type AuthenticateUserResponse struct {
 	ID   string `json:"id"`
 	Type string `json:"type"`
-	OuID string `json:"ouId"`
+	OUID string `json:"ouId"`
 }

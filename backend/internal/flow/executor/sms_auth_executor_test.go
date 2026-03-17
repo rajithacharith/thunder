@@ -252,7 +252,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_A
 
 	userFromStore := &userprovider.User{
 		UserID:     "user-123",
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 		UserType:   "INTERNAL",
 		Attributes: attrsJSON,
 	}
@@ -298,7 +298,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_P
 
 	userFromStore := &userprovider.User{
 		UserID:     "user-123",
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 		UserType:   "INTERNAL",
 		Attributes: attrsJSON,
 	}
@@ -339,7 +339,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetUserMobileNumber_NotFoundInAttribu
 
 	userFromStore := &userprovider.User{
 		UserID:     "user-123",
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 		UserType:   "INTERNAL",
 		Attributes: attrsJSON,
 	}
@@ -410,7 +410,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_N
 
 	userFromStore := &userprovider.User{
 		UserID:     "user-123",
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 		UserType:   "INTERNAL",
 		Attributes: attrsJSON, // null JSON
 	}

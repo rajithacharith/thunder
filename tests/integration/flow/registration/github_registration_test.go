@@ -330,7 +330,7 @@ func (ts *GithubRegistrationFlowTestSuite) SetupSuite() {
 	githubRegTestOUID = ouID
 
 	// Create user schema
-	githubRegUserSchema.OuID = githubRegTestOUID
+	githubRegUserSchema.OUID = githubRegTestOUID
 	githubRegUserSchema.AllowSelfRegistration = true
 	schemaID, err := testutils.CreateUserType(githubRegUserSchema)
 	ts.Require().NoError(err, "Failed to create GitHub user schema")
@@ -551,7 +551,7 @@ func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowCompleteSuc
 
 	// Validate JWT contains expected user type and OU ID
 	ts.Require().Equal(githubRegUserSchema.Name, jwtClaims.UserType, "Expected userType to match created schema")
-	ts.Require().NotEmpty(jwtClaims.OuID, "Expected ouId to be present")
+	ts.Require().NotEmpty(jwtClaims.OUID, "Expected ouId to be present")
 	ts.Require().Equal(githubRegTestAppID, jwtClaims.Aud, "Expected aud to match the application ID")
 	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
 

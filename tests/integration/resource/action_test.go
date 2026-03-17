@@ -58,7 +58,7 @@ func (suite *ActionAPITestSuite) SetupSuite() {
 		Name:               "Action Test Server",
 		Description:        "Resource server for action testing",
 		Identifier:         "action-test-server",
-		OuID: ouID,
+		OUID: ouID,
 	}
 	rsID, err := createResourceServer(rsReq)
 	suite.Require().NoError(err, "Failed to create test resource server")
@@ -552,7 +552,7 @@ func (suite *ActionAPITestSuite) TestActionPermissionDerivationWithCustomDelimit
 	delimiter := "-"
 	rsReq := CreateResourceServerRequest{
 		Name:               "Action Permission Test Server",
-		OuID: suite.ouID,
+		OUID: suite.ouID,
 		Delimiter:          &delimiter,
 	}
 	customRsID, err := createResourceServer(rsReq)

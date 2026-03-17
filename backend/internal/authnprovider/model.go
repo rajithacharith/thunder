@@ -27,7 +27,7 @@ type AuthnMetadata struct {
 type AuthnResult struct {
 	UserID              string               `json:"userId"`
 	UserType            string               `json:"userType"`
-	OuID                string               `json:"ouId"`
+	OUID                string               `json:"ouId"`
 	Token               string               `json:"token"`
 	AvailableAttributes *AvailableAttributes `json:"availableAttributes"`
 }
@@ -42,7 +42,7 @@ type GetAttributesMetadata struct {
 type GetAttributesResult struct {
 	UserID             string              `json:"userId"`
 	UserType           string              `json:"userType"`
-	OuID               string              `json:"ouId"`
+	OUID               string              `json:"ouId"`
 	AttributesResponse *AttributesResponse `json:"attributeResponse,omitempty"`
 }
 

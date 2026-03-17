@@ -126,7 +126,7 @@ func (s *CacheBackedStoreTestSuite) createTestSchema() UserSchema {
 	return UserSchema{
 		ID:                    "schema-1",
 		Name:                  "TestSchema",
-		OuID:                  "ou-1",
+		OUID:                  "ou-1",
 		AllowSelfRegistration: true,
 		SystemAttributes:      &SystemAttributes{Display: "email"},
 		Schema:                json.RawMessage(`{"email":{"type":"string"}}`),

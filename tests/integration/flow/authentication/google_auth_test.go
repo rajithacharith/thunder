@@ -181,7 +181,7 @@ func (ts *GoogleAuthFlowTestSuite) SetupSuite() {
 	googleAuthTestOU.ID = ouID
 
 	// Create user schema
-	googleUserSchema.OuID = ouID
+	googleUserSchema.OUID = ouID
 	schemaID, err := testutils.CreateUserType(googleUserSchema)
 	ts.Require().NoError(err, "Failed to create Google user schema")
 	ts.userSchemaID = schemaID
@@ -202,7 +202,7 @@ func (ts *GoogleAuthFlowTestSuite) SetupSuite() {
 	// Create user in the pre-configured OU from database scripts
 	user := testutils.User{
 		Type:             googleUserSchema.Name,
-		OuID:             googleUserSchema.OuID,
+		OUID:             googleUserSchema.OUID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 

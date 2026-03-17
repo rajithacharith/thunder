@@ -85,8 +85,8 @@ func (s *AuthzTestSuite) TestGetUserSchemaList_AllAllowed() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 	storeMock.On("GetUserSchemaListCount", mock.Anything).Return(2, nil)
 	storeMock.On("GetUserSchemaList", mock.Anything, 10, 0).Return([]UserSchemaListItem{
-		{ID: "s1", Name: "schema1", OuID: testOUID1},
-		{ID: "s2", Name: "schema2", OuID: testOUID2},
+		{ID: "s1", Name: "schema1", OUID: testOUID1},
+		{ID: "s2", Name: "schema2", OUID: testOUID2},
 	}, nil)
 
 	svc := &userSchemaService{
@@ -107,7 +107,7 @@ func (s *AuthzTestSuite) TestGetUserSchemaList_FilteredByOUIDs() {
 	storeMock.On("GetUserSchemaListCountByOUIDs", mock.Anything, []string{testOUID1}).Return(1, nil)
 	storeMock.On("GetUserSchemaListByOUIDs", mock.Anything, []string{testOUID1}, 10, 0).
 		Return([]UserSchemaListItem{
-			{ID: "s1", Name: "schema1", OuID: testOUID1},
+			{ID: "s1", Name: "schema1", OUID: testOUID1},
 		}, nil)
 
 	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(s.T())
@@ -165,7 +165,7 @@ func (s *AuthzTestSuite) TestGetUserSchemaList_NilAuthzService() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 	storeMock.On("GetUserSchemaListCount", mock.Anything).Return(1, nil)
 	storeMock.On("GetUserSchemaList", mock.Anything, 10, 0).Return([]UserSchemaListItem{
-		{ID: "s1", Name: "schema1", OuID: testOUID1},
+		{ID: "s1", Name: "schema1", OUID: testOUID1},
 	}, nil)
 
 	svc := &userSchemaService{
@@ -192,7 +192,7 @@ func (s *AuthzTestSuite) TestCreateUserSchema_Denied() {
 
 	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(s.T())
 	authzMock.On("IsActionAllowed", mock.Anything, security.ActionCreateUserSchema,
-		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUserSchema, OuID: testOUID1}).
+		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUserSchema, OUID: testOUID1}).
 		Return(false, nil)
 
 	svc := &userSchemaService{
@@ -204,7 +204,7 @@ func (s *AuthzTestSuite) TestCreateUserSchema_Denied() {
 
 	result, svcErr := svc.CreateUserSchema(context.Background(), CreateUserSchemaRequest{
 		Name:   "test-schema",
-		OuID:   testOUID1,
+		OUID:   testOUID1,
 		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 	})
 	s.Nil(result)
@@ -229,7 +229,7 @@ func (s *AuthzTestSuite) TestCreateUserSchema_AuthzError() {
 
 	result, svcErr := svc.CreateUserSchema(context.Background(), CreateUserSchemaRequest{
 		Name:   "test-schema",
-		OuID:   testOUID1,
+		OUID:   testOUID1,
 		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 	})
 	s.Nil(result)
@@ -242,11 +242,11 @@ func (s *AuthzTestSuite) TestCreateUserSchema_AuthzError() {
 func (s *AuthzTestSuite) TestGetUserSchema_Denied() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 	storeMock.On("GetUserSchemaByID", mock.Anything, "schema-1").
-		Return(UserSchema{ID: "schema-1", OuID: testOUID1}, nil)
+		Return(UserSchema{ID: "schema-1", OUID: testOUID1}, nil)
 
 	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(s.T())
 	authzMock.On("IsActionAllowed", mock.Anything, security.ActionReadUserSchema,
-		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUserSchema, OuID: testOUID1}).
+		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUserSchema, OUID: testOUID1}).
 		Return(false, nil)
 
 	svc := &userSchemaService{
@@ -264,7 +264,7 @@ func (s *AuthzTestSuite) TestGetUserSchema_Denied() {
 func (s *AuthzTestSuite) TestGetUserSchema_AuthzError() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 	storeMock.On("GetUserSchemaByID", mock.Anything, "schema-1").
-		Return(UserSchema{ID: "schema-1", OuID: testOUID1}, nil)
+		Return(UserSchema{ID: "schema-1", OUID: testOUID1}, nil)
 
 	svc := &userSchemaService{
 		userSchemaStore: storeMock,
@@ -283,11 +283,11 @@ func (s *AuthzTestSuite) TestGetUserSchema_AuthzError() {
 func (s *AuthzTestSuite) TestGetUserSchemaByName_Denied() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 	storeMock.On("GetUserSchemaByName", mock.Anything, "employee").
-		Return(UserSchema{ID: "schema-1", Name: "employee", OuID: testOUID2}, nil)
+		Return(UserSchema{ID: "schema-1", Name: "employee", OUID: testOUID2}, nil)
 
 	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(s.T())
 	authzMock.On("IsActionAllowed", mock.Anything, security.ActionReadUserSchema,
-		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUserSchema, OuID: testOUID2}).
+		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUserSchema, OUID: testOUID2}).
 		Return(false, nil)
 
 	svc := &userSchemaService{
@@ -305,7 +305,7 @@ func (s *AuthzTestSuite) TestGetUserSchemaByName_Denied() {
 func (s *AuthzTestSuite) TestGetUserSchemaByName_AuthzError() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 	storeMock.On("GetUserSchemaByName", mock.Anything, "employee").
-		Return(UserSchema{ID: "schema-1", Name: "employee", OuID: testOUID2}, nil)
+		Return(UserSchema{ID: "schema-1", Name: "employee", OUID: testOUID2}, nil)
 
 	svc := &userSchemaService{
 		userSchemaStore: storeMock,
@@ -330,7 +330,7 @@ func (s *AuthzTestSuite) TestUpdateUserSchema_Denied() {
 		Return(UserSchema{
 			ID:     "schema-1",
 			Name:   "employee",
-			OuID:   testOUID1,
+			OUID:   testOUID1,
 			Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 		}, nil)
 
@@ -340,7 +340,7 @@ func (s *AuthzTestSuite) TestUpdateUserSchema_Denied() {
 
 	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(s.T())
 	authzMock.On("IsActionAllowed", mock.Anything, security.ActionUpdateUserSchema,
-		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUserSchema, OuID: testOUID1}).
+		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUserSchema, OUID: testOUID1}).
 		Return(false, nil)
 
 	svc := &userSchemaService{
@@ -352,7 +352,7 @@ func (s *AuthzTestSuite) TestUpdateUserSchema_Denied() {
 
 	result, svcErr := svc.UpdateUserSchema(context.Background(), "schema-1", UpdateUserSchemaRequest{
 		Name:   "employee",
-		OuID:   testOUID1,
+		OUID:   testOUID1,
 		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 	})
 	s.Nil(result)
@@ -369,7 +369,7 @@ func (s *AuthzTestSuite) TestUpdateUserSchema_AuthzError() {
 		Return(UserSchema{
 			ID:     "schema-1",
 			Name:   "employee",
-			OuID:   testOUID1,
+			OUID:   testOUID1,
 			Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 		}, nil)
 
@@ -386,7 +386,7 @@ func (s *AuthzTestSuite) TestUpdateUserSchema_AuthzError() {
 
 	result, svcErr := svc.UpdateUserSchema(context.Background(), "schema-1", UpdateUserSchemaRequest{
 		Name:   "employee",
-		OuID:   testOUID1,
+		OUID:   testOUID1,
 		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 	})
 	s.Nil(result)
@@ -404,12 +404,12 @@ func (s *AuthzTestSuite) TestDeleteUserSchema_Denied() {
 	storeMock.On("GetUserSchemaByID", mock.Anything, "schema-1").
 		Return(UserSchema{
 			ID:   "schema-1",
-			OuID: testOUID1,
+			OUID: testOUID1,
 		}, nil)
 
 	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(s.T())
 	authzMock.On("IsActionAllowed", mock.Anything, security.ActionDeleteUserSchema,
-		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUserSchema, OuID: testOUID1}).
+		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUserSchema, OUID: testOUID1}).
 		Return(false, nil)
 
 	svc := &userSchemaService{
@@ -431,7 +431,7 @@ func (s *AuthzTestSuite) TestDeleteUserSchema_AuthzError() {
 	storeMock.On("GetUserSchemaByID", mock.Anything, "schema-1").
 		Return(UserSchema{
 			ID:   "schema-1",
-			OuID: testOUID1,
+			OUID: testOUID1,
 		}, nil)
 
 	svc := &userSchemaService{
@@ -456,7 +456,7 @@ func (s *AuthzTestSuite) TestDeleteUserSchema_NotFound_StillChecksAuthz() {
 	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(s.T())
 	// Expect delete authz check with empty OU (schema doesn't exist, so no OU to check against).
 	authzMock.On("IsActionAllowed", mock.Anything, security.ActionDeleteUserSchema,
-		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUserSchema, OuID: ""}).
+		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUserSchema, OUID: ""}).
 		Return(false, nil)
 
 	svc := &userSchemaService{
@@ -481,7 +481,7 @@ func (s *AuthzTestSuite) TestDeleteUserSchema_NotFound_Authorized_ReturnsNil() {
 
 	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(s.T())
 	authzMock.On("IsActionAllowed", mock.Anything, security.ActionDeleteUserSchema,
-		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUserSchema, OuID: ""}).
+		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUserSchema, OUID: ""}).
 		Return(true, nil)
 
 	svc := &userSchemaService{
@@ -499,7 +499,7 @@ func (s *AuthzTestSuite) TestDeleteUserSchema_NotFound_Authorized_ReturnsNil() {
 func (s *AuthzTestSuite) TestGetUserSchema_NilAuthz_NoError() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 	storeMock.On("GetUserSchemaByID", mock.Anything, "schema-1").
-		Return(UserSchema{ID: "schema-1", Name: "test", OuID: testOUID1}, nil)
+		Return(UserSchema{ID: "schema-1", Name: "test", OUID: testOUID1}, nil)
 
 	svc := &userSchemaService{
 		userSchemaStore: storeMock,
@@ -535,7 +535,7 @@ func (s *AuthzTestSuite) TestDeleteUserSchema_NilAuthz_NoError() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 	storeMock.On("IsUserSchemaDeclarative", mock.Anything).Return(false).Maybe()
 	storeMock.On("GetUserSchemaByID", mock.Anything, "schema-1").
-		Return(UserSchema{ID: "schema-1", OuID: testOUID1}, nil)
+		Return(UserSchema{ID: "schema-1", OUID: testOUID1}, nil)
 	storeMock.On("DeleteUserSchemaByID", mock.Anything, "schema-1").Return(nil)
 
 	consentMock := consentmock.NewConsentServiceInterfaceMock(s.T())

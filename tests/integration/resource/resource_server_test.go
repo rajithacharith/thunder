@@ -73,7 +73,7 @@ func (suite *ResourceServerAPITestSuite) TestCreateResourceServer() {
 		Name:               "Booking System",
 		Description:        "Handles all booking operations",
 		Identifier:         "booking-system",
-		OuID: testOUID,
+		OUID: testOUID,
 	}
 
 	rsID, err := createResourceServer(reqBody)
@@ -87,7 +87,7 @@ func (suite *ResourceServerAPITestSuite) TestCreateResourceServer() {
 	suite.Equal(reqBody.Name, rs.Name)
 	suite.Equal(reqBody.Description, rs.Description)
 	suite.Equal(reqBody.Identifier, rs.Identifier)
-	suite.Equal(reqBody.OuID, rs.OuID)
+	suite.Equal(reqBody.OUID, rs.OUID)
 	suite.NotEmpty(rs.Delimiter, "Delimiter should be set to default value")
 	suite.Equal(":", rs.Delimiter, "Default delimiter should be ':' based on default configuration")
 }
@@ -95,7 +95,7 @@ func (suite *ResourceServerAPITestSuite) TestCreateResourceServer() {
 func (suite *ResourceServerAPITestSuite) TestCreateResourceServerWithoutOptionalFields() {
 	reqBody := CreateResourceServerRequest{
 		Name:               "Minimal Resource Server",
-		OuID: testOUID,
+		OUID: testOUID,
 	}
 
 	rsID, err := createResourceServer(reqBody)
@@ -114,7 +114,7 @@ func (suite *ResourceServerAPITestSuite) TestCreateResourceServerWithoutOptional
 func (suite *ResourceServerAPITestSuite) TestCreateResourceServerDuplicateName() {
 	reqBody := CreateResourceServerRequest{
 		Name:               "Duplicate Resource Server",
-		OuID: testOUID,
+		OUID: testOUID,
 	}
 
 	rsID1, err := createResourceServer(reqBody)
@@ -124,7 +124,7 @@ func (suite *ResourceServerAPITestSuite) TestCreateResourceServerDuplicateName()
 	// Try with same name - should fail
 	reqBody2 := CreateResourceServerRequest{
 		Name:               "Duplicate Resource Server",
-		OuID: testOUID,
+		OUID: testOUID,
 	}
 	_, err = createResourceServer(reqBody2)
 	suite.Error(err, "Should fail with duplicate name")
@@ -135,7 +135,7 @@ func (suite *ResourceServerAPITestSuite) TestCreateResourceServerDuplicateIdenti
 	reqBody1 := CreateResourceServerRequest{
 		Name:               "Resource Server 1",
 		Identifier:         "same-identifier",
-		OuID: testOUID,
+		OUID: testOUID,
 	}
 
 	rsID1, err := createResourceServer(reqBody1)
@@ -145,7 +145,7 @@ func (suite *ResourceServerAPITestSuite) TestCreateResourceServerDuplicateIdenti
 	reqBody2 := CreateResourceServerRequest{
 		Name:               "Resource Server 2",
 		Identifier:         "same-identifier",
-		OuID: testOUID,
+		OUID: testOUID,
 	}
 
 	_, err = createResourceServer(reqBody2)
@@ -156,7 +156,7 @@ func (suite *ResourceServerAPITestSuite) TestCreateResourceServerDuplicateIdenti
 func (suite *ResourceServerAPITestSuite) TestCreateResourceServerInvalidOU() {
 	reqBody := CreateResourceServerRequest{
 		Name:               "Invalid OU Resource Server",
-		OuID: "00000000-0000-0000-0000-000000000000",
+		OUID: "00000000-0000-0000-0000-000000000000",
 	}
 
 	_, err := createResourceServer(reqBody)
@@ -168,7 +168,7 @@ func (suite *ResourceServerAPITestSuite) TestGetResourceServer() {
 	reqBody := CreateResourceServerRequest{
 		Name:               "Get Test Resource Server",
 		Description:        "Resource server for get test",
-		OuID: testOUID,
+		OUID: testOUID,
 	}
 
 	rsID, err := createResourceServer(reqBody)
@@ -193,13 +193,13 @@ func (suite *ResourceServerAPITestSuite) TestListResourceServers() {
 	rs1 := CreateResourceServerRequest{
 		Name:               "List Resource Server 1",
 		Description:        "First resource server",
-		OuID: testOUID,
+		OUID: testOUID,
 		Delimiter:          &delimiter,
 	}
 	rs2 := CreateResourceServerRequest{
 		Name:               "List Resource Server 2",
 		Description:        "Second resource server",
-		OuID: testOUID,
+		OUID: testOUID,
 	}
 
 	rsID1, err := createResourceServer(rs1)
@@ -249,7 +249,7 @@ func (suite *ResourceServerAPITestSuite) TestUpdateResourceServer() {
 		Name:               "Update Test Resource Server",
 		Description:        "Original description",
 		Identifier:         "original-identifier",
-		OuID: testOUID,
+		OUID: testOUID,
 		Delimiter:          &delimiter,
 	}
 
@@ -261,7 +261,7 @@ func (suite *ResourceServerAPITestSuite) TestUpdateResourceServer() {
 		Name:               "Updated Resource Server",
 		Description:        "Updated description",
 		Identifier:         "updated-identifier",
-		OuID: testOUID,
+		OUID: testOUID,
 	}
 
 	err = updateResourceServer(rsID, updateReq)
@@ -278,7 +278,7 @@ func (suite *ResourceServerAPITestSuite) TestUpdateResourceServer() {
 func (suite *ResourceServerAPITestSuite) TestUpdateResourceServerNotFound() {
 	updateReq := UpdateResourceServerRequest{
 		Name:               "non-existent",
-		OuID: testOUID,
+		OUID: testOUID,
 	}
 
 	err := updateResourceServer("00000000-0000-0000-0000-000000000000", updateReq)
@@ -289,11 +289,11 @@ func (suite *ResourceServerAPITestSuite) TestUpdateResourceServerNotFound() {
 func (suite *ResourceServerAPITestSuite) TestUpdateResourceServerNameConflict() {
 	rs1 := CreateResourceServerRequest{
 		Name:               "Conflict Resource Server 1",
-		OuID: testOUID,
+		OUID: testOUID,
 	}
 	rs2 := CreateResourceServerRequest{
 		Name:               "Conflict Resource Server 2",
-		OuID: testOUID,
+		OUID: testOUID,
 	}
 
 	rsID1, err := createResourceServer(rs1)
@@ -307,7 +307,7 @@ func (suite *ResourceServerAPITestSuite) TestUpdateResourceServerNameConflict() 
 	// Try to update second server to have the same name as first
 	updateReq := UpdateResourceServerRequest{
 		Name:               "Conflict Resource Server 1",
-		OuID: testOUID,
+		OUID: testOUID,
 	}
 
 	err = updateResourceServer(rsID2, updateReq)
@@ -320,12 +320,12 @@ func (suite *ResourceServerAPITestSuite) TestUpdateResourceServerIdentifierConfl
 	rs1 := CreateResourceServerRequest{
 		Name:               "Resource Server 1",
 		Identifier:         "identifier-1",
-		OuID: testOUID,
+		OUID: testOUID,
 	}
 	rs2 := CreateResourceServerRequest{
 		Name:               "Resource Server 2",
 		Identifier:         "identifier-2",
-		OuID: testOUID,
+		OUID: testOUID,
 	}
 
 	rsID1, err := createResourceServer(rs1)
@@ -340,7 +340,7 @@ func (suite *ResourceServerAPITestSuite) TestUpdateResourceServerIdentifierConfl
 	updateReq := UpdateResourceServerRequest{
 		Name:               "Resource Server 2",
 		Identifier:         "identifier-1",
-		OuID: testOUID,
+		OUID: testOUID,
 	}
 
 	err = updateResourceServer(rsID2, updateReq)
@@ -351,7 +351,7 @@ func (suite *ResourceServerAPITestSuite) TestUpdateResourceServerIdentifierConfl
 func (suite *ResourceServerAPITestSuite) TestDeleteResourceServer() {
 	reqBody := CreateResourceServerRequest{
 		Name:               "Delete Test Resource Server",
-		OuID: testOUID,
+		OUID: testOUID,
 	}
 
 	rsID, err := createResourceServer(reqBody)
@@ -379,7 +379,7 @@ func (suite *ResourceServerAPITestSuite) TestCreateResourceServerWithVariousDeli
 		delimiter := delim
 		reqBody := CreateResourceServerRequest{
 			Name:               "Server With " + delim + " Delimiter",
-			OuID: testOUID,
+			OUID: testOUID,
 			Delimiter:          &delimiter,
 		}
 
@@ -412,7 +412,7 @@ func (suite *ResourceServerAPITestSuite) TestCreateResourceServerWithVariousDeli
 		delimiter := tc.value
 		reqBody := CreateResourceServerRequest{
 			Name:               "Server With " + tc.description + " Delimiter",
-			OuID: testOUID,
+			OUID: testOUID,
 			Delimiter:          &delimiter,
 		}
 

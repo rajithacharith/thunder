@@ -72,7 +72,7 @@ func (suite *AuthenticationHandlerTestSuite) testIDPAuthFinishSuccess(
 	authResponse := &common.AuthenticationResponse{
 		ID:        "user123",
 		Type:      "person",
-		OuID:      "test-ou",
+		OUID:      "test-ou",
 		Assertion: "jwt-token",
 	}
 
@@ -107,7 +107,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestSuc
 	authResponse := &common.AuthenticationResponse{
 		ID:        "user123",
 		Type:      "person",
-		OuID:      "test-ou",
+		OUID:      "test-ou",
 		Assertion: "jwt-token",
 	}
 
@@ -143,7 +143,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestWit
 	authResponse := &common.AuthenticationResponse{
 		ID:   "user123",
 		Type: "person",
-		OuID: "test-ou",
+		OUID: "test-ou",
 	}
 
 	suite.mockService.On("AuthenticateWithCredentials", mock.Anything, identifiers, credentials,
@@ -179,7 +179,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestWit
 	authResponse := &common.AuthenticationResponse{
 		ID:        "user123",
 		Type:      "person",
-		OuID:      "test-ou",
+		OUID:      "test-ou",
 		Assertion: "updated.jwt.token",
 	}
 
@@ -386,7 +386,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleVerifySMSOTPRequestSucces
 	authResponse := &common.AuthenticationResponse{
 		ID:        "user123",
 		Type:      "person",
-		OuID:      "test-ou",
+		OUID:      "test-ou",
 		Assertion: "jwt-token",
 	}
 
@@ -601,7 +601,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleGithubAuthFinishRequestSu
 	authResponse := &common.AuthenticationResponse{
 		ID:   "user123",
 		Type: "person",
-		OuID: "test-ou",
+		OUID: "test-ou",
 	}
 
 	suite.mockService.On("FinishIDPAuthentication", mock.Anything, idp.IDPTypeGitHub, authRequest.SessionToken,
@@ -1005,7 +1005,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyFinishRequestSucce
 	authResponse := &common.AuthenticationResponse{
 		ID:        "user123",
 		Type:      "person",
-		OuID:      "test-ou",
+		OUID:      "test-ou",
 		Assertion: "jwt-token",
 	}
 

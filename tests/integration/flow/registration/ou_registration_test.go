@@ -431,7 +431,7 @@ func (ts *OURegistrationFlowTestSuite) SetupSuite() {
 	ts.smsFlowTestOUID = smsOUID
 
 	// Create dynamic user schema
-	dynamicUserSchema.OuID = ts.basicFlowTestOUID
+	dynamicUserSchema.OUID = ts.basicFlowTestOUID
 	dynamicUserSchema.AllowSelfRegistration = true
 	schemaID, err := testutils.CreateUserType(dynamicUserSchema)
 	if err != nil {
@@ -616,18 +616,18 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOU() {
 			jwtClaims, err := testutils.DecodeJWT(flowStep.Assertion)
 			ts.Require().NoError(err)
 			ts.Require().Equal(dynamicUserSchema.Name, jwtClaims.UserType)
-			ts.Require().NotEmpty(jwtClaims.OuID)
+			ts.Require().NotEmpty(jwtClaims.OUID)
 
 			user, err := testutils.FindUserByAttribute("username", username)
 			ts.Require().NoError(err)
 			ts.Require().NotNil(user)
 
 			if user != nil {
-				ts.Require().Equal(jwtClaims.OuID, user.OuID)
+				ts.Require().Equal(jwtClaims.OUID, user.OUID)
 				ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.ID)
 			}
 
-			ou, err := testutils.GetOrganizationUnit(jwtClaims.OuID)
+			ou, err := testutils.GetOrganizationUnit(jwtClaims.OUID)
 			ts.Require().NoError(err)
 			ts.Require().Equal(tc.ouName, ou.Name)
 			ts.Require().Equal(tc.ouHandle, ou.Handle)
@@ -639,7 +639,7 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOU() {
 				ts.Require().Equal(tc.ouDescription, ou.Description)
 			}
 
-			ts.createdOUs = append(ts.createdOUs, jwtClaims.OuID)
+			ts.createdOUs = append(ts.createdOUs, jwtClaims.OUID)
 		})
 	}
 }
@@ -794,18 +794,18 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 			jwtClaims, err := testutils.DecodeJWT(flowStep.Assertion)
 			ts.Require().NoError(err)
 			ts.Require().Equal(dynamicUserSchema.Name, jwtClaims.UserType)
-			ts.Require().NotEmpty(jwtClaims.OuID)
+			ts.Require().NotEmpty(jwtClaims.OUID)
 
 			user, err := testutils.FindUserByAttribute("mobileNumber", mobileNumber)
 			ts.Require().NoError(err)
 			ts.Require().NotNil(user)
 
 			if user != nil {
-				ts.Require().Equal(jwtClaims.OuID, user.OuID)
+				ts.Require().Equal(jwtClaims.OUID, user.OUID)
 				ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.ID)
 			}
 
-			ou, err := testutils.GetOrganizationUnit(jwtClaims.OuID)
+			ou, err := testutils.GetOrganizationUnit(jwtClaims.OUID)
 			ts.Require().NoError(err)
 			ts.Require().Equal(tc.ouName, ou.Name)
 			ts.Require().Equal(tc.ouHandle, ou.Handle)
@@ -817,7 +817,7 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 				ts.Require().Equal(tc.ouDescription, ou.Description)
 			}
 
-			ts.createdOUs = append(ts.createdOUs, jwtClaims.OuID)
+			ts.createdOUs = append(ts.createdOUs, jwtClaims.OUID)
 		})
 	}
 }

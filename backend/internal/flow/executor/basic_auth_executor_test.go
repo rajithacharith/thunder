@@ -166,7 +166,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow(
 	authenticateResult := &authnprovider.AuthnResult{
 		UserID:   testUserID,
 		UserType: "person",
-		OuID:     "ou-123",
+		OUID:     "ou-123",
 		Token:    "test-token",
 		AvailableAttributes: &authnprovider.AvailableAttributes{
 			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
@@ -216,7 +216,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute(
 	authenticatedUser := &authnprovider.AuthnResult{
 		UserID:   testUserID,
 		UserType: "person",
-		OuID:     "ou-123",
+		OUID:     "ou-123",
 		Token:    "test-token",
 		AvailableAttributes: &authnprovider.AvailableAttributes{
 			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
@@ -293,7 +293,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttribu
 	authenticatedUser := &authnprovider.AuthnResult{
 		UserID:   testUserID,
 		UserType: "person",
-		OuID:     "ou-123",
+		OUID:     "ou-123",
 		Token:    "test-token",
 		AvailableAttributes: &authnprovider.AvailableAttributes{
 			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
@@ -498,7 +498,7 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_SuccessfulAuth
 	authenticatedUser := &authnprovider.AuthnResult{
 		UserID:   testUserID,
 		UserType: "person",
-		OuID:     "ou-123",
+		OUID:     "ou-123",
 		Token:    "test-token",
 		AvailableAttributes: &authnprovider.AvailableAttributes{
 			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
@@ -547,7 +547,7 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_Success_WithFe
 	authenticateResult := &authnprovider.AuthnResult{
 		UserID:   testUserID,
 		UserType: "person",
-		OuID:     "ou-123",
+		OUID:     "ou-123",
 		Token:    "test-token",
 		AvailableAttributes: &authnprovider.AvailableAttributes{
 			Attributes: map[string]*authnprovider.AttributeMetadataResponse{
@@ -603,7 +603,7 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_Authentication
 	authenticatedUser := &authnprovider.AuthnResult{
 		UserID:   testUserID,
 		UserType: "person",
-		OuID:     "ou-123",
+		OUID:     "ou-123",
 		Token:    "test-token",
 		AvailableAttributes: &authnprovider.AvailableAttributes{
 			Attributes: map[string]*authnprovider.AttributeMetadataResponse{

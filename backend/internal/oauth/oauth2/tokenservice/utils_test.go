@@ -683,7 +683,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_EmptyAllowedClaims() {
 		ID:         "test-user",
 		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
 		Type:       "local",
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 	}, nil)
 
 	// Empty allowedClaims - no special claims should be added
@@ -708,7 +708,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_NilAllowedClaims() {
 		ID:         "test-user",
 		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
 		Type:       "local",
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 	}, nil)
 
 	// Nil allowedClaims - no special claims should be added
@@ -732,7 +732,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_UserWithNoType() {
 		ID:         "test-user",
 		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
 		Type:       "", // Empty type
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 	}, nil)
 
 	allowedClaims := []string{constants.ClaimUserType, constants.ClaimOUID}
@@ -756,7 +756,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_UserWithNoOrganizationUnit(
 		ID:         "test-user",
 		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
 		Type:       "local",
-		OuID:       "", // Empty OU
+		OUID:       "", // Empty OU
 	}, nil)
 
 	allowedClaims := []string{constants.ClaimUserType, constants.ClaimOUID}
@@ -781,7 +781,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_WithOUServiceSuccess() {
 		ID:         "test-user",
 		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
 		Type:       "local",
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 	}, nil)
 
 	// Mock GetOrganizationUnit to return OU details
@@ -814,7 +814,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_WithOUServiceError() {
 		ID:         "test-user",
 		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
 		Type:       "local",
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 	}, nil)
 
 	// Mock GetOrganizationUnit to return error
@@ -845,7 +845,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_OUDetailsNotRequestedSkipsO
 		ID:         "test-user",
 		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
 		Type:       "local",
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 	}, nil)
 
 	// No mock for GetOrganizationUnit - it should NOT be called
@@ -874,7 +874,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_NilOUServiceSkipsOUDetails(
 		ID:         "test-user",
 		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
 		Type:       "local",
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 	}, nil)
 
 	// Request ouHandle but pass nil ouService
@@ -899,7 +899,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_WithGroups() {
 		ID:         "test-user",
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 		Type:       "local",
-		OuID:       "ou-123",
+		OUID:       "ou-123",
 	}, nil)
 
 	// Mock GetUserGroups to return groups
@@ -1058,7 +1058,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_SingleOUClaim() {
 			mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
 				ID:         "test-user",
 				Attributes: json.RawMessage(`{"email":"test@example.com"}`),
-				OuID:       "ou-123",
+				OUID:       "ou-123",
 			}, nil)
 
 			mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-123").Return(ou.OrganizationUnit{

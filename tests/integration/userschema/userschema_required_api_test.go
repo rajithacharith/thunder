@@ -85,13 +85,13 @@ func (ts *UserSchemaRequiredAPITestSuite) TestRequiredTopLevelString() {
             "nickname": {"type": "string"}
         }`),
 	}
-	schema.OuID = ts.oUID
+	schema.OUID = ts.oUID
 	schemaID := ts.createSchemaHelper(schema)
 	ts.createdSchemas = append(ts.createdSchemas, schemaID)
 
 	// Missing required email -> expect validation error USR-1019
 	reqMissing := CreateUserRequest{
-		OuID:       ts.oUID,
+		OUID:       ts.oUID,
 		Type:       schema.Name,
 		Attributes: json.RawMessage(`{"nickname": "neo"}`),
 	}
@@ -99,7 +99,7 @@ func (ts *UserSchemaRequiredAPITestSuite) TestRequiredTopLevelString() {
 
 	// Provide required email -> success
 	reqPresent := CreateUserRequest{
-		OuID:       ts.oUID,
+		OUID:       ts.oUID,
 		Type:       schema.Name,
 		Attributes: json.RawMessage(`{"email": "a@b.com"}`),
 	}
@@ -122,13 +122,13 @@ func (ts *UserSchemaRequiredAPITestSuite) TestRequiredObjectAndNested() {
             }
         }`),
 	}
-	schema.OuID = ts.oUID
+	schema.OUID = ts.oUID
 	schemaID := ts.createSchemaHelper(schema)
 	ts.createdSchemas = append(ts.createdSchemas, schemaID)
 
 	// Missing required object -> fail
 	reqMissingObj := CreateUserRequest{
-		OuID:       ts.oUID,
+		OUID:       ts.oUID,
 		Type:       schema.Name,
 		Attributes: json.RawMessage(`{}`),
 	}
@@ -136,7 +136,7 @@ func (ts *UserSchemaRequiredAPITestSuite) TestRequiredObjectAndNested() {
 
 	// Object present, missing required nested city -> fail
 	reqMissingNested := CreateUserRequest{
-		OuID:       ts.oUID,
+		OUID:       ts.oUID,
 		Type:       schema.Name,
 		Attributes: json.RawMessage(`{"address": {"zip": "94040"}}`),
 	}
@@ -144,7 +144,7 @@ func (ts *UserSchemaRequiredAPITestSuite) TestRequiredObjectAndNested() {
 
 	// Provide required nested city -> success
 	reqOK := CreateUserRequest{
-		OuID:       ts.oUID,
+		OUID:       ts.oUID,
 		Type:       schema.Name,
 		Attributes: json.RawMessage(`{"address": {"city": "Colombo"}}`),
 	}
@@ -160,13 +160,13 @@ func (ts *UserSchemaRequiredAPITestSuite) TestRequiredArrayTopLevel() {
             "tags": {"type": "array", "required": true, "items": {"type": "string"}}
         }`),
 	}
-	schema.OuID = ts.oUID
+	schema.OUID = ts.oUID
 	schemaID := ts.createSchemaHelper(schema)
 	ts.createdSchemas = append(ts.createdSchemas, schemaID)
 
 	// Missing required array -> fail
 	reqMissing := CreateUserRequest{
-		OuID:       ts.oUID,
+		OUID:       ts.oUID,
 		Type:       schema.Name,
 		Attributes: json.RawMessage(`{}`),
 	}
@@ -174,7 +174,7 @@ func (ts *UserSchemaRequiredAPITestSuite) TestRequiredArrayTopLevel() {
 
 	// Present empty array -> fail
 	reqEmpty := CreateUserRequest{
-		OuID:       ts.oUID,
+		OUID:       ts.oUID,
 		Type:       schema.Name,
 		Attributes: json.RawMessage(`{"tags": []}`),
 	}
@@ -182,7 +182,7 @@ func (ts *UserSchemaRequiredAPITestSuite) TestRequiredArrayTopLevel() {
 
 	// Present array with items -> success
 	reqWithItems := CreateUserRequest{
-		OuID:       ts.oUID,
+		OUID:       ts.oUID,
 		Type:       schema.Name,
 		Attributes: json.RawMessage(`{"tags": ["tag1", "tag2"]}`),
 	}
@@ -190,7 +190,7 @@ func (ts *UserSchemaRequiredAPITestSuite) TestRequiredArrayTopLevel() {
 	ts.createdUsers = append(ts.createdUsers, userID)
 }
 
-func (ts *UserSchemaRequiredAPITestSuite) TestSchemaCreationRequiresOuID() {
+func (ts *UserSchemaRequiredAPITestSuite) TestSchemaCreationRequiresOUID() {
 	schema := CreateUserSchemaRequest{
 		Name: "req-ouid-schema",
 		Schema: json.RawMessage(`{
@@ -221,8 +221,8 @@ func (ts *UserSchemaRequiredAPITestSuite) TestSchemaCreationRequiresOuID() {
 }
 
 func (ts *UserSchemaRequiredAPITestSuite) createSchemaHelper(schema CreateUserSchemaRequest) string {
-	if schema.OuID == "" {
-		schema.OuID = ts.oUID
+	if schema.OUID == "" {
+		schema.OUID = ts.oUID
 	}
 
 	jsonData, err := json.Marshal(schema)

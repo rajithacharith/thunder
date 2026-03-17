@@ -49,7 +49,7 @@ func TestValidateUserSchema(t *testing.T) {
 			schema: &UserSchema{
 				ID:     "schema-1",
 				Name:   "Valid Schema",
-				OuID:   "ou-1",
+				OUID:   "ou-1",
 				Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 			},
 			setupMock: func() {
@@ -64,7 +64,7 @@ func TestValidateUserSchema(t *testing.T) {
 			schema: &UserSchema{
 				ID:   "schema-1",
 				Name: "",
-				OuID: "ou-1",
+				OUID: "ou-1",
 			},
 			setupMock: func() {},
 			wantErr:   true,
@@ -75,7 +75,7 @@ func TestValidateUserSchema(t *testing.T) {
 			schema: &UserSchema{
 				ID:   "schema-1",
 				Name: "   ",
-				OuID: "ou-1",
+				OUID: "ou-1",
 			},
 			setupMock: func() {},
 			wantErr:   true,
@@ -86,7 +86,7 @@ func TestValidateUserSchema(t *testing.T) {
 			schema: &UserSchema{
 				ID:   "",
 				Name: "Valid Schema",
-				OuID: "ou-1",
+				OUID: "ou-1",
 			},
 			setupMock: func() {},
 			wantErr:   true,
@@ -97,7 +97,7 @@ func TestValidateUserSchema(t *testing.T) {
 			schema: &UserSchema{
 				ID:   "   ",
 				Name: "Valid Schema",
-				OuID: "ou-1",
+				OUID: "ou-1",
 			},
 			setupMock: func() {},
 			wantErr:   true,
@@ -108,7 +108,7 @@ func TestValidateUserSchema(t *testing.T) {
 			schema: &UserSchema{
 				ID:   "schema-1",
 				Name: "Valid Schema",
-				OuID: "",
+				OUID: "",
 			},
 			setupMock: func() {},
 			wantErr:   true,
@@ -119,7 +119,7 @@ func TestValidateUserSchema(t *testing.T) {
 			schema: &UserSchema{
 				ID:   "schema-1",
 				Name: "Valid Schema",
-				OuID: "   ",
+				OUID: "   ",
 			},
 			setupMock: func() {},
 			wantErr:   true,
@@ -130,7 +130,7 @@ func TestValidateUserSchema(t *testing.T) {
 			schema: &UserSchema{
 				ID:     "schema-1",
 				Name:   "Valid Schema",
-				OuID:   "nonexistent",
+				OUID:   "nonexistent",
 				Schema: json.RawMessage(`{"type": "object"}`),
 			},
 			setupMock: func() {
@@ -146,7 +146,7 @@ func TestValidateUserSchema(t *testing.T) {
 			schema: &UserSchema{
 				ID:     "schema-1",
 				Name:   "Invalid Schema",
-				OuID:   "ou-1",
+				OUID:   "ou-1",
 				Schema: json.RawMessage(`{invalid json}`),
 			},
 			setupMock: func() {
@@ -162,7 +162,7 @@ func TestValidateUserSchema(t *testing.T) {
 			schema: &UserSchema{
 				ID:     "schema-1",
 				Name:   "Valid Schema",
-				OuID:   "ou-1",
+				OUID:   "ou-1",
 				Schema: json.RawMessage(``),
 			},
 			setupMock: func() {
@@ -199,7 +199,7 @@ func TestValidateUserSchemaWrapper(t *testing.T) {
 		schema := &UserSchema{
 			ID:     "schema-1",
 			Name:   "Valid Schema",
-			OuID:   "ou-1",
+			OUID:   "ou-1",
 			Schema: json.RawMessage(`{"email":{"type":"string"}}`),
 		}
 
@@ -245,7 +245,7 @@ schema: '{"type": "object"}'
 			want: &UserSchema{
 				ID:                    "schema-1",
 				Name:                  "Test Schema",
-				OuID:                  "ou-1",
+				OUID:                  "ou-1",
 				AllowSelfRegistration: true,
 				Schema:                json.RawMessage(`{"type": "object"}`),
 			},
@@ -262,7 +262,7 @@ schema: '{}'
 			want: &UserSchema{
 				ID:                    "schema-2",
 				Name:                  "Minimal Schema",
-				OuID:                  "ou-1",
+				OUID:                  "ou-1",
 				AllowSelfRegistration: false,
 				Schema:                json.RawMessage(`{}`),
 			},
@@ -301,7 +301,7 @@ schema: '{invalid json}'
 				assert.NoError(t, err)
 				assert.Equal(t, tc.want.ID, result.ID)
 				assert.Equal(t, tc.want.Name, result.Name)
-				assert.Equal(t, tc.want.OuID, result.OuID)
+				assert.Equal(t, tc.want.OUID, result.OUID)
 				assert.Equal(t, tc.want.AllowSelfRegistration, result.AllowSelfRegistration)
 			}
 		})
@@ -461,7 +461,7 @@ func TestValidateUserSchema_OUServiceError(t *testing.T) {
 	schema := &UserSchema{
 		ID:     "schema-1",
 		Name:   "Valid Schema",
-		OuID:   "ou-1",
+		OUID:   "ou-1",
 		Schema: json.RawMessage(`{"type": "object"}`),
 	}
 

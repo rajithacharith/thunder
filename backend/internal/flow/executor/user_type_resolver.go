@@ -173,7 +173,7 @@ func (u *userTypeResolver) handleUserOnboardingFlows(ctx *core.NodeContext,
 		execResp.RuntimeData[userTypeKey] = userType
 		execResp.RuntimeData[defaultOUIDKey] = ouID
 		logger.Debug("User type resolved for user onboarding", log.String(userTypeKey, userType),
-			log.String(ouIDKey, userSchema.OuID))
+			log.String(ouIDKey, userSchema.OUID))
 		execResp.Status = common.ExecComplete
 		return execResp, nil
 	}
@@ -327,14 +327,14 @@ func (u *userTypeResolver) getUserSchemaAndOU(
 		return nil, "", fmt.Errorf("failed to resolve user schema for user type: %s", userType)
 	}
 
-	if userSchema.OuID == "" {
+	if userSchema.OUID == "" {
 		logger.Error("No organization unit found for user type", log.String(userTypeKey, userType))
 		return nil, "", fmt.Errorf("no organization unit found for user type: %s", userType)
 	}
 
 	logger.Debug("User schema resolved for user type", log.String(userTypeKey, userType),
-		log.String(ouIDKey, userSchema.OuID))
-	return userSchema, userSchema.OuID, nil
+		log.String(ouIDKey, userSchema.OUID))
+	return userSchema, userSchema.OUID, nil
 }
 
 // promptUserSelection prompts the user to select a user type from the provided options.

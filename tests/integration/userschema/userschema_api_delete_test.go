@@ -76,7 +76,7 @@ func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchema() {
             "description": {"type": "string"}
         }`),
 	}
-	schema.OuID = ts.oUID
+	schema.OUID = ts.oUID
 
 	schemaID := ts.createTestSchema(schema)
 
@@ -319,8 +319,8 @@ func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchemaResponseHeaders() {
 
 // Helper function to create a test schema
 func (ts *DeleteUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaRequest) string {
-	if schema.OuID == "" {
-		schema.OuID = ts.oUID
+	if schema.OUID == "" {
+		schema.OUID = ts.oUID
 	}
 
 	jsonData, err := json.Marshal(schema)

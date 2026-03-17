@@ -33,7 +33,7 @@ type JWTClaims struct {
 	Exp       float64                `json:"exp"`
 	Iat       float64                `json:"iat"`
 	UserType  string                 `json:"userType,omitempty"`
-	OuID      string                 `json:"ouId,omitempty"`
+	OUID      string                 `json:"ouId,omitempty"`
 	OuName    string                 `json:"ouName,omitempty"`
 	OuHandle  string                 `json:"ouHandle,omitempty"`
 	Assurance map[string]interface{} `json:"assurance,omitempty"`
@@ -75,7 +75,7 @@ func DecodeJWT(token string) (*JWTClaims, error) {
 }
 
 // ValidateJWTClaims validates that the JWT contains the expected claims.
-func ValidateJWTClaims(claims *JWTClaims, expectedSub, expectedAud, expectedUserType, expectedOuID string) error {
+func ValidateJWTClaims(claims *JWTClaims, expectedSub, expectedAud, expectedUserType, expectedOUID string) error {
 	if claims.Sub != expectedSub {
 		return fmt.Errorf("expected sub '%s', got '%s'", expectedSub, claims.Sub)
 	}
@@ -85,8 +85,8 @@ func ValidateJWTClaims(claims *JWTClaims, expectedSub, expectedAud, expectedUser
 	if expectedUserType != "" && claims.UserType != expectedUserType {
 		return fmt.Errorf("expected userType '%s', got '%s'", expectedUserType, claims.UserType)
 	}
-	if expectedOuID != "" && claims.OuID != expectedOuID {
-		return fmt.Errorf("expected ouId '%s', got '%s'", expectedOuID, claims.OuID)
+	if expectedOUID != "" && claims.OUID != expectedOUID {
+		return fmt.Errorf("expected ouId '%s', got '%s'", expectedOUID, claims.OUID)
 	}
 	return nil
 }
@@ -94,7 +94,7 @@ func ValidateJWTClaims(claims *JWTClaims, expectedSub, expectedAud, expectedUser
 // ValidateJWTAssertionFields validates common JWT assertion fields including OU details.
 // This is a helper function that can be used across integration tests to validate JWT assertions.
 func ValidateJWTAssertionFields(assertion, expectedAudience, expectedUserType,
-	expectedOuID, expectedOuName, expectedOuHandle string) (*JWTClaims, error) {
+	expectedOUID, expectedOuName, expectedOuHandle string) (*JWTClaims, error) {
 	// Decode JWT
 	jwtClaims, err := DecodeJWT(assertion)
 	if err != nil {
@@ -121,8 +121,8 @@ func ValidateJWTAssertionFields(assertion, expectedAudience, expectedUserType,
 	}
 
 	// Validate OU ID if provided
-	if expectedOuID != "" && jwtClaims.OuID != expectedOuID {
-		return nil, fmt.Errorf("expected ouId to be '%s', got '%s'", expectedOuID, jwtClaims.OuID)
+	if expectedOUID != "" && jwtClaims.OUID != expectedOUID {
+		return nil, fmt.Errorf("expected ouId to be '%s', got '%s'", expectedOUID, jwtClaims.OUID)
 	}
 
 	// Validate OU name if provided

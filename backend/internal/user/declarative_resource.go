@@ -126,7 +126,7 @@ func (e *userExporter) GetResourceByID(
 	exportUser := &userDeclarativeResource{
 		ID:          user.ID,
 		Type:        user.Type,
-		OuID:        user.OuID,
+		OUID:        user.OUID,
 		Attributes:  attributesMap,
 		Credentials: make(map[string]interface{}), // Empty credentials - will be filled with placeholders
 	}
@@ -209,7 +209,7 @@ func parseToUserWrapper(data []byte) (interface{}, error) {
 type userDeclarativeResource struct {
 	ID          string                 `yaml:"id"`
 	Type        string                 `yaml:"type"`
-	OuID        string                 `yaml:"ou_id"`
+	OUID        string                 `yaml:"ou_id"`
 	Attributes  map[string]interface{} `yaml:"attributes"`
 	Credentials map[string]interface{} `yaml:"credentials,omitempty"` // Flexible format for YAML
 }
@@ -230,7 +230,7 @@ func parseToUser(data []byte) (*userResource, error) {
 	user := User{
 		ID:         userRes.ID,
 		Type:       userRes.Type,
-		OuID:       userRes.OuID,
+		OUID:       userRes.OUID,
 		Attributes: json.RawMessage(attributesJSON),
 	}
 
@@ -419,7 +419,7 @@ func validateUserWrapper(data interface{}, fileStore *userFileBasedStore, dbStor
 	if user.Type == "" {
 		return fmt.Errorf("user type is required")
 	}
-	if user.OuID == "" {
+	if user.OUID == "" {
 		return fmt.Errorf("organization unit ID is required")
 	}
 

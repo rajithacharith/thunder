@@ -36,7 +36,7 @@ type AuthSessionData struct {
 type AuthenticationResponseDTO struct {
 	ID        string `json:"id"`
 	Type      string `json:"type,omitempty"`
-	OuID      string `json:"ouId,omitempty"`
+	OUID      string `json:"ouId,omitempty"`
 	Assertion string `json:"assertion,omitempty"`
 }
 

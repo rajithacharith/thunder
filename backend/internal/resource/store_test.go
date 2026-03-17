@@ -2983,7 +2983,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 			errContains: "id",
 		},
 		{
-			name: "Error_MissingOuID",
+			name: "Error_MissingOUID",
 			row: map[string]interface{}{
 				"internal_id": 62,
 				"id":          "rs1",
@@ -2993,7 +2993,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 			errContains: "ou_id",
 		},
 		{
-			name: "Error_InvalidOuID",
+			name: "Error_InvalidOUID",
 			row: map[string]interface{}{
 				"internal_id": 63,
 				"id":          "rs1",

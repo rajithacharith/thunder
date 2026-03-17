@@ -53,13 +53,13 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_Success() {
 	authResp := &user.AuthenticateUserResponse{
 		ID:   "user123",
 		Type: "customer",
-		OuID: "ou1",
+		OUID: "ou1",
 	}
 
 	userObj := &user.User{
 		ID:         "user123",
 		Type:       "customer",
-		OuID:       "ou1",
+		OUID:       "ou1",
 		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
 	}
 
@@ -75,7 +75,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_Success() {
 	suite.Equal("user123", result.UserID)
 	suite.Equal("user123", result.Token)
 	suite.Equal("customer", result.UserType)
-	suite.Equal("ou1", result.OuID)
+	suite.Equal("ou1", result.OUID)
 	suite.NotNil(result.AvailableAttributes)
 	suite.Len(result.AvailableAttributes.Attributes, 1)
 	suite.Contains(result.AvailableAttributes.Attributes, "email")
@@ -132,7 +132,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_All() {
 	userObj := &user.User{
 		ID:         "user123",
 		Type:       "customer",
-		OuID:       "ou1",
+		OUID:       "ou1",
 		Attributes: json.RawMessage(`{"email":"test@example.com", "age": 30}`),
 	}
 
@@ -152,7 +152,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_Filtered()
 	userObj := &user.User{
 		ID:         "user123",
 		Type:       "customer",
-		OuID:       "ou1",
+		OUID:       "ou1",
 		Attributes: json.RawMessage(`{"email":"test@example.com", "age": 30}`),
 	}
 
@@ -192,7 +192,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_GetUserNotFound() {
 	authResp := &user.AuthenticateUserResponse{
 		ID:   "user123",
 		Type: "customer",
-		OuID: "ou1",
+		OUID: "ou1",
 	}
 
 	// Expect AuthenticateUser call - Success

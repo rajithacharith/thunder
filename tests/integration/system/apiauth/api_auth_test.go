@@ -72,7 +72,7 @@ func (suite *APIAuthTestSuite) SetupSuite() {
 
 	userSchema := testutils.UserSchema{
 		Name:                  fmt.Sprintf("api-auth-user-%d", time.Now().UnixNano()),
-		OuID:                  suite.ouID,
+		OUID:                  suite.ouID,
 		AllowSelfRegistration: true,
 		Schema: map[string]interface{}{
 			"username":  map[string]interface{}{"type": "string"},
@@ -100,7 +100,7 @@ func (suite *APIAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err)
 
 	userID, err := testutils.CreateUser(testutils.User{
-		OuID:             suite.ouID,
+		OUID:             suite.ouID,
 		Type:             userSchema.Name,
 		Attributes:       attrBytes,
 	})

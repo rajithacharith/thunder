@@ -447,7 +447,7 @@ func (o *oAuthExecutor) getContextUserForAuthentication(ctx *core.NodeContext,
 	authenticatedUser := authncm.AuthenticatedUser{
 		IsAuthenticated: true,
 		UserID:          internalUser.UserID,
-		OUID:            internalUser.OuID,
+		OUID:            internalUser.OUID,
 		UserType:        internalUser.UserType,
 	}
 
@@ -489,7 +489,7 @@ func (o *oAuthExecutor) getContextUserForRegistration(ctx *core.NodeContext,
 		return &authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          internalUser.UserID,
-			OUID:            internalUser.OuID,
+			OUID:            internalUser.OUID,
 			UserType:        internalUser.UserType,
 		}, nil
 	}
@@ -552,7 +552,7 @@ func (o *oAuthExecutor) resolveUserTypeForAutoProvisioning(ctx *core.NodeContext
 	// Proceed with the single resolved user type
 	// Add userType and ouID to runtime data
 	execResp.RuntimeData[userTypeKey] = selfRegEnabledSchemas[0].Name
-	execResp.RuntimeData[defaultOUIDKey] = selfRegEnabledSchemas[0].OuID
+	execResp.RuntimeData[defaultOUIDKey] = selfRegEnabledSchemas[0].OUID
 	return nil
 }
 

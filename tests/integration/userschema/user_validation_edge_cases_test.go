@@ -84,7 +84,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TearDownSuite() {
 func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithEmptyAttributes() {
 	// Create a user with empty attributes (should succeed - all properties are optional)
 	createUserReq := CreateUserRequest{
-		OuID:       ts.oUID,
+		OUID:       ts.oUID,
 		Type:       "employee",
 		Attributes: json.RawMessage(`{}`),
 	}
@@ -97,7 +97,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithEmptyAttributes() 
 func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithNullAttributes() {
 	// Create a user with null attributes
 	createUserReq := CreateUserRequest{
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Type: "employee",
 		// Attributes is nil/null
 	}
@@ -110,7 +110,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithNullAttributes() {
 func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithPartialAttributes() {
 	// Create a user with only some of the schema attributes (should succeed)
 	createUserReq := CreateUserRequest{
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Type: "employee",
 		Attributes: json.RawMessage(`{
 			"given_name": "John",
@@ -126,7 +126,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithPartialAttributes(
 func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithExtraAttributes() {
 	// Create a user with extra attributes not defined in schema (should fail - strict validation)
 	createUserReq := CreateUserRequest{
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Type: "employee",
 		Attributes: json.RawMessage(`{
 			"given_name": "John",
@@ -146,7 +146,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithExtraAttributes() 
 func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithNumberValidation() {
 	// Test valid numbers
 	createUserReq := CreateUserRequest{
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Type: "numeric-user",
 		Attributes: json.RawMessage(`{
 			"age": 25,
@@ -160,7 +160,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithNumberValidation()
 
 	// Test invalid number type (string instead of number)
 	createUserReq2 := CreateUserRequest{
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Type: "numeric-user",
 		Attributes: json.RawMessage(`{
 			"age": "twenty-five",
@@ -176,7 +176,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithNumberValidation()
 func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithStringEnumValidation() {
 	// Test valid enum value
 	createUserReq := CreateUserRequest{
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Type: "status-user",
 		Attributes: json.RawMessage(`{
 			"name": "Alice",
@@ -190,7 +190,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithStringEnumValidati
 
 	// Test invalid enum value
 	createUserReq2 := CreateUserRequest{
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Type: "status-user",
 		Attributes: json.RawMessage(`{
 			"name": "Bob",
@@ -206,7 +206,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithStringEnumValidati
 func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithMixedEnumValidation() {
 	// Test valid enum values
 	createUserReq := CreateUserRequest{
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Type: "mixed-user",
 		Attributes: json.RawMessage(`{
 			"name": "Charlie",
@@ -220,7 +220,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithMixedEnumValidatio
 
 	// Test invalid enum value for number
 	createUserReq2 := CreateUserRequest{
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Type: "mixed-user",
 		Attributes: json.RawMessage(`{
 			"name": "Dave",
@@ -236,7 +236,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestCreateUserWithMixedEnumValidatio
 func (ts *UserValidationEdgeCasesTestSuite) TestUpdateUserChangeType() {
 	// Create an employee user
 	createUserReq := CreateUserRequest{
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Type: "employee",
 		Attributes: json.RawMessage(`{
 			"given_name": "John",
@@ -253,7 +253,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestUpdateUserChangeType() {
 	// Update user to different type with valid attributes for new schema
 	updateUserReq := UpdateUserRequest{
 		Type: "numeric-user",
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Attributes: json.RawMessage(`{
 			"age": 30,
 			"salary": 75000.0,
@@ -266,7 +266,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestUpdateUserChangeType() {
 	// Update user to different type with invalid attributes for new schema
 	updateUserReq2 := UpdateUserRequest{
 		Type: "numeric-user",
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Attributes: json.RawMessage(`{
 			"age": "thirty",
 			"salary": 75000.0,
@@ -282,7 +282,7 @@ func (ts *UserValidationEdgeCasesTestSuite) TestUpdateUserChangeType() {
 func (ts *UserValidationEdgeCasesTestSuite) createEmployeeSchema() string {
 	schema := CreateUserSchemaRequest{
 		Name: "employee",
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Schema: json.RawMessage(`{
 			"given_name": {"type": "string"},
 			"family_name": {"type": "string"},
@@ -298,7 +298,7 @@ func (ts *UserValidationEdgeCasesTestSuite) createEmployeeSchema() string {
 func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithNumbers() string {
 	schema := CreateUserSchemaRequest{
 		Name: "numeric-user",
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Schema: json.RawMessage(`{
 			"age": {"type": "number"},
 			"salary": {"type": "number"},
@@ -312,7 +312,7 @@ func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithNumbers() string {
 func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithStringEnum() string {
 	schema := CreateUserSchemaRequest{
 		Name: "status-user",
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Schema: json.RawMessage(`{
 			"name": {"type": "string"},
 			"status": {"type": "string", "enum": ["active", "inactive", "pending"]},
@@ -326,7 +326,7 @@ func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithStringEnum() string 
 func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithMixedEnum() string {
 	schema := CreateUserSchemaRequest{
 		Name: "mixed-user",
-		OuID: ts.oUID,
+		OUID: ts.oUID,
 		Schema: json.RawMessage(`{
 			"name": {"type": "string"},
 			"level": {"type": "number", "enum": [1, 2, 3, 4, 5]},
@@ -338,8 +338,8 @@ func (ts *UserValidationEdgeCasesTestSuite) createSchemaWithMixedEnum() string {
 }
 
 func (ts *UserValidationEdgeCasesTestSuite) createSchema(schema CreateUserSchemaRequest) string {
-	if schema.OuID == "" {
-		schema.OuID = ts.oUID
+	if schema.OUID == "" {
+		schema.OUID = ts.oUID
 	}
 
 	jsonData, err := json.Marshal(schema)

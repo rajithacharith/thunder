@@ -4293,7 +4293,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithAllowedUserTypes() {
 	// Create test user schemas first
 	employeeSchema := testutils.UserSchema{
 		Name:               "employee",
-		OuID:               testOUID,
+		OUID:               testOUID,
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
 				"type": "string",
@@ -4305,7 +4305,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithAllowedUserTypes() {
 	}
 	customerSchema := testutils.UserSchema{
 		Name:               "customer",
-		OuID:               testOUID,
+		OUID:               testOUID,
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
 				"type": "string",
@@ -4433,7 +4433,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithAllowedUserTypes() {
 	// Create test user schemas
 	employeeSchema := testutils.UserSchema{
 		Name:               "employee_update",
-		OuID:               testOUID,
+		OUID:               testOUID,
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
 				"type": "string",
@@ -4442,7 +4442,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithAllowedUserTypes() {
 	}
 	partnerSchema := testutils.UserSchema{
 		Name:               "partner",
-		OuID:               testOUID,
+		OUID:               testOUID,
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
 				"type": "string",
@@ -4646,7 +4646,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithPartialInvalidAllowedUserT
 	// Create one valid user schema
 	validSchema := testutils.UserSchema{
 		Name:               "valid_user_type",
-		OuID:               testOUID,
+		OUID:               testOUID,
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
 				"type": "string",

@@ -61,7 +61,7 @@ func (suite *FileBasedStoreTestSuite) buildUser(id, ou string, attrs map[string]
 
 	return User{
 		ID:         id,
-		OuID:       ou,
+		OUID:       ou,
 		Type:       "person",
 		Attributes: payload,
 	}
@@ -137,7 +137,7 @@ func (suite *FileBasedStoreTestSuite) TestGetUserListCountAndList_Filtering() {
 func (suite *FileBasedStoreTestSuite) TestGetUserListCount_InvalidAttributes() {
 	user := User{
 		ID:         "user-1",
-		OuID:       "ou-1",
+		OUID:       "ou-1",
 		Type:       "person",
 		Attributes: json.RawMessage("{invalid-json"),
 	}

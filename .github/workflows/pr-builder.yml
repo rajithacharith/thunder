@@ -623,14 +623,23 @@ jobs:
       - name: 🔄 Restart Thunder Server with Security Enabled
         run: |
           cd tests/e2e/thunder-server
-          
+
           echo "Stopping Thunder server..."
-          # Kill the specific Thunder server process using captured PID
-          kill $THUNDER_PID || true
-          
-          # Wait for process to fully terminate
-          sleep 5
-          
+          # Kill the start.sh wrapper process
+          kill $THUNDER_PID 2>/dev/null || true
+
+          # Also kill any process still listening on port 8090
+          # (start.sh backgrounds the thunder binary, so killing start.sh
+          # may leave the thunder process running as an orphan)
+          sleep 2
+          if lsof -ti tcp:8090 >/dev/null 2>&1; then
+            echo "Port 8090 still in use, killing remaining processes..."
+            kill -9 $(lsof -ti tcp:8090) 2>/dev/null || true
+          fi
+
+          # Wait for port to be fully released
+          sleep 3
+
           echo "Starting Thunder server with security enabled..."
           ./start.sh &
           THUNDER_PID=$!
