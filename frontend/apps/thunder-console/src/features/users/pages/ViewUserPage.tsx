@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -17,37 +17,57 @@
  */
 
 import {Link, useNavigate, useParams} from 'react-router';
+import getInitials from '@/utils/getInitials';
 import {useForm} from 'react-hook-form';
-import {useState, useEffect, useMemo} from 'react';
+import {useState, useEffect, useMemo, type SyntheticEvent, type ReactNode, type JSX} from 'react';
 import {
   Box,
   Stack,
   Typography,
   Button,
-  Paper,
-  Divider,
   CircularProgress,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
+  Avatar,
+  Chip,
+  Tabs,
+  Tab,
   PageContent,
   PageTitle,
 } from '@wso2/oxygen-ui';
-import {ArrowLeft, Edit, Save, X, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {ArrowLeft, Save, X} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
 import {useResolveDisplayName} from '@thunder/shared-hooks';
+import SettingsCard from '@/components/SettingsCard';
+import CopyableId from '../../../components/CopyableId';
 import useGetUser from '../api/useGetUser';
 import useGetUserSchemas from '../api/useGetUserSchemas';
 import useGetUserSchema from '../api/useGetUserSchema';
 import useUpdateUser from '../api/useUpdateUser';
-import useDeleteUser from '../api/useDeleteUser';
 import renderSchemaField from '../utils/renderSchemaField';
+import UserDeleteDialog from './UserDeleteDialog';
 
 type UpdateUserFormData = Record<string, string | number | boolean>;
+
+interface TabPanelProps {
+  children?: ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel({children = null, value, index, ...other}: TabPanelProps): JSX.Element {
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`user-tabpanel-${index}`}
+      aria-labelledby={`user-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{py: 3}}>{children}</Box>}
+    </div>
+  );
+}
 
 export default function ViewUserPage() {
   const navigate = useNavigate();
@@ -56,13 +76,13 @@ export default function ViewUserPage() {
   const {resolveDisplayName} = useResolveDisplayName({handlers: {t}});
   const {userId} = useParams<{userId: string}>();
 
+  const [activeTab, setActiveTab] = useState(0);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const {data: user, isLoading: isUserLoading, error: userError} = useGetUser(userId);
   const updateUserMutation = useUpdateUser();
-  const deleteUserMutation = useDeleteUser();
 
   // Get all schemas to find the schema ID from the schema name
   const {data: userSchemas} = useGetUserSchemas();
@@ -82,6 +102,8 @@ export default function ViewUserPage() {
 
   const {data: userSchema, isLoading: isSchemaLoading, error: schemaError} = useGetUserSchema(schemaId);
 
+  const displayName = user?.display ?? user?.id ?? '';
+
   const {
     control,
     handleSubmit,
@@ -100,6 +122,10 @@ export default function ViewUserPage() {
     }
   }, [user, userSchema, setValue]);
 
+  const handleTabChange = (_event: SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
   const onSubmit = async (data: UpdateUserFormData) => {
     const organizationUnitId = schemaOuId ?? user?.organizationUnit;
 
@@ -116,11 +142,8 @@ export default function ViewUserPage() {
 
       await updateUserMutation.mutateAsync({userId, data: requestBody});
 
-      // Exit edit mode
       setIsEditMode(false);
     } catch (err) {
-      // Error is already handled in the hook and displayed in the UI
-      // Keep the form in edit mode so the user can correct the error
       logger.error('Failed to update user', {error: err});
     } finally {
       setIsSubmitting(false);
@@ -130,7 +153,6 @@ export default function ViewUserPage() {
   const handleCancel = () => {
     setIsEditMode(false);
     updateUserMutation.reset();
-    // Reset form to original values
     if (user?.attributes && userSchema?.schema) {
       Object.entries(user.attributes).forEach(([key, value]) => {
         setValue(key, value as string | number | boolean);
@@ -142,27 +164,12 @@ export default function ViewUserPage() {
     await navigate('/users');
   };
 
-  const handleDeleteClick = () => {
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteCancel = () => {
-    setDeleteDialogOpen(false);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!userId) return;
-
-    try {
-      await deleteUserMutation.mutateAsync(userId);
-      setDeleteDialogOpen(false);
-      // Navigate back to users list after successful deletion
+  const handleDeleteSuccess = () => {
+    (async () => {
       await navigate('/users');
-    } catch (err) {
-      // Error is already handled in the hook
-      logger.error('Failed to delete user', {error: err});
-      setDeleteDialogOpen(false);
-    }
+    })().catch((error: unknown) => {
+      logger.error('Failed to navigate after deleting user', {error});
+    });
   };
 
   // Loading state
@@ -183,13 +190,11 @@ export default function ViewUserPage() {
         </Alert>
         <Button
           onClick={() => {
-            handleBack().catch(() => {
-              // Handle navigation error
-            });
+            handleBack().catch(() => {});
           }}
           startIcon={<ArrowLeft size={16} />}
         >
-          Back to Users
+          {t('users:manageUser.back')}
         </Button>
       </PageContent>
     );
@@ -200,17 +205,15 @@ export default function ViewUserPage() {
     return (
       <PageContent>
         <Alert severity="warning" sx={{mb: 2}}>
-          User not found
+          {t('users:manageUser.notFound', 'User not found')}
         </Alert>
         <Button
           onClick={() => {
-            handleBack().catch(() => {
-              // Handle navigation error
-            });
+            handleBack().catch(() => {});
           }}
           startIcon={<ArrowLeft size={16} />}
         >
-          Back to Users
+          {t('users:manageUser.back')}
         </Button>
       </PageContent>
     );
@@ -220,187 +223,187 @@ export default function ViewUserPage() {
     <PageContent>
       {/* Header */}
       <PageTitle>
-        <PageTitle.BackButton component={<Link to="/users" />} />
-        <PageTitle.Header>{t('users:manageUser.title')}</PageTitle.Header>
-        <PageTitle.SubHeader>{t('users:manageUser.subtitle')}</PageTitle.SubHeader>
-        <PageTitle.Actions>
-          {!isEditMode && (
-            <>
-              <Button variant="outlined" color="error" startIcon={<Trash2 size={16} />} onClick={handleDeleteClick}>
-                Delete
-              </Button>
-              <Button variant="contained" startIcon={<Edit size={16} />} onClick={() => setIsEditMode(true)}>
-                Edit
-              </Button>
-            </>
-          )}
-        </PageTitle.Actions>
+        <PageTitle.BackButton component={<Link to="/users" />}>
+          {t('users:manageUser.back', 'Back to Users')}
+        </PageTitle.BackButton>
+        <PageTitle.Avatar>
+          <Avatar
+            sx={{
+              bgcolor: 'primary.main',
+              fontSize: '1rem',
+            }}
+          >
+            {getInitials(displayName)}
+          </Avatar>
+        </PageTitle.Avatar>
+        <PageTitle.Header>
+          <Typography variant="h3">{displayName}</Typography>
+        </PageTitle.Header>
+        <PageTitle.SubHeader>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Chip label={user.type} size="small" sx={{px: 0.5}} />
+          </Stack>
+          <CopyableId value={user.id} copyLabel={t('users:manageUser.copyUserId', 'Copy User ID')} />
+        </PageTitle.SubHeader>
       </PageTitle>
 
-      <Paper sx={{p: 4}}>
-        {/* User Basic Information */}
-        <Box sx={{mb: 3}}>
-          <Typography variant="h6" gutterBottom>
-            Basic Information
-          </Typography>
-          <Divider sx={{mb: 2}} />
-          <Stack spacing={2}>
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                User ID
-              </Typography>
-              <Typography variant="body1">{user.id}</Typography>
-            </Box>
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                Organization Unit
-              </Typography>
-              <Typography variant="body1">{user.organizationUnit}</Typography>
-            </Box>
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                User Type
-              </Typography>
-              <Typography variant="body1">{user.type}</Typography>
-            </Box>
-          </Stack>
-        </Box>
+      {/* Tabs */}
+      <Tabs value={activeTab} onChange={handleTabChange} aria-label="user settings tabs">
+        <Tab
+          label={t('users:manageUser.tabs.general', 'General')}
+          id="user-tab-0"
+          aria-controls="user-tabpanel-0"
+          sx={{textTransform: 'none'}}
+        />
+      </Tabs>
 
-        <Divider sx={{my: 3}} />
-
-        {/* User Attributes - View or Edit Mode */}
-        <Box>
-          <Typography variant="h6" gutterBottom>
-            User Attributes
-          </Typography>
-          <Divider sx={{mb: 2}} />
-
-          {!isEditMode ? (
-            // View Mode - Display attributes as read-only
-            <Stack spacing={2}>
-              {user.attributes && Object.keys(user.attributes).length > 0 ? (
-                Object.entries(user.attributes).map(([key, value]) => {
-                  let displayValue: string;
-                  if (value === null || value === undefined) {
-                    displayValue = '-';
-                  } else if (typeof value === 'boolean') {
-                    displayValue = value ? 'Yes' : 'No';
-                  } else if (Array.isArray(value)) {
-                    displayValue = value.join(', ');
-                  } else if (typeof value === 'object') {
-                    displayValue = JSON.stringify(value);
-                  } else if (typeof value === 'string' || typeof value === 'number') {
-                    displayValue = String(value);
-                  } else {
-                    displayValue = '-';
-                  }
-
-                  const fieldDef = userSchema?.schema?.[key];
-                  let attributeLabel = key;
-                  if (fieldDef?.displayName) {
-                    const resolved = resolveDisplayName(fieldDef.displayName);
-                    attributeLabel = resolved || key;
-                  }
-
-                  return (
-                    <Box key={key}>
-                      <Typography variant="caption" color="text.secondary">
-                        {attributeLabel}
-                      </Typography>
-                      <Typography variant="body1">{displayValue}</Typography>
-                    </Box>
-                  );
-                })
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  No attributes available
-                </Typography>
+      {/* Tab Panels */}
+      <>
+        {/* General Tab */}
+        <TabPanel value={activeTab} index={0}>
+          <Stack spacing={3}>
+            {/* User Attributes */}
+            <SettingsCard
+              title={t('users:manageUser.sections.attributes.title', 'User Attributes')}
+              description={t(
+                'users:manageUser.sections.attributes.description',
+                'View and manage user attribute values.',
               )}
-            </Stack>
-          ) : (
-            // Edit Mode - Display form fields
-            <Box
-              component="form"
-              onSubmit={(event) => {
-                handleSubmit(onSubmit)(event).catch(() => {
-                  // Handle form submission error
-                });
-              }}
-              noValidate
-              sx={{display: 'flex', flexDirection: 'column', gap: 2}}
+              headerAction={
+                !isEditMode ? (
+                  <Button variant="outlined" size="small" onClick={() => setIsEditMode(true)}>
+                    {t('common:actions.edit', 'Edit')}
+                  </Button>
+                ) : undefined
+              }
             >
-              {/* Dynamic Schema Fields */}
-              {userSchema?.schema ? (
-                Object.entries(userSchema.schema)
-                  .filter(([, fieldDef]) => !((fieldDef.type === 'string' || fieldDef.type === 'number') && fieldDef.credential))
-                  .map(([fieldName, fieldDef]) => renderSchemaField(fieldName, fieldDef, control, errors, resolveDisplayName))
+              {!isEditMode ? (
+                <Stack spacing={2}>
+                  {user.attributes && Object.keys(user.attributes).length > 0 ? (
+                    Object.entries(user.attributes).map(([key, value]) => {
+                      let displayValue: string;
+                      if (value === null || value === undefined) {
+                        displayValue = '-';
+                      } else if (typeof value === 'boolean') {
+                        displayValue = value ? t('common:actions.yes') : t('common:actions.no');
+                      } else if (Array.isArray(value)) {
+                        displayValue = value.join(', ');
+                      } else if (typeof value === 'object') {
+                        displayValue = JSON.stringify(value);
+                      } else if (typeof value === 'string' || typeof value === 'number') {
+                        displayValue = String(value);
+                      } else {
+                        displayValue = '-';
+                      }
+
+                      const fieldDef = userSchema?.schema?.[key];
+                      let attributeLabel = key;
+                      if (fieldDef?.displayName) {
+                        const resolved = resolveDisplayName(fieldDef.displayName);
+                        attributeLabel = resolved || key;
+                      }
+
+                      return (
+                        <Box key={key}>
+                          <Typography variant="caption" color="text.secondary">
+                            {attributeLabel}
+                          </Typography>
+                          <Typography variant="body1">{displayValue}</Typography>
+                        </Box>
+                      );
+                    })
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      {t('users:manageUser.sections.attributes.empty', 'No attributes available')}
+                    </Typography>
+                  )}
+                </Stack>
               ) : (
-                <Typography variant="body2" color="text.secondary">
-                  No schema available for editing
-                </Typography>
-              )}
-
-              {/* Update User Error Display */}
-              {updateUserMutation.error && (
-                <Alert severity="error" sx={{mt: 2}}>
-                  <Typography variant="body2" sx={{fontWeight: 'bold', mb: 0.5}}>
-                    {updateUserMutation.error.message}
-                  </Typography>
-                </Alert>
-              )}
-
-              {/* Form Actions */}
-              <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{mt: 2}}>
-                <Button variant="outlined" onClick={handleCancel} disabled={isSubmitting} startIcon={<X size={16} />}>
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  startIcon={isSubmitting ? null : <Save size={16} />}
-                  disabled={isSubmitting}
+                <Box
+                  component="form"
+                  onSubmit={(event) => {
+                    handleSubmit(onSubmit)(event).catch(() => {});
+                  }}
+                  noValidate
+                  sx={{display: 'flex', flexDirection: 'column', gap: 2}}
                 >
-                  {isSubmitting ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </Stack>
-            </Box>
-          )}
-        </Box>
-      </Paper>
+                  {userSchema?.schema ? (
+                    Object.entries(userSchema.schema)
+                      .filter(
+                        ([, fieldDef]) =>
+                          !((fieldDef.type === 'string' || fieldDef.type === 'number') && fieldDef.credential),
+                      )
+                      .map(([fieldName, fieldDef]) =>
+                        renderSchemaField(fieldName, fieldDef, control, errors, resolveDisplayName),
+                      )
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      {t('users:manageUser.sections.attributes.noSchema', 'No schema available for editing')}
+                    </Typography>
+                  )}
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel}>
-        <DialogTitle>Delete User</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete this user? This action cannot be undone.
-          </DialogContentText>
-          {deleteUserMutation.error && (
-            <Alert severity="error" sx={{mt: 2}}>
-              <Typography variant="body2" sx={{fontWeight: 'bold'}}>
-                {deleteUserMutation.error.message}
+                  {updateUserMutation.error && (
+                    <Alert severity="error" sx={{mt: 2}}>
+                      <Typography variant="body2" sx={{fontWeight: 'bold', mb: 0.5}}>
+                        {updateUserMutation.error.message}
+                      </Typography>
+                    </Alert>
+                  )}
+
+                  <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{mt: 2}}>
+                    <Button
+                      variant="outlined"
+                      onClick={handleCancel}
+                      disabled={isSubmitting}
+                      startIcon={<X size={16} />}
+                    >
+                      {t('common:actions.cancel', 'Cancel')}
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      startIcon={isSubmitting ? null : <Save size={16} />}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? t('common:status.saving', 'Saving...') : t('common:actions.save', 'Save Changes')}
+                    </Button>
+                  </Stack>
+                </Box>
+              )}
+            </SettingsCard>
+
+            {/* Danger Zone */}
+            <SettingsCard
+              title={t('users:manageUser.sections.dangerZone.title', 'Danger Zone')}
+              description={t(
+                'users:manageUser.sections.dangerZone.description',
+                'Irreversible and destructive actions.',
+              )}
+            >
+              <Typography variant="h6" gutterBottom color="error">
+                {t('users:manageUser.sections.dangerZone.deleteUser', 'Delete User')}
               </Typography>
-            </Alert>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel} disabled={deleteUserMutation.isPending}>
-            Cancel
-          </Button>
-          <Button
-            onClick={() => {
-              handleDeleteConfirm().catch(() => {
-                // Handle error
-              });
-            }}
-            color="error"
-            variant="contained"
-            disabled={deleteUserMutation.isPending}
-          >
-            {deleteUserMutation.isPending ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+              <Typography variant="body2" color="text.secondary" sx={{mb: 3}}>
+                {t(
+                  'users:manageUser.sections.dangerZone.deleteUserDescription',
+                  'Once deleted, this user cannot be recovered. All associated data will be permanently removed.',
+                )}
+              </Typography>
+              <Button variant="contained" color="error" onClick={() => setDeleteDialogOpen(true)}>
+                {t('common:actions.delete', 'Delete')}
+              </Button>
+            </SettingsCard>
+          </Stack>
+        </TabPanel>
+      </>
+
+      {/* Delete Dialog */}
+      <UserDeleteDialog
+        open={deleteDialogOpen}
+        userId={userId ?? null}
+        onClose={() => setDeleteDialogOpen(false)}
+        onSuccess={handleDeleteSuccess}
+      />
     </PageContent>
   );
 }

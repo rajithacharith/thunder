@@ -41,6 +41,7 @@ export default function ThemeDeleteDialog({
   const [error, setError] = useState<string | null>(null);
 
   const handleCancel = (): void => {
+    if (deleteTheme.isPending) return;
     setError(null);
     onClose();
   };

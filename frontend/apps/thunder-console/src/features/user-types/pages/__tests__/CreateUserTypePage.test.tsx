@@ -882,15 +882,15 @@ describe('CreateUserTypePage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    // Step 1: Only "Name" breadcrumb
+    // Step 1: Only the name step breadcrumb
     const breadcrumb1 = screen.getByRole('navigation', {name: /breadcrumb/i});
-    expect(within(breadcrumb1).getByText('Name')).toBeInTheDocument();
+    expect(within(breadcrumb1).getByText('Create a User Type')).toBeInTheDocument();
 
     await goToGeneralStep(user);
 
-    // Step 2: "Name" > "General" breadcrumbs
+    // Step 2: Name step > "General" breadcrumbs
     const breadcrumb2 = screen.getByRole('navigation', {name: /breadcrumb/i});
-    expect(within(breadcrumb2).getByText('Name')).toBeInTheDocument();
+    expect(within(breadcrumb2).getByText('Create a User Type')).toBeInTheDocument();
     expect(within(breadcrumb2).getByText('General')).toBeInTheDocument();
   });
 
@@ -900,9 +900,9 @@ describe('CreateUserTypePage', () => {
 
     await goToGeneralStep(user);
 
-    // Click on "Name" breadcrumb to go back
+    // Click on name step breadcrumb to go back
     const breadcrumb = screen.getByRole('navigation', {name: /breadcrumb/i});
-    await user.click(within(breadcrumb).getByText('Name'));
+    await user.click(within(breadcrumb).getByText('Create a User Type'));
 
     await waitFor(() => {
       expect(screen.getByTestId('configure-name')).toBeInTheDocument();

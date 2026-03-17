@@ -19,70 +19,59 @@
 import {useState, type JSX} from 'react';
 import {Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Alert} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
-import {getDisplayNameForCode, useDeleteTranslations} from '@thunder/i18n';
+import useDeleteUser from '../api/useDeleteUser';
 
-export interface TranslationDeleteDialogProps {
-  /**
-   * Whether the dialog is open
-   */
+export interface UserDeleteDialogProps {
   open: boolean;
-  /**
-   * The language code to delete translations for
-   */
-  language: string | null;
-  /**
-   * Callback when the dialog should be closed
-   */
+  userId: string | null;
   onClose: () => void;
-  /**
-   * Callback when translations are successfully deleted
-   */
   onSuccess?: () => void;
 }
 
 /**
- * Dialog component for confirming deletion of all custom translations for a language.
+ * Dialog component for confirming user deletion.
  */
-export default function TranslationDeleteDialog({
+export default function UserDeleteDialog({
   open,
-  language,
+  userId,
   onClose,
   onSuccess = undefined,
-}: TranslationDeleteDialogProps): JSX.Element {
-  const {t} = useTranslation('translations');
-  const deleteTranslations = useDeleteTranslations();
+}: UserDeleteDialogProps): JSX.Element {
+  const {t} = useTranslation();
+  const deleteUser = useDeleteUser();
   const [error, setError] = useState<string | null>(null);
 
-  const displayName = language ? getDisplayNameForCode(language) : '';
-
   const handleCancel = (): void => {
-    if (deleteTranslations.isPending) return;
+    if (deleteUser.isPending) return;
     setError(null);
     onClose();
   };
 
   const handleConfirm = (): void => {
-    if (!language) return;
+    if (!userId) return;
 
-    deleteTranslations.mutate(language, {
+    setError(null);
+    deleteUser.mutate(userId, {
       onSuccess: (): void => {
         setError(null);
         onClose();
         onSuccess?.();
       },
-      onError: () => {
-        setError(t('delete.error'));
+      onError: (err: Error) => {
+        setError(err.message ?? t('users:delete.error', 'Failed to delete user'));
       },
     });
   };
 
   return (
     <Dialog open={open} onClose={handleCancel} maxWidth="sm" fullWidth>
-      <DialogTitle>{t('delete.title')}</DialogTitle>
+      <DialogTitle>{t('users:delete.title', 'Delete User')}</DialogTitle>
       <DialogContent>
-        <DialogContentText sx={{mb: 2}}>{t('delete.message', {language: displayName ?? language})}</DialogContentText>
+        <DialogContentText sx={{mb: 2}}>
+          {t('users:delete.message', 'Are you sure you want to delete this user? This action cannot be undone.')}
+        </DialogContentText>
         <Alert severity="warning" sx={{mb: 2}}>
-          {t('delete.disclaimer')}
+          {t('users:delete.disclaimer', 'All associated data will be permanently removed.')}
         </Alert>
         {error && (
           <Alert severity="error" sx={{mt: 2}}>
@@ -91,11 +80,11 @@ export default function TranslationDeleteDialog({
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleCancel} disabled={deleteTranslations.isPending}>
+        <Button onClick={handleCancel} disabled={deleteUser.isPending}>
           {t('common:actions.cancel')}
         </Button>
-        <Button onClick={handleConfirm} color="error" variant="contained" disabled={deleteTranslations.isPending}>
-          {deleteTranslations.isPending ? t('common:status.deleting') : t('common:actions.delete')}
+        <Button onClick={handleConfirm} color="error" variant="contained" disabled={deleteUser.isPending || !userId}>
+          {deleteUser.isPending ? t('common:status.deleting', 'Deleting...') : t('common:actions.delete', 'Delete')}
         </Button>
       </DialogActions>
     </Dialog>

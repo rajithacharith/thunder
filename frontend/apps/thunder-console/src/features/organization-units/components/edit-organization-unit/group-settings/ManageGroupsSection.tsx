@@ -17,9 +17,9 @@
  */
 
 import {useMemo, type JSX} from 'react';
-import {Box, DataGrid, Avatar, useTheme} from '@wso2/oxygen-ui';
-import {Users} from '@wso2/oxygen-ui-icons-react';
+import {Box, DataGrid, Avatar} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
+import getInitials from '@/utils/getInitials';
 import SettingsCard from '@/components/SettingsCard';
 import useDataGridLocaleText from '../../../../../hooks/useDataGridLocaleText';
 import useGetOrganizationUnitGroups from '../../../api/useGetOrganizationUnitGroups';
@@ -48,7 +48,6 @@ interface ManageGroupsSectionProps {
  */
 export default function ManageGroupsSection({organizationUnitId}: ManageGroupsSectionProps): JSX.Element {
   const {t} = useTranslation();
-  const theme = useTheme();
   const dataGridLocaleText = useDataGridLocaleText();
 
   const {data: groupsData, isLoading} = useGetOrganizationUnitGroups(organizationUnitId);
@@ -61,31 +60,31 @@ export default function ManageGroupsSection({organizationUnitId}: ManageGroupsSe
         width: 70,
         sortable: false,
         filterable: false,
-        renderCell: (): JSX.Element => (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-            }}
-          >
-            <Avatar
+        renderCell: (params: DataGrid.GridRenderCellParams<Group>): JSX.Element => {
+          const displayVal = params.row.name ?? params.row.id;
+
+          return (
+            <Box
               sx={{
-                p: 0.5,
-                backgroundColor: theme.vars?.palette.grey[500],
-                width: 30,
-                height: 30,
-                fontSize: '0.875rem',
-                ...theme.applyStyles('dark', {
-                  backgroundColor: theme.vars?.palette.grey[900],
-                }),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
               }}
             >
-              <Users size={14} />
-            </Avatar>
-          </Box>
-        ),
+              <Avatar
+                sx={{
+                  width: 30,
+                  height: 30,
+                  bgcolor: 'primary.main',
+                  fontSize: '0.875rem',
+                }}
+              >
+                {getInitials(displayVal)}
+              </Avatar>
+            </Box>
+          );
+        },
       },
       {
         field: 'name',
@@ -100,7 +99,7 @@ export default function ManageGroupsSection({organizationUnitId}: ManageGroupsSe
         minWidth: 250,
       },
     ],
-    [t, theme],
+    [t],
   );
 
   return (

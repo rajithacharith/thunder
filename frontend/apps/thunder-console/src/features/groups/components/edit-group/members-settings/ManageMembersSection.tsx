@@ -17,8 +17,9 @@
  */
 
 import {useState, useMemo, type JSX, type ReactNode} from 'react';
-import {Box, Avatar, Chip, DataGrid, IconButton, Typography, useTheme} from '@wso2/oxygen-ui';
-import {User, Users, Trash2} from '@wso2/oxygen-ui-icons-react';
+import getInitials from '@/utils/getInitials';
+import {Box, Avatar, DataGrid, IconButton} from '@wso2/oxygen-ui';
+import {Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import SettingsCard from '@/components/SettingsCard';
 import useDataGridLocaleText from '../../../../../hooks/useDataGridLocaleText';
@@ -36,7 +37,6 @@ interface ManageMembersSectionProps {
  */
 export default function ManageMembersSection({groupId, onRemoveMember, headerAction = undefined}: ManageMembersSectionProps): JSX.Element {
   const {t} = useTranslation();
-  const theme = useTheme();
   const dataGridLocaleText = useDataGridLocaleText();
   const [paginationModel, setPaginationModel] = useState<DataGrid.GridPaginationModel>({pageSize: 10, page: 0});
 
@@ -57,55 +57,50 @@ export default function ManageMembersSection({groupId, onRemoveMember, headerAct
         width: 70,
         sortable: false,
         filterable: false,
-        renderCell: (params: DataGrid.GridRenderCellParams<Member>): JSX.Element => (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-            }}
-          >
-            <Avatar
+        renderCell: (params: DataGrid.GridRenderCellParams<Member>): JSX.Element => {
+          const displayVal = params.row.display ?? params.row.id;
+
+          return (
+            <Box
               sx={{
-                p: 0.5,
-                backgroundColor: theme.vars?.palette.grey[500],
-                width: 30,
-                height: 30,
-                fontSize: '0.875rem',
-                ...theme.applyStyles('dark', {
-                  backgroundColor: theme.vars?.palette.grey[900],
-                }),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
               }}
             >
-              {params.row.type === 'user' ? <User size={14} /> : <Users size={14} />}
-            </Avatar>
-          </Box>
-        ),
+              <Avatar
+                sx={{
+                  width: 30,
+                  height: 30,
+                  bgcolor: 'primary.main',
+                  fontSize: '0.875rem',
+                }}
+              >
+                {getInitials(displayVal)}
+              </Avatar>
+            </Box>
+          );
+        },
       },
       {
         field: 'display',
+        headerName: t('groups:edit.members.sections.manage.listing.columns.name', 'Name'),
+        flex: 1,
+        minWidth: 200,
+        valueGetter: (_value: unknown, row: Member) => row.display ?? row.id,
+      },
+      {
+        field: 'id',
         headerName: t('groups:edit.members.sections.manage.listing.columns.id'),
         flex: 1,
         minWidth: 250,
-        renderCell: (params: DataGrid.GridRenderCellParams<Member>): JSX.Element => (
-          <Box sx={{display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', overflow: 'hidden'}}>
-            <Typography variant="body2" noWrap>
-              {params.row.display ?? params.row.id}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" noWrap sx={{fontFamily: 'monospace', fontSize: '0.7rem'}}>
-              {params.row.id}
-            </Typography>
-          </Box>
-        ),
       },
       {
         field: 'type',
         headerName: t('groups:edit.members.sections.manage.listing.columns.type'),
-        width: 150,
-        renderCell: (params: DataGrid.GridRenderCellParams<Member>): JSX.Element => (
-          <Chip label={params.row.type} size="small" variant="outlined" sx={{textTransform: 'capitalize'}} />
-        ),
+        flex: 0.6,
+        minWidth: 120,
       },
       {
         field: 'actions',
@@ -128,7 +123,7 @@ export default function ManageMembersSection({groupId, onRemoveMember, headerAct
         ),
       },
     ],
-    [t, theme, onRemoveMember],
+    [t, onRemoveMember],
   );
 
   return (

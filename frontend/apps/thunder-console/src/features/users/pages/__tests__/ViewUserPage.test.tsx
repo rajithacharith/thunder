@@ -28,7 +28,7 @@ const {mockLoggerError} = vi.hoisted(() => ({
 
 const mockNavigate = vi.fn();
 const mockUpdateMutateAsync = vi.fn();
-const mockDeleteMutateAsync = vi.fn();
+const mockDeleteMutate = vi.fn();
 const mockResetUpdateError = vi.fn();
 const mockResetDeleteError = vi.fn();
 
@@ -189,8 +189,8 @@ describe('ViewUserPage', () => {
   };
 
   const defaultDeleteReturn: UseDeleteUserReturn = {
-    mutate: vi.fn(),
-    mutateAsync: mockDeleteMutateAsync,
+    mutate: mockDeleteMutate,
+    mutateAsync: vi.fn(),
     isPending: false,
     error: null,
     data: undefined,
@@ -204,7 +204,9 @@ describe('ViewUserPage', () => {
     vi.clearAllMocks();
     mockNavigate.mockResolvedValue(undefined);
     mockUpdateMutateAsync.mockResolvedValue(mockUserData);
-    mockDeleteMutateAsync.mockResolvedValue(undefined);
+    mockDeleteMutate.mockImplementation((_userId: string, options?: {onSuccess?: () => void}) => {
+      options?.onSuccess?.();
+    });
     mockUseGetUser.mockReturnValue({
       data: mockUserData,
       isLoading: false,
@@ -349,23 +351,19 @@ describe('ViewUserPage', () => {
   });
 
   describe('View Mode', () => {
-    it('renders user profile page with title', () => {
+    it('renders user profile page with header', () => {
       render(<ViewUserPage />);
 
-      expect(screen.getByRole('heading', {name: 'Manage User'})).toBeInTheDocument();
-      expect(screen.getByText('View and manage user information')).toBeInTheDocument();
+      const headings = screen.getAllByRole('heading', {name: 'user123'});
+      expect(headings.length).toBeGreaterThanOrEqual(1);
     });
 
     it('displays basic user information', () => {
       render(<ViewUserPage />);
 
-      expect(screen.getByText('User ID')).toBeInTheDocument();
-      expect(screen.getByText('user123')).toBeInTheDocument();
-
-      expect(screen.getByText('Organization Unit')).toBeInTheDocument();
-      expect(screen.getByText('test-ou')).toBeInTheDocument();
-
-      expect(screen.getByText('User Type')).toBeInTheDocument();
+      // User ID shown in heading and CopyableId
+      expect(screen.getAllByText('user123').length).toBeGreaterThanOrEqual(1);
+      // User type shown as chip
       expect(screen.getByText('Employee')).toBeInTheDocument();
     });
 
@@ -432,7 +430,7 @@ describe('ViewUserPage', () => {
       const user = userEvent.setup();
       render(<ViewUserPage />);
 
-      const backButton = screen.getByRole('button', {name: /^back$/i});
+      const backButton = screen.getByRole('button', {name: /back to users/i});
       await user.click(backButton);
 
       await waitFor(() => {
@@ -447,7 +445,7 @@ describe('ViewUserPage', () => {
 
       render(<ViewUserPage />);
 
-      const backButton = screen.getByRole('button', {name: /^back$/i});
+      const backButton = screen.getByRole('button', {name: /back to users/i});
       await user.click(backButton);
 
       await waitFor(() => {
@@ -467,13 +465,12 @@ describe('ViewUserPage', () => {
       await user.click(editButton);
 
       await waitFor(() => {
-        expect(screen.getByRole('button', {name: /save changes/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /^save$/i})).toBeInTheDocument();
         expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
       });
 
-      // Edit and Delete buttons should not be visible in edit mode
+      // Edit button should not be visible in edit mode (replaced by Save/Cancel)
       expect(screen.queryByRole('button', {name: /^edit$/i})).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', {name: /^delete$/i})).not.toBeInTheDocument();
     });
 
     it('does not submit if userId is missing from params', async () => {
@@ -489,7 +486,7 @@ describe('ViewUserPage', () => {
       render(<ViewUserPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
+      await user.click(screen.getByRole('button', {name: /^save$/i}));
 
       // Should not call mutateAsync when organizationUnit or type is empty
       await waitFor(() => {
@@ -516,7 +513,7 @@ describe('ViewUserPage', () => {
       render(<ViewUserPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
+      await user.click(screen.getByRole('button', {name: /^save$/i}));
 
       await waitFor(() => {
         expect(mockUpdateMutateAsync).not.toHaveBeenCalled();
@@ -534,7 +531,7 @@ describe('ViewUserPage', () => {
       render(<ViewUserPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
+      await user.click(screen.getByRole('button', {name: /^save$/i}));
 
       await waitFor(() => {
         expect(mockUpdateMutateAsync).not.toHaveBeenCalled();
@@ -717,7 +714,7 @@ describe('ViewUserPage', () => {
       await user.clear(emailInput);
       await user.type(emailInput, 'updated@example.com');
 
-      const saveButton = screen.getByRole('button', {name: /save changes/i});
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
       await user.click(saveButton);
 
       await waitFor(() => {
@@ -756,7 +753,7 @@ describe('ViewUserPage', () => {
       render(<ViewUserPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
+      await user.click(screen.getByRole('button', {name: /^save$/i}));
 
       await waitFor(() => {
         expect(mockUpdateMutateAsync).toHaveBeenCalled();
@@ -779,7 +776,7 @@ describe('ViewUserPage', () => {
       render(<ViewUserPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
+      await user.click(screen.getByRole('button', {name: /^save$/i}));
 
       await waitFor(() => {
         expect(mockUpdateMutateAsync).toHaveBeenCalled();
@@ -795,11 +792,11 @@ describe('ViewUserPage', () => {
       render(<ViewUserPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
+      await user.click(screen.getByRole('button', {name: /^save$/i}));
 
       await waitFor(() => {
         expect(screen.getByRole('button', {name: /edit/i})).toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /save changes/i})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /^save$/i})).not.toBeInTheDocument();
       });
     });
 
@@ -816,7 +813,7 @@ describe('ViewUserPage', () => {
       render(<ViewUserPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
+      await user.click(screen.getByRole('button', {name: /^save$/i}));
 
       await waitFor(() => {
         expect(screen.getByRole('alert')).toHaveTextContent('Failed to update user');
@@ -854,7 +851,7 @@ describe('ViewUserPage', () => {
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
 
-      const saveButton = screen.getByRole('button', {name: /save changes/i});
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
       await user.click(saveButton);
 
       await waitFor(() => {
@@ -876,7 +873,7 @@ describe('ViewUserPage', () => {
       render(<ViewUserPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
+      await user.click(screen.getByRole('button', {name: /^save$/i}));
 
       await waitFor(() => {
         expect(mockLoggerError).toHaveBeenCalledWith('Failed to update user', {error});
@@ -893,9 +890,10 @@ describe('ViewUserPage', () => {
       await user.click(deleteButton);
 
       await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-        expect(screen.getByText('Delete User')).toBeInTheDocument();
-        expect(screen.getByText(/Are you sure you want to delete this user/i)).toBeInTheDocument();
+        const dialog = screen.getByRole('dialog');
+        expect(dialog).toBeInTheDocument();
+        expect(within(dialog).getByText('Delete User')).toBeInTheDocument();
+        expect(within(dialog).getByText(/Are you sure you want to delete this user/i)).toBeInTheDocument();
       });
     });
 
@@ -912,7 +910,7 @@ describe('ViewUserPage', () => {
 
       // Verify userId is passed correctly
       await waitFor(() => {
-        expect(mockDeleteMutateAsync).toHaveBeenCalledWith('user123');
+        expect(mockDeleteMutate).toHaveBeenCalledWith('user123', expect.any(Object));
       });
     });
 
@@ -943,18 +941,16 @@ describe('ViewUserPage', () => {
       await user.click(confirmButton);
 
       await waitFor(() => {
-        expect(mockDeleteMutateAsync).toHaveBeenCalledWith('user123');
+        expect(mockDeleteMutate).toHaveBeenCalledWith('user123', expect.any(Object));
         expect(mockNavigate).toHaveBeenCalledWith('/users');
       });
     });
 
     it('displays delete error in dialog', async () => {
       const user = userEvent.setup();
-      mockUseDeleteUser.mockReturnValue({
-        ...defaultDeleteReturn,
-        error: new Error('Failed to delete user'),
-        isError: true,
-        isIdle: false,
+      const deleteError = new Error('Failed to delete user');
+      mockDeleteMutate.mockImplementation((_userId: string, options?: {onError?: (err: Error) => void}) => {
+        options?.onError?.(deleteError);
       });
 
       render(<ViewUserPage />);
@@ -962,7 +958,12 @@ describe('ViewUserPage', () => {
       await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
       const dialog = screen.getByRole('dialog');
-      expect(within(dialog).getByText('Failed to delete user')).toBeInTheDocument();
+      const confirmButton = within(dialog).getByRole('button', {name: /^delete$/i});
+      await user.click(confirmButton);
+
+      await waitFor(() => {
+        expect(within(dialog).getByText('Failed to delete user')).toBeInTheDocument();
+      });
     });
 
     it('disables buttons during deletion', async () => {
@@ -982,14 +983,12 @@ describe('ViewUserPage', () => {
       expect(within(dialog).getByRole('button', {name: /cancel/i})).toBeDisabled();
     });
 
-    it('logs error when delete fails', async () => {
+    it('shows error message when delete fails', async () => {
       const user = userEvent.setup();
       const error = new Error('Delete failed');
 
-      const failingDeleteMutateAsync = vi.fn().mockRejectedValue(error);
-      mockUseDeleteUser.mockReturnValue({
-        ...defaultDeleteReturn,
-        mutateAsync: failingDeleteMutateAsync,
+      mockDeleteMutate.mockImplementation((_userId: string, options?: {onError?: (err: Error) => void}) => {
+        options?.onError?.(error);
       });
 
       render(<ViewUserPage />);
@@ -1001,16 +1000,14 @@ describe('ViewUserPage', () => {
       await user.click(confirmButton);
 
       await waitFor(() => {
-        expect(mockLoggerError).toHaveBeenCalledWith('Failed to delete user', {error});
+        expect(within(dialog).getByText('Delete failed')).toBeInTheDocument();
       });
     });
 
-    it('closes dialog after delete error', async () => {
+    it('keeps dialog open after delete error so user can retry', async () => {
       const user = userEvent.setup();
-      const failingDeleteMutateAsync = vi.fn().mockRejectedValue(new Error('Delete failed'));
-      mockUseDeleteUser.mockReturnValue({
-        ...defaultDeleteReturn,
-        mutateAsync: failingDeleteMutateAsync,
+      mockDeleteMutate.mockImplementation((_userId: string, options?: {onError?: (err: Error) => void}) => {
+        options?.onError?.(new Error('Delete failed'));
       });
 
       render(<ViewUserPage />);
@@ -1022,7 +1019,8 @@ describe('ViewUserPage', () => {
       await user.click(confirmButton);
 
       await waitFor(() => {
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        expect(within(dialog).getByText('Delete failed')).toBeInTheDocument();
       });
     });
   });

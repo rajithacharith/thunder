@@ -96,8 +96,8 @@ describe('ManageUsersSection', () => {
 
     expect(screen.getByText('JD')).toBeInTheDocument();
     expect(screen.getByText('JS')).toBeInTheDocument();
-    // user-3 falls back to id 'user-3', initials would be 'U'
-    expect(screen.getByText('U')).toBeInTheDocument();
+    // user-3 falls back to id 'user-3', initials would be 'US'
+    expect(screen.getByText('US')).toBeInTheDocument();
   });
 
   it('should render column headers', () => {

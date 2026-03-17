@@ -37,6 +37,7 @@ import {
 import {ArrowLeft, Edit, Building} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
+import CopyableId from '../../../components/CopyableId';
 import useGetOrganizationUnit from '../api/useGetOrganizationUnit';
 import useUpdateOrganizationUnit from '../api/useUpdateOrganizationUnit';
 import type {OrganizationUnit} from '../models/organization-unit';
@@ -94,7 +95,6 @@ export default function OrganizationUnitEditPage(): JSX.Element {
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [tempName, setTempName] = useState('');
   const [tempDescription, setTempDescription] = useState('');
-
   const listUrl = '/organization-units';
 
   const handleBack = async (): Promise<void> => {
@@ -331,6 +331,9 @@ export default function OrganizationUnitEditPage(): JSX.Element {
               </>
             )}
           </Stack>
+
+          {/* Organization Unit ID */}
+          <CopyableId value={organizationUnit.id} copyLabel={t('organizationUnits:edit.page.copyOuId', 'Copy Organization Unit ID')} />
         </PageTitle.SubHeader>
       </PageTitle>
 

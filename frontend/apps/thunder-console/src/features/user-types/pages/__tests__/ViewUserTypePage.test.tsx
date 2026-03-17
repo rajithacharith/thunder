@@ -27,7 +27,7 @@ const mockNavigate = vi.fn();
 const mockRefetch = vi.fn();
 const mockUpdateMutateAsync = vi.fn();
 const mockResetUpdateError = vi.fn();
-const mockDeleteMutateAsync = vi.fn();
+const mockShowToast = vi.fn();
 
 // Mock react-router
 vi.mock('react-router', async () => {
@@ -55,8 +55,6 @@ vi.mock('react-router', async () => {
 const mockUseGetUserType = vi.fn<(id?: string) => any>();
 const mockUseUpdateUserType = vi.fn<() => any>();
 const mockUseDeleteUserType = vi.fn<() => any>();
-const mockUseGetOrganizationUnits = vi.fn<() => any>();
-const mockRefetchOrganizationUnits = vi.fn();
 
 vi.mock('../../api/useGetUserType', () => ({
   default: (id?: string) => mockUseGetUserType(id),
@@ -70,13 +68,42 @@ vi.mock('../../api/useDeleteUserType', () => ({
   default: () => mockUseDeleteUserType(),
 }));
 
-vi.mock('../../../organization-units/api/useGetOrganizationUnits', () => ({
-  default: () => mockUseGetOrganizationUnits(),
+// Mock OrganizationUnitTreePicker
+vi.mock('../../../organization-units/components/OrganizationUnitTreePicker', () => ({
+  default: ({value, onChange}: {value: string; onChange: (id: string) => void}) => (
+    <div data-testid="ou-tree-picker">
+      <span data-testid="ou-value">{value || ''}</span>
+      <button type="button" data-testid="select-ou-root" onClick={() => onChange('root-ou')}>
+        Root Organization
+      </button>
+      <button type="button" data-testid="select-ou-child" onClick={() => onChange('child-ou')}>
+        Child Organization
+      </button>
+    </div>
+  ),
 }));
 
-const getOrganizationUnitSelect = () => screen.getAllByRole('combobox')[0];
-const getPropertyTypeSelect = (index = 0) => screen.getAllByRole('combobox')[index + 2];
-const getPropertyTypeSelects = () => screen.getAllByRole('combobox').slice(2);
+// Mock shared-contexts (useToast)
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+  return {
+    ...actual,
+    useToast: () => ({showToast: mockShowToast}),
+  };
+});
+
+// Schema tab has the property type selects; the General tab has a display attribute select.
+// When on the Schema tab, comboboxes are property type selects.
+const getPropertyTypeSelect = (index = 0) => screen.getAllByRole('combobox')[index];
+const getPropertyTypeSelects = () => screen.getAllByRole('combobox');
+
+/**
+ * Helper to navigate to the Schema tab.
+ */
+const goToSchemaTab = async (user: ReturnType<typeof userEvent.setup>) => {
+  const schemaTab = screen.getByRole('tab', {name: /schema/i});
+  await user.click(schemaTab);
+};
 
 describe('ViewUserTypePage', () => {
   const mockUserType: ApiUserSchema = {
@@ -101,16 +128,6 @@ describe('ViewUserTypePage', () => {
     },
   };
 
-  const mockOrganizationUnitsResponse = {
-    totalResults: 2,
-    startIndex: 1,
-    count: 2,
-    organizationUnits: [
-      {id: 'root-ou', name: 'Root Organization', handle: 'root', description: null, parent: null},
-      {id: 'child-ou', name: 'Child Organization', handle: 'child', description: null, parent: 'root-ou'},
-    ],
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseGetUserType.mockReturnValue({
@@ -126,16 +143,11 @@ describe('ViewUserTypePage', () => {
       isPending: false,
     });
     mockUseDeleteUserType.mockReturnValue({
-      mutateAsync: mockDeleteMutateAsync,
+      mutateAsync: vi.fn(),
       isPending: false,
       error: null,
       reset: vi.fn(),
-    });
-    mockUseGetOrganizationUnits.mockReturnValue({
-      data: mockOrganizationUnitsResponse,
-      isLoading: false,
-      error: null,
-      refetch: mockRefetchOrganizationUnits,
+      mutate: vi.fn(),
     });
   });
 
@@ -207,166 +219,189 @@ describe('ViewUserTypePage', () => {
     });
   });
 
-  describe('View Mode', () => {
-    it('renders user type details in view mode', () => {
+  describe('Header and Navigation', () => {
+    it('renders user type name and ID', () => {
       render(<ViewUserTypePage />);
 
-      expect(screen.getByText('Manage User Type')).toBeInTheDocument();
-      expect(screen.getByText('View and manage user type information')).toBeInTheDocument();
-      expect(screen.getByText('schema-123')).toBeInTheDocument();
       expect(screen.getByText('Employee Schema')).toBeInTheDocument();
-      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+      expect(screen.getByText('schema-123')).toBeInTheDocument();
     });
 
-    it('displays schema properties in table', () => {
+    it('displays General and Schema tabs', () => {
       render(<ViewUserTypePage />);
 
-      expect(screen.getByText('Property Name')).toBeInTheDocument();
-      expect(screen.getByText('Type')).toBeInTheDocument();
-      expect(screen.getByText('Required')).toBeInTheDocument();
-      expect(screen.getByText('Unique')).toBeInTheDocument();
-
-      expect(screen.getByText('email')).toBeInTheDocument();
-      expect(screen.getByText('age')).toBeInTheDocument();
-      expect(screen.getByText('isActive')).toBeInTheDocument();
+      expect(screen.getByRole('tab', {name: /general/i})).toBeInTheDocument();
+      expect(screen.getByRole('tab', {name: /schema/i})).toBeInTheDocument();
     });
 
-    it('falls back to organization unit id when lookup data is missing', () => {
-      mockUseGetOrganizationUnits.mockReturnValue({
-        data: {...mockOrganizationUnitsResponse, organizationUnits: []},
-        isLoading: false,
-        error: null,
-        refetch: mockRefetchOrganizationUnits,
-      });
-
+    it('navigates back via back button link', () => {
       render(<ViewUserTypePage />);
 
-      expect(screen.getByText('root-ou')).toBeInTheDocument();
+      const backLink = screen.getByRole('link', {name: /back to user types/i});
+      expect(backLink).toHaveAttribute('href', '/user-types');
     });
 
-    it('displays edit and delete buttons in view mode', () => {
-      render(<ViewUserTypePage />);
-
-      expect(screen.getByRole('button', {name: /edit/i})).toBeInTheDocument();
-      expect(screen.getByRole('button', {name: /delete/i})).toBeInTheDocument();
-    });
-
-    it('navigates back when back button is clicked', async () => {
+    it('allows inline editing of user type name', async () => {
       const user = userEvent.setup();
       render(<ViewUserTypePage />);
 
-      const backButton = screen.getByRole('button', {name: /^back$/i});
-      await user.click(backButton);
+      // Click the edit name button
+      const editNameButton = screen.getByRole('button', {name: /edit user type name/i});
+      await user.click(editNameButton);
 
+      // Should show a text field with the current name
+      const nameInput = screen.getByRole('textbox');
+      expect(nameInput).toHaveValue('Employee Schema');
+
+      // Edit the name
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Updated Schema{Enter}');
+
+      // Name should be updated
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/user-types');
+        expect(screen.getByText('Updated Schema')).toBeInTheDocument();
       });
-    });
-
-    it('displays enum values in view mode', () => {
-      const userTypeWithEnum: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'root-ou',
-        allowSelfRegistration: false,
-        schema: {
-          status: {
-            type: 'string',
-            required: true,
-            enum: ['ACTIVE', 'INACTIVE', 'PENDING'],
-          },
-        },
-      };
-
-      mockUseGetUserType.mockReturnValue({
-        data: userTypeWithEnum,
-        isLoading: false,
-        error: null,
-        refetch: mockRefetch,
-      });
-
-      render(<ViewUserTypePage />);
-
-      expect(screen.getByText(/ACTIVE, INACTIVE, PENDING/i)).toBeInTheDocument();
-    });
-
-    it('displays regex pattern in view mode', () => {
-      const userTypeWithRegex: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'root-ou',
-        allowSelfRegistration: false,
-        schema: {
-          username: {
-            type: 'string',
-            required: true,
-            regex: '^[a-zA-Z0-9]+$',
-          },
-        },
-      };
-
-      mockUseGetUserType.mockReturnValue({
-        data: userTypeWithRegex,
-        isLoading: false,
-        error: null,
-        refetch: mockRefetch,
-      });
-
-      render(<ViewUserTypePage />);
-
-      expect(screen.getByText('Pattern:')).toBeInTheDocument();
-      expect(screen.getByText('^[a-zA-Z0-9]+$')).toBeInTheDocument();
     });
   });
 
-  describe('Edit Mode', () => {
-    it('enters edit mode when edit button is clicked', async () => {
+  describe('General Tab', () => {
+    it('displays organization unit tree picker', () => {
+      render(<ViewUserTypePage />);
+
+      expect(screen.getByTestId('ou-tree-picker')).toBeInTheDocument();
+      expect(screen.getByTestId('ou-value')).toHaveTextContent('root-ou');
+    });
+
+    it('allows selecting a different organization unit', async () => {
       const user = userEvent.setup();
       render(<ViewUserTypePage />);
 
-      const editButton = screen.getByRole('button', {name: /edit/i});
-      await user.click(editButton);
+      await user.click(screen.getByTestId('select-ou-child'));
 
       await waitFor(() => {
-        expect(screen.getByRole('button', {name: /save changes/i})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /edit/i})).not.toBeInTheDocument();
+        expect(screen.getByTestId('ou-value')).toHaveTextContent('child-ou');
       });
     });
 
-    it('displays editable form fields in edit mode', async () => {
+    it('displays self registration toggle', () => {
+      render(<ViewUserTypePage />);
+
+      expect(screen.getByText('Self Registration')).toBeInTheDocument();
+      // SettingsCard renders a Switch component with role="switch"
+      const toggle = screen.getByRole('switch');
+      expect(toggle).not.toBeChecked();
+    });
+
+    it('allows toggling self registration', async () => {
       const user = userEvent.setup();
       render(<ViewUserTypePage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      const toggle = screen.getByRole('switch');
+      await user.click(toggle);
 
       await waitFor(() => {
-        expect(screen.getByPlaceholderText(/user type name/i)).toBeInTheDocument();
+        expect(toggle).toBeChecked();
       });
     });
 
-    it('allows editing user type name', async () => {
+    it('displays display attribute section', () => {
+      render(<ViewUserTypePage />);
+
+      expect(screen.getByText('Display Attribute')).toBeInTheDocument();
+    });
+
+    it('displays danger zone with delete button', () => {
+      render(<ViewUserTypePage />);
+
+      expect(screen.getByText('Danger Zone')).toBeInTheDocument();
+      expect(screen.getByRole('button', {name: /^delete$/i})).toBeInTheDocument();
+    });
+
+    it('displays organization unit tree picker with empty value', () => {
+      const userTypeWithEmptyOu: ApiUserSchema = {
+        ...mockUserType,
+        ouId: '',
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithEmptyOu,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      render(<ViewUserTypePage />);
+
+      const ouValue = screen.getByTestId('ou-value');
+      expect(ouValue).toHaveTextContent('');
+    });
+
+    it('displays organization unit id in tree picker when unit is not found in lookup', () => {
+      const userTypeWithUnknownOu: ApiUserSchema = {
+        ...mockUserType,
+        ouId: 'unknown-ou-id',
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithUnknownOu,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      render(<ViewUserTypePage />);
+
+      const ouValue = screen.getByTestId('ou-value');
+      expect(ouValue).toHaveTextContent('unknown-ou-id');
+    });
+  });
+
+  describe('Schema Tab', () => {
+    it('displays property editor cards on Schema tab', async () => {
       const user = userEvent.setup();
       render(<ViewUserTypePage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await goToSchemaTab(user);
 
-      const nameInput = await screen.findByPlaceholderText(/user type name/i);
-      await user.clear(nameInput);
-      await user.type(nameInput, 'Updated Schema Name');
+      // Should show property name inputs
+      const propertyNameInputs = screen.getAllByPlaceholderText(/e.g., email, age, address/i);
+      expect(propertyNameInputs.length).toBe(3);
+    });
 
-      expect(nameInput).toHaveValue('Updated Schema Name');
+    it('property name fields are editable', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      await goToSchemaTab(user);
+
+      const propertyNameInputs = screen.getAllByPlaceholderText(/e.g., email, age, address/i);
+      propertyNameInputs.forEach((input) => {
+        expect(input).toBeEnabled();
+      });
+    });
+
+    it('allows changing property type', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      await goToSchemaTab(user);
+
+      const typeSelects = getPropertyTypeSelects();
+      await user.click(typeSelects[0]);
+
+      const numberOption = await screen.findByRole('option', {name: 'Number'});
+      await user.click(numberOption);
+
+      await waitFor(() => {
+        expect(typeSelects[0]).toHaveTextContent('Number');
+      });
     });
 
     it('allows toggling required checkbox', async () => {
       const user = userEvent.setup();
       render(<ViewUserTypePage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', {name: /save changes/i})).toBeInTheDocument();
-      });
+      await goToSchemaTab(user);
 
       const requiredCheckboxes = screen.getAllByRole('checkbox', {name: /users must provide a value/i});
       const firstCheckbox = requiredCheckboxes[0];
@@ -383,144 +418,10 @@ describe('ViewUserTypePage', () => {
       });
     });
 
-    it('allows changing property type', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      const typeSelects = getPropertyTypeSelects();
-      await user.click(typeSelects[0]);
-
-      // Click on Number option instead to avoid duplicate "String" text
-      const numberOption = await screen.findByRole('option', {name: 'Number'});
-      await user.click(numberOption);
-
-      await waitFor(() => {
-        expect(typeSelects[0]).toHaveTextContent('Number');
-      });
-    });
-
-    it('allows selecting organization unit by name', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      const ouSelect = getOrganizationUnitSelect();
-      await user.click(ouSelect);
-
-      const childOption = await screen.findByText('Child Organization');
-      await user.click(childOption);
-
-      await waitFor(() => {
-        expect(ouSelect).toHaveTextContent('Child Organization');
-      });
-
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
-
-      await waitFor(() => {
-        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
-          userTypeId: 'schema-123',
-          data: expect.objectContaining({
-            ouId: 'child-ou',
-          }),
-        });
-      });
-    });
-
-    it('cancels edit mode and reverts changes', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      const nameInput = screen.getByPlaceholderText(/user type name/i);
-      await user.clear(nameInput);
-      await user.type(nameInput, 'Changed Name');
-
-      await user.click(screen.getByRole('button', {name: /cancel/i}));
-
-      await waitFor(() => {
-        expect(screen.getByText('Employee Schema')).toBeInTheDocument();
-        expect(screen.queryByPlaceholderText(/user type name/i)).not.toBeInTheDocument();
-        expect(mockResetUpdateError).toHaveBeenCalled();
-      });
-    });
-
-    it('saves changes successfully', async () => {
-      const user = userEvent.setup();
-      mockUpdateMutateAsync.mockResolvedValue(undefined);
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      const nameInput = screen.getByPlaceholderText(/user type name/i);
-      await user.clear(nameInput);
-      await user.type(nameInput, 'Updated Schema');
-
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
-
-      await waitFor(() => {
-        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
-          userTypeId: 'schema-123',
-          data: {
-            name: 'Updated Schema',
-            ouId: 'root-ou',
-            allowSelfRegistration: false,
-            schema: expect.any(Object) as Record<string, unknown>,
-          },
-        });
-        // Query invalidation in useUpdateUserType handles refetch automatically
-      });
-    });
-
-    it('displays saving state', async () => {
-      const user = userEvent.setup();
-      // Use a promise that never resolves so the saving state persists
-      mockUpdateMutateAsync.mockImplementation(() => new Promise(() => {}));
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
-
-      await waitFor(() => {
-        expect(screen.getByText('Saving...')).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /saving.../i})).toBeDisabled();
-      });
-    });
-
-    it('displays update error', async () => {
-      const user = userEvent.setup();
-      const error: ApiError = {
-        code: 'UPDATE_ERROR',
-        message: 'Failed to update',
-        description: 'Validation failed',
-      };
-
-      mockUseUpdateUserType.mockReturnValue({
-        mutateAsync: mockUpdateMutateAsync,
-        error,
-        reset: mockResetUpdateError,
-        isPending: false,
-      });
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      expect(screen.getByText('Failed to update')).toBeInTheDocument();
-    });
-
-    it('allows adding enum values in edit mode', async () => {
+    it('allows adding enum values', async () => {
       const user = userEvent.setup();
       const userTypeWithString: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'root-ou',
-        allowSelfRegistration: false,
+        ...mockUserType,
         schema: {
           status: {
             type: 'string',
@@ -539,9 +440,9 @@ describe('ViewUserTypePage', () => {
 
       render(<ViewUserTypePage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await goToSchemaTab(user);
 
-      // Change type to Enum so the enum input appears
+      // Change type to Enum
       const typeSelect = getPropertyTypeSelect();
       await user.click(typeSelect);
       const enumOption = await screen.findByRole('option', {name: 'Enum'});
@@ -558,13 +459,48 @@ describe('ViewUserTypePage', () => {
       });
     });
 
-    it('allows removing enum values in edit mode', async () => {
+    it('allows adding enum value with Enter key', async () => {
+      const user = userEvent.setup();
+      const userTypeWithString: ApiUserSchema = {
+        ...mockUserType,
+        schema: {
+          status: {
+            type: 'string',
+            required: true,
+            enum: [],
+          },
+        },
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithString,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      render(<ViewUserTypePage />);
+
+      await goToSchemaTab(user);
+
+      // Change type to Enum
+      const typeSelect = getPropertyTypeSelect();
+      await user.click(typeSelect);
+      const enumOption = await screen.findByRole('option', {name: 'Enum'});
+      await user.click(enumOption);
+
+      const enumInput = screen.getByPlaceholderText(/add value and press enter/i);
+      await user.type(enumInput, 'ACTIVE{Enter}');
+
+      await waitFor(() => {
+        expect(screen.getByText('ACTIVE')).toBeInTheDocument();
+      });
+    });
+
+    it('allows removing enum values', async () => {
       const user = userEvent.setup();
       const userTypeWithEnum: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'root-ou',
-        allowSelfRegistration: false,
+        ...mockUserType,
         schema: {
           status: {
             type: 'string',
@@ -583,9 +519,9 @@ describe('ViewUserTypePage', () => {
 
       render(<ViewUserTypePage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await goToSchemaTab(user);
 
-      // Change type to Enum so enum chips and input appear
+      // Change type to Enum so enum chips appear
       const typeSelect = getPropertyTypeSelect();
       await user.click(typeSelect);
       const enumOption = await screen.findByRole('option', {name: 'Enum'});
@@ -602,179 +538,10 @@ describe('ViewUserTypePage', () => {
       });
     });
 
-    it('allows editing regex pattern', async () => {
+    it('does not add empty enum value', async () => {
       const user = userEvent.setup();
       const userTypeWithString: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'root-ou',
-        allowSelfRegistration: false,
-        schema: {
-          username: {
-            type: 'string',
-            required: true,
-          },
-        },
-      };
-
-      mockUseGetUserType.mockReturnValue({
-        data: userTypeWithString,
-        isLoading: false,
-        error: null,
-        refetch: mockRefetch,
-      });
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      const regexInput = screen.getByPlaceholderText(/e.g., \^/i);
-      await user.click(regexInput);
-      await user.paste('^[a-z]+$');
-
-      expect(regexInput).toHaveValue('^[a-z]+$');
-    });
-
-    it('property name field is editable in edit mode', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      const propertyNameInputs = screen.getAllByPlaceholderText(/e.g., email, age, address/i);
-      propertyNameInputs.forEach((input) => {
-        expect(input).toBeEnabled();
-      });
-    });
-  });
-
-  describe('Delete Functionality', () => {
-    it('opens delete confirmation dialog', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserTypePage />);
-
-      const deleteButton = screen.getByRole('button', {name: /delete/i});
-      await user.click(deleteButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Delete User Type')).toBeInTheDocument();
-        expect(screen.getByText(/are you sure you want to delete this user type/i)).toBeInTheDocument();
-      });
-    });
-
-    it('closes delete dialog when cancel is clicked', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /delete/i}));
-
-      await waitFor(() => {
-        expect(screen.getByText('Delete User Type')).toBeInTheDocument();
-      });
-
-      const cancelButton = screen.getAllByRole('button', {name: /cancel/i})[0];
-      await user.click(cancelButton);
-
-      await waitFor(() => {
-        expect(screen.queryByText('Delete User Type')).not.toBeInTheDocument();
-      });
-    });
-
-    it('deletes user type and navigates back', async () => {
-      const user = userEvent.setup();
-      mockDeleteMutateAsync.mockResolvedValue(undefined);
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /delete/i}));
-
-      await waitFor(() => {
-        expect(screen.getByText('Delete User Type')).toBeInTheDocument();
-      });
-
-      const dialogDeleteButton = screen.getByRole('button', {name: /^delete$/i});
-      await user.click(dialogDeleteButton);
-
-      await waitFor(() => {
-        expect(mockDeleteMutateAsync).toHaveBeenCalledWith('schema-123');
-        expect(mockNavigate).toHaveBeenCalledWith('/user-types');
-      });
-    });
-
-    it('displays deleting state', async () => {
-      const user = userEvent.setup();
-      mockUseDeleteUserType.mockReturnValue({
-        mutateAsync: mockDeleteMutateAsync,
-        isPending: true,
-        error: null,
-        reset: vi.fn(),
-      });
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /delete/i}));
-
-      await waitFor(() => {
-        expect(screen.getByText('Deleting...')).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /deleting.../i})).toBeDisabled();
-      });
-    });
-
-    it('displays delete error in dialog', async () => {
-      const user = userEvent.setup();
-      const error: ApiError = {
-        code: 'DELETE_ERROR',
-        message: 'Cannot delete user type',
-        description: 'User type is in use',
-      };
-
-      mockUseDeleteUserType.mockReturnValue({
-        mutateAsync: mockDeleteMutateAsync,
-        isPending: false,
-        error,
-        reset: vi.fn(),
-      });
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /delete/i}));
-
-      await waitFor(() => {
-        expect(screen.getByText('Cannot delete user type')).toBeInTheDocument();
-      });
-    });
-
-    it('keeps dialog open on delete error', async () => {
-      const user = userEvent.setup();
-      mockDeleteMutateAsync.mockRejectedValue(new Error('Delete failed'));
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /delete/i}));
-
-      await waitFor(() => {
-        expect(screen.getByText('Delete User Type')).toBeInTheDocument();
-      });
-
-      const dialogDeleteButton = screen.getByRole('button', {name: /^delete$/i});
-      await user.click(dialogDeleteButton);
-
-      await waitFor(() => {
-        expect(mockDeleteMutateAsync).toHaveBeenCalled();
-        // Dialog stays open so user can see error and retry
-        expect(screen.getByText('Delete User Type')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Advanced Edit Mode Features', () => {
-    it('allows adding enum value with Enter key', async () => {
-      const user = userEvent.setup();
-      const userTypeWithString: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'root-ou',
-        allowSelfRegistration: false,
+        ...mockUserType,
         schema: {
           status: {
             type: 'string',
@@ -793,29 +560,59 @@ describe('ViewUserTypePage', () => {
 
       render(<ViewUserTypePage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await goToSchemaTab(user);
 
-      // Change type to Enum so the enum input appears
+      // Change type to Enum
       const typeSelect = getPropertyTypeSelect();
       await user.click(typeSelect);
       const enumOption = await screen.findByRole('option', {name: 'Enum'});
       await user.click(enumOption);
 
-      const enumInput = screen.getByPlaceholderText(/add value and press enter/i);
-      await user.type(enumInput, 'ACTIVE{Enter}');
+      const chipsBefore = document.querySelectorAll('.MuiChip-root');
+      expect(chipsBefore.length).toBe(0);
 
-      await waitFor(() => {
-        expect(screen.getByText('ACTIVE')).toBeInTheDocument();
+      const addButton = screen.getByRole('button', {name: /^add$/i});
+      await user.click(addButton);
+
+      // No chip should have been added since the input was empty
+      const chipsAfter = document.querySelectorAll('.MuiChip-root');
+      expect(chipsAfter.length).toBe(0);
+    });
+
+    it('allows editing regex pattern', async () => {
+      const user = userEvent.setup();
+      const userTypeWithString: ApiUserSchema = {
+        ...mockUserType,
+        schema: {
+          username: {
+            type: 'string',
+            required: true,
+          },
+        },
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithString,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
       });
+
+      render(<ViewUserTypePage />);
+
+      await goToSchemaTab(user);
+
+      const regexInput = screen.getByPlaceholderText(/e.g., \^/i);
+      await user.click(regexInput);
+      await user.paste('^[a-z]+$');
+
+      expect(regexInput).toHaveValue('^[a-z]+$');
     });
 
     it('allows toggling unique checkbox for number type', async () => {
       const user = userEvent.setup();
       const userTypeWithNumber: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'root-ou',
-        allowSelfRegistration: false,
+        ...mockUserType,
         schema: {
           employeeId: {
             type: 'number',
@@ -834,7 +631,7 @@ describe('ViewUserTypePage', () => {
 
       render(<ViewUserTypePage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await goToSchemaTab(user);
 
       const uniqueCheckbox = screen.getByRole('checkbox', {name: /each user must have a distinct value/i});
       await user.click(uniqueCheckbox);
@@ -844,217 +641,10 @@ describe('ViewUserTypePage', () => {
       });
     });
 
-    it('saves schema with array type properties', async () => {
-      const user = userEvent.setup();
-      const userTypeWithArray: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'root-ou',
-        allowSelfRegistration: false,
-        schema: {
-          tags: {
-            type: 'array',
-            required: false,
-            items: {type: 'string'},
-          },
-        },
-      };
-
-      mockUseGetUserType.mockReturnValue({
-        data: userTypeWithArray,
-        isLoading: false,
-        error: null,
-        refetch: mockRefetch,
-      });
-
-      mockUpdateMutateAsync.mockResolvedValue(undefined);
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
-
-      await waitFor(() => {
-        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
-          userTypeId: 'schema-123',
-          data: expect.objectContaining({
-            schema: expect.objectContaining({
-              tags: expect.objectContaining({
-                type: 'array',
-                items: {type: 'string'},
-              }) as Record<string, unknown>,
-            }) as Record<string, unknown>,
-          }),
-        });
-      });
-    });
-
-    it('saves schema with object type properties', async () => {
-      const user = userEvent.setup();
-      const userTypeWithObject: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'root-ou',
-        allowSelfRegistration: false,
-        schema: {
-          address: {
-            type: 'object',
-            required: false,
-            properties: {},
-          },
-        },
-      };
-
-      mockUseGetUserType.mockReturnValue({
-        data: userTypeWithObject,
-        isLoading: false,
-        error: null,
-        refetch: mockRefetch,
-      });
-
-      mockUpdateMutateAsync.mockResolvedValue(undefined);
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
-
-      await waitFor(() => {
-        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
-          userTypeId: 'schema-123',
-          data: expect.objectContaining({
-            schema: expect.objectContaining({
-              address: expect.objectContaining({
-                type: 'object',
-                properties: {},
-              }) as Record<string, unknown>,
-            }) as Record<string, unknown>,
-          }),
-        });
-      });
-    });
-
-    it('handles save error and keeps form in edit mode', async () => {
-      const user = userEvent.setup();
-      mockUpdateMutateAsync.mockRejectedValue(new Error('Save failed'));
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      const nameInput = screen.getByPlaceholderText(/user type name/i);
-      await user.clear(nameInput);
-      await user.type(nameInput, 'Updated Schema');
-
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
-
-      await waitFor(() => {
-        expect(mockUpdateMutateAsync).toHaveBeenCalled();
-      });
-
-      // Form should still be in edit mode
-      await waitFor(() => {
-        expect(screen.getByRole('button', {name: /save changes/i})).toBeInTheDocument();
-      });
-    });
-
-    it('saves schema with enum values for string type', async () => {
-      const user = userEvent.setup();
-      const userTypeWithString: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'root-ou',
-        allowSelfRegistration: false,
-        schema: {
-          status: {
-            type: 'string',
-            required: true,
-            enum: ['ACTIVE', 'INACTIVE'],
-          },
-        },
-      };
-
-      mockUseGetUserType.mockReturnValue({
-        data: userTypeWithString,
-        isLoading: false,
-        error: null,
-        refetch: mockRefetch,
-      });
-
-      mockUpdateMutateAsync.mockResolvedValue(undefined);
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
-
-      await waitFor(() => {
-        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
-          userTypeId: 'schema-123',
-          data: expect.objectContaining({
-            schema: expect.objectContaining({
-              status: expect.objectContaining({
-                type: 'string',
-                enum: ['ACTIVE', 'INACTIVE'],
-              }) as Record<string, unknown>,
-            }) as Record<string, unknown>,
-          }),
-        });
-      });
-    });
-
-    it('saves schema with regex pattern for string type', async () => {
-      const user = userEvent.setup();
-      const userTypeWithRegex: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'root-ou',
-        allowSelfRegistration: false,
-        schema: {
-          username: {
-            type: 'string',
-            required: true,
-            regex: '^[a-zA-Z]+$',
-          },
-        },
-      };
-
-      mockUseGetUserType.mockReturnValue({
-        data: userTypeWithRegex,
-        isLoading: false,
-        error: null,
-        refetch: mockRefetch,
-      });
-
-      mockUpdateMutateAsync.mockResolvedValue(undefined);
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
-
-      await waitFor(() => {
-        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
-          userTypeId: 'schema-123',
-          data: expect.objectContaining({
-            schema: expect.objectContaining({
-              username: expect.objectContaining({
-                type: 'string',
-                regex: '^[a-zA-Z]+$',
-              }) as Record<string, unknown>,
-            }) as Record<string, unknown>,
-          }),
-        });
-      });
-    });
-
     it('resets enum and regex when changing type from string to boolean', async () => {
       const user = userEvent.setup();
       const userTypeWithString: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'root-ou',
-        allowSelfRegistration: false,
+        ...mockUserType,
         schema: {
           status: {
             type: 'string',
@@ -1075,7 +665,7 @@ describe('ViewUserTypePage', () => {
 
       render(<ViewUserTypePage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await goToSchemaTab(user);
 
       const typeSelect = getPropertyTypeSelect();
       await user.click(typeSelect);
@@ -1090,24 +680,205 @@ describe('ViewUserTypePage', () => {
       });
     });
 
-    it('does not add empty enum value', async () => {
+    it('adds a new property when add button is clicked', async () => {
       const user = userEvent.setup();
-      const userTypeWithString: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'root-ou',
-        allowSelfRegistration: false,
+      render(<ViewUserTypePage />);
+
+      await goToSchemaTab(user);
+
+      const typeSelectsBefore = getPropertyTypeSelects();
+      const countBefore = typeSelectsBefore.length;
+
+      const addButton = screen.getByRole('button', {name: /add property/i});
+      await user.click(addButton);
+
+      await waitFor(() => {
+        const typeSelectsAfter = getPropertyTypeSelects();
+        expect(typeSelectsAfter.length).toBe(countBefore + 1);
+      });
+    });
+
+    it('removes a property when delete button is clicked', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      await goToSchemaTab(user);
+
+      const typeSelectsBefore = getPropertyTypeSelects();
+      const countBefore = typeSelectsBefore.length;
+
+      const removeButtons = screen.getAllByRole('button', {name: /remove property/i});
+      await user.click(removeButtons[0]);
+
+      await waitFor(() => {
+        const typeSelectsAfter = getPropertyTypeSelects();
+        expect(typeSelectsAfter.length).toBe(countBefore - 1);
+      });
+    });
+  });
+
+  describe('Delete Functionality', () => {
+    it('opens delete confirmation dialog from danger zone', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      const deleteButton = screen.getByRole('button', {name: /^delete$/i});
+      await user.click(deleteButton);
+
+      await waitFor(() => {
+        const dialog = screen.getByRole('dialog');
+        expect(dialog).toBeInTheDocument();
+        expect(screen.getByText(/are you sure you want to delete this user type/i)).toBeInTheDocument();
+      });
+    });
+
+    it('closes delete dialog when cancel is clicked', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      await user.click(screen.getByRole('button', {name: /^delete$/i}));
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+
+      const cancelButton = within(screen.getByRole('dialog')).getByRole('button', {name: /cancel/i});
+      await user.click(cancelButton);
+
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Unsaved Changes Bar', () => {
+    it('shows unsaved changes bar when OU is changed', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      await user.click(screen.getByTestId('select-ou-child'));
+
+      await waitFor(() => {
+        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+      });
+    });
+
+    it('shows unsaved changes bar when name is edited', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      const editNameButton = screen.getByRole('button', {name: /edit user type name/i});
+      await user.click(editNameButton);
+
+      const nameInput = screen.getByRole('textbox');
+      await user.clear(nameInput);
+      await user.type(nameInput, 'New Name{Enter}');
+
+      await waitFor(() => {
+        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+      });
+    });
+
+    it('resets changes when reset button is clicked', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      // Make a change
+      await user.click(screen.getByTestId('select-ou-child'));
+
+      await waitFor(() => {
+        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+      });
+
+      // Click reset
+      const resetButton = screen.getByRole('button', {name: /reset/i});
+      await user.click(resetButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
+      });
+
+      // OU should be back to original
+      expect(screen.getByTestId('ou-value')).toHaveTextContent('root-ou');
+    });
+  });
+
+  describe('Save Functionality', () => {
+    it('saves changes via unsaved changes bar', async () => {
+      const user = userEvent.setup();
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
+
+      render(<ViewUserTypePage />);
+
+      // Change the OU
+      await user.click(screen.getByTestId('select-ou-child'));
+
+      await waitFor(() => {
+        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+      });
+
+      // Click save
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
+            name: 'Employee Schema',
+            ouId: 'child-ou',
+            allowSelfRegistration: false,
+            schema: expect.any(Object) as Record<string, unknown>,
+          }),
+        });
+      });
+    });
+
+    it('saves name changes', async () => {
+      const user = userEvent.setup();
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
+
+      render(<ViewUserTypePage />);
+
+      // Edit the name inline
+      const editNameButton = screen.getByRole('button', {name: /edit user type name/i});
+      await user.click(editNameButton);
+
+      const nameInput = screen.getByRole('textbox');
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Updated Schema{Enter}');
+
+      // Save
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
+            name: 'Updated Schema',
+          }),
+        });
+      });
+    });
+
+    it('saves schema changes from Schema tab', async () => {
+      const user = userEvent.setup();
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
+
+      const userTypeWithEnum: ApiUserSchema = {
+        ...mockUserType,
         schema: {
           status: {
             type: 'string',
             required: true,
-            enum: [],
+            enum: ['ACTIVE', 'INACTIVE'],
           },
         },
       };
 
       mockUseGetUserType.mockReturnValue({
-        data: userTypeWithString,
+        data: userTypeWithEnum,
         isLoading: false,
         error: null,
         refetch: mockRefetch,
@@ -1115,21 +886,766 @@ describe('ViewUserTypePage', () => {
 
       render(<ViewUserTypePage />);
 
-      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await goToSchemaTab(user);
 
-      // Change type to Enum so the enum input and Add button appear
+      // Change type to Enum so the enum input appears
       const typeSelect = getPropertyTypeSelect();
       await user.click(typeSelect);
       const enumOption = await screen.findByRole('option', {name: 'Enum'});
       await user.click(enumOption);
 
+      // Add a new enum value
+      const enumInput = screen.getByPlaceholderText(/add value and press enter/i);
+      await user.type(enumInput, 'PENDING');
+
       const addButton = screen.getByRole('button', {name: /^add$/i});
       await user.click(addButton);
 
-      // No chip should be added
       await waitFor(() => {
-        expect(screen.queryByRole('button', {name: /cancel/i})).toBeInTheDocument();
+        expect(screen.getByText('PENDING')).toBeInTheDocument();
       });
+
+      // Save via the unsaved changes bar
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
+            schema: expect.objectContaining({
+              status: expect.objectContaining({
+                type: 'string',
+                enum: ['ACTIVE', 'INACTIVE', 'PENDING'],
+              }) as Record<string, unknown>,
+            }) as Record<string, unknown>,
+          }),
+        });
+      });
+    });
+
+    it('saves schema with array type properties', async () => {
+      const user = userEvent.setup();
+      const userTypeWithArray: ApiUserSchema = {
+        ...mockUserType,
+        schema: {
+          tags: {
+            type: 'array',
+            required: false,
+            items: {type: 'string'},
+          },
+        },
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithArray,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
+
+      render(<ViewUserTypePage />);
+
+      // Make any change to trigger save bar (change OU)
+      await user.click(screen.getByTestId('select-ou-child'));
+
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
+            schema: expect.objectContaining({
+              tags: expect.objectContaining({
+                type: 'array',
+                items: {type: 'string'},
+              }) as Record<string, unknown>,
+            }) as Record<string, unknown>,
+          }),
+        });
+      });
+    });
+
+    it('saves schema with object type properties', async () => {
+      const user = userEvent.setup();
+      const userTypeWithObject: ApiUserSchema = {
+        ...mockUserType,
+        schema: {
+          address: {
+            type: 'object',
+            required: false,
+            properties: {},
+          },
+        },
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithObject,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
+
+      render(<ViewUserTypePage />);
+
+      // Make any change to trigger save bar
+      await user.click(screen.getByTestId('select-ou-child'));
+
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
+            schema: expect.objectContaining({
+              address: expect.objectContaining({
+                type: 'object',
+                properties: {},
+              }) as Record<string, unknown>,
+            }) as Record<string, unknown>,
+          }),
+        });
+      });
+    });
+
+    it('preserves unique flag on boolean type during round-trip', async () => {
+      const user = userEvent.setup();
+      const userTypeWithUniqueBoolean: ApiUserSchema = {
+        ...mockUserType,
+        schema: {
+          isVerified: {
+            type: 'boolean',
+            required: false,
+            unique: true,
+          },
+        },
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithUniqueBoolean,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
+
+      render(<ViewUserTypePage />);
+
+      // Make a change to trigger save bar
+      await user.click(screen.getByTestId('select-ou-child'));
+
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
+            schema: expect.objectContaining({
+              isVerified: expect.objectContaining({
+                type: 'boolean',
+                unique: true,
+              }) as Record<string, unknown>,
+            }) as Record<string, unknown>,
+          }),
+        });
+      });
+    });
+
+    it('saves schema with unique flag for number type', async () => {
+      const user = userEvent.setup();
+      const userTypeWithUniqueNumber: ApiUserSchema = {
+        ...mockUserType,
+        schema: {
+          employeeId: {
+            type: 'number',
+            required: true,
+            unique: true,
+          },
+        },
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithUniqueNumber,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
+
+      render(<ViewUserTypePage />);
+
+      // Make a change to trigger save bar
+      await user.click(screen.getByTestId('select-ou-child'));
+
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
+            schema: expect.objectContaining({
+              employeeId: expect.objectContaining({
+                type: 'number',
+                unique: true,
+              }) as Record<string, unknown>,
+            }) as Record<string, unknown>,
+          }),
+        });
+      });
+    });
+
+    it('saves schema with regex pattern for string type', async () => {
+      const user = userEvent.setup();
+      const userTypeWithRegex: ApiUserSchema = {
+        ...mockUserType,
+        schema: {
+          username: {
+            type: 'string',
+            required: true,
+            regex: '^[a-zA-Z]+$',
+          },
+        },
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithRegex,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
+
+      render(<ViewUserTypePage />);
+
+      // Make a change to trigger save bar
+      await user.click(screen.getByTestId('select-ou-child'));
+
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
+            schema: expect.objectContaining({
+              username: expect.objectContaining({
+                type: 'string',
+                regex: '^[a-zA-Z]+$',
+              }) as Record<string, unknown>,
+            }) as Record<string, unknown>,
+          }),
+        });
+      });
+    });
+
+    it('saves schema with enum values for string type', async () => {
+      const user = userEvent.setup();
+      const userTypeWithEnum: ApiUserSchema = {
+        ...mockUserType,
+        schema: {
+          status: {
+            type: 'string',
+            required: true,
+            enum: ['ACTIVE', 'INACTIVE'],
+          },
+        },
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithEnum,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
+
+      render(<ViewUserTypePage />);
+
+      // Make a change to trigger save bar
+      await user.click(screen.getByTestId('select-ou-child'));
+
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
+            schema: expect.objectContaining({
+              status: expect.objectContaining({
+                type: 'string',
+                enum: ['ACTIVE', 'INACTIVE'],
+              }) as Record<string, unknown>,
+            }) as Record<string, unknown>,
+          }),
+        });
+      });
+    });
+
+    it('handles save error and shows toast', async () => {
+      const user = userEvent.setup();
+      mockUpdateMutateAsync.mockRejectedValue(new Error('Save failed'));
+
+      render(<ViewUserTypePage />);
+
+      // Make a change
+      await user.click(screen.getByTestId('select-ou-child'));
+
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockShowToast).toHaveBeenCalledWith('Save failed', 'error');
+      });
+    });
+
+    it('shows validation error when saving with empty organization unit', async () => {
+      const user = userEvent.setup();
+      const userTypeWithEmptyOu: ApiUserSchema = {
+        ...mockUserType,
+        ouId: '',
+        schema: {
+          email: {
+            type: 'string',
+            required: true,
+          },
+        },
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithEmptyOu,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      render(<ViewUserTypePage />);
+
+      // Edit name to trigger save bar (since OU is empty, no change to OU)
+      const editNameButton = screen.getByRole('button', {name: /edit user type name/i});
+      await user.click(editNameButton);
+      const nameInput = screen.getByRole('textbox');
+      await user.clear(nameInput);
+      await user.type(nameInput, 'New Name{Enter}');
+
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockShowToast).toHaveBeenCalledWith('Please provide an organization unit ID', 'error');
+      });
+
+      expect(mockUpdateMutateAsync).not.toHaveBeenCalled();
+    });
+
+    it('displays saving state', async () => {
+      const user = userEvent.setup();
+
+      mockUseUpdateUserType.mockReturnValue({
+        mutateAsync: mockUpdateMutateAsync,
+        error: null,
+        reset: mockResetUpdateError,
+        isPending: true,
+      });
+
+      render(<ViewUserTypePage />);
+
+      // Make a change
+      await user.click(screen.getByTestId('select-ou-child'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Saving...')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /saving.../i})).toBeDisabled();
+      });
+    });
+  });
+
+  describe('Credential Support', () => {
+    it('allows toggling credential checkbox on Schema tab', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      await goToSchemaTab(user);
+
+      // email is string type, so credential checkbox should appear
+      const credentialCheckboxes = screen.getAllByRole('checkbox', {name: /values will be hashed/i});
+      expect(credentialCheckboxes.length).toBeGreaterThan(0);
+
+      await user.click(credentialCheckboxes[0]);
+
+      await waitFor(() => {
+        expect(credentialCheckboxes[0]).toBeChecked();
+      });
+    });
+
+    it('disables unique checkbox when credential is checked', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      await goToSchemaTab(user);
+
+      const uniqueCheckboxes = screen.getAllByRole('checkbox', {name: /each user must have a distinct value/i});
+      const credentialCheckboxes = screen.getAllByRole('checkbox', {name: /values will be hashed/i});
+
+      expect(uniqueCheckboxes[0]).not.toBeDisabled();
+
+      await user.click(credentialCheckboxes[0]);
+
+      await waitFor(() => {
+        expect(uniqueCheckboxes[0]).toBeDisabled();
+      });
+    });
+
+    it('clears unique when credential is enabled', async () => {
+      const user = userEvent.setup();
+
+      const userTypeWithUnique: ApiUserSchema = {
+        ...mockUserType,
+        schema: {
+          email: {
+            type: 'string',
+            required: true,
+            unique: true,
+          },
+        },
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithUnique,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      render(<ViewUserTypePage />);
+
+      await goToSchemaTab(user);
+
+      const uniqueCheckbox = screen.getByRole('checkbox', {name: /each user must have a distinct value/i});
+      const credentialCheckbox = screen.getByRole('checkbox', {name: /values will be hashed/i});
+
+      expect(uniqueCheckbox).toBeChecked();
+
+      await user.click(credentialCheckbox);
+
+      await waitFor(() => {
+        expect(uniqueCheckbox).not.toBeChecked();
+        expect(uniqueCheckbox).toBeDisabled();
+      });
+    });
+
+    it('shows credential hint when credential is checked', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      await goToSchemaTab(user);
+
+      const credentialCheckboxes = screen.getAllByRole('checkbox', {name: /values will be hashed/i});
+      await user.click(credentialCheckboxes[0]);
+
+      await waitFor(() => {
+        expect(screen.getByText(/this field will be treated as a secret/i)).toBeInTheDocument();
+      });
+    });
+
+    it('saves schema with credential flag', async () => {
+      const user = userEvent.setup();
+
+      const userTypeWithSingleString: ApiUserSchema = {
+        ...mockUserType,
+        schema: {
+          password: {
+            type: 'string',
+            required: true,
+          },
+        },
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithSingleString,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
+
+      render(<ViewUserTypePage />);
+
+      await goToSchemaTab(user);
+
+      const credentialCheckbox = screen.getByRole('checkbox', {name: /values will be hashed/i});
+      await user.click(credentialCheckbox);
+
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
+            schema: expect.objectContaining({
+              password: expect.objectContaining({
+                credential: true,
+              }) as Record<string, unknown>,
+            }) as Record<string, unknown>,
+          }),
+        });
+      });
+    });
+  });
+
+  describe('Schema Property Handling with Enum Type', () => {
+    it('saves schema with enum type converted to string', async () => {
+      const user = userEvent.setup();
+      const userTypeWithEnum: ApiUserSchema = {
+        ...mockUserType,
+        schema: {
+          status: {
+            type: 'string',
+            required: true,
+            enum: ['ACTIVE', 'INACTIVE'],
+          },
+        },
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithEnum,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
+
+      render(<ViewUserTypePage />);
+
+      await goToSchemaTab(user);
+
+      // Change type to Enum so the enum input appears
+      const typeSelect = getPropertyTypeSelect();
+      await user.click(typeSelect);
+      const enumOption = await screen.findByRole('option', {name: 'Enum'});
+      await user.click(enumOption);
+
+      // Add a new enum value
+      const enumInput = screen.getByPlaceholderText(/add value and press enter/i);
+      await user.type(enumInput, 'PENDING');
+
+      const addButton = screen.getByRole('button', {name: /^add$/i});
+      await user.click(addButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('PENDING')).toBeInTheDocument();
+      });
+
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
+            schema: expect.objectContaining({
+              status: expect.objectContaining({
+                type: 'string',
+                enum: ['ACTIVE', 'INACTIVE', 'PENDING'],
+              }) as Record<string, unknown>,
+            }) as Record<string, unknown>,
+          }),
+        });
+      });
+    });
+  });
+
+  describe('Display Attribute Eligibility', () => {
+    it('clears display attribute when selected property becomes ineligible', async () => {
+      const user = userEvent.setup();
+      const userTypeWithDisplay: ApiUserSchema = {
+        ...mockUserType,
+        systemAttributes: {display: 'email'},
+        schema: {
+          email: {
+            type: 'string',
+            required: true,
+          },
+        },
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithDisplay,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      render(<ViewUserTypePage />);
+
+      // Go to schema tab and change email type to boolean (ineligible for display)
+      await goToSchemaTab(user);
+
+      const typeSelect = getPropertyTypeSelect();
+      await user.click(typeSelect);
+      const booleanOption = await screen.findByRole('option', {name: 'Boolean'});
+      await user.click(booleanOption);
+
+      // Save should not include display attribute since it became ineligible
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.not.objectContaining({
+            systemAttributes: expect.anything(),
+          }),
+        });
+      });
+    });
+
+    it('preserves display attribute when selected property remains eligible', async () => {
+      const user = userEvent.setup();
+      const userTypeWithDisplay: ApiUserSchema = {
+        ...mockUserType,
+        systemAttributes: {display: 'email'},
+        schema: {
+          email: {
+            type: 'string',
+            required: true,
+          },
+          age: {
+            type: 'number',
+            required: false,
+          },
+        },
+      };
+
+      mockUseGetUserType.mockReturnValue({
+        data: userTypeWithDisplay,
+        isLoading: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      mockUpdateMutateAsync.mockResolvedValue(undefined);
+
+      render(<ViewUserTypePage />);
+
+      // Make a change to trigger save bar
+      await user.click(screen.getByTestId('select-ou-child'));
+
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
+          userTypeId: 'schema-123',
+          data: expect.objectContaining({
+            systemAttributes: {display: 'email'},
+          }),
+        });
+      });
+    });
+  });
+
+  describe('Duplicate Property Name Validation', () => {
+    it('shows error toast when saving with duplicate property names', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      await goToSchemaTab(user);
+
+      // Add a new property
+      const addButton = screen.getByRole('button', {name: /add property/i});
+      await user.click(addButton);
+
+      // Set the new property name to 'email' (duplicate)
+      const propertyNameInputs = screen.getAllByPlaceholderText(/e.g., email, age, address/i);
+      const lastInput = propertyNameInputs[propertyNameInputs.length - 1];
+      await user.type(lastInput, 'email');
+
+      // Try to save
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockShowToast).toHaveBeenCalledWith(
+          expect.stringContaining('email'),
+          'error',
+        );
+      });
+
+      expect(mockUpdateMutateAsync).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Save Error Handling', () => {
+    it('handles non-Error save rejection with fallback message', async () => {
+      const user = userEvent.setup();
+      mockUpdateMutateAsync.mockRejectedValue('string error');
+
+      render(<ViewUserTypePage />);
+
+      await user.click(screen.getByTestId('select-ou-child'));
+
+      const saveButton = screen.getByRole('button', {name: /^save$/i});
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockShowToast).toHaveBeenCalledWith(
+          expect.stringContaining('Failed to save user type'),
+          'error',
+        );
+      });
+    });
+  });
+
+  describe('Inline Name Editing Edge Cases', () => {
+    it('does not save name when escape is pressed', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      const editNameButton = screen.getByRole('button', {name: /edit user type name/i});
+      await user.click(editNameButton);
+
+      const nameInput = screen.getByRole('textbox');
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Temp Name{Escape}');
+
+      // Should revert to original name
+      await waitFor(() => {
+        expect(screen.getByText('Employee Schema')).toBeInTheDocument();
+      });
+
+      // No unsaved changes bar should appear
+      expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
+    });
+
+    it('does not save name when blurred with same value', async () => {
+      const user = userEvent.setup();
+      render(<ViewUserTypePage />);
+
+      const editNameButton = screen.getByRole('button', {name: /edit user type name/i});
+      await user.click(editNameButton);
+
+      // Verify input is shown, then blur without changing the name
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
+      await user.tab();
+
+      // No unsaved changes bar should appear
+      expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
     });
   });
 
@@ -1152,559 +1668,6 @@ describe('ViewUserTypePage', () => {
 
       await waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/user-types');
-      });
-    });
-  });
-
-  describe('Schema Conversion and Save', () => {
-    it('saves schema with unique flag for number type', async () => {
-      const user = userEvent.setup();
-      const userTypeWithUniqueNumber: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'root-ou',
-        allowSelfRegistration: false,
-        schema: {
-          employeeId: {
-            type: 'number',
-            required: true,
-            unique: true,
-          },
-        },
-      };
-
-      mockUseGetUserType.mockReturnValue({
-        data: userTypeWithUniqueNumber,
-        isLoading: false,
-        error: null,
-        refetch: mockRefetch,
-      });
-
-      mockUpdateMutateAsync.mockResolvedValue(undefined);
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
-
-      await waitFor(() => {
-        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
-          userTypeId: 'schema-123',
-          data: expect.objectContaining({
-            schema: expect.objectContaining({
-              employeeId: expect.objectContaining({
-                type: 'number',
-                unique: true,
-              }) as Record<string, unknown>,
-            }) as Record<string, unknown>,
-          }),
-        });
-      });
-    });
-  });
-
-  describe('Validation and Snackbar', () => {
-    it('shows validation error when saving with empty organization unit', async () => {
-      const user = userEvent.setup();
-      const userTypeWithEmptyOu: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: '',
-        allowSelfRegistration: false,
-        schema: {
-          email: {
-            type: 'string',
-            required: true,
-          },
-        },
-      };
-
-      mockUseGetUserType.mockReturnValue({
-        data: userTypeWithEmptyOu,
-        isLoading: false,
-        error: null,
-        refetch: mockRefetch,
-      });
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
-
-      await waitFor(() => {
-        expect(screen.getByText('Please provide an organization unit ID')).toBeInTheDocument();
-      });
-
-      expect(mockUpdateMutateAsync).not.toHaveBeenCalled();
-    });
-
-    it('closes validation error snackbar when close button is clicked', async () => {
-      const user = userEvent.setup();
-      const userTypeWithEmptyOu: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: '',
-        allowSelfRegistration: false,
-        schema: {
-          email: {
-            type: 'string',
-            required: true,
-          },
-        },
-      };
-
-      mockUseGetUserType.mockReturnValue({
-        data: userTypeWithEmptyOu,
-        isLoading: false,
-        error: null,
-        refetch: mockRefetch,
-      });
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
-
-      await waitFor(() => {
-        expect(screen.getByText('Please provide an organization unit ID')).toBeInTheDocument();
-      });
-
-      const closeButton = screen.getByLabelText(/close/i);
-      await user.click(closeButton);
-
-      await waitFor(() => {
-        expect(screen.queryByText('Please provide an organization unit ID')).not.toBeInTheDocument();
-      });
-    });
-
-    it('allows toggling allowSelfRegistration checkbox in edit mode', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      const selfRegCheckbox = screen.getByRole('checkbox', {name: /allow self registration/i});
-      expect(selfRegCheckbox).not.toBeChecked();
-
-      await user.click(selfRegCheckbox);
-
-      await waitFor(() => {
-        expect(selfRegCheckbox).toBeChecked();
-      });
-    });
-
-    it('displays organization unit placeholder when value is empty in edit mode', async () => {
-      const user = userEvent.setup();
-      const userTypeWithEmptyOu: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: '',
-        allowSelfRegistration: false,
-        schema: {
-          email: {
-            type: 'string',
-            required: true,
-          },
-        },
-      };
-
-      mockUseGetUserType.mockReturnValue({
-        data: userTypeWithEmptyOu,
-        isLoading: false,
-        error: null,
-        refetch: mockRefetch,
-      });
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      const ouSelect = getOrganizationUnitSelect();
-      expect(ouSelect).toHaveTextContent('Select an organization unit');
-    });
-
-    it('displays organization unit id in select when unit is not found in lookup', async () => {
-      const user = userEvent.setup();
-      const userTypeWithUnknownOu: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'unknown-ou-id',
-        allowSelfRegistration: false,
-        schema: {
-          email: {
-            type: 'string',
-            required: true,
-          },
-        },
-      };
-
-      mockUseGetUserType.mockReturnValue({
-        data: userTypeWithUnknownOu,
-        isLoading: false,
-        error: null,
-        refetch: mockRefetch,
-      });
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      const ouSelect = getOrganizationUnitSelect();
-      expect(ouSelect).toHaveTextContent('unknown-ou-id');
-    });
-
-    it('shows loading state in organization unit dropdown', async () => {
-      const user = userEvent.setup();
-
-      mockUseGetOrganizationUnits.mockReturnValue({
-        data: null,
-        isLoading: true,
-        error: null,
-        refetch: mockRefetchOrganizationUnits,
-      });
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      const ouSelect = getOrganizationUnitSelect();
-      await user.click(ouSelect);
-
-      await waitFor(() => {
-        expect(screen.getByText('Loading...')).toBeInTheDocument();
-      });
-    });
-
-    it('shows error message in organization unit dropdown when fetch fails', async () => {
-      const user = userEvent.setup();
-      const orgError: ApiError = {
-        code: 'ORG_ERROR',
-        message: 'Failed to load organization units',
-        description: 'Error',
-      };
-
-      mockUseGetOrganizationUnits.mockReturnValue({
-        data: null,
-        isLoading: false,
-        error: orgError,
-        refetch: mockRefetchOrganizationUnits,
-      });
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      const ouSelect = getOrganizationUnitSelect();
-      await user.click(ouSelect);
-
-      await waitFor(() => {
-        expect(screen.getByText('Failed to load organization units')).toBeInTheDocument();
-      });
-    });
-
-    it('shows no organization units message when list is empty', async () => {
-      const user = userEvent.setup();
-
-      mockUseGetOrganizationUnits.mockReturnValue({
-        data: {...mockOrganizationUnitsResponse, organizationUnits: []},
-        isLoading: false,
-        error: null,
-        refetch: mockRefetchOrganizationUnits,
-      });
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      const ouSelect = getOrganizationUnitSelect();
-      await user.click(ouSelect);
-
-      await waitFor(() => {
-        expect(screen.getByText('No organization units available')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Credential Support', () => {
-    it('displays credential column in view mode', () => {
-      const userTypeWithCredential: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'root-ou',
-        allowSelfRegistration: false,
-        schema: {
-          password: {
-            type: 'string',
-            required: true,
-            credential: true,
-          },
-          email: {
-            type: 'string',
-            required: true,
-          },
-        },
-      };
-
-      mockUseGetUserType.mockReturnValue({
-        data: userTypeWithCredential,
-        isLoading: false,
-        error: null,
-        refetch: mockRefetch,
-      });
-
-      render(<ViewUserTypePage />);
-
-      expect(screen.getByText('Credential')).toBeInTheDocument();
-    });
-
-    it('allows toggling credential checkbox in edit mode', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      // email is string type, so credential checkbox should appear
-      const credentialCheckboxes = screen.getAllByRole('checkbox', {name: /values will be hashed/i});
-      expect(credentialCheckboxes.length).toBeGreaterThan(0);
-
-      await user.click(credentialCheckboxes[0]);
-
-      await waitFor(() => {
-        expect(credentialCheckboxes[0]).toBeChecked();
-      });
-    });
-
-    it('disables unique checkbox when credential is checked', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      // Find the unique checkbox for email (first string property)
-      const uniqueCheckboxes = screen.getAllByRole('checkbox', {name: /each user must have a distinct value/i});
-      const credentialCheckboxes = screen.getAllByRole('checkbox', {name: /values will be hashed/i});
-
-      // Initially unique should be enabled
-      expect(uniqueCheckboxes[0]).not.toBeDisabled();
-
-      // Toggle credential on
-      await user.click(credentialCheckboxes[0]);
-
-      await waitFor(() => {
-        expect(uniqueCheckboxes[0]).toBeDisabled();
-      });
-    });
-
-    it('clears unique when credential is enabled', async () => {
-      const user = userEvent.setup();
-
-      const userTypeWithUnique: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'root-ou',
-        allowSelfRegistration: false,
-        schema: {
-          email: {
-            type: 'string',
-            required: true,
-            unique: true,
-          },
-        },
-      };
-
-      mockUseGetUserType.mockReturnValue({
-        data: userTypeWithUnique,
-        isLoading: false,
-        error: null,
-        refetch: mockRefetch,
-      });
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      const uniqueCheckbox = screen.getByRole('checkbox', {name: /each user must have a distinct value/i});
-      const credentialCheckbox = screen.getByRole('checkbox', {name: /values will be hashed/i});
-
-      expect(uniqueCheckbox).toBeChecked();
-
-      // Toggle credential on — should clear unique
-      await user.click(credentialCheckbox);
-
-      await waitFor(() => {
-        expect(uniqueCheckbox).not.toBeChecked();
-        expect(uniqueCheckbox).toBeDisabled();
-      });
-    });
-
-    it('shows credential hint when credential is checked', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      const credentialCheckboxes = screen.getAllByRole('checkbox', {name: /values will be hashed/i});
-      await user.click(credentialCheckboxes[0]);
-
-      await waitFor(() => {
-        expect(screen.getByText(/this field will be treated as a secret/i)).toBeInTheDocument();
-      });
-    });
-
-    it('saves schema with credential flag', async () => {
-      const user = userEvent.setup();
-
-      const userTypeWithSingleString: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'root-ou',
-        allowSelfRegistration: false,
-        schema: {
-          password: {
-            type: 'string',
-            required: true,
-          },
-        },
-      };
-
-      mockUseGetUserType.mockReturnValue({
-        data: userTypeWithSingleString,
-        isLoading: false,
-        error: null,
-        refetch: mockRefetch,
-      });
-
-      mockUpdateMutateAsync.mockResolvedValue(undefined);
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      const credentialCheckbox = screen.getByRole('checkbox', {name: /values will be hashed/i});
-      await user.click(credentialCheckbox);
-
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
-
-      await waitFor(() => {
-        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
-          userTypeId: 'schema-123',
-          data: expect.objectContaining({
-            schema: expect.objectContaining({
-              password: expect.objectContaining({
-                credential: true,
-              }) as Record<string, unknown>,
-            }) as Record<string, unknown>,
-          }),
-        });
-      });
-    });
-  });
-
-  describe('Add and Remove Properties', () => {
-    it('adds a new property when add button is clicked', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      // Count initial property name inputs
-      const initialInputs = screen.getAllByRole('textbox').filter(
-        (el) => (el as HTMLInputElement).value === 'email' || (el as HTMLInputElement).value === 'age' || (el as HTMLInputElement).value === 'isActive',
-      );
-      const initialCount = initialInputs.length;
-
-      // Click add property button
-      const addButton = screen.getByRole('button', {name: /add property/i});
-      await user.click(addButton);
-
-      // Should have one more property
-      await waitFor(() => {
-        const typeSelects = getPropertyTypeSelects();
-        expect(typeSelects.length).toBe(initialCount + 1);
-      });
-    });
-
-    it('removes a property when delete button is clicked', async () => {
-      const user = userEvent.setup();
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      const typeSelectsBefore = getPropertyTypeSelects();
-      const countBefore = typeSelectsBefore.length;
-
-      // Find and click a remove property button
-      const removeButtons = screen.getAllByRole('button', {name: /remove property/i});
-      await user.click(removeButtons[0]);
-
-      await waitFor(() => {
-        const typeSelectsAfter = getPropertyTypeSelects();
-        expect(typeSelectsAfter.length).toBe(countBefore - 1);
-      });
-    });
-  });
-
-  describe('Schema Property Handling with Enum Type', () => {
-    it('saves schema with enum type converted to string', async () => {
-      const user = userEvent.setup();
-      const userTypeWithEnum: ApiUserSchema = {
-        id: 'schema-123',
-        name: 'Test Schema',
-        ouId: 'root-ou',
-        allowSelfRegistration: false,
-        schema: {
-          status: {
-            type: 'string',
-            required: true,
-            enum: ['ACTIVE', 'INACTIVE'],
-          },
-        },
-      };
-
-      mockUseGetUserType.mockReturnValue({
-        data: userTypeWithEnum,
-        isLoading: false,
-        error: null,
-        refetch: mockRefetch,
-      });
-
-      mockUpdateMutateAsync.mockResolvedValue(undefined);
-
-      render(<ViewUserTypePage />);
-
-      await user.click(screen.getByRole('button', {name: /edit/i}));
-
-      // Change type to Enum so the enum input appears
-      const typeSelect = getPropertyTypeSelect();
-      await user.click(typeSelect);
-      const enumOption = await screen.findByRole('option', {name: 'Enum'});
-      await user.click(enumOption);
-
-      // Add a new enum value
-      const enumInput = screen.getByPlaceholderText(/add value and press enter/i);
-      await user.type(enumInput, 'PENDING');
-
-      const addButton = screen.getByRole('button', {name: /^add$/i});
-      await user.click(addButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('PENDING')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByRole('button', {name: /save changes/i}));
-
-      await waitFor(() => {
-        expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
-          userTypeId: 'schema-123',
-          data: expect.objectContaining({
-            schema: expect.objectContaining({
-              status: expect.objectContaining({
-                type: 'string',
-                enum: ['ACTIVE', 'INACTIVE', 'PENDING'],
-              }) as Record<string, unknown>,
-            }) as Record<string, unknown>,
-          }),
-        });
       });
     });
   });
