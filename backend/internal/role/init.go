@@ -26,14 +26,12 @@ import (
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	resourcepkg "github.com/asgardeo/thunder/internal/resource"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
-
-var getDBProvider = provider.GetDBProvider
 
 // Initialize initializes the role service and registers its routes.
 func Initialize(
@@ -44,19 +42,8 @@ func Initialize(
 	resourceService resourcepkg.ResourceServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 ) (RoleServiceInterface, declarativeresource.ResourceExporter, error) {
-	// Step 1: Initialize store based on configuration
-	roleStore, err := initializeStore()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Get transactioner from DB provider
-	dbProvider := getDBProvider()
-	dbClient, err := dbProvider.GetConfigDBClient()
-	if err != nil {
-		return nil, nil, err
-	}
-	transactioner, err := dbClient.GetTransactioner()
+	// Step 1: Initialize store and transactioner based on store mode
+	roleStore, transactioner, err := initializeStore()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -95,35 +82,34 @@ func Initialize(
 // - If role.store is not specified, falls back to global declarative_resources.enabled:
 //   - If declarative_resources.enabled = true: behaves as IMMUTABLE mode
 //   - If declarative_resources.enabled = false: behaves as MUTABLE mode
-func initializeStore() (roleStoreInterface, error) {
-	var roleStore roleStoreInterface
-
+func initializeStore() (roleStoreInterface, transaction.Transactioner, error) {
 	storeMode := getRoleStoreMode()
 
 	switch storeMode {
 	case serverconst.StoreModeComposite:
-		fileStoreInterface := newFileBasedStore()
+		fileStoreInterface, _ := newFileBasedStore()
 		fileStore := fileStoreInterface.(*fileBasedStore)
-		dbStore := newRoleStore()
-		roleStore = newCompositeRoleStore(fileStoreInterface, dbStore)
-		if err := loadDeclarativeResources(fileStore, dbStore); err != nil {
-			return nil, err
+		dbStore, transactioner, err := newRoleStore()
+		if err != nil {
+			return nil, nil, err
 		}
+		roleStore := newCompositeRoleStore(fileStoreInterface, dbStore)
+		if err := loadDeclarativeResources(fileStore, dbStore); err != nil {
+			return nil, nil, err
+		}
+		return roleStore, transactioner, nil
 
 	case serverconst.StoreModeDeclarative:
-		fileStoreInterface := newFileBasedStore()
+		fileStoreInterface, transactioner := newFileBasedStore()
 		fileStore := fileStoreInterface.(*fileBasedStore)
-		roleStore = fileStoreInterface
 		if err := loadDeclarativeResources(fileStore, nil); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
+		return fileStoreInterface, transactioner, nil
 
 	default:
-		dbStore := newRoleStore()
-		roleStore = dbStore
+		return newRoleStore()
 	}
-
-	return roleStore, nil
 }
 
 // registerRoutes registers the routes for role management operations.

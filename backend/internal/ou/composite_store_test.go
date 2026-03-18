@@ -44,7 +44,7 @@ func (suite *CompositeStoreTestSuite) SetupTest() {
 	_ = entity.GetInstance().Clear()
 
 	// Create NEW file-based store for each test to avoid state leakage
-	suite.fileStore = newFileBasedStore()
+	suite.fileStore, _ = newFileBasedStore()
 
 	// Create mock DB store
 	suite.dbStoreMock = newOrganizationUnitStoreInterfaceMock(suite.T())
@@ -329,7 +329,7 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_ListOperations() {
 	suite.Run("GetOrganizationUnitList returns merged results", func() {
 		// Reset state from previous sub-test by reinitializing stores
 		_ = entity.GetInstance().Clear()
-		suite.fileStore = newFileBasedStore()
+		suite.fileStore, _ = newFileBasedStore()
 		suite.compositeStore = newCompositeOUStore(suite.fileStore, suite.dbStoreMock)
 
 		// Add 1 OU to file store
@@ -438,7 +438,7 @@ func (suite *CompositeStoreCoverageTestSuite) SetupTest() {
 	_ = entity.GetInstance().Clear()
 
 	// Create NEW file-based store for each test to avoid state leakage
-	suite.fileStore = newFileBasedStore()
+	suite.fileStore, _ = newFileBasedStore()
 	suite.dbStoreMock = newOrganizationUnitStoreInterfaceMock(suite.T())
 	suite.compositeStore = newCompositeOUStore(suite.fileStore, suite.dbStoreMock)
 }

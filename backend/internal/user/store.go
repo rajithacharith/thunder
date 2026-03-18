@@ -28,6 +28,7 @@ import (
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 // userStoreInterface defines the interface for user store operations.
@@ -53,6 +54,8 @@ type userStoreInterface interface {
 	IsUserDeclarative(ctx context.Context, id string) (bool, error)
 }
 
+var getDBProvider = provider.GetDBProvider
+
 // userStore is the default implementation of userStoreInterface.
 //
 // indexedAttributes: Set of attribute keys that are indexed; immutable after initialization.
@@ -63,24 +66,34 @@ type userStore struct {
 }
 
 // newUserStore creates a new instance of userStore.
-func newUserStore() (userStoreInterface, error) {
+func newUserStore() (userStoreInterface, transaction.Transactioner, error) {
 	runtime := config.GetThunderRuntime()
 
 	indexedAttributesFromConfig := runtime.Config.User.IndexedAttributes
 
 	if err := validateIndexedAttributesConfig(indexedAttributesFromConfig); err != nil {
-		return nil, fmt.Errorf("indexed attributes configuration validation failed: %w", err)
+		return nil, nil, fmt.Errorf("indexed attributes configuration validation failed: %w", err)
 	}
 	indexedAttributes := make(map[string]bool, len(indexedAttributesFromConfig))
 	for _, attr := range indexedAttributesFromConfig {
 		indexedAttributes[attr] = true
 	}
 
+	dbProvider := getDBProvider()
+	client, err := dbProvider.GetUserDBClient()
+	if err != nil {
+		return nil, nil, err
+	}
+	transactioner, err := client.GetTransactioner()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	return &userStore{
 		deploymentID:      runtime.Config.Server.Identifier,
 		indexedAttributes: indexedAttributes,
-		dbProvider:        provider.GetDBProvider(),
-	}, nil
+		dbProvider:        dbProvider,
+	}, transactioner, nil
 }
 
 // GetUserListCount retrieves the total count of users.

@@ -46,7 +46,7 @@ func (suite *CompositeStoreTestSuite) SetupTest() {
 	_ = entity.GetInstance().Clear()
 
 	// Create NEW file-based store for each test to avoid state leakage
-	suite.fileStore = newFileBasedStore()
+	suite.fileStore, _ = newFileBasedStore()
 
 	// Create mock DB store
 	suite.dbStoreMock = newApplicationStoreInterfaceMock(suite.T())

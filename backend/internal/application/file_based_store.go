@@ -26,6 +26,7 @@ import (
 	"github.com/asgardeo/thunder/internal/application/model"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 type fileBasedStore struct {
@@ -166,9 +167,9 @@ func (f *fileBasedStore) IsApplicationDeclarative(ctx context.Context, id string
 }
 
 // newFileBasedStore creates a new instance of a file-based store.
-func newFileBasedStore() applicationStoreInterface {
+func newFileBasedStore() (applicationStoreInterface, transaction.Transactioner) {
 	genericStore := declarativeresource.NewGenericFileBasedStore(entity.KeyTypeApplication)
 	return &fileBasedStore{
 		GenericFileBasedStore: genericStore,
-	}
+	}, transaction.NewNoOpTransactioner()
 }

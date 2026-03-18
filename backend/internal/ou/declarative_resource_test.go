@@ -137,7 +137,8 @@ description: Root organization unit
 }
 
 func (s *DeclarativeResourceTestSuite) TestValidateOUWrapper() {
-	store := newFileBasedStore().(*fileBasedStore)
+	fbStore, _ := newFileBasedStore()
+	store := fbStore.(*fileBasedStore)
 	ou := &OrganizationUnit{
 		ID:     "test-ou-1",
 		Handle: "test",
@@ -149,7 +150,8 @@ func (s *DeclarativeResourceTestSuite) TestValidateOUWrapper() {
 }
 
 func (s *DeclarativeResourceTestSuite) TestValidateOUWrapperMissingID() {
-	store := newFileBasedStore().(*fileBasedStore)
+	fbStore, _ := newFileBasedStore()
+	store := fbStore.(*fileBasedStore)
 	ou := &OrganizationUnit{
 		Handle: "test",
 		Name:   "Test OU",
@@ -161,7 +163,8 @@ func (s *DeclarativeResourceTestSuite) TestValidateOUWrapperMissingID() {
 }
 
 func (s *DeclarativeResourceTestSuite) TestValidateOUWrapperMissingName() {
-	store := newFileBasedStore().(*fileBasedStore)
+	fbStore, _ := newFileBasedStore()
+	store := fbStore.(*fileBasedStore)
 	ou := &OrganizationUnit{
 		ID:     "test-ou-1",
 		Handle: "test",
@@ -173,7 +176,8 @@ func (s *DeclarativeResourceTestSuite) TestValidateOUWrapperMissingName() {
 }
 
 func (s *DeclarativeResourceTestSuite) TestValidateOUWrapperMissingHandle() {
-	store := newFileBasedStore().(*fileBasedStore)
+	fbStore, _ := newFileBasedStore()
+	store := fbStore.(*fileBasedStore)
 	ou := &OrganizationUnit{
 		ID:   "test-ou-1",
 		Name: "Test OU",
@@ -185,7 +189,8 @@ func (s *DeclarativeResourceTestSuite) TestValidateOUWrapperMissingHandle() {
 }
 
 func (s *DeclarativeResourceTestSuite) TestValidateOUWrapperDuplicateID() {
-	store := newFileBasedStore().(*fileBasedStore)
+	fbStore, _ := newFileBasedStore()
+	store := fbStore.(*fileBasedStore)
 
 	// First OU - should succeed
 	ou1 := &OrganizationUnit{
@@ -212,7 +217,8 @@ func (s *DeclarativeResourceTestSuite) TestValidateOUWrapperDuplicateID() {
 }
 
 func (s *DeclarativeResourceTestSuite) TestValidateOUWrapperDuplicateIDInDBStore() {
-	fileStore := newFileBasedStore().(*fileBasedStore)
+	fs, _ := newFileBasedStore()
+	fileStore := fs.(*fileBasedStore)
 	dbStore := newOrganizationUnitStoreInterfaceMock(s.T())
 
 	// Mock dbStore to return that the ID exists
@@ -237,7 +243,8 @@ func (s *DeclarativeResourceTestSuite) TestValidateOUWrapperDuplicateIDInDBStore
 }
 
 func (s *DeclarativeResourceTestSuite) TestValidateOUWrapperNoDuplicateInCompositeMode() {
-	fileStore := newFileBasedStore().(*fileBasedStore)
+	fs, _ := newFileBasedStore()
+	fileStore := fs.(*fileBasedStore)
 	dbStore := newOrganizationUnitStoreInterfaceMock(s.T())
 
 	// Mock dbStore to return that the ID does not exist
@@ -259,7 +266,8 @@ func (s *DeclarativeResourceTestSuite) TestValidateOUWrapperNoDuplicateInComposi
 }
 
 func (s *DeclarativeResourceTestSuite) TestValidateOUWrapperErrorInDBStore() {
-	fileStore := newFileBasedStore().(*fileBasedStore)
+	fs, _ := newFileBasedStore()
+	fileStore := fs.(*fileBasedStore)
 	dbStore := newOrganizationUnitStoreInterfaceMock(s.T())
 
 	// Mock dbStore to return an error

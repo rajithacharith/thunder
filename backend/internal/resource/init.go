@@ -24,9 +24,9 @@ import (
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 // Initialize initializes the resource service and registers its routes.
@@ -35,16 +35,10 @@ func Initialize(
 	mux *http.ServeMux,
 	ouService oupkg.OrganizationUnitServiceInterface,
 ) (ResourceServiceInterface, declarativeresource.ResourceExporter, error) {
-	// Initialize store based on configuration
-	resourceStore, err := initializeStore()
+	// Initialize store and transactioner based on store mode
+	resourceStore, transactioner, err := initializeStore()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to initialize resource store: %w", err)
-	}
-
-	// Get transactioner from DB provider
-	transactioner, err := provider.GetDBProvider().GetConfigDBTransactioner()
-	if err != nil {
-		return nil, nil, err
 	}
 
 	resourceService, err := newResourceService(ouService, resourceStore, transactioner)
@@ -70,25 +64,26 @@ func Initialize(
 }
 
 // initializeStore creates and initializes the appropriate store based on configuration.
-func initializeStore() (resourceStoreInterface, error) {
+func initializeStore() (resourceStoreInterface, transaction.Transactioner, error) {
 	storeMode := getResourceStoreMode()
+
 	switch storeMode {
 	case serverconst.StoreModeMutable:
-		// Mutable mode: use database store only
-		return newResourceStore(), nil
+		return newResourceStore()
 	case serverconst.StoreModeDeclarative:
-		// Declarative mode: use file-based store only
 		return newFileBasedResourceStore()
 	case serverconst.StoreModeComposite:
-		// Composite mode: use both file-based and database stores
-		fileStore, err := newFileBasedResourceStore()
+		fileStore, _, err := newFileBasedResourceStore()
 		if err != nil {
-			return nil, fmt.Errorf("failed to create file-based store: %w", err)
+			return nil, nil, fmt.Errorf("failed to create file-based store: %w", err)
 		}
-		dbStore := newResourceStore()
-		return newCompositeResourceStore(fileStore, dbStore), nil
+		dbStore, transactioner, err := newResourceStore()
+		if err != nil {
+			return nil, nil, err
+		}
+		return newCompositeResourceStore(fileStore, dbStore), transactioner, nil
 	default:
-		return nil, fmt.Errorf("unsupported store mode: %s", storeMode)
+		return nil, nil, fmt.Errorf("unsupported store mode: %s", storeMode)
 	}
 }
 

@@ -27,7 +27,10 @@ import (
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
+
+var getDBProvider = provider.GetDBProvider
 
 // idpStoreInterface defines the interface for identity provider store operations.
 type idpStoreInterface interface {
@@ -47,11 +50,20 @@ type idpStore struct {
 }
 
 // newIDPStore creates a new instance of IDPStore.
-func newIDPStore() idpStoreInterface {
-	return &idpStore{
-		dbProvider:   provider.GetDBProvider(),
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+func newIDPStore() (idpStoreInterface, transaction.Transactioner, error) {
+	dbProvider := getDBProvider()
+	client, err := dbProvider.GetConfigDBClient()
+	if err != nil {
+		return nil, nil, err
 	}
+	transactioner, err := client.GetTransactioner()
+	if err != nil {
+		return nil, nil, err
+	}
+	return &idpStore{
+		dbProvider:   dbProvider,
+		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+	}, transactioner, nil
 }
 
 // CreateIdentityProvider handles the IdP creation in the database.

@@ -69,7 +69,15 @@ func (suite *InitTestSuite) TestInitializeStoreMutableMode() {
 	runtime.Config.Role.Store = ""
 	runtime.Config.DeclarativeResources.Enabled = false
 
-	store, err := initializeStore()
+	mockClient := &providermock.DBClientInterfaceMock{}
+	mockClient.On("GetTransactioner").Return(&mockTransactioner{}, nil)
+	mockProvider := &providermock.DBProviderInterfaceMock{}
+	mockProvider.On("GetConfigDBClient").Return(mockClient, nil)
+	originalGetDBProvider := getDBProvider
+	getDBProvider = func() provider.DBProviderInterface { return mockProvider }
+	defer func() { getDBProvider = originalGetDBProvider }()
+
+	store, _, err := initializeStore()
 
 	suite.NoError(err)
 	suite.NotNil(store)
@@ -86,7 +94,7 @@ func (suite *InitTestSuite) TestInitializeStoreDeclarativeMode() {
 	runtime.Config.Role.Store = string(serverconst.StoreModeDeclarative)
 	runtime.Config.DeclarativeResources.Enabled = true
 
-	store, err := initializeStore()
+	store, _, err := initializeStore()
 
 	suite.NoError(err)
 	suite.NotNil(store)
@@ -101,7 +109,15 @@ func (suite *InitTestSuite) TestInitializeStoreCompositeMode() {
 	runtime := config.GetThunderRuntime()
 	runtime.Config.Role.Store = string(serverconst.StoreModeComposite)
 
-	store, err := initializeStore()
+	mockClient := &providermock.DBClientInterfaceMock{}
+	mockClient.On("GetTransactioner").Return(&mockTransactioner{}, nil)
+	mockProvider := &providermock.DBProviderInterfaceMock{}
+	mockProvider.On("GetConfigDBClient").Return(mockClient, nil)
+	originalGetDBProvider := getDBProvider
+	getDBProvider = func() provider.DBProviderInterface { return mockProvider }
+	defer func() { getDBProvider = originalGetDBProvider }()
+
+	store, _, err := initializeStore()
 
 	suite.NoError(err)
 	suite.NotNil(store)
@@ -120,7 +136,7 @@ func (suite *InitTestSuite) TestInitializeStoreDeclarativeFallback() {
 	runtime.Config.Role.Store = ""
 	runtime.Config.DeclarativeResources.Enabled = true
 
-	store, err := initializeStore()
+	store, _, err := initializeStore()
 
 	suite.NoError(err)
 	suite.NotNil(store)
@@ -136,7 +152,15 @@ func (suite *InitTestSuite) TestInitializeStoreMutableModeFallback() {
 	runtime.Config.Role.Store = ""
 	runtime.Config.DeclarativeResources.Enabled = false
 
-	store, err := initializeStore()
+	mockClient := &providermock.DBClientInterfaceMock{}
+	mockClient.On("GetTransactioner").Return(&mockTransactioner{}, nil)
+	mockProvider := &providermock.DBProviderInterfaceMock{}
+	mockProvider.On("GetConfigDBClient").Return(mockClient, nil)
+	originalGetDBProvider := getDBProvider
+	getDBProvider = func() provider.DBProviderInterface { return mockProvider }
+	defer func() { getDBProvider = originalGetDBProvider }()
+
+	store, _, err := initializeStore()
 
 	suite.NoError(err)
 	suite.NotNil(store)
@@ -152,7 +176,7 @@ func (suite *InitTestSuite) TestInitializeStoreNormalizeCaseSensitivity() {
 	runtime := config.GetThunderRuntime()
 	runtime.Config.Role.Store = "DECLARATIVE"
 
-	store, err := initializeStore()
+	store, _, err := initializeStore()
 
 	suite.NoError(err)
 	suite.NotNil(store)
@@ -167,7 +191,15 @@ func (suite *InitTestSuite) TestInitializeStoreTrimsWhitespace() {
 	runtime := config.GetThunderRuntime()
 	runtime.Config.Role.Store = "  composite  "
 
-	store, err := initializeStore()
+	mockClient := &providermock.DBClientInterfaceMock{}
+	mockClient.On("GetTransactioner").Return(&mockTransactioner{}, nil)
+	mockProvider := &providermock.DBProviderInterfaceMock{}
+	mockProvider.On("GetConfigDBClient").Return(mockClient, nil)
+	originalGetDBProvider := getDBProvider
+	getDBProvider = func() provider.DBProviderInterface { return mockProvider }
+	defer func() { getDBProvider = originalGetDBProvider }()
+
+	store, _, err := initializeStore()
 
 	suite.NoError(err)
 	suite.NotNil(store)

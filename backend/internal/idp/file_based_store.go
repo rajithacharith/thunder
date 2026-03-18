@@ -24,6 +24,7 @@ import (
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 type idpFileBasedStore struct {
@@ -104,9 +105,9 @@ func (f *idpFileBasedStore) UpdateIdentityProvider(ctx context.Context, idp *IDP
 }
 
 // newIDPFileBasedStore creates a new instance of a file-based store.
-func newIDPFileBasedStore() idpStoreInterface {
+func newIDPFileBasedStore() (idpStoreInterface, transaction.Transactioner) {
 	genericStore := declarativeresource.NewGenericFileBasedStore(entity.KeyTypeIDP)
 	return &idpFileBasedStore{
 		GenericFileBasedStore: genericStore,
-	}
+	}, transaction.NewNoOpTransactioner()
 }

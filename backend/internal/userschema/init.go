@@ -24,10 +24,10 @@ import (
 	"github.com/asgardeo/thunder/internal/consent"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 // Initialize initializes the user schema service and registers its routes.
@@ -37,22 +37,18 @@ func Initialize(
 	authzService sysauthz.SystemAuthorizationServiceInterface,
 	consentService consent.ConsentServiceInterface,
 ) (UserSchemaServiceInterface, declarativeresource.ResourceExporter, error) {
-	// Step 1: Determine store mode and initialize store structure
+	// Step 1: Determine store mode and initialize store and transactioner
 	storeMode := getUserSchemaStoreMode()
-	userSchemaStore := initializeStore(storeMode)
-
-	// Step 2: Get database transactioner
-	dbProvider := provider.GetDBProvider()
-	transactioner, err := dbProvider.GetConfigDBTransactioner()
+	userSchemaStore, transactioner, err := initializeStore(storeMode)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// Step 3: Create service with store
+	// Step 2: Create service with store
 	userSchemaService := newUserSchemaService(ouService, userSchemaStore, transactioner,
 		authzService, consentService)
 
-	// Step 4: Load declarative resources into store (if applicable)
+	// Step 3: Load declarative resources into store (if applicable)
 	if storeMode == serverconst.StoreModeComposite || storeMode == serverconst.StoreModeDeclarative {
 		if err := loadDeclarativeResources(userSchemaStore, ouService); err != nil {
 			return nil, nil, err
@@ -94,25 +90,27 @@ func Initialize(
 // - If user_schema.store is not specified, falls back to global declarative_resources.enabled:
 //   - If declarative_resources.enabled = true: behaves as IMMUTABLE mode
 //   - If declarative_resources.enabled = false: behaves as MUTABLE mode
-func initializeStore(storeMode serverconst.StoreMode) userSchemaStoreInterface {
-	var userSchemaStore userSchemaStoreInterface
-
+func initializeStore(storeMode serverconst.StoreMode) (userSchemaStoreInterface, transaction.Transactioner, error) {
 	switch storeMode {
 	case serverconst.StoreModeComposite:
-		fileStore := newUserSchemaFileBasedStore()
-		dbStore := newUserSchemaStore()
-		userSchemaStore = newCompositeUserSchemaStore(fileStore, dbStore)
+		fileStore, _ := newUserSchemaFileBasedStore()
+		dbStore, transactioner, err := newUserSchemaStore()
+		if err != nil {
+			return nil, nil, err
+		}
+		return newCompositeUserSchemaStore(fileStore, dbStore), transactioner, nil
 
 	case serverconst.StoreModeDeclarative:
-		fileStore := newUserSchemaFileBasedStore()
-		userSchemaStore = fileStore
+		fileStore, transactioner := newUserSchemaFileBasedStore()
+		return fileStore, transactioner, nil
 
 	default:
-		dbStore := newUserSchemaStore()
-		userSchemaStore = newCachedBackedUserSchemaStore(dbStore)
+		dbStore, transactioner, err := newUserSchemaStore()
+		if err != nil {
+			return nil, nil, err
+		}
+		return newCachedBackedUserSchemaStore(dbStore), transactioner, nil
 	}
-
-	return userSchemaStore
 }
 
 // registerRoutes registers the routes for user schema management operations.

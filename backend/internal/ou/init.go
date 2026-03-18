@@ -23,10 +23,10 @@ import (
 	"strings"
 
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 // Initialize initializes the organization unit service and registers its routes.
@@ -35,12 +35,7 @@ import (
 func Initialize(
 	mux *http.ServeMux, authzService sysauthz.SystemAuthorizationServiceInterface,
 ) (ConfigurableOUService, sysauthz.OUHierarchyResolver, declarativeresource.ResourceExporter, error) {
-	ouStore, err := initializeStore()
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	transactioner, err := provider.GetDBProvider().GetUserDBTransactioner()
+	ouStore, transactioner, err := initializeStore()
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -86,33 +81,32 @@ func Initialize(
 // - If organization_unit.store is not specified, falls back to global immutable_resources.enabled:
 //   - If immutable_resources.enabled = true: behaves as IMMUTABLE mode
 //   - If immutable_resources.enabled = false: behaves as MUTABLE mode
-func initializeStore() (organizationUnitStoreInterface, error) {
-	var ouStore organizationUnitStoreInterface
-
+func initializeStore() (organizationUnitStoreInterface, transaction.Transactioner, error) {
 	storeMode := getOrganizationUnitStoreMode()
 
 	switch storeMode {
 	case serverconst.StoreModeComposite:
-		fileStore := newFileBasedStore()
-		dbStore := newOrganizationUnitStore()
-		ouStore = newCompositeOUStore(fileStore, dbStore)
-		if err := loadDeclarativeResources(fileStore, dbStore); err != nil {
-			return nil, err
+		fileStore, _ := newFileBasedStore()
+		dbStore, transactioner, err := newOrganizationUnitStore()
+		if err != nil {
+			return nil, nil, err
 		}
+		ouStore := newCompositeOUStore(fileStore, dbStore)
+		if err := loadDeclarativeResources(fileStore, dbStore); err != nil {
+			return nil, nil, err
+		}
+		return ouStore, transactioner, nil
 
 	case serverconst.StoreModeDeclarative:
-		fileStore := newFileBasedStore()
-		ouStore = fileStore
-
+		fileStore, transactioner := newFileBasedStore()
 		if err := loadDeclarativeResources(fileStore, nil); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
+		return fileStore, transactioner, nil
 
 	default:
-		ouStore = newOrganizationUnitStore()
+		return newOrganizationUnitStore()
 	}
-
-	return ouStore, nil
 }
 
 // registerRoutes registers the routes for organization unit management operations.

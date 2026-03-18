@@ -288,3 +288,57 @@ func (suite *TransactionerTestSuite) TestTransact_PanicWithNonErrorValue() {
 	suite.True(executed)
 	suite.NoError(suite.mock.ExpectationsWereMet())
 }
+
+// NoOpTransactionerTestSuite tests the no-op transactioner implementation.
+type NoOpTransactionerTestSuite struct {
+	suite.Suite
+	transactioner Transactioner
+}
+
+func TestNoOpTransactionerTestSuite(t *testing.T) {
+	suite.Run(t, new(NoOpTransactionerTestSuite))
+}
+
+func (suite *NoOpTransactionerTestSuite) SetupTest() {
+	suite.transactioner = NewNoOpTransactioner()
+}
+
+func (suite *NoOpTransactionerTestSuite) TestTransact_Success() {
+	ctx := context.Background()
+
+	executed := false
+	err := suite.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		executed = true
+		// No transaction should be in context
+		suite.False(HasKeyedTx(txCtx, "test"))
+		return nil
+	})
+
+	suite.NoError(err)
+	suite.True(executed)
+}
+
+func (suite *NoOpTransactionerTestSuite) TestTransact_Error() {
+	ctx := context.Background()
+	expectedErr := errors.New("business logic error")
+
+	err := suite.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		return expectedErr
+	})
+
+	suite.Error(err)
+	suite.Equal(expectedErr, err)
+}
+
+func (suite *NoOpTransactionerTestSuite) TestTransact_ContextPassthrough() {
+	type ctxKey string
+	ctx := context.WithValue(context.Background(), ctxKey("key"), "value")
+
+	err := suite.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		// Original context values should be preserved
+		suite.Equal("value", txCtx.Value(ctxKey("key")))
+		return nil
+	})
+
+	suite.NoError(err)
+}

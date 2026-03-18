@@ -49,7 +49,7 @@ func (suite *FileBasedStoreTestSuite) SetupTest() {
 
 // TestNewUserFileBasedStore verifies the constructor returns a usable store.
 func (suite *FileBasedStoreTestSuite) TestNewUserFileBasedStore() {
-	store := newUserFileBasedStore()
+	store, _ := newUserFileBasedStore()
 	suite.NotNil(store)
 	_, ok := store.(*userFileBasedStore)
 	suite.True(ok)

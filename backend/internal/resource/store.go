@@ -25,6 +25,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 // resourceStoreInterface defines the interface for resource store operations.
@@ -84,11 +85,16 @@ type resourceServerProperties struct {
 }
 
 // newResourceStore creates a new instance of resourceStore.
-func newResourceStore() resourceStoreInterface {
-	return &resourceStore{
-		dbProvider:   provider.GetDBProvider(),
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+func newResourceStore() (resourceStoreInterface, transaction.Transactioner, error) {
+	dbProvider := provider.GetDBProvider()
+	transactioner, err := dbProvider.GetConfigDBTransactioner()
+	if err != nil {
+		return nil, nil, err
 	}
+	return &resourceStore{
+		dbProvider:   dbProvider,
+		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+	}, transactioner, nil
 }
 
 // CreateResourceServer creates a new resource server in the database.

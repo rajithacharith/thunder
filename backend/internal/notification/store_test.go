@@ -28,11 +28,18 @@ import (
 	"github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
 
 const testDeploymentID = "test-deployment-id"
+
+type mockTransactioner struct{}
+
+func (m *mockTransactioner) Transact(ctx context.Context, operation func(txCtx context.Context) error) error {
+	return operation(ctx)
+}
 
 type StoreTestSuite struct {
 	suite.Suite
@@ -69,8 +76,17 @@ func (suite *StoreTestSuite) SetupTest() {
 }
 
 func (suite *StoreTestSuite) TestNewNotificationStore() {
-	store := newNotificationStore()
+	mockClient := providermock.NewDBClientInterfaceMock(suite.T())
+	mockClient.On("GetTransactioner").Return(&mockTransactioner{}, nil)
+	mockProvider := providermock.NewDBProviderInterfaceMock(suite.T())
+	mockProvider.On("GetConfigDBClient").Return(mockClient, nil)
+	originalGetDBProvider := getDBProvider
+	getDBProvider = func() provider.DBProviderInterface { return mockProvider }
+	defer func() { getDBProvider = originalGetDBProvider }()
 
+	store, _, err := newNotificationStore()
+
+	suite.NoError(err)
 	suite.NotNil(store)
 	suite.Implements((*notificationStoreInterface)(nil), store)
 }

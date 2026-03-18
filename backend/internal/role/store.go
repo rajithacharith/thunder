@@ -26,9 +26,12 @@ import (
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 const storeLoggerComponentName = "RoleStore"
+
+var getDBProvider = provider.GetDBProvider
 
 // roleStoreInterface defines the interface for role store operations.
 type roleStoreInterface interface {
@@ -57,11 +60,20 @@ type roleStore struct {
 }
 
 // newRoleStore creates a new instance of roleStore.
-func newRoleStore() roleStoreInterface {
-	return &roleStore{
-		dbProvider:   provider.GetDBProvider(),
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+func newRoleStore() (roleStoreInterface, transaction.Transactioner, error) {
+	dbProvider := getDBProvider()
+	client, err := dbProvider.GetConfigDBClient()
+	if err != nil {
+		return nil, nil, err
 	}
+	transactioner, err := client.GetTransactioner()
+	if err != nil {
+		return nil, nil, err
+	}
+	return &roleStore{
+		dbProvider:   dbProvider,
+		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+	}, transactioner, nil
 }
 
 // GetRoleListCount retrieves the total count of roles.

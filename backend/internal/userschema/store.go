@@ -27,6 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 // marshalSystemAttributes marshals SystemAttributes to a JSON string for DB storage.
@@ -92,11 +93,16 @@ type userSchemaStore struct {
 }
 
 // newUserSchemaStore creates a new instance of userSchemaStore.
-func newUserSchemaStore() userSchemaStoreInterface {
-	return &userSchemaStore{
-		dbProvider:   provider.GetDBProvider(),
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+func newUserSchemaStore() (userSchemaStoreInterface, transaction.Transactioner, error) {
+	dbProvider := provider.GetDBProvider()
+	transactioner, err := dbProvider.GetConfigDBTransactioner()
+	if err != nil {
+		return nil, nil, err
 	}
+	return &userSchemaStore{
+		dbProvider:   dbProvider,
+		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+	}, transactioner, nil
 }
 
 // GetUserSchemaListCount retrieves the total count of user schemas.

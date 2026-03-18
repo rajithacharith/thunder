@@ -25,8 +25,8 @@ import (
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/database/model"
-	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 
 	_ "github.com/lib/pq"
 	_ "modernc.org/sqlite"
