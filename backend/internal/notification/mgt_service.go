@@ -88,37 +88,33 @@ func (s *notificationSenderMgtService) CreateSender(
 	}
 	sender.ID = id
 
-	var dbErr serviceerror.ServiceError
+	var svcErr *serviceerror.ServiceError
 	transactErr := s.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		// Check if sender with same name already exists
 		senderRetv, err := s.notificationStore.getSenderByName(txCtx, sender.Name)
 		if err != nil {
-			logger.Error("Failed to retrieve notification sender", log.String("name", sender.Name),
-				log.Error(err))
-			dbErr = ErrorInternalServerError
 			return err
 		}
 		if senderRetv != nil {
 			logger.Debug("Notification sender already exists", log.String("name", sender.Name),
 				log.String("id", senderRetv.ID))
-			dbErr = ErrorDuplicateSenderName
+			svcErr = &ErrorDuplicateSenderName
 			return errors.New("sender already exists")
 		}
 
 		// Create the sender
 		err = s.notificationStore.createSender(txCtx, sender)
 		if err != nil {
-			logger.Error("Failed to create notification sender", log.Error(err))
-			dbErr = ErrorInternalServerError
 			return err
 		}
 		return nil
 	})
 
+	if svcErr != nil {
+		return nil, svcErr
+	}
 	if transactErr != nil {
-		if dbErr.Code != "" {
-			return nil, &dbErr
-		}
+		logger.Error("Failed to create notification sender", log.Error(transactErr), log.String("name", sender.Name))
 		return nil, &ErrorInternalServerError
 	}
 
@@ -202,18 +198,16 @@ func (s *notificationSenderMgtService) UpdateSender(ctx context.Context, id stri
 		return nil, err
 	}
 
-	var dbErr serviceerror.ServiceError
+	var svcErr *serviceerror.ServiceError
 	transactErr := s.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		// Check if sender exists
 		senderRetv, err := s.notificationStore.getSenderByID(txCtx, id)
 		if err != nil {
-			logger.Error("Failed to retrieve notification sender", log.String("id", id), log.Error(err))
-			dbErr = ErrorInternalServerError
 			return err
 		}
 		if senderRetv == nil {
 			logger.Debug("Notification sender not found", log.String("id", id))
-			dbErr = ErrorSenderNotFound
+			svcErr = &ErrorSenderNotFound
 			return errors.New("sender not found")
 		}
 
@@ -221,15 +215,12 @@ func (s *notificationSenderMgtService) UpdateSender(ctx context.Context, id stri
 		if sender.Name != senderRetv.Name {
 			senderWithUpdatedName, err := s.notificationStore.getSenderByName(txCtx, sender.Name)
 			if err != nil {
-				logger.Error("Failed to retrieve notification sender", log.String("name", sender.Name),
-					log.Error(err))
-				dbErr = ErrorInternalServerError
 				return err
 			}
 			if senderWithUpdatedName != nil && senderWithUpdatedName.ID != id {
 				logger.Debug("Another sender with the same name already exists",
 					log.String("name", sender.Name), log.String("existingID", senderWithUpdatedName.ID))
-				dbErr = ErrorDuplicateSenderName
+				svcErr = &ErrorDuplicateSenderName
 				return errors.New("duplicate name")
 			}
 		}
@@ -238,24 +229,23 @@ func (s *notificationSenderMgtService) UpdateSender(ctx context.Context, id stri
 		if sender.Type != senderRetv.Type {
 			logger.Debug("Attempting to change sender type", log.String("id", id),
 				log.String("originalType", string(senderRetv.Type)), log.String("newType", string(sender.Type)))
-			dbErr = ErrorSenderTypeUpdateNotAllowed
+			svcErr = &ErrorSenderTypeUpdateNotAllowed
 			return errors.New("cannot change type")
 		}
 
 		// Update the sender
 		if err := s.notificationStore.updateSender(txCtx, id, sender); err != nil {
-			logger.Error("Failed to update notification sender", log.String("id", id), log.Error(err))
-			dbErr = ErrorInternalServerError
 			return err
 		}
 
 		return nil
 	})
 
+	if svcErr != nil {
+		return nil, svcErr
+	}
 	if transactErr != nil {
-		if dbErr.Code != "" {
-			return nil, &dbErr
-		}
+		logger.Error("Failed to update notification sender", log.Error(transactErr), log.String("id", id))
 		return nil, &ErrorInternalServerError
 	}
 
@@ -282,20 +272,15 @@ func (s *notificationSenderMgtService) DeleteSender(ctx context.Context, id stri
 		return &ErrorInvalidSenderID
 	}
 
-	var dbErr serviceerror.ServiceError
 	transactErr := s.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := s.notificationStore.deleteSender(txCtx, id); err != nil {
-			logger.Error("Failed to delete notification sender", log.String("id", id), log.Error(err))
-			dbErr = ErrorInternalServerError
 			return err
 		}
 		return nil
 	})
 
 	if transactErr != nil {
-		if dbErr.Code != "" {
-			return &dbErr
-		}
+		logger.Error("Failed to delete notification sender", log.Error(transactErr), log.String("id", id))
 		return &ErrorInternalServerError
 	}
 

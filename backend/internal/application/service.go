@@ -162,7 +162,6 @@ func (as *applicationService) CreateApplication(ctx context.Context, app *model.
 
 		createErr := as.appStore.CreateApplication(txCtx, *processedDTO)
 		if createErr != nil {
-			logger.Error("Failed to create application", log.Error(createErr), log.String("appID", appID))
 			return createErr
 		}
 
@@ -177,10 +176,12 @@ func (as *applicationService) CreateApplication(ctx context.Context, app *model.
 		return nil
 	})
 
+	if innerSvcErr != nil {
+		return nil, innerSvcErr
+	}
+
 	if err != nil {
-		if innerSvcErr != nil {
-			return nil, innerSvcErr
-		}
+		logger.Error("Failed to create application", log.Error(err), log.String("appID", appID))
 		return nil, &ErrorInternalServerError
 	}
 
@@ -657,7 +658,6 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 
 		storeErr := as.appStore.UpdateApplication(txCtx, existingApp, processedDTO)
 		if storeErr != nil {
-			logger.Error("Failed to update application", log.Error(storeErr), log.String("appID", appID))
 			return storeErr
 		}
 
@@ -672,10 +672,11 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 		return nil
 	})
 
+	if innerSvcErr != nil {
+		return nil, innerSvcErr
+	}
 	if err != nil {
-		if innerSvcErr != nil {
-			return nil, innerSvcErr
-		}
+		logger.Error("Failed to update application", log.Error(err), log.String("appID", appID))
 		return nil, &ErrorInternalServerError
 	}
 
@@ -832,8 +833,6 @@ func (as *applicationService) DeleteApplication(ctx context.Context, appID strin
 				appNotFound = true
 				return nil
 			}
-			logger.Error("Error while retrieving the application before deletion", log.Error(fetchErr),
-				log.String("appID", appID))
 			return fetchErr
 		}
 
@@ -844,7 +843,6 @@ func (as *applicationService) DeleteApplication(ctx context.Context, appID strin
 				appNotFound = true
 				return nil
 			}
-			logger.Error("Error while deleting the application", log.Error(appErr), log.String("appID", appID))
 			return appErr
 		}
 
@@ -876,10 +874,11 @@ func (as *applicationService) DeleteApplication(ctx context.Context, appID strin
 		return nil
 	}
 
+	if transactionSvcErr != nil {
+		return transactionSvcErr
+	}
 	if err != nil {
-		if transactionSvcErr != nil {
-			return transactionSvcErr
-		}
+		logger.Error("Failed to delete application", log.Error(err), log.String("appID", appID))
 		return &ErrorInternalServerError
 	}
 

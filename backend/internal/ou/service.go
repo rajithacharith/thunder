@@ -257,7 +257,6 @@ func (ous *organizationUnitService) CreateOrganizationUnit(
 			}
 			exists, err := ous.ouStore.IsOrganizationUnitExists(txCtx, *request.Parent)
 			if err != nil {
-				capturedSvcErr = &ErrorInternalServerError
 				return err
 			}
 			if !exists {
@@ -273,7 +272,6 @@ func (ous *organizationUnitService) CreateOrganizationUnit(
 
 		conflict, err := ous.ouStore.CheckOrganizationUnitNameConflict(txCtx, request.Name, request.Parent)
 		if err != nil {
-			capturedSvcErr = &ErrorInternalServerError
 			return err
 		}
 		if conflict {
@@ -283,7 +281,6 @@ func (ous *organizationUnitService) CreateOrganizationUnit(
 
 		handleConflict, err := ous.ouStore.CheckOrganizationUnitHandleConflict(txCtx, request.Handle, request.Parent)
 		if err != nil {
-			capturedSvcErr = &ErrorInternalServerError
 			return err
 		}
 		if handleConflict {
@@ -293,7 +290,6 @@ func (ous *organizationUnitService) CreateOrganizationUnit(
 
 		ouID, err := utils.GenerateUUIDv7()
 		if err != nil {
-			capturedSvcErr = &ErrorInternalServerError
 			return err
 		}
 
@@ -312,17 +308,14 @@ func (ous *organizationUnitService) CreateOrganizationUnit(
 		}
 
 		err = ous.ouStore.CreateOrganizationUnit(txCtx, createdOU)
-		if err != nil {
-			capturedSvcErr = &ErrorInternalServerError
-			return err
-		}
-		return nil
+		return err
 	})
 
 	if capturedSvcErr != nil {
 		return OrganizationUnit{}, capturedSvcErr
 	}
 	if err != nil {
+		logger.Error("Failed to create organization unit", log.Error(err), log.String("name", request.Name))
 		return OrganizationUnit{}, &ErrorInternalServerError
 	}
 
@@ -456,8 +449,6 @@ func (ous *organizationUnitService) UpdateOrganizationUnit(
 				capturedSvcErr = &ErrorOrganizationUnitNotFound
 				return err
 			}
-			logger.Error("Failed to get organization unit", log.Error(err))
-			capturedSvcErr = &ErrorInternalServerError
 			return err
 		}
 
@@ -474,6 +465,7 @@ func (ous *organizationUnitService) UpdateOrganizationUnit(
 		return OrganizationUnit{}, capturedSvcErr
 	}
 	if err != nil {
+		logger.Error("Failed to update organization unit", log.Error(err), log.String("ouID", id))
 		return OrganizationUnit{}, &ErrorInternalServerError
 	}
 
@@ -503,8 +495,6 @@ func (ous *organizationUnitService) UpdateOrganizationUnitByPath(
 				capturedSvcErr = &ErrorOrganizationUnitNotFound
 				return err
 			}
-			logger.Error("Failed to get organization unit by path", log.Error(err))
-			capturedSvcErr = &ErrorInternalServerError
 			return err
 		}
 
@@ -532,6 +522,7 @@ func (ous *organizationUnitService) UpdateOrganizationUnitByPath(
 		return OrganizationUnit{}, capturedSvcErr
 	}
 	if err != nil {
+		logger.Error("Failed to update organization unit by path", log.Error(err), log.String("path", handlePath))
 		return OrganizationUnit{}, &ErrorInternalServerError
 	}
 
@@ -643,8 +634,6 @@ func (ous *organizationUnitService) DeleteOrganizationUnit(ctx context.Context, 
 		// Check if organization unit exists
 		exists, err := ous.ouStore.IsOrganizationUnitExists(txCtx, id)
 		if err != nil {
-			logger.Error("Failed to check organization unit existence", log.Error(err))
-			capturedSvcErr = &ErrorInternalServerError
 			return err
 		}
 		if !exists {
@@ -664,6 +653,7 @@ func (ous *organizationUnitService) DeleteOrganizationUnit(ctx context.Context, 
 		return capturedSvcErr
 	}
 	if err != nil {
+		logger.Error("Failed to delete organization unit", log.Error(err), log.String("ouID", id))
 		return &ErrorInternalServerError
 	}
 
@@ -693,8 +683,6 @@ func (ous *organizationUnitService) DeleteOrganizationUnitByPath(
 				capturedSvcErr = &ErrorOrganizationUnitNotFound
 				return err
 			}
-			logger.Error("Failed to get organization unit by path", log.Error(err))
-			capturedSvcErr = &ErrorInternalServerError
 			return err
 		}
 		ouID = existingOU.ID
@@ -722,6 +710,7 @@ func (ous *organizationUnitService) DeleteOrganizationUnitByPath(
 		return capturedSvcErr
 	}
 	if err != nil {
+		logger.Error("Failed to delete organization unit by path", log.Error(err), log.String("path", handlePath))
 		return &ErrorInternalServerError
 	}
 
