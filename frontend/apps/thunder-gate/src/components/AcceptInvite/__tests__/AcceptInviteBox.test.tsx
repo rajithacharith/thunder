@@ -461,37 +461,6 @@ describe('AcceptInviteBox', () => {
     expect(screen.getByTestId('asgardeo-accept-invite')).toBeInTheDocument();
   });
 
-  it('disables submit button when form is not valid', () => {
-    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
-      isValid: false,
-      components: [
-        {
-          id: 'block-1',
-          type: 'BLOCK',
-          components: [
-            {
-              id: 'password-input',
-              type: 'PASSWORD_INPUT',
-              ref: 'password',
-              label: 'Password',
-              required: true,
-            },
-            {
-              id: 'submit-btn',
-              type: 'ACTION',
-              eventType: 'SUBMIT',
-              label: 'Set Password',
-              variant: 'PRIMARY',
-            },
-          ],
-        },
-      ],
-    });
-    render(<AcceptInviteBox />);
-    const submitBtn = screen.getByText('Set Password');
-    expect(submitBtn).toBeDisabled();
-  });
-
   it('shows validation error for SELECT component', () => {
     mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
       touched: {role: true},

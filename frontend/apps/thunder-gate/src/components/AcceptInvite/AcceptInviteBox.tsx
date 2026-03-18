@@ -108,7 +108,6 @@ export default function AcceptInviteBox(): JSX.Element {
             isComplete,
             isValidatingToken,
             isTokenInvalid,
-            isValid = true,
           }: any) => {
             // Validating token
             if (isValidatingToken) {
@@ -168,7 +167,7 @@ export default function AcceptInviteBox(): JSX.Element {
                         values={values ?? {}}
                         touched={touched}
                         fieldErrors={fieldErrors}
-                        isLoading={isLoading || !isValid}
+                        isLoading={isLoading}
                         resolve={resolve}
                         onInputChange={handleInputChange}
                         onSubmit={(action, inputs) => {
