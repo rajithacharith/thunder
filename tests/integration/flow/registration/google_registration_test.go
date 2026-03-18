@@ -305,7 +305,7 @@ func (ts *GoogleRegistrationFlowTestSuite) SetupSuite() {
 	googleRegTestOUID = ouID
 
 	// Create user schema
-	googleRegUserSchema.OrganizationUnitId = googleRegTestOUID
+	googleRegUserSchema.OUID = googleRegTestOUID
 	googleRegUserSchema.AllowSelfRegistration = true
 	schemaID, err := testutils.CreateUserType(googleRegUserSchema)
 	ts.Require().NoError(err, "Failed to create Google user schema")
@@ -537,7 +537,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowCompleteSuc
 
 	// Validate JWT contains expected user type and OU ID
 	ts.Require().Equal(googleRegUserSchema.Name, jwtClaims.UserType, "Expected userType to match created schema")
-	ts.Require().NotEmpty(jwtClaims.OuID, "Expected ouId to be present")
+	ts.Require().NotEmpty(jwtClaims.OUID, "Expected ouId to be present")
 	ts.Require().Equal(googleRegTestAppID, jwtClaims.Aud, "Expected aud to match the application ID")
 	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
 

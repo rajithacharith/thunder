@@ -241,7 +241,7 @@ func (s *userSchemaStore) CreateUserSchema(ctx context.Context, userSchema UserS
 		queryCreateUserSchema,
 		userSchema.ID,
 		userSchema.Name,
-		userSchema.OrganizationUnitID,
+		userSchema.OUID,
 		userSchema.AllowSelfRegistration,
 		string(userSchema.Schema),
 		sysAttrs,
@@ -308,7 +308,7 @@ func (s *userSchemaStore) UpdateUserSchemaByID(ctx context.Context, schemaID str
 		ctx,
 		queryUpdateUserSchemaByID,
 		userSchema.Name,
-		userSchema.OrganizationUnitID,
+		userSchema.OUID,
 		userSchema.AllowSelfRegistration,
 		string(userSchema.Schema),
 		sysAttrs,
@@ -409,7 +409,7 @@ func parseUserSchemaFromRow(row map[string]interface{}) (UserSchema, error) {
 		return UserSchema{}, fmt.Errorf("failed to parse name as string")
 	}
 
-	organizationUnitID, ok := row["ou_id"].(string)
+	oUID, ok := row["ou_id"].(string)
 	if !ok {
 		return UserSchema{}, fmt.Errorf("failed to parse ou_id as string")
 	}
@@ -437,7 +437,7 @@ func parseUserSchemaFromRow(row map[string]interface{}) (UserSchema, error) {
 	userSchema := UserSchema{
 		ID:                    schemaID,
 		Name:                  name,
-		OrganizationUnitID:    organizationUnitID,
+		OUID:                  oUID,
 		AllowSelfRegistration: allowSelfRegistration,
 		SystemAttributes:      systemAttributes,
 		Schema:                json.RawMessage(schemaDef),
@@ -458,7 +458,7 @@ func parseUserSchemaListItemFromRow(row map[string]interface{}) (UserSchemaListI
 		return UserSchemaListItem{}, fmt.Errorf("failed to parse name as string")
 	}
 
-	organizationUnitID, ok := row["ou_id"].(string)
+	oUID, ok := row["ou_id"].(string)
 	if !ok {
 		return UserSchemaListItem{}, fmt.Errorf("failed to parse ou_id as string")
 	}
@@ -476,7 +476,7 @@ func parseUserSchemaListItemFromRow(row map[string]interface{}) (UserSchemaListI
 	userSchemaListItem := UserSchemaListItem{
 		ID:                    schemaID,
 		Name:                  name,
-		OrganizationUnitID:    organizationUnitID,
+		OUID:                  oUID,
 		AllowSelfRegistration: allowSelfRegistration,
 		SystemAttributes:      systemAttributes,
 	}

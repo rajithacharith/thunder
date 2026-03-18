@@ -48,8 +48,8 @@ describe('useGetOrganizationUnitUsers', () => {
     startIndex: 1,
     count: 2,
     users: [
-      {id: 'user-1', organizationUnit: 'ou-123', type: 'employee'},
-      {id: 'user-2', organizationUnit: 'ou-123', type: 'contractor'},
+      {id: 'user-1', ouId: 'ou-123', type: 'employee'},
+      {id: 'user-2', ouId: 'ou-123', type: 'contractor'},
     ],
     links: [{rel: 'self', href: 'https://localhost:8090/organization-units/ou-123/users'}],
   };

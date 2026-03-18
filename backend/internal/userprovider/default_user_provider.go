@@ -62,10 +62,10 @@ func (p *defaultUserProvider) GetUser(userID string) (*User, *UserProviderError)
 	}
 
 	return &User{
-		UserID:             userResult.ID,
-		UserType:           userResult.Type,
-		OrganizationUnitID: userResult.OrganizationUnit,
-		Attributes:         userResult.Attributes,
+		UserID:     userResult.ID,
+		UserType:   userResult.Type,
+		OUID:       userResult.OUID,
+		Attributes: userResult.Attributes,
 	}, nil
 }
 
@@ -84,9 +84,9 @@ func (p *defaultUserProvider) GetUserGroups(userID string, limit, offset int) (*
 	groups := make([]UserGroup, len(userGroupListResponse.Groups))
 	for i, g := range userGroupListResponse.Groups {
 		groups[i] = UserGroup{
-			ID:                 g.ID,
-			Name:               g.Name,
-			OrganizationUnitID: g.OrganizationUnitID,
+			ID:   g.ID,
+			Name: g.Name,
+			OUID: g.OUID,
 		}
 	}
 
@@ -114,10 +114,10 @@ func (p *defaultUserProvider) UpdateUser(userID string, userUpdateConfig *User) 
 			"User update configuration cannot be nil")
 	}
 	updatedUser := &user.User{
-		ID:               userID,
-		OrganizationUnit: userUpdateConfig.OrganizationUnitID,
-		Type:             userUpdateConfig.UserType,
-		Attributes:       userUpdateConfig.Attributes,
+		ID:         userID,
+		OUID:       userUpdateConfig.OUID,
+		Type:       userUpdateConfig.UserType,
+		Attributes: userUpdateConfig.Attributes,
 	}
 
 	userResult, err := p.userSvc.UpdateUser(
@@ -137,10 +137,10 @@ func (p *defaultUserProvider) UpdateUser(userID string, userUpdateConfig *User) 
 		}
 	}
 	return &User{
-		UserID:             userResult.ID,
-		UserType:           userResult.Type,
-		OrganizationUnitID: userResult.OrganizationUnit,
-		Attributes:         userResult.Attributes,
+		UserID:     userResult.ID,
+		UserType:   userResult.Type,
+		OUID:       userResult.OUID,
+		Attributes: userResult.Attributes,
 	}, nil
 }
 
@@ -151,9 +151,9 @@ func (p *defaultUserProvider) CreateUser(userCreateConfig *User) (*User, *UserPr
 			"User create configuration cannot be nil")
 	}
 	newUser := &user.User{
-		OrganizationUnit: userCreateConfig.OrganizationUnitID,
-		Type:             userCreateConfig.UserType,
-		Attributes:       userCreateConfig.Attributes,
+		OUID:       userCreateConfig.OUID,
+		Type:       userCreateConfig.UserType,
+		Attributes: userCreateConfig.Attributes,
 	}
 
 	userResult, err := p.userSvc.CreateUser(security.WithRuntimeContext(context.Background()), newUser)
@@ -175,10 +175,10 @@ func (p *defaultUserProvider) CreateUser(userCreateConfig *User) (*User, *UserPr
 	}
 
 	return &User{
-		UserID:             userResult.ID,
-		UserType:           userResult.Type,
-		OrganizationUnitID: userResult.OrganizationUnit,
-		Attributes:         userResult.Attributes,
+		UserID:     userResult.ID,
+		UserType:   userResult.Type,
+		OUID:       userResult.OUID,
+		Attributes: userResult.Attributes,
 	}, nil
 }
 

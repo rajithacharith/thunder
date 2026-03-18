@@ -247,9 +247,9 @@ func extractAndValidateID(w http.ResponseWriter, r *http.Request) (string, bool)
 	id := r.PathValue("id")
 	if id == "" {
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, apierror.ErrorResponse{
-			Code:        ErrorMissingOrganizationUnitID.Code,
-			Message:     ErrorMissingOrganizationUnitID.Error,
-			Description: ErrorMissingOrganizationUnitID.ErrorDescription,
+			Code:        ErrorMissingOUID.Code,
+			Message:     ErrorMissingOUID.Error,
+			Description: ErrorMissingOUID.ErrorDescription,
 		})
 		return "", true
 	}

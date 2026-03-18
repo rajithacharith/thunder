@@ -649,7 +649,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetRequest(
 				suite.Equal(http.StatusBadRequest, recorder.Code)
 				var resp apierror.ErrorResponse
 				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorMissingOrganizationUnitID.Code, resp.Code)
+				suite.Equal(ErrorMissingOUID.Code, resp.Code)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "GetOrganizationUnit", mock.Anything)
@@ -769,7 +769,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 				suite.Equal(http.StatusBadRequest, recorder.Code)
 				var resp apierror.ErrorResponse
 				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorMissingOrganizationUnitID.Code, resp.Code)
+				suite.Equal(ErrorMissingOUID.Code, resp.Code)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "UpdateOrganizationUnit", mock.Anything)
@@ -941,7 +941,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUDeleteReque
 				suite.Equal(http.StatusBadRequest, recorder.Code)
 				var resp apierror.ErrorResponse
 				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorMissingOrganizationUnitID.Code, resp.Code)
+				suite.Equal(ErrorMissingOUID.Code, resp.Code)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "DeleteOrganizationUnit", mock.Anything)
@@ -1035,7 +1035,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUChildrenLis
 				suite.Equal(http.StatusBadRequest, recorder.Code)
 				var resp apierror.ErrorResponse
 				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorMissingOrganizationUnitID.Code, resp.Code)
+				suite.Equal(ErrorMissingOUID.Code, resp.Code)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(
@@ -1640,7 +1640,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListRe
 				suite.Equal(http.StatusBadRequest, recorder.Code)
 				var resp apierror.ErrorResponse
 				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorMissingOrganizationUnitID.Code, resp.Code)
+				suite.Equal(ErrorMissingOUID.Code, resp.Code)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(
@@ -1822,7 +1822,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGroupsListR
 				suite.Equal(http.StatusBadRequest, recorder.Code)
 				var resp apierror.ErrorResponse
 				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorMissingOrganizationUnitID.Code, resp.Code)
+				suite.Equal(ErrorMissingOUID.Code, resp.Code)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(

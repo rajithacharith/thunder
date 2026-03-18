@@ -33,11 +33,11 @@ import (
 
 type GetUserSchemaTestSuite struct {
 	suite.Suite
-	client             *http.Client
-	testSchemaID       string
-	testSchemaName     string
-	testSchemaData     json.RawMessage
-	organizationUnitID string
+	client         *http.Client
+	testSchemaID   string
+	testSchemaName string
+	testSchemaData json.RawMessage
+	oUID           string
 }
 
 var testUserSchemaAPIGetOU = testutils.OrganizationUnit{
@@ -59,7 +59,7 @@ func (ts *GetUserSchemaTestSuite) SetupSuite() {
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit: %v", err)
 	}
-	ts.organizationUnitID = ouID
+	ts.oUID = ouID
 
 	// Create a test schema for retrieval tests
 	ts.testSchemaName = "retrieval-test-schema"
@@ -91,9 +91,9 @@ func (ts *GetUserSchemaTestSuite) TearDownSuite() {
 	}
 
 	// Clean up created organization units
-	if ts.organizationUnitID != "" {
-		if err := testutils.DeleteOrganizationUnit(ts.organizationUnitID); err != nil {
-			ts.T().Logf("Failed to delete test organization unit %s: %v", ts.organizationUnitID, err)
+	if ts.oUID != "" {
+		if err := testutils.DeleteOrganizationUnit(ts.oUID); err != nil {
+			ts.T().Logf("Failed to delete test organization unit %s: %v", ts.oUID, err)
 		}
 	}
 }
@@ -268,8 +268,8 @@ func (ts *GetUserSchemaTestSuite) TestGetUserSchemaResponseHeaders() {
 
 // Helper function to create a test schema
 func (ts *GetUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaRequest) string {
-	if schema.OrganizationUnitID == "" {
-		schema.OrganizationUnitID = ts.organizationUnitID
+	if schema.OUID == "" {
+		schema.OUID = ts.oUID
 	}
 
 	jsonData, err := json.Marshal(schema)

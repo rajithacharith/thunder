@@ -198,7 +198,7 @@ describe('UsersList', () => {
     users: [
       {
         id: 'user1',
-        organizationUnit: 'org1',
+        ouId: 'org1',
         type: 'schema1',
         display: 'John Doe',
         attributes: {
@@ -210,7 +210,7 @@ describe('UsersList', () => {
       },
       {
         id: 'user2',
-        organizationUnit: 'org2',
+        ouId: 'org2',
         type: 'schema2',
         display: 'Jane Smith',
         attributes: {
@@ -568,7 +568,7 @@ describe('UsersList', () => {
         users: [
           {
             id: 'user1',
-            organizationUnit: 'org1',
+            ouId: 'org1',
             type: 'schema1',
           },
         ],

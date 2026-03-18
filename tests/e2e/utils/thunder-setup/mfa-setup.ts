@@ -434,7 +434,7 @@ export class ThunderMFASetup {
     const response = await this.request.post(`${this.config.thunderUrl}/users`, {
       data: {
         type: "Person",
-        organizationUnit: defaultOuId,
+        ouId: defaultOuId,
         attributes: {
           username: this.config.testUser.username,
           password: this.config.testUser.password,

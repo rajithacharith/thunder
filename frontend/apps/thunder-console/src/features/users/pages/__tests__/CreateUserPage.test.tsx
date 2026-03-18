@@ -295,7 +295,7 @@ describe('CreateUserPage', () => {
     mockNavigate.mockResolvedValue(undefined);
     mockMutateAsync.mockResolvedValue({
       id: 'user123',
-      organizationUnit: 'root-ou',
+      ouId: 'root-ou',
       type: 'Employee',
       attributes: {},
     });
@@ -523,7 +523,7 @@ describe('CreateUserPage', () => {
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalledWith({
-        organizationUnit: 'root-ou',
+        ouId: 'root-ou',
         type: 'Employee',
         attributes: {username: 'john_doe', age: 30},
       });
@@ -858,7 +858,7 @@ describe('CreateUserPage', () => {
 
       await waitFor(() => {
         expect(mockMutateAsync).toHaveBeenCalledWith({
-          organizationUnit: 'child-ou-1',
+          ouId: 'child-ou-1',
           type: 'Employee',
           attributes: {username: 'john_doe', age: 30},
         });
@@ -893,7 +893,7 @@ describe('CreateUserPage', () => {
 
       await waitFor(() => {
         expect(mockMutateAsync).toHaveBeenCalledWith({
-          organizationUnit: 'root-ou',
+          ouId: 'root-ou',
           type: 'Employee',
           attributes: {username: 'john_doe', age: 30},
         });

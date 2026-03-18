@@ -119,7 +119,7 @@ export default function GroupsList(): JSX.Element {
         valueGetter: (_value, row): string => row.description ?? '-',
       },
       {
-        field: 'organizationUnitId',
+        field: 'ouId',
         headerName: t('groups:listing.columns.organizationUnit'),
         flex: 1,
         minWidth: 200,

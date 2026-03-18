@@ -46,9 +46,9 @@ type OUHierarchyResolver interface {
 // ActionContext provides contextual information used to make an authorization decision.
 // Not all fields are required for every action; populate only those relevant to the operation.
 type ActionContext struct {
-	// OuID is the organization unit ID scoping the action.
+	// OUID is the organization unit ID scoping the action.
 	// Leave empty if the action is not scoped to a specific OU.
-	OuID string
+	OUID string
 	// ResourceType is the type of resource being acted upon.
 	ResourceType security.ResourceType
 	// ResourceID is the identifier of the specific resource being acted upon.

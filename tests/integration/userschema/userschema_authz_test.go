@@ -140,7 +140,7 @@ func (ts *UserSchemaAuthzTestSuite) SetupSuite() {
 	// ---- 2. Create user schemas in OU1 and OU2 ----
 	ou1Schema := testutils.UserSchema{
 		Name:                  "schema-authz-ou1-schema",
-		OrganizationUnitId:    ts.ou1ID,
+		OUID:                  ts.ou1ID,
 		AllowSelfRegistration: false,
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{"type": "string", "unique": true},
@@ -154,7 +154,7 @@ func (ts *UserSchemaAuthzTestSuite) SetupSuite() {
 
 	ou2Schema := testutils.UserSchema{
 		Name:                  "schema-authz-ou2-schema",
-		OrganizationUnitId:    ts.ou2ID,
+		OUID:                  ts.ou2ID,
 		AllowSelfRegistration: false,
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{"type": "string", "unique": true},
@@ -168,7 +168,7 @@ func (ts *UserSchemaAuthzTestSuite) SetupSuite() {
 	// ---- 3. Create the test user in OU12 (uses OU1's schema via inheritance) ----
 	userID, err := testutils.CreateUser(testutils.User{
 		Type:             ou1Schema.Name,
-		OrganizationUnit: ts.ou12ID,
+		OUID:             ts.ou12ID,
 		Attributes: json.RawMessage(fmt.Sprintf(
 			`{"username": %q, "password": %q}`,
 			schemaAdminUsername, schemaAdminPassword,
@@ -184,7 +184,7 @@ func (ts *UserSchemaAuthzTestSuite) SetupSuite() {
 	// ---- 5. Create a role with system:userschema permission ----
 	role := testutils.Role{
 		Name:               schemaAdminRoleName,
-		OrganizationUnitID: ts.ou12ID,
+		OUID: ts.ou12ID,
 		Permissions: []testutils.ResourcePermissions{
 			{
 				ResourceServerID: systemRSID,
@@ -345,7 +345,7 @@ func (ts *UserSchemaAuthzTestSuite) TestGetSiblingOUSchema() {
 func (ts *UserSchemaAuthzTestSuite) TestUpdateAncestorOUSchema() {
 	payload, err := json.Marshal(UpdateUserSchemaRequest{
 		Name:               "schema-authz-ou1-schema",
-		OrganizationUnitID: ts.ou1ID,
+		OUID: ts.ou1ID,
 		Schema:             json.RawMessage(`{"username": {"type": "string", "unique": true}}`),
 	})
 	ts.Require().NoError(err)
@@ -372,7 +372,7 @@ func (ts *UserSchemaAuthzTestSuite) TestDeleteAncestorOUSchema() {
 func (ts *UserSchemaAuthzTestSuite) TestCreateSchemaInSiblingOU() {
 	payload, err := json.Marshal(CreateUserSchemaRequest{
 		Name:               "schema-authz-ou2-blocked",
-		OrganizationUnitID: ts.ou2ID,
+		OUID: ts.ou2ID,
 		Schema:             json.RawMessage(`{"username": {"type": "string", "unique": true}}`),
 	})
 	ts.Require().NoError(err)
@@ -395,7 +395,7 @@ func (ts *UserSchemaAuthzTestSuite) TestOwnOUSchemaLifecycle() {
 	// ---- Create ----
 	createPayload, err := json.Marshal(CreateUserSchemaRequest{
 		Name:               "schema-authz-ou12-schema",
-		OrganizationUnitID: ts.ou12ID,
+		OUID: ts.ou12ID,
 		Schema: json.RawMessage(`{
 			"username": {"type": "string", "unique": true},
 			"password": {"type": "string", "credential": true},
@@ -429,7 +429,7 @@ func (ts *UserSchemaAuthzTestSuite) TestOwnOUSchemaLifecycle() {
 	// ---- Update ----
 	updatePayload, err := json.Marshal(UpdateUserSchemaRequest{
 		Name:               "schema-authz-ou12-schema-updated",
-		OrganizationUnitID: ts.ou12ID,
+		OUID: ts.ou12ID,
 		Schema: json.RawMessage(`{
 			"username":  {"type": "string", "unique": true},
 			"password":  {"type": "string", "credential": true},

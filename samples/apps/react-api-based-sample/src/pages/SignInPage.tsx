@@ -34,7 +34,7 @@ import { getConfig } from "../config";
 interface AuthResponse {
   id: string;
   type: string;
-  organization_unit?: string;
+  ouId?: string;
   assertion: string;
 }
 

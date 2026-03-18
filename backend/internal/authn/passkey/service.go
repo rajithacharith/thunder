@@ -527,9 +527,9 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 
 	// Build authentication response
 	authResponse := &common.AuthenticationResponse{
-		ID:               coreUser.ID,
-		Type:             coreUser.Type,
-		OrganizationUnit: coreUser.OrganizationUnit,
+		ID:   coreUser.ID,
+		Type: coreUser.Type,
+		OUID: coreUser.OUID,
 	}
 
 	logger.Debug("Passkey authentication completed successfully",

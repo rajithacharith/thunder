@@ -34,8 +34,8 @@ var (
 		Error:            "Invalid request format",
 		ErrorDescription: "The request body is malformed, contains invalid data, or required fields are missing/empty",
 	}
-	// ErrorMissingOrganizationUnitID is the error returned when organization unit ID is missing.
-	ErrorMissingOrganizationUnitID = serviceerror.ServiceError{
+	// ErrorMissingOUID is the error returned when organization unit ID is missing.
+	ErrorMissingOUID = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "OU-1002",
 		Error:            "Invalid request format",

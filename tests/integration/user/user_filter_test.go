@@ -131,7 +131,7 @@ func (ts *UserFilterTestSuite) SetupSuite() {
 
 	filterTestSchemaIDs = make([]string, 0, len(filterTestUserSchemas))
 	for _, schema := range filterTestUserSchemas {
-		schema.OrganizationUnitId = filterTestOUID
+		schema.OUID = filterTestOUID
 		schemaID, err := testutils.CreateUserType(schema)
 		if err != nil {
 			ts.T().Fatalf("Failed to create user schema during filter test setup: %v", err)
@@ -142,7 +142,7 @@ func (ts *UserFilterTestSuite) SetupSuite() {
 	// Create test users for filtering
 	filterTestUserIDs = make([]string, 0, len(filterTestUsers))
 	for _, user := range filterTestUsers {
-		user.OrganizationUnit = filterTestOUID
+		user.OUID = filterTestOUID
 		userID, err := createUser(user)
 		if err != nil {
 			ts.T().Fatalf("Failed to create filter test user during setup: %v", err)

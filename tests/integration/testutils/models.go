@@ -27,7 +27,7 @@ import (
 type UserSchema struct {
 	ID                    string                 `json:"id,omitempty"`
 	Name                  string                 `json:"name"`
-	OrganizationUnitId    string                 `json:"ouId"`
+	OUID                  string                 `json:"ouId"`
 	AllowSelfRegistration bool                   `json:"allowSelfRegistration,omitempty"`
 	Schema                map[string]interface{} `json:"schema"`
 }
@@ -35,7 +35,7 @@ type UserSchema struct {
 // User represents a user in the system
 type User struct {
 	ID               string          `json:"id"`
-	OrganizationUnit string          `json:"organizationUnit"`
+	OUID             string          `json:"ouId"`
 	Type             string          `json:"type"`
 	Attributes       json.RawMessage `json:"attributes"`
 }
@@ -112,7 +112,7 @@ type ErrorResponse struct {
 type AuthenticationResponse struct {
 	ID               string `json:"id"`
 	Type             string `json:"type"`
-	OrganizationUnit string `json:"organization_unit"`
+	OUID             string `json:"ouId"`
 	Assertion        string `json:"assertion,omitempty"`
 }
 
@@ -128,7 +128,7 @@ type Group struct {
 	ID                 string   `json:"id,omitempty"`
 	Name               string   `json:"name"`
 	Description        string   `json:"description,omitempty"`
-	OrganizationUnitId string   `json:"organizationUnitId,omitempty"`
+	OUID               string   `json:"ouId,omitempty"`
 	Members            []Member `json:"members,omitempty"`
 }
 
@@ -150,7 +150,7 @@ type Role struct {
 	ID                 string                `json:"id,omitempty"`
 	Name               string                `json:"name"`
 	Description        string                `json:"description,omitempty"`
-	OrganizationUnitID string                `json:"ouId"`
+	OUID               string                `json:"ouId"`
 	Permissions        []ResourcePermissions `json:"permissions,omitempty"`
 	Assignments        []Assignment          `json:"assignments,omitempty"`
 }
@@ -184,7 +184,7 @@ type ResourceServer struct {
 	Name               string  `json:"name"`
 	Description        string  `json:"description,omitempty"`
 	Identifier         string  `json:"identifier,omitempty"`
-	OrganizationUnitID string  `json:"ouId"`
+	OUID               string  `json:"ouId"`
 	Delimiter          *string `json:"delimiter,omitempty"`
 }
 

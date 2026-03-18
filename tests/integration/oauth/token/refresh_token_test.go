@@ -176,7 +176,7 @@ func (ts *RefreshTokenTestSuite) SetupSuite() {
 	ts.ouID = ouID
 
 	// Create user schema.
-	refreshTokenTestUserSchema.OrganizationUnitId = ouID
+	refreshTokenTestUserSchema.OUID = ouID
 	schemaID, err := testutils.CreateUserType(refreshTokenTestUserSchema)
 	ts.Require().NoError(err, "Failed to create test user type")
 	ts.userSchemaID = schemaID
@@ -191,7 +191,7 @@ func (ts *RefreshTokenTestSuite) SetupSuite() {
 
 	// Create test user.
 	user := testutils.User{
-		OrganizationUnit: ouID,
+		OUID:             ouID,
 		Type:             "refresh-token-test-person",
 		Attributes: json.RawMessage(fmt.Sprintf(`{
 			"username": "%s",

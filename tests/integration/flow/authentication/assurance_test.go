@@ -373,7 +373,7 @@ func (ts *AssuranceTestSuite) SetupSuite() {
 	assuranceTestOU.ID = ouID
 
 	// Create test user schema
-	assuranceUserSchema.OrganizationUnitId = ouID
+	assuranceUserSchema.OUID = ouID
 	schemaID, err := testutils.CreateUserType(assuranceUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema: %v", err)
@@ -390,7 +390,7 @@ func (ts *AssuranceTestSuite) SetupSuite() {
 
 	// Create test user
 	testUser := assuranceTestUser
-	testUser.OrganizationUnit = assuranceTestOU.ID
+	testUser.OUID = assuranceTestOU.ID
 	userIDs, err := testutils.CreateMultipleUsers(testUser)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user: %v", err)

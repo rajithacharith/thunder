@@ -228,7 +228,7 @@ func (ts *BasicAuthFlowTestSuite) SetupSuite() {
 	ts.ouID = ouID
 
 	// Create test user schema
-	testUserSchema.OrganizationUnitId = ts.ouID
+	testUserSchema.OUID = ts.ouID
 	schemaID, err := testutils.CreateUserType(testUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
@@ -254,7 +254,7 @@ func (ts *BasicAuthFlowTestSuite) SetupSuite() {
 
 	// Create test user with the created OU
 	testUser := testUser
-	testUser.OrganizationUnit = ts.ouID
+	testUser.OUID = ts.ouID
 	userIDs, err := testutils.CreateMultipleUsers(testUser)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user during setup: %v", err)
@@ -646,7 +646,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlow_WithoutTokenConfig() {
 
 	// Verify userType and OU attributes are NOT present (since TokenConfig is not specified)
 	ts.Require().Empty(jwtClaims.UserType, "userType should NOT be present when TokenConfig is not specified")
-	ts.Require().Empty(jwtClaims.OuID, "ouId should NOT be present when TokenConfig is not specified")
+	ts.Require().Empty(jwtClaims.OUID, "ouId should NOT be present when TokenConfig is not specified")
 	ts.Require().Empty(jwtClaims.OuName, "ouName should NOT be present when TokenConfig is not specified")
 	ts.Require().Empty(jwtClaims.OuHandle, "ouHandle should NOT be present when TokenConfig is not specified")
 }
@@ -707,7 +707,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlow_WithEmptyUserAttributes() {
 
 	// Verify userType and OU attributes are NOT present (since user_attributes is empty)
 	ts.Require().Empty(jwtClaims.UserType, "userType should NOT be present when user_attributes is empty")
-	ts.Require().Empty(jwtClaims.OuID, "ouId should NOT be present when user_attributes is empty")
+	ts.Require().Empty(jwtClaims.OUID, "ouId should NOT be present when user_attributes is empty")
 	ts.Require().Empty(jwtClaims.OuName, "ouName should NOT be present when user_attributes is empty")
 	ts.Require().Empty(jwtClaims.OuHandle, "ouHandle should NOT be present when user_attributes is empty")
 }

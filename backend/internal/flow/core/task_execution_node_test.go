@@ -527,9 +527,9 @@ func (s *TaskExecutionNodeTestSuite) TestBuildNodeResponseWithNilMaps() {
 func (s *TaskExecutionNodeTestSuite) TestBuildNodeResponsePreservesExecutorData() {
 	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false).(*taskExecutionNode)
 	authUser := authncm.AuthenticatedUser{
-		UserID:             "user-123",
-		OrganizationUnitID: "org-456",
-		IsAuthenticated:    true,
+		UserID:          "user-123",
+		OUID:            "org-456",
+		IsAuthenticated: true,
 	}
 	execResp := &common.ExecutorResponse{
 		Status:            common.ExecComplete,
@@ -552,7 +552,7 @@ func (s *TaskExecutionNodeTestSuite) TestBuildNodeResponsePreservesExecutorData(
 	s.Equal("https://example.com", nodeResp.RedirectURL)
 	s.Equal("data", nodeResp.RuntimeData["runtime"])
 	s.Equal("user-123", nodeResp.AuthenticatedUser.UserID)
-	s.Equal("org-456", nodeResp.AuthenticatedUser.OrganizationUnitID)
+	s.Equal("org-456", nodeResp.AuthenticatedUser.OUID)
 	s.True(nodeResp.AuthenticatedUser.IsAuthenticated)
 	s.Equal("assertion-token", nodeResp.Assertion)
 }

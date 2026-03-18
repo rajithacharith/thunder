@@ -183,7 +183,7 @@ log_info "Creating admin user..."
 
 RESPONSE=$(thunder_api_call POST "/users" '{
   "type": "Person",
-  "organizationUnit": "'${DEFAULT_OU_ID}'",
+  "ouId": "'${DEFAULT_OU_ID}'",
   "attributes": {
     "username": "admin",
     "password": "admin",
@@ -665,7 +665,7 @@ fi
 RESPONSE=$(thunder_api_call POST "/groups" "{
   \"name\": \"Administrators\",
   \"description\": \"System administrators group\",
-    \"organizationUnitId\": \"${DEFAULT_OU_ID}\",
+    \"ouId\": \"${DEFAULT_OU_ID}\",
     \"members\": [
         {
             \"id\": \"${ADMIN_USER_ID}\",

@@ -44,12 +44,12 @@ describe('useCreateGroup', () => {
   const mockGroup: Group = {
     id: 'g1',
     name: 'New Group',
-    organizationUnitId: 'ou1',
+    ouId: 'ou1',
   };
 
   const mockRequest: CreateGroupRequest = {
     name: 'New Group',
-    organizationUnitId: 'ou1',
+    ouId: 'ou1',
   };
 
   beforeEach(() => {

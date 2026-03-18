@@ -66,7 +66,7 @@ type handlerTestCase struct {
 	assertService  func(*GroupServiceInterfaceMock)
 }
 
-const testOrganizationUnitID = "ou-001"
+const testOUID = "ou-001"
 
 func runHandlerTestCases(
 	suite *GroupHandlerTestSuite,
@@ -533,7 +533,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostRequest() {
 			body: `{
 				"name": "  Team <script> ",
 				"description": " desc ",
-				"organizationUnitId": " ou-001 ",
+				"ouId": " ou-001 ",
 				"members": [
 					{"id": " member-1 ", "type": "user"}
 				]
@@ -543,13 +543,13 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostRequest() {
 					On("CreateGroup", mock.Anything, mock.MatchedBy(func(request CreateGroupRequest) bool {
 						return request.Name == "Team &lt;script&gt;" &&
 							request.Description == "desc" &&
-							request.OrganizationUnitID == testOrganizationUnitID &&
+							request.OUID == testOUID &&
 							len(request.Members) == 1 &&
 							request.Members[0].ID == "member-1" &&
 							request.Members[0].Type == MemberTypeUser
 					})).
 					Return(&Group{ID: "grp-001", Name: "Team &lt;script&gt;",
-						OrganizationUnitID: testOrganizationUnitID}, nil).
+						OUID: testOUID}, nil).
 					Once()
 			},
 			assert: func(rr *httptest.ResponseRecorder) {
@@ -564,7 +564,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostRequest() {
 		},
 		{
 			name: "service error",
-			body: `{"name":"group","organizationUnitId":"ou"}`,
+			body: `{"name":"group","ouId":"ou"}`,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
 					On("CreateGroup", mock.Anything, mock.AnythingOfType("group.CreateGroupRequest")).
@@ -580,7 +580,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostRequest() {
 		},
 		{
 			name: "internal error",
-			body: `{"name":"group","organizationUnitId":"ou"}`,
+			body: `{"name":"group","ouId":"ou"}`,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
 					On("CreateGroup", mock.Anything, mock.AnythingOfType("group.CreateGroupRequest")).
@@ -594,12 +594,12 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostRequest() {
 		},
 		{
 			name:     "response write error",
-			body:     `{"name":"team","organizationUnitId":"ou"}`,
+			body:     `{"name":"team","ouId":"ou"}`,
 			useFlaky: true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
 					On("CreateGroup", mock.Anything, mock.MatchedBy(func(request CreateGroupRequest) bool {
-						return request.Name == "team" && request.OrganizationUnitID == "ou"
+						return request.Name == "team" && request.OUID == "ou"
 					})).
 					Return(&Group{ID: "grp-001", Name: "team"}, nil).
 					Once()
@@ -899,7 +899,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPutRequest() {
 			body: `{
 				"name": " team <script> ",
 				"description": " desc ",
-				"organizationUnitId": " ou-001 "
+				"ouId": " ou-001 "
 			}`,
 			setJSONHeader: true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
@@ -907,7 +907,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPutRequest() {
 					On("UpdateGroup", mock.Anything, "grp-001", mock.MatchedBy(func(request UpdateGroupRequest) bool {
 						return request.Name == "team &lt;script&gt;" &&
 							request.Description == "desc" &&
-							request.OrganizationUnitID == testOrganizationUnitID
+							request.OUID == testOUID
 					})).
 					Return(&Group{ID: "grp-001"}, nil).
 					Once()
@@ -925,7 +925,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPutRequest() {
 			url:            "/groups/grp-001",
 			pathParamKey:   "id",
 			pathParamValue: "grp-001",
-			body:           `{"name":"group","organizationUnitId":"ou"}`,
+			body:           `{"name":"group","ouId":"ou"}`,
 			setJSONHeader:  true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
@@ -943,7 +943,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPutRequest() {
 			url:            "/groups/grp-001",
 			pathParamKey:   "id",
 			pathParamValue: "grp-001",
-			body:           `{"name":"group","organizationUnitId":"ou"}`,
+			body:           `{"name":"group","ouId":"ou"}`,
 			setJSONHeader:  true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
@@ -962,7 +962,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPutRequest() {
 			url:            "/groups/grp-001",
 			pathParamKey:   "id",
 			pathParamValue: "grp-001",
-			body:           `{"name":"group","organizationUnitId":"ou"}`,
+			body:           `{"name":"group","ouId":"ou"}`,
 			useFlaky:       true,
 			setJSONHeader:  true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {

@@ -369,16 +369,16 @@ func (suite *UserStoreTestSuite) TestCreateUser() {
 	attributesBytes, _ := json.Marshal(attributesMap)
 
 	user := User{
-		ID:               svcTestUserID1,
-		OrganizationUnit: "ou-1",
-		Type:             "customer",
-		Attributes:       json.RawMessage(attributesBytes),
+		ID:         svcTestUserID1,
+		OUID:       "ou-1",
+		Type:       "customer",
+		Attributes: json.RawMessage(attributesBytes),
 	}
 	credentials := Credentials{}
 
 	// Expect insert query
 	suite.mockDB.On("ExecuteContext", mock.Anything, QueryCreateUser,
-		user.ID, user.OrganizationUnit, user.Type, string(attributesBytes), "{}", testDeploymentID).
+		user.ID, user.OUID, user.Type, string(attributesBytes), "{}", testDeploymentID).
 		Return(int64(1), nil)
 
 	// Expect indexed attributes sync
@@ -398,15 +398,15 @@ func (suite *UserStoreTestSuite) TestGetUser() {
 	attributesBytes, _ := json.Marshal(attributesMap)
 
 	expectedUser := User{
-		ID:               userID,
-		OrganizationUnit: "ou-1",
-		Type:             "customer",
-		Attributes:       json.RawMessage(attributesBytes),
+		ID:         userID,
+		OUID:       "ou-1",
+		Type:       "customer",
+		Attributes: json.RawMessage(attributesBytes),
 	}
 
 	row := map[string]interface{}{
 		"id":         expectedUser.ID,
-		"ou_id":      expectedUser.OrganizationUnit,
+		"ou_id":      expectedUser.OUID,
 		"type":       expectedUser.Type,
 		"attributes": string(attributesBytes),
 	}
@@ -434,15 +434,15 @@ func (suite *UserStoreTestSuite) TestUpdateUser() {
 	attributesBytes, _ := json.Marshal(attributesMap)
 
 	user := &User{
-		ID:               svcTestUserID1,
-		OrganizationUnit: "ou-1",
-		Type:             "customer",
-		Attributes:       json.RawMessage(attributesBytes),
+		ID:         svcTestUserID1,
+		OUID:       "ou-1",
+		Type:       "customer",
+		Attributes: json.RawMessage(attributesBytes),
 	}
 
 	// Expect update query
 	suite.mockDB.On("ExecuteContext", mock.Anything, QueryUpdateUserByUserID,
-		user.ID, user.OrganizationUnit, user.Type, string(attributesBytes), testDeploymentID).
+		user.ID, user.OUID, user.Type, string(attributesBytes), testDeploymentID).
 		Return(int64(1), nil)
 
 	// Expect delete indexed attributes query

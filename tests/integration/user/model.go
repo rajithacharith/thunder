@@ -29,14 +29,14 @@ import (
 type UserGroup struct {
 	ID                 string `json:"id"`
 	Name               string `json:"name"`
-	OrganizationUnitID string `json:"organizationUnit"`
+	OUID               string `json:"ouId"`
 }
 
 // AuthenticateUserResponse represents the response from user authentication
 type AuthenticateUserResponse struct {
 	ID               string `json:"id"`
 	Type             string `json:"type"`
-	OrganizationUnit string `json:"organizationUnit"`
+	OUID             string `json:"ouId"`
 }
 
 // UserGroupListResponse represents the response for listing groups that a user belongs to.
@@ -67,7 +67,7 @@ type OUResponse struct {
 
 // Equals compares two testutils.User for equality
 func Equals(user, expectedUser testutils.User) bool {
-	if user.ID != expectedUser.ID || user.OrganizationUnit != expectedUser.OrganizationUnit || user.Type != expectedUser.Type {
+	if user.ID != expectedUser.ID || user.OUID != expectedUser.OUID || user.Type != expectedUser.Type {
 		return false
 	}
 

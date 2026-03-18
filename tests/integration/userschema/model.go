@@ -37,7 +37,7 @@ type SystemAttributes struct {
 type UserSchema struct {
 	ID                    string            `json:"id,omitempty"`
 	Name                  string            `json:"name"`
-	OrganizationUnitID    string            `json:"ouId"`
+	OUID                  string            `json:"ouId"`
 	AllowSelfRegistration bool              `json:"allowSelfRegistration,omitempty"`
 	SystemAttributes      *SystemAttributes `json:"systemAttributes,omitempty"`
 	Schema                json.RawMessage   `json:"schema"`
@@ -46,7 +46,7 @@ type UserSchema struct {
 // CreateUserSchemaRequest represents the request to create a user schema
 type CreateUserSchemaRequest struct {
 	Name                  string            `json:"name"`
-	OrganizationUnitID    string            `json:"ouId"`
+	OUID                  string            `json:"ouId"`
 	AllowSelfRegistration bool              `json:"allowSelfRegistration,omitempty"`
 	SystemAttributes      *SystemAttributes `json:"systemAttributes,omitempty"`
 	Schema                json.RawMessage   `json:"schema"`
@@ -55,7 +55,7 @@ type CreateUserSchemaRequest struct {
 // UpdateUserSchemaRequest represents the request to update a user schema
 type UpdateUserSchemaRequest struct {
 	Name                  string            `json:"name"`
-	OrganizationUnitID    string            `json:"ouId"`
+	OUID                  string            `json:"ouId"`
 	AllowSelfRegistration bool              `json:"allowSelfRegistration,omitempty"`
 	SystemAttributes      *SystemAttributes `json:"systemAttributes,omitempty"`
 	Schema                json.RawMessage   `json:"schema"`
@@ -65,7 +65,7 @@ type UpdateUserSchemaRequest struct {
 type UserSchemaListItem struct {
 	ID                    string            `json:"id,omitempty"`
 	Name                  string            `json:"name,omitempty"`
-	OrganizationUnitID    string            `json:"ouId"`
+	OUID                  string            `json:"ouId"`
 	AllowSelfRegistration bool              `json:"allowSelfRegistration,omitempty"`
 	SystemAttributes      *SystemAttributes `json:"systemAttributes,omitempty"`
 }
@@ -98,14 +98,14 @@ type OrganizationUnit struct {
 
 // CreateUserRequest represents the request to create a user
 type CreateUserRequest struct {
-	OrganizationUnit string          `json:"organizationUnit"`
+	OUID             string          `json:"ouId"`
 	Type             string          `json:"type"`
 	Attributes       json.RawMessage `json:"attributes,omitempty"`
 }
 
 // UpdateUserRequest represents the request to update a user
 type UpdateUserRequest struct {
-	OrganizationUnit string          `json:"organizationUnit,omitempty"`
+	OUID             string          `json:"ouId,omitempty"`
 	Type             string          `json:"type,omitempty"`
 	Attributes       json.RawMessage `json:"attributes,omitempty"`
 }

@@ -132,7 +132,7 @@ describe('CreateGroupPage', () => {
       await waitFor(() => {
         expect(mockMutateAsync).toHaveBeenCalledWith({
           name: 'Test Group',
-          organizationUnitId: 'ou-single',
+          ouId: 'ou-single',
         });
       });
     });
@@ -232,7 +232,7 @@ describe('CreateGroupPage', () => {
       await waitFor(() => {
         expect(mockMutateAsync).toHaveBeenCalledWith({
           name: 'Test Group',
-          organizationUnitId: 'ou-123',
+          ouId: 'ou-123',
         });
       });
     });

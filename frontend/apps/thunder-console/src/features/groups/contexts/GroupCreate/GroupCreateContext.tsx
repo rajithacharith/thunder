@@ -35,8 +35,8 @@ export interface GroupCreateContextType {
   description: string;
   setDescription: (description: string) => void;
 
-  organizationUnitId: string;
-  setOrganizationUnitId: (ouId: string) => void;
+  ouId: string;
+  setOuId: (ouId: string) => void;
 
   error: string | null;
   setError: (error: string | null) => void;

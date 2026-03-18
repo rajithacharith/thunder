@@ -253,16 +253,16 @@ func FetchUserAttributes(
 		attrs[constants.ClaimUserType] = userData.Type
 	}
 
-	if userData.OrganizationUnit != "" {
+	if userData.OUID != "" {
 		// Add default claim - ouId
 		if shouldInclude(constants.ClaimOUID) {
-			attrs[constants.ClaimOUID] = userData.OrganizationUnit
+			attrs[constants.ClaimOUID] = userData.OUID
 		}
 
 		// Only fetch OU details if ouHandle or ouName are requested
 		needsOUDetails := shouldInclude(constants.ClaimOUHandle) || shouldInclude(constants.ClaimOUName)
 		if needsOUDetails && ouService != nil {
-			ouDetails, ouErr := ouService.GetOrganizationUnit(ctx, userData.OrganizationUnit)
+			ouDetails, ouErr := ouService.GetOrganizationUnit(ctx, userData.OUID)
 			if ouErr != nil {
 				return nil, fmt.Errorf("failed to fetch organization unit details: %s", ouErr.Error)
 			}

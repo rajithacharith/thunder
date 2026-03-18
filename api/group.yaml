@@ -48,11 +48,11 @@ paths:
                   - id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                     name: "Sports"
                     description: "Sports group"
-                    organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                    ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                   - id: "257e528f-eb24-48b6-884d-20460e190957"
                     name: "Managers"
                     description: "Manager group"
-                    organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                    ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                 links:
                   - href: "groups?offset=2&limit=2"
                     rel: "next"
@@ -102,7 +102,7 @@ paths:
             example:
               name: "Sports"
               description: "Sports group"
-              organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+              ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
               members:
                 - type: "user"
                   id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
@@ -121,7 +121,7 @@ paths:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                 name: "Sports"
                 description: "Sports group"
-                organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
         "400":
           description: Bad request
           content:
@@ -188,7 +188,7 @@ paths:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                 name: "Sports"
                 description: "Sports group"
-                organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
         "400":
           description: Bad request
           content:
@@ -237,7 +237,7 @@ paths:
             example:
               name: "Activities"
               description: "Activities group"
-              organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+              ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
       responses:
         "200":
           description: Group updated
@@ -249,7 +249,7 @@ paths:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                 name: "Activities"
                 description: "Activities group"
-                organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
         "400":
           description: Bad request
           content:
@@ -450,7 +450,7 @@ paths:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                 name: "Engineering"
                 description: "Engineering group"
-                organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
         "400":
           description: Bad request
           content:
@@ -527,7 +527,7 @@ paths:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                 name: "Engineering"
                 description: "Engineering group"
-                organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
         "400":
           description: Bad request
           content:
@@ -601,11 +601,11 @@ paths:
                   - id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                     name: "Sports"
                     description: "Sports group"
-                    organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                    ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                   - id: "257e528f-eb24-48b6-884d-20460e190957"
                     name: "Managers"
                     description: "Manager group"
-                    organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                    ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                 links:
                   - href: "groups/tree/engineering/frontend?offset=2&limit=2"
                     rel: "next"
@@ -701,7 +701,7 @@ paths:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                 name: "Sports"
                 description: "Sports group"
-                organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
         "400":
           description: Bad request
           content:
@@ -827,7 +827,7 @@ components:
 
     Group:
       type: object
-      required: [id, name, organizationUnitId]
+      required: [id, name, ouId]
       properties:
         id:
           type: string
@@ -837,7 +837,7 @@ components:
         description:
           type: string
           nullable: true
-        organizationUnitId:
+        ouId:
           type: string
           format: uuid
         members:
@@ -847,13 +847,13 @@ components:
 
     CreateGroupRequest:
       type: object
-      required: [name, organizationUnitId]
+      required: [name, ouId]
       properties:
         name:
           type: string
         description:
           type: string
-        organizationUnitId:
+        ouId:
           type: string
           format: uuid
         members:
@@ -863,13 +863,13 @@ components:
 
     UpdateGroupRequest:
       type: object
-      required: [name, organizationUnitId]
+      required: [name, ouId]
       properties:
         name:
           type: string
         description:
           type: string
-        organizationUnitId:
+        ouId:
           type: string
           format: uuid
 

@@ -52,9 +52,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) seedRole(role RoleWithPermissi
 // Test GetRoleList with zero limit
 func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetRoleList_ZeroLimit() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 	})
 
 	roles, err := suite.store.GetRoleList(context.Background(), 0, 0)
@@ -66,9 +66,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetRoleList_ZeroLimit() {
 // Test GetRoleList with negative limit
 func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetRoleList_NegativeLimit() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 	})
 
 	roles, err := suite.store.GetRoleList(context.Background(), -1, 0)
@@ -80,9 +80,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetRoleList_NegativeLimit(
 // Test GetRoleList with offset beyond results
 func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetRoleList_OffsetBeyondResults() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 	})
 
 	roles, err := suite.store.GetRoleList(context.Background(), 10, 100)
@@ -94,9 +94,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetRoleList_OffsetBeyondRe
 // Test GetRoleList with negative offset
 func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetRoleList_NegativeOffset() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 	})
 
 	roles, err := suite.store.GetRoleList(context.Background(), 10, -1)
@@ -133,9 +133,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetRole_NonExistent() {
 // Test GetRoleAssignments with zero limit
 func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetRoleAssignments_ZeroLimit() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 		Assignments: []RoleAssignment{
 			{ID: "user1", Type: AssigneeTypeUser},
 		},
@@ -166,9 +166,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetRoleAssignmentsCount_No
 // Test CheckRoleNameExists with different organization units
 func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestCheckRoleNameExists_DifferentOUs() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Manager",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Manager",
+		OUID: "ou1",
 	})
 
 	exists, err := suite.store.CheckRoleNameExists(context.Background(), "ou2", "Manager")
@@ -180,9 +180,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestCheckRoleNameExists_Differ
 // Test CheckRoleNameExists with empty organization unit
 func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestCheckRoleNameExists_EmptyOU() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Manager",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Manager",
+		OUID: "ou1",
 	})
 
 	exists, err := suite.store.CheckRoleNameExists(context.Background(), "", "Manager")
@@ -194,9 +194,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestCheckRoleNameExists_EmptyO
 // Test CheckRoleNameExists with case sensitivity
 func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestCheckRoleNameExists_CaseSensitive() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 	})
 
 	exists, err := suite.store.CheckRoleNameExists(context.Background(), "ou1", "admin")
@@ -208,9 +208,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestCheckRoleNameExists_CaseSe
 // Test CheckRoleNameExistsExcludingID with no other role
 func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestCheckRoleNameExistsExcludingID_NoOtherRole() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 	})
 
 	exists, err := suite.store.CheckRoleNameExistsExcludingID(context.Background(), "ou1", "Admin", "role1")
@@ -222,9 +222,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestCheckRoleNameExistsExcludi
 // Test GetAuthorizedPermissions with empty user and groups
 func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_EmptyUserAndGroups() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 		Permissions: []ResourcePermissions{
 			{ResourceServerID: "rs1", Permissions: []string{"perm1"}},
 		},
@@ -244,9 +244,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_E
 // Test GetAuthorizedPermissions with empty requested permissions
 func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_EmptyRequestedPermissions() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 		Assignments: []RoleAssignment{
 			{ID: "user1", Type: AssigneeTypeUser},
 		},
@@ -269,9 +269,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_E
 // Test GetAuthorizedPermissions with group assignment
 func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_GroupAssignment() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 		Assignments: []RoleAssignment{
 			{ID: "group1", Type: AssigneeTypeGroup},
 		},
@@ -296,9 +296,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_G
 // Test GetAuthorizedPermissions with multiple roles and multiple resource servers
 func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_MultipleRolesAndServers() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 		Assignments: []RoleAssignment{
 			{ID: "user1", Type: AssigneeTypeUser},
 		},
@@ -308,9 +308,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_M
 		},
 	})
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role2",
-		Name:               "Editor",
-		OrganizationUnitID: "ou1",
+		ID:   "role2",
+		Name: "Editor",
+		OUID: "ou1",
 		Assignments: []RoleAssignment{
 			{ID: "user1", Type: AssigneeTypeUser},
 		},
@@ -336,9 +336,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_M
 // Test GetAuthorizedPermissions maintains order
 func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_MaintainsOrder() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 		Assignments: []RoleAssignment{
 			{ID: "user1", Type: AssigneeTypeUser},
 		},
@@ -361,9 +361,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_M
 // Test malformed role handling
 func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetRoleList_SkipsMalformedRoles() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 	})
 
 	// Seed a malformed role (this would be caught by Create but we test error handling)
@@ -382,9 +382,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetRoleList_SkipsMalformed
 func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetRoleListCount_Consistency() {
 	for i := 0; i < 5; i++ {
 		suite.seedRole(RoleWithPermissionsAndAssignments{
-			ID:                 "role" + string(rune('0'+i)),
-			Name:               "Role" + string(rune('0'+i)),
-			OrganizationUnitID: "ou1",
+			ID:   "role" + string(rune('0'+i)),
+			Name: "Role" + string(rune('0'+i)),
+			OUID: "ou1",
 		})
 	}
 
@@ -400,9 +400,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetRoleListCount_Consisten
 // Test CheckRoleNameExists with special characters
 func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestCheckRoleNameExists_SpecialCharacters() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin@Role#1",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin@Role#1",
+		OUID: "ou1",
 	})
 
 	exists, err := suite.store.CheckRoleNameExists(context.Background(), "ou1", "Admin@Role#1")
@@ -414,9 +414,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestCheckRoleNameExists_Specia
 // Test GetRoleAssignments maintains pagination order
 func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetRoleAssignments_PaginationOrder() {
 	suite.seedRole(RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Admin",
-		OrganizationUnitID: "ou1",
+		ID:   "role1",
+		Name: "Admin",
+		OUID: "ou1",
 		Assignments: []RoleAssignment{
 			{ID: "user1", Type: AssigneeTypeUser},
 			{ID: "user2", Type: AssigneeTypeUser},

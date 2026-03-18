@@ -125,12 +125,12 @@ func (s *ResourceServerExporterTestSuite) TestGetResourceByID_Success() {
 	serverID := "rs1"
 
 	server := &ResourceServer{
-		ID:                 serverID,
-		Name:               "Test Server",
-		Description:        "A test server",
-		Identifier:         "test-server",
-		OrganizationUnitID: "ou1",
-		Delimiter:          ":",
+		ID:          serverID,
+		Name:        "Test Server",
+		Description: "A test server",
+		Identifier:  "test-server",
+		OUID:        "ou1",
+		Delimiter:   ":",
 	}
 
 	resources := &ResourceList{
@@ -197,10 +197,10 @@ func (s *ResourceServerExporterTestSuite) TestGetResourceByID_ServerNotFound() {
 
 func (s *ResourceServerExporterTestSuite) TestValidateResource_Success() {
 	dto := &ResourceServer{
-		ID:                 "rs1",
-		Name:               "Test Server",
-		Description:        "A test server",
-		OrganizationUnitID: "ou1",
+		ID:          "rs1",
+		Name:        "Test Server",
+		Description: "A test server",
+		OUID:        "ou1",
 	}
 
 	name, err := s.exporter.ValidateResource(dto, "rs1", s.logger)
@@ -220,9 +220,9 @@ func (s *ResourceServerExporterTestSuite) TestValidateResource_InvalidType() {
 
 func (s *ResourceServerExporterTestSuite) TestValidateResource_EmptyName() {
 	dto := &ResourceServer{
-		ID:                 "rs1",
-		Name:               "",
-		OrganizationUnitID: "ou1",
+		ID:   "rs1",
+		Name: "",
+		OUID: "ou1",
 	}
 
 	name, err := s.exporter.ValidateResource(dto, "rs1", s.logger)
@@ -235,7 +235,7 @@ func (s *ResourceServerExporterTestSuite) TestGetResourceRules() {
 	rules := s.exporter.GetResourceRules()
 
 	assert.NotNil(s.T(), rules)
-	assert.Contains(s.T(), rules.Variables, "OrganizationUnitID")
+	assert.Contains(s.T(), rules.Variables, "OUID")
 	assert.Contains(s.T(), rules.Variables, "Identifier")
 }
 
@@ -263,7 +263,7 @@ resources:
 	assert.Equal(t, "rs1", dto.ID)
 	assert.Equal(t, "Test Server", dto.Name)
 	assert.Equal(t, "test-server", dto.Identifier)
-	assert.Equal(t, "ou1", dto.OrganizationUnitID)
+	assert.Equal(t, "ou1", dto.OUID)
 	assert.Equal(t, ":", dto.Delimiter)
 	assert.Len(t, dto.Resources, 1)
 	assert.Equal(t, "users", dto.Resources[0].Handle)
@@ -363,10 +363,10 @@ func TestBuildPermissionString(t *testing.T) {
 
 func TestProcessResourceServer_SetsPermissionsAndDelimiter(t *testing.T) {
 	rs := &ResourceServer{
-		ID:                 "rs1",
-		Name:               "Test Server",
-		OrganizationUnitID: "ou1",
-		Identifier:         "api",
+		ID:         "rs1",
+		Name:       "Test Server",
+		OUID:       "ou1",
+		Identifier: "api",
 		Resources: []Resource{
 			{
 				Name:   "Users",
@@ -394,9 +394,9 @@ func TestProcessResourceServer_SetsPermissionsAndDelimiter(t *testing.T) {
 
 func TestProcessResourceServer_DuplicateHandle(t *testing.T) {
 	rs := &ResourceServer{
-		ID:                 "rs1",
-		Name:               "Test Server",
-		OrganizationUnitID: "ou1",
+		ID:   "rs1",
+		Name: "Test Server",
+		OUID: "ou1",
 		Resources: []Resource{
 			{Name: "Users", Handle: "users"},
 			{Name: "Users Duplicate", Handle: "users"},

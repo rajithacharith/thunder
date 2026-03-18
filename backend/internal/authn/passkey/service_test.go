@@ -165,9 +165,9 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_GetCredentialsError
 	}
 
 	testUser := &user.User{
-		ID:               testUserID,
-		Type:             "person",
-		OrganizationUnit: "org123",
+		ID:   testUserID,
+		Type: "person",
+		OUID: "org123",
 	}
 
 	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
@@ -335,9 +335,9 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_UserServiceServer
 
 func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_GetCredentialsError() {
 	testUser := &user.User{
-		ID:               testUserID,
-		Type:             "person",
-		OrganizationUnit: "org123",
+		ID:   testUserID,
+		Type: "person",
+		OUID: "org123",
 	}
 
 	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
@@ -362,9 +362,9 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_GetCredentialsErr
 
 func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_NoCredentialsFound() {
 	testUser := &user.User{
-		ID:               testUserID,
-		Type:             "person",
-		OrganizationUnit: "org123",
+		ID:   testUserID,
+		Type: "person",
+		OUID: "org123",
 	}
 
 	emptyCredentials := []user.Credential{}
@@ -903,9 +903,9 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_StoreSessionError()
 	}
 
 	testUser := &user.User{
-		ID:               testUserID,
-		Type:             "person",
-		OrganizationUnit: "org123",
+		ID:   testUserID,
+		Type: "person",
+		OUID: "org123",
 	}
 
 	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
@@ -2084,9 +2084,9 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_BuildAuthRespons
 	credentialJSON, _ := json.Marshal(mockCredential)
 
 	testUser := &user.User{
-		ID:               testUserID,
-		Type:             "person",
-		OrganizationUnit: "org123",
+		ID:   testUserID,
+		Type: "person",
+		OUID: "org123",
 	}
 
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).
@@ -2593,9 +2593,9 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_WithRelyingPartyNam
 	}
 
 	testUser := &user.User{
-		ID:               testUserID,
-		Type:             "person",
-		OrganizationUnit: "org123",
+		ID:   testUserID,
+		Type: "person",
+		OUID: "org123",
 	}
 
 	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
@@ -2752,9 +2752,9 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_Usernameless_Suc
 	}
 
 	testUser := &user.User{
-		ID:               testUserID,
-		Type:             "person",
-		OrganizationUnit: "org123",
+		ID:   testUserID,
+		Type: "person",
+		OUID: "org123",
 	}
 
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).
@@ -3101,9 +3101,9 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ValidatePasskeyL
 	credentialJSON, _ := json.Marshal(mockCredential)
 
 	testUser := &user.User{
-		ID:               testUserID,
-		Type:             "person",
-		OrganizationUnit: "org123",
+		ID:   testUserID,
+		Type: "person",
+		OUID: "org123",
 	}
 
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).
@@ -3152,9 +3152,9 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ValidateLogin_Re
 	credentialJSON, _ := json.Marshal(mockCredential)
 
 	testUser := &user.User{
-		ID:               testUserID,
-		Type:             "person",
-		OrganizationUnit: "org123",
+		ID:   testUserID,
+		Type: "person",
+		OUID: "org123",
 	}
 
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).

@@ -960,7 +960,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_AugmentedAttributes_
 
 func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_AugmentedAttributes_OUClaimsInjected() {
 	ctx := buildConsentNodeContext()
-	ctx.AuthenticatedUser.OrganizationUnitID = "ou-999"
+	ctx.AuthenticatedUser.OUID = "ou-999"
 
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("ValidatePrerequisites", ctx, mock.AnythingOfType("*common.ExecutorResponse")).Return(true)
@@ -1156,7 +1156,7 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Nil
 	ctx := buildConsentNodeContext()
 	ctx.AuthenticatedUser.AvailableAttributes = nil
 	ctx.AuthenticatedUser.UserType = testUserTypeInternal
-	ctx.AuthenticatedUser.OrganizationUnitID = "ou-123"
+	ctx.AuthenticatedUser.OUID = "ou-123"
 
 	result := buildAugmentedAvailableAttributes(ctx)
 
@@ -1178,7 +1178,7 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Emp
 		Attributes: map[string]*authnprovider.AttributeMetadataResponse{},
 	}
 	ctx.AuthenticatedUser.UserType = testUserTypeInternal
-	ctx.AuthenticatedUser.OrganizationUnitID = "ou-123"
+	ctx.AuthenticatedUser.OUID = "ou-123"
 
 	result := buildAugmentedAvailableAttributes(ctx)
 
@@ -1196,9 +1196,9 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Emp
 
 func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_NoSpecialContext() {
 	ctx := buildConsentNodeContext()
-	// UserType, OrganizationUnitID, UserID are all empty
+	// UserType, OUID, UserID are all empty
 	ctx.AuthenticatedUser.UserType = ""
-	ctx.AuthenticatedUser.OrganizationUnitID = ""
+	ctx.AuthenticatedUser.OUID = ""
 	ctx.AuthenticatedUser.UserID = ""
 	ctx.AuthenticatedUser.AvailableAttributes = &authnprovider.AvailableAttributes{
 		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
@@ -1237,7 +1237,7 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Wit
 			expectedAbsent:   []string{"ouId", "ouName", "ouHandle", "groups"},
 		},
 		{
-			name:             "OrganizationUnitID only",
+			name:             "OUID only",
 			ouID:             "ou-456",
 			expectedContains: []string{"ouId", "ouName", "ouHandle", "email"},
 			expectedAbsent:   []string{"userType", "groups"},
@@ -1248,7 +1248,7 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Wit
 		suite.Run(tc.name, func() {
 			ctx := buildConsentNodeContext()
 			ctx.AuthenticatedUser.UserType = tc.userType
-			ctx.AuthenticatedUser.OrganizationUnitID = tc.ouID
+			ctx.AuthenticatedUser.OUID = tc.ouID
 			ctx.AuthenticatedUser.UserID = tc.userID
 			ctx.AuthenticatedUser.AvailableAttributes = &authnprovider.AvailableAttributes{
 				Attributes: map[string]*authnprovider.AttributeMetadataResponse{
@@ -1272,7 +1272,7 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Wit
 func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_WithGroups() {
 	ctx := buildConsentNodeContext()
 	ctx.AuthenticatedUser.UserType = ""
-	ctx.AuthenticatedUser.OrganizationUnitID = ""
+	ctx.AuthenticatedUser.OUID = ""
 	ctx.AuthenticatedUser.UserID = "user-abc"
 	ctx.AuthenticatedUser.AvailableAttributes = &authnprovider.AvailableAttributes{
 		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
@@ -1292,7 +1292,7 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Wit
 func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_AllSpecialFields() {
 	ctx := buildConsentNodeContext()
 	ctx.AuthenticatedUser.UserType = testUserTypeInternal
-	ctx.AuthenticatedUser.OrganizationUnitID = "ou-789"
+	ctx.AuthenticatedUser.OUID = "ou-789"
 	ctx.AuthenticatedUser.UserID = "user-xyz"
 	ctx.AuthenticatedUser.AvailableAttributes = &authnprovider.AvailableAttributes{
 		Attributes: map[string]*authnprovider.AttributeMetadataResponse{
@@ -1316,7 +1316,7 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_All
 func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_DoesNotMutateOriginal() {
 	ctx := buildConsentNodeContext()
 	ctx.AuthenticatedUser.UserType = testUserTypeInternal
-	ctx.AuthenticatedUser.OrganizationUnitID = "ou-789"
+	ctx.AuthenticatedUser.OUID = "ou-789"
 	ctx.AuthenticatedUser.UserID = "user-xyz"
 	ctx.AuthenticatedUser.AvailableAttributes = &authnprovider.AvailableAttributes{
 		Attributes: map[string]*authnprovider.AttributeMetadataResponse{

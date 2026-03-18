@@ -511,9 +511,9 @@ func (suite *OAuthAuthnServiceTestSuite) TestFetchUserInfoWithClientConfigEmptyA
 func (suite *OAuthAuthnServiceTestSuite) TestGetInternalUserSuccess() {
 	userID := "user123"
 	user := &userprovider.User{
-		UserID:             userID,
-		UserType:           "person",
-		OrganizationUnitID: "test-ou",
+		UserID:   userID,
+		UserType: "person",
+		OUID:     "test-ou",
 	}
 
 	suite.mockUserProvider.On("IdentifyUser", mock.MatchedBy(

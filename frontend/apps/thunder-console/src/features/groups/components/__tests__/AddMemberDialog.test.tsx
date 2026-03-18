@@ -78,8 +78,8 @@ describe('AddMemberDialog', () => {
         startIndex: 0,
         count: 2,
         users: [
-          {id: 'u1', organizationUnit: 'ou1', type: 'Person'},
-          {id: 'u2', organizationUnit: 'ou2', type: 'Person'},
+          {id: 'u1', ouId: 'ou1', type: 'Person'},
+          {id: 'u2', ouId: 'ou2', type: 'Person'},
         ],
       },
       isLoading: false,

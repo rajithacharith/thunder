@@ -271,10 +271,10 @@ func (suite *UtilsTestSuite) TestDecodeBase64_InvalidInput() {
 func (suite *UtilsTestSuite) TestExtractCoreUser_WithFullAttributes() {
 	attrs := json.RawMessage(`{"given_name":"John","family_name":"Doe","username":"johndoe"}`)
 	testUser := &user.User{
-		ID:               testUserID,
-		Type:             "person",
-		OrganizationUnit: "org123",
-		Attributes:       attrs,
+		ID:         testUserID,
+		Type:       "person",
+		OUID:       "org123",
+		Attributes: attrs,
 	}
 
 	displayName, userName := extractCoreUser(testUser)

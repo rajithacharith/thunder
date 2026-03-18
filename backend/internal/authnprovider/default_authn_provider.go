@@ -87,7 +87,7 @@ func (p *defaultAuthnProvider) Authenticate(
 		UserID:              authResponse.ID,
 		Token:               authResponse.ID,
 		UserType:            userResult.Type,
-		OrganizationUnitID:  userResult.OrganizationUnit,
+		OUID:                userResult.OUID,
 		AvailableAttributes: availableAttributes,
 	}, nil
 }
@@ -148,7 +148,7 @@ func (p *defaultAuthnProvider) GetAttributes(
 	return &GetAttributesResult{
 		UserID:             userResult.ID,
 		UserType:           userResult.Type,
-		OrganizationUnitID: userResult.OrganizationUnit,
+		OUID:               userResult.OUID,
 		AttributesResponse: attributesResponse,
 	}, nil
 }

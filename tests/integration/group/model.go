@@ -45,7 +45,7 @@ type GroupBasic struct {
 	Id                 string `json:"id"`
 	Name               string `json:"name"`
 	Description        string `json:"description,omitempty"`
-	OrganizationUnitId string `json:"organizationUnitId"`
+	OUID               string `json:"ouId"`
 }
 
 // Group represents a complete group with members.
@@ -58,7 +58,7 @@ type Group struct {
 type CreateGroupRequest struct {
 	Name               string   `json:"name"`
 	Description        string   `json:"description,omitempty"`
-	OrganizationUnitId string   `json:"organizationUnitId"`
+	OUID               string   `json:"ouId"`
 	Members            []Member `json:"members,omitempty"`
 }
 
@@ -66,7 +66,7 @@ type CreateGroupRequest struct {
 type UpdateGroupRequest struct {
 	Name               string `json:"name"`
 	Description        string `json:"description,omitempty"`
-	OrganizationUnitId string `json:"organizationUnitId"`
+	OUID               string `json:"ouId"`
 }
 
 // GroupListResponse represents the response for listing groups with pagination.

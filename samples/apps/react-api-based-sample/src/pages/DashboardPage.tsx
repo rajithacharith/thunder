@@ -126,7 +126,7 @@ function DashboardPage() {
                   family_name,
                   mobileNumber,
                   type: user.type,
-                  organizationUnit: user.organizationUnit,
+                  ouId: user.ouId,
                 };
               }),
             };

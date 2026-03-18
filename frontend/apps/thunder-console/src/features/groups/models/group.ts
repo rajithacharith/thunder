@@ -39,7 +39,7 @@ export interface GroupBasic {
   /** Optional description of the group */
   description?: string;
   /** ID of the organization unit this group belongs to */
-  organizationUnitId: string;
+  ouId: string;
 }
 
 /**

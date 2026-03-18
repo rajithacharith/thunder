@@ -54,8 +54,8 @@ func (suite *CompositeRoleStoreEdgeCaseTestSuite) TestCreateRole_DelegatesToDB()
 	suite.mockDBStore.On("CreateRole", suite.ctx, "role1", mock.Anything).Return(nil)
 
 	err := suite.store.CreateRole(suite.ctx, "role1", RoleCreationDetail{
-		Name:               "Test",
-		OrganizationUnitID: "ou1",
+		Name: "Test",
+		OUID: "ou1",
 	})
 
 	assert.NoError(suite.T(), err)

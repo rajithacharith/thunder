@@ -34,10 +34,10 @@ type AuthSessionData struct {
 
 // AuthenticationResponseDTO represents the data transfer object for the authentication response.
 type AuthenticationResponseDTO struct {
-	ID               string `json:"id"`
-	Type             string `json:"type,omitempty"`
-	OrganizationUnit string `json:"organization_unit,omitempty"`
-	Assertion        string `json:"assertion,omitempty"`
+	ID        string `json:"id"`
+	Type      string `json:"type,omitempty"`
+	OUID      string `json:"ouId,omitempty"`
+	Assertion string `json:"assertion,omitempty"`
 }
 
 // IDPAuthInitRequestDTO is the request to initiate IDP authentication.

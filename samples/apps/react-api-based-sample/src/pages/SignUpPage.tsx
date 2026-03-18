@@ -34,7 +34,7 @@ import { getCustomersOrganizationUnitId } from "../utils/api";
 
 interface UserResponse {
   id: string;
-  organizationUnit: string;
+  ouId: string;
   type: string;
   attributes: Record<string, unknown>;
 }
@@ -86,7 +86,7 @@ function SignUpPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          organizationUnit: organizationUnitId,
+          ouId: organizationUnitId,
           type: "Customer",
           attributes: {
             username: formData.username,

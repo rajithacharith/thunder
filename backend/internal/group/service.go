@@ -209,23 +209,23 @@ func (gs *groupService) GetGroupsByPath(
 		}
 		return nil, svcErr
 	}
-	organizationUnitID := ou.ID
+	oUID := ou.ID
 
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
 	}
 
-	if err := gs.checkGroupAccess(ctx, security.ActionListGroups, organizationUnitID, ""); err != nil {
+	if err := gs.checkGroupAccess(ctx, security.ActionListGroups, oUID, ""); err != nil {
 		return nil, err
 	}
 
-	totalCount, err := gs.groupStore.GetGroupsByOrganizationUnitCount(ctx, organizationUnitID)
+	totalCount, err := gs.groupStore.GetGroupsByOrganizationUnitCount(ctx, oUID)
 	if err != nil {
 		logger.Error("Failed to get group count by organization unit", log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
 
-	groups, err := gs.groupStore.GetGroupsByOrganizationUnit(ctx, organizationUnitID, limit, offset)
+	groups, err := gs.groupStore.GetGroupsByOrganizationUnit(ctx, oUID, limit, offset)
 	if err != nil {
 		logger.Error("Failed to list groups by organization unit", log.Error(err))
 		return nil, &ErrorInternalServerError
@@ -257,11 +257,11 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 		return nil, err
 	}
 
-	if err := gs.validateOU(ctx, request.OrganizationUnitID); err != nil {
+	if err := gs.validateOU(ctx, request.OUID); err != nil {
 		return nil, err
 	}
 
-	if err := gs.checkGroupAccess(ctx, security.ActionCreateGroup, request.OrganizationUnitID, ""); err != nil {
+	if err := gs.checkGroupAccess(ctx, security.ActionCreateGroup, request.OUID, ""); err != nil {
 		return nil, err
 	}
 
@@ -289,7 +289,7 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 
 	err := gs.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if err := gs.groupStore.CheckGroupNameConflictForCreate(
-			txCtx, request.Name, request.OrganizationUnitID); err != nil {
+			txCtx, request.Name, request.OUID); err != nil {
 			if errors.Is(err, ErrGroupNameConflict) {
 				logger.Debug("Group name conflict detected", log.String("name", request.Name))
 				capturedSvcErr = &ErrorGroupNameConflict
@@ -304,11 +304,11 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 		}
 
 		groupDAO := GroupDAO{
-			ID:                 groupDaoID,
-			Name:               request.Name,
-			Description:        request.Description,
-			OrganizationUnitID: request.OrganizationUnitID,
-			Members:            request.Members,
+			ID:          groupDaoID,
+			Name:        request.Name,
+			Description: request.Description,
+			OUID:        request.OUID,
+			Members:     request.Members,
 		}
 
 		if err := gs.groupStore.CreateGroup(txCtx, groupDAO); err != nil {
@@ -355,10 +355,10 @@ func (gs *groupService) CreateGroupByPath(
 
 	// Convert CreateGroupByPathRequest to CreateGroupRequest
 	createRequest := CreateGroupRequest{
-		Name:               request.Name,
-		Description:        request.Description,
-		OrganizationUnitID: ou.ID,
-		Members:            request.Members,
+		Name:        request.Name,
+		Description: request.Description,
+		OUID:        ou.ID,
+		Members:     request.Members,
 	}
 
 	return gs.CreateGroup(ctx, createRequest)
@@ -383,7 +383,7 @@ func (gs *groupService) GetGroup(ctx context.Context, groupID string) (*Group, *
 		return nil, &ErrorInternalServerError
 	}
 
-	if err := gs.checkGroupAccess(ctx, security.ActionReadGroup, groupDAO.OrganizationUnitID, groupID); err != nil {
+	if err := gs.checkGroupAccess(ctx, security.ActionReadGroup, groupDAO.OUID, groupID); err != nil {
 		return nil, err
 	}
 
@@ -421,31 +421,31 @@ func (gs *groupService) UpdateGroup(
 		}
 
 		existingGroup := convertGroupDAOToGroup(existingGroupDAO)
-		updateOrganizationUnitID := existingGroupDAO.OrganizationUnitID
+		updateOUID := existingGroupDAO.OUID
 
 		if gs.isOrganizationUnitChanged(existingGroup, request) {
-			if err := gs.validateOU(txCtx, request.OrganizationUnitID); err != nil {
+			if err := gs.validateOU(txCtx, request.OUID); err != nil {
 				capturedSvcErr = err
 				return errors.New("rollback for invalid OU")
 			}
-			updateOrganizationUnitID = request.OrganizationUnitID
+			updateOUID = request.OUID
 		}
 
 		if err := gs.checkGroupAccess(
 			txCtx,
 			security.ActionUpdateGroup,
-			existingGroupDAO.OrganizationUnitID,
+			existingGroupDAO.OUID,
 			groupID,
 		); err != nil {
 			capturedSvcErr = err
 			return errors.New("rollback for unauthorized access")
 		}
 
-		if updateOrganizationUnitID != existingGroupDAO.OrganizationUnitID {
+		if updateOUID != existingGroupDAO.OUID {
 			if err := gs.checkGroupAccess(
 				txCtx,
 				security.ActionUpdateGroup,
-				updateOrganizationUnitID,
+				updateOUID,
 				groupID,
 			); err != nil {
 				capturedSvcErr = err
@@ -453,9 +453,9 @@ func (gs *groupService) UpdateGroup(
 			}
 		}
 
-		if existingGroup.Name != request.Name || existingGroup.OrganizationUnitID != request.OrganizationUnitID {
+		if existingGroup.Name != request.Name || existingGroup.OUID != request.OUID {
 			err := gs.groupStore.CheckGroupNameConflictForUpdate(
-				txCtx, request.Name, request.OrganizationUnitID, groupID)
+				txCtx, request.Name, request.OUID, groupID)
 			if err != nil {
 				if errors.Is(err, ErrGroupNameConflict) {
 					logger.Debug("Group name conflict detected during update", log.String("name", request.Name))
@@ -467,10 +467,10 @@ func (gs *groupService) UpdateGroup(
 		}
 
 		updatedGroupDAO := GroupDAO{
-			ID:                 existingGroup.ID,
-			Name:               request.Name,
-			Description:        request.Description,
-			OrganizationUnitID: updateOrganizationUnitID,
+			ID:          existingGroup.ID,
+			Name:        request.Name,
+			Description: request.Description,
+			OUID:        updateOUID,
 		}
 
 		if err := gs.groupStore.UpdateGroup(txCtx, updatedGroupDAO); err != nil {
@@ -520,7 +520,7 @@ func (gs *groupService) DeleteGroup(ctx context.Context, groupID string) *servic
 		if err := gs.checkGroupAccess(
 			txCtx,
 			security.ActionDeleteGroup,
-			existingGroupDAO.OrganizationUnitID,
+			existingGroupDAO.OUID,
 			groupID,
 		); err != nil {
 			capturedSvcErr = err
@@ -572,7 +572,7 @@ func (gs *groupService) GetGroupMembers(ctx context.Context, groupID string, lim
 	if err := gs.checkGroupAccess(
 		ctx,
 		security.ActionReadGroup,
-		existingGroupDAO.OrganizationUnitID,
+		existingGroupDAO.OUID,
 		groupID,
 	); err != nil {
 		return nil, err
@@ -712,7 +712,7 @@ func (gs *groupService) AddGroupMembers(
 		if err := gs.checkGroupAccess(
 			txCtx,
 			security.ActionUpdateGroup,
-			existingGroupDAO.OrganizationUnitID,
+			existingGroupDAO.OUID,
 			groupID,
 		); err != nil {
 			capturedSvcErr = err
@@ -802,7 +802,7 @@ func (gs *groupService) RemoveGroupMembers(
 		if err := gs.checkGroupAccess(
 			txCtx,
 			security.ActionUpdateGroup,
-			existingGroupDAO.OrganizationUnitID,
+			existingGroupDAO.OUID,
 			groupID,
 		); err != nil {
 			capturedSvcErr = err
@@ -842,7 +842,7 @@ func (gs *groupService) validateCreateGroupRequest(request CreateGroupRequest) *
 		return &ErrorInvalidRequestFormat
 	}
 
-	if request.OrganizationUnitID == "" {
+	if request.OUID == "" {
 		return &ErrorInvalidRequestFormat
 	}
 
@@ -864,7 +864,7 @@ func (gs *groupService) validateUpdateGroupRequest(request UpdateGroupRequest) *
 		return &ErrorInvalidRequestFormat
 	}
 
-	if request.OrganizationUnitID == "" {
+	if request.OUID == "" {
 		return &ErrorInvalidRequestFormat
 	}
 
@@ -886,7 +886,7 @@ func validateMemberTypes(members []Member) *serviceerror.ServiceError {
 
 // isOrganizationUnitChanged checks if the organization unit of the group has changed during an update.
 func (gs *groupService) isOrganizationUnitChanged(existingGroup Group, request UpdateGroupRequest) bool {
-	return existingGroup.OrganizationUnitID != request.OrganizationUnitID
+	return existingGroup.OUID != request.OUID
 }
 
 // validateOU validates that provided organization unit ID exist.
@@ -1013,10 +1013,10 @@ func (gs *groupService) GetGroupsByIDs(
 	result := make(map[string]*Group, len(groupDAOs))
 	for _, dao := range groupDAOs {
 		group := convertGroupDAOToGroup(GroupDAO{
-			ID:                 dao.ID,
-			Name:               dao.Name,
-			Description:        dao.Description,
-			OrganizationUnitID: dao.OrganizationUnitID,
+			ID:          dao.ID,
+			Name:        dao.Name,
+			Description: dao.Description,
+			OUID:        dao.OUID,
 		})
 		result[dao.ID] = &group
 	}
@@ -1052,7 +1052,7 @@ func (gs *groupService) checkGroupAccess(
 
 	actionCtx := sysauthz.ActionContext{
 		ResourceType: security.ResourceTypeGroup,
-		OuID:         ouID,
+		OUID:         ouID,
 		ResourceID:   groupID,
 	}
 

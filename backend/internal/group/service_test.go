@@ -155,8 +155,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupList() {
 					Once()
 				storeMock.On("GetGroupList", mock.Anything, 2, 1).
 					Return([]GroupBasicDAO{
-						{ID: "g1", Name: "group-1", Description: "desc-1", OrganizationUnitID: "ou-1"},
-						{ID: "g2", Name: "group-2", Description: "desc-2", OrganizationUnitID: "ou-2"},
+						{ID: "g1", Name: "group-1", Description: "desc-1", OUID: "ou-1"},
+						{ID: "g2", Name: "group-2", Description: "desc-2", OUID: "ou-2"},
 					}, nil).
 					Once()
 			},
@@ -222,7 +222,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupList() {
 				ouIDs := []string{testOUID1, testOUID2}
 				storeMock.On("GetGroupListCountByOUIDs", mock.Anything, ouIDs).Return(1, nil).Once()
 				storeMock.On("GetGroupListByOUIDs", mock.Anything, ouIDs, 5, 0).
-					Return([]GroupBasicDAO{{ID: "id1", Name: "name1", OrganizationUnitID: testOUID1}}, nil).Once()
+					Return([]GroupBasicDAO{{ID: "id1", Name: "name1", OUID: testOUID1}}, nil).Once()
 			},
 			wantResult: &groupListExpectations{
 				totalResults: 1,
@@ -337,8 +337,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 					Once()
 				storeMock.On("GetGroupsByOrganizationUnit", mock.Anything, "ou-123", 2, 0).
 					Return([]GroupBasicDAO{
-						{ID: "g1", Name: "group-1", OrganizationUnitID: "ou-123"},
-						{ID: "g2", Name: "group-2", OrganizationUnitID: "ou-123"},
+						{ID: "g1", Name: "group-1", OUID: "ou-123"},
+						{ID: "g2", Name: "group-2", OUID: "ou-123"},
 					}, nil).
 					Once()
 
@@ -490,7 +490,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 				authzMock.On("IsActionAllowed", mock.Anything, security.ActionListGroups,
-					&sysauthz.ActionContext{OuID: testOUID1, ResourceType: security.ResourceTypeGroup}).
+					&sysauthz.ActionContext{OUID: testOUID1, ResourceType: security.ResourceTypeGroup}).
 					Return(false, (*serviceerror.ServiceError)(nil))
 				return authzMock
 			},
@@ -567,9 +567,9 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 		{
 			name: "success",
 			request: CreateGroupRequest{
-				Name:               "engineering",
-				Description:        "Engineers",
-				OrganizationUnitID: "ou-001",
+				Name:        "engineering",
+				Description: "Engineers",
+				OUID:        "ou-001",
 				Members: []Member{
 					{ID: "usr-001", Type: MemberTypeUser},
 					{ID: "grp-002", Type: MemberTypeGroup},
@@ -584,7 +584,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 					Once()
 				args.store.On("CreateGroup", mock.Anything, mock.MatchedBy(func(group GroupDAO) bool {
 					return group.Name == "engineering" &&
-						group.OrganizationUnitID == "ou-001" &&
+						group.OUID == "ou-001" &&
 						len(group.Members) == 2
 				})).
 					Return(nil).
@@ -603,8 +603,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 		{
 			name: "invalid organization unit",
 			request: CreateGroupRequest{
-				Name:               "engineering",
-				OrganizationUnitID: "ou-unknown",
+				Name: "engineering",
+				OUID: "ou-unknown",
 			},
 			setup: func(args *setupArgs) {
 				args.ou.On("IsOrganizationUnitExists", mock.Anything, "ou-unknown").
@@ -619,9 +619,9 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 		{
 			name: "invalid user IDs",
 			request: CreateGroupRequest{
-				Name:               "engineering",
-				OrganizationUnitID: "ou-001",
-				Members:            []Member{{ID: "usr-invalid", Type: MemberTypeUser}},
+				Name:    "engineering",
+				OUID:    "ou-001",
+				Members: []Member{{ID: "usr-invalid", Type: MemberTypeUser}},
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("CheckGroupNameConflictForCreate", mock.Anything, "engineering", "ou-001").
@@ -639,8 +639,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 		{
 			name: "name conflict",
 			request: CreateGroupRequest{
-				Name:               "engineering",
-				OrganizationUnitID: "ou-001",
+				Name: "engineering",
+				OUID: "ou-001",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("CheckGroupNameConflictForCreate", mock.Anything, "engineering", "ou-001").
@@ -658,8 +658,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 		{
 			name: "conflict check error",
 			request: CreateGroupRequest{
-				Name:               "engineering",
-				OrganizationUnitID: "ou-001",
+				Name: "engineering",
+				OUID: "ou-001",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("CheckGroupNameConflictForCreate", mock.Anything, "engineering", "ou-001").
@@ -677,8 +677,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 		{
 			name: "create error",
 			request: CreateGroupRequest{
-				Name:               "engineering",
-				OrganizationUnitID: "ou-001",
+				Name: "engineering",
+				OUID: "ou-001",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("CheckGroupNameConflictForCreate", mock.Anything, "engineering", "ou-001").
@@ -699,8 +699,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 		{
 			name: "organization unit service error",
 			request: CreateGroupRequest{
-				Name:               "engineering",
-				OrganizationUnitID: "ou-001",
+				Name: "engineering",
+				OUID: "ou-001",
 			},
 			setup: func(args *setupArgs) {
 				args.ou.On("IsOrganizationUnitExists", mock.Anything, "ou-001").
@@ -713,8 +713,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 		{
 			name: "access denied",
 			request: CreateGroupRequest{
-				Name:               "developers",
-				OrganizationUnitID: testOUID1,
+				Name: "developers",
+				OUID: testOUID1,
 			},
 			setup: func(args *setupArgs) {
 				args.ou.On("IsOrganizationUnitExists", mock.Anything, testOUID1).
@@ -723,7 +723,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 				authzMock.On("IsActionAllowed", mock.Anything, security.ActionCreateGroup,
-					&sysauthz.ActionContext{OuID: testOUID1, ResourceType: security.ResourceTypeGroup}).
+					&sysauthz.ActionContext{OUID: testOUID1, ResourceType: security.ResourceTypeGroup}).
 					Return(false, (*serviceerror.ServiceError)(nil))
 				return authzMock
 			},
@@ -918,7 +918,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroup() {
 			id:   "grp-001",
 			setup: func(storeMock *groupStoreInterfaceMock) {
 				storeMock.On("GetGroup", mock.Anything, "grp-001").
-					Return(GroupDAO{ID: "grp-001", Name: "test", OrganizationUnitID: testOUID1}, nil).
+					Return(GroupDAO{ID: "grp-001", Name: "test", OUID: testOUID1}, nil).
 					Once()
 			},
 		},
@@ -927,7 +927,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroup() {
 			id:   "grp-001",
 			setup: func(storeMock *groupStoreInterfaceMock) {
 				storeMock.On("GetGroup", mock.Anything, "grp-001").
-					Return(GroupDAO{ID: "grp-001", OrganizationUnitID: testOUID1}, nil).
+					Return(GroupDAO{ID: "grp-001", OUID: testOUID1}, nil).
 					Once()
 			},
 			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
@@ -937,7 +937,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroup() {
 					mock.Anything,
 					security.ActionReadGroup,
 					&sysauthz.ActionContext{
-						OuID:         testOUID1,
+						OUID:         testOUID1,
 						ResourceType: security.ResourceTypeGroup,
 						ResourceID:   "grp-001",
 					},
@@ -1018,20 +1018,20 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			name:    "success",
 			groupID: "grp-001",
 			request: UpdateGroupRequest{
-				Name:               "new-name",
-				Description:        "New desc",
-				OrganizationUnitID: "ou-new",
+				Name:        "new-name",
+				Description: "New desc",
+				OUID:        "ou-new",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", Name: "old", Description: "legacy",
-						OrganizationUnitID: "ou-old"}, nil).
+						OUID: "ou-old"}, nil).
 					Once()
 				args.store.On("CheckGroupNameConflictForUpdate", mock.Anything, "new-name", "ou-new", "grp-001").
 					Return(nil).
 					Once()
 				args.store.On("UpdateGroup", mock.Anything, mock.MatchedBy(func(group GroupDAO) bool {
-					return group.ID == "grp-001" && group.Name == "new-name" && group.OrganizationUnitID == "ou-new"
+					return group.ID == "grp-001" && group.Name == "new-name" && group.OUID == "ou-new"
 				})).
 					Return(nil).
 					Once()
@@ -1045,12 +1045,12 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			name:    "name conflict",
 			groupID: "grp-001",
 			request: UpdateGroupRequest{
-				Name:               "new-name",
-				OrganizationUnitID: "ou-new",
+				Name: "new-name",
+				OUID: "ou-new",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
-					Return(GroupDAO{ID: "grp-001", Name: "old", OrganizationUnitID: "ou-old"}, nil).
+					Return(GroupDAO{ID: "grp-001", Name: "old", OUID: "ou-old"}, nil).
 					Once()
 				args.store.On("CheckGroupNameConflictForUpdate", mock.Anything, "new-name", "ou-new", "grp-001").
 					Return(ErrGroupNameConflict).
@@ -1065,8 +1065,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			name:    "group not found",
 			groupID: "grp-001",
 			request: UpdateGroupRequest{
-				Name:               "name",
-				OrganizationUnitID: "ou",
+				Name: "name",
+				OUID: "ou",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
@@ -1079,8 +1079,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			name:    "get group error",
 			groupID: "grp-001",
 			request: UpdateGroupRequest{
-				Name:               "name",
-				OrganizationUnitID: "ou",
+				Name: "name",
+				OUID: "ou",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
@@ -1093,12 +1093,12 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			name:    "validate organization unit error",
 			groupID: "grp-001",
 			request: UpdateGroupRequest{
-				Name:               "name",
-				OrganizationUnitID: "ou-new",
+				Name: "name",
+				OUID: "ou-new",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
-					Return(GroupDAO{ID: "grp-001", Name: "name", OrganizationUnitID: "ou-old"}, nil).
+					Return(GroupDAO{ID: "grp-001", Name: "name", OUID: "ou-old"}, nil).
 					Once()
 				args.ou.On("IsOrganizationUnitExists", mock.Anything, "ou-new").
 					Return(false, nil).
@@ -1110,12 +1110,12 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			name:    "conflict check error",
 			groupID: "grp-001",
 			request: UpdateGroupRequest{
-				Name:               "new",
-				OrganizationUnitID: "ou",
+				Name: "new",
+				OUID: "ou",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
-					Return(GroupDAO{ID: "grp-001", Name: "old", OrganizationUnitID: "ou"}, nil).
+					Return(GroupDAO{ID: "grp-001", Name: "old", OUID: "ou"}, nil).
 					Once()
 				args.store.On("CheckGroupNameConflictForUpdate", mock.Anything, "new", "ou", "grp-001").
 					Return(errors.New("db error")).
@@ -1127,12 +1127,12 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			name:    "update error",
 			groupID: "grp-001",
 			request: UpdateGroupRequest{
-				Name:               "new",
-				OrganizationUnitID: "ou",
+				Name: "new",
+				OUID: "ou",
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
-					Return(GroupDAO{ID: "grp-001", Name: "old-name", OrganizationUnitID: "ou"}, nil).
+					Return(GroupDAO{ID: "grp-001", Name: "old-name", OUID: "ou"}, nil).
 					Once()
 				args.store.On("CheckGroupNameConflictForUpdate", mock.Anything, "new", "ou", "grp-001").
 					Return(nil).
@@ -1147,12 +1147,12 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			name:    "access denied on source OU",
 			groupID: "grp-001",
 			request: UpdateGroupRequest{
-				Name:               "new-name",
-				OrganizationUnitID: testOUID1,
+				Name: "new-name",
+				OUID: testOUID1,
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
-					Return(GroupDAO{ID: "grp-001", OrganizationUnitID: testOUID1}, nil).Once()
+					Return(GroupDAO{ID: "grp-001", OUID: testOUID1}, nil).Once()
 			},
 			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
@@ -1161,7 +1161,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 					mock.Anything,
 					security.ActionUpdateGroup,
 					&sysauthz.ActionContext{
-						OuID:         testOUID1,
+						OUID:         testOUID1,
 						ResourceType: security.ResourceTypeGroup,
 						ResourceID:   "grp-001",
 					},
@@ -1174,12 +1174,12 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 			name:    "access denied on target OU",
 			groupID: "grp-001",
 			request: UpdateGroupRequest{
-				Name:               "new-name",
-				OrganizationUnitID: testOUID2,
+				Name: "new-name",
+				OUID: testOUID2,
 			},
 			setup: func(args *setupArgs) {
 				args.store.On("GetGroup", mock.Anything, "grp-001").
-					Return(GroupDAO{ID: "grp-001", OrganizationUnitID: testOUID1}, nil).Once()
+					Return(GroupDAO{ID: "grp-001", OUID: testOUID1}, nil).Once()
 				args.ou.On("IsOrganizationUnitExists", mock.Anything, testOUID2).
 					Return(true, (*serviceerror.ServiceError)(nil)).Once()
 			},
@@ -1190,7 +1190,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 					mock.Anything,
 					security.ActionUpdateGroup,
 					&sysauthz.ActionContext{
-						OuID:         testOUID1,
+						OUID:         testOUID1,
 						ResourceType: security.ResourceTypeGroup,
 						ResourceID:   "grp-001",
 					},
@@ -1200,7 +1200,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 					mock.Anything,
 					security.ActionUpdateGroup,
 					&sysauthz.ActionContext{
-						OuID:         testOUID2,
+						OUID:         testOUID2,
 						ResourceType: security.ResourceTypeGroup,
 						ResourceID:   "grp-001",
 					},
@@ -1328,7 +1328,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 			id:   "grp-001",
 			setup: func(storeMock *groupStoreInterfaceMock) {
 				storeMock.On("GetGroup", mock.Anything, "grp-001").
-					Return(GroupDAO{ID: "grp-001", OrganizationUnitID: testOUID1}, nil).Once()
+					Return(GroupDAO{ID: "grp-001", OUID: testOUID1}, nil).Once()
 			},
 			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
@@ -1337,7 +1337,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 					mock.Anything,
 					security.ActionDeleteGroup,
 					&sysauthz.ActionContext{
-						OuID:         testOUID1,
+						OUID:         testOUID1,
 						ResourceType: security.ResourceTypeGroup,
 						ResourceID:   "grp-001",
 					},
@@ -1495,7 +1495,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers() {
 			offset: 0,
 			setup: func(storeMock *groupStoreInterfaceMock) {
 				storeMock.On("GetGroup", mock.Anything, "grp-001").
-					Return(GroupDAO{ID: "grp-001", OrganizationUnitID: testOUID1}, nil).Once()
+					Return(GroupDAO{ID: "grp-001", OUID: testOUID1}, nil).Once()
 			},
 			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
@@ -1504,7 +1504,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers() {
 					mock.Anything,
 					security.ActionReadGroup,
 					&sysauthz.ActionContext{
-						OuID:         testOUID1,
+						OUID:         testOUID1,
 						ResourceType: security.ResourceTypeGroup,
 						ResourceID:   "grp-001",
 					},
@@ -1587,7 +1587,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers_WithDisplay
 
 	storeMock.On("GetGroupsByIDs", mock.Anything, []string{"grp-002"}).
 		Return([]GroupBasicDAO{
-			{ID: "grp-002", Name: "Engineering", OrganizationUnitID: "ou-1"},
+			{ID: "grp-002", Name: "Engineering", OUID: "ou-1"},
 		}, nil).Once()
 
 	service := &groupService{
@@ -1623,27 +1623,27 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateCreateGroupRequest(
 		{
 			name: "invalid member type",
 			request: CreateGroupRequest{
-				Name:               "name",
-				OrganizationUnitID: "ou",
-				Members:            []Member{{ID: "id", Type: "invalid"}},
+				Name:    "name",
+				OUID:    "ou",
+				Members: []Member{{ID: "id", Type: "invalid"}},
 			},
 			wantErr: true,
 		},
 		{
 			name: "missing member id",
 			request: CreateGroupRequest{
-				Name:               "name",
-				OrganizationUnitID: "ou",
-				Members:            []Member{{ID: "", Type: MemberTypeUser}},
+				Name:    "name",
+				OUID:    "ou",
+				Members: []Member{{ID: "", Type: MemberTypeUser}},
 			},
 			wantErr: true,
 		},
 		{
 			name: "valid request",
 			request: CreateGroupRequest{
-				Name:               "name",
-				OrganizationUnitID: "ou",
-				Members:            []Member{{ID: "usr-1", Type: MemberTypeUser}},
+				Name:    "name",
+				OUID:    "ou",
+				Members: []Member{{ID: "usr-1", Type: MemberTypeUser}},
 			},
 			wantErr: false,
 		},
@@ -1670,8 +1670,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateUpdateGroupRequest(
 		{
 			name: "valid request",
 			request: UpdateGroupRequest{
-				Name:               "name",
-				OrganizationUnitID: "ou",
+				Name: "name",
+				OUID: "ou",
 			},
 			wantErr: false,
 		},
@@ -2091,7 +2091,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_AddGroupMembers() {
 			members: []Member{{ID: "usr-001", Type: MemberTypeUser}},
 			setup: func(storeMock *groupStoreInterfaceMock, _ *usermock.UserServiceInterfaceMock) {
 				storeMock.On("GetGroup", mock.Anything, "grp-001").
-					Return(GroupDAO{ID: "grp-001", OrganizationUnitID: testOUID1}, nil).Once()
+					Return(GroupDAO{ID: "grp-001", OUID: testOUID1}, nil).Once()
 			},
 			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
@@ -2100,7 +2100,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_AddGroupMembers() {
 					mock.Anything,
 					security.ActionUpdateGroup,
 					&sysauthz.ActionContext{
-						OuID:         testOUID1,
+						OUID:         testOUID1,
 						ResourceType: security.ResourceTypeGroup,
 						ResourceID:   "grp-001",
 					},
@@ -2225,7 +2225,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_RemoveGroupMembers() {
 			members: []Member{{ID: "usr-001", Type: MemberTypeUser}},
 			setup: func(storeMock *groupStoreInterfaceMock) {
 				storeMock.On("GetGroup", mock.Anything, "grp-001").
-					Return(GroupDAO{ID: "grp-001", OrganizationUnitID: testOUID1}, nil).Once()
+					Return(GroupDAO{ID: "grp-001", OUID: testOUID1}, nil).Once()
 			},
 			authzSetup: func(t *testing.T) sysauthz.SystemAuthorizationServiceInterface {
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
@@ -2234,7 +2234,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_RemoveGroupMembers() {
 					mock.Anything,
 					security.ActionUpdateGroup,
 					&sysauthz.ActionContext{
-						OuID:         testOUID1,
+						OUID:         testOUID1,
 						ResourceType: security.ResourceTypeGroup,
 						ResourceID:   "grp-001",
 					},
@@ -2329,7 +2329,7 @@ func TestPopulateMemberDisplayNames_MixedMembers(t *testing.T) {
 	storeMock := newGroupStoreInterfaceMock(t)
 	storeMock.On("GetGroupsByIDs", mock.Anything, []string{"group-1"}).
 		Return([]GroupBasicDAO{
-			{ID: "group-1", Name: "Engineering", OrganizationUnitID: "ou-1"},
+			{ID: "group-1", Name: "Engineering", OUID: "ou-1"},
 		}, nil).Once()
 
 	service := &groupService{
@@ -2406,7 +2406,7 @@ func TestPopulateMemberDisplayNames_GroupFallbackToID(t *testing.T) {
 	storeMock := newGroupStoreInterfaceMock(t)
 	storeMock.On("GetGroupsByIDs", mock.Anything, []string{"group-1"}).
 		Return([]GroupBasicDAO{
-			{ID: "group-1", Name: "", OrganizationUnitID: "ou-1"},
+			{ID: "group-1", Name: "", OUID: "ou-1"},
 		}, nil).Once()
 
 	service := &groupService{
@@ -2471,7 +2471,7 @@ func TestPopulateMemberDisplayNames_SchemaServiceError_WithGroupMember(t *testin
 		Return(map[string]string(nil), &serviceerror.ServiceError{Code: "ERR"}).Once()
 
 	groupStoreMock.On("GetGroupsByIDs", mock.Anything, []string{"group-1"}).
-		Return([]GroupBasicDAO{{ID: "group-1", Name: "Engineering", OrganizationUnitID: "ou-1"}}, nil).Once()
+		Return([]GroupBasicDAO{{ID: "group-1", Name: "Engineering", OUID: "ou-1"}}, nil).Once()
 
 	service := &groupService{
 		groupStore:        groupStoreMock,

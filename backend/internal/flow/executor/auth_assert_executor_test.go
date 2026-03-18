@@ -124,10 +124,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success(
 		AppID:    "app-123",
 		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
-			IsAuthenticated:    true,
-			UserID:             "user-123",
-			OrganizationUnitID: "ou-123",
-			UserType:           "INTERNAL",
+			IsAuthenticated: true,
+			UserID:          "user-123",
+			OUID:            "ou-123",
+			UserType:        "INTERNAL",
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{
 			"node1": {
@@ -515,10 +515,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
 		AppID:    "app-123",
 		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
-			IsAuthenticated:    true,
-			UserID:             "user-123",
-			UserType:           "EXTERNAL",
-			OrganizationUnitID: "ou-456",
+			IsAuthenticated: true,
+			UserID:          "user-123",
+			UserType:        "EXTERNAL",
+			OUID:            "ou-456",
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
@@ -579,9 +579,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 		AppID:    "app-123",
 		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
-			IsAuthenticated:    true,
-			UserID:             "user-123",
-			OrganizationUnitID: testAssertOUID,
+			IsAuthenticated: true,
+			UserID:          "user-123",
+			OUID:            testAssertOUID,
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
@@ -687,9 +687,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFai
 		AppID:    "app-123",
 		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
-			IsAuthenticated:    true,
-			UserID:             "user-123",
-			OrganizationUnitID: "ou-123",
+			IsAuthenticated: true,
+			UserID:          "user-123",
+			OUID:            "ou-123",
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
@@ -749,9 +749,9 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganiz
 		AppID:    "app-123",
 		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
-			IsAuthenticated:    true,
-			UserID:             "user-123",
-			OrganizationUnitID: "ou-invalid",
+			IsAuthenticated: true,
+			UserID:          "user-123",
+			OUID:            "ou-invalid",
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{

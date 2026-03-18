@@ -171,9 +171,9 @@ func (suite *OTPAuthnServiceTestSuite) TestVerifyOTPSuccess() {
 		Recipient: recipient,
 	}
 	user := &userprovider.User{
-		UserID:             userID,
-		UserType:           "person",
-		OrganizationUnitID: orgUnit,
+		UserID:   userID,
+		UserType: "person",
+		OUID:     orgUnit,
 	}
 
 	suite.mockOTPService.On("VerifyOTP", mock.Anything, mock.MatchedBy(func(dto notifcommon.VerifyOTPDTO) bool {
@@ -188,7 +188,7 @@ func (suite *OTPAuthnServiceTestSuite) TestVerifyOTPSuccess() {
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(userID, result.UserID)
-	suite.Equal(orgUnit, result.OrganizationUnitID)
+	suite.Equal(orgUnit, result.OUID)
 }
 
 func (suite *OTPAuthnServiceTestSuite) TestVerifyOTPWithInvalidInputs() {

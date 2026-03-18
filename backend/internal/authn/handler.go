@@ -70,8 +70,7 @@ func (ah *authenticationHandler) HandleCredentialsAuthRequest(w http.ResponseWri
 		return
 	}
 
-	responseDTO := AuthenticationResponseDTO(*authResponse)
-	sysutils.WriteSuccessResponse(w, http.StatusOK, responseDTO)
+	sysutils.WriteSuccessResponse(w, http.StatusOK, AuthenticationResponseDTO(*authResponse))
 }
 
 // HandleSendSMSOTPRequest handles the send SMS OTP authentication request.
@@ -113,8 +112,7 @@ func (ah *authenticationHandler) HandleVerifySMSOTPRequest(w http.ResponseWriter
 		return
 	}
 
-	responseDTO := AuthenticationResponseDTO(*authResponse)
-	sysutils.WriteSuccessResponse(w, http.StatusOK, responseDTO)
+	sysutils.WriteSuccessResponse(w, http.StatusOK, AuthenticationResponseDTO(*authResponse))
 }
 
 // HandleGoogleAuthStartRequest handles the Google OAuth start authentication request.
@@ -152,8 +150,7 @@ func (ah *authenticationHandler) HandleGoogleAuthFinishRequest(w http.ResponseWr
 		return
 	}
 
-	responseDTO := AuthenticationResponseDTO(*authResponse)
-	sysutils.WriteSuccessResponse(w, http.StatusOK, responseDTO)
+	sysutils.WriteSuccessResponse(w, http.StatusOK, AuthenticationResponseDTO(*authResponse))
 }
 
 // HandleGithubAuthStartRequest handles the GitHub OAuth start authentication request.
@@ -191,8 +188,7 @@ func (ah *authenticationHandler) HandleGithubAuthFinishRequest(w http.ResponseWr
 		return
 	}
 
-	responseDTO := AuthenticationResponseDTO(*authResponse)
-	sysutils.WriteSuccessResponse(w, http.StatusOK, responseDTO)
+	sysutils.WriteSuccessResponse(w, http.StatusOK, AuthenticationResponseDTO(*authResponse))
 }
 
 // HandleStandardOAuthStartRequest handles the standard OAuth start authentication request.
@@ -230,8 +226,7 @@ func (ah *authenticationHandler) HandleStandardOAuthFinishRequest(w http.Respons
 		return
 	}
 
-	responseDTO := AuthenticationResponseDTO(*authResponse)
-	sysutils.WriteSuccessResponse(w, http.StatusOK, responseDTO)
+	sysutils.WriteSuccessResponse(w, http.StatusOK, AuthenticationResponseDTO(*authResponse))
 }
 
 // HandlePasskeyRegisterStartRequest handles the passkey start registration request.
@@ -327,8 +322,7 @@ func (ah *authenticationHandler) HandlePasskeyFinishRequest(w http.ResponseWrite
 		return
 	}
 
-	responseDTO := AuthenticationResponseDTO(*authResponse)
-	sysutils.WriteSuccessResponse(w, http.StatusOK, responseDTO)
+	sysutils.WriteSuccessResponse(w, http.StatusOK, AuthenticationResponseDTO(*authResponse))
 }
 
 // handleServiceError converts service errors to appropriate HTTP responses.

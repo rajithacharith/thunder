@@ -117,7 +117,7 @@ type FlowContextWithUserDataDB struct {
 	RuntimeData         *string
 	IsAuthenticated     bool
 	UserID              *string
-	OrganizationUnitID  *string
+	OUID                *string
 	UserType            *string
 	UserInputs          *string
 	UserAttributes      *string
@@ -193,8 +193,8 @@ func (f *FlowContextWithUserDataDB) ToEngineContext(graph core.GraphInterface) (
 	if f.UserID != nil {
 		authenticatedUser.UserID = *f.UserID
 	}
-	if f.OrganizationUnitID != nil {
-		authenticatedUser.OrganizationUnitID = *f.OrganizationUnitID
+	if f.OUID != nil {
+		authenticatedUser.OUID = *f.OUID
 	}
 	if f.UserType != nil {
 		authenticatedUser.UserType = *f.UserType
@@ -290,9 +290,9 @@ func FromEngineContext(ctx EngineContext) (*FlowContextWithUserDataDB, error) {
 	}
 
 	// Get organization unit ID
-	var organizationUnitID *string
-	if ctx.AuthenticatedUser.OrganizationUnitID != "" {
-		organizationUnitID = &ctx.AuthenticatedUser.OrganizationUnitID
+	var oUID *string
+	if ctx.AuthenticatedUser.OUID != "" {
+		oUID = &ctx.AuthenticatedUser.OUID
 	}
 
 	// Get user type
@@ -339,7 +339,7 @@ func FromEngineContext(ctx EngineContext) (*FlowContextWithUserDataDB, error) {
 		RuntimeData:         &runtimeData,
 		IsAuthenticated:     ctx.AuthenticatedUser.IsAuthenticated,
 		UserID:              authenticatedUserID,
-		OrganizationUnitID:  organizationUnitID,
+		OUID:                oUID,
 		UserType:            userType,
 		UserInputs:          &userInputs,
 		UserAttributes:      &userAttributes,

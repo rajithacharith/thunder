@@ -150,10 +150,10 @@ func (rs *roleService) CreateRole(
 	}
 
 	// Validate organization unit exists using OU service
-	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, role.OrganizationUnitID)
+	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, role.OUID)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
-			logger.Debug("Organization unit not found", log.String("ouID", role.OrganizationUnitID))
+			logger.Debug("Organization unit not found", log.String("ouID", role.OUID))
 			return nil, &ErrorOrganizationUnitNotFound
 		}
 		logger.Error("Failed to validate organization unit", log.String("error", svcErr.Error))
@@ -161,14 +161,14 @@ func (rs *roleService) CreateRole(
 	}
 
 	// Check if role name already exists in the organization unit
-	nameExists, err := rs.roleStore.CheckRoleNameExists(ctx, role.OrganizationUnitID, role.Name)
+	nameExists, err := rs.roleStore.CheckRoleNameExists(ctx, role.OUID, role.Name)
 	if err != nil {
 		logger.Error("Failed to check role name existence", log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
 	if nameExists {
 		logger.Debug("Role name already exists in organization unit",
-			log.String("name", role.Name), log.String("ouID", role.OrganizationUnitID))
+			log.String("name", role.Name), log.String("ouID", role.OUID))
 		return nil, &ErrorRoleNameConflict
 	}
 
@@ -179,12 +179,12 @@ func (rs *roleService) CreateRole(
 	}
 
 	serviceRole := &RoleWithPermissionsAndAssignments{
-		ID:                 id,
-		Name:               role.Name,
-		Description:        role.Description,
-		OrganizationUnitID: role.OrganizationUnitID,
-		Permissions:        role.Permissions,
-		Assignments:        role.Assignments,
+		ID:          id,
+		Name:        role.Name,
+		Description: role.Description,
+		OUID:        role.OUID,
+		Permissions: role.Permissions,
+		Assignments: role.Assignments,
 	}
 
 	err = rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
@@ -263,10 +263,10 @@ func (rs *roleService) UpdateRoleWithPermissions(
 	}
 
 	// Validate organization unit exists using OU service
-	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, role.OrganizationUnitID)
+	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, role.OUID)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
-			logger.Debug("Organization unit not found", log.String("ouID", role.OrganizationUnitID))
+			logger.Debug("Organization unit not found", log.String("ouID", role.OUID))
 			return nil, &ErrorOrganizationUnitNotFound
 		}
 		logger.Error("Failed to validate organization unit", log.String("error", svcErr.Error))
@@ -274,14 +274,14 @@ func (rs *roleService) UpdateRoleWithPermissions(
 	}
 
 	// Check if role name already exists in the organization unit (excluding the current role)
-	nameExists, err := rs.roleStore.CheckRoleNameExistsExcludingID(ctx, role.OrganizationUnitID, role.Name, id)
+	nameExists, err := rs.roleStore.CheckRoleNameExistsExcludingID(ctx, role.OUID, role.Name, id)
 	if err != nil {
 		logger.Error("Failed to check role name existence", log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
 	if nameExists {
 		logger.Debug("Role name already exists in organization unit",
-			log.String("name", role.Name), log.String("ouID", role.OrganizationUnitID))
+			log.String("name", role.Name), log.String("ouID", role.OUID))
 		return nil, &ErrorRoleNameConflict
 	}
 
@@ -296,11 +296,11 @@ func (rs *roleService) UpdateRoleWithPermissions(
 
 	logger.Debug("Successfully updated role", log.String("id", id), log.String("name", role.Name))
 	return &RoleWithPermissions{
-		ID:                 id,
-		Name:               role.Name,
-		Description:        role.Description,
-		OrganizationUnitID: role.OrganizationUnitID,
-		Permissions:        role.Permissions,
+		ID:          id,
+		Name:        role.Name,
+		Description: role.Description,
+		OUID:        role.OUID,
+		Permissions: role.Permissions,
 	}, nil
 }
 
@@ -559,7 +559,7 @@ func (rs *roleService) validateCreateRoleRequest(role RoleCreationDetail) *servi
 		return &ErrorInvalidRequestFormat
 	}
 
-	if role.OrganizationUnitID == "" {
+	if role.OUID == "" {
 		return &ErrorInvalidRequestFormat
 	}
 
@@ -578,7 +578,7 @@ func (rs *roleService) validateUpdateRoleRequest(request RoleUpdateDetail) *serv
 		return &ErrorInvalidRequestFormat
 	}
 
-	if request.OrganizationUnitID == "" {
+	if request.OUID == "" {
 		return &ErrorInvalidRequestFormat
 	}
 

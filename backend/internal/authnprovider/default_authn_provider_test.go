@@ -51,16 +51,16 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_Success() {
 	credentials := map[string]interface{}{"password": "password123"}
 
 	authResp := &user.AuthenticateUserResponse{
-		ID:               "user123",
-		Type:             "customer",
-		OrganizationUnit: "ou1",
+		ID:   "user123",
+		Type: "customer",
+		OUID: "ou1",
 	}
 
 	userObj := &user.User{
-		ID:               "user123",
-		Type:             "customer",
-		OrganizationUnit: "ou1",
-		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
+		ID:         "user123",
+		Type:       "customer",
+		OUID:       "ou1",
+		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
 	}
 
 	// Expect AuthenticateUser call
@@ -75,7 +75,7 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_Success() {
 	suite.Equal("user123", result.UserID)
 	suite.Equal("user123", result.Token)
 	suite.Equal("customer", result.UserType)
-	suite.Equal("ou1", result.OrganizationUnitID)
+	suite.Equal("ou1", result.OUID)
 	suite.NotNil(result.AvailableAttributes)
 	suite.Len(result.AvailableAttributes.Attributes, 1)
 	suite.Contains(result.AvailableAttributes.Attributes, "email")
@@ -130,10 +130,10 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_SystemError_Prepare
 func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_All() {
 	token := "user123"
 	userObj := &user.User{
-		ID:               "user123",
-		Type:             "customer",
-		OrganizationUnit: "ou1",
-		Attributes:       json.RawMessage(`{"email":"test@example.com", "age": 30}`),
+		ID:         "user123",
+		Type:       "customer",
+		OUID:       "ou1",
+		Attributes: json.RawMessage(`{"email":"test@example.com", "age": 30}`),
 	}
 
 	suite.mockService.On("GetUser", mock.Anything, token).Return(userObj, (*serviceerror.ServiceError)(nil)).Once()
@@ -150,10 +150,10 @@ func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_All() {
 func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_Filtered() {
 	token := "user123"
 	userObj := &user.User{
-		ID:               "user123",
-		Type:             "customer",
-		OrganizationUnit: "ou1",
-		Attributes:       json.RawMessage(`{"email":"test@example.com", "age": 30}`),
+		ID:         "user123",
+		Type:       "customer",
+		OUID:       "ou1",
+		Attributes: json.RawMessage(`{"email":"test@example.com", "age": 30}`),
 	}
 
 	suite.mockService.On("GetUser", mock.Anything, token).Return(userObj, (*serviceerror.ServiceError)(nil)).Once()
@@ -190,9 +190,9 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_GetUserNotFound() {
 	credentials := map[string]interface{}{"password": "password123"}
 
 	authResp := &user.AuthenticateUserResponse{
-		ID:               "user123",
-		Type:             "customer",
-		OrganizationUnit: "ou1",
+		ID:   "user123",
+		Type: "customer",
+		OUID: "ou1",
 	}
 
 	// Expect AuthenticateUser call - Success

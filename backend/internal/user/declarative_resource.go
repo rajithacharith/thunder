@@ -124,11 +124,11 @@ func (e *userExporter) GetResourceByID(
 	// Create export structure with credentials as placeholders
 	// The parameterizer will replace actual credential values with template variables
 	exportUser := &userDeclarativeResource{
-		ID:               user.ID,
-		Type:             user.Type,
-		OrganizationUnit: user.OrganizationUnit,
-		Attributes:       attributesMap,
-		Credentials:      make(map[string]interface{}), // Empty credentials - will be filled with placeholders
+		ID:          user.ID,
+		Type:        user.Type,
+		OUID:        user.OUID,
+		Attributes:  attributesMap,
+		Credentials: make(map[string]interface{}), // Empty credentials - will be filled with placeholders
 	}
 
 	return exportUser, username, nil
@@ -207,11 +207,11 @@ func parseToUserWrapper(data []byte) (interface{}, error) {
 }
 
 type userDeclarativeResource struct {
-	ID               string                 `yaml:"id"`
-	Type             string                 `yaml:"type"`
-	OrganizationUnit string                 `yaml:"ou_id"`
-	Attributes       map[string]interface{} `yaml:"attributes"`
-	Credentials      map[string]interface{} `yaml:"credentials,omitempty"` // Flexible format for YAML
+	ID          string                 `yaml:"id"`
+	Type        string                 `yaml:"type"`
+	OUID        string                 `yaml:"ou_id"`
+	Attributes  map[string]interface{} `yaml:"attributes"`
+	Credentials map[string]interface{} `yaml:"credentials,omitempty"` // Flexible format for YAML
 }
 
 // parseToUser parses YAML data to userResource.
@@ -228,10 +228,10 @@ func parseToUser(data []byte) (*userResource, error) {
 	}
 
 	user := User{
-		ID:               userRes.ID,
-		Type:             userRes.Type,
-		OrganizationUnit: userRes.OrganizationUnit,
-		Attributes:       json.RawMessage(attributesJSON),
+		ID:         userRes.ID,
+		Type:       userRes.Type,
+		OUID:       userRes.OUID,
+		Attributes: json.RawMessage(attributesJSON),
 	}
 
 	// Parse and hash credentials
@@ -419,7 +419,7 @@ func validateUserWrapper(data interface{}, fileStore *userFileBasedStore, dbStor
 	if user.Type == "" {
 		return fmt.Errorf("user type is required")
 	}
-	if user.OrganizationUnit == "" {
+	if user.OUID == "" {
 		return fmt.Errorf("organization unit ID is required")
 	}
 

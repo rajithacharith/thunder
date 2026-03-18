@@ -238,7 +238,7 @@ func (us *userStore) CreateUser(ctx context.Context, user User, credentials Cred
 		ctx,
 		QueryCreateUser,
 		user.ID,
-		user.OrganizationUnit,
+		user.OUID,
 		user.Type,
 		string(attributes),
 		credentialsJSON,
@@ -300,7 +300,7 @@ func (us *userStore) UpdateUser(ctx context.Context, user *User) error {
 	// Update user
 	rowsAffected, err := dbClient.ExecuteContext(
 		ctx,
-		QueryUpdateUserByUserID, user.ID, user.OrganizationUnit, user.Type, string(attributes), us.deploymentID)
+		QueryUpdateUserByUserID, user.ID, user.OUID, user.Type, string(attributes), us.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute update user query: %w", err)
 	}
@@ -699,9 +699,9 @@ func buildUserFromResultRow(row map[string]interface{}) (User, error) {
 	}
 
 	user := User{
-		ID:               userID,
-		OrganizationUnit: orgID,
-		Type:             userType,
+		ID:   userID,
+		OUID: orgID,
+		Type: userType,
 	}
 
 	// Unmarshal JSON attributes
@@ -730,9 +730,9 @@ func buildGroupFromResultRow(row map[string]interface{}) (UserGroup, error) {
 	}
 
 	group := UserGroup{
-		ID:                 groupID,
-		Name:               name,
-		OrganizationUnitID: ouID,
+		ID:   groupID,
+		Name: name,
+		OUID: ouID,
 	}
 
 	return group, nil

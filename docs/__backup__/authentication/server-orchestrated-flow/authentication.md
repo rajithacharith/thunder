@@ -29,7 +29,7 @@ Follow the steps below to configure and execute a login flow using username and 
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/users \
     -H 'Authorization: Bearer <token>' \
     -d '{
-        "organizationUnit": "{ou-id-from-above}",
+        "ouId": "{ou-id-from-above}",
         "type": "superhuman",
         "attributes": {
             "username": "thor",
@@ -209,7 +209,7 @@ Follow the steps below to configure and execute a login flow using username and 
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/users \
     -H 'Authorization: Bearer <token>' \
     -d '{
-        "organizationUnit": "{ou-id-from-above}",
+        "ouId": "{ou-id-from-above}",
         "type": "superhuman",
         "attributes": {
             "username": "thor",

@@ -680,10 +680,10 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_EmptyAllowedClaims() {
 
 	// Mock GetUser to return user with full data
 	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:               "test-user",
-		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
-		Type:             "local",
-		OrganizationUnit: "ou-123",
+		ID:         "test-user",
+		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
+		Type:       "local",
+		OUID:       "ou-123",
 	}, nil)
 
 	// Empty allowedClaims - no special claims should be added
@@ -705,10 +705,10 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_NilAllowedClaims() {
 
 	// Mock GetUser to return user with full data
 	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:               "test-user",
-		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
-		Type:             "local",
-		OrganizationUnit: "ou-123",
+		ID:         "test-user",
+		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
+		Type:       "local",
+		OUID:       "ou-123",
 	}, nil)
 
 	// Nil allowedClaims - no special claims should be added
@@ -729,10 +729,10 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_UserWithNoType() {
 
 	// Mock GetUser to return user without type
 	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:               "test-user",
-		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
-		Type:             "", // Empty type
-		OrganizationUnit: "ou-123",
+		ID:         "test-user",
+		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
+		Type:       "", // Empty type
+		OUID:       "ou-123",
 	}, nil)
 
 	allowedClaims := []string{constants.ClaimUserType, constants.ClaimOUID}
@@ -753,10 +753,10 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_UserWithNoOrganizationUnit(
 
 	// Mock GetUser to return user without organization unit
 	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:               "test-user",
-		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
-		Type:             "local",
-		OrganizationUnit: "", // Empty OU
+		ID:         "test-user",
+		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
+		Type:       "local",
+		OUID:       "", // Empty OU
 	}, nil)
 
 	allowedClaims := []string{constants.ClaimUserType, constants.ClaimOUID}
@@ -778,10 +778,10 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_WithOUServiceSuccess() {
 
 	// Mock GetUser to return valid user with OU
 	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:               "test-user",
-		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
-		Type:             "local",
-		OrganizationUnit: "ou-123",
+		ID:         "test-user",
+		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
+		Type:       "local",
+		OUID:       "ou-123",
 	}, nil)
 
 	// Mock GetOrganizationUnit to return OU details
@@ -811,10 +811,10 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_WithOUServiceError() {
 
 	// Mock GetUser to return valid user with OU
 	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:               "test-user",
-		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
-		Type:             "local",
-		OrganizationUnit: "ou-123",
+		ID:         "test-user",
+		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
+		Type:       "local",
+		OUID:       "ou-123",
 	}, nil)
 
 	// Mock GetOrganizationUnit to return error
@@ -842,10 +842,10 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_OUDetailsNotRequestedSkipsO
 
 	// Mock GetUser to return valid user with OU
 	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:               "test-user",
-		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
-		Type:             "local",
-		OrganizationUnit: "ou-123",
+		ID:         "test-user",
+		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
+		Type:       "local",
+		OUID:       "ou-123",
 	}, nil)
 
 	// No mock for GetOrganizationUnit - it should NOT be called
@@ -871,10 +871,10 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_NilOUServiceSkipsOUDetails(
 
 	// Mock GetUser to return valid user with OU
 	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:               "test-user",
-		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
-		Type:             "local",
-		OrganizationUnit: "ou-123",
+		ID:         "test-user",
+		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
+		Type:       "local",
+		OUID:       "ou-123",
 	}, nil)
 
 	// Request ouHandle but pass nil ouService
@@ -896,10 +896,10 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_WithGroups() {
 
 	// Mock GetUser to return valid user
 	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:               "test-user",
-		Attributes:       json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
-		Type:             "local",
-		OrganizationUnit: "ou-123",
+		ID:         "test-user",
+		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
+		Type:       "local",
+		OUID:       "ou-123",
 	}, nil)
 
 	// Mock GetUserGroups to return groups
@@ -1056,9 +1056,9 @@ func (suite *UtilsTestSuite) TestFetchUserAttributes_SingleOUClaim() {
 			mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 
 			mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-				ID:               "test-user",
-				Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
-				OrganizationUnit: "ou-123",
+				ID:         "test-user",
+				Attributes: json.RawMessage(`{"email":"test@example.com"}`),
+				OUID:       "ou-123",
 			}, nil)
 
 			mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-123").Return(ou.OrganizationUnit{

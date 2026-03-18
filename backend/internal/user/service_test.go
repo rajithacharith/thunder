@@ -428,7 +428,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 		userSchemaMock.
 			On("GetUserSchemaByName", mock.Anything, testUserType).
 			Return(&userschema.UserSchema{
-				OrganizationUnitID: parentOU,
+				OUID: parentOU,
 			}, (*serviceerror.ServiceError)(nil)).
 			Once()
 
@@ -455,7 +455,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 			setup: func(t *testing.T) (*userService, testMocks) {
 				return &userService{}, testMocks{}
 			},
-			expectedErr: &ErrorInvalidOrganizationUnitID,
+			expectedErr: &ErrorInvalidOUID,
 		},
 		{
 			name:     "ReturnsErrorWhenIDInvalid",
@@ -464,7 +464,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 			setup: func(t *testing.T) (*userService, testMocks) {
 				return &userService{}, testMocks{}
 			},
-			expectedErr: &ErrorInvalidOrganizationUnitID,
+			expectedErr: &ErrorInvalidOUID,
 		},
 		{
 			name:     "ReturnsErrorWhenOrganizationUnitMissing",
@@ -506,7 +506,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 			expectedErr: &ErrorOrganizationUnitNotFound,
 		},
 		{
-			name:     "HandlesClientErrorWhenOrganizationUnitIDInvalid",
+			name:     "HandlesClientErrorWhenOUIDInvalid",
 			userType: testUserType,
 			ouID:     "8d0c2f4e-8bb1-40bc-a0e1-ca5c4aacff63",
 			setup: func(t *testing.T) (*userService, testMocks) {
@@ -523,7 +523,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 						ouService: ouServiceMock,
 					}
 			},
-			expectedErr: &ErrorInvalidOrganizationUnitID,
+			expectedErr: &ErrorInvalidOUID,
 		},
 		{
 			name:     "ReturnsMismatchWhenSchemaDoesNotMatchOU",
@@ -545,7 +545,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 				userSchemaMock.
 					On("GetUserSchemaByName", mock.Anything, testUserType).
 					Return(&userschema.UserSchema{
-						OrganizationUnitID: parentOU,
+						OUID: parentOU,
 					}, (*serviceerror.ServiceError)(nil)).
 					Once()
 
@@ -577,7 +577,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 				userSchemaMock.
 					On("GetUserSchemaByName", mock.Anything, testUserType).
 					Return(&userschema.UserSchema{
-						OrganizationUnitID: parentOU,
+						OUID: parentOU,
 					}, (*serviceerror.ServiceError)(nil)).
 					Once()
 
@@ -624,7 +624,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 				userSchemaMock.
 					On("GetUserSchemaByName", mock.Anything, testUserType).
 					Return(&userschema.UserSchema{
-						OrganizationUnitID: "e5c3aa8a-d7df-46f8-9f3f-bb3245c95d7c",
+						OUID: "e5c3aa8a-d7df-46f8-9f3f-bb3245c95d7c",
 					}, (*serviceerror.ServiceError)(nil)).
 					Once()
 
@@ -750,7 +750,7 @@ func TestUserService_CreateUser_UsesTransactionAndStore(t *testing.T) {
 
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-		Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).
+		Return(&userschema.UserSchema{OUID: testOrgID}, (*serviceerror.ServiceError)(nil)).
 		Once()
 	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 		Return(true, (*serviceerror.ServiceError)(nil)).
@@ -767,7 +767,7 @@ func TestUserService_CreateUser_UsesTransactionAndStore(t *testing.T) {
 	var capturedCtx context.Context
 	storeMock.
 		On("CreateUser", mock.Anything, mock.MatchedBy(func(u User) bool {
-			return u.OrganizationUnit == testOrgID && u.Type == testUserType && u.ID != ""
+			return u.OUID == testOrgID && u.Type == testUserType && u.ID != ""
 		}), mock.Anything).
 		Run(func(args mock.Arguments) {
 			capturedCtx = args[0].(context.Context)
@@ -787,15 +787,15 @@ func TestUserService_CreateUser_UsesTransactionAndStore(t *testing.T) {
 	}
 
 	user := &User{
-		Type:             testUserType,
-		OrganizationUnit: testOrgID,
-		Attributes:       json.RawMessage(`{}`),
+		Type:       testUserType,
+		OUID:       testOrgID,
+		Attributes: json.RawMessage(`{}`),
 	}
 
 	created, err := service.CreateUser(context.Background(), user)
 	require.Nil(t, err)
 	require.NotNil(t, created)
-	require.Equal(t, testOrgID, created.OrganizationUnit)
+	require.Equal(t, testOrgID, created.OUID)
 	require.NotEmpty(t, created.ID)
 	require.Equal(t, 1, txMock.transactCalls)
 	require.NotNil(t, capturedCtx)
@@ -811,7 +811,7 @@ func TestUserService_CreateUser_PropagatesStoreError(t *testing.T) {
 
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-		Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).
+		Return(&userschema.UserSchema{OUID: testOrgID}, (*serviceerror.ServiceError)(nil)).
 		Once()
 	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 		Return(true, (*serviceerror.ServiceError)(nil)).
@@ -842,9 +842,9 @@ func TestUserService_CreateUser_PropagatesStoreError(t *testing.T) {
 	}
 
 	user := &User{
-		Type:             testUserType,
-		OrganizationUnit: testOrgID,
-		Attributes:       json.RawMessage(`{}`),
+		Type:       testUserType,
+		OUID:       testOrgID,
+		Attributes: json.RawMessage(`{}`),
 	}
 
 	created, svcErr := service.CreateUser(context.Background(), user)
@@ -862,7 +862,7 @@ func TestUserService_CreateUser_TransactionerError(t *testing.T) {
 
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-		Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).
+		Return(&userschema.UserSchema{OUID: testOrgID}, (*serviceerror.ServiceError)(nil)).
 		Once()
 	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 		Return(true, (*serviceerror.ServiceError)(nil)).
@@ -890,9 +890,9 @@ func TestUserService_CreateUser_TransactionerError(t *testing.T) {
 	}
 
 	user := &User{
-		Type:             testUserType,
-		OrganizationUnit: testOrgID,
-		Attributes:       json.RawMessage(`{}`),
+		Type:       testUserType,
+		OUID:       testOrgID,
+		Attributes: json.RawMessage(`{}`),
 	}
 
 	created, svcErr := service.CreateUser(context.Background(), user)
@@ -1694,7 +1694,7 @@ func TestUserService_UpdateUserAttributes_Succeeds(t *testing.T) {
 
 func TestUserService_GetUser_ReturnsUser(t *testing.T) {
 	userID := svcTestUserID1
-	expectedUser := User{ID: userID, OrganizationUnit: testOrgID}
+	expectedUser := User{ID: userID, OUID: testOrgID}
 
 	storeMock := newUserStoreInterfaceMock(t)
 	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
@@ -1716,7 +1716,7 @@ func TestUserService_DeleteUser(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
 	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.On("GetUser", mock.Anything, userID).
-		Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
+		Return(User{ID: userID, OUID: testOrgID}, nil).Once()
 	storeMock.On("DeleteUser", mock.Anything, userID).Return(nil).Once()
 
 	txMock := &fakeTransactioner{}
@@ -1734,7 +1734,7 @@ func TestUserService_DeleteUser(t *testing.T) {
 
 func TestUserService_UpdateUser(t *testing.T) {
 	userID := svcTestUserID1
-	updatedUser := User{ID: userID, OrganizationUnit: testOrgID, Type: testUserType,
+	updatedUser := User{ID: userID, OUID: testOrgID, Type: testUserType,
 		Attributes: json.RawMessage(`{"updated":"true"}`)}
 
 	storeMock := newUserStoreInterfaceMock(t)
@@ -1742,7 +1742,7 @@ func TestUserService_UpdateUser(t *testing.T) {
 
 	// Mock GetUser pre-fetch for authz check
 	storeMock.On("GetUser", mock.Anything, userID).
-		Return(User{ID: userID, OrganizationUnit: testOrgID, Type: testUserType}, nil).Once()
+		Return(User{ID: userID, OUID: testOrgID, Type: testUserType}, nil).Once()
 
 	// Mock UpdateUser call
 	storeMock.On("UpdateUser", mock.Anything, mock.MatchedBy(func(u *User) bool {
@@ -1758,7 +1758,7 @@ func TestUserService_UpdateUser(t *testing.T) {
 	userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
 		Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Once()
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-		Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).
+		Return(&userschema.UserSchema{OUID: testOrgID}, (*serviceerror.ServiceError)(nil)).
 		Once()
 	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 		Return(true, (*serviceerror.ServiceError)(nil)).Once()
@@ -1786,10 +1786,10 @@ func TestUserService_UpdateUser_WithCredentials(t *testing.T) {
 
 	// Test the new credential extraction, merging, and update logic
 	updatedUser := User{
-		ID:               userID,
-		OrganizationUnit: testOrgID,
-		Type:             testUserType,
-		Attributes:       json.RawMessage(`{"email":"test@example.com","password":"newPassword123"}`),
+		ID:         userID,
+		OUID:       testOrgID,
+		Type:       testUserType,
+		Attributes: json.RawMessage(`{"email":"test@example.com","password":"newPassword123"}`),
 	}
 
 	storeMock := newUserStoreInterfaceMock(t)
@@ -1801,7 +1801,7 @@ func TestUserService_UpdateUser_WithCredentials(t *testing.T) {
 
 	// Mock GetUser pre-fetch for authz check
 	storeMock.On("GetUser", mock.Anything, userID).
-		Return(User{ID: userID, OrganizationUnit: testOrgID, Type: testUserType}, nil).Once()
+		Return(User{ID: userID, OUID: testOrgID, Type: testUserType}, nil).Once()
 
 	// Mock hash generation for password
 	hashMock.On("Generate", mock.Anything).Return(hash.Credential{
@@ -1820,7 +1820,7 @@ func TestUserService_UpdateUser_WithCredentials(t *testing.T) {
 	userSchemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
 		Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Once()
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-		Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).Once()
+		Return(&userschema.UserSchema{OUID: testOrgID}, (*serviceerror.ServiceError)(nil)).Once()
 	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 		Return(true, (*serviceerror.ServiceError)(nil)).Once()
 	userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
@@ -1913,14 +1913,14 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 				ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
 					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 				userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-					Return(&userschema.UserSchema{OrganizationUnitID: testOrgID},
+					Return(&userschema.UserSchema{OUID: testOrgID},
 						(*serviceerror.ServiceError)(nil)).Maybe()
 				userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 				userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
 					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
-					Return(User{ID: userID, OrganizationUnit: testOrgID, Type: testUserType}, nil).Once()
+					Return(User{ID: userID, OUID: testOrgID, Type: testUserType}, nil).Once()
 				storeMock.On("UpdateUser", mock.Anything, mock.Anything).Return(nil).Once()
 				storeMock.On("GetCredentials", mock.Anything, userID).
 					Return(User{}, Credentials{}, ErrUserNotFound).Once()
@@ -1946,14 +1946,14 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 				ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
 					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 				userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-					Return(&userschema.UserSchema{OrganizationUnitID: testOrgID},
+					Return(&userschema.UserSchema{OUID: testOrgID},
 						(*serviceerror.ServiceError)(nil)).Maybe()
 				userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 				userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
 					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
-					Return(User{ID: userID, OrganizationUnit: testOrgID, Type: testUserType}, nil).Once()
+					Return(User{ID: userID, OUID: testOrgID, Type: testUserType}, nil).Once()
 				storeMock.On("UpdateUser", mock.Anything, mock.Anything).Return(errors.New("db connection lost")).Once()
 			},
 			expectedError: &ErrorInternalServerError,
@@ -1971,14 +1971,14 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 				ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
 					Return(true, (*serviceerror.ServiceError)(nil)).Once()
 				userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-					Return(&userschema.UserSchema{OrganizationUnitID: testOrgID},
+					Return(&userschema.UserSchema{OUID: testOrgID},
 						(*serviceerror.ServiceError)(nil)).Once()
 				userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 					Return(true, (*serviceerror.ServiceError)(nil)).Once()
 				userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
 					Return(true, (*serviceerror.ServiceError)(nil)).Once()
 				storeMock.On("GetUser", mock.Anything, userID).
-					Return(User{ID: userID, OrganizationUnit: testOrgID, Type: testUserType}, nil).Once()
+					Return(User{ID: userID, OUID: testOrgID, Type: testUserType}, nil).Once()
 				storeMock.On("UpdateUser", mock.Anything, mock.Anything).Return(nil).Once()
 			},
 			expectedError: nil,
@@ -1998,12 +1998,12 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 				ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
 					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 				userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-					Return(&userschema.UserSchema{OrganizationUnitID: testOrgID},
+					Return(&userschema.UserSchema{OUID: testOrgID},
 						(*serviceerror.ServiceError)(nil)).Maybe()
 				userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 					Return(false, (*serviceerror.ServiceError)(nil)).Once()
 				storeMock.On("GetUser", mock.Anything, userID).
-					Return(User{ID: userID, OrganizationUnit: testOrgID, Type: testUserType}, nil).Once()
+					Return(User{ID: userID, OUID: testOrgID, Type: testUserType}, nil).Once()
 			},
 			expectedError: &ErrorSchemaValidationFailed,
 		},
@@ -2022,7 +2022,7 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 				ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
 					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 				userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-					Return(&userschema.UserSchema{OrganizationUnitID: testOrgID},
+					Return(&userschema.UserSchema{OUID: testOrgID},
 						(*serviceerror.ServiceError)(nil)).Maybe()
 				userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
@@ -2031,7 +2031,7 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 				hashMock.On("Generate", mock.Anything).
 					Return(hash.Credential{}, errors.New("hash generation failed")).Once()
 				storeMock.On("GetUser", mock.Anything, userID).
-					Return(User{ID: userID, OrganizationUnit: testOrgID, Type: testUserType}, nil).Once()
+					Return(User{ID: userID, OUID: testOrgID, Type: testUserType}, nil).Once()
 			},
 			expectedError: &ErrorInternalServerError,
 			checkTx: func(t *testing.T, txCalls int) {
@@ -2051,7 +2051,7 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 				ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOrgID).
 					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 				userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-					Return(&userschema.UserSchema{OrganizationUnitID: testOrgID},
+					Return(&userschema.UserSchema{OUID: testOrgID},
 						(*serviceerror.ServiceError)(nil)).Maybe()
 				userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
@@ -2062,7 +2062,7 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 					Parameters: hash.CredParameters{Salt: "s", Iterations: 1, KeySize: 32},
 				}, nil).Once()
 				storeMock.On("GetUser", mock.Anything, userID).
-					Return(User{ID: userID, OrganizationUnit: testOrgID, Type: testUserType}, nil).Once()
+					Return(User{ID: userID, OUID: testOrgID, Type: testUserType}, nil).Once()
 				storeMock.On("UpdateUser", mock.Anything, mock.Anything).Return(nil).Once()
 				storeMock.On("GetCredentials", mock.Anything, userID).
 					Return(User{ID: userID}, Credentials{}, nil).Once()
@@ -2104,10 +2104,10 @@ func TestUserService_UpdateUser_ErrorPaths(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			updatedUser := User{
-				ID:               userID,
-				OrganizationUnit: testOrgID,
-				Type:             testUserType,
-				Attributes:       json.RawMessage(tt.attributes),
+				ID:         userID,
+				OUID:       testOrgID,
+				Type:       testUserType,
+				Attributes: json.RawMessage(tt.attributes),
 			}
 
 			storeMock := newUserStoreInterfaceMock(t)
@@ -2172,7 +2172,7 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 				authzMock.On("IsActionAllowed", mock.Anything, security.ActionUpdateUser,
 					&sysauthz.ActionContext{
 						ResourceType: security.ResourceTypeUser,
-						OuID:         existingOU,
+						OUID:         existingOU,
 						ResourceID:   userID,
 					}).Return(false, nil).Once()
 			},
@@ -2186,7 +2186,7 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 				authzMock.On("IsActionAllowed", mock.Anything, security.ActionUpdateUser,
 					&sysauthz.ActionContext{
 						ResourceType: security.ResourceTypeUser,
-						OuID:         existingOU,
+						OUID:         existingOU,
 						ResourceID:   userID,
 					}).Return(false, &serviceerror.InternalServerError).Once()
 			},
@@ -2200,7 +2200,7 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 				authzMock.On("IsActionAllowed", mock.Anything, security.ActionUpdateUser,
 					&sysauthz.ActionContext{
 						ResourceType: security.ResourceTypeUser,
-						OuID:         existingOU,
+						OUID:         existingOU,
 						ResourceID:   userID,
 					}).Return(true, nil).Once()
 			},
@@ -2214,14 +2214,14 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 				authzMock.On("IsActionAllowed", mock.Anything, security.ActionUpdateUser,
 					&sysauthz.ActionContext{
 						ResourceType: security.ResourceTypeUser,
-						OuID:         existingOU,
+						OUID:         existingOU,
 						ResourceID:   userID,
 					}).Return(true, nil).Once()
 				// Second check on empty destination OU → allowed.
 				authzMock.On("IsActionAllowed", mock.Anything, security.ActionUpdateUser,
 					&sysauthz.ActionContext{
 						ResourceType: security.ResourceTypeUser,
-						OuID:         "",
+						OUID:         "",
 						ResourceID:   userID,
 					}).Return(true, nil).Once()
 			},
@@ -2234,7 +2234,7 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 					Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Maybe()
 			},
 			// Downstream validation rejects empty OU after both authz checks pass.
-			expectedErrorCode: ErrorInvalidOrganizationUnitID.Code,
+			expectedErrorCode: ErrorInvalidOUID.Code,
 		},
 		{
 			name:   "Whitespace_OU_triggers_destination_check",
@@ -2244,14 +2244,14 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 				authzMock.On("IsActionAllowed", mock.Anything, security.ActionUpdateUser,
 					&sysauthz.ActionContext{
 						ResourceType: security.ResourceTypeUser,
-						OuID:         existingOU,
+						OUID:         existingOU,
 						ResourceID:   userID,
 					}).Return(true, nil).Once()
 				// Second check on whitespace destination OU → allowed.
 				authzMock.On("IsActionAllowed", mock.Anything, security.ActionUpdateUser,
 					&sysauthz.ActionContext{
 						ResourceType: security.ResourceTypeUser,
-						OuID:         "   ",
+						OUID:         "   ",
 						ResourceID:   userID,
 					}).Return(true, nil).Once()
 			},
@@ -2264,7 +2264,7 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 					Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Maybe()
 			},
 			// Downstream validation rejects whitespace OU after both authz checks pass.
-			expectedErrorCode: ErrorInvalidOrganizationUnitID.Code,
+			expectedErrorCode: ErrorInvalidOUID.Code,
 		},
 		{
 			name:   "Different_OU_destination_denied",
@@ -2274,14 +2274,14 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 				authzMock.On("IsActionAllowed", mock.Anything, security.ActionUpdateUser,
 					&sysauthz.ActionContext{
 						ResourceType: security.ResourceTypeUser,
-						OuID:         existingOU,
+						OUID:         existingOU,
 						ResourceID:   userID,
 					}).Return(true, nil).Once()
 				// Second check on destination OU → denied.
 				authzMock.On("IsActionAllowed", mock.Anything, security.ActionUpdateUser,
 					&sysauthz.ActionContext{
 						ResourceType: security.ResourceTypeUser,
-						OuID:         destinationOU,
+						OUID:         destinationOU,
 						ResourceID:   userID,
 					}).Return(false, nil).Once()
 			},
@@ -2295,14 +2295,14 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 				authzMock.On("IsActionAllowed", mock.Anything, security.ActionUpdateUser,
 					&sysauthz.ActionContext{
 						ResourceType: security.ResourceTypeUser,
-						OuID:         existingOU,
+						OUID:         existingOU,
 						ResourceID:   userID,
 					}).Return(true, nil).Once()
 				// Second check on destination OU → service error.
 				authzMock.On("IsActionAllowed", mock.Anything, security.ActionUpdateUser,
 					&sysauthz.ActionContext{
 						ResourceType: security.ResourceTypeUser,
-						OuID:         destinationOU,
+						OUID:         destinationOU,
 						ResourceID:   userID,
 					}).Return(false, &serviceerror.InternalServerError).Once()
 			},
@@ -2316,14 +2316,14 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 				authzMock.On("IsActionAllowed", mock.Anything, security.ActionUpdateUser,
 					&sysauthz.ActionContext{
 						ResourceType: security.ResourceTypeUser,
-						OuID:         existingOU,
+						OUID:         existingOU,
 						ResourceID:   userID,
 					}).Return(true, nil).Once()
 				// Second check on destination OU → allowed.
 				authzMock.On("IsActionAllowed", mock.Anything, security.ActionUpdateUser,
 					&sysauthz.ActionContext{
 						ResourceType: security.ResourceTypeUser,
-						OuID:         destinationOU,
+						OUID:         destinationOU,
 						ResourceID:   userID,
 					}).Return(true, nil).Once()
 			},
@@ -2352,7 +2352,7 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 
 			// The existing user always lives in existingOU.
 			storeMock.On("GetUser", mock.Anything, userID).
-				Return(User{ID: userID, OrganizationUnit: existingOU, Type: testUserType}, nil).Once()
+				Return(User{ID: userID, OUID: existingOU, Type: testUserType}, nil).Once()
 
 			tt.setupAuthzMock(authzMock)
 
@@ -2363,7 +2363,7 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 				ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, mock.Anything).
 					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
 				userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-					Return(&userschema.UserSchema{OrganizationUnitID: existingOU},
+					Return(&userschema.UserSchema{OUID: existingOU},
 						(*serviceerror.ServiceError)(nil)).Maybe()
 				userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 					Return(true, (*serviceerror.ServiceError)(nil)).Maybe()
@@ -2386,10 +2386,10 @@ func TestUserService_UpdateUser_AuthzBranches(t *testing.T) {
 			}
 
 			updatedUser := User{
-				ID:               userID,
-				OrganizationUnit: tt.userOU,
-				Type:             testUserType,
-				Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
+				ID:         userID,
+				OUID:       tt.userOU,
+				Type:       testUserType,
+				Attributes: json.RawMessage(`{"email":"test@example.com"}`),
 			}
 
 			resp, svcErr := service.UpdateUser(ctx, userID, &updatedUser)
@@ -2416,9 +2416,9 @@ func TestUserService_UpdateUser_PreservesMultipleCredentials(t *testing.T) {
 
 	// User update with ONLY password (should preserve PIN)
 	updatedUser := User{
-		ID:               userID,
-		Type:             testUserType,
-		OrganizationUnit: testOU,
+		ID:   userID,
+		Type: testUserType,
+		OUID: testOU,
 		Attributes: json.RawMessage(`{
 			"username": "john.doe",
 			"email": "john.updated@example.com",
@@ -2466,7 +2466,7 @@ func TestUserService_UpdateUser_PreservesMultipleCredentials(t *testing.T) {
 
 	// Mock GetUser pre-fetch for authz check
 	storeMock.On("GetUser", mock.Anything, userID).
-		Return(User{ID: userID, OrganizationUnit: testOU, Type: testUserType}, nil).Once()
+		Return(User{ID: userID, OUID: testOU, Type: testUserType}, nil).Once()
 
 	// Mock OU validation
 	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, testOU).
@@ -2479,8 +2479,8 @@ func TestUserService_UpdateUser_PreservesMultipleCredentials(t *testing.T) {
 		Return([]string{"password", "pin"}, (*serviceerror.ServiceError)(nil)).Once()
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 		Return(&userschema.UserSchema{
-			Name:               testUserType,
-			OrganizationUnitID: testOU,
+			Name: testUserType,
+			OUID: testOU,
 		}, (*serviceerror.ServiceError)(nil)).Once()
 	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 		Return(true, (*serviceerror.ServiceError)(nil)).Once()
@@ -2616,7 +2616,7 @@ func TestUserService_GetUserList_ScopedByOUIDs(t *testing.T) {
 	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.On("GetUserListCountByOUIDs", mock.Anything, ouIDs, filters).Return(3, nil).Once()
 	storeMock.On("GetUserListByOUIDs", mock.Anything, ouIDs, limit, offset, filters).
-		Return([]User{{ID: svcTestUserID1, OrganizationUnit: testOrgID}}, nil).
+		Return([]User{{ID: svcTestUserID1, OUID: testOrgID}}, nil).
 		Once()
 
 	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
@@ -2663,7 +2663,7 @@ func TestUserService_GetUserGroups(t *testing.T) {
 	limit, offset := 10, 0
 
 	mockStore.On("GetUser", mock.Anything, userID).
-		Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
+		Return(User{ID: userID, OUID: testOrgID}, nil).Once()
 	mockStore.On("GetGroupCountForUser", mock.Anything, userID).Return(5, nil)
 	mockStore.On("GetUserGroups", mock.Anything, userID, limit, offset).
 		Return([]UserGroup{{ID: "g1", Name: "Group 1"}}, nil)
@@ -2728,7 +2728,7 @@ func TestUserService_AuthenticateUser(t *testing.T) {
 	userID := svcTestUserID123
 	mockStore.On("IdentifyUser", mock.Anything, mock.Anything).Return(&userID, nil)
 
-	storedUser := User{ID: userID, Type: "employee", OrganizationUnit: "ou-1"}
+	storedUser := User{ID: userID, Type: "employee", OUID: "ou-1"}
 	storedCreds := Credentials{
 		"password": []Credential{
 			{
@@ -2896,7 +2896,7 @@ func TestUserService_GetUserGroups_ErrorCases(t *testing.T) {
 
 	t.Run("StoreErrorOnCount", func(t *testing.T) {
 		mockStore.On("GetUser", mock.Anything, "u1").
-			Return(User{ID: "u1", OrganizationUnit: testOrgID}, nil).Once()
+			Return(User{ID: "u1", OUID: testOrgID}, nil).Once()
 		mockStore.On("GetGroupCountForUser", mock.Anything, "u1").
 			Return(0, errors.New("db error")).Once()
 		_, err := service.GetUserGroups(ctx, "u1", 10, 0)
@@ -3192,13 +3192,13 @@ func TestUserService_Validation_EdgeCases(t *testing.T) {
 	t.Run("ValidateOU_InvalidUUID", func(t *testing.T) {
 		err := service.validateOrganizationUnitForUserType(context.Background(), "customer", "invalid-uuid", nil)
 		require.NotNil(t, err)
-		require.Equal(t, ErrorInvalidOrganizationUnitID.Code, err.Code)
+		require.Equal(t, ErrorInvalidOUID.Code, err.Code)
 	})
 
 	t.Run("ValidateOU_EmptyOU", func(t *testing.T) {
 		err := service.validateOrganizationUnitForUserType(context.Background(), "customer", "", nil)
 		require.NotNil(t, err)
-		require.Equal(t, ErrorInvalidOrganizationUnitID.Code, err.Code)
+		require.Equal(t, ErrorInvalidOUID.Code, err.Code)
 	})
 
 	t.Run("ValidateUserIDs_Empty", func(t *testing.T) {
@@ -3289,9 +3289,9 @@ func TestUserService_MoreErrorCases(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("UpdateUser_StoreError", func(t *testing.T) {
-		userIn := &User{Type: "customer", OrganizationUnit: testOrgID}
+		userIn := &User{Type: "customer", OUID: testOrgID}
 		storeMock.On("GetUser", mock.Anything, "u1").
-			Return(User{ID: "u1", OrganizationUnit: testOrgID}, nil).Once()
+			Return(User{ID: "u1", OUID: testOrgID}, nil).Once()
 		storeMock.On("UpdateUser", mock.Anything, mock.Anything).Return(errors.New("db error")).Once()
 
 		// Mock all validation steps in the transaction with broad matches to ensure they hit
@@ -3317,7 +3317,7 @@ func TestUserService_MoreErrorCases(t *testing.T) {
 
 	t.Run("DeleteUser_StoreError", func(t *testing.T) {
 		storeMock.On("GetUser", mock.Anything, "u1").
-			Return(User{ID: "u1", OrganizationUnit: testOrgID}, nil).Once()
+			Return(User{ID: "u1", OUID: testOrgID}, nil).Once()
 		storeMock.On("DeleteUser", mock.Anything, "u1").Return(errors.New("db error")).Once()
 		err := service.DeleteUser(ctx, "u1")
 		require.NotNil(t, err)
@@ -3644,7 +3644,7 @@ func TestUserService_CreateUser_SchemaNotFound(t *testing.T) {
 
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-		Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).Once()
+		Return(&userschema.UserSchema{OUID: testOrgID}, (*serviceerror.ServiceError)(nil)).Once()
 	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 		Return(true, (*serviceerror.ServiceError)(nil)).Once()
 	userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
@@ -3661,9 +3661,9 @@ func TestUserService_CreateUser_SchemaNotFound(t *testing.T) {
 	}
 
 	user := &User{
-		Type:             testUserType,
-		OrganizationUnit: testOrgID,
-		Attributes:       json.RawMessage(`{}`),
+		Type:       testUserType,
+		OUID:       testOrgID,
+		Attributes: json.RawMessage(`{}`),
 	}
 
 	created, svcErr := service.CreateUser(context.Background(), user)
@@ -3679,7 +3679,7 @@ func TestUserService_CreateUser_GetCredentialAttributesInternalError(t *testing.
 
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
-		Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).Once()
+		Return(&userschema.UserSchema{OUID: testOrgID}, (*serviceerror.ServiceError)(nil)).Once()
 	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 		Return(true, (*serviceerror.ServiceError)(nil)).Once()
 	userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
@@ -3696,9 +3696,9 @@ func TestUserService_CreateUser_GetCredentialAttributesInternalError(t *testing.
 	}
 
 	user := &User{
-		Type:             testUserType,
-		OrganizationUnit: testOrgID,
-		Attributes:       json.RawMessage(`{}`),
+		Type:       testUserType,
+		OUID:       testOrgID,
+		Attributes: json.RawMessage(`{}`),
 	}
 
 	created, svcErr := service.CreateUser(context.Background(), user)
@@ -3711,7 +3711,7 @@ func TestUserService_UpdateUser_NilSchemaService(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
 	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.On("GetUser", mock.Anything, svcTestUserID1).
-		Return(User{ID: svcTestUserID1, OrganizationUnit: testOrgID, Type: testUserType}, nil).Once()
+		Return(User{ID: svcTestUserID1, OUID: testOrgID, Type: testUserType}, nil).Once()
 
 	service := &userService{
 		userStore:     storeMock,
@@ -3720,10 +3720,10 @@ func TestUserService_UpdateUser_NilSchemaService(t *testing.T) {
 	}
 
 	user := &User{
-		ID:               svcTestUserID1,
-		Type:             testUserType,
-		OrganizationUnit: testOrgID,
-		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
+		ID:         svcTestUserID1,
+		Type:       testUserType,
+		OUID:       testOrgID,
+		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
 	}
 
 	resp, svcErr := service.UpdateUser(context.Background(), svcTestUserID1, user)
@@ -3740,7 +3740,7 @@ func TestUserService_UpdateUser_SchemaNotFound(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
 	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	storeMock.On("GetUser", mock.Anything, svcTestUserID1).
-		Return(User{ID: svcTestUserID1, OrganizationUnit: testOrgID, Type: testUserType}, nil).Once()
+		Return(User{ID: svcTestUserID1, OUID: testOrgID, Type: testUserType}, nil).Once()
 
 	service := &userService{
 		userStore:         storeMock,
@@ -3750,10 +3750,10 @@ func TestUserService_UpdateUser_SchemaNotFound(t *testing.T) {
 	}
 
 	user := &User{
-		ID:               svcTestUserID1,
-		Type:             testUserType,
-		OrganizationUnit: testOrgID,
-		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
+		ID:         svcTestUserID1,
+		Type:       testUserType,
+		OUID:       testOrgID,
+		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
 	}
 
 	resp, svcErr := service.UpdateUser(context.Background(), svcTestUserID1, user)
@@ -3807,7 +3807,7 @@ func TestUserService_UpdateUserCredentials_NilSchemaService(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
 	userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	userStoreMock.On("GetUser", mock.Anything, svcTestUserID1).
-		Return(User{ID: svcTestUserID1, OrganizationUnit: testOrgID, Type: testUserType}, nil).Once()
+		Return(User{ID: svcTestUserID1, OUID: testOrgID, Type: testUserType}, nil).Once()
 	userStoreMock.On("GetCredentials", mock.Anything, svcTestUserID1).
 		Return(User{ID: svcTestUserID1, Type: testUserType}, Credentials{}, nil).Once()
 
@@ -3827,7 +3827,7 @@ func TestUserService_UpdateUserCredentials_SchemaNotFound(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
 	userStoreMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 	userStoreMock.On("GetUser", mock.Anything, svcTestUserID1).
-		Return(User{ID: svcTestUserID1, OrganizationUnit: testOrgID, Type: testUserType}, nil).Once()
+		Return(User{ID: svcTestUserID1, OUID: testOrgID, Type: testUserType}, nil).Once()
 	userStoreMock.On("GetCredentials", mock.Anything, svcTestUserID1).
 		Return(User{ID: svcTestUserID1, Type: testUserType}, Credentials{}, nil).Once()
 
@@ -4104,7 +4104,7 @@ func TestUserService_CreateUser_AuthzChecks(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			svc := tc.setup(t)
-			user := &User{Type: testUserType, OrganizationUnit: testOrgID}
+			user := &User{Type: testUserType, OUID: testOrgID}
 			resp, err := svc.CreateUser(context.Background(), user)
 			require.Nil(t, resp)
 			require.NotNil(t, err)
@@ -4157,7 +4157,7 @@ func TestUserService_GetUser_ErrorCases(t *testing.T) {
 				storeMock := newUserStoreInterfaceMock(t)
 				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
-					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
+					Return(User{ID: userID, OUID: testOrgID}, nil).Once()
 
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 				authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
@@ -4176,7 +4176,7 @@ func TestUserService_GetUser_ErrorCases(t *testing.T) {
 				storeMock := newUserStoreInterfaceMock(t)
 				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
-					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
+					Return(User{ID: userID, OUID: testOrgID}, nil).Once()
 
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 				authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
@@ -4225,7 +4225,7 @@ func TestUserService_GetUserGroups_AuthzChecks(t *testing.T) {
 				storeMock := newUserStoreInterfaceMock(t)
 				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
-					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
+					Return(User{ID: userID, OUID: testOrgID}, nil).Once()
 
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 				authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
@@ -4244,7 +4244,7 @@ func TestUserService_GetUserGroups_AuthzChecks(t *testing.T) {
 				storeMock := newUserStoreInterfaceMock(t)
 				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
-					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
+					Return(User{ID: userID, OUID: testOrgID}, nil).Once()
 
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 				authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
@@ -4278,7 +4278,7 @@ func TestUserService_UpdateUser_PreFetchAndAuthzChecks(t *testing.T) {
 	userID := svcTestUserID1
 	storeErr := errors.New("db error")
 	authzErr := &serviceerror.ServiceError{Code: "SVC-5000", Error: "authz error"}
-	updatedUser := &User{Type: testUserType, OrganizationUnit: testOrgID,
+	updatedUser := &User{Type: testUserType, OUID: testOrgID,
 		Attributes: json.RawMessage(`{"email":"test@example.com"}`)}
 
 	tests := []struct {
@@ -4318,7 +4318,7 @@ func TestUserService_UpdateUser_PreFetchAndAuthzChecks(t *testing.T) {
 				storeMock := newUserStoreInterfaceMock(t)
 				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
-					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
+					Return(User{ID: userID, OUID: testOrgID}, nil).Once()
 
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 				authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
@@ -4337,7 +4337,7 @@ func TestUserService_UpdateUser_PreFetchAndAuthzChecks(t *testing.T) {
 				storeMock := newUserStoreInterfaceMock(t)
 				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
-					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
+					Return(User{ID: userID, OUID: testOrgID}, nil).Once()
 
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 				authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
@@ -4401,7 +4401,7 @@ func TestUserService_UpdateUserAttributes_PreFetchAndAuthzChecks(t *testing.T) {
 				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				// Single pre-fetch: used for both schema lookup and authz check.
 				storeMock.On("GetUser", mock.Anything, userID).
-					Return(User{ID: userID, Type: testUserType, OrganizationUnit: testOrgID}, nil).Once()
+					Return(User{ID: userID, Type: testUserType, OUID: testOrgID}, nil).Once()
 
 				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				schemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
@@ -4427,7 +4427,7 @@ func TestUserService_UpdateUserAttributes_PreFetchAndAuthzChecks(t *testing.T) {
 				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				// Single pre-fetch: used for both schema lookup and authz check.
 				storeMock.On("GetUser", mock.Anything, userID).
-					Return(User{ID: userID, Type: testUserType, OrganizationUnit: testOrgID}, nil).Once()
+					Return(User{ID: userID, Type: testUserType, OUID: testOrgID}, nil).Once()
 
 				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				schemaMock.On("GetCredentialAttributes", mock.Anything, testUserType).
@@ -4492,7 +4492,7 @@ func TestUserService_UpdateUserCredentials_PreFetchAndAuthzChecks(t *testing.T) 
 				storeMock := newUserStoreInterfaceMock(t)
 				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
-					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
+					Return(User{ID: userID, OUID: testOrgID}, nil).Once()
 
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 				authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
@@ -4511,7 +4511,7 @@ func TestUserService_UpdateUserCredentials_PreFetchAndAuthzChecks(t *testing.T) 
 				storeMock := newUserStoreInterfaceMock(t)
 				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
-					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
+					Return(User{ID: userID, OUID: testOrgID}, nil).Once()
 
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 				authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
@@ -4570,7 +4570,7 @@ func TestUserService_DeleteUser_PreFetchAndAuthzChecks(t *testing.T) {
 				storeMock := newUserStoreInterfaceMock(t)
 				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
-					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
+					Return(User{ID: userID, OUID: testOrgID}, nil).Once()
 
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 				authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
@@ -4590,7 +4590,7 @@ func TestUserService_DeleteUser_PreFetchAndAuthzChecks(t *testing.T) {
 				storeMock := newUserStoreInterfaceMock(t)
 				storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
 				storeMock.On("GetUser", mock.Anything, userID).
-					Return(User{ID: userID, OrganizationUnit: testOrgID}, nil).Once()
+					Return(User{ID: userID, OUID: testOrgID}, nil).Once()
 
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 				authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
@@ -4707,16 +4707,16 @@ func TestServiceIsUserDeclarativeTestSuite(t *testing.T) {
 func TestUpdateUser_DeclarativeResource(t *testing.T) {
 	userID := svcTestDeclarativeUserID1
 	updatedUser := User{
-		ID:               userID,
-		OrganizationUnit: "ou1",
-		Type:             "employee",
-		Attributes:       json.RawMessage(`{"name":"test"}`),
+		ID:         userID,
+		OUID:       "ou1",
+		Type:       "employee",
+		Attributes: json.RawMessage(`{"name":"test"}`),
 	}
 
 	storeMock := newUserStoreInterfaceMock(t)
 	// Mock GetUser for pre-fetch
 	storeMock.On("GetUser", mock.Anything, userID).
-		Return(User{ID: userID, OrganizationUnit: "ou1", Type: "employee"}, nil).Once()
+		Return(User{ID: userID, OUID: "ou1", Type: "employee"}, nil).Once()
 
 	// Mock IsUserDeclarative to return true
 	storeMock.On("IsUserDeclarative", mock.Anything, userID).Return(true, nil).Once()
@@ -4736,16 +4736,16 @@ func TestUpdateUser_DeclarativeResource(t *testing.T) {
 func TestUpdateUser_DeclarativeCheckError(t *testing.T) {
 	userID := svcTestUserID1
 	updatedUser := User{
-		ID:               userID,
-		OrganizationUnit: "ou1",
-		Type:             "employee",
-		Attributes:       json.RawMessage(`{"name":"test"}`),
+		ID:         userID,
+		OUID:       "ou1",
+		Type:       "employee",
+		Attributes: json.RawMessage(`{"name":"test"}`),
 	}
 
 	storeMock := newUserStoreInterfaceMock(t)
 	// Mock GetUser for pre-fetch
 	storeMock.On("GetUser", mock.Anything, userID).
-		Return(User{ID: userID, OrganizationUnit: "ou1", Type: "employee"}, nil).Once()
+		Return(User{ID: userID, OUID: "ou1", Type: "employee"}, nil).Once()
 
 	// Mock IsUserDeclarative to return an error
 	storeErr := errors.New("database connection failed")
@@ -4767,16 +4767,16 @@ func TestUpdateUser_DeclarativeCheckError(t *testing.T) {
 func TestUpdateUser_DeclarativeCheckUserNotFound(t *testing.T) {
 	userID := "non-existent-user"
 	updatedUser := User{
-		ID:               userID,
-		OrganizationUnit: "ou1",
-		Type:             "employee",
-		Attributes:       json.RawMessage(`{"name":"test"}`),
+		ID:         userID,
+		OUID:       "ou1",
+		Type:       "employee",
+		Attributes: json.RawMessage(`{"name":"test"}`),
 	}
 
 	storeMock := newUserStoreInterfaceMock(t)
 	// Mock GetUser for pre-fetch
 	storeMock.On("GetUser", mock.Anything, userID).
-		Return(User{ID: userID, OrganizationUnit: "ou1", Type: "employee"}, nil).Once()
+		Return(User{ID: userID, OUID: "ou1", Type: "employee"}, nil).Once()
 
 	// Mock IsUserDeclarative to return ErrUserNotFound
 	storeMock.On("IsUserDeclarative", mock.Anything, userID).Return(false, ErrUserNotFound).Once()
@@ -4801,7 +4801,7 @@ func TestUpdateUserAttributes_DeclarativeResource(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
 	// Mock GetUser for pre-fetch
 	storeMock.On("GetUser", mock.Anything, userID).
-		Return(User{ID: userID, OrganizationUnit: "ou1", Type: "employee"}, nil).Once()
+		Return(User{ID: userID, OUID: "ou1", Type: "employee"}, nil).Once()
 
 	// Mock IsUserDeclarative to return true
 	storeMock.On("IsUserDeclarative", mock.Anything, userID).Return(true, nil).Once()
@@ -4831,7 +4831,7 @@ func TestUpdateUserAttributes_DeclarativeCheckError(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
 	// Mock GetUser for pre-fetch
 	storeMock.On("GetUser", mock.Anything, userID).
-		Return(User{ID: userID, OrganizationUnit: "ou1", Type: "employee"}, nil).Once()
+		Return(User{ID: userID, OUID: "ou1", Type: "employee"}, nil).Once()
 
 	// Mock IsUserDeclarative to return an error
 	storeErr := errors.New("database connection failed")
@@ -4862,7 +4862,7 @@ func TestUpdateUserCredentials_DeclarativeResource(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
 	// Mock GetUser for pre-fetch
 	storeMock.On("GetUser", mock.Anything, userID).
-		Return(User{ID: userID, OrganizationUnit: "ou1", Type: "employee"}, nil).Once()
+		Return(User{ID: userID, OUID: "ou1", Type: "employee"}, nil).Once()
 
 	// Mock IsUserDeclarative to return true
 	storeMock.On("IsUserDeclarative", mock.Anything, userID).Return(true, nil).Once()
@@ -4890,7 +4890,7 @@ func TestUpdateUserCredentials_DeclarativeCheckError(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
 	// Mock GetUser for pre-fetch
 	storeMock.On("GetUser", mock.Anything, userID).
-		Return(User{ID: userID, OrganizationUnit: "ou1", Type: "employee"}, nil).Once()
+		Return(User{ID: userID, OUID: "ou1", Type: "employee"}, nil).Once()
 
 	// Mock IsUserDeclarative to return an error
 	storeErr := errors.New("database connection failed")
@@ -4918,7 +4918,7 @@ func TestDeleteUser_DeclarativeResource(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
 	// Mock GetUser for pre-fetch
 	storeMock.On("GetUser", mock.Anything, userID).
-		Return(User{ID: userID, OrganizationUnit: "ou1", Type: "employee"}, nil).Once()
+		Return(User{ID: userID, OUID: "ou1", Type: "employee"}, nil).Once()
 
 	// Mock IsUserDeclarative to return true
 	storeMock.On("IsUserDeclarative", mock.Anything, userID).Return(true, nil).Once()
@@ -4941,7 +4941,7 @@ func TestDeleteUser_DeclarativeCheckError(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
 	// Mock GetUser for pre-fetch
 	storeMock.On("GetUser", mock.Anything, userID).
-		Return(User{ID: userID, OrganizationUnit: "ou1", Type: "employee"}, nil).Once()
+		Return(User{ID: userID, OUID: "ou1", Type: "employee"}, nil).Once()
 
 	// Mock IsUserDeclarative to return an error
 	storeErr := errors.New("database connection failed")

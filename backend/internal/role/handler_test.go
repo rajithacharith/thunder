@@ -111,18 +111,18 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleListRequest_ServiceError() {
 // HandleRolePostRequest Tests
 func (suite *RoleHandlerTestSuite) TestHandleRolePostRequest_Success() {
 	request := CreateRoleRequest{
-		Name:               "Test Role",
-		Description:        "Description",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Name:        "Test Role",
+		Description: "Description",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	expectedRole := &RoleWithPermissionsAndAssignments{
-		ID:                 "role1",
-		Name:               "Test Role",
-		Description:        "Description",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		ID:          "role1",
+		Name:        "Test Role",
+		Description: "Description",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	suite.mockService.On("CreateRole", mock.Anything, mock.AnythingOfType("RoleCreationDetail")).
@@ -156,9 +156,9 @@ func (suite *RoleHandlerTestSuite) TestHandleRolePostRequest_InvalidJSON() {
 
 func (suite *RoleHandlerTestSuite) TestHandleRolePostRequest_ServiceError() {
 	request := CreateRoleRequest{
-		Name:               "Test Role",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Name:        "Test Role",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	suite.mockService.On("CreateRole", mock.Anything, mock.AnythingOfType("RoleCreationDetail")).
@@ -177,11 +177,11 @@ func (suite *RoleHandlerTestSuite) TestHandleRolePostRequest_ServiceError() {
 // HandleRoleGetRequest Tests
 func (suite *RoleHandlerTestSuite) TestHandleRoleGetRequest_Success() {
 	expectedRole := &RoleWithPermissions{
-		ID:                 "role1",
-		Name:               "Admin",
-		Description:        "Admin role",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		ID:          "role1",
+		Name:        "Admin",
+		Description: "Admin role",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	suite.mockService.On("GetRoleWithPermissions", mock.Anything, "role1").Return(expectedRole, nil)
@@ -227,16 +227,16 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleGetRequest_NotFound() {
 // HandleRolePutRequest Tests
 func (suite *RoleHandlerTestSuite) TestHandleRolePutRequest_Success() {
 	request := UpdateRoleRequest{
-		Name:               "Updated Role",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1", "perm2"}}},
+		Name:        "Updated Role",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1", "perm2"}}},
 	}
 
 	updatedRole := &RoleWithPermissions{
-		ID:                 "role1",
-		Name:               "Updated Role",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1", "perm2"}}},
+		ID:          "role1",
+		Name:        "Updated Role",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1", "perm2"}}},
 	}
 
 	suite.mockService.On("UpdateRoleWithPermissions", mock.Anything, "role1",
@@ -478,9 +478,9 @@ func (suite *RoleHandlerTestSuite) TestParsePaginationParams() {
 // HandleRolePutRequest additional tests
 func (suite *RoleHandlerTestSuite) TestHandleRolePutRequest_MissingID() {
 	request := UpdateRoleRequest{
-		Name:               "Updated Role",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Name:        "Updated Role",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	suite.mockService.On("UpdateRoleWithPermissions", mock.Anything, "", mock.AnythingOfType("RoleUpdateDetail")).
@@ -498,9 +498,9 @@ func (suite *RoleHandlerTestSuite) TestHandleRolePutRequest_MissingID() {
 
 func (suite *RoleHandlerTestSuite) TestHandleRolePutRequest_RoleNotFound() {
 	request := UpdateRoleRequest{
-		Name:               "Updated Role",
-		OrganizationUnitID: "ou1",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
+		Name:        "Updated Role",
+		OUID:        "ou1",
+		Permissions: []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
 	suite.mockService.On("UpdateRoleWithPermissions", mock.Anything, "nonexistent",
@@ -684,9 +684,9 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleRemoveAssignmentsRequest_Servic
 // Sanitization Tests
 func (suite *RoleHandlerTestSuite) TestSanitizeCreateRoleRequest() {
 	request := &CreateRoleRequest{
-		Name:               "  Test Role  ",
-		Description:        "  Description  ",
-		OrganizationUnitID: "  ou1  ",
+		Name:        "  Test Role  ",
+		Description: "  Description  ",
+		OUID:        "  ou1  ",
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: "  rs1  ",
@@ -702,7 +702,7 @@ func (suite *RoleHandlerTestSuite) TestSanitizeCreateRoleRequest() {
 
 	suite.Equal("Test Role", sanitized.Name)
 	suite.Equal("Description", sanitized.Description)
-	suite.Equal("ou1", sanitized.OrganizationUnitID)
+	suite.Equal("ou1", sanitized.OUID)
 	suite.Equal("rs1", sanitized.Permissions[0].ResourceServerID)
 	suite.Equal("perm1", sanitized.Permissions[0].Permissions[0])
 	suite.Equal("user1", sanitized.Assignments[0].ID)
@@ -710,15 +710,15 @@ func (suite *RoleHandlerTestSuite) TestSanitizeCreateRoleRequest() {
 
 func (suite *RoleHandlerTestSuite) TestSanitizeUpdateRoleRequest() {
 	request := &UpdateRoleRequest{
-		Name:               "  Updated Name  ",
-		OrganizationUnitID: "  ou2  ",
-		Permissions:        []ResourcePermissions{{ResourceServerID: "  rs2  ", Permissions: []string{"  perm3  "}}},
+		Name:        "  Updated Name  ",
+		OUID:        "  ou2  ",
+		Permissions: []ResourcePermissions{{ResourceServerID: "  rs2  ", Permissions: []string{"  perm3  "}}},
 	}
 
 	sanitized := suite.handler.sanitizeUpdateRoleRequest(request)
 
 	suite.Equal("Updated Name", sanitized.Name)
-	suite.Equal("ou2", sanitized.OrganizationUnitID)
+	suite.Equal("ou2", sanitized.OUID)
 	suite.Equal("rs2", sanitized.Permissions[0].ResourceServerID)
 	suite.Equal("perm3", sanitized.Permissions[0].Permissions[0])
 }

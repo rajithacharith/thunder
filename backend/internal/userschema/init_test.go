@@ -337,7 +337,7 @@ schema: |
 	suite.NotNil(schemaDTO)
 	suite.Equal("schema-001", schemaDTO.ID)
 	suite.Equal("Employee Schema", schemaDTO.Name)
-	suite.Equal("550e8400-e29b-41d4-a716-446655440000", schemaDTO.OrganizationUnitID)
+	suite.Equal("550e8400-e29b-41d4-a716-446655440000", schemaDTO.OUID)
 	suite.True(schemaDTO.AllowSelfRegistration)
 	suite.NotEmpty(schemaDTO.Schema)
 }
@@ -363,7 +363,7 @@ schema: |
 	suite.NotNil(schemaDTO)
 	suite.Equal("minimal-schema", schemaDTO.ID)
 	suite.Equal("Minimal Schema", schemaDTO.Name)
-	suite.Equal("550e8400-e29b-41d4-a716-446655440000", schemaDTO.OrganizationUnitID)
+	suite.Equal("550e8400-e29b-41d4-a716-446655440000", schemaDTO.OUID)
 	suite.False(schemaDTO.AllowSelfRegistration)
 	suite.NotEmpty(schemaDTO.Schema)
 }
@@ -817,20 +817,20 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 		{
 			name: "Valid schema with valid OU ID",
 			schema: UserSchema{
-				ID:                 "valid-schema-001",
-				Name:               "Valid Schema",
-				OrganizationUnitID: "550e8400-e29b-41d4-a716-446655440000",
-				Schema:             []byte(`{"email":{"type":"string","required":true}}`),
+				ID:     "valid-schema-001",
+				Name:   "Valid Schema",
+				OUID:   "550e8400-e29b-41d4-a716-446655440000",
+				Schema: []byte(`{"email":{"type":"string","required":true}}`),
 			},
 			shouldBeValid: true,
 		},
 		{
 			name: "Invalid schema - empty name",
 			schema: UserSchema{
-				ID:                 "invalid-001",
-				Name:               "",
-				OrganizationUnitID: "550e8400-e29b-41d4-a716-446655440000",
-				Schema:             []byte(`{"email":{"type":"string"}}`),
+				ID:     "invalid-001",
+				Name:   "",
+				OUID:   "550e8400-e29b-41d4-a716-446655440000",
+				Schema: []byte(`{"email":{"type":"string"}}`),
 			},
 			shouldBeValid: false,
 			errorContains: "user schema name must not be empty",
@@ -838,10 +838,10 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 		{
 			name: "Invalid schema - empty OU ID",
 			schema: UserSchema{
-				ID:                 "invalid-002",
-				Name:               "Test Schema",
-				OrganizationUnitID: "",
-				Schema:             []byte(`{"email":{"type":"string"}}`),
+				ID:     "invalid-002",
+				Name:   "Test Schema",
+				OUID:   "",
+				Schema: []byte(`{"email":{"type":"string"}}`),
 			},
 			shouldBeValid: false,
 			errorContains: "organization unit id must not be empty",
@@ -849,10 +849,10 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 		{
 			name: "Invalid schema - malformed OU ID",
 			schema: UserSchema{
-				ID:                 "invalid-003",
-				Name:               "Test Schema",
-				OrganizationUnitID: "not-a-valid-uuid",
-				Schema:             []byte(`{"email":{"type":"string"}}`),
+				ID:     "invalid-003",
+				Name:   "Test Schema",
+				OUID:   "not-a-valid-uuid",
+				Schema: []byte(`{"email":{"type":"string"}}`),
 			},
 			shouldBeValid: false,
 			errorContains: "organization unit id is not a valid UUID",
@@ -860,10 +860,10 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 		{
 			name: "Invalid schema - empty schema definition",
 			schema: UserSchema{
-				ID:                 "invalid-004",
-				Name:               "Test Schema",
-				OrganizationUnitID: "550e8400-e29b-41d4-a716-446655440000",
-				Schema:             []byte{},
+				ID:     "invalid-004",
+				Name:   "Test Schema",
+				OUID:   "550e8400-e29b-41d4-a716-446655440000",
+				Schema: []byte{},
 			},
 			shouldBeValid: false,
 			errorContains: "schema definition must not be empty",
@@ -871,10 +871,10 @@ func TestValidateUserSchemaWithOUCheck(t *testing.T) {
 		{
 			name: "Invalid schema - malformed schema definition",
 			schema: UserSchema{
-				ID:                 "invalid-005",
-				Name:               "Test Schema",
-				OrganizationUnitID: "550e8400-e29b-41d4-a716-446655440000",
-				Schema:             []byte(`{"email":"not-an-object"}`),
+				ID:     "invalid-005",
+				Name:   "Test Schema",
+				OUID:   "550e8400-e29b-41d4-a716-446655440000",
+				Schema: []byte(`{"email":"not-an-object"}`),
 			},
 			shouldBeValid: false,
 			errorContains: "property definition must be an object",

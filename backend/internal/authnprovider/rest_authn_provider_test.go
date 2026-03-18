@@ -59,10 +59,10 @@ func (suite *RestAuthnProviderTestSuite) TestAuthenticate_Success() {
 		suite.Equal("pass", req.Credentials["password"])
 
 		resp := AuthnResult{
-			UserID:             "user123",
-			Token:              "token123",
-			UserType:           "customer",
-			OrganizationUnitID: "ou1",
+			UserID:   "user123",
+			Token:    "token123",
+			UserType: "customer",
+			OUID:     "ou1",
 		}
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resp)

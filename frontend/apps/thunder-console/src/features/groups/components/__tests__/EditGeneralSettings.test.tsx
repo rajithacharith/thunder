@@ -28,7 +28,7 @@ describe('EditGeneralSettings', () => {
     id: 'g1',
     name: 'Test Group',
     description: 'Test desc',
-    organizationUnitId: 'ou-123',
+    ouId: 'ou-123',
   };
 
   let mockWriteText: ReturnType<typeof vi.fn>;

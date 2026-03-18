@@ -44,11 +44,11 @@ type groupStoreInterface interface {
 	UpdateGroup(ctx context.Context, group GroupDAO) error
 	DeleteGroup(ctx context.Context, id string) error
 	ValidateGroupIDs(ctx context.Context, groupIDs []string) ([]string, error)
-	CheckGroupNameConflictForCreate(ctx context.Context, name string, organizationUnitID string) error
-	CheckGroupNameConflictForUpdate(ctx context.Context, name string, organizationUnitID string, groupID string) error
-	GetGroupsByOrganizationUnitCount(ctx context.Context, organizationUnitID string) (int, error)
+	CheckGroupNameConflictForCreate(ctx context.Context, name string, oUID string) error
+	CheckGroupNameConflictForUpdate(ctx context.Context, name string, oUID string, groupID string) error
+	GetGroupsByOrganizationUnitCount(ctx context.Context, oUID string) (int, error)
 	GetGroupsByOrganizationUnit(
-		ctx context.Context, organizationUnitID string, limit, offset int) ([]GroupBasicDAO, error)
+		ctx context.Context, oUID string, limit, offset int) ([]GroupBasicDAO, error)
 	AddGroupMembers(ctx context.Context, groupID string, members []Member) error
 	RemoveGroupMembers(ctx context.Context, groupID string, members []Member) error
 	GetGroupsByIDs(ctx context.Context, groupIDs []string) ([]GroupBasicDAO, error)
@@ -109,10 +109,10 @@ func (s *groupStore) GetGroupList(ctx context.Context, limit, offset int) ([]Gro
 		}
 
 		groupBasic := GroupBasicDAO{
-			ID:                 group.ID,
-			Name:               group.Name,
-			Description:        group.Description,
-			OrganizationUnitID: group.OrganizationUnitID,
+			ID:          group.ID,
+			Name:        group.Name,
+			Description: group.Description,
+			OUID:        group.OUID,
 		}
 
 		groups = append(groups, groupBasic)
@@ -177,10 +177,10 @@ func (s *groupStore) GetGroupListByOUIDs(
 		}
 
 		groupBasic := GroupBasicDAO{
-			ID:                 group.ID,
-			Name:               group.Name,
-			Description:        group.Description,
-			OrganizationUnitID: group.OrganizationUnitID,
+			ID:          group.ID,
+			Name:        group.Name,
+			Description: group.Description,
+			OUID:        group.OUID,
 		}
 
 		groups = append(groups, groupBasic)
@@ -200,7 +200,7 @@ func (s *groupStore) CreateGroup(ctx context.Context, group GroupDAO) error {
 		ctx,
 		QueryCreateGroup,
 		group.ID,
-		group.OrganizationUnitID,
+		group.OUID,
 		group.Name,
 		group.Description,
 		s.deploymentID,
@@ -307,7 +307,7 @@ func (s *groupStore) UpdateGroup(ctx context.Context, group GroupDAO) error {
 		ctx,
 		QueryUpdateGroup,
 		group.ID,
-		group.OrganizationUnitID,
+		group.OUID,
 		group.Name,
 		group.Description,
 		s.deploymentID,
@@ -390,36 +390,36 @@ func (s *groupStore) ValidateGroupIDs(ctx context.Context, groupIDs []string) ([
 // CheckGroupNameConflictForCreate checks if the new group name conflicts with existing groups
 // in the same organization unit.
 func (s *groupStore) CheckGroupNameConflictForCreate(
-	ctx context.Context, name string, organizationUnitID string) error {
+	ctx context.Context, name string, oUID string) error {
 	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	return checkGroupNameConflictForCreate(ctx, dbClient, name, organizationUnitID, s.deploymentID)
+	return checkGroupNameConflictForCreate(ctx, dbClient, name, oUID, s.deploymentID)
 }
 
 // CheckGroupNameConflictForUpdate checks if the new group name conflicts with other groups
 // in the same organization unit.
 func (s *groupStore) CheckGroupNameConflictForUpdate(
-	ctx context.Context, name string, organizationUnitID string, groupID string) error {
+	ctx context.Context, name string, oUID string, groupID string) error {
 	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	return checkGroupNameConflictForUpdate(ctx, dbClient, name, organizationUnitID, groupID, s.deploymentID)
+	return checkGroupNameConflictForUpdate(ctx, dbClient, name, oUID, groupID, s.deploymentID)
 }
 
 // GetGroupsByOrganizationUnitCount retrieves the total count of groups in a specific organization unit.
-func (s *groupStore) GetGroupsByOrganizationUnitCount(ctx context.Context, organizationUnitID string) (int, error) {
+func (s *groupStore) GetGroupsByOrganizationUnitCount(ctx context.Context, oUID string) (int, error) {
 	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
 
 	countResults, err := dbClient.QueryContext(
-		ctx, QueryGetGroupsByOrganizationUnitCount, organizationUnitID, s.deploymentID)
+		ctx, QueryGetGroupsByOrganizationUnitCount, oUID, s.deploymentID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get group count by organization unit: %w", err)
 	}
@@ -437,7 +437,7 @@ func (s *groupStore) GetGroupsByOrganizationUnitCount(ctx context.Context, organ
 
 // GetGroupsByOrganizationUnit retrieves a list of groups in a specific organization unit with pagination.
 func (s *groupStore) GetGroupsByOrganizationUnit(
-	ctx context.Context, organizationUnitID string, limit, offset int,
+	ctx context.Context, oUID string, limit, offset int,
 ) ([]GroupBasicDAO, error) {
 	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
@@ -445,7 +445,7 @@ func (s *groupStore) GetGroupsByOrganizationUnit(
 	}
 
 	results, err := dbClient.QueryContext(
-		ctx, QueryGetGroupsByOrganizationUnit, organizationUnitID, limit, offset, s.deploymentID)
+		ctx, QueryGetGroupsByOrganizationUnit, oUID, limit, offset, s.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get groups by organization unit: %w", err)
 	}
@@ -458,10 +458,10 @@ func (s *groupStore) GetGroupsByOrganizationUnit(
 		}
 
 		groups = append(groups, GroupBasicDAO{
-			ID:                 group.ID,
-			OrganizationUnitID: group.OrganizationUnitID,
-			Name:               group.Name,
-			Description:        group.Description,
+			ID:          group.ID,
+			OUID:        group.OUID,
+			Name:        group.Name,
+			Description: group.Description,
 		})
 	}
 
@@ -536,10 +536,10 @@ func (s *groupStore) GetGroupsByIDs(ctx context.Context, groupIDs []string) ([]G
 				return nil, fmt.Errorf("failed to build group from result row: %w", err)
 			}
 			groups = append(groups, GroupBasicDAO{
-				ID:                 group.ID,
-				Name:               group.Name,
-				Description:        group.Description,
-				OrganizationUnitID: group.OrganizationUnitID,
+				ID:          group.ID,
+				Name:        group.Name,
+				Description: group.Description,
+				OUID:        group.OUID,
 			})
 		}
 	}
@@ -570,10 +570,10 @@ func buildGroupFromResultRow(row map[string]interface{}) (GroupDAO, error) {
 	}
 
 	group := GroupDAO{
-		ID:                 groupID,
-		Name:               name,
-		Description:        description,
-		OrganizationUnitID: ouID,
+		ID:          groupID,
+		Name:        name,
+		Description: description,
+		OUID:        ouID,
 	}
 
 	return group, nil
@@ -602,13 +602,13 @@ func checkGroupNameConflictForCreate(
 	ctx context.Context,
 	dbClient provider.DBClientInterface,
 	name string,
-	organizationUnitID string,
+	oUID string,
 	deploymentID string,
 ) error {
 	var results []map[string]interface{}
 	var err error
 
-	results, err = dbClient.QueryContext(ctx, QueryCheckGroupNameConflict, name, organizationUnitID, deploymentID)
+	results, err = dbClient.QueryContext(ctx, QueryCheckGroupNameConflict, name, oUID, deploymentID)
 
 	if err != nil {
 		return fmt.Errorf("failed to check group name conflict: %w", err)
@@ -629,7 +629,7 @@ func checkGroupNameConflictForUpdate(
 	ctx context.Context,
 	dbClient provider.DBClientInterface,
 	name string,
-	organizationUnitID string,
+	oUID string,
 	groupID string,
 	deploymentID string,
 ) error {
@@ -637,7 +637,7 @@ func checkGroupNameConflictForUpdate(
 	var err error
 
 	results, err = dbClient.QueryContext(
-		ctx, QueryCheckGroupNameConflictForUpdate, name, organizationUnitID, groupID, deploymentID)
+		ctx, QueryCheckGroupNameConflictForUpdate, name, oUID, groupID, deploymentID)
 
 	if err != nil {
 		return fmt.Errorf("failed to check group name conflict: %w", err)

@@ -117,7 +117,7 @@ func (ts *UserAuthzTestSuite) SetupSuite() {
 	// ---- 2. Create user schemas (one per OU) ----
 	schemaOU1ID, err := testutils.CreateUserType(testutils.UserSchema{
 		Name:               userSchemaOU1Name,
-		OrganizationUnitId: ts.userOU1ID,
+		OUID: ts.userOU1ID,
 		Schema: map[string]interface{}{
 			"username":     map[string]interface{}{"type": "string"},
 			"password":     map[string]interface{}{"type": "string", "credential": true},
@@ -129,7 +129,7 @@ func (ts *UserAuthzTestSuite) SetupSuite() {
 
 	schemaOU2ID, err := testutils.CreateUserType(testutils.UserSchema{
 		Name:               userSchemaOU2Name,
-		OrganizationUnitId: ts.userOU2ID,
+		OUID: ts.userOU2ID,
 		Schema: map[string]interface{}{
 			"display_name": map[string]interface{}{"type": "string"},
 		},
@@ -140,7 +140,7 @@ func (ts *UserAuthzTestSuite) SetupSuite() {
 	// ---- 3. Create the user-manager in OU1 (needs username+password for token grant) ----
 	userMgrID, err := testutils.CreateUser(testutils.User{
 		Type:             userSchemaOU1Name,
-		OrganizationUnit: ts.userOU1ID,
+		OUID: ts.userOU1ID,
 		Attributes: json.RawMessage(fmt.Sprintf(
 			`{"username": %q, "password": %q, "display_name": "User Manager"}`,
 			userMgrUsername, userMgrPassword,
@@ -152,7 +152,7 @@ func (ts *UserAuthzTestSuite) SetupSuite() {
 	// ---- 4. Create target users ----
 	targetOU1ID, err := testutils.CreateUser(testutils.User{
 		Type:             userSchemaOU1Name,
-		OrganizationUnit: ts.userOU1ID,
+		OUID: ts.userOU1ID,
 		Attributes:       json.RawMessage(`{"username": "authz-target-ou1", "display_name": "Target User OU1"}`),
 	})
 	ts.Require().NoError(err, "create target user in OU1")
@@ -160,7 +160,7 @@ func (ts *UserAuthzTestSuite) SetupSuite() {
 
 	deletableID, err := testutils.CreateUser(testutils.User{
 		Type:             userSchemaOU1Name,
-		OrganizationUnit: ts.userOU1ID,
+		OUID: ts.userOU1ID,
 		Attributes:       json.RawMessage(`{"username": "authz-deletable-ou1", "display_name": "Deletable User OU1"}`),
 	})
 	ts.Require().NoError(err, "create deletable user in OU1")
@@ -168,7 +168,7 @@ func (ts *UserAuthzTestSuite) SetupSuite() {
 
 	targetOU2ID, err := testutils.CreateUser(testutils.User{
 		Type:             userSchemaOU2Name,
-		OrganizationUnit: ts.userOU2ID,
+		OUID: ts.userOU2ID,
 		Attributes:       json.RawMessage(`{"display_name": "Target User OU2"}`),
 	})
 	ts.Require().NoError(err, "create target user in OU2")
@@ -181,7 +181,7 @@ func (ts *UserAuthzTestSuite) SetupSuite() {
 	// ---- 6. Create a role with system:user permission and assign to the user-manager ----
 	roleID, err := testutils.CreateRole(testutils.Role{
 		Name:               userMgrRoleName,
-		OrganizationUnitID: ts.userOU1ID,
+		OUID: ts.userOU1ID,
 		Permissions: []testutils.ResourcePermissions{
 			{
 				ResourceServerID: systemRSID,
@@ -327,7 +327,7 @@ func (ts *UserAuthzTestSuite) TestGetUserInOtherOU() {
 // TestCreateUserInOwnOU verifies the user-manager can create a user in their own OU.
 func (ts *UserAuthzTestSuite) TestCreateUserInOwnOU() {
 	payload, err := json.Marshal(map[string]interface{}{
-		"organizationUnit": ts.userOU1ID,
+		"ouId": ts.userOU1ID,
 		"type":             userSchemaOU1Name,
 		"attributes": map[string]interface{}{
 			"username":     "authz-created-user",
@@ -354,7 +354,7 @@ func (ts *UserAuthzTestSuite) TestCreateUserInOwnOU() {
 // TestCreateUserInOtherOU verifies the user-manager is denied creating a user in OU2.
 func (ts *UserAuthzTestSuite) TestCreateUserInOtherOU() {
 	payload, err := json.Marshal(map[string]interface{}{
-		"organizationUnit": ts.userOU2ID,
+		"ouId": ts.userOU2ID,
 		"type":             userSchemaOU2Name,
 		"attributes": map[string]interface{}{
 			"display_name": "Denied User",
@@ -373,7 +373,7 @@ func (ts *UserAuthzTestSuite) TestCreateUserInOtherOU() {
 func (ts *UserAuthzTestSuite) TestUpdateUserInOwnOU() {
 	payload, err := json.Marshal(map[string]interface{}{
 		"type":             userSchemaOU1Name,
-		"organizationUnit": ts.userOU1ID,
+		"ouId": ts.userOU1ID,
 		"attributes": map[string]interface{}{
 			"username":     "authz-target-ou1",
 			"display_name": "Updated Display Name",
@@ -392,7 +392,7 @@ func (ts *UserAuthzTestSuite) TestUpdateUserInOwnOU() {
 func (ts *UserAuthzTestSuite) TestUpdateUserInOtherOU() {
 	payload, err := json.Marshal(map[string]interface{}{
 		"type":             userSchemaOU2Name,
-		"organizationUnit": ts.userOU2ID,
+		"ouId": ts.userOU2ID,
 		"attributes": map[string]interface{}{
 			"display_name": "Should Not Update",
 		},

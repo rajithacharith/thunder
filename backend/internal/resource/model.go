@@ -22,13 +22,13 @@ package resource
 
 // ResourceServerResponse represents a resource server.
 type ResourceServerResponse struct {
-	ID                 string `json:"id"`
-	Name               string `json:"name"`
-	Description        string `json:"description,omitempty"`
-	Identifier         string `json:"identifier,omitempty"`
-	OrganizationUnitID string `json:"ouId"`
-	Delimiter          string `json:"delimiter"`
-	IsReadOnly         bool   `json:"isReadOnly,omitempty"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Identifier  string `json:"identifier,omitempty"`
+	OUID        string `json:"ouId"`
+	Delimiter   string `json:"delimiter"`
+	IsReadOnly  bool   `json:"isReadOnly,omitempty"`
 }
 
 // ResourceResponse represents a resource.
@@ -85,19 +85,19 @@ type ActionListResponse struct {
 
 // CreateResourceServerRequest represents the request to create a resource server.
 type CreateResourceServerRequest struct {
-	Name               string `json:"name"`
-	Description        string `json:"description,omitempty"`
-	Identifier         string `json:"identifier,omitempty"`
-	OrganizationUnitID string `json:"ouId"`
-	Delimiter          string `json:"delimiter,omitempty"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Identifier  string `json:"identifier,omitempty"`
+	OUID        string `json:"ouId"`
+	Delimiter   string `json:"delimiter,omitempty"`
 }
 
 // UpdateResourceServerRequest represents the request to update a resource server.
 type UpdateResourceServerRequest struct {
-	Name               string `json:"name"`
-	Description        string `json:"description,omitempty"`
-	Identifier         string `json:"identifier,omitempty"`
-	OrganizationUnitID string `json:"ouId"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Identifier  string `json:"identifier,omitempty"`
+	OUID        string `json:"ouId"`
 }
 
 // CreateResourceRequest represents the request to create a resource.
@@ -189,12 +189,12 @@ type Resource struct {
 
 // ResourceServer represents a resource server in both declarative resources and service layer.
 type ResourceServer struct {
-	ID                 string     `yaml:"id" json:"-"`
-	Name               string     `yaml:"name" json:"name"`
-	Description        string     `yaml:"description,omitempty" json:"description,omitempty"`
-	Identifier         string     `yaml:"identifier,omitempty" json:"identifier,omitempty"`
-	OrganizationUnitID string     `yaml:"ou_id" json:"ou_id"`
-	Delimiter          string     `yaml:"delimiter,omitempty" json:"delimiter,omitempty"`
-	IsReadOnly         bool       `yaml:"-" json:"-"`
-	Resources          []Resource `yaml:"resources,omitempty" json:"resources,omitempty"`
+	ID          string     `yaml:"id" json:"-"`
+	Name        string     `yaml:"name" json:"name"`
+	Description string     `yaml:"description,omitempty" json:"description,omitempty"`
+	Identifier  string     `yaml:"identifier,omitempty" json:"identifier,omitempty"`
+	OUID        string     `yaml:"ou_id" json:"ou_id"`
+	Delimiter   string     `yaml:"delimiter,omitempty" json:"delimiter,omitempty"`
+	IsReadOnly  bool       `yaml:"-" json:"-"`
+	Resources   []Resource `yaml:"resources,omitempty" json:"resources,omitempty"`
 }

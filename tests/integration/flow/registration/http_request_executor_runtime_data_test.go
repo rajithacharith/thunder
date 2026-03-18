@@ -342,7 +342,7 @@ func (ts *HTTPRequestRuntimeDataRegistrationFlowTestSuite) SetupSuite() {
 	ts.Require().NoError(err, "Failed to create test organization unit")
 	httpRequestRuntimeDataOUID = ouID
 
-	httpRequestRuntimeDataUserSchema.OrganizationUnitId = httpRequestRuntimeDataOUID
+	httpRequestRuntimeDataUserSchema.OUID = httpRequestRuntimeDataOUID
 	httpRequestRuntimeDataUserSchema.AllowSelfRegistration = true
 	schemaID, err := testutils.CreateUserType(httpRequestRuntimeDataUserSchema)
 	ts.Require().NoError(err, "Failed to create user schema for runtime data flow")

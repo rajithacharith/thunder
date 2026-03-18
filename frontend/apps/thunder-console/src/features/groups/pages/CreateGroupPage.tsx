@@ -52,8 +52,8 @@ export default function CreateGroupPage(): JSX.Element {
     setCurrentStep,
     name,
     setName,
-    organizationUnitId,
-    setOrganizationUnitId,
+    ouId,
+    setOuId,
     error,
     setError,
   } = useGroupCreate();
@@ -132,8 +132,8 @@ export default function CreateGroupPage(): JSX.Element {
     }
 
     // If only one OU, use it directly
-    const ouId = hasMultipleOUs ? organizationUnitId : ouList[0]?.id;
-    if (!ouId) {
+    const selectedOuId = hasMultipleOUs ? ouId : ouList[0]?.id;
+    if (!selectedOuId) {
       setValidationError(t('groups:create.form.organizationUnit.required'));
       setSnackbarOpen(true);
       return;
@@ -141,7 +141,7 @@ export default function CreateGroupPage(): JSX.Element {
 
     const requestData: CreateGroupRequest = {
       name: name.trim(),
-      organizationUnitId: ouId,
+      ouId: selectedOuId,
     };
 
     try {
@@ -192,8 +192,8 @@ export default function CreateGroupPage(): JSX.Element {
       case GroupCreateFlowStep.ORGANIZATION_UNIT:
         return (
           <ConfigureOrganizationUnit
-            selectedOuId={organizationUnitId}
-            onOuIdChange={setOrganizationUnitId}
+            selectedOuId={ouId}
+            onOuIdChange={setOuId}
             onReadyChange={handleOuStepReadyChange}
           />
         );

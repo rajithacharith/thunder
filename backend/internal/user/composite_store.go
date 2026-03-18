@@ -320,7 +320,7 @@ func (c *compositeUserStore) ValidateUserIDsInOUs(
 			}
 			return nil, err
 		}
-		if !ouSet[user.OrganizationUnit] {
+		if !ouSet[user.OUID] {
 			outOfScope = append(outOfScope, id)
 		}
 	}

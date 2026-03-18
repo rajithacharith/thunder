@@ -32,10 +32,10 @@ import (
 // UserSchemaRequiredAPITestSuite contains API tests for validating the required attribute behavior.
 type UserSchemaRequiredAPITestSuite struct {
 	suite.Suite
-	client             *http.Client
-	createdSchemas     []string
-	createdUsers       []string
-	organizationUnitID string
+	client         *http.Client
+	createdSchemas []string
+	createdUsers   []string
+	oUID           string
 }
 
 var testUserSchemaRequiredOU = testutils.OrganizationUnit{
@@ -59,7 +59,7 @@ func (ts *UserSchemaRequiredAPITestSuite) SetupSuite() {
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit: %v", err)
 	}
-	ts.organizationUnitID = ouID
+	ts.oUID = ouID
 }
 
 func (ts *UserSchemaRequiredAPITestSuite) TearDownSuite() {
@@ -69,9 +69,9 @@ func (ts *UserSchemaRequiredAPITestSuite) TearDownSuite() {
 	for _, schemaID := range ts.createdSchemas {
 		ts.deleteSchema(schemaID)
 	}
-	if ts.organizationUnitID != "" {
-		if err := testutils.DeleteOrganizationUnit(ts.organizationUnitID); err != nil {
-			ts.T().Logf("Failed to delete test organization unit %s: %v", ts.organizationUnitID, err)
+	if ts.oUID != "" {
+		if err := testutils.DeleteOrganizationUnit(ts.oUID); err != nil {
+			ts.T().Logf("Failed to delete test organization unit %s: %v", ts.oUID, err)
 		}
 	}
 }
@@ -85,23 +85,23 @@ func (ts *UserSchemaRequiredAPITestSuite) TestRequiredTopLevelString() {
             "nickname": {"type": "string"}
         }`),
 	}
-	schema.OrganizationUnitID = ts.organizationUnitID
+	schema.OUID = ts.oUID
 	schemaID := ts.createSchemaHelper(schema)
 	ts.createdSchemas = append(ts.createdSchemas, schemaID)
 
 	// Missing required email -> expect validation error USR-1019
 	reqMissing := CreateUserRequest{
-		OrganizationUnit: ts.organizationUnitID,
-		Type:             schema.Name,
-		Attributes:       json.RawMessage(`{"nickname": "neo"}`),
+		OUID:       ts.oUID,
+		Type:       schema.Name,
+		Attributes: json.RawMessage(`{"nickname": "neo"}`),
 	}
 	ts.createUserAndExpectError(reqMissing, "USR-1019")
 
 	// Provide required email -> success
 	reqPresent := CreateUserRequest{
-		OrganizationUnit: ts.organizationUnitID,
-		Type:             schema.Name,
-		Attributes:       json.RawMessage(`{"email": "a@b.com"}`),
+		OUID:       ts.oUID,
+		Type:       schema.Name,
+		Attributes: json.RawMessage(`{"email": "a@b.com"}`),
 	}
 	userID := ts.createUserAndExpectSuccess(reqPresent)
 	ts.createdUsers = append(ts.createdUsers, userID)
@@ -122,31 +122,31 @@ func (ts *UserSchemaRequiredAPITestSuite) TestRequiredObjectAndNested() {
             }
         }`),
 	}
-	schema.OrganizationUnitID = ts.organizationUnitID
+	schema.OUID = ts.oUID
 	schemaID := ts.createSchemaHelper(schema)
 	ts.createdSchemas = append(ts.createdSchemas, schemaID)
 
 	// Missing required object -> fail
 	reqMissingObj := CreateUserRequest{
-		OrganizationUnit: ts.organizationUnitID,
-		Type:             schema.Name,
-		Attributes:       json.RawMessage(`{}`),
+		OUID:       ts.oUID,
+		Type:       schema.Name,
+		Attributes: json.RawMessage(`{}`),
 	}
 	ts.createUserAndExpectError(reqMissingObj, "USR-1019")
 
 	// Object present, missing required nested city -> fail
 	reqMissingNested := CreateUserRequest{
-		OrganizationUnit: ts.organizationUnitID,
-		Type:             schema.Name,
-		Attributes:       json.RawMessage(`{"address": {"zip": "94040"}}`),
+		OUID:       ts.oUID,
+		Type:       schema.Name,
+		Attributes: json.RawMessage(`{"address": {"zip": "94040"}}`),
 	}
 	ts.createUserAndExpectError(reqMissingNested, "USR-1019")
 
 	// Provide required nested city -> success
 	reqOK := CreateUserRequest{
-		OrganizationUnit: ts.organizationUnitID,
-		Type:             schema.Name,
-		Attributes:       json.RawMessage(`{"address": {"city": "Colombo"}}`),
+		OUID:       ts.oUID,
+		Type:       schema.Name,
+		Attributes: json.RawMessage(`{"address": {"city": "Colombo"}}`),
 	}
 	userID := ts.createUserAndExpectSuccess(reqOK)
 	ts.createdUsers = append(ts.createdUsers, userID)
@@ -160,37 +160,37 @@ func (ts *UserSchemaRequiredAPITestSuite) TestRequiredArrayTopLevel() {
             "tags": {"type": "array", "required": true, "items": {"type": "string"}}
         }`),
 	}
-	schema.OrganizationUnitID = ts.organizationUnitID
+	schema.OUID = ts.oUID
 	schemaID := ts.createSchemaHelper(schema)
 	ts.createdSchemas = append(ts.createdSchemas, schemaID)
 
 	// Missing required array -> fail
 	reqMissing := CreateUserRequest{
-		OrganizationUnit: ts.organizationUnitID,
-		Type:             schema.Name,
-		Attributes:       json.RawMessage(`{}`),
+		OUID:       ts.oUID,
+		Type:       schema.Name,
+		Attributes: json.RawMessage(`{}`),
 	}
 	ts.createUserAndExpectError(reqMissing, "USR-1019")
 
 	// Present empty array -> fail
 	reqEmpty := CreateUserRequest{
-		OrganizationUnit: ts.organizationUnitID,
-		Type:             schema.Name,
-		Attributes:       json.RawMessage(`{"tags": []}`),
+		OUID:       ts.oUID,
+		Type:       schema.Name,
+		Attributes: json.RawMessage(`{"tags": []}`),
 	}
 	ts.createUserAndExpectError(reqEmpty, "USR-1019")
 
 	// Present array with items -> success
 	reqWithItems := CreateUserRequest{
-		OrganizationUnit: ts.organizationUnitID,
-		Type:             schema.Name,
-		Attributes:       json.RawMessage(`{"tags": ["tag1", "tag2"]}`),
+		OUID:       ts.oUID,
+		Type:       schema.Name,
+		Attributes: json.RawMessage(`{"tags": ["tag1", "tag2"]}`),
 	}
 	userID := ts.createUserAndExpectSuccess(reqWithItems)
 	ts.createdUsers = append(ts.createdUsers, userID)
 }
 
-func (ts *UserSchemaRequiredAPITestSuite) TestSchemaCreationRequiresOuID() {
+func (ts *UserSchemaRequiredAPITestSuite) TestSchemaCreationRequiresOUID() {
 	schema := CreateUserSchemaRequest{
 		Name: "req-ouid-schema",
 		Schema: json.RawMessage(`{
@@ -221,8 +221,8 @@ func (ts *UserSchemaRequiredAPITestSuite) TestSchemaCreationRequiresOuID() {
 }
 
 func (ts *UserSchemaRequiredAPITestSuite) createSchemaHelper(schema CreateUserSchemaRequest) string {
-	if schema.OrganizationUnitID == "" {
-		schema.OrganizationUnitID = ts.organizationUnitID
+	if schema.OUID == "" {
+		schema.OUID = ts.oUID
 	}
 
 	jsonData, err := json.Marshal(schema)

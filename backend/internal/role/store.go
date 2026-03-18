@@ -113,7 +113,7 @@ func (s *roleStore) CreateRole(ctx context.Context, id string, role RoleCreation
 	_, err = dbClient.ExecuteContext(ctx,
 		queryCreateRole,
 		id,
-		role.OrganizationUnitID,
+		role.OUID,
 		role.Name,
 		role.Description,
 		s.deploymentID,
@@ -165,11 +165,11 @@ func (s *roleStore) GetRole(ctx context.Context, id string) (RoleWithPermissions
 	}
 
 	return RoleWithPermissions{
-		ID:                 roleBasicInfo.ID,
-		Name:               roleBasicInfo.Name,
-		Description:        roleBasicInfo.Description,
-		OrganizationUnitID: roleBasicInfo.OrganizationUnitID,
-		Permissions:        permissions,
+		ID:          roleBasicInfo.ID,
+		Name:        roleBasicInfo.Name,
+		Description: roleBasicInfo.Description,
+		OUID:        roleBasicInfo.OUID,
+		Permissions: permissions,
 	}, nil
 }
 
@@ -243,7 +243,7 @@ func (s *roleStore) UpdateRole(ctx context.Context, id string, role RoleUpdateDe
 
 	rowsAffected, err := dbClient.ExecuteContext(ctx,
 		queryUpdateRole,
-		role.OrganizationUnitID,
+		role.OUID,
 		role.Name,
 		role.Description,
 		id,
@@ -363,10 +363,10 @@ func buildRoleBasicInfoFromResultRow(row map[string]interface{}) (Role, error) {
 	}
 
 	return Role{
-		ID:                 fields[0],
-		Name:               fields[1],
-		Description:        fields[2],
-		OrganizationUnitID: fields[3],
+		ID:          fields[0],
+		Name:        fields[1],
+		Description: fields[2],
+		OUID:        fields[3],
 	}, nil
 }
 

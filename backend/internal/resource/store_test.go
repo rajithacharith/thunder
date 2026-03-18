@@ -79,11 +79,11 @@ func (suite *ResourceStoreTestSuite) TestCreateResourceServer() {
 			name:       "Success",
 			resourceID: "rs1",
 			resourceServer: ResourceServer{
-				OrganizationUnitID: "ou1",
-				Name:               "Test Server",
-				Description:        "Test Description",
-				Identifier:         "test-identifier",
-				Delimiter:          ":",
+				OUID:        "ou1",
+				Name:        "Test Server",
+				Description: "Test Description",
+				Identifier:  "test-identifier",
+				Delimiter:   ":",
 			},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
@@ -98,11 +98,11 @@ func (suite *ResourceStoreTestSuite) TestCreateResourceServer() {
 			name:       "ExecuteError",
 			resourceID: "rs1",
 			resourceServer: ResourceServer{
-				OrganizationUnitID: "ou1",
-				Name:               "Test Server",
-				Description:        "Test Description",
-				Identifier:         "test-identifier",
-				Delimiter:          ":",
+				OUID:        "ou1",
+				Name:        "Test Server",
+				Description: "Test Description",
+				Identifier:  "test-identifier",
+				Delimiter:   ":",
 			},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
@@ -121,10 +121,10 @@ func (suite *ResourceStoreTestSuite) TestCreateResourceServer() {
 			name:       "DBClientError",
 			resourceID: "rs1",
 			resourceServer: ResourceServer{
-				OrganizationUnitID: "ou1",
-				Name:               "Test Server",
-				Description:        "Test Description",
-				Identifier:         "test-identifier",
+				OUID:        "ou1",
+				Name:        "Test Server",
+				Description: "Test Description",
+				Identifier:  "test-identifier",
 			},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(nil, errors.New("database connection error"))
@@ -196,12 +196,12 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServer() {
 			},
 			expectedInternalID: 7,
 			expectedRS: ResourceServer{
-				ID:                 "rs1",
-				OrganizationUnitID: "ou1",
-				Name:               "Test Server",
-				Description:        "Test Description",
-				Identifier:         "test-identifier",
-				Delimiter:          "/",
+				ID:          "rs1",
+				OUID:        "ou1",
+				Name:        "Test Server",
+				Description: "Test Description",
+				Identifier:  "test-identifier",
+				Delimiter:   "/",
 			},
 			shouldErr: false,
 		},
@@ -263,7 +263,7 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServer() {
 			} else {
 				suite.NoError(err)
 				suite.Equal(tc.expectedRS.ID, rs.ID)
-				suite.Equal(tc.expectedRS.OrganizationUnitID, rs.OrganizationUnitID)
+				suite.Equal(tc.expectedRS.OUID, rs.OUID)
 				suite.Equal(tc.expectedRS.Name, rs.Name)
 				suite.Equal(tc.expectedRS.Description, rs.Description)
 				suite.Equal(tc.expectedRS.Identifier, rs.Identifier)
@@ -456,11 +456,11 @@ func (suite *ResourceStoreTestSuite) TestUpdateResourceServer() {
 			name:       "Success",
 			resourceID: "rs1",
 			resourceServer: ResourceServer{
-				OrganizationUnitID: "ou1",
-				Name:               "Updated Server",
-				Description:        "Updated Description",
-				Identifier:         "updated-identifier",
-				Delimiter:          "-",
+				OUID:        "ou1",
+				Name:        "Updated Server",
+				Description: "Updated Description",
+				Identifier:  "updated-identifier",
+				Delimiter:   "-",
 			},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
@@ -475,11 +475,11 @@ func (suite *ResourceStoreTestSuite) TestUpdateResourceServer() {
 			name:       "ExecuteError",
 			resourceID: "rs1",
 			resourceServer: ResourceServer{
-				OrganizationUnitID: "ou1",
-				Name:               "Updated Server",
-				Description:        "Updated Description",
-				Identifier:         "updated-identifier",
-				Delimiter:          "-",
+				OUID:        "ou1",
+				Name:        "Updated Server",
+				Description: "Updated Description",
+				Identifier:  "updated-identifier",
+				Delimiter:   "-",
 			},
 			setupMocks: func() {
 				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
@@ -2918,12 +2918,12 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 				"properties":  []byte(`{"delimiter":"|"}`),
 			},
 			expectedResourceServer: ResourceServer{
-				ID:                 "rs1",
-				OrganizationUnitID: "ou1",
-				Name:               "Test Server",
-				Description:        "Test Description",
-				Identifier:         "test-identifier",
-				Delimiter:          "|",
+				ID:          "rs1",
+				OUID:        "ou1",
+				Name:        "Test Server",
+				Description: "Test Description",
+				Identifier:  "test-identifier",
+				Delimiter:   "|",
 			},
 			shouldErr: false,
 		},
@@ -2936,11 +2936,11 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 				"name":        "Test Server",
 			},
 			expectedResourceServer: ResourceServer{
-				ID:                 "rs1",
-				OrganizationUnitID: "ou1",
-				Name:               "Test Server",
-				Description:        "",
-				Identifier:         "",
+				ID:          "rs1",
+				OUID:        "ou1",
+				Name:        "Test Server",
+				Description: "",
+				Identifier:  "",
 			},
 			shouldErr: false,
 		},
@@ -2954,10 +2954,10 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 				"properties":  `{"delimiter":"."}`,
 			},
 			expectedResourceServer: ResourceServer{
-				ID:                 "rs1",
-				OrganizationUnitID: "ou1",
-				Name:               "Test Server",
-				Delimiter:          ".",
+				ID:        "rs1",
+				OUID:      "ou1",
+				Name:      "Test Server",
+				Delimiter: ".",
 			},
 			shouldErr: false,
 		},
@@ -2983,7 +2983,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 			errContains: "id",
 		},
 		{
-			name: "Error_MissingOuID",
+			name: "Error_MissingOUID",
 			row: map[string]interface{}{
 				"internal_id": 62,
 				"id":          "rs1",
@@ -2993,7 +2993,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 			errContains: "ou_id",
 		},
 		{
-			name: "Error_InvalidOuID",
+			name: "Error_InvalidOUID",
 			row: map[string]interface{}{
 				"internal_id": 63,
 				"id":          "rs1",
@@ -3036,7 +3036,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 			} else {
 				suite.NoError(err)
 				suite.Equal(tc.expectedResourceServer.ID, rs.ID)
-				suite.Equal(tc.expectedResourceServer.OrganizationUnitID, rs.OrganizationUnitID)
+				suite.Equal(tc.expectedResourceServer.OUID, rs.OUID)
 				suite.Equal(tc.expectedResourceServer.Name, rs.Name)
 				suite.Equal(tc.expectedResourceServer.Description, rs.Description)
 				suite.Equal(tc.expectedResourceServer.Identifier, rs.Identifier)

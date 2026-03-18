@@ -22,10 +22,10 @@ import "encoding/json"
 
 // User represents a user.
 type User struct {
-	UserID             string          `json:"userId"`
-	UserType           string          `json:"userType"`
-	OrganizationUnitID string          `json:"ouId"`
-	Attributes         json.RawMessage `json:"attributes,omitempty"`
+	UserID     string          `json:"userId"`
+	UserType   string          `json:"userType"`
+	OUID       string          `json:"ouId"`
+	Attributes json.RawMessage `json:"attributes,omitempty"`
 }
 
 // Link represents a link.
@@ -36,9 +36,9 @@ type Link struct {
 
 // UserGroup represents a user group.
 type UserGroup struct {
-	ID                 string `json:"id"`
-	Name               string `json:"name"`
-	OrganizationUnitID string `json:"ouId"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	OUID string `json:"ouId"`
 }
 
 // UserGroupListResponse represents a response containing a list of user groups.

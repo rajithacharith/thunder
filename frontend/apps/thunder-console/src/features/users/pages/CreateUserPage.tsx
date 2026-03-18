@@ -184,7 +184,7 @@ export default function CreateUserPage(): JSX.Element {
     );
 
     const requestBody = {
-      organizationUnit: trimmedOuId,
+      ouId: trimmedOuId,
       type: selectedSchema.name,
       attributes: filteredAttributes,
     };

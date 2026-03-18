@@ -69,7 +69,7 @@ func (s *flowStore) StoreFlowContext(ctx context.Context, engineCtx EngineContex
 			return err
 		}
 		_, err := dbClient.ExecuteContext(ctx, QueryCreateFlowUserData, dbModel.FlowID,
-			dbModel.IsAuthenticated, dbModel.UserID, dbModel.OrganizationUnitID,
+			dbModel.IsAuthenticated, dbModel.UserID, dbModel.OUID,
 			dbModel.UserType, dbModel.UserInputs, dbModel.UserAttributes, dbModel.Token,
 			dbModel.AvailableAttributes, s.deploymentID)
 		return err
@@ -122,7 +122,7 @@ func (s *flowStore) UpdateFlowContext(ctx context.Context, engineCtx EngineConte
 			return err
 		}
 		_, err := dbClient.ExecuteContext(ctx, QueryUpdateFlowUserData, dbModel.FlowID,
-			dbModel.IsAuthenticated, dbModel.UserID, dbModel.OrganizationUnitID, dbModel.UserType,
+			dbModel.IsAuthenticated, dbModel.UserID, dbModel.OUID, dbModel.UserType,
 			dbModel.UserInputs, dbModel.UserAttributes, dbModel.Token,
 			dbModel.AvailableAttributes, s.deploymentID)
 		return err
@@ -177,7 +177,7 @@ func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*
 	currentNodeID := s.parseOptionalString(row["current_node_id"])
 	currentAction := s.parseOptionalString(row["current_action"])
 	userID := s.parseOptionalString(row["user_id"])
-	organizationUnitID := s.parseOptionalString(row["ou_id"])
+	oUID := s.parseOptionalString(row["ou_id"])
 	userType := s.parseOptionalString(row["user_type"])
 	userInputs := s.parseOptionalString(row["user_inputs"])
 	runtimeData := s.parseOptionalString(row["runtime_data"])
@@ -200,7 +200,7 @@ func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*
 		Verbose:             verbose,
 		IsAuthenticated:     isAuthenticated,
 		UserID:              userID,
-		OrganizationUnitID:  organizationUnitID,
+		OUID:                oUID,
 		UserType:            userType,
 		UserInputs:          userInputs,
 		UserAttributes:      userAttributes,

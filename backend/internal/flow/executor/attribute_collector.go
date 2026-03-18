@@ -305,9 +305,9 @@ func (a *attributeCollector) getUpdatedUserObject(ctx *core.NodeContext,
 	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
 	updatedUser := &userprovider.User{
-		UserID:             userData.UserID,
-		OrganizationUnitID: userData.OrganizationUnitID,
-		UserType:           userData.UserType,
+		UserID:   userData.UserID,
+		OUID:     userData.OUID,
+		UserType: userData.UserType,
 	}
 
 	// Get the existing attributes

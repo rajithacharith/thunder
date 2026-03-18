@@ -81,10 +81,10 @@ func (f *fileBasedStore) GetRoleList(ctx context.Context, limit, offset int) ([]
 			continue
 		}
 		roles = append(roles, Role{
-			ID:                 roleData.ID,
-			Name:               roleData.Name,
-			Description:        roleData.Description,
-			OrganizationUnitID: roleData.OrganizationUnitID,
+			ID:          roleData.ID,
+			Name:        roleData.Name,
+			Description: roleData.Description,
+			OUID:        roleData.OUID,
 		})
 	}
 
@@ -124,11 +124,11 @@ func (f *fileBasedStore) GetRole(ctx context.Context, id string) (RoleWithPermis
 	}
 
 	return RoleWithPermissions{
-		ID:                 roleData.ID,
-		Name:               roleData.Name,
-		Description:        roleData.Description,
-		OrganizationUnitID: roleData.OrganizationUnitID,
-		Permissions:        roleData.Permissions,
+		ID:          roleData.ID,
+		Name:        roleData.Name,
+		Description: roleData.Description,
+		OUID:        roleData.OUID,
+		Permissions: roleData.Permissions,
 	}, nil
 }
 
@@ -245,7 +245,7 @@ func (f *fileBasedStore) CheckRoleNameExists(ctx context.Context, ouID, name str
 				log.Error(err))
 			continue
 		}
-		if roleData.OrganizationUnitID == ouID && roleData.Name == name {
+		if roleData.OUID == ouID && roleData.Name == name {
 			return true, nil
 		}
 	}
@@ -275,7 +275,7 @@ func (f *fileBasedStore) CheckRoleNameExistsExcludingID(
 		if roleData.ID == excludeRoleID {
 			continue
 		}
-		if roleData.OrganizationUnitID == ouID && roleData.Name == name {
+		if roleData.OUID == ouID && roleData.Name == name {
 			return true, nil
 		}
 	}

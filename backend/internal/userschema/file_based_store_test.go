@@ -58,7 +58,7 @@ func (suite *FileBasedStoreTestSuite) TestCreateUserSchema() {
 	schema := UserSchema{
 		ID:                    "schema-1",
 		Name:                  "basic_schema",
-		OrganizationUnitID:    "ou-1",
+		OUID:                  "ou-1",
 		AllowSelfRegistration: true,
 		Schema:                json.RawMessage(schemaJSON),
 	}
@@ -71,7 +71,7 @@ func (suite *FileBasedStoreTestSuite) TestCreateUserSchema() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), schema.ID, retrieved.ID)
 	assert.Equal(suite.T(), schema.Name, retrieved.Name)
-	assert.Equal(suite.T(), schema.OrganizationUnitID, retrieved.OrganizationUnitID)
+	assert.Equal(suite.T(), schema.OUID, retrieved.OUID)
 	assert.Equal(suite.T(), schema.AllowSelfRegistration, retrieved.AllowSelfRegistration)
 }
 
@@ -80,7 +80,7 @@ func (suite *FileBasedStoreTestSuite) TestCreateUserSchema_DuplicateID() {
 	schema := UserSchema{
 		ID:                    "schema-1",
 		Name:                  "basic_schema",
-		OrganizationUnitID:    "ou-1",
+		OUID:                  "ou-1",
 		AllowSelfRegistration: true,
 		Schema:                json.RawMessage(schemaJSON),
 	}
@@ -106,7 +106,7 @@ func (suite *FileBasedStoreTestSuite) TestGetUserSchemaByName() {
 	schema := UserSchema{
 		ID:                    "schema-1",
 		Name:                  "basic_schema",
-		OrganizationUnitID:    "ou-1",
+		OUID:                  "ou-1",
 		AllowSelfRegistration: true,
 		Schema:                json.RawMessage(schemaJSON),
 	}
@@ -133,21 +133,21 @@ func (suite *FileBasedStoreTestSuite) TestGetUserSchemaList() {
 		{
 			ID:                    "schema-1",
 			Name:                  "basic_schema",
-			OrganizationUnitID:    "ou-1",
+			OUID:                  "ou-1",
 			AllowSelfRegistration: true,
 			Schema:                json.RawMessage(schemaJSON),
 		},
 		{
 			ID:                    "schema-2",
 			Name:                  "extended_schema",
-			OrganizationUnitID:    "ou-1",
+			OUID:                  "ou-1",
 			AllowSelfRegistration: false,
 			Schema:                json.RawMessage(schemaJSON),
 		},
 		{
 			ID:                    "schema-3",
 			Name:                  "minimal_schema",
-			OrganizationUnitID:    "ou-1",
+			OUID:                  "ou-1",
 			AllowSelfRegistration: true,
 			Schema:                json.RawMessage(schemaJSON),
 		},
@@ -170,7 +170,7 @@ func (suite *FileBasedStoreTestSuite) TestGetUserSchemaList_WithPagination() {
 		schema := UserSchema{
 			ID:                    "schema-" + string(rune('0'+i)),
 			Name:                  "schema_" + string(rune('0'+i)),
-			OrganizationUnitID:    "ou-1",
+			OUID:                  "ou-1",
 			AllowSelfRegistration: true,
 			Schema:                json.RawMessage(schemaJSON),
 		}
@@ -205,7 +205,7 @@ func (suite *FileBasedStoreTestSuite) TestUpdateUserSchemaByID_ReturnsError() {
 	schema := UserSchema{
 		ID:                    "schema-1",
 		Name:                  "basic_schema",
-		OrganizationUnitID:    "ou-1",
+		OUID:                  "ou-1",
 		AllowSelfRegistration: true,
 		Schema:                json.RawMessage(schemaJSON),
 	}
@@ -233,7 +233,7 @@ func (suite *FileBasedStoreTestSuite) TestGetUserSchemaListCount() {
 		schema := UserSchema{
 			ID:                    "schema-" + string(rune('0'+i)),
 			Name:                  "schema_" + string(rune('0'+i)),
-			OrganizationUnitID:    "ou-1",
+			OUID:                  "ou-1",
 			AllowSelfRegistration: true,
 			Schema:                json.RawMessage(schemaJSON),
 		}
@@ -253,21 +253,21 @@ func (suite *FileBasedStoreTestSuite) TestGetUserSchemaListByOUIDs() {
 		{
 			ID:                    "schema-1",
 			Name:                  "schema_1",
-			OrganizationUnitID:    "ou-1",
+			OUID:                  "ou-1",
 			AllowSelfRegistration: true,
 			Schema:                json.RawMessage(schemaJSON),
 		},
 		{
 			ID:                    "schema-2",
 			Name:                  "schema_2",
-			OrganizationUnitID:    "ou-2",
+			OUID:                  "ou-2",
 			AllowSelfRegistration: false,
 			Schema:                json.RawMessage(schemaJSON),
 		},
 		{
 			ID:                    "schema-3",
 			Name:                  "schema_3",
-			OrganizationUnitID:    "ou-1",
+			OUID:                  "ou-1",
 			AllowSelfRegistration: true,
 			Schema:                json.RawMessage(schemaJSON),
 		},
@@ -357,21 +357,21 @@ func (suite *FileBasedStoreTestSuite) TestGetUserSchemaListCountByOUIDs() {
 		{
 			ID:                    "schema-1",
 			Name:                  "schema_1",
-			OrganizationUnitID:    "ou-1",
+			OUID:                  "ou-1",
 			AllowSelfRegistration: true,
 			Schema:                json.RawMessage(schemaJSON),
 		},
 		{
 			ID:                    "schema-2",
 			Name:                  "schema_2",
-			OrganizationUnitID:    "ou-2",
+			OUID:                  "ou-2",
 			AllowSelfRegistration: false,
 			Schema:                json.RawMessage(schemaJSON),
 		},
 		{
 			ID:                    "schema-3",
 			Name:                  "schema_3",
-			OrganizationUnitID:    "ou-1",
+			OUID:                  "ou-1",
 			AllowSelfRegistration: true,
 			Schema:                json.RawMessage(schemaJSON),
 		},

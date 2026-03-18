@@ -311,9 +311,9 @@ func handleError(w http.ResponseWriter,
 // sanitizeCreateRoleRequest sanitizes the create role request input.
 func (rh *roleHandler) sanitizeCreateRoleRequest(request *CreateRoleRequest) CreateRoleRequest {
 	sanitized := CreateRoleRequest{
-		Name:               sysutils.SanitizeString(request.Name),
-		Description:        sysutils.SanitizeString(request.Description),
-		OrganizationUnitID: sysutils.SanitizeString(request.OrganizationUnitID),
+		Name:        sysutils.SanitizeString(request.Name),
+		Description: sysutils.SanitizeString(request.Description),
+		OUID:        sysutils.SanitizeString(request.OUID),
 	}
 
 	if request.Permissions != nil {
@@ -346,9 +346,9 @@ func (rh *roleHandler) sanitizeCreateRoleRequest(request *CreateRoleRequest) Cre
 // sanitizeUpdateRoleRequest sanitizes the update role request input.
 func (rh *roleHandler) sanitizeUpdateRoleRequest(request *UpdateRoleRequest) UpdateRoleRequest {
 	sanitized := UpdateRoleRequest{
-		Name:               sysutils.SanitizeString(request.Name),
-		Description:        sysutils.SanitizeString(request.Description),
-		OrganizationUnitID: sysutils.SanitizeString(request.OrganizationUnitID),
+		Name:        sysutils.SanitizeString(request.Name),
+		Description: sysutils.SanitizeString(request.Description),
+		OUID:        sysutils.SanitizeString(request.OUID),
 	}
 
 	if request.Permissions != nil {
@@ -421,23 +421,18 @@ func (rh *roleHandler) toRoleCreationDetail(req CreateRoleRequest) RoleCreationD
 	}
 
 	return RoleCreationDetail{
-		Name:               req.Name,
-		Description:        req.Description,
-		OrganizationUnitID: req.OrganizationUnitID,
-		Permissions:        req.Permissions,
-		Assignments:        serviceAssignments,
+		Name:        req.Name,
+		Description: req.Description,
+		OUID:        req.OUID,
+		Permissions: req.Permissions,
+		Assignments: serviceAssignments,
 	}
 }
 
 // toHTTPRole converts service layer RoleWithPermissions to HTTP Role.
 func (rh *roleHandler) toHTTPRoleResponse(role *RoleWithPermissions) *RoleResponse {
-	return &RoleResponse{
-		ID:                 role.ID,
-		Name:               role.Name,
-		Description:        role.Description,
-		OrganizationUnitID: role.OrganizationUnitID,
-		Permissions:        role.Permissions,
-	}
+	r := RoleResponse(*role)
+	return &r
 }
 
 // toHTTPCreateRoleResponse converts service layer RoleDetails to HTTP CreateRoleResponse.
@@ -451,12 +446,12 @@ func (rh *roleHandler) toHTTPCreateRoleResponse(role *RoleWithPermissionsAndAssi
 	}
 
 	return &CreateRoleResponse{
-		ID:                 role.ID,
-		Name:               role.Name,
-		Description:        role.Description,
-		OrganizationUnitID: role.OrganizationUnitID,
-		Permissions:        role.Permissions,
-		Assignments:        httpAssignments,
+		ID:          role.ID,
+		Name:        role.Name,
+		Description: role.Description,
+		OUID:        role.OUID,
+		Permissions: role.Permissions,
+		Assignments: httpAssignments,
 	}
 }
 

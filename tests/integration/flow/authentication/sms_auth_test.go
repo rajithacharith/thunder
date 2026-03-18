@@ -299,7 +299,7 @@ func (ts *SMSAuthFlowTestSuite) SetupSuite() {
 	smsAuthTestOU.ID = ouID
 
 	// Create test user schema within the OU
-	smsAuthUserSchema.OrganizationUnitId = ouID
+	smsAuthUserSchema.OUID = ouID
 	schemaID, err := testutils.CreateUserType(smsAuthUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
@@ -317,7 +317,7 @@ func (ts *SMSAuthFlowTestSuite) SetupSuite() {
 
 	// Create test user with mobile number using the created OU
 	testUserWithMobile := testUserWithMobile
-	testUserWithMobile.OrganizationUnit = smsAuthTestOU.ID
+	testUserWithMobile.OUID = smsAuthTestOU.ID
 	userIDs, err := testutils.CreateMultipleUsers(testUserWithMobile)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user during setup: %v", err)

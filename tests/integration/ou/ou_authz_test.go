@@ -130,7 +130,7 @@ func (ts *OUAuthzTestSuite) SetupSuite() {
 	// ---- 2. Create a minimal user schema in OU1 ----
 	schema := testutils.UserSchema{
 		Name:                  "ou-authz-admin-schema",
-		OrganizationUnitId:    ts.ou1ID,
+		OUID:                  ts.ou1ID,
 		AllowSelfRegistration: false,
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{"type": "string", "unique": true},
@@ -144,7 +144,7 @@ func (ts *OUAuthzTestSuite) SetupSuite() {
 	// ---- 3. Create the OU-admin user in OU1 ----
 	userID, err := testutils.CreateUser(testutils.User{
 		Type:             schema.Name,
-		OrganizationUnit: ts.ou1ID,
+		OUID:             ts.ou1ID,
 		Attributes: json.RawMessage(fmt.Sprintf(
 			`{"username": %q, "password": %q}`,
 			ouAdminUsername, ouAdminPassword,
@@ -161,7 +161,7 @@ func (ts *OUAuthzTestSuite) SetupSuite() {
 	// ---- 5. Create a role with permission system:ou:view ----
 	role := testutils.Role{
 		Name:               ouViewRoleName,
-		OrganizationUnitID: ts.ou1ID,
+		OUID:               ts.ou1ID,
 		Permissions: []testutils.ResourcePermissions{
 			{
 				ResourceServerID: systemRSID,

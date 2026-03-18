@@ -169,7 +169,7 @@ func (ts *GithubAuthFlowTestSuite) SetupSuite() {
 	githubAuthTestOU.ID = ouID
 
 	// Create user schema
-	githubUserSchema.OrganizationUnitId = ouID
+	githubUserSchema.OUID = ouID
 	schemaID, err := testutils.CreateUserType(githubUserSchema)
 	ts.Require().NoError(err, "Failed to create GitHub user schema")
 	ts.userSchemaID = schemaID
@@ -190,7 +190,7 @@ func (ts *GithubAuthFlowTestSuite) SetupSuite() {
 	// Create user in the pre-configured OU from database scripts
 	user := testutils.User{
 		Type:             githubUserSchema.Name,
-		OrganizationUnit: githubUserSchema.OrganizationUnitId,
+		OUID:             githubUserSchema.OUID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 

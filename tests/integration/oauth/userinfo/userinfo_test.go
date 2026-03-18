@@ -94,7 +94,7 @@ func (ts *UserInfoTestSuite) SetupSuite() {
 	ts.ouID = ouID
 
 	// Create user schema
-	testUserSchema.OrganizationUnitId = ts.ouID
+	testUserSchema.OUID = ts.ouID
 	schemaID, err := testutils.CreateUserType(testUserSchema)
 	ts.Require().NoError(err, "Failed to create test user schema")
 	ts.userSchemaID = schemaID
@@ -154,7 +154,7 @@ func (ts *UserInfoTestSuite) createTestUser() string {
 
 	user := testutils.User{
 		Type:             "userinfo-person",
-		OrganizationUnit: ts.ouID,
+		OUID:             ts.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 

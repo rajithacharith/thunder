@@ -32,8 +32,8 @@ import (
 
 type DeleteUserSchemaTestSuite struct {
 	suite.Suite
-	client             *http.Client
-	organizationUnitID string
+	client *http.Client
+	oUID   string
 }
 
 var testUserSchemaAPIDeleteOU = testutils.OrganizationUnit{
@@ -48,9 +48,9 @@ func TestDeleteUserSchemaTestSuite(t *testing.T) {
 }
 
 func (ts *DeleteUserSchemaTestSuite) TearDownSuite() {
-	if ts.organizationUnitID != "" {
-		if err := testutils.DeleteOrganizationUnit(ts.organizationUnitID); err != nil {
-			ts.T().Logf("Failed to delete test organization unit %s: %v", ts.organizationUnitID, err)
+	if ts.oUID != "" {
+		if err := testutils.DeleteOrganizationUnit(ts.oUID); err != nil {
+			ts.T().Logf("Failed to delete test organization unit %s: %v", ts.oUID, err)
 		}
 	}
 }
@@ -63,7 +63,7 @@ func (ts *DeleteUserSchemaTestSuite) SetupSuite() {
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit: %v", err)
 	}
-	ts.organizationUnitID = ouID
+	ts.oUID = ouID
 }
 
 // TestDeleteUserSchema tests DELETE /user-schemas/{id} with valid ID
@@ -76,7 +76,7 @@ func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchema() {
             "description": {"type": "string"}
         }`),
 	}
-	schema.OrganizationUnitID = ts.organizationUnitID
+	schema.OUID = ts.oUID
 
 	schemaID := ts.createTestSchema(schema)
 
@@ -319,8 +319,8 @@ func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchemaResponseHeaders() {
 
 // Helper function to create a test schema
 func (ts *DeleteUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaRequest) string {
-	if schema.OrganizationUnitID == "" {
-		schema.OrganizationUnitID = ts.organizationUnitID
+	if schema.OUID == "" {
+		schema.OUID = ts.oUID
 	}
 
 	jsonData, err := json.Marshal(schema)

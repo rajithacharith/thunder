@@ -108,19 +108,19 @@ func (suite *HandlerTestSuite) TestHandleResourceServerListRequest_Error() {
 
 func (suite *HandlerTestSuite) TestHandleResourceServerPostRequest_Success() {
 	reqBody := CreateResourceServerRequest{
-		Name:               "test-rs",
-		Description:        "Test",
-		OrganizationUnitID: "ou-123",
+		Name:        "test-rs",
+		Description: "Test",
+		OUID:        "ou-123",
 	}
 
 	suite.mockService.On("CreateResourceServer", mock.Anything,
 		mock.MatchedBy(func(rs ResourceServer) bool {
 			return rs.Name == "test-rs"
 		})).Return(&ResourceServer{
-		ID:                 "rs-123",
-		Name:               "test-rs",
-		Description:        "Test",
-		OrganizationUnitID: "ou-123",
+		ID:          "rs-123",
+		Name:        "test-rs",
+		Description: "Test",
+		OUID:        "ou-123",
 	}, nil)
 
 	body, _ := json.Marshal(reqBody)
@@ -181,8 +181,8 @@ func (suite *HandlerTestSuite) TestHandleResourceServerGetRequest_NotFound() {
 
 func (suite *HandlerTestSuite) TestHandleResourceServerPutRequest_Success() {
 	reqBody := UpdateResourceServerRequest{
-		Name:               "updated-rs",
-		OrganizationUnitID: "ou-123",
+		Name: "updated-rs",
+		OUID: "ou-123",
 	}
 
 	suite.mockService.On("UpdateResourceServer", mock.Anything,
@@ -605,9 +605,9 @@ func (suite *HandlerTestSuite) TestParsePaginationParams_NegativeOffset() {
 
 func (suite *HandlerTestSuite) TestSanitizeCreateResourceServerRequest() {
 	input := &CreateResourceServerRequest{
-		Name:               "  test-rs  ",
-		Description:        "  Test Description  ",
-		OrganizationUnitID: "  ou-123  ",
+		Name:        "  test-rs  ",
+		Description: "  Test Description  ",
+		OUID:        "  ou-123  ",
 	}
 
 	result := sanitizeCreateResourceServerRequest(input)
@@ -615,7 +615,7 @@ func (suite *HandlerTestSuite) TestSanitizeCreateResourceServerRequest() {
 	// Verify exact trimmed values
 	suite.Equal("test-rs", result.Name)
 	suite.Equal("Test Description", result.Description)
-	suite.Equal("ou-123", result.OrganizationUnitID)
+	suite.Equal("ou-123", result.OUID)
 }
 
 func (suite *HandlerTestSuite) TestSanitizeCreateResourceRequest_WithParent() {
@@ -664,8 +664,8 @@ func (suite *HandlerTestSuite) TestHandleError_NotFoundStatus() {
 
 func (suite *HandlerTestSuite) TestHandleError_ConflictStatus() {
 	reqBody := CreateResourceServerRequest{
-		Name:               "test-rs",
-		OrganizationUnitID: "ou-123",
+		Name: "test-rs",
+		OUID: "ou-123",
 	}
 
 	suite.mockService.On("CreateResourceServer", mock.Anything,
@@ -682,8 +682,8 @@ func (suite *HandlerTestSuite) TestHandleError_ConflictStatus() {
 
 func (suite *HandlerTestSuite) TestHandleError_BadRequestStatus() {
 	reqBody := CreateResourceServerRequest{
-		Name:               "",
-		OrganizationUnitID: "ou-123",
+		Name: "",
+		OUID: "ou-123",
 	}
 
 	suite.mockService.On("CreateResourceServer", mock.Anything,
@@ -860,8 +860,8 @@ func (suite *HandlerTestSuite) TestHandleResourceServerPutRequest_InvalidJSON() 
 
 func (suite *HandlerTestSuite) TestHandleResourceServerPutRequest_ServiceError() {
 	reqBody := UpdateResourceServerRequest{
-		Name:               "updated-rs",
-		OrganizationUnitID: "ou-123",
+		Name: "updated-rs",
+		OUID: "ou-123",
 	}
 
 	suite.mockService.On("UpdateResourceServer", mock.Anything,

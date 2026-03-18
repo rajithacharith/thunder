@@ -138,7 +138,7 @@ func (s *SystemAuthzTestSuite) TestIsActionAllowed() {
 			ctx:    buildCtx("system"),
 			action: security.ActionReadUser,
 			actionCtx: &ActionContext{
-				OuID: "ou-abc", ResourceType: security.ResourceTypeUser, ResourceID: "user-xyz",
+				OUID: "ou-abc", ResourceType: security.ResourceTypeUser, ResourceID: "user-xyz",
 			},
 			wantAllowed: true,
 		},
@@ -250,7 +250,7 @@ func (s *SystemAuthzTestSuite) TestIsActionAllowed() {
 			name:        "RequiredPermission_MatchingOU_PolicyAllowed",
 			ctx:         buildCtxWithOU("system:ou", "ou1"),
 			action:      security.ActionCreateOU,
-			actionCtx:   &ActionContext{OuID: "ou1"},
+			actionCtx:   &ActionContext{OUID: "ou1"},
 			wantAllowed: true,
 		},
 		{
@@ -259,7 +259,7 @@ func (s *SystemAuthzTestSuite) TestIsActionAllowed() {
 			name:        "RequiredPermission_MismatchedOU_PolicyDenied",
 			ctx:         buildCtxWithOU("system:ou", "ou1"),
 			action:      security.ActionCreateOU,
-			actionCtx:   &ActionContext{OuID: "ou2"},
+			actionCtx:   &ActionContext{OUID: "ou2"},
 			wantAllowed: false,
 		},
 		{
@@ -441,7 +441,7 @@ func (s *SystemAuthzTestSuite) TestSetOUHierarchyResolver_EnablesInheritancePoli
 
 	ctx := buildCtxWithOU("system:userschema:view", "child-ou")
 	actionCtx := &ActionContext{
-		OuID:         "parent-ou",
+		OUID:         "parent-ou",
 		ResourceType: security.ResourceTypeUserSchema,
 		ResourceID:   "schema-1",
 	}
@@ -463,7 +463,7 @@ func (s *SystemAuthzTestSuite) TestInheritancePolicy_DeniesWriteFromChildOU() {
 
 	ctx := buildCtxWithOU("system:userschema", "child-ou")
 	actionCtx := &ActionContext{
-		OuID:         "parent-ou",
+		OUID:         "parent-ou",
 		ResourceType: security.ResourceTypeUserSchema,
 	}
 
@@ -495,7 +495,7 @@ func (s *SystemAuthzTestSuite) TestSetOUHierarchyResolver_NilResolver_FallsBackT
 	// No resolver set (nil) → ouMembershipPolicy is used, same-OU access only.
 	ctx := buildCtxWithOU("system:userschema:view", "ou1")
 	actionCtx := &ActionContext{
-		OuID:         "ou1",
+		OUID:         "ou1",
 		ResourceType: security.ResourceTypeUserSchema,
 	}
 
@@ -505,7 +505,7 @@ func (s *SystemAuthzTestSuite) TestSetOUHierarchyResolver_NilResolver_FallsBackT
 	assert.Nil(s.T(), svcErr)
 
 	// Different OU → ouMembershipPolicy denies.
-	actionCtx.OuID = "other-ou"
+	actionCtx.OUID = "other-ou"
 	allowed, svcErr = s.service.IsActionAllowed(ctx, security.ActionReadUserSchema, actionCtx)
 	assert.False(s.T(), allowed)
 	assert.Nil(s.T(), svcErr)

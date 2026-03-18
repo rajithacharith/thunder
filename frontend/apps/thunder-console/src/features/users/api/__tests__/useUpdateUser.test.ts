@@ -44,7 +44,7 @@ describe('useUpdateUser', () => {
 
   const mockUser: ApiUser = {
     id: 'user-1',
-    organizationUnit: 'ou-1',
+    ouId: 'ou-1',
     type: 'Employee',
     attributes: {username: 'john-updated', email: 'john@test.com'},
   };
@@ -52,7 +52,7 @@ describe('useUpdateUser', () => {
   const mockVariables: UpdateUserVariables = {
     userId: 'user-1',
     data: {
-      organizationUnit: 'ou-1',
+      ouId: 'ou-1',
       type: 'Employee',
       attributes: {username: 'john-updated', email: 'john@test.com'},
     },

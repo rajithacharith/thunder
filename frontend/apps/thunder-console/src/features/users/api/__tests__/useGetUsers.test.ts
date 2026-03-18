@@ -47,8 +47,8 @@ describe('useGetUsers', () => {
     startIndex: 0,
     count: 2,
     users: [
-      {id: 'user-1', organizationUnit: 'ou-1', type: 'Employee', attributes: {username: 'john'}},
-      {id: 'user-2', organizationUnit: 'ou-1', type: 'Employee', attributes: {username: 'jane'}},
+      {id: 'user-1', ouId: 'ou-1', type: 'Employee', attributes: {username: 'john'}},
+      {id: 'user-2', ouId: 'ou-1', type: 'Employee', attributes: {username: 'jane'}},
     ],
   };
 

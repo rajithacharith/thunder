@@ -94,27 +94,27 @@ func TestOuMembershipPolicy_IsActionAllowed(t *testing.T) {
 			wantDecision: policyDecisionNotApplicable,
 		},
 		{
-			name:         "EmptyOuID_NotApplicable",
+			name:         "EmptyOUID_NotApplicable",
 			ctx:          context.Background(),
-			actionCtx:    &ActionContext{OuID: ""},
+			actionCtx:    &ActionContext{OUID: ""},
 			wantDecision: policyDecisionNotApplicable,
 		},
 		{
 			name:         "MatchingOU_Allowed",
 			ctx:          buildCtxWithOU("", "ou1"),
-			actionCtx:    &ActionContext{OuID: "ou1"},
+			actionCtx:    &ActionContext{OUID: "ou1"},
 			wantDecision: policyDecisionAllowed,
 		},
 		{
 			name:         "MismatchedOU_Denied",
 			ctx:          buildCtxWithOU("", "ou2"),
-			actionCtx:    &ActionContext{OuID: "ou1"},
+			actionCtx:    &ActionContext{OUID: "ou1"},
 			wantDecision: policyDecisionDenied,
 		},
 		{
 			name:         "NoOuInContext_Denied",
 			ctx:          context.Background(),
-			actionCtx:    &ActionContext{OuID: "ou1"},
+			actionCtx:    &ActionContext{OUID: "ou1"},
 			wantDecision: policyDecisionDenied,
 		},
 	}
@@ -156,7 +156,7 @@ func TestOuMembershipPolicy_GetAccessibleResources(t *testing.T) {
 			wantApplicable: false,
 		},
 		{
-			name:           "OUResource_EmptyOuIDInContext_RestrictedEmpty",
+			name:           "OUResource_EmptyOUIDInContext_RestrictedEmpty",
 			ctx:            context.Background(),
 			resourceType:   security.ResourceTypeOU,
 			wantApplicable: true,
@@ -164,7 +164,7 @@ func TestOuMembershipPolicy_GetAccessibleResources(t *testing.T) {
 			wantIDs:        []string{},
 		},
 		{
-			name:           "OUResource_NonEmptyOuID_RestrictedToOU",
+			name:           "OUResource_NonEmptyOUID_RestrictedToOU",
 			ctx:            buildCtxWithOU("", "ou1"),
 			resourceType:   security.ResourceTypeOU,
 			wantApplicable: true,
@@ -319,16 +319,16 @@ func TestOuInheritancePolicy_IsActionAllowed(t *testing.T) {
 			wantDecision: policyDecisionNotApplicable,
 		},
 		{
-			name:         "EmptyOuID_NotApplicable",
+			name:         "EmptyOUID_NotApplicable",
 			ctx:          context.Background(),
-			actionCtx:    &ActionContext{OuID: ""},
+			actionCtx:    &ActionContext{OUID: ""},
 			resolver:     &stubOUHierarchyResolver{},
 			wantDecision: policyDecisionNotApplicable,
 		},
 		{
 			name:         "NoCallerOU_Denied",
 			ctx:          context.Background(),
-			actionCtx:    &ActionContext{OuID: "parent-ou"},
+			actionCtx:    &ActionContext{OUID: "parent-ou"},
 			resolver:     &stubOUHierarchyResolver{isAncestorResult: true},
 			wantDecision: policyDecisionDenied,
 		},
@@ -336,7 +336,7 @@ func TestOuInheritancePolicy_IsActionAllowed(t *testing.T) {
 			// Caller is in the same OU as the resource (ancestor of self).
 			name:         "SameOU_ResolverReturnsTrue_Allowed",
 			ctx:          buildCtxWithOU("", "ou1"),
-			actionCtx:    &ActionContext{OuID: "ou1"},
+			actionCtx:    &ActionContext{OUID: "ou1"},
 			resolver:     &stubOUHierarchyResolver{isAncestorResult: true},
 			wantDecision: policyDecisionAllowed,
 		},
@@ -344,7 +344,7 @@ func TestOuInheritancePolicy_IsActionAllowed(t *testing.T) {
 			// Caller is in a child OU; resource's OU is an ancestor → allowed (inherited visibility).
 			name:         "CallerInChildOU_ResolverReturnsTrue_Allowed",
 			ctx:          buildCtxWithOU("", "child-ou"),
-			actionCtx:    &ActionContext{OuID: "parent-ou"},
+			actionCtx:    &ActionContext{OUID: "parent-ou"},
 			resolver:     &stubOUHierarchyResolver{isAncestorResult: true},
 			wantDecision: policyDecisionAllowed,
 		},
@@ -352,7 +352,7 @@ func TestOuInheritancePolicy_IsActionAllowed(t *testing.T) {
 			// Caller is in an unrelated OU; resource's OU is not an ancestor → denied.
 			name:         "CallerInUnrelatedOU_ResolverReturnsFalse_Denied",
 			ctx:          buildCtxWithOU("", "other-ou"),
-			actionCtx:    &ActionContext{OuID: "parent-ou"},
+			actionCtx:    &ActionContext{OUID: "parent-ou"},
 			resolver:     &stubOUHierarchyResolver{isAncestorResult: false},
 			wantDecision: policyDecisionDenied,
 		},
@@ -360,7 +360,7 @@ func TestOuInheritancePolicy_IsActionAllowed(t *testing.T) {
 			// Resolver returns an error → denied + error propagated.
 			name:         "ResolverError_DeniedWithError",
 			ctx:          buildCtxWithOU("", "child-ou"),
-			actionCtx:    &ActionContext{OuID: "parent-ou"},
+			actionCtx:    &ActionContext{OUID: "parent-ou"},
 			resolver:     &stubOUHierarchyResolver{isAncestorErr: errSvc},
 			wantDecision: policyDecisionDenied,
 			wantErr:      true,

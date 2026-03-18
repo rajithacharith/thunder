@@ -126,9 +126,9 @@ func (suite *OAuthExecutorTestSuite) TestExecute_CodeProvided_AuthenticatesUser(
 	}
 
 	existingUser := &userprovider.User{
-		UserID:             "user-123",
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
+		UserID:   "user-123",
+		OUID:     "ou-123",
+		UserType: "INTERNAL",
 	}
 
 	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
@@ -145,7 +145,7 @@ func (suite *OAuthExecutorTestSuite) TestExecute_CodeProvided_AuthenticatesUser(
 	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 	assert.True(suite.T(), resp.AuthenticatedUser.IsAuthenticated)
 	assert.Equal(suite.T(), "user-123", resp.AuthenticatedUser.UserID)
-	assert.Equal(suite.T(), "ou-123", resp.AuthenticatedUser.OrganizationUnitID)
+	assert.Equal(suite.T(), "ou-123", resp.AuthenticatedUser.OUID)
 	assert.Equal(suite.T(), "test@example.com", resp.RuntimeData["email"])
 	suite.mockOAuthService.AssertExpectations(suite.T())
 }
@@ -595,8 +595,8 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_UserAlreadyExis
 	}
 
 	existingUser := &userprovider.User{
-		UserID:             "user-456",
-		OrganizationUnitID: "ou-456",
+		UserID: "user-456",
+		OUID:   "ou-456",
 	}
 
 	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
@@ -948,7 +948,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWithou
 		Return(&userschema.UserSchema{
 			Name:                  "INTERNAL",
 			AllowSelfRegistration: true,
-			OrganizationUnitID:    "ou-123",
+			OUID:                  "ou-123",
 		}, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -1043,9 +1043,9 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowRegistrati
 	}
 
 	existingUser := &userprovider.User{
-		UserID:             "user-123",
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
+		UserID:   "user-123",
+		OUID:     "ou-123",
+		UserType: "INTERNAL",
 	}
 
 	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
@@ -1096,9 +1096,9 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventRegistra
 	}
 
 	existingUser := &userprovider.User{
-		UserID:             "user-123",
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
+		UserID:   "user-123",
+		OUID:     "ou-123",
+		UserType: "INTERNAL",
 	}
 
 	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
@@ -1134,7 +1134,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning() {
 		Return(&userschema.UserSchema{
 			Name:                  "INTERNAL",
 			AllowSelfRegistration: true,
-			OrganizationUnitID:    "ou-123",
+			OUID:                  "ou-123",
 		}, nil)
 
 	err := suite.executor.(*oAuthExecutor).resolveUserTypeForAutoProvisioning(ctx, execResp)
@@ -1165,7 +1165,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 					Return(&userschema.UserSchema{
 						Name:                  "INTERNAL",
 						AllowSelfRegistration: false,
-						OrganizationUnitID:    "ou-123",
+						OUID:                  "ou-123",
 					}, nil).Once()
 			},
 		},
@@ -1177,13 +1177,13 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 					Return(&userschema.UserSchema{
 						Name:                  "INTERNAL",
 						AllowSelfRegistration: true,
-						OrganizationUnitID:    "ou-123",
+						OUID:                  "ou-123",
 					}, nil).Once()
 				suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "CUSTOMER").
 					Return(&userschema.UserSchema{
 						Name:                  "CUSTOMER",
 						AllowSelfRegistration: true,
-						OrganizationUnitID:    "ou-456",
+						OUID:                  "ou-456",
 					}, nil).Once()
 			},
 		},
@@ -1325,9 +1325,9 @@ func (suite *OAuthExecutorTestSuite) TestGetInternalUser_Success() {
 	}
 
 	existingUser := &userprovider.User{
-		UserID:             "user-123",
-		OrganizationUnitID: "ou-123",
-		UserType:           "INTERNAL",
+		UserID:   "user-123",
+		OUID:     "ou-123",
+		UserType: "INTERNAL",
 	}
 
 	suite.mockOAuthService.On("GetInternalUser", "user-sub-123").
@@ -1359,9 +1359,9 @@ func (suite *OAuthExecutorTestSuite) TestGetContextUserForRegistration_WithExist
 	}
 
 	existingUser := &userprovider.User{
-		UserID:             "user-456",
-		OrganizationUnitID: "ou-456",
-		UserType:           "INTERNAL",
+		UserID:   "user-456",
+		OUID:     "ou-456",
+		UserType: "INTERNAL",
 	}
 
 	contextUser, err := suite.executor.(*oAuthExecutor).getContextUserForRegistration(
@@ -1407,12 +1407,12 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 				"TYPE1": {
 					Name:                  "TYPE1",
 					AllowSelfRegistration: true,
-					OrganizationUnitID:    "ou-1",
+					OUID:                  "ou-1",
 				},
 				"TYPE2": {
 					Name:                  "TYPE2",
 					AllowSelfRegistration: true,
-					OrganizationUnitID:    "ou-2",
+					OUID:                  "ou-2",
 				},
 			},
 		},

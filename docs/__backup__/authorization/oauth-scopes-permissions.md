@@ -144,7 +144,7 @@ Create a user and assign a role with document permissions:
 curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/users \
 -H 'Authorization: Bearer <token>' \
 -d '{
-    "organizationUnit": "<organization-unit-id>",
+    "ouId": "<organization-unit-id>",
     "type": "test-person",
     "attributes": {
         "username": "bob",

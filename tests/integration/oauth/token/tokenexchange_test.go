@@ -45,12 +45,12 @@ const (
 
 type TokenExchangeTestSuite struct {
 	suite.Suite
-	applicationID      string
-	userID             string
-	organizationUnitID string
-	userSchemaID       string
-	client             *http.Client
-	assertionToken     string
+	applicationID  string
+	userID         string
+	oUID           string
+	userSchemaID   string
+	client         *http.Client
+	assertionToken string
 }
 
 var (
@@ -80,10 +80,10 @@ func (ts *TokenExchangeTestSuite) SetupSuite() {
 	ts.client = testutils.GetHTTPClient()
 
 	// Create test organization unit for user creation
-	ts.organizationUnitID = ts.createTestOrganizationUnit()
+	ts.oUID = ts.createTestOrganizationUnit()
 
 	// Create user schema for person type
-	testUserSchema.OrganizationUnitId = ts.organizationUnitID
+	testUserSchema.OUID = ts.oUID
 	schemaID, err := testutils.CreateUserType(testUserSchema)
 	ts.Require().NoError(err, "Failed to create test user schema")
 	ts.userSchemaID = schemaID
@@ -110,8 +110,8 @@ func (ts *TokenExchangeTestSuite) TearDownSuite() {
 	}
 
 	// Clean up organization unit
-	if ts.organizationUnitID != "" {
-		ts.deleteOrganizationUnit(ts.organizationUnitID)
+	if ts.oUID != "" {
+		ts.deleteOrganizationUnit(ts.oUID)
 	}
 
 	// Clean up user schema
@@ -186,9 +186,9 @@ func (ts *TokenExchangeTestSuite) createTestUser() string {
 	ts.Require().NoError(err, "Failed to marshal user attributes")
 
 	user := testutils.User{
-		Type:             "token-test-person",
-		OrganizationUnit: ts.organizationUnitID,
-		Attributes:       json.RawMessage(attributesJSON),
+		Type:       "token-test-person",
+		OUID:       ts.oUID,
+		Attributes: json.RawMessage(attributesJSON),
 	}
 
 	userID, err := testutils.CreateUser(user)

@@ -194,7 +194,7 @@ Log-Info "Creating admin user..."
 
 $adminUserData = ([ordered]@{
     type = "Person"
-    organizationUnit = $DEFAULT_OU_ID
+    ouId = $DEFAULT_OU_ID
     attributes = @{
         username = "admin"
         password = "admin"
@@ -730,7 +730,7 @@ if (-not $ADMIN_USER_ID) {
 $administratorGroupData = @{
     name = "Administrators"
     description = "System Administrators group"
-    organizationUnitId = $DEFAULT_OU_ID
+    ouId = $DEFAULT_OU_ID
     members = @(
         @{
             id = $ADMIN_USER_ID

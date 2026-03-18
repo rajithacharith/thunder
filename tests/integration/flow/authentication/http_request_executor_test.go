@@ -262,7 +262,7 @@ func (ts *HTTPRequestExecutorTestSuite) SetupSuite() {
 	ts.ouID = ouID
 
 	// Create test user schema within the OU
-	httpRequestTestUserSchema.OrganizationUnitId = ts.ouID
+	httpRequestTestUserSchema.OUID = ts.ouID
 	schemaID, err := testutils.CreateUserType(httpRequestTestUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
@@ -280,7 +280,7 @@ func (ts *HTTPRequestExecutorTestSuite) SetupSuite() {
 
 	// Create test user for authentication
 	testUser := httpRequestTestUser
-	testUser.OrganizationUnit = ts.ouID
+	testUser.OUID = ts.ouID
 	userIDs, err := testutils.CreateMultipleUsers(testUser)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user during setup: %v", err)

@@ -244,7 +244,7 @@ func (ts *VerboseMetaTestSuite) SetupSuite() {
 	ts.ouID = ouID
 
 	// Create user schema
-	verboseTestUserSchema.OrganizationUnitId = ouID
+	verboseTestUserSchema.OUID = ouID
 	schemaID, err := testutils.CreateUserType(verboseTestUserSchema)
 	ts.Require().NoError(err, "Failed to create user schema")
 	verboseUserSchemaID = schemaID
@@ -267,7 +267,7 @@ func (ts *VerboseMetaTestSuite) SetupSuite() {
 	verboseTestAppID = appID
 
 	// Create test user
-	verboseTestUser.OrganizationUnit = ouID
+	verboseTestUser.OUID = ouID
 	userID, err := testutils.CreateUser(verboseTestUser)
 	ts.Require().NoError(err, "Failed to create test user")
 	ts.config.CreatedUserIDs = []string{userID}

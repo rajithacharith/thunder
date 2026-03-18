@@ -92,7 +92,7 @@ func (suite *GroupAPITestSuite) SetupSuite() {
 		suite.T().Fatalf("Failed to create test organization unit during setup: %v", err)
 	}
 	testOUID = ouID
-	testUserSchema.OrganizationUnitId = testOUID
+	testUserSchema.OUID = testOUID
 
 	// Create test user type
 	schemaID, err := testutils.CreateUserType(testUserSchema)
@@ -103,7 +103,7 @@ func (suite *GroupAPITestSuite) SetupSuite() {
 
 	// Create test user with the created OU
 	testUser := testUser
-	testUser.OrganizationUnit = testOUID
+	testUser.OUID = testOUID
 	userID, err := testutils.CreateUser(testUser)
 	if err != nil {
 		suite.T().Fatalf("Failed to create test user during setup: %v", err)
@@ -112,7 +112,7 @@ func (suite *GroupAPITestSuite) SetupSuite() {
 
 	// Create test group with the created OU and user
 	groupToCreate := testGroup
-	groupToCreate.OrganizationUnitId = testOUID
+	groupToCreate.OUID = testOUID
 	groupToCreate.Members = []Member{
 		{
 			Id:   testUserID,
@@ -195,7 +195,7 @@ func (suite *GroupAPITestSuite) TestGetGroup() {
 	createdGroup := buildCreatedGroup()
 	suite.Equal(createdGroup.Id, retrievedGroup.Id)
 	suite.Equal(createdGroup.Name, retrievedGroup.Name)
-	suite.Equal(createdGroup.OrganizationUnitId, retrievedGroup.OrganizationUnitId)
+	suite.Equal(createdGroup.OUID, retrievedGroup.OUID)
 }
 
 func (suite *GroupAPITestSuite) TestListGroups() {
@@ -238,7 +238,7 @@ func (suite *GroupAPITestSuite) TestListGroups() {
 		if group.Id == createdGroup.Id {
 			found = true
 			suite.Equal(createdGroup.Name, group.Name)
-			suite.Equal(createdGroup.OrganizationUnitId, group.OrganizationUnitId)
+			suite.Equal(createdGroup.OUID, group.OUID)
 			break
 		}
 	}
@@ -389,7 +389,7 @@ func (suite *GroupAPITestSuite) TestUpdateGroup() {
 	// Update the group
 	updateRequest := UpdateGroupRequest{
 		Name:               "Updated Test Group",
-		OrganizationUnitId: testOUID,
+		OUID: testOUID,
 	}
 
 	jsonData, err := json.Marshal(updateRequest)
@@ -423,7 +423,7 @@ func (suite *GroupAPITestSuite) TestUpdateGroupPreservesMembers() {
 	// Create a group with a member
 	groupWithMember := CreateGroupRequest{
 		Name:               "Group for Preserve Members Test",
-		OrganizationUnitId: testOUID,
+		OUID: testOUID,
 		Members: []Member{
 			{
 				Id:   testUserID,
@@ -443,7 +443,7 @@ func (suite *GroupAPITestSuite) TestUpdateGroupPreservesMembers() {
 	// Update only the group name via PUT (no members field)
 	updateRequest := UpdateGroupRequest{
 		Name:               "Renamed Group",
-		OrganizationUnitId: testOUID,
+		OUID: testOUID,
 	}
 
 	jsonData, err := json.Marshal(updateRequest)
@@ -500,7 +500,7 @@ func (suite *GroupAPITestSuite) TestDeleteGroup() {
 	// Create a temporary group for this test since we don't want to delete the main test group
 	tempGroupToCreate := CreateGroupRequest{
 		Name:               "Temp Test Group",
-		OrganizationUnitId: testOUID,
+		OUID: testOUID,
 		Members:            []Member{},
 	}
 
@@ -566,7 +566,7 @@ func (suite *GroupAPITestSuite) TestGetNonExistentGroup() {
 func (suite *GroupAPITestSuite) TestCreateGroupWithInvalidData() {
 	// Try to create a group with invalid data (missing name)
 	invalidGroup := map[string]interface{}{
-		"organizationUnitId": testOUID,
+		"ouId": testOUID,
 	}
 
 	jsonData, err := json.Marshal(invalidGroup)
@@ -591,7 +591,7 @@ func (suite *GroupAPITestSuite) TestCreateGroupWithInvalidUserID() {
 	// Try to create a group with an invalid user ID
 	invalidGroup := CreateGroupRequest{
 		Name:               "Group with Invalid User",
-		OrganizationUnitId: testOUID,
+		OUID: testOUID,
 		Members: []Member{
 			{
 				Id:   "invalid-user-id-12345",
@@ -632,7 +632,7 @@ func (suite *GroupAPITestSuite) TestCreateGroupWithMixedValidInvalidUserIDs() {
 	// Try to create a group with a mix of valid and invalid user IDs
 	invalidGroup := CreateGroupRequest{
 		Name:               "Group with Mixed User IDs",
-		OrganizationUnitId: testOUID,
+		OUID: testOUID,
 		Members: []Member{
 			{
 				Id:   testUserID, // Use created test user
@@ -680,7 +680,7 @@ func (suite *GroupAPITestSuite) TestCreateGroupWithEmptyUserList() {
 	// Create a group with empty user list (should succeed)
 	validGroup := CreateGroupRequest{
 		Name:               "Group with Empty Users",
-		OrganizationUnitId: testOUID,
+		OUID: testOUID,
 		Members:            []Member{}, // Empty members list
 	}
 
@@ -712,7 +712,7 @@ func (suite *GroupAPITestSuite) TestCreateGroupWithEmptyUserList() {
 func (suite *GroupAPITestSuite) TestCreateGroupWithMultipleMembers() {
 	// Create a temporary user for testing
 	tempUser := testutils.User{
-		OrganizationUnit: testOUID,
+		OUID:             testOUID,
 		Type:             "group-test-person",
 		Attributes: json.RawMessage(`{
 			"email": "testuser2@example.com",
@@ -734,7 +734,7 @@ func (suite *GroupAPITestSuite) TestCreateGroupWithMultipleMembers() {
 	// Create a group with multiple members (use both the main test user and the temporarily created user)
 	groupWithMembers := CreateGroupRequest{
 		Name:               "Group with Multiple Members",
-		OrganizationUnitId: testOUID,
+		OUID: testOUID,
 		Members: []Member{
 			{
 				Id:   testUserID, // Main test user from SetupSuite
@@ -787,7 +787,7 @@ func (suite *GroupAPITestSuite) TestCreateGroupWithGroupMember() {
 	// First create a temporary group that will be used as a member
 	tempGroup := CreateGroupRequest{
 		Name:               "Temp Member Group",
-		OrganizationUnitId: testOUID,
+		OUID: testOUID,
 		Members:            []Member{},
 	}
 
@@ -821,7 +821,7 @@ func (suite *GroupAPITestSuite) TestCreateGroupWithGroupMember() {
 	// Now create a parent group that includes the first group as a member
 	parentGroup := CreateGroupRequest{
 		Name:               "Parent Group with Group Member",
-		OrganizationUnitId: testOUID,
+		OUID: testOUID,
 		Members: []Member{
 			{
 				Id:   memberGroup.Id,
@@ -861,7 +861,7 @@ func (suite *GroupAPITestSuite) TestCreateGroupWithInvalidGroupMember() {
 	// Try to create a group with an invalid group member ID
 	invalidGroup := CreateGroupRequest{
 		Name:               "Group with Invalid Group Member",
-		OrganizationUnitId: testOUID,
+		OUID: testOUID,
 		Members: []Member{
 			{
 				Id:   "invalid-group-id-12345",
@@ -957,7 +957,7 @@ func buildCreatedGroup() Group {
 		GroupBasic: GroupBasic{
 			Id:                 createdGroupID,
 			Name:               testGroup.Name,
-			OrganizationUnitId: testOUID,
+			OUID: testOUID,
 		},
 		Members: []Member{
 			{
@@ -979,7 +979,7 @@ func (suite *GroupAPITestSuite) TestAddGroupMembers() {
 
 	// Create a temporary user to add as a member
 	tempUser := testutils.User{
-		OrganizationUnit: testOUID,
+		OUID:             testOUID,
 		Type:             "group-test-person",
 		Attributes: json.RawMessage(`{
 			"email": "addmember@example.com",
@@ -1089,7 +1089,7 @@ func (suite *GroupAPITestSuite) TestAddGroupMembersWithGroupMember() {
 	// Create a temporary group to add as a member
 	tempGroupReq := CreateGroupRequest{
 		Name:               "Temp Group for Add Member Test",
-		OrganizationUnitId: testOUID,
+		OUID: testOUID,
 		Members:            []Member{},
 	}
 
@@ -1325,7 +1325,7 @@ func (suite *GroupAPITestSuite) TestRemoveGroupMembers() {
 
 	// Create a temporary user and add it to the group first
 	tempUser := testutils.User{
-		OrganizationUnit: testOUID,
+		OUID:             testOUID,
 		Type:             "group-test-person",
 		Attributes: json.RawMessage(`{
 			"email": "removemember@example.com",
@@ -1481,7 +1481,7 @@ func (suite *GroupAPITestSuite) TestAddAndRemoveMultipleMembers() {
 
 	// Create two temporary users
 	tempUser1 := testutils.User{
-		OrganizationUnit: testOUID,
+		OUID:             testOUID,
 		Type:             "group-test-person",
 		Attributes: json.RawMessage(`{
 			"email": "multi1@example.com",
@@ -1499,7 +1499,7 @@ func (suite *GroupAPITestSuite) TestAddAndRemoveMultipleMembers() {
 	}()
 
 	tempUser2 := testutils.User{
-		OrganizationUnit: testOUID,
+		OUID:             testOUID,
 		Type:             "group-test-person",
 		Attributes: json.RawMessage(`{
 			"email": "multi2@example.com",
@@ -1628,7 +1628,7 @@ func (suite *GroupAPITestSuite) TestAddGroupMembersWithMixedTypes() {
 
 	// Create a temporary user
 	tempUser := testutils.User{
-		OrganizationUnit: testOUID,
+		OUID:             testOUID,
 		Type:             "group-test-person",
 		Attributes: json.RawMessage(`{
 			"email": "mixedtype@example.com",
@@ -1648,7 +1648,7 @@ func (suite *GroupAPITestSuite) TestAddGroupMembersWithMixedTypes() {
 	// Create a temporary group
 	tempGroupReq := CreateGroupRequest{
 		Name:               "Temp Group for Mixed Type Test",
-		OrganizationUnitId: testOUID,
+		OUID: testOUID,
 		Members:            []Member{},
 	}
 	tempGroupID, err := createGroup(tempGroupReq)

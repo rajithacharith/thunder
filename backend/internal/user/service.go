@@ -216,10 +216,10 @@ func (us *userService) GetUsersByPath(
 			log.String("path", handlePath),
 		)
 	}
-	organizationUnitID := ou.ID
+	oUID := ou.ID
 
 	// Check if caller is authorized to list users in the resolved OU.
-	if svcErr := us.checkUserAccess(ctx, security.ActionListUsers, organizationUnitID, ""); svcErr != nil {
+	if svcErr := us.checkUserAccess(ctx, security.ActionListUsers, oUID, ""); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -227,7 +227,7 @@ func (us *userService) GetUsersByPath(
 		return nil, err
 	}
 
-	ouResponse, svcErr := us.ouService.GetOrganizationUnitUsers(ctx, organizationUnitID, limit, offset, false)
+	ouResponse, svcErr := us.ouService.GetOrganizationUnitUsers(ctx, oUID, limit, offset, false)
 	if svcErr != nil {
 		return nil, mapOUServiceError(
 			svcErr,
@@ -238,7 +238,7 @@ func (us *userService) GetUsersByPath(
 				oupkg.ErrorInvalidLimit.Code:             &ErrorInvalidLimit,
 				oupkg.ErrorInvalidOffset.Code:            &ErrorInvalidOffset,
 			},
-			log.String("organizationUnitID", organizationUnitID),
+			log.String("oUID", oUID),
 			log.Int("limit", limit),
 			log.Int("offset", offset),
 		)
@@ -316,11 +316,11 @@ func (us *userService) CreateUser(ctx context.Context, user *User) (*User, *serv
 	}
 
 	// Check if caller is authorized to create users in the target OU.
-	if svcErr := us.checkUserAccess(ctx, security.ActionCreateUser, user.OrganizationUnit, ""); svcErr != nil {
+	if svcErr := us.checkUserAccess(ctx, security.ActionCreateUser, user.OUID, ""); svcErr != nil {
 		return nil, svcErr
 	}
 
-	if svcErr := us.validateOrganizationUnitForUserType(ctx, user.Type, user.OrganizationUnit, logger); svcErr != nil {
+	if svcErr := us.validateOrganizationUnitForUserType(ctx, user.Type, user.OUID, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -388,9 +388,9 @@ func (us *userService) CreateUserByPath(
 	}
 
 	user := &User{
-		OrganizationUnit: ou.ID,
-		Type:             request.Type,
-		Attributes:       request.Attributes,
+		OUID:       ou.ID,
+		Type:       request.Type,
+		Attributes: request.Attributes,
 	}
 
 	return us.CreateUser(ctx, user)
@@ -496,7 +496,7 @@ func (us *userService) GetUser(ctx context.Context, userID string) (*User, *serv
 	}
 
 	// Check authz using the user's OU ID (fetched from store).
-	if svcErr := us.checkUserAccess(ctx, security.ActionReadUser, user.OrganizationUnit, userID); svcErr != nil {
+	if svcErr := us.checkUserAccess(ctx, security.ActionReadUser, user.OUID, userID); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -528,7 +528,7 @@ func (as *userService) GetUserGroups(ctx context.Context, userID string, limit, 
 	}
 
 	// Check authz using the user's OU ID.
-	if svcErr := as.checkUserAccess(ctx, security.ActionReadUser, user.OrganizationUnit, userID); svcErr != nil {
+	if svcErr := as.checkUserAccess(ctx, security.ActionReadUser, user.OUID, userID); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -583,14 +583,14 @@ func (us *userService) UpdateUser(ctx context.Context, userID string, user *User
 
 	// Check authz using the existing user's OU ID.
 	if svcErr := us.checkUserAccess(
-		ctx, security.ActionUpdateUser, existingUser.OrganizationUnit, userID); svcErr != nil {
+		ctx, security.ActionUpdateUser, existingUser.OUID, userID); svcErr != nil {
 		return nil, svcErr
 	}
 
 	// If the user is moving to a different OU, require authorization for the destination OU as well.
-	if user.OrganizationUnit != existingUser.OrganizationUnit {
+	if user.OUID != existingUser.OUID {
 		if svcErr := us.checkUserAccess(
-			ctx, security.ActionUpdateUser, user.OrganizationUnit, userID); svcErr != nil {
+			ctx, security.ActionUpdateUser, user.OUID, userID); svcErr != nil {
 			return nil, svcErr
 		}
 	}
@@ -626,7 +626,7 @@ func (us *userService) UpdateUser(ctx context.Context, userID string, user *User
 
 	err = us.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if svcErr := us.validateOrganizationUnitForUserType(
-			txCtx, user.Type, user.OrganizationUnit, logger,
+			txCtx, user.Type, user.OUID, logger,
 		); svcErr != nil {
 			capturedSvcErr = svcErr
 			return errors.New("rollback for validation error")
@@ -722,7 +722,7 @@ func (us *userService) UpdateUserAttributes(
 
 	// Check authz outside the transaction so a denial is returned directly without a rollback.
 	if svcErr := us.checkUserAccess(
-		ctx, security.ActionUpdateUser, existingUser.OrganizationUnit, userID); svcErr != nil {
+		ctx, security.ActionUpdateUser, existingUser.OUID, userID); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -852,7 +852,7 @@ func (us *userService) batchUpdateUserCredentials(
 
 	// Check authz outside the transaction so a denial is returned directly without a rollback.
 	if svcErr := us.checkUserAccess(
-		ctx, security.ActionUpdateUser, existingUser.OrganizationUnit, userID); svcErr != nil {
+		ctx, security.ActionUpdateUser, existingUser.OUID, userID); svcErr != nil {
 		return svcErr
 	}
 
@@ -1097,7 +1097,7 @@ func (us *userService) DeleteUser(ctx context.Context, userID string) *serviceer
 
 	// Check authz using the user's OU ID.
 	if svcErr := us.checkUserAccess(
-		ctx, security.ActionDeleteUser, existingUser.OrganizationUnit, userID); svcErr != nil {
+		ctx, security.ActionDeleteUser, existingUser.OUID, userID); svcErr != nil {
 		return svcErr
 	}
 
@@ -1260,9 +1260,9 @@ func (us *userService) AuthenticateUser(
 
 	logger.Debug("User authenticated successfully", log.String("userID", *userID))
 	return &AuthenticateUserResponse{
-		ID:               user.ID,
-		Type:             user.Type,
-		OrganizationUnit: user.OrganizationUnit,
+		ID:   user.ID,
+		Type: user.Type,
+		OUID: user.OUID,
 	}, nil
 }
 
@@ -1433,14 +1433,14 @@ func (us *userService) IsUserDeclarative(ctx context.Context, userID string) (bo
 
 // validateOrganizationUnitForUserType ensures that the organization unit ID is valid and belongs to the user type.
 func (us *userService) validateOrganizationUnitForUserType(
-	ctx context.Context, userType, organizationUnitID string, logger *log.Logger,
+	ctx context.Context, userType, oUID string, logger *log.Logger,
 ) *serviceerror.ServiceError {
 	if strings.TrimSpace(userType) == "" {
 		return &ErrorUserSchemaNotFound
 	}
 
-	if strings.TrimSpace(organizationUnitID) == "" || !utils.IsValidUUID(organizationUnitID) {
-		return &ErrorInvalidOrganizationUnitID
+	if strings.TrimSpace(oUID) == "" || !utils.IsValidUUID(oUID) {
+		return &ErrorInvalidOUID
 	}
 
 	if us.ouService == nil {
@@ -1448,18 +1448,18 @@ func (us *userService) validateOrganizationUnitForUserType(
 		return &ErrorInternalServerError
 	}
 
-	exists, svcErr := us.ouService.IsOrganizationUnitExists(ctx, organizationUnitID)
+	exists, svcErr := us.ouService.IsOrganizationUnitExists(ctx, oUID)
 	if svcErr != nil {
 		return mapOUServiceError(
 			svcErr,
 			logger,
 			"verifying organization unit existence",
 			map[string]*serviceerror.ServiceError{
-				oupkg.ErrorOrganizationUnitNotFound.Code:  &ErrorOrganizationUnitNotFound,
-				oupkg.ErrorInvalidRequestFormat.Code:      &ErrorInvalidOrganizationUnitID,
-				oupkg.ErrorMissingOrganizationUnitID.Code: &ErrorInvalidOrganizationUnitID,
+				oupkg.ErrorOrganizationUnitNotFound.Code: &ErrorOrganizationUnitNotFound,
+				oupkg.ErrorInvalidRequestFormat.Code:     &ErrorInvalidOUID,
+				oupkg.ErrorMissingOUID.Code:              &ErrorInvalidOUID,
 			},
-			log.String("organizationUnitID", organizationUnitID),
+			log.String("oUID", oUID),
 		)
 	}
 	if !exists {
@@ -1486,11 +1486,11 @@ func (us *userService) validateOrganizationUnitForUserType(
 		return &ErrorInternalServerError
 	}
 
-	if userSchema.OrganizationUnitID == organizationUnitID {
+	if userSchema.OUID == oUID {
 		return nil
 	}
 
-	isParent, svcErr := us.ouService.IsParent(ctx, userSchema.OrganizationUnitID, organizationUnitID)
+	isParent, svcErr := us.ouService.IsParent(ctx, userSchema.OUID, oUID)
 	if svcErr != nil {
 		return mapOUServiceError(
 			svcErr,
@@ -1500,16 +1500,16 @@ func (us *userService) validateOrganizationUnitForUserType(
 				oupkg.ErrorOrganizationUnitNotFound.Code: &ErrorOrganizationUnitNotFound,
 			},
 			log.String("userType", userType),
-			log.String("organizationUnitID", organizationUnitID),
-			log.String("schemaOrganizationUnitID", userSchema.OrganizationUnitID),
+			log.String("oUID", oUID),
+			log.String("schemaOUID", userSchema.OUID),
 		)
 	}
 
 	if !isParent {
 		logger.Debug("Organization unit mismatch for user type",
 			log.String("userType", userType),
-			log.String("organizationUnitID", organizationUnitID),
-			log.String("schemaOrganizationUnitID", userSchema.OrganizationUnitID))
+			log.String("oUID", oUID),
+			log.String("schemaOUID", userSchema.OUID))
 		return &ErrorOrganizationUnitMismatch
 	}
 
@@ -1660,7 +1660,7 @@ func (us *userService) checkUserAccess(
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	allowed, svcErr := us.authzService.IsActionAllowed(ctx, action,
-		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUser, OuID: ouID, ResourceID: resourceID})
+		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUser, OUID: ouID, ResourceID: resourceID})
 	if svcErr != nil {
 		logger.Error("Failed to check authorization for action",
 			log.String("action", string(action)), log.Any("error", svcErr))

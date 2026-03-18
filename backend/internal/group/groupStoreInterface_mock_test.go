@@ -101,8 +101,8 @@ func (_c *groupStoreInterfaceMock_AddGroupMembers_Call) RunAndReturn(run func(ct
 }
 
 // CheckGroupNameConflictForCreate provides a mock function for the type groupStoreInterfaceMock
-func (_mock *groupStoreInterfaceMock) CheckGroupNameConflictForCreate(ctx context.Context, name string, organizationUnitID string) error {
-	ret := _mock.Called(ctx, name, organizationUnitID)
+func (_mock *groupStoreInterfaceMock) CheckGroupNameConflictForCreate(ctx context.Context, name string, oUID string) error {
+	ret := _mock.Called(ctx, name, oUID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CheckGroupNameConflictForCreate")
@@ -110,7 +110,7 @@ func (_mock *groupStoreInterfaceMock) CheckGroupNameConflictForCreate(ctx contex
 
 	var r0 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
-		r0 = returnFunc(ctx, name, organizationUnitID)
+		r0 = returnFunc(ctx, name, oUID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -125,12 +125,12 @@ type groupStoreInterfaceMock_CheckGroupNameConflictForCreate_Call struct {
 // CheckGroupNameConflictForCreate is a helper method to define mock.On call
 //   - ctx context.Context
 //   - name string
-//   - organizationUnitID string
-func (_e *groupStoreInterfaceMock_Expecter) CheckGroupNameConflictForCreate(ctx interface{}, name interface{}, organizationUnitID interface{}) *groupStoreInterfaceMock_CheckGroupNameConflictForCreate_Call {
-	return &groupStoreInterfaceMock_CheckGroupNameConflictForCreate_Call{Call: _e.mock.On("CheckGroupNameConflictForCreate", ctx, name, organizationUnitID)}
+//   - oUID string
+func (_e *groupStoreInterfaceMock_Expecter) CheckGroupNameConflictForCreate(ctx interface{}, name interface{}, oUID interface{}) *groupStoreInterfaceMock_CheckGroupNameConflictForCreate_Call {
+	return &groupStoreInterfaceMock_CheckGroupNameConflictForCreate_Call{Call: _e.mock.On("CheckGroupNameConflictForCreate", ctx, name, oUID)}
 }
 
-func (_c *groupStoreInterfaceMock_CheckGroupNameConflictForCreate_Call) Run(run func(ctx context.Context, name string, organizationUnitID string)) *groupStoreInterfaceMock_CheckGroupNameConflictForCreate_Call {
+func (_c *groupStoreInterfaceMock_CheckGroupNameConflictForCreate_Call) Run(run func(ctx context.Context, name string, oUID string)) *groupStoreInterfaceMock_CheckGroupNameConflictForCreate_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -158,14 +158,14 @@ func (_c *groupStoreInterfaceMock_CheckGroupNameConflictForCreate_Call) Return(e
 	return _c
 }
 
-func (_c *groupStoreInterfaceMock_CheckGroupNameConflictForCreate_Call) RunAndReturn(run func(ctx context.Context, name string, organizationUnitID string) error) *groupStoreInterfaceMock_CheckGroupNameConflictForCreate_Call {
+func (_c *groupStoreInterfaceMock_CheckGroupNameConflictForCreate_Call) RunAndReturn(run func(ctx context.Context, name string, oUID string) error) *groupStoreInterfaceMock_CheckGroupNameConflictForCreate_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // CheckGroupNameConflictForUpdate provides a mock function for the type groupStoreInterfaceMock
-func (_mock *groupStoreInterfaceMock) CheckGroupNameConflictForUpdate(ctx context.Context, name string, organizationUnitID string, groupID string) error {
-	ret := _mock.Called(ctx, name, organizationUnitID, groupID)
+func (_mock *groupStoreInterfaceMock) CheckGroupNameConflictForUpdate(ctx context.Context, name string, oUID string, groupID string) error {
+	ret := _mock.Called(ctx, name, oUID, groupID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CheckGroupNameConflictForUpdate")
@@ -173,7 +173,7 @@ func (_mock *groupStoreInterfaceMock) CheckGroupNameConflictForUpdate(ctx contex
 
 	var r0 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) error); ok {
-		r0 = returnFunc(ctx, name, organizationUnitID, groupID)
+		r0 = returnFunc(ctx, name, oUID, groupID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -188,13 +188,13 @@ type groupStoreInterfaceMock_CheckGroupNameConflictForUpdate_Call struct {
 // CheckGroupNameConflictForUpdate is a helper method to define mock.On call
 //   - ctx context.Context
 //   - name string
-//   - organizationUnitID string
+//   - oUID string
 //   - groupID string
-func (_e *groupStoreInterfaceMock_Expecter) CheckGroupNameConflictForUpdate(ctx interface{}, name interface{}, organizationUnitID interface{}, groupID interface{}) *groupStoreInterfaceMock_CheckGroupNameConflictForUpdate_Call {
-	return &groupStoreInterfaceMock_CheckGroupNameConflictForUpdate_Call{Call: _e.mock.On("CheckGroupNameConflictForUpdate", ctx, name, organizationUnitID, groupID)}
+func (_e *groupStoreInterfaceMock_Expecter) CheckGroupNameConflictForUpdate(ctx interface{}, name interface{}, oUID interface{}, groupID interface{}) *groupStoreInterfaceMock_CheckGroupNameConflictForUpdate_Call {
+	return &groupStoreInterfaceMock_CheckGroupNameConflictForUpdate_Call{Call: _e.mock.On("CheckGroupNameConflictForUpdate", ctx, name, oUID, groupID)}
 }
 
-func (_c *groupStoreInterfaceMock_CheckGroupNameConflictForUpdate_Call) Run(run func(ctx context.Context, name string, organizationUnitID string, groupID string)) *groupStoreInterfaceMock_CheckGroupNameConflictForUpdate_Call {
+func (_c *groupStoreInterfaceMock_CheckGroupNameConflictForUpdate_Call) Run(run func(ctx context.Context, name string, oUID string, groupID string)) *groupStoreInterfaceMock_CheckGroupNameConflictForUpdate_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -227,7 +227,7 @@ func (_c *groupStoreInterfaceMock_CheckGroupNameConflictForUpdate_Call) Return(e
 	return _c
 }
 
-func (_c *groupStoreInterfaceMock_CheckGroupNameConflictForUpdate_Call) RunAndReturn(run func(ctx context.Context, name string, organizationUnitID string, groupID string) error) *groupStoreInterfaceMock_CheckGroupNameConflictForUpdate_Call {
+func (_c *groupStoreInterfaceMock_CheckGroupNameConflictForUpdate_Call) RunAndReturn(run func(ctx context.Context, name string, oUID string, groupID string) error) *groupStoreInterfaceMock_CheckGroupNameConflictForUpdate_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -907,8 +907,8 @@ func (_c *groupStoreInterfaceMock_GetGroupsByIDs_Call) RunAndReturn(run func(ctx
 }
 
 // GetGroupsByOrganizationUnit provides a mock function for the type groupStoreInterfaceMock
-func (_mock *groupStoreInterfaceMock) GetGroupsByOrganizationUnit(ctx context.Context, organizationUnitID string, limit int, offset int) ([]GroupBasicDAO, error) {
-	ret := _mock.Called(ctx, organizationUnitID, limit, offset)
+func (_mock *groupStoreInterfaceMock) GetGroupsByOrganizationUnit(ctx context.Context, oUID string, limit int, offset int) ([]GroupBasicDAO, error) {
+	ret := _mock.Called(ctx, oUID, limit, offset)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetGroupsByOrganizationUnit")
@@ -917,17 +917,17 @@ func (_mock *groupStoreInterfaceMock) GetGroupsByOrganizationUnit(ctx context.Co
 	var r0 []GroupBasicDAO
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int) ([]GroupBasicDAO, error)); ok {
-		return returnFunc(ctx, organizationUnitID, limit, offset)
+		return returnFunc(ctx, oUID, limit, offset)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int) []GroupBasicDAO); ok {
-		r0 = returnFunc(ctx, organizationUnitID, limit, offset)
+		r0 = returnFunc(ctx, oUID, limit, offset)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]GroupBasicDAO)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int, int) error); ok {
-		r1 = returnFunc(ctx, organizationUnitID, limit, offset)
+		r1 = returnFunc(ctx, oUID, limit, offset)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -941,14 +941,14 @@ type groupStoreInterfaceMock_GetGroupsByOrganizationUnit_Call struct {
 
 // GetGroupsByOrganizationUnit is a helper method to define mock.On call
 //   - ctx context.Context
-//   - organizationUnitID string
+//   - oUID string
 //   - limit int
 //   - offset int
-func (_e *groupStoreInterfaceMock_Expecter) GetGroupsByOrganizationUnit(ctx interface{}, organizationUnitID interface{}, limit interface{}, offset interface{}) *groupStoreInterfaceMock_GetGroupsByOrganizationUnit_Call {
-	return &groupStoreInterfaceMock_GetGroupsByOrganizationUnit_Call{Call: _e.mock.On("GetGroupsByOrganizationUnit", ctx, organizationUnitID, limit, offset)}
+func (_e *groupStoreInterfaceMock_Expecter) GetGroupsByOrganizationUnit(ctx interface{}, oUID interface{}, limit interface{}, offset interface{}) *groupStoreInterfaceMock_GetGroupsByOrganizationUnit_Call {
+	return &groupStoreInterfaceMock_GetGroupsByOrganizationUnit_Call{Call: _e.mock.On("GetGroupsByOrganizationUnit", ctx, oUID, limit, offset)}
 }
 
-func (_c *groupStoreInterfaceMock_GetGroupsByOrganizationUnit_Call) Run(run func(ctx context.Context, organizationUnitID string, limit int, offset int)) *groupStoreInterfaceMock_GetGroupsByOrganizationUnit_Call {
+func (_c *groupStoreInterfaceMock_GetGroupsByOrganizationUnit_Call) Run(run func(ctx context.Context, oUID string, limit int, offset int)) *groupStoreInterfaceMock_GetGroupsByOrganizationUnit_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -981,14 +981,14 @@ func (_c *groupStoreInterfaceMock_GetGroupsByOrganizationUnit_Call) Return(group
 	return _c
 }
 
-func (_c *groupStoreInterfaceMock_GetGroupsByOrganizationUnit_Call) RunAndReturn(run func(ctx context.Context, organizationUnitID string, limit int, offset int) ([]GroupBasicDAO, error)) *groupStoreInterfaceMock_GetGroupsByOrganizationUnit_Call {
+func (_c *groupStoreInterfaceMock_GetGroupsByOrganizationUnit_Call) RunAndReturn(run func(ctx context.Context, oUID string, limit int, offset int) ([]GroupBasicDAO, error)) *groupStoreInterfaceMock_GetGroupsByOrganizationUnit_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetGroupsByOrganizationUnitCount provides a mock function for the type groupStoreInterfaceMock
-func (_mock *groupStoreInterfaceMock) GetGroupsByOrganizationUnitCount(ctx context.Context, organizationUnitID string) (int, error) {
-	ret := _mock.Called(ctx, organizationUnitID)
+func (_mock *groupStoreInterfaceMock) GetGroupsByOrganizationUnitCount(ctx context.Context, oUID string) (int, error) {
+	ret := _mock.Called(ctx, oUID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetGroupsByOrganizationUnitCount")
@@ -997,15 +997,15 @@ func (_mock *groupStoreInterfaceMock) GetGroupsByOrganizationUnitCount(ctx conte
 	var r0 int
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (int, error)); ok {
-		return returnFunc(ctx, organizationUnitID)
+		return returnFunc(ctx, oUID)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string) int); ok {
-		r0 = returnFunc(ctx, organizationUnitID)
+		r0 = returnFunc(ctx, oUID)
 	} else {
 		r0 = ret.Get(0).(int)
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, organizationUnitID)
+		r1 = returnFunc(ctx, oUID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1019,12 +1019,12 @@ type groupStoreInterfaceMock_GetGroupsByOrganizationUnitCount_Call struct {
 
 // GetGroupsByOrganizationUnitCount is a helper method to define mock.On call
 //   - ctx context.Context
-//   - organizationUnitID string
-func (_e *groupStoreInterfaceMock_Expecter) GetGroupsByOrganizationUnitCount(ctx interface{}, organizationUnitID interface{}) *groupStoreInterfaceMock_GetGroupsByOrganizationUnitCount_Call {
-	return &groupStoreInterfaceMock_GetGroupsByOrganizationUnitCount_Call{Call: _e.mock.On("GetGroupsByOrganizationUnitCount", ctx, organizationUnitID)}
+//   - oUID string
+func (_e *groupStoreInterfaceMock_Expecter) GetGroupsByOrganizationUnitCount(ctx interface{}, oUID interface{}) *groupStoreInterfaceMock_GetGroupsByOrganizationUnitCount_Call {
+	return &groupStoreInterfaceMock_GetGroupsByOrganizationUnitCount_Call{Call: _e.mock.On("GetGroupsByOrganizationUnitCount", ctx, oUID)}
 }
 
-func (_c *groupStoreInterfaceMock_GetGroupsByOrganizationUnitCount_Call) Run(run func(ctx context.Context, organizationUnitID string)) *groupStoreInterfaceMock_GetGroupsByOrganizationUnitCount_Call {
+func (_c *groupStoreInterfaceMock_GetGroupsByOrganizationUnitCount_Call) Run(run func(ctx context.Context, oUID string)) *groupStoreInterfaceMock_GetGroupsByOrganizationUnitCount_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -1047,7 +1047,7 @@ func (_c *groupStoreInterfaceMock_GetGroupsByOrganizationUnitCount_Call) Return(
 	return _c
 }
 
-func (_c *groupStoreInterfaceMock_GetGroupsByOrganizationUnitCount_Call) RunAndReturn(run func(ctx context.Context, organizationUnitID string) (int, error)) *groupStoreInterfaceMock_GetGroupsByOrganizationUnitCount_Call {
+func (_c *groupStoreInterfaceMock_GetGroupsByOrganizationUnitCount_Call) RunAndReturn(run func(ctx context.Context, oUID string) (int, error)) *groupStoreInterfaceMock_GetGroupsByOrganizationUnitCount_Call {
 	_c.Call.Return(run)
 	return _c
 }

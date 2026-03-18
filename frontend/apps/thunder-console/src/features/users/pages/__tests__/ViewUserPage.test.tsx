@@ -136,7 +136,7 @@ vi.mock('../../api/useDeleteUser', () => ({
 describe('ViewUserPage', () => {
   const mockUserData: ApiUser = {
     id: 'user123',
-    organizationUnit: 'test-ou',
+    ouId: 'test-ou',
     type: 'Employee',
     attributes: {
       username: 'john_doe',
@@ -478,7 +478,7 @@ describe('ViewUserPage', () => {
       // When userId is undefined, useGetUser will be called with undefined
       // Let's test the guard clause by simulating missing required fields instead
       mockUseGetUser.mockReturnValue({
-        data: {...mockUserData, organizationUnit: '', type: ''},
+        data: {...mockUserData, ouId: '', type: ''},
         isLoading: false,
         error: null,
       });
@@ -488,16 +488,16 @@ describe('ViewUserPage', () => {
       await user.click(screen.getByRole('button', {name: /edit/i}));
       await user.click(screen.getByRole('button', {name: /^save$/i}));
 
-      // Should not call mutateAsync when organizationUnit or type is empty
+      // Should not call mutateAsync when ouId or type is empty
       await waitFor(() => {
         expect(mockUpdateMutateAsync).not.toHaveBeenCalled();
       });
     });
 
-    it('does not submit if user organizationUnit is missing', async () => {
+    it('does not submit if user ouId is missing', async () => {
       const user = userEvent.setup();
       mockUseGetUser.mockReturnValue({
-        data: {...mockUserData, organizationUnit: undefined as unknown as string},
+        data: {...mockUserData, ouId: undefined as unknown as string},
         isLoading: false,
         error: null,
       });
@@ -721,7 +721,7 @@ describe('ViewUserPage', () => {
         expect(mockUpdateMutateAsync).toHaveBeenCalledWith({
           userId: 'user123',
           data: {
-            organizationUnit: 'test-ou',
+            ouId: 'test-ou',
             type: 'Employee',
             attributes: {
               username: 'john_doe',
@@ -737,7 +737,7 @@ describe('ViewUserPage', () => {
     it('uses schema organization unit when updating user', async () => {
       const user = userEvent.setup();
       mockUseGetUser.mockReturnValue({
-        data: {...mockUserData, organizationUnit: 'stale-ou'},
+        data: {...mockUserData, ouId: 'stale-ou'},
         isLoading: false,
         error: null,
       });
@@ -757,8 +757,8 @@ describe('ViewUserPage', () => {
 
       await waitFor(() => {
         expect(mockUpdateMutateAsync).toHaveBeenCalled();
-        const callArgs = mockUpdateMutateAsync.mock.calls[0][0] as {data: {organizationUnit: string}};
-        expect(callArgs.data.organizationUnit).toBe('schema-ou');
+        const callArgs = mockUpdateMutateAsync.mock.calls[0][0] as {data: {ouId: string}};
+        expect(callArgs.data.ouId).toBe('schema-ou');
       });
     });
 
@@ -780,8 +780,8 @@ describe('ViewUserPage', () => {
 
       await waitFor(() => {
         expect(mockUpdateMutateAsync).toHaveBeenCalled();
-        const callArgs = mockUpdateMutateAsync.mock.calls[0][0] as {data: {organizationUnit: string}};
-        expect(callArgs.data.organizationUnit).toBe('test-ou');
+        const callArgs = mockUpdateMutateAsync.mock.calls[0][0] as {data: {ouId: string}};
+        expect(callArgs.data.ouId).toBe('test-ou');
       });
     });
 
@@ -1029,7 +1029,7 @@ describe('ViewUserPage', () => {
     it('displays dash for null attribute values', () => {
       const userWithNullAttr: ApiUser = {
         id: 'user123',
-        organizationUnit: 'test-ou',
+        ouId: 'test-ou',
         type: 'Employee',
         attributes: {
           username: 'john_doe',
@@ -1052,7 +1052,7 @@ describe('ViewUserPage', () => {
     it('displays dash for undefined attribute values', () => {
       const userWithUndefinedAttr: ApiUser = {
         id: 'user123',
-        organizationUnit: 'test-ou',
+        ouId: 'test-ou',
         type: 'Employee',
         attributes: {
           username: 'john_doe',
@@ -1075,7 +1075,7 @@ describe('ViewUserPage', () => {
     it('displays comma-separated values for array attributes', () => {
       const userWithArrayAttr: ApiUser = {
         id: 'user123',
-        organizationUnit: 'test-ou',
+        ouId: 'test-ou',
         type: 'Employee',
         attributes: {
           username: 'john_doe',
@@ -1098,7 +1098,7 @@ describe('ViewUserPage', () => {
     it('displays JSON string for object attributes', () => {
       const userWithObjectAttr: ApiUser = {
         id: 'user123',
-        organizationUnit: 'test-ou',
+        ouId: 'test-ou',
         type: 'Employee',
         attributes: {
           username: 'john_doe',
@@ -1121,7 +1121,7 @@ describe('ViewUserPage', () => {
     it('displays dash for unknown attribute types', () => {
       const userWithUnknownType: ApiUser = {
         id: 'user123',
-        organizationUnit: 'test-ou',
+        ouId: 'test-ou',
         type: 'Employee',
         attributes: {
           username: 'john_doe',

@@ -60,10 +60,10 @@ func (suite *FileBasedStoreTestSuite) buildUser(id, ou string, attrs map[string]
 	suite.NoError(err)
 
 	return User{
-		ID:               id,
-		OrganizationUnit: ou,
-		Type:             "person",
-		Attributes:       payload,
+		ID:         id,
+		OUID:       ou,
+		Type:       "person",
+		Attributes: payload,
 	}
 }
 
@@ -136,10 +136,10 @@ func (suite *FileBasedStoreTestSuite) TestGetUserListCountAndList_Filtering() {
 // TestGetUserListCount_InvalidAttributes verifies invalid JSON attributes are filtered out.
 func (suite *FileBasedStoreTestSuite) TestGetUserListCount_InvalidAttributes() {
 	user := User{
-		ID:               "user-1",
-		OrganizationUnit: "ou-1",
-		Type:             "person",
-		Attributes:       json.RawMessage("{invalid-json"),
+		ID:         "user-1",
+		OUID:       "ou-1",
+		Type:       "person",
+		Attributes: json.RawMessage("{invalid-json"),
 	}
 
 	suite.NoError(suite.store.CreateUser(context.Background(), user, nil))

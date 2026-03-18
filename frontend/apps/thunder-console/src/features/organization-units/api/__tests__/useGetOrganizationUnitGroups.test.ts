@@ -48,8 +48,8 @@ describe('useGetOrganizationUnitGroups', () => {
     startIndex: 1,
     count: 2,
     groups: [
-      {id: 'group-1', name: 'Admin Group', organizationUnit: 'ou-123'},
-      {id: 'group-2', name: 'User Group', organizationUnit: 'ou-123'},
+      {id: 'group-1', name: 'Admin Group', ouId: 'ou-123'},
+      {id: 'group-2', name: 'User Group', ouId: 'ou-123'},
     ],
     links: [{rel: 'self', href: 'https://localhost:8090/organization-units/ou-123/groups'}],
   };
