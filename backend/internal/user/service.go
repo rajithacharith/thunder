@@ -1439,7 +1439,7 @@ func (us *userService) validateOrganizationUnitForUserType(
 		return &ErrorUserSchemaNotFound
 	}
 
-	if strings.TrimSpace(oUID) == "" || !utils.IsValidUUID(oUID) {
+	if strings.TrimSpace(oUID) == "" {
 		return &ErrorInvalidOUID
 	}
 
