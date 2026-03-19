@@ -17,7 +17,7 @@
  */
 
 import type {JSX} from 'react';
-import {Box, Checkbox, Divider, FormControlLabel, Typography} from '@wso2/oxygen-ui';
+import {Box, Divider, FormControlLabel, Switch, Typography} from '@wso2/oxygen-ui';
 import {Consent, ConsentCheckboxList, type ConsentPurpose, type ConsentRenderProps} from '@asgardeo/react';
 
 /**
@@ -65,17 +65,37 @@ export default function ConsentAdapter({
                     onInputChange={onInputChange}
                   >
                     {({attributes, isChecked}) => (
-                      <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.5, pl: 1}}>
+                      <Box sx={{display: 'flex', flexDirection: 'column'}}>
                         {attributes.map((attr) => (
-                          <FormControlLabel
-                            key={attr}
-                            control={<Checkbox checked={isChecked(attr)} disabled size="small" />}
-                            label={
-                              <Typography variant="body2" sx={{opacity: 0.7}}>
-                                {attr}
-                              </Typography>
-                            }
-                          />
+                          <Box key={attr} sx={{px: 1}}>
+                            <FormControlLabel
+                              control={<Switch checked={isChecked(attr)} disabled size="small" />}
+                              label={
+                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
+                                  <Box
+                                    sx={{
+                                      width: 6,
+                                      height: 6,
+                                      borderRadius: '50%',
+                                      backgroundColor: 'text.disabled',
+                                      flexShrink: 0,
+                                    }}
+                                  />
+                                  <Typography variant="body2" sx={{fontWeight: 500}}>
+                                    {attr}
+                                  </Typography>
+                                </Box>
+                              }
+                              labelPlacement="start"
+                              sx={{
+                                m: 0,
+                                width: '100%',
+                                justifyContent: 'space-between',
+                                py: 0.5,
+                              }}
+                            />
+                            <Divider sx={{opacity: 0.5}} />
+                          </Box>
                         ))}
                       </Box>
                     )}
@@ -94,19 +114,43 @@ export default function ConsentAdapter({
                     onInputChange={onInputChange}
                   >
                     {({attributes, isChecked, handleChange}) => (
-                      <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.5, pl: 1}}>
+                      <Box sx={{display: 'flex', flexDirection: 'column'}}>
                         {attributes.map((attr) => (
-                          <FormControlLabel
-                            key={attr}
-                            control={
-                              <Checkbox
-                                checked={isChecked(attr)}
-                                onChange={(e) => handleChange(attr, (e.target as HTMLInputElement).checked)}
-                                size="small"
-                              />
-                            }
-                            label={<Typography variant="body2">{attr}</Typography>}
-                          />
+                          <Box key={attr} sx={{px: 1}}>
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  checked={isChecked(attr)}
+                                  onChange={(e) => handleChange(attr, (e.target as HTMLInputElement).checked)}
+                                  size="small"
+                                />
+                              }
+                              label={
+                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
+                                  <Box
+                                    sx={{
+                                      width: 6,
+                                      height: 6,
+                                      borderRadius: '50%',
+                                      backgroundColor: 'text.disabled',
+                                      flexShrink: 0,
+                                    }}
+                                  />
+                                  <Typography variant="body2" sx={{fontWeight: 500}}>
+                                    {attr}
+                                  </Typography>
+                                </Box>
+                              }
+                              labelPlacement="start"
+                              sx={{
+                                m: 0,
+                                width: '100%',
+                                justifyContent: 'space-between',
+                                py: 0.5,
+                              }}
+                            />
+                            <Divider sx={{opacity: 0.5}} />
+                          </Box>
                         ))}
                       </Box>
                     )}
