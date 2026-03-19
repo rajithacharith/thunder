@@ -19,10 +19,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import ImageAdapter from '../ImageAdapter';
 import type {FlowComponent} from '../../../../models/flow';
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
+const mockIsEmojiUri = vi.fn((_uri: string): boolean => false);
+const mockExtractEmojiFromUri = vi.fn((_uri: string): string => '');
+/* eslint-enable @typescript-eslint/no-unused-vars */
+
+vi.mock('@asgardeo/react', () => ({
+  isEmojiUri: (uri: string) => mockIsEmojiUri(uri),
+  extractEmojiFromUri: (uri: string) => mockExtractEmojiFromUri(uri),
+}));
 
 vi.mock('@wso2/oxygen-ui', () => ({
   Box: ({component: Comp, src, alt, sx}: any) => {
@@ -47,7 +57,19 @@ const baseComponent: FlowComponent = {
   alt: 'Company Logo',
 };
 
+const emojiComponent: FlowComponent = {
+  id: 'img-emoji',
+  type: 'IMAGE',
+  src: 'emoji://1f600',
+  alt: 'Grinning Face',
+};
+
 describe('ImageAdapter', () => {
+  beforeEach(() => {
+    mockIsEmojiUri.mockReturnValue(false);
+    mockExtractEmojiFromUri.mockReturnValue('😀');
+  });
+
   it('renders an img element', () => {
     render(<ImageAdapter component={baseComponent} resolve={(s) => s} />);
     expect(screen.getByTestId('flow-image')).toBeInTheDocument();
@@ -103,5 +125,39 @@ describe('ImageAdapter', () => {
     const img = getByTestId('flow-image');
     expect(img.style.maxWidth).toBe('100%');
     expect(img.style.maxHeight).toBe('100%');
+  });
+
+  describe('emoji rendering', () => {
+    beforeEach(() => {
+      mockIsEmojiUri.mockReturnValue(true);
+      mockExtractEmojiFromUri.mockReturnValue('😀');
+    });
+
+    it('renders an emoji span instead of an img when src is an emoji URI', () => {
+      render(<ImageAdapter component={emojiComponent} resolve={(s) => s} />);
+      expect(screen.getByRole('img', {name: 'Grinning Face'})).toBeInTheDocument();
+      expect(screen.queryByTestId('flow-image')).not.toBeInTheDocument();
+    });
+
+    it('uses concrete height as containerHeight when height is set', () => {
+      const component = {...emojiComponent, height: '80', width: '80'};
+      const {container} = render(<ImageAdapter component={component} resolve={(s) => s} />);
+      const outer = container.firstChild as HTMLElement;
+      expect(outer.style.height).toBe('80px');
+    });
+
+    it('uses concrete width as containerHeight when height is auto and width is set', () => {
+      const component = {...emojiComponent, height: undefined, width: '60'};
+      const {container} = render(<ImageAdapter component={component} resolve={(s) => s} />);
+      const outer = container.firstChild as HTMLElement;
+      expect(outer.style.height).toBe('60px');
+    });
+
+    it('falls back to default emoji container height when both width and height are non-concrete', () => {
+      const component = {...emojiComponent, height: undefined, width: undefined};
+      const {container} = render(<ImageAdapter component={component} resolve={(s) => s} />);
+      const outer = container.firstChild as HTMLElement;
+      expect(outer.style.height).toBe('4em');
+    });
   });
 });

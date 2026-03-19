@@ -21,6 +21,7 @@
       "forms.credential.actions.submit.label": "Set Password"
     },
     "signin": {
+      "images.app_logo.alt": "Application logo",
       "forms.credentials.title": "Sign In",
       "forms.credentials.fields.username.label": "Username",
       "forms.credentials.fields.username.placeholder": "Enter your username",
@@ -52,6 +53,7 @@
       "forms.password_for_registration.actions.submit.label": "Register Passkey"
     },
     "signup": {
+      "images.app_logo.alt": "Application logo",
       "forms.credentials.title": "Sign Up",
       "forms.credentials.description": "Choose your preferred registration method",
       "forms.credentials.complete_profile": "Complete your profile",

@@ -14,6 +14,17 @@
             "meta": {
                 "components": [
                     {
+                        "alt": "{{ t(signin:images.app_logo.alt) }}",
+                        "category": "DISPLAY",
+                        "height": "60",
+                        "id": "image",
+                        "resourceType": "ELEMENT",
+                        "src": "{{ meta(application.logo_url) }}",
+                        "type": "IMAGE",
+                        "width": ""
+                    },
+                    {
+                        "align": "center",
                         "type": "TEXT",
                         "id": "text_001",
                         "label": "{{ t(signin:forms.choose_auth_method.title) }}",
@@ -102,6 +113,17 @@
             "meta": {
                 "components": [
                     {
+                        "alt": "{{ t(signin:images.app_logo.alt) }}",
+                        "category": "DISPLAY",
+                        "height": "60",
+                        "id": "image",
+                        "resourceType": "ELEMENT",
+                        "src": "{{ meta(application.logo_url) }}",
+                        "type": "IMAGE",
+                        "width": ""
+                    },
+                    {
+                        "align": "center",
                         "type": "TEXT",
                         "id": "text_002",
                         "label": "{{ t(signin:forms.passkey_identifier.title) }}",
@@ -184,6 +206,17 @@
             "meta": {
                 "components": [
                     {
+                        "alt": "{{ t(signin:images.app_logo.alt) }}",
+                        "category": "DISPLAY",
+                        "height": "60",
+                        "id": "image",
+                        "resourceType": "ELEMENT",
+                        "src": "{{ meta(application.logo_url) }}",
+                        "type": "IMAGE",
+                        "width": ""
+                    },
+                    {
+                        "align": "center",
                         "type": "TEXT",
                         "id": "text_004",
                         "label": "{{ t(signin:forms.password_for_registration.title) }}",

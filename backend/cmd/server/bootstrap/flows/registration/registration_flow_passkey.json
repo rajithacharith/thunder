@@ -23,10 +23,21 @@
             "meta": {
                 "components": [
                     {
+                        "alt": "{{ t(signup:images.app_logo.alt) }}",
+                        "category": "DISPLAY",
+                        "height": "60",
+                        "id": "image",
+                        "resourceType": "ELEMENT",
+                        "src": "{{ meta(application.logo_url) }}",
+                        "type": "IMAGE",
+                        "width": ""
+                    },
+                    {
+                        "align": "center",
                         "type": "TEXT",
                         "id": "heading_usertype",
                         "label": "{{ t(signup:forms.user_type.title) }}",
-                        "variant": "HEADING_2"
+                        "variant": "HEADING_1"
                     },
                     {
                         "type": "BLOCK",
@@ -75,6 +86,17 @@
             "meta": {
                 "components": [
                     {
+                        "alt": "{{ t(signup:images.app_logo.alt) }}",
+                        "category": "DISPLAY",
+                        "height": "60",
+                        "id": "image",
+                        "resourceType": "ELEMENT",
+                        "src": "{{ meta(application.logo_url) }}",
+                        "type": "IMAGE",
+                        "width": ""
+                    },
+                    {
+                        "align": "center",
                         "type": "TEXT",
                         "id": "text_001",
                         "label": "{{ t(signup:forms.collect_user_info.title) }}",

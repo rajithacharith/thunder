@@ -48,7 +48,7 @@ describe('isMetaTemplatePattern', () => {
     });
 
     it('should return false when the template is embedded in other text', () => {
-      expect(isMetaTemplatePattern('Visit {{meta(application.signUpUrl)}} today')).toBe(false);
+      expect(isMetaTemplatePattern('Visit {{meta(application.sign_up_url)}} today')).toBe(false);
     });
 
     it('should return false for missing closing braces', () => {
@@ -77,10 +77,10 @@ describe('META_PATTERN', () => {
 
 describe('META_KEY_PATTERN', () => {
   it('should capture the key from a meta template', () => {
-    const match = META_KEY_PATTERN.exec('{{meta(application.signUpUrl)}}');
+    const match = META_KEY_PATTERN.exec('{{meta(application.sign_up_url)}}');
 
     expect(match).not.toBeNull();
-    expect(match?.[1]).toBe('application.signUpUrl');
+    expect(match?.[1]).toBe('application.sign_up_url');
   });
 
   it('should return null for a non-matching string', () => {
