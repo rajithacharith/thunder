@@ -48,7 +48,7 @@ func TestHandleSelfUserGetRequest_Success(t *testing.T) {
 		ID:         userID,
 		Attributes: json.RawMessage(`{"username":"alice"}`),
 	}
-	mockSvc.On("GetUser", mock.Anything, userID).Return(expectedUser, nil)
+	mockSvc.On("GetUser", mock.Anything, userID, false).Return(expectedUser, nil)
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodGet, "/users/me", nil)
@@ -64,6 +64,25 @@ func TestHandleSelfUserGetRequest_Success(t *testing.T) {
 	require.NoError(t, json.NewDecoder(rr.Body).Decode(&respUser))
 	require.Equal(t, expectedUser.ID, respUser.ID)
 	require.JSONEq(t, string(expectedUser.Attributes), string(respUser.Attributes))
+}
+
+func TestHandleSelfUserGetRequest_IncludeDisplay(t *testing.T) {
+	userID := testUserID123
+	authCtx := security.NewSecurityContextForTest(userID, "", "", nil, nil)
+
+	mockSvc := NewUserServiceInterfaceMock(t)
+	expectedUser := &User{ID: userID}
+	mockSvc.On("GetUser", mock.Anything, userID, true).Return(expectedUser, nil)
+
+	handler := newUserHandler(mockSvc)
+	req := httptest.NewRequest(http.MethodGet, "/users/me?include=display", nil)
+	req = req.WithContext(security.WithSecurityContextTest(req.Context(), authCtx))
+	rr := httptest.NewRecorder()
+
+	handler.HandleSelfUserGetRequest(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	mockSvc.AssertExpectations(t)
 }
 
 func TestHandleSelfUserGetRequest_Unauthorized(t *testing.T) {
@@ -358,7 +377,7 @@ func TestHandleUserGetRequest_Success(t *testing.T) {
 	mockSvc := NewUserServiceInterfaceMock(t)
 	userID := testUserID123
 	expectedUser := &User{ID: userID}
-	mockSvc.On("GetUser", mock.Anything, userID).Return(expectedUser, nil)
+	mockSvc.On("GetUser", mock.Anything, userID, false).Return(expectedUser, nil)
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodGet, "/users/"+userID, nil)
@@ -372,6 +391,23 @@ func TestHandleUserGetRequest_Success(t *testing.T) {
 	var resp User
 	require.NoError(t, json.NewDecoder(rr.Body).Decode(&resp))
 	require.Equal(t, userID, resp.ID)
+}
+
+func TestHandleUserGetRequest_IncludeDisplay(t *testing.T) {
+	mockSvc := NewUserServiceInterfaceMock(t)
+	userID := testUserID123
+	expectedUser := &User{ID: userID}
+	mockSvc.On("GetUser", mock.Anything, userID, true).Return(expectedUser, nil)
+
+	handler := newUserHandler(mockSvc)
+	req := httptest.NewRequest(http.MethodGet, "/users/"+userID+"?include=display", nil)
+	req.SetPathValue("id", userID)
+	rr := httptest.NewRecorder()
+
+	handler.HandleUserGetRequest(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	mockSvc.AssertExpectations(t)
 }
 
 func TestHandleUserPutRequest_Success(t *testing.T) {
@@ -577,7 +613,7 @@ func TestHandleUserGetRequest_ErrorCases(t *testing.T) {
 	})
 
 	t.Run("ServiceError", func(t *testing.T) {
-		mockSvc.On("GetUser", mock.Anything, userID).Return(nil, &ErrorUserNotFound).Once()
+		mockSvc.On("GetUser", mock.Anything, userID, false).Return(nil, &ErrorUserNotFound).Once()
 		req := httptest.NewRequest(http.MethodGet, "/users/"+userID, nil)
 		req.SetPathValue("id", userID)
 		rr := httptest.NewRecorder()
@@ -665,7 +701,7 @@ func TestHandleError_ErrorUnauthorized_Returns403(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			mockSvc.On("GetUser", mock.Anything, userID).Return(nil, tc.svcErr).Once()
+			mockSvc.On("GetUser", mock.Anything, userID, false).Return(nil, tc.svcErr).Once()
 			req := httptest.NewRequest(http.MethodGet, "/users/"+userID, nil)
 			req.SetPathValue("id", userID)
 			rr := httptest.NewRecorder()

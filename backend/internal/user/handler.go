@@ -133,8 +133,11 @@ func (uh *userHandler) HandleUserGetRequest(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Parse include parameter to check if display name should be included.
+	includeDisplay := r.URL.Query().Get(sysutils.QueryParamInclude) == sysutils.IncludeValueDisplay
+
 	// Get the user using the user service.
-	user, svcErr := uh.userService.GetUser(ctx, id)
+	user, svcErr := uh.userService.GetUser(ctx, id, includeDisplay)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -338,7 +341,10 @@ func (uh *userHandler) HandleSelfUserGetRequest(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	user, svcErr := uh.userService.GetUser(ctx, userID)
+	// Parse include parameter to check if display name should be included.
+	includeDisplay := r.URL.Query().Get(sysutils.QueryParamInclude) == sysutils.IncludeValueDisplay
+
+	user, svcErr := uh.userService.GetUser(ctx, userID, includeDisplay)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return

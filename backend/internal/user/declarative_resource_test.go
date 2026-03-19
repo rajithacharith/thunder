@@ -181,7 +181,7 @@ func (suite *DeclarativeResourceTestSuite) TestUserExporter_GetResourceByID() {
 	exporter := newUserExporter(mockSvc)
 
 	attrs := json.RawMessage(`{"username":"alice"}`)
-	mockSvc.On("GetUser", context.Background(), "user-1").
+	mockSvc.On("GetUser", context.Background(), "user-1", false).
 		Return(&User{ID: "user-1", Type: "person", OUID: "ou-1", Attributes: attrs}, nil)
 
 	resource, name, err := exporter.GetResourceByID(context.Background(), "user-1")

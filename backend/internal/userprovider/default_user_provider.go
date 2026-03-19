@@ -53,7 +53,7 @@ func (p *defaultUserProvider) IdentifyUser(filters map[string]interface{}) (*str
 
 // GetUser retrieves a user based on the given user ID.
 func (p *defaultUserProvider) GetUser(userID string) (*User, *UserProviderError) {
-	userResult, err := p.userSvc.GetUser(security.WithRuntimeContext(context.Background()), userID)
+	userResult, err := p.userSvc.GetUser(security.WithRuntimeContext(context.Background()), userID, false)
 	if err != nil {
 		if err.Code == user.ErrorUserNotFound.Code {
 			return nil, NewUserProviderError(ErrorCodeUserNotFound, err.Error, err.ErrorDescription)

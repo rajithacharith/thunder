@@ -1705,9 +1705,37 @@ func TestUserService_GetUser_ReturnsUser(t *testing.T) {
 		authzService: newAllowAllAuthz(t),
 	}
 
-	user, err := service.GetUser(context.Background(), userID)
+	user, err := service.GetUser(context.Background(), userID, false)
 	require.Nil(t, err)
 	require.Equal(t, expectedUser, *user)
+}
+
+func TestUserService_GetUser_WithIncludeDisplay(t *testing.T) {
+	userID := svcTestUserID1
+	expectedUser := User{
+		ID:         userID,
+		OUID:       testOrgID,
+		Type:       "employee",
+		Attributes: json.RawMessage(`{"email":"alice@example.com"}`),
+	}
+
+	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.On("IsUserDeclarative", mock.Anything, mock.Anything).Return(false, nil).Maybe()
+	storeMock.On("GetUser", mock.Anything, userID).Return(expectedUser, nil).Once()
+
+	mockSchema := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	mockSchema.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
+		Return(map[string]string{"employee": "email"}, nil).Once()
+
+	service := &userService{
+		userStore:         storeMock,
+		authzService:      newAllowAllAuthz(t),
+		userSchemaService: mockSchema,
+	}
+
+	user, err := service.GetUser(context.Background(), userID, true)
+	require.Nil(t, err)
+	require.Equal(t, "alice@example.com", user.Display)
 }
 
 func TestUserService_DeleteUser(t *testing.T) {
@@ -3022,14 +3050,14 @@ func TestUserService_CRUD_ErrorCases(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("GetUser_MissingID", func(t *testing.T) {
-		_, err := service.GetUser(ctx, "")
+		_, err := service.GetUser(ctx, "", false)
 		require.NotNil(t, err)
 		require.Equal(t, ErrorMissingUserID.Code, err.Code)
 	})
 
 	t.Run("GetUser_NotFound", func(t *testing.T) {
 		mockStore.On("GetUser", mock.Anything, "u1").Return(User{}, ErrUserNotFound).Once()
-		_, err := service.GetUser(ctx, "u1")
+		_, err := service.GetUser(ctx, "u1", false)
 		require.NotNil(t, err)
 		require.Equal(t, ErrorUserNotFound.Code, err.Code)
 	})
@@ -4199,7 +4227,7 @@ func TestUserService_GetUser_ErrorCases(t *testing.T) {
 			if tc.name == "MissingUserID_ReturnsMissingUserIDError" {
 				id = ""
 			}
-			user, err := svc.GetUser(context.Background(), id)
+			user, err := svc.GetUser(context.Background(), id, false)
 			require.Nil(t, user)
 			require.NotNil(t, err)
 			require.Equal(t, tc.wantErrCode, err.Code)

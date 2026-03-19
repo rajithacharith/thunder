@@ -40,7 +40,7 @@ export default function useGetUser(userId: string | undefined): UseQueryResult<A
       const response: {
         data: ApiUser;
       } = await http.request({
-        url: `${serverUrl}/users/${userId}`,
+        url: `${serverUrl}/users/${userId}?include=display`,
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

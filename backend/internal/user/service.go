@@ -50,7 +50,7 @@ type UserServiceInterface interface {
 	CreateUser(ctx context.Context, user *User) (*User, *serviceerror.ServiceError)
 	CreateUserByPath(ctx context.Context, handlePath string,
 		request CreateUserByPathRequest) (*User, *serviceerror.ServiceError)
-	GetUser(ctx context.Context, userID string) (*User, *serviceerror.ServiceError)
+	GetUser(ctx context.Context, userID string, includeDisplay bool) (*User, *serviceerror.ServiceError)
 	GetUserGroups(ctx context.Context, userID string,
 		limit, offset int) (*UserGroupListResponse, *serviceerror.ServiceError)
 	UpdateUser(ctx context.Context, userID string, user *User) (*User, *serviceerror.ServiceError)
@@ -478,7 +478,9 @@ func (us *userService) extractCredentials(user *User, schemaCredentialAttributes
 }
 
 // GetUser retrieves a user by ID.
-func (us *userService) GetUser(ctx context.Context, userID string) (*User, *serviceerror.ServiceError) {
+func (us *userService) GetUser(
+	ctx context.Context, userID string, includeDisplay bool,
+) (*User, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Retrieving user", log.String("id", userID))
 
@@ -498,6 +500,13 @@ func (us *userService) GetUser(ctx context.Context, userID string) (*User, *serv
 	// Check authz using the user's OU ID (fetched from store).
 	if svcErr := us.checkUserAccess(ctx, security.ActionReadUser, user.OUID, userID); svcErr != nil {
 		return nil, svcErr
+	}
+
+	if includeDisplay {
+		displayAttrPaths := ResolveDisplayAttributePaths(
+			ctx, []string{user.Type}, us.userSchemaService, logger)
+		user.Display = utils.ResolveDisplay(
+			user.ID, user.Type, user.Attributes, displayAttrPaths)
 	}
 
 	logger.Debug("Successfully retrieved user", log.String("id", userID))

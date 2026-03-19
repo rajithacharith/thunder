@@ -95,7 +95,7 @@ func (e *userExporter) GetAllResourceIDs(ctx context.Context) ([]string, *servic
 // GetResourceByID retrieves a user by its ID.
 func (e *userExporter) GetResourceByID(
 	ctx context.Context, id string) (interface{}, string, *serviceerror.ServiceError) {
-	user, err := e.service.GetUser(ctx, id)
+	user, err := e.service.GetUser(ctx, id, false)
 	if err != nil {
 		return nil, "", err
 	}
