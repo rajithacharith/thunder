@@ -19,14 +19,15 @@
 package executor
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"html"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/email"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/template"
 )
 
 // emailExecutor sends emails based on the configured email template and runtime context data.
@@ -34,13 +35,15 @@ import (
 // without setting the emailSent flag, allowing the SDK to fall back to displaying the invite link.
 type emailExecutor struct {
 	core.ExecutorInterface
-	logger      *log.Logger
-	emailClient email.EmailClientInterface
+	logger          *log.Logger
+	emailClient     email.EmailClientInterface
+	templateService template.TemplateServiceInterface
 }
 
 // newEmailExecutor creates a new instance of the email executor.
 // emailClient may be nil if SMTP is not configured; the executor will act as a no-op in that case.
-func newEmailExecutor(flowFactory core.FlowFactoryInterface, emailClient email.EmailClientInterface) *emailExecutor {
+func newEmailExecutor(flowFactory core.FlowFactoryInterface, emailClient email.EmailClientInterface,
+	templateService template.TemplateServiceInterface) *emailExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "EmailExecutor"))
 	base := flowFactory.CreateExecutor(
 		ExecutorNameEmailExecutor,
@@ -54,6 +57,7 @@ func newEmailExecutor(flowFactory core.FlowFactoryInterface, emailClient email.E
 		ExecutorInterface: base,
 		logger:            logger,
 		emailClient:       emailClient,
+		templateService:   templateService,
 	}
 }
 
@@ -86,6 +90,10 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		return execResp, nil
 	}
 
+	if e.templateService == nil {
+		return nil, errors.New("template service is not configured")
+	}
+
 	// Resolve recipient email from user inputs or runtime data.
 	recipient := resolveRecipientEmail(ctx)
 	if recipient == "" {
@@ -95,23 +103,41 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		return execResp, nil
 	}
 
-	inviteLink := ctx.RuntimeData[common.RuntimeKeyInviteLink]
-	if inviteLink == "" {
-		logger.Debug("Invite link not found in runtime data")
-		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "invite link not found in runtime data"
-		return execResp, nil
+	var scenario template.ScenarioType
+	if tmplProp, ok := ctx.NodeProperties[propertyKeyEmailTemplate]; ok {
+		tmplStr, ok := tmplProp.(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid type for %s: expected string, got %T with value %v",
+				propertyKeyEmailTemplate, tmplProp, tmplProp)
+		}
+		if tmplStr == "" {
+			scenario = template.ScenarioUserInvite
+		} else {
+			scenario = template.ScenarioType(tmplStr)
+		}
+	} else {
+		scenario = template.ScenarioUserInvite
 	}
 
-	subject := "You're Invited to Register"
-	body := buildInviteEmailBody(inviteLink)
-	isHTML := true
+	inviteLink := ctx.RuntimeData[common.RuntimeKeyInviteLink]
+	if scenario == template.ScenarioUserInvite && inviteLink == "" {
+		return nil, errors.New("invite link not found in runtime data")
+	}
+
+	templateData := template.TemplateData{
+		"inviteLink": inviteLink,
+	}
+
+	rendered, svcErr := e.templateService.Render(context.Background(), scenario, templateData)
+	if svcErr != nil {
+		return nil, fmt.Errorf("failed to render email template: %s", svcErr.Code)
+	}
 
 	emailData := email.EmailData{
 		To:      []string{recipient},
-		Subject: subject,
-		Body:    body,
-		IsHTML:  isHTML,
+		Subject: rendered.Subject,
+		Body:    rendered.Body,
+		IsHTML:  rendered.IsHTML,
 	}
 
 	if err := e.emailClient.Send(emailData); err != nil {
@@ -120,7 +146,6 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 			execResp.FailureReason = "Failed to send email"
 			return execResp, nil
 		}
-		logger.Error("Failed to send email", log.Error(err))
 		return nil, fmt.Errorf("email send failed: %w", err)
 	}
 
@@ -141,25 +166,6 @@ func resolveRecipientEmail(ctx *core.NodeContext) string {
 		return recipientEmail
 	}
 	return ""
-}
-
-// buildInviteEmailBody constructs the HTML body for the invite email.
-func buildInviteEmailBody(inviteLink string) string {
-	// Escape the link for both attribute and text contexts to avoid
-	// HTML injection if the token ever contains unsafe characters.
-	esc := html.EscapeString(inviteLink)
-	return fmt.Sprintf(`<html>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-	<h2>You've Been Invited!</h2>
-	<p>You have been invited to create your account. Click the link below to complete your registration:</p>
-	<p><a href="%s" style="display: inline-block; padding: 10px 20px;
-		background-color: #ff7300; color: #fff; text-decoration: none;
-		border-radius: 4px;">Complete Registration</a></p>
-	<p>If the button above doesn't work, copy and paste the following link into your browser:</p>
-	<p><a href="%s">%s</a></p>
-	<p>If you did not expect this invitation, you can safely ignore this email.</p>
-</body>
-</html>`, esc, esc, esc)
 }
 
 // isEmailClientError returns true if the error is a client-side validation error

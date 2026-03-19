@@ -19,32 +19,34 @@
 package executor
 
 import (
-	"html"
-	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/email"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/template"
 	"github.com/asgardeo/thunder/tests/mocks/emailmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
+	"github.com/asgardeo/thunder/tests/mocks/templatemock"
 )
 
 type EmailExecutorTestSuite struct {
 	suite.Suite
-	mockFlowFactory *coremock.FlowFactoryInterfaceMock
-	mockEmailClient *emailmock.EmailClientInterfaceMock
-	executor        *emailExecutor
+	mockFlowFactory     *coremock.FlowFactoryInterfaceMock
+	mockEmailClient     *emailmock.EmailClientInterfaceMock
+	mockTemplateService *templatemock.TemplateServiceInterfaceMock
+	executor            *emailExecutor
 }
 
 func (suite *EmailExecutorTestSuite) SetupTest() {
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 	mockBaseExecutor := coremock.NewExecutorInterfaceMock(suite.T())
 	suite.mockEmailClient = emailmock.NewEmailClientInterfaceMock(suite.T())
+	suite.mockTemplateService = templatemock.NewTemplateServiceInterfaceMock(suite.T())
 
 	suite.mockFlowFactory.On("CreateExecutor",
 		ExecutorNameEmailExecutor,
@@ -55,7 +57,7 @@ func (suite *EmailExecutorTestSuite) SetupTest() {
 		},
 	).Return(mockBaseExecutor)
 
-	suite.executor = newEmailExecutor(suite.mockFlowFactory, suite.mockEmailClient)
+	suite.executor = newEmailExecutor(suite.mockFlowFactory, suite.mockEmailClient, suite.mockTemplateService)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UserInviteTemplate_Success() {
@@ -73,6 +75,18 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UserInviteTemplate_Suc
 		},
 	}
 
+	suite.mockTemplateService.On("Render",
+		mock.Anything,
+		template.ScenarioUserInvite,
+		template.TemplateData{
+			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+		},
+	).Return(&template.RenderedTemplate{
+		Subject: "You're Invited to Register",
+		Body:    "<html><body>Complete Registration</body></html>",
+		IsHTML:  true,
+	}, nil)
+
 	var sentEmail email.EmailData
 	suite.mockEmailClient.On("Send", mock.Anything).Run(func(args mock.Arguments) {
 		sentEmail = args.Get(0).(email.EmailData)
@@ -80,13 +94,53 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UserInviteTemplate_Suc
 
 	resp, err := suite.executor.Execute(ctx)
 
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
-	assert.Equal(suite.T(), dataValueTrue, resp.AdditionalData[common.DataEmailSent])
-	assert.Equal(suite.T(), []string{"user@example.com"}, sentEmail.To)
-	assert.Equal(suite.T(), "You're Invited to Register", sentEmail.Subject)
-	assert.True(suite.T(), sentEmail.IsHTML)
-	assert.Contains(suite.T(), sentEmail.Body, "Complete Registration")
+	suite.NoError(err)
+	suite.Equal(common.ExecComplete, resp.Status)
+	suite.Equal(dataValueTrue, resp.AdditionalData[common.DataEmailSent])
+	suite.Equal([]string{"user@example.com"}, sentEmail.To)
+	suite.Equal("You're Invited to Register", sentEmail.Subject)
+	suite.True(sentEmail.IsHTML)
+	suite.Contains(sentEmail.Body, "Complete Registration")
+}
+
+func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UsesUserInputOverRuntimeRecipient() {
+	ctx := &core.NodeContext{
+		FlowID:       "test-flow-id",
+		ExecutorMode: ExecutorModeSend,
+		UserInputs: map[string]string{
+			"email": "user@example.com",
+		},
+		RuntimeData: map[string]string{
+			"email":                     "runtime@example.com",
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+		},
+		NodeProperties: map[string]interface{}{
+			"emailTemplate": "USER_INVITE",
+		},
+	}
+
+	suite.mockTemplateService.On("Render",
+		mock.Anything,
+		template.ScenarioUserInvite,
+		template.TemplateData{
+			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+		},
+	).Return(&template.RenderedTemplate{
+		Subject: "You're Invited to Register",
+		Body:    "<html><body>Complete Registration</body></html>",
+		IsHTML:  true,
+	}, nil)
+
+	var sentEmail email.EmailData
+	suite.mockEmailClient.On("Send", mock.Anything).Run(func(args mock.Arguments) {
+		sentEmail = args.Get(0).(email.EmailData)
+	}).Return(nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	suite.NoError(err)
+	suite.Equal(common.ExecComplete, resp.Status)
+	suite.Equal([]string{"user@example.com"}, sentEmail.To)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmailFromRuntimeData() {
@@ -103,6 +157,18 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmailFromRuntimeData()
 		},
 	}
 
+	suite.mockTemplateService.On("Render",
+		mock.Anything,
+		template.ScenarioUserInvite,
+		template.TemplateData{
+			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+		},
+	).Return(&template.RenderedTemplate{
+		Subject: "You're Invited to Register",
+		Body:    "<html><body>Complete Registration</body></html>",
+		IsHTML:  true,
+	}, nil)
+
 	var sentEmail email.EmailData
 	suite.mockEmailClient.On("Send", mock.Anything).Run(func(args mock.Arguments) {
 		sentEmail = args.Get(0).(email.EmailData)
@@ -110,9 +176,9 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmailFromRuntimeData()
 
 	resp, err := suite.executor.Execute(ctx)
 
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
-	assert.Equal(suite.T(), []string{"runtime@example.com"}, sentEmail.To)
+	suite.NoError(err)
+	suite.Equal(common.ExecComplete, resp.Status)
+	suite.Equal([]string{"runtime@example.com"}, sentEmail.To)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingRecipient() {
@@ -130,9 +196,9 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingRecipient() {
 
 	resp, err := suite.executor.Execute(ctx)
 
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Equal(suite.T(), "Email recipient is required", resp.FailureReason)
+	suite.NoError(err)
+	suite.Equal(common.ExecFailure, resp.Status)
+	suite.Equal("Email recipient is required", resp.FailureReason)
 	suite.mockEmailClient.AssertNotCalled(suite.T(), "Send", mock.Anything)
 }
 
@@ -151,13 +217,13 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingInviteLink() {
 
 	resp, err := suite.executor.Execute(ctx)
 
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Contains(suite.T(), resp.FailureReason, "invite link not found")
+	suite.Error(err)
+	suite.Nil(resp)
+	suite.Contains(err.Error(), "invite link not found")
 	suite.mockEmailClient.AssertNotCalled(suite.T(), "Send", mock.Anything)
 }
 
-func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingTemplateProperty_Success() {
+func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingTemplateProperty_DefaultsToUserInvite() {
 	ctx := &core.NodeContext{
 		FlowID:       "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
@@ -170,6 +236,19 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingTemplatePropert
 		NodeProperties: map[string]interface{}{},
 	}
 
+	// Verify that Render is called with ScenarioUserInvite even when the property is absent.
+	suite.mockTemplateService.On("Render",
+		mock.Anything,
+		template.ScenarioUserInvite,
+		template.TemplateData{
+			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+		},
+	).Return(&template.RenderedTemplate{
+		Subject: "You're Invited to Register",
+		Body:    "<html><body>Complete Registration</body></html>",
+		IsHTML:  true,
+	}, nil)
+
 	var sentEmail email.EmailData
 	suite.mockEmailClient.On("Send", mock.Anything).Run(func(args mock.Arguments) {
 		sentEmail = args.Get(0).(email.EmailData)
@@ -177,9 +256,134 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingTemplatePropert
 
 	resp, err := suite.executor.Execute(ctx)
 
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
-	assert.Equal(suite.T(), []string{"user@example.com"}, sentEmail.To)
+	suite.NoError(err)
+	suite.Equal(common.ExecComplete, resp.Status)
+	suite.Equal([]string{"user@example.com"}, sentEmail.To)
+}
+
+func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmptyTemplateString_DefaultsToUserInvite() {
+	ctx := &core.NodeContext{
+		FlowID:       "test-flow-id",
+		ExecutorMode: ExecutorModeSend,
+		UserInputs: map[string]string{
+			"email": "user@example.com",
+		},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+		},
+		NodeProperties: map[string]interface{}{
+			"emailTemplate": "",
+		},
+	}
+
+	suite.mockTemplateService.On("Render",
+		mock.Anything,
+		template.ScenarioUserInvite,
+		template.TemplateData{
+			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+		},
+	).Return(&template.RenderedTemplate{
+		Subject: "You're Invited to Register",
+		Body:    "<html><body>Complete Registration</body></html>",
+		IsHTML:  true,
+	}, nil)
+
+	var sentEmail email.EmailData
+	suite.mockEmailClient.On("Send", mock.Anything).Run(func(args mock.Arguments) {
+		sentEmail = args.Get(0).(email.EmailData)
+	}).Return(nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	suite.NoError(err)
+	suite.Equal(common.ExecComplete, resp.Status)
+	suite.Equal([]string{"user@example.com"}, sentEmail.To)
+}
+
+func (suite *EmailExecutorTestSuite) TestExecute_SendMode_InvalidTemplateType_ReturnsError() {
+	ctx := &core.NodeContext{
+		FlowID:       "test-flow-id",
+		ExecutorMode: ExecutorModeSend,
+		UserInputs: map[string]string{
+			"email": "user@example.com",
+		},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+		},
+		NodeProperties: map[string]interface{}{
+			"emailTemplate": 123,
+		},
+	}
+
+	resp, err := suite.executor.Execute(ctx)
+	if suite.Error(err) {
+		suite.Contains(err.Error(), "invalid type for emailTemplate")
+	}
+	suite.Nil(resp)
+}
+
+func (suite *EmailExecutorTestSuite) TestExecute_SendMode_TemplateRenderError() {
+	ctx := &core.NodeContext{
+		FlowID:       "test-flow-id",
+		ExecutorMode: ExecutorModeSend,
+		UserInputs: map[string]string{
+			"email": "user@example.com",
+		},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+		},
+		NodeProperties: map[string]interface{}{
+			"emailTemplate": "USER_INVITE",
+		},
+	}
+
+	suite.mockTemplateService.On("Render",
+		mock.Anything,
+		template.ScenarioUserInvite,
+		mock.Anything,
+	).Return(nil, &serviceerror.I18nServiceError{Code: "TMP-5000"})
+
+	resp, err := suite.executor.Execute(ctx)
+	if suite.Error(err) {
+		suite.Contains(err.Error(), "failed to render email template: TMP-5000")
+	}
+	suite.Nil(resp)
+	suite.mockEmailClient.AssertNotCalled(suite.T(), "Send", mock.Anything)
+}
+
+func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilTemplateService() {
+	mockBaseExecutor := coremock.NewExecutorInterfaceMock(suite.T())
+	mockFactory := coremock.NewFlowFactoryInterfaceMock(suite.T())
+	mockFactory.On("CreateExecutor",
+		ExecutorNameEmailExecutor,
+		common.ExecutorTypeUtility,
+		[]common.Input{},
+		[]common.Input{
+			{Identifier: userAttributeEmail, Type: common.InputTypeText, Required: true},
+		},
+	).Return(mockBaseExecutor)
+
+	noServiceExecutor := newEmailExecutor(mockFactory, suite.mockEmailClient, nil)
+
+	ctx := &core.NodeContext{
+		FlowID:       "test-flow-id",
+		ExecutorMode: ExecutorModeSend,
+		UserInputs: map[string]string{
+			"email": "user@example.com",
+		},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+		},
+		NodeProperties: map[string]interface{}{
+			"emailTemplate": "USER_INVITE",
+		},
+	}
+
+	resp, err := noServiceExecutor.Execute(ctx)
+	if suite.Error(err) {
+		suite.Contains(err.Error(), "template service is not configured")
+	}
+	suite.Nil(resp)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ClientError() {
@@ -197,13 +401,23 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ClientError() {
 		},
 	}
 
+	suite.mockTemplateService.On("Render",
+		mock.Anything,
+		template.ScenarioUserInvite,
+		mock.Anything,
+	).Return(&template.RenderedTemplate{
+		Subject: "You're Invited to Register",
+		Body:    "<html><body>Complete Registration</body></html>",
+		IsHTML:  true,
+	}, nil)
+
 	suite.mockEmailClient.On("Send", mock.Anything).Return(email.ErrorInvalidRecipient)
 
 	resp, err := suite.executor.Execute(ctx)
 
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Equal(suite.T(), "Failed to send email", resp.FailureReason)
+	suite.NoError(err)
+	suite.Equal(common.ExecFailure, resp.Status)
+	suite.Equal("Failed to send email", resp.FailureReason)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ServerError() {
@@ -221,12 +435,22 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ServerError() {
 		},
 	}
 
+	suite.mockTemplateService.On("Render",
+		mock.Anything,
+		template.ScenarioUserInvite,
+		mock.Anything,
+	).Return(&template.RenderedTemplate{
+		Subject: "You're Invited to Register",
+		Body:    "<html><body>Complete Registration</body></html>",
+		IsHTML:  true,
+	}, nil)
+
 	suite.mockEmailClient.On("Send", mock.Anything).Return(email.ErrorSMTPConnection)
 
 	resp, err := suite.executor.Execute(ctx)
 
-	assert.Error(suite.T(), err)
-	assert.Nil(suite.T(), resp)
+	suite.Error(err)
+	suite.Nil(resp)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_NoOp() {
@@ -242,7 +466,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_NoOp() 
 		},
 	).Return(mockBaseExecutor)
 
-	noEmailExecutor := newEmailExecutor(mockFactory, nil)
+	noEmailExecutor := newEmailExecutor(mockFactory, nil, suite.mockTemplateService)
 
 	ctx := &core.NodeContext{
 		FlowID:       "test-flow-id",
@@ -260,10 +484,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_NoOp() 
 
 	resp, err := noEmailExecutor.Execute(ctx)
 
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	suite.NoError(err)
+	suite.Equal(common.ExecComplete, resp.Status)
 	// emailSent should NOT be set when email client is not configured
-	assert.Empty(suite.T(), resp.AdditionalData[common.DataEmailSent])
+	suite.Empty(resp.AdditionalData[common.DataEmailSent])
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_InvalidMode() {
@@ -275,23 +499,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_InvalidMode() {
 	}
 
 	resp, err := suite.executor.Execute(ctx)
-
-	assert.Error(suite.T(), err)
-	assert.Nil(suite.T(), resp)
-	assert.Contains(suite.T(), err.Error(), "invalid executor mode for EmailExecutor")
-}
-
-func (suite *EmailExecutorTestSuite) TestBuildInviteEmailBody_EscapesLink() {
-	// Craft a link that would break naive interpolation if unescaped
-	malicious := `https://example.com/?q="'><script>alert(1)</script>`
-	body := buildInviteEmailBody(malicious)
-
-	// Original string should not appear unescaped
-	assert.NotContains(suite.T(), body, malicious)
-	escaped := html.EscapeString(malicious)
-	assert.Contains(suite.T(), body, escaped)
-	// Ensure the escaped version appears in both href and visible text sections
-	assert.Equal(suite.T(), 3, strings.Count(body, escaped))
+	if suite.Error(err) {
+		suite.Contains(err.Error(), "invalid executor mode for EmailExecutor")
+	}
+	suite.Nil(resp)
 }
 
 func TestEmailExecutorSuite(t *testing.T) {

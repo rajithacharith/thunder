@@ -85,6 +85,7 @@ const (
 	propertyKeyAssignGroup    = "assignGroup"
 	propertyKeyAssignRole     = "assignRole"
 	propertyKeyRequiredScopes = "requiredScopes"
+	propertyKeyEmailTemplate  = "emailTemplate"
 )
 
 // nonSearchableInputs contains the list of user inputs/ attributes that are non-searchable.
