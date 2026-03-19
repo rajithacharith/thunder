@@ -304,7 +304,7 @@ var (
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"assurance_test_user"},
 		AssertionConfig: map[string]interface{}{
-			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
+			"userAttributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
 

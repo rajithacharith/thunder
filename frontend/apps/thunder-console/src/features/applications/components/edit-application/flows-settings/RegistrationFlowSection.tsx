@@ -67,17 +67,17 @@ export default function RegistrationFlowSection({application, editedApp, onField
     <SettingsCard
       title={t('applications:edit.flows.labels.registrationFlow')}
       description={t('applications:edit.flows.labels.registrationFlow.description')}
-      enabled={editedApp.is_registration_flow_enabled ?? application.is_registration_flow_enabled ?? false}
-      onToggle={(enabled) => onFieldChange('is_registration_flow_enabled', enabled)}
+      enabled={editedApp.isRegistrationFlowEnabled ?? application.isRegistrationFlowEnabled ?? false}
+      onToggle={(enabled) => onFieldChange('isRegistrationFlowEnabled', enabled)}
     >
-      {(editedApp.registration_flow_id ?? application.registration_flow_id) && (
+      {(editedApp.registrationFlowId ?? application.registrationFlowId) && (
         <Alert severity="info" sx={{mb: 2}}>
           <Trans
             i18nKey="applications:edit.flows.registrationFlow.alert"
             components={[
               <Link
                 key="edit"
-                to={`/flows/signup/${editedApp.registration_flow_id ?? application.registration_flow_id}`}
+                to={`/flows/signup/${editedApp.registrationFlowId ?? application.registrationFlowId}`}
                 style={{color: 'inherit', fontWeight: 'bold', textDecoration: 'underline'}}
               />,
               <Link
@@ -95,10 +95,10 @@ export default function RegistrationFlowSection({application, editedApp, onField
         getOptionLabel={(option) => (typeof option === 'string' ? option : option.name)}
         value={
           regFlowOptions.find(
-            (flow) => flow.id === (editedApp.registration_flow_id ?? application.registration_flow_id),
+            (flow) => flow.id === (editedApp.registrationFlowId ?? application.registrationFlowId),
           ) ?? null
         }
-        onChange={(_event, newValue) => onFieldChange('registration_flow_id', newValue?.id ?? '')}
+        onChange={(_event, newValue) => onFieldChange('registrationFlowId', newValue?.id ?? '')}
         loading={loadingRegFlows}
         renderInput={(params) => (
           <TextField

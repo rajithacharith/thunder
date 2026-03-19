@@ -96,7 +96,7 @@ describe('RichTextAdapter', () => {
 
     it('returns null when registration is disabled', () => {
       const resolve = (template: string | undefined) =>
-        template?.includes('is_registration_flow_enabled') ? 'false' : template;
+        template?.includes('isRegistrationFlowEnabled') ? 'false' : template;
 
       const {queryByTestId} = render(
         <RichTextAdapter component={signUpComponent} resolve={resolve} signUpFallbackUrl="/signup" />,
@@ -106,7 +106,7 @@ describe('RichTextAdapter', () => {
 
     it('renders the sign-up link when registration is enabled and the server resolves the URL', () => {
       const resolve = (template: string | undefined) => {
-        if (template?.includes('is_registration_flow_enabled')) return 'true';
+        if (template?.includes('isRegistrationFlowEnabled')) return 'true';
         return template?.replace('{{meta(application.sign_up_url)}}', '/custom/signup');
       };
 
@@ -118,7 +118,7 @@ describe('RichTextAdapter', () => {
 
     it('uses signUpFallbackUrl when the server does not resolve the sign-up URL template', () => {
       const resolve = (template: string | undefined) =>
-        template?.includes('is_registration_flow_enabled') ? 'true' : template;
+        template?.includes('isRegistrationFlowEnabled') ? 'true' : template;
 
       const {getByTestId} = render(
         <RichTextAdapter component={signUpComponent} resolve={resolve} signUpFallbackUrl="/signup?client_id=abc" />,
@@ -128,7 +128,7 @@ describe('RichTextAdapter', () => {
 
     it('renders sign-up content without href substitution when signUpFallbackUrl is not provided', () => {
       const resolve = (template: string | undefined) =>
-        template?.includes('is_registration_flow_enabled') ? 'true' : template;
+        template?.includes('isRegistrationFlowEnabled') ? 'true' : template;
 
       const {getByTestId} = render(<RichTextAdapter component={signUpComponent} resolve={resolve} />);
       // Component renders (registration enabled) but no fallback URL is substituted

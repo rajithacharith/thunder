@@ -37,20 +37,20 @@ const (
 // OTPRequest represents the request to send an OTP
 type OTPRequest struct {
 	Recipient string `json:"recipient"`
-	SenderID  string `json:"sender_id"`
+	SenderID  string `json:"senderId"`
 	Channel   string `json:"channel"`
 }
 
 // OTPSendResponse represents the response when sending an OTP
 type OTPSendResponse struct {
 	Status       string `json:"status"`
-	SessionToken string `json:"session_token"`
+	SessionToken string `json:"sessionToken"`
 }
 
 // OTPVerifyRequest represents the request to verify an OTP
 type OTPVerifyRequest struct {
-	SessionToken string `json:"session_token"`
-	OTPCode      string `json:"otp_code"`
+	SessionToken string `json:"sessionToken"`
+	OTPCode      string `json:"otpCode"`
 }
 
 // OTPVerifyResponse represents the response when verifying an OTP

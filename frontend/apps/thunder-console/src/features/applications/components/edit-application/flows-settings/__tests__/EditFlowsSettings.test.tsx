@@ -26,7 +26,7 @@ import type {Application} from '../../../../models/application';
 vi.mock('../AuthenticationFlowSection', () => ({
   default: ({application, editedApp}: {application: Application; editedApp: Partial<Application>}) => (
     <div data-testid="auth-flow-section">
-      AuthenticationFlowSection - App: {application.id}, Edited Auth Flow: {editedApp.auth_flow_id ?? 'None'}
+      AuthenticationFlowSection - App: {application.id}, Edited Auth Flow: {editedApp.authFlowId ?? 'None'}
     </div>
   ),
 }));
@@ -34,7 +34,7 @@ vi.mock('../AuthenticationFlowSection', () => ({
 vi.mock('../RegistrationFlowSection', () => ({
   default: ({application, editedApp}: {application: Application; editedApp: Partial<Application>}) => (
     <div data-testid="registration-flow-section">
-      RegistrationFlowSection - App: {application.id}, Edited Reg Flow: {editedApp.registration_flow_id ?? 'None'}
+      RegistrationFlowSection - App: {application.id}, Edited Reg Flow: {editedApp.registrationFlowId ?? 'None'}
     </div>
   ),
 }));
@@ -44,9 +44,9 @@ describe('EditFlowsSettings', () => {
   const mockApplication: Application = {
     id: 'app-123',
     name: 'Test App',
-    auth_flow_id: 'auth-flow-1',
-    registration_flow_id: 'reg-flow-1',
-    is_registration_flow_enabled: true,
+    authFlowId: 'auth-flow-1',
+    registrationFlowId: 'reg-flow-1',
+    isRegistrationFlowEnabled: true,
   } as Application;
 
   beforeEach(() => {
@@ -78,8 +78,8 @@ describe('EditFlowsSettings', () => {
 
     it('should pass editedApp to child components', () => {
       const editedApp = {
-        auth_flow_id: 'edited-auth-flow',
-        registration_flow_id: 'edited-reg-flow',
+        authFlowId: 'edited-auth-flow',
+        registrationFlowId: 'edited-reg-flow',
       };
 
       render(
@@ -128,7 +128,7 @@ describe('EditFlowsSettings', () => {
     });
 
     it('should pass all required props to both child components', () => {
-      const editedApp = {auth_flow_id: 'new-flow'};
+      const editedApp = {authFlowId: 'new-flow'};
 
       render(
         <MemoryRouter>

@@ -23,10 +23,10 @@ import declarativeresource "github.com/asgardeo/thunder/internal/system/declarat
 // ExportRequest represents the request structure for exporting resources.
 type ExportRequest struct {
 	Applications        []string `json:"applications,omitempty"`
-	IdentityProviders   []string `json:"identity_providers,omitempty"`
-	NotificationSenders []string `json:"notification_senders,omitempty"`
-	UserSchemas         []string `json:"user_schemas,omitempty"`
-	OrganizationUnits   []string `json:"organization_units,omitempty"`
+	IdentityProviders   []string `json:"identityProviders,omitempty"`
+	NotificationSenders []string `json:"notificationSenders,omitempty"`
+	UserSchemas         []string `json:"userSchemas,omitempty"`
+	OrganizationUnits   []string `json:"organizationUnits,omitempty"`
 	Flows               []string `json:"flows,omitempty"`
 	Translations        []string `json:"translations,omitempty"`
 	Layouts             []string `json:"layouts,omitempty"`
@@ -38,16 +38,16 @@ type ExportRequest struct {
 // ExportOptions provides configuration for export behavior.
 type ExportOptions struct {
 	// IncludeMetadata determines whether to include metadata (creation dates, IDs, etc.)
-	IncludeMetadata bool `json:"include_metadata,omitempty"`
+	IncludeMetadata bool `json:"includeMetadata,omitempty"`
 
 	// IncludeDependencies automatically exports related resources
-	IncludeDependencies bool `json:"include_dependencies,omitempty"`
+	IncludeDependencies bool `json:"includeDependencies,omitempty"`
 
 	// Format specifies the output format for individual files (yaml, json)
 	Format string `json:"format,omitempty"` // Default: "yaml"
 
 	// Folder structure options
-	FolderStructure *FolderStructureOptions `json:"folder_structure,omitempty"`
+	FolderStructure *FolderStructureOptions `json:"folderStructure,omitempty"`
 
 	// Pagination for bulk exports
 	Pagination *PaginationOptions `json:"pagination,omitempty"`
@@ -56,13 +56,13 @@ type ExportOptions struct {
 // FolderStructureOptions configures how files are organized in exports.
 type FolderStructureOptions struct {
 	// GroupByType creates separate folders for each resource type
-	GroupByType bool `json:"group_by_type,omitempty"`
+	GroupByType bool `json:"groupByType,omitempty"`
 
 	// CustomStructure allows defining custom folder paths
-	CustomStructure map[string]string `json:"custom_structure,omitempty"`
+	CustomStructure map[string]string `json:"customStructure,omitempty"`
 
 	// FileNamingPattern defines how files should be named
-	FileNamingPattern string `json:"file_naming_pattern,omitempty"` // e.g., "${name}_${id}", "${type}_${name}"
+	FileNamingPattern string `json:"fileNamingPattern,omitempty"` // e.g., "${name}_${id}", "${type}_${name}"
 }
 
 // PaginationOptions configures pagination for bulk exports.
@@ -84,10 +84,10 @@ type ExportResponse struct {
 
 // ExportSummary provides metadata about the export operation.
 type ExportSummary struct {
-	TotalFiles    int                               `json:"total_files"`
-	TotalSize     int64                             `json:"total_size_bytes,omitempty"`
-	ExportedAt    string                            `json:"exported_at,omitempty"`
-	ResourceTypes map[string]int                    `json:"resource_types,omitempty"` // Type -> count
+	TotalFiles    int                               `json:"totalFiles"`
+	TotalSize     int64                             `json:"totalSizeBytes,omitempty"`
+	ExportedAt    string                            `json:"exportedAt,omitempty"`
+	ResourceTypes map[string]int                    `json:"resourceTypes,omitempty"` // Type -> count
 	Errors        []declarativeresource.ExportError `json:"errors,omitempty"`
 	Pagination    *PaginationInfo                   `json:"pagination,omitempty"`
 }
@@ -100,16 +100,16 @@ type ExportError = declarativeresource.ExportError
 type PaginationInfo struct {
 	Page       int  `json:"page"`
 	Limit      int  `json:"limit"`
-	TotalPages int  `json:"total_pages,omitempty"`
-	HasMore    bool `json:"has_more"`
+	TotalPages int  `json:"totalPages,omitempty"`
+	HasMore    bool `json:"hasMore"`
 }
 
 // ExportFile represents a single YAML file in the export response.
 type ExportFile struct {
-	FileName     string `json:"file_name"`
+	FileName     string `json:"fileName"`
 	Content      string `json:"content"`
-	FolderPath   string `json:"folder_path,omitempty"`   // Relative path within the export
-	ResourceType string `json:"resource_type,omitempty"` // application, group, user, idp
-	ResourceID   string `json:"resource_id,omitempty"`   // ID of the exported resource
-	Size         int64  `json:"size,omitempty"`          // File size in bytes
+	FolderPath   string `json:"folderPath,omitempty"`   // Relative path within the export
+	ResourceType string `json:"resourceType,omitempty"` // application, group, user, idp
+	ResourceID   string `json:"resourceId,omitempty"`   // ID of the exported resource
+	Size         int64  `json:"size,omitempty"`         // File size in bytes
 }

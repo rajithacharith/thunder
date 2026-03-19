@@ -39,17 +39,17 @@ const mockApplication: Application = {
   name: 'Test Application',
   template: 'react',
   description: 'Test description',
-  allowed_user_types: ['admin', 'user'],
+  allowedUserTypes: ['admin', 'user'],
 };
 
 const mockOAuth2Config: OAuth2Config = {
-  client_id: 'client-123',
-  client_secret: 'secret-456',
-  grant_types: ['authorization_code'],
-  response_types: ['code'],
-  pkce_required: true,
-  public_client: false,
-  redirect_uris: ['https://example.com/callback'],
+  clientId: 'client-123',
+  clientSecret: 'secret-456',
+  grantTypes: ['authorization_code'],
+  responseTypes: ['code'],
+  pkceRequired: true,
+  publicClient: false,
+  redirectUris: ['https://example.com/callback'],
 };
 
 const mockIntegrationGuides = {

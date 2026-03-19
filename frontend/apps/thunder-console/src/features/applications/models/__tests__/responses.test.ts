@@ -26,7 +26,7 @@ describe('Responses Models', () => {
       const mockApplication: BasicApplication = {
         id: '550e8400-e29b-41d4-a716-446655440000',
         name: 'Test App',
-        client_id: 'test_client_id',
+        clientId: 'test_client_id',
       };
 
       const response: ApplicationListResponse = {
@@ -57,14 +57,14 @@ describe('Responses Models', () => {
         {
           id: '1',
           name: 'App 1',
-          client_id: 'client_1',
+          clientId: 'client_1',
         },
         {
           id: '2',
           name: 'App 2',
           description: 'Test description',
-          client_id: 'client_2',
-          logo_url: 'https://example.com/logo.png',
+          clientId: 'client_2',
+          logoUrl: 'https://example.com/logo.png',
         },
       ];
 

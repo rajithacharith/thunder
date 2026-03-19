@@ -71,14 +71,14 @@ export default function AuthenticationFlowSection({
       title={t('applications:edit.flows.labels.authFlow')}
       description={t('applications:edit.flows.labels.authFlow.description')}
     >
-      {(editedApp.auth_flow_id ?? application.auth_flow_id) && (
+      {(editedApp.authFlowId ?? application.authFlowId) && (
         <Alert severity="info" sx={{mb: 2}}>
           <Trans
             i18nKey="applications:edit.flows.authFlow.alert"
             components={[
               <Link
                 key="edit"
-                to={`/flows/signin/${editedApp.auth_flow_id ?? application.auth_flow_id}`}
+                to={`/flows/signin/${editedApp.authFlowId ?? application.authFlowId}`}
                 style={{color: 'inherit', fontWeight: 'bold', textDecoration: 'underline'}}
               />,
               <Link
@@ -94,8 +94,8 @@ export default function AuthenticationFlowSection({
         fullWidth
         options={authFlowOptions}
         getOptionLabel={(option) => (typeof option === 'string' ? option : option.name)}
-        value={authFlowOptions.find((flow) => flow.id === (editedApp.auth_flow_id ?? application.auth_flow_id)) ?? null}
-        onChange={(_event, newValue) => onFieldChange('auth_flow_id', newValue?.id ?? '')}
+        value={authFlowOptions.find((flow) => flow.id === (editedApp.authFlowId ?? application.authFlowId)) ?? null}
+        onChange={(_event, newValue) => onFieldChange('authFlowId', newValue?.id ?? '')}
         loading={loadingAuthFlows}
         renderInput={(params) => (
           <TextField

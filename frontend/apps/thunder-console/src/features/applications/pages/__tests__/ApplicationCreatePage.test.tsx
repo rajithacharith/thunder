@@ -573,9 +573,9 @@ describe('ApplicationCreatePage', () => {
 
       // Verify OAuth config was included
       const createAppCall = mockCreateApplication.mock.calls[0][0] as Application;
-      expect(createAppCall.inbound_auth_config).toBeDefined();
-      expect(createAppCall.inbound_auth_config?.[0]).toBeDefined();
-      expect(createAppCall.inbound_auth_config?.[0]?.type).toBe('oauth2');
+      expect(createAppCall.inboundAuthConfig).toBeDefined();
+      expect(createAppCall.inboundAuthConfig?.[0]).toBeDefined();
+      expect(createAppCall.inboundAuthConfig?.[0]?.type).toBe('oauth2');
     });
 
     it('should navigate to application details page after creation', async () => {
@@ -657,7 +657,7 @@ describe('ApplicationCreatePage', () => {
 
       // Verify OAuth config was NOT included
       const createAppCall = mockCreateApplication.mock.calls[0][0] as Application;
-      expect(createAppCall.inbound_auth_config).toBeUndefined();
+      expect(createAppCall.inboundAuthConfig).toBeUndefined();
     });
 
     it('should skip configure step for embedded approach', async () => {
@@ -826,9 +826,9 @@ describe('ApplicationCreatePage', () => {
         expect(mockCreateApplication).toHaveBeenCalled();
       });
 
-      // Verify theme_id was included in the application creation
+      // Verify themeId was included in the application creation
       const createAppCall = mockCreateApplication.mock.calls[0][0] as Application;
-      expect(createAppCall.theme_id).toBe('theme-1');
+      expect(createAppCall.themeId).toBe('theme-1');
     });
   });
 
@@ -886,18 +886,18 @@ describe('ApplicationCreatePage', () => {
   });
 
   describe('Client Secret Display (COMPLETE Step)', () => {
-    it('should show COMPLETE step when application is created with client_secret', async () => {
+    it('should show COMPLETE step when application is created with clientSecret', async () => {
       mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
         onSuccess({
           id: 'app-123',
           name: 'My App',
-          inbound_auth_config: [
+          inboundAuthConfig: [
             {
               type: 'oauth2',
               config: {
-                client_id: 'test-client-id',
-                client_secret: 'test_secret_12345',
-                redirect_uris: ['https://example.com/callback'],
+                clientId: 'test-client-id',
+                clientSecret: 'test_secret_12345',
+                redirectUris: ['https://example.com/callback'],
               },
             },
           ],
@@ -939,12 +939,12 @@ describe('ApplicationCreatePage', () => {
       expect(screen.getByTestId('client-secret-value')).toHaveTextContent('test_secret_12345');
     });
 
-    it('should not show COMPLETE step when application is created without client_secret', async () => {
+    it('should not show COMPLETE step when application is created without clientSecret', async () => {
       mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
         onSuccess({
           id: 'app-123',
           name: 'My App',
-          inbound_auth_config: [],
+          inboundAuthConfig: [],
         } as Application);
       });
 
@@ -988,13 +988,13 @@ describe('ApplicationCreatePage', () => {
         onSuccess({
           id: 'app-456',
           name: 'My App',
-          inbound_auth_config: [
+          inboundAuthConfig: [
             {
               type: 'oauth2',
               config: {
-                client_id: 'test-client-id',
-                client_secret: 'test_secret_12345',
-                redirect_uris: ['https://example.com/callback'],
+                clientId: 'test-client-id',
+                clientSecret: 'test_secret_12345',
+                redirectUris: ['https://example.com/callback'],
               },
             },
           ],
@@ -1047,13 +1047,13 @@ describe('ApplicationCreatePage', () => {
         onSuccess({
           id: 'app-123',
           name: 'My App',
-          inbound_auth_config: [
+          inboundAuthConfig: [
             {
               type: 'oauth2',
               config: {
-                client_id: 'test-client-id',
-                client_secret: 'test_secret_12345',
-                redirect_uris: ['https://example.com/callback'],
+                clientId: 'test-client-id',
+                clientSecret: 'test_secret_12345',
+                redirectUris: ['https://example.com/callback'],
               },
             },
           ],
@@ -1100,13 +1100,13 @@ describe('ApplicationCreatePage', () => {
         onSuccess({
           id: 'app-123',
           name: 'My App',
-          inbound_auth_config: [
+          inboundAuthConfig: [
             {
               type: 'oauth2',
               config: {
-                client_id: 'test-client-id',
-                client_secret: 'test_secret_12345',
-                redirect_uris: ['https://example.com/callback'],
+                clientId: 'test-client-id',
+                clientSecret: 'test_secret_12345',
+                redirectUris: ['https://example.com/callback'],
               },
             },
           ],
@@ -1231,7 +1231,7 @@ describe('ApplicationCreatePage', () => {
 
       // Verify createApplication called with generated flow ID
       const createAppCall = mockCreateApplication.mock.calls[0][0] as Application;
-      expect(createAppCall.auth_flow_id).toBe('generated-flow-id');
+      expect(createAppCall.authFlowId).toBe('generated-flow-id');
     });
 
     it('should show error when flow generation fails', async () => {

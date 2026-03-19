@@ -125,8 +125,8 @@ export default function OrganizationUnitEditPage(): JSX.Element {
       name: editedOU.name ?? organizationUnit.name,
       description: editedOU.description !== undefined ? editedOU.description : organizationUnit.description,
       parent: organizationUnit.parent ?? null,
-      theme_id: editedOU.theme_id !== undefined ? editedOU.theme_id : organizationUnit.theme_id,
-      logo_url: editedOU.logo_url ?? organizationUnit.logo_url,
+      themeId: editedOU.themeId !== undefined ? editedOU.themeId : organizationUnit.themeId,
+      logoUrl: editedOU.logoUrl ?? organizationUnit.logoUrl,
     };
 
     try {
@@ -214,10 +214,10 @@ export default function OrganizationUnitEditPage(): JSX.Element {
         </PageTitle.BackButton>
         <PageTitle.Avatar sx={{overflow: 'visible'}}>
           <ResourceAvatar
-            value={editedOU.logo_url ?? organizationUnit.logo_url ?? undefined}
+            value={editedOU.logoUrl ?? organizationUnit.logoUrl ?? undefined}
             fallbackIcon={<Building size={32} />}
             editAriaLabel={t('organizationUnits:edit.page.logoUpdate.label')}
-            onSelect={(newLogoUrl: string) => setEditedOU((prev) => ({...prev, logo_url: newLogoUrl}))}
+            onSelect={(newLogoUrl: string) => setEditedOU((prev) => ({...prev, logoUrl: newLogoUrl}))}
           />
         </PageTitle.Avatar>
         <PageTitle.Header>

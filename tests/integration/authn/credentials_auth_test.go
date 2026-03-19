@@ -684,7 +684,7 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithSkipAssertionFalse() 
 		"credentials": map[string]interface{}{
 			"password": "TestPassword123!",
 		},
-		"skip_assertion": false,
+		"skipAssertion": false,
 	}
 
 	response, statusCode, err := suite.sendAuthRequest(authRequest)
@@ -707,7 +707,7 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithSkipAssertionTrue() {
 		"credentials": map[string]interface{}{
 			"password": "TestPassword123!",
 		},
-		"skip_assertion": true,
+		"skipAssertion": true,
 	}
 
 	response, statusCode, err := suite.sendAuthRequest(authRequest)
@@ -758,7 +758,7 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithAssuranceLevelNoAsser
 		"credentials": map[string]interface{}{
 			"password": "TestPassword123!",
 		},
-		"skip_assertion": true,
+		"skipAssertion": true,
 	}
 
 	response, statusCode, err := suite.sendAuthRequest(authRequest)
@@ -989,7 +989,7 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionSkip
 		"credentials": map[string]interface{}{
 			"password": "TestPassword123!",
 		},
-		"skip_assertion": true,
+		"skipAssertion": true,
 		"assertion":      firstResponse.Assertion,
 	}
 

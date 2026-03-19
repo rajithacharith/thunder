@@ -39,12 +39,12 @@ import {TechnologyApplicationTemplate} from '../models/application-templates';
  * @example
  * ```typescript
  * // Public client (SPA)
- * const spaConfig = { public_client: true, grant_types: ['authorization_code'] };
+ * const spaConfig = { publicClient: true, grantTypes: ['authorization_code'] };
  * inferApplicationTemplateTechnologyFromConfig(spaConfig);
  * // Returns: 'REACT'
  *
  * // Confidential client (SSR)
- * const ssrConfig = { public_client: false, grant_types: ['authorization_code'] };
+ * const ssrConfig = { publicClient: false, grantTypes: ['authorization_code'] };
  * inferApplicationTemplateTechnologyFromConfig(ssrConfig);
  * // Returns: 'NEXTJS'
  *
@@ -58,11 +58,11 @@ export default function inferApplicationTemplateTechnologyFromConfig(
 ): TechnologyApplicationTemplate {
   if (!config) return TechnologyApplicationTemplate.OTHER;
 
-  if (config.public_client) {
+  if (config.publicClient) {
     return TechnologyApplicationTemplate.REACT;
   }
 
-  if (config.grant_types.includes(OAuth2GrantTypes.AUTHORIZATION_CODE)) {
+  if (config.grantTypes.includes(OAuth2GrantTypes.AUTHORIZATION_CODE)) {
     return TechnologyApplicationTemplate.NEXTJS;
   }
 

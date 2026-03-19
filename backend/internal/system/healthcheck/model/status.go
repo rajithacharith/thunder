@@ -22,12 +22,12 @@ package model
 // ServerStatus represents an liveliness details of the server.
 type ServerStatus struct {
 	Status        Status          `json:"status,omitempty"`
-	ServiceStatus []ServiceStatus `json:"service_status,omitempty"`
+	ServiceStatus []ServiceStatus `json:"serviceStatus,omitempty"`
 }
 
 // ServiceStatus represents the status of a service in the system.
 type ServiceStatus struct {
-	ServiceName string `json:"service_name,omitempty"`
+	ServiceName string `json:"serviceName,omitempty"`
 	Status      Status `json:"status,omitempty"`
 }
 

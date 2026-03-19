@@ -42,8 +42,8 @@ describe('QuickCopySection', () => {
   } as Application;
 
   const mockOAuth2Config: OAuth2Config = {
-    client_id: 'client-123',
-    client_secret: 'secret-456',
+    clientId: 'client-123',
+    clientSecret: 'secret-456',
   } as OAuth2Config;
 
   beforeEach(() => {
@@ -136,7 +136,7 @@ describe('QuickCopySection', () => {
       const copyButtons = screen.getAllByRole('button');
       await user.click(copyButtons[1]);
 
-      expect(mockOnCopyToClipboard).toHaveBeenCalledWith('client-123', 'client_id');
+      expect(mockOnCopyToClipboard).toHaveBeenCalledWith('client-123', 'clientId');
     });
 
     it('should not render client ID copy button when client ID is not available', () => {
@@ -182,12 +182,12 @@ describe('QuickCopySection', () => {
         <QuickCopySection
           application={mockApplication}
           oauth2Config={mockOAuth2Config}
-          copiedField="client_id"
+          copiedField="clientId"
           onCopyToClipboard={mockOnCopyToClipboard}
         />,
       );
 
-      // Should show "Copied!" tooltip for client_id field
+      // Should show "Copied!" tooltip for clientId field
       expect(screen.getByLabelText('Copied!')).toBeInTheDocument();
     });
 
@@ -211,7 +211,7 @@ describe('QuickCopySection', () => {
         <QuickCopySection
           application={mockApplication}
           oauth2Config={mockOAuth2Config}
-          copiedField="client_id"
+          copiedField="clientId"
           onCopyToClipboard={mockOnCopyToClipboard}
         />,
       );

@@ -58,8 +58,8 @@ type ResourceExporter interface {
 
 // ExportError represents errors that occurred during export.
 type ExportError struct {
-	ResourceType string `json:"resource_type"`
-	ResourceID   string `json:"resource_id,omitempty"`
+	ResourceType string `json:"resourceType"`
+	ResourceID   string `json:"resourceId,omitempty"`
 	Error        string `json:"error"`
 	Code         string `json:"code,omitempty"`
 }

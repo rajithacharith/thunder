@@ -34,7 +34,7 @@ vi.mock('../QuickCopySection', () => ({
     copiedField: string | null;
   }) => (
     <div data-testid="quick-copy-section">
-      QuickCopySection - App: {application.id}, OAuth: {oauth2Config?.client_id ?? 'None'}, Copied:{' '}
+      QuickCopySection - App: {application.id}, OAuth: {oauth2Config?.clientId ?? 'None'}, Copied:{' '}
       {copiedField ?? 'None'}
     </div>
   ),
@@ -52,7 +52,7 @@ vi.mock('../AccessSection', () => ({
   }) => (
     <div data-testid="access-section">
       AccessSection - App: {application.id}, Edited URL: {editedApp.url ?? 'None'}, OAuth:{' '}
-      {oauth2Config?.client_id ?? 'None'}
+      {oauth2Config?.clientId ?? 'None'}
     </div>
   ),
 }));
@@ -112,9 +112,9 @@ describe('EditGeneralSettings', () => {
   } as Application;
 
   const mockOAuth2Config: OAuth2Config = {
-    client_id: 'client-123',
-    client_secret: 'secret-456',
-    token_endpoint_auth_method: 'client_secret_basic',
+    clientId: 'client-123',
+    clientSecret: 'secret-456',
+    tokenEndpointAuthMethod: 'client_secret_basic',
   } as OAuth2Config;
 
   beforeEach(() => {
@@ -266,7 +266,7 @@ describe('EditGeneralSettings', () => {
           editedApp={editedApp}
           onFieldChange={mockOnFieldChange}
           oauth2Config={mockOAuth2Config}
-          copiedField="client_id"
+          copiedField="clientId"
           onCopyToClipboard={mockOnCopyToClipboard}
         />,
       );
@@ -312,8 +312,8 @@ describe('EditGeneralSettings', () => {
 
     it('should not render DangerZoneSection for public client (none auth method)', () => {
       const publicClientConfig: OAuth2Config = {
-        client_id: 'public-client-123',
-        token_endpoint_auth_method: 'none',
+        clientId: 'public-client-123',
+        tokenEndpointAuthMethod: 'none',
       } as OAuth2Config;
 
       render(
@@ -346,8 +346,8 @@ describe('EditGeneralSettings', () => {
 
     it('should not render DangerZoneSection for private_key_jwt auth method', () => {
       const pkjwtClientConfig: OAuth2Config = {
-        client_id: 'pkjwt-client-123',
-        token_endpoint_auth_method: 'private_key_jwt',
+        clientId: 'pkjwt-client-123',
+        tokenEndpointAuthMethod: 'private_key_jwt',
       } as OAuth2Config;
 
       render(
@@ -366,9 +366,9 @@ describe('EditGeneralSettings', () => {
 
     it('should render DangerZoneSection for client_secret_post auth method', () => {
       const postClientConfig: OAuth2Config = {
-        client_id: 'post-client-123',
-        client_secret: 'secret-456',
-        token_endpoint_auth_method: 'client_secret_post',
+        clientId: 'post-client-123',
+        clientSecret: 'secret-456',
+        tokenEndpointAuthMethod: 'client_secret_post',
       } as OAuth2Config;
 
       render(

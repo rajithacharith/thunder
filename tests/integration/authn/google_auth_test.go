@@ -213,7 +213,7 @@ func (suite *GoogleAuthTestSuite) TearDownSuite() {
 
 func (suite *GoogleAuthTestSuite) TestGoogleAuthStartSuccess() {
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -233,10 +233,10 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthStartSuccess() {
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	suite.Contains(startResponse, "redirect_url")
-	suite.Contains(startResponse, "session_token")
+	suite.Contains(startResponse, "redirectUrl")
+	suite.Contains(startResponse, "sessionToken")
 
-	redirectURL, ok := startResponse["redirect_url"].(string)
+	redirectURL, ok := startResponse["redirectUrl"].(string)
 	suite.Require().True(ok)
 	suite.Contains(redirectURL, suite.mockGoogleServer.GetURL())
 	suite.Contains(redirectURL, "client_id=test-google-client")
@@ -245,7 +245,7 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthStartSuccess() {
 
 func (suite *GoogleAuthTestSuite) TestGoogleAuthStartInvalidIDPID() {
 	startRequest := map[string]interface{}{
-		"idp_id": "invalid-idp-id",
+		"idpId": "invalid-idp-id",
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -287,7 +287,7 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthStartMissingIDPID() {
 
 func (suite *GoogleAuthTestSuite) TestGoogleAuthCompleteFlowSuccess() {
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -307,14 +307,14 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthCompleteFlowSuccess() {
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	sessionToken := startResponse["session_token"].(string)
-	redirectURL := startResponse["redirect_url"].(string)
+	sessionToken := startResponse["sessionToken"].(string)
+	redirectURL := startResponse["redirectUrl"].(string)
 
 	authCode := suite.simulateGoogleAuthorization(redirectURL)
 	suite.Require().NotEmpty(authCode)
 
 	finishRequest := map[string]interface{}{
-		"session_token": sessionToken,
+		"sessionToken": sessionToken,
 		"code":          authCode,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
@@ -343,7 +343,7 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthCompleteFlowSuccess() {
 
 func (suite *GoogleAuthTestSuite) TestGoogleAuthFinishInvalidSessionToken() {
 	finishRequest := map[string]interface{}{
-		"session_token": "invalid-session-token",
+		"sessionToken": "invalid-session-token",
 		"code":          "some-auth-code",
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
@@ -363,7 +363,7 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthFinishInvalidSessionToken() {
 
 func (suite *GoogleAuthTestSuite) TestGoogleAuthFinishMissingCode() {
 	finishRequest := map[string]interface{}{
-		"session_token": "some-session-token",
+		"sessionToken": "some-session-token",
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -380,10 +380,10 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthFinishMissingCode() {
 	suite.Equal(http.StatusBadRequest, resp.StatusCode)
 }
 
-// TestGoogleAuthCompleteFlowWithSkipAssertionFalse tests complete Google auth flow with skip_assertion=false
+// TestGoogleAuthCompleteFlowWithSkipAssertionFalse tests complete Google auth flow with skipAssertion=false
 func (suite *GoogleAuthTestSuite) TestGoogleAuthCompleteFlowWithSkipAssertionFalse() {
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -403,16 +403,16 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthCompleteFlowWithSkipAssertionFal
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	sessionToken := startResponse["session_token"].(string)
-	redirectURL := startResponse["redirect_url"].(string)
+	sessionToken := startResponse["sessionToken"].(string)
+	redirectURL := startResponse["redirectUrl"].(string)
 
 	authCode := suite.simulateGoogleAuthorization(redirectURL)
 	suite.Require().NotEmpty(authCode)
 
 	finishRequest := map[string]interface{}{
-		"session_token":  sessionToken,
+		"sessionToken":  sessionToken,
 		"code":           authCode,
-		"skip_assertion": false,
+		"skipAssertion": false,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -435,13 +435,13 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthCompleteFlowWithSkipAssertionFal
 	suite.NotEmpty(authResponse.Type, "Response should contain user type")
 	suite.NotEmpty(authResponse.OUID, "Response should contain organization unit")
 	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
-	suite.NotEmpty(authResponse.Assertion, "Response should contain assertion token when skip_assertion is false")
+	suite.NotEmpty(authResponse.Assertion, "Response should contain assertion token when skipAssertion is false")
 }
 
-// TestGoogleAuthCompleteFlowWithSkipAssertionTrue tests complete Google auth flow with skip_assertion=true
+// TestGoogleAuthCompleteFlowWithSkipAssertionTrue tests complete Google auth flow with skipAssertion=true
 func (suite *GoogleAuthTestSuite) TestGoogleAuthCompleteFlowWithSkipAssertionTrue() {
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -461,16 +461,16 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthCompleteFlowWithSkipAssertionTru
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	sessionToken := startResponse["session_token"].(string)
-	redirectURL := startResponse["redirect_url"].(string)
+	sessionToken := startResponse["sessionToken"].(string)
+	redirectURL := startResponse["redirectUrl"].(string)
 
 	authCode := suite.simulateGoogleAuthorization(redirectURL)
 	suite.Require().NotEmpty(authCode)
 
 	finishRequest := map[string]interface{}{
-		"session_token":  sessionToken,
+		"sessionToken":  sessionToken,
 		"code":           authCode,
-		"skip_assertion": true,
+		"skipAssertion": true,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -493,7 +493,7 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthCompleteFlowWithSkipAssertionTru
 	suite.NotEmpty(authResponse.Type, "Response should contain user type")
 	suite.NotEmpty(authResponse.OUID, "Response should contain organization unit")
 	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
-	suite.Empty(authResponse.Assertion, "Response should not contain assertion token when skip_assertion is true")
+	suite.Empty(authResponse.Assertion, "Response should not contain assertion token when skipAssertion is true")
 }
 
 // simulateGoogleAuthorization simulates user authorization and returns authorization code
@@ -541,7 +541,7 @@ func (suite *GoogleAuthTestSuite) simulateGoogleAuthorization(redirectURL string
 func (suite *GoogleAuthTestSuite) TestGoogleAuthWithAssuranceLevelAAL1() {
 	// Step 1: Start Google authentication
 	startReq := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startReqJSON, err := json.Marshal(startReq)
 	suite.Require().NoError(err)
@@ -560,16 +560,16 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthWithAssuranceLevelAAL1() {
 	suite.Require().NoError(err)
 	suite.Equal(http.StatusOK, resp.StatusCode)
 
-	sessionToken := startResp["session_token"].(string)
+	sessionToken := startResp["sessionToken"].(string)
 	suite.NotEmpty(sessionToken)
 
 	// Step 2: Get authorization code from mock server
-	code := suite.simulateGoogleAuthorization(startResp["redirect_url"].(string))
+	code := suite.simulateGoogleAuthorization(startResp["redirectUrl"].(string))
 	suite.NotEmpty(code)
 
 	// Step 3: Finish Google authentication
 	finishReq := map[string]interface{}{
-		"session_token": sessionToken,
+		"sessionToken": sessionToken,
 		"code":          code,
 	}
 	finishReqJSON, err := json.Marshal(finishReq)
@@ -601,11 +601,11 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthWithAssuranceLevelAAL1() {
 	suite.Equal("IAL1", ial, "Self-asserted identity should result in IAL1")
 }
 
-// TestGoogleAuthWithSkipAssertion tests Google authentication with skip_assertion=true
+// TestGoogleAuthWithSkipAssertion tests Google authentication with skipAssertion=true
 func (suite *GoogleAuthTestSuite) TestGoogleAuthWithSkipAssertion() {
 	// Start authentication
 	startReq := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startReqJSON, err := json.Marshal(startReq)
 	suite.Require().NoError(err)
@@ -623,14 +623,14 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthWithSkipAssertion() {
 	err = json.NewDecoder(resp.Body).Decode(&startResp)
 	suite.Require().NoError(err)
 
-	sessionToken := startResp["session_token"].(string)
-	code := suite.simulateGoogleAuthorization(startResp["redirect_url"].(string))
+	sessionToken := startResp["sessionToken"].(string)
+	code := suite.simulateGoogleAuthorization(startResp["redirectUrl"].(string))
 
-	// Finish with skip_assertion=true
+	// Finish with skipAssertion=true
 	finishReq := map[string]interface{}{
-		"session_token":  sessionToken,
+		"sessionToken":  sessionToken,
 		"code":           code,
-		"skip_assertion": true,
+		"skipAssertion": true,
 	}
 	finishReqJSON, err := json.Marshal(finishReq)
 	suite.Require().NoError(err)
@@ -648,5 +648,5 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthWithSkipAssertion() {
 	suite.Require().NoError(err)
 	suite.Equal(http.StatusOK, resp.StatusCode)
 
-	suite.Empty(authResp.Assertion, "Response should not contain assertion when skip_assertion is true")
+	suite.Empty(authResp.Assertion, "Response should not contain assertion when skipAssertion is true")
 }

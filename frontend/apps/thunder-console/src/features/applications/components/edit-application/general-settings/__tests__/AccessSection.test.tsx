@@ -46,21 +46,21 @@ describe('AccessSection', () => {
     id: 'app-123',
     name: 'Test App',
     url: 'https://example.com',
-    allowed_user_types: ['admin', 'user'],
-    inbound_auth_config: [
+    allowedUserTypes: ['admin', 'user'],
+    inboundAuthConfig: [
       {
         type: 'oauth2',
         config: {
-          client_id: 'client-123',
-          redirect_uris: ['https://example.com/callback'],
+          clientId: 'client-123',
+          redirectUris: ['https://example.com/callback'],
         },
       },
     ],
   } as Application;
 
   const mockOAuth2Config: OAuth2Config = {
-    client_id: 'client-123',
-    redirect_uris: ['https://example.com/callback'],
+    clientId: 'client-123',
+    redirectUris: ['https://example.com/callback'],
   } as OAuth2Config;
 
   const mockUserTypes = {
@@ -190,7 +190,7 @@ describe('AccessSection', () => {
       render(
         <AccessSection
           application={mockApplication}
-          editedApp={{allowed_user_types: ['guest']}}
+          editedApp={{allowedUserTypes: ['guest']}}
           onFieldChange={mockOnFieldChange}
         />,
       );
@@ -296,7 +296,7 @@ describe('AccessSection', () => {
 
       const configWithMultipleUris = {
         ...mockOAuth2Config,
-        redirect_uris: ['https://example.com/callback1', 'https://example.com/callback2'],
+        redirectUris: ['https://example.com/callback1', 'https://example.com/callback2'],
       };
 
       render(
@@ -344,7 +344,7 @@ describe('AccessSection', () => {
 
       const configWithMultipleUris = {
         ...mockOAuth2Config,
-        redirect_uris: ['https://example.com/callback1', 'https://example.com/callback2'],
+        redirectUris: ['https://example.com/callback1', 'https://example.com/callback2'],
       };
 
       render(
@@ -383,7 +383,7 @@ describe('AccessSection', () => {
       await waitFor(() => {
         expect(mockOnFieldChange).toHaveBeenCalled();
         const {calls} = mockOnFieldChange.mock;
-        const userTypesCall = calls.find((call) => call[0] === 'allowed_user_types');
+        const userTypesCall = calls.find((call) => call[0] === 'allowedUserTypes');
         expect(userTypesCall).toBeDefined();
       });
     });
@@ -394,13 +394,13 @@ describe('AccessSection', () => {
       id: 'app-123',
       name: 'Test App',
       url: 'https://example.com',
-      allowed_user_types: ['admin', 'user'],
-      inbound_auth_config: [
+      allowedUserTypes: ['admin', 'user'],
+      inboundAuthConfig: [
         {
           type: 'oauth2',
           config: {
-            client_id: 'client-123',
-            redirect_uris: ['https://example.com/callback'],
+            clientId: 'client-123',
+            redirectUris: ['https://example.com/callback'],
           },
         },
       ],
@@ -430,9 +430,9 @@ describe('AccessSection', () => {
       // Blur the input to trigger validation
       await user.tab();
 
-      // Should show error and not call onFieldChange for inbound_auth_config
+      // Should show error and not call onFieldChange for inboundAuthConfig
       await waitFor(() => {
-        const errorCalls = mockOnFieldChange.mock.calls.filter((call) => call[0] === 'inbound_auth_config');
+        const errorCalls = mockOnFieldChange.mock.calls.filter((call) => call[0] === 'inboundAuthConfig');
         expect(errorCalls).toHaveLength(0);
       });
     });
@@ -462,7 +462,7 @@ describe('AccessSection', () => {
 
       // Should not call onFieldChange for empty URI
       await waitFor(() => {
-        const errorCalls = mockOnFieldChange.mock.calls.filter((call) => call[0] === 'inbound_auth_config');
+        const errorCalls = mockOnFieldChange.mock.calls.filter((call) => call[0] === 'inboundAuthConfig');
         expect(errorCalls).toHaveLength(0);
       });
     });
@@ -493,7 +493,7 @@ describe('AccessSection', () => {
       // The onBlur handler should have been called
       // Since URI is valid and non-empty, it should call updateRedirectUris
       await waitFor(() => {
-        expect(mockOnFieldChange).toHaveBeenCalledWith('inbound_auth_config', expect.any(Array));
+        expect(mockOnFieldChange).toHaveBeenCalledWith('inboundAuthConfig', expect.any(Array));
       });
     });
   });
@@ -510,7 +510,7 @@ describe('AccessSection', () => {
       expect(screen.getByLabelText('Allowed User Types')).toBeInTheDocument();
     });
 
-    it('should handle null application allowed_user_types', () => {
+    it('should handle null application allowedUserTypes', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
@@ -518,7 +518,7 @@ describe('AccessSection', () => {
 
       const appWithNullTypes = {
         ...mockApplication,
-        allowed_user_types: undefined,
+        allowedUserTypes: undefined,
       };
 
       render(
@@ -574,7 +574,7 @@ describe('AccessSection', () => {
 
       const configWithThreeUris = {
         ...mockOAuth2Config,
-        redirect_uris: ['https://example.com/callback1', 'invalid-uri', 'https://example.com/callback3'],
+        redirectUris: ['https://example.com/callback1', 'invalid-uri', 'https://example.com/callback3'],
       };
 
       render(
@@ -608,7 +608,7 @@ describe('AccessSection', () => {
 
       const configWithThreeUris = {
         ...mockOAuth2Config,
-        redirect_uris: ['invalid-first', 'https://example.com/callback2', 'https://example.com/callback3'],
+        redirectUris: ['invalid-first', 'https://example.com/callback2', 'https://example.com/callback3'],
       };
 
       render(
@@ -646,7 +646,7 @@ describe('AccessSection', () => {
 
       const appWithMixedConfig: Application = {
         ...mockApplication,
-        inbound_auth_config: [
+        inboundAuthConfig: [
           {
             type: 'saml',
             config: {issuer: 'test-issuer'},
@@ -654,8 +654,8 @@ describe('AccessSection', () => {
           {
             type: 'oauth2',
             config: {
-              client_id: 'client-123',
-              redirect_uris: ['https://example.com/callback'],
+              clientId: 'client-123',
+              redirectUris: ['https://example.com/callback'],
             },
           },
         ],
@@ -676,8 +676,8 @@ describe('AccessSection', () => {
       await user.tab();
 
       await waitFor(() => {
-        expect(mockOnFieldChange).toHaveBeenCalledWith('inbound_auth_config', expect.any(Array));
-        const call = mockOnFieldChange.mock.calls.find((c) => c[0] === 'inbound_auth_config');
+        expect(mockOnFieldChange).toHaveBeenCalledWith('inboundAuthConfig', expect.any(Array));
+        const call = mockOnFieldChange.mock.calls.find((c) => c[0] === 'inboundAuthConfig');
         if (call) {
           const updatedConfig = call[1] as {type: string}[];
           // Should contain both saml and oauth2 configs
@@ -751,8 +751,8 @@ describe('AccessSection', () => {
       // Without oauth2Config, redirect URI section should not be rendered
       expect(screen.queryByText('Authorized redirect URIs')).not.toBeInTheDocument();
 
-      // No inbound_auth_config calls should be made
-      const inboundAuthCalls = mockOnFieldChange.mock.calls.filter((call) => call[0] === 'inbound_auth_config');
+      // No inboundAuthConfig calls should be made
+      const inboundAuthCalls = mockOnFieldChange.mock.calls.filter((call) => call[0] === 'inboundAuthConfig');
       expect(inboundAuthCalls).toHaveLength(0);
     });
 
@@ -765,7 +765,7 @@ describe('AccessSection', () => {
 
       const configWithMultipleUris = {
         ...mockOAuth2Config,
-        redirect_uris: ['https://example.com/callback1', 'https://example.com/callback2'],
+        redirectUris: ['https://example.com/callback1', 'https://example.com/callback2'],
       };
 
       render(
@@ -783,7 +783,7 @@ describe('AccessSection', () => {
       await user.tab();
 
       await waitFor(() => {
-        const inboundAuthCalls = mockOnFieldChange.mock.calls.filter((call) => call[0] === 'inbound_auth_config');
+        const inboundAuthCalls = mockOnFieldChange.mock.calls.filter((call) => call[0] === 'inboundAuthConfig');
         expect(inboundAuthCalls.length).toBeGreaterThan(0);
       });
     });
@@ -799,7 +799,7 @@ describe('AccessSection', () => {
 
       const configWithThreeUris = {
         ...mockOAuth2Config,
-        redirect_uris: ['https://example.com/callback1', 'https://example.com/callback2', 'invalid-uri-3'],
+        redirectUris: ['https://example.com/callback1', 'https://example.com/callback2', 'invalid-uri-3'],
       };
 
       render(
@@ -836,7 +836,7 @@ describe('AccessSection', () => {
 
       const configWithThreeUris = {
         ...mockOAuth2Config,
-        redirect_uris: ['invalid-first', 'https://example.com/callback2', 'https://example.com/callback3'],
+        redirectUris: ['invalid-first', 'https://example.com/callback2', 'https://example.com/callback3'],
       };
 
       render(
@@ -870,7 +870,7 @@ describe('AccessSection', () => {
 
       const configWithThreeUris = {
         ...mockOAuth2Config,
-        redirect_uris: ['https://example.com/callback1', 'https://example.com/callback2', 'invalid-third'],
+        redirectUris: ['https://example.com/callback1', 'https://example.com/callback2', 'invalid-third'],
       };
 
       render(
@@ -907,7 +907,7 @@ describe('AccessSection', () => {
 
       const initialConfig = {
         ...mockOAuth2Config,
-        redirect_uris: ['https://initial.com/callback'],
+        redirectUris: ['https://initial.com/callback'],
       };
 
       const {rerender} = render(
@@ -923,7 +923,7 @@ describe('AccessSection', () => {
 
       const updatedConfig = {
         ...mockOAuth2Config,
-        redirect_uris: ['https://updated.com/callback'],
+        redirectUris: ['https://updated.com/callback'],
       };
 
       rerender(

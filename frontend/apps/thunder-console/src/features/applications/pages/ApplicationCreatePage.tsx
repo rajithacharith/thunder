@@ -139,7 +139,7 @@ export default function ApplicationCreatePage(): JSX.Element {
         prevConfig
           ? {
               ...prevConfig,
-              redirect_uris: [callbackUrlFromConfig],
+              redirectUris: [callbackUrlFromConfig],
             }
           : null,
       );
@@ -193,12 +193,12 @@ export default function ApplicationCreatePage(): JSX.Element {
 
     const applicationData: CreateApplicationRequest = {
       name: appName,
-      logo_url: appLogo ?? undefined,
-      auth_flow_id: authFlowId,
-      user_attributes: ['given_name', 'family_name', 'email', 'groups'],
-      ...(themeId && {theme_id: themeId}),
-      is_registration_flow_enabled: true,
-      ...(allowedUserTypes && {allowed_user_types: allowedUserTypes}),
+      logoUrl: appLogo ?? undefined,
+      authFlowId,
+      userAttributes: ['given_name', 'family_name', 'email', 'groups'],
+      ...(themeId && {themeId}),
+      isRegistrationFlowEnabled: true,
+      ...(allowedUserTypes && {allowedUserTypes}),
       // Include template if available, append '-embedded' suffix for CUSTOM approach
       ...(selectedTemplateConfig?.id && {
         template:
@@ -208,7 +208,7 @@ export default function ApplicationCreatePage(): JSX.Element {
       }),
       // Only include OAuth config if not skipping
       ...(!skipOAuthConfig && {
-        inbound_auth_config: [
+        inboundAuthConfig: [
           {
             type: 'oauth2',
             config: oauthConfig,
@@ -219,8 +219,8 @@ export default function ApplicationCreatePage(): JSX.Element {
 
     createApplication.mutate(applicationData, {
       onSuccess: (createdApp: Application): void => {
-        const hasClientSecret = createdApp.inbound_auth_config?.some(
-          (config) => config.type === 'oauth2' && config.config?.client_secret,
+        const hasClientSecret = createdApp.inboundAuthConfig?.some(
+          (config) => config.type === 'oauth2' && config.config?.clientSecret,
         );
 
         if (hasClientSecret) {
@@ -495,8 +495,8 @@ export default function ApplicationCreatePage(): JSX.Element {
           return null;
         }
 
-        const oauth2Config = createdApplication.inbound_auth_config?.find((config) => config.type === 'oauth2');
-        const clientSecret = oauth2Config?.config?.client_secret;
+        const oauth2Config = createdApplication.inboundAuthConfig?.find((config) => config.type === 'oauth2');
+        const clientSecret = oauth2Config?.config?.clientSecret;
 
         if (!clientSecret) {
           return null;
@@ -527,7 +527,7 @@ export default function ApplicationCreatePage(): JSX.Element {
     if (signInApproach === ApplicationCreateFlowSignInApproach.INBUILT) {
       allSteps.push(ApplicationCreateFlowStep.STACK);
 
-      // Show configure step if template requires configuration (has empty redirect_uris)
+      // Show configure step if template requires configuration (has empty redirectUris)
       const needsConfiguration: boolean =
         getConfigurationTypeFromTemplate(selectedTemplateConfig) !== ApplicationCreateFlowConfiguration.NONE;
 
@@ -665,7 +665,7 @@ export default function ApplicationCreatePage(): JSX.Element {
               theme={selectedTheme}
               mock={buildPreviewMock(integrations, idpData ?? [], {
                 application: {
-                  logo_url: appLogo!,
+                  logoUrl: appLogo!,
                 },
               })}
               displayName={appName ?? undefined}

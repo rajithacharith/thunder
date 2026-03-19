@@ -85,14 +85,14 @@ describe('Request Models', () => {
         name: 'Engineering Department (Updated)',
         description: 'Updated description',
         parent: 'root-ou-id',
-        theme_id: '96c62e6d-9297-4295-8195-d28dfe0c9ff7',
-        logo_url: 'https://example.com/new-logo.png',
+        themeId: '96c62e6d-9297-4295-8195-d28dfe0c9ff7',
+        logoUrl: 'https://example.com/new-logo.png',
       };
 
       expect(request.description).toBe('Updated description');
       expect(request.parent).toBe('root-ou-id');
-      expect(request.theme_id).toBe('96c62e6d-9297-4295-8195-d28dfe0c9ff7');
-      expect(request.logo_url).toBe('https://example.com/new-logo.png');
+      expect(request.themeId).toBe('96c62e6d-9297-4295-8195-d28dfe0c9ff7');
+      expect(request.logoUrl).toBe('https://example.com/new-logo.png');
     });
 
     it('should accept null for nullable fields', () => {
@@ -101,12 +101,12 @@ describe('Request Models', () => {
         name: 'Engineering',
         description: null,
         parent: null,
-        theme_id: null,
+        themeId: null,
       };
 
       expect(request.description).toBeNull();
       expect(request.parent).toBeNull();
-      expect(request.theme_id).toBeNull();
+      expect(request.themeId).toBeNull();
     });
   });
 

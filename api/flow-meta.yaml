@@ -81,22 +81,22 @@ paths:
                 app-metadata:
                   summary: Application metadata with i18n
                   value:
-                    is_registration_flow_enabled: true
+                    isRegistrationFlowEnabled: true
                     application:
                       id: "60a9b38b-6eba-9f9e-55f9-267067de4680"
                       name: "My Web Application"
-                      logo_url: "https://myapp.example.com/logo.png"
+                      logoUrl: "https://myapp.example.com/logo.png"
                       url: "https://myapp.example.com"
-                      tos_uri: "https://myapp.example.com/terms"
-                      policy_uri: "https://myapp.example.com/privacy"
+                      tosUri: "https://myapp.example.com/terms"
+                      policyUri: "https://myapp.example.com/privacy"
                     ou:
                       id: "fe447a2f-29c5-4e33-ac8f-d77be15fdb32"
                       handle: "default"
                       name: "Default Organization Unit"
-                      logo_url: "https://myapp.example.com/logo.png"
-                      tos_uri: "https://myapp.example.com/terms"
-                      policy_uri: "https://myapp.example.com/privacy"
-                      cookie_policy_uri: "https://myapp.example.com/cookies"
+                      logoUrl: "https://myapp.example.com/logo.png"
+                      tosUri: "https://myapp.example.com/terms"
+                      policyUri: "https://myapp.example.com/privacy"
+                      cookiePolicyUri: "https://myapp.example.com/cookies"
                     design:
                       theme:
                         direction: "ltr"
@@ -124,12 +124,12 @@ paths:
                 ou-metadata:
                   summary: Organization unit metadata
                   value:
-                    is_registration_flow_enabled: false
+                    isRegistrationFlowEnabled: false
                     ou:
                       id: "fe447a2f-29c5-4e33-ac8f-d77be15fdb32"
                       handle: "default"
                       name: "Default Organization Unit"
-                      logo_url: "https://myapp.example.com/logo.png"
+                      logoUrl: "https://myapp.example.com/logo.png"
                     design:
                       theme: {}
                       layout: {}
@@ -151,11 +151,11 @@ components:
     FlowMetadataResponse:
       type: object
       required:
-        - is_registration_flow_enabled
+        - isRegistrationFlowEnabled
         - design
         - i18n
       properties:
-        is_registration_flow_enabled:
+        isRegistrationFlowEnabled:
           type: boolean
           description: Indicates if registration flow is enabled for the entity
           example: true
@@ -181,7 +181,7 @@ components:
           type: string
           description: Application name
           example: "My Web Application"
-        logo_url:
+        logoUrl:
           type: string
           format: uri
           description: Application logo URL
@@ -191,12 +191,12 @@ components:
           format: uri
           description: Application URL
           example: "https://myapp.example.com"
-        tos_uri:
+        tosUri:
           type: string
           format: uri
           description: Terms of Service URI
           example: "https://myapp.example.com/terms"
-        policy_uri:
+        policyUri:
           type: string
           format: uri
           description: Privacy Policy URI
@@ -226,22 +226,22 @@ components:
           type: string
           description: Organization unit description
           example: "Default organization unit for the deployment"
-        logo_url:
+        logoUrl:
           type: string
           format: uri
           description: Organization unit logo URL
           example: "https://myapp.example.com/logo.png"
-        tos_uri:
+        tosUri:
           type: string
           format: uri
           description: Terms of Service URI
           example: "https://myapp.example.com/terms"
-        policy_uri:
+        policyUri:
           type: string
           format: uri
           description: Privacy Policy URI
           example: "https://myapp.example.com/privacy"
-        cookie_policy_uri:
+        cookiePolicyUri:
           type: string
           format: uri
           description: Cookie Policy URI

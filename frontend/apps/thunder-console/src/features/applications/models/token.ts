@@ -26,8 +26,8 @@
  * @example
  * ```typescript
  * const accessTokenConfig: TokenConfig = {
- *   validity_period: 3600, // 1 hour
- *   user_attributes: ['email', 'username', 'roles']
+ *   validityPeriod: 3600, // 1 hour
+ *   userAttributes: ['email', 'username', 'roles']
  * };
  * ```
  */
@@ -37,14 +37,14 @@ export interface TokenConfig {
    * Determines how long the token remains valid after issuance
    * @example 3600 (1 hour)
    */
-  validity_period: number;
+  validityPeriod: number;
 
   /**
    * User attributes to include in the token
    * List of user profile attributes that should be included in the token claims
    * @example ['email', 'username', 'given_name', 'family_name']
    */
-  user_attributes: string[];
+  userAttributes: string[];
 }
 
 /**

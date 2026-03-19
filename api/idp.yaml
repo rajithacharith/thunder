@@ -271,13 +271,13 @@ components:
           example:
             - name: "client_id"
               value: "your-client-id"
-              is_secret: false
+              isSecret: false
             - name: "client_secret"
               value: "your-client-secret"
-              is_secret: true
+              isSecret: true
             - name: "scope"
               value: "openid email profile"
-              is_secret: false
+              isSecret: false
 
     IDPResponse:
       type: object
@@ -311,13 +311,13 @@ components:
           example:
             - name: "client_id"
               value: "your-client-id"
-              is_secret: false
+              isSecret: false
             - name: "client_secret"
               value: "******"
-              is_secret: true
+              isSecret: true
             - name: "scope"
               value: "openid email profile"
-              is_secret: false
+              isSecret: false
 
     BasicIDPResponse:
       type: object
@@ -369,7 +369,7 @@ components:
           type: string
           description: Value of the property
           example: "your-client-id"
-        is_secret:
+        isSecret:
           type: boolean
           description: Whether the property is secret
           example: false

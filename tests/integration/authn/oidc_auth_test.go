@@ -215,7 +215,7 @@ func (suite *OIDCAuthTestSuite) TearDownSuite() {
 func (suite *OIDCAuthTestSuite) TestOIDCAuthStartSuccess() {
 	// Start authentication
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -235,11 +235,11 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthStartSuccess() {
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	// Verify response contains redirect_url and session_token
-	suite.Contains(startResponse, "redirect_url")
-	suite.Contains(startResponse, "session_token")
+	// Verify response contains redirectUrl and sessionToken
+	suite.Contains(startResponse, "redirectUrl")
+	suite.Contains(startResponse, "sessionToken")
 
-	redirectURL, ok := startResponse["redirect_url"].(string)
+	redirectURL, ok := startResponse["redirectUrl"].(string)
 	suite.Require().True(ok)
 	suite.Contains(redirectURL, suite.mockOIDCServer.GetURL())
 	suite.Contains(redirectURL, "client_id=test-oidc-client")
@@ -250,7 +250,7 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthStartSuccess() {
 
 func (suite *OIDCAuthTestSuite) TestOIDCAuthStartInvalidIDPID() {
 	startRequest := map[string]interface{}{
-		"idp_id": "invalid-idp-id",
+		"idpId": "invalid-idp-id",
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -292,7 +292,7 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthStartMissingIDPID() {
 
 func (suite *OIDCAuthTestSuite) TestOIDCAuthCompleteFlowSuccess() {
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -312,14 +312,14 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthCompleteFlowSuccess() {
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	sessionToken := startResponse["session_token"].(string)
-	redirectURL := startResponse["redirect_url"].(string)
+	sessionToken := startResponse["sessionToken"].(string)
+	redirectURL := startResponse["redirectUrl"].(string)
 
 	authCode := suite.simulateOIDCAuthorization(redirectURL)
 	suite.Require().NotEmpty(authCode)
 
 	finishRequest := map[string]interface{}{
-		"session_token": sessionToken,
+		"sessionToken": sessionToken,
 		"code":          authCode,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
@@ -348,7 +348,7 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthCompleteFlowSuccess() {
 
 func (suite *OIDCAuthTestSuite) TestOIDCAuthFinishInvalidSessionToken() {
 	finishRequest := map[string]interface{}{
-		"session_token": "invalid-session-token",
+		"sessionToken": "invalid-session-token",
 		"code":          "some-auth-code",
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
@@ -368,7 +368,7 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthFinishInvalidSessionToken() {
 
 func (suite *OIDCAuthTestSuite) TestOIDCAuthFinishMissingCode() {
 	finishRequest := map[string]interface{}{
-		"session_token": "some-session-token",
+		"sessionToken": "some-session-token",
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -391,7 +391,7 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthWithNonce() {
 
 	// Start authentication
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -411,7 +411,7 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthWithNonce() {
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	redirectURL := startResponse["redirect_url"].(string)
+	redirectURL := startResponse["redirectUrl"].(string)
 
 	parsedURL, err := url.Parse(redirectURL)
 	suite.Require().NoError(err)
@@ -423,10 +423,10 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthWithNonce() {
 	// nonce is optional - Thunder doesn't generate it currently
 }
 
-// TestOIDCAuthCompleteFlowWithSkipAssertionFalse tests complete OIDC flow with skip_assertion=false
+// TestOIDCAuthCompleteFlowWithSkipAssertionFalse tests complete OIDC flow with skipAssertion=false
 func (suite *OIDCAuthTestSuite) TestOIDCAuthCompleteFlowWithSkipAssertionFalse() {
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -446,16 +446,16 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthCompleteFlowWithSkipAssertionFalse()
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	sessionToken := startResponse["session_token"].(string)
-	redirectURL := startResponse["redirect_url"].(string)
+	sessionToken := startResponse["sessionToken"].(string)
+	redirectURL := startResponse["redirectUrl"].(string)
 
 	authCode := suite.simulateOIDCAuthorization(redirectURL)
 	suite.Require().NotEmpty(authCode)
 
 	finishRequest := map[string]interface{}{
-		"session_token":  sessionToken,
+		"sessionToken":  sessionToken,
 		"code":           authCode,
-		"skip_assertion": false,
+		"skipAssertion": false,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -478,13 +478,13 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthCompleteFlowWithSkipAssertionFalse()
 	suite.NotEmpty(authResponse.Type, "Response should contain user type")
 	suite.NotEmpty(authResponse.OUID, "Response should contain organization unit")
 	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
-	suite.NotEmpty(authResponse.Assertion, "Response should contain assertion token when skip_assertion is false")
+	suite.NotEmpty(authResponse.Assertion, "Response should contain assertion token when skipAssertion is false")
 }
 
-// TestOIDCAuthCompleteFlowWithSkipAssertionTrue tests complete OIDC flow with skip_assertion=true
+// TestOIDCAuthCompleteFlowWithSkipAssertionTrue tests complete OIDC flow with skipAssertion=true
 func (suite *OIDCAuthTestSuite) TestOIDCAuthCompleteFlowWithSkipAssertionTrue() {
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -504,16 +504,16 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthCompleteFlowWithSkipAssertionTrue() 
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	sessionToken := startResponse["session_token"].(string)
-	redirectURL := startResponse["redirect_url"].(string)
+	sessionToken := startResponse["sessionToken"].(string)
+	redirectURL := startResponse["redirectUrl"].(string)
 
 	authCode := suite.simulateOIDCAuthorization(redirectURL)
 	suite.Require().NotEmpty(authCode)
 
 	finishRequest := map[string]interface{}{
-		"session_token":  sessionToken,
+		"sessionToken":  sessionToken,
 		"code":           authCode,
-		"skip_assertion": true,
+		"skipAssertion": true,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -536,13 +536,13 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthCompleteFlowWithSkipAssertionTrue() 
 	suite.NotEmpty(authResponse.Type, "Response should contain user type")
 	suite.NotEmpty(authResponse.OUID, "Response should contain organization unit")
 	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
-	suite.Empty(authResponse.Assertion, "Response should not contain assertion token when skip_assertion is true")
+	suite.Empty(authResponse.Assertion, "Response should not contain assertion token when skipAssertion is true")
 }
 
 // TestOIDCAuthWithAssuranceLevelAAL1 tests OIDC authentication generates AAL1 assurance level
 func (suite *OIDCAuthTestSuite) TestOIDCAuthWithAssuranceLevelAAL1() {
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -562,16 +562,16 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthWithAssuranceLevelAAL1() {
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	sessionToken := startResponse["session_token"].(string)
-	redirectURL := startResponse["redirect_url"].(string)
+	sessionToken := startResponse["sessionToken"].(string)
+	redirectURL := startResponse["redirectUrl"].(string)
 
 	authCode := suite.simulateOIDCAuthorization(redirectURL)
 	suite.Require().NotEmpty(authCode)
 
 	finishRequest := map[string]interface{}{
-		"session_token":  sessionToken,
+		"sessionToken":  sessionToken,
 		"code":           authCode,
-		"skip_assertion": false,
+		"skipAssertion": false,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -603,7 +603,7 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthWithAssuranceLevelAAL1() {
 // TestOIDCAuthWithSkipAssertion tests OIDC authentication with assertion skip functionality
 func (suite *OIDCAuthTestSuite) TestOIDCAuthWithSkipAssertion() {
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -623,16 +623,16 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthWithSkipAssertion() {
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	sessionToken := startResponse["session_token"].(string)
-	redirectURL := startResponse["redirect_url"].(string)
+	sessionToken := startResponse["sessionToken"].(string)
+	redirectURL := startResponse["redirectUrl"].(string)
 
 	authCode := suite.simulateOIDCAuthorization(redirectURL)
 	suite.Require().NotEmpty(authCode)
 
 	finishRequest := map[string]interface{}{
-		"session_token":  sessionToken,
+		"sessionToken":  sessionToken,
 		"code":           authCode,
-		"skip_assertion": true,
+		"skipAssertion": true,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -651,7 +651,7 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthWithSkipAssertion() {
 	err = json.NewDecoder(resp.Body).Decode(&authResponse)
 	suite.Require().NoError(err)
 
-	suite.Empty(authResponse.Assertion, "Response should not contain assertion token when skip_assertion is true")
+	suite.Empty(authResponse.Assertion, "Response should not contain assertion token when skipAssertion is true")
 }
 
 // simulateOIDCAuthorization simulates user authorization and returns authorization code

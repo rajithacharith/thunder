@@ -65,5 +65,5 @@ func (ts *HealthCheckAPITestSuite) TestReadinessCheck() {
 	err = json.NewDecoder(resp.Body).Decode(&healthStatus)
 	ts.Require().NoError(err)
 	ts.Require().Equal("UP", healthStatus["status"])
-	ts.Require().NotEmpty(healthStatus["service_status"])
+	ts.Require().NotEmpty(healthStatus["serviceStatus"])
 }

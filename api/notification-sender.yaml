@@ -236,7 +236,7 @@ paths:
                   type: string
                   description: Recipient's mobile number
                   example: "+1234567890"
-                sender_id:
+                senderId:
                   type: string
                   description: ID of the message notification sender to use
                   example: "550e8400-e29b-41d4-a716-446655440000"
@@ -258,7 +258,7 @@ paths:
                     type: string
                     description: Status of the OTP send request
                     example: "SUCCESS"
-                  session_token:
+                  sessionToken:
                     type: string
                     description: JWT token for the OTP session
                     example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -295,11 +295,11 @@ paths:
             schema:
               type: object
               properties:
-                session_token:
+                sessionToken:
                   type: string
                   description: JWT token for the OTP session
                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                otp_code:
+                otpCode:
                   type: string
                   description: The OTP code received by the user
                   example: "123456"
@@ -383,7 +383,7 @@ components:
                 type: string
                 description: Property value (masked with ****** for secret properties)
                 example: "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-              is_secret:
+              isSecret:
                 type: boolean
                 description: Indicates if the property is a secret
                 example: true
@@ -421,7 +421,7 @@ components:
                 type: string
                 description: Property value
                 example: "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-              is_secret:
+              isSecret:
                 type: boolean
                 description: Indicates if the property is a secret
                 example: true

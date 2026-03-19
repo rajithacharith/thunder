@@ -117,7 +117,7 @@ interface TokenUserAttributesSectionProps {
  * - JWT preview with syntax highlighting
  * - Separate attribute management for access vs ID tokens in OAuth mode
  *
- * Default attributes (aud, client_id, exp, etc.) are always included and shown in the preview.
+ * Default attributes (aud, clientId, exp, etc.) are always included and shown in the preview.
  *
  * @param props - Component props
  * @returns User attributes selection UI within a SettingsCard

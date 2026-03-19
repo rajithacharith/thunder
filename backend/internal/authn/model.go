@@ -28,8 +28,8 @@ type IDPAuthInitData struct {
 
 // AuthSessionData represents the data stored in the authentication session token.
 type AuthSessionData struct {
-	IDPID   string      `json:"idp_id"`
-	IDPType idp.IDPType `json:"idp_type"`
+	IDPID   string      `json:"idpId"`
+	IDPType idp.IDPType `json:"idpType"`
 }
 
 // AuthenticationResponseDTO represents the data transfer object for the authentication response.
@@ -42,39 +42,39 @@ type AuthenticationResponseDTO struct {
 
 // IDPAuthInitRequestDTO is the request to initiate IDP authentication.
 type IDPAuthInitRequestDTO struct {
-	IDPID string `json:"idp_id"`
+	IDPID string `json:"idpId"`
 }
 
 // IDPAuthInitResponseDTO is the response after initiating IDP authentication.
 type IDPAuthInitResponseDTO struct {
-	RedirectURL  string `json:"redirect_url,omitempty"`
-	SessionToken string `json:"session_token"`
+	RedirectURL  string `json:"redirectUrl,omitempty"`
+	SessionToken string `json:"sessionToken"`
 }
 
 // IDPAuthFinishRequestDTO is the request to complete IDP authentication.
 type IDPAuthFinishRequestDTO struct {
-	SessionToken  string `json:"session_token"`
-	SkipAssertion bool   `json:"skip_assertion"`
+	SessionToken  string `json:"sessionToken"`
+	SkipAssertion bool   `json:"skipAssertion"`
 	Assertion     string `json:"assertion,omitempty"`
 	Code          string `json:"code"`
 }
 
 // SendOTPAuthRequestDTO is the request to send an OTP for authentication.
 type SendOTPAuthRequestDTO struct {
-	SenderID  string `json:"sender_id"`
+	SenderID  string `json:"senderId"`
 	Recipient string `json:"recipient"`
 }
 
 // SendOTPAuthResponseDTO is the response after sending an OTP for authentication.
 type SendOTPAuthResponseDTO struct {
 	Status       string `json:"status"`
-	SessionToken string `json:"session_token"`
+	SessionToken string `json:"sessionToken"`
 }
 
 // VerifyOTPAuthRequestDTO is the request to verify an OTP for authentication.
 type VerifyOTPAuthRequestDTO struct {
-	SessionToken  string `json:"session_token"`
-	SkipAssertion bool   `json:"skip_assertion"`
+	SessionToken  string `json:"sessionToken"`
+	SkipAssertion bool   `json:"skipAssertion"`
 	Assertion     string `json:"assertion,omitempty"`
 	OTP           string `json:"otp"`
 }
@@ -130,7 +130,7 @@ type PasskeyStartRequestDTO struct {
 type PasskeyFinishRequestDTO struct {
 	PublicKeyCredential PasskeyPublicKeyCredentialDTO `json:"publicKeyCredential"`
 	SessionToken        string                        `json:"sessionToken"`
-	SkipAssertion       bool                          `json:"skip_assertion"`
+	SkipAssertion       bool                          `json:"skipAssertion"`
 	Assertion           string                        `json:"assertion,omitempty"`
 }
 
@@ -138,6 +138,6 @@ type PasskeyFinishRequestDTO struct {
 type AuthenticateWithCredentialsRequestDTO struct {
 	Identifiers   map[string]interface{} `json:"identifiers"`
 	Credentials   map[string]interface{} `json:"credentials"`
-	SkipAssertion *bool                  `json:"skip_assertion,omitempty"`
+	SkipAssertion *bool                  `json:"skipAssertion,omitempty"`
 	Assertion     *string                `json:"assertion,omitempty"`
 }

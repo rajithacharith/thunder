@@ -87,7 +87,7 @@ export default function AccessSection({
   const {t} = useTranslation();
   const {data: userTypesData, isLoading: loadingUserTypes} = useGetUserTypes();
 
-  const [redirectUris, setRedirectUris] = useState<string[]>(oauth2Config?.redirect_uris ?? []);
+  const [redirectUris, setRedirectUris] = useState<string[]>(oauth2Config?.redirectUris ?? []);
   const [uriErrors, setUriErrors] = useState<Record<number, string>>({});
 
   const userTypeOptions = userTypesData?.schemas.map((schema) => schema.name) ?? [];
@@ -110,10 +110,10 @@ export default function AccessSection({
   });
 
   useEffect(() => {
-    if (oauth2Config?.redirect_uris) {
-      setRedirectUris(oauth2Config.redirect_uris);
+    if (oauth2Config?.redirectUris) {
+      setRedirectUris(oauth2Config.redirectUris);
     }
-  }, [oauth2Config?.redirect_uris]);
+  }, [oauth2Config?.redirectUris]);
 
   const validateUri = (uri: string, index: number): boolean => {
     if (!uri || uri.trim() === '') {
@@ -168,15 +168,15 @@ export default function AccessSection({
     const validUris = newUris.filter((uri) => uri.trim() !== '');
     const updatedConfig = {
       ...oauth2Config,
-      redirect_uris: validUris,
+      redirectUris: validUris,
     };
-    const updatedInboundAuth = application.inbound_auth_config?.map((config) => {
+    const updatedInboundAuth = application.inboundAuthConfig?.map((config) => {
       if (config.type === 'oauth2') {
         return {...config, config: updatedConfig};
       }
       return config;
     });
-    onFieldChange('inbound_auth_config', updatedInboundAuth);
+    onFieldChange('inboundAuthConfig', updatedInboundAuth);
   };
 
   const handleUriChange = (index: number, value: string) => {
@@ -203,15 +203,15 @@ export default function AccessSection({
 
     const updatedConfig = {
       ...oauth2Config,
-      redirect_uris: validUris,
+      redirectUris: validUris,
     };
-    const updatedInboundAuth = application.inbound_auth_config?.map((config) => {
+    const updatedInboundAuth = application.inboundAuthConfig?.map((config) => {
       if (config.type === 'oauth2') {
         return {...config, config: updatedConfig};
       }
       return config;
     });
-    onFieldChange('inbound_auth_config', updatedInboundAuth);
+    onFieldChange('inboundAuthConfig', updatedInboundAuth);
   };
 
   const handleUriBlur = (index: number) => {
@@ -236,8 +236,8 @@ export default function AccessSection({
             fullWidth
             id="allowed-user-types-autocomplete"
             options={userTypeOptions}
-            value={editedApp.allowed_user_types ?? application.allowed_user_types ?? []}
-            onChange={(_event, newValue) => onFieldChange('allowed_user_types', newValue)}
+            value={editedApp.allowedUserTypes ?? application.allowedUserTypes ?? []}
+            onChange={(_event, newValue) => onFieldChange('allowedUserTypes', newValue)}
             loading={loadingUserTypes}
             renderInput={(params) => (
               <TextField

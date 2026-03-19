@@ -48,33 +48,33 @@ describe('useUpdateApplication', () => {
     name: 'Updated Test Application',
     description: 'Updated test application description',
     url: 'https://updated-test-app.com',
-    logo_url: 'https://updated-test-app.com/logo.png',
-    tos_uri: 'https://updated-test-app.com/terms',
-    policy_uri: 'https://updated-test-app.com/privacy',
+    logoUrl: 'https://updated-test-app.com/logo.png',
+    tosUri: 'https://updated-test-app.com/terms',
+    policyUri: 'https://updated-test-app.com/privacy',
     contacts: ['admin@updated-test-app.com'],
-    auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
-    registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
-    is_registration_flow_enabled: true,
-    inbound_auth_config: [
+    authFlowId: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+    registrationFlowId: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
+    isRegistrationFlowEnabled: true,
+    inboundAuthConfig: [
       {
         type: 'oauth2',
         config: {
-          client_id: 'test-client-id',
-          redirect_uris: ['https://updated-test-app.com/callback'],
-          grant_types: ['authorization_code'],
-          response_types: ['code'],
-          pkce_required: false,
-          token_endpoint_auth_method: 'none',
-          public_client: true,
+          clientId: 'test-client-id',
+          redirectUris: ['https://updated-test-app.com/callback'],
+          grantTypes: ['authorization_code'],
+          responseTypes: ['code'],
+          pkceRequired: false,
+          tokenEndpointAuthMethod: 'none',
+          publicClient: true,
           token: {
-            access_token: {
-              validity_period: 3600,
-              user_attributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
+            accessToken: {
+              validityPeriod: 3600,
+              userAttributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
             },
-            id_token: {
-              validity_period: 3600,
-              user_attributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
-              scope_claims: {
+            idToken: {
+              validityPeriod: 3600,
+              userAttributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
+              scopeClaims: {
                 profile: ['name', 'given_name', 'family_name', 'picture'],
                 email: ['email', 'email_verified'],
                 phone: ['phone_number', 'phone_number_verified'],
@@ -86,33 +86,33 @@ describe('useUpdateApplication', () => {
         },
       },
     ],
-    user_attributes: ['email', 'username', 'profile'],
-    created_at: '2025-11-13T10:00:00Z',
-    updated_at: '2025-11-14T15:30:00Z',
+    userAttributes: ['email', 'username', 'profile'],
+    createdAt: '2025-11-13T10:00:00Z',
+    updatedAt: '2025-11-14T15:30:00Z',
   };
 
   const mockUpdateRequest: CreateApplicationRequest = {
     name: 'Updated Test Application',
     description: 'Updated test application description',
     url: 'https://updated-test-app.com',
-    logo_url: 'https://updated-test-app.com/logo.png',
-    tos_uri: 'https://updated-test-app.com/terms',
-    policy_uri: 'https://updated-test-app.com/privacy',
+    logoUrl: 'https://updated-test-app.com/logo.png',
+    tosUri: 'https://updated-test-app.com/terms',
+    policyUri: 'https://updated-test-app.com/privacy',
     contacts: ['admin@updated-test-app.com'],
-    auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
-    registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
-    is_registration_flow_enabled: true,
-    inbound_auth_config: {
-      grant_types: ['authorization_code', 'refresh_token'],
-      redirect_uris: ['https://updated-test-app.com/callback'],
+    authFlowId: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+    registrationFlowId: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
+    isRegistrationFlowEnabled: true,
+    inboundAuthConfig: {
+      grantTypes: ['authorization_code', 'refresh_token'],
+      redirectUris: ['https://updated-test-app.com/callback'],
       allowed_origins: ['https://updated-test-app.com'],
-      public_client: false,
+      publicClient: false,
       pkce_mandatory: true,
       access_token_ttl: 7200,
       refresh_token_ttl: 172800,
       id_token_ttl: 7200,
     },
-    user_attributes: ['email', 'username', 'profile'],
+    userAttributes: ['email', 'username', 'profile'],
   };
 
   beforeEach(() => {
@@ -452,11 +452,11 @@ describe('useUpdateApplication', () => {
     const minimalApp: Application = {
       id: '550e8400-e29b-41d4-a716-446655440000',
       name: 'Minimal App',
-      auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
-      registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
-      is_registration_flow_enabled: false,
-      created_at: '2025-11-13T10:00:00Z',
-      updated_at: '2025-11-14T15:30:00Z',
+      authFlowId: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+      registrationFlowId: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
+      isRegistrationFlowEnabled: false,
+      createdAt: '2025-11-13T10:00:00Z',
+      updatedAt: '2025-11-14T15:30:00Z',
     };
 
     mockHttpRequest.mockResolvedValueOnce({
@@ -513,7 +513,7 @@ describe('useUpdateApplication', () => {
   it('should handle server returning updated timestamps', async () => {
     const updatedApp: Application = {
       ...mockApplication,
-      updated_at: '2025-11-15T12:00:00Z', // More recent timestamp
+      updatedAt: '2025-11-15T12:00:00Z', // More recent timestamp
     };
 
     mockHttpRequest.mockResolvedValueOnce({
@@ -529,7 +529,7 @@ describe('useUpdateApplication', () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(result.current.data?.updated_at).toBe('2025-11-15T12:00:00Z');
-    expect(result.current.data?.created_at).toBe(mockApplication.created_at);
+    expect(result.current.data?.updatedAt).toBe('2025-11-15T12:00:00Z');
+    expect(result.current.data?.createdAt).toBe(mockApplication.createdAt);
   });
 });

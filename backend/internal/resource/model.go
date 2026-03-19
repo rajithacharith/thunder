@@ -193,7 +193,7 @@ type ResourceServer struct {
 	Name        string     `yaml:"name" json:"name"`
 	Description string     `yaml:"description,omitempty" json:"description,omitempty"`
 	Identifier  string     `yaml:"identifier,omitempty" json:"identifier,omitempty"`
-	OUID        string     `yaml:"ou_id" json:"ou_id"`
+	OUID        string     `yaml:"ou_id" json:"ouId"`
 	Delimiter   string     `yaml:"delimiter,omitempty" json:"delimiter,omitempty"`
 	IsReadOnly  bool       `yaml:"-" json:"-"`
 	Resources   []Resource `yaml:"resources,omitempty" json:"resources,omitempty"`

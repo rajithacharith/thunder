@@ -89,7 +89,7 @@ func (s *IDPStoreTestSuite) TestCreateIdentityProvider_Success() {
 
 	s.mockDBProvider.On("GetConfigDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", context.Background(), queryCreateIdentityProvider, idp.ID, idp.Name,
-		idp.Description, idp.Type, `[{"name":"client_id","value":"test-client","is_secret":false}]`, testDeploymentID).
+		idp.Description, idp.Type, `[{"name":"client_id","value":"test-client","isSecret":false}]`, testDeploymentID).
 		Return(int64(1), nil)
 
 	err := s.store.CreateIdentityProvider(context.Background(), idp)
@@ -410,7 +410,7 @@ func (s *IDPStoreTestSuite) TestUpdateIdentityProvider_WithProperties() {
 
 	s.mockDBProvider.On("GetConfigDBClient").Return(s.mockDBClient, nil)
 	s.mockDBClient.On("ExecuteContext", context.Background(), queryUpdateIdentityProviderByID, idp.ID, idp.Name,
-		idp.Description, idp.Type, `[{"name":"client_id","value":"test","is_secret":false}]`, testDeploymentID).
+		idp.Description, idp.Type, `[{"name":"client_id","value":"test","isSecret":false}]`, testDeploymentID).
 		Return(int64(1), nil)
 
 	err := s.store.UpdateIdentityProvider(context.Background(), idp)

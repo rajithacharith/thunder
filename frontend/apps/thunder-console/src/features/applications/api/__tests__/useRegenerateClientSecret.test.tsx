@@ -49,30 +49,30 @@ describe('useRegenerateClientSecret', () => {
     name: 'Test Application',
     description: 'Test description',
     url: 'https://test-app.com',
-    auth_flow_id: 'flow-1',
-    registration_flow_id: 'reg-flow-1',
-    is_registration_flow_enabled: true,
-    inbound_auth_config: [
+    authFlowId: 'flow-1',
+    registrationFlowId: 'reg-flow-1',
+    isRegistrationFlowEnabled: true,
+    inboundAuthConfig: [
       {
         type: 'oauth2',
         config: {
-          client_id: 'test-client-id',
-          client_secret: 'old-secret',
-          redirect_uris: ['https://test-app.com/callback'],
-          grant_types: ['authorization_code'],
-          response_types: ['code'],
-          pkce_required: false,
-          token_endpoint_auth_method: 'client_secret_basic',
-          public_client: false,
+          clientId: 'test-client-id',
+          clientSecret: 'old-secret',
+          redirectUris: ['https://test-app.com/callback'],
+          grantTypes: ['authorization_code'],
+          responseTypes: ['code'],
+          pkceRequired: false,
+          tokenEndpointAuthMethod: 'client_secret_basic',
+          publicClient: false,
           token: {
-            access_token: {
-              validity_period: 3600,
-              user_attributes: ['email'],
+            accessToken: {
+              validityPeriod: 3600,
+              userAttributes: ['email'],
             },
-            id_token: {
-              validity_period: 3600,
-              user_attributes: ['email'],
-              scope_claims: {
+            idToken: {
+              validityPeriod: 3600,
+              userAttributes: ['email'],
+              scopeClaims: {
                 profile: ['name'],
                 email: ['email'],
               },
@@ -82,13 +82,13 @@ describe('useRegenerateClientSecret', () => {
         },
       },
     ],
-    created_at: '2025-11-13T10:00:00Z',
-    updated_at: '2025-11-14T15:30:00Z',
+    createdAt: '2025-11-13T10:00:00Z',
+    updatedAt: '2025-11-14T15:30:00Z',
   };
 
   const mockUpdatedApplication: Application = {
     ...mockApplication,
-    updated_at: '2025-11-15T12:00:00Z',
+    updatedAt: '2025-11-15T12:00:00Z',
   };
 
   beforeEach(() => {
@@ -191,7 +191,7 @@ describe('useRegenerateClientSecret', () => {
     expect(secret).not.toMatch(/[+/=]/);
   });
 
-  it('should strip server-generated fields (id, created_at, updated_at) from update request', async () => {
+  it('should strip server-generated fields (id, createdAt, updatedAt) from update request', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockApplication});
     mockHttpRequest.mockResolvedValueOnce({data: mockUpdatedApplication});
 
@@ -206,8 +206,8 @@ describe('useRegenerateClientSecret', () => {
     const putCall = mockHttpRequest.mock.calls[1][0] as {data: string};
     const putCallData = JSON.parse(putCall.data) as Record<string, unknown>;
     expect(putCallData).not.toHaveProperty('id');
-    expect(putCallData).not.toHaveProperty('created_at');
-    expect(putCallData).not.toHaveProperty('updated_at');
+    expect(putCallData).not.toHaveProperty('createdAt');
+    expect(putCallData).not.toHaveProperty('updatedAt');
   });
 
   it('should include the new client secret in the PUT request body', async () => {
@@ -224,18 +224,18 @@ describe('useRegenerateClientSecret', () => {
 
     const putCall = mockHttpRequest.mock.calls[1][0] as {data: string};
     const putCallData = JSON.parse(putCall.data) as {
-      inbound_auth_config: {type: string; config: {client_secret: string}}[];
+      inboundAuthConfig: {type: string; config: {clientSecret: string}}[];
     };
-    const oauth2Config = putCallData.inbound_auth_config.find(
+    const oauth2Config = putCallData.inboundAuthConfig.find(
       (c: {type: string}) => c.type === 'oauth2',
     );
-    expect(oauth2Config?.config.client_secret).toBe(result.current.data?.clientSecret);
+    expect(oauth2Config?.config.clientSecret).toBe(result.current.data?.clientSecret);
   });
 
   it('should throw error when application has no OAuth2 configuration', async () => {
     const appWithoutOAuth: Application = {
       ...mockApplication,
-      inbound_auth_config: [
+      inboundAuthConfig: [
         {
           type: 'saml',
           config: {} as InboundAuthConfig['config'],

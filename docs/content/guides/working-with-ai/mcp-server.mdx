@@ -105,11 +105,11 @@ If you prefer not to enable open DCR, you can pre-register an application and us
      -H 'Authorization: Bearer <ADMIN_TOKEN>' \
      -d '{
        "name": "MCP Access",
-       "inbound_auth_config": [
+       "inboundAuthConfig": [
          {
            "type": "oauth2",
            "config": {
-             "grant_types": ["client_credentials"],
+             "grantTypes": ["client_credentials"],
              "scope": "system"
            }
          }
@@ -117,7 +117,7 @@ If you prefer not to enable open DCR, you can pre-register an application and us
      }'
    ```
 
-   Note the `client_id` and `client_secret` from the response.
+   Note the `clientId` and `clientSecret` from the response.
 
 2. **Get an access token** using the client credentials grant:
 
@@ -165,7 +165,7 @@ The assistant will:
 
 1. Use `thunder_get_application_templates` to get the SPA template
 2. Use `thunder_create_application` to create the application with appropriate OAuth settings
-3. Return the `client_id` for use in your React app
+3. Return the `clientId` for use in your React app
 
 ### Step 2: Get React SDK Integration Instructions
 

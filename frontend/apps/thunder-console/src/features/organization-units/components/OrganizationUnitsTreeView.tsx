@@ -306,7 +306,7 @@ function CustomTreeItem(allProps: CustomTreeItemProps): JSX.Element {
             }}
           >
             <ResourceAvatar
-              value={itemData?.logo_url}
+              value={itemData?.logoUrl}
               size={32}
               fallbackIcon={<Building size={14} />}
               sx={{

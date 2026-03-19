@@ -74,8 +74,8 @@ export default function UrlsSection({application, editedApp, onFieldChange}: Url
     resolver: zodResolver(urlsSchema),
     mode: 'onChange',
     defaultValues: {
-      tosUri: editedApp.tos_uri ?? application.tos_uri ?? '',
-      policyUri: editedApp.policy_uri ?? application.policy_uri ?? '',
+      tosUri: editedApp.tosUri ?? application.tosUri ?? '',
+      policyUri: editedApp.policyUri ?? application.policyUri ?? '',
     },
   });
 
@@ -97,7 +97,7 @@ export default function UrlsSection({application, editedApp, onFieldChange}: Url
                 {...field}
                 onChange={(e) => {
                   field.onChange(e);
-                  onFieldChange('tos_uri', e.target.value);
+                  onFieldChange('tosUri', e.target.value);
                 }}
                 fullWidth
                 placeholder={t('applications:edit.customization.tosUri.placeholder')}
@@ -120,7 +120,7 @@ export default function UrlsSection({application, editedApp, onFieldChange}: Url
                 {...field}
                 onChange={(e) => {
                   field.onChange(e);
-                  onFieldChange('policy_uri', e.target.value);
+                  onFieldChange('policyUri', e.target.value);
                 }}
                 fullWidth
                 placeholder={t('applications:edit.customization.policyUri.placeholder')}

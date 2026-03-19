@@ -54,16 +54,16 @@ type Prompt struct {
 type NodeResponse struct {
 	Status            NodeStatus                `json:"status"`
 	Type              NodeResponseType          `json:"type"`
-	FailureReason     string                    `json:"failure_reason,omitempty"`
+	FailureReason     string                    `json:"failureReason,omitempty"`
 	Inputs            []Input                   `json:"inputs,omitempty"`
-	AdditionalData    map[string]string         `json:"additional_data,omitempty"`
-	RedirectURL       string                    `json:"redirect_url,omitempty"`
+	AdditionalData    map[string]string         `json:"additionalData,omitempty"`
+	RedirectURL       string                    `json:"redirectUrl,omitempty"`
 	Actions           []Action                  `json:"actions,omitempty"`
 	Meta              interface{}               `json:"meta,omitempty"`
-	NextNodeID        string                    `json:"next_node_id,omitempty"`
-	RuntimeData       map[string]string         `json:"runtime_data,omitempty"`
-	ForwardedData     map[string]interface{}    `json:"forwarded_data,omitempty"`
-	AuthenticatedUser authncm.AuthenticatedUser `json:"authenticated_user,omitempty"`
+	NextNodeID        string                    `json:"nextNodeId,omitempty"`
+	RuntimeData       map[string]string         `json:"runtimeData,omitempty"`
+	ForwardedData     map[string]interface{}    `json:"forwardedData,omitempty"`
+	AuthenticatedUser authncm.AuthenticatedUser `json:"authenticatedUser,omitempty"`
 	Assertion         string                    `json:"assertion,omitempty"`
 }
 
@@ -71,27 +71,27 @@ type NodeResponse struct {
 type ExecutorResponse struct {
 	Status            ExecutorStatus            `json:"status"`
 	Inputs            []Input                   `json:"inputs,omitempty"`
-	AdditionalData    map[string]string         `json:"additional_data,omitempty"`
-	RedirectURL       string                    `json:"redirect_url,omitempty"`
-	RuntimeData       map[string]string         `json:"runtime_data,omitempty"`
-	ForwardedData     map[string]interface{}    `json:"forwarded_data,omitempty"`
-	AuthenticatedUser authncm.AuthenticatedUser `json:"authenticated_user,omitempty"`
+	AdditionalData    map[string]string         `json:"additionalData,omitempty"`
+	RedirectURL       string                    `json:"redirectUrl,omitempty"`
+	RuntimeData       map[string]string         `json:"runtimeData,omitempty"`
+	ForwardedData     map[string]interface{}    `json:"forwardedData,omitempty"`
+	AuthenticatedUser authncm.AuthenticatedUser `json:"authenticatedUser,omitempty"`
 	Assertion         string                    `json:"assertion,omitempty"`
-	FailureReason     string                    `json:"failure_reason,omitempty"`
+	FailureReason     string                    `json:"failureReason,omitempty"`
 }
 
 // NodeExecutionRecord represents a record of a node execution in the flow.
 type NodeExecutionRecord struct {
-	NodeID       string             `json:"node_id"`
-	NodeType     string             `json:"node_type"`
-	ExecutorName string             `json:"executor_name,omitempty"`
-	ExecutorType ExecutorType       `json:"executor_type,omitempty"`
-	ExecutorMode string             `json:"executor_mode,omitempty"`
+	NodeID       string             `json:"nodeId"`
+	NodeType     string             `json:"nodeType"`
+	ExecutorName string             `json:"executorName,omitempty"`
+	ExecutorType ExecutorType       `json:"executorType,omitempty"`
+	ExecutorMode string             `json:"executorMode,omitempty"`
 	Step         int                `json:"step"`
 	Status       FlowStatus         `json:"status"`
 	Executions   []ExecutionAttempt `json:"executions"`
-	StartTime    int64              `json:"start_time,omitempty"`
-	EndTime      int64              `json:"end_time,omitempty"`
+	StartTime    int64              `json:"startTime,omitempty"`
+	EndTime      int64              `json:"endTime,omitempty"`
 }
 
 // GetDuration calculates the duration of the execution in milliseconds.
@@ -104,8 +104,8 @@ type ExecutionAttempt struct {
 	Attempt   int        `json:"attempt"`
 	Timestamp int64      `json:"timestamp"`
 	Status    FlowStatus `json:"status"`
-	StartTime int64      `json:"start_time"`
-	EndTime   int64      `json:"end_time"`
+	StartTime int64      `json:"startTime"`
+	EndTime   int64      `json:"endTime"`
 }
 
 // GetDuration calculates the duration of the execution attempt in milliseconds.

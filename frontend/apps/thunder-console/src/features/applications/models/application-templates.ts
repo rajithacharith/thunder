@@ -155,7 +155,7 @@ export type IntegrationGuides = Record<
 
 export type ApplicationTemplate = Pick<
   Application,
-  'name' | 'description' | 'inbound_auth_config' | 'allowed_user_types'
+  'name' | 'description' | 'inboundAuthConfig' | 'allowedUserTypes'
 > & {
   /**
    * Unique identifier for the template

@@ -271,12 +271,12 @@ func UpdateAppConfig(appID, authFlowID, registrationFlowID string) error {
 	}
 
 	if authFlowID != "" {
-		appConfig["auth_flow_id"] = authFlowID
+		appConfig["authFlowId"] = authFlowID
 	}
 	if registrationFlowID != "" {
-		appConfig["registration_flow_id"] = registrationFlowID
+		appConfig["registrationFlowId"] = registrationFlowID
 	}
-	appConfig["client_secret"] = "secret123"
+	appConfig["clientSecret"] = "secret123"
 
 	client := testutils.GetHTTPClient()
 
@@ -405,7 +405,7 @@ func RestoreAppConfig(appID string, originalConfig map[string]interface{}) error
 	}
 
 	// Add client secret to original config for restoration
-	originalConfig["client_secret"] = "secret123"
+	originalConfig["clientSecret"] = "secret123"
 
 	client := testutils.GetHTTPClient()
 

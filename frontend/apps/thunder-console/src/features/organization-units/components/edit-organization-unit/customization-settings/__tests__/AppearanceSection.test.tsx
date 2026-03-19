@@ -50,7 +50,7 @@ describe('AppearanceSection', () => {
     name: 'Engineering',
     description: 'Engineering department',
     parent: null,
-    theme_id: 'default-theme',
+    themeId: 'default-theme',
   };
 
   const mockThemes = [
@@ -139,7 +139,7 @@ describe('AppearanceSection', () => {
     });
 
     const editedOU: Partial<OrganizationUnit> = {
-      theme_id: 'dark-theme',
+      themeId: 'dark-theme',
     };
 
     renderWithProviders(
@@ -173,7 +173,7 @@ describe('AppearanceSection', () => {
     fireEvent.click(screen.getByText('Light Theme'));
 
     await waitFor(() => {
-      expect(mockOnFieldChange).toHaveBeenCalledWith('theme_id', 'light-theme');
+      expect(mockOnFieldChange).toHaveBeenCalledWith('themeId', 'light-theme');
     });
   });
 
@@ -194,7 +194,7 @@ describe('AppearanceSection', () => {
       fireEvent.click(clearButton);
 
       await waitFor(() => {
-        expect(mockOnFieldChange).toHaveBeenCalledWith('theme_id', '');
+        expect(mockOnFieldChange).toHaveBeenCalledWith('themeId', '');
       });
     }
   });

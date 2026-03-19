@@ -55,7 +55,7 @@ describe('useNotificationSenders', () => {
       provider: 'twilio',
       properties: [
         {name: 'accountSid', value: 'AC123'},
-        {name: 'authToken', value: 'token123', is_secret: true},
+        {name: 'authToken', value: 'token123', isSecret: true},
       ],
     },
     {
@@ -180,7 +180,7 @@ describe('useNotificationSenders', () => {
       const twilioSender = result.current.data?.find(s => s.id === 'sender-1');
       expect(twilioSender?.properties).toHaveLength(2);
       expect(twilioSender?.properties?.[0]).toEqual({name: 'accountSid', value: 'AC123'});
-      expect(twilioSender?.properties?.[1]).toEqual({name: 'authToken', value: 'token123', is_secret: true});
+      expect(twilioSender?.properties?.[1]).toEqual({name: 'authToken', value: 'token123', isSecret: true});
     });
   });
 

@@ -23,24 +23,24 @@ type Application struct {
 	ID                        string              `json:"id,omitempty"`
 	Name                      string              `json:"name"`
 	Description               string              `json:"description,omitempty"`
-	ClientID                  string              `json:"client_id,omitempty"`
-	ClientSecret              string              `json:"client_secret,omitempty"`
-	AuthFlowID                string              `json:"auth_flow_id,omitempty"`
-	RegistrationFlowID        string              `json:"registration_flow_id,omitempty"`
-	IsRegistrationFlowEnabled bool                `json:"is_registration_flow_enabled"`
-	ThemeID                   string              `json:"theme_id,omitempty"`
-	LayoutID                  string              `json:"layout_id,omitempty"`
+	ClientID                  string              `json:"clientId,omitempty"`
+	ClientSecret              string              `json:"clientSecret,omitempty"`
+	AuthFlowID                string              `json:"authFlowId,omitempty"`
+	RegistrationFlowID        string              `json:"registrationFlowId,omitempty"`
+	IsRegistrationFlowEnabled bool                `json:"isRegistrationFlowEnabled"`
+	ThemeID                   string              `json:"themeId,omitempty"`
+	LayoutID                  string              `json:"layoutId,omitempty"`
 	Template                  string              `json:"template,omitempty"`
 	URL                       string              `json:"url,omitempty"`
-	LogoURL                   string              `json:"logo_url,omitempty"`
+	LogoURL                   string              `json:"logoUrl,omitempty"`
 	Certificate               *ApplicationCert    `json:"certificate,omitempty"`
 	Assertion                 *AssertionConfig    `json:"assertion,omitempty"`
-	TosURI                    string              `json:"tos_uri,omitempty"`
-	PolicyURI                 string              `json:"policy_uri,omitempty"`
+	TosURI                    string              `json:"tosUri,omitempty"`
+	PolicyURI                 string              `json:"policyUri,omitempty"`
 	Contacts                  []string            `json:"contacts,omitempty"`
-	AllowedUserTypes          []string            `json:"allowed_user_types,omitempty"`
-	LoginConsent              *LoginConsentConfig `json:"login_consent,omitempty"`
-	InboundAuthConfig         []InboundAuthConfig `json:"inbound_auth_config,omitempty"`
+	AllowedUserTypes          []string            `json:"allowedUserTypes,omitempty"`
+	LoginConsent              *LoginConsentConfig `json:"loginConsent,omitempty"`
+	InboundAuthConfig         []InboundAuthConfig `json:"inboundAuthConfig,omitempty"`
 }
 
 // ApplicationCert represents the certificate structure in the application.
@@ -57,54 +57,54 @@ type InboundAuthConfig struct {
 
 // OAuthAppConfig represents the OAuth application configuration.
 type OAuthAppConfig struct {
-	ClientID                string              `json:"client_id"`
-	ClientSecret            string              `json:"client_secret,omitempty"`
-	RedirectURIs            []string            `json:"redirect_uris"`
-	GrantTypes              []string            `json:"grant_types"`
-	ResponseTypes           []string            `json:"response_types"`
-	TokenEndpointAuthMethod string              `json:"token_endpoint_auth_method"`
-	PKCERequired            bool                `json:"pkce_required"`
-	PublicClient            bool                `json:"public_client"`
+	ClientID                string              `json:"clientId"`
+	ClientSecret            string              `json:"clientSecret,omitempty"`
+	RedirectURIs            []string            `json:"redirectUris"`
+	GrantTypes              []string            `json:"grantTypes"`
+	ResponseTypes           []string            `json:"responseTypes"`
+	TokenEndpointAuthMethod string              `json:"tokenEndpointAuthMethod"`
+	PKCERequired            bool                `json:"pkceRequired"`
+	PublicClient            bool                `json:"publicClient"`
 	Scopes                  []string            `json:"scopes,omitempty"`
 	Token                   *OAuthTokenConfig   `json:"token,omitempty"`
-	ScopeClaims             map[string][]string `json:"scope_claims,omitempty"`
-	UserInfo                *UserInfoConfig     `json:"user_info,omitempty"`
+	ScopeClaims             map[string][]string `json:"scopeClaims,omitempty"`
+	UserInfo                *UserInfoConfig     `json:"userInfo,omitempty"`
 	Certificate             *ApplicationCert    `json:"certificate,omitempty"`
 }
 
 // OAuthTokenConfig represents the OAuth token configuration.
 type OAuthTokenConfig struct {
-	AccessToken *AccessTokenConfig `json:"access_token,omitempty"`
-	IDToken     *IDTokenConfig     `json:"id_token,omitempty"`
+	AccessToken *AccessTokenConfig `json:"accessToken,omitempty"`
+	IDToken     *IDTokenConfig     `json:"idToken,omitempty"`
 }
 
 // UserInfoConfig represents the UserInfo endpoint configuration.
 type UserInfoConfig struct {
-	ResponseType   string   `json:"response_type,omitempty"`
-	UserAttributes []string `json:"user_attributes,omitempty"`
+	ResponseType   string   `json:"responseType,omitempty"`
+	UserAttributes []string `json:"userAttributes,omitempty"`
 }
 
 // AssertionConfig represents the assertion configuration (used for application-level assertion config).
 type AssertionConfig struct {
-	ValidityPeriod int64    `json:"validity_period,omitempty"`
-	UserAttributes []string `json:"user_attributes,omitempty"`
+	ValidityPeriod int64    `json:"validityPeriod,omitempty"`
+	UserAttributes []string `json:"userAttributes,omitempty"`
 }
 
 // LoginConsentConfig represents the login consent configuration for an application.
 type LoginConsentConfig struct {
-	ValidityPeriod int64 `json:"validity_period,omitempty"`
+	ValidityPeriod int64 `json:"validityPeriod,omitempty"`
 }
 
 // AccessTokenConfig represents the access token configuration.
 type AccessTokenConfig struct {
-	ValidityPeriod int64    `json:"validity_period,omitempty"`
-	UserAttributes []string `json:"user_attributes,omitempty"`
+	ValidityPeriod int64    `json:"validityPeriod,omitempty"`
+	UserAttributes []string `json:"userAttributes,omitempty"`
 }
 
 // IDTokenConfig represents the ID token configuration.
 type IDTokenConfig struct {
-	ValidityPeriod int64    `json:"validity_period,omitempty"`
-	UserAttributes []string `json:"user_attributes,omitempty"`
+	ValidityPeriod int64    `json:"validityPeriod,omitempty"`
+	UserAttributes []string `json:"userAttributes,omitempty"`
 }
 
 // ApplicationList represents the response structure for listing applications.

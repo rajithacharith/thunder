@@ -73,7 +73,7 @@ export default function ApplicationsList(): JSX.Element {
             sx={{width: '100%'}}
             icon={
               <ResourceAvatar
-                value={params.row.logo_url}
+                value={params.row.logoUrl}
                 size={30}
                 fallbackIcon={<AppWindow size={14} />}
                 sx={{
@@ -117,14 +117,14 @@ export default function ApplicationsList(): JSX.Element {
         },
       },
       {
-        field: 'client_id',
+        field: 'clientId',
         headerName: t('applications:listing.columns.clientId'),
         flex: 1,
         minWidth: 200,
         renderCell: (params: DataGrid.GridRenderCellParams<BasicApplication>): JSX.Element =>
-          params.row.client_id ? (
+          params.row.clientId ? (
             <Chip
-              label={params.row.client_id}
+              label={params.row.clientId}
               size="small"
               variant="outlined"
               sx={{

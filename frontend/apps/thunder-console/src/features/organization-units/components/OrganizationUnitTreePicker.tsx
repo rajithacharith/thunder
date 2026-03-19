@@ -185,7 +185,7 @@ function PickerTreeItem(allProps: PickerTreeItemProps): JSX.Element {
               height: 28,
               fontSize: '0.75rem',
             }}
-            src={itemData?.logo_url}
+            src={itemData?.logoUrl}
           >
             <Building size={12} />
           </Avatar>
@@ -321,7 +321,7 @@ export default function OrganizationUnitTreePicker({
       label: rootOuData.name,
       handle: rootOuData.handle,
       description: rootOuData.description ?? undefined,
-      logo_url: rootOuData.logo_url,
+      logoUrl: rootOuData.logoUrl,
       children: rootChildren,
     };
 

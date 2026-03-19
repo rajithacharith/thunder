@@ -21,63 +21,63 @@ import type {TokenConfig} from '../token';
 
 describe('Token Models', () => {
   describe('TokenConfig', () => {
-    it('should have required validity_period and user_attributes', () => {
+    it('should have required validityPeriod and userAttributes', () => {
       const tokenConfig: TokenConfig = {
-        validity_period: 3600,
-        user_attributes: ['email', 'username'],
+        validityPeriod: 3600,
+        userAttributes: ['email', 'username'],
       };
 
-      expect(tokenConfig).toHaveProperty('validity_period');
-      expect(tokenConfig).toHaveProperty('user_attributes');
-      expect(tokenConfig.validity_period).toBe(3600);
-      expect(tokenConfig.user_attributes).toEqual(['email', 'username']);
+      expect(tokenConfig).toHaveProperty('validityPeriod');
+      expect(tokenConfig).toHaveProperty('userAttributes');
+      expect(tokenConfig.validityPeriod).toBe(3600);
+      expect(tokenConfig.userAttributes).toEqual(['email', 'username']);
     });
 
 
     it('should accept validity period and user attributes', () => {
       const tokenConfig: TokenConfig = {
-        validity_period: 7200,
-        user_attributes: ['sub', 'email', 'name'],
+        validityPeriod: 7200,
+        userAttributes: ['sub', 'email', 'name'],
       };
 
-      expect(tokenConfig.validity_period).toBe(7200);
-      expect(tokenConfig.user_attributes).toHaveLength(3);
+      expect(tokenConfig.validityPeriod).toBe(7200);
+      expect(tokenConfig.userAttributes).toHaveLength(3);
     });
 
-    it('should accept empty user_attributes array', () => {
+    it('should accept empty userAttributes array', () => {
       const tokenConfig: TokenConfig = {
-        validity_period: 1800,
-        user_attributes: [],
+        validityPeriod: 1800,
+        userAttributes: [],
       };
 
-      expect(tokenConfig.user_attributes).toEqual([]);
-      expect(tokenConfig.user_attributes).toHaveLength(0);
+      expect(tokenConfig.userAttributes).toEqual([]);
+      expect(tokenConfig.userAttributes).toHaveLength(0);
     });
 
     it('should accept various validity periods', () => {
       const shortLived: TokenConfig = {
-        validity_period: 300, // 5 minutes
-        user_attributes: [],
+        validityPeriod: 300, // 5 minutes
+        userAttributes: [],
       };
 
       const longLived: TokenConfig = {
-        validity_period: 86400, // 24 hours
-        user_attributes: [],
+        validityPeriod: 86400, // 24 hours
+        userAttributes: [],
       };
 
-      expect(shortLived.validity_period).toBe(300);
-      expect(longLived.validity_period).toBe(86400);
+      expect(shortLived.validityPeriod).toBe(300);
+      expect(longLived.validityPeriod).toBe(86400);
     });
 
     it('should accept multiple user attributes', () => {
       const tokenConfig: TokenConfig = {
-        validity_period: 3600,
-        user_attributes: ['sub', 'email', 'email_verified', 'name', 'given_name', 'family_name', 'picture', 'roles'],
+        validityPeriod: 3600,
+        userAttributes: ['sub', 'email', 'email_verified', 'name', 'given_name', 'family_name', 'picture', 'roles'],
       };
 
-      expect(tokenConfig.user_attributes).toHaveLength(8);
-      expect(tokenConfig.user_attributes).toContain('email');
-      expect(tokenConfig.user_attributes).toContain('roles');
+      expect(tokenConfig.userAttributes).toHaveLength(8);
+      expect(tokenConfig.userAttributes).toContain('email');
+      expect(tokenConfig.userAttributes).toContain('roles');
     });
   });
 });

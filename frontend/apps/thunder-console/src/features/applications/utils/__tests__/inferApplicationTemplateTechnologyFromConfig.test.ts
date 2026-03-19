@@ -30,11 +30,11 @@ describe('inferApplicationTemplateTechnologyFromConfig', () => {
 
   it('returns REACT for public client configurations', () => {
     const config: OAuth2Config = {
-      public_client: true,
-      grant_types: [OAuth2GrantTypes.AUTHORIZATION_CODE],
-      response_types: ['code'],
-      redirect_uris: ['https://localhost:3000/callback'],
-      pkce_required: true,
+      publicClient: true,
+      grantTypes: [OAuth2GrantTypes.AUTHORIZATION_CODE],
+      responseTypes: ['code'],
+      redirectUris: ['https://localhost:3000/callback'],
+      pkceRequired: true,
       scopes: ['openid', 'profile'],
     };
 
@@ -44,13 +44,13 @@ describe('inferApplicationTemplateTechnologyFromConfig', () => {
 
   it('returns NEXTJS for confidential client with authorization code grant', () => {
     const config: OAuth2Config = {
-      public_client: false,
-      grant_types: [OAuth2GrantTypes.AUTHORIZATION_CODE],
-      response_types: ['code'],
-      redirect_uris: ['https://localhost:3000/callback'],
-      pkce_required: true,
+      publicClient: false,
+      grantTypes: [OAuth2GrantTypes.AUTHORIZATION_CODE],
+      responseTypes: ['code'],
+      redirectUris: ['https://localhost:3000/callback'],
+      pkceRequired: true,
       scopes: ['openid', 'profile'],
-      token_endpoint_auth_method: 'client_secret_basic',
+      tokenEndpointAuthMethod: 'client_secret_basic',
     };
 
     const result = inferApplicationTemplateTechnologyFromConfig(config);
@@ -59,12 +59,12 @@ describe('inferApplicationTemplateTechnologyFromConfig', () => {
 
   it('returns OTHER for confidential client without authorization code grant', () => {
     const config: OAuth2Config = {
-      public_client: false,
-      grant_types: [OAuth2GrantTypes.CLIENT_CREDENTIALS],
-      response_types: [],
-      pkce_required: false,
+      publicClient: false,
+      grantTypes: [OAuth2GrantTypes.CLIENT_CREDENTIALS],
+      responseTypes: [],
+      pkceRequired: false,
       scopes: ['openid'],
-      token_endpoint_auth_method: 'client_secret_basic',
+      tokenEndpointAuthMethod: 'client_secret_basic',
     };
 
     const result = inferApplicationTemplateTechnologyFromConfig(config);
@@ -73,11 +73,11 @@ describe('inferApplicationTemplateTechnologyFromConfig', () => {
 
   it('returns REACT for public client even with multiple grant types', () => {
     const config: OAuth2Config = {
-      public_client: true,
-      grant_types: [OAuth2GrantTypes.AUTHORIZATION_CODE, OAuth2GrantTypes.REFRESH_TOKEN],
-      response_types: ['code'],
-      redirect_uris: ['https://localhost:3000/callback'],
-      pkce_required: true,
+      publicClient: true,
+      grantTypes: [OAuth2GrantTypes.AUTHORIZATION_CODE, OAuth2GrantTypes.REFRESH_TOKEN],
+      responseTypes: ['code'],
+      redirectUris: ['https://localhost:3000/callback'],
+      pkceRequired: true,
       scopes: ['openid', 'profile', 'email'],
     };
 
@@ -87,13 +87,13 @@ describe('inferApplicationTemplateTechnologyFromConfig', () => {
 
   it('returns NEXTJS for confidential client with authorization code among other grants', () => {
     const config: OAuth2Config = {
-      public_client: false,
-      grant_types: [OAuth2GrantTypes.AUTHORIZATION_CODE, OAuth2GrantTypes.REFRESH_TOKEN],
-      response_types: ['code'],
-      redirect_uris: ['https://localhost:3000/callback'],
-      pkce_required: true,
+      publicClient: false,
+      grantTypes: [OAuth2GrantTypes.AUTHORIZATION_CODE, OAuth2GrantTypes.REFRESH_TOKEN],
+      responseTypes: ['code'],
+      redirectUris: ['https://localhost:3000/callback'],
+      pkceRequired: true,
       scopes: ['openid', 'profile', 'email'],
-      token_endpoint_auth_method: 'client_secret_basic',
+      tokenEndpointAuthMethod: 'client_secret_basic',
     };
 
     const result = inferApplicationTemplateTechnologyFromConfig(config);
@@ -102,9 +102,9 @@ describe('inferApplicationTemplateTechnologyFromConfig', () => {
 
   it('handles config with minimal properties', () => {
     const config: OAuth2Config = {
-      public_client: true,
-      grant_types: [OAuth2GrantTypes.AUTHORIZATION_CODE],
-      response_types: ['code'],
+      publicClient: true,
+      grantTypes: [OAuth2GrantTypes.AUTHORIZATION_CODE],
+      responseTypes: ['code'],
     };
 
     const result = inferApplicationTemplateTechnologyFromConfig(config);
@@ -113,11 +113,11 @@ describe('inferApplicationTemplateTechnologyFromConfig', () => {
 
   it('handles empty grant types array for public client', () => {
     const config: OAuth2Config = {
-      public_client: true,
-      grant_types: [],
-      response_types: ['code'],
-      redirect_uris: ['https://localhost:3000/callback'],
-      pkce_required: true,
+      publicClient: true,
+      grantTypes: [],
+      responseTypes: ['code'],
+      redirectUris: ['https://localhost:3000/callback'],
+      pkceRequired: true,
       scopes: ['openid'],
     };
 
@@ -127,13 +127,13 @@ describe('inferApplicationTemplateTechnologyFromConfig', () => {
 
   it('handles empty grant types array for confidential client', () => {
     const config: OAuth2Config = {
-      public_client: false,
-      grant_types: [],
-      response_types: ['code'],
-      redirect_uris: ['https://localhost:3000/callback'],
-      pkce_required: true,
+      publicClient: false,
+      grantTypes: [],
+      responseTypes: ['code'],
+      redirectUris: ['https://localhost:3000/callback'],
+      pkceRequired: true,
       scopes: ['openid'],
-      token_endpoint_auth_method: 'client_secret_basic',
+      tokenEndpointAuthMethod: 'client_secret_basic',
     };
 
     const result = inferApplicationTemplateTechnologyFromConfig(config);

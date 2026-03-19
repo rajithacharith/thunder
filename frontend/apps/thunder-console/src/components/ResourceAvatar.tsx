@@ -93,10 +93,10 @@ export interface ResourceAvatarProps extends Omit<AvatarProps, 'onSelect'> {
  *
  * // Editable
  * <ResourceAvatar
- *   value={app.logo_url}
+ *   value={app.logoUrl}
  *   size={40}
  *   fallbackIcon={<AppWindow />}
- *   onSelect={(val) => setApp({...app, logo_url: val})}
+ *   onSelect={(val) => setApp({...app, logoUrl: val})}
  * />
  * ```
  *

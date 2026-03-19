@@ -28,7 +28,7 @@ type OrganizationUnitBasic struct {
 	Handle      string `json:"handle"`
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
-	LogoURL     string `json:"logo_url,omitempty"`
+	LogoURL     string `json:"logoUrl,omitempty"`
 }
 
 // OrganizationUnit represents an organization unit.
@@ -38,12 +38,12 @@ type OrganizationUnit struct {
 	Name            string  `json:"name"`
 	Description     string  `json:"description,omitempty"`
 	Parent          *string `json:"parent"`
-	LogoURL         string  `json:"logo_url,omitempty"`
-	TosURI          string  `json:"tos_uri,omitempty"`
-	PolicyURI       string  `json:"policy_uri,omitempty"`
-	CookiePolicyURI string  `json:"cookie_policy_uri,omitempty"`
-	ThemeID         string  `json:"theme_id,omitempty"`
-	LayoutID        string  `json:"layout_id,omitempty"`
+	LogoURL         string  `json:"logoUrl,omitempty"`
+	TosURI          string  `json:"tosUri,omitempty"`
+	PolicyURI       string  `json:"policyUri,omitempty"`
+	CookiePolicyURI string  `json:"cookiePolicyUri,omitempty"`
+	ThemeID         string  `json:"themeId,omitempty"`
+	LayoutID        string  `json:"layoutId,omitempty"`
 }
 
 // CreateOURequest represents the request body for creating an organization unit.
@@ -52,12 +52,12 @@ type CreateOURequest struct {
 	Name            string  `json:"name"`
 	Description     string  `json:"description,omitempty"`
 	Parent          *string `json:"parent,omitempty"`
-	LogoURL         string  `json:"logo_url,omitempty"`
-	TosURI          string  `json:"tos_uri,omitempty"`
-	PolicyURI       string  `json:"policy_uri,omitempty"`
-	CookiePolicyURI string  `json:"cookie_policy_uri,omitempty"`
-	ThemeID         string  `json:"theme_id,omitempty"`
-	LayoutID        string  `json:"layout_id,omitempty"`
+	LogoURL         string  `json:"logoUrl,omitempty"`
+	TosURI          string  `json:"tosUri,omitempty"`
+	PolicyURI       string  `json:"policyUri,omitempty"`
+	CookiePolicyURI string  `json:"cookiePolicyUri,omitempty"`
+	ThemeID         string  `json:"themeId,omitempty"`
+	LayoutID        string  `json:"layoutId,omitempty"`
 }
 
 // UpdateOURequest represents the request body for updating an organization unit.
@@ -66,12 +66,12 @@ type UpdateOURequest struct {
 	Name            string  `json:"name"`
 	Description     string  `json:"description,omitempty"`
 	Parent          *string `json:"parent,omitempty"`
-	LogoURL         string  `json:"logo_url,omitempty"`
-	TosURI          string  `json:"tos_uri,omitempty"`
-	PolicyURI       string  `json:"policy_uri,omitempty"`
-	CookiePolicyURI string  `json:"cookie_policy_uri,omitempty"`
-	ThemeID         string  `json:"theme_id,omitempty"`
-	LayoutID        string  `json:"layout_id,omitempty"`
+	LogoURL         string  `json:"logoUrl,omitempty"`
+	TosURI          string  `json:"tosUri,omitempty"`
+	PolicyURI       string  `json:"policyUri,omitempty"`
+	CookiePolicyURI string  `json:"cookiePolicyUri,omitempty"`
+	ThemeID         string  `json:"themeId,omitempty"`
+	LayoutID        string  `json:"layoutId,omitempty"`
 }
 
 // OrganizationUnitListResponse represents the response for listing organization units with pagination.

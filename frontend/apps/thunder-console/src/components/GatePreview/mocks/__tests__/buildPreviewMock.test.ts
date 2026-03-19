@@ -54,15 +54,15 @@ describe('buildPreviewMock', () => {
   });
 
   describe('App logo meta', () => {
-    it('should use application logo_url from meta when provided', () => {
-      const meta = {application: {logo_url: 'https://example.com/logo.png'}};
+    it('should use application logoUrl from meta when provided', () => {
+      const meta = {application: {logoUrl: 'https://example.com/logo.png'}};
       const result = buildPreviewMock({}, [], meta) as unknown as MockComponent[];
 
       const logo = getComponentById(result, 'app_logo');
       expect(logo!.src).toBe('https://example.com/logo.png');
     });
 
-    it('should use empty string for app logo src when meta has no logo_url', () => {
+    it('should use empty string for app logo src when meta has no logoUrl', () => {
       const result = buildPreviewMock({}, [], {}) as unknown as MockComponent[];
 
       const logo = getComponentById(result, 'app_logo');

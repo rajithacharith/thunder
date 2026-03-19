@@ -47,12 +47,12 @@ paths:
                 $ref: '#/components/schemas/HealthStatus'
               example:
                 status: "UP"
-                service_status:
-                  - service_name: "ConfigDB"
+                serviceStatus:
+                  - serviceName: "ConfigDB"
                     status: "UP"
-                  - service_name: "RuntimeDB"
+                  - serviceName: "RuntimeDB"
                     status: "UP"
-                  - service_name: "UserDB"
+                  - serviceName: "UserDB"
                     status: "UP"
         '503':
           description: Service is not ready
@@ -62,12 +62,12 @@ paths:
                 $ref: '#/components/schemas/HealthStatus'
               example:
                 status: "DOWN"
-                service_status:
-                  - service_name: "ConfigDB"
+                serviceStatus:
+                  - serviceName: "ConfigDB"
                     status: "DOWN"
-                  - service_name: "RuntimeDB"
+                  - serviceName: "RuntimeDB"
                     status: "UP"
-                  - service_name: "UserDB"
+                  - serviceName: "UserDB"
                     status: "UP"
 
 components:
@@ -81,12 +81,12 @@ components:
             - UP
             - DOWN
             - UNKNOWN
-        service_status:
+        serviceStatus:
           type: array
           items:
             type: object
             properties:
-              service_name:
+              serviceName:
                 type: string
                 enum:
                   - ConfigDB

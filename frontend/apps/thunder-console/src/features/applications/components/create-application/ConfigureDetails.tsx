@@ -217,7 +217,7 @@ export interface ConfigureDetailsProps {
  *    - Displays a message indicating no additional configuration is needed
  *
  * Additionally, if the selected template requires user type selection (indicated by an empty
- * allowed_user_types array) and multiple user types are available, the component displays
+ * allowedUserTypes array) and multiple user types are available, the component displays
  * a multi-select autocomplete for choosing applicable user types.
  *
  * The component uses React Hook Form with Zod validation to provide real-time form
@@ -486,9 +486,9 @@ export default function ConfigureDetails({
       {/* User Type Selection - shown when template requires it and user types are available */}
       {userTypes &&
         userTypes.length > 0 &&
-        selectedTemplateConfig?.allowed_user_types !== undefined &&
-        Array.isArray(selectedTemplateConfig.allowed_user_types) &&
-        selectedTemplateConfig.allowed_user_types.length === 0 && (
+        selectedTemplateConfig?.allowedUserTypes !== undefined &&
+        Array.isArray(selectedTemplateConfig.allowedUserTypes) &&
+        selectedTemplateConfig.allowedUserTypes.length === 0 && (
           <FormControl fullWidth>
             <FormLabel htmlFor="user-types-select">
               {t('applications:onboarding.configure.details.userTypes.label')}

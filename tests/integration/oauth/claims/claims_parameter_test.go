@@ -50,7 +50,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{
@@ -152,8 +152,8 @@ func (ts *ClaimsParameterTestSuite) createTestUser() string {
 		"username":     "claims_test_user",
 		"password":     "SecurePass123!",
 		"email":        "claims_test@example.com",
-		"given_name":    "Claims",
-		"family_name":     "Test",
+		"given_name":   "Claims",
+		"family_name":  "Test",
 		"phone_number": "+1234567890",
 		"locale":       "en-US",
 	}
@@ -162,9 +162,9 @@ func (ts *ClaimsParameterTestSuite) createTestUser() string {
 	ts.Require().NoError(err, "Failed to marshal user attributes")
 
 	user := testutils.User{
-		Type:             "claims-test-person",
-		OUID:             ts.ouID,
-		Attributes:       json.RawMessage(attributesJSON),
+		Type:       "claims-test-person",
+		OUID:       ts.ouID,
+		Attributes: json.RawMessage(attributesJSON),
 	}
 
 	userID, err := testutils.CreateUser(user)
@@ -257,33 +257,33 @@ func (ts *ClaimsParameterTestSuite) createTestAuthenticationFlow() string {
 
 func (ts *ClaimsParameterTestSuite) createTestApplication(authFlowID string) string {
 	app := map[string]interface{}{
-		"name":                         appName,
-		"description":                  "Application for Claims Parameter integration tests",
-		"auth_flow_id":                 authFlowID,
-		"is_registration_flow_enabled": false,
-		"allowed_user_types":           []string{"claims-test-person"},
-		"inbound_auth_config": []map[string]interface{}{
+		"name":                      appName,
+		"description":               "Application for Claims Parameter integration tests",
+		"authFlowId":                authFlowID,
+		"isRegistrationFlowEnabled": false,
+		"allowedUserTypes":          []string{"claims-test-person"},
+		"inboundAuthConfig": []map[string]interface{}{
 			{
 				"type": "oauth2",
 				"config": map[string]interface{}{
-					"client_id":     clientID,
-					"client_secret": clientSecret,
-					"redirect_uris": []string{redirectURI},
-					"grant_types": []string{
+					"clientId":     clientID,
+					"clientSecret": clientSecret,
+					"redirectUris": []string{redirectURI},
+					"grantTypes": []string{
 						"authorization_code",
 						"refresh_token",
 					},
-					"response_types":             []string{"code"},
-					"token_endpoint_auth_method": "client_secret_basic",
-					"scopes":                     []string{"openid", "profile", "email", "phone"},
+					"responseTypes":           []string{"code"},
+					"tokenEndpointAuthMethod": "client_secret_basic",
+					"scopes":                  []string{"openid", "profile", "email", "phone"},
 					"token": map[string]interface{}{
-						"id_token": map[string]interface{}{
-							"user_attributes": []string{
+						"idToken": map[string]interface{}{
+							"userAttributes": []string{
 								"email", "given_name", "family_name", "phone_number", "locale",
 							},
 						},
 					},
-					"scope_claims": map[string][]string{
+					"scopeClaims": map[string][]string{
 						"profile": {"given_name", "family_name", "locale"},
 						"email":   {"email"},
 						"phone":   {"phone_number"},

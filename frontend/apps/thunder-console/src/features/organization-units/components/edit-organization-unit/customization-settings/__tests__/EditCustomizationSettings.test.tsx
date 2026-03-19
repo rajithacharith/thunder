@@ -34,10 +34,10 @@ vi.mock('../AppearanceSection', () => ({
   }) => (
     <div data-testid="appearance-section">
       AppearanceSection - {organizationUnit.name}
-      <button type="button" onClick={() => onFieldChange('theme_id', 'new-theme')}>
+      <button type="button" onClick={() => onFieldChange('themeId', 'new-theme')}>
         Change Theme
       </button>
-      <span>Edited Theme: {editedOU.theme_id ?? 'none'}</span>
+      <span>Edited Theme: {editedOU.themeId ?? 'none'}</span>
     </div>
   ),
 }));
@@ -84,7 +84,7 @@ describe('EditCustomizationSettings', () => {
 
   it('should pass editedOU to AppearanceSection', () => {
     const editedOU: Partial<OrganizationUnit> = {
-      theme_id: 'custom-theme',
+      themeId: 'custom-theme',
     };
 
     renderWithProviders(
@@ -110,7 +110,7 @@ describe('EditCustomizationSettings', () => {
     const changeButton = screen.getByText('Change Theme');
     changeButton.click();
 
-    expect(mockOnFieldChange).toHaveBeenCalledWith('theme_id', 'new-theme');
+    expect(mockOnFieldChange).toHaveBeenCalledWith('themeId', 'new-theme');
   });
 
   it('should handle empty editedOU', () => {

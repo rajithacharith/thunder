@@ -40,9 +40,9 @@ describe('inbound-auth', () => {
   describe('InboundAuthConfig interface', () => {
     it('should allow creating a valid OAuth2 inbound auth config', () => {
       const mockOAuth2Config: OAuth2Config = {
-        redirect_uris: ['https://example.com/callback'],
-        grant_types: ['authorization_code'],
-        response_types: ['code'],
+        redirectUris: ['https://example.com/callback'],
+        grantTypes: ['authorization_code'],
+        responseTypes: ['code'],
         scopes: ['openid', 'profile'],
       };
 
@@ -57,9 +57,9 @@ describe('inbound-auth', () => {
 
     it('should work with string type for type field', () => {
       const mockConfig: OAuth2Config = {
-        redirect_uris: ['https://app.com/auth'],
-        grant_types: ['authorization_code', 'refresh_token'],
-        response_types: ['code'],
+        redirectUris: ['https://app.com/auth'],
+        grantTypes: ['authorization_code', 'refresh_token'],
+        responseTypes: ['code'],
         scopes: ['openid'],
       };
 
@@ -73,11 +73,11 @@ describe('inbound-auth', () => {
 
     it('should allow PKCE configuration for SPAs', () => {
       const spaConfig: OAuth2Config = {
-        redirect_uris: ['http://localhost:3000/callback'],
-        grant_types: ['authorization_code', 'refresh_token'],
-        response_types: ['code'],
-        pkce_required: true,
-        public_client: true,
+        redirectUris: ['http://localhost:3000/callback'],
+        grantTypes: ['authorization_code', 'refresh_token'],
+        responseTypes: ['code'],
+        pkceRequired: true,
+        publicClient: true,
         scopes: ['openid', 'profile', 'email'],
       };
 
@@ -86,8 +86,8 @@ describe('inbound-auth', () => {
         config: spaConfig,
       };
 
-      expect(inboundAuthConfig.config.pkce_required).toBe(true);
-      expect(inboundAuthConfig.config.public_client).toBe(true);
+      expect(inboundAuthConfig.config.pkceRequired).toBe(true);
+      expect(inboundAuthConfig.config.publicClient).toBe(true);
     });
   });
 });

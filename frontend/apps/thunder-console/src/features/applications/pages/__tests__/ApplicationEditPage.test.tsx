@@ -183,20 +183,20 @@ describe('ApplicationEditPage', () => {
     name: 'Test Application',
     description: 'Test application description',
     template: 'react',
-    logo_url: 'https://example.com/logo.png',
+    logoUrl: 'https://example.com/logo.png',
     url: 'https://example.com',
-    inbound_auth_config: [
+    inboundAuthConfig: [
       {
         type: 'oauth2',
         config: {
-          response_types: ['code'],
-          client_id: 'test-client-id',
-          client_secret: 'test-client-secret',
-          grant_types: ['authorization_code'],
-          redirect_uris: ['https://example.com/callback'],
-          pkce_required: true,
-          public_client: false,
-          token_endpoint_auth_method: 'client_secret_basic',
+          responseTypes: ['code'],
+          clientId: 'test-client-id',
+          clientSecret: 'test-client-secret',
+          grantTypes: ['authorization_code'],
+          redirectUris: ['https://example.com/callback'],
+          pkceRequired: true,
+          publicClient: false,
+          tokenEndpointAuthMethod: 'client_secret_basic',
         },
       },
     ],
@@ -1040,9 +1040,9 @@ describe('ApplicationEditPage', () => {
   });
 
   describe('OAuth2 Config', () => {
-    it('should handle application without inbound_auth_config', () => {
+    it('should handle application without inboundAuthConfig', () => {
       mockUseGetApplication.mockReturnValue({
-        data: {...mockApplication, inbound_auth_config: undefined},
+        data: {...mockApplication, inboundAuthConfig: undefined},
         isLoading: false,
         isError: false,
         error: null,
@@ -1054,11 +1054,11 @@ describe('ApplicationEditPage', () => {
       expect(screen.getByText('Test Application')).toBeInTheDocument();
     });
 
-    it('should handle application with non-oauth2 inbound_auth_config', () => {
+    it('should handle application with non-oauth2 inboundAuthConfig', () => {
       mockUseGetApplication.mockReturnValue({
         data: {
           ...mockApplication,
-          inbound_auth_config: [{type: 'saml', config: {issuer: 'test'}}],
+          inboundAuthConfig: [{type: 'saml', config: {issuer: 'test'}}],
         },
         isLoading: false,
         isError: false,
@@ -1272,7 +1272,7 @@ describe('ApplicationEditPage', () => {
       expect(descriptionInputAgain).toHaveValue('New description');
     });
 
-    it('should display edited logo_url in avatar when editedApp has logo_url', async () => {
+    it('should display edited logoUrl in avatar when editedApp has logoUrl', async () => {
       const user = userEvent.setup();
       renderComponent();
 
@@ -1290,9 +1290,9 @@ describe('ApplicationEditPage', () => {
       });
     });
 
-    it('should handle application with no logo_url', () => {
+    it('should handle application with no logoUrl', () => {
       mockUseGetApplication.mockReturnValue({
-        data: {...mockApplication, logo_url: undefined},
+        data: {...mockApplication, logoUrl: undefined},
         isLoading: false,
         isError: false,
         error: null,

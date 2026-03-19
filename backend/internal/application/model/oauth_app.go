@@ -35,41 +35,41 @@ import (
 
 // AccessTokenConfig represents the access token configuration structure.
 type AccessTokenConfig struct {
-	ValidityPeriod int64    `json:"validity_period,omitempty" yaml:"validity_period,omitempty" jsonschema:"Access token validity period in seconds."`
-	UserAttributes []string `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in access token. Claims embedded in the access token for authorization decisions."`
+	ValidityPeriod int64    `json:"validityPeriod,omitempty" yaml:"validity_period,omitempty" jsonschema:"Access token validity period in seconds."`
+	UserAttributes []string `json:"userAttributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in access token. Claims embedded in the access token for authorization decisions."`
 }
 
 // IDTokenConfig represents the ID token configuration structure.
 type IDTokenConfig struct {
-	ValidityPeriod int64    `json:"validity_period,omitempty" yaml:"validity_period,omitempty" jsonschema:"ID token validity period in seconds."`
-	UserAttributes []string `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in ID token. Standard OIDC claims: sub, name, email, picture, etc."`
+	ValidityPeriod int64    `json:"validityPeriod,omitempty" yaml:"validity_period,omitempty" jsonschema:"ID token validity period in seconds."`
+	UserAttributes []string `json:"userAttributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in ID token. Standard OIDC claims: sub, name, email, picture, etc."`
 }
 
 // UserInfoConfig represents the user info endpoint configuration structure.
 type UserInfoConfig struct {
-	ResponseType   UserInfoResponseType `json:"response_type,omitempty" yaml:"response_type,omitempty"`
-	UserAttributes []string             `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in userinfo response."`
+	ResponseType   UserInfoResponseType `json:"responseType,omitempty" yaml:"response_type,omitempty"`
+	UserAttributes []string             `json:"userAttributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in userinfo response."`
 }
 
 // OAuthTokenConfig represents the OAuth token configuration structure with access_token and id_token wrappers.
 type OAuthTokenConfig struct {
-	AccessToken *AccessTokenConfig `json:"access_token,omitempty" yaml:"access_token,omitempty" jsonschema:"Access token configuration. Configure validity period and user attributes for access tokens used in API authorization."`
-	IDToken     *IDTokenConfig     `json:"id_token,omitempty" yaml:"id_token,omitempty" jsonschema:"ID token configuration. Configure validity period and user attributes for OIDC ID tokens."`
+	AccessToken *AccessTokenConfig `json:"accessToken,omitempty" yaml:"access_token,omitempty" jsonschema:"Access token configuration. Configure validity period and user attributes for access tokens used in API authorization."`
+	IDToken     *IDTokenConfig     `json:"idToken,omitempty" yaml:"id_token,omitempty" jsonschema:"ID token configuration. Configure validity period and user attributes for OIDC ID tokens."`
 }
 
 // OAuthAppConfig represents the structure for OAuth application configuration.
 type OAuthAppConfig struct {
-	ClientID                string                              `json:"client_id"`
-	RedirectURIs            []string                            `json:"redirect_uris"`
-	GrantTypes              []oauth2const.GrantType             `json:"grant_types"`
-	ResponseTypes           []oauth2const.ResponseType          `json:"response_types"`
-	TokenEndpointAuthMethod oauth2const.TokenEndpointAuthMethod `json:"token_endpoint_auth_method"`
-	PKCERequired            bool                                `json:"pkce_required"`
-	PublicClient            bool                                `json:"public_client"`
+	ClientID                string                              `json:"clientId"`
+	RedirectURIs            []string                            `json:"redirectUris"`
+	GrantTypes              []oauth2const.GrantType             `json:"grantTypes"`
+	ResponseTypes           []oauth2const.ResponseType          `json:"responseTypes"`
+	TokenEndpointAuthMethod oauth2const.TokenEndpointAuthMethod `json:"tokenEndpointAuthMethod"`
+	PKCERequired            bool                                `json:"pkceRequired"`
+	PublicClient            bool                                `json:"publicClient"`
 	Token                   *OAuthTokenConfig                   `json:"token,omitempty"`
 	Scopes                  []string                            `json:"scopes,omitempty"`
-	UserInfo                *UserInfoConfig                     `json:"user_info,omitempty"`
-	ScopeClaims             map[string][]string                 `json:"scope_claims,omitempty"`
+	UserInfo                *UserInfoConfig                     `json:"userInfo,omitempty"`
+	ScopeClaims             map[string][]string                 `json:"scopeClaims,omitempty"`
 	Certificate             *ApplicationCertificate             `json:"certificate,omitempty"`
 }
 
@@ -77,36 +77,36 @@ type OAuthAppConfig struct {
 //
 //nolint:lll
 type OAuthAppConfigComplete struct {
-	ClientID                string                              `json:"client_id" yaml:"client_id"`
-	ClientSecret            string                              `json:"client_secret,omitempty" yaml:"client_secret"`
-	RedirectURIs            []string                            `json:"redirect_uris" yaml:"redirect_uris"`
-	GrantTypes              []oauth2const.GrantType             `json:"grant_types" yaml:"grant_types"`
-	ResponseTypes           []oauth2const.ResponseType          `json:"response_types" yaml:"response_types"`
-	TokenEndpointAuthMethod oauth2const.TokenEndpointAuthMethod `json:"token_endpoint_auth_method" yaml:"token_endpoint_auth_method"`
-	PKCERequired            bool                                `json:"pkce_required" yaml:"pkce_required"`
-	PublicClient            bool                                `json:"public_client" yaml:"public_client"`
+	ClientID                string                              `json:"clientId" yaml:"client_id"`
+	ClientSecret            string                              `json:"clientSecret,omitempty" yaml:"client_secret"`
+	RedirectURIs            []string                            `json:"redirectUris" yaml:"redirect_uris"`
+	GrantTypes              []oauth2const.GrantType             `json:"grantTypes" yaml:"grant_types"`
+	ResponseTypes           []oauth2const.ResponseType          `json:"responseTypes" yaml:"response_types"`
+	TokenEndpointAuthMethod oauth2const.TokenEndpointAuthMethod `json:"tokenEndpointAuthMethod" yaml:"token_endpoint_auth_method"`
+	PKCERequired            bool                                `json:"pkceRequired" yaml:"pkce_required"`
+	PublicClient            bool                                `json:"publicClient" yaml:"public_client"`
 	Token                   *OAuthTokenConfig                   `json:"token,omitempty" yaml:"token,omitempty"`
 	Scopes                  []string                            `json:"scopes,omitempty" yaml:"scopes,omitempty"`
-	UserInfo                *UserInfoConfig                     `json:"user_info,omitempty" yaml:"user_info,omitempty"`
-	ScopeClaims             map[string][]string                 `json:"scope_claims,omitempty" yaml:"scope_claims,omitempty"`
+	UserInfo                *UserInfoConfig                     `json:"userInfo,omitempty" yaml:"user_info,omitempty"`
+	ScopeClaims             map[string][]string                 `json:"scopeClaims,omitempty" yaml:"scope_claims,omitempty"`
 	Certificate             *ApplicationCertificate             `json:"certificate,omitempty" jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
 }
 
 // OAuthAppConfigDTO represents the data transfer object for OAuth application configuration.
 type OAuthAppConfigDTO struct {
-	AppID                   string                              `json:"app_id,omitempty" jsonschema:"The unique identifier of the OAuth application"`
-	ClientID                string                              `json:"client_id,omitempty" jsonschema:"OAuth client ID (auto-generated if not provided)"`
-	ClientSecret            string                              `json:"client_secret,omitempty" jsonschema:"OAuth client secret (auto-generated if not provided)"`
-	RedirectURIs            []string                            `json:"redirect_uris,omitempty" jsonschema:"Allowed redirect URIs. Required for Public (SPA/Mobile) and Confidential (Server) clients. Omit for M2M."`
-	GrantTypes              []oauth2const.GrantType             `json:"grant_types,omitempty" jsonschema:"OAuth grant types. Common: [authorization_code, refresh_token] for user apps, [client_credentials] for M2M."`
-	ResponseTypes           []oauth2const.ResponseType          `json:"response_types,omitempty" jsonschema:"OAuth response types. Common: [code] for user apps. Omit for M2M."`
-	TokenEndpointAuthMethod oauth2const.TokenEndpointAuthMethod `json:"token_endpoint_auth_method,omitempty" jsonschema:"Client authentication method. Use 'none' for Public clients, 'client_secret_basic' for Confidential/M2M."`
-	PKCERequired            bool                                `json:"pkce_required,omitempty" jsonschema:"Require PKCE for security. Recommended for all user-interactive flows."`
-	PublicClient            bool                                `json:"public_client,omitempty" jsonschema:"Identify if client is public (cannot store secrets). Set true for SPA/Mobile."`
+	AppID                   string                              `json:"appId,omitempty" jsonschema:"The unique identifier of the OAuth application"`
+	ClientID                string                              `json:"clientId,omitempty" jsonschema:"OAuth client ID (auto-generated if not provided)"`
+	ClientSecret            string                              `json:"clientSecret,omitempty" jsonschema:"OAuth client secret (auto-generated if not provided)"`
+	RedirectURIs            []string                            `json:"redirectUris,omitempty" jsonschema:"Allowed redirect URIs. Required for Public (SPA/Mobile) and Confidential (Server) clients. Omit for M2M."`
+	GrantTypes              []oauth2const.GrantType             `json:"grantTypes,omitempty" jsonschema:"OAuth grant types. Common: [authorization_code, refresh_token] for user apps, [client_credentials] for M2M."`
+	ResponseTypes           []oauth2const.ResponseType          `json:"responseTypes,omitempty" jsonschema:"OAuth response types. Common: [code] for user apps. Omit for M2M."`
+	TokenEndpointAuthMethod oauth2const.TokenEndpointAuthMethod `json:"tokenEndpointAuthMethod,omitempty" jsonschema:"Client authentication method. Use 'none' for Public clients, 'client_secret_basic' for Confidential/M2M."`
+	PKCERequired            bool                                `json:"pkceRequired,omitempty" jsonschema:"Require PKCE for security. Recommended for all user-interactive flows."`
+	PublicClient            bool                                `json:"publicClient,omitempty" jsonschema:"Identify if client is public (cannot store secrets). Set true for SPA/Mobile."`
 	Token                   *OAuthTokenConfig                   `json:"token,omitempty" jsonschema:"Token configuration for access tokens and ID tokens"`
 	Scopes                  []string                            `json:"scopes,omitempty" jsonschema:"Allowed OAuth scopes. Add custom scopes as needed for your application."`
-	UserInfo                *UserInfoConfig                     `json:"user_info,omitempty" jsonschema:"UserInfo endpoint configuration. Configure user attributes returned from the OIDC userinfo endpoint."`
-	ScopeClaims             map[string][]string                 `json:"scope_claims,omitempty" jsonschema:"Scope-to-claims mapping. Maps OAuth scopes to user claims for both ID token and userinfo."`
+	UserInfo                *UserInfoConfig                     `json:"userInfo,omitempty" jsonschema:"UserInfo endpoint configuration. Configure user attributes returned from the OIDC userinfo endpoint."`
+	ScopeClaims             map[string][]string                 `json:"scopeClaims,omitempty" jsonschema:"Scope-to-claims mapping. Maps OAuth scopes to user claims for both ID token and userinfo."`
 	Certificate             *ApplicationCertificate             `json:"certificate,omitempty" jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
 }
 

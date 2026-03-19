@@ -27,18 +27,18 @@ describe('getConfigurationTypeFromTemplate', () => {
     expect(result).toBe(ApplicationCreateFlowConfiguration.NONE);
   });
 
-  it('returns NONE when redirect_uris is already populated', () => {
+  it('returns NONE when redirectUris is already populated', () => {
     const template: ApplicationTemplate = {
       name: 'Test App',
       description: 'Test application',
-      inbound_auth_config: [
+      inboundAuthConfig: [
         {
           type: 'oauth2',
           config: {
-            redirect_uris: ['https://example.com/callback'],
-            grant_types: ['authorization_code'],
-            response_types: ['code'],
-            public_client: true,
+            redirectUris: ['https://example.com/callback'],
+            grantTypes: ['authorization_code'],
+            responseTypes: ['code'],
+            publicClient: true,
           },
         },
       ],
@@ -52,14 +52,14 @@ describe('getConfigurationTypeFromTemplate', () => {
     const template: ApplicationTemplate = {
       name: 'Mobile Application',
       description: 'Mobile app',
-      inbound_auth_config: [
+      inboundAuthConfig: [
         {
           type: 'oauth2',
           config: {
-            redirect_uris: [],
-            grant_types: ['authorization_code'],
-            response_types: ['code'],
-            public_client: true,
+            redirectUris: [],
+            grantTypes: ['authorization_code'],
+            responseTypes: ['code'],
+            publicClient: true,
           },
         },
       ],
@@ -73,14 +73,14 @@ describe('getConfigurationTypeFromTemplate', () => {
     const template: ApplicationTemplate = {
       name: 'Browser Application',
       description: 'Browser app',
-      inbound_auth_config: [
+      inboundAuthConfig: [
         {
           type: 'oauth2',
           config: {
-            redirect_uris: [],
-            grant_types: ['authorization_code'],
-            response_types: ['code'],
-            public_client: true,
+            redirectUris: [],
+            grantTypes: ['authorization_code'],
+            responseTypes: ['code'],
+            publicClient: true,
           },
         },
       ],
@@ -94,14 +94,14 @@ describe('getConfigurationTypeFromTemplate', () => {
     const template: ApplicationTemplate = {
       name: 'Server Application',
       description: 'Server app',
-      inbound_auth_config: [
+      inboundAuthConfig: [
         {
           type: 'oauth2',
           config: {
-            redirect_uris: [],
-            grant_types: ['authorization_code'],
-            response_types: ['code'],
-            public_client: false,
+            redirectUris: [],
+            grantTypes: ['authorization_code'],
+            responseTypes: ['code'],
+            publicClient: false,
           },
         },
       ],
@@ -115,14 +115,14 @@ describe('getConfigurationTypeFromTemplate', () => {
     const template: ApplicationTemplate = {
       name: 'Backend Application',
       description: 'Backend service',
-      inbound_auth_config: [
+      inboundAuthConfig: [
         {
           type: 'oauth2',
           config: {
-            redirect_uris: [],
-            grant_types: ['client_credentials'],
-            response_types: [],
-            public_client: false,
+            redirectUris: [],
+            grantTypes: ['client_credentials'],
+            responseTypes: [],
+            publicClient: false,
           },
         },
       ],
@@ -136,14 +136,14 @@ describe('getConfigurationTypeFromTemplate', () => {
     const template: ApplicationTemplate = {
       name: 'Unknown Application',
       description: 'Unknown app type',
-      inbound_auth_config: [
+      inboundAuthConfig: [
         {
           type: 'oauth2',
           config: {
-            redirect_uris: [],
-            grant_types: ['authorization_code'],
-            response_types: ['code'],
-            public_client: true,
+            redirectUris: [],
+            grantTypes: ['authorization_code'],
+            responseTypes: ['code'],
+            publicClient: true,
           },
         },
       ],
@@ -157,25 +157,25 @@ describe('getConfigurationTypeFromTemplate', () => {
     const template: ApplicationTemplate = {
       name: 'No OAuth App',
       description: 'App without OAuth',
-      inbound_auth_config: [],
+      inboundAuthConfig: [],
     };
 
     const result = getConfigurationTypeFromTemplate(template);
     expect(result).toBe(ApplicationCreateFlowConfiguration.URL);
   });
 
-  it('handles template with undefined redirect_uris', () => {
+  it('handles template with undefined redirectUris', () => {
     const template: ApplicationTemplate = {
       name: 'Undefined URIs App',
-      description: 'App with undefined redirect_uris',
-      inbound_auth_config: [
+      description: 'App with undefined redirectUris',
+      inboundAuthConfig: [
         {
           type: 'oauth2',
           config: {
-            // redirect_uris not specified
-            grant_types: ['authorization_code'],
-            response_types: ['code'],
-            public_client: true,
+            // redirectUris not specified
+            grantTypes: ['authorization_code'],
+            responseTypes: ['code'],
+            publicClient: true,
           },
         },
       ],
@@ -189,14 +189,14 @@ describe('getConfigurationTypeFromTemplate', () => {
     const template: ApplicationTemplate = {
       name: 'MOBILE APPLICATION',
       description: 'Mobile app with uppercase name',
-      inbound_auth_config: [
+      inboundAuthConfig: [
         {
           type: 'oauth2',
           config: {
-            redirect_uris: [],
-            grant_types: ['authorization_code'],
-            response_types: ['code'],
-            public_client: true,
+            redirectUris: [],
+            grantTypes: ['authorization_code'],
+            responseTypes: ['code'],
+            publicClient: true,
           },
         },
       ],

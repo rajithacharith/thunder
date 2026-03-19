@@ -142,8 +142,8 @@ export default function EditTokenSettings({
   const [pendingRemovals, setPendingRemovals] = useState<Set<string>>(new Set());
   const [highlightedAttributes, setHighlightedAttributes] = useState<Set<string>>(new Set());
 
-  // Stabilize allowed_user_types array reference
-  const allowedUserTypes = useMemo(() => application.allowed_user_types ?? [], [application.allowed_user_types]);
+  // Stabilize allowedUserTypes array reference
+  const allowedUserTypes = useMemo(() => application.allowedUserTypes ?? [], [application.allowedUserTypes]);
 
   // Get schema IDs for allowed user types
   const schemaIds = useMemo(() => {
@@ -156,7 +156,7 @@ export default function EditTokenSettings({
 
   // Determine if this is OAuth/OIDC mode (has separate token configs) or Native mode
   const isOAuthMode = useMemo(
-    () => oauth2Config?.token?.access_token !== undefined || oauth2Config?.token?.id_token !== undefined,
+    () => oauth2Config?.token?.accessToken !== undefined || oauth2Config?.token?.idToken !== undefined,
     [oauth2Config],
   );
 
@@ -171,9 +171,9 @@ export default function EditTokenSettings({
     resolver: zodResolver(tokenConfigSchema),
     mode: 'onChange',
     defaultValues: {
-      validityPeriod: oauth2Config?.token?.validity_period ?? application.assertion?.validity_period ?? 3600,
-      accessTokenValidity: oauth2Config?.token?.access_token?.validity_period ?? 3600,
-      idTokenValidity: oauth2Config?.token?.id_token?.validity_period ?? 3600,
+      validityPeriod: oauth2Config?.token?.validityPeriod ?? application.assertion?.validityPeriod ?? 3600,
+      accessTokenValidity: oauth2Config?.token?.accessToken?.validityPeriod ?? 3600,
+      idTokenValidity: oauth2Config?.token?.idToken?.validityPeriod ?? 3600,
     },
   });
 
@@ -186,15 +186,12 @@ export default function EditTokenSettings({
    */
   useEffect(() => {
     if (isOAuthMode) {
-      setValue('accessTokenValidity', oauth2Config?.token?.access_token?.validity_period ?? 3600);
-      setValue('idTokenValidity', oauth2Config?.token?.id_token?.validity_period ?? 3600);
+      setValue('accessTokenValidity', oauth2Config?.token?.accessToken?.validityPeriod ?? 3600);
+      setValue('idTokenValidity', oauth2Config?.token?.idToken?.validityPeriod ?? 3600);
     } else {
-      setValue(
-        'validityPeriod',
-        oauth2Config?.token?.validity_period ?? application.assertion?.validity_period ?? 3600,
-      );
+      setValue('validityPeriod', oauth2Config?.token?.validityPeriod ?? application.assertion?.validityPeriod ?? 3600);
     }
-  }, [isOAuthMode, oauth2Config, application.assertion?.validity_period, setValue]);
+  }, [isOAuthMode, oauth2Config, application.assertion?.validityPeriod, setValue]);
 
   /**
    * Effect to sync form changes back to the parent component.
@@ -206,18 +203,18 @@ export default function EditTokenSettings({
         ...oauth2Config,
         token: {
           ...oauth2Config.token,
-          access_token: {
-            ...oauth2Config.token?.access_token,
-            validity_period: accessTokenValidity,
+          accessToken: {
+            ...oauth2Config.token?.accessToken,
+            validityPeriod: accessTokenValidity,
           },
-          id_token: {
-            ...oauth2Config.token?.id_token,
-            validity_period: idTokenValidity,
+          idToken: {
+            ...oauth2Config.token?.idToken,
+            validityPeriod: idTokenValidity,
           },
         },
       };
 
-      const updatedInboundAuth = application.inbound_auth_config?.map((config) => {
+      const updatedInboundAuth = application.inboundAuthConfig?.map((config) => {
         if (config.type === 'oauth2') {
           return {...config, config: updatedConfig};
         }
@@ -225,12 +222,12 @@ export default function EditTokenSettings({
         return config;
       });
 
-      onFieldChange('inbound_auth_config', updatedInboundAuth);
+      onFieldChange('inboundAuthConfig', updatedInboundAuth);
     } else if (!isOAuthMode) {
       // Native mode: update root-level assertion config
       const updatedAssertion = {
         ...application.assertion,
-        validity_period: validityPeriod,
+        validityPeriod,
       };
 
       onFieldChange('assertion', updatedAssertion);
@@ -241,7 +238,7 @@ export default function EditTokenSettings({
     idTokenValidity,
     isOAuthMode,
     oauth2Config,
-    application.inbound_auth_config,
+    application.inboundAuthConfig,
     application.assertion,
     onFieldChange,
   ]);
@@ -325,36 +322,36 @@ export default function EditTokenSettings({
       return [];
     }
 
-    return oauth2Config?.token?.user_attributes ?? application.assertion?.user_attributes ?? [];
+    return oauth2Config?.token?.userAttributes ?? application.assertion?.userAttributes ?? [];
   }, [isOAuthMode, oauth2Config, application]);
 
   const [isUserInfoCustomAttributes, setIsUserInfoCustomAttributes] = useState<boolean>(false);
   const [currentUserInfoAttributes, setCurrentUserInfoAttributes] = useState<string[]>([]);
 
   const currentAccessTokenAttributes = useMemo(
-    () => oauth2Config?.token?.access_token?.user_attributes ?? [],
+    () => oauth2Config?.token?.accessToken?.userAttributes ?? [],
     [oauth2Config],
   );
 
-  const currentIdTokenAttributes = useMemo(() => oauth2Config?.token?.id_token?.user_attributes ?? [], [oauth2Config]);
+  const currentIdTokenAttributes = useMemo(() => oauth2Config?.token?.idToken?.userAttributes ?? [], [oauth2Config]);
 
   // Initialize userinfoEnabled based on config presence and difference from ID token
   useEffect(() => {
     if (!isOAuthMode || !oauth2Config) return;
 
-    const idTokenAttrs = oauth2Config.token?.id_token?.user_attributes ?? [];
+    const idTokenAttrs = oauth2Config.token?.idToken?.userAttributes ?? [];
 
-    const userInfoConfig = oauth2Config.user_info;
+    const userInfoConfig = oauth2Config.userInfo;
 
     if (userInfoConfig) {
-      const userInfoAttrs = userInfoConfig.user_attributes || [];
+      const userInfoAttrs = userInfoConfig.userAttributes || [];
       const idTokenAttrsRef = idTokenAttrs || [];
       setCurrentUserInfoAttributes(userInfoAttrs);
       // Enable toggle only if attributes differ from ID token attributes
       const isDifferent = !areAttributesEqual(userInfoAttrs, idTokenAttrsRef);
       setIsUserInfoCustomAttributes(isDifferent);
     } else {
-      // If user_info is undefined, fallback logic applies, so toggle is OFF
+      // If userInfo is undefined, fallback logic applies, so toggle is OFF
       setIsUserInfoCustomAttributes(false);
       setCurrentUserInfoAttributes(idTokenAttrs);
     }
@@ -378,37 +375,37 @@ export default function EditTokenSettings({
 
     if (checked) {
       // When enabling, start with ID token attributes if current UserInfo attrs are empty/undefined
-      if (!oauth2Config?.user_info) {
+      if (!oauth2Config?.userInfo) {
         setCurrentUserInfoAttributes([...currentIdTokenAttributes]);
 
         // Update config immediately to initialize the structure
         const updatedConfig = {
           ...oauth2Config,
-          user_info: {
-            user_attributes: [...currentIdTokenAttributes],
+          userInfo: {
+            userAttributes: [...currentIdTokenAttributes],
           },
         };
 
-        const updatedInboundAuth = application.inbound_auth_config?.map((config) => {
+        const updatedInboundAuth = application.inboundAuthConfig?.map((config) => {
           if (config.type === 'oauth2') {
             return {...config, config: updatedConfig};
           }
           return config;
         });
-        onFieldChange('inbound_auth_config', updatedInboundAuth);
+        onFieldChange('inboundAuthConfig', updatedInboundAuth);
       }
     } else if (oauth2Config) {
-      // When disabling, remove user_info from config to use fallback
-      const {user_info: userInfo, ...restConfig} = oauth2Config;
+      // When disabling, remove userInfo from config to use fallback
+      const {userInfo, ...restConfig} = oauth2Config;
       const updatedConfig = restConfig;
 
-      const updatedInboundAuth = application.inbound_auth_config?.map((config) => {
+      const updatedInboundAuth = application.inboundAuthConfig?.map((config) => {
         if (config.type === 'oauth2') {
           return {...config, config: updatedConfig};
         }
         return config;
       });
-      onFieldChange('inbound_auth_config', updatedInboundAuth);
+      onFieldChange('inboundAuthConfig', updatedInboundAuth);
     }
   };
 
@@ -442,19 +439,19 @@ export default function EditTokenSettings({
               ...oauth2Config,
               token: {
                 ...oauth2Config.token,
-                access_token: {
-                  ...oauth2Config.token?.access_token,
-                  user_attributes: newAttributes,
+                accessToken: {
+                  ...oauth2Config.token?.accessToken,
+                  userAttributes: newAttributes,
                 },
               },
             };
-            const updatedInboundAuth = application.inbound_auth_config?.map((config) => {
+            const updatedInboundAuth = application.inboundAuthConfig?.map((config) => {
               if (config.type === 'oauth2') {
                 return {...config, config: updatedConfig};
               }
               return config;
             });
-            onFieldChange('inbound_auth_config', updatedInboundAuth);
+            onFieldChange('inboundAuthConfig', updatedInboundAuth);
           } else if (activeTokenType === 'id') {
             const newAttributes = [
               ...currentIdTokenAttributes,
@@ -464,19 +461,19 @@ export default function EditTokenSettings({
               ...oauth2Config,
               token: {
                 ...oauth2Config.token,
-                id_token: {
-                  ...oauth2Config.token?.id_token,
-                  user_attributes: newAttributes,
+                idToken: {
+                  ...oauth2Config.token?.idToken,
+                  userAttributes: newAttributes,
                 },
               },
             };
-            const updatedInboundAuth = application.inbound_auth_config?.map((config) => {
+            const updatedInboundAuth = application.inboundAuthConfig?.map((config) => {
               if (config.type === 'oauth2') {
                 return {...config, config: updatedConfig};
               }
               return config;
             });
-            onFieldChange('inbound_auth_config', updatedInboundAuth);
+            onFieldChange('inboundAuthConfig', updatedInboundAuth);
           } else if (activeTokenType === 'userinfo') {
             const newAttributes = [
               ...currentUserInfoAttributes,
@@ -484,17 +481,17 @@ export default function EditTokenSettings({
             ];
             const updatedConfig = {
               ...oauth2Config,
-              user_info: {
-                user_attributes: newAttributes,
+              userInfo: {
+                userAttributes: newAttributes,
               },
             };
-            const updatedInboundAuth = application.inbound_auth_config?.map((config) => {
+            const updatedInboundAuth = application.inboundAuthConfig?.map((config) => {
               if (config.type === 'oauth2') {
                 return {...config, config: updatedConfig};
               }
               return config;
             });
-            onFieldChange('inbound_auth_config', updatedInboundAuth);
+            onFieldChange('inboundAuthConfig', updatedInboundAuth);
           }
         } else {
           // Native mode: update root-level assertion attributes
@@ -504,7 +501,7 @@ export default function EditTokenSettings({
           ];
           const updatedAssertion = {
             ...application.assertion,
-            user_attributes: newAttributes,
+            userAttributes: newAttributes,
           };
           onFieldChange('assertion', updatedAssertion);
         }
@@ -522,60 +519,60 @@ export default function EditTokenSettings({
               ...oauth2Config,
               token: {
                 ...oauth2Config.token,
-                access_token: {
-                  ...oauth2Config.token?.access_token,
-                  user_attributes: newAttributes,
+                accessToken: {
+                  ...oauth2Config.token?.accessToken,
+                  userAttributes: newAttributes,
                 },
               },
             };
-            const updatedInboundAuth = application.inbound_auth_config?.map((config) => {
+            const updatedInboundAuth = application.inboundAuthConfig?.map((config) => {
               if (config.type === 'oauth2') {
                 return {...config, config: updatedConfig};
               }
               return config;
             });
-            onFieldChange('inbound_auth_config', updatedInboundAuth);
+            onFieldChange('inboundAuthConfig', updatedInboundAuth);
           } else if (activeTokenType === 'id') {
             const newAttributes = currentIdTokenAttributes.filter((attr) => !removalsArray.includes(attr));
             const updatedConfig = {
               ...oauth2Config,
               token: {
                 ...oauth2Config.token,
-                id_token: {
-                  ...oauth2Config.token?.id_token,
-                  user_attributes: newAttributes,
+                idToken: {
+                  ...oauth2Config.token?.idToken,
+                  userAttributes: newAttributes,
                 },
               },
             };
-            const updatedInboundAuth = application.inbound_auth_config?.map((config) => {
+            const updatedInboundAuth = application.inboundAuthConfig?.map((config) => {
               if (config.type === 'oauth2') {
                 return {...config, config: updatedConfig};
               }
               return config;
             });
-            onFieldChange('inbound_auth_config', updatedInboundAuth);
+            onFieldChange('inboundAuthConfig', updatedInboundAuth);
           } else if (activeTokenType === 'userinfo') {
             const newAttributes = currentUserInfoAttributes.filter((attr) => !removalsArray.includes(attr));
             const updatedConfig = {
               ...oauth2Config,
-              user_info: {
-                user_attributes: newAttributes,
+              userInfo: {
+                userAttributes: newAttributes,
               },
             };
-            const updatedInboundAuth = application.inbound_auth_config?.map((config) => {
+            const updatedInboundAuth = application.inboundAuthConfig?.map((config) => {
               if (config.type === 'oauth2') {
                 return {...config, config: updatedConfig};
               }
               return config;
             });
-            onFieldChange('inbound_auth_config', updatedInboundAuth);
+            onFieldChange('inboundAuthConfig', updatedInboundAuth);
           }
         } else {
           // Native mode: update root-level assertion attributes
           const newAttributes = sharedUserAttributes.filter((attr) => !removalsArray.includes(attr));
           const updatedAssertion = {
             ...application.assertion,
-            user_attributes: newAttributes,
+            userAttributes: newAttributes,
           };
           onFieldChange('assertion', updatedAssertion);
         }
@@ -601,7 +598,7 @@ export default function EditTokenSettings({
     currentIdTokenAttributes,
     currentUserInfoAttributes,
     sharedUserAttributes,
-    application.inbound_auth_config,
+    application.inboundAuthConfig,
     application.assertion,
     onFieldChange,
   ]);

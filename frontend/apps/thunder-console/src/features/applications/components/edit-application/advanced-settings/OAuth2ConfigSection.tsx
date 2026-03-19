@@ -61,7 +61,7 @@ export default function OAuth2ConfigSection({oauth2Config = undefined}: OAuth2Co
             {t('applications:edit.advanced.labels.grantTypes')}
           </Typography>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            {oauth2Config.grant_types?.map((grant) => (
+            {oauth2Config.grantTypes?.map((grant) => (
               <Chip key={grant} label={grant} size="small" variant="outlined" />
             ))}
           </Stack>
@@ -75,7 +75,7 @@ export default function OAuth2ConfigSection({oauth2Config = undefined}: OAuth2Co
             {t('applications:edit.advanced.labels.responseTypes')}
           </Typography>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            {oauth2Config.response_types?.map((response) => (
+            {oauth2Config.responseTypes?.map((response) => (
               <Chip key={response} label={response} size="small" variant="outlined" />
             ))}
           </Stack>
@@ -86,12 +86,12 @@ export default function OAuth2ConfigSection({oauth2Config = undefined}: OAuth2Co
             {t('applications:edit.advanced.labels.publicClient')}
           </Typography>
           <Typography variant="body1">
-            {oauth2Config.public_client
+            {oauth2Config.publicClient
               ? t('applications:edit.advanced.publicClient.yes')
               : t('applications:edit.advanced.publicClient.no')}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{mt: 0.5, display: 'block'}}>
-            {oauth2Config.public_client
+            {oauth2Config.publicClient
               ? t('applications:edit.advanced.publicClient.public')
               : t('applications:edit.advanced.publicClient.confidential')}
           </Typography>
@@ -102,12 +102,12 @@ export default function OAuth2ConfigSection({oauth2Config = undefined}: OAuth2Co
             {t('applications:edit.advanced.labels.pkceRequired')}
           </Typography>
           <Typography variant="body1">
-            {oauth2Config.pkce_required
+            {oauth2Config.pkceRequired
               ? t('applications:edit.advanced.pkce.yes')
               : t('applications:edit.advanced.pkce.no')}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{mt: 0.5, display: 'block'}}>
-            {oauth2Config.pkce_required
+            {oauth2Config.pkceRequired
               ? t('applications:edit.advanced.pkce.enabled')
               : t('applications:edit.advanced.pkce.disabled')}
           </Typography>

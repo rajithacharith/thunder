@@ -62,20 +62,20 @@ export type IdentityProviderType = (typeof IdentityProviderTypes)[keyof typeof I
  * const redirectUri: IdentityProviderProperty = {
  *   name: 'redirect_uri',
  *   value: 'https://localhost:5091/signin',
- *   is_secret: false
+ *   isSecret: false
  * };
  *
  * // Secret property (value is masked when retrieved)
  * const clientSecret: IdentityProviderProperty = {
- *   name: 'client_secret',
+ *   name: 'clientSecret',
  *   value: '******',
- *   is_secret: true
+ *   isSecret: true
  * };
  * ```
  */
 export interface IdentityProviderProperty {
   /**
-   * The name of the property (e.g., 'client_id', 'client_secret', 'scopes')
+   * The name of the property (e.g., 'clientId', 'clientSecret', 'scopes')
    */
   name: string;
 
@@ -90,7 +90,7 @@ export interface IdentityProviderProperty {
    * Secret properties are masked in API responses and stored securely
    * @defaultValue false
    */
-  is_secret?: boolean;
+  isSecret?: boolean;
 }
 
 /**
@@ -164,11 +164,11 @@ export interface BasicIdentityProvider {
  *   description: 'Login with Google',
  *   type: IdentityProviderTypes.GOOGLE,
  *   properties: [
- *     { name: 'client_id', value: '******', is_secret: true },
- *     { name: 'client_secret', value: '******', is_secret: true },
- *     { name: 'redirect_uri', value: 'https://localhost:5091/signin', is_secret: false },
- *     { name: 'prompt', value: 'select_account', is_secret: false },
- *     { name: 'scopes', value: 'openid,email,profile', is_secret: false }
+ *     { name: 'clientId', value: '******', isSecret: true },
+ *     { name: 'clientSecret', value: '******', isSecret: true },
+ *     { name: 'redirect_uri', value: 'https://localhost:5091/signin', isSecret: false },
+ *     { name: 'prompt', value: 'select_account', isSecret: false },
+ *     { name: 'scopes', value: 'openid,email,profile', isSecret: false }
  *   ]
  * };
  * ```

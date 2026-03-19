@@ -121,7 +121,7 @@ func (suite *ClientProviderTestSuite) TestGetMessageClient() {
 
 func (suite *ClientProviderTestSuite) TestGetMessageClientWithError() {
 	makeInvalidSecretProps := func(propName string) []cmodels.Property {
-		jsonStr := `[{"name":"` + propName + `","value":"not-encrypted-value","is_secret":true}` + `]`
+		jsonStr := `[{"name":"` + propName + `","value":"not-encrypted-value","isSecret":true}` + `]`
 		props, err := cmodels.DeserializePropertiesFromJSON(jsonStr)
 		if err != nil {
 			return []cmodels.Property{}

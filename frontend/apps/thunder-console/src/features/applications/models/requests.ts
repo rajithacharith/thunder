@@ -34,7 +34,7 @@ import type {Application} from './application';
  * - OAuth2/OIDC inbound authentication settings
  * - User attributes to include in tokens
  *
- * The server will generate additional fields (id, client_id, timestamps) upon creation.
+ * The server will generate additional fields (id, clientId, timestamps) upon creation.
  *
  * @example
  * ```typescript
@@ -43,30 +43,30 @@ import type {Application} from './application';
  *   name: 'My Web Application',
  *   description: 'Customer portal application',
  *   url: 'https://myapp.com',
- *   logo_url: 'https://myapp.com/logo.png',
- *   tos_uri: 'https://myapp.com/terms',
- *   policy_uri: 'https://myapp.com/privacy',
+ *   logoUrl: 'https://myapp.com/logo.png',
+ *   tosUri: 'https://myapp.com/terms',
+ *   policyUri: 'https://myapp.com/privacy',
  *   contacts: ['admin@myapp.com', 'support@myapp.com'],
- *   auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
- *   registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
- *   is_registration_flow_enabled: true,
- *   user_attributes: ['email', 'username', 'roles'],
- *   inbound_auth_config: [{
+ *   authFlowId: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+ *   registrationFlowId: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
+ *   isRegistrationFlowEnabled: true,
+ *   userAttributes: ['email', 'username', 'roles'],
+ *   inboundAuthConfig: [{
  *     type: 'oauth2',
  *     config: {
- *       redirect_uris: ['https://myapp.com/callback'],
- *       grant_types: ['authorization_code', 'refresh_token'],
- *       response_types: ['code'],
+ *       redirectUris: ['https://myapp.com/callback'],
+ *       grantTypes: ['authorization_code', 'refresh_token'],
+ *       responseTypes: ['code'],
  *       scopes: ['openid', 'profile', 'email'],
  *       token: {
- *         access_token: {
- *           validity_period: 3600,
- *           user_attributes: ['email', 'username']
+ *         accessToken: {
+ *           validityPeriod: 3600,
+ *           userAttributes: ['email', 'username']
  *         },
- *         id_token: {
- *           validity_period: 3600,
- *           user_attributes: ['sub', 'email', 'name'],
- *           scope_claims: {
+ *         idToken: {
+ *           validityPeriod: 3600,
+ *           userAttributes: ['sub', 'email', 'name'],
+ *           scopeClaims: {
  *             profile: ['name', 'picture'],
  *             email: ['email', 'email_verified']
  *           }
@@ -83,22 +83,22 @@ import type {Application} from './application';
  * const createSPA: CreateApplicationRequest = {
  *   name: 'My SPA',
  *   url: 'http://localhost:3000',
- *   inbound_auth_config: [{
+ *   inboundAuthConfig: [{
  *     type: 'oauth2',
  *     config: {
- *       redirect_uris: ['http://localhost:3000/callback'],
- *       grant_types: ['authorization_code', 'refresh_token'],
- *       response_types: ['code'],
- *       pkce_required: true,
- *       public_client: true,
+ *       redirectUris: ['http://localhost:3000/callback'],
+ *       grantTypes: ['authorization_code', 'refresh_token'],
+ *       responseTypes: ['code'],
+ *       pkceRequired: true,
+ *       publicClient: true,
  *       scopes: ['openid', 'profile'],
  *       token: {
- *         access_token: { validity_period: 3600, user_attributes: [] },
- *         id_token: { validity_period: 3600, user_attributes: ['sub'], scope_claims: {} }
+ *         accessToken: { validityPeriod: 3600, userAttributes: [] },
+ *         idToken: { validityPeriod: 3600, userAttributes: ['sub'], scopeClaims: {} }
  *       }
  *     }
  *   }]
  * };
  * ```
  */
-export type CreateApplicationRequest = Omit<Application, 'id' | 'created_at' | 'updated_at'>;
+export type CreateApplicationRequest = Omit<Application, 'id' | 'createdAt' | 'updatedAt'>;
