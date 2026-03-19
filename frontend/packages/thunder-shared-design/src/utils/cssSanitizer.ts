@@ -27,9 +27,15 @@ function normalizeForSanitization(css: string): string {
   normalized = normalized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
 
   // Decode CSS unicode escapes (e.g., \65 -> e, \0065 -> e)
-  normalized = normalized.replace(/\\([0-9a-fA-F]{1,6})\s?/g, (_match, hex: string) =>
-    String.fromCodePoint(parseInt(hex, 16)),
-  );
+  normalized = normalized.replace(/\\([0-9a-fA-F]{1,6})\s?/g, (_match, hex: string) => {
+    const codePoint = parseInt(hex, 16);
+
+    if (codePoint > 0x10ffff) {
+      return '';
+    }
+
+    return String.fromCodePoint(codePoint);
+  });
 
   return normalized;
 }
@@ -60,11 +66,11 @@ export function sanitizeCss(css: string): string {
   // Remove @charset rules (prevent encoding-based attacks)
   sanitized = sanitized.replace(/@charset\s+[^;]+;/gi, '');
 
-  // Remove -moz-binding (Firefox XBL injection)
-  sanitized = sanitized.replace(/-moz-binding\s*:[^;]+;?/gi, '');
+  // Remove -moz-binding (Firefox XBL injection) — anchored to property boundary
+  sanitized = sanitized.replace(/(^|[{;]\s*)-moz-binding\s*:[^;]+;?/gi, '$1');
 
-  // Remove behavior property (IE HTC injection)
-  sanitized = sanitized.replace(/behavior\s*:[^;]+;?/gi, '');
+  // Remove behavior property (IE HTC injection) — anchored to avoid matching e.g. scroll-behavior
+  sanitized = sanitized.replace(/(^|[{;]\s*)behavior\s*:[^;]+;?/gi, '$1');
 
   return sanitized;
 }

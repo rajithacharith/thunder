@@ -83,6 +83,9 @@ vi.mock('../adapters/TimerAdapter', () => ({
     return <div data-testid="timer-adapter" data-expires-in={String(props.expiresIn)} />;
   },
 }));
+vi.mock('../adapters/DividerAdapter', () => ({
+  default: () => <div data-testid="divider-adapter" />,
+}));
 
 const baseProps: FlowComponentRendererProps = {
   component: {id: 'c1', type: 'TEXT'},
@@ -238,6 +241,11 @@ describe('FlowComponentRenderer', () => {
   it('renders StandaloneTriggerAdapter for ACTION/TRIGGER type', () => {
     render(<FlowComponentRenderer {...baseProps} component={{id: 'c7', type: 'ACTION', eventType: 'TRIGGER'}} />);
     expect(screen.getByTestId('standalone-trigger-adapter')).toBeInTheDocument();
+  });
+
+  it('renders DividerAdapter for DIVIDER type', () => {
+    render(<FlowComponentRenderer {...baseProps} component={{id: 'c-div', type: 'DIVIDER'}} />);
+    expect(screen.getByTestId('divider-adapter')).toBeInTheDocument();
   });
 
   it('returns null for unrecognised component types', () => {

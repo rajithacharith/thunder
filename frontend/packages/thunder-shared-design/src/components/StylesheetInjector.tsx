@@ -16,10 +16,13 @@
  * under the License.
  */
 
+import {createLogger} from '@thunder/logger';
 import {useEffect} from 'react';
 import useDesign from '../contexts/Design/useDesign';
 import type {Stylesheet} from '../models/layout';
 import {sanitizeCss, isValidStylesheetUrl} from '../utils/cssSanitizer';
+
+const logger = createLogger({component: 'StylesheetInjector'});
 
 const ELEMENT_ID_PREFIX = 'thunder-stylesheet-';
 
@@ -77,8 +80,7 @@ export default function StylesheetInjector({stylesheets = undefined}: Stylesheet
           document.head.appendChild(link);
           injectedIds.push(elementId);
         } else {
-          // eslint-disable-next-line no-console
-          console.warn(
+          logger.warn(
             `[StylesheetInjector] Skipping stylesheet "${stylesheet.id}": URL must use https protocol`,
           );
         }

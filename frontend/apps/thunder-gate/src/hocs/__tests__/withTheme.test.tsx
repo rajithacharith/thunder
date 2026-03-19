@@ -35,6 +35,7 @@ const mockUseDesign = vi.fn();
 vi.mock('@thunder/shared-design', () => ({
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   useDesign: () => mockUseDesign(),
+  StylesheetInjector: () => null,
 }));
 
 // Track LanguageSwitcher render function props
