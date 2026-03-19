@@ -20,6 +20,7 @@ import {useEffect, useState, type JSX} from 'react';
 import {useSearchParams} from 'react-router';
 import {ColorSchemeImage, Stack, Typography} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
+import {cn} from '@thunder/utils';
 
 export default function Error(): JSX.Element {
   const [searchParams] = useSearchParams();
@@ -48,6 +49,7 @@ export default function Error(): JSX.Element {
     <Stack
       direction="column"
       component="main"
+      className={cn('Error--root')}
       sx={[
         {
           justifyContent: 'center',

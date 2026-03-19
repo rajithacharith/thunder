@@ -18,6 +18,7 @@
 
 import type {JSX} from 'react';
 import {Stack} from '@wso2/oxygen-ui';
+import {cn} from '@thunder/utils';
 import SignUpBox from './SignUpBox';
 
 export default function SignUp(): JSX.Element {
@@ -25,6 +26,7 @@ export default function SignUp(): JSX.Element {
     <Stack
       direction="column"
       component="main"
+      className={cn('SignUp--root')}
       sx={[
         {
           justifyContent: 'center',

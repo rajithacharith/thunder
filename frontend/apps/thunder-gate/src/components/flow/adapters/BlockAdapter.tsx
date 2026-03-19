@@ -21,6 +21,7 @@ import {Box, Button} from '@wso2/oxygen-ui';
 import {EmbeddedFlowComponentType, EmbeddedFlowEventType, type EmbeddedFlowComponent} from '@asgardeo/react';
 import {useTranslation} from 'react-i18next';
 import getIntegrationIcon from '../../../utils/getIntegrationIcon';
+import DividerAdapter from './DividerAdapter';
 import RichTextAdapter from './RichTextAdapter';
 import TextInputAdapter from './TextInputAdapter';
 import PasswordInputAdapter from './PasswordInputAdapter';
@@ -241,6 +242,10 @@ function renderFormSubComponent(
     );
   }
 
+  if (sub.type === 'DIVIDER') {
+    return <DividerAdapter key={sub.id ?? compIndex} component={sub} resolve={ctx.resolve} />;
+  }
+
   return null;
 }
 
@@ -315,6 +320,9 @@ function TriggerBlockAdapter({component, index, ...ctx}: TriggerBlockAdapterProp
               values={ctx.values}
             />
           );
+        }
+        if (sub.type === 'DIVIDER') {
+          return <DividerAdapter key={sub.id ?? actionIndex} component={sub} resolve={ctx.resolve} />;
         }
         return null;
       })}
