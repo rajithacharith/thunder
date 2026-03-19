@@ -44,13 +44,12 @@ const COMMON_META_FIELDS: string[] = [
   'application.id',
   'application.name',
   'application.description',
-  'application.loginPageUrl',
-  'application.logoUrl',
-  'application.signUpUrl',
+  'application.logo_url',
+  'application.sign_up_url',
   'ou.name',
   'ou.handle',
   'ou.description',
-  'ou.logoUrl',
+  'ou.logo_url',
 ];
 
 /**

@@ -43,7 +43,7 @@ interface BlockContext {
   hasMultipleSubmits?: boolean;
   /** ID of the primary submit action that stays as type="submit" */
   primarySubmitId?: string;
-  /** Fallback sign-up URL for RICH_TEXT elements that embed `application.signUpUrl` */
+  /** Fallback sign-up URL for RICH_TEXT elements that embed `application.sign_up_url` */
   signUpFallbackUrl?: string;
 }
 

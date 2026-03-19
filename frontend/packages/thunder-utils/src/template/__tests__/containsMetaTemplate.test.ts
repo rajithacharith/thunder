@@ -22,65 +22,61 @@ import containsMetaTemplate, {replaceMetaTemplate} from '../containsMetaTemplate
 describe('containsMetaTemplate', () => {
   describe('returns true when meta template is present', () => {
     it('should detect an exact meta template', () => {
-      expect(containsMetaTemplate('{{meta(application.signUpUrl)}}', 'application.signUpUrl')).toBe(true);
+      expect(containsMetaTemplate('{{meta(application.sign_up_url)}}', 'application.sign_up_url')).toBe(true);
     });
 
     it('should detect a meta template embedded in an HTML string', () => {
       expect(
-        containsMetaTemplate('<a href="{{meta(application.signUpUrl)}}">Sign up</a>', 'application.signUpUrl'),
+        containsMetaTemplate('<a href="{{meta(application.sign_up_url)}}">Sign up</a>', 'application.sign_up_url'),
       ).toBe(true);
     });
 
     it('should allow whitespace around double braces', () => {
-      expect(containsMetaTemplate('{{ meta(application.signUpUrl) }}', 'application.signUpUrl')).toBe(true);
+      expect(containsMetaTemplate('{{ meta(application.sign_up_url) }}', 'application.sign_up_url')).toBe(true);
     });
 
     it('should allow whitespace inside the braces only', () => {
-      expect(containsMetaTemplate('{{  meta(application.signUpUrl)  }}', 'application.signUpUrl')).toBe(true);
+      expect(containsMetaTemplate('{{  meta(application.sign_up_url)  }}', 'application.sign_up_url')).toBe(true);
     });
 
     it('should detect the template when it appears in the middle of text', () => {
       expect(containsMetaTemplate('Hello {{meta(ou.name)}} world', 'ou.name')).toBe(true);
     });
 
-    it('should detect a meta key with dots in it', () => {
-      expect(containsMetaTemplate('{{meta(application.loginPageUrl)}}', 'application.loginPageUrl')).toBe(true);
-    });
-
     it('should find the template among multiple tokens', () => {
       expect(
-        containsMetaTemplate('{{meta(ou.name)}} and {{meta(application.signUpUrl)}}', 'application.signUpUrl'),
+        containsMetaTemplate('{{meta(ou.name)}} and {{meta(application.sign_up_url)}}', 'application.sign_up_url'),
       ).toBe(true);
     });
   });
 
   describe('returns false when meta template is absent', () => {
     it('should return false for a plain URL string', () => {
-      expect(containsMetaTemplate('https://example.com/signup', 'application.signUpUrl')).toBe(false);
+      expect(containsMetaTemplate('https://example.com/signup', 'application.sign_up_url')).toBe(false);
     });
 
     it('should return false when a different key is present', () => {
-      expect(containsMetaTemplate('{{meta(ou.name)}}', 'application.signUpUrl')).toBe(false);
+      expect(containsMetaTemplate('{{meta(ou.name)}}', 'application.sign_up_url')).toBe(false);
     });
 
     it('should return false for an empty string', () => {
-      expect(containsMetaTemplate('', 'application.signUpUrl')).toBe(false);
+      expect(containsMetaTemplate('', 'application.sign_up_url')).toBe(false);
     });
 
     it('should return false for a partial key match', () => {
-      // "signUpUrl" alone should not match "application.signUpUrl"
-      expect(containsMetaTemplate('{{meta(signUpUrl)}}', 'application.signUpUrl')).toBe(false);
+      // "sign_up_url" alone should not match "application.sign_up_url"
+      expect(containsMetaTemplate('{{meta(sign_up_url)}}', 'application.sign_up_url')).toBe(false);
     });
 
     it('should return false when the meta() call is missing', () => {
-      expect(containsMetaTemplate('{{application.signUpUrl}}', 'application.signUpUrl')).toBe(false);
+      expect(containsMetaTemplate('{{application.sign_up_url}}', 'application.sign_up_url')).toBe(false);
     });
   });
 
   describe('special regex characters in key', () => {
     it('should escape dots in the key so they match literally', () => {
       // A dot in the key should not act as a regex wildcard
-      expect(containsMetaTemplate('{{meta(applicationXsignUpUrl)}}', 'application.signUpUrl')).toBe(false);
+      expect(containsMetaTemplate('{{meta(applicationXsignUpUrl)}}', 'application.sign_up_url')).toBe(false);
     });
   });
 });
@@ -88,8 +84,8 @@ describe('containsMetaTemplate', () => {
 describe('replaceMetaTemplate', () => {
   it('should replace a single meta template occurrence', () => {
     const result = replaceMetaTemplate(
-      '{{meta(application.signUpUrl)}}',
-      'application.signUpUrl',
+      '{{meta(application.sign_up_url)}}',
+      'application.sign_up_url',
       'https://example.com/signup',
     );
 
@@ -98,8 +94,8 @@ describe('replaceMetaTemplate', () => {
 
   it('should replace a meta template embedded inside an HTML string', () => {
     const result = replaceMetaTemplate(
-      '<a href="{{meta(application.signUpUrl)}}">Sign up</a>',
-      'application.signUpUrl',
+      '<a href="{{meta(application.sign_up_url)}}">Sign up</a>',
+      'application.sign_up_url',
       'https://example.com/signup',
     );
 
@@ -113,15 +109,15 @@ describe('replaceMetaTemplate', () => {
   });
 
   it('should replace when there is whitespace around braces', () => {
-    const result = replaceMetaTemplate('{{ meta(application.signUpUrl) }}', 'application.signUpUrl', '/signup');
+    const result = replaceMetaTemplate('{{ meta(application.sign_up_url) }}', 'application.sign_up_url', '/signup');
 
     expect(result).toBe('/signup');
   });
 
   it('should leave other tokens untouched', () => {
     const result = replaceMetaTemplate(
-      '{{meta(ou.name)}} visits {{meta(application.signUpUrl)}}',
-      'application.signUpUrl',
+      '{{meta(ou.name)}} visits {{meta(application.sign_up_url)}}',
+      'application.sign_up_url',
       '/signup',
     );
 
@@ -131,10 +127,10 @@ describe('replaceMetaTemplate', () => {
   it('should return the original string unchanged when the key is not found', () => {
     const original = 'No template here';
 
-    expect(replaceMetaTemplate(original, 'application.signUpUrl', '/signup')).toBe(original);
+    expect(replaceMetaTemplate(original, 'application.sign_up_url', '/signup')).toBe(original);
   });
 
   it('should return an empty string unchanged', () => {
-    expect(replaceMetaTemplate('', 'application.signUpUrl', '/signup')).toBe('');
+    expect(replaceMetaTemplate('', 'application.sign_up_url', '/signup')).toBe('');
   });
 });

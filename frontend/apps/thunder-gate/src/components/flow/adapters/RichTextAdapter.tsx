@@ -24,7 +24,7 @@ import DOMPurify from 'dompurify';
 import type {FlowComponent} from '../../../models/flow';
 
 /** The meta key used by the server to embed the application's sign-up URL. */
-const SIGN_UP_URL_META_KEY = 'application.signUpUrl';
+const SIGN_UP_URL_META_KEY = 'application.sign_up_url';
 
 /** The meta key that controls whether self registration is enabled. */
 const REGISTRATION_ENABLED_META_KEY = 'is_registration_flow_enabled';
@@ -34,7 +34,7 @@ interface RichTextAdapterProps {
   resolve: (template: string | undefined) => string | undefined;
   /**
    * Fallback sign-up URL used when the flow meta does not supply
-   * `application.signUpUrl` but self registration is enabled.
+   * `application.sign_up_url` but self registration is enabled.
    */
   signUpFallbackUrl?: string;
 }
@@ -61,7 +61,7 @@ export default function RichTextAdapter({
     let resolvedLabel = resolve(rawLabel) ?? rawLabel;
 
     // If the sign-up URL token is still present after resolution (i.e. the
-    // server did not provide application.signUpUrl in meta), substitute the
+    // server did not provide application.sign_up_url in meta), substitute the
     // fallback URL so the link still works.
     if (containsMetaTemplate(resolvedLabel, SIGN_UP_URL_META_KEY) && signUpFallbackUrl) {
       resolvedLabel = replaceMetaTemplate(resolvedLabel, SIGN_UP_URL_META_KEY, signUpFallbackUrl);

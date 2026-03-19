@@ -26,6 +26,7 @@ import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import {TemplateLiteralType} from '@thunder/utils';
 import {useSearchParams} from 'react-router';
 import {useTranslation} from 'react-i18next';
+import {useDesign} from '@thunder/shared-design';
 import FlowComponentRenderer from '../flow/FlowComponentRenderer';
 import generateFallbackSignUpUrl from '../../utils/generateFallbackSignUpUrl';
 
@@ -45,6 +46,7 @@ export default function SignInBox(): JSX.Element {
   const [searchParams] = useSearchParams();
   const {resolve, resolveAll} = useTemplateLiteralResolver();
   const {t} = useTranslation();
+  const {isDesignEnabled} = useDesign();
 
   const signUpFallbackUrl = generateFallbackSignUpUrl(searchParams);
 
@@ -99,7 +101,7 @@ export default function SignInBox(): JSX.Element {
         height={30}
         width="auto"
         sx={{
-          display: {xs: 'flex', md: 'none'},
+          display: !isDesignEnabled ? {xs: 'flex', md: 'none'} : 'none',
         }}
       />
       <StyledPaper variant="outlined">

@@ -28,11 +28,6 @@ function MockChild() {
 }
 const AppWithConfig = withConfig(MockChild);
 
-// Mock the DesignProvider
-vi.mock('@thunder/shared-design', () => ({
-  DesignProvider: ({children}: {children: React.ReactNode}) => <div data-testid="design-provider">{children}</div>,
-}));
-
 // Mock AsgardeoProvider to capture baseUrl
 vi.mock('@asgardeo/react', () => ({
   AsgardeoProvider: ({children, baseUrl}: {children: React.ReactNode; baseUrl: string}) => {
@@ -67,12 +62,6 @@ describe('AppWithConfig', () => {
     mockGetServerUrl.mockReturnValue('https://server-url.com');
     const {getByTestId} = render(<AppWithConfig />);
     expect(getByTestId('app-with-theme')).toBeInTheDocument();
-  });
-
-  it('wraps with DesignProvider', () => {
-    mockGetServerUrl.mockReturnValue('https://server-url.com');
-    const {getByTestId} = render(<AppWithConfig />);
-    expect(getByTestId('design-provider')).toBeInTheDocument();
   });
 
   it('uses getServerUrl when available', () => {

@@ -22,7 +22,7 @@ import ROUTES from '../constants/routes';
  * Generate a fallback sign-up URL preserving the current query string.
  *
  * Used when self sign-up is enabled but the flow meta does not provide an
- * explicit `application.signUpUrl`.  The generated URL preserves whatever
+ * explicit `application.sign_up_url`.  The generated URL preserves whatever
  * query parameters are currently in the address bar so the auth flow context
  * (e.g. `client_id`, `redirect_uri`) is carried over.
  *

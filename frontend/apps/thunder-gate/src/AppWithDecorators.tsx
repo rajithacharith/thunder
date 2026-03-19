@@ -17,10 +17,11 @@
  */
 
 import withConfig from './hocs/withConfig';
+import withDesign from './hocs/withDesign';
 import withI18n from './hocs/withI18n';
 import withTheme from './hocs/withTheme';
 import App from './App';
 
-const AppWithDecorators = withConfig(withI18n(withTheme(App)));
+const AppWithDecorators = withConfig(withDesign(withI18n(withTheme(App))));
 
 export default AppWithDecorators;

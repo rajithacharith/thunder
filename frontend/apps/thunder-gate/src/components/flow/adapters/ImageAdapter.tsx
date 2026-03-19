@@ -18,6 +18,7 @@
 
 import type {JSX} from 'react';
 import {Box} from '@wso2/oxygen-ui';
+import {isEmojiUri, extractEmojiFromUri} from '@asgardeo/react';
 import type {FlowComponent} from '../../../models/flow';
 
 interface ImageAdapterProps {
@@ -27,13 +28,38 @@ interface ImageAdapterProps {
   maxHeight?: number | string;
 }
 
+const DEFAULT_EMOJI_CONTAINER_HEIGHT = '4em';
+
 export default function ImageAdapter({component, resolve, maxWidth = '100%', maxHeight = '100%'}: ImageAdapterProps): JSX.Element {
-  const resolvedSrc = resolve(component.src ?? '');
+  const resolvedSrc = resolve(component.src ?? '') ?? component.src ?? '';
+
+  if (isEmojiUri(resolvedSrc)) {
+    const cssWidth = component.width ? `${component.width}px` : '100%';
+    const cssHeight = component.height ? `${component.height}px` : 'auto';
+
+    const isConcrete = (v: string): boolean => v !== 'auto' && !v.endsWith('%');
+    let containerHeight: string;
+    if (isConcrete(cssHeight)) {
+      containerHeight = cssHeight;
+    } else if (isConcrete(cssWidth)) {
+      containerHeight = cssWidth;
+    } else {
+      containerHeight = DEFAULT_EMOJI_CONTAINER_HEIGHT;
+    }
+
+    return (
+      <span style={{containerType: 'size', display: 'inline-grid', height: containerHeight, placeItems: 'center', width: cssWidth}}>
+        <span aria-label={component.alt ?? ''} role="img" style={{fontSize: '100cqmin', lineHeight: 1}}>
+          {extractEmojiFromUri(resolvedSrc)}
+        </span>
+      </span>
+    );
+  }
 
   return (
     <Box
       component="img"
-      src={resolvedSrc ?? component.src ?? ''}
+      src={resolvedSrc}
       alt={component.alt ?? ''}
       sx={{
         width: component.width ? `${component.width}px` : 'auto',

@@ -23,6 +23,14 @@ import type {Element as FlowElement} from '@/features/flows/models/elements';
 import ImageAdapter from '../ImageAdapter';
 
 // Mock dependencies
+vi.mock('@wso2/oxygen-ui-icons-react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@wso2/oxygen-ui-icons-react')>();
+  return {
+    ...actual,
+    ImageIcon: () => <svg data-testid="image-icon" />,
+  };
+});
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
@@ -159,7 +167,7 @@ describe('ImageAdapter', () => {
 
   describe('Dynamic Source', () => {
     it('should render dynamic placeholder for meta template src', () => {
-      const resource = createMockElement({src: '{{meta(application.logoUrl)}}'});
+      const resource = createMockElement({src: '{{meta(application.logo_url)}}'});
 
       render(<ImageAdapter resource={resource} />);
 
@@ -177,7 +185,7 @@ describe('ImageAdapter', () => {
     });
 
     it('should render ImageIcon in dynamic placeholder', () => {
-      const resource = createMockElement({src: '{{meta(application.logoUrl)}}'});
+      const resource = createMockElement({src: '{{meta(application.logo_url)}}'});
 
       const {container} = render(<ImageAdapter resource={resource} />);
 

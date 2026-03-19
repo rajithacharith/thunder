@@ -514,7 +514,7 @@ describe('SignInBox', () => {
         {
           id: 'rich-text-signup',
           type: 'RICH_TEXT',
-          label: '<p>Don\'t have an account? <a href="{{meta(application.signUpUrl)}}">Sign up</a></p>',
+          label: '<p>Don\'t have an account? <a href="{{meta(application.sign_up_url)}}">Sign up</a></p>',
         },
       ],
     });
@@ -533,7 +533,7 @@ describe('SignInBox', () => {
         {
           id: 'rich-text-signup',
           type: 'RICH_TEXT',
-          label: '<p>Don\'t have an account? <a href="{{meta(application.signUpUrl)}}">Sign up</a></p>',
+          label: '<p>Don\'t have an account? <a href="{{meta(application.sign_up_url)}}">Sign up</a></p>',
         },
       ],
     });
@@ -678,7 +678,7 @@ describe('SignInBox', () => {
         {
           id: 'rich-text-signup',
           type: 'RICH_TEXT',
-          label: '<p>Don\'t have an account? <a href="{{meta(application.signUpUrl)}}">Sign up</a></p>',
+          label: '<p>Don\'t have an account? <a href="{{meta(application.sign_up_url)}}">Sign up</a></p>',
         },
       ],
     });
@@ -701,7 +701,7 @@ describe('SignInBox', () => {
         {
           id: 'rich-text-signup',
           type: 'RICH_TEXT',
-          label: '<p>Don\'t have an account? <a href="{{meta(application.signUpUrl)}}">Sign up</a></p>',
+          label: '<p>Don\'t have an account? <a href="{{meta(application.sign_up_url)}}">Sign up</a></p>',
         },
       ],
     });
@@ -1988,7 +1988,7 @@ describe('SignInBox', () => {
         {
           id: 'rich-text-signup',
           type: 'RICH_TEXT',
-          label: '<p>Don\'t have an account? <a href="{{meta(application.signUpUrl)}}">Sign up</a></p>',
+          label: '<p>Don\'t have an account? <a href="{{meta(application.sign_up_url)}}">Sign up</a></p>',
         },
       ],
     });

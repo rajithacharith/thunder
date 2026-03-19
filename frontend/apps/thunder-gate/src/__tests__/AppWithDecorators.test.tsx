@@ -24,6 +24,9 @@ import AppWithDecorators from '../AppWithDecorators';
 vi.mock('../hocs/withConfig', () => ({
   default: (Component: React.ComponentType) => Component,
 }));
+vi.mock('../hocs/withDesign', () => ({
+  default: (Component: React.ComponentType) => Component,
+}));
 vi.mock('../hocs/withI18n', () => ({
   default: (Component: React.ComponentType) => Component,
 }));

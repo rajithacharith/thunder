@@ -86,10 +86,10 @@ describe('parseTemplateLiteral', () => {
     });
 
     it('should strip surrounding quotes from a meta key', () => {
-      const result = parseTemplateLiteral("meta('application.signUpUrl')");
+      const result = parseTemplateLiteral("meta('application.sign_up_url')");
 
       expect(result.type).toBe(TemplateLiteralType.META);
-      expect(result.key).toBe('application.signUpUrl');
+      expect(result.key).toBe('application.sign_up_url');
     });
   });
 

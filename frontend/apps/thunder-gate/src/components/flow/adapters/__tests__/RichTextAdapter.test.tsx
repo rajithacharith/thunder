@@ -87,7 +87,7 @@ describe('RichTextAdapter', () => {
   });
 
   describe('sign-up URL handling', () => {
-    const signUpLabel = '<p>Don\'t have an account? <a href="{{meta(application.signUpUrl)}}">Sign up</a></p>';
+    const signUpLabel = '<p>Don\'t have an account? <a href="{{meta(application.sign_up_url)}}">Sign up</a></p>';
     const signUpComponent: FlowComponent = {
       id: 'signup-richtext',
       type: 'RICH_TEXT',
@@ -107,7 +107,7 @@ describe('RichTextAdapter', () => {
     it('renders the sign-up link when registration is enabled and the server resolves the URL', () => {
       const resolve = (template: string | undefined) => {
         if (template?.includes('is_registration_flow_enabled')) return 'true';
-        return template?.replace('{{meta(application.signUpUrl)}}', '/custom/signup');
+        return template?.replace('{{meta(application.sign_up_url)}}', '/custom/signup');
       };
 
       const {getByTestId} = render(<RichTextAdapter component={signUpComponent} resolve={resolve} />);

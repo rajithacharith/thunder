@@ -18,16 +18,31 @@
 
 import {useMemo, type PropsWithChildren} from 'react';
 import {useConfig} from '@thunder/shared-contexts';
+import {isEmpty} from '@thunder/utils';
 import DesignContext, {type DesignContextType} from './DesignContext';
 import useGetDesignResolve from '../../api/useGetDesignResolve';
 import {DesignResolveType} from '../../models/design';
+import type {DesignResolveResponse} from '../../models/responses';
 
 /**
  * Props for the DesignProvider component.
  *
  * @public
  */
-export type DesignProviderProps = PropsWithChildren;
+export type DesignProviderProps = PropsWithChildren<{
+  /**
+   * Optional pre-resolved design to use directly, skipping the internal
+   * resolve API call. Useful when the host SDK (e.g. Asgardeo) already
+   * provides design data via its metadata (e.g. `meta.design`).
+   */
+  design?: DesignResolveResponse;
+
+  /**
+   * Flag to indicate that the Design should be resolved internally by the DesignProvider.
+   * This is useful if flow metadata does not contain design information and the design needs to be resolved using the client UUID.
+   */
+  shouldResolveDesignInternally?: boolean;
+}>;
 
 /**
  * React context provider component that provides Thunder design configuration
@@ -44,15 +59,20 @@ export type DesignProviderProps = PropsWithChildren;
  *
  * @public
  */
-export default function DesignProvider({children}: DesignProviderProps) {
+export default function DesignProvider({
+  children = null,
+  design: externalDesign = undefined,
+  shouldResolveDesignInternally = true,
+}: DesignProviderProps) {
   const {getClientUuid} = useConfig();
   const clientUuid = getClientUuid();
 
-  // Skip design resolution when no client UUID is available
-  const shouldLoadDesign = Boolean(clientUuid && clientUuid.trim().length > 0);
+  // Skip internal resolution when no client UUID is available or design is provided externally
+  const shouldLoadDesign =
+    shouldResolveDesignInternally && !externalDesign && Boolean(clientUuid && clientUuid.trim().length > 0);
 
   const {
-    data: design,
+    data: resolvedDesign,
     isLoading,
     error,
   } = useGetDesignResolve(
@@ -65,16 +85,18 @@ export default function DesignProvider({children}: DesignProviderProps) {
     },
   );
 
+  const design = externalDesign ?? resolvedDesign;
+
   const contextValue: DesignContextType = useMemo(
     () => ({
       design,
-      isDesignEnabled: Boolean(design),
-      isLoading,
-      error,
+      isDesignEnabled: Boolean(design) && (!isEmpty(design?.theme) || !isEmpty(design?.layout)),
+      isLoading: externalDesign ? false : isLoading,
+      error: externalDesign ? null : error,
       theme: undefined,
-      layout: design?.layout,
+      layout: isEmpty(design?.layout) ? undefined : design?.layout,
     }),
-    [design, isLoading, error],
+    [design, externalDesign, isLoading, error],
   );
 
   return <DesignContext.Provider value={contextValue}>{children}</DesignContext.Provider>;

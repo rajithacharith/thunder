@@ -131,7 +131,7 @@ export interface FlowComponentRendererProps {
   additionalData?: Record<string, unknown>;
   /**
    * Fallback sign-up URL used when the flow meta contains a sign-up URL template
-   * but `application.signUpUrl` is absent from the meta object.
+   * but `application.sign_up_url` is absent from the meta object.
    */
   signUpFallbackUrl?: string;
 }

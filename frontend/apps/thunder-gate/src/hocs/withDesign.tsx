@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -17,22 +17,19 @@
  */
 
 import type {JSX, ComponentType} from 'react';
-import {AsgardeoProvider} from '@asgardeo/react';
-import {useConfig} from '@thunder/shared-contexts';
+import {useAsgardeo} from '@asgardeo/react';
+import {DesignProvider, type DesignResolveResponse} from '@thunder/shared-design';
 
-export default function withConfig<P extends object>(WrappedComponent: ComponentType<P>) {
-  return function WithConfig(props: P): JSX.Element {
-    const {getServerUrl} = useConfig();
-    const applicationId = new URL(window.location.href).searchParams.get('applicationId');
-
+export default function withDesign<P extends object>(WrappedComponent: ComponentType<P>) {
+  return function WithDesign(props: P): JSX.Element {
+    const {meta} = useAsgardeo();
     return (
-      <AsgardeoProvider
-        baseUrl={getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string)}
-        applicationId={applicationId!}
-        platform="AsgardeoV2"
+      <DesignProvider
+        shouldResolveDesignInternally={false}
+        design={meta?.design as unknown as DesignResolveResponse | undefined}
       >
         <WrappedComponent {...props} />
-      </AsgardeoProvider>
+      </DesignProvider>
     );
   };
 }
