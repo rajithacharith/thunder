@@ -52,6 +52,6 @@
     "dotenv": "17.2.3"
   },
   "overrides": {
-    "flatted": ">=3.4.1"
+    "flatted": ">=3.4.2"
   }
 }
