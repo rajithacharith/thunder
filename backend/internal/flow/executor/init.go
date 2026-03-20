@@ -32,6 +32,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/email"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/observability"
+	"github.com/asgardeo/thunder/internal/system/template"
 	"github.com/asgardeo/thunder/internal/userprovider"
 
 	"github.com/asgardeo/thunder/internal/userschema"
@@ -53,6 +54,7 @@ func Initialize(
 	userProvider userprovider.UserProviderInterface,
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	emailClient email.EmailClientInterface,
+	templateService template.TemplateServiceInterface,
 ) ExecutorRegistryInterface {
 	reg := newExecutorRegistry()
 	reg.RegisterExecutor(ExecutorNameBasicAuth, newBasicAuthExecutor(
@@ -85,7 +87,7 @@ func Initialize(
 	reg.RegisterExecutor(ExecutorNameHTTPRequest, newHTTPRequestExecutor(flowFactory))
 	reg.RegisterExecutor(ExecutorNameUserTypeResolver, newUserTypeResolver(flowFactory, userSchemaService))
 	reg.RegisterExecutor(ExecutorNameInviteExecutor, newInviteExecutor(flowFactory))
-	reg.RegisterExecutor(ExecutorNameEmailExecutor, newEmailExecutor(flowFactory, emailClient))
+	reg.RegisterExecutor(ExecutorNameEmailExecutor, newEmailExecutor(flowFactory, emailClient, templateService))
 	reg.RegisterExecutor(ExecutorNameCredentialSetter, newCredentialSetter(flowFactory, userProvider))
 	reg.RegisterExecutor(ExecutorNamePermissionValidator, newPermissionValidator(flowFactory))
 	reg.RegisterExecutor(ExecutorNameIdentifying, newIdentifyingExecutor(
