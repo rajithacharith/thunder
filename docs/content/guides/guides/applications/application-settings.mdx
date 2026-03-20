@@ -1,0 +1,87 @@
+---
+title: Application Settings
+sidebar_position: 2
+description: Configure authentication flows, registration, tokens, customization, and OAuth 2.0 settings for Thunder applications.
+---
+
+# Application Settings
+
+This guide explains how to configure an application from the Thunder Console application details page.
+
+## Find Your Client ID
+
+The **Application ID** and **Client ID** are shown on the application's General tab under **Quick Copy**. Use the copy button to grab them quickly.
+
+- **Application ID** - the internal Thunder identifier for this application.
+- **Client ID** - the OAuth 2.0 identifier your SDK or client configuration needs.
+
+## Control Who Can Sign In
+
+Under **Access** on the General tab, you can restrict which users can authenticate with this application.
+
+| Setting | Description |
+|---------|-------------|
+| **Allowed User Types** | Only users of the selected types can sign in. If none are selected, all user types are allowed. |
+| **Application URL** | The homepage URL of your application. |
+| **Authorized Redirect URIs** | The URLs Thunder sends users back to after authentication. Register every URI your application uses.
+
+## Configure Sign-In and Registration Flows
+
+On the **Flows** tab, choose the flows that drive sign-in and sign-up for this application.
+
+**Authentication Flow** - select the flow users follow to sign in. You can assign a custom flow built with the Flow Designer or use the deployment default. Use the **open the flow builder** link to edit the selected flow directly.
+
+**Registration Flow** - toggle the switch to enable or disable self-registration. When enabled, select a flow that defines what information users must provide to create an account.
+
+## Customize the Appearance
+
+On the **Customization** tab, control how your application looks and what legal links users see.
+
+| Setting | Description |
+|---------|-------------|
+| **Theme** | The visual theme applied to authentication pages. Select **Default Theme** to use the shared deployment theme, or pick an application-specific theme. |
+| **Terms of Service URI** | Displayed to users during consent, sign-in, sign-up, or recovery flows. |
+| **Privacy Policy URI** | Displayed to users during consent, sign-in, sign-up, or recovery flows. |
+| **Contacts** | Administrator email addresses for this application. Separate multiple addresses with commas. |
+
+## Configure What Goes Into Tokens
+
+On the **Token** tab, choose which user attributes each token carries and how long tokens stay valid.
+
+**Access Token** - select the user attributes to include in the access token payload. Default attributes (`sub`, `iss`, `exp`, and others) are always included and cannot be removed. Set **Token Validity** in seconds (for example, `3600` for one hour).
+
+**ID Token** - select the user attributes to include. Only attributes covered by the requested scopes are returned. Set **Token Validity** in seconds. The **Scopes** field shows the OIDC scopes configured for this application (for example, `openid`, `profile`, `email`).
+
+**User Info Attributes** - configure the attributes returned by the `/userinfo` endpoint. Enable **Use same attributes as ID Token** to mirror your ID token selection, or define a separate set.
+
+## Rotate the Client Secret
+
+If you need to invalidate the current client secret, open the General tab and click **Regenerate Client Secret** in the **Danger Zone**.
+
+:::warning
+The current client secret is immediately invalidated. Any running clients using the old secret will lose access. Update your application configuration right away.
+:::
+
+## Review OAuth 2.0 Configuration
+
+The **Advanced Settings** tab shows the OAuth 2.0 settings configured at creation. These are read-only.
+
+| Setting | Description |
+|---------|-------------|
+| **Grant Types** | The OAuth 2.0 flows this application can use (for example, `authorization_code`, `refresh_token`, `client_credentials`). |
+| **Response Types** | The response types the application can request (for example, `code`). |
+| **Public Client** | Whether this is a public client that cannot securely store a client secret. |
+| **PKCE Required** | Whether the application must send a `code_challenge` in every authorization request. Always `Yes` for public clients. |
+
+You can also attach a **Certificate** for client authentication or token encryption.
+
+| Certificate Type | Description |
+|-----------------|-------------|
+| `None` | No certificate configured. |
+| `JWKS` | Provide the JSON Web Key Set (JWKS) inline. |
+| `JWKS_URI` | Provide the URL of the application's JWKS endpoint. Thunder fetches the public keys to verify signed requests. |
+
+## Related Guides
+
+- [Manage Applications](../applications/manage-applications) - Create, update, and delete applications
+- [Flows](/guides/guides/flows) - Build and assign custom authentication and registration flows

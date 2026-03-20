@@ -110,6 +110,9 @@ samples/apps/*/server/app
 backend/coverage_unit.out
 backend/coverage_unit.html
 
+# Generated API spec (unversioned root-level artifact produced by merge-openapi-specs.mjs)
+docs/static/api/combined.yaml
+
 # IDE settings
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
