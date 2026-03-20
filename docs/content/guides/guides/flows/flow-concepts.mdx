@@ -83,7 +83,7 @@ Connections between nodes control how the flow progresses:
 - **View to Executor** - the user clicks a button in the View, which triggers the connected Executor.
 - **Executor success (green dot)** - connects to the next node when the operation succeeds.
 - **Executor failure (red dot)** - connects to a fallback View (error screen or retry step) when the operation fails.
-- **Executor incomplete (yellow dot)** - connects back to a View node when the executor needs more input from the user. The target must be a View node. Not all executors expose this path. Only those that can request additional input, such as Attribute Collector, Provisioning, and OU Creation.
+- **Executor incomplete (yellow dot)** - connects back to a View node when the executor needs more input from the user. The target must be a View node. Not all executors expose this path; only those that can request additional input, such as Attribute Collector, Provisioning, and OU Creation, expose this path.
 - **Final Executor to END** - connect the success path of the last Executor to an END node to complete the flow.
 
 ## Flow Versioning

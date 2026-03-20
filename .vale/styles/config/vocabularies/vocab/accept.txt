@@ -47,5 +47,4 @@ DTOs
 [Vv]itest
 ESLint
 templated
-[Ii][Aa][Mm]
 OTPs

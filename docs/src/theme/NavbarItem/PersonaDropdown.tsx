@@ -29,7 +29,7 @@ interface PersonaOption {
   description: string;
 }
 
-const PERSONAS: PersonaOption[] = [
+export const PERSONAS: PersonaOption[] = [
   {value: 'all', label: 'All Roles', description: 'Browse all documentation'},
   {value: 'app', label: 'Application Developer', description: 'Integrate Thunder into your app'},
   {value: 'iam', label: 'IAM Developer', description: 'Configure and manage Thunder'},
