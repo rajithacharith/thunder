@@ -40,7 +40,7 @@ func TestFileBasedResourceStoreTestSuite(t *testing.T) {
 
 func (s *FileBasedResourceStoreTestSuite) SetupTest() {
 	var err error
-	s.store, err = newFileBasedResourceStore()
+	s.store, _, err = newFileBasedResourceStore()
 	assert.NoError(s.T(), err)
 	s.ctx = context.Background()
 }

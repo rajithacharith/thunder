@@ -30,10 +30,9 @@ import (
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
-	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
 
@@ -48,24 +47,13 @@ func Initialize(
 	userSchemaService userschema.UserSchemaServiceInterface,
 	consentService consent.ConsentServiceInterface,
 ) (ApplicationServiceInterface, declarativeresource.ResourceExporter, error) {
-	// Step 1: Initialize store structure (without data)
-	appStore := initializeStore()
-
-	// Step 2: Get database transactioner
-	client, err := provider.GetDBProvider().GetConfigDBClient()
+	// Step 1: Initialize store and transactioner based on store mode
+	appStore, transactioner, err := initializeStore()
 	if err != nil {
-		log.GetLogger().Error("Failed to initialize database client for application service",
-			log.Error(err))
-		return nil, nil, err
-	}
-	transactioner, err := client.GetTransactioner()
-	if err != nil {
-		log.GetLogger().Error("Failed to initialize database transactioner for application service",
-			log.Error(err))
 		return nil, nil, err
 	}
 
-	// Step 3: Create service with store
+	// Step 2: Create service with store
 	appService := newApplicationService(
 		appStore, certService, flowMgtService,
 		themeMgtService, layoutMgtService,
@@ -73,7 +61,7 @@ func Initialize(
 		transactioner,
 	)
 
-	// Step 4: Load declarative resources into store (if applicable)
+	// Step 3: Load declarative resources into store (if applicable)
 	storeMode := getApplicationStoreMode()
 	if storeMode == serverconst.StoreModeComposite || storeMode == serverconst.StoreModeDeclarative {
 		if err := loadDeclarativeResources(appStore, appService); err != nil {
@@ -121,27 +109,29 @@ func Initialize(
 // - If application.store is not specified, falls back to global declarative_resources.enabled:
 //   - If declarative_resources.enabled = true: behaves as IMMUTABLE mode
 //   - If declarative_resources.enabled = false: behaves as MUTABLE mode
-func initializeStore() applicationStoreInterface {
-	var appStore applicationStoreInterface
-
+func initializeStore() (applicationStoreInterface, transaction.Transactioner, error) {
 	storeMode := getApplicationStoreMode()
 
 	switch storeMode {
 	case serverconst.StoreModeComposite:
-		fileStore := newFileBasedStore()
-		dbStore := newApplicationStore()
-		appStore = newCompositeApplicationStore(fileStore, dbStore)
+		fileStore, _ := newFileBasedStore()
+		dbStore, transactioner, err := newApplicationStore()
+		if err != nil {
+			return nil, nil, err
+		}
+		return newCompositeApplicationStore(fileStore, dbStore), transactioner, nil
 
 	case serverconst.StoreModeDeclarative:
-		fileStore := newFileBasedStore()
-		appStore = fileStore
+		fileStore, transactioner := newFileBasedStore()
+		return fileStore, transactioner, nil
 
 	default:
-		dbStore := newApplicationStore()
-		appStore = newCachedBackedApplicationStore(dbStore)
+		dbStore, transactioner, err := newApplicationStore()
+		if err != nil {
+			return nil, nil, err
+		}
+		return newCachedBackedApplicationStore(dbStore), transactioner, nil
 	}
-
-	return appStore
 }
 
 func registerRoutes(mux *http.ServeMux, appHandler *applicationHandler) {

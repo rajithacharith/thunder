@@ -348,8 +348,8 @@ func TestLoadDeclarativeResources(t *testing.T) {
 		assert.NoError(t, err)
 		defer config.ResetThunderRuntime()
 
-		fileStore := newUserSchemaFileBasedStore()
-		dbStore := newUserSchemaStore()
+		fileStore, _ := newUserSchemaFileBasedStore()
+		dbStore, _, _ := newUserSchemaStore()
 		compositeStore := newCompositeUserSchemaStore(fileStore, dbStore)
 
 		// Mock OU service to return valid OU for any ID
@@ -371,7 +371,7 @@ func TestLoadDeclarativeResources(t *testing.T) {
 		assert.NoError(t, err)
 		defer config.ResetThunderRuntime()
 
-		fileStore := newUserSchemaFileBasedStore()
+		fileStore, _ := newUserSchemaFileBasedStore()
 
 		// Mock OU service
 		mockOUService.On("GetOrganizationUnit", mock.Anything, mock.Anything).
@@ -391,7 +391,7 @@ func TestLoadDeclarativeResources(t *testing.T) {
 		defer config.ResetThunderRuntime()
 
 		// Use the regular database store which should not be valid for declarative resources
-		dbStore := newUserSchemaStore()
+		dbStore, _, _ := newUserSchemaStore()
 
 		err = loadDeclarativeResources(dbStore, mockOUService)
 		assert.Error(t, err)
@@ -443,8 +443,9 @@ func TestLoadDeclarativeResources_WithNilOUService(t *testing.T) {
 	assert.NoError(t, err)
 	defer config.ResetThunderRuntime()
 
-	fileStore := newUserSchemaFileBasedStore()
-	compositeStore := newCompositeUserSchemaStore(fileStore, newUserSchemaStore())
+	fileStore, _ := newUserSchemaFileBasedStore()
+	dbStore, _, _ := newUserSchemaStore()
+	compositeStore := newCompositeUserSchemaStore(fileStore, dbStore)
 
 	// This should handle nil OU service gracefully or return an error
 	// depending on whether resources are actually being validated

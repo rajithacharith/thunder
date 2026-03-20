@@ -28,11 +28,13 @@ import (
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 var (
 	serializePropertiesToJSONArray = cmodels.SerializePropertiesToJSONArray
 	deserializePropertiesFromJSON  = cmodels.DeserializePropertiesFromJSON
+	getDBProvider                  = provider.GetDBProvider
 )
 
 // notificationStoreInterface defines the interface for notification sender storage operations.
@@ -52,11 +54,21 @@ type notificationStore struct {
 }
 
 // newNotificationStore returns a new instance of notificationStoreInterface.
-func newNotificationStore() notificationStoreInterface {
-	return &notificationStore{
-		dbProvider:   provider.GetDBProvider(),
+func newNotificationStore() (notificationStoreInterface, transaction.Transactioner, error) {
+	dbProvider := getDBProvider()
+	client, err := dbProvider.GetConfigDBClient()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+	tx, err := client.GetTransactioner()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get transactioner: %w", err)
+	}
+	store := &notificationStore{
+		dbProvider:   dbProvider,
 		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
 	}
+	return store, tx, nil
 }
 
 // createSender creates a new notification sender.

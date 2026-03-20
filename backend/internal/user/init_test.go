@@ -19,14 +19,17 @@
 package user
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
+	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
 
 // LoadDeclarativeUserResourcesTestSuite tests the loadDeclarativeUserResources wrapper function.
@@ -36,7 +39,14 @@ type LoadDeclarativeUserResourcesTestSuite struct {
 
 // SetupSuite initializes test settings once.
 func (suite *LoadDeclarativeUserResourcesTestSuite) SetupSuite() {
-	testConfig := &config.Config{}
+	testConfig := &config.Config{
+		Database: config.DatabaseConfig{
+			Config: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
+	}
 	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
 	if err != nil {
 		suite.Fail("Failed to initialize runtime", err)
@@ -51,10 +61,13 @@ func (suite *LoadDeclarativeUserResourcesTestSuite) TearDownSuite() {
 // TestLoadDeclarativeUserResources_CompositeStore tests loading with a composite store.
 // Composite store contains both file-based (immutable) and database (mutable) stores.
 func (suite *LoadDeclarativeUserResourcesTestSuite) TestLoadDeclarativeUserResources_CompositeStore() {
+	cleanup := setupMockDBProvider()
+	defer cleanup()
+
 	fileStore := &userFileBasedStore{
 		GenericFileBasedStore: declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeUser),
 	}
-	dbStore, err := newUserStore()
+	dbStore, _, err := newUserStore()
 	suite.NoError(err)
 
 	compositeStore := newCompositeUserStore(fileStore, dbStore)
@@ -86,7 +99,10 @@ func (suite *LoadDeclarativeUserResourcesTestSuite) TestLoadDeclarativeUserResou
 // TestLoadDeclarativeUserResources_DatabaseStore tests loading with a database store (mutable mode).
 // Database store should be used only for runtime users, not declarative resources.
 func (suite *LoadDeclarativeUserResourcesTestSuite) TestLoadDeclarativeUserResources_DatabaseStore() {
-	dbStore, err := newUserStore()
+	cleanup := setupMockDBProvider()
+	defer cleanup()
+
+	dbStore, _, err := newUserStore()
 	suite.NoError(err)
 
 	// Call loadDeclarativeUserResources with database store
@@ -113,6 +129,24 @@ func (suite *LoadDeclarativeUserResourcesTestSuite) TestLoadDeclarativeUserResou
 // TestLoadDeclarativeUserResourcesTestSuite runs the test suite.
 func TestLoadDeclarativeUserResourcesTestSuite(t *testing.T) {
 	suite.Run(t, new(LoadDeclarativeUserResourcesTestSuite))
+}
+
+// mockTransactioner is a simple no-op transactioner for tests.
+type mockTransactioner struct{}
+
+func (m *mockTransactioner) Transact(ctx context.Context, operation func(txCtx context.Context) error) error {
+	return operation(ctx)
+}
+
+// setupMockDBProvider sets up a mock DB provider for tests that need transactioner creation.
+func setupMockDBProvider() func() {
+	mockClient := &providermock.DBClientInterfaceMock{}
+	mockClient.On("GetTransactioner").Return(&mockTransactioner{}, nil)
+	mockProvider := &providermock.DBProviderInterfaceMock{}
+	mockProvider.On("GetUserDBClient").Return(mockClient, nil)
+	originalGetDBProvider := getDBProvider
+	getDBProvider = func() provider.DBProviderInterface { return mockProvider }
+	return func() { getDBProvider = originalGetDBProvider }
 }
 
 // InitializeStoreTestSuite tests the initializeStore function.
@@ -148,7 +182,10 @@ func (suite *InitializeStoreTestSuite) TestInitializeStore_MutableMode() {
 	runtime.Config.User.Store = ""
 	runtime.Config.DeclarativeResources.Enabled = false
 
-	store, err := initializeStore(serverconst.StoreModeMutable)
+	cleanup := setupMockDBProvider()
+	defer cleanup()
+
+	store, _, err := initializeStore(serverconst.StoreModeMutable)
 
 	suite.NoError(err)
 	suite.NotNil(store)
@@ -166,7 +203,7 @@ func (suite *InitializeStoreTestSuite) TestInitializeStore_DeclarativeMode() {
 	runtime.Config.User.Store = string(serverconst.StoreModeDeclarative)
 	runtime.Config.DeclarativeResources.Enabled = true
 
-	store, err := initializeStore(serverconst.StoreModeDeclarative)
+	store, _, err := initializeStore(serverconst.StoreModeDeclarative)
 
 	suite.NoError(err)
 	suite.NotNil(store)
@@ -183,7 +220,10 @@ func (suite *InitializeStoreTestSuite) TestInitializeStore_CompositeMode() {
 	runtime.Config.User.Store = string(serverconst.StoreModeComposite)
 	runtime.Config.DeclarativeResources.Enabled = true
 
-	store, err := initializeStore(serverconst.StoreModeComposite)
+	cleanup := setupMockDBProvider()
+	defer cleanup()
+
+	store, _, err := initializeStore(serverconst.StoreModeComposite)
 
 	suite.NoError(err)
 	suite.NotNil(store)
@@ -206,8 +246,11 @@ func (suite *InitializeStoreTestSuite) TestInitializeStore_MutableMode_DefaultBe
 	runtime.Config.User.Store = ""
 	runtime.Config.DeclarativeResources.Enabled = false
 
+	cleanup := setupMockDBProvider()
+	defer cleanup()
+
 	// Call with StoreModeMutable (result of getUserStoreMode in this config)
-	store, err := initializeStore(serverconst.StoreModeMutable)
+	store, _, err := initializeStore(serverconst.StoreModeMutable)
 
 	suite.NoError(err)
 	suite.NotNil(store)
@@ -225,7 +268,7 @@ func (suite *InitializeStoreTestSuite) TestInitializeStore_DeclarativeMode_Globa
 	runtime.Config.DeclarativeResources.Enabled = true
 
 	// Call with StoreModeDeclarative (result of getUserStoreMode in this config)
-	store, err := initializeStore(serverconst.StoreModeDeclarative)
+	store, _, err := initializeStore(serverconst.StoreModeDeclarative)
 
 	suite.NoError(err)
 	suite.NotNil(store)

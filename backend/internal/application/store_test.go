@@ -33,11 +33,18 @@ import (
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
 
 const testAppID = "test-app-id"
 const testServerID = "test-server-id"
+
+type mockTransactioner struct{}
+
+func (m *mockTransactioner) Transact(ctx context.Context, operation func(txCtx context.Context) error) error {
+	return operation(ctx)
+}
 
 // ApplicationStoreTestSuite contains comprehensive tests for the application store helper functions.
 type ApplicationStoreTestSuite struct {
@@ -116,8 +123,17 @@ func (suite *ApplicationStoreTestSuite) createTestApplication() model.Applicatio
 }
 
 func (suite *ApplicationStoreTestSuite) TestNewApplicationStore() {
-	store := newApplicationStore()
+	mockClient := providermock.NewDBClientInterfaceMock(suite.T())
+	mockClient.On("GetTransactioner").Return(&mockTransactioner{}, nil)
+	mockProvider := providermock.NewDBProviderInterfaceMock(suite.T())
+	mockProvider.On("GetConfigDBClient").Return(mockClient, nil)
+	originalGetDBProvider := getDBProvider
+	getDBProvider = func() provider.DBProviderInterface { return mockProvider }
+	defer func() { getDBProvider = originalGetDBProvider }()
 
+	store, _, err := newApplicationStore()
+
+	suite.NoError(err)
 	suite.NotNil(store)
 	suite.IsType(&applicationStore{}, store)
 }

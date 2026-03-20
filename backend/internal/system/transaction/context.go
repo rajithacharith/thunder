@@ -16,7 +16,7 @@
  * under the License.
  */
 
-// Package transaction provides database transaction management capabilities.
+// Package transaction provides transaction management capabilities.
 package transaction
 
 import (

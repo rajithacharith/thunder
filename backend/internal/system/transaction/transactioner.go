@@ -36,22 +36,29 @@ type Transactioner interface {
 	Transact(ctx context.Context, txFunc func(context.Context) error) error
 }
 
-// NewTransactioner creates a new Transactioner instance.
+// NewTransactioner creates a new database-backed Transactioner instance.
 func NewTransactioner(db *sql.DB, dbName string) Transactioner {
-	return &transactioner{
+	return &dbTransactioner{
 		db:     db,
 		dbName: dbName,
 	}
 }
 
-// transactioner is the default implementation of Transactioner.
-type transactioner struct {
+// NewNoOpTransactioner creates a Transactioner that simply executes the function without
+// wrapping it in a database transaction. This is used for file-based (declarative) store modes
+// where no database transaction management is needed.
+func NewNoOpTransactioner() Transactioner {
+	return &noOpTransactioner{}
+}
+
+// dbTransactioner is the database-backed implementation of Transactioner.
+type dbTransactioner struct {
 	db     *sql.DB
 	dbName string
 }
 
 // Transact executes the given function within a database transaction.
-func (t *transactioner) Transact(ctx context.Context, txFunc func(context.Context) error) (err error) {
+func (t *dbTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) (err error) {
 	// Check if we're already in a transaction for this database
 	if HasKeyedTx(ctx, t.dbName) {
 		// Already in a transaction - just execute the function without creating a new one
@@ -118,4 +125,13 @@ func (t *transactioner) Transact(ctx context.Context, txFunc func(context.Contex
 	// 4. Execute the user-provided function
 	err = txFunc(txCtx)
 	return err
+}
+
+// noOpTransactioner is a no-op implementation that simply executes the function directly.
+// Used for declarative (file-based) store modes where no database transaction is needed.
+type noOpTransactioner struct{}
+
+// Transact executes the given function directly without transaction wrapping.
+func (n *noOpTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) error {
+	return txFunc(ctx)
 }

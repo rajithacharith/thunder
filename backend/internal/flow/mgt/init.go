@@ -29,9 +29,9 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 // Initialize initializes the flow management service and registers HTTP routes.
@@ -42,12 +42,7 @@ func Initialize(
 	executorRegistry executor.ExecutorRegistryInterface,
 	graphCache core.GraphCacheInterface,
 ) (FlowMgtServiceInterface, declarativeresource.ResourceExporter, error) {
-	store, compositeStore, err := initializeStore()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	transactioner, err := provider.GetDBProvider().GetConfigDBTransactioner()
+	store, compositeStore, transactioner, err := initializeStore()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -88,35 +83,38 @@ func Initialize(
 //   - Reads check both stores (merged results)
 //   - Writes only go to database store
 //   - Declarative flows cannot be updated or deleted
-func initializeStore() (flowStoreInterface, *compositeFlowStore, error) {
-	var store flowStoreInterface
+func initializeStore() (flowStoreInterface, *compositeFlowStore, transaction.Transactioner, error) {
 	var compositeStore *compositeFlowStore
 
 	storeMode := getFlowStoreMode()
 
 	switch storeMode {
 	case serverconst.StoreModeComposite:
-		fileStore := newFileBasedStore()
-		dbStore := newCacheBackedFlowStore()
-		compositeStore = newCompositeFlowStore(fileStore, dbStore)
-		store = compositeStore
-		if err := loadDeclarativeResources(fileStore); err != nil {
-			return nil, nil, err
+		fileStore, _ := newFileBasedStore()
+		dbStore, transactioner, err := newCacheBackedFlowStore()
+		if err != nil {
+			return nil, nil, nil, err
 		}
+		compositeStore = newCompositeFlowStore(fileStore, dbStore)
+		if err := loadDeclarativeResources(fileStore); err != nil {
+			return nil, nil, nil, err
+		}
+		return compositeStore, compositeStore, transactioner, nil
 
 	case serverconst.StoreModeDeclarative:
-		fileStore := newFileBasedStore()
-		store = fileStore
-
+		fileStore, transactioner := newFileBasedStore()
 		if err := loadDeclarativeResources(fileStore); err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
+		return fileStore, nil, transactioner, nil
 
 	default:
-		store = newCacheBackedFlowStore()
+		store, transactioner, err := newCacheBackedFlowStore()
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		return store, nil, transactioner, nil
 	}
-
-	return store, compositeStore, nil
 }
 
 // getFlowStoreMode determines the store mode for flows.

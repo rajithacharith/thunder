@@ -261,7 +261,7 @@ func (suite *FileBasedStoreTestSuite) TestCreateMultipleSenders_WithProperties()
 
 func (suite *FileBasedStoreTestSuite) TestNewNotificationFileBasedStore() {
 	// Act
-	store := newNotificationFileBasedStore()
+	store, _ := newNotificationFileBasedStore()
 
 	// Assert
 	suite.NotNil(store)

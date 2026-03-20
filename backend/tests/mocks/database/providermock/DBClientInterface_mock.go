@@ -8,7 +8,7 @@ import (
 	"context"
 
 	"github.com/asgardeo/thunder/internal/system/database/model"
-	"github.com/asgardeo/thunder/internal/system/database/transaction"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 	mock "github.com/stretchr/testify/mock"
 )
 

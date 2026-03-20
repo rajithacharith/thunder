@@ -25,6 +25,7 @@ import (
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 var (
@@ -36,13 +37,13 @@ type fileBasedResourceStore struct {
 }
 
 // newFileBasedResourceStore creates a new file-based resource store.
-func newFileBasedResourceStore() (resourceStoreInterface, error) {
+func newFileBasedResourceStore() (resourceStoreInterface, transaction.Transactioner, error) {
 	genericStore := declarativeresource.NewGenericFileBasedStore(entity.KeyTypeResourceServer)
 	store := &fileBasedResourceStore{
 		GenericFileBasedStore: genericStore,
 	}
 
-	return store, nil
+	return store, transaction.NewNoOpTransactioner(), nil
 }
 
 // Create implements declarativeresource.Storer interface for resource loader

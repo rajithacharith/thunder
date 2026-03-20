@@ -25,10 +25,10 @@ import (
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
-	"github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
 
@@ -40,29 +40,18 @@ func Initialize(
 	hashService hash.HashServiceInterface,
 	authzService sysauthz.SystemAuthorizationServiceInterface,
 ) (UserServiceInterface, oupkg.OUUserResolver, declarativeresource.ResourceExporter, error) {
-	// Step 1: Determine store mode and initialize store structure
+	// Step 1: Determine store mode and initialize store and transactioner
 	storeMode := getUserStoreMode()
-	userStore, err := initializeStore(storeMode)
+	userStore, transactioner, err := initializeStore(storeMode)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	// Step 2: Get database transactioner
-	dbProvider := provider.GetDBProvider()
-	dbClient, err := dbProvider.GetUserDBClient()
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	transactioner, err := dbClient.GetTransactioner()
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	// Step 3: Create service with store
+	// Step 2: Create service with store
 	userService := newUserService(authzService, userStore, ouService, userSchemaService, hashService, transactioner)
 	setUserService(userService) // Set the provider for backward compatibility
 
-	// Step 4: Load declarative resources into store (if applicable)
+	// Step 3: Load declarative resources into store (if applicable)
 	if storeMode == serverconst.StoreModeComposite || storeMode == serverconst.StoreModeDeclarative {
 		if err := loadDeclarativeUserResources(userStore); err != nil {
 			return nil, nil, nil, err
@@ -107,31 +96,23 @@ func Initialize(
 // - If user.store is not specified, falls back to global declarative_resources.enabled:
 //   - If declarative_resources.enabled = true: behaves as IMMUTABLE mode
 //   - If declarative_resources.enabled = false: behaves as MUTABLE mode
-func initializeStore(storeMode serverconst.StoreMode) (userStoreInterface, error) {
-	var userStore userStoreInterface
-
+func initializeStore(storeMode serverconst.StoreMode) (userStoreInterface, transaction.Transactioner, error) {
 	switch storeMode {
 	case serverconst.StoreModeComposite:
-		fileStore := newUserFileBasedStore()
-		dbStore, err := newUserStore()
+		fileStore, _ := newUserFileBasedStore()
+		dbStore, transactioner, err := newUserStore()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		userStore = newCompositeUserStore(fileStore.(*userFileBasedStore), dbStore)
+		return newCompositeUserStore(fileStore.(*userFileBasedStore), dbStore), transactioner, nil
 
 	case serverconst.StoreModeDeclarative:
-		fileStore := newUserFileBasedStore()
-		userStore = fileStore
+		fileStore, transactioner := newUserFileBasedStore()
+		return fileStore, transactioner, nil
 
 	default:
-		dbStore, err := newUserStore()
-		if err != nil {
-			return nil, err
-		}
-		userStore = dbStore
+		return newUserStore()
 	}
-
-	return userStore, nil
 }
 
 // loadDeclarativeUserResources loads declarative user resources from files.

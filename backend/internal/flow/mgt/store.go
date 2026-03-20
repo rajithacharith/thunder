@@ -28,6 +28,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 // Database column names
@@ -43,6 +44,8 @@ const (
 	colVersion       = "version"
 	colCount         = "count"
 )
+
+var getDBProvider = provider.GetDBProvider
 
 // flowStoreInterface defines the interface for flow store operations.
 type flowStoreInterface interface {
@@ -68,13 +71,18 @@ type flowStore struct {
 }
 
 // newFlowStore creates a new instance of flowStore.
-func newFlowStore() flowStoreInterface {
+func newFlowStore() (flowStoreInterface, transaction.Transactioner, error) {
+	dbProvider := getDBProvider()
+	transactioner, err := dbProvider.GetConfigDBTransactioner()
+	if err != nil {
+		return nil, nil, err
+	}
 	return &flowStore{
-		dbProvider:        provider.GetDBProvider(),
+		dbProvider:        dbProvider,
 		deploymentID:      config.GetThunderRuntime().Config.Server.Identifier,
 		maxVersionHistory: getMaxVersionHistory(),
 		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowStore")),
-	}
+	}, transactioner, nil
 }
 
 // ListFlows retrieves a paginated list of flow definitions with optional filtering by flow type.

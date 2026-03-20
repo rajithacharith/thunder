@@ -22,34 +22,28 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 // Initialize creates and configures the notification service components.
 func Initialize(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) (
 	NotificationSenderMgtSvcInterface, OTPServiceInterface, declarativeresource.ResourceExporter, error) {
-	client, err := provider.GetDBProvider().GetConfigDBClient()
-	if err != nil {
-		log.GetLogger().Error("Failed to initialize database client for notification service",
-			log.Error(err))
-		return nil, nil, nil, err
-	}
-	tx, err := client.GetTransactioner()
-	if err != nil {
-		log.GetLogger().Error("Failed to initialize database transactioner for notification service",
-			log.Error(err))
-		return nil, nil, nil, err
-	}
-
 	var notificationStore notificationStoreInterface
+	var tx transaction.Transactioner
+
 	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
-		notificationStore = newNotificationFileBasedStore()
+		notificationStore, tx = newNotificationFileBasedStore()
 	} else {
-		notificationStore = newNotificationStore()
+		var err error
+		notificationStore, tx, err = newNotificationStore()
+		if err != nil {
+			log.GetLogger().Error("Failed to initialize notification store", log.Error(err))
+			return nil, nil, nil, err
+		}
 	}
 
 	mgtService := newNotificationSenderMgtService(notificationStore, tx)
