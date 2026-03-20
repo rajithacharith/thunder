@@ -210,7 +210,7 @@ const config: Config = {
               value: '<hr style="margin: 0.3rem 0;">',
             },
             {
-              href: 'https://github.com/asgardeo/thunder/issues/1251',
+              href: 'https://github.com/asgardeo/thunder/issues/1912',
               label: '🌍 Help translate',
             },
           ],
