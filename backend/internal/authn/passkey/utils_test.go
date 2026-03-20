@@ -92,8 +92,8 @@ func (suite *UtilsTestSuite) TestParseUserAttributes_InvalidJSON() {
 
 func (suite *UtilsTestSuite) TestBuildUserDisplayName_WithName() {
 	attrs := map[string]interface{}{
-		"firstName": "John",
-		"lastName":  "Doe",
+		"given_name":  "John",
+		"family_name": "Doe",
 	}
 
 	result := buildUserDisplayName(testUserID, attrs)
@@ -103,7 +103,7 @@ func (suite *UtilsTestSuite) TestBuildUserDisplayName_WithName() {
 
 func (suite *UtilsTestSuite) TestBuildUserDisplayName_WithFirstNameOnly() {
 	attrs := map[string]interface{}{
-		"firstName": "John",
+		"given_name": "John",
 	}
 
 	result := buildUserDisplayName(testUserID, attrs)
@@ -196,6 +196,13 @@ func (suite *UtilsTestSuite) TestValidateRegistrationStartRequest_EmptyRelyingPa
 	suite.Equal(ErrorEmptyRelyingPartyID.Code, err.Code)
 }
 
+func (suite *UtilsTestSuite) TestValidateAuthenticationStartRequest_NilRequest() {
+	err := validateAuthenticationStartRequest(nil)
+
+	suite.NotNil(err)
+	suite.Equal(ErrorInvalidFinishData.Code, err.Code)
+}
+
 func (suite *UtilsTestSuite) TestHandleUserRetrievalError_ClientError() {
 	svcErr := &serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
@@ -262,12 +269,12 @@ func (suite *UtilsTestSuite) TestDecodeBase64_InvalidInput() {
 }
 
 func (suite *UtilsTestSuite) TestExtractCoreUser_WithFullAttributes() {
-	attrs := json.RawMessage(`{"firstName":"John","lastName":"Doe","username":"johndoe"}`)
+	attrs := json.RawMessage(`{"given_name":"John","family_name":"Doe","username":"johndoe"}`)
 	testUser := &user.User{
-		ID:               testUserID,
-		Type:             "person",
-		OrganizationUnit: "org123",
-		Attributes:       attrs,
+		ID:         testUserID,
+		Type:       "person",
+		OUID:       "org123",
+		Attributes: attrs,
 	}
 
 	displayName, userName := extractCoreUser(testUser)

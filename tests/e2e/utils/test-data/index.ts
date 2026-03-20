@@ -25,7 +25,7 @@
  * @example
  * import { TestDataFactory } from '../../utils/test-data';
  *
- * const userData = TestDataFactory.createUser({ firstName: 'John' });
+ * const userData = TestDataFactory.createUser({ given_name: 'John' });
  * const appData = TestDataFactory.createApplication({ name: 'MyApp' });
  */
 
@@ -57,8 +57,8 @@ export class TestDataFactory {
     return {
       username: `testuser_${uniqueId}`,
       email: this.generateEmail(`testuser_${uniqueId}`),
-      firstName: `TestFirst_${uniqueId}`,
-      lastName: `TestLast_${uniqueId}`,
+      given_name: `TestFirst_${uniqueId}`,
+      family_name: `TestLast_${uniqueId}`,
       password: process.env.TEST_USER_PASSWORD || "TestPassword@123",
       ...overrides,
     };
@@ -88,8 +88,8 @@ export class TestDataFactory {
 export interface UserData {
   username: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  given_name: string;
+  family_name: string;
   password?: string;
   [key: string]: any;
 }

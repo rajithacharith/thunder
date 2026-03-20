@@ -34,6 +34,7 @@ import (
 )
 
 const testDeploymentID = "test-deployment-id"
+const getUsersByIDsQueryID = "ASQ-USER_MGT-22"
 
 // MockDBClient is a mock implementation of provider.DBClientInterface
 type MockDBClient struct {
@@ -124,6 +125,28 @@ func (m *MockDBProvider) GetRuntimeDBTransactioner() (transaction.Transactioner,
 	return nil, nil
 }
 
+// errorUserDBProvider is a provider that returns an error for GetUserDBClient calls.
+type errorUserDBProvider struct{}
+
+func (e *errorUserDBProvider) GetConfigDBClient() (provider.DBClientInterface, error) {
+	return nil, nil
+}
+func (e *errorUserDBProvider) GetRuntimeDBClient() (provider.DBClientInterface, error) {
+	return nil, nil
+}
+func (e *errorUserDBProvider) GetUserDBClient() (provider.DBClientInterface, error) {
+	return nil, errors.New("user db client unavailable")
+}
+func (e *errorUserDBProvider) GetConfigDBTransactioner() (transaction.Transactioner, error) {
+	return nil, nil
+}
+func (e *errorUserDBProvider) GetUserDBTransactioner() (transaction.Transactioner, error) {
+	return nil, nil
+}
+func (e *errorUserDBProvider) GetRuntimeDBTransactioner() (transaction.Transactioner, error) {
+	return nil, nil
+}
+
 // UserStoreTestSuite is the test suite for userStore.
 type UserStoreTestSuite struct {
 	suite.Suite
@@ -158,6 +181,16 @@ func (suite *UserStoreTestSuite) SetupTest() {
 func (suite *UserStoreTestSuite) TestSyncIndexedAttributes_EmptyAttributes() {
 	err := suite.store.syncIndexedAttributes(context.Background(), suite.mockDB, "user1", nil)
 	suite.NoError(err)
+}
+
+func (suite *UserStoreTestSuite) TestMaskMapValues() {
+	input := map[string]interface{}{
+		"token": "secret",
+		"count": 10,
+	}
+	masked := maskMapValues(input)
+	suite.NotEqual(input["token"], masked["token"])
+	suite.Equal("***", masked["count"])
 }
 
 func (suite *UserStoreTestSuite) TestSyncIndexedAttributes_Success_StringValues() {
@@ -336,16 +369,16 @@ func (suite *UserStoreTestSuite) TestCreateUser() {
 	attributesBytes, _ := json.Marshal(attributesMap)
 
 	user := User{
-		ID:               svcTestUserID1,
-		OrganizationUnit: "ou-1",
-		Type:             "customer",
-		Attributes:       json.RawMessage(attributesBytes),
+		ID:         svcTestUserID1,
+		OUID:       "ou-1",
+		Type:       "customer",
+		Attributes: json.RawMessage(attributesBytes),
 	}
 	credentials := Credentials{}
 
 	// Expect insert query
 	suite.mockDB.On("ExecuteContext", mock.Anything, QueryCreateUser,
-		user.ID, user.OrganizationUnit, user.Type, string(attributesBytes), "{}", testDeploymentID).
+		user.ID, user.OUID, user.Type, string(attributesBytes), "{}", testDeploymentID).
 		Return(int64(1), nil)
 
 	// Expect indexed attributes sync
@@ -365,15 +398,15 @@ func (suite *UserStoreTestSuite) TestGetUser() {
 	attributesBytes, _ := json.Marshal(attributesMap)
 
 	expectedUser := User{
-		ID:               userID,
-		OrganizationUnit: "ou-1",
-		Type:             "customer",
-		Attributes:       json.RawMessage(attributesBytes),
+		ID:         userID,
+		OUID:       "ou-1",
+		Type:       "customer",
+		Attributes: json.RawMessage(attributesBytes),
 	}
 
 	row := map[string]interface{}{
-		"user_id":    expectedUser.ID,
-		"ou_id":      expectedUser.OrganizationUnit,
+		"id":         expectedUser.ID,
+		"ou_id":      expectedUser.OUID,
 		"type":       expectedUser.Type,
 		"attributes": string(attributesBytes),
 	}
@@ -401,15 +434,15 @@ func (suite *UserStoreTestSuite) TestUpdateUser() {
 	attributesBytes, _ := json.Marshal(attributesMap)
 
 	user := &User{
-		ID:               svcTestUserID1,
-		OrganizationUnit: "ou-1",
-		Type:             "customer",
-		Attributes:       json.RawMessage(attributesBytes),
+		ID:         svcTestUserID1,
+		OUID:       "ou-1",
+		Type:       "customer",
+		Attributes: json.RawMessage(attributesBytes),
 	}
 
 	// Expect update query
 	suite.mockDB.On("ExecuteContext", mock.Anything, QueryUpdateUserByUserID,
-		user.ID, user.OrganizationUnit, user.Type, string(attributesBytes), testDeploymentID).
+		user.ID, user.OUID, user.Type, string(attributesBytes), testDeploymentID).
 		Return(int64(1), nil)
 
 	// Expect delete indexed attributes query
@@ -428,12 +461,20 @@ func (suite *UserStoreTestSuite) TestUpdateUser() {
 	suite.NoError(err)
 }
 
+func (suite *UserStoreTestSuite) TestGetUserListCountByOUIDs_EmptyOUIDs() {
+	// No DB call should be made when the OU slice is empty.
+	count, err := suite.store.GetUserListCountByOUIDs(context.Background(), []string{}, nil)
+	suite.NoError(err)
+	suite.Equal(0, count)
+	suite.mockDB.AssertNotCalled(suite.T(), "QueryContext")
+}
+
 func (suite *UserStoreTestSuite) TestGetUserList() {
 	limit := 10
 	offset := 0
 
 	row := map[string]interface{}{
-		"user_id":    svcTestUserID1,
+		"id":         svcTestUserID1,
 		"ou_id":      "ou-1",
 		"type":       "customer",
 		"attributes": `{"username": "john.doe"}`,
@@ -465,7 +506,7 @@ func (suite *UserStoreTestSuite) TestGetCredentials() {
 	credentialsJSON, _ := json.Marshal(credentials)
 
 	row := map[string]interface{}{
-		"user_id":     userID,
+		"id":          userID,
 		"ou_id":       "ou-1",
 		"type":        "customer",
 		"attributes":  string(attributesBytes),
@@ -496,9 +537,9 @@ func (suite *UserStoreTestSuite) TestGetUserGroups() {
 	offset := 0
 
 	row := map[string]interface{}{
-		"group_id": "group-1",
-		"name":     "admin",
-		"ou_id":    "ou-1",
+		"id":    "group-1",
+		"name":  "admin",
+		"ou_id": "ou-1",
 	}
 
 	suite.mockDB.On("QueryContext", mock.Anything, QueryGetGroupsForUser, userID, limit, offset, testDeploymentID).
@@ -519,13 +560,123 @@ func (suite *UserStoreTestSuite) TestValidateUserIDs() {
 		return strings.Contains(query.Query, "SELECT USER_ID FROM \"USER\"") || query.ID == "ASQ-USER_MGT-09"
 	}), mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return([]map[string]interface{}{
-			{"user_id": svcTestUserID1},
-			{"user_id": "user-2"},
+			{"id": svcTestUserID1},
+			{"id": "user-2"},
 		}, nil)
 
 	invalid, err := suite.store.ValidateUserIDs(context.Background(), userIDs)
 	suite.NoError(err)
 	suite.Empty(invalid)
+}
+
+func (suite *UserStoreTestSuite) TestValidateUserIDsInOUs_EmptyUserIDs() {
+	outOfScope, err := suite.store.ValidateUserIDsInOUs(context.Background(), []string{}, []string{"ou-1"})
+	suite.NoError(err)
+	suite.Empty(outOfScope)
+	suite.mockDB.AssertNotCalled(suite.T(), "QueryContext")
+}
+
+func (suite *UserStoreTestSuite) TestValidateUserIDsInOUs_EmptyOUIDs() {
+	userIDs := []string{"usr-001", "usr-002"}
+	outOfScope, err := suite.store.ValidateUserIDsInOUs(context.Background(), userIDs, []string{})
+	suite.NoError(err)
+	suite.Equal(userIDs, outOfScope)
+	suite.mockDB.AssertNotCalled(suite.T(), "QueryContext")
+}
+
+func (suite *UserStoreTestSuite) TestValidateUserIDsInOUs() {
+	testCases := []struct {
+		name           string
+		userIDs        []string
+		ouIDs          []string
+		dbRows         []map[string]interface{}
+		dbErr          error
+		wantOutOfScope []string
+		wantErr        bool
+	}{
+		{
+			name:    "user in scope",
+			userIDs: []string{"usr-001"},
+			ouIDs:   []string{"ou-1"},
+			dbRows: []map[string]interface{}{
+				{"id": "usr-001"},
+			},
+			wantOutOfScope: []string{},
+		},
+		{
+			name:           "user out of scope",
+			userIDs:        []string{"usr-001"},
+			ouIDs:          []string{"ou-1"},
+			dbRows:         []map[string]interface{}{},
+			wantOutOfScope: []string{"usr-001"},
+		},
+		{
+			name:    "query execution error",
+			userIDs: []string{"usr-001"},
+			ouIDs:   []string{"ou-1"},
+			dbErr:   errors.New("db failure"),
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		suite.Run(tc.name, func() {
+			// For 1 user + 1 OU: args = [deploymentID, ouID, userID] → 5 total (ctx, query, +3)
+			suite.mockDB.On("QueryContext",
+				mock.Anything,
+				mock.MatchedBy(func(query dbmodel.DBQuery) bool {
+					return query.ID == "ASQ-USER_MGT-21"
+				}),
+				mock.Anything, mock.Anything, mock.Anything).
+				Return(tc.dbRows, tc.dbErr).Once()
+
+			outOfScope, err := suite.store.ValidateUserIDsInOUs(
+				context.Background(), tc.userIDs, tc.ouIDs)
+
+			if tc.wantErr {
+				suite.Error(err)
+			} else {
+				suite.NoError(err)
+				suite.Equal(tc.wantOutOfScope, outOfScope)
+			}
+
+			suite.mockDB.AssertExpectations(suite.T())
+		})
+	}
+}
+
+func (suite *UserStoreTestSuite) TestValidateUserIDsInOUs_PartialOutOfScope() {
+	// 2 users, 1 OU → args = [deploymentID, ou-1, usr-001, usr-002] → 6 total (ctx, query, +4)
+	suite.mockDB.On("QueryContext",
+		mock.Anything,
+		mock.MatchedBy(func(query dbmodel.DBQuery) bool {
+			return query.ID == "ASQ-USER_MGT-21"
+		}),
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return([]map[string]interface{}{{"id": "usr-001"}}, nil).Once()
+
+	outOfScope, err := suite.store.ValidateUserIDsInOUs(
+		context.Background(), []string{"usr-001", "usr-002"}, []string{"ou-1"})
+
+	suite.NoError(err)
+	suite.Equal([]string{"usr-002"}, outOfScope)
+	suite.mockDB.AssertExpectations(suite.T())
+}
+
+func (suite *UserStoreTestSuite) TestValidateUserIDsInOUs_DBClientError() {
+	// Use a store wired to a provider that fails on GetUserDBClient.
+	errProvider := &errorUserDBProvider{}
+	store := &userStore{
+		deploymentID: testDeploymentID,
+		dbProvider:   errProvider,
+	}
+
+	_, err := store.ValidateUserIDsInOUs(
+		context.Background(), []string{"usr-001"}, []string{"ou-1"})
+
+	suite.Error(err)
+	suite.Contains(err.Error(), "failed to get database client")
 }
 
 func (suite *UserStoreTestSuite) TestIdentifyUser_NoIndexedFilters() {
@@ -534,7 +685,7 @@ func (suite *UserStoreTestSuite) TestIdentifyUser_NoIndexedFilters() {
 	suite.mockDB.On("QueryContext", mock.Anything, mock.MatchedBy(func(query dbmodel.DBQuery) bool {
 		return query.ID == "ASQ-USER_MGT-08"
 	}), mock.Anything, mock.Anything).
-		Return([]map[string]interface{}{{"user_id": svcTestUserID1}}, nil)
+		Return([]map[string]interface{}{{"id": svcTestUserID1}}, nil)
 
 	id, err := suite.store.IdentifyUser(context.Background(), filters)
 	suite.NoError(err)
@@ -547,7 +698,7 @@ func (suite *UserStoreTestSuite) TestIdentifyUser_AllIndexed() {
 	suite.mockDB.On("QueryContext", mock.Anything, mock.MatchedBy(func(query dbmodel.DBQuery) bool {
 		return strings.Contains(query.Query, "USER_INDEXED_ATTRIBUTES")
 	}), mock.Anything, mock.Anything, mock.Anything).
-		Return([]map[string]interface{}{{"user_id": "user-indexed"}}, nil)
+		Return([]map[string]interface{}{{"id": "user-indexed"}}, nil)
 
 	id, err := suite.store.IdentifyUser(context.Background(), filters)
 	suite.NoError(err)
@@ -563,7 +714,7 @@ func (suite *UserStoreTestSuite) TestIdentifyUser_Hybrid() {
 	suite.mockDB.On("QueryContext", mock.Anything, mock.MatchedBy(func(query dbmodel.DBQuery) bool {
 		return strings.Contains(query.Query, "JOIN USER_INDEXED_ATTRIBUTES")
 	}), mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return([]map[string]interface{}{{"user_id": "user-hybrid"}}, nil)
+		Return([]map[string]interface{}{{"id": "user-hybrid"}}, nil)
 
 	id, err := suite.store.IdentifyUser(context.Background(), filters)
 	suite.NoError(err)
@@ -581,6 +732,49 @@ func (suite *UserStoreTestSuite) TestIdentifyUser_NotFound() {
 	suite.Nil(id)
 }
 
+func (suite *UserStoreTestSuite) TestGetUserListCountByOUIDs_Empty() {
+	count, err := suite.store.GetUserListCountByOUIDs(context.Background(), []string{}, nil)
+	suite.NoError(err)
+	suite.Equal(0, count)
+}
+
+func (suite *UserStoreTestSuite) TestGetUserListCountByOUIDs_Success() {
+	ouIDs := []string{"ou-1"}
+
+	suite.mockDB.On("QueryContext", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return([]map[string]interface{}{{"total": int64(1)}}, nil)
+
+	count, err := suite.store.GetUserListCountByOUIDs(context.Background(), ouIDs, nil)
+	suite.NoError(err)
+	suite.Equal(1, count)
+}
+
+func (suite *UserStoreTestSuite) TestGetUserListByOUIDs_Success() {
+	ouIDs := []string{"ou-1"}
+	row := map[string]interface{}{
+		"id":         "user-1",
+		"ou_id":      "ou-1",
+		"type":       "person",
+		"attributes": `{"username":"alice"}`,
+	}
+
+	suite.mockDB.On(
+		"QueryContext",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).
+		Return([]map[string]interface{}{row}, nil)
+
+	users, err := suite.store.GetUserListByOUIDs(context.Background(), ouIDs, 10, 0, nil)
+	suite.NoError(err)
+	suite.Len(users, 1)
+	suite.Equal("user-1", users[0].ID)
+}
+
 func (suite *UserStoreTestSuite) TestCreateUser_DBError() {
 	suite.mockDB.On("ExecuteContext", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
@@ -590,6 +784,21 @@ func (suite *UserStoreTestSuite) TestCreateUser_DBError() {
 	suite.Error(err)
 }
 
+func (suite *UserStoreTestSuite) TestIsUserDeclarative_DBStore() {
+	row := map[string]interface{}{
+		"id":         "user-1",
+		"ou_id":      "ou-1",
+		"type":       "person",
+		"attributes": `{"username":"alice"}`,
+	}
+
+	suite.mockDB.On("QueryContext", mock.Anything, mock.Anything, "user-1", testDeploymentID).
+		Return([]map[string]interface{}{row}, nil)
+
+	isDeclarative, err := suite.store.IsUserDeclarative(context.Background(), "user-1")
+	suite.NoError(err)
+	suite.False(isDeclarative)
+}
 func (suite *UserStoreTestSuite) TestUpdateUser_DBError() {
 	suite.mockDB.On("ExecuteContext", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
@@ -597,4 +806,72 @@ func (suite *UserStoreTestSuite) TestUpdateUser_DBError() {
 
 	err := suite.store.UpdateUser(context.Background(), &User{ID: "u1"})
 	suite.Error(err)
+}
+
+func (suite *UserStoreTestSuite) TestGetUsersByIDs_EmptyInput() {
+	users, err := suite.store.GetUsersByIDs(context.Background(), []string{})
+	suite.NoError(err)
+	suite.Empty(users)
+	suite.mockDB.AssertNotCalled(suite.T(), "QueryContext")
+}
+
+func (suite *UserStoreTestSuite) TestGetUsersByIDs_Success() {
+	rows := []map[string]interface{}{
+		{"id": "user-1", "ou_id": "ou-1", "type": "person", "attributes": `{"username":"alice"}`},
+		{"id": "user-2", "ou_id": "ou-1", "type": "person", "attributes": `{"username":"bob"}`},
+	}
+
+	queryID := getUsersByIDsQueryID
+	suite.mockDB.On("QueryContext", mock.Anything, mock.MatchedBy(func(q dbmodel.DBQuery) bool {
+		return q.ID == queryID
+	}), mock.Anything, mock.Anything, mock.Anything).
+		Return(rows, nil)
+
+	users, err := suite.store.GetUsersByIDs(context.Background(), []string{"user-1", "user-2"})
+	suite.NoError(err)
+	suite.Len(users, 2)
+	suite.Equal("user-1", users[0].ID)
+	suite.Equal("user-2", users[1].ID)
+}
+
+func (suite *UserStoreTestSuite) TestGetUsersByIDs_PartialResults() {
+	rows := []map[string]interface{}{
+		{"id": "user-1", "ou_id": "ou-1", "type": "person", "attributes": `{"username":"alice"}`},
+	}
+
+	queryID := getUsersByIDsQueryID
+	suite.mockDB.On("QueryContext", mock.Anything, mock.MatchedBy(func(q dbmodel.DBQuery) bool {
+		return q.ID == queryID
+	}), mock.Anything, mock.Anything, mock.Anything).
+		Return(rows, nil)
+
+	users, err := suite.store.GetUsersByIDs(context.Background(), []string{"user-1", "user-missing"})
+	suite.NoError(err)
+	suite.Len(users, 1)
+	suite.Equal("user-1", users[0].ID)
+}
+
+func (suite *UserStoreTestSuite) TestGetUsersByIDs_QueryError() {
+	queryID := getUsersByIDsQueryID
+	suite.mockDB.On("QueryContext", mock.Anything, mock.MatchedBy(func(q dbmodel.DBQuery) bool {
+		return q.ID == queryID
+	}), mock.Anything, mock.Anything).
+		Return(nil, errors.New("query failed"))
+
+	users, err := suite.store.GetUsersByIDs(context.Background(), []string{"user-1"})
+	suite.Error(err)
+	suite.Contains(err.Error(), "failed to execute query")
+	suite.Nil(users)
+}
+
+func (suite *UserStoreTestSuite) TestGetUsersByIDs_DBClientError() {
+	store := &userStore{
+		deploymentID: testDeploymentID,
+		dbProvider:   &errorUserDBProvider{},
+	}
+
+	users, err := store.GetUsersByIDs(context.Background(), []string{"user-1"})
+	suite.Error(err)
+	suite.Contains(err.Error(), "failed to get database client")
+	suite.Nil(users)
 }

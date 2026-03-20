@@ -5,6 +5,8 @@
 package scopemock
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/oauth/scope"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -37,8 +39,8 @@ func (_m *ScopeValidatorInterfaceMock) EXPECT() *ScopeValidatorInterfaceMock_Exp
 }
 
 // ValidateScopes provides a mock function for the type ScopeValidatorInterfaceMock
-func (_mock *ScopeValidatorInterfaceMock) ValidateScopes(requestedScopes string, clientID string) (string, *scope.ScopeError) {
-	ret := _mock.Called(requestedScopes, clientID)
+func (_mock *ScopeValidatorInterfaceMock) ValidateScopes(ctx context.Context, requestedScopes string, clientID string) (string, *scope.ScopeError) {
+	ret := _mock.Called(ctx, requestedScopes, clientID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ValidateScopes")
@@ -46,16 +48,16 @@ func (_mock *ScopeValidatorInterfaceMock) ValidateScopes(requestedScopes string,
 
 	var r0 string
 	var r1 *scope.ScopeError
-	if returnFunc, ok := ret.Get(0).(func(string, string) (string, *scope.ScopeError)); ok {
-		return returnFunc(requestedScopes, clientID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (string, *scope.ScopeError)); ok {
+		return returnFunc(ctx, requestedScopes, clientID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, string) string); ok {
-		r0 = returnFunc(requestedScopes, clientID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
+		r0 = returnFunc(ctx, requestedScopes, clientID)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, string) *scope.ScopeError); ok {
-		r1 = returnFunc(requestedScopes, clientID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) *scope.ScopeError); ok {
+		r1 = returnFunc(ctx, requestedScopes, clientID)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*scope.ScopeError)
@@ -70,25 +72,31 @@ type ScopeValidatorInterfaceMock_ValidateScopes_Call struct {
 }
 
 // ValidateScopes is a helper method to define mock.On call
+//   - ctx context.Context
 //   - requestedScopes string
 //   - clientID string
-func (_e *ScopeValidatorInterfaceMock_Expecter) ValidateScopes(requestedScopes interface{}, clientID interface{}) *ScopeValidatorInterfaceMock_ValidateScopes_Call {
-	return &ScopeValidatorInterfaceMock_ValidateScopes_Call{Call: _e.mock.On("ValidateScopes", requestedScopes, clientID)}
+func (_e *ScopeValidatorInterfaceMock_Expecter) ValidateScopes(ctx interface{}, requestedScopes interface{}, clientID interface{}) *ScopeValidatorInterfaceMock_ValidateScopes_Call {
+	return &ScopeValidatorInterfaceMock_ValidateScopes_Call{Call: _e.mock.On("ValidateScopes", ctx, requestedScopes, clientID)}
 }
 
-func (_c *ScopeValidatorInterfaceMock_ValidateScopes_Call) Run(run func(requestedScopes string, clientID string)) *ScopeValidatorInterfaceMock_ValidateScopes_Call {
+func (_c *ScopeValidatorInterfaceMock_ValidateScopes_Call) Run(run func(ctx context.Context, requestedScopes string, clientID string)) *ScopeValidatorInterfaceMock_ValidateScopes_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 string
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -99,7 +107,7 @@ func (_c *ScopeValidatorInterfaceMock_ValidateScopes_Call) Return(s string, scop
 	return _c
 }
 
-func (_c *ScopeValidatorInterfaceMock_ValidateScopes_Call) RunAndReturn(run func(requestedScopes string, clientID string) (string, *scope.ScopeError)) *ScopeValidatorInterfaceMock_ValidateScopes_Call {
+func (_c *ScopeValidatorInterfaceMock_ValidateScopes_Call) RunAndReturn(run func(ctx context.Context, requestedScopes string, clientID string) (string, *scope.ScopeError)) *ScopeValidatorInterfaceMock_ValidateScopes_Call {
 	_c.Call.Return(run)
 	return _c
 }

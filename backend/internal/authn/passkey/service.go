@@ -41,15 +41,20 @@ const (
 // PasskeyServiceInterface defines the interface for passkey authentication and registration operations.
 type PasskeyServiceInterface interface {
 	// Registration methods
-	StartRegistration(req *PasskeyRegistrationStartRequest) (*PasskeyRegistrationStartData, *serviceerror.ServiceError)
+	StartRegistration(
+		ctx context.Context, req *PasskeyRegistrationStartRequest,
+	) (*PasskeyRegistrationStartData, *serviceerror.ServiceError)
 	FinishRegistration(
-		req *PasskeyRegistrationFinishRequest) (*PasskeyRegistrationFinishData, *serviceerror.ServiceError)
+		ctx context.Context, req *PasskeyRegistrationFinishRequest,
+	) (*PasskeyRegistrationFinishData, *serviceerror.ServiceError)
 
 	// Authentication methods
 	StartAuthentication(
-		req *PasskeyAuthenticationStartRequest) (*PasskeyAuthenticationStartData, *serviceerror.ServiceError)
+		ctx context.Context, req *PasskeyAuthenticationStartRequest,
+	) (*PasskeyAuthenticationStartData, *serviceerror.ServiceError)
 	FinishAuthentication(
-		req *PasskeyAuthenticationFinishRequest) (*common.AuthenticationResponse, *serviceerror.ServiceError)
+		ctx context.Context, req *PasskeyAuthenticationFinishRequest,
+	) (*common.AuthenticationResponse, *serviceerror.ServiceError)
 }
 
 // passkeyService is the default implementation of PasskeyServiceInterface.
@@ -77,7 +82,7 @@ func newPasskeyService(userSvc user.UserServiceInterface, sessionStore sessionSt
 
 // StartRegistration initiates passkey credential registration for a user.
 func (w *passkeyService) StartRegistration(
-	req *PasskeyRegistrationStartRequest,
+	ctx context.Context, req *PasskeyRegistrationStartRequest,
 ) (*PasskeyRegistrationStartData, *serviceerror.ServiceError) {
 	if req == nil {
 		return nil, &ErrorInvalidFinishData
@@ -94,7 +99,7 @@ func (w *passkeyService) StartRegistration(
 	}
 
 	// Retrieve core user
-	coreUser, svcErr := w.userService.GetUser(context.TODO(), req.UserID)
+	coreUser, svcErr := w.userService.GetUser(ctx, req.UserID)
 	if svcErr != nil {
 		return nil, handleUserRetrievalError(svcErr, req.UserID, logger)
 	}
@@ -106,7 +111,7 @@ func (w *passkeyService) StartRegistration(
 	}
 
 	// Retrieve user's existing passkey credentials from database
-	credentials, err := w.getStoredPasskeyCredentials(req.UserID)
+	credentials, err := w.getStoredPasskeyCredentials(ctx, req.UserID)
 	if err != nil {
 		logger.Error("Failed to retrieve credentials from database", log.Error(err))
 		return nil, &serviceerror.InternalServerError
@@ -169,7 +174,7 @@ func (w *passkeyService) StartRegistration(
 }
 
 // FinishRegistration completes passkey credential registration.
-func (w *passkeyService) FinishRegistration(req *PasskeyRegistrationFinishRequest) (
+func (w *passkeyService) FinishRegistration(ctx context.Context, req *PasskeyRegistrationFinishRequest) (
 	*PasskeyRegistrationFinishData, *serviceerror.ServiceError) {
 	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Finishing passkey credential registration")
@@ -220,14 +225,14 @@ func (w *passkeyService) FinishRegistration(req *PasskeyRegistrationFinishReques
 	}
 
 	// Get core user
-	coreUser, svcErr := w.userService.GetUser(context.TODO(), userID)
+	coreUser, svcErr := w.userService.GetUser(ctx, userID)
 	if svcErr != nil {
 		logger.Error("Failed to retrieve user", log.String("error", svcErr.Error))
 		return nil, &serviceerror.InternalServerError
 	}
 
 	// Retrieve existing credentials from database
-	credentials, err := w.getStoredPasskeyCredentials(userID)
+	credentials, err := w.getStoredPasskeyCredentials(ctx, userID)
 	if err != nil {
 		logger.Error("Failed to retrieve credentials from database", log.Error(err))
 		return nil, &serviceerror.InternalServerError
@@ -265,7 +270,7 @@ func (w *passkeyService) FinishRegistration(req *PasskeyRegistrationFinishReques
 	credentialID := base64.StdEncoding.EncodeToString(credential.ID)
 
 	// Store credential in database using user service
-	if err := w.storePasskeyCredential(userID, credential); err != nil {
+	if err := w.storePasskeyCredential(ctx, userID, credential); err != nil {
 		logger.Error("Failed to store credential in database", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
@@ -281,46 +286,32 @@ func (w *passkeyService) FinishRegistration(req *PasskeyRegistrationFinishReques
 }
 
 // StartAuthentication initiates passkey authentication for a user.
-func (w *passkeyService) StartAuthentication(req *PasskeyAuthenticationStartRequest) (
+func (w *passkeyService) StartAuthentication(ctx context.Context, req *PasskeyAuthenticationStartRequest) (
 	*PasskeyAuthenticationStartData, *serviceerror.ServiceError) {
 	if req == nil {
 		return nil, &ErrorInvalidFinishData
 	}
 
 	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Starting passkey authentication",
-		log.String("userID", log.MaskString(req.UserID)),
-		log.String("relyingPartyID", req.RelyingPartyID))
+
+	// Check if this is usernameless flow
+	isUsernameless := strings.TrimSpace(req.UserID) == ""
+
+	userID := req.UserID
+	if isUsernameless {
+		userID = ""
+		logger.Debug("Starting usernameless passkey authentication",
+			log.String("relyingPartyID", req.RelyingPartyID))
+	} else {
+		logger.Debug("Starting passkey authentication",
+			log.String("userID", log.MaskString(req.UserID)),
+			log.String("relyingPartyID", req.RelyingPartyID))
+	}
 
 	// Validate input
 	if svcErr := validateAuthenticationStartRequest(req); svcErr != nil {
 		return nil, svcErr
 	}
-
-	// Retrieve user by userID to verify user exists
-	coreUser, svcErr := w.userService.GetUser(context.TODO(), req.UserID)
-	if svcErr != nil {
-		return nil, handleUserRetrievalError(svcErr, req.UserID, logger)
-	}
-
-	// Retrieve user's registered passkey credentials from database
-	credentials, err := w.getStoredPasskeyCredentials(req.UserID)
-	if err != nil {
-		logger.Error("Failed to retrieve credentials from database", log.Error(err))
-		return nil, &serviceerror.InternalServerError
-	}
-
-	logger.Debug("Retrieved credentials for authentication",
-		log.String("userID", req.UserID),
-		log.Int("credentialCount", len(credentials)))
-
-	if len(credentials) == 0 {
-		logger.Debug("No credentials found for user", log.String("userID", req.UserID))
-		return nil, &ErrorNoCredentialsFound
-	}
-
-	// Create WebAuthn user from core user
-	webAuthnUser := newWebAuthnUserFromCoreUser(coreUser, credentials)
 
 	// Initialize WebAuthn service with relying party configuration
 	rpOrigins := getConfiguredOrigins()
@@ -330,16 +321,54 @@ func (w *passkeyService) StartAuthentication(req *PasskeyAuthenticationStartRequ
 		return nil, &serviceerror.InternalServerError
 	}
 
-	// Begin login ceremony using the WebAuthn service
-	// The WebAuthn service will generate challenge and set timeout automatically
-	options, sessionData, err := webAuthnService.BeginLogin(webAuthnUser)
-	if err != nil {
-		logger.Error("Failed to begin passkey login", log.String("error", err.Error()))
-		return nil, &serviceerror.InternalServerError
+	var options *credentialAssertion
+	var sessionData *sessionData
+
+	if isUsernameless {
+		// Usernameless flow: Use discoverable credentials
+		options, sessionData, err = webAuthnService.BeginDiscoverableLogin()
+		if err != nil {
+			logger.Error("Failed to begin usernameless passkey login", log.String("error", err.Error()))
+			return nil, &serviceerror.InternalServerError
+		}
+	} else {
+		// Username-based flow: Retrieve user and credentials
+		// Retrieve user by userID to verify user exists
+		coreUser, svcErr := w.userService.GetUser(ctx, req.UserID)
+		if svcErr != nil {
+			return nil, handleUserRetrievalError(svcErr, req.UserID, logger)
+		}
+
+		// Retrieve user's registered passkey credentials from database
+		credentials, err := w.getStoredPasskeyCredentials(ctx, req.UserID)
+		if err != nil {
+			logger.Error("Failed to retrieve credentials from database", log.Error(err))
+			return nil, &serviceerror.InternalServerError
+		}
+
+		logger.Debug("Retrieved credentials for authentication",
+			log.String("userID", log.MaskString(req.UserID)),
+			log.Int("credentialCount", len(credentials)))
+
+		if len(credentials) == 0 {
+			logger.Debug("No credentials found for user", log.String("userID", log.MaskString(req.UserID)))
+			return nil, &ErrorNoCredentialsFound
+		}
+
+		// Create WebAuthn user from core user
+		webAuthnUser := newWebAuthnUserFromCoreUser(coreUser, credentials)
+
+		// Begin login ceremony using the WebAuthn service
+		// The WebAuthn service will generate challenge and set timeout automatically
+		options, sessionData, err = webAuthnService.BeginLogin(webAuthnUser)
+		if err != nil {
+			logger.Error("Failed to begin passkey login", log.String("error", err.Error()))
+			return nil, &serviceerror.InternalServerError
+		}
 	}
 
-	// Store session data in cache with TTL
-	sessionToken, svcErr := w.storeSessionData(req.UserID, req.RelyingPartyID, sessionData)
+	// Store session data in cache with TTL using normalized userID
+	sessionToken, svcErr := w.storeSessionData(userID, req.RelyingPartyID, sessionData)
 	if svcErr != nil {
 		logger.Error("Failed to store session data", log.String("error", svcErr.Error))
 		return nil, svcErr
@@ -362,7 +391,7 @@ func (w *passkeyService) StartAuthentication(req *PasskeyAuthenticationStartRequ
 }
 
 // FinishAuthentication completes passkey authentication.
-func (w *passkeyService) FinishAuthentication(req *PasskeyAuthenticationFinishRequest) (
+func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyAuthenticationFinishRequest) (
 	*common.AuthenticationResponse, *serviceerror.ServiceError) {
 	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Finishing passkey authentication")
@@ -373,25 +402,55 @@ func (w *passkeyService) FinishAuthentication(req *PasskeyAuthenticationFinishRe
 	}
 
 	// Retrieve session data from cache
-	sessionData, userID, relyingPartyID, svcErr := w.retrieveSessionData(req.SessionToken)
+	sessionData, sessionUserID, relyingPartyID, svcErr := w.retrieveSessionData(req.SessionToken)
 	if svcErr != nil {
 		logger.Error("Failed to retrieve session data", log.String("error", svcErr.Error))
 		return nil, svcErr
 	}
 
-	logger.Debug("Processing passkey authentication",
-		log.String("userID", log.MaskString(userID)),
-		log.String("relyingPartyID", relyingPartyID))
+	// Check if this is usernameless flow (session was created without userID)
+	isUsernameless := strings.TrimSpace(sessionUserID) == ""
+
+	var userID string
+
+	if isUsernameless {
+		// Usernameless flow: Resolve user from userHandle in the authentication response
+		if req.UserHandle == "" {
+			logger.Error("UserHandle is required for usernameless authentication")
+			return nil, &ErrorInvalidAuthenticatorResponse
+		}
+
+		// Decode userHandle to get userID
+		userHandleBytes, err := base64.StdEncoding.DecodeString(req.UserHandle)
+		if err != nil {
+			// Try RawURLEncoding if standard encoding fails
+			userHandleBytes, err = base64.RawURLEncoding.DecodeString(req.UserHandle)
+			if err != nil {
+				logger.Error("Failed to decode userHandle", log.Error(err))
+				return nil, &ErrorInvalidAuthenticatorResponse
+			}
+		}
+
+		userID = string(userHandleBytes)
+		logger.Debug("Resolved userID from userHandle for usernameless authentication",
+			log.String("userID", log.MaskString(userID)))
+	} else {
+		// Username-based flow: Use userID from session
+		userID = sessionUserID
+		logger.Debug("Processing passkey authentication",
+			log.String("userID", log.MaskString(userID)),
+			log.String("relyingPartyID", relyingPartyID))
+	}
 
 	// Get core user
-	coreUser, svcErr := w.userService.GetUser(context.TODO(), userID)
+	coreUser, svcErr := w.userService.GetUser(ctx, userID)
 	if svcErr != nil {
 		logger.Error("Failed to retrieve user", log.String("error", svcErr.Error))
 		return nil, &serviceerror.InternalServerError
 	}
 
 	// Retrieve user's credentials from database
-	credentials, err := w.getStoredPasskeyCredentials(userID)
+	credentials, err := w.getStoredPasskeyCredentials(ctx, userID)
 	if err != nil {
 		logger.Error("Failed to retrieve credentials from database", log.Error(err))
 		return nil, &serviceerror.InternalServerError
@@ -425,11 +484,27 @@ func (w *passkeyService) FinishAuthentication(req *PasskeyAuthenticationFinishRe
 		return nil, &ErrorInvalidAuthenticatorResponse
 	}
 
-	// Verify the credential assertion using WebAuthn service
-	credential, err := webAuthnService.ValidateLogin(webAuthnUser, *sessionData, parsedResponse)
-	if err != nil {
-		logger.Debug("Failed to validate WebAuthn assertion", log.String("error", err.Error()))
-		return nil, &ErrorInvalidSignature
+	var credential *webauthnCredential
+
+	if isUsernameless {
+		// Usernameless flow: Use ValidatePasskeyLogin with user handler
+		userHandler := func(rawID, userHandle []byte) (webauthnUserInterface, error) {
+			// The user has already been resolved and validated above
+			return webAuthnUser, nil
+		}
+
+		_, credential, err = webAuthnService.ValidatePasskeyLogin(userHandler, *sessionData, parsedResponse)
+		if err != nil {
+			logger.Debug("Failed to validate passkey assertion", log.String("error", err.Error()))
+			return nil, &ErrorInvalidSignature
+		}
+	} else {
+		// Username-based flow: Use ValidateLogin with specific user
+		credential, err = webAuthnService.ValidateLogin(webAuthnUser, *sessionData, parsedResponse)
+		if err != nil {
+			logger.Debug("Failed to validate WebAuthn assertion", log.String("error", err.Error()))
+			return nil, &ErrorInvalidSignature
+		}
 	}
 
 	logger.Debug("Passkey authentication verified successfully",
@@ -437,7 +512,7 @@ func (w *passkeyService) FinishAuthentication(req *PasskeyAuthenticationFinishRe
 		log.Any("signCount", credential.Authenticator.SignCount))
 
 	// Update credential in database to prevent replay attacks
-	if err := w.updatePasskeyCredential(userID, credential); err != nil {
+	if err := w.updatePasskeyCredential(ctx, userID, credential); err != nil {
 		logger.Error("Failed to update credential sign count in database", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
@@ -452,9 +527,9 @@ func (w *passkeyService) FinishAuthentication(req *PasskeyAuthenticationFinishRe
 
 	// Build authentication response
 	authResponse := &common.AuthenticationResponse{
-		ID:               coreUser.ID,
-		Type:             coreUser.Type,
-		OrganizationUnit: coreUser.OrganizationUnit,
+		ID:   coreUser.ID,
+		Type: coreUser.Type,
+		OUID: coreUser.OUID,
 	}
 
 	logger.Debug("Passkey authentication completed successfully",
@@ -472,12 +547,12 @@ func (w *passkeyService) getMetadata() common.AuthenticatorMeta {
 }
 
 // getStoredPasskeyCredentials retrieves passkey credentials for a user from the database.
-func (w *passkeyService) getStoredPasskeyCredentials(userID string) ([]webauthnCredential, error) {
+func (w *passkeyService) getStoredPasskeyCredentials(ctx context.Context, userID string) ([]webauthnCredential, error) {
 	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	// Get passkey credentials from user service
 	passkeyCredentials, svcErr := w.userService.GetUserCredentialsByType(
-		context.TODO(), userID, user.CredentialTypePasskey.String())
+		ctx, userID, user.CredentialTypePasskey.String())
 	if svcErr != nil {
 		logger.Error("Failed to get passkey credentials",
 			log.String("userID", userID),
@@ -526,7 +601,9 @@ func (w *passkeyService) getStoredPasskeyCredentials(userID string) ([]webauthnC
 }
 
 // storePasskeyCredential stores a passkey credential in the database.
-func (w *passkeyService) storePasskeyCredential(userID string, credential *webauthnCredential) error {
+func (w *passkeyService) storePasskeyCredential(
+	ctx context.Context, userID string, credential *webauthnCredential,
+) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	// Serialize the passkey credential to JSON for storage in the Value field
@@ -540,7 +617,7 @@ func (w *passkeyService) storePasskeyCredential(userID string, credential *webau
 
 	// Get existing passkey credentials to append to
 	existingCredentials, svcErr := w.userService.GetUserCredentialsByType(
-		context.TODO(), userID, user.CredentialTypePasskey.String())
+		ctx, userID, user.CredentialTypePasskey.String())
 	if svcErr != nil {
 		logger.Error("Failed to get existing passkey credentials",
 			log.String("userID", userID),
@@ -569,7 +646,8 @@ func (w *passkeyService) storePasskeyCredential(userID string, credential *webau
 	}
 
 	// Update credentials in the database
-	svcErr = w.userService.UpdateUserCredentials(context.TODO(), userID, credentialsJSON)
+	svcErr = w.userService.UpdateUserCredentials(
+		ctx, userID, credentialsJSON)
 	if svcErr != nil {
 		logger.Error("Failed to update passkey credentials",
 			log.String("userID", userID),
@@ -586,13 +664,13 @@ func (w *passkeyService) storePasskeyCredential(userID string, credential *webau
 
 // updatePasskeyCredential updates an existing passkey credential in the database.
 func (w *passkeyService) updatePasskeyCredential(
-	userID string, updatedCredential *webauthnCredential,
+	ctx context.Context, userID string, updatedCredential *webauthnCredential,
 ) error {
 	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	// Get all existing passkey credentials
 	existingCredentials, svcErr := w.userService.GetUserCredentialsByType(
-		context.TODO(), userID, user.CredentialTypePasskey.String())
+		ctx, userID, user.CredentialTypePasskey.String())
 	if svcErr != nil {
 		logger.Error("Failed to get existing credentials",
 			log.String("userID", userID),
@@ -666,7 +744,8 @@ func (w *passkeyService) updatePasskeyCredential(
 	}
 
 	// Update all passkey credentials in the database
-	svcErr = w.userService.UpdateUserCredentials(context.TODO(), userID, credentialsJSON)
+	svcErr = w.userService.UpdateUserCredentials(
+		ctx, userID, credentialsJSON)
 	if svcErr != nil {
 		logger.Error("Failed to update credentials",
 			log.String("userID", userID),

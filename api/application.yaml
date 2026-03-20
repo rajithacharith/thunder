@@ -102,13 +102,18 @@ paths:
               tos_uri: "https://myapp.example.com/terms"
               policy_uri: "https://myapp.example.com/privacy"
               contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
-              token:
-                issuer: "thunder"
+              metadata:
+                env: "production"
+                team: "platform"
+              assertion:
                 validity_period: 3600
                 user_attributes: ["email", "username"]
               certificate:
                 type: "JWKS_URI"
                 value: "https://myapp.example.com/.well-known/jwks"
+              allowed_user_types: ["employee", "customer"]
+              login_consent:
+                validity_period: 3600
               inbound_auth_config:
                 - type: "oauth2"
                   config:
@@ -130,16 +135,17 @@ paths:
                       - "profile"
                       - "email"
                     token:
-                      issuer: "thunder-oauth"
                       access_token:
                         validity_period: 3600
                         user_attributes: ["email", "username"]
                       id_token:
                         validity_period: 3600
                         user_attributes: ["email", "name", "given_name", "family_name"]
-                        scope_claims:
-                          profile: ["name", "family_name", "given_name", "picture"]
-                          employee: ["emp_id", "department"]
+                    user_info:
+                      user_attributes: ["email", "name", "given_name", "family_name", "picture"]
+                    scope_claims:
+                      profile: ["name", "family_name", "given_name", "picture"]
+                      employee: ["emp_id", "department"]
       responses:
         "201":
           description: Application created
@@ -160,13 +166,19 @@ paths:
                 tos_uri: "https://myapp.example.com/terms"
                 policy_uri: "https://myapp.example.com/privacy"
                 contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
-                token:
-                  issuer: "thunder"
+                metadata:
+                  env: "production"
+                  team: "platform"
+                assertion:
                   validity_period: 3600
                   user_attributes: ["email", "username"]
                 certificate:
                   type: "JWKS_URI"
                   value: "https://myapp.example.com/.well-known/jwks"
+                allowed_user_types: ["employee", "customer"]
+                login_consent:
+                  enabled: true
+                  validity_period: 3600
                 inbound_auth_config:
                   - type: "oauth2"
                     config:
@@ -188,16 +200,17 @@ paths:
                         - "profile"
                         - "email"
                       token:
-                        issuer: "thunder-oauth"
                         access_token:
                           validity_period: 3600
                           user_attributes: ["email", "username"]
                         id_token:
                           validity_period: 1800
                           user_attributes: ["email", "email_verified", "name", "given_name", "family_name"]
-                          scope_claims:
-                            profile: ["name", "given_name", "family_name"]
-                            email: ["email", "email_verified"]
+                      user_info:
+                        user_attributes: ["email", "name", "given_name", "family_name", "picture"]
+                      scope_claims:
+                        profile: ["name", "family_name", "given_name", "picture"]
+                        employee: ["emp_id", "department"]
         "400":
           description: Bad request
           content:
@@ -269,13 +282,19 @@ paths:
                 tos_uri: "https://myapp.example.com/terms"
                 policy_uri: "https://myapp.example.com/privacy"
                 contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
-                token:
-                  issuer: "thunder"
+                metadata:
+                  env: "production"
+                  team: "platform"
+                assertion:
                   validity_period: 3600
                   user_attributes: ["email", "username"]
                 certificate:
                   type: "JWKS_URI"
                   value: "https://myapp.example.com/.well-known/jwks"
+                allowed_user_types: ["employee", "customer"]
+                login_consent:
+                  enabled: true
+                  validity_period: 3600
                 inbound_auth_config:
                   - type: "oauth2"
                     config:
@@ -296,16 +315,17 @@ paths:
                         - "profile"
                         - "email"
                       token:
-                        issuer: "thunder-oauth"
                         access_token:
                           validity_period: 3600
                           user_attributes: ["email", "username"]
                         id_token:
                           validity_period: 1800
                           user_attributes: ["email", "email_verified", "name", "given_name", "family_name"]
-                          scope_claims:
-                            profile: ["name", "given_name", "family_name"]
-                            email: ["email", "email_verified"]
+                      user_info:
+                        user_attributes: ["email", "name", "given_name", "family_name", "picture"]
+                      scope_claims:
+                        profile: ["name", "family_name", "given_name", "picture"]
+                        employee: ["emp_id", "department"]
         "400":
           description: Bad request
           content:
@@ -368,13 +388,18 @@ paths:
               tos_uri: "https://myapp.example.com/terms"
               policy_uri: "https://myapp.example.com/privacy"
               contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
-              token:
-                issuer: "thunder"
+              metadata:
+                env: "production"
+                team: "platform"
+              assertion:
                 validity_period: 3600
                 user_attributes: ["email", "username"]
               certificate:
                 type: "JWKS_URI"
                 value: "https://myapp.example.com/.well-known/jwks"
+              allowed_user_types: ["employee", "customer"]
+              login_consent:
+                validity_period: 3600
               inbound_auth_config:
                 - type: "oauth2"
                   config:
@@ -399,16 +424,16 @@ paths:
                       - "email"
                     token:
                       access_token:
-                        issuer: "thunder"
                         validity_period: 3600
                         user_attributes: ["email", "username"]
                       id_token:
-                        issuer: "thunder-oidc"
                         validity_period: 1800
                         user_attributes: ["email", "email_verified", "name", "given_name", "family_name"]
-                        scope_claims:
-                          profile: ["name", "given_name", "family_name"]
-                          email: ["email", "email_verified"]
+                    user_info:
+                      user_attributes: ["email", "name", "given_name", "family_name", "picture"]
+                    scope_claims:
+                      profile: ["name", "family_name", "given_name", "picture"]
+                      employee: ["emp_id", "department"]
       responses:
         "200":
           description: Application updated
@@ -429,13 +454,19 @@ paths:
                 tos_uri: "https://myapp.example.com/terms"
                 policy_uri: "https://myapp.example.com/privacy"
                 contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
-                token:
-                  issuer: "thunder"
+                metadata:
+                  env: "production"
+                  team: "platform"
+                assertion:
                   validity_period: 3600
                   user_attributes: ["email", "username"]
                 certificate:
                   type: "JWKS_URI"
                   value: "https://myapp.example.com/.well-known/jwks"
+                allowed_user_types: ["employee", "customer"]
+                login_consent:
+                  enabled: true
+                  validity_period: 3600
                 inbound_auth_config:
                   - type: "oauth2"
                     config:
@@ -459,16 +490,17 @@ paths:
                         - "profile"
                         - "email"
                       token:
-                        issuer: "thunder-oauth"
                         access_token:
                           validity_period: 3600
                           user_attributes: ["email", "username"]
                         id_token:
                           validity_period: 1800
                           user_attributes: ["email", "email_verified", "name", "given_name", "family_name"]
-                          scope_claims:
-                            profile: ["name", "given_name", "family_name"]
-                            email: ["email", "email_verified"]
+                      user_info:
+                        user_attributes: ["email", "name", "given_name", "family_name", "picture"]
+                      scope_claims:
+                        profile: ["name", "family_name", "given_name", "picture"]
+                        employee: ["emp_id", "department"]
         "400":
           description: Bad request
           content:
@@ -605,11 +637,16 @@ components:
           description: Indicates if the registration flow is enabled for the application.
           example: true
           default: false
-        branding_id:
+        theme_id:
           type: string
           format: uuid
-          description: The ID of the branding configuration associated with this application.
+          description: The ID of the theme configuration associated with this application.
           example: "660e8400-e29b-41d4-a716-446655440001"
+        layout_id:
+          type: string
+          format: uuid
+          description: The ID of the layout configuration associated with this application.
+          example: "770e8400-e29b-41d4-a716-446655440002"
         template:
           type: string
           description: The template type of the application.
@@ -624,8 +661,8 @@ components:
           format: uri
           description: The URL of the application's logo.
           example: "https://myapp.example.com/logo.png"
-        token:
-          $ref: '#/components/schemas/TokenConfig'
+        assertion:
+          $ref: '#/components/schemas/AssertionConfig'
         certificate:
           $ref: '#/components/schemas/Certificate'
         inbound_auth_config:
@@ -656,6 +693,20 @@ components:
             type: string
           description: Array of allowed user types for this application.
           example: ["employee", "customer", "partner"]
+        login_consent:
+          type: object
+          properties:
+            validity_period:
+              type: integer
+              description: The validity period of the login consent in seconds. Default is 0 (no expiration).
+              example: 3600
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Generic metadata for the application. Arbitrary key-value pairs for consumer use.
+          example:
+            env: "production"
+            team: "platform"
 
     ApplicationCompleteResponse:
       type: object
@@ -689,10 +740,14 @@ components:
           type: boolean
           description: Indicates if the registration flow is enabled for the application.
           example: true
-        branding_id:
+        theme_id:
           type: string
           format: uuid
-          description: The ID of the branding configuration associated with this application.
+          description: The ID of the theme configuration associated with this application.
+        layout_id:
+          type: string
+          format: uuid
+          description: The ID of the layout configuration associated with this application.
           example: "660e8400-e29b-41d4-a716-446655440001"
         template:
           type: string
@@ -708,8 +763,8 @@ components:
           format: uri
           description: The URL of the application's logo.
           example: "https://myapp.example.com/logo.png"
-        token:
-          $ref: '#/components/schemas/TokenConfig'
+        assertion:
+          $ref: '#/components/schemas/AssertionConfig'
         certificate:
           $ref: '#/components/schemas/Certificate'
         inbound_auth_config:
@@ -740,6 +795,20 @@ components:
             type: string
           description: Array of allowed user types for this application.
           example: ["employee", "customer", "partner"]
+        login_consent:
+          type: object
+          properties:
+            validity_period:
+              type: integer
+              description: The validity period of the consent in seconds. Default is 0 (no expiration).
+              example: 3600
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Generic metadata for the application. Arbitrary key-value pairs for consumer use.
+          example:
+            env: "production"
+            team: "platform"
 
     ApplicationGetResponse:
       type: object
@@ -773,11 +842,15 @@ components:
           type: boolean
           description: Indicates if the registration flow is enabled for the application.
           example: true
-        branding_id:
+        theme_id:
           type: string
           format: uuid
-          description: The ID of the branding configuration associated with this application.
-          example: "660e8400-e29b-41d4-a716-446655440001"
+          description: The ID of the theme configuration associated with this application.
+        layout_id:
+          type: string
+          format: uuid
+          description: The ID of the layout configuration associated with this application.
+          example: "770e8400-e29b-41d4-a716-446655440002"
         template:
           type: string
           description: The template type of the application.
@@ -792,8 +865,8 @@ components:
           format: uri
           description: The URL of the application's logo.
           example: "https://myapp.example.com/logo.png"
-        token:
-          $ref: '#/components/schemas/TokenConfig'
+        assertion:
+          $ref: '#/components/schemas/AssertionConfig'
         certificate:
           $ref: '#/components/schemas/Certificate'
         inbound_auth_config:
@@ -824,6 +897,20 @@ components:
             type: string
           description: Array of allowed user types for this application.
           example: ["employee", "customer", "partner"]
+        login_consent:
+          type: object
+          properties:
+            validity_period:
+              type: integer
+              description: The validity period of the consent in seconds. Default is 0 (no expiration).
+              example: 3600
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Generic metadata for the application. Arbitrary key-value pairs for consumer use.
+          example:
+            env: "production"
+            team: "platform"
 
     BasicApplicationResponse:
       type: object
@@ -862,11 +949,15 @@ components:
           type: boolean
           description: Indicates if the registration flow is enabled for the application.
           example: true
-        branding_id:
+        theme_id:
           type: string
           format: uuid
-          description: The ID of the branding configuration associated with this application.
-          example: "660e8400-e29b-41d4-a716-446655440001"
+          description: The ID of the theme configuration associated with this application.
+        layout_id:
+          type: string
+          format: uuid
+          description: The ID of the layout configuration associated with this application.
+          example: "770e8400-e29b-41d4-a716-446655440002"
         template:
           type: string
           description: The template type of the application.
@@ -888,16 +979,11 @@ components:
           items:
             $ref: '#/components/schemas/BasicApplicationResponse'
 
-    TokenConfig:
+    AssertionConfig:
       type: object
       description: |
-        Token configuration for application-level (root) tokens. This includes an issuer field
-        since application-level tokens can have their own issuer.
+        Assertion configuration for application-level (root) assertions.
       properties:
-        issuer:
-          type: string
-          description: The issuer of the token.
-          example: "thunder"
         validity_period:
           type: integer
           description: The validity period of the token in seconds.
@@ -912,8 +998,7 @@ components:
     AccessTokenConfig:
       type: object
       description: |
-        Access token configuration for OAuth applications. Note that access tokens do NOT have
-        their own issuer field - they use the OAuth-level issuer (specified in the parent token.issuer field).
+        Access token configuration for OAuth applications.
       properties:
         validity_period:
           type: integer
@@ -929,8 +1014,7 @@ components:
     IDTokenConfig:
       type: object
       description: |
-        ID token configuration for OAuth applications. Note that ID tokens do NOT have their own
-        issuer field - they use the OAuth-level issuer (specified in the parent token.issuer field).
+        ID token configuration for OAuth applications.
       properties:
         validity_period:
           type: integer
@@ -942,16 +1026,19 @@ components:
             type: string
           description: The user attributes to include in the ID token. Only claims requested by scopes AND listed here will be included.
           example: ["email", "name", "given_name", "family_name"]
-        scope_claims:
-          type: object
-          additionalProperties:
-            type: array
-            items:
-              type: string
-          description: Custom scope-to-claims mapping. Overrides default OIDC scope claims or defines custom scopes.
-          example:
-            profile: ["name", "family_name", "given_name", "picture"]
-            employee: ["emp_id", "department"]
+
+    UserInfoConfig:
+      type: object
+      description: UserInfo endpoint configuration for the OAuth application
+      properties:
+        user_attributes:
+          type: array
+          items:
+            type: string
+          description: |
+            The user attributes to include in the userinfo response. 
+            If not specified, falls back to ID token user attributes.
+          example: ["email", "name", "given_name", "family_name", "picture"]
 
     Certificate:
       type: object
@@ -1045,15 +1132,22 @@ components:
         token:
           type: object
           properties:
-            issuer:
-              type: string
-              description: |
-                The issuer for both access token and ID token.
-              example: "thunder-oauth"
             access_token:
               $ref: '#/components/schemas/AccessTokenConfig'
             id_token:
               $ref: '#/components/schemas/IDTokenConfig'
+        user_info:
+          $ref: '#/components/schemas/UserInfoConfig'
+        scope_claims:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Custom scope-to-claims mapping. Overrides default OIDC scope claims or defines custom scopes. Applies to both ID token and userinfo responses.
+          example:
+            profile: ["name", "family_name", "given_name", "picture"]
+            employee: ["emp_id", "department"]
 
     OAuthAppConfigComplete:
       type: object
@@ -1111,15 +1205,22 @@ components:
         token:
           type: object
           properties:
-            issuer:
-              type: string
-              description: |
-                The issuer for both access token and ID token.
-              example: "thunder-oauth"
             access_token:
               $ref: '#/components/schemas/AccessTokenConfig'
             id_token:
               $ref: '#/components/schemas/IDTokenConfig'
+        user_info:
+          $ref: '#/components/schemas/UserInfoConfig'
+        scope_claims:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Custom scope-to-claims mapping. Overrides default OIDC scope claims or defines custom scopes. Applies to both ID token and userinfo responses.
+          example:
+            profile: ["name", "family_name", "given_name", "picture"]
+            employee: ["emp_id", "department"]
 
     Error:
       type: object

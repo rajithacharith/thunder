@@ -19,6 +19,7 @@
 package export
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -38,6 +39,8 @@ const (
 	resourceTypeOU                 = "organization_unit"
 	resourceTypeFlow               = "flow"
 	resourceTypeTranslation        = "translation"
+	resourceTypeLayout             = "layout"
+	resourceTypeTheme              = "theme"
 )
 
 // parameterizerInterface defines the interface for template parameterization.
@@ -48,7 +51,7 @@ type parameterizerInterface interface {
 
 // ExportServiceInterface defines the interface for the export service.
 type ExportServiceInterface interface {
-	ExportResources(request *ExportRequest) (*ExportResponse, *serviceerror.ServiceError)
+	ExportResources(ctx context.Context, request *ExportRequest) (*ExportResponse, *serviceerror.ServiceError)
 }
 
 // exportService implements the ExportServiceInterface.
@@ -74,7 +77,9 @@ func newExportService(
 }
 
 // ExportResources exports the specified resources as YAML files.
-func (es *exportService) ExportResources(request *ExportRequest) (*ExportResponse, *serviceerror.ServiceError) {
+func (es *exportService) ExportResources(
+	ctx context.Context, request *ExportRequest,
+) (*ExportResponse, *serviceerror.ServiceError) {
 	if request == nil {
 		return nil, serviceerror.CustomServiceError(
 			ErrorInvalidRequest,
@@ -106,6 +111,8 @@ func (es *exportService) ExportResources(request *ExportRequest) (*ExportRespons
 		resourceTypeOU:                 request.OrganizationUnits,
 		resourceTypeFlow:               request.Flows,
 		resourceTypeTranslation:        request.Translations,
+		resourceTypeLayout:             request.Layouts,
+		resourceTypeTheme:              request.Themes,
 	}
 
 	// Export resources using the registry
@@ -121,7 +128,7 @@ func (es *exportService) ExportResources(request *ExportRequest) (*ExportRespons
 			continue
 		}
 
-		files, errors := es.exportResourcesWithExporter(exporter, resourceIDs, options)
+		files, errors := es.exportResourcesWithExporter(ctx, exporter, resourceIDs, options)
 		exportFiles = append(exportFiles, files...)
 		exportErrors = append(exportErrors, errors...)
 		resourceCounts[resourceType] = len(files)
@@ -157,6 +164,7 @@ func (es *exportService) ExportResources(request *ExportRequest) (*ExportRespons
 
 // exportResourcesWithExporter exports resources using a registered exporter.
 func (es *exportService) exportResourcesWithExporter(
+	ctx context.Context,
 	exporter declarativeresource.ResourceExporter,
 	resourceIDs []string,
 	options *ExportOptions,
@@ -168,7 +176,7 @@ func (es *exportService) exportResourcesWithExporter(
 	var resourceIDList []string
 	if len(resourceIDs) == 1 && resourceIDs[0] == "*" {
 		// Export all resources
-		ids, err := exporter.GetAllResourceIDs()
+		ids, err := exporter.GetAllResourceIDs(ctx)
 		if err != nil {
 			logger.Warn("Failed to get all resources",
 				log.String("resourceType", resourceType), log.Any("error", err))
@@ -181,7 +189,7 @@ func (es *exportService) exportResourcesWithExporter(
 
 	for _, resourceID := range resourceIDList {
 		// Get the resource
-		resource, _, svcErr := exporter.GetResourceByID(resourceID)
+		resource, _, svcErr := exporter.GetResourceByID(ctx, resourceID)
 		if svcErr != nil {
 			logger.Warn("Failed to get resource for export",
 				log.String("resourceType", resourceType),

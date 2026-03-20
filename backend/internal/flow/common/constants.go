@@ -127,6 +127,14 @@ const (
 const (
 	// DataIDPName is the key used for the identity provider name in the flow response.
 	DataIDPName = "idpName"
+	// DataConsentPrompt is the key used for the consent prompt data in the flow response.
+	DataConsentPrompt = "consentPrompt"
+	// DataStepTimeout is the key used for the step expiry timestamp in the flow response.
+	DataStepTimeout = "stepTimeout"
+	// DataInviteLink is the key used for the invite link in the flow response additional data.
+	DataInviteLink = "inviteLink"
+	// DataEmailSent is the key used to indicate that an email was sent successfully in the flow response.
+	DataEmailSent = "emailSent"
 )
 
 // DefaultHTTPTimeout defines the default timeout duration for HTTP requests.
@@ -137,6 +145,9 @@ const (
 	NodePropertyAllowAuthenticationWithoutLocalUser = "allowAuthenticationWithoutLocalUser"
 	// NodePropertyAllowRegistrationWithExistingUser indicates whether registration is allowed with an existing user
 	NodePropertyAllowRegistrationWithExistingUser = "allowRegistrationWithExistingUser"
+	// NodePropertyOUResolveFrom specifies the strategy for resolving the organization unit.
+	// Supported values: "caller" (use the caller's OU).
+	NodePropertyOUResolveFrom = "resolveFrom"
 )
 
 const (
@@ -146,4 +157,62 @@ const (
 	RuntimeKeyUserEligibleForProvisioning = "userEligibleForProvisioning"
 	// RuntimeKeySkipProvisioning indicates whether to skip provisioning
 	RuntimeKeySkipProvisioning = "skipProvisioning"
+	// RuntimeKeyRequestedPermissions holds the space-separated permission scopes requested by the OAuth client.
+	RuntimeKeyRequestedPermissions = "requested_permissions"
+	// RuntimeKeyRequiredEssentialAttributes holds the space-separated essential user attributes required for the flow.
+	RuntimeKeyRequiredEssentialAttributes = "required_essential_attributes"
+	// RuntimeKeyRequiredOptionalAttributes holds the space-separated optional user attributes required for the flow.
+	RuntimeKeyRequiredOptionalAttributes = "required_optional_attributes"
+	// RuntimeKeyRequiredLocales holds the space-separated locales requested for claims.
+	RuntimeKeyRequiredLocales = "required_locales"
+	// RuntimeKeyConsentID holds the consent record ID after consent has been recorded.
+	RuntimeKeyConsentID = "consent_id"
+	// RuntimeKeyStepTimeout holds the expiry timestamp for the current flow step.
+	RuntimeKeyStepTimeout = "step_timeout"
+	// RuntimeKeyConsentedAttributes holds a space-separated set of attributes that the user has consented to share.
+	RuntimeKeyConsentedAttributes = "consented_attributes"
+	// RuntimeKeyConsentSessionToken holds the signed JWT session token for consent validation.
+	RuntimeKeyConsentSessionToken = "consent_session_token"
+	// RuntimeKeyStoredInviteToken holds the generated invite token stored during the invite send phase.
+	RuntimeKeyStoredInviteToken = "storedInviteToken"
+	// RuntimeKeyUserAttributesCacheTTLSeconds indicates the TTL of the user attributes cache.
+	RuntimeKeyUserAttributesCacheTTLSeconds = "user_attributes_cache_ttl_seconds"
+	// RuntimeKeyInviteLink holds the generated invite link for downstream executors (e.g., EmailExecutor).
+	RuntimeKeyInviteLink = "inviteLink"
+)
+
+// TODO: Define a go type for InputType when formalizing input types
+
+// InputType constants define known input types used in flow definitions.
+const (
+	// InputTypeText represents a text input type.
+	InputTypeText = "TEXT_INPUT"
+	// InputTypePassword represents a password credential input type.
+	InputTypePassword = "PASSWORD_INPUT"
+	// InputTypeOTP represents a one-time password input type.
+	InputTypeOTP = "OTP_INPUT"
+	// InputTypePhone represents a phone number input type.
+	InputTypePhone = "PHONE_INPUT"
+	// InputTypeConsent represents a consent decisions input type.
+	InputTypeConsent = "CONSENT_INPUT"
+
+	// TODO: Add support for other sensitive input types:
+	// - Passkey credential fields (credentialId, clientDataJSON, authenticatorData, signature, userHandle)
+	// - OAuth/OIDC authorization codes
+	// - OIDC nonce
+	// - Invite tokens
+)
+
+// sensitiveInputTypes contains the list of input types that are considered sensitive.
+var sensitiveInputTypes = []string{
+	InputTypePassword,
+	InputTypeOTP,
+}
+
+// ForwardedData key constants define keys used in the ForwardedData map.
+const (
+	// ForwardedDataKeyInputs is the key used to store input data in ForwardedData.
+	ForwardedDataKeyInputs = "inputs"
+	// ForwardedDataKeyConsentPrompt is the key used to forward consent prompt data to the prompt node.
+	ForwardedDataKeyConsentPrompt = "consent_prompt"
 )

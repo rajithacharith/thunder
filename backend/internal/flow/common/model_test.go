@@ -55,6 +55,25 @@ func (s *ModelTestSuite) TestNodeExecutionRecord_GetDuration() {
 	}
 }
 
+func (s *ModelTestSuite) TestInput_IsSensitive() {
+	tests := []struct {
+		name     string
+		input    Input
+		expected bool
+	}{
+		{"Password input is sensitive", Input{Identifier: "password", Type: InputTypePassword}, true},
+		{"OTP input is sensitive", Input{Identifier: "otp", Type: InputTypeOTP}, true},
+		{"Text input is not sensitive", Input{Identifier: "username", Type: InputTypeText}, false},
+		{"Empty type is not sensitive", Input{Identifier: "field", Type: ""}, false},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.Equal(tt.expected, tt.input.IsSensitive())
+		})
+	}
+}
+
 func (s *ModelTestSuite) TestExecutionAttempt_GetDuration() {
 	tests := []struct {
 		name      string

@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
@@ -474,6 +475,50 @@ func (suite *OAuth2UtilsTestSuite) TestGenerateOAuth2ClientSecretUniqueness() {
 	assert.Equal(suite.T(), 1000, len(clientSecrets), "Should have generated 1000 unique client secrets")
 }
 
+func (suite *OAuth2UtilsTestSuite) TestGenerateAuthorizationCode() {
+	code, err := GenerateAuthorizationCode()
+
+	// Should not return an error
+	assert.NoError(suite.T(), err, "GenerateAuthorizationCode should not return an error")
+	assert.NotEmpty(suite.T(), code, "Generated authorization code should not be empty")
+
+	// Verify format - should be base64url without padding
+	base64URLPattern := regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+	assert.True(suite.T(), base64URLPattern.MatchString(code),
+		"Authorization code should contain only base64url characters (A-Z, a-z, 0-9, -, _)")
+
+	// Should not contain padding characters
+	assert.False(suite.T(), strings.Contains(code, "="),
+		"Authorization code should not contain padding characters")
+
+	// Verify length - 20 bytes base64url encoded without padding should be 27 characters
+	expectedLength := base64.RawURLEncoding.EncodedLen(OAuth2AuthorizationCodeLength)
+	assert.Equal(suite.T(), expectedLength, len(code),
+		"Authorization code should have the expected encoded length")
+
+	// Verify it can be decoded back to original byte length (20 bytes = 160 bits)
+	decoded, err := base64.RawURLEncoding.DecodeString(code)
+	assert.NoError(suite.T(), err, "Generated authorization code should be valid base64url")
+	assert.Equal(suite.T(), OAuth2AuthorizationCodeLength, len(decoded),
+		"Decoded authorization code should have the expected byte length")
+}
+
+func (suite *OAuth2UtilsTestSuite) TestGenerateAuthorizationCodeUniqueness() {
+	codes := make(map[string]bool)
+
+	// Generate multiple authorization codes and verify uniqueness
+	for i := 0; i < 1000; i++ {
+		code, err := GenerateAuthorizationCode()
+		assert.NoError(suite.T(), err, "Should not return an error during generation")
+
+		_, exists := codes[code]
+		assert.False(suite.T(), exists, "Generated authorization codes should be unique")
+		codes[code] = true
+	}
+
+	assert.Equal(suite.T(), 1000, len(codes), "Should have generated 1000 unique authorization codes")
+}
+
 func (suite *OAuth2UtilsTestSuite) TestOAuth2CredentialsDifferentFromUUID() {
 	// Generate OAuth credentials
 	clientID, err := GenerateOAuth2ClientID()
@@ -483,7 +528,8 @@ func (suite *OAuth2UtilsTestSuite) TestOAuth2CredentialsDifferentFromUUID() {
 	assert.NoError(suite.T(), err)
 
 	// Generate UUID for comparison
-	uuid := sysutils.GenerateUUID()
+	uuid, err := sysutils.GenerateUUIDv7()
+	assert.NoError(suite.T(), err)
 
 	// OAuth credentials should have different format than UUID
 	uuidPattern := regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
@@ -630,7 +676,7 @@ func (suite *OAuth2UtilsTestSuite) TestSeparateOIDCAndNonOIDCScopes() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			oidcScopes, nonOidcScopes := SeparateOIDCAndNonOIDCScopes(tc.scopes)
+			oidcScopes, nonOidcScopes := SeparateOIDCAndNonOIDCScopes(tc.scopes, nil)
 			// Compare lengths and contents, handling nil vs empty slice
 			if tc.expectedOIDC == nil {
 				assert.Nil(t, oidcScopes, "OIDC scopes should be nil")
@@ -660,7 +706,7 @@ func (suite *OAuth2UtilsTestSuite) TestSeparateOIDCAndNonOIDCScopes_StandardOIDC
 
 	for _, scope := range standardOIDCScopes {
 		suite.T().Run("OIDCScope_"+scope, func(t *testing.T) {
-			oidcScopes, nonOidcScopes := SeparateOIDCAndNonOIDCScopes(scope)
+			oidcScopes, nonOidcScopes := SeparateOIDCAndNonOIDCScopes(scope, nil)
 			if oidcScopes == nil {
 				assert.Fail(t, "OIDC scopes should not be nil for standard OIDC scope")
 			} else {
@@ -679,7 +725,7 @@ func (suite *OAuth2UtilsTestSuite) TestSeparateOIDCAndNonOIDCScopes_CustomScopes
 
 	for _, scope := range customScopes {
 		suite.T().Run("CustomScope_"+scope, func(t *testing.T) {
-			oidcScopes, nonOidcScopes := SeparateOIDCAndNonOIDCScopes(scope)
+			oidcScopes, nonOidcScopes := SeparateOIDCAndNonOIDCScopes(scope, nil)
 			// Handle nil case - function may return nil for empty slices
 			if oidcScopes == nil {
 				assert.Nil(t, oidcScopes, "OIDC scopes should be nil for custom scope")
@@ -689,4 +735,298 @@ func (suite *OAuth2UtilsTestSuite) TestSeparateOIDCAndNonOIDCScopes_CustomScopes
 			assert.Contains(t, nonOidcScopes, scope, "Custom scope should be in non-OIDC list")
 		})
 	}
+}
+
+func (suite *OAuth2UtilsTestSuite) TestSeparateOIDCAndNonOIDCScopes_WithCustomScopeClaimsMapping() {
+	scopeClaimsMapping := map[string][]string{
+		"ou":       {"ouId", "ouName"},
+		"employee": {"emp_id", "department"},
+	}
+
+	testCases := []struct {
+		name            string
+		scopes          string
+		expectedOIDC    []string
+		expectedNonOIDC []string
+	}{
+		{
+			name:            "CustomMappedScopeIsOIDC",
+			scopes:          "openid ou",
+			expectedOIDC:    []string{"openid", "ou"},
+			expectedNonOIDC: nil,
+		},
+		{
+			name:            "UnmappedCustomScopeIsNonOIDC",
+			scopes:          "openid read",
+			expectedOIDC:    []string{"openid"},
+			expectedNonOIDC: []string{"read"},
+		},
+		{
+			name:            "MixedStandardAndCustomMappedScopes",
+			scopes:          "openid profile ou employee read",
+			expectedOIDC:    []string{"openid", "profile", "ou", "employee"},
+			expectedNonOIDC: []string{"read"},
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			oidcScopes, nonOidcScopes := SeparateOIDCAndNonOIDCScopes(tc.scopes, scopeClaimsMapping)
+			if tc.expectedOIDC == nil {
+				assert.Nil(t, oidcScopes)
+			} else {
+				assert.Equal(t, tc.expectedOIDC, oidcScopes)
+			}
+			if tc.expectedNonOIDC == nil {
+				assert.Nil(t, nonOidcScopes)
+			} else {
+				assert.Equal(t, tc.expectedNonOIDC, nonOidcScopes)
+			}
+		})
+	}
+}
+
+// Claims parameter parsing tests
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_ValidJSON() {
+	jsonStr := `{
+		"userinfo": {
+			"given_name": {"essential": true},
+			"nickname": null,
+			"email": {"essential": true},
+			"picture": null
+		},
+		"id_token": {
+			"auth_time": {"essential": true},
+			"acr": {"values": ["urn:mace:incommon:iap:silver"]}
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), claimsRequest)
+	assert.NotNil(suite.T(), claimsRequest.UserInfo)
+	assert.NotNil(suite.T(), claimsRequest.IDToken)
+
+	// Verify userinfo claims
+	assert.Len(suite.T(), claimsRequest.UserInfo, 4)
+	assert.NotNil(suite.T(), claimsRequest.UserInfo["given_name"])
+	assert.True(suite.T(), claimsRequest.UserInfo["given_name"].Essential)
+	assert.Nil(suite.T(), claimsRequest.UserInfo["nickname"])
+
+	// Verify id_token claims
+	assert.Len(suite.T(), claimsRequest.IDToken, 2)
+	assert.NotNil(suite.T(), claimsRequest.IDToken["auth_time"])
+	assert.True(suite.T(), claimsRequest.IDToken["auth_time"].Essential)
+	assert.NotNil(suite.T(), claimsRequest.IDToken["acr"])
+	assert.Contains(suite.T(), claimsRequest.IDToken["acr"].Values, "urn:mace:incommon:iap:silver")
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_EmptyString() {
+	claimsRequest, err := ParseClaimsRequest("")
+
+	assert.NoError(suite.T(), err)
+	assert.Nil(suite.T(), claimsRequest)
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_InvalidJSON() {
+	jsonStr := `{invalid json}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), claimsRequest)
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_OnlyUserInfo() {
+	jsonStr := `{
+		"userinfo": {
+			"email": {"essential": true}
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), claimsRequest)
+	assert.NotNil(suite.T(), claimsRequest.UserInfo)
+	assert.Nil(suite.T(), claimsRequest.IDToken)
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_OnlyIDToken() {
+	jsonStr := `{
+		"id_token": {
+			"sub": {"value": "248289761001"}
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), claimsRequest)
+	assert.Nil(suite.T(), claimsRequest.UserInfo)
+	assert.NotNil(suite.T(), claimsRequest.IDToken)
+	assert.NotNil(suite.T(), claimsRequest.IDToken["sub"])
+	assert.Equal(suite.T(), "248289761001", claimsRequest.IDToken["sub"].Value)
+}
+
+func (suite *OAuth2UtilsTestSuite) TestSerializeClaimsRequest_ValidRequest() {
+	claimsRequest := &model.ClaimsRequest{
+		UserInfo: map[string]*model.IndividualClaimRequest{
+			"email":      {Essential: true},
+			"given_name": nil,
+		},
+		IDToken: map[string]*model.IndividualClaimRequest{
+			"auth_time": {Essential: true},
+		},
+	}
+
+	serialized, err := SerializeClaimsRequest(claimsRequest)
+
+	assert.NoError(suite.T(), err)
+	assert.NotEmpty(suite.T(), serialized)
+
+	// Verify roundtrip
+	parsed, err := ParseClaimsRequest(serialized)
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), parsed)
+	assert.True(suite.T(), parsed.UserInfo["email"].Essential)
+}
+
+func (suite *OAuth2UtilsTestSuite) TestSerializeClaimsRequest_NilRequest() {
+	serialized, err := SerializeClaimsRequest(nil)
+
+	assert.NoError(suite.T(), err)
+	assert.Empty(suite.T(), serialized)
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_MutuallyExclusiveValueAndValues() {
+	// Test that value and values cannot both be specified (OIDC spec violation)
+	jsonStr := `{
+		"userinfo": {
+			"email": {
+				"value": "user@example.com",
+				"values": ["user1@example.com", "user2@example.com"]
+			}
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), claimsRequest)
+	assert.Contains(suite.T(), err.Error(), "mutually exclusive")
+	assert.Contains(suite.T(), err.Error(), "email")
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_EmptyValuesArray() {
+	// Test that empty values array is rejected (OIDC spec - must match "one of" the values)
+	jsonStr := `{
+		"userinfo": {
+			"email": {
+				"values": []
+			}
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), claimsRequest)
+	assert.Contains(suite.T(), err.Error(), "empty 'values' array")
+	assert.Contains(suite.T(), err.Error(), "email")
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_MutuallyExclusiveInIDToken() {
+	// Test mutual exclusivity in id_token section
+	jsonStr := `{
+		"id_token": {
+			"sub": {
+				"value": "user123",
+				"values": ["user123", "user456"]
+			}
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), claimsRequest)
+	assert.Contains(suite.T(), err.Error(), "mutually exclusive")
+	assert.Contains(suite.T(), err.Error(), "sub")
+	assert.Contains(suite.T(), err.Error(), "id_token")
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_EmptyValuesArrayInIDToken() {
+	// Test empty values array rejection in id_token section
+	jsonStr := `{
+		"id_token": {
+			"acr": {
+				"values": []
+			}
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), claimsRequest)
+	assert.Contains(suite.T(), err.Error(), "empty 'values' array")
+	assert.Contains(suite.T(), err.Error(), "acr")
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_ValidValueOnly() {
+	// Test valid request with only value (not values)
+	jsonStr := `{
+		"userinfo": {
+			"email": {
+				"value": "user@example.com"
+			}
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), claimsRequest)
+	assert.NotNil(suite.T(), claimsRequest.UserInfo["email"])
+	assert.Equal(suite.T(), "user@example.com", claimsRequest.UserInfo["email"].Value)
+	assert.Nil(suite.T(), claimsRequest.UserInfo["email"].Values)
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_ValidValuesOnly() {
+	// Test valid request with only values (not value)
+	jsonStr := `{
+		"id_token": {
+			"acr": {
+				"values": ["urn:mace:incommon:iap:silver", "urn:mace:incommon:iap:bronze"]
+			}
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), claimsRequest)
+	assert.NotNil(suite.T(), claimsRequest.IDToken["acr"])
+	assert.Nil(suite.T(), claimsRequest.IDToken["acr"].Value)
+	assert.Len(suite.T(), claimsRequest.IDToken["acr"].Values, 2)
+}
+
+func (suite *OAuth2UtilsTestSuite) TestParseClaimsRequest_NullClaimRequest() {
+	// Test that null individual claim requests are valid (means claim is requested without constraints)
+	jsonStr := `{
+		"userinfo": {
+			"email": null,
+			"name": null
+		}
+	}`
+
+	claimsRequest, err := ParseClaimsRequest(jsonStr)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), claimsRequest)
+	assert.Nil(suite.T(), claimsRequest.UserInfo["email"])
+	assert.Nil(suite.T(), claimsRequest.UserInfo["name"])
 }

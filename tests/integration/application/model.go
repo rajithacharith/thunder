@@ -28,16 +28,18 @@ type Application struct {
 	AuthFlowID                string              `json:"auth_flow_id,omitempty"`
 	RegistrationFlowID        string              `json:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool                `json:"is_registration_flow_enabled"`
-	BrandingID                string              `json:"branding_id,omitempty"`
+	ThemeID                   string              `json:"theme_id,omitempty"`
+	LayoutID                  string              `json:"layout_id,omitempty"`
 	Template                  string              `json:"template,omitempty"`
 	URL                       string              `json:"url,omitempty"`
 	LogoURL                   string              `json:"logo_url,omitempty"`
 	Certificate               *ApplicationCert    `json:"certificate,omitempty"`
-	Token                     *TokenConfig        `json:"token,omitempty"`
+	Assertion                 *AssertionConfig    `json:"assertion,omitempty"`
 	TosURI                    string              `json:"tos_uri,omitempty"`
 	PolicyURI                 string              `json:"policy_uri,omitempty"`
 	Contacts                  []string            `json:"contacts,omitempty"`
 	AllowedUserTypes          []string            `json:"allowed_user_types,omitempty"`
+	LoginConsent              *LoginConsentConfig `json:"login_consent,omitempty"`
 	InboundAuthConfig         []InboundAuthConfig `json:"inbound_auth_config,omitempty"`
 }
 
@@ -55,30 +57,42 @@ type InboundAuthConfig struct {
 
 // OAuthAppConfig represents the OAuth application configuration.
 type OAuthAppConfig struct {
-	ClientID                string            `json:"client_id"`
-	ClientSecret            string            `json:"client_secret,omitempty"`
-	RedirectURIs            []string          `json:"redirect_uris"`
-	GrantTypes              []string          `json:"grant_types"`
-	ResponseTypes           []string          `json:"response_types"`
-	TokenEndpointAuthMethod string            `json:"token_endpoint_auth_method"`
-	PKCERequired            bool              `json:"pkce_required"`
-	PublicClient            bool              `json:"public_client"`
-	Scopes                  []string          `json:"scopes,omitempty"`
-	Token                   *OAuthTokenConfig `json:"token,omitempty"`
+	ClientID                string              `json:"client_id"`
+	ClientSecret            string              `json:"client_secret,omitempty"`
+	RedirectURIs            []string            `json:"redirect_uris"`
+	GrantTypes              []string            `json:"grant_types"`
+	ResponseTypes           []string            `json:"response_types"`
+	TokenEndpointAuthMethod string              `json:"token_endpoint_auth_method"`
+	PKCERequired            bool                `json:"pkce_required"`
+	PublicClient            bool                `json:"public_client"`
+	Scopes                  []string            `json:"scopes,omitempty"`
+	Token                   *OAuthTokenConfig   `json:"token,omitempty"`
+	ScopeClaims             map[string][]string `json:"scope_claims,omitempty"`
+	UserInfo                *UserInfoConfig     `json:"user_info,omitempty"`
+	Certificate             *ApplicationCert    `json:"certificate,omitempty"`
 }
 
 // OAuthTokenConfig represents the OAuth token configuration.
 type OAuthTokenConfig struct {
-	Issuer      string             `json:"issuer,omitempty"`
 	AccessToken *AccessTokenConfig `json:"access_token,omitempty"`
 	IDToken     *IDTokenConfig     `json:"id_token,omitempty"`
 }
 
-// TokenConfig represents the token configuration (used for application-level token config).
-type TokenConfig struct {
-	Issuer         string   `json:"issuer,omitempty"`
+// UserInfoConfig represents the UserInfo endpoint configuration.
+type UserInfoConfig struct {
+	ResponseType   string   `json:"response_type,omitempty"`
+	UserAttributes []string `json:"user_attributes,omitempty"`
+}
+
+// AssertionConfig represents the assertion configuration (used for application-level assertion config).
+type AssertionConfig struct {
 	ValidityPeriod int64    `json:"validity_period,omitempty"`
 	UserAttributes []string `json:"user_attributes,omitempty"`
+}
+
+// LoginConsentConfig represents the login consent configuration for an application.
+type LoginConsentConfig struct {
+	ValidityPeriod int64 `json:"validity_period,omitempty"`
 }
 
 // AccessTokenConfig represents the access token configuration.
@@ -89,9 +103,8 @@ type AccessTokenConfig struct {
 
 // IDTokenConfig represents the ID token configuration.
 type IDTokenConfig struct {
-	ValidityPeriod int64               `json:"validity_period,omitempty"`
-	UserAttributes []string            `json:"user_attributes,omitempty"`
-	ScopeClaims    map[string][]string `json:"scope_claims,omitempty"`
+	ValidityPeriod int64    `json:"validity_period,omitempty"`
+	UserAttributes []string `json:"user_attributes,omitempty"`
 }
 
 // ApplicationList represents the response structure for listing applications.
@@ -133,8 +146,8 @@ func (app *Application) equals(expectedApp Application) bool {
 		return false
 	}
 
-	// Branding ID
-	if app.BrandingID != expectedApp.BrandingID {
+	// Theme and Layout IDs
+	if app.ThemeID != expectedApp.ThemeID || app.LayoutID != expectedApp.LayoutID {
 		return false
 	}
 
@@ -165,17 +178,29 @@ func (app *Application) equals(expectedApp Application) bool {
 		return false
 	}
 
-	// Token config
-	if (app.Token != nil) && (expectedApp.Token != nil) {
-		if app.Token.Issuer != expectedApp.Token.Issuer ||
-			app.Token.ValidityPeriod != expectedApp.Token.ValidityPeriod {
+	// Assertion config
+	if (app.Assertion != nil) && (expectedApp.Assertion != nil) {
+		if app.Assertion.ValidityPeriod != expectedApp.Assertion.ValidityPeriod {
 			return false
 		}
-		if !compareStringSlices(app.Token.UserAttributes, expectedApp.Token.UserAttributes) {
+		if !compareStringSlices(app.Assertion.UserAttributes, expectedApp.Assertion.UserAttributes) {
 			return false
 		}
-	} else if (app.Token == nil && expectedApp.Token != nil) ||
-		(app.Token != nil && expectedApp.Token == nil) {
+	} else if (app.Assertion == nil && expectedApp.Assertion != nil) ||
+		(app.Assertion != nil && expectedApp.Assertion == nil) {
+		return false
+	}
+
+	// LoginConsent config
+	if (app.LoginConsent != nil) && (expectedApp.LoginConsent != nil) {
+		if app.LoginConsent.ValidityPeriod != expectedApp.LoginConsent.ValidityPeriod {
+			return false
+		}
+	} else if app.LoginConsent == nil && expectedApp.LoginConsent != nil {
+		// Expected a LoginConsent object but absent
+		return false
+	} else if app.LoginConsent != nil && expectedApp.LoginConsent == nil {
+		// Actual has LoginConsent object but expected omitted it
 		return false
 	}
 
@@ -247,6 +272,41 @@ func (app *Application) equals(expectedApp Application) bool {
 				if oauth.PublicClient != expectedOAuth.PublicClient {
 					return false
 				}
+
+				// Compare ScopeClaims - lenient if expected is nil but actual is empty
+				if expectedOAuth.ScopeClaims != nil {
+					if !compareScopeClaimsMaps(oauth.ScopeClaims, expectedOAuth.ScopeClaims) {
+						return false
+					}
+				}
+
+				// Compare UserInfo config - lenient if expected is nil but actual is empty
+				if expectedOAuth.UserInfo != nil {
+					if oauth.UserInfo == nil {
+						return false
+					}
+					if oauth.UserInfo.ResponseType != expectedOAuth.UserInfo.ResponseType {
+						return false
+					}
+					if !compareStringSlices(oauth.UserInfo.UserAttributes, expectedOAuth.UserInfo.UserAttributes) {
+						return false
+					}
+				}
+				// If expected UserInfo is nil, we accept any value in actual (including empty object)
+
+				// Compare OAuth certificate - allow nil expected when actual is default empty
+				if oauth.Certificate != nil && expectedOAuth.Certificate == nil {
+					if oauth.Certificate.Type != "NONE" || oauth.Certificate.Value != "" {
+						return false
+					}
+				} else if oauth.Certificate == nil && expectedOAuth.Certificate != nil {
+					return false
+				} else if oauth.Certificate != nil && expectedOAuth.Certificate != nil {
+					if oauth.Certificate.Type != expectedOAuth.Certificate.Type ||
+						oauth.Certificate.Value != expectedOAuth.Certificate.Value {
+						return false
+					}
+				}
 			} else if (cfg.OAuthAppConfig == nil && expectedCfg.OAuthAppConfig != nil) ||
 				(cfg.OAuthAppConfig != nil && expectedCfg.OAuthAppConfig == nil) {
 				return false
@@ -254,5 +314,22 @@ func (app *Application) equals(expectedApp Application) bool {
 		}
 	}
 
+	return true
+}
+
+// compareScopeClaimsMaps compares two scope claims maps for equality.
+func compareScopeClaimsMaps(a, b map[string][]string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for key, aVal := range a {
+		bVal, exists := b[key]
+		if !exists {
+			return false
+		}
+		if !compareStringSlices(aVal, bVal) {
+			return false
+		}
+	}
 	return true
 }

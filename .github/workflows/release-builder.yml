@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g., v1.0.0). Leave empty to use version.txt'
+        description: 'Release version (e.g., X for v0.X.0, X.Y for v0.X.Y, or X.Y.Z for v0.Y.Z). Leave empty to use version.txt'
         required: false
         type: string
       prerelease:
@@ -24,7 +24,7 @@ on:
         description: 'Run performance tests after release'
         required: false
         type: boolean
-        default: false
+        default: true
 
 # Add permissions to allow pushing tags and packages
 permissions:
@@ -33,6 +33,7 @@ permissions:
 
 env:
   GOFLAGS: "-mod=readonly"
+  RELEASE_MAJOR_VERSION: 0
 
 jobs:
   build-thunder:
@@ -44,18 +45,45 @@ jobs:
       run_performance_test: ${{ steps.get_version.outputs.run_performance_test }}
     steps:  
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
       - name: 📝 Determine Release Version
         id: get_version
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
-            # Use manually provided version
-            VERSION="${{ github.event.inputs.version }}"
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            # Manual trigger - always use input values for flags
             PRERELEASE="${{ github.event.inputs.prerelease }}"
             RUN_PERF_TEST="${{ github.event.inputs.run_performance_test }}"
+            INPUT_VERSION="${{ github.event.inputs.version }}"
+            MAJOR="${{ env.RELEASE_MAJOR_VERSION }}"
+
+            if [ -n "$INPUT_VERSION" ]; then
+              # Handle manually provided version
+              if [[ $INPUT_VERSION =~ ^v?[0-9]+\.([0-9]+)\.([0-9]+) ]]; then
+                # Full format (vX.Y.Z) -> Parse and use MAJOR
+                MINOR="${BASH_REMATCH[1]}"
+                PATCH="${BASH_REMATCH[2]}"
+                VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+              elif [[ $INPUT_VERSION =~ ^[0-9]+\.[0-9]+$ ]]; then
+                # minor.patch format (X.Y) -> v0.X.Y
+                VERSION="v${MAJOR}.${INPUT_VERSION}"
+              elif [[ $INPUT_VERSION =~ ^[0-9]+$ ]]; then
+                # minor format (X) -> v0.X.0
+                VERSION="v${MAJOR}.${INPUT_VERSION}.0"
+              else
+                echo "❌ Error: Invalid version format '$INPUT_VERSION'. Use 'X', 'X.Y', or 'vX.Y.Z'"
+                exit 1
+              fi
+            else
+              # Manual run without version - read from version.txt
+              if [ ! -f version.txt ] || [ -z "$(cat version.txt | tr -d '[:space:]')" ]; then
+                echo "❌ Error: version.txt not found or empty"
+                exit 1
+              fi
+              VERSION=$(tr -d '[:space:]' < version.txt)
+            fi
           else
             # Scheduled run or manual run without version - read from version.txt
             if [ ! -f version.txt ] || [ -z "$(cat version.txt | tr -d '[:space:]')" ]; then
@@ -64,12 +92,12 @@ jobs:
             fi
             VERSION=$(tr -d '[:space:]' < version.txt)
             PRERELEASE="true"
-            RUN_PERF_TEST="false"
+            RUN_PERF_TEST="true"
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "prerelease=$PRERELEASE" >> $GITHUB_OUTPUT
           echo "run_performance_test=$RUN_PERF_TEST" >> $GITHUB_OUTPUT
-          echo "✅ Using version: $VERSION"
+          echo "✅ Using version: $VERSION (Prerelease: $PRERELEASE, Perf Test: $RUN_PERF_TEST)"
 
       - name: ✅ Validate Release Version
         run: |
@@ -100,7 +128,7 @@ jobs:
         uses: ./.github/actions/setup-go  
 
       - name: 🗄️ Cache Go Modules  
-        uses: actions/cache@v4  
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4  
         id: cache-go-modules  
         with:  
           path: |  
@@ -130,7 +158,7 @@ jobs:
           echo "Built distribution: $DIST_PATH"
 
       - name: 📦 Upload Built Distribution
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: thunder-distribution
           path: target/dist/*.zip
@@ -160,13 +188,13 @@ jobs:
           --health-retries 5
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: ⚙️ Set up Go Environment
         uses: ./.github/actions/setup-go
 
       - name: 🗄️ Cache Go Modules
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         id: cache-go-modules
         with:
           path: |
@@ -207,7 +235,7 @@ jobs:
     needs: [build-thunder, test-integration, validate-windows]
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
@@ -220,7 +248,7 @@ jobs:
         uses: ./.github/actions/setup-go
 
       - name: 🗄️ Cache Go Modules
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         id: cache-go-modules
         with:
           path: |
@@ -250,7 +278,7 @@ jobs:
         run: echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
 
       - name: 📦 Upload Backend Distribution Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: thunder-distribution
           path: target/dist/*.zip
@@ -258,7 +286,7 @@ jobs:
           overwrite: true
 
       - name: 📦 Upload Documentation Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: thunder-docs
           path: docs/build
@@ -278,17 +306,17 @@ jobs:
           git push origin "$TAG_VERSION"
 
       - name: 🐳 Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: 🔐 Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 📥 Download Shared Certificates for Docker
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: thunder-certificates
           path: target/out/.cert/
@@ -364,7 +392,7 @@ jobs:
           grep "tag:" install/helm/values.yaml | head -1
 
       - name: ⚙️ Set up Helm
-        uses: azure/setup-helm@v3
+        uses: azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78 # v3
         with:
           version: 'v3.12.3'
 
@@ -415,18 +443,19 @@ jobs:
           # Parse version components (handle both X.Y and X.Y.Z formats)
           if [[ $RELEASE_VERSION =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
             # X.Y.Z format
-            MAJOR="${BASH_REMATCH[1]}"
             MINOR="${BASH_REMATCH[2]}"
             PATCH="${BASH_REMATCH[3]}"
           elif [[ $RELEASE_VERSION =~ ^([0-9]+)\.([0-9]+) ]]; then
             # X.Y format
-            MAJOR="${BASH_REMATCH[1]}"
             MINOR="${BASH_REMATCH[2]}"
             PATCH="0"
           else
             echo "❌ Error: Unable to parse version format: $RELEASE_VERSION"
             exit 1
           fi
+          
+          # Use fixed major version
+          MAJOR="${{ env.RELEASE_MAJOR_VERSION }}"
           
           # Bump minor version
           NEXT_MINOR=$((MINOR + 1))
@@ -449,7 +478,7 @@ jobs:
           dependency-path: 'samples/apps/react-vanilla-sample'
 
       - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
           version: 9
 
@@ -505,7 +534,7 @@ jobs:
     needs: [build-thunder, build-and-package]
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
@@ -526,7 +555,7 @@ jobs:
         run: ./scripts/package-samples.sh win x64
 
       - name: 📦 Upload Linux & Windows Sample Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: thunder-samples-linux-windows
           path: target/dist/*.zip
@@ -538,7 +567,7 @@ jobs:
     needs: [build-thunder, build-and-package]
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
@@ -556,7 +585,7 @@ jobs:
           ./scripts/package-samples.sh macos arm64
 
       - name: 📦 Upload macOS Sample Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: thunder-samples-macos
           path: target/dist/*.zip
@@ -570,24 +599,24 @@ jobs:
       release_tag: ${{ steps.release_info.outputs.release_tag }}
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
       - name: 📥 Download Backend Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: thunder-distribution
           path: ./backend-artifacts
 
       - name: 📥 Download Linux & Windows Sample Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: thunder-samples-linux-windows
           path: ./linux-windows-artifacts
 
       - name: 📥 Download macOS Sample Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: thunder-samples-macos
           path: ./macos-artifacts
@@ -607,7 +636,7 @@ jobs:
           ls -la target/dist/
 
       - name: 📦 Upload Final Combined Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: thunder-final-distribution
           path: target/dist/*.zip
@@ -621,7 +650,7 @@ jobs:
 
       - name: 📝 Generate Automatic Release Notes
         id: generate_notes
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const currentTag = '${{ needs.build-thunder.outputs.version }}';
@@ -837,7 +866,7 @@ jobs:
 
       - name: 📦 Create GitHub Release
         id: create_release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
         with:
           tag_name: ${{ steps.version.outputs.version }}
           name: Thunder ${{ steps.version.outputs.version }}
@@ -876,14 +905,14 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: 📚 Deploy Documentation
         id: deployment
         uses: ./.github/actions/deploy-docs
         with:
           docs-artifact-name: 'thunder-docs'
-          build-docs: 'false'
+          build-docs: 'true'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: '📚 Deploy documentation for ${{ needs.build-thunder.outputs.version }}'
 
@@ -902,10 +931,10 @@ jobs:
     if: ${{ needs.build-thunder.outputs.run_performance_test == 'true' }}
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: ⚡ Trigger Performance Test Workflows
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           github-token: ${{ secrets.THUNDER_GITHUB_BOT_TOKEN }}
           script: |
@@ -936,7 +965,7 @@ jobs:
                     BRANCH: 'main',
                     MODE: 'FULL',
                     USE_DELAYS: 'true',
-                    CONCURRENCY: '50-3000',
+                    CONCURRENCY: '50-1000',
                     PUSH_BENCHMARKS_TO_GITHUB: pushBenchmarkToGitHub
                   }
                 });

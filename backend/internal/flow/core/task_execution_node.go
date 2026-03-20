@@ -38,6 +38,8 @@ type ExecutorBackedNodeInterface interface {
 	SetOnSuccess(nodeID string)
 	GetOnFailure() string
 	SetOnFailure(nodeID string)
+	GetOnIncomplete() string
+	SetOnIncomplete(nodeID string)
 	GetMode() string
 	SetMode(mode string)
 }
@@ -51,6 +53,7 @@ type taskExecutionNode struct {
 	inputs       []common.Input
 	onSuccess    string
 	onFailure    string
+	onIncomplete string
 	logger       *log.Logger
 }
 
@@ -98,12 +101,14 @@ func (n *taskExecutionNode) Execute(ctx *NodeContext) (*common.NodeResponse, *se
 	// Set executor mode in context
 	ctx.ExecutorMode = n.mode
 
+	n.enrichRuntimeData(ctx)
+
 	execResp, svcErr := n.triggerExecutor(ctx, logger)
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
-	nodeResp := n.buildNodeResponse(execResp, ctx)
+	nodeResp := n.buildNodeResponse(execResp)
 
 	// Set the next node ID based on execution outcome
 	if nodeResp.Status == common.NodeStatusComplete {
@@ -120,9 +125,52 @@ func (n *taskExecutionNode) Execute(ctx *NodeContext) (*common.NodeResponse, *se
 			nodeResp.RuntimeData = make(map[string]string)
 		}
 		nodeResp.RuntimeData["failureReason"] = nodeResp.FailureReason
+
+		// Clear user inputs consumed by this executor
+		for _, input := range n.inputs {
+			delete(ctx.UserInputs, input.Identifier)
+		}
+	} else if nodeResp.Status == common.NodeStatusIncomplete && n.onIncomplete != "" {
+		// Executor requires user input - forward to dedicated prompt node
+		// Change status to Forward so engine forwards execution to onIncomplete node
+		nodeResp.Status = common.NodeStatusForward
+		nodeResp.NextNodeID = n.onIncomplete
+
+		// Propagate failure reason if present
+		if nodeResp.FailureReason != "" {
+			if nodeResp.RuntimeData == nil {
+				nodeResp.RuntimeData = make(map[string]string)
+			}
+			nodeResp.RuntimeData["failureReason"] = nodeResp.FailureReason
+
+			// Clear user inputs consumed by this executor
+			for _, input := range n.inputs {
+				delete(ctx.UserInputs, input.Identifier)
+			}
+		}
 	}
 
 	return nodeResp, nil
+}
+
+// enrichRuntimeData initializes the runtime data map and attaches identifiers like application, IDP,
+// and sender IDs so downstream executors and placeholders can use them.
+func (n *taskExecutionNode) enrichRuntimeData(ctx *NodeContext) {
+	if ctx.RuntimeData == nil {
+		ctx.RuntimeData = make(map[string]string)
+	}
+
+	if ctx.AppID != "" {
+		ctx.RuntimeData["applicationId"] = ctx.AppID
+	}
+
+	if idpID, ok := ctx.NodeProperties["idpId"].(string); ok && idpID != "" {
+		ctx.RuntimeData["idpId"] = idpID
+	}
+
+	if senderID, ok := ctx.NodeProperties["senderId"].(string); ok && senderID != "" {
+		ctx.RuntimeData["senderId"] = senderID
+	}
 }
 
 // triggerExecutor triggers the executor configured for the node.
@@ -142,14 +190,14 @@ func (n *taskExecutionNode) triggerExecutor(ctx *NodeContext, logger *log.Logger
 }
 
 // buildNodeResponse constructs a NodeResponse from the ExecutorResponse.
-func (n *taskExecutionNode) buildNodeResponse(execResp *common.ExecutorResponse,
-	ctx *NodeContext) *common.NodeResponse {
+func (n *taskExecutionNode) buildNodeResponse(execResp *common.ExecutorResponse) *common.NodeResponse {
 	nodeResp := &common.NodeResponse{
 		FailureReason:     execResp.FailureReason,
 		Inputs:            execResp.Inputs,
 		AdditionalData:    execResp.AdditionalData,
 		RedirectURL:       execResp.RedirectURL,
 		RuntimeData:       execResp.RuntimeData,
+		ForwardedData:     execResp.ForwardedData,
 		AuthenticatedUser: execResp.AuthenticatedUser,
 		Assertion:         execResp.Assertion,
 	}
@@ -158,6 +206,9 @@ func (n *taskExecutionNode) buildNodeResponse(execResp *common.ExecutorResponse,
 	}
 	if nodeResp.RuntimeData == nil {
 		nodeResp.RuntimeData = make(map[string]string)
+	}
+	if nodeResp.ForwardedData == nil {
+		nodeResp.ForwardedData = make(map[string]interface{})
 	}
 	if nodeResp.Inputs == nil {
 		nodeResp.Inputs = make([]common.Input, 0)
@@ -173,16 +224,6 @@ func (n *taskExecutionNode) buildNodeResponse(execResp *common.ExecutorResponse,
 	case common.ExecUserInputRequired:
 		nodeResp.Status = common.NodeStatusIncomplete
 		nodeResp.Type = common.NodeResponseTypeView
-
-		// Include meta in the response if verbose mode is enabled
-		// Prefer executor-returned meta over node's configured meta
-		if ctx.Verbose {
-			if execResp.Meta != nil {
-				nodeResp.Meta = execResp.Meta
-			} else if n.GetMeta() != nil {
-				nodeResp.Meta = n.GetMeta()
-			}
-		}
 	case common.ExecExternalRedirection:
 		nodeResp.Status = common.NodeStatusIncomplete
 		nodeResp.Type = common.NodeResponseTypeRedirection
@@ -241,6 +282,16 @@ func (n *taskExecutionNode) GetOnFailure() string {
 // SetOnFailure sets the onFailure node ID
 func (n *taskExecutionNode) SetOnFailure(nodeID string) {
 	n.onFailure = nodeID
+}
+
+// GetOnIncomplete returns the onIncomplete node ID
+func (n *taskExecutionNode) GetOnIncomplete() string {
+	return n.onIncomplete
+}
+
+// SetOnIncomplete sets the onIncomplete node ID
+func (n *taskExecutionNode) SetOnIncomplete(nodeID string) {
+	n.onIncomplete = nodeID
 }
 
 // GetMode returns the mode for the executor that supports multi-step execution

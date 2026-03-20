@@ -98,10 +98,16 @@ read -r -d '' CUSTOMER_USER_TYPE_PAYLOAD <<JSON || true
       "required": true,
       "unique": true
     },
+    "password": {
+      "type": "string",
+      "required": true,
+      "credential": true
+    },
     "email": {
       "type": "string",
       "required": true,
-      "unique": true
+      "unique": true,
+      "regex": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}$"
     },
     "given_name": {
       "type": "string",
@@ -110,7 +116,14 @@ read -r -d '' CUSTOMER_USER_TYPE_PAYLOAD <<JSON || true
     "family_name": {
       "type": "string",
       "required": false
+    },
+    "mobileNumber": {
+      "type": "string",
+      "required": false
     }
+  },
+  "systemAttributes": {
+    "display": "username"
   }
 }
 JSON
@@ -159,21 +172,20 @@ read -r -d '' SAMPLE_APP_PAYLOAD <<JSON || true
       "public_client": true,
       "scopes": ["openid", "profile", "email"],
       "token": {
-        "issuer": "thunder",
         "access_token": {
           "validity_period": 3600,
           "user_attributes": ["given_name","family_name","email","groups"]
         },
         "id_token": {
           "validity_period": 3600,
-          "user_attributes": ["given_name","family_name","email","groups"],
-          "scope_claims": {
-            "profile": ["name","given_name","family_name","picture"],
-            "email": ["email","email_verified"],
-            "phone": ["phone_number","phone_number_verified"],
-            "group": ["groups"]
-          }
+          "user_attributes": ["given_name","family_name","email","groups"]
         }
+      },
+      "scope_claims": {
+        "profile": ["name","given_name","family_name","picture"],
+        "email": ["email","email_verified"],
+        "phone": ["phone_number","phone_number_verified"],
+        "group": ["groups"]
       }
     }
   }]
@@ -221,8 +233,7 @@ read -r -d '' REACT_SDK_APP_PAYLOAD <<JSON || true
   "policy_uri": "https://localhost:3000/privacy",
   "contacts": ["admin@example.com"],
   "is_registration_flow_enabled": true,
-  "token": {
-    "issuer": "thunder",
+  "assertion": {
     "validity_period": 3600,
     "user_attributes": null
   },
@@ -243,21 +254,20 @@ read -r -d '' REACT_SDK_APP_PAYLOAD <<JSON || true
       "pkce_required": true,
       "public_client": true,
       "token": {
-        "issuer": "https://localhost:8090",
         "access_token": {
           "validity_period": 3600,
           "user_attributes": ["given_name","family_name","email","groups","name"]
         },
         "id_token": {
           "validity_period": 3600,
-          "user_attributes": ["given_name","family_name","email","groups","name"],
-          "scope_claims": {
-            "email": ["email","email_verified"],
-            "group": ["groups"],
-            "phone": ["phone_number","phone_number_verified"],
-            "profile": ["name","given_name","family_name","picture"]
-          }
+          "user_attributes": ["given_name","family_name","email","groups","name"]
         }
+      },
+      "scope_claims": {
+        "email": ["email","email_verified"],
+        "group": ["groups"],
+        "phone": ["phone_number","phone_number_verified"],
+        "profile": ["name","given_name","family_name","picture"]
       }
     }
   }]

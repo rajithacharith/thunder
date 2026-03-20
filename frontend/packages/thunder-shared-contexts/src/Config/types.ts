@@ -57,14 +57,14 @@ export interface ServerConfig {
 export interface ClientConfig {
   /**
    * Base path for the client application.
-   * @example "/develop", "/admin", "/my-app"
+   * @example "/console", "/admin", "/my-app"
    */
   base: string;
 
   /**
    * Unique identifier for the client application, used for authentication
    * and authorization with identity providers like Asgardeo.
-   * @example "DEVELOP", "thunder-admin", "my-app-client-id"
+   * @example "CONSOLE", "thunder-admin", "my-app-client-id"
    */
   client_id: string;
 
@@ -101,6 +101,19 @@ export interface ClientConfig {
 }
 
 /**
+ * Branding configuration interface that defines product name and other branding-related settings.
+ *
+ * @public
+ */
+export interface BrandConfig {
+  /**
+   * Product name for branding purposes.
+   * @example "Thunder", "Awesome Product"
+   */
+  product_name: string;
+}
+
+/**
  * Thunder runtime configuration interface that contains all configuration
  * settings for Thunder applications.
  *
@@ -111,6 +124,9 @@ export interface ClientConfig {
  * @public
  */
 export interface ThunderConfig {
+  /** Branding configuration such as product name and logo */
+  brand: BrandConfig;
+
   /** Client-specific configuration including authentication settings */
   client: ClientConfig;
 
@@ -131,7 +147,7 @@ export interface ThunderConfig {
  * // In public/config.js
  * window.__THUNDER_RUNTIME_CONFIG__ = {
  *   client: {
- *     client_id: 'DEVELOP'
+ *     client_id: 'CONSOLE'
  *   },
  *   server: {
  *     hostname: 'localhost',

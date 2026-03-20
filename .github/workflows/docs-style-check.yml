@@ -1,0 +1,62 @@
+# This workflow validates that Thunder content follows the style rules defined in .vale.ini using Vale.
+# It only runs on changed md and mdx files in pull requests.
+
+name: 🥒 Vale Lint (Changed Markdown Only)
+
+on:
+  pull_request:
+    paths:
+      - '**/*.md'
+      - '**/*.mdx'
+  merge_group:
+
+jobs:
+  vale:
+    name: Vale style check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: read
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Get changed markdown files
+        id: changed-files
+        run: |
+          # Determine base ref depending on event type
+          if [ "${{ github.event_name }}" = "merge_group" ]; then
+            # merge_group.base_ref is a full ref like refs/heads/main — strip the prefix
+            BASE_REF="${{ github.event.merge_group.base_ref }}"
+            BASE_REF="${BASE_REF#refs/heads/}"
+          else
+            BASE_REF="${{ github.base_ref }}"
+          fi
+          # Get list of changed md/mdx files in this PR
+          FILES=$(git diff --name-only --diff-filter=ACMR origin/${BASE_REF}...HEAD -- '*.md' '*.mdx')
+          if [ -z "$FILES" ]; then
+            echo "No markdown files changed."
+            echo "has_files=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Changed markdown files:"
+            echo "$FILES"
+            # Convert newline-separated list to comma-separated for vale-action
+            COMMA_FILES=$(echo "$FILES" | paste -sd ',' -)
+            echo "files=$COMMA_FILES" >> "$GITHUB_OUTPUT"
+            echo "has_files=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 🔍 Run Vale
+        if: steps.changed-files.outputs.has_files == 'true'
+        uses: errata-ai/vale-action@d89dee975228ae261d22c15adcd03578634d429c # v2.1.1
+        with:
+          files: ${{ steps.changed-files.outputs.files }}
+          separator: ","
+          reporter: github-pr-check
+          filter_mode: added
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

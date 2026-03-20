@@ -14,9 +14,20 @@
             "meta": {
                 "components": [
                     {
+                        "alt": "{{ t(signin:images.app_logo.alt) }}",
+                        "category": "DISPLAY",
+                        "height": "60",
+                        "id": "image",
+                        "resourceType": "ELEMENT",
+                        "src": "{{ meta(application.logo_url) }}",
+                        "type": "IMAGE",
+                        "width": ""
+                    },
+                    {
+                        "align": "center",
                         "type": "TEXT",
                         "id": "text_001",
-                        "label": "Sign In",
+                        "label": "{{ t(signin:forms.credentials.title) }}",
                         "variant": "HEADING_1"
                     },
                     {
@@ -27,22 +38,22 @@
                                 "id": "input_001",
                                 "ref": "username",
                                 "type": "TEXT_INPUT",
-                                "label": "Username",
+                                "label": "{{ t(signin:forms.credentials.fields.username.label) }}",
                                 "required": true,
-                                "placeholder": "Enter your username"
+                                "placeholder": "{{ t(signin:forms.credentials.fields.username.placeholder) }}"
                             },
                             {
                                 "id": "input_002",
                                 "ref": "password",
                                 "type": "PASSWORD_INPUT",
-                                "label": "Password",
+                                "label": "{{ t(signin:forms.credentials.fields.password.label) }}",
                                 "required": true,
-                                "placeholder": "Enter your password"
+                                "placeholder": "{{ t(signin:forms.credentials.fields.password.placeholder) }}"
                             },
                             {
                                 "type": "ACTION",
                                 "id": "action_001",
-                                "label": "Sign In",
+                                "label": "{{ t(signin:forms.credentials.actions.submit.label) }}",
                                 "variant": "PRIMARY",
                                 "eventType": "SUBMIT"
                             }
@@ -79,7 +90,8 @@
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "onSuccess": "authorization_check"
+            "onSuccess": "authorization_check",
+            "onIncomplete": "prompt_credentials"
         },
         {
             "id": "authorization_check",

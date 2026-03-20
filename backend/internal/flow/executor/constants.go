@@ -25,22 +25,33 @@ const (
 	ExecutorNameBasicAuth = "BasicAuthExecutor"
 	ExecutorNameSMSAuth   = "SMSOTPAuthExecutor"
 	// nolint:gosec // G101: This is an executor name, not a credential
-	ExecutorNamePasskeyAuth         = "PasskeyAuthExecutor"
-	ExecutorNameOAuth               = "OAuthExecutor"
-	ExecutorNameOIDCAuth            = "OIDCAuthExecutor"
-	ExecutorNameGitHubAuth          = "GithubOAuthExecutor"
-	ExecutorNameGoogleAuth          = "GoogleOIDCAuthExecutor"
-	ExecutorNameIdentifying         = "IdentifyingExecutor"
-	ExecutorNameAuthAssert          = "AuthAssertExecutor"
-	ExecutorNameProvisioning        = "ProvisioningExecutor"
-	ExecutorNameAttributeCollect    = "AttributeCollector"
-	ExecutorNameAuthorization       = "AuthorizationExecutor"
-	ExecutorNamePermissionValidator = "PermissionValidator"
-	ExecutorNameOUCreation          = "OUExecutor"
-	ExecutorNameHTTPRequest         = "HTTPRequestExecutor"
-	ExecutorNameUserTypeResolver    = "UserTypeResolver"
-	ExecutorNameInviteExecutor      = "InviteExecutor"
-	ExecutorNameCredentialSetter    = "CredentialSetter"
+	ExecutorNamePasskeyAuth                  = "PasskeyAuthExecutor"
+	ExecutorNameOAuth                        = "OAuthExecutor"
+	ExecutorNameOIDCAuth                     = "OIDCAuthExecutor"
+	ExecutorNameGitHubAuth                   = "GithubOAuthExecutor"
+	ExecutorNameGoogleAuth                   = "GoogleOIDCAuthExecutor"
+	ExecutorNameIdentifying                  = "IdentifyingExecutor"
+	ExecutorNameAuthAssert                   = "AuthAssertExecutor"
+	ExecutorNameProvisioning                 = "ProvisioningExecutor"
+	ExecutorNameAttributeCollect             = "AttributeCollector"
+	ExecutorNameAuthorization                = "AuthorizationExecutor"
+	ExecutorNamePermissionValidator          = "PermissionValidator"
+	ExecutorNameOUCreation                   = "OUExecutor"
+	ExecutorNameHTTPRequest                  = "HTTPRequestExecutor"
+	ExecutorNameUserTypeResolver             = "UserTypeResolver"
+	ExecutorNameInviteExecutor               = "InviteExecutor"
+	ExecutorNameEmailExecutor                = "EmailExecutor"
+	ExecutorNameCredentialSetter             = "CredentialSetter"
+	ExecutorNameConsent                      = "ConsentExecutor"
+	ExecutorNameOUResolver                   = "OUResolverExecutor"
+	ExecutorNameAttributeUniquenessValidator = "AttributeUniquenessValidator"
+)
+
+// Executor mode constants
+const (
+	ExecutorModeSend     = "send"
+	ExecutorModeGenerate = "generate"
+	ExecutorModeVerify   = "verify"
 )
 
 // User attribute and input constants
@@ -53,12 +64,14 @@ const (
 	userAttributeGroups       = "groups"
 	userAttributeSub          = "sub"
 
-	userInputCode        = "code"
-	userInputNonce       = "nonce"
-	userInputOuName      = "ouName"
-	userInputOuHandle    = "ouHandle"
-	userInputOuDesc      = "ouDescription"
-	userInputInviteToken = "inviteToken"
+	userInputCode             = "code"
+	userInputNonce            = "nonce"
+	userInputOuName           = "ouName"
+	userInputOuHandle         = "ouHandle"
+	userInputOuDesc           = "ouDescription"
+	userInputInviteToken      = "inviteToken"
+	userInputOTP              = "otp"
+	userInputConsentDecisions = "consent_decisions"
 
 	ouIDKey        = "ouId"
 	defaultOUIDKey = "defaultOUID"
@@ -80,16 +93,22 @@ var nonSearchableInputs = []string{"password", "code", "nonce", "otp"}
 // nonUserAttributes contains the list of user attributes that do not belong to user entity.
 var nonUserAttributes = []string{"userID", "code", "nonce", "state", "flowID",
 	"otp", "attemptCount", "expiryTimeInMillis", "otpSessionToken", "value",
-	"authorized_permissions", "requested_permissions",
+	"authorized_permissions",
+	common.RuntimeKeyRequiredOptionalAttributes, common.RuntimeKeyRequiredEssentialAttributes,
+	common.RuntimeKeyRequestedPermissions, common.RuntimeKeyRequiredLocales,
 	userTypeKey, ouIDKey, defaultOUIDKey, userInputOuName, userInputOuHandle, userInputOuDesc, userInputInviteToken,
 	common.RuntimeKeyUserEligibleForProvisioning, common.RuntimeKeySkipProvisioning,
-	common.RuntimeKeyUserAutoProvisioned, runtimeKeyStoredInviteToken}
-
-const runtimeKeyStoredInviteToken = "storedInviteToken"
+	common.RuntimeKeyUserAutoProvisioned, common.RuntimeKeyStoredInviteToken,
+	common.RuntimeKeyInviteLink,
+	common.RuntimeKeyConsentID, common.RuntimeKeyStepTimeout, userInputConsentDecisions,
+	common.RuntimeKeyConsentedAttributes, common.RuntimeKeyConsentSessionToken,
+	"applicationId", "idpId", "senderId"}
 
 // Failure reason constants
 const (
 	failureReasonUserNotAuthenticated = "User is not authenticated"
 	failureReasonUserNotFound         = "User not found"
+	failureReasonInvalidCredentials   = "Invalid credentials provided" // #nosec G101
 	failureReasonFailedToIdentifyUser = "Failed to identify user"
+	failureReasonInvalidOTP           = "invalid OTP provided"
 )

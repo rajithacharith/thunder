@@ -20,6 +20,7 @@
 package flowmgt
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"regexp"
@@ -28,13 +29,18 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/flow/executor"
 	"github.com/asgardeo/thunder/internal/system/config"
-	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
 const loggerComponentName = "FlowMgtService"
+
+var (
+	errFlowHandleExists = errors.New("flow with handle already exists")
+	errClientValidation = errors.New("client validation failed")
+)
 
 // handleFormatRegex matches valid handle format:
 // - starts with lowercase letter or digit
@@ -44,17 +50,21 @@ var handleFormatRegex = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]*[a-z0-9]$|^[a-z0
 
 // FlowMgtServiceInterface defines the interface for the flow management service.
 type FlowMgtServiceInterface interface {
-	ListFlows(limit, offset int, flowType common.FlowType) (*FlowListResponse, *serviceerror.ServiceError)
-	CreateFlow(flowDef *FlowDefinition) (*CompleteFlowDefinition, *serviceerror.ServiceError)
-	GetFlow(flowID string) (*CompleteFlowDefinition, *serviceerror.ServiceError)
-	GetFlowByHandle(handle string, flowType common.FlowType) (*CompleteFlowDefinition, *serviceerror.ServiceError)
-	UpdateFlow(flowID string, flowDef *FlowDefinition) (*CompleteFlowDefinition, *serviceerror.ServiceError)
-	DeleteFlow(flowID string) *serviceerror.ServiceError
-	ListFlowVersions(flowID string) (*FlowVersionListResponse, *serviceerror.ServiceError)
-	GetFlowVersion(flowID string, version int) (*FlowVersion, *serviceerror.ServiceError)
-	RestoreFlowVersion(flowID string, version int) (*CompleteFlowDefinition, *serviceerror.ServiceError)
-	GetGraph(flowID string) (core.GraphInterface, *serviceerror.ServiceError)
-	IsValidFlow(flowID string) bool
+	ListFlows(ctx context.Context, limit, offset int, flowType common.FlowType) (
+		*FlowListResponse, *serviceerror.ServiceError)
+	CreateFlow(ctx context.Context, flowDef *FlowDefinition) (*CompleteFlowDefinition, *serviceerror.ServiceError)
+	GetFlow(ctx context.Context, flowID string) (*CompleteFlowDefinition, *serviceerror.ServiceError)
+	GetFlowByHandle(ctx context.Context, handle string, flowType common.FlowType) (
+		*CompleteFlowDefinition, *serviceerror.ServiceError)
+	UpdateFlow(ctx context.Context, flowID string, flowDef *FlowDefinition) (
+		*CompleteFlowDefinition, *serviceerror.ServiceError)
+	DeleteFlow(ctx context.Context, flowID string) *serviceerror.ServiceError
+	ListFlowVersions(ctx context.Context, flowID string) (*FlowVersionListResponse, *serviceerror.ServiceError)
+	GetFlowVersion(ctx context.Context, flowID string, version int) (*FlowVersion, *serviceerror.ServiceError)
+	RestoreFlowVersion(ctx context.Context, flowID string, version int) (
+		*CompleteFlowDefinition, *serviceerror.ServiceError)
+	GetGraph(ctx context.Context, flowID string) (core.GraphInterface, *serviceerror.ServiceError)
+	IsValidFlow(ctx context.Context, flowID string) bool
 }
 
 // flowMgtService is the default implementation of the FlowMgtServiceInterface.
@@ -63,6 +73,8 @@ type flowMgtService struct {
 	inferenceService flowInferenceServiceInterface
 	graphBuilder     graphBuilderInterface
 	executorRegistry executor.ExecutorRegistryInterface
+	compositeStore   *compositeFlowStore
+	transactioner    transaction.Transactioner
 	logger           *log.Logger
 }
 
@@ -72,12 +84,16 @@ func newFlowMgtService(
 	inferenceService flowInferenceServiceInterface,
 	graphBuilder graphBuilderInterface,
 	executorRegistry executor.ExecutorRegistryInterface,
+	compositeStore *compositeFlowStore,
+	transactioner transaction.Transactioner,
 ) FlowMgtServiceInterface {
 	return &flowMgtService{
 		store:            store,
 		inferenceService: inferenceService,
 		graphBuilder:     graphBuilder,
 		executorRegistry: executorRegistry,
+		compositeStore:   compositeStore,
+		transactioner:    transactioner,
 		logger:           log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
 	}
 }
@@ -85,7 +101,7 @@ func newFlowMgtService(
 // Flow management methods
 
 // ListFlows retrieves a paginated list of flow definitions. Supports optional filtering by flow type.
-func (s *flowMgtService) ListFlows(limit, offset int, flowType common.FlowType) (
+func (s *flowMgtService) ListFlows(ctx context.Context, limit, offset int, flowType common.FlowType) (
 	*FlowListResponse, *serviceerror.ServiceError) {
 	if limit <= 0 {
 		limit = defaultPageSize
@@ -101,7 +117,7 @@ func (s *flowMgtService) ListFlows(limit, offset int, flowType common.FlowType) 
 		return nil, &ErrorInvalidFlowType
 	}
 
-	flows, totalCount, err := s.store.ListFlows(limit, offset, string(flowType))
+	flows, totalCount, err := s.store.ListFlows(ctx, limit, offset, string(flowType))
 	if err != nil {
 		s.logger.Error("Failed to list flows", log.Error(err))
 		return nil, &serviceerror.InternalServerError
@@ -119,29 +135,14 @@ func (s *flowMgtService) ListFlows(limit, offset int, flowType common.FlowType) 
 }
 
 // CreateFlow creates a new flow definition with version 1.
-func (s *flowMgtService) CreateFlow(flowDef *FlowDefinition) (
+func (s *flowMgtService) CreateFlow(ctx context.Context, flowDef *FlowDefinition) (
 	*CompleteFlowDefinition, *serviceerror.ServiceError) {
-	if err := declarativeresource.CheckDeclarativeCreate(); err != nil {
-		return nil, err
+	if isDeclarativeModeEnabled() {
+		return nil, &ErrorFlowDeclarativeReadOnly
 	}
 
 	if err := validateFlowDefinition(flowDef); err != nil {
 		return nil, err
-	}
-
-	// Check if a flow with the same handle and type already exists
-	exists, err := s.store.IsFlowExistsByHandle(flowDef.Handle, flowDef.FlowType)
-	if err != nil {
-		s.logger.Error("Failed to check flow existence by handle", log.Error(err))
-		return nil, &serviceerror.InternalServerError
-	}
-	if exists {
-		return nil, &ErrorDuplicateFlowHandle
-	}
-
-	svcErr := s.applyExecutorDefaultMeta(flowDef)
-	if svcErr != nil {
-		return nil, svcErr
 	}
 
 	flowID, genErr := utils.GenerateUUIDv7()
@@ -150,26 +151,43 @@ func (s *flowMgtService) CreateFlow(flowDef *FlowDefinition) (
 		return nil, &serviceerror.InternalServerError
 	}
 
-	createdFlow, storeErr := s.store.CreateFlow(flowID, flowDef)
-	if storeErr != nil {
-		s.logger.Error("Failed to create flow", log.Error(storeErr))
+	var createdFlow *CompleteFlowDefinition
+	txErr := s.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		exists, err := s.store.IsFlowExistsByHandle(txCtx, flowDef.Handle, flowDef.FlowType)
+		if err != nil {
+			return err
+		}
+		if exists {
+			return errFlowHandleExists
+		}
+
+		var storeErr error
+		createdFlow, storeErr = s.store.CreateFlow(txCtx, flowID, flowDef)
+		return storeErr
+	})
+	if txErr != nil {
+		if errors.Is(txErr, errFlowHandleExists) {
+			return nil, &ErrorDuplicateFlowHandle
+		}
+		s.logger.Error("Failed to create flow", log.Error(txErr))
 		return nil, &serviceerror.InternalServerError
 	}
 
 	s.logger.Debug("Flow created successfully", log.String(logKeyFlowID, flowID))
 
-	s.tryInferRegistrationFlow(flowID, flowDef)
+	s.tryInferRegistrationFlow(ctx, flowID, flowDef)
 
 	return createdFlow, nil
 }
 
 // GetFlow retrieves a flow definition by its ID.
-func (s *flowMgtService) GetFlow(flowID string) (*CompleteFlowDefinition, *serviceerror.ServiceError) {
+func (s *flowMgtService) GetFlow(ctx context.Context, flowID string) (
+	*CompleteFlowDefinition, *serviceerror.ServiceError) {
 	if flowID == "" {
 		return nil, &ErrorMissingFlowID
 	}
 
-	flow, err := s.store.GetFlowByID(flowID)
+	flow, err := s.store.GetFlowByID(ctx, flowID)
 	if err != nil {
 		if errors.Is(err, errFlowNotFound) {
 			return nil, &ErrorFlowNotFound
@@ -182,7 +200,7 @@ func (s *flowMgtService) GetFlow(flowID string) (*CompleteFlowDefinition, *servi
 }
 
 // GetFlowByHandle retrieves a flow definition by its handle and type.
-func (s *flowMgtService) GetFlowByHandle(handle string, flowType common.FlowType) (
+func (s *flowMgtService) GetFlowByHandle(ctx context.Context, handle string, flowType common.FlowType) (
 	*CompleteFlowDefinition, *serviceerror.ServiceError) {
 	if handle == "" {
 		return nil, &ErrorMissingFlowHandle
@@ -191,7 +209,7 @@ func (s *flowMgtService) GetFlowByHandle(handle string, flowType common.FlowType
 		return nil, &ErrorInvalidFlowType
 	}
 
-	flow, err := s.store.GetFlowByHandle(handle, flowType)
+	flow, err := s.store.GetFlowByHandle(ctx, handle, flowType)
 	if err != nil {
 		if errors.Is(err, errFlowNotFound) {
 			return nil, &ErrorFlowNotFound
@@ -206,10 +224,10 @@ func (s *flowMgtService) GetFlowByHandle(handle string, flowType common.FlowType
 
 // UpdateFlow updates an existing flow definition with the incremented version.
 // Old versions are retained up to the configured max_version_history limit.
-func (s *flowMgtService) UpdateFlow(flowID string, flowDef *FlowDefinition) (
+func (s *flowMgtService) UpdateFlow(ctx context.Context, flowID string, flowDef *FlowDefinition) (
 	*CompleteFlowDefinition, *serviceerror.ServiceError) {
-	if err := declarativeresource.CheckDeclarativeUpdate(); err != nil {
-		return nil, err
+	if isDeclarativeModeEnabled() {
+		return nil, &ErrorFlowDeclarativeReadOnly
 	}
 
 	if flowID == "" {
@@ -221,34 +239,43 @@ func (s *flowMgtService) UpdateFlow(flowID string, flowDef *FlowDefinition) (
 
 	logger := s.logger.With(log.String(logKeyFlowID, flowID))
 
-	// Verify the flow exists before updating
-	existingFlow, err := s.store.GetFlowByID(flowID)
-	if err != nil {
-		if errors.Is(err, errFlowNotFound) {
+	// Prevent updating declarative (immutable) flows
+	if s.isFlowDeclarative(ctx, flowID) {
+		return nil, &ErrorFlowDeclarativeReadOnly
+	}
+
+	var updatedFlow *CompleteFlowDefinition
+	var validationSvcErr *serviceerror.ServiceError
+	txErr := s.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		existingFlow, err := s.store.GetFlowByID(txCtx, flowID)
+		if err != nil {
+			return err
+		}
+
+		// Prevent changing the flow type
+		if existingFlow.FlowType != flowDef.FlowType {
+			validationSvcErr = &ErrorCannotUpdateFlowType
+			return errClientValidation
+		}
+
+		// Prevent changing the handle
+		if existingFlow.Handle != flowDef.Handle {
+			validationSvcErr = &ErrorHandleUpdateNotAllowed
+			return errClientValidation
+		}
+
+		var updateErr error
+		updatedFlow, updateErr = s.store.UpdateFlow(txCtx, flowID, flowDef)
+		return updateErr
+	})
+	if txErr != nil {
+		if errors.Is(txErr, errClientValidation) {
+			return nil, validationSvcErr
+		}
+		if errors.Is(txErr, errFlowNotFound) {
 			return nil, &ErrorFlowNotFound
 		}
-		logger.Error("Failed to get existing flow", log.Error(err))
-		return nil, &serviceerror.InternalServerError
-	}
-
-	// Prevent changing the flow type
-	if existingFlow.FlowType != flowDef.FlowType {
-		return nil, &ErrorCannotUpdateFlowType
-	}
-
-	// Prevent changing the handle
-	if existingFlow.Handle != flowDef.Handle {
-		return nil, &ErrorHandleUpdateNotAllowed
-	}
-
-	svcErr := s.applyExecutorDefaultMeta(flowDef)
-	if svcErr != nil {
-		return nil, svcErr
-	}
-
-	updatedFlow, err := s.store.UpdateFlow(flowID, flowDef)
-	if err != nil {
-		logger.Error("Failed to update flow", log.Error(err))
+		logger.Error("Failed to update flow", log.Error(txErr))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -261,9 +288,9 @@ func (s *flowMgtService) UpdateFlow(flowID string, flowDef *FlowDefinition) (
 }
 
 // DeleteFlow deletes a flow definition and all its version history.
-func (s *flowMgtService) DeleteFlow(flowID string) *serviceerror.ServiceError {
-	if err := declarativeresource.CheckDeclarativeDelete(); err != nil {
-		return err
+func (s *flowMgtService) DeleteFlow(ctx context.Context, flowID string) *serviceerror.ServiceError {
+	if isDeclarativeModeEnabled() {
+		return &ErrorFlowDeclarativeReadOnly
 	}
 
 	if flowID == "" {
@@ -272,7 +299,7 @@ func (s *flowMgtService) DeleteFlow(flowID string) *serviceerror.ServiceError {
 
 	logger := s.logger.With(log.String(logKeyFlowID, flowID))
 
-	_, err := s.store.GetFlowByID(flowID)
+	_, err := s.store.GetFlowByID(ctx, flowID)
 	if err != nil {
 		if errors.Is(err, errFlowNotFound) {
 			// Silently return if the flow does not exist
@@ -282,7 +309,12 @@ func (s *flowMgtService) DeleteFlow(flowID string) *serviceerror.ServiceError {
 		return &serviceerror.InternalServerError
 	}
 
-	err = s.store.DeleteFlow(flowID)
+	// Prevent deleting declarative (immutable) flows
+	if s.isFlowDeclarative(ctx, flowID) {
+		return &ErrorFlowDeclarativeReadOnly
+	}
+
+	err = s.store.DeleteFlow(ctx, flowID)
 	if err != nil {
 		logger.Error("Failed to delete flow", log.Error(err))
 		return &serviceerror.InternalServerError
@@ -299,7 +331,7 @@ func (s *flowMgtService) DeleteFlow(flowID string) *serviceerror.ServiceError {
 // Flow version management methods
 
 // ListFlowVersions retrieves all versions of a flow definition.
-func (s *flowMgtService) ListFlowVersions(flowID string) (
+func (s *flowMgtService) ListFlowVersions(ctx context.Context, flowID string) (
 	*FlowVersionListResponse, *serviceerror.ServiceError) {
 	if flowID == "" {
 		return nil, &ErrorMissingFlowID
@@ -307,7 +339,7 @@ func (s *flowMgtService) ListFlowVersions(flowID string) (
 
 	logger := s.logger.With(log.String(logKeyFlowID, flowID))
 
-	_, err := s.store.GetFlowByID(flowID)
+	_, err := s.store.GetFlowByID(ctx, flowID)
 	if err != nil {
 		if errors.Is(err, errFlowNotFound) {
 			return nil, &ErrorFlowNotFound
@@ -316,7 +348,7 @@ func (s *flowMgtService) ListFlowVersions(flowID string) (
 		return nil, &serviceerror.InternalServerError
 	}
 
-	versions, err := s.store.ListFlowVersions(flowID)
+	versions, err := s.store.ListFlowVersions(ctx, flowID)
 	if err != nil {
 		logger.Error("Failed to list flow versions", log.Error(err))
 		return nil, &serviceerror.InternalServerError
@@ -331,7 +363,7 @@ func (s *flowMgtService) ListFlowVersions(flowID string) (
 }
 
 // GetFlowVersion retrieves a specific version of a flow definition.
-func (s *flowMgtService) GetFlowVersion(flowID string, version int) (
+func (s *flowMgtService) GetFlowVersion(ctx context.Context, flowID string, version int) (
 	*FlowVersion, *serviceerror.ServiceError) {
 	if flowID == "" {
 		return nil, &ErrorMissingFlowID
@@ -340,7 +372,7 @@ func (s *flowMgtService) GetFlowVersion(flowID string, version int) (
 		return nil, &ErrorInvalidVersion
 	}
 
-	flowVersion, err := s.store.GetFlowVersion(flowID, version)
+	flowVersion, err := s.store.GetFlowVersion(ctx, flowID, version)
 	if err != nil {
 		if errors.Is(err, errFlowNotFound) {
 			return nil, &ErrorFlowNotFound
@@ -358,8 +390,12 @@ func (s *flowMgtService) GetFlowVersion(flowID string, version int) (
 
 // RestoreFlowVersion restores a specific version as the active version.
 // Creates a new version by copying the configuration from the specified version.
-func (s *flowMgtService) RestoreFlowVersion(flowID string, version int) (
+func (s *flowMgtService) RestoreFlowVersion(ctx context.Context, flowID string, version int) (
 	*CompleteFlowDefinition, *serviceerror.ServiceError) {
+	if isDeclarativeModeEnabled() {
+		return nil, &ErrorFlowDeclarativeReadOnly
+	}
+
 	if flowID == "" {
 		return nil, &ErrorMissingFlowID
 	}
@@ -369,21 +405,24 @@ func (s *flowMgtService) RestoreFlowVersion(flowID string, version int) (
 
 	logger := s.logger.With(log.String(logKeyFlowID, flowID), log.Int(logKeyVersion, version))
 
-	_, err := s.store.GetFlowVersion(flowID, version)
-	if err != nil {
-		if errors.Is(err, errFlowNotFound) {
+	var restoredFlow *CompleteFlowDefinition
+	txErr := s.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		_, err := s.store.GetFlowVersion(txCtx, flowID, version)
+		if err != nil {
+			return err
+		}
+
+		restoredFlow, err = s.store.RestoreFlowVersion(txCtx, flowID, version)
+		return err
+	})
+	if txErr != nil {
+		if errors.Is(txErr, errFlowNotFound) {
 			return nil, &ErrorFlowNotFound
 		}
-		if errors.Is(err, errVersionNotFound) {
+		if errors.Is(txErr, errVersionNotFound) {
 			return nil, &ErrorVersionNotFound
 		}
-		logger.Error("Failed to get flow version for restore", log.Error(err))
-		return nil, &serviceerror.InternalServerError
-	}
-
-	restoredFlow, err := s.store.RestoreFlowVersion(flowID, version)
-	if err != nil {
-		logger.Error("Failed to restore flow version", log.Error(err))
+		logger.Error("Failed to restore flow version", log.Error(txErr))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -398,13 +437,14 @@ func (s *flowMgtService) RestoreFlowVersion(flowID string, version int) (
 // Graph building methods
 
 // GetGraph retrieves or builds a graph for the given flow ID.
-func (s *flowMgtService) GetGraph(flowID string) (core.GraphInterface, *serviceerror.ServiceError) {
+func (s *flowMgtService) GetGraph(ctx context.Context, flowID string) (
+	core.GraphInterface, *serviceerror.ServiceError) {
 	if flowID == "" {
 		return nil, &ErrorMissingFlowID
 	}
 
 	// Fetch flow definition from store
-	flow, err := s.store.GetFlowByID(flowID)
+	flow, err := s.store.GetFlowByID(ctx, flowID)
 	if err != nil {
 		if errors.Is(err, errFlowNotFound) {
 			return nil, &ErrorFlowNotFound
@@ -418,12 +458,12 @@ func (s *flowMgtService) GetGraph(flowID string) (core.GraphInterface, *servicee
 }
 
 // IsValidFlow checks if a valid flow exists for the given flow ID.
-func (s *flowMgtService) IsValidFlow(flowID string) bool {
+func (s *flowMgtService) IsValidFlow(ctx context.Context, flowID string) bool {
 	if flowID == "" {
 		return false
 	}
 
-	exists, err := s.store.IsFlowExists(flowID)
+	exists, err := s.store.IsFlowExists(ctx, flowID)
 	if err != nil {
 		s.logger.Error("Failed to check flow existence", log.String(logKeyFlowID, flowID), log.Error(err))
 		return false
@@ -522,7 +562,7 @@ func isValidHandleFormat(handle string) bool {
 }
 
 // tryInferRegistrationFlow attempts to infer and create a registration flow from an authentication flow
-func (s *flowMgtService) tryInferRegistrationFlow(authFlowID string, authFlowDef *FlowDefinition) {
+func (s *flowMgtService) tryInferRegistrationFlow(ctx context.Context, authFlowID string, authFlowDef *FlowDefinition) {
 	logger := s.logger.With(log.String("authFlowID", authFlowID))
 
 	if !config.GetThunderRuntime().Config.Flow.AutoInferRegistration {
@@ -536,6 +576,14 @@ func (s *flowMgtService) tryInferRegistrationFlow(authFlowID string, authFlowDef
 		return
 	}
 
+	// Check if auth flow already contains PasskeyAuthExecutor with registration modes
+	// If so, skip registration flow inference as the auth flow handles registration internally
+	if s.hasPasskeyRegistrationModes(authFlowDef) {
+		logger.Debug("Authentication flow contains PasskeyAuthExecutor with " +
+			"register_start and register_finish modes, skipping registration inference")
+		return
+	}
+
 	logger.Debug("Inferring registration flow from authentication flow",
 		log.String("flowName", authFlowDef.Name))
 
@@ -545,20 +593,13 @@ func (s *flowMgtService) tryInferRegistrationFlow(authFlowID string, authFlowDef
 		return
 	}
 
-	metaErr := s.applyExecutorDefaultMeta(regFlowDef)
-	if metaErr != nil {
-		logger.Error("Failed to apply executor default meta to inferred registration flow",
-			log.String("error", metaErr.Code))
-		return
-	}
-
 	regFlowID, uuidErr := utils.GenerateUUIDv7()
 	if uuidErr != nil {
 		logger.Error("Failed to generate UUID for inferred registration flow", log.Error(uuidErr))
 		return
 	}
 
-	_, storeErr := s.store.CreateFlow(regFlowID, regFlowDef)
+	_, storeErr := s.store.CreateFlow(ctx, regFlowID, regFlowDef)
 	if storeErr != nil {
 		logger.Error("Failed to create inferred registration flow", log.Error(storeErr))
 		return
@@ -569,37 +610,52 @@ func (s *flowMgtService) tryInferRegistrationFlow(authFlowID string, authFlowDef
 		log.String("regFlowName", regFlowDef.Name))
 }
 
-// applyExecutorDefaultMeta applies default meta from executors to TASK_EXECUTION nodes.
-func (s *flowMgtService) applyExecutorDefaultMeta(flowDef *FlowDefinition) *serviceerror.ServiceError {
-	if s.executorRegistry == nil {
-		s.logger.Error("Executor registry is nil, cannot apply default meta")
-		return &serviceerror.InternalServerError
-	}
+// hasPasskeyRegistrationModes checks if the flow contains PasskeyAuthExecutor with both
+// register_start and register_finish modes, indicating the auth flow handles passkey registration internally.
+func (s *flowMgtService) hasPasskeyRegistrationModes(flowDef *FlowDefinition) bool {
+	hasRegStart := false
+	hasRegFinish := false
 
-	for i := range flowDef.Nodes {
-		node := &flowDef.Nodes[i]
-
-		if node.Type != string(common.NodeTypeTaskExecution) || node.Executor == nil {
-			continue
+	for _, node := range flowDef.Nodes {
+		if node.Executor != nil && node.Executor.Name == executor.ExecutorNamePasskeyAuth {
+			switch node.Executor.Mode {
+			case "register_start":
+				hasRegStart = true
+			case "register_finish":
+				hasRegFinish = true
+			}
 		}
-		if node.Meta != nil {
-			s.logger.Debug("Node already has meta, skipping default meta application",
-				log.String("nodeID", node.ID), log.String("executorName", node.Executor.Name))
-			continue
-		}
-
-		exec, err := s.executorRegistry.GetExecutor(node.Executor.Name)
-		if err != nil {
-			s.logger.Error("Failed to get executor for default meta application",
-				log.String("nodeID", node.ID), log.String("executorName", node.Executor.Name), log.Error(err))
-			return &serviceerror.InternalServerError
-		}
-
-		meta := exec.GetDefaultMeta()
-		if meta != nil {
-			node.Meta = meta
+		// Early exit if both modes are found
+		if hasRegStart && hasRegFinish {
+			return true
 		}
 	}
 
-	return nil
+	return hasRegStart && hasRegFinish
+}
+
+// isFlowDeclarative checks if a flow is declarative (read-only from file store).
+// Returns true only if the flow exists in the file store but NOT in the database store.
+// Database flows take precedence - if a flow exists in both stores, it's treated as mutable (not declarative).
+func (s *flowMgtService) isFlowDeclarative(ctx context.Context, flowID string) bool {
+	if s.compositeStore == nil {
+		return false
+	}
+
+	// Check DB store first - if flow exists in DB, it's mutable (not declarative)
+	if s.compositeStore.dbStore != nil {
+		_, err := s.compositeStore.dbStore.GetFlowByID(ctx, flowID)
+		if err == nil {
+			// Flow exists in DB, so it's mutable (not declarative)
+			return false
+		}
+	}
+
+	// Flow not in DB, check if it exists in file store
+	if s.compositeStore.fileStore != nil {
+		_, err := s.compositeStore.fileStore.GetFlowByID(ctx, flowID)
+		return err == nil
+	}
+
+	return false
 }

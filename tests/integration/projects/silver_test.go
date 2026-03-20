@@ -31,10 +31,10 @@ import (
 
 type SilverTestSuite struct {
 	suite.Suite
-	client             *http.Client
-	organizationUnitID string
-	userSchemaID       string
-	userID             string
+	client       *http.Client
+	oUID         string
+	userSchemaID string
+	userID       string
 }
 
 const (
@@ -60,7 +60,8 @@ var (
 				"unique": true,
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
+				"credential": true,
 			},
 			"email": map[string]interface{}{
 				"type":   "string",
@@ -90,10 +91,10 @@ func (ts *SilverTestSuite) SetupSuite() {
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit: %v", err)
 	}
-	ts.organizationUnitID = ouID
+	ts.oUID = ouID
 
 	// Create user schema
-	userSchema.OrganizationUnitId = ts.organizationUnitID
+	userSchema.OUID = ts.oUID
 	schemaID, err := testutils.CreateUserType(userSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema: %v", err)
@@ -101,7 +102,7 @@ func (ts *SilverTestSuite) SetupSuite() {
 	ts.userSchemaID = schemaID
 
 	// Create user
-	user.OrganizationUnit = ts.organizationUnitID
+	user.OUID = ts.oUID
 	userID, err := testutils.CreateUser(user)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user: %v", err)
@@ -125,17 +126,21 @@ func (ts *SilverTestSuite) TearDownSuite() {
 	}
 
 	// Clean up created organization unit
-	if ts.organizationUnitID != "" {
-		if err := testutils.DeleteOrganizationUnit(ts.organizationUnitID); err != nil {
-			ts.T().Logf("Failed to delete test organization unit %s: %v", ts.organizationUnitID, err)
+	if ts.oUID != "" {
+		if err := testutils.DeleteOrganizationUnit(ts.oUID); err != nil {
+			ts.T().Logf("Failed to delete test organization unit %s: %v", ts.oUID, err)
 		}
 	}
 }
 
 func (ts *SilverTestSuite) TestSilver_AuthenticateUser() {
 	authRequest := map[string]interface{}{
-		"username": username,
-		"password": password,
+		"identifiers": map[string]interface{}{
+			"username": username,
+		},
+		"credentials": map[string]interface{}{
+			"password": password,
+		},
 	}
 	requestJSON, err := json.Marshal(authRequest)
 	ts.Require().NoError(err, "Failed to marshal auth request")

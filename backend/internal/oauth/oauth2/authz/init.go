@@ -19,11 +19,14 @@
 package authz
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/constants"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
@@ -33,29 +36,55 @@ func Initialize(
 	applicationService application.ApplicationServiceInterface,
 	jwtService jwt.JWTServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
-) AuthorizeServiceInterface {
+) (AuthorizeServiceInterface, error) {
 	authzCodeStore := newAuthorizationCodeStore()
 	authzReqStore := newAuthorizationRequestStore()
-	authzService := newAuthorizeService(authzCodeStore)
-	authzHandler := newAuthorizeHandler(applicationService, jwtService, authzCodeStore, authzReqStore, flowExecService)
+
+	dbProvider := provider.GetDBProvider()
+	runtimeDBClient, err := dbProvider.GetRuntimeDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to initialize database client for authorization service")
+	}
+
+	transactioner, err := runtimeDBClient.GetTransactioner()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to initialize database transactioner for authorization service")
+	}
+
+	authzService := newAuthorizeService(
+		applicationService, jwtService, flowExecService, authzCodeStore, authzReqStore, transactioner,
+	)
+	authzHandler := newAuthorizeHandler(authzService)
 	registerRoutes(mux, authzHandler)
-	return authzService
+	return authzService, nil
 }
 
 // registerRoutes registers the routes for OAuth2 authorization operations.
 func registerRoutes(mux *http.ServeMux, authzHandler AuthorizeHandlerInterface) {
-	opts := middleware.CORSOptions{
-		AllowedMethods:   "GET, POST",
+	// CORS MUST NOT be enabled on the authorization endpoint.
+	// The client redirects the user agent to it; it is not accessed directly via XHR/fetch.
+	mux.HandleFunc("GET /oauth2/authorize",
+		withFrameProtection(authzHandler.HandleAuthorizeGetRequest))
+
+	callbackOpts := middleware.CORSOptions{
+		AllowedMethods:   "POST",
 		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
 	}
 
-	mux.HandleFunc(middleware.WithCORS("GET /oauth2/authorize",
-		authzHandler.HandleAuthorizeGetRequest, opts))
-	mux.HandleFunc(middleware.WithCORS("POST /oauth2/authorize",
-		authzHandler.HandleAuthorizePostRequest, opts))
-	mux.HandleFunc(middleware.WithCORS("OPTIONS /oauth2/authorize",
+	mux.HandleFunc(middleware.WithCORS("POST /oauth2/auth/callback",
+		authzHandler.HandleAuthCallbackPostRequest, callbackOpts))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /oauth2/auth/callback",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
-		}, opts))
+		}, callbackOpts))
+}
+
+// withFrameProtection wraps an HTTP handler to prevent the page from being embedded in frames.
+func withFrameProtection(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set(constants.XFrameOptionsHeaderName, constants.XFrameOptionsDeny)
+		w.Header().Set(constants.ContentSecurityPolicyHeaderName, constants.ContentSecurityPolicyFrameAncestorsNone)
+		handler(w, r)
+	}
 }

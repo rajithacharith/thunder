@@ -83,12 +83,12 @@ export async function getCustomersOrganizationUnitId(): Promise<string> {
 
 export interface User {
   id: string;
-  organizationUnit: string;
+  ouId: string;
   type: string;
   attributes: {
     username?: string;
-    firstName?: string;
-    lastName?: string;
+    given_name?: string;
+    family_name?: string;
     email?: string;
     [key: string]: unknown;
   };
@@ -159,7 +159,7 @@ export interface SendOTPResponse {
 export interface VerifyOTPResponse {
   id: string;
   type: string;
-  organization_unit?: string;
+  ouId?: string;
   assertion: string;
 }
 

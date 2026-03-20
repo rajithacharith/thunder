@@ -27,7 +27,7 @@ var (
 		Type:             serviceerror.ClientErrorType,
 		Code:             "invalid_client_metadata",
 		Error:            "Invalid request format",
-		ErrorDescription: "The request format is invalid",
+		ErrorDescription: "The request body is missing or has an invalid format",
 	}
 
 	// ErrorInvalidRedirectURI is the standard error for redirect URI issues
@@ -60,5 +60,14 @@ var (
 		Code:             "server_error",
 		Error:            "Server error",
 		ErrorDescription: "An unexpected error occurred while processing the request",
+	}
+
+	// ErrorUnauthorized is the error returned when the request lacks valid authentication
+	// or the authenticated caller does not hold required permissions.
+	ErrorUnauthorized = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "unauthorized_client",
+		Error:            "Unauthorized",
+		ErrorDescription: "Authentication with sufficient permissions is required to register a client",
 	}
 )

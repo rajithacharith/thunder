@@ -46,6 +46,7 @@ func newRoleHandler(roleService RoleServiceInterface) *roleHandler {
 
 // HandleRoleListRequest handles the list roles request.
 func (rh *roleHandler) HandleRoleListRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
@@ -54,7 +55,7 @@ func (rh *roleHandler) HandleRoleListRequest(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	roleList, svcErr := rh.roleService.GetRoleList(limit, offset)
+	roleList, svcErr := rh.roleService.GetRoleList(ctx, limit, offset)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -71,7 +72,7 @@ func (rh *roleHandler) HandleRoleListRequest(w http.ResponseWriter, r *http.Requ
 		StartIndex:   roleList.StartIndex,
 		Count:        roleList.Count,
 		Roles:        roles,
-		Links:        toHTTPLinks(roleList.Links),
+		Links:        roleList.Links,
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, roleListResponse)
@@ -84,6 +85,7 @@ func (rh *roleHandler) HandleRoleListRequest(w http.ResponseWriter, r *http.Requ
 
 // HandleRolePostRequest handles the create role request.
 func (rh *roleHandler) HandleRolePostRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	createRequest, err := sysutils.DecodeJSONBody[CreateRoleRequest](r)
@@ -97,7 +99,7 @@ func (rh *roleHandler) HandleRolePostRequest(w http.ResponseWriter, r *http.Requ
 	// Convert HTTP request to service request
 	serviceRequest := rh.toRoleCreationDetail(sanitizedRequest)
 
-	serviceRole, svcErr := rh.roleService.CreateRole(serviceRequest)
+	serviceRole, svcErr := rh.roleService.CreateRole(ctx, serviceRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -113,10 +115,11 @@ func (rh *roleHandler) HandleRolePostRequest(w http.ResponseWriter, r *http.Requ
 
 // HandleRoleGetRequest handles the get role by id request.
 func (rh *roleHandler) HandleRoleGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
-	serviceRole, svcErr := rh.roleService.GetRoleWithPermissions(id)
+	serviceRole, svcErr := rh.roleService.GetRoleWithPermissions(ctx, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -132,6 +135,7 @@ func (rh *roleHandler) HandleRoleGetRequest(w http.ResponseWriter, r *http.Reque
 
 // HandleRolePutRequest handles the update role request.
 func (rh *roleHandler) HandleRolePutRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
@@ -146,7 +150,7 @@ func (rh *roleHandler) HandleRolePutRequest(w http.ResponseWriter, r *http.Reque
 	// Convert HTTP request to service request
 	serviceRequest := RoleUpdateDetail(sanitizedRequest)
 
-	serviceRole, svcErr := rh.roleService.UpdateRoleWithPermissions(id, serviceRequest)
+	serviceRole, svcErr := rh.roleService.UpdateRoleWithPermissions(ctx, id, serviceRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -162,10 +166,11 @@ func (rh *roleHandler) HandleRolePutRequest(w http.ResponseWriter, r *http.Reque
 
 // HandleRoleDeleteRequest handles the delete role request.
 func (rh *roleHandler) HandleRoleDeleteRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
-	svcErr := rh.roleService.DeleteRole(id)
+	svcErr := rh.roleService.DeleteRole(ctx, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -177,6 +182,7 @@ func (rh *roleHandler) HandleRoleDeleteRequest(w http.ResponseWriter, r *http.Re
 
 // HandleRoleAssignmentsGetRequest handles the get role assignments request.
 func (rh *roleHandler) HandleRoleAssignmentsGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
@@ -187,9 +193,9 @@ func (rh *roleHandler) HandleRoleAssignmentsGetRequest(w http.ResponseWriter, r 
 	}
 
 	// Parse include parameter to check if display names should be included
-	includeDisplay := r.URL.Query().Get("include") == "display"
+	includeDisplay := r.URL.Query().Get(sysutils.QueryParamInclude) == sysutils.IncludeValueDisplay
 
-	serviceResponse, svcErr := rh.roleService.GetRoleAssignments(id, limit, offset, includeDisplay)
+	serviceResponse, svcErr := rh.roleService.GetRoleAssignments(ctx, id, limit, offset, includeDisplay)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -206,7 +212,7 @@ func (rh *roleHandler) HandleRoleAssignmentsGetRequest(w http.ResponseWriter, r 
 		StartIndex:   serviceResponse.StartIndex,
 		Count:        serviceResponse.Count,
 		Assignments:  httpAssignments,
-		Links:        toHTTPLinks(serviceResponse.Links),
+		Links:        serviceResponse.Links,
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, assignmentListResponse)
@@ -220,6 +226,7 @@ func (rh *roleHandler) HandleRoleAssignmentsGetRequest(w http.ResponseWriter, r 
 
 // HandleRoleAddAssignmentsRequest handles the add assignments to role request.
 func (rh *roleHandler) HandleRoleAddAssignmentsRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
@@ -234,7 +241,7 @@ func (rh *roleHandler) HandleRoleAddAssignmentsRequest(w http.ResponseWriter, r 
 	// Convert HTTP request to service request
 	serviceRequest := rh.toRoleAssignments(sanitizedRequest)
 
-	svcErr := rh.roleService.AddAssignments(id, serviceRequest)
+	svcErr := rh.roleService.AddAssignments(ctx, id, serviceRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -246,6 +253,7 @@ func (rh *roleHandler) HandleRoleAddAssignmentsRequest(w http.ResponseWriter, r 
 
 // HandleRoleRemoveAssignmentsRequest handles the remove assignments from role request.
 func (rh *roleHandler) HandleRoleRemoveAssignmentsRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
@@ -260,7 +268,7 @@ func (rh *roleHandler) HandleRoleRemoveAssignmentsRequest(w http.ResponseWriter,
 	// Convert HTTP request to service request
 	serviceRequest := rh.toRoleAssignments(sanitizedRequest)
 
-	svcErr := rh.roleService.RemoveAssignments(id, serviceRequest)
+	svcErr := rh.roleService.RemoveAssignments(ctx, id, serviceRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -303,9 +311,9 @@ func handleError(w http.ResponseWriter,
 // sanitizeCreateRoleRequest sanitizes the create role request input.
 func (rh *roleHandler) sanitizeCreateRoleRequest(request *CreateRoleRequest) CreateRoleRequest {
 	sanitized := CreateRoleRequest{
-		Name:               sysutils.SanitizeString(request.Name),
-		Description:        sysutils.SanitizeString(request.Description),
-		OrganizationUnitID: sysutils.SanitizeString(request.OrganizationUnitID),
+		Name:        sysutils.SanitizeString(request.Name),
+		Description: sysutils.SanitizeString(request.Description),
+		OUID:        sysutils.SanitizeString(request.OUID),
 	}
 
 	if request.Permissions != nil {
@@ -338,9 +346,9 @@ func (rh *roleHandler) sanitizeCreateRoleRequest(request *CreateRoleRequest) Cre
 // sanitizeUpdateRoleRequest sanitizes the update role request input.
 func (rh *roleHandler) sanitizeUpdateRoleRequest(request *UpdateRoleRequest) UpdateRoleRequest {
 	sanitized := UpdateRoleRequest{
-		Name:               sysutils.SanitizeString(request.Name),
-		Description:        sysutils.SanitizeString(request.Description),
-		OrganizationUnitID: sysutils.SanitizeString(request.OrganizationUnitID),
+		Name:        sysutils.SanitizeString(request.Name),
+		Description: sysutils.SanitizeString(request.Description),
+		OUID:        sysutils.SanitizeString(request.OUID),
 	}
 
 	if request.Permissions != nil {
@@ -413,23 +421,18 @@ func (rh *roleHandler) toRoleCreationDetail(req CreateRoleRequest) RoleCreationD
 	}
 
 	return RoleCreationDetail{
-		Name:               req.Name,
-		Description:        req.Description,
-		OrganizationUnitID: req.OrganizationUnitID,
-		Permissions:        req.Permissions,
-		Assignments:        serviceAssignments,
+		Name:        req.Name,
+		Description: req.Description,
+		OUID:        req.OUID,
+		Permissions: req.Permissions,
+		Assignments: serviceAssignments,
 	}
 }
 
 // toHTTPRole converts service layer RoleWithPermissions to HTTP Role.
 func (rh *roleHandler) toHTTPRoleResponse(role *RoleWithPermissions) *RoleResponse {
-	return &RoleResponse{
-		ID:                 role.ID,
-		Name:               role.Name,
-		Description:        role.Description,
-		OrganizationUnitID: role.OrganizationUnitID,
-		Permissions:        role.Permissions,
-	}
+	r := RoleResponse(*role)
+	return &r
 }
 
 // toHTTPCreateRoleResponse converts service layer RoleDetails to HTTP CreateRoleResponse.
@@ -443,22 +446,13 @@ func (rh *roleHandler) toHTTPCreateRoleResponse(role *RoleWithPermissionsAndAssi
 	}
 
 	return &CreateRoleResponse{
-		ID:                 role.ID,
-		Name:               role.Name,
-		Description:        role.Description,
-		OrganizationUnitID: role.OrganizationUnitID,
-		Permissions:        role.Permissions,
-		Assignments:        httpAssignments,
+		ID:          role.ID,
+		Name:        role.Name,
+		Description: role.Description,
+		OUID:        role.OUID,
+		Permissions: role.Permissions,
+		Assignments: httpAssignments,
 	}
-}
-
-// toHTTPLinks converts service layer Links to HTTP LinkResponse.
-func toHTTPLinks(links []Link) []LinkResponse {
-	httpLinks := make([]LinkResponse, len(links))
-	for i, link := range links {
-		httpLinks[i] = LinkResponse(link)
-	}
-	return httpLinks
 }
 
 // toRoleAssignments converts HTTP AssignmentsRequest to service layer RoleAssignments.

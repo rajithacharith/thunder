@@ -19,20 +19,22 @@
 package flowexec
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/asgardeo/thunder/internal/system/config"
-	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 )
 
 // flowStoreInterface defines the methods for flow context storage operations.
 type flowStoreInterface interface {
-	StoreFlowContext(ctx EngineContext) error
-	GetFlowContext(flowID string) (*FlowContextWithUserDataDB, error)
-	UpdateFlowContext(ctx EngineContext) error
-	DeleteFlowContext(flowID string) error
+	StoreFlowContext(ctx context.Context, engineCtx EngineContext, expirySeconds int64) error
+	GetFlowContext(ctx context.Context, flowID string) (*FlowContextWithUserDataDB, error)
+	UpdateFlowContext(ctx context.Context, engineCtx EngineContext) error
+	DeleteFlowContext(ctx context.Context, flowID string) error
 }
 
 // flowStore implements the FlowStoreInterface for managing flow contexts.
@@ -50,124 +52,102 @@ func newFlowStore(dbProvider provider.DBProviderInterface) flowStoreInterface {
 }
 
 // StoreFlowContext stores the complete flow context in the database.
-func (s *flowStore) StoreFlowContext(ctx EngineContext) error {
+func (s *flowStore) StoreFlowContext(ctx context.Context, engineCtx EngineContext, expirySeconds int64) error {
 	// Convert engine context to database model
-	dbModel, err := FromEngineContext(ctx)
+	dbModel, err := FromEngineContext(engineCtx)
 	if err != nil {
 		return fmt.Errorf("failed to convert engine context to database model: %w", err)
 	}
 
-	queries := []func(tx dbmodel.TxInterface) error{
-		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryCreateFlowContext,
-				dbModel.FlowID, dbModel.AppID, dbModel.Verbose,
-				dbModel.CurrentNodeID, dbModel.CurrentAction, dbModel.GraphID,
-				dbModel.RuntimeData, dbModel.ExecutionHistory, s.deploymentID)
-			return err
-		},
-		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryCreateFlowUserData, dbModel.FlowID,
-				dbModel.IsAuthenticated, dbModel.UserID, dbModel.OrganizationUnitID,
-				dbModel.UserType, dbModel.UserInputs, dbModel.UserAttributes, s.deploymentID)
-			return err
-		},
-	}
+	expiryTime := time.Now().UTC().Add(time.Duration(expirySeconds) * time.Second)
 
-	return s.executeTransaction(queries)
+	return withRuntimeDBClientContext(ctx, s.dbProvider, func(dbClient provider.DBClientInterface) error {
+		if _, err := dbClient.ExecuteContext(ctx, QueryCreateFlowContext,
+			dbModel.FlowID, dbModel.AppID, dbModel.Verbose,
+			dbModel.CurrentNodeID, dbModel.CurrentAction, dbModel.GraphID,
+			dbModel.RuntimeData, dbModel.ExecutionHistory, expiryTime, s.deploymentID); err != nil {
+			return err
+		}
+		_, err := dbClient.ExecuteContext(ctx, QueryCreateFlowUserData, dbModel.FlowID,
+			dbModel.IsAuthenticated, dbModel.UserID, dbModel.OUID,
+			dbModel.UserType, dbModel.UserInputs, dbModel.UserAttributes, dbModel.Token,
+			dbModel.AvailableAttributes, s.deploymentID)
+		return err
+	})
 }
 
 // GetFlowContext retrieves the flow context from the database.
-func (s *flowStore) GetFlowContext(flowID string) (*FlowContextWithUserDataDB, error) {
-	dbClient, err := s.dbProvider.GetRuntimeDBClient()
+func (s *flowStore) GetFlowContext(ctx context.Context, flowID string) (*FlowContextWithUserDataDB, error) {
+	var result *FlowContextWithUserDataDB
+
+	err := withRuntimeDBClientContext(ctx, s.dbProvider, func(dbClient provider.DBClientInterface) error {
+		results, err := dbClient.QueryContext(ctx, QueryGetFlowContextWithUserData,
+			flowID, s.deploymentID, time.Now().UTC())
+		if err != nil {
+			return fmt.Errorf("failed to execute query: %w", err)
+		}
+
+		if len(results) == 0 {
+			return nil
+		}
+
+		if len(results) != 1 {
+			return fmt.Errorf("unexpected number of results: %d", len(results))
+		}
+
+		row := results[0]
+		var buildErr error
+		result, buildErr = s.buildFlowContextFromResultRow(row)
+		return buildErr
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get database client: %w", err)
+		return nil, err
 	}
 
-	results, err := dbClient.Query(QueryGetFlowContextWithUserData, flowID, s.deploymentID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute query: %w", err)
-	}
-
-	if len(results) == 0 {
-		return nil, nil
-	}
-
-	if len(results) != 1 {
-		return nil, fmt.Errorf("unexpected number of results: %d", len(results))
-	}
-
-	row := results[0]
-	return s.buildFlowContextFromResultRow(row)
+	return result, nil
 }
 
 // UpdateFlowContext updates the flow context in the database.
-func (s *flowStore) UpdateFlowContext(ctx EngineContext) error {
+func (s *flowStore) UpdateFlowContext(ctx context.Context, engineCtx EngineContext) error {
 	// Convert engine context to database model
-	dbModel, err := FromEngineContext(ctx)
+	dbModel, err := FromEngineContext(engineCtx)
 	if err != nil {
 		return fmt.Errorf("failed to convert engine context to database model: %w", err)
 	}
 
-	queries := []func(tx dbmodel.TxInterface) error{
-		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryUpdateFlowContext, dbModel.FlowID,
-				dbModel.CurrentNodeID, dbModel.CurrentAction, dbModel.RuntimeData, dbModel.ExecutionHistory,
-				s.deploymentID)
+	return withRuntimeDBClientContext(ctx, s.dbProvider, func(dbClient provider.DBClientInterface) error {
+		if _, err := dbClient.ExecuteContext(ctx, QueryUpdateFlowContext, dbModel.FlowID,
+			dbModel.CurrentNodeID, dbModel.CurrentAction, dbModel.RuntimeData, dbModel.ExecutionHistory,
+			s.deploymentID); err != nil {
 			return err
-		},
-		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryUpdateFlowUserData, dbModel.FlowID, dbModel.IsAuthenticated,
-				dbModel.UserID, dbModel.OrganizationUnitID, dbModel.UserType,
-				dbModel.UserInputs, dbModel.UserAttributes, s.deploymentID)
-			return err
-		},
-	}
-
-	return s.executeTransaction(queries)
+		}
+		_, err := dbClient.ExecuteContext(ctx, QueryUpdateFlowUserData, dbModel.FlowID,
+			dbModel.IsAuthenticated, dbModel.UserID, dbModel.OUID, dbModel.UserType,
+			dbModel.UserInputs, dbModel.UserAttributes, dbModel.Token,
+			dbModel.AvailableAttributes, s.deploymentID)
+		return err
+	})
 }
 
 // DeleteFlowContext removes the flow context from the database.
-func (s *flowStore) DeleteFlowContext(flowID string) error {
-	queries := []func(tx dbmodel.TxInterface) error{
-		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryDeleteFlowUserData, flowID, s.deploymentID)
+func (s *flowStore) DeleteFlowContext(ctx context.Context, flowID string) error {
+	return withRuntimeDBClientContext(ctx, s.dbProvider, func(dbClient provider.DBClientInterface) error {
+		if _, err := dbClient.ExecuteContext(ctx, QueryDeleteFlowUserData, flowID, s.deploymentID); err != nil {
 			return err
-		},
-		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryDeleteFlowContext, flowID, s.deploymentID)
-			return err
-		},
-	}
-
-	return s.executeTransaction(queries)
+		}
+		_, err := dbClient.ExecuteContext(ctx, QueryDeleteFlowContext, flowID, s.deploymentID)
+		return err
+	})
 }
 
-// executeTransaction is a helper function to handle database transactions.
-func (s *flowStore) executeTransaction(queries []func(tx dbmodel.TxInterface) error) error {
-	dbClient, err := s.dbProvider.GetRuntimeDBClient()
+// withRuntimeDBClientContext is a helper to execute a function with a runtime database client.
+func withRuntimeDBClientContext(_ context.Context, dbProvider provider.DBProviderInterface,
+	fn func(provider.DBClientInterface) error) error {
+	dbClient, err := dbProvider.GetRuntimeDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
-
-	tx, err := dbClient.BeginTx()
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-
-	for _, query := range queries {
-		if err := query(tx); err != nil {
-			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				return fmt.Errorf("failed to rollback transaction: %w", rollbackErr)
-			}
-			return fmt.Errorf("transaction failed: %w", err)
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
-	return nil
+	return fn(dbClient)
 }
 
 // buildFlowContextFromResultRow builds a FlowContextWithUserDataDB from a database result row.
@@ -188,15 +168,22 @@ func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*
 		return nil, errors.New("failed to parse graph_id as string")
 	}
 
+	expiryTime, err := s.parseTimeField(row["expiry_time"], "expiry_time")
+	if err != nil {
+		return nil, err
+	}
+
 	// Parse optional fields
 	currentNodeID := s.parseOptionalString(row["current_node_id"])
 	currentAction := s.parseOptionalString(row["current_action"])
 	userID := s.parseOptionalString(row["user_id"])
-	organizationUnitID := s.parseOptionalString(row["ou_id"])
+	oUID := s.parseOptionalString(row["ou_id"])
 	userType := s.parseOptionalString(row["user_type"])
 	userInputs := s.parseOptionalString(row["user_inputs"])
 	runtimeData := s.parseOptionalString(row["runtime_data"])
 	userAttributes := s.parseOptionalString(row["user_attributes"])
+	token := s.parseOptionalString(row["token"])
+	availableAttributes := s.parseOptionalString(row["available_attributes"])
 	executionHistory := s.parseOptionalString(row["execution_history"])
 
 	// Parse boolean fields with type conversion support
@@ -204,20 +191,23 @@ func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*
 	verbose := s.parseBoolean(row["verbose"])
 
 	return &FlowContextWithUserDataDB{
-		FlowID:             flowID,
-		AppID:              appID,
-		CurrentNodeID:      currentNodeID,
-		CurrentAction:      currentAction,
-		GraphID:            graphID,
-		RuntimeData:        runtimeData,
-		Verbose:            verbose,
-		IsAuthenticated:    isAuthenticated,
-		UserID:             userID,
-		OrganizationUnitID: organizationUnitID,
-		UserType:           userType,
-		UserInputs:         userInputs,
-		UserAttributes:     userAttributes,
-		ExecutionHistory:   executionHistory,
+		FlowID:              flowID,
+		AppID:               appID,
+		CurrentNodeID:       currentNodeID,
+		CurrentAction:       currentAction,
+		GraphID:             graphID,
+		RuntimeData:         runtimeData,
+		Verbose:             verbose,
+		IsAuthenticated:     isAuthenticated,
+		UserID:              userID,
+		OUID:                oUID,
+		UserType:            userType,
+		UserInputs:          userInputs,
+		UserAttributes:      userAttributes,
+		Token:               token,
+		AvailableAttributes: availableAttributes,
+		ExecutionHistory:    executionHistory,
+		ExpiryTime:          expiryTime,
 	}, nil
 }
 
@@ -252,4 +242,40 @@ func (s *flowStore) parseBoolean(value interface{}) bool {
 	}
 
 	return false
+}
+
+// parseTimeField safely parses a time field from the database row handling multiple formats.
+// This follows the pattern used in other stores for consistency.
+func (s *flowStore) parseTimeField(field interface{}, fieldName string) (time.Time, error) {
+	const customTimeFormat = "2006-01-02 15:04:05.999999999"
+
+	switch v := field.(type) {
+	case string:
+		// Handle SQLite datetime strings
+		trimmedTime := s.trimTimeString(v)
+		parsedTime, err := time.Parse(customTimeFormat, trimmedTime)
+		if err != nil {
+			// Try alternative ISO 8601 format as fallback
+			parsedTime, err = time.Parse(time.RFC3339, v)
+			if err != nil {
+				return time.Time{}, fmt.Errorf("error parsing %s: %w", fieldName, err)
+			}
+		}
+		return parsedTime, nil
+	case time.Time:
+		return v, nil
+	case nil:
+		return time.Time{}, fmt.Errorf("%s is nil", fieldName)
+	default:
+		return time.Time{}, fmt.Errorf("unexpected type for %s: %T", fieldName, field)
+	}
+}
+
+// trimTimeString trims extra information from a time string to match the expected format.
+func (s *flowStore) trimTimeString(timeStr string) string {
+	parts := strings.SplitN(timeStr, " ", 3)
+	if len(parts) >= 2 {
+		return parts[0] + " " + parts[1]
+	}
+	return timeStr
 }

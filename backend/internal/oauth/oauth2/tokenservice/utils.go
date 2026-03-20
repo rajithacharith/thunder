@@ -20,15 +20,15 @@ package tokenservice
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"slices"
 	"strings"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/user"
 )
 
 // ParseScopes parses a space-separated scope string into a slice of scope strings.
@@ -54,19 +54,13 @@ func JoinScopes(scopes []string) string {
 	return strings.Join(scopes, " ")
 }
 
-// resolveTokenConfig resolves the token configuration from the OAuth app or falls back to global config.
-// Both access and ID tokens use the same OAuth-level issuer.
-func resolveTokenConfig(oauthApp *appmodel.OAuthAppConfigProcessedDTO, tokenType TokenType) *TokenConfig {
+// ResolveTokenConfig resolves the token configuration from the OAuth app or falls back to global config.
+func ResolveTokenConfig(oauthApp *appmodel.OAuthAppConfigProcessedDTO, tokenType TokenType) *TokenConfig {
 	conf := config.GetThunderRuntime().Config
 
 	tokenConfig := &TokenConfig{
 		Issuer:         conf.JWT.Issuer,
 		ValidityPeriod: conf.JWT.ValidityPeriod,
-	}
-
-	// Use OAuth-level issuer for all token types if app config is available
-	if oauthApp != nil && oauthApp.Token != nil && oauthApp.Token.Issuer != "" {
-		tokenConfig.Issuer = oauthApp.Token.Issuer
 	}
 
 	// Override with token-type specific configuration if available
@@ -92,7 +86,7 @@ func resolveTokenConfig(oauthApp *appmodel.OAuthAppConfigProcessedDTO, tokenType
 	return tokenConfig
 }
 
-// extractStringClaim safely extracts a string claim from a claims map.
+// extractStringClaim safely extracts a non-empty string claim from a claims map.
 func extractStringClaim(claims map[string]interface{}, key string) (string, error) {
 	value, ok := claims[key]
 	if !ok {
@@ -102,6 +96,10 @@ func extractStringClaim(claims map[string]interface{}, key string) (string, erro
 	strValue, ok := value.(string)
 	if !ok {
 		return "", fmt.Errorf("claim %s is not a string", key)
+	}
+
+	if strValue == "" {
+		return "", fmt.Errorf("claim %s is empty", key)
 	}
 
 	return strValue, nil
@@ -199,7 +197,7 @@ func ExtractUserAttributes(claims map[string]interface{}) map[string]interface{}
 func getValidIssuers(oauthApp *appmodel.OAuthAppConfigProcessedDTO) map[string]bool {
 	validIssuers := make(map[string]bool)
 
-	tokenConfig := resolveTokenConfig(oauthApp, TokenTypeAccess)
+	tokenConfig := ResolveTokenConfig(oauthApp, TokenTypeAccess)
 	validIssuers[tokenConfig.Issuer] = true
 
 	// TODO: Add support for external issuers
@@ -215,21 +213,96 @@ func validateIssuer(issuer string, oauthApp *appmodel.OAuthAppConfigProcessedDTO
 	return nil
 }
 
-// BuildOIDCClaimsFromScopes builds OIDC claims based on scopes, user attributes, and app configuration.
-func BuildOIDCClaimsFromScopes(
+// FetchUserAttributes fetches user attributes and merges default claims and groups into the return map.
+// Callers should log errors with their own context.
+func FetchUserAttributes(
+	ctx context.Context,
+	attrCacheService attributecache.AttributeCacheServiceInterface,
+	allowedClaims []string,
+	attributeCacheKey string,
+) (map[string]interface{}, error) {
+	attrs := make(map[string]interface{})
+
+	// Helper to check if a claim should be included
+	shouldInclude := func(claimName string) bool {
+		if len(allowedClaims) == 0 {
+			return false // Only add special claims if explicitly allowed
+		}
+		return slices.Contains(allowedClaims, claimName)
+	}
+
+	if attributeCacheKey != "" {
+		attrCache, err := attrCacheService.GetAttributeCache(ctx, attributeCacheKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch attribute cache: %s", err.Error)
+		}
+		if attrCache == nil || attrCache.Attributes == nil {
+			return nil, fmt.Errorf("attribute cache not found for key: %s", attributeCacheKey)
+		}
+		for key, value := range attrCache.Attributes {
+			if shouldInclude(key) {
+				attrs[key] = value
+			}
+		}
+	}
+
+	return attrs, nil
+}
+
+// BuildClaims builds claims by merging scope-based claims with explicit claims request.
+// Explicit claims override scope claims. Returns empty if allowedUserAttributes is not configured.
+// The requestedClaims should contain only the relevant claims map (IDToken or UserInfo) for the target.
+func BuildClaims(
+	scopes []string,
+	requestedClaims map[string]*model.IndividualClaimRequest,
+	userAttributes map[string]interface{},
+	scopeClaimsMapping map[string][]string,
+	allowedUserAttributes []string,
+) map[string]interface{} {
+	result := make(map[string]interface{})
+
+	// Check for openid scope first
+	hasOpenIDScope := slices.Contains(scopes, constants.ScopeOpenID)
+	if !hasOpenIDScope || userAttributes == nil {
+		return result
+	}
+
+	// Build scope claims
+	scopeClaims := buildClaimsFromScopes(scopes, userAttributes, scopeClaimsMapping, allowedUserAttributes)
+
+	// Process explicit claims request if present
+	if requestedClaims != nil {
+		explicitClaims := buildClaimsFromRequest(requestedClaims, userAttributes, allowedUserAttributes)
+
+		// Add scope claims that are not explicitly requested
+		for k, v := range scopeClaims {
+			if _, explicitlyRequested := requestedClaims[k]; !explicitlyRequested {
+				result[k] = v
+			}
+		}
+
+		// Add validated explicit claims (takes precedence over scope claims)
+		for claimName, value := range explicitClaims {
+			result[claimName] = value
+		}
+	} else {
+		// No explicit claims request, add all scope claims
+		for k, v := range scopeClaims {
+			result[k] = v
+		}
+	}
+
+	return result
+}
+
+// buildClaimsFromScopes builds claims from OIDC scopes based on scope-to-claims mapping.
+func buildClaimsFromScopes(
 	scopes []string,
 	userAttributes map[string]interface{},
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	scopeClaimsMapping map[string][]string,
+	allowedUserAttributes []string,
 ) map[string]interface{} {
 	claims := make(map[string]interface{})
-
-	// Extract allowed user attributes and scope-to-claims mapping from ID token config
-	var allowedUserAttributes []string
-	var scopeClaimsMapping map[string][]string
-	if oauthApp != nil && oauthApp.Token != nil && oauthApp.Token.IDToken != nil {
-		allowedUserAttributes = oauthApp.Token.IDToken.UserAttributes
-		scopeClaimsMapping = oauthApp.Token.IDToken.ScopeClaims
-	}
 
 	if len(allowedUserAttributes) == 0 || userAttributes == nil || len(scopes) == 0 {
 		return claims
@@ -266,36 +339,49 @@ func BuildOIDCClaimsFromScopes(
 	return claims
 }
 
-// FetchUserAttributesAndGroups fetches user attributes and groups from the user service.
-// It returns user attributes, user groups, and an error if any.
-// Callers should log errors with their own context.
-func FetchUserAttributesAndGroups(userService user.UserServiceInterface, userID string,
-	includeGroups bool) (map[string]interface{}, []string, error) {
-	user, svcErr := userService.GetUser(context.TODO(), userID)
-	if svcErr != nil {
-		return nil, nil, fmt.Errorf("failed to fetch user: %s", svcErr.Error)
+// buildClaimsFromRequest builds claims from explicit claims parameter.
+// Returns empty if allowedUserAttributes is not configured.
+// Filters claims by availability, allowed attributes, and value/values constraints.
+func buildClaimsFromRequest(
+	requestedClaims map[string]*model.IndividualClaimRequest,
+	userAttributes map[string]interface{},
+	allowedUserAttributes []string,
+) map[string]interface{} {
+	result := make(map[string]interface{})
+
+	if requestedClaims == nil || userAttributes == nil {
+		return result
 	}
 
-	var attrs map[string]interface{}
-	if user.Attributes != nil {
-		if err := json.Unmarshal(user.Attributes, &attrs); err != nil {
-			return nil, nil, fmt.Errorf("failed to unmarshal user attributes: %w", err)
+	// Return empty if no allowed attributes configured
+	if len(allowedUserAttributes) == 0 {
+		return result
+	}
+
+	// Process each requested claim
+	for claimName, claimReq := range requestedClaims {
+		// Check if claim value is available in user attributes
+		value, exists := userAttributes[claimName]
+		if !exists || value == nil {
+			// Per OIDC spec, it's not an error to not return a requested claim
+			continue
 		}
+
+		// Check if this claim is allowed by app config
+		if !slices.Contains(allowedUserAttributes, claimName) {
+			continue
+		}
+
+		// Check value/values constraints if specified
+		if claimReq != nil && !claimReq.MatchesValue(value) {
+			// Value doesn't match the requested constraint, skip this claim
+			continue
+		}
+
+		// TODO: Revisit "essential" claim handling if needed.
+
+		result[claimName] = value
 	}
 
-	if !includeGroups {
-		return attrs, []string{}, nil
-	}
-
-	groups, svcErr := userService.GetUserGroups(context.TODO(), userID, constants.DefaultGroupListLimit, 0)
-	if svcErr != nil {
-		return nil, nil, fmt.Errorf("failed to fetch user groups: %s", svcErr.Error)
-	}
-
-	userGroups := make([]string, 0, len(groups.Groups))
-	for _, group := range groups.Groups {
-		userGroups = append(userGroups, group.Name)
-	}
-
-	return attrs, userGroups, nil
+	return result
 }

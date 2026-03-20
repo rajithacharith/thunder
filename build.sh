@@ -120,14 +120,19 @@ SERVER_DB_SCRIPTS_DIR=$BACKEND_BASE_DIR/dbscripts
 SECURITY_DIR=repository/resources/security
 FRONTEND_BASE_DIR=frontend
 GATE_APP_DIST_DIR=apps/gate
-DEVELOP_APP_DIST_DIR=apps/develop
+CONSOLE_APP_DIST_DIR=apps/console
 FRONTEND_GATE_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/thunder-gate
-FRONTEND_DEVELOP_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/thunder-develop
+FRONTEND_CONSOLE_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/thunder-console
 SAMPLE_BASE_DIR=samples
 VANILLA_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-vanilla-sample
 VANILLA_SAMPLE_APP_SERVER_DIR=$VANILLA_SAMPLE_APP_DIR/server
 REACT_SDK_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-sdk-sample
 REACT_API_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-api-based-sample
+
+# Default ports
+GATE_APP_DEFAULT_PORT=5190
+CONSOLE_APP_DEFAULT_PORT=5191
+DOCS_DEFAULT_PORT=3000
 
 # Integration test filters (optional)
 TEST_RUN="${4:-}"
@@ -292,8 +297,8 @@ function initialize_databases() {
 
     mkdir -p "$REPOSITORY_DB_DIR"
 
-    db_files=("thunderdb.db" "runtimedb.db" "userdb.db")
-    script_paths=("thunderdb/sqlite.sql" "runtimedb/sqlite.sql" "userdb/sqlite.sql")
+    db_files=("configdb.db" "runtimedb.db" "userdb.db")
+    script_paths=("configdb/sqlite.sql" "runtimedb/sqlite.sql" "userdb/sqlite.sql")
 
     for ((i = 0; i < ${#db_files[@]}; i++)); do
         db_file="${db_files[$i]}"
@@ -351,6 +356,29 @@ function build_frontend() {
     echo "================================================================"
 }
 
+function build_docs() {
+    echo "================================================================"
+    echo "Building documentation..."
+    
+    # Check if pnpm is installed, if not install it
+    if ! command -v pnpm >/dev/null 2>&1; then
+        echo "pnpm not found, installing..."
+        npm install -g pnpm
+    fi
+    
+    # Navigate to frontend directory first to ensure build:docs script can run
+    cd "$FRONTEND_BASE_DIR" || exit 1
+    echo "Installing frontend dependencies (required for docs build)..."
+    pnpm install --frozen-lockfile
+    
+    echo "Building documentation..."
+    pnpm run build:docs
+    
+    # Return to script directory
+    cd "$SCRIPT_DIR" || exit 1
+    echo "================================================================"
+}
+
 function prepare_backend_for_packaging() {
     echo "================================================================"
     echo "Copying backend artifacts..."
@@ -375,7 +403,8 @@ function prepare_backend_for_packaging() {
     chmod +x "$DIST_DIR/$PRODUCT_FOLDER/bootstrap/"*.sh 2>/dev/null || true
 
     echo "=== Ensuring server certificates exist in the distribution ==="
-    ensure_certificates "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR"
+    ensure_certificates "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR" "server"
+    ensure_certificates "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR" "signing"
     echo "================================================================"
 
     echo "=== Ensuring crypto file exists in the distribution ==="
@@ -388,7 +417,7 @@ function prepare_frontend_for_packaging() {
     echo "Copying frontend artifacts..."
 
     mkdir -p "$DIST_DIR/$PRODUCT_FOLDER/$GATE_APP_DIST_DIR"
-    mkdir -p "$DIST_DIR/$PRODUCT_FOLDER/$DEVELOP_APP_DIST_DIR"
+    mkdir -p "$DIST_DIR/$PRODUCT_FOLDER/$CONSOLE_APP_DIST_DIR"
 
     # Copy gate app build output
     if [ -d "$FRONTEND_GATE_APP_SOURCE_DIR/dist" ]; then
@@ -400,14 +429,14 @@ function prepare_frontend_for_packaging() {
         echo "Warning: Gate app build output not found at $FRONTEND_GATE_APP_SOURCE_DIR/dist"
     fi
     
-    # Copy develop app build output
-    if [ -d "$FRONTEND_DEVELOP_APP_SOURCE_DIR/dist" ]; then
-        echo "Copying Develop app build output..."
+    # Copy console app build output
+    if [ -d "$FRONTEND_CONSOLE_APP_SOURCE_DIR/dist" ]; then
+        echo "Copying Console app build output..."
         shopt -s dotglob
-        cp -r "$FRONTEND_DEVELOP_APP_SOURCE_DIR/dist/"* "$DIST_DIR/$PRODUCT_FOLDER/$DEVELOP_APP_DIST_DIR"
+        cp -r "$FRONTEND_CONSOLE_APP_SOURCE_DIR/dist/"* "$DIST_DIR/$PRODUCT_FOLDER/$CONSOLE_APP_DIST_DIR"
         shopt -u dotglob
     else
-        echo "Warning: Develop app build output not found at $FRONTEND_DEVELOP_APP_SOURCE_DIR/dist"
+        echo "Warning: Console app build output not found at $FRONTEND_CONSOLE_APP_SOURCE_DIR/dist"
     fi
 
     echo "================================================================"
@@ -449,7 +478,7 @@ function build_sample_app() {
     # Build React Vanilla sample
     echo "=== Building React Vanilla sample app ==="
     echo "=== Ensuring React Vanilla sample app certificates exist ==="
-    ensure_certificates "$VANILLA_SAMPLE_APP_DIR"
+    ensure_certificates "$VANILLA_SAMPLE_APP_DIR" "server"
 
     cd "$VANILLA_SAMPLE_APP_DIR" || exit 1
     echo "Installing React Vanilla sample dependencies..."
@@ -466,7 +495,7 @@ function build_sample_app() {
 
     # Ensure certificates exist for React SDK sample
     echo "=== Ensuring React SDK sample app certificates exist ==="
-    ensure_certificates "$REACT_SDK_SAMPLE_APP_DIR"
+    ensure_certificates "$REACT_SDK_SAMPLE_APP_DIR" "server"
 
     cd "$REACT_SDK_SAMPLE_APP_DIR" || exit 1
     echo "Installing React SDK sample dependencies..."
@@ -483,7 +512,7 @@ function build_sample_app() {
 
     # Ensure certificates exist for React API-based sample
     echo "=== Ensuring React API-based sample app certificates exist ==="
-    ensure_certificates "$REACT_API_SAMPLE_APP_DIR"
+    ensure_certificates "$REACT_API_SAMPLE_APP_DIR" "server"
 
     cd "$REACT_API_SAMPLE_APP_DIR" || exit 1
     echo "Installing React API-based sample dependencies..."
@@ -553,7 +582,7 @@ function package_vanilla_sample() {
 
     # Ensure the certificates exist in the sample app directory
     echo "=== Ensuring certificates exist in the React Vanilla sample distribution ==="
-    ensure_certificates "$DIST_DIR/$VANILLA_SAMPLE_APP_FOLDER"
+    ensure_certificates "$DIST_DIR/$VANILLA_SAMPLE_APP_FOLDER" "server"
 
     # Copy the appropriate startup script based on the target OS
     if [ "$SAMPLE_DIST_OS" = "win" ]; then
@@ -627,7 +656,7 @@ function package_react_api_based_sample() {
 
     # Ensure the certificates exist in the sample app dist directory
     echo "=== Ensuring certificates exist in the React API-based sample distribution ==="
-    ensure_certificates "$DIST_DIR/$REACT_API_SAMPLE_APP_FOLDER/dist"
+    ensure_certificates "$DIST_DIR/$REACT_API_SAMPLE_APP_FOLDER/dist" "server"
 
     # Copy the appropriate startup script based on the target OS
     if [ "$SAMPLE_DIST_OS" = "win" ]; then
@@ -664,10 +693,10 @@ function test_unit() {
     # Run gotestsum if available, otherwise fallback to go test
     if command -v gotestsum &> /dev/null; then
         echo "Running unit tests with coverage using gotestsum..."
-        gotestsum -- -v -coverprofile=coverage_unit.out -covermode=atomic -coverpkg="$coverpkg" ./... || { echo "There are unit test failures."; exit 1; }
+        gotestsum -- -v -count=1 -coverprofile=coverage_unit.out -covermode=atomic -coverpkg="$coverpkg" ./... || { echo "There are unit test failures."; exit 1; }
     else
         echo "Running unit tests with coverage using go test..."
-        go test -v -coverprofile=coverage_unit.out -covermode=atomic -coverpkg="$coverpkg" ./... || { echo "There are unit test failures."; exit 1; }
+        go test -v -count=1 -coverprofile=coverage_unit.out -covermode=atomic -coverpkg="$coverpkg" ./... || { echo "There are unit test failures."; exit 1; }
     fi
     
     echo "Unit test coverage profile generated in: backend/coverage_unit.out"
@@ -826,16 +855,16 @@ function merge_coverage() {
 
 function ensure_certificates() {
     local cert_dir=$1
-    local cert_name_prefix="server"
+    local cert_name_prefix=${2:-"server"}  # Default to "server" if not specified
     local cert_file_name="${cert_name_prefix}.cert"
     local key_file_name="${cert_name_prefix}.key"
 
-    # Generate certificate and key file if don't exists in the cert directory
+    # Generate certificate and key file if they don't exist in the cert directory
     local local_cert_file="${LOCAL_CERT_DIR}/${cert_file_name}"
     local local_key_file="${LOCAL_CERT_DIR}/${key_file_name}"
     if [[ ! -f "$local_cert_file" || ! -f "$local_key_file" ]]; then
         mkdir -p "$LOCAL_CERT_DIR"
-        echo "Generating SSL certificates in $LOCAL_CERT_DIR..."
+        echo "Generating certificates (${cert_name_prefix}) in $LOCAL_CERT_DIR..."
         OPENSSL_ERR=$(
             openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
                 -keyout "$local_key_file" \
@@ -844,12 +873,12 @@ function ensure_certificates() {
                 > /dev/null 2>&1
         )
         if [[ $? -ne 0 ]]; then
-            echo "Error generating SSL certificates: $OPENSSL_ERR"
+            echo "Error generating certificates: $OPENSSL_ERR"
             exit 1
         fi
         echo "Certificates generated successfully in $LOCAL_CERT_DIR."
     else
-        echo "Certificates already exist in $LOCAL_CERT_DIR."
+        echo "Certificates (${cert_name_prefix}) already exist in $LOCAL_CERT_DIR."
     fi
 
     # Copy the generated certificates to the specified directory
@@ -858,12 +887,12 @@ function ensure_certificates() {
 
     if [[ ! -f "$cert_file" || ! -f "$key_file" ]]; then
         mkdir -p "$cert_dir"
-        echo "Copying certificates to $cert_dir..."
+        echo "Copying certificates (${cert_name_prefix}) to $cert_dir..."
         cp "$local_cert_file" "$cert_file"
         cp "$local_key_file" "$key_file"
         echo "Certificates copied successfully to $cert_dir."
     else
-        echo "Certificates already exist in $cert_dir."
+        echo "Certificates (${cert_name_prefix}) already exist in $cert_dir."
     fi
 }
 
@@ -881,12 +910,10 @@ function ensure_crypto_file() {
     else
         echo "Default crypto key file not found. Generating new key at $KEY_FILE..."
         
-        # Generate 32-byte key (64 hex characters) using /dev/urandom
+        # Generate 32-byte key (64 hex characters) using openssl
         local NEW_KEY
-        NEW_KEY=$(head -c 32 /dev/urandom | xxd -p -c 32)
-
-        if [[ -z "$NEW_KEY" ]]; then
-            echo "ERROR: Failed to generate crypto key from /dev/urandom."
+        if ! NEW_KEY=$(openssl rand -hex 32); then
+            echo "ERROR: Failed to generate crypto key using openssl."
             exit 1
         fi
 
@@ -910,9 +937,6 @@ function run() {
     ORIGINAL_THUNDER_SKIP_SECURITY="${THUNDER_SKIP_SECURITY:-}"
     export THUNDER_SKIP_SECURITY=true
     run_backend false
-    
-    GATE_APP_DEFAULT_PORT=5190
-    DEVELOP_APP_DEFAULT_PORT=5191
 
     # Run initial data setup
     echo "⚙️  Running initial data setup..."
@@ -946,7 +970,7 @@ function run() {
     # Run the bootstrap script directly with environment variable and arguments
     THUNDER_API_BASE="$BASE_URL" \
         "$BACKEND_BASE_DIR/cmd/server/bootstrap/01-default-resources.sh" \
-        --develop-redirect-uris "https://localhost:$DEVELOP_APP_DEFAULT_PORT/develop"
+        --console-redirect-uris "https://localhost:$CONSOLE_APP_DEFAULT_PORT/console"
 
     if [ $? -ne 0 ]; then
         echo "❌ Initial data setup failed"
@@ -969,7 +993,7 @@ function run() {
     echo "  👉 Backend : $BASE_URL"
     echo "  📱 Frontend :"
     echo "      🚪 Gate (Login/Register): https://localhost:$GATE_APP_DEFAULT_PORT/gate"
-    echo "      🛠️  Develop (Admin Console): https://localhost:$DEVELOP_APP_DEFAULT_PORT/develop"
+    echo "      🛠️  Console (System Management): https://localhost:$CONSOLE_APP_DEFAULT_PORT/console"
     echo ""
 
     echo "Press Ctrl+C to stop."
@@ -1001,26 +1025,33 @@ function run() {
     wait $BACKEND_PID 2>/dev/null
 }
 
+function debug_backend() {
+    run_backend true true
+}
+
 function run_backend() {
     local show_final_output=${1:-true}
+    local debug=${2:-false}
 
     echo "=== Ensuring server certificates exist ==="
-    ensure_certificates "$BACKEND_DIR/$SECURITY_DIR"
+    ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "server"
+    ensure_certificates "$BACKEND_DIR/$SECURITY_DIR" "signing"
 
     echo "=== Ensuring sample app certificates exist ==="
-    ensure_certificates "$VANILLA_SAMPLE_APP_DIR"
-    ensure_certificates "$REACT_API_SAMPLE_APP_DIR"
+    ensure_certificates "$VANILLA_SAMPLE_APP_DIR" "server"
+    ensure_certificates "$REACT_API_SAMPLE_APP_DIR" "server"
 
     ensure_crypto_file "$BACKEND_DIR/$SECURITY_DIR"
 
     echo "Initializing databases..."
     initialize_databases
 
-    start_backend "$show_final_output"
+    start_backend "$show_final_output" "$debug"
 }
 
 function start_backend() {
     local show_final_output=${1:-true}
+    local debug=${2:-false}
 
     # Kill known ports
     function kill_port() {
@@ -1030,9 +1061,18 @@ function start_backend() {
 
     kill_port $PORT
 
-    echo "=== Starting backend on $BASE_URL ==="
-    go run -C "$BACKEND_DIR" . &
-    BACKEND_PID=$!
+    if [ "$debug" = "true" ]; then
+        echo "=== Starting backend on $BASE_URL in debug mode ==="
+        (
+            cd "$BACKEND_DIR" || exit 1
+            dlv debug --headless --listen=127.0.0.1:2345 --api-version=2 --accept-multiclient --continue -- .
+        ) &
+        BACKEND_PID=$!
+    else
+        echo "=== Starting backend on $BASE_URL ==="
+        go run -C "$BACKEND_DIR" . &
+        BACKEND_PID=$!
+    fi
 
     if [ "$show_final_output" = "true" ]; then
         echo ""
@@ -1066,8 +1106,36 @@ function run_frontend() {
     
     echo "Starting frontend applications in the background..."
     # Start frontend processes in background
-    pnpm -r --parallel --filter "@thunder/develop" --filter "@thunder/gate" dev &
+    pnpm -r --parallel --filter "@thunder/console" --filter "@thunder/gate" dev &
     FRONTEND_PID=$!
+    
+    # Return to script directory
+    cd "$SCRIPT_DIR" || exit 1
+    echo "================================================================"
+}
+
+function run_docs() {
+    echo "================================================================"
+    echo "Starting documentation development server..."
+    
+    # Check if pnpm is installed, if not install it
+    if ! command -v pnpm >/dev/null 2>&1; then
+        echo "pnpm not found, installing..."
+        npm install -g pnpm
+    fi
+    
+    # Navigate to frontend directory first to install all dependencies
+    cd "$FRONTEND_BASE_DIR" || exit 1
+    echo "Installing frontend dependencies (required for docs)..."
+    pnpm install --frozen-lockfile
+    
+    # Navigate to docs directory
+    cd "$SCRIPT_DIR/docs" || exit 1
+    
+    echo "Starting documentation server with live reload..."
+    echo "📚 Documentation will be available at http://localhost:$DOCS_DEFAULT_PORT"
+    echo "Press Ctrl+C to stop."
+    pnpm dev
     
     # Return to script directory
     cd "$SCRIPT_DIR" || exit 1
@@ -1084,6 +1152,9 @@ case "$1" in
         ;;
     build_frontend)
         build_frontend
+        ;;
+    build_docs)
+        build_docs
         ;;
     build_samples)
         build_sample_app
@@ -1118,16 +1189,23 @@ case "$1" in
     run_backend)
         run_backend
         ;;
+    debug_backend)
+        debug_backend
+        ;;
     run_frontend)
         run_frontend
         ;;
+    run_docs)
+        run_docs
+        ;;
     *)
-        echo "Usage: ./build.sh {clean|build|build_backend|build_frontend|test|run} [OS] [ARCH]"
+        echo "Usage: ./build.sh {clean|build|build_backend|build_frontend|build_docs|test|run} [OS] [ARCH]"
         echo ""
         echo "  clean                    - Clean build artifacts"
         echo "  build                    - Build the complete Thunder application (backend + frontend + samples)"
         echo "  build_backend            - Build only the Thunder backend server"
         echo "  build_frontend           - Build only the Next.js frontend applications"
+        echo "  build_docs               - Build only the documentation"
         echo "  build_samples            - Build the sample applications"
         echo "  test_unit                - Run unit tests with coverage"
         echo "  test_integration         - Run integration tests. Use -run and -package for filtering"
@@ -1135,7 +1213,9 @@ case "$1" in
         echo "  test                     - Run all tests (unit and integration)"
         echo "  run                      - Run the Thunder server for development (with automatic initial data setup)"
         echo "  run_backend              - Run the Thunder backend for development"
+        echo "  debug_backend            - Run the Thunder backend for development in debug mode"
         echo "  run_frontend             - Run the Thunder frontend for development"
+        echo "  run_docs                 - Run the documentation development server with live reload"
         exit 1
         ;;
 esac

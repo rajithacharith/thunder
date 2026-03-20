@@ -45,6 +45,7 @@ func newUserSchemaHandler(userSchemaService UserSchemaServiceInterface) *userSch
 
 // HandleUserSchemaListRequest handles the user schema list request.
 func (h *userSchemaHandler) HandleUserSchemaListRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
 
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
@@ -57,7 +58,7 @@ func (h *userSchemaHandler) HandleUserSchemaListRequest(w http.ResponseWriter, r
 		limit = serverconst.DefaultPageSize
 	}
 
-	userSchemaListResponse, svcErr := h.userSchemaService.GetUserSchemaList(limit, offset)
+	userSchemaListResponse, svcErr := h.userSchemaService.GetUserSchemaList(ctx, limit, offset)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -73,6 +74,7 @@ func (h *userSchemaHandler) HandleUserSchemaListRequest(w http.ResponseWriter, r
 
 // HandleUserSchemaPostRequest handles the user schema creation request.
 func (h *userSchemaHandler) HandleUserSchemaPostRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
 
 	createRequest, err := sysutils.DecodeJSONBody[CreateUserSchemaRequest](r)
@@ -89,7 +91,7 @@ func (h *userSchemaHandler) HandleUserSchemaPostRequest(w http.ResponseWriter, r
 
 	sanitizedRequest := h.sanitizeCreateUserSchemaRequest(*createRequest)
 
-	createdUserSchema, svcErr := h.userSchemaService.CreateUserSchema(sanitizedRequest)
+	createdUserSchema, svcErr := h.userSchemaService.CreateUserSchema(ctx, sanitizedRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -103,6 +105,7 @@ func (h *userSchemaHandler) HandleUserSchemaPostRequest(w http.ResponseWriter, r
 
 // HandleUserSchemaGetRequest handles the user schema get request.
 func (h *userSchemaHandler) HandleUserSchemaGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
 
 	schemaID, idValidationFailed := extractAndValidateSchemaID(w, r)
@@ -110,7 +113,7 @@ func (h *userSchemaHandler) HandleUserSchemaGetRequest(w http.ResponseWriter, r 
 		return
 	}
 
-	userSchema, svcErr := h.userSchemaService.GetUserSchema(schemaID)
+	userSchema, svcErr := h.userSchemaService.GetUserSchema(ctx, schemaID)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -123,6 +126,7 @@ func (h *userSchemaHandler) HandleUserSchemaGetRequest(w http.ResponseWriter, r 
 
 // HandleUserSchemaPutRequest handles the user schema update request.
 func (h *userSchemaHandler) HandleUserSchemaPutRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
 
 	schemaID, idValidationFailed := extractAndValidateSchemaID(w, r)
@@ -135,7 +139,7 @@ func (h *userSchemaHandler) HandleUserSchemaPutRequest(w http.ResponseWriter, r 
 		return
 	}
 
-	updatedUserSchema, svcErr := h.userSchemaService.UpdateUserSchema(schemaID, sanitizedRequest)
+	updatedUserSchema, svcErr := h.userSchemaService.UpdateUserSchema(ctx, schemaID, sanitizedRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -149,6 +153,7 @@ func (h *userSchemaHandler) HandleUserSchemaPutRequest(w http.ResponseWriter, r 
 
 // HandleUserSchemaDeleteRequest handles the user schema delete request.
 func (h *userSchemaHandler) HandleUserSchemaDeleteRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
 
 	schemaID, idValidationFailed := extractAndValidateSchemaID(w, r)
@@ -156,7 +161,7 @@ func (h *userSchemaHandler) HandleUserSchemaDeleteRequest(w http.ResponseWriter,
 		return
 	}
 
-	svcErr := h.userSchemaService.DeleteUserSchema(schemaID)
+	svcErr := h.userSchemaService.DeleteUserSchema(ctx, schemaID)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -199,6 +204,12 @@ func handleError(w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
 			statusCode = http.StatusNotFound
 		} else if svcErr.Code == ErrorUserSchemaNameConflict.Code {
 			statusCode = http.StatusConflict
+		} else if svcErr.Code == ErrorCannotModifyDeclarativeResource.Code {
+			statusCode = http.StatusForbidden
+		} else if svcErr.Code == ErrorResultLimitExceededInCompositeMode.Code {
+			statusCode = http.StatusBadRequest
+		} else if svcErr.Code == serviceerror.ErrorUnauthorized.Code {
+			statusCode = http.StatusForbidden
 		}
 	} else {
 		statusCode = http.StatusInternalServerError
@@ -239,7 +250,6 @@ func validateUpdateUserSchemaRequest(
 			Message:     ErrorInvalidRequestFormat.Error,
 			Description: "Failed to parse request body",
 		}
-
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, errResp)
 		return UpdateUserSchemaRequest{}, true
 	}
@@ -253,12 +263,13 @@ func (h *userSchemaHandler) sanitizeCreateUserSchemaRequest(
 	request CreateUserSchemaRequest,
 ) CreateUserSchemaRequest {
 	sanitizedName := sysutils.SanitizeString(request.Name)
-	sanitizedOrganizationUnitID := sysutils.SanitizeString(request.OrganizationUnitID)
+	sanitizedOUID := sysutils.SanitizeString(request.OUID)
 
 	return CreateUserSchemaRequest{
 		Name:                  sanitizedName,
-		OrganizationUnitID:    sanitizedOrganizationUnitID,
+		OUID:                  sanitizedOUID,
 		AllowSelfRegistration: request.AllowSelfRegistration,
+		SystemAttributes:      sanitizeSystemAttributes(request.SystemAttributes),
 		Schema:                request.Schema,
 	}
 }
@@ -271,7 +282,7 @@ func (h *userSchemaHandler) sanitizeUpdateUserSchemaRequest(
 
 	originalName := request.Name
 	sanitizedName := sysutils.SanitizeString(request.Name)
-	sanitizedOrganizationUnitID := sysutils.SanitizeString(request.OrganizationUnitID)
+	sanitizedOUID := sysutils.SanitizeString(request.OUID)
 
 	if originalName != sanitizedName {
 		logger.Debug("Sanitized user schema name in update request",
@@ -281,8 +292,19 @@ func (h *userSchemaHandler) sanitizeUpdateUserSchemaRequest(
 
 	return UpdateUserSchemaRequest{
 		Name:                  sanitizedName,
-		OrganizationUnitID:    sanitizedOrganizationUnitID,
+		OUID:                  sanitizedOUID,
 		AllowSelfRegistration: request.AllowSelfRegistration,
+		SystemAttributes:      sanitizeSystemAttributes(request.SystemAttributes),
 		Schema:                request.Schema,
+	}
+}
+
+// sanitizeSystemAttributes sanitizes the SystemAttributes fields.
+func sanitizeSystemAttributes(sa *SystemAttributes) *SystemAttributes {
+	if sa == nil {
+		return nil
+	}
+	return &SystemAttributes{
+		Display: sysutils.SanitizeString(sa.Display),
 	}
 }

@@ -46,6 +46,7 @@ var smsOTPUserSchema = testutils.UserSchema{
 		},
 		"password": map[string]interface{}{
 			"type": "string",
+			"credential": true,
 		},
 		"email": map[string]interface{}{
 			"type": "string",
@@ -119,7 +120,7 @@ func (suite *SMSOTPAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err, "Failed to create notification sender")
 	suite.senderID = senderID
 
-	smsOTPUserSchema.OrganizationUnitId = suite.ouID
+	smsOTPUserSchema.OUID = suite.ouID
 	schemaID, err := testutils.CreateUserType(smsOTPUserSchema)
 	suite.Require().NoError(err, "Failed to create SMS OTP user schema")
 	suite.userSchemaID = schemaID
@@ -135,7 +136,7 @@ func (suite *SMSOTPAuthTestSuite) SetupSuite() {
 
 	user := testutils.User{
 		Type:             smsOTPUserSchema.Name,
-		OrganizationUnit: suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       userAttributesJSON,
 	}
 	userID, err := testutils.CreateUser(user)
@@ -303,7 +304,7 @@ func (suite *SMSOTPAuthTestSuite) TestVerifyOTPSuccess() {
 	suite.NotEmpty(authResponse.ID, "Response should contain user ID")
 	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
 	suite.NotEmpty(authResponse.Type, "Response should contain user type")
-	suite.NotEmpty(authResponse.OrganizationUnit, "Response should contain organization unit")
+	suite.NotEmpty(authResponse.OUID, "Response should contain organization unit")
 	suite.NotEmpty(authResponse.Assertion, "Response should contain assertion token by default")
 }
 
@@ -454,7 +455,7 @@ func (suite *SMSOTPAuthTestSuite) TestCompleteOTPAuthFlow() {
 
 	suite.Contains(authResponse, "id")
 	suite.Contains(authResponse, "type")
-	suite.Contains(authResponse, "organization_unit")
+	suite.Contains(authResponse, "ouId")
 	suite.Equal(suite.userID, authResponse["id"])
 }
 
@@ -487,7 +488,7 @@ func (suite *SMSOTPAuthTestSuite) TestVerifyOTPWithSkipAssertionFalse() {
 	suite.NotEmpty(authResponse.ID, "Response should contain user ID")
 	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
 	suite.NotEmpty(authResponse.Type, "Response should contain user type")
-	suite.NotEmpty(authResponse.OrganizationUnit, "Response should contain organization unit")
+	suite.NotEmpty(authResponse.OUID, "Response should contain organization unit")
 	suite.NotEmpty(authResponse.Assertion, "Response should contain assertion token when skip_assertion is false")
 }
 
@@ -520,7 +521,7 @@ func (suite *SMSOTPAuthTestSuite) TestVerifyOTPWithSkipAssertionTrue() {
 	suite.NotEmpty(authResponse.ID, "Response should contain user ID")
 	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
 	suite.NotEmpty(authResponse.Type, "Response should contain user type")
-	suite.NotEmpty(authResponse.OrganizationUnit, "Response should contain organization unit")
+	suite.NotEmpty(authResponse.OUID, "Response should contain organization unit")
 	suite.Empty(authResponse.Assertion, "Response should not contain assertion token when skip_assertion is true")
 }
 
@@ -596,8 +597,12 @@ func (suite *SMSOTPAuthTestSuite) TestSMSOTPNoAssertionGeneration() {
 func (suite *SMSOTPAuthTestSuite) TestSMSOTPWithCredentialsMultiFactorAAL2() {
 	// First, authenticate with credentials (get assertion for first factor)
 	credentialsRequest := map[string]interface{}{
-		"username": "smsotp_user",
-		"password": "Test@1234",
+		"identifiers": map[string]interface{}{
+			"username": "smsotp_user",
+		},
+		"credentials": map[string]interface{}{
+			"password": "Test@1234",
+		},
 	}
 	credJSON, err := json.Marshal(credentialsRequest)
 	suite.Require().NoError(err)

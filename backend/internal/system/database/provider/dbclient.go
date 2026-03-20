@@ -52,13 +52,15 @@ type DBClientInterface interface {
 type DBClient struct {
 	db     model.DBInterface
 	dbType string
+	dbName string
 }
 
 // NewDBClient creates a new instance of DBClient with the provided database connection.
-func NewDBClient(db model.DBInterface, dbType string) DBClientInterface {
+func NewDBClient(db model.DBInterface, dbType string, dbName string) DBClientInterface {
 	return &DBClient{
 		db:     db,
 		dbType: dbType,
+		dbName: dbName,
 	}
 }
 
@@ -75,14 +77,14 @@ func (client *DBClient) QueryContext(
 	args ...interface{},
 ) ([]map[string]interface{}, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DBClient"))
-	logger.Info("Executing query", log.String("queryID", query.GetID()))
+	logger.Debug("Executing query", log.String("queryID", query.GetID()))
 
 	sqlQuery := query.GetQuery(client.dbType)
 
-	// Check if there's a transaction in the context
+	// Check if there's a transaction in the context for this database
 	var rows *sql.Rows
 	var err error
-	if tx := transaction.TxFromContext(ctx); tx != nil {
+	if tx := transaction.KeyedTxFromContext(ctx, client.dbName); tx != nil {
 		rows, err = tx.QueryContext(ctx, sqlQuery, args...)
 	} else {
 		rows, err = client.db.Query(sqlQuery, args...)
@@ -138,14 +140,14 @@ func (client *DBClient) Execute(query model.DBQuery, args ...interface{}) (int64
 // If a transaction exists in the context, it will be used automatically.
 func (client *DBClient) ExecuteContext(ctx context.Context, query model.DBQuery, args ...interface{}) (int64, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DBClient"))
-	logger.Info("Executing query", log.String("queryID", query.GetID()))
+	logger.Debug("Executing query", log.String("queryID", query.GetID()))
 
 	sqlQuery := query.GetQuery(client.dbType)
 
-	// Check if there's a transaction in the context
+	// Check if there's a transaction in the context for this database
 	var res sql.Result
 	var err error
-	if tx := transaction.TxFromContext(ctx); tx != nil {
+	if tx := transaction.KeyedTxFromContext(ctx, client.dbName); tx != nil {
 		res, err = tx.ExecContext(ctx, sqlQuery, args...)
 	} else {
 		res, err = client.db.Exec(sqlQuery, args...)
@@ -174,7 +176,7 @@ func (client *DBClient) BeginTx() (model.TxInterface, error) {
 
 // GetTransactioner returns the transactioner for this client.
 func (client *DBClient) GetTransactioner() (transaction.Transactioner, error) {
-	return transaction.NewTransactioner(client.db.GetSQLDB()), nil
+	return transaction.NewTransactioner(client.db.GetSQLDB(), client.dbName), nil
 }
 
 // Close closes the database connection.

@@ -72,14 +72,14 @@ func (suite *APIAuthTestSuite) SetupSuite() {
 
 	userSchema := testutils.UserSchema{
 		Name:                  fmt.Sprintf("api-auth-user-%d", time.Now().UnixNano()),
-		OrganizationUnitId:    suite.ouID,
+		OUID:                  suite.ouID,
 		AllowSelfRegistration: true,
 		Schema: map[string]interface{}{
 			"username":  map[string]interface{}{"type": "string"},
-			"password":  map[string]interface{}{"type": "string"},
+			"password":  map[string]interface{}{"type": "string", "credential": true},
 			"email":     map[string]interface{}{"type": "string"},
-			"firstName": map[string]interface{}{"type": "string"},
-			"lastName":  map[string]interface{}{"type": "string"},
+			"given_name": map[string]interface{}{"type": "string"},
+			"family_name":  map[string]interface{}{"type": "string"},
 		},
 	}
 
@@ -93,14 +93,14 @@ func (suite *APIAuthTestSuite) SetupSuite() {
 		"username":  username,
 		"password":  password,
 		"email":     fmt.Sprintf("%s@example.com", username),
-		"firstName": "API",
-		"lastName":  "Auth",
+		"given_name": "API",
+		"family_name":  "Auth",
 	}
 	attrBytes, err := json.Marshal(userAttrs)
 	suite.Require().NoError(err)
 
 	userID, err := testutils.CreateUser(testutils.User{
-		OrganizationUnit: suite.ouID,
+		OUID:             suite.ouID,
 		Type:             userSchema.Name,
 		Attributes:       attrBytes,
 	})

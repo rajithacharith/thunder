@@ -25,32 +25,15 @@ import (
 	"github.com/asgardeo/thunder/internal/cert"
 )
 
-// TokenConfig represents the token configuration structure for application-level (root) token configs.
-type TokenConfig struct {
-	Issuer         string   `json:"issuer,omitempty" yaml:"issuer,omitempty" jsonschema:"Token issuer. The entity that issues the token (typically authorization server URL)."`
-	ValidityPeriod int64    `json:"validity_period,omitempty" yaml:"validity_period,omitempty" jsonschema:"Token validity period in seconds."`
-	UserAttributes []string `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in the token. List of user claim names to embed in the token (e.g., email, username, roles)."`
+// AssertionConfig represents the assertion configuration structure for application-level (root) assertion configs.
+type AssertionConfig struct {
+	ValidityPeriod int64    `json:"validity_period,omitempty" yaml:"validity_period,omitempty" jsonschema:"Assertion validity period in seconds."`
+	UserAttributes []string `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in the assertion. List of user claim names to embed in the assertion (e.g., email, username, roles)."`
 }
 
-// AccessTokenConfig represents the access token configuration structure.
-type AccessTokenConfig struct {
-	ValidityPeriod int64    `json:"validity_period,omitempty" yaml:"validity_period,omitempty" jsonschema:"Access token validity period in seconds."`
-	UserAttributes []string `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in access token. Claims embedded in the access token for authorization decisions."`
-}
-
-// IDTokenConfig represents the ID token configuration structure.
-type IDTokenConfig struct {
-	ValidityPeriod int64               `json:"validity_period,omitempty" yaml:"validity_period,omitempty" jsonschema:"ID token validity period in seconds."`
-	UserAttributes []string            `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in ID token. Standard OIDC claims: sub, name, email, picture, etc."`
-	ScopeClaims    map[string][]string `json:"scope_claims,omitempty" yaml:"scope_claims,omitempty" jsonschema:"Scope-to-claims mapping. Maps OAuth scopes to user claims. Example: {profile: [name, picture], email: [email, email_verified]}."`
-}
-
-// OAuthTokenConfig represents the OAuth token configuration structure with access_token and id_token wrappers.
-// The Issuer field at this level is used by both access and ID tokens.
-type OAuthTokenConfig struct {
-	Issuer      string             `json:"issuer,omitempty" yaml:"issuer,omitempty" jsonschema:"Token issuer URL. The authorization server URL that issues tokens. Used by both access and ID tokens."`
-	AccessToken *AccessTokenConfig `json:"access_token,omitempty" yaml:"access_token,omitempty" jsonschema:"Access token configuration. Configure validity period and user attributes for access tokens used in API authorization."`
-	IDToken     *IDTokenConfig     `json:"id_token,omitempty" yaml:"id_token,omitempty" jsonschema:"ID token configuration. Configure validity period, user attributes, and scope-to-claims mapping for OIDC ID tokens."`
+// LoginConsentConfig represents the login consent configuration for an application.
+type LoginConsentConfig struct {
+	ValidityPeriod int64 `json:"validity_period" yaml:"validity_period" jsonschema:"Consent validity period in seconds. Default value 0 indicates consent is valid until revoked."`
 }
 
 // ApplicationDTO represents the data transfer object for application service operations.
@@ -61,7 +44,8 @@ type ApplicationDTO struct {
 	AuthFlowID                string `json:"auth_flow_id,omitempty" jsonschema:"Authentication flow ID. Optional. Specifies which login flow to use (e.g., MFA, passwordless). Use list_flows to find available flows. If omitted, the default authentication flow is used."`
 	RegistrationFlowID        string `json:"registration_flow_id,omitempty" jsonschema:"Registration flow ID. Optional. Specifies the user registration/signup flow. Use list_flows to find available flows."`
 	IsRegistrationFlowEnabled bool   `json:"is_registration_flow_enabled,omitempty" jsonschema:"Enable self-service registration. Set to true to allow users to sign up themselves. Requires registration_flow_id to be set."`
-	BrandingID                string `json:"branding_id,omitempty" jsonschema:"Branding configuration ID. Optional. Customizes the look and feel of login pages for this application."`
+	ThemeID                   string `json:"theme_id,omitempty" jsonschema:"Theme configuration ID. Optional. Customizes the visual styling (colors, typography) of login pages."`
+	LayoutID                  string `json:"layout_id,omitempty" jsonschema:"Layout configuration ID. Optional. Customizes the screen structure and component positioning of login pages."`
 	Template                  string `json:"template,omitempty" jsonschema:"Application template. Optional. Pre-configured application type template."`
 
 	URL       string   `json:"url,omitempty" jsonschema:"Application home URL. Optional. The main URL where your application is hosted."`
@@ -70,10 +54,12 @@ type ApplicationDTO struct {
 	PolicyURI string   `json:"policy_uri,omitempty" jsonschema:"Privacy Policy URI. Optional. Link to your application's privacy policy."`
 	Contacts  []string `json:"contacts,omitempty" jsonschema:"Contact email addresses. Optional. Administrative contact emails for this application."`
 
-	Token             *TokenConfig            `json:"token,omitempty" jsonschema:"Token configuration. Optional. Customize token validity periods and included user attributes."`
+	Assertion         *AssertionConfig        `json:"assertion,omitempty" jsonschema:"Assertion configuration. Optional. Customize assertion validity periods and included user attributes."`
 	Certificate       *ApplicationCertificate `json:"certificate,omitempty" jsonschema:"Application certificate. Optional. For certificate-based authentication or JWT validation."`
 	InboundAuthConfig []InboundAuthConfigDTO  `json:"inbound_auth_config,omitempty" jsonschema:"OAuth/OIDC authentication configuration. Required for OAuth-enabled applications. Configure OAuth grant types, redirect URIs, and client authentication methods."`
 	AllowedUserTypes  []string                `json:"allowed_user_types,omitempty" jsonschema:"Allowed user types. Optional. Restricts which types of users can register to this application."`
+	LoginConsent      *LoginConsentConfig     `json:"login_consent,omitempty" jsonschema:"Login consent configuration settings."`
+	Metadata          map[string]interface{}  `json:"metadata,omitempty" jsonschema:"Generic metadata. Optional arbitrary key-value pairs for consumer use."`
 }
 
 // BasicApplicationDTO represents a simplified data transfer object for application service operations.
@@ -84,10 +70,12 @@ type BasicApplicationDTO struct {
 	AuthFlowID                string
 	RegistrationFlowID        string
 	IsRegistrationFlowEnabled bool
-	BrandingID                string
+	ThemeID                   string
+	LayoutID                  string
 	Template                  string
 	ClientID                  string
 	LogoURL                   string
+	IsReadOnly                bool
 }
 
 // Application represents the structure for application which returns in GetApplicationById.
@@ -98,7 +86,8 @@ type Application struct {
 	AuthFlowID                string `yaml:"auth_flow_id,omitempty" json:"auth_flow_id,omitempty" jsonschema:"Associated authentication flow ID."`
 	RegistrationFlowID        string `yaml:"registration_flow_id,omitempty" json:"registration_flow_id,omitempty" jsonschema:"Associated registration flow ID."`
 	IsRegistrationFlowEnabled bool   `yaml:"is_registration_flow_enabled,omitempty" json:"is_registration_flow_enabled,omitempty" jsonschema:"Indicates if self-service registration is enabled."`
-	BrandingID                string `yaml:"branding_id,omitempty" json:"branding_id,omitempty" jsonschema:"Associated branding configuration ID."`
+	ThemeID                   string `yaml:"theme_id,omitempty" json:"theme_id,omitempty" jsonschema:"Associated theme configuration ID."`
+	LayoutID                  string `yaml:"layout_id,omitempty" json:"layout_id,omitempty" jsonschema:"Associated layout configuration ID."`
 	Template                  string `yaml:"template,omitempty" json:"template,omitempty" jsonschema:"Template used to create the application."`
 
 	URL       string   `yaml:"url,omitempty" json:"url,omitempty" jsonschema:"Application home URL."`
@@ -107,10 +96,12 @@ type Application struct {
 	PolicyURI string   `yaml:"policy_uri,omitempty" json:"policy_uri,omitempty" jsonschema:"Privacy Policy URI."`
 	Contacts  []string `yaml:"contacts,omitempty" json:"contacts,omitempty"`
 
-	Token             *TokenConfig                `yaml:"token,omitempty" json:"token,omitempty" jsonschema:"Token configuration settings."`
+	Assertion         *AssertionConfig            `yaml:"assertion,omitempty" json:"assertion,omitempty" jsonschema:"Assertion configuration settings."`
 	Certificate       *ApplicationCertificate     `yaml:"certificate,omitempty" json:"certificate,omitempty" jsonschema:"Application certificate settings."`
 	InboundAuthConfig []InboundAuthConfigComplete `yaml:"inbound_auth_config,omitempty" json:"inbound_auth_config,omitempty" jsonschema:"Inbound authentication configuration (OAuth2/OIDC settings)."`
 	AllowedUserTypes  []string                    `yaml:"allowed_user_types,omitempty" json:"allowed_user_types,omitempty" jsonschema:"Allowed user types for registration."`
+	LoginConsent      *LoginConsentConfig         `yaml:"login_consent,omitempty" json:"login_consent,omitempty" jsonschema:"Login consent configuration settings."`
+	Metadata          map[string]interface{}      `yaml:"metadata,omitempty" json:"metadata,omitempty" jsonschema:"Generic metadata key-value pairs."`
 }
 
 // ApplicationProcessedDTO represents the processed data transfer object for application service operations.
@@ -121,7 +112,8 @@ type ApplicationProcessedDTO struct {
 	AuthFlowID                string `yaml:"auth_flow_id,omitempty"`
 	RegistrationFlowID        string `yaml:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool   `yaml:"is_registration_flow_enabled,omitempty"`
-	BrandingID                string `yaml:"branding_id,omitempty"`
+	ThemeID                   string `yaml:"theme_id,omitempty"`
+	LayoutID                  string `yaml:"layout_id,omitempty"`
 	Template                  string `yaml:"template,omitempty"`
 
 	URL       string `yaml:"url,omitempty"`
@@ -130,10 +122,12 @@ type ApplicationProcessedDTO struct {
 	PolicyURI string `yaml:"policy_uri,omitempty"`
 	Contacts  []string
 
-	Token             *TokenConfig                    `yaml:"token,omitempty"`
+	Assertion         *AssertionConfig                `yaml:"assertion,omitempty"`
 	Certificate       *ApplicationCertificate         `yaml:"certificate,omitempty"`
 	InboundAuthConfig []InboundAuthConfigProcessedDTO `yaml:"inbound_auth_config,omitempty"`
 	AllowedUserTypes  []string                        `yaml:"allowed_user_types,omitempty"`
+	LoginConsent      *LoginConsentConfig             `yaml:"login_consent,omitempty"`
+	Metadata          map[string]interface{}          `yaml:"metadata,omitempty"`
 }
 
 // InboundAuthConfigDTO represents the data transfer object for inbound authentication configuration.
@@ -165,17 +159,20 @@ type ApplicationRequest struct {
 	AuthFlowID                string                      `json:"auth_flow_id,omitempty" yaml:"auth_flow_id,omitempty"`
 	RegistrationFlowID        string                      `json:"registration_flow_id,omitempty" yaml:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool                        `json:"is_registration_flow_enabled" yaml:"is_registration_flow_enabled"`
-	BrandingID                string                      `json:"branding_id,omitempty" yaml:"branding_id,omitempty"`
+	ThemeID                   string                      `json:"theme_id,omitempty" yaml:"theme_id,omitempty"`
+	LayoutID                  string                      `json:"layout_id,omitempty" yaml:"layout_id,omitempty"`
 	Template                  string                      `json:"template,omitempty" yaml:"template,omitempty"`
 	URL                       string                      `json:"url,omitempty" yaml:"url,omitempty"`
 	LogoURL                   string                      `json:"logo_url,omitempty" yaml:"logo_url,omitempty"`
-	Token                     *TokenConfig                `json:"token,omitempty" yaml:"token,omitempty"`
+	Assertion                 *AssertionConfig            `json:"assertion,omitempty" yaml:"assertion,omitempty"`
 	Certificate               *ApplicationCertificate     `json:"certificate,omitempty" yaml:"certificate,omitempty"`
 	TosURI                    string                      `json:"tos_uri,omitempty" yaml:"tos_uri,omitempty"`
 	PolicyURI                 string                      `json:"policy_uri,omitempty" yaml:"policy_uri,omitempty"`
 	Contacts                  []string                    `json:"contacts,omitempty" yaml:"contacts,omitempty"`
 	InboundAuthConfig         []InboundAuthConfigComplete `json:"inbound_auth_config,omitempty" yaml:"inbound_auth_config,omitempty"`
 	AllowedUserTypes          []string                    `json:"allowed_user_types,omitempty" yaml:"allowed_user_types,omitempty"`
+	LoginConsent              *LoginConsentConfig         `json:"login_consent,omitempty" yaml:"login_consent,omitempty"`
+	Metadata                  map[string]interface{}      `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 }
 
 // ApplicationRequestWithID represents the request structure for importing an application using file based runtime.
@@ -188,17 +185,19 @@ type ApplicationRequestWithID struct {
 	AuthFlowID                string                      `json:"auth_flow_id,omitempty" yaml:"auth_flow_id,omitempty"`
 	RegistrationFlowID        string                      `json:"registration_flow_id,omitempty" yaml:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool                        `json:"is_registration_flow_enabled" yaml:"is_registration_flow_enabled"`
-	BrandingID                string                      `json:"branding_id,omitempty" yaml:"branding_id,omitempty"`
+	ThemeID                   string                      `json:"theme_id,omitempty" yaml:"theme_id,omitempty"`
+	LayoutID                  string                      `json:"layout_id,omitempty" yaml:"layout_id,omitempty"`
 	Template                  string                      `json:"template,omitempty" yaml:"template,omitempty"`
 	URL                       string                      `json:"url,omitempty" yaml:"url,omitempty"`
 	LogoURL                   string                      `json:"logo_url,omitempty" yaml:"logo_url,omitempty"`
-	Token                     *TokenConfig                `json:"token,omitempty" yaml:"token,omitempty"`
+	Assertion                 *AssertionConfig            `json:"assertion,omitempty" yaml:"assertion,omitempty"`
 	Certificate               *ApplicationCertificate     `json:"certificate,omitempty" yaml:"certificate,omitempty"`
 	TosURI                    string                      `json:"tos_uri,omitempty" yaml:"tos_uri,omitempty"`
 	PolicyURI                 string                      `json:"policy_uri,omitempty" yaml:"policy_uri,omitempty"`
 	Contacts                  []string                    `json:"contacts,omitempty" yaml:"contacts,omitempty"`
 	InboundAuthConfig         []InboundAuthConfigComplete `json:"inbound_auth_config,omitempty" yaml:"inbound_auth_config,omitempty"`
 	AllowedUserTypes          []string                    `json:"allowed_user_types,omitempty" yaml:"allowed_user_types,omitempty"`
+	Metadata                  map[string]interface{}      `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 }
 
 // ApplicationCompleteResponse represents the complete response structure for an application.
@@ -210,17 +209,20 @@ type ApplicationCompleteResponse struct {
 	AuthFlowID                string                      `json:"auth_flow_id,omitempty"`
 	RegistrationFlowID        string                      `json:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool                        `json:"is_registration_flow_enabled"`
-	BrandingID                string                      `json:"branding_id,omitempty"`
+	ThemeID                   string                      `json:"theme_id,omitempty"`
+	LayoutID                  string                      `json:"layout_id,omitempty"`
 	Template                  string                      `json:"template,omitempty"`
 	URL                       string                      `json:"url,omitempty"`
 	LogoURL                   string                      `json:"logo_url,omitempty"`
-	Token                     *TokenConfig                `json:"token,omitempty"`
+	Assertion                 *AssertionConfig            `json:"assertion,omitempty"`
 	Certificate               *ApplicationCertificate     `json:"certificate,omitempty"`
 	TosURI                    string                      `json:"tos_uri,omitempty"`
 	PolicyURI                 string                      `json:"policy_uri,omitempty"`
 	Contacts                  []string                    `json:"contacts,omitempty"`
 	InboundAuthConfig         []InboundAuthConfigComplete `json:"inbound_auth_config,omitempty"`
 	AllowedUserTypes          []string                    `json:"allowed_user_types,omitempty"`
+	LoginConsent              *LoginConsentConfig         `json:"login_consent,omitempty"`
+	Metadata                  map[string]interface{}      `json:"metadata,omitempty"`
 }
 
 // ApplicationGetResponse represents the response structure for getting an application.
@@ -232,17 +234,20 @@ type ApplicationGetResponse struct {
 	AuthFlowID                string                  `json:"auth_flow_id,omitempty"`
 	RegistrationFlowID        string                  `json:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool                    `json:"is_registration_flow_enabled"`
-	BrandingID                string                  `json:"branding_id,omitempty"`
+	ThemeID                   string                  `json:"theme_id,omitempty"`
+	LayoutID                  string                  `json:"layout_id,omitempty"`
 	Template                  string                  `json:"template,omitempty"`
 	URL                       string                  `json:"url,omitempty"`
 	LogoURL                   string                  `json:"logo_url,omitempty"`
-	Token                     *TokenConfig            `json:"token,omitempty"`
+	Assertion                 *AssertionConfig        `json:"assertion,omitempty"`
 	Certificate               *ApplicationCertificate `json:"certificate,omitempty"`
 	TosURI                    string                  `json:"tos_uri,omitempty"`
 	PolicyURI                 string                  `json:"policy_uri,omitempty"`
 	Contacts                  []string                `json:"contacts,omitempty"`
 	InboundAuthConfig         []InboundAuthConfig     `json:"inbound_auth_config,omitempty"`
 	AllowedUserTypes          []string                `json:"allowed_user_types,omitempty"`
+	LoginConsent              *LoginConsentConfig     `json:"login_consent,omitempty"`
+	Metadata                  map[string]interface{}  `json:"metadata,omitempty"`
 }
 
 // BasicApplicationResponse represents a simplified response structure for an application.
@@ -255,8 +260,10 @@ type BasicApplicationResponse struct {
 	AuthFlowID                string `json:"auth_flow_id,omitempty" jsonschema:"Authentication Flow ID."`
 	RegistrationFlowID        string `json:"registration_flow_id,omitempty" jsonschema:"Registration Flow ID."`
 	IsRegistrationFlowEnabled bool   `json:"is_registration_flow_enabled" jsonschema:"Registration enabled status."`
-	BrandingID                string `json:"branding_id,omitempty" jsonschema:"Branding ID."`
+	ThemeID                   string `json:"theme_id,omitempty" jsonschema:"Theme ID."`
+	LayoutID                  string `json:"layout_id,omitempty" jsonschema:"Layout ID."`
 	Template                  string `json:"template,omitempty" jsonschema:"Application Template."`
+	IsReadOnly                bool   `json:"is_read_only,omitempty" jsonschema:"Indicates if the application is read-only (declarative/immutable)."`
 }
 
 // ApplicationListResponse represents the response structure for listing applications.

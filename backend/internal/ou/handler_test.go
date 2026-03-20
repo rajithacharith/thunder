@@ -44,6 +44,7 @@ const (
 	defaultOURequestID = "ou-1"
 	defaultOUPath      = "root"
 	defaultOUHandle    = "finance"
+	testOUNameFinance  = "Finance"
 )
 
 func TestOUHandler_OrganizationUnitHandlerTestSuite_Run(t *testing.T) {
@@ -176,7 +177,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_RegisterRoutes() {
 			path:   "/organization-units/ou-123",
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnit", "ou-123").
+					On("GetOrganizationUnit", mock.Anything, "ou-123").
 					Return(OrganizationUnit{ID: "ou-123"}, nil).
 					Once()
 			},
@@ -188,7 +189,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_RegisterRoutes() {
 			path:   "/organization-units/ou-123/ous",
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitChildren", "ou-123", serverconst.DefaultPageSize, 0).
+					On("GetOrganizationUnitChildren", mock.Anything, "ou-123", serverconst.DefaultPageSize, 0).
 					Return(&OrganizationUnitListResponse{}, nil).
 					Once()
 			},
@@ -200,7 +201,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_RegisterRoutes() {
 			path:   "/organization-units/tree/root",
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitByPath", "root").
+					On("GetOrganizationUnitByPath", mock.Anything, "root").
 					Return(OrganizationUnit{ID: "ou-root"}, nil).
 					Once()
 			},
@@ -269,7 +270,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUListRequest
 			url:  "/organization-units?limit=3&offset=2",
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitList", 3, 2).
+					On("GetOrganizationUnitList", mock.Anything, 3, 2).
 					Return(&OrganizationUnitListResponse{
 						TotalResults: 4,
 						Count:        2,
@@ -294,7 +295,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUListRequest
 			url:  "/organization-units?offset=1",
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitList", serverconst.DefaultPageSize, 1).
+					On("GetOrganizationUnitList", mock.Anything, serverconst.DefaultPageSize, 1).
 					Return(&OrganizationUnitListResponse{}, nil).
 					Once()
 			},
@@ -312,7 +313,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUListRequest
 				suite.Equal(ErrorInvalidLimit.Code, body.Code)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
-				serviceMock.AssertNotCalled(suite.T(), "GetOrganizationUnitList", mock.Anything, mock.Anything)
+				serviceMock.AssertNotCalled(suite.T(), "GetOrganizationUnitList", mock.Anything)
 			},
 		},
 		{
@@ -325,7 +326,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUListRequest
 				suite.Equal(ErrorInvalidOffset.Code, body.Code)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
-				serviceMock.AssertNotCalled(suite.T(), "GetOrganizationUnitList", mock.Anything, mock.Anything)
+				serviceMock.AssertNotCalled(suite.T(), "GetOrganizationUnitList", mock.Anything)
 			},
 		},
 		{
@@ -333,7 +334,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUListRequest
 			url:  "/organization-units",
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitList", serverconst.DefaultPageSize, 0).
+					On("GetOrganizationUnitList", mock.Anything, serverconst.DefaultPageSize, 0).
 					Return((*OrganizationUnitListResponse)(nil), &ErrorInternalServerError).
 					Once()
 			},
@@ -350,7 +351,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUListRequest
 			useFlaky: true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitList", serverconst.DefaultPageSize, 0).
+					On("GetOrganizationUnitList", mock.Anything, serverconst.DefaultPageSize, 0).
 					Return(&OrganizationUnitListResponse{}, nil).
 					Once()
 			},
@@ -443,7 +444,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			}`,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("CreateOrganizationUnit", mock.MatchedBy(func(req OrganizationUnitRequest) bool {
+					On("CreateOrganizationUnit", mock.Anything, mock.MatchedBy(func(req OrganizationUnitRequest) bool {
 						return req.Handle == defaultOUHandle &&
 							req.Name == "Finance &lt;script&gt;" &&
 							req.Description == "desc"
@@ -458,12 +459,90 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 				suite.Equal("ou-1", resp.ID)
 			},
 		},
+		//nolint:dupl // Similar structure but tests different fields (design vs URI fields)
 		{
-			name: "service conflict",
-			body: `{"handle":"finance","name":"Finance"}`,
+			name: "passes design fields",
+			body: `{
+				"handle": "finance",
+				"name": "` + testOUNameFinance + `",
+				"theme_id": "theme-123",
+				"layout_id": "layout-456",
+				"logo_url": "https://example.com/logo.png"
+			}`,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("CreateOrganizationUnit", mock.AnythingOfType("ou.OrganizationUnitRequest")).
+					On("CreateOrganizationUnit", mock.Anything, mock.MatchedBy(func(req OrganizationUnitRequest) bool {
+						return req.Handle == defaultOUHandle &&
+							req.Name == testOUNameFinance &&
+							req.ThemeID == "theme-123" &&
+							req.LayoutID == "layout-456" &&
+							req.LogoURL == "https://example.com/logo.png"
+					})).
+					Return(OrganizationUnit{
+						ID:       "ou-1",
+						Handle:   "finance",
+						Name:     testOUNameFinance,
+						ThemeID:  "theme-123",
+						LayoutID: "layout-456",
+						LogoURL:  "https://example.com/logo.png",
+					}, nil).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusCreated, recorder.Code)
+				var resp OrganizationUnit
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
+				suite.Equal("ou-1", resp.ID)
+				suite.Equal("theme-123", resp.ThemeID)
+				suite.Equal("layout-456", resp.LayoutID)
+				suite.Equal("https://example.com/logo.png", resp.LogoURL)
+			},
+		},
+		//nolint:dupl // Similar structure but tests different fields (design vs URI fields)
+		{
+			name: "passes URI fields",
+			body: `{
+				"handle": "finance",
+				"name": "` + testOUNameFinance + `",
+				"tos_uri": "https://example.com/tos",
+				"policy_uri": "https://example.com/privacy",
+				"cookie_policy_uri": "https://example.com/cookie-policy"
+			}`,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On("CreateOrganizationUnit", mock.Anything, mock.MatchedBy(func(req OrganizationUnitRequest) bool {
+						return req.Handle == defaultOUHandle &&
+							req.Name == testOUNameFinance &&
+							req.TosURI == "https://example.com/tos" &&
+							req.PolicyURI == "https://example.com/privacy" &&
+							req.CookiePolicyURI == "https://example.com/cookie-policy"
+					})).
+					Return(OrganizationUnit{
+						ID:              "ou-1",
+						Handle:          "finance",
+						Name:            testOUNameFinance,
+						TosURI:          "https://example.com/tos",
+						PolicyURI:       "https://example.com/privacy",
+						CookiePolicyURI: "https://example.com/cookie-policy",
+					}, nil).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusCreated, recorder.Code)
+				var resp OrganizationUnit
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
+				suite.Equal("ou-1", resp.ID)
+				suite.Equal("https://example.com/tos", resp.TosURI)
+				suite.Equal("https://example.com/privacy", resp.PolicyURI)
+				suite.Equal("https://example.com/cookie-policy", resp.CookiePolicyURI)
+			},
+		},
+		{
+			name: "service conflict",
+			body: `{"handle":"finance","name":"` + testOUNameFinance + `"}`,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On("CreateOrganizationUnit", mock.Anything, mock.AnythingOfType("ou.OrganizationUnitRequest")).
 					Return(OrganizationUnit{}, &ErrorOrganizationUnitNameConflict).
 					Once()
 			},
@@ -476,27 +555,27 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 		},
 		{
 			name: "service error",
-			body: `{"handle":"finance","name":"Finance"}`,
+			body: `{"handle":"finance","name":"` + testOUNameFinance + `"}`,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("CreateOrganizationUnit", mock.AnythingOfType("ou.OrganizationUnitRequest")).
+					On("CreateOrganizationUnit", mock.Anything, mock.AnythingOfType("ou.OrganizationUnitRequest")).
 					Return(OrganizationUnit{}, &ErrorInternalServerError).
 					Once()
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				var resp apierror.ErrorResponse
-				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorInternalServerError.Code, resp.Code)
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
 			},
 		},
 		{
 			name:     "service error response write failure",
-			body:     `{"handle":"finance","name":"Finance"}`,
+			body:     `{"handle":"finance","name":"` + testOUNameFinance + `"}`,
 			useFlaky: true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("CreateOrganizationUnit", mock.AnythingOfType("ou.OrganizationUnitRequest")).
+					On("CreateOrganizationUnit", mock.Anything, mock.AnythingOfType("ou.OrganizationUnitRequest")).
 					Return(OrganizationUnit{}, &ErrorInternalServerError).
 					Once()
 			},
@@ -507,11 +586,11 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 		},
 		{
 			name:     "response write error",
-			body:     `{"handle":"finance","name":"Finance"}`,
+			body:     `{"handle":"finance","name":"` + testOUNameFinance + `"}`,
 			useFlaky: true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("CreateOrganizationUnit", mock.AnythingOfType("ou.OrganizationUnitRequest")).
+					On("CreateOrganizationUnit", mock.Anything, mock.AnythingOfType("ou.OrganizationUnitRequest")).
 					Return(OrganizationUnit{ID: "ou-1"}, nil).
 					Once()
 			},
@@ -570,7 +649,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetRequest(
 				suite.Equal(http.StatusBadRequest, recorder.Code)
 				var resp apierror.ErrorResponse
 				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorMissingOrganizationUnitID.Code, resp.Code)
+				suite.Equal(ErrorMissingOUID.Code, resp.Code)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "GetOrganizationUnit", mock.Anything)
@@ -595,7 +674,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetRequest(
 			pathParamValue: defaultOURequestID,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnit", defaultOURequestID).
+					On("GetOrganizationUnit", mock.Anything, defaultOURequestID).
 					Return(OrganizationUnit{}, &ErrorOrganizationUnitNotFound).
 					Once()
 			},
@@ -614,7 +693,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetRequest(
 			useFlaky:       true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnit", defaultOURequestID).
+					On("GetOrganizationUnit", mock.Anything, defaultOURequestID).
 					Return(OrganizationUnit{ID: defaultOURequestID}, nil).
 					Once()
 			},
@@ -630,8 +709,32 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetRequest(
 			pathParamValue: defaultOURequestID,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnit", defaultOURequestID).
-					Return(OrganizationUnit{ID: defaultOURequestID, Name: "Finance"}, nil).
+					On("GetOrganizationUnit", mock.Anything, defaultOURequestID).
+					Return(OrganizationUnit{ID: defaultOURequestID, Name: testOUNameFinance}, nil).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusOK, recorder.Code)
+				var resp OrganizationUnit
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
+				suite.Equal(testOUNameFinance, resp.Name)
+			},
+		},
+		{
+			name:           "returns design fields",
+			url:            "/organization-units/" + defaultOURequestID,
+			pathParamKey:   "id",
+			pathParamValue: defaultOURequestID,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On("GetOrganizationUnit", mock.Anything, defaultOURequestID).
+					Return(OrganizationUnit{
+						ID:       defaultOURequestID,
+						Name:     "Finance",
+						ThemeID:  "theme-123",
+						LayoutID: "layout-456",
+						LogoURL:  "https://example.com/logo.png",
+					}, nil).
 					Once()
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
@@ -639,6 +742,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetRequest(
 				var resp OrganizationUnit
 				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
 				suite.Equal("Finance", resp.Name)
+				suite.Equal("theme-123", resp.ThemeID)
+				suite.Equal("layout-456", resp.LayoutID)
+				suite.Equal("https://example.com/logo.png", resp.LogoURL)
 			},
 		},
 	}
@@ -663,10 +769,10 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 				suite.Equal(http.StatusBadRequest, recorder.Code)
 				var resp apierror.ErrorResponse
 				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorMissingOrganizationUnitID.Code, resp.Code)
+				suite.Equal(ErrorMissingOUID.Code, resp.Code)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
-				serviceMock.AssertNotCalled(suite.T(), "UpdateOrganizationUnit", mock.Anything, mock.Anything)
+				serviceMock.AssertNotCalled(suite.T(), "UpdateOrganizationUnit", mock.Anything)
 			},
 		},
 		{
@@ -708,8 +814,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 			pathParamValue: defaultOURequestID,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On(
-						"UpdateOrganizationUnit",
+					On("UpdateOrganizationUnit", mock.Anything,
 						defaultOURequestID,
 						mock.MatchedBy(func(req OrganizationUnitRequest) bool {
 							return req.Handle == defaultOUHandle &&
@@ -728,6 +833,51 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 			},
 		},
 		{
+			name:   "passes design fields on update",
+			method: http.MethodPut,
+			url:    "/organization-units/" + defaultOURequestID,
+			body: `{
+				"handle": "finance",
+				"name": "` + testOUNameFinance + `",
+				"theme_id": "theme-new",
+				"layout_id": "layout-new",
+				"logo_url": "https://example.com/new-logo.png"
+			}`,
+			setJSONHeader:  true,
+			pathParamKey:   "id",
+			pathParamValue: defaultOURequestID,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On("UpdateOrganizationUnit", mock.Anything,
+						defaultOURequestID,
+						mock.MatchedBy(func(req OrganizationUnitRequest) bool {
+							return req.Handle == defaultOUHandle &&
+								req.Name == testOUNameFinance &&
+								req.ThemeID == "theme-new" &&
+								req.LayoutID == "layout-new" &&
+								req.LogoURL == "https://example.com/new-logo.png"
+						}),
+					).
+					Return(OrganizationUnit{
+						ID:       defaultOURequestID,
+						Handle:   "finance",
+						Name:     testOUNameFinance,
+						ThemeID:  "theme-new",
+						LayoutID: "layout-new",
+						LogoURL:  "https://example.com/new-logo.png",
+					}, nil).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusOK, recorder.Code)
+				var resp OrganizationUnit
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
+				suite.Equal("theme-new", resp.ThemeID)
+				suite.Equal("layout-new", resp.LayoutID)
+				suite.Equal("https://example.com/new-logo.png", resp.LogoURL)
+			},
+		},
+		{
 			name:           "service conflict",
 			method:         http.MethodPut,
 			url:            "/organization-units/" + defaultOURequestID,
@@ -737,7 +887,8 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 			pathParamValue: defaultOURequestID,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("UpdateOrganizationUnit", defaultOURequestID, mock.AnythingOfType("ou.OrganizationUnitRequest")).
+					On("UpdateOrganizationUnit", mock.Anything, defaultOURequestID,
+						mock.AnythingOfType("ou.OrganizationUnitRequest")).
 					Return(OrganizationUnit{}, &ErrorOrganizationUnitHandleConflict).
 					Once()
 			},
@@ -759,7 +910,8 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 			useFlaky:       true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("UpdateOrganizationUnit", defaultOURequestID, mock.AnythingOfType("ou.OrganizationUnitRequest")).
+					On("UpdateOrganizationUnit", mock.Anything, defaultOURequestID,
+						mock.AnythingOfType("ou.OrganizationUnitRequest")).
 					Return(OrganizationUnit{ID: defaultOURequestID}, nil).
 					Once()
 			},
@@ -789,7 +941,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUDeleteReque
 				suite.Equal(http.StatusBadRequest, recorder.Code)
 				var resp apierror.ErrorResponse
 				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorMissingOrganizationUnitID.Code, resp.Code)
+				suite.Equal(ErrorMissingOUID.Code, resp.Code)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "DeleteOrganizationUnit", mock.Anything)
@@ -800,7 +952,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUDeleteReque
 			setID: true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("DeleteOrganizationUnit", "ou-1").
+					On("DeleteOrganizationUnit", mock.Anything, "ou-1").
 					Return(&ErrorOrganizationUnitNotFound).
 					Once()
 			},
@@ -816,15 +968,15 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUDeleteReque
 			setID: true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("DeleteOrganizationUnit", "ou-1").
+					On("DeleteOrganizationUnit", mock.Anything, "ou-1").
 					Return(&ErrorInternalServerError).
 					Once()
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				var resp apierror.ErrorResponse
-				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorInternalServerError.Code, resp.Code)
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
 			},
 		},
 		{
@@ -832,7 +984,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUDeleteReque
 			setID: true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("DeleteOrganizationUnit", "ou-1").
+					On("DeleteOrganizationUnit", mock.Anything, "ou-1").
 					Return((*serviceerror.ServiceError)(nil)).
 					Once()
 			},
@@ -883,12 +1035,13 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUChildrenLis
 				suite.Equal(http.StatusBadRequest, recorder.Code)
 				var resp apierror.ErrorResponse
 				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorMissingOrganizationUnitID.Code, resp.Code)
+				suite.Equal(ErrorMissingOUID.Code, resp.Code)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(
 					suite.T(),
 					"GetOrganizationUnitChildren",
+					mock.Anything,
 					mock.Anything,
 					mock.Anything,
 					mock.Anything,
@@ -913,6 +1066,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUChildrenLis
 					mock.Anything,
 					mock.Anything,
 					mock.Anything,
+					mock.Anything,
 				)
 			},
 		},
@@ -923,15 +1077,16 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUChildrenLis
 			pathParamValue: defaultOURequestID,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitChildren", defaultOURequestID, serverconst.DefaultPageSize, 0).
+					On("GetOrganizationUnitChildren", mock.Anything,
+						defaultOURequestID, serverconst.DefaultPageSize, 0).
 					Return((*OrganizationUnitListResponse)(nil), &ErrorInternalServerError).
 					Once()
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				var resp apierror.ErrorResponse
-				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorInternalServerError.Code, resp.Code)
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
 			},
 		},
 		{
@@ -942,7 +1097,8 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUChildrenLis
 			useFlaky:       true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitChildren", defaultOURequestID, serverconst.DefaultPageSize, 0).
+					On("GetOrganizationUnitChildren", mock.Anything,
+						defaultOURequestID, serverconst.DefaultPageSize, 0).
 					Return(&OrganizationUnitListResponse{}, nil).
 					Once()
 			},
@@ -958,7 +1114,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUChildrenLis
 			pathParamValue: defaultOURequestID,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitChildren", defaultOURequestID, 2, 1).
+					On("GetOrganizationUnitChildren", mock.Anything, defaultOURequestID, 2, 1).
 					Return(&OrganizationUnitListResponse{TotalResults: 1}, nil).
 					Once()
 			},
@@ -995,6 +1151,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUChildrenLis
 					mock.Anything,
 					mock.Anything,
 					mock.Anything,
+					mock.Anything,
 				)
 			},
 		},
@@ -1005,7 +1162,8 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUChildrenLis
 			pathParamValue: defaultOUPath,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitChildrenByPath", defaultOUPath, serverconst.DefaultPageSize, 0).
+					On("GetOrganizationUnitChildrenByPath", mock.Anything,
+						defaultOUPath, serverconst.DefaultPageSize, 0).
 					Return(&OrganizationUnitListResponse{TotalResults: 2, Count: 2}, nil).
 					Once()
 			},
@@ -1057,7 +1215,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetByPathRe
 			pathParamValue: defaultOUPath,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitByPath", defaultOUPath).
+					On("GetOrganizationUnitByPath", mock.Anything, defaultOUPath).
 					Return(OrganizationUnit{}, &ErrorOrganizationUnitNotFound).
 					Once()
 			},
@@ -1076,7 +1234,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetByPathRe
 			useFlaky:       true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitByPath", defaultOUPath).
+					On("GetOrganizationUnitByPath", mock.Anything, defaultOUPath).
 					Return(OrganizationUnit{ID: defaultOURequestID}, nil).
 					Once()
 			},
@@ -1092,7 +1250,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetByPathRe
 			pathParamValue: defaultOUPath,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitByPath", defaultOUPath).
+					On("GetOrganizationUnitByPath", mock.Anything, defaultOUPath).
 					Return(OrganizationUnit{ID: defaultOURequestID}, nil).
 					Once()
 			},
@@ -1126,7 +1284,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutByPathRe
 				suite.Equal(ErrorInvalidHandlePath.Code, resp.Code)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
-				serviceMock.AssertNotCalled(suite.T(), "UpdateOrganizationUnitByPath", mock.Anything, mock.Anything)
+				serviceMock.AssertNotCalled(suite.T(), "UpdateOrganizationUnitByPath", mock.Anything)
 			},
 		},
 		{
@@ -1154,16 +1312,16 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutByPathRe
 			pathParamValue: defaultOUPath,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("UpdateOrganizationUnitByPath", defaultOUPath,
+					On("UpdateOrganizationUnitByPath", mock.Anything, defaultOUPath,
 						mock.AnythingOfType("ou.OrganizationUnitRequest")).
 					Return(OrganizationUnit{}, &ErrorInternalServerError).
 					Once()
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				var resp apierror.ErrorResponse
-				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorInternalServerError.Code, resp.Code)
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
 			},
 		},
 		{
@@ -1177,7 +1335,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutByPathRe
 			useFlaky:       true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("UpdateOrganizationUnitByPath", defaultOUPath,
+					On("UpdateOrganizationUnitByPath", mock.Anything, defaultOUPath,
 						mock.AnythingOfType("ou.OrganizationUnitRequest")).
 					Return(OrganizationUnit{ID: defaultOURequestID}, nil).
 					Once()
@@ -1197,7 +1355,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutByPathRe
 			pathParamValue: defaultOUPath,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("UpdateOrganizationUnitByPath", defaultOUPath,
+					On("UpdateOrganizationUnitByPath", mock.Anything, defaultOUPath,
 						mock.AnythingOfType("ou.OrganizationUnitRequest")).
 					Return(OrganizationUnit{ID: defaultOURequestID}, nil).
 					Once()
@@ -1241,15 +1399,15 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUDeleteByPat
 			setPath: true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("DeleteOrganizationUnitByPath", "root").
+					On("DeleteOrganizationUnitByPath", mock.Anything, "root").
 					Return(&ErrorInternalServerError).
 					Once()
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				var resp apierror.ErrorResponse
-				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
-				suite.Equal(ErrorInternalServerError.Code, resp.Code)
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
 			},
 		},
 		{
@@ -1257,7 +1415,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUDeleteByPat
 			setPath: true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("DeleteOrganizationUnitByPath", "root").
+					On("DeleteOrganizationUnitByPath", mock.Anything, "root").
 					Return((*serviceerror.ServiceError)(nil)).
 					Once()
 			},
@@ -1317,6 +1475,8 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListBy
 					mock.Anything,
 					mock.Anything,
 					mock.Anything,
+					mock.Anything,
+					mock.Anything,
 				)
 			},
 		},
@@ -1338,7 +1498,26 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListBy
 					mock.Anything,
 					mock.Anything,
 					mock.Anything,
+					mock.Anything,
+					mock.Anything,
 				)
+			},
+		},
+		{
+			name:           "service error",
+			url:            "/organization-units/tree/" + defaultOUPath + "/users",
+			pathParamKey:   "path",
+			pathParamValue: defaultOUPath,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On("GetOrganizationUnitUsersByPath",
+						mock.Anything, defaultOUPath,
+						serverconst.DefaultPageSize, 0, false).
+					Return((*UserListResponse)(nil), &ErrorInternalServerError).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusInternalServerError, recorder.Code)
 			},
 		},
 		{
@@ -1349,7 +1528,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListBy
 			useFlaky:       true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitUsersByPath", defaultOUPath, serverconst.DefaultPageSize, 0).
+					On("GetOrganizationUnitUsersByPath",
+						mock.Anything, defaultOUPath,
+						serverconst.DefaultPageSize, 0, false).
 					Return(&UserListResponse{}, nil).
 					Once()
 			},
@@ -1365,7 +1546,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListBy
 			pathParamValue: defaultOUPath,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitUsersByPath", defaultOUPath, 2, 1).
+					On("GetOrganizationUnitUsersByPath", mock.Anything, defaultOUPath, 2, 1, false).
 					Return(&UserListResponse{TotalResults: 3}, nil).
 					Once()
 			},
@@ -1382,8 +1563,10 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListBy
 		func(handler *organizationUnitHandler, writer http.ResponseWriter, req *http.Request) {
 			handler.HandleOUUsersListByPathRequest(writer, req)
 		})
+}
 
-	groupTestCases := []ouHandlerTestCase{
+func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGroupsListByPathRequest() {
+	testCases := []ouHandlerTestCase{
 		{
 			name: "groups missing path",
 			url:  "/organization-units/tree/" + defaultOUPath + "/groups",
@@ -1394,13 +1577,32 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListBy
 				suite.Equal(ErrorInvalidHandlePath.Code, resp.Code)
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				suite.NotNil(serviceMock) // Avoid AST duplication
 				serviceMock.AssertNotCalled(
 					suite.T(),
 					"GetOrganizationUnitGroupsByPath",
 					mock.Anything,
 					mock.Anything,
 					mock.Anything,
+					mock.Anything,
 				)
+			},
+		},
+		{
+			name:           "groups service error",
+			url:            "/organization-units/tree/" + defaultOUPath + "/groups",
+			pathParamKey:   "path",
+			pathParamValue: defaultOUPath,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On("GetOrganizationUnitGroupsByPath",
+						mock.Anything, defaultOUPath,
+						serverconst.DefaultPageSize, 0).
+					Return((*GroupListResponse)(nil), &ErrorInternalServerError).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusInternalServerError, recorder.Code)
 			},
 		},
 		{
@@ -1410,7 +1612,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListBy
 			pathParamValue: defaultOUPath,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
-					On("GetOrganizationUnitGroupsByPath", defaultOUPath, 2, 1).
+					On("GetOrganizationUnitGroupsByPath", mock.Anything, defaultOUPath, 2, 1).
 					Return(&GroupListResponse{TotalResults: 1}, nil).
 					Once()
 			},
@@ -1423,8 +1625,238 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListBy
 		},
 	}
 
-	suite.runHandlerTestCases(groupTestCases,
+	suite.runHandlerTestCases(testCases,
 		func(handler *organizationUnitHandler, writer http.ResponseWriter, req *http.Request) {
 			handler.HandleOUGroupsListByPathRequest(writer, req)
+		})
+}
+
+func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListRequest() {
+	testCases := []ouHandlerTestCase{
+		{
+			name: "missing id",
+			url:  "/organization-units/" + defaultOURequestID + "/users",
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusBadRequest, recorder.Code)
+				var resp apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
+				suite.Equal(ErrorMissingOUID.Code, resp.Code)
+			},
+			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.AssertNotCalled(
+					suite.T(),
+					"GetOrganizationUnitUsers",
+					mock.Anything,
+					mock.Anything,
+					mock.Anything,
+					mock.Anything,
+					mock.Anything,
+				)
+			},
+		},
+		{
+			name:           "invalid limit",
+			url:            "/organization-units/" + defaultOURequestID + "/users?limit=abc",
+			pathParamKey:   "id",
+			pathParamValue: defaultOURequestID,
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusBadRequest, recorder.Code)
+				var resp apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
+				suite.Equal(ErrorInvalidLimit.Code, resp.Code)
+			},
+			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.AssertNotCalled(
+					suite.T(),
+					"GetOrganizationUnitUsers",
+					mock.Anything,
+					mock.Anything,
+					mock.Anything,
+					mock.Anything,
+					mock.Anything,
+				)
+			},
+		},
+		{
+			name:           "service error",
+			url:            "/organization-units/" + defaultOURequestID + "/users",
+			pathParamKey:   "id",
+			pathParamValue: defaultOURequestID,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On("GetOrganizationUnitUsers",
+						mock.Anything, defaultOURequestID,
+						serverconst.DefaultPageSize, 0, false).
+					Return((*UserListResponse)(nil), &ErrorInternalServerError).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusInternalServerError, recorder.Code)
+				var body apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Equal(ErrorInternalServerError.Code, body.Code)
+			},
+		},
+		{
+			name:           "response write error",
+			url:            "/organization-units/" + defaultOURequestID + "/users",
+			pathParamKey:   "id",
+			pathParamValue: defaultOURequestID,
+			useFlaky:       true,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On("GetOrganizationUnitUsers",
+						mock.Anything, defaultOURequestID,
+						serverconst.DefaultPageSize, 0, false).
+					Return(&UserListResponse{}, nil).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusOK, recorder.Code)
+				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
+			},
+		},
+		{
+			name:           "success",
+			url:            "/organization-units/" + defaultOURequestID + "/users?limit=2&offset=1",
+			pathParamKey:   "id",
+			pathParamValue: defaultOURequestID,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On("GetOrganizationUnitUsers", mock.Anything, defaultOURequestID, 2, 1, false).
+					Return(&UserListResponse{TotalResults: 1}, nil).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusOK, recorder.Code)
+				var resp UserListResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
+				suite.Equal(1, resp.TotalResults)
+			},
+		},
+	}
+
+	suite.runHandlerTestCases(testCases,
+		func(handler *organizationUnitHandler, writer http.ResponseWriter, req *http.Request) {
+			handler.HandleOUUsersListRequest(writer, req)
+		})
+}
+
+func (suite *OrganizationUnitHandlerTestSuite) buildIncludeDisplayTestCases(
+	baseURL, paramKey, paramValue, serviceMethod string,
+) []ouHandlerTestCase {
+	return []ouHandlerTestCase{
+		{
+			name:           "include=display passes true to service",
+			url:            baseURL + "?limit=10&include=display",
+			pathParamKey:   paramKey,
+			pathParamValue: paramValue,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On(serviceMethod, mock.Anything, paramValue, 10, 0, true).
+					Return(&UserListResponse{
+						TotalResults: 1,
+						Users:        []User{{ID: "user-1", Display: "Alice"}},
+					}, nil).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusOK, recorder.Code)
+				var resp UserListResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
+				suite.Equal("Alice", resp.Users[0].Display)
+			},
+		},
+		{
+			name:           "invalid include value passes false to service",
+			url:            baseURL + "?limit=10&include=invalid",
+			pathParamKey:   paramKey,
+			pathParamValue: paramValue,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On(serviceMethod, mock.Anything, paramValue, 10, 0, false).
+					Return(&UserListResponse{
+						TotalResults: 1,
+						Users:        []User{{ID: "user-1"}},
+					}, nil).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusOK, recorder.Code)
+				var resp UserListResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
+				suite.Equal("", resp.Users[0].Display)
+			},
+		},
+	}
+}
+
+func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListRequest_WithIncludeDisplay() {
+	testCases := suite.buildIncludeDisplayTestCases(
+		"/organization-units/"+defaultOURequestID+"/users",
+		"id", defaultOURequestID, "GetOrganizationUnitUsers",
+	)
+	suite.runHandlerTestCases(testCases,
+		func(handler *organizationUnitHandler, writer http.ResponseWriter, req *http.Request) {
+			handler.HandleOUUsersListRequest(writer, req)
+		})
+}
+
+func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListByPathRequest_WithIncludeDisplay() {
+	testCases := suite.buildIncludeDisplayTestCases(
+		"/organization-units/tree/"+defaultOUPath+"/users",
+		"path", defaultOUPath, "GetOrganizationUnitUsersByPath",
+	)
+	suite.runHandlerTestCases(testCases,
+		func(handler *organizationUnitHandler, writer http.ResponseWriter, req *http.Request) {
+			handler.HandleOUUsersListByPathRequest(writer, req)
+		})
+}
+
+func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGroupsListRequest() {
+	testCases := []ouHandlerTestCase{
+		{
+			name: "missing id",
+			url:  "/organization-units/" + defaultOURequestID + "/groups",
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusBadRequest, recorder.Code)
+				var resp apierror.ErrorResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
+				suite.Equal(ErrorMissingOUID.Code, resp.Code)
+			},
+			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.AssertNotCalled(
+					suite.T(),
+					"GetOrganizationUnitGroups",
+					mock.Anything,
+					mock.Anything,
+					mock.Anything,
+					mock.Anything,
+				)
+			},
+		},
+		{
+			name:           "success",
+			url:            "/organization-units/" + defaultOURequestID + "/groups?limit=2&offset=1",
+			pathParamKey:   "id",
+			pathParamValue: defaultOURequestID,
+			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
+				serviceMock.
+					On("GetOrganizationUnitGroups", mock.Anything, defaultOURequestID, 2, 1).
+					Return(&GroupListResponse{TotalResults: 5}, nil).
+					Once()
+			},
+			assert: func(recorder *httptest.ResponseRecorder) {
+				suite.Equal(http.StatusOK, recorder.Code)
+				var resp GroupListResponse
+				suite.NoError(json.Unmarshal(recorder.Body.Bytes(), &resp))
+				suite.Equal(5, resp.TotalResults)
+			},
+		},
+	}
+
+	suite.runHandlerTestCases(testCases,
+		func(handler *organizationUnitHandler, writer http.ResponseWriter, req *http.Request) {
+			handler.HandleOUGroupsListRequest(writer, req)
 		})
 }

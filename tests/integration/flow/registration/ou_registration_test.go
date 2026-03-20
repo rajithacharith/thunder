@@ -49,7 +49,60 @@ var (
 				"executor": map[string]interface{}{
 					"name": "UserTypeResolver",
 				},
-				"onSuccess": "basic_auth",
+				"onSuccess":    "basic_auth",
+				"onIncomplete": "prompt_usertype",
+			},
+			{
+				"id":   "prompt_usertype",
+				"type": "PROMPT",
+				"meta": map[string]interface{}{
+					"components": []map[string]interface{}{
+						{
+							"type":    "TEXT",
+							"id":      "heading_usertype",
+							"label":   "Sign Up",
+							"variant": "HEADING_2",
+						},
+						{
+							"type": "BLOCK",
+							"id":   "block_usertype",
+							"components": []map[string]interface{}{
+								{
+									"type":        "SELECT",
+									"id":          "usertype_input",
+									"ref":         "userType",
+									"label":       "User Type",
+									"placeholder": "Select your user type",
+									"required":    true,
+									"options":     []interface{}{},
+								},
+								{
+									"type":      "ACTION",
+									"id":        "action_usertype",
+									"label":     "Continue",
+									"variant":   "PRIMARY",
+									"eventType": "SUBMIT",
+								},
+							},
+						},
+					},
+				},
+				"prompts": []map[string]interface{}{
+					{
+						"inputs": []map[string]interface{}{
+							{
+								"ref":        "usertype_input",
+								"identifier": "userType",
+								"type":       "SELECT",
+								"required":   true,
+							},
+						},
+						"action": map[string]interface{}{
+							"ref":      "action_usertype",
+							"nextNode": "user_type_resolver",
+						},
+					},
+				},
 			},
 			{
 				"id":   "basic_auth",
@@ -87,13 +140,13 @@ var (
 						},
 						{
 							"ref":        "input_003",
-							"identifier": "firstName",
+							"identifier": "given_name",
 							"type":       "string",
 							"required":   true,
 						},
 						{
 							"ref":        "input_004",
-							"identifier": "lastName",
+							"identifier": "family_name",
 							"type":       "string",
 							"required":   true,
 						},
@@ -243,13 +296,13 @@ var (
 						},
 						{
 							"ref":        "input_007",
-							"identifier": "firstName",
+							"identifier": "given_name",
 							"type":       "TEXT_INPUT",
 							"required":   true,
 						},
 						{
 							"ref":        "input_008",
-							"identifier": "lastName",
+							"identifier": "family_name",
 							"type":       "TEXT_INPUT",
 							"required":   true,
 						},
@@ -286,7 +339,7 @@ var (
 		ClientSecret:              "ou_reg_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{dynamicUserSchema.Name},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
@@ -299,7 +352,7 @@ var (
 		ClientSecret:              "ou_sms_reg_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{dynamicUserSchema.Name},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
@@ -326,14 +379,15 @@ var (
 			},
 			"password": map[string]interface{}{
 				"type": "string",
+				"credential": true,
 			},
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 			"mobileNumber": map[string]interface{}{
@@ -377,7 +431,7 @@ func (ts *OURegistrationFlowTestSuite) SetupSuite() {
 	ts.smsFlowTestOUID = smsOUID
 
 	// Create dynamic user schema
-	dynamicUserSchema.OrganizationUnitId = ts.basicFlowTestOUID
+	dynamicUserSchema.OUID = ts.basicFlowTestOUID
 	dynamicUserSchema.AllowSelfRegistration = true
 	schemaID, err := testutils.CreateUserType(dynamicUserSchema)
 	if err != nil {
@@ -549,8 +603,8 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOU() {
 				"ouName":        tc.ouName,
 				"ouHandle":      tc.ouHandle,
 				"ouDescription": tc.ouDescription,
-				"firstName":     "Test",
-				"lastName":      "User",
+				"given_name":     "Test",
+				"family_name":      "User",
 				"email":         username + "@example.com",
 			}
 
@@ -562,18 +616,18 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOU() {
 			jwtClaims, err := testutils.DecodeJWT(flowStep.Assertion)
 			ts.Require().NoError(err)
 			ts.Require().Equal(dynamicUserSchema.Name, jwtClaims.UserType)
-			ts.Require().NotEmpty(jwtClaims.OuID)
+			ts.Require().NotEmpty(jwtClaims.OUID)
 
 			user, err := testutils.FindUserByAttribute("username", username)
 			ts.Require().NoError(err)
 			ts.Require().NotNil(user)
 
 			if user != nil {
-				ts.Require().Equal(jwtClaims.OuID, user.OrganizationUnit)
+				ts.Require().Equal(jwtClaims.OUID, user.OUID)
 				ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.ID)
 			}
 
-			ou, err := testutils.GetOrganizationUnit(jwtClaims.OuID)
+			ou, err := testutils.GetOrganizationUnit(jwtClaims.OUID)
 			ts.Require().NoError(err)
 			ts.Require().Equal(tc.ouName, ou.Name)
 			ts.Require().Equal(tc.ouHandle, ou.Handle)
@@ -585,7 +639,7 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOU() {
 				ts.Require().Equal(tc.ouDescription, ou.Description)
 			}
 
-			ts.createdOUs = append(ts.createdOUs, jwtClaims.OuID)
+			ts.createdOUs = append(ts.createdOUs, jwtClaims.OUID)
 		})
 	}
 }
@@ -642,8 +696,8 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOUCreationDu
 				"ouName":        tc.newOUName,
 				"ouHandle":      newHandle,
 				"ouDescription": "Should fail due to duplicate",
-				"firstName":     "Test",
-				"lastName":      "User",
+				"given_name":     "Test",
+				"family_name":      "User",
 				"email":         username + "@example.com",
 			}
 
@@ -698,7 +752,7 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 			ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus)
 
 			// Wait for OTP to be sent
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 
 			lastMessage := ts.mockServer.GetLastMessage()
 			ts.Require().NotNil(lastMessage)
@@ -727,8 +781,8 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 			// Step 5: Submit user details
 			inputs = map[string]string{
 				"mobileNumber": mobileNumber,
-				"firstName":    "Test",
-				"lastName":     "User",
+				"given_name":    "Test",
+				"family_name":     "User",
 				"email":        mobileNumber + "@example.com",
 			}
 
@@ -740,18 +794,18 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 			jwtClaims, err := testutils.DecodeJWT(flowStep.Assertion)
 			ts.Require().NoError(err)
 			ts.Require().Equal(dynamicUserSchema.Name, jwtClaims.UserType)
-			ts.Require().NotEmpty(jwtClaims.OuID)
+			ts.Require().NotEmpty(jwtClaims.OUID)
 
 			user, err := testutils.FindUserByAttribute("mobileNumber", mobileNumber)
 			ts.Require().NoError(err)
 			ts.Require().NotNil(user)
 
 			if user != nil {
-				ts.Require().Equal(jwtClaims.OuID, user.OrganizationUnit)
+				ts.Require().Equal(jwtClaims.OUID, user.OUID)
 				ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.ID)
 			}
 
-			ou, err := testutils.GetOrganizationUnit(jwtClaims.OuID)
+			ou, err := testutils.GetOrganizationUnit(jwtClaims.OUID)
 			ts.Require().NoError(err)
 			ts.Require().Equal(tc.ouName, ou.Name)
 			ts.Require().Equal(tc.ouHandle, ou.Handle)
@@ -763,7 +817,7 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 				ts.Require().Equal(tc.ouDescription, ou.Description)
 			}
 
-			ts.createdOUs = append(ts.createdOUs, jwtClaims.OuID)
+			ts.createdOUs = append(ts.createdOUs, jwtClaims.OUID)
 		})
 	}
 }
@@ -821,7 +875,7 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreationDupl
 				"mobileNumber": mobileNumber,
 			}
 			// Wait for OTP to be sent
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 
 			flowStep, err = common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
 			ts.Require().NoError(err)

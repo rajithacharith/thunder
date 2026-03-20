@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 )
 
 type InitTestSuite struct {
@@ -45,7 +45,7 @@ func (suite *InitTestSuite) SetupTest() {
 func (suite *InitTestSuite) TestInitialize() {
 	mux := http.NewServeMux()
 
-	service := Initialize(mux, suite.mockJWTService)
+	service := Initialize(mux, suite.mockJWTService, nil, nil)
 
 	assert.NotNil(suite.T(), service)
 	assert.Implements(suite.T(), (*TokenIntrospectionServiceInterface)(nil), service)
@@ -54,7 +54,7 @@ func (suite *InitTestSuite) TestInitialize() {
 func (suite *InitTestSuite) TestInitialize_RegistersRoutes() {
 	mux := http.NewServeMux()
 
-	_ = Initialize(mux, suite.mockJWTService)
+	Initialize(mux, suite.mockJWTService, nil, nil)
 
 	// Verify that the routes are registered by attempting to get a handler for them.
 	// The pattern includes the method because of CORS middleware wrapping.

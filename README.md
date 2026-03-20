@@ -109,7 +109,7 @@ Follow these steps to run WSO2 Thunder using Docker Compose.
     Download the `docker-compose.yml` file using the following command:
 
     ```bash
-    curl -o docker-compose.yml https://raw.githubusercontent.com/asgardeo/thunder/v0.16.0/install/quick-start/docker-compose.yml
+    curl -o docker-compose.yml https://raw.githubusercontent.com/asgardeo/thunder/v0.28.0/install/quick-start/docker-compose.yml
     ```
 
 2. **Start Thunder**
@@ -131,11 +131,11 @@ Follow these steps to run WSO2 Thunder using Docker Compose.
 
 ### Try Out the Product
 
-#### Try out the Developer Console
+#### Try out the Thunder Console
 
-Follow these steps to access the Developer Console:
+Follow these steps to access the Thunder Console:
 
-1. Open your browser and navigate to [https://localhost:8090/develop](https://localhost:8090/develop).
+1. Open your browser and navigate to [https://localhost:8090/console](https://localhost:8090/console).
 
 2. Log in using the admin credentials created during the initial data setup (`admin` / `admin`).
 
@@ -299,192 +299,24 @@ To try out the Client Credentials flow, follow these steps:
 
 ---
 
-<details>
-<summary><h2>🛠️ Build the Product from Source</h2></summary>
+## Star History
 
-### Prerequisites
-
-- Go 1.25+
-- Node.js 24+
+[![Star History Chart](https://api.star-history.com/svg?repos=asgardeo/thunder&type=date&legend=top-left)](https://www.star-history.com/#asgardeo/thunder&type=date&legend=top-left)
 
 ---
 
-- Build the product with tests using the following command:
+## Contributing
 
-    ```bash
-    make all
-    ```
+Please refer to the [Contributing Guide](https://asgardeo.github.io/thunder/docs/next/community/contributing/overview) for the different ways to contribute to this project and the relevant guidelines.
 
-</details>
+For code contributions, refer to the [Contributing Code](https://asgardeo.github.io/thunder/docs/next/community/contributing/contributing-code/prerequisites) section for details on the prerequisites and instructions for running Thunder in development mode.
 
----
+## Documentation
 
-<details>
-<summary><h2>⚙️ Development Setup</h2></summary>
-
-### Prerequisites
-
-- Go 1.24+
-- Node.js 24+
-
-### Start Thunder in Development Mode
-
-- Clone the repository:
-
-    ```bash
-    git clone https://github.com/asgardeo/thunder
-    cd thunder
-    ```
-
-- Run the following command to start the product in development mode:
-
-    ```bash
-    make run
-    ```
-
-- The product will start on `https://localhost:8090`.
-
-### Start the Sample App in Development Mode
-
-The sample apps support two configuration approaches:
-- **`.env` file**: Used during development (values are bundled at build time)
-- **`runtime.json` file**: Used for deployed/distributed apps (values loaded at runtime)
-
-For development, use the `.env` file approach:
-
-- Navigate to the sample app directory:
-
-  ```bash
-  cd samples/apps/react-vanilla-sample
-  ```
-
-- Create a file `.env` in the path `samples/apps/react-vanilla-sample/` by copying `.env.example`:
-
-  ```bash
-  cp .env.example .env
-  ```
-
-- Edit the `.env` file and configure the required values:
-
-  ```env
-  # Application ID registered in Thunder
-  VITE_REACT_APP_AUTH_APP_ID={your-application-id}
-  
-  # Thunder server endpoints
-  VITE_REACT_APP_SERVER_FLOW_ENDPOINT=https://localhost:8090/flow
-  VITE_REACT_APPLICATIONS_ENDPOINT=https://localhost:8090/applications
-  
-  # Set to false for native flow, true for OAuth redirect flow
-  VITE_REACT_APP_REDIRECT_BASED_LOGIN=false
-  ```
-
-  > **Note**: For OAuth redirect flow, additional configurations like `VITE_REACT_APP_CLIENT_ID`, `VITE_REACT_APP_SERVER_AUTHORIZATION_ENDPOINT`, and `VITE_REACT_APP_SERVER_TOKEN_ENDPOINT` are required. See `.env.example` for the complete list.
-
-- Install the dependencies:
-
-  ```bash
-  npm install
-  ```
-
-- Run the sample app using the following command:
-
-  ```bash
-  npm run dev
-  ```
-  
-- Open your browser and navigate to `http://localhost:3000` to see the sample app in action.
-
-### Remote Debugging Setup
-
-Thunder supports remote debugging using Delve debugger, enabling debugging from any IDE that supports the Debug Adapter Protocol (DAP).
-
-#### Install Delve Debugger
-
-Install Delve using Go:
-
-```bash
-go install github.com/go-delve/delve/cmd/dlv@latest
-```
-
-Add Delve to your PATH:
-
-```bash
-export PATH=$PATH:$(go env GOPATH)/bin
-```
-
-#### Start Thunder in Debug Mode
-
-From the distribution directory:
-
-**Linux/macOS:**
-
-```bash
-./start.sh --debug
-```
-
-**Windows (PowerShell):**
-
-```powershell
-.\start.ps1 --debug
-```
-
-**Windows (Command Prompt):**
-
-```cmd
-start.bat --debug
-```
-
-The debugger will listen on `localhost:2345` by default.
-
-#### Connect from IDE
-
-**VS Code:**
-- Use the provided `.vscode/launch.json` configuration
-- Press `F5` or go to `Run and Debug`
-
-**GoLand/IntelliJ:**
-- Go to `Run → Edit Configurations → + → Go Remote`
-- Set Host: `127.0.0.1`, Port: `2345`
-
-**Other IDEs:**
-- Configure DAP client to connect to `127.0.0.1:2345`
-
-### Testing
-
-Thunder includes both unit tests and integration tests:
-
-#### Run Unit Tests
-
-```bash
-make test_unit
-```
-
-#### Run Integration Tests
-
-```bash
-make test_integration
-```
-
-**Note:** This command will run integration tests on an already built product. If you need to build the product before running integration tests, use:
-
-```bash
-make build_backend test_integration
-```
-
-#### Run Tests with Coverage
-
-```bash
-make build_with_coverage
-```
-
-This will build the server with coverage instrumentation, run tests, and generate coverage reports at `target/` directory.
-
-</details>
-
----
+Please refer to the [Documentation](https://asgardeo.github.io/thunder/docs/guides/introduction) for additional guidance on getting started with Thunder and exploring its features, concepts, and usage.
 
 <details>
-<summary><h2>🔧 Advanced Setup & Configuration</h2></summary>
+<summary><h2>Advanced Setup & Configuration</h2></summary>
 
 <details>
 <summary><h3>Running with PostgreSQL Database</h3></summary>
@@ -528,11 +360,11 @@ docker compose down -v
 
     ```yaml
     database:
-        identity:
+        config:
             type: "postgres"
             hostname: "localhost"
             port: 5432
-            name: "thunderdb"
+            name: "configdb"
             username: "asgthunder"
             password: "asgthunder"
             sslmode: "disable"
@@ -566,19 +398,9 @@ The product will now use the PostgreSQL database for its operations.
 
 </details>
 
----
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=asgardeo/thunder&type=date&legend=top-left)](https://www.star-history.com/#asgardeo/thunder&type=date&legend=top-left)
-
-## 🤝 Contributing
-
-Please refer to the [CONTRIBUTING.md](docs/content/community/contributing/README.md) for guidelines on how to contribute to this project.
-
 ## License
 
 Licenses this source under the Apache License, Version 2.0 ([LICENSE](LICENSE)), You may not use this file except in compliance with the License.
 
 ---------------------------------------------------------------------------
-(c) Copyright 2025 WSO2 LLC.
+(c) Copyright 2026 WSO2 LLC.

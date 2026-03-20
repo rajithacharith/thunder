@@ -1,0 +1,83 @@
+/**
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import type {PropsWithChildren} from 'react';
+import {useState, useMemo, useCallback} from 'react';
+import {{pascalCase featureName}}Context, {type {{pascalCase featureName}}ContextType} from './{{pascalCase featureName}}Context';
+
+/**
+ * Props for the {@link {{pascalCase featureName}}Provider} component.
+ *
+ * @public
+ */
+export type {{pascalCase featureName}}ProviderProps = PropsWithChildren;
+
+/**
+ * React context provider component that provides {{camelCase featureName}} state
+ * to all child components.
+ *
+ * This provider manages the state for {{camelCase featureName}}-related operations
+ * and provides access to this state through the {{pascalCase featureName}}Context.
+ *
+ * @param props - The component props
+ * @returns The provider component wrapping children with {{camelCase featureName}} context
+ *
+ * @example
+ * ```tsx
+ * <{{pascalCase featureName}}Provider>
+ *   <YourComponents />
+ * </{{pascalCase featureName}}Provider>
+ * ```
+ *
+ * @public
+ */
+const {{pascalCase featureName}}Provider = ({children}: {{pascalCase featureName}}ProviderProps): React.ReactElement => {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  /**
+   * Refreshes the {{camelCase featureName}} data
+   */
+  const refresh = useCallback(() => {
+    // Implement refresh logic here
+    setIsLoading(true);
+    setError(null);
+
+    // Example: refetch data
+    // queryClient.invalidateQueries({{constantCase featureName}}_QUERY_KEYS.ALL);
+
+    setIsLoading(false);
+  }, []);
+
+  /**
+   * Memoized context value to prevent unnecessary re-renders
+   */
+  const contextValue: {{pascalCase featureName}}ContextType = useMemo(
+    () => ({
+      isLoading,
+      error,
+      setError,
+      refresh,
+    }),
+    [isLoading, error, refresh],
+  );
+
+  return <{{pascalCase featureName}}Context.Provider value=\{contextValue}>\{children}</{{pascalCase featureName}}Context.Provider>;
+};
+
+export default {{pascalCase featureName}}Provider;

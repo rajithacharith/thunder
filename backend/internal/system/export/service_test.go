@@ -19,6 +19,7 @@
 package export
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -43,6 +44,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -121,7 +123,7 @@ func TestExportServiceTestSuite(t *testing.T) {
 
 // TestExportResources_NilRequest tests ExportResources with nil request.
 func (suite *ExportServiceTestSuite) TestExportResources_NilRequest() {
-	result, err := suite.exportService.ExportResources(nil)
+	result, err := suite.exportService.ExportResources(context.Background(), nil)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -133,7 +135,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_NilRequest() {
 func (suite *ExportServiceTestSuite) TestExportResources_EmptyRequest() {
 	request := &ExportRequest{}
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -154,9 +156,9 @@ func (suite *ExportServiceTestSuite) TestExportResources_DefaultOptions() {
 		Description: "Test Description",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(appID).Return(mockApp, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, appID).Return(mockApp, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -180,9 +182,9 @@ func (suite *ExportServiceTestSuite) TestExportResources_ApplicationNotFound() {
 		Error: "Application not found",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(appID).Return(nil, appError)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, appID).Return(nil, appError)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -213,7 +215,6 @@ func (suite *ExportServiceTestSuite) TestExportResources_CompleteOAuthApplicatio
 		PublicClient:            false,
 		Scopes:                  []string{"openid", "profile"},
 		Token: &appmodel.OAuthTokenConfig{
-			Issuer: "https://localhost:8090",
 			AccessToken: &appmodel.AccessTokenConfig{
 				ValidityPeriod: 3600,
 				UserAttributes: []string{"email", "username"},
@@ -221,10 +222,10 @@ func (suite *ExportServiceTestSuite) TestExportResources_CompleteOAuthApplicatio
 			IDToken: &appmodel.IDTokenConfig{
 				ValidityPeriod: 1800,
 				UserAttributes: []string{"email"},
-				ScopeClaims: map[string][]string{
-					"profile": {"name", "picture"},
-				},
 			},
+		},
+		ScopeClaims: map[string][]string{
+			"profile": {"name", "picture"},
 		},
 	}
 
@@ -239,14 +240,14 @@ func (suite *ExportServiceTestSuite) TestExportResources_CompleteOAuthApplicatio
 				OAuthAppConfig: mockOAuthConfig,
 			},
 		},
-		Token: &appmodel.TokenConfig{
+		Assertion: &appmodel.AssertionConfig{
 			UserAttributes: []string{"email", "username"},
 		},
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(appID).Return(mockApp, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, appID).Return(mockApp, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -286,10 +287,10 @@ func (suite *ExportServiceTestSuite) TestExportResources_MultipleApplications() 
 		Description: "Second App",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(testApp1ID).Return(mockApp1, nil)
-	suite.appServiceMock.EXPECT().GetApplication(testApp2ID).Return(mockApp2, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, testApp1ID).Return(mockApp1, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, testApp2ID).Return(mockApp2, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -319,10 +320,10 @@ func (suite *ExportServiceTestSuite) TestExportResources_PartialFailure() {
 		Error: "Application not found",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(app1ID).Return(mockApp1, nil)
-	suite.appServiceMock.EXPECT().GetApplication(app2ID).Return(nil, appError)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, app1ID).Return(mockApp1, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, app2ID).Return(nil, appError)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -371,12 +372,12 @@ func (suite *ExportServiceTestSuite) TestExportResources_WildcardApplications() 
 		Description: "Third App",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplicationList().Return(mockAppList, nil)
-	suite.appServiceMock.EXPECT().GetApplication(testApp1ID).Return(mockApp1, nil)
-	suite.appServiceMock.EXPECT().GetApplication(testApp2ID).Return(mockApp2, nil)
-	suite.appServiceMock.EXPECT().GetApplication(testApp3ID).Return(mockApp3, nil)
+	suite.appServiceMock.EXPECT().GetApplicationList(mock.Anything).Return(mockAppList, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, testApp1ID).Return(mockApp1, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, testApp2ID).Return(mockApp2, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, testApp3ID).Return(mockApp3, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -400,9 +401,9 @@ func (suite *ExportServiceTestSuite) TestExportResources_WildcardApplications_Li
 		Error: "Failed to list applications",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplicationList().Return(nil, listError)
+	suite.appServiceMock.EXPECT().GetApplicationList(mock.Anything).Return(nil, listError)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -425,9 +426,9 @@ func (suite *ExportServiceTestSuite) TestExportResources_WildcardApplications_Em
 		Applications: []appmodel.BasicApplicationResponse{},
 	}
 
-	suite.appServiceMock.EXPECT().GetApplicationList().Return(mockAppList, nil)
+	suite.appServiceMock.EXPECT().GetApplicationList(mock.Anything).Return(mockAppList, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -471,12 +472,12 @@ func (suite *ExportServiceTestSuite) TestExportResources_WildcardApplications_Pa
 		Error: "Application not found",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplicationList().Return(mockAppList, nil)
-	suite.appServiceMock.EXPECT().GetApplication(testApp1ID).Return(mockApp1, nil)
-	suite.appServiceMock.EXPECT().GetApplication(testApp2ID).Return(nil, appError)
-	suite.appServiceMock.EXPECT().GetApplication(testApp3ID).Return(mockApp3, nil)
+	suite.appServiceMock.EXPECT().GetApplicationList(mock.Anything).Return(mockAppList, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, testApp1ID).Return(mockApp1, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, testApp2ID).Return(nil, appError)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, testApp3ID).Return(mockApp3, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -507,9 +508,9 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Succes
 		Properties:  []cmodels.Property{*mockProperty},
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProvider(idpID).Return(mockIDP, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, idpID).Return(mockIDP, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -540,14 +541,14 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Multip
 		Properties: []cmodels.Property{*mockProperty2},
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp1").Return(mockIDP1, nil)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp2").Return(mockIDP2, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp1").Return(mockIDP1, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp2").Return(mockIDP2, nil)
 
 	request := &ExportRequest{
 		IdentityProviders: []string{"idp1", "idp2"},
 		Options:           &ExportOptions{Format: "yaml"},
 	}
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	suite.assertMultipleResourcesExport(result, err, 2, "identity_provider")
 }
@@ -582,11 +583,11 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Wildca
 		Properties: []cmodels.Property{*mockProperty2},
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProviderList().Return(mockIDPList, nil)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp1").Return(mockIDP1, nil)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp2").Return(mockIDP2, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProviderList(mock.Anything).Return(mockIDPList, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp1").Return(mockIDP1, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp2").Return(mockIDP2, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -618,10 +619,10 @@ func (suite *ExportServiceTestSuite) TestExportResources_Mixed_ApplicationsAndID
 		Properties: []cmodels.Property{*mockProperty},
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(testAppID).Return(mockApp, nil)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider(testIDPID).Return(mockIDP, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, testAppID).Return(mockApp, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, testIDPID).Return(mockIDP, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -647,9 +648,9 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_NotFou
 		Error: "Identity provider not found",
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("non-existent-idp").Return(nil, idpError)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "non-existent-idp").Return(nil, idpError)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	// Should return error since no valid resources found
 	assert.NotNil(suite.T(), err)
@@ -693,12 +694,12 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Wildca
 		Error: "Identity provider not found",
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProviderList().Return(mockIDPList, nil)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp1").Return(mockIDP1, nil)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp2").Return(nil, idpError)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp3").Return(mockIDP3, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProviderList(mock.Anything).Return(mockIDPList, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp1").Return(mockIDP1, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp2").Return(nil, idpError)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp3").Return(mockIDP3, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -708,6 +709,17 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Wildca
 	assert.Len(suite.T(), result.Summary.Errors, 1) // One error recorded
 	assert.Equal(suite.T(), "identity_provider", result.Summary.Errors[0].ResourceType)
 	assert.Equal(suite.T(), "idp2", result.Summary.Errors[0].ResourceID)
+}
+
+func (suite *ExportServiceTestSuite) assertExportNoProperties(request *ExportRequest, expectedContent string) {
+	result, err := suite.exportService.ExportResources(context.Background(), request)
+
+	// Should succeed even with no properties
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Len(suite.T(), result.Files, 1)
+	assert.Equal(suite.T(), 1, result.Summary.TotalFiles)
+	assert.Contains(suite.T(), result.Files[0].Content, expectedContent)
 }
 
 // TestExportResources_IdentityProvider_NoProperties tests exporting IDP with no properties.
@@ -727,16 +739,9 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_NoProp
 		Properties: []cmodels.Property{}, // Empty properties
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp-no-props").Return(mockIDP, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp-no-props").Return(mockIDP, nil)
 
-	result, err := suite.exportService.ExportResources(request)
-
-	// Should succeed even with no properties
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), result)
-	assert.Len(suite.T(), result.Files, 1)
-	assert.Equal(suite.T(), 1, result.Summary.TotalFiles)
-	assert.Contains(suite.T(), result.Files[0].Content, "name: Empty IDP")
+	suite.assertExportNoProperties(request, "name: Empty IDP")
 }
 
 // TestExportResources_IdentityProvider_EmptyName tests validation for IDP with empty name.
@@ -756,9 +761,9 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_EmptyN
 		Properties: []cmodels.Property{*mockProperty},
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp-no-name").Return(mockIDP, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp-no-name").Return(mockIDP, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	// Should return error since name is required
 	assert.NotNil(suite.T(), err)
@@ -794,9 +799,9 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Proper
 		},
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProvider(idpID).Return(mockIDP, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, idpID).Return(mockIDP, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -853,9 +858,9 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Proper
 		},
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProvider(idpID).Return(mockIDP, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, idpID).Return(mockIDP, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -912,10 +917,10 @@ func (suite *ExportServiceTestSuite) TestExportResources_PartialFailure_Detailed
 		Error: "Application not found",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(app1ID).Return(mockApp1, nil)
-	suite.appServiceMock.EXPECT().GetApplication(app2ID).Return(nil, appError)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, app1ID).Return(mockApp1, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, app2ID).Return(nil, appError)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	// Verify successful export
 	assert.Nil(suite.T(), err)
@@ -966,11 +971,11 @@ func (suite *ExportServiceTestSuite) TestExportResources_IdentityProvider_Partia
 		Error: "Identity provider not found",
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp1").Return(mockIDP1, nil)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp2-not-found").Return(nil, idpError)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp3").Return(mockIDP3, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp1").Return(mockIDP1, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp2-not-found").Return(nil, idpError)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp3").Return(mockIDP3, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	// Verify partial success
 	assert.Nil(suite.T(), err)
@@ -1030,12 +1035,12 @@ func (suite *ExportServiceTestSuite) TestExportResources_MixedResources_WithErro
 		Error: "Identity provider not found",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication("app1").Return(mockApp1, nil)
-	suite.appServiceMock.EXPECT().GetApplication("app2-not-found").Return(nil, appError)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp1").Return(mockIDP1, nil)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp2-not-found").Return(nil, idpError)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, "app1").Return(mockApp1, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, "app2-not-found").Return(nil, appError)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp1").Return(mockIDP1, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp2-not-found").Return(nil, idpError)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	// Verify partial success
 	assert.Nil(suite.T(), err)
@@ -1090,10 +1095,10 @@ func (suite *ExportServiceTestSuite) TestExportResources_FileSizeCalculation() {
 		Description: "Second application with longer description",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(testApp1ID).Return(mockApp1, nil)
-	suite.appServiceMock.EXPECT().GetApplication(testApp2ID).Return(mockApp2, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, testApp1ID).Return(mockApp1, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, testApp2ID).Return(mockApp2, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1147,8 +1152,8 @@ func (suite *ExportServiceTestSuite) TestExportResources_TemplateGenerationError
 		Name: "App That Fails Template Generation",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(testApp1ID).Return(mockApp1, nil)
-	suite.appServiceMock.EXPECT().GetApplication(testApp2ID).Return(mockApp2, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, testApp1ID).Return(mockApp1, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, testApp2ID).Return(mockApp2, nil)
 
 	// Create a mock parameterizer that returns errors
 	mockParameterizer := &MockParameterizer{
@@ -1167,7 +1172,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_TemplateGenerationError
 	// Create a new export service with the mock parameterizer
 	exportServiceWithMock := newExportService(exporters, mockParameterizer)
 
-	result, err := exportServiceWithMock.ExportResources(request)
+	result, err := exportServiceWithMock.ExportResources(context.Background(), request)
 
 	// When all resources fail template generation, service returns error
 	assert.NotNil(suite.T(), err)
@@ -1196,9 +1201,9 @@ func (suite *ExportServiceTestSuite) TestExportResources_WithCustomFolderStructu
 		Name: "Test Application",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(testApp1ID).Return(mockApp, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, testApp1ID).Return(mockApp, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1239,11 +1244,11 @@ func (suite *ExportServiceTestSuite) TestExportResources_WithGroupByTypeStructur
 		Properties: []cmodels.Property{*mockProperty},
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(testApp1ID).Return(mockApp1, nil)
-	suite.appServiceMock.EXPECT().GetApplication(testApp2ID).Return(mockApp2, nil)
-	suite.idpServiceMock.EXPECT().GetIdentityProvider("idp1").Return(mockIDP, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, testApp1ID).Return(mockApp1, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, testApp2ID).Return(mockApp2, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, "idp1").Return(mockIDP, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1284,9 +1289,9 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_Success() {
 		Properties:  []cmodels.Property{*mockProperty},
 	}
 
-	suite.mockNotificationService.EXPECT().GetSender("sender1").Return(mockSender, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender1").Return(mockSender, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1317,14 +1322,14 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_Multiple() {
 		Properties: []cmodels.Property{*mockProperty2},
 	}
 
-	suite.mockNotificationService.EXPECT().GetSender("sender1").Return(mockSender1, nil)
-	suite.mockNotificationService.EXPECT().GetSender("sender2").Return(mockSender2, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender1").Return(mockSender1, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender2").Return(mockSender2, nil)
 
 	request := &ExportRequest{
 		NotificationSenders: []string{"sender1", "sender2"},
 		Options:             &ExportOptions{Format: "yaml"},
 	}
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	suite.assertMultipleResourcesExport(result, err, 2, "notification_sender")
 }
@@ -1356,11 +1361,11 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_Wildcard() {
 
 	mockSenderList := []common.NotificationSenderDTO{*mockSender1, *mockSender2}
 
-	suite.mockNotificationService.EXPECT().ListSenders().Return(mockSenderList, nil)
-	suite.mockNotificationService.EXPECT().GetSender("sender1").Return(mockSender1, nil)
-	suite.mockNotificationService.EXPECT().GetSender("sender2").Return(mockSender2, nil)
+	suite.mockNotificationService.EXPECT().ListSenders(mock.Anything).Return(mockSenderList, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender1").Return(mockSender1, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender2").Return(mockSender2, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1382,9 +1387,9 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_NotFound() {
 		Error: "Notification sender not found",
 	}
 
-	suite.mockNotificationService.EXPECT().GetSender("non-existent-sender").Return(nil, senderError)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "non-existent-sender").Return(nil, senderError)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.NotNil(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1408,9 +1413,9 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_EmptyName() {
 		Properties: []cmodels.Property{*mockProperty},
 	}
 
-	suite.mockNotificationService.EXPECT().GetSender("sender-no-name").Return(mockSender, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender-no-name").Return(mockSender, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.NotNil(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1433,16 +1438,9 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_NoProperties(
 		Properties: []cmodels.Property{}, // Empty properties
 	}
 
-	suite.mockNotificationService.EXPECT().GetSender("sender-no-props").Return(mockSender, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender-no-props").Return(mockSender, nil)
 
-	result, err := suite.exportService.ExportResources(request)
-
-	// Should succeed even with no properties
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), result)
-	assert.Len(suite.T(), result.Files, 1)
-	assert.Equal(suite.T(), 1, result.Summary.TotalFiles)
-	assert.Contains(suite.T(), result.Files[0].Content, "name: Empty Sender")
+	suite.assertExportNoProperties(request, "name: Empty Sender")
 }
 
 // TestExportNotificationSenders_WildcardPartialFailure tests wildcard export with partial failures.
@@ -1473,11 +1471,11 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_WildcardParti
 	// Create list with 3 senders but sender2 will fail to retrieve
 	mockSenderList := []common.NotificationSenderDTO{*mockSender1, *mockSender3}
 
-	suite.mockNotificationService.EXPECT().ListSenders().Return(mockSenderList, nil)
-	suite.mockNotificationService.EXPECT().GetSender("sender1").Return(mockSender1, nil)
-	suite.mockNotificationService.EXPECT().GetSender("sender3").Return(mockSender3, nil)
+	suite.mockNotificationService.EXPECT().ListSenders(mock.Anything).Return(mockSenderList, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender1").Return(mockSender1, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, "sender3").Return(mockSender3, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1498,14 +1496,14 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Success() {
 	mockSchema := &userschema.UserSchema{
 		ID:                    "schema1",
 		Name:                  "Test Schema",
-		OrganizationUnitID:    "ou1",
+		OUID:                  "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte(`{"type":"object","properties":{"email":{"type":"string"}}}`),
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema1").Return(mockSchema, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(mockSchema, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1529,7 +1527,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Multiple() {
 	mockSchema1 := &userschema.UserSchema{
 		ID:                    "schema1",
 		Name:                  "Customer Schema",
-		OrganizationUnitID:    "ou1",
+		OUID:                  "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte(`{"type":"object","properties":{"email":{"type":"string"}}}`),
 	}
@@ -1537,15 +1535,15 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Multiple() {
 	mockSchema2 := &userschema.UserSchema{
 		ID:                    "schema2",
 		Name:                  "Employee Schema",
-		OrganizationUnitID:    "ou1",
+		OUID:                  "ou1",
 		AllowSelfRegistration: false,
 		Schema:                []byte(`{"type":"object","properties":{"empId":{"type":"string"}}}`),
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema1").Return(mockSchema1, nil)
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema2").Return(mockSchema2, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(mockSchema1, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema2").Return(mockSchema2, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1566,7 +1564,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Wildcard() {
 	mockSchema1 := &userschema.UserSchema{
 		ID:                    "schema1",
 		Name:                  "Customer Schema",
-		OrganizationUnitID:    "ou1",
+		OUID:                  "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte(`{"type":"object","properties":{"email":{"type":"string"}}}`),
 	}
@@ -1574,7 +1572,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Wildcard() {
 	mockSchema2 := &userschema.UserSchema{
 		ID:                    "schema2",
 		Name:                  "Employee Schema",
-		OrganizationUnitID:    "ou1",
+		OUID:                  "ou1",
 		AllowSelfRegistration: false,
 		Schema:                []byte(`{"type":"object","properties":{"empId":{"type":"string"}}}`),
 	}
@@ -1583,16 +1581,16 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Wildcard() {
 		TotalResults: 2,
 		Count:        2,
 		Schemas: []userschema.UserSchemaListItem{
-			{ID: "schema1", Name: "Customer Schema", OrganizationUnitID: "ou1"},
-			{ID: "schema2", Name: "Employee Schema", OrganizationUnitID: "ou1"},
+			{ID: "schema1", Name: "Customer Schema", OUID: "ou1"},
+			{ID: "schema2", Name: "Employee Schema", OUID: "ou1"},
 		},
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchemaList(100, 0).Return(mockSchemaList, nil)
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema1").Return(mockSchema1, nil)
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema2").Return(mockSchema2, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0).Return(mockSchemaList, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(mockSchema1, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema2").Return(mockSchema2, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1614,9 +1612,9 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_NotFound() {
 		Error: "User schema not found",
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("non-existent-schema").Return(nil, schemaError)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "non-existent-schema").Return(nil, schemaError)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.NotNil(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1635,14 +1633,14 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_EmptyName() {
 	mockSchema := &userschema.UserSchema{
 		ID:                    "schema-no-name",
 		Name:                  "", // Empty name
-		OrganizationUnitID:    "ou1",
+		OUID:                  "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte(`{"type":"object"}`),
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema-no-name").Return(mockSchema, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema-no-name").Return(mockSchema, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.NotNil(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1661,14 +1659,14 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_NoSchema() {
 	mockSchema := &userschema.UserSchema{
 		ID:                    "schema-no-def",
 		Name:                  "Empty Schema",
-		OrganizationUnitID:    "ou1",
+		OUID:                  "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte{}, // Empty schema
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema-no-def").Return(mockSchema, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema-no-def").Return(mockSchema, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	// Should succeed even with no schema definition
 	assert.Nil(suite.T(), err)
@@ -1690,7 +1688,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_WildcardPartialFailur
 	mockSchema1 := &userschema.UserSchema{
 		ID:                    "schema1",
 		Name:                  "Customer Schema",
-		OrganizationUnitID:    "ou1",
+		OUID:                  "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte(`{"type":"object"}`),
 	}
@@ -1698,7 +1696,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_WildcardPartialFailur
 	mockSchema3 := &userschema.UserSchema{
 		ID:                    "schema3",
 		Name:                  "Partner Schema",
-		OrganizationUnitID:    "ou1",
+		OUID:                  "ou1",
 		AllowSelfRegistration: false,
 		Schema:                []byte(`{"type":"object"}`),
 	}
@@ -1718,12 +1716,12 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_WildcardPartialFailur
 		Error: "User schema not found",
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchemaList(100, 0).Return(mockSchemaList, nil)
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema1").Return(mockSchema1, nil)
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema2").Return(nil, schemaError)
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema3").Return(mockSchema3, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0).Return(mockSchemaList, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(mockSchema1, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema2").Return(nil, schemaError)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema3").Return(mockSchema3, nil)
 
-	result, err := suite.exportService.ExportResources(request)
+	result, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1758,7 +1756,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_Success() {
 		Description: "Test Description",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(appID).Return(mockApp, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, appID).Return(mockApp, nil)
 
 	// Get the exporter from the service's registry
 	exporter, exists := suite.exportService.(*exportService).registry.Get(resourceTypeApplication)
@@ -1768,7 +1766,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_Success() {
 		Format: formatYAML,
 	}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{appID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -1803,14 +1801,14 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_MultipleRes
 		Description: "Third App",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(app1ID).Return(mockApp1, nil)
-	suite.appServiceMock.EXPECT().GetApplication(app2ID).Return(mockApp2, nil)
-	suite.appServiceMock.EXPECT().GetApplication(app3ID).Return(mockApp3, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, app1ID).Return(mockApp1, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, app2ID).Return(mockApp2, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, app3ID).Return(mockApp3, nil)
 
 	exporter, _ := suite.exportService.(*exportService).registry.Get(resourceTypeApplication)
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{app1ID, app2ID, app3ID}, options)
 
 	assert.Len(suite.T(), files, 3)
@@ -1828,12 +1826,12 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_ResourceNot
 		Error: "Application not found",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(appID).Return(nil, appError)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, appID).Return(nil, appError)
 
 	exporter, _ := suite.exportService.(*exportService).registry.Get(resourceTypeApplication)
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{appID}, options)
 
 	assert.Len(suite.T(), files, 0)
@@ -1860,13 +1858,13 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_PartialSucc
 		Error: "Application not found",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(validAppID).Return(mockApp, nil)
-	suite.appServiceMock.EXPECT().GetApplication(invalidAppID).Return(nil, appError)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, validAppID).Return(mockApp, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, invalidAppID).Return(nil, appError)
 
 	exporter, _ := suite.exportService.(*exportService).registry.Get(resourceTypeApplication)
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{validAppID, invalidAppID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -1899,14 +1897,14 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardSuc
 		Description: "Second App",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplicationList().Return(mockAppList, nil)
-	suite.appServiceMock.EXPECT().GetApplication(testApp1ID).Return(mockApp1, nil)
-	suite.appServiceMock.EXPECT().GetApplication(testApp2ID).Return(mockApp2, nil)
+	suite.appServiceMock.EXPECT().GetApplicationList(mock.Anything).Return(mockAppList, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, testApp1ID).Return(mockApp1, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, testApp2ID).Return(mockApp2, nil)
 
 	exporter, _ := suite.exportService.(*exportService).registry.Get(resourceTypeApplication)
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{"*"}, options)
 
 	assert.Len(suite.T(), files, 2)
@@ -1922,12 +1920,12 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardFai
 		Error: "Failed to list applications",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplicationList().Return(nil, listError)
+	suite.appServiceMock.EXPECT().GetApplicationList(mock.Anything).Return(nil, listError)
 
 	exporter, _ := suite.exportService.(*exportService).registry.Get(resourceTypeApplication)
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{"*"}, options)
 
 	assert.Len(suite.T(), files, 0)
@@ -1942,12 +1940,12 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardEmp
 		Applications: []appmodel.BasicApplicationResponse{},
 	}
 
-	suite.appServiceMock.EXPECT().GetApplicationList().Return(mockAppList, nil)
+	suite.appServiceMock.EXPECT().GetApplicationList(mock.Anything).Return(mockAppList, nil)
 
 	exporter, _ := suite.exportService.(*exportService).registry.Get(resourceTypeApplication)
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{"*"}, options)
 
 	assert.Len(suite.T(), files, 0)
@@ -1963,7 +1961,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WithGroupBy
 		Description: "Test Description",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(appID).Return(mockApp, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, appID).Return(mockApp, nil)
 
 	exporter, _ := suite.exportService.(*exportService).registry.Get(resourceTypeApplication)
 	options := &ExportOptions{
@@ -1973,7 +1971,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WithGroupBy
 		},
 	}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{appID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -1990,7 +1988,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WithCustomF
 		Description: "Test Description",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(appID).Return(mockApp, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, appID).Return(mockApp, nil)
 
 	exporter, _ := suite.exportService.(*exportService).registry.Get(resourceTypeApplication)
 	options := &ExportOptions{
@@ -2000,7 +1998,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WithCustomF
 		},
 	}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{appID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -2017,14 +2015,14 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_IdentityPro
 		Description: "Test IDP Description",
 	}
 
-	suite.idpServiceMock.EXPECT().GetIdentityProvider(idpID).Return(mockIDP, nil)
+	suite.idpServiceMock.EXPECT().GetIdentityProvider(mock.Anything, idpID).Return(mockIDP, nil)
 
 	exporter, exists := suite.exportService.(*exportService).registry.Get(resourceTypeIdentityProvider)
 	assert.True(suite.T(), exists, "IDP exporter should be registered")
 
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{idpID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -2045,14 +2043,14 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_Notificatio
 		Properties: []cmodels.Property{*mockProperty},
 	}
 
-	suite.mockNotificationService.EXPECT().GetSender(senderID).Return(mockSender, nil)
+	suite.mockNotificationService.EXPECT().GetSender(mock.Anything, senderID).Return(mockSender, nil)
 
 	exporter, exists := suite.exportService.(*exportService).registry.Get(resourceTypeNotificationSender)
 	assert.True(suite.T(), exists, "Notification sender exporter should be registered")
 
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{senderID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -2068,19 +2066,19 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_UserSchema(
 	mockSchema := &userschema.UserSchema{
 		ID:                    schemaID,
 		Name:                  "Test Schema",
-		OrganizationUnitID:    "ou1",
+		OUID:                  "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte(`{"type":"object","properties":{"email":{"type":"string"}}}`),
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchema(schemaID).Return(mockSchema, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, schemaID).Return(mockSchema, nil)
 
 	exporter, exists := suite.exportService.(*exportService).registry.Get(resourceTypeUserSchema)
 	assert.True(suite.T(), exists, "User schema exporter should be registered")
 
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{schemaID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -2095,7 +2093,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_EmptyResour
 	exporter, _ := suite.exportService.(*exportService).registry.Get(resourceTypeApplication)
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{}, options)
 
 	assert.Len(suite.T(), files, 0)
@@ -2111,14 +2109,14 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_JSONFormatF
 		Description: "Test Description",
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(appID).Return(mockApp, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, appID).Return(mockApp, nil)
 
 	exporter, _ := suite.exportService.(*exportService).registry.Get(resourceTypeApplication)
 	options := &ExportOptions{
 		Format: formatJSON, // JSON not yet implemented
 	}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{appID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -2156,14 +2154,14 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_Flow() {
 		UpdatedAt: "2025-12-22 10:00:00",
 	}
 
-	suite.mockFlowService.EXPECT().GetFlow(flowID).Return(mockFlow, nil)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, flowID).Return(mockFlow, nil)
 
 	exporter, exists := suite.exportService.(*exportService).registry.Get("flow")
 	assert.True(suite.T(), exists, "Flow exporter should be registered")
 
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{flowID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -2250,14 +2248,14 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_FlowWithCom
 		UpdatedAt: "2025-12-22 10:00:00",
 	}
 
-	suite.mockFlowService.EXPECT().GetFlow(flowID).Return(mockFlow, nil)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, flowID).Return(mockFlow, nil)
 
 	exporter, exists := suite.exportService.(*exportService).registry.Get("flow")
 	assert.True(suite.T(), exists)
 
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{flowID}, options)
 
 	assert.Len(suite.T(), files, 1)
@@ -2296,13 +2294,13 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_MultipleFlo
 		},
 	}
 
-	suite.mockFlowService.EXPECT().GetFlow(testFlow1ID).Return(flow1, nil)
-	suite.mockFlowService.EXPECT().GetFlow(testFlow2ID).Return(flow2, nil)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, testFlow1ID).Return(flow1, nil)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, testFlow2ID).Return(flow2, nil)
 
 	exporter, _ := suite.exportService.(*exportService).registry.Get("flow")
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{testFlow1ID, testFlow2ID}, options)
 
 	assert.Len(suite.T(), files, 2)
@@ -2318,12 +2316,12 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_FlowNotFoun
 		Code:  "FLOW_NOT_FOUND",
 		Error: "Flow not found",
 	}
-	suite.mockFlowService.EXPECT().GetFlow(flowID).Return(nil, flowError)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, flowID).Return(nil, flowError)
 
 	exporter, _ := suite.exportService.(*exportService).registry.Get("flow")
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{flowID}, options)
 
 	assert.Len(suite.T(), files, 0)
@@ -2381,14 +2379,14 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardFlo
 		},
 	}
 
-	suite.mockFlowService.EXPECT().ListFlows(10000, 0, flowcommon.FlowType("")).Return(flowList, nil)
-	suite.mockFlowService.EXPECT().GetFlow(testFlow1ID).Return(flow1Complete, nil)
-	suite.mockFlowService.EXPECT().GetFlow(testFlow2ID).Return(flow2Complete, nil)
+	suite.mockFlowService.EXPECT().ListFlows(mock.Anything, 10000, 0, flowcommon.FlowType("")).Return(flowList, nil)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, testFlow1ID).Return(flow1Complete, nil)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, testFlow2ID).Return(flow2Complete, nil)
 
 	exporter, _ := suite.exportService.(*exportService).registry.Get("flow")
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{"*"}, options)
 
 	assert.Len(suite.T(), files, 2)
@@ -2401,12 +2399,12 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardFlo
 		Code:  "DB_ERROR",
 		Error: "Database error",
 	}
-	suite.mockFlowService.EXPECT().ListFlows(10000, 0, flowcommon.FlowType("")).Return(nil, dbError)
+	suite.mockFlowService.EXPECT().ListFlows(mock.Anything, 10000, 0, flowcommon.FlowType("")).Return(nil, dbError)
 
 	exporter, _ := suite.exportService.(*exportService).registry.Get("flow")
 	options := &ExportOptions{Format: formatYAML}
 
-	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(context.Background(),
 		exporter, []string{"*"}, options)
 
 	assert.Len(suite.T(), files, 0)
@@ -2430,7 +2428,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_FlowOnly() {
 		UpdatedAt: "2025-12-22 10:00:00",
 	}
 
-	suite.mockFlowService.EXPECT().GetFlow(flowID).Return(mockFlow, nil)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, flowID).Return(mockFlow, nil)
 
 	request := &ExportRequest{
 		Flows: []string{flowID},
@@ -2439,7 +2437,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_FlowOnly() {
 		},
 	}
 
-	response, err := suite.exportService.ExportResources(request)
+	response, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), response)
@@ -2473,8 +2471,8 @@ func (suite *ExportServiceTestSuite) TestExportResources_MixedWithFlows() {
 		},
 	}
 
-	suite.appServiceMock.EXPECT().GetApplication(appID).Return(mockApp, nil)
-	suite.mockFlowService.EXPECT().GetFlow(flowID).Return(mockFlow, nil)
+	suite.appServiceMock.EXPECT().GetApplication(mock.Anything, appID).Return(mockApp, nil)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, flowID).Return(mockFlow, nil)
 
 	request := &ExportRequest{
 		Applications: []string{appID},
@@ -2484,7 +2482,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_MixedWithFlows() {
 		},
 	}
 
-	response, err := suite.exportService.ExportResources(request)
+	response, err := suite.exportService.ExportResources(context.Background(), request)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), response)

@@ -29,6 +29,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -89,10 +90,10 @@ func (s *TokenIntrospectionHandlerTestSuite) TestHandleIntrospect_ParseFormError
 	// Execute the handler - should attempt to write error response despite encoding failure
 	s.handler.HandleIntrospect(bw, req)
 
-	// Verify that the handler attempted to set headers (Content-Type will be text/plain after http.Error fallback)
+	// Verify that the handler attempted to set headers
 	assert.NotNil(s.T(), bw.Header())
-	// After encoding fails, http.Error() is called which sets Content-Type to text/plain
-	assert.Contains(s.T(), bw.Header().Get("Content-Type"), "text/plain")
+	// WriteJSONError sets Content-Type to application/json before attempting to encode
+	assert.Contains(s.T(), bw.Header().Get("Content-Type"), "application/json")
 }
 
 func (s *TokenIntrospectionHandlerTestSuite) TestHandleIntrospect_MissingToken() {
@@ -118,10 +119,10 @@ func (s *TokenIntrospectionHandlerTestSuite) TestHandleIntrospect_MissingToken_E
 	// Execute the handler - should attempt to write error response despite encoding failure
 	s.handler.HandleIntrospect(bw, req)
 
-	// Verify that the handler attempted to set headers (Content-Type will be text/plain after http.Error fallback)
+	// Verify that the handler attempted to set headers
 	assert.NotNil(s.T(), bw.Header())
-	// After encoding fails, http.Error() is called which sets Content-Type to text/plain
-	assert.Contains(s.T(), bw.Header().Get("Content-Type"), "text/plain")
+	// WriteJSONError sets Content-Type to application/json before attempting to encode
+	assert.Contains(s.T(), bw.Header().Get("Content-Type"), "application/json")
 }
 
 func (s *TokenIntrospectionHandlerTestSuite) TestHandleIntrospect_IntrospectionError() {
@@ -131,14 +132,15 @@ func (s *TokenIntrospectionHandlerTestSuite) TestHandleIntrospect_IntrospectionE
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	// Setup the mock to return an error
-	s.introspectionServiceMock.On("IntrospectToken", "valid-token", "").Return(nil, errors.New("introspection error"))
+	s.introspectionServiceMock.On("IntrospectToken", mock.Anything, "valid-token", "").
+		Return(nil, errors.New("introspection error"))
 
 	rr := httptest.NewRecorder()
 
 	s.handler.HandleIntrospect(rr, req)
 	assert.Equal(s.T(), http.StatusInternalServerError, rr.Code)
 	assert.Contains(s.T(), rr.Body.String(), constants.ErrorServerError)
-	assert.Contains(s.T(), rr.Body.String(), "Server error while introspecting token")
+	assert.Contains(s.T(), rr.Body.String(), "An unexpected error occurred while processing the request")
 	s.introspectionServiceMock.AssertExpectations(s.T())
 }
 
@@ -164,7 +166,8 @@ func (s *TokenIntrospectionHandlerTestSuite) TestHandleIntrospect_Success_Active
 		Iss:       "https://example.com",
 		Jti:       "token-id-123",
 	}
-	s.introspectionServiceMock.On("IntrospectToken", "valid-token", "access_token").Return(activeResponse, nil)
+	s.introspectionServiceMock.On("IntrospectToken", mock.Anything, "valid-token", "access_token").
+		Return(activeResponse, nil)
 
 	rr := httptest.NewRecorder()
 
@@ -183,7 +186,8 @@ func (s *TokenIntrospectionHandlerTestSuite) TestHandleIntrospect_IntrospectionE
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	// Setup the mock to return an error
-	s.introspectionServiceMock.On("IntrospectToken", "valid-token", "").Return(nil, errors.New("introspection error"))
+	s.introspectionServiceMock.On("IntrospectToken", mock.Anything, "valid-token", "").
+		Return(nil, errors.New("introspection error"))
 
 	rr := httptest.NewRecorder()
 
@@ -202,7 +206,7 @@ func (s *TokenIntrospectionHandlerTestSuite) TestHandleIntrospect_Success_Encode
 	activeResponse := &IntrospectResponse{
 		Active: true,
 	}
-	s.introspectionServiceMock.On("IntrospectToken", "valid-token", "").Return(activeResponse, nil)
+	s.introspectionServiceMock.On("IntrospectToken", mock.Anything, "valid-token", "").Return(activeResponse, nil)
 
 	rr := httptest.NewRecorder()
 
@@ -221,7 +225,7 @@ func (s *TokenIntrospectionHandlerTestSuite) TestHandleIntrospect_Success_Inacti
 	inactiveResponse := &IntrospectResponse{
 		Active: false,
 	}
-	s.introspectionServiceMock.On("IntrospectToken", "invalid-token", "").Return(inactiveResponse, nil)
+	s.introspectionServiceMock.On("IntrospectToken", mock.Anything, "invalid-token", "").Return(inactiveResponse, nil)
 
 	rr := httptest.NewRecorder()
 

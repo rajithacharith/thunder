@@ -30,6 +30,8 @@ const (
 	RequestParamGrantType           string = "grant_type"
 	RequestParamClientID            string = "client_id"
 	RequestParamClientSecret        string = "client_secret"
+	RequestParamClientAssertion     string = "client_assertion"
+	RequestParamClientAssertionType string = "client_assertion_type"
 	RequestParamRedirectURI         string = "redirect_uri"
 	RequestParamUsername            string = "username"
 	RequestParamPassword            string = "password"
@@ -52,6 +54,30 @@ const (
 	RequestParamActorTokenType      string = "actor_token_type"
 	RequestParamRequestedTokenType  string = "requested_token_type"
 	RequestParamAudience            string = "audience"
+	RequestParamClaims              string = "claims"
+	RequestParamClaimsLocales       string = "claims_locales"
+	RequestParamNonce               string = "nonce"
+	RequestParamPrompt              string = "prompt"
+)
+
+// OIDC prompt parameter values.
+const (
+	PromptNone          string = "none"
+	PromptLogin         string = "login"
+	PromptConsent       string = "consent"
+	PromptSelectAccount string = "select_account"
+)
+
+// ValidPromptValues contains all valid OIDC prompt parameter values.
+var ValidPromptValues = []string{
+	PromptNone, PromptLogin, PromptConsent, PromptSelectAccount,
+}
+
+// OAuth2 request parameter validation limits.
+const (
+	// MaxNonceLength defines the maximum allowed length of the nonce parameter.
+	// Aligned with FAPI 2.0 Security Profile recommendation (64 characters).
+	MaxNonceLength = 64
 )
 
 // Server OAuth constants.
@@ -121,6 +147,8 @@ type ResponseType string
 const (
 	// ResponseTypeCode represents the authorization code response type.
 	ResponseTypeCode ResponseType = "code"
+	// ResponseTypeIDToken represents the id token response type.
+	ResponseTypeIDToken ResponseType = "id_token"
 )
 
 // supportedResponseTypes is the single source of truth for all supported response types.
@@ -146,6 +174,9 @@ const (
 	TokenEndpointAuthMethodClientSecretBasic TokenEndpointAuthMethod = "client_secret_basic"
 	// TokenEndpointAuthMethodClientSecretPost represents the client secret post authentication method.
 	TokenEndpointAuthMethodClientSecretPost TokenEndpointAuthMethod = "client_secret_post"
+	// TokenEndpointAuthMethodPrivateKeyJWT represents the private key JWT authentication method.
+	// #nosec G101 - This is not a hardcoded credential, but a constant representing an authentication method.
+	TokenEndpointAuthMethodPrivateKeyJWT TokenEndpointAuthMethod = "private_key_jwt"
 	// TokenEndpointAuthMethodNone represents no authentication method.
 	TokenEndpointAuthMethodNone TokenEndpointAuthMethod = "none"
 )
@@ -155,6 +186,7 @@ const (
 var supportedTokenEndpointAuthMethods = []TokenEndpointAuthMethod{
 	TokenEndpointAuthMethodClientSecretBasic,
 	TokenEndpointAuthMethodClientSecretPost,
+	TokenEndpointAuthMethodPrivateKeyJWT,
 	TokenEndpointAuthMethodNone,
 }
 
@@ -171,7 +203,6 @@ func (tam TokenEndpointAuthMethod) IsValid() bool {
 // OAuth2 token types.
 const (
 	TokenTypeBearer = "Bearer"
-	TokenTypeJWT    = "JWT"
 )
 
 // TokenTypeIdentifier defines a type for RFC 8693 token type identifiers.
@@ -209,16 +240,19 @@ func (tti TokenTypeIdentifier) IsValid() bool {
 
 // OAuth2 error codes.
 const (
-	ErrorInvalidRequest          string = "invalid_request"
-	ErrorInvalidClient           string = "invalid_client"
-	ErrorInvalidGrant            string = "invalid_grant"
-	ErrorUnauthorizedClient      string = "unauthorized_client"
-	ErrorUnsupportedGrantType    string = "unsupported_grant_type"
-	ErrorInvalidScope            string = "invalid_scope"
-	ErrorInvalidTarget           string = "invalid_target"
-	ErrorServerError             string = "server_error"
-	ErrorUnsupportedResponseType string = "unsupported_response_type"
-	ErrorAccessDenied            string = "access_denied"
+	ErrorInvalidRequest           string = "invalid_request"
+	ErrorInvalidClient            string = "invalid_client"
+	ErrorInvalidGrant             string = "invalid_grant"
+	ErrorUnauthorizedClient       string = "unauthorized_client"
+	ErrorUnsupportedGrantType     string = "unsupported_grant_type"
+	ErrorInvalidScope             string = "invalid_scope"
+	ErrorInvalidTarget            string = "invalid_target"
+	ErrorServerError              string = "server_error"
+	ErrorUnsupportedResponseType  string = "unsupported_response_type"
+	ErrorAccessDenied             string = "access_denied"
+	ErrorLoginRequired            string = "login_required"
+	ErrorConsentRequired          string = "consent_required"
+	ErrorAccountSelectionRequired string = "account_selection_required"
 )
 
 // UnSupportedGrantTypeError is returned when an unsupported grant type is requested.
@@ -269,10 +303,12 @@ const (
 
 // Custom JWT claim names.
 const (
-	ClaimUserType string = "userType"
-	ClaimOUID     string = "ouId"
-	ClaimOUName   string = "ouName"
-	ClaimOUHandle string = "ouHandle"
+	ClaimUserType      string = "userType"
+	ClaimOUID          string = "ouId"
+	ClaimOUName        string = "ouName"
+	ClaimOUHandle      string = "ouHandle"
+	ClaimClaimsRequest string = "claims_req"
+	ClaimClaimsLocales string = "claims_locales"
 )
 
 // JWT signing algorithms.
@@ -291,6 +327,22 @@ const (
 	UserAttributeGroups = "groups"
 	// DefaultGroupListLimit is the default limit for group list retrieval.
 	DefaultGroupListLimit = 20
+)
+
+// Standard OIDC scope names.
+const (
+	ScopeOpenID = "openid"
+)
+
+const (
+	// SupportedClientAssertionType is the constant for supported client assertion type.
+	SupportedClientAssertionType = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+)
+
+const (
+	// AttributeCacheTTLBufferSeconds is a fixed buffer added to attribute cache TTL values to
+	// account for the gap between cache entry creation (end of authentication) and token issuance.
+	AttributeCacheTTLBufferSeconds = 60
 )
 
 // GetSupportedResponseTypes returns all supported OAuth2 response types.

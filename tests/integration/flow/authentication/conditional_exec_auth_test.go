@@ -110,7 +110,7 @@ var (
 		ClientSecret:              "conditional_exec_auth_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"conditional_exec_flow_user"},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
@@ -125,16 +125,41 @@ var (
 		Name:                  "conditional_exec_flow_user",
 		AllowSelfRegistration: true,
 		Schema: map[string]interface{}{
+			"username": map[string]interface{}{
+				"type": "string",
+			},
+			"password": map[string]interface{}{
+				"type":       "string",
+				"credential": true,
+			},
 			"sub": map[string]interface{}{
 				"type": "string",
 			},
 			"email": map[string]interface{}{
 				"type": "string",
 			},
+			"email_verified": map[string]interface{}{
+				"type": "string",
+			},
+			"name": map[string]interface{}{
+				"type": "string",
+			},
+			"given_name": map[string]interface{}{
+				"type": "string",
+			},
+			"family_name": map[string]interface{}{
+				"type": "string",
+			},
 			"givenName": map[string]interface{}{
 				"type": "string",
 			},
 			"familyName": map[string]interface{}{
+				"type": "string",
+			},
+			"picture": map[string]interface{}{
+				"type": "string",
+			},
+			"locale": map[string]interface{}{
 				"type": "string",
 			},
 		},
@@ -199,7 +224,7 @@ func (ts *ConditionalExecAuthFlowTestSuite) SetupSuite() {
 	conditionalExecPreCreatedOUID = ouID
 
 	// Create user schema with self-registration enabled
-	conditionalExecUserSchema.OrganizationUnitId = conditionalExecPreCreatedOUID
+	conditionalExecUserSchema.OUID = conditionalExecPreCreatedOUID
 	schemaID, err := testutils.CreateUserType(conditionalExecUserSchema)
 	ts.Require().NoError(err, "Failed to create conditional exec user schema")
 	conditionalExecUserSchemaID = schemaID
@@ -218,7 +243,7 @@ func (ts *ConditionalExecAuthFlowTestSuite) SetupSuite() {
 
 	existingUser := testutils.User{
 		Type:             conditionalExecUserSchema.Name,
-		OrganizationUnit: conditionalExecPreCreatedOUID,
+		OUID:             conditionalExecPreCreatedOUID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 	existingUserID, err := testutils.CreateUser(existingUser)
@@ -439,10 +464,10 @@ func (ts *ConditionalExecAuthFlowTestSuite) TestExecuteConditionalNodes() {
 	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
 	ts.Require().Equal(conditionalExecTestAppID, jwtClaims.Aud, "JWT aud should match app ID")
 	ts.Require().Equal(conditionalExecUserSchema.Name, jwtClaims.UserType, "JWT userType should match schema")
-	ts.Require().NotEmpty(jwtClaims.OuID, "JWT ouId should not be empty")
+	ts.Require().NotEmpty(jwtClaims.OUID, "JWT ouId should not be empty")
 
 	// Verify the created OU
-	createdOU, err := testutils.GetOrganizationUnit(jwtClaims.OuID)
+	createdOU, err := testutils.GetOrganizationUnit(jwtClaims.OUID)
 	ts.Require().NoError(err, "Failed to get created OU")
 	ts.Require().Equal("Conditional Exec OU", createdOU.Name, "Created OU name should match")
 	ts.Require().Equal(conditionalExecNewOUHandle, createdOU.Handle, "Created OU handle should match")

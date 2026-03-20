@@ -36,17 +36,29 @@ const (
 
 var (
 	ouToCreate = CreateOURequest{
-		Name:        "OU API Test Organization Unit",
-		Handle:      "ou-api-test-org-unit",
-		Description: "Test OU for integration testing",
-		Parent:      nil,
+		Name:            "OU API Test Organization Unit",
+		Handle:          "ou-api-test-org-unit",
+		Description:     "Test OU for integration testing",
+		Parent:          nil,
+		LogoURL:         "https://example.com/logo.png",
+		TosURI:          "https://example.com/tos",
+		PolicyURI:       "https://example.com/privacy",
+		CookiePolicyURI: "https://example.com/cookie-policy",
+		ThemeID:         "theme-123",
+		LayoutID:        "layout-456",
 	}
 
 	childOUToCreate = CreateOURequest{
-		Name:        "Child Test OU",
-		Handle:      "child-test-ou",
-		Description: "Child OU for testing hierarchy",
-		Parent:      nil,
+		Name:            "Child Test OU",
+		Handle:          "child-test-ou",
+		Description:     "Child OU for testing hierarchy",
+		Parent:          nil,
+		LogoURL:         "https://example.com/child-logo.png",
+		TosURI:          "https://example.com/child-tos",
+		PolicyURI:       "https://example.com/child-privacy",
+		CookiePolicyURI: "https://example.com/child-cookie-policy",
+		ThemeID:         "theme-child",
+		LayoutID:        "layout-child",
 	}
 )
 
@@ -120,6 +132,12 @@ func (suite *OUAPITestSuite) TestGetOrganizationUnit() {
 	suite.Equal(ouToCreate.Name, retrievedOU.Name)
 	suite.Equal(ouToCreate.Description, retrievedOU.Description)
 	suite.Equal(ouToCreate.Parent, retrievedOU.Parent)
+	suite.Equal(ouToCreate.LogoURL, retrievedOU.LogoURL)
+	suite.Equal(ouToCreate.TosURI, retrievedOU.TosURI)
+	suite.Equal(ouToCreate.PolicyURI, retrievedOU.PolicyURI)
+	suite.Equal(ouToCreate.CookiePolicyURI, retrievedOU.CookiePolicyURI)
+	suite.Equal(ouToCreate.ThemeID, retrievedOU.ThemeID)
+	suite.Equal(ouToCreate.LayoutID, retrievedOU.LayoutID)
 }
 
 func (suite *OUAPITestSuite) TestListOrganizationUnits() {
@@ -258,9 +276,15 @@ func (suite *OUAPITestSuite) TestUpdateOrganizationUnit() {
 	}
 
 	updateRequest := UpdateOURequest{
-		Name:        "Updated Test Organization Unit",
-		Handle:      "updated-test-org-unit",
-		Description: "Updated description for testing",
+		Name:            "Updated Test Organization Unit",
+		Handle:          "updated-test-org-unit",
+		Description:     "Updated description for testing",
+		LogoURL:         "https://example.com/updated-logo.png",
+		TosURI:          "https://example.com/updated-tos",
+		PolicyURI:       "https://example.com/updated-privacy",
+		CookiePolicyURI: "https://example.com/updated-cookie-policy",
+		ThemeID:         "theme-updated",
+		LayoutID:        "layout-updated",
 	}
 
 	jsonData, err := json.Marshal(updateRequest)
@@ -290,6 +314,12 @@ func (suite *OUAPITestSuite) TestUpdateOrganizationUnit() {
 	suite.Equal("Updated Test Organization Unit", updatedOU.Name)
 	suite.Equal("updated-test-org-unit", updatedOU.Handle)
 	suite.Equal("Updated description for testing", updatedOU.Description)
+	suite.Equal("https://example.com/updated-logo.png", updatedOU.LogoURL)
+	suite.Equal("https://example.com/updated-tos", updatedOU.TosURI)
+	suite.Equal("https://example.com/updated-privacy", updatedOU.PolicyURI)
+	suite.Equal("https://example.com/updated-cookie-policy", updatedOU.CookiePolicyURI)
+	suite.Equal("theme-updated", updatedOU.ThemeID)
+	suite.Equal("layout-updated", updatedOU.LayoutID)
 }
 
 func (suite *OUAPITestSuite) TestDeleteOrganizationUnit() {

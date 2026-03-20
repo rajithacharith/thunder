@@ -35,7 +35,7 @@ import { Timeouts } from "./constants/timeouts";
 const envPath = path.resolve(__dirname, ".env");
 dotenv.config({ path: envPath });
 
-const STORAGE_STATE = path.join(__dirname, "playwright/.auth/devportal-admin.json");
+const STORAGE_STATE = path.join(__dirname, "playwright/.auth/console-admin.json");
 
 /** Configure number of workers. Default to 1 to avoid auth conflicts. */
 const WORKERS = process.env.PLAYWRIGHT_WORKERS ? parseInt(process.env.PLAYWRIGHT_WORKERS, 10) : 1;
@@ -88,7 +88,10 @@ export default defineConfig({
    * This ensures the server is up before the setup project tries to authenticate.
    */
   webServer: {
-    command: "cd ../.. && ./build.sh run_backend",
+    command:
+      process.platform === "win32"
+        ? "cd ..\\..  && pwsh -File .\\build.ps1 run_backend"
+        : "cd ../.. && ./build.sh run_backend",
     url: "https://localhost:8090/health/liveness",
     reuseExistingServer: true,
     ignoreHTTPSErrors: true,

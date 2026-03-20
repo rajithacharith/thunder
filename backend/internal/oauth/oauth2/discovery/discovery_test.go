@@ -20,6 +20,7 @@
 package discovery
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -82,9 +83,9 @@ func (suite *DiscoveryTestSuite) TestOAuth2AuthorizationServerMetadata() {
 	assert.NotEmpty(suite.T(), metadata.JWKSUri)
 	assert.NotEmpty(suite.T(), metadata.RegistrationEndpoint)
 	assert.NotEmpty(suite.T(), metadata.IntrospectionEndpoint)
+	assert.NotEmpty(suite.T(), metadata.UserInfoEndpoint)
 
 	// Verify only implemented endpoints are present
-	assert.Empty(suite.T(), metadata.UserInfoEndpoint)   // Not implemented
 	assert.Empty(suite.T(), metadata.RevocationEndpoint) // Not implemented
 
 	// Verify only implemented grant types are present
@@ -121,6 +122,9 @@ func (suite *DiscoveryTestSuite) TestOIDCDiscovery() {
 	assert.Contains(suite.T(), metadata.ClaimsSupported, constants.ClaimSub)
 	assert.Contains(suite.T(), metadata.ClaimsSupported, constants.ClaimIss)
 	assert.Contains(suite.T(), metadata.ClaimsSupported, constants.ClaimAud)
+
+	// Verify claims parameter support
+	assert.True(suite.T(), metadata.ClaimsParameterSupported, "claims_parameter_supported should be true")
 }
 
 // TestGrantTypeIsValid tests the GrantType.IsValid() method
@@ -158,11 +162,11 @@ func TestTokenEndpointAuthMethodIsValid(t *testing.T) {
 	assert.True(t, constants.TokenEndpointAuthMethodClientSecretBasic.IsValid())
 	assert.True(t, constants.TokenEndpointAuthMethodClientSecretPost.IsValid())
 	assert.True(t, constants.TokenEndpointAuthMethodNone.IsValid())
+	assert.True(t, constants.TokenEndpointAuthMethodPrivateKeyJWT.IsValid())
 
 	// Test invalid authentication methods
 	assert.False(t, constants.TokenEndpointAuthMethod("invalid").IsValid())
 	assert.False(t, constants.TokenEndpointAuthMethod("client_secret_jwt").IsValid())
-	assert.False(t, constants.TokenEndpointAuthMethod("private_key_jwt").IsValid())
 	assert.False(t, constants.TokenEndpointAuthMethod("").IsValid())
 }
 
@@ -198,12 +202,12 @@ func TestGetSupportedTokenEndpointAuthMethods(t *testing.T) {
 	supported := constants.GetSupportedTokenEndpointAuthMethods()
 
 	assert.NotNil(t, supported)
-	assert.Equal(t, 3, len(supported))
+	assert.Equal(t, 4, len(supported))
 	assert.Contains(t, supported, "client_secret_basic")
 	assert.Contains(t, supported, "client_secret_post")
 	assert.Contains(t, supported, "none")
+	assert.Contains(t, supported, "private_key_jwt")
 	assert.NotContains(t, supported, "client_secret_jwt")
-	assert.NotContains(t, supported, "private_key_jwt")
 }
 
 // TestGetSupportedSubjectTypes tests the GetSupportedSubjectTypes function
@@ -288,7 +292,7 @@ func (suite *DiscoveryTestSuite) TestGetBaseURL_WithPublicHostname() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	service := newDiscoveryService()
-	metadata := service.GetOAuth2AuthorizationServerMetadata()
+	metadata := service.GetOAuth2AuthorizationServerMetadata(context.Background())
 	assert.Contains(suite.T(), metadata.AuthorizationEndpoint, "public.thunder.io")
 	config.ResetThunderRuntime()
 }
@@ -308,7 +312,7 @@ func (suite *DiscoveryTestSuite) TestGetBaseURL_WithHTTPOnly() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	service := newDiscoveryService()
-	metadata := service.GetOAuth2AuthorizationServerMetadata()
+	metadata := service.GetOAuth2AuthorizationServerMetadata(context.Background())
 	assert.Contains(suite.T(), metadata.AuthorizationEndpoint, "http://")
 	config.ResetThunderRuntime()
 }

@@ -1,40 +1,49 @@
 {
-    "name": "Passkey Only Authentication Flow",
-    "handle": "passkey-authentication-flow",
+    "name": "Passkey Authentication Flow",
+    "handle": "default-passkey-flow",
     "flowType": "AUTHENTICATION",
     "nodes": [
         {
             "id": "start",
             "type": "START",
-            "onSuccess": "prompt_identifier"
+            "onSuccess": "prompt_passkey"
         },
         {
-            "id": "prompt_identifier",
+            "id": "prompt_passkey",
             "type": "PROMPT",
             "meta": {
                 "components": [
                     {
+                        "alt": "{{ t(signin:images.app_logo.alt) }}",
+                        "category": "DISPLAY",
+                        "height": "60",
+                        "id": "image",
+                        "resourceType": "ELEMENT",
+                        "src": "{{ meta(application.logo_url) }}",
+                        "type": "IMAGE",
+                        "width": ""
+                    },
+                    {
+                        "align": "center",
                         "type": "TEXT",
                         "id": "text_001",
-                        "label": "{{ t(signin:heading) }}",
+                        "label": "{{ t(signin:forms.passkey.title) }}",
                         "variant": "HEADING_1"
+                    },
+                    {
+                        "type": "TEXT",
+                        "id": "text_002",
+                        "label": "{{ t(signin:forms.passkey.description) }}",
+                        "variant": "BODY"
                     },
                     {
                         "type": "BLOCK",
                         "id": "block_001",
                         "components": [
                             {
-                                "id": "input_001",
-                                "ref": "username",
-                                "type": "TEXT_INPUT",
-                                "label": "{{ t(elements:fields.username.label) }}",
-                                "required": true,
-                                "placeholder": "{{ t(elements:fields.username.placeholder) }}"
-                            },
-                            {
                                 "type": "ACTION",
                                 "id": "action_001",
-                                "label": "{{ t(elements:buttons.submit.text) }}",
+                                "label": "{{ t(signin:forms.passkey.actions.submit.label) }}",
                                 "variant": "PRIMARY",
                                 "eventType": "SUBMIT"
                             }
@@ -44,29 +53,12 @@
             },
             "prompts": [
                 {
-                    "inputs": [
-                        {
-                            "ref": "input_001",
-                            "identifier": "username",
-                            "type": "TEXT_INPUT",
-                            "required": true
-                        }
-                    ],
                     "action": {
                         "ref": "action_001",
-                        "nextNode": "identity_resolver"
+                        "nextNode": "passkey_challenge"
                     }
                 }
             ]
-        },
-        {
-            "id": "identity_resolver",
-            "type": "TASK_EXECUTION",
-            "executor": {
-                "name": "IdentifyingExecutor"
-            },
-            "onSuccess": "passkey_challenge",
-            "onFailure": "prompt_identifier"
         },
         {
             "id": "passkey_challenge",
@@ -79,8 +71,7 @@
                 "name": "PasskeyAuthExecutor",
                 "mode": "challenge"
             },
-            "onSuccess": "passkey_verify",
-            "onFailure": "prompt_identifier"
+            "onSuccess": "passkey_verify"
         },
         {
             "id": "passkey_verify",
@@ -89,8 +80,7 @@
                 "name": "PasskeyAuthExecutor",
                 "mode": "verify"
             },
-            "onSuccess": "auth_assert",
-            "onFailure": "prompt_identifier"
+            "onSuccess": "auth_assert"
         },
         {
             "id": "auth_assert",

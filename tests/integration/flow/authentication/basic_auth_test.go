@@ -80,18 +80,19 @@ var (
 						{
 							"ref":        "input_001",
 							"identifier": "username",
-							"type":       "string",
+							"type":       "TEXT_INPUT",
 							"required":   true,
 						},
 						{
 							"ref":        "input_002",
 							"identifier": "password",
-							"type":       "string",
+							"type":       "PASSWORD_INPUT",
 							"required":   true,
 						},
 					},
 				},
-				"onSuccess": "auth_assert",
+				"onSuccess":    "auth_assert",
+				"onIncomplete": "prompt_credentials",
 			},
 			{
 				"id":   "auth_assert",
@@ -127,13 +128,13 @@ var (
 						{
 							"ref":        "input_001",
 							"identifier": "username",
-							"type":       "string",
+							"type":       "TEXT_INPUT",
 							"required":   true,
 						},
 						{
 							"ref":        "input_002",
 							"identifier": "password",
-							"type":       "string",
+							"type":       "PASSWORD_INPUT",
 							"required":   true,
 						},
 					},
@@ -163,7 +164,7 @@ var (
 		ClientSecret:              "flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"basic_auth_user"},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
@@ -176,14 +177,15 @@ var (
 			},
 			"password": map[string]interface{}{
 				"type": "string",
+				"credential": true,
 			},
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 		},
@@ -195,8 +197,8 @@ var (
 			"username": "testuser",
 			"password": "testpassword",
 			"email": "test@example.com",
-			"firstName": "Test",
-			"lastName": "User"
+			"given_name": "Test",
+			"family_name": "User"
 		}`),
 	}
 )
@@ -226,7 +228,7 @@ func (ts *BasicAuthFlowTestSuite) SetupSuite() {
 	ts.ouID = ouID
 
 	// Create test user schema
-	testUserSchema.OrganizationUnitId = ts.ouID
+	testUserSchema.OUID = ts.ouID
 	schemaID, err := testutils.CreateUserType(testUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
@@ -252,7 +254,7 @@ func (ts *BasicAuthFlowTestSuite) SetupSuite() {
 
 	// Create test user with the created OU
 	testUser := testUser
-	testUser.OrganizationUnit = ts.ouID
+	testUser.OUID = ts.ouID
 	userIDs, err := testutils.CreateMultipleUsers(testUser)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user during setup: %v", err)
@@ -486,10 +488,63 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidCredentials() {
 		ts.T().Fatalf("Failed to complete authentication flow with invalid credentials: %v", err)
 	}
 
-	// Verify authentication failure
-	ts.Require().Equal("ERROR", completeFlowStep.FlowStatus, "Expected flow status to be ERROR")
+	// Verify authentication failure returns INCOMPLETE
+	ts.Require().Equal("INCOMPLETE", completeFlowStep.FlowStatus,
+		"Expected flow status to be INCOMPLETE for invalid credentials")
+	ts.Require().Equal("VIEW", completeFlowStep.Type, "Expected type to be VIEW for prompt re-display")
 	ts.Require().Empty(completeFlowStep.Assertion, "No JWT assertion should be returned for failed authentication")
-	ts.Require().NotEmpty(completeFlowStep.FailureReason, "Failure reason should be provided for invalid credentials")
+	ts.Require().NotEmpty(completeFlowStep.FailureReason,
+		"Failure reason should be provided for invalid credentials")
+
+	// Verify both inputs are re-prompted (cleared after failure)
+	ts.Require().NotEmpty(completeFlowStep.Data, "Flow data should not be empty after re-prompt")
+	ts.Require().NotEmpty(completeFlowStep.Data.Inputs, "Inputs should be re-prompted after failure")
+	ts.Require().Len(completeFlowStep.Data.Inputs, 2, "Both username and password should be re-prompted")
+}
+
+func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowRetryAfterInvalidCredentials() {
+	// Update application
+	err := common.UpdateAppConfig(testAppID, ts.config.CreatedFlowIDs[0], "")
+	ts.NoError(err, "App config update should succeed")
+
+	// Step 1: Initialize the flow
+	flowStep, err := common.InitiateAuthenticationFlow(testAppID, false, nil, "")
+	if err != nil {
+		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
+	}
+	ts.Require().NotEmpty(flowStep.FlowID, "Flow ID should not be empty")
+
+	// Step 2: Submit invalid credentials
+	invalidInputs := map[string]string{
+		"username": "invalid_user",
+		"password": "wrong_password",
+	}
+
+	retryFlowStep, err := common.CompleteFlow(flowStep.FlowID, invalidInputs, "action_001")
+	if err != nil {
+		ts.T().Fatalf("Failed to complete authentication flow with invalid credentials: %v", err)
+	}
+
+	// Verify we get INCOMPLETE (retryable) not ERROR
+	ts.Require().Equal("INCOMPLETE", retryFlowStep.FlowStatus, "Expected INCOMPLETE after invalid credentials")
+	ts.Require().NotEmpty(retryFlowStep.FailureReason, "Failure reason should be present")
+
+	// Step 3: Retry with valid credentials
+	validInputs := map[string]string{
+		"username": "testuser",
+		"password": "testpassword",
+	}
+
+	successFlowStep, err := common.CompleteFlow(flowStep.FlowID, validInputs, "action_001")
+	if err != nil {
+		ts.T().Fatalf("Failed to complete authentication flow after retry: %v", err)
+	}
+
+	// Verify successful authentication
+	ts.Require().Equal("COMPLETE", successFlowStep.FlowStatus,
+		"Expected COMPLETE after retry with valid credentials")
+	ts.Require().NotEmpty(successFlowStep.Assertion, "JWT assertion should be returned on successful retry")
+	ts.Require().Empty(successFlowStep.FailureReason, "No failure reason on success")
 }
 
 func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidAppID() {
@@ -591,7 +646,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlow_WithoutTokenConfig() {
 
 	// Verify userType and OU attributes are NOT present (since TokenConfig is not specified)
 	ts.Require().Empty(jwtClaims.UserType, "userType should NOT be present when TokenConfig is not specified")
-	ts.Require().Empty(jwtClaims.OuID, "ouId should NOT be present when TokenConfig is not specified")
+	ts.Require().Empty(jwtClaims.OUID, "ouId should NOT be present when TokenConfig is not specified")
 	ts.Require().Empty(jwtClaims.OuName, "ouName should NOT be present when TokenConfig is not specified")
 	ts.Require().Empty(jwtClaims.OuHandle, "ouHandle should NOT be present when TokenConfig is not specified")
 }
@@ -608,7 +663,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlow_WithEmptyUserAttributes() {
 		ClientSecret:              "flow_test_secret_empty_attrs",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"basic_auth_user"},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{}, // Empty array
 		},
 	}
@@ -652,7 +707,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlow_WithEmptyUserAttributes() {
 
 	// Verify userType and OU attributes are NOT present (since user_attributes is empty)
 	ts.Require().Empty(jwtClaims.UserType, "userType should NOT be present when user_attributes is empty")
-	ts.Require().Empty(jwtClaims.OuID, "ouId should NOT be present when user_attributes is empty")
+	ts.Require().Empty(jwtClaims.OUID, "ouId should NOT be present when user_attributes is empty")
 	ts.Require().Empty(jwtClaims.OuName, "ouName should NOT be present when user_attributes is empty")
 	ts.Require().Empty(jwtClaims.OuHandle, "ouHandle should NOT be present when user_attributes is empty")
 }

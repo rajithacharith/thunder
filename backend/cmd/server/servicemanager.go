@@ -23,33 +23,42 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/application"
+	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/authn"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/authz"
-	brandingmgt "github.com/asgardeo/thunder/internal/branding/mgt"
-	brandingresolve "github.com/asgardeo/thunder/internal/branding/resolve"
 	"github.com/asgardeo/thunder/internal/cert"
+	"github.com/asgardeo/thunder/internal/consent"
+	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
+	"github.com/asgardeo/thunder/internal/design/resolve"
+	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	flowcore "github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/flow/executor"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
+	"github.com/asgardeo/thunder/internal/flow/flowmeta"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	"github.com/asgardeo/thunder/internal/group"
 	"github.com/asgardeo/thunder/internal/idp"
-	"github.com/asgardeo/thunder/internal/mcp"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/oauth"
-	"github.com/asgardeo/thunder/internal/observability"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/internal/system/email"
 	"github.com/asgardeo/thunder/internal/system/export"
 	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/mcp"
+	"github.com/asgardeo/thunder/internal/system/observability"
 	"github.com/asgardeo/thunder/internal/system/services"
+	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
 
@@ -57,12 +66,19 @@ import (
 var observabilitySvc observability.ObservabilityServiceInterface
 
 // registerServices registers all the services with the provided HTTP multiplexer.
-func registerServices(
-	mux *http.ServeMux,
-	jwtService jwt.JWTServiceInterface,
-	pkiService pki.PKIServiceInterface,
-) {
+func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	logger := log.GetLogger()
+
+	// Load the server's private key for signing JWTs.
+	pkiService, err := pki.Initialize()
+	if err != nil {
+		logger.Fatal("Failed to initialize certificate service", log.Error(err))
+	}
+
+	jwtService, _, err := jose.Initialize(pkiService)
+	if err != nil {
+		logger.Fatal("Failed to initialize JOSE services", log.Error(err))
+	}
 
 	observabilitySvc = observability.Initialize()
 
@@ -70,37 +86,73 @@ func registerServices(
 	var exporters []declarativeresource.ResourceExporter
 
 	// Initialize i18n service for internationalization support.
-	_, i18nExporter, err := i18nmgt.Initialize(mux)
+	i18nService, i18nExporter, err := i18nmgt.Initialize(mux)
 	if err != nil {
 		logger.Fatal("Failed to initialize i18n service", log.Error(err))
 	}
 	// Add to exporters list (must be done after initializing list)
 	exporters = append(exporters, i18nExporter)
 
-	ouService, ouExporter, err := ou.Initialize(mux)
+	ouAuthzService, err := sysauthz.Initialize()
+	if err != nil {
+		logger.Fatal("Failed to initialize system authorization service", log.Error(err))
+	}
+
+	ouService, ouHierarchyResolver, ouExporter, err := ou.Initialize(mux, ouAuthzService)
 	if err != nil {
 		logger.Fatal("Failed to initialize OrganizationUnitService", log.Error(err))
 	}
 	exporters = append(exporters, ouExporter)
 
+	// Complete the two-phase initialization: inject the OU hierarchy resolver into the
+	// authz service now that the ou package is ready. This breaks the import-cycle that
+	// would arise if sysauthz were to directly import the ou package.
+	ouAuthzService.SetOUHierarchyResolver(ouHierarchyResolver)
+
 	hashService := hash.Initialize()
-	userSchemaService, userSchemaExporter, err := userschema.Initialize(mux, ouService)
+
+	// Initialize consent service
+	consentService := consent.Initialize()
+
+	// Initialize user schema service
+	userSchemaService, userSchemaExporter, err := userschema.Initialize(
+		mux, ouService, ouAuthzService, consentService)
 	if err != nil {
 		logger.Fatal("Failed to initialize UserSchemaService", log.Error(err))
 	}
 	exporters = append(exporters, userSchemaExporter)
 
-	userService, err := user.Initialize(mux, ouService, userSchemaService, hashService)
+	userService, ouUserResolver, userExporter, err := user.Initialize(
+		mux, ouService, userSchemaService, hashService, ouAuthzService,
+	)
 	if err != nil {
 		logger.Fatal("Failed to initialize UserService", log.Error(err))
 	}
-	groupService := group.Initialize(mux, ouService, userService)
+	exporters = append(exporters, userExporter)
 
-	resourceService, err := resource.Initialize(mux, ouService)
+	groupService, ouGroupResolver, err := group.Initialize(
+		mux, ouService, userService, userSchemaService, ouAuthzService,
+	)
+	if err != nil {
+		logger.Fatal("Failed to initialize GroupService", log.Error(err))
+	}
+
+	// Two-phase initialization: inject user/group resolvers into OU service.
+	ouService.SetOUUserResolver(ouUserResolver)
+	ouService.SetOUGroupResolver(ouGroupResolver)
+
+	resourceService, resourceExporter, err := resource.Initialize(mux, ouService)
 	if err != nil {
 		logger.Fatal("Failed to initialize Resource Service", log.Error(err))
 	}
-	roleService := role.Initialize(mux, userService, groupService, ouService, resourceService)
+	exporters = append(exporters, resourceExporter)
+	roleService, roleExporter, err := role.Initialize(
+		mux, userService, groupService, ouService, resourceService, userSchemaService,
+	)
+	if err != nil {
+		logger.Fatal("Failed to initialize RoleService", log.Error(err))
+	}
+	exporters = append(exporters, roleExporter)
 	authZService := authz.Initialize(roleService)
 
 	idpService, idpExporter, err := idp.Initialize(mux)
@@ -115,47 +167,96 @@ func registerServices(
 	}
 	exporters = append(exporters, notificationExporter)
 
+	// Initialize MCP server
+	mcpServer := mcp.Initialize(mux, jwtService)
+
+	// Initialize authn provider
+	authnProvider := authnprovider.InitializeAuthnProvider(userService)
+
+	// Initialize user provider based on configuration
+	userProvider := userprovider.InitializeUserProvider(userService)
+
 	// Initialize authentication services.
-	_, authSvcRegistry := authn.Initialize(mux, idpService, jwtService, userService, otpService)
+	_, authSvcRegistry := authn.Initialize(
+		mux, mcpServer, idpService, jwtService, userService,
+		userProvider, otpService, authnProvider, consentService,
+	)
+
+	attributeCacheService := attributecache.Initialize()
 
 	// Initialize flow and executor services.
 	flowFactory, graphCache := flowcore.Initialize()
-	execRegistry := executor.Initialize(flowFactory, userService, ouService,
+	var emailClient email.EmailClientInterface
+	emailClient, err = email.Initialize()
+	if err != nil {
+		logger.Debug("Email client not configured. "+
+			"EmailExecutor will be registered but will not send emails.", log.Error(err))
+		emailClient = nil
+	}
+	execRegistry := executor.Initialize(flowFactory, ouService,
 		idpService, otpService, jwtService, authSvcRegistry, authZService, userSchemaService, observabilitySvc,
-		groupService, roleService)
+		groupService, roleService, userProvider, attributeCacheService, emailClient)
 
-	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(mux, flowFactory, execRegistry, graphCache)
+	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(mux, mcpServer, flowFactory, execRegistry, graphCache)
 	if err != nil {
 		logger.Fatal("Failed to initialize FlowMgtService", log.Error(err))
 	}
 	exporters = append(exporters, flowMgtExporter)
-	certservice := cert.Initialize()
-	brandingMgtService := brandingmgt.Initialize(mux)
-	applicationService, applicationExporter, err := application.Initialize(mux, certservice, flowMgtService,
-		brandingMgtService, userSchemaService)
+	certservice, err := cert.Initialize()
+	if err != nil {
+		logger.Fatal("Failed to initialize CertificateService", log.Error(err))
+	}
+
+	// Initialize theme and layout services
+	themeMgtService, themeExporter, err := thememgt.Initialize(mux)
+	if err != nil {
+		logger.Fatal("Failed to initialize ThemeMgtService", log.Error(err))
+	}
+	exporters = append(exporters, themeExporter)
+
+	layoutMgtService, layoutExporter, err := layoutmgt.Initialize(mux)
+	if err != nil {
+		logger.Fatal("Failed to initialize LayoutMgtService", log.Error(err))
+	}
+	exporters = append(exporters, layoutExporter)
+
+	applicationService, applicationExporter, err := application.Initialize(
+		mux, mcpServer, certservice, flowMgtService, themeMgtService, layoutMgtService,
+		userSchemaService, consentService)
 	if err != nil {
 		logger.Fatal("Failed to initialize ApplicationService", log.Error(err))
 	}
 	exporters = append(exporters, applicationExporter)
 
-	_ = brandingresolve.Initialize(mux, brandingMgtService, applicationService)
+	// Initialize design resolve service for theme and layout resolution
+	designResolveService := resolve.Initialize(mux, themeMgtService, layoutMgtService, applicationService)
+
+	// Initialize flow metadata service
+	_ = flowmeta.Initialize(mux, applicationService, ouService, designResolveService, i18nService)
 
 	// Initialize export service with collected exporters
 	_ = export.Initialize(mux, exporters)
 
-	flowExecService := flowexec.Initialize(mux, flowMgtService, applicationService, execRegistry, observabilitySvc)
+	flowExecService, err := flowexec.Initialize(mux, flowMgtService, applicationService, execRegistry,
+		observabilitySvc)
+	if err != nil {
+		logger.Fatal("Failed to initialize flow execution service", log.Error(err))
+	}
 
 	// Initialize OAuth services.
-	oauth.Initialize(mux, applicationService, userService, jwtService, flowExecService, observabilitySvc, pkiService)
-
-	// Initialize MCP server.
-	mcp.Initialize(mux, applicationService, flowMgtService)
+	err = oauth.Initialize(mux, applicationService, jwtService, flowExecService, observabilitySvc,
+		pkiService, ouService, attributeCacheService)
+	if err != nil {
+		logger.Fatal("Failed to initialize OAuth services", log.Error(err))
+	}
 
 	// TODO: Legacy way of initializing services. These need to be refactored in the future aligning to the
 	// dependency injection pattern used above.
 
 	// Register the health service.
 	services.NewHealthCheckService(mux)
+
+	return jwtService
 }
 
 // unregisterServices unregisters all services that require cleanup during shutdown.

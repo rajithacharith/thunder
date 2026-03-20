@@ -115,7 +115,7 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
             password,
             email: "e2e@thunder.com",
             mobileNumber: "+12345678920",
-            firstName: "E2E Test User",
+            given_name: "E2E Test User",
           },
         });
 
@@ -367,8 +367,8 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
     const timestamp = Date.now();
     const regUsername = `reg-user-${timestamp}`;
     const regPassword = "RegUser@123";
-    const regFirstName = "Registration";
-    const regLastName = "Test";
+    const regGivenName = "Registration";
+    const regFamilyName = "Test";
     const regEmail = `reg-user-${timestamp}@example.com`;
     const regMobile = `+1234567${timestamp.toString().slice(-4)}`;
     let createdUserId: string | null = null;
@@ -416,20 +416,20 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
 
     // Step 7: Verify user info form (with mobile number field)
     console.log("\n[REGISTRATION] Step 7: Verifying user information form...");
-    await expect(page.locator('input[name="firstName"]')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('input[name="lastName"]')).toBeVisible();
+    await expect(page.locator('input[name="given_name"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('input[name="family_name"]')).toBeVisible();
     await expect(page.locator('input[name="email"]')).toBeVisible();
     await expect(page.locator('input[name="mobileNumber"]')).toBeVisible();
     console.log("✓ User information form displayed with mobile number field");
 
     // Step 8: Fill user information including mobile number
     console.log("\n[REGISTRATION] Step 8: Filling user information form...");
-    await page.locator('input[name="firstName"]').fill(regFirstName);
-    await page.locator('input[name="lastName"]').fill(regLastName);
+    await page.locator('input[name="given_name"]').fill(regGivenName);
+    await page.locator('input[name="family_name"]').fill(regFamilyName);
     await page.locator('input[name="email"]').fill(regEmail);
     await page.locator('input[name="mobileNumber"]').fill(regMobile);
-    console.log(`  First Name: ${regFirstName}`);
-    console.log(`  Last Name: ${regLastName}`);
+    console.log(`  First Name: ${regGivenName}`);
+    console.log(`  Last Name: ${regFamilyName}`);
     console.log(`  Email: ${regEmail}`);
     console.log(`  Mobile Number: ${regMobile}`);
 
@@ -440,21 +440,14 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
     console.log("✓ Registration form submitted");
 
     // Step 10: Verify user is auto-logged in after successful registration
+    // After registration, the app goes through an OAuth redirect chain:
+    //   registration complete → OAuth authorize → redirect with ?code= → token exchange → logged-in UI
+    // We wait for the avatar button which indicates the full flow completed successfully.
     console.log("\n[REGISTRATION] Step 10: Verifying auto-login after registration...");
-    await page.waitForLoadState("networkidle");
-    
-    // Wait for OAuth redirect to complete and page to fully render
-    // The app redirects with ?code=...&state=... and then processes the token
-    await page.waitForURL((url: URL) => !url.searchParams.has("code"), { timeout: 15000 }).catch(() => {
-      console.log("  Note: URL still contains code parameter, continuing...");
-    });
-    await page.waitForLoadState("networkidle");
-    
-    // Wait for the avatar/logout button to be visible (indicates logged-in UI is ready)
     const avatarOrLogout = page.locator(
-      'button[aria-haspopup="true"], button[aria-controls="account-menu"], button:has(> div[class*="MuiAvatar"]), button:has-text("Logout"), button:has-text("Sign Out")'
+      'button[aria-haspopup="true"], button:has(div[class*="MuiAvatar"])'
     ).first();
-    await avatarOrLogout.waitFor({ state: "visible", timeout: 15000 });
+    await avatarOrLogout.waitFor({ state: "visible", timeout: 30000 });
     console.log("✓ User auto-logged in after registration");
 
     // Step 11: Logout to test the MFA login flow

@@ -139,8 +139,8 @@ function UserTable() {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      {user.attributes.firstName || user.attributes.lastName
-                        ? `${user.attributes.firstName || ""} ${user.attributes.lastName || ""}`.trim()
+                      {user.attributes.given_name || user.attributes.family_name
+                        ? `${user.attributes.given_name || ""} ${user.attributes.family_name || ""}`.trim()
                         : "-"}
                     </TableCell>
                     <TableCell>

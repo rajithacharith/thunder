@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 )
 
@@ -39,13 +40,26 @@ func TestInitTestSuite(t *testing.T) {
 }
 
 func (suite *InitTestSuite) SetupTest() {
+	config.ResetThunderRuntime()
 	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
+	testConfig := &config.Config{
+		Database: config.DatabaseConfig{
+			Config:  config.DataSource{Type: "sqlite", Path: "thunder_test.db"},
+			Runtime: config.DataSource{Type: "sqlite", Path: "thunder_test.db"},
+			User:    config.DataSource{Type: "sqlite", Path: "thunder_test.db"},
+		},
+	}
+	_ = config.InitializeThunderRuntime("", testConfig)
+}
+
+func (suite *InitTestSuite) TearDownTest() {
+	config.ResetThunderRuntime()
 }
 
 func (suite *InitTestSuite) TestInitialize() {
 	mux := http.NewServeMux()
 
-	service := Initialize(mux, suite.mockAppService)
+	service := Initialize(mux, suite.mockAppService, &MockTransactioner{})
 
 	assert.NotNil(suite.T(), service)
 	assert.Implements(suite.T(), (*DCRServiceInterface)(nil), service)
@@ -54,7 +68,7 @@ func (suite *InitTestSuite) TestInitialize() {
 func (suite *InitTestSuite) TestInitialize_RegistersRoutes() {
 	mux := http.NewServeMux()
 
-	_ = Initialize(mux, suite.mockAppService)
+	Initialize(mux, suite.mockAppService, &MockTransactioner{})
 
 	// Verify that the routes are registered by attempting to get a handler for them.
 	// The pattern includes the method because of CORS middleware wrapping.

@@ -18,35 +18,49 @@
 
 package ou
 
+import (
+	"context"
+
+	"github.com/asgardeo/thunder/internal/system/utils"
+)
+
 // OrganizationUnitBasic represents the basic information of an organization unit.
 type OrganizationUnitBasic struct {
 	ID          string `json:"id"`
 	Handle      string `json:"handle"`
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
+	LogoURL     string `json:"logo_url,omitempty"`
+	IsReadOnly  bool   `json:"isReadOnly,omitempty"`
 }
 
 // OrganizationUnit represents an organization unit.
 type OrganizationUnit struct {
-	ID          string  `json:"id" yaml:"id"`
-	Handle      string  `json:"handle" yaml:"handle"`
-	Name        string  `json:"name" yaml:"name"`
-	Description string  `json:"description,omitempty" yaml:"description,omitempty"`
-	Parent      *string `json:"parent" yaml:"parent"`
+	ID              string  `json:"id" yaml:"id"`
+	Handle          string  `json:"handle" yaml:"handle"`
+	Name            string  `json:"name" yaml:"name"`
+	Description     string  `json:"description,omitempty" yaml:"description,omitempty"`
+	Parent          *string `json:"parent" yaml:"parent"`
+	ThemeID         string  `json:"theme_id,omitempty" yaml:"theme_id,omitempty"`
+	LayoutID        string  `json:"layout_id,omitempty" yaml:"layout_id,omitempty"`
+	LogoURL         string  `json:"logo_url,omitempty" yaml:"logo_url,omitempty"`
+	TosURI          string  `json:"tos_uri,omitempty" yaml:"tos_uri,omitempty"`
+	PolicyURI       string  `json:"policy_uri,omitempty" yaml:"policy_uri,omitempty"`
+	CookiePolicyURI string  `json:"cookie_policy_uri,omitempty" yaml:"cookie_policy_uri,omitempty"`
 }
 
 // OrganizationUnitRequest represents the request body for creating an organization unit.
 type OrganizationUnitRequest struct {
-	Handle      string  `json:"handle"`
-	Name        string  `json:"name"`
-	Description string  `json:"description,omitempty"`
-	Parent      *string `json:"parent"`
-}
-
-// Link represents a pagination link.
-type Link struct {
-	Href string `json:"href"`
-	Rel  string `json:"rel"`
+	Handle          string  `json:"handle"`
+	Name            string  `json:"name"`
+	Description     string  `json:"description,omitempty"`
+	Parent          *string `json:"parent"`
+	ThemeID         string  `json:"theme_id,omitempty"`
+	LayoutID        string  `json:"layout_id,omitempty"`
+	LogoURL         string  `json:"logo_url,omitempty"`
+	TosURI          string  `json:"tos_uri,omitempty"`
+	PolicyURI       string  `json:"policy_uri,omitempty"`
+	CookiePolicyURI string  `json:"cookie_policy_uri,omitempty"`
 }
 
 // OrganizationUnitListResponse represents the response for listing organization units with pagination.
@@ -55,12 +69,14 @@ type OrganizationUnitListResponse struct {
 	StartIndex        int                     `json:"startIndex"`
 	Count             int                     `json:"count"`
 	OrganizationUnits []OrganizationUnitBasic `json:"organizationUnits"`
-	Links             []Link                  `json:"links"`
+	Links             []utils.Link            `json:"links"`
 }
 
 // User represents a user with basic information for OU endpoints.
 type User struct {
-	ID string `json:"id"`
+	ID      string `json:"id"`
+	Type    string `json:"type,omitempty"`
+	Display string `json:"display,omitempty"`
 }
 
 // Group represents a group with basic information for OU endpoints.
@@ -71,18 +87,32 @@ type Group struct {
 
 // UserListResponse represents the response for listing users in an organization unit.
 type UserListResponse struct {
-	TotalResults int    `json:"totalResults"`
-	StartIndex   int    `json:"startIndex"`
-	Count        int    `json:"count"`
-	Users        []User `json:"users"`
-	Links        []Link `json:"links"`
+	TotalResults int          `json:"totalResults"`
+	StartIndex   int          `json:"startIndex"`
+	Count        int          `json:"count"`
+	Users        []User       `json:"users"`
+	Links        []utils.Link `json:"links"`
+}
+
+// OUUserResolver provides access to user data for an organization unit
+// without requiring direct import of the user package.
+type OUUserResolver interface {
+	GetUserCountByOUID(ctx context.Context, ouID string) (int, error)
+	GetUserListByOUID(ctx context.Context, ouID string, limit, offset int, includeDisplay bool) ([]User, error)
+}
+
+// OUGroupResolver provides access to group data for an organization unit
+// without requiring direct import of the group package.
+type OUGroupResolver interface {
+	GetGroupCountByOUID(ctx context.Context, ouID string) (int, error)
+	GetGroupListByOUID(ctx context.Context, ouID string, limit, offset int) ([]Group, error)
 }
 
 // GroupListResponse represents the response for listing groups in an organization unit.
 type GroupListResponse struct {
-	TotalResults int     `json:"totalResults"`
-	StartIndex   int     `json:"startIndex"`
-	Count        int     `json:"count"`
-	Groups       []Group `json:"groups"`
-	Links        []Link  `json:"links"`
+	TotalResults int          `json:"totalResults"`
+	StartIndex   int          `json:"startIndex"`
+	Count        int          `json:"count"`
+	Groups       []Group      `json:"groups"`
+	Links        []utils.Link `json:"links"`
 }

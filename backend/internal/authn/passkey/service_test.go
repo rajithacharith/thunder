@@ -19,6 +19,7 @@
 package passkey
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"testing"
@@ -82,7 +83,7 @@ func (suite *WebAuthnServiceTestSuite) SetupTest() {
 }
 
 func (suite *WebAuthnServiceTestSuite) TestStartRegistration_NilRequest() {
-	result, svcErr := suite.service.StartRegistration(nil)
+	result, svcErr := suite.service.StartRegistration(context.Background(), nil)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -95,7 +96,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_EmptyUserID() {
 		RelyingPartyID: testRelyingPartyID,
 	}
 
-	result, svcErr := suite.service.StartRegistration(req)
+	result, svcErr := suite.service.StartRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -108,7 +109,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_EmptyRelyingPartyID
 		RelyingPartyID: "",
 	}
 
-	result, svcErr := suite.service.StartRegistration(req)
+	result, svcErr := suite.service.StartRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -129,7 +130,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_UserNotFound() {
 		},
 	).Once()
 
-	result, svcErr := suite.service.StartRegistration(req)
+	result, svcErr := suite.service.StartRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -150,7 +151,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_UserServiceServerEr
 		},
 	).Once()
 
-	result, svcErr := suite.service.StartRegistration(req)
+	result, svcErr := suite.service.StartRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -164,9 +165,9 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_GetCredentialsError
 	}
 
 	testUser := &user.User{
-		ID:               testUserID,
-		Type:             "person",
-		OrganizationUnit: "org123",
+		ID:   testUserID,
+		Type: "person",
+		OUID: "org123",
 	}
 
 	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
@@ -178,7 +179,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_GetCredentialsError
 		},
 	).Once()
 
-	result, svcErr := suite.service.StartRegistration(req)
+	result, svcErr := suite.service.StartRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -186,7 +187,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_GetCredentialsError
 }
 
 func (suite *WebAuthnServiceTestSuite) TestFinishRegistration_NilRequest() {
-	result, svcErr := suite.service.FinishRegistration(nil)
+	result, svcErr := suite.service.FinishRegistration(context.Background(), nil)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -201,7 +202,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishRegistration_EmptySessionToken(
 		AttestationObject: "o2NmbXRkbm9uZQ",
 	}
 
-	result, svcErr := suite.service.FinishRegistration(req)
+	result, svcErr := suite.service.FinishRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -216,7 +217,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishRegistration_EmptyCredentialID(
 		AttestationObject: "o2NmbXRkbm9uZQ",
 	}
 
-	result, svcErr := suite.service.FinishRegistration(req)
+	result, svcErr := suite.service.FinishRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -231,7 +232,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishRegistration_EmptyClientDataJSO
 		AttestationObject: "o2NmbXRkbm9uZQ",
 	}
 
-	result, svcErr := suite.service.FinishRegistration(req)
+	result, svcErr := suite.service.FinishRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -246,7 +247,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishRegistration_EmptyAttestationOb
 		AttestationObject: "",
 	}
 
-	result, svcErr := suite.service.FinishRegistration(req)
+	result, svcErr := suite.service.FinishRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -254,7 +255,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishRegistration_EmptyAttestationOb
 }
 
 func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_NilRequest() {
-	result, svcErr := suite.service.StartAuthentication(nil)
+	result, svcErr := suite.service.StartAuthentication(context.Background(), nil)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -266,11 +267,18 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_EmptyUserID() {
 		UserID:         "",
 		RelyingPartyID: testRelyingPartyID,
 	}
-	result, svcErr := suite.service.StartAuthentication(req)
 
-	suite.Nil(result)
-	suite.NotNil(svcErr)
-	suite.Equal(ErrorEmptyUserIdentifier.Code, svcErr.Code)
+	// Mock session store for usernameless flow (empty userID)
+	suite.mockSessionStore.On("storeSession", mock.Anything, "", testRelyingPartyID, mock.Anything, mock.Anything).
+		Return(nil).Once()
+
+	result, svcErr := suite.service.StartAuthentication(context.Background(), req)
+
+	// Usernameless flow should succeed
+	suite.Nil(svcErr)
+	suite.NotNil(result)
+	suite.NotEmpty(result.SessionToken)
+	suite.NotEmpty(result.PublicKeyCredentialRequestOptions.Challenge)
 }
 
 func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_EmptyRelyingPartyID() {
@@ -278,7 +286,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_EmptyRelyingParty
 		UserID:         testUserID,
 		RelyingPartyID: "",
 	}
-	result, svcErr := suite.service.StartAuthentication(req)
+	result, svcErr := suite.service.StartAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -298,7 +306,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_UserNotFound() {
 		UserID:         testUserID,
 		RelyingPartyID: testRelyingPartyID,
 	}
-	result, svcErr := suite.service.StartAuthentication(req)
+	result, svcErr := suite.service.StartAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -318,7 +326,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_UserServiceServer
 		UserID:         testUserID,
 		RelyingPartyID: testRelyingPartyID,
 	}
-	result, svcErr := suite.service.StartAuthentication(req)
+	result, svcErr := suite.service.StartAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -327,9 +335,9 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_UserServiceServer
 
 func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_GetCredentialsError() {
 	testUser := &user.User{
-		ID:               testUserID,
-		Type:             "person",
-		OrganizationUnit: "org123",
+		ID:   testUserID,
+		Type: "person",
+		OUID: "org123",
 	}
 
 	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
@@ -345,7 +353,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_GetCredentialsErr
 		UserID:         testUserID,
 		RelyingPartyID: testRelyingPartyID,
 	}
-	result, svcErr := suite.service.StartAuthentication(req)
+	result, svcErr := suite.service.StartAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -354,9 +362,9 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_GetCredentialsErr
 
 func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_NoCredentialsFound() {
 	testUser := &user.User{
-		ID:               testUserID,
-		Type:             "person",
-		OrganizationUnit: "org123",
+		ID:   testUserID,
+		Type: "person",
+		OUID: "org123",
 	}
 
 	emptyCredentials := []user.Credential{}
@@ -371,7 +379,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_NoCredentialsFoun
 		UserID:         testUserID,
 		RelyingPartyID: testRelyingPartyID,
 	}
-	result, svcErr := suite.service.StartAuthentication(req)
+	result, svcErr := suite.service.StartAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -379,7 +387,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_NoCredentialsFoun
 }
 
 func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_NilRequest() {
-	result, svcErr := suite.service.FinishAuthentication(nil)
+	result, svcErr := suite.service.FinishAuthentication(context.Background(), nil)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -396,7 +404,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_EmptyCredentialI
 		UserHandle:        "userHandle",
 		SessionToken:      testSessionToken,
 	}
-	result, svcErr := suite.service.FinishAuthentication(req)
+	result, svcErr := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -413,7 +421,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_EmptyCredentialT
 		UserHandle:        "userHandle",
 		SessionToken:      testSessionToken,
 	}
-	result, svcErr := suite.service.FinishAuthentication(req)
+	result, svcErr := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -430,7 +438,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_EmptyClientDataJ
 		UserHandle:        "userHandle",
 		SessionToken:      testSessionToken,
 	}
-	result, svcErr := suite.service.FinishAuthentication(req)
+	result, svcErr := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -447,7 +455,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_EmptyAuthenticat
 		UserHandle:        "userHandle",
 		SessionToken:      testSessionToken,
 	}
-	result, svcErr := suite.service.FinishAuthentication(req)
+	result, svcErr := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -464,7 +472,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_EmptySignature()
 		UserHandle:        "userHandle",
 		SessionToken:      testSessionToken,
 	}
-	result, svcErr := suite.service.FinishAuthentication(req)
+	result, svcErr := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -481,7 +489,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_EmptySessionToke
 		UserHandle:        "userHandle",
 		SessionToken:      "",
 	}
-	result, svcErr := suite.service.FinishAuthentication(req)
+	result, svcErr := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -517,7 +525,7 @@ func (suite *WebAuthnServiceTestSuite) TestGetWebAuthnCredentialsFromDB_Success(
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
 		Return(mockUserCreds, nil).Once()
 
-	credentials, err := suite.service.getStoredPasskeyCredentials(testUserID)
+	credentials, err := suite.service.getStoredPasskeyCredentials(context.Background(), testUserID)
 
 	suite.NoError(err)
 	suite.NotNil(credentials)
@@ -534,7 +542,7 @@ func (suite *WebAuthnServiceTestSuite) TestGetWebAuthnCredentialsFromDB_ServiceE
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
 		Return(nil, svcErr).Once()
 
-	credentials, err := suite.service.getStoredPasskeyCredentials(testUserID)
+	credentials, err := suite.service.getStoredPasskeyCredentials(context.Background(), testUserID)
 
 	suite.Error(err)
 	suite.Nil(credentials)
@@ -551,7 +559,7 @@ func (suite *WebAuthnServiceTestSuite) TestGetWebAuthnCredentialsFromDB_InvalidJ
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
 		Return(mockUserCreds, nil).Once()
 
-	credentials, err := suite.service.getStoredPasskeyCredentials(testUserID)
+	credentials, err := suite.service.getStoredPasskeyCredentials(context.Background(), testUserID)
 
 	suite.NoError(err)
 	suite.NotNil(credentials)
@@ -562,7 +570,7 @@ func (suite *WebAuthnServiceTestSuite) TestGetWebAuthnCredentialsFromDB_EmptyCre
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
 		Return([]user.Credential{}, nil).Once()
 
-	credentials, err := suite.service.getStoredPasskeyCredentials(testUserID)
+	credentials, err := suite.service.getStoredPasskeyCredentials(context.Background(), testUserID)
 
 	suite.NoError(err)
 	suite.NotNil(credentials)
@@ -594,7 +602,7 @@ func (suite *WebAuthnServiceTestSuite) TestStoreWebAuthnCredentialInDB_Success()
 			return ok && len(creds) == 1
 		})).Return(nil).Once()
 
-	err := suite.service.storePasskeyCredential(testUserID, mockCredential)
+	err := suite.service.storePasskeyCredential(context.Background(), testUserID, mockCredential)
 
 	suite.NoError(err)
 }
@@ -613,7 +621,7 @@ func (suite *WebAuthnServiceTestSuite) TestStoreWebAuthnCredentialInDB_GetCreden
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
 		Return(nil, svcErr).Once()
 
-	err := suite.service.storePasskeyCredential(testUserID, mockCredential)
+	err := suite.service.storePasskeyCredential(context.Background(), testUserID, mockCredential)
 
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to get existing passkey credentials")
@@ -639,7 +647,7 @@ func (suite *WebAuthnServiceTestSuite) TestStoreWebAuthnCredentialInDB_UpdateCre
 	suite.mockUserService.On("UpdateUserCredentials", mock.Anything, testUserID, mock.Anything).
 		Return(svcErr).Once()
 
-	err := suite.service.storePasskeyCredential(testUserID, mockCredential)
+	err := suite.service.storePasskeyCredential(context.Background(), testUserID, mockCredential)
 
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to update passkey credentials")
@@ -689,7 +697,7 @@ func (suite *WebAuthnServiceTestSuite) TestUpdateWebAuthnCredentialInDB_Success(
 			return cred.Authenticator.SignCount == 6
 		})).Return(nil).Once()
 
-	err := suite.service.updatePasskeyCredential(testUserID, updatedCredential)
+	err := suite.service.updatePasskeyCredential(context.Background(), testUserID, updatedCredential)
 
 	suite.NoError(err)
 }
@@ -716,7 +724,7 @@ func (suite *WebAuthnServiceTestSuite) TestUpdateWebAuthnCredentialInDB_Credenti
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
 		Return(existingCreds, nil).Once()
 
-	err := suite.service.updatePasskeyCredential(testUserID, updatedCredential)
+	err := suite.service.updatePasskeyCredential(context.Background(), testUserID, updatedCredential)
 
 	suite.Error(err)
 	suite.Contains(err.Error(), "credential not found for update")
@@ -736,7 +744,7 @@ func (suite *WebAuthnServiceTestSuite) TestUpdateWebAuthnCredentialInDB_GetCrede
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
 		Return(nil, svcErr).Once()
 
-	err := suite.service.updatePasskeyCredential(testUserID, updatedCredential)
+	err := suite.service.updatePasskeyCredential(context.Background(), testUserID, updatedCredential)
 
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to get existing credentials")
@@ -773,7 +781,7 @@ func (suite *WebAuthnServiceTestSuite) TestUpdateWebAuthnCredentialInDB_UpdateEr
 	suite.mockUserService.On("UpdateUserCredentials", mock.Anything, testUserID, mock.Anything).
 		Return(svcErr).Once()
 
-	err := suite.service.updatePasskeyCredential(testUserID, updatedCredential)
+	err := suite.service.updatePasskeyCredential(context.Background(), testUserID, updatedCredential)
 
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to update credentials")
@@ -798,7 +806,7 @@ func (suite *WebAuthnServiceTestSuite) TestUpdateWebAuthnCredentialInDB_InvalidE
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
 		Return(existingCreds, nil).Once()
 
-	err := suite.service.updatePasskeyCredential(testUserID, updatedCredential)
+	err := suite.service.updatePasskeyCredential(context.Background(), testUserID, updatedCredential)
 
 	suite.Error(err)
 	suite.Contains(err.Error(), "credential not found for update")
@@ -895,9 +903,9 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_StoreSessionError()
 	}
 
 	testUser := &user.User{
-		ID:               testUserID,
-		Type:             "person",
-		OrganizationUnit: "org123",
+		ID:   testUserID,
+		Type: "person",
+		OUID: "org123",
 	}
 
 	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
@@ -913,7 +921,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_StoreSessionError()
 		mock.AnythingOfType("time.Time")).
 		Return(assert.AnError).Once()
 
-	result, svcErr := suite.service.StartRegistration(req)
+	result, svcErr := suite.service.StartRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -929,7 +937,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishRegistration_InvalidCredentialT
 		SessionToken:      testSessionToken,
 	}
 
-	result, svcErr := suite.service.FinishRegistration(req)
+	result, svcErr := suite.service.FinishRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -945,7 +953,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishRegistration_RetrieveSessionErr
 		SessionToken:      testSessionToken,
 	}
 
-	result, svcErr := suite.service.FinishRegistration(req)
+	result, svcErr := suite.service.FinishRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -966,7 +974,7 @@ func (suite *WebAuthnServiceTestSuite) TestGenerateAssertionWithAttributes() {
 		UserHandle:        "userHandle",
 		SessionToken:      testSessionToken,
 	}
-	result, svcErr := suite.service.FinishAuthentication(req)
+	result, svcErr := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -999,7 +1007,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_GetUserError() {
 		UserHandle:        "userHandle",
 		SessionToken:      testSessionToken,
 	}
-	result, err := suite.service.FinishAuthentication(req)
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1040,7 +1048,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_GetCredentialsEr
 		UserHandle:        "userHandle",
 		SessionToken:      testSessionToken,
 	}
-	result, err := suite.service.FinishAuthentication(req)
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1074,7 +1082,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_NoCredentialsErr
 		UserHandle:        "userHandle",
 		SessionToken:      testSessionToken,
 	}
-	result, err := suite.service.FinishAuthentication(req)
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1121,7 +1129,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_InvalidAssertion
 		UserHandle:        "userHandle",
 		SessionToken:      testSessionToken,
 	}
-	result, err := suite.service.FinishAuthentication(req)
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1160,7 +1168,7 @@ func (suite *WebAuthnServiceTestSuite) TestGetWebAuthnCredentialsFromDB_Multiple
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
 		Return(mockUserCreds, nil).Once()
 
-	credentials, err := suite.service.getStoredPasskeyCredentials(testUserID)
+	credentials, err := suite.service.getStoredPasskeyCredentials(context.Background(), testUserID)
 
 	suite.NoError(err)
 	suite.NotNil(credentials)
@@ -1189,7 +1197,7 @@ func (suite *WebAuthnServiceTestSuite) TestGetWebAuthnCredentialsFromDB_MixedVal
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
 		Return(mockUserCreds, nil).Once()
 
-	credentials, err := suite.service.getStoredPasskeyCredentials(testUserID)
+	credentials, err := suite.service.getStoredPasskeyCredentials(context.Background(), testUserID)
 
 	suite.NoError(err)
 	suite.NotNil(credentials)
@@ -1231,7 +1239,7 @@ func (suite *WebAuthnServiceTestSuite) TestStoreWebAuthnCredentialInDB_WithExist
 			return ok && len(creds) == 2 // Should have 2 credentials now
 		})).Return(nil).Once()
 
-	err := suite.service.storePasskeyCredential(testUserID, mockCredential)
+	err := suite.service.storePasskeyCredential(context.Background(), testUserID, mockCredential)
 
 	suite.NoError(err)
 }
@@ -1254,7 +1262,7 @@ func (suite *WebAuthnServiceTestSuite) TestStoreWebAuthnCredentialInDB_MarshalEr
 	suite.mockUserService.On("UpdateUserCredentials", mock.Anything, testUserID, mock.Anything).
 		Return(nil).Once()
 
-	err := suite.service.storePasskeyCredential(testUserID, mockCredential)
+	err := suite.service.storePasskeyCredential(context.Background(), testUserID, mockCredential)
 
 	// Should succeed - marshaling works for standard credentials
 	suite.NoError(err)
@@ -1319,7 +1327,7 @@ func (suite *WebAuthnServiceTestSuite) TestUpdateWebAuthnCredentialInDB_Multiple
 			return cred1.Authenticator.SignCount == 6 && cred2.Authenticator.SignCount == 10
 		})).Return(nil).Once()
 
-	err := suite.service.updatePasskeyCredential(testUserID, updatedCredential)
+	err := suite.service.updatePasskeyCredential(context.Background(), testUserID, updatedCredential)
 
 	suite.NoError(err)
 }
@@ -1369,7 +1377,7 @@ func (suite *WebAuthnServiceTestSuite) TestUpdateWebAuthnCredentialInDB_Preserve
 				creds[0].StorageAlgoParams.KeySize == 256
 		})).Return(nil).Once()
 
-	err := suite.service.updatePasskeyCredential(testUserID, updatedCredential)
+	err := suite.service.updatePasskeyCredential(context.Background(), testUserID, updatedCredential)
 
 	suite.NoError(err)
 }
@@ -1382,7 +1390,7 @@ func (suite *WebAuthnServiceTestSuite) TestUpdateWebAuthnCredentialInDB_EmptyCre
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
 		Return([]user.Credential{}, nil).Once()
 
-	err := suite.service.updatePasskeyCredential(testUserID, updatedCredential)
+	err := suite.service.updatePasskeyCredential(context.Background(), testUserID, updatedCredential)
 
 	suite.Error(err)
 	suite.Contains(err.Error(), "credential not found for update")
@@ -1410,7 +1418,7 @@ func (suite *WebAuthnServiceTestSuite) TestStoreWebAuthnCredentialInDB_EmptyCred
 			return ok && len(creds) == 1
 		})).Return(nil).Once()
 
-	err := suite.service.storePasskeyCredential(testUserID, mockCredential)
+	err := suite.service.storePasskeyCredential(context.Background(), testUserID, mockCredential)
 
 	// Should succeed even with empty fields
 	suite.NoError(err)
@@ -1434,7 +1442,7 @@ func (suite *WebAuthnServiceTestSuite) TestGetWebAuthnCredentialsFromDB_Partiall
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
 		Return(mockUserCreds, nil).Once()
 
-	credentials, err := suite.service.getStoredPasskeyCredentials(testUserID)
+	credentials, err := suite.service.getStoredPasskeyCredentials(context.Background(), testUserID)
 
 	suite.NoError(err)
 	suite.NotNil(credentials)
@@ -1484,7 +1492,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_CredentialsValida
 		UserID:         testUserID,
 		RelyingPartyID: testRelyingPartyID,
 	}
-	result, svcErr := suite.service.StartAuthentication(req)
+	result, svcErr := suite.service.StartAuthentication(context.Background(), req)
 
 	suite.Nil(svcErr)
 	suite.NotNil(result)
@@ -1529,7 +1537,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_CredentialWithZer
 		UserID:         testUserID,
 		RelyingPartyID: testRelyingPartyID,
 	}
-	result, svcErr := suite.service.StartAuthentication(req)
+	result, svcErr := suite.service.StartAuthentication(context.Background(), req)
 
 	suite.Nil(svcErr)
 	suite.NotNil(result)
@@ -1574,7 +1582,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_WithExistingValidCr
 		mock.AnythingOfType("time.Time")).
 		Return(nil).Once()
 
-	result, svcErr := suite.service.StartRegistration(req)
+	result, svcErr := suite.service.StartRegistration(context.Background(), req)
 
 	suite.Nil(svcErr)
 	suite.NotNil(result)
@@ -1624,7 +1632,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_UpdateCredential
 		UserHandle:        "",
 		SessionToken:      testSessionToken,
 	}
-	result, err := suite.service.FinishAuthentication(req)
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1668,7 +1676,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_SkipAssertion() 
 		UserHandle:        "",
 		SessionToken:      testSessionToken,
 	}
-	result, err := suite.service.FinishAuthentication(req)
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1686,7 +1694,7 @@ func (suite *WebAuthnServiceTestSuite) TestGetWebAuthnCredentialsFromDB_NonStrin
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
 		Return(mockUserCreds, nil).Once()
 
-	credentials, err := suite.service.getStoredPasskeyCredentials(testUserID)
+	credentials, err := suite.service.getStoredPasskeyCredentials(context.Background(), testUserID)
 
 	suite.NoError(err)
 	suite.NotNil(credentials)
@@ -1722,7 +1730,7 @@ func (suite *WebAuthnServiceTestSuite) TestStoreWebAuthnCredentialInDB_MarshalSu
 			return ok && len(creds) == 1 && len(creds[0].Value) > 0
 		})).Return(nil).Once()
 
-	err := suite.service.storePasskeyCredential(testUserID, mockCredential)
+	err := suite.service.storePasskeyCredential(context.Background(), testUserID, mockCredential)
 
 	suite.NoError(err)
 }
@@ -1759,7 +1767,7 @@ func (suite *WebAuthnServiceTestSuite) TestUpdateWebAuthnCredentialInDB_MarshalU
 	suite.mockUserService.On("UpdateUserCredentials", mock.Anything, testUserID, mock.Anything).
 		Return(nil).Once()
 
-	err := suite.service.updatePasskeyCredential(testUserID, updatedCredential)
+	err := suite.service.updatePasskeyCredential(context.Background(), testUserID, updatedCredential)
 
 	// Should succeed for normal credentials
 	suite.NoError(err)
@@ -1831,7 +1839,7 @@ func (suite *WebAuthnServiceTestSuite) TestGetWebAuthnCredentialsFromDB_SuccessW
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
 		Return(mockUserCreds, nil).Once()
 
-	credentials, err := suite.service.getStoredPasskeyCredentials(testUserID)
+	credentials, err := suite.service.getStoredPasskeyCredentials(context.Background(), testUserID)
 
 	suite.NoError(err)
 	suite.NotNil(credentials)
@@ -1886,7 +1894,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_WithMultipleCrede
 		UserID:         testUserID,
 		RelyingPartyID: testRelyingPartyID,
 	}
-	result, svcErr := suite.service.StartAuthentication(req)
+	result, svcErr := suite.service.StartAuthentication(context.Background(), req)
 
 	suite.Nil(svcErr)
 	suite.NotNil(result)
@@ -1904,7 +1912,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishRegistration_StoreCredentialErr
 	}
 
 	// This test validates that the error handling path for credential storage exists
-	result, svcErr := suite.service.FinishRegistration(req)
+	result, svcErr := suite.service.FinishRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -1922,7 +1930,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishRegistration_WithCustomCredenti
 		CredentialName:    "My Custom Passkey",
 	}
 
-	result, svcErr := suite.service.FinishRegistration(req)
+	result, svcErr := suite.service.FinishRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -1939,7 +1947,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishRegistration_InitializeWebAuthn
 		SessionToken:      testSessionToken,
 	}
 
-	result, svcErr := suite.service.FinishRegistration(req)
+	result, svcErr := suite.service.FinishRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -1957,7 +1965,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishRegistration_CreatewebAuthnUser
 		SessionToken:      testSessionToken,
 	}
 
-	result, svcErr := suite.service.FinishRegistration(req)
+	result, svcErr := suite.service.FinishRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -2008,7 +2016,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ValidateLoginFai
 		UserHandle:        "",
 		SessionToken:      testSessionToken,
 	}
-	result, err := suite.service.FinishAuthentication(req)
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2055,7 +2063,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ClearSessionAfte
 		UserHandle:        "",
 		SessionToken:      testSessionToken,
 	}
-	result, err := suite.service.FinishAuthentication(req)
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
 
 	// Test will fail at library validation but verifies the clear session path exists
 	suite.Nil(result)
@@ -2076,9 +2084,9 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_BuildAuthRespons
 	credentialJSON, _ := json.Marshal(mockCredential)
 
 	testUser := &user.User{
-		ID:               testUserID,
-		Type:             "person",
-		OrganizationUnit: "org123",
+		ID:   testUserID,
+		Type: "person",
+		OUID: "org123",
 	}
 
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).
@@ -2099,7 +2107,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_BuildAuthRespons
 		UserHandle:        "",
 		SessionToken:      testSessionToken,
 	}
-	result, err := suite.service.FinishAuthentication(req)
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
 
 	// Test will fail at library validation but tests the response building path
 	suite.Nil(result)
@@ -2145,7 +2153,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_UpdateCredential
 		UserHandle:        "",
 		SessionToken:      testSessionToken,
 	}
-	result, err := suite.service.FinishAuthentication(req)
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2188,7 +2196,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_InitializeWebAut
 		UserHandle:        "",
 		SessionToken:      testSessionToken,
 	}
-	result, err := suite.service.FinishAuthentication(req)
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2218,7 +2226,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_GetWebAuthnCredenti
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
 		Return(nil, credErr).Once()
 
-	result, svcErr := suite.service.StartRegistration(req)
+	result, svcErr := suite.service.StartRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -2233,7 +2241,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_InitializeWebAuthnL
 	}
 
 	// Should fail validation before reaching library init
-	result, svcErr := suite.service.StartRegistration(req)
+	result, svcErr := suite.service.StartRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -2265,7 +2273,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_BeginRegistrationEr
 		Return(nil).Once()
 
 	// Library initialization will succeed and BeginRegistration will succeed
-	result, svcErr := suite.service.StartRegistration(req)
+	result, svcErr := suite.service.StartRegistration(context.Background(), req)
 
 	// Should succeed since BeginRegistration doesn't fail with valid data
 	suite.Nil(svcErr)
@@ -2282,7 +2290,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishRegistration_ParseAttestationRe
 		SessionToken:      testSessionToken,
 	}
 
-	result, svcErr := suite.service.FinishRegistration(req)
+	result, svcErr := suite.service.FinishRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -2299,7 +2307,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishRegistration_GetWebAuthnCredent
 	}
 
 	// Will fail at parsing before reaching credential retrieval
-	result, svcErr := suite.service.FinishRegistration(req)
+	result, svcErr := suite.service.FinishRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -2316,7 +2324,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishRegistration_CreateCredentialEr
 	}
 
 	// Will fail at parsing stage which tests the error path exists
-	result, svcErr := suite.service.FinishRegistration(req)
+	result, svcErr := suite.service.FinishRegistration(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -2343,7 +2351,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_GetWebAuthnCreden
 		UserID:         testUserID,
 		RelyingPartyID: testRelyingPartyID,
 	}
-	result, svcErr := suite.service.StartAuthentication(req)
+	result, svcErr := suite.service.StartAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -2355,7 +2363,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_InitializeWebAuth
 		UserID:         testUserID,
 		RelyingPartyID: "",
 	}
-	result, svcErr := suite.service.StartAuthentication(req)
+	result, svcErr := suite.service.StartAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(svcErr)
@@ -2392,7 +2400,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_BeginLoginError()
 		UserID:         testUserID,
 		RelyingPartyID: testRelyingPartyID,
 	}
-	result, svcErr := suite.service.StartAuthentication(req)
+	result, svcErr := suite.service.StartAuthentication(context.Background(), req)
 
 	// Should succeed since BeginLogin doesn't fail with valid data
 	suite.Nil(svcErr)
@@ -2434,7 +2442,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_GetWebAuthnCrede
 		UserHandle:        "",
 		SessionToken:      testSessionToken,
 	}
-	result, err := suite.service.FinishAuthentication(req)
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2475,7 +2483,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ParseAssertionRe
 		UserHandle:        "",
 		SessionToken:      testSessionToken,
 	}
-	result, err := suite.service.FinishAuthentication(req)
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2516,7 +2524,7 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ValidateLoginErr
 		UserHandle:        "",
 		SessionToken:      testSessionToken,
 	}
-	result, err := suite.service.FinishAuthentication(req)
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2542,7 +2550,7 @@ func (suite *WebAuthnServiceTestSuite) TestGetWebAuthnCredentialsFromDB_Unmarsha
 	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
 		Return(invalidJSON, nil).Once()
 
-	credentials, err := suite.service.getStoredPasskeyCredentials(testUserID)
+	credentials, err := suite.service.getStoredPasskeyCredentials(context.Background(), testUserID)
 
 	// Should skip invalid and return valid ones
 	suite.NoError(err)
@@ -2569,7 +2577,7 @@ func (suite *WebAuthnServiceTestSuite) TestUpdateWebAuthnCredentialInDB_Unmarsha
 		Return(invalidCreds, nil).Once()
 
 	// Should continue with invalid credentials (won't find match)
-	err := suite.service.updatePasskeyCredential(testUserID, updatedCredential)
+	err := suite.service.updatePasskeyCredential(context.Background(), testUserID, updatedCredential)
 
 	suite.Error(err)
 	suite.Contains(err.Error(), "credential not found")
@@ -2585,9 +2593,9 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_WithRelyingPartyNam
 	}
 
 	testUser := &user.User{
-		ID:               testUserID,
-		Type:             "person",
-		OrganizationUnit: "org123",
+		ID:   testUserID,
+		Type: "person",
+		OUID: "org123",
 	}
 
 	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
@@ -2602,7 +2610,7 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_WithRelyingPartyNam
 		mock.AnythingOfType("time.Time")).
 		Return(nil).Once()
 
-	result, svcErr := suite.service.StartRegistration(req)
+	result, svcErr := suite.service.StartRegistration(context.Background(), req)
 
 	suite.Nil(svcErr)
 	suite.NotNil(result)
@@ -2647,11 +2655,531 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_WithExistingCredent
 		mock.AnythingOfType("time.Time")).
 		Return(nil).Once()
 
-	result, svcErr := suite.service.StartRegistration(req)
+	result, svcErr := suite.service.StartRegistration(context.Background(), req)
 
 	suite.Nil(svcErr)
 	suite.NotNil(result)
 	suite.NotEmpty(result.SessionToken)
 	// Verify exclude list contains the existing credential
 	suite.NotEmpty(result.PublicKeyCredentialCreationOptions.CredentialExcludeList)
+}
+
+func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_Usernameless_Success() {
+	req := &PasskeyAuthenticationStartRequest{
+		UserID:         "", // Empty userID for usernameless flow
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	suite.mockSessionStore.On("storeSession",
+		mock.AnythingOfType("string"),
+		"", // Empty userID
+		testRelyingPartyID,
+		mock.AnythingOfType("*webauthn.SessionData"),
+		mock.AnythingOfType("time.Time")).
+		Return(nil).Once()
+
+	result, svcErr := suite.service.StartAuthentication(context.Background(), req)
+
+	suite.Nil(svcErr)
+	suite.NotNil(result)
+	suite.NotEmpty(result.SessionToken)
+	suite.NotEmpty(result.PublicKeyCredentialRequestOptions.Challenge)
+	suite.Empty(result.PublicKeyCredentialRequestOptions.AllowCredentials)
+}
+
+func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_Usernameless_StoreSessionError() {
+	req := &PasskeyAuthenticationStartRequest{
+		UserID:         "", // Empty userID for usernameless flow
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	suite.mockSessionStore.On("storeSession",
+		mock.AnythingOfType("string"),
+		"",
+		testRelyingPartyID,
+		mock.AnythingOfType("*webauthn.SessionData"),
+		mock.AnythingOfType("time.Time")).
+		Return(assert.AnError).Once()
+
+	result, svcErr := suite.service.StartAuthentication(context.Background(), req)
+
+	suite.Nil(result)
+	suite.NotNil(svcErr)
+	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+}
+
+func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_Usernameless_WithWhitespaceUserID() {
+	req := &PasskeyAuthenticationStartRequest{
+		UserID:         "   ", // Whitespace-only userID should be treated as usernameless
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	suite.mockSessionStore.On("storeSession",
+		mock.AnythingOfType("string"),
+		"",
+		testRelyingPartyID,
+		mock.AnythingOfType("*webauthn.SessionData"),
+		mock.AnythingOfType("time.Time")).
+		Return(nil).Once()
+
+	result, svcErr := suite.service.StartAuthentication(context.Background(), req)
+
+	suite.Nil(svcErr)
+	suite.NotNil(result)
+	suite.NotEmpty(result.SessionToken)
+}
+
+func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_Usernameless_Success() {
+	sessionData := &sessionData{
+		Challenge:      "challenge123",
+		UserID:         nil, // No userID in session for usernameless flow
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	userHandle := base64.StdEncoding.EncodeToString([]byte(testUserID))
+
+	mockCredential := webauthnCredential{
+		ID:        []byte("credential123"),
+		PublicKey: []byte("publickey123"),
+		Authenticator: authenticator{
+			SignCount: 5,
+		},
+	}
+	credentialJSON, _ := json.Marshal(mockCredential)
+
+	mockUserCreds := []user.Credential{
+		{Value: string(credentialJSON)},
+	}
+
+	testUser := &user.User{
+		ID:   testUserID,
+		Type: "person",
+		OUID: "org123",
+	}
+
+	suite.mockSessionStore.On("retrieveSession", testSessionToken).
+		Return(sessionData, "", testRelyingPartyID, nil).Once()
+
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
+	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return(mockUserCreds, nil).Once()
+
+	suite.mockSessionStore.On("deleteSession", testSessionToken).
+		Return(nil).Maybe()
+
+	validCredentialID := base64.RawURLEncoding.EncodeToString([]byte("credential123"))
+
+	req := &PasskeyAuthenticationFinishRequest{
+		CredentialID:      validCredentialID,
+		CredentialType:    "public-key",
+		ClientDataJSON:    base64.RawURLEncoding.EncodeToString([]byte(`{"type":"passkey.get"}`)),
+		AuthenticatorData: base64.RawURLEncoding.EncodeToString([]byte("authenticator-data")),
+		Signature:         base64.RawURLEncoding.EncodeToString([]byte("signature")),
+		UserHandle:        userHandle, // Required for usernameless flow
+		SessionToken:      testSessionToken,
+	}
+
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.True(err.Code == ErrorInvalidAuthenticatorResponse.Code || err.Code == ErrorInvalidSignature.Code)
+}
+
+func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_Usernameless_MissingUserHandle() {
+	sessionData := &sessionData{
+		Challenge:      "challenge123",
+		UserID:         nil,
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	suite.mockSessionStore.On("retrieveSession", testSessionToken).
+		Return(sessionData, "", testRelyingPartyID, nil).Once()
+
+	validCredentialID := base64.RawURLEncoding.EncodeToString([]byte("credential123"))
+
+	req := &PasskeyAuthenticationFinishRequest{
+		CredentialID:      validCredentialID,
+		CredentialType:    "public-key",
+		ClientDataJSON:    base64.RawURLEncoding.EncodeToString([]byte(`{"type":"passkey.get"}`)),
+		AuthenticatorData: base64.RawURLEncoding.EncodeToString([]byte("authenticator-data")),
+		Signature:         base64.RawURLEncoding.EncodeToString([]byte("signature")),
+		UserHandle:        "", // Missing userHandle in usernameless flow
+		SessionToken:      testSessionToken,
+	}
+
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
+
+	// Should fail because userHandle is required for usernameless authentication
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(ErrorInvalidAuthenticatorResponse.Code, err.Code)
+}
+
+func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_Usernameless_InvalidUserHandle() {
+	sessionData := &sessionData{
+		Challenge:      "challenge123",
+		UserID:         nil,
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	suite.mockSessionStore.On("retrieveSession", testSessionToken).
+		Return(sessionData, "", testRelyingPartyID, nil).Once()
+
+	validCredentialID := base64.RawURLEncoding.EncodeToString([]byte("credential123"))
+
+	req := &PasskeyAuthenticationFinishRequest{
+		CredentialID:      validCredentialID,
+		CredentialType:    "public-key",
+		ClientDataJSON:    base64.RawURLEncoding.EncodeToString([]byte(`{"type":"passkey.get"}`)),
+		AuthenticatorData: base64.RawURLEncoding.EncodeToString([]byte("authenticator-data")),
+		Signature:         base64.RawURLEncoding.EncodeToString([]byte("signature")),
+		UserHandle:        "invalid-base64!!!!", // Invalid base64 userHandle
+		SessionToken:      testSessionToken,
+	}
+
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
+
+	// Should fail because userHandle cannot be decoded
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(ErrorInvalidAuthenticatorResponse.Code, err.Code)
+}
+
+func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_Usernameless_UserNotFound() {
+	sessionData := &sessionData{
+		Challenge:      "challenge123",
+		UserID:         nil,
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	userHandle := base64.StdEncoding.EncodeToString([]byte("nonexistent-user"))
+
+	suite.mockSessionStore.On("retrieveSession", testSessionToken).
+		Return(sessionData, "", testRelyingPartyID, nil).Once()
+
+	suite.mockUserService.On("GetUser", mock.Anything, "nonexistent-user").Return(
+		nil,
+		&serviceerror.ServiceError{
+			Type: serviceerror.ClientErrorType,
+			Code: "USER_NOT_FOUND",
+		},
+	).Once()
+
+	validCredentialID := base64.RawURLEncoding.EncodeToString([]byte("credential123"))
+
+	req := &PasskeyAuthenticationFinishRequest{
+		CredentialID:      validCredentialID,
+		CredentialType:    "public-key",
+		ClientDataJSON:    base64.RawURLEncoding.EncodeToString([]byte(`{"type":"passkey.get"}`)),
+		AuthenticatorData: base64.RawURLEncoding.EncodeToString([]byte("authenticator-data")),
+		Signature:         base64.RawURLEncoding.EncodeToString([]byte("signature")),
+		UserHandle:        userHandle,
+		SessionToken:      testSessionToken,
+	}
+
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
+
+	// Should fail with internal server error
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
+}
+
+func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_Usernameless_GetCredentialsError() {
+	sessionData := &sessionData{
+		Challenge:      "challenge123",
+		UserID:         nil,
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	userHandle := base64.StdEncoding.EncodeToString([]byte(testUserID))
+
+	testUser := &user.User{
+		ID:   testUserID,
+		Type: "person",
+	}
+
+	suite.mockSessionStore.On("retrieveSession", testSessionToken).
+		Return(sessionData, "", testRelyingPartyID, nil).Once()
+
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
+
+	credErr := &serviceerror.ServiceError{
+		Type:  serviceerror.ServerErrorType,
+		Code:  "CRED_ERROR",
+		Error: "Failed to get credentials",
+	}
+	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return(nil, credErr).Once()
+
+	validCredentialID := base64.RawURLEncoding.EncodeToString([]byte("credential123"))
+
+	req := &PasskeyAuthenticationFinishRequest{
+		CredentialID:      validCredentialID,
+		CredentialType:    "public-key",
+		ClientDataJSON:    base64.RawURLEncoding.EncodeToString([]byte(`{"type":"passkey.get"}`)),
+		AuthenticatorData: base64.RawURLEncoding.EncodeToString([]byte("authenticator-data")),
+		Signature:         base64.RawURLEncoding.EncodeToString([]byte("signature")),
+		UserHandle:        userHandle,
+		SessionToken:      testSessionToken,
+	}
+
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
+
+	// Should fail with internal server error
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
+}
+
+func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_Usernameless_NoCredentials() {
+	sessionData := &sessionData{
+		Challenge:      "challenge123",
+		UserID:         nil,
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	userHandle := base64.StdEncoding.EncodeToString([]byte(testUserID))
+
+	testUser := &user.User{
+		ID:   testUserID,
+		Type: "person",
+	}
+
+	suite.mockSessionStore.On("retrieveSession", testSessionToken).
+		Return(sessionData, "", testRelyingPartyID, nil).Once()
+
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
+	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]user.Credential{}, nil).Once()
+
+	validCredentialID := base64.RawURLEncoding.EncodeToString([]byte("credential123"))
+
+	req := &PasskeyAuthenticationFinishRequest{
+		CredentialID:      validCredentialID,
+		CredentialType:    "public-key",
+		ClientDataJSON:    base64.RawURLEncoding.EncodeToString([]byte(`{"type":"passkey.get"}`)),
+		AuthenticatorData: base64.RawURLEncoding.EncodeToString([]byte("authenticator-data")),
+		Signature:         base64.RawURLEncoding.EncodeToString([]byte("signature")),
+		UserHandle:        userHandle,
+		SessionToken:      testSessionToken,
+	}
+
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
+
+	// Should fail with no credentials found
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(ErrorNoCredentialsFound.Code, err.Code)
+}
+
+func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_Usernameless_WithRawURLEncodedUserHandle() {
+	sessionData := &sessionData{
+		Challenge:      "challenge123",
+		UserID:         nil,
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	userHandle := base64.RawURLEncoding.EncodeToString([]byte(testUserID))
+
+	mockCredential := webauthnCredential{
+		ID:        []byte("credential123"),
+		PublicKey: []byte("publickey123"),
+		Authenticator: authenticator{
+			SignCount: 5,
+		},
+	}
+	credentialJSON, _ := json.Marshal(mockCredential)
+
+	testUser := &user.User{
+		ID:   testUserID,
+		Type: "person",
+	}
+
+	suite.mockSessionStore.On("retrieveSession", testSessionToken).
+		Return(sessionData, "", testRelyingPartyID, nil).Once()
+
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
+	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]user.Credential{{Value: string(credentialJSON)}}, nil).Once()
+
+	suite.mockSessionStore.On("deleteSession", testSessionToken).
+		Return(nil).Maybe()
+
+	validCredentialID := base64.RawURLEncoding.EncodeToString([]byte("credential123"))
+
+	req := &PasskeyAuthenticationFinishRequest{
+		CredentialID:      validCredentialID,
+		CredentialType:    "public-key",
+		ClientDataJSON:    base64.RawURLEncoding.EncodeToString([]byte(`{"type":"passkey.get"}`)),
+		AuthenticatorData: base64.RawURLEncoding.EncodeToString([]byte("authenticator-data")),
+		Signature:         base64.RawURLEncoding.EncodeToString([]byte("signature")),
+		UserHandle:        userHandle, // RawURLEncoding
+		SessionToken:      testSessionToken,
+	}
+
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
+
+	// Will fail at WebAuthn validation but tests the userHandle decoding fallback
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.True(err.Code == ErrorInvalidAuthenticatorResponse.Code || err.Code == ErrorInvalidSignature.Code)
+}
+
+func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_UsernameBasedFlow_WithUserHandle() {
+	sessionData := &sessionData{
+		Challenge:      "challenge123",
+		UserID:         []byte(testUserID), // UserID present in session
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	// UserHandle may still be provided but should be ignored in username-based flow
+	userHandle := base64.StdEncoding.EncodeToString([]byte("different-user"))
+
+	mockCredential := webauthnCredential{
+		ID:        []byte("credential123"),
+		PublicKey: []byte("publickey123"),
+		Authenticator: authenticator{
+			SignCount: 5,
+		},
+	}
+	credentialJSON, _ := json.Marshal(mockCredential)
+
+	testUser := &user.User{
+		ID:   testUserID,
+		Type: "person",
+	}
+
+	suite.mockSessionStore.On("retrieveSession", testSessionToken).
+		Return(sessionData, testUserID, testRelyingPartyID, nil).Once()
+
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
+	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]user.Credential{{Value: string(credentialJSON)}}, nil).Once()
+
+	suite.mockSessionStore.On("deleteSession", testSessionToken).
+		Return(nil).Maybe()
+
+	validCredentialID := base64.RawURLEncoding.EncodeToString([]byte("credential123"))
+
+	req := &PasskeyAuthenticationFinishRequest{
+		CredentialID:      validCredentialID,
+		CredentialType:    "public-key",
+		ClientDataJSON:    base64.RawURLEncoding.EncodeToString([]byte(`{"type":"passkey.get"}`)),
+		AuthenticatorData: base64.RawURLEncoding.EncodeToString([]byte("authenticator-data")),
+		Signature:         base64.RawURLEncoding.EncodeToString([]byte("signature")),
+		UserHandle:        userHandle, // Provided but should be ignored
+		SessionToken:      testSessionToken,
+	}
+
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
+
+	// Will fail at WebAuthn validation but verifies username-based flow uses session userID
+	suite.Nil(result)
+	suite.NotNil(err)
+}
+
+// TestFinishAuthentication_ValidatePasskeyLogin_ReachesValidation tests that the usernameless
+func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ValidatePasskeyLogin_ReachesValidation() {
+	sessionData := &sessionData{
+		Challenge:      "dGVzdC1jaGFsbGVuZ2U",
+		UserID:         nil, // Empty for usernameless
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	userHandle := base64.StdEncoding.EncodeToString([]byte(testUserID))
+
+	mockCredential := webauthnCredential{
+		ID:        []byte("credential123"),
+		PublicKey: []byte("publickey123"),
+		Authenticator: authenticator{
+			SignCount: 5,
+			AAGUID:    []byte("aaguid123"),
+		},
+	}
+	credentialJSON, _ := json.Marshal(mockCredential)
+
+	testUser := &user.User{
+		ID:   testUserID,
+		Type: "person",
+		OUID: "org123",
+	}
+
+	suite.mockSessionStore.On("retrieveSession", testSessionToken).
+		Return(sessionData, "", testRelyingPartyID, nil).Once()
+
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
+	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]user.Credential{{Value: string(credentialJSON)}}, nil).Once()
+
+	validCredentialID := base64.RawURLEncoding.EncodeToString([]byte("credential123"))
+
+	req := &PasskeyAuthenticationFinishRequest{
+		CredentialID:   validCredentialID,
+		CredentialType: "public-key",
+		ClientDataJSON: base64.RawURLEncoding.EncodeToString([]byte(
+			`{"type":"webauthn.get","challenge":"dGVzdC1jaGFsbGVuZ2U","origin":"http://` + testRelyingPartyID + `"}`)),
+		AuthenticatorData: base64.RawURLEncoding.EncodeToString(make([]byte, 37)),
+		Signature:         base64.RawURLEncoding.EncodeToString([]byte("test-signature")),
+		UserHandle:        userHandle,
+		SessionToken:      testSessionToken,
+	}
+
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.True(err.Code == ErrorInvalidSignature.Code || err.Code == ErrorInvalidAuthenticatorResponse.Code)
+}
+
+// TestFinishAuthentication_ValidateLogin_ReachesValidation tests that the username-based
+func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ValidateLogin_ReachesValidation() {
+	sessionData := &sessionData{
+		Challenge:      "dGVzdC1jaGFsbGVuZ2U",
+		UserID:         []byte(testUserID), // UserID present for username-based flow
+		RelyingPartyID: testRelyingPartyID,
+	}
+
+	mockCredential := webauthnCredential{
+		ID:        []byte("credential123"),
+		PublicKey: []byte("publickey123"),
+		Authenticator: authenticator{
+			SignCount: 5,
+			AAGUID:    []byte("aaguid123"),
+		},
+	}
+	credentialJSON, _ := json.Marshal(mockCredential)
+
+	testUser := &user.User{
+		ID:   testUserID,
+		Type: "person",
+		OUID: "org123",
+	}
+
+	suite.mockSessionStore.On("retrieveSession", testSessionToken).
+		Return(sessionData, testUserID, testRelyingPartyID, nil).Once()
+
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(testUser, nil).Once()
+	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]user.Credential{{Value: string(credentialJSON)}}, nil).Once()
+
+	validCredentialID := base64.RawURLEncoding.EncodeToString([]byte("credential123"))
+
+	req := &PasskeyAuthenticationFinishRequest{
+		CredentialID:   validCredentialID,
+		CredentialType: "public-key",
+		ClientDataJSON: base64.RawURLEncoding.EncodeToString([]byte(
+			`{"type":"webauthn.get","challenge":"dGVzdC1jaGFsbGVuZ2U","origin":"http://` + testRelyingPartyID + `"}`)),
+		AuthenticatorData: base64.RawURLEncoding.EncodeToString(make([]byte, 37)),
+		Signature:         base64.RawURLEncoding.EncodeToString([]byte("test-signature")),
+		UserHandle:        "", // Empty for username-based flow
+		SessionToken:      testSessionToken,
+	}
+
+	result, err := suite.service.FinishAuthentication(context.Background(), req)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.True(err.Code == ErrorInvalidSignature.Code || err.Code == ErrorInvalidAuthenticatorResponse.Code)
 }

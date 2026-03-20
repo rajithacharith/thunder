@@ -27,7 +27,7 @@ import (
 type UserSchema struct {
 	ID                    string                 `json:"id,omitempty"`
 	Name                  string                 `json:"name"`
-	OrganizationUnitId    string                 `json:"ouId"`
+	OUID                  string                 `json:"ouId"`
 	AllowSelfRegistration bool                   `json:"allowSelfRegistration,omitempty"`
 	Schema                map[string]interface{} `json:"schema"`
 }
@@ -35,7 +35,7 @@ type UserSchema struct {
 // User represents a user in the system
 type User struct {
 	ID               string          `json:"id"`
-	OrganizationUnit string          `json:"organizationUnit"`
+	OUID             string          `json:"ouId"`
 	Type             string          `json:"type"`
 	Attributes       json.RawMessage `json:"attributes"`
 }
@@ -54,16 +54,20 @@ type Application struct {
 	AllowedUserTypes          []string                 `json:"allowed_user_types,omitempty"`
 	Certificate               map[string]interface{}   `json:"certificate,omitempty"`
 	InboundAuthConfig         []map[string]interface{} `json:"inbound_auth_config,omitempty"`
-	TokenConfig               map[string]interface{}   `json:"token_config,omitempty"`
+	AssertionConfig           map[string]interface{}   `json:"assertion,omitempty"`
 }
 
 // OrganizationUnit represents an organization unit in the system
 type OrganizationUnit struct {
-	ID          string  `json:"id,omitempty"`
-	Handle      string  `json:"handle"`
-	Name        string  `json:"name"`
-	Description string  `json:"description,omitempty"`
-	Parent      *string `json:"parent,omitempty"`
+	ID              string  `json:"id,omitempty"`
+	Handle          string  `json:"handle"`
+	Name            string  `json:"name"`
+	Description     string  `json:"description,omitempty"`
+	Parent          *string `json:"parent,omitempty"`
+	LogoURL         string  `json:"logo_url,omitempty"`
+	TosURI          string  `json:"tos_uri,omitempty"`
+	PolicyURI       string  `json:"policy_uri,omitempty"`
+	CookiePolicyURI string  `json:"cookie_policy_uri,omitempty"`
 }
 
 // IDPProperty represents a property of an identity provider
@@ -108,7 +112,7 @@ type ErrorResponse struct {
 type AuthenticationResponse struct {
 	ID               string `json:"id"`
 	Type             string `json:"type"`
-	OrganizationUnit string `json:"organization_unit"`
+	OUID             string `json:"ouId"`
 	Assertion        string `json:"assertion,omitempty"`
 }
 
@@ -121,10 +125,17 @@ type GroupMember struct {
 
 // Group represents a group in the system
 type Group struct {
-	ID                 string `json:"id,omitempty"`
-	Name               string `json:"name"`
-	Description        string `json:"description,omitempty"`
-	OrganizationUnitId string `json:"organizationUnitId,omitempty"`
+	ID                 string   `json:"id,omitempty"`
+	Name               string   `json:"name"`
+	Description        string   `json:"description,omitempty"`
+	OUID               string   `json:"ouId,omitempty"`
+	Members            []Member `json:"members,omitempty"`
+}
+
+// Member represents a member of a group (either user or another group).
+type Member struct {
+	Id   string `json:"id"`
+	Type string `json:"type"` // "user" or "group"
 }
 
 // Assignment represents a role assignment
@@ -139,7 +150,7 @@ type Role struct {
 	ID                 string                `json:"id,omitempty"`
 	Name               string                `json:"name"`
 	Description        string                `json:"description,omitempty"`
-	OrganizationUnitID string                `json:"ouId"`
+	OUID               string                `json:"ouId"`
 	Permissions        []ResourcePermissions `json:"permissions,omitempty"`
 	Assignments        []Assignment          `json:"assignments,omitempty"`
 }
@@ -151,6 +162,7 @@ type TokenResponse struct {
 	ExpiresIn    float64   `json:"expires_in"`
 	Scope        string    `json:"scope,omitempty"`
 	RefreshToken string    `json:"refresh_token,omitempty"`
+	IDToken      string    `json:"id_token,omitempty"`
 	ExpiresAt    time.Time `json:"expires_at,omitempty"` // Absolute expiry time
 }
 
@@ -172,7 +184,7 @@ type ResourceServer struct {
 	Name               string  `json:"name"`
 	Description        string  `json:"description,omitempty"`
 	Identifier         string  `json:"identifier,omitempty"`
-	OrganizationUnitID string  `json:"ouId"`
+	OUID               string  `json:"ouId"`
 	Delimiter          *string `json:"delimiter,omitempty"`
 }
 

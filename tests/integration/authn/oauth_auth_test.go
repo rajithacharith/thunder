@@ -52,6 +52,7 @@ var oauthUserSchema = testutils.UserSchema{
 		},
 		"password": map[string]interface{}{
 			"type": "string",
+			"credential": true,
 		},
 		"sub": map[string]interface{}{
 			"type": "string",
@@ -103,7 +104,7 @@ func (suite *OAuthAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err, "Failed to create test organization unit")
 	suite.ouID = ouID
 
-	oauthUserSchema.OrganizationUnitId = suite.ouID
+	oauthUserSchema.OUID = suite.ouID
 	schemaID, err := testutils.CreateUserType(oauthUserSchema)
 	suite.Require().NoError(err, "Failed to create OAuth user schema")
 	suite.userSchemaID = schemaID
@@ -122,7 +123,7 @@ func (suite *OAuthAuthTestSuite) SetupSuite() {
 
 	user := testutils.User{
 		Type:             oauthUserSchema.Name,
-		OrganizationUnit: suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 
@@ -328,7 +329,7 @@ func (suite *OAuthAuthTestSuite) TestOAuthAuthCompleteFlowSuccess() {
 
 	suite.NotEmpty(authResponse.ID, "Response should contain user ID")
 	suite.NotEmpty(authResponse.Type, "Response should contain user type")
-	suite.NotEmpty(authResponse.OrganizationUnit, "Response should contain organization unit")
+	suite.NotEmpty(authResponse.OUID, "Response should contain organization unit")
 	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
 	suite.NotEmpty(authResponse.Assertion, "Response should contain assertion token by default")
 }
@@ -468,7 +469,7 @@ func (suite *OAuthAuthTestSuite) TestOAuthAuthCompleteFlowWithSkipAssertionFalse
 
 	suite.NotEmpty(authResponse.ID, "Response should contain user ID")
 	suite.NotEmpty(authResponse.Type, "Response should contain user type")
-	suite.NotEmpty(authResponse.OrganizationUnit, "Response should contain organization unit")
+	suite.NotEmpty(authResponse.OUID, "Response should contain organization unit")
 	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
 	suite.NotEmpty(authResponse.Assertion, "Response should contain assertion token when skip_assertion is false")
 }
@@ -526,7 +527,7 @@ func (suite *OAuthAuthTestSuite) TestOAuthAuthCompleteFlowWithSkipAssertionTrue(
 
 	suite.NotEmpty(authResponse.ID, "Response should contain user ID")
 	suite.NotEmpty(authResponse.Type, "Response should contain user type")
-	suite.NotEmpty(authResponse.OrganizationUnit, "Response should contain organization unit")
+	suite.NotEmpty(authResponse.OUID, "Response should contain organization unit")
 	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
 	suite.Empty(authResponse.Assertion, "Response should not contain assertion token when skip_assertion is true")
 }

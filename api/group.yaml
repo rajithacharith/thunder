@@ -48,11 +48,11 @@ paths:
                   - id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                     name: "Sports"
                     description: "Sports group"
-                    organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                    ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                   - id: "257e528f-eb24-48b6-884d-20460e190957"
                     name: "Managers"
                     description: "Manager group"
-                    organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                    ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                 links:
                   - href: "groups?offset=2&limit=2"
                     rel: "next"
@@ -102,7 +102,7 @@ paths:
             example:
               name: "Sports"
               description: "Sports group"
-              organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+              ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
               members:
                 - type: "user"
                   id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
@@ -121,7 +121,7 @@ paths:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                 name: "Sports"
                 description: "Sports group"
-                organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
         "400":
           description: Bad request
           content:
@@ -188,7 +188,7 @@ paths:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                 name: "Sports"
                 description: "Sports group"
-                organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
         "400":
           description: Bad request
           content:
@@ -237,14 +237,7 @@ paths:
             example:
               name: "Activities"
               description: "Activities group"
-              organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
-              members:
-                - type: "user"
-                  id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
-                - type: "user"
-                  id: "9f1e47d3-0347-4464-9f02-e0bfae02e896"
-                - type: "group"
-                  id: "6b1e7b8d-7e19-41eb-8fa2-c0ee5bb67a94"
+              ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
       responses:
         "200":
           description: Group updated
@@ -256,7 +249,7 @@ paths:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                 name: "Activities"
                 description: "Activities group"
-                organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
         "400":
           description: Bad request
           content:
@@ -276,12 +269,6 @@ paths:
                     code: "GRP-1001"
                     message: "Invalid request format"
                     description: "The request body is malformed or contains invalid data"
-                invalid-user-id:
-                  summary: Invalid member ID
-                  value:
-                    code: "GRP-1007"
-                    message: "Invalid member ID"
-                    description: "One or more member IDs in the request do not exist"
                 ou-not-found:
                   summary: Organization unit not found
                   value:
@@ -371,6 +358,7 @@ paths:
             format: uuid
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/offsetQueryParam'
+        - $ref: '#/components/parameters/includeQueryParam'
       responses:
         "200":
           description: List of members in the group
@@ -427,6 +415,156 @@ paths:
                 type: string
               example: "Internal server error"
 
+  /groups/{id}/members/add:
+    post:
+      tags:
+        - groups
+      summary: Add members to a group
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembersRequest'
+            example:
+              members:
+                - type: "user"
+                  id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                - type: "user"
+                  id: "9f1e47d3-0347-4464-9f02-e0bfae02e896"
+      responses:
+        "200":
+          description: Members added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+              example:
+                id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                name: "Engineering"
+                description: "Engineering group"
+                ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "GRP-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+                empty-members:
+                  summary: Empty members list
+                  value:
+                    code: "GRP-1013"
+                    message: "Empty members list"
+                    description: "The members list cannot be empty"
+                invalid-member-id:
+                  summary: Invalid member ID
+                  value:
+                    code: "GRP-1007"
+                    message: "Invalid user member ID"
+                    description: "One or more user member IDs in the request do not exist"
+        "404":
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "GRP-1003"
+                message: "Group not found"
+                description: "The group with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Internal server error"
+
+  /groups/{id}/members/remove:
+    post:
+      tags:
+        - groups
+      summary: Remove members from a group
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembersRequest'
+            example:
+              members:
+                - type: "user"
+                  id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+      responses:
+        "200":
+          description: Members removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+              example:
+                id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                name: "Engineering"
+                description: "Engineering group"
+                ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "GRP-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+                empty-members:
+                  summary: Empty members list
+                  value:
+                    code: "GRP-1013"
+                    message: "Empty members list"
+                    description: "The members list cannot be empty"
+        "404":
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "GRP-1003"
+                message: "Group not found"
+                description: "The group with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Internal server error"
+
   /groups/tree/{path}:
     get:
       tags:
@@ -463,11 +601,11 @@ paths:
                   - id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                     name: "Sports"
                     description: "Sports group"
-                    organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                    ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                   - id: "257e528f-eb24-48b6-884d-20460e190957"
                     name: "Managers"
                     description: "Manager group"
-                    organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                    ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                 links:
                   - href: "groups/tree/engineering/frontend?offset=2&limit=2"
                     rel: "next"
@@ -563,7 +701,7 @@ paths:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                 name: "Sports"
                 description: "Sports group"
-                organizationUnitId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
         "400":
           description: Bad request
           content:
@@ -657,6 +795,17 @@ components:
       schema:
         type: integer
         default: 0
+    includeQueryParam:
+      in: query
+      name: include
+      required: false
+      schema:
+        type: string
+        enum:
+          - display
+      description: |
+        Optional parameter to include additional information.
+        - `display` - Include display names for members. For users, the display value is resolved from the schema-configured display attribute (`systemAttributes.display`). Falls back to the user ID if no display attribute is configured, the configured attribute path does not exist in the user's data, or the attribute value is empty. For groups, the group name is used.
 
   schemas:
     Member:
@@ -671,10 +820,14 @@ components:
           enum:
             - user
             - group
+        display:
+          type: string
+          readOnly: true
+          description: "Display name of the member (only included when include=display query parameter is used). For users, resolved from the schema-configured display attribute (`systemAttributes.display`); falls back to the user ID if the attribute is not configured, the path does not exist, or the value is empty. For groups, the group name is used."
 
     Group:
       type: object
-      required: [id, name, organizationUnitId]
+      required: [id, name, ouId]
       properties:
         id:
           type: string
@@ -684,7 +837,7 @@ components:
         description:
           type: string
           nullable: true
-        organizationUnitId:
+        ouId:
           type: string
           format: uuid
         members:
@@ -694,13 +847,13 @@ components:
 
     CreateGroupRequest:
       type: object
-      required: [name, organizationUnitId]
+      required: [name, ouId]
       properties:
         name:
           type: string
         description:
           type: string
-        organizationUnitId:
+        ouId:
           type: string
           format: uuid
         members:
@@ -709,8 +862,16 @@ components:
             $ref: '#/components/schemas/Member'
 
     UpdateGroupRequest:
-      allOf:
-        - $ref: '#/components/schemas/CreateGroupRequest'
+      type: object
+      required: [name, ouId]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        ouId:
+          type: string
+          format: uuid
 
     GroupListResponse:
       type: object
@@ -787,6 +948,17 @@ components:
         rel:
           type: string
           example: "next"
+
+    MembersRequest:
+      type: object
+      required: [members]
+      properties:
+        members:
+          type: array
+          description: "List of members to add or remove"
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Member'
 
     Error:
       type: object

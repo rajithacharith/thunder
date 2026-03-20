@@ -145,8 +145,8 @@ var (
 		Error:            "User schema not found",
 		ErrorDescription: "The specified user schema does not exist",
 	}
-	// ErrorInvalidOrganizationUnitID is returned when the organization unit ID is missing or malformed.
-	ErrorInvalidOrganizationUnitID = serviceerror.ServiceError{
+	// ErrorInvalidOUID is returned when the organization unit ID is missing or malformed.
+	ErrorInvalidOUID = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "USR-1022",
 		Error:            "Invalid organization unit",
@@ -165,6 +165,13 @@ var (
 		Code:             "USR-1024",
 		Error:            "Invalid request format",
 		ErrorDescription: "Invalid credential fields in request",
+	}
+	// ErrorCannotModifyDeclarativeResource is the error returned when trying to modify a declarative user.
+	ErrorCannotModifyDeclarativeResource = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "USR-1025",
+		Error:            "Cannot modify declarative resource",
+		ErrorDescription: "The user is declarative and cannot be modified or deleted",
 	}
 )
 
@@ -186,4 +193,7 @@ var (
 
 	// ErrBadAttributesInRequest is returned when the attributes in the request are invalid.
 	ErrBadAttributesInRequest = errors.New("failed to marshal attributes")
+
+	// errResultLimitExceededInCompositeMode is returned when the result limit is exceeded in composite mode.
+	errResultLimitExceededInCompositeMode = errors.New("result limit exceeded in composite mode")
 )

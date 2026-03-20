@@ -248,7 +248,7 @@ func (o *oidcAuthExecutor) getContextUserAttributes(ctx *core.NodeContext, execR
 		return nil, err
 	}
 
-	oauthConfigs, svcErr := o.authService.GetOAuthClientConfig(idpID)
+	oauthConfigs, svcErr := o.authService.GetOAuthClientConfig(ctx.Context, idpID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure

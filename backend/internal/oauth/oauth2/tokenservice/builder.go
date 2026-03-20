@@ -23,15 +23,16 @@ import (
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
+	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 )
 
 // TokenBuilderInterface defines the interface for building OAuth2 tokens.
 type TokenBuilderInterface interface {
-	BuildAccessToken(ctx *AccessTokenBuildContext) (*model.TokenDTO, error)
-	BuildRefreshToken(ctx *RefreshTokenBuildContext) (*model.TokenDTO, error)
-	BuildIDToken(ctx *IDTokenBuildContext) (*model.TokenDTO, error)
+	BuildAccessToken(ctx *AccessTokenBuildContext) (*oauth2model.TokenDTO, error)
+	BuildRefreshToken(ctx *RefreshTokenBuildContext) (*oauth2model.TokenDTO, error)
+	BuildIDToken(ctx *IDTokenBuildContext) (*oauth2model.TokenDTO, error)
 }
 
 // TokenBuilder implements TokenBuilderInterface.
@@ -47,24 +48,30 @@ func newTokenBuilder(jwtService jwt.JWTServiceInterface) TokenBuilderInterface {
 }
 
 // BuildAccessToken builds an access token with all necessary claims.
-func (tb *tokenBuilder) BuildAccessToken(ctx *AccessTokenBuildContext) (*model.TokenDTO, error) {
+func (tb *tokenBuilder) BuildAccessToken(ctx *AccessTokenBuildContext) (*oauth2model.TokenDTO, error) {
 	if ctx == nil {
 		return nil, fmt.Errorf("build context cannot be nil")
 	}
 
-	tokenConfig := resolveTokenConfig(ctx.OAuthApp, TokenTypeAccess)
+	tokenConfig := ResolveTokenConfig(ctx.OAuthApp, TokenTypeAccess)
 
 	userAttributes := tb.buildAccessTokenUserAttributes(ctx.UserAttributes, ctx.OAuthApp)
-	jwtClaims := tb.buildAccessTokenClaims(ctx, userAttributes)
+	jwtClaims, claimsErr := tb.buildAccessTokenClaims(ctx, userAttributes)
+	if claimsErr != nil {
+		return nil, fmt.Errorf("failed to build access token claims: %w", claimsErr)
+	}
 
-	tokenDTO := &model.TokenDTO{
-		TokenType:      constants.TokenTypeBearer,
-		ExpiresIn:      tokenConfig.ValidityPeriod,
-		Scopes:         ctx.Scopes,
-		ClientID:       ctx.ClientID,
-		UserAttributes: userAttributes,
-		Subject:        ctx.Subject,
-		Audience:       ctx.Audience,
+	tokenDTO := &oauth2model.TokenDTO{
+		TokenType:        constants.TokenTypeBearer,
+		ExpiresIn:        tokenConfig.ValidityPeriod,
+		Scopes:           ctx.Scopes,
+		ClientID:         ctx.ClientID,
+		UserAttributes:   userAttributes,
+		AttributeCacheID: ctx.AttributeCacheID,
+		Subject:          ctx.Subject,
+		Audience:         ctx.Audience,
+		ClaimsRequest:    ctx.ClaimsRequest,
+		ClaimsLocales:    ctx.ClaimsLocales,
 	}
 
 	token, iat, err := tb.jwtService.GenerateJWT(
@@ -73,9 +80,10 @@ func (tb *tokenBuilder) BuildAccessToken(ctx *AccessTokenBuildContext) (*model.T
 		tokenConfig.Issuer,
 		tokenConfig.ValidityPeriod,
 		jwtClaims,
+		jwt.TokenTypeAccessToken,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate access token: %v", err)
+		return nil, fmt.Errorf("failed to generate access token: %v", err.Error)
 	}
 
 	// Assign generated token and issued at time
@@ -89,7 +97,7 @@ func (tb *tokenBuilder) BuildAccessToken(ctx *AccessTokenBuildContext) (*model.T
 func (tb *tokenBuilder) buildAccessTokenClaims(
 	ctx *AccessTokenBuildContext,
 	filteredAttributes map[string]interface{},
-) map[string]interface{} {
+) (map[string]interface{}, error) {
 	claims := make(map[string]interface{})
 
 	if len(ctx.Scopes) > 0 {
@@ -109,12 +117,36 @@ func (tb *tokenBuilder) buildAccessTokenClaims(
 		claims[key] = value
 	}
 
+	// Set after merging user attributes to prevent user attributes from overwriting this system claim.
+	if ctx.AttributeCacheID != "" {
+		claims["aci"] = ctx.AttributeCacheID
+	}
+
 	if ctx.ActorClaims != nil {
 		actClaim := tb.buildActorClaim(ctx.ActorClaims)
 		claims["act"] = actClaim
 	}
 
-	return claims
+	// Include only userinfo claims request for UserInfo endpoint support
+	if ctx.ClaimsRequest != nil && ctx.ClaimsRequest.UserInfo != nil {
+		userinfoClaims := &oauth2model.ClaimsRequest{
+			UserInfo: ctx.ClaimsRequest.UserInfo,
+		}
+		serialized, err := oauth2utils.SerializeClaimsRequest(userinfoClaims)
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize userinfo claims request: %w", err)
+		}
+		if serialized != "" {
+			claims[constants.ClaimClaimsRequest] = serialized
+		}
+	}
+
+	// Include claims_locales if present
+	if ctx.ClaimsLocales != "" {
+		claims[constants.ClaimClaimsLocales] = ctx.ClaimsLocales
+	}
+
+	return claims, nil
 }
 
 // buildAccessTokenUserAttributes builds user attributes for the access token based on app configuration.
@@ -132,6 +164,10 @@ func (tb *tokenBuilder) buildAccessTokenUserAttributes(
 	var accessTokenUserAttributes []string
 	if oauthApp != nil && oauthApp.Token != nil && oauthApp.Token.AccessToken != nil {
 		accessTokenUserAttributes = oauthApp.Token.AccessToken.UserAttributes
+	}
+
+	if accessTokenUserAttributes == nil {
+		accessTokenUserAttributes = []string{}
 	}
 
 	// If app config specifies which attributes to include, filter them
@@ -165,21 +201,25 @@ func (tb *tokenBuilder) buildActorClaim(actorClaims *SubjectTokenClaims) map[str
 }
 
 // BuildRefreshToken builds a refresh token with all necessary claims.
-func (tb *tokenBuilder) BuildRefreshToken(ctx *RefreshTokenBuildContext) (*model.TokenDTO, error) {
+func (tb *tokenBuilder) BuildRefreshToken(ctx *RefreshTokenBuildContext) (*oauth2model.TokenDTO, error) {
 	if ctx == nil {
 		return nil, fmt.Errorf("build context cannot be nil")
 	}
 
-	tokenConfig := resolveTokenConfig(ctx.OAuthApp, TokenTypeRefresh)
+	tokenConfig := ResolveTokenConfig(ctx.OAuthApp, TokenTypeRefresh)
 
-	claims := tb.buildRefreshTokenClaims(ctx)
+	claims, claimsErr := tb.buildRefreshTokenClaims(ctx)
+	if claimsErr != nil {
+		return nil, fmt.Errorf("failed to build refresh token claims: %w", claimsErr)
+	}
 
-	tokenDTO := &model.TokenDTO{
-		ExpiresIn: tokenConfig.ValidityPeriod,
-		Scopes:    ctx.Scopes,
-		ClientID:  ctx.ClientID,
-		Subject:   ctx.AccessTokenSubject,
-		Audience:  tokenConfig.Issuer,
+	tokenDTO := &oauth2model.TokenDTO{
+		ExpiresIn:     tokenConfig.ValidityPeriod,
+		Scopes:        ctx.Scopes,
+		ClientID:      ctx.ClientID,
+		Subject:       ctx.AccessTokenSubject,
+		Audience:      tokenConfig.Issuer,
+		ClaimsLocales: ctx.ClaimsLocales,
 	}
 
 	token, iat, err := tb.jwtService.GenerateJWT(
@@ -188,9 +228,10 @@ func (tb *tokenBuilder) BuildRefreshToken(ctx *RefreshTokenBuildContext) (*model
 		tokenConfig.Issuer,
 		tokenConfig.ValidityPeriod,
 		claims,
+		jwt.TokenTypeJWT,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate refresh token: %v", err)
+		return nil, fmt.Errorf("failed to generate refresh token: %v", err.Error)
 	}
 
 	// Assign generated token and issued at time
@@ -201,7 +242,7 @@ func (tb *tokenBuilder) BuildRefreshToken(ctx *RefreshTokenBuildContext) (*model
 }
 
 // buildRefreshTokenClaims builds the claims map for a refresh token.
-func (tb *tokenBuilder) buildRefreshTokenClaims(ctx *RefreshTokenBuildContext) map[string]interface{} {
+func (tb *tokenBuilder) buildRefreshTokenClaims(ctx *RefreshTokenBuildContext) (map[string]interface{}, error) {
 	claims := make(map[string]interface{})
 
 	if len(ctx.Scopes) > 0 {
@@ -212,28 +253,40 @@ func (tb *tokenBuilder) buildRefreshTokenClaims(ctx *RefreshTokenBuildContext) m
 	claims["access_token_aud"] = ctx.AccessTokenAudience
 	claims["grant_type"] = ctx.GrantType
 
-	if ctx.OAuthApp != nil &&
-		ctx.OAuthApp.Token != nil &&
-		ctx.OAuthApp.Token.AccessToken != nil &&
-		len(ctx.OAuthApp.Token.AccessToken.UserAttributes) > 0 &&
-		len(ctx.AccessTokenUserAttrs) > 0 {
-		claims["access_token_user_attributes"] = ctx.AccessTokenUserAttrs
+	if ctx.AttributeCacheID != "" {
+		claims["aci"] = ctx.AttributeCacheID
 	}
 
-	return claims
+	// Include claims request if present
+	if ctx.ClaimsRequest != nil && !ctx.ClaimsRequest.IsEmpty() {
+		serialized, err := oauth2utils.SerializeClaimsRequest(ctx.ClaimsRequest)
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize claims request: %w", err)
+		}
+		if serialized != "" {
+			claims["access_token_claims_request"] = serialized
+		}
+	}
+
+	// Include claims_locales if present
+	if ctx.ClaimsLocales != "" {
+		claims["access_token_claims_locales"] = ctx.ClaimsLocales
+	}
+
+	return claims, nil
 }
 
 // BuildIDToken builds an OIDC ID token with all necessary claims.
-func (tb *tokenBuilder) BuildIDToken(ctx *IDTokenBuildContext) (*model.TokenDTO, error) {
+func (tb *tokenBuilder) BuildIDToken(ctx *IDTokenBuildContext) (*oauth2model.TokenDTO, error) {
 	if ctx == nil {
 		return nil, fmt.Errorf("build context cannot be nil")
 	}
 
-	tokenConfig := resolveTokenConfig(ctx.OAuthApp, TokenTypeID)
+	tokenConfig := ResolveTokenConfig(ctx.OAuthApp, TokenTypeID)
 
 	jwtClaims := tb.buildIDTokenClaims(ctx)
 
-	tokenDTO := &model.TokenDTO{
+	tokenDTO := &oauth2model.TokenDTO{
 		ExpiresIn: tokenConfig.ValidityPeriod,
 		Scopes:    ctx.Scopes,
 		ClientID:  ctx.Audience,
@@ -247,9 +300,10 @@ func (tb *tokenBuilder) BuildIDToken(ctx *IDTokenBuildContext) (*model.TokenDTO,
 		tokenConfig.Issuer,
 		tokenConfig.ValidityPeriod,
 		jwtClaims,
+		jwt.TokenTypeJWT,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate ID token: %v", err)
+		return nil, fmt.Errorf("failed to generate ID token: %v", err.Error)
 	}
 
 	// Assign generated token and issued at time
@@ -267,18 +321,39 @@ func (tb *tokenBuilder) buildIDTokenClaims(ctx *IDTokenBuildContext) map[string]
 		claims["auth_time"] = ctx.AuthTime
 	}
 
+	if ctx.Nonce != "" {
+		claims[constants.RequestParamNonce] = ctx.Nonce
+	}
+
 	userAttributes := ctx.UserAttributes
 	if userAttributes == nil {
 		userAttributes = make(map[string]interface{})
 	}
 
-	scopeClaims := BuildOIDCClaimsFromScopes(
+	// Get scope claims mapping and allowed user attributes from app config
+	var scopeClaimsMapping map[string][]string
+	var allowedUserAttributes []string
+	if ctx.OAuthApp != nil {
+		scopeClaimsMapping = ctx.OAuthApp.ScopeClaims
+		if ctx.OAuthApp.Token != nil && ctx.OAuthApp.Token.IDToken != nil {
+			allowedUserAttributes = ctx.OAuthApp.Token.IDToken.UserAttributes
+		}
+	}
+
+	// Build claims from scopes and explicit claims parameter
+	var idTokenClaims map[string]*oauth2model.IndividualClaimRequest
+	if ctx.ClaimsRequest != nil {
+		idTokenClaims = ctx.ClaimsRequest.IDToken
+	}
+	claimData := BuildClaims(
 		ctx.Scopes,
+		idTokenClaims,
 		userAttributes,
-		ctx.OAuthApp,
+		scopeClaimsMapping,
+		allowedUserAttributes,
 	)
 
-	for key, value := range scopeClaims {
+	for key, value := range claimData {
 		claims[key] = value
 	}
 

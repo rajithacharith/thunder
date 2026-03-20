@@ -19,7 +19,7 @@
 
 # Parse command line arguments for custom redirect URIs
 param(
-    [string]$DevelopRedirectUris = ""
+    [string]$ConsoleRedirectUris = ""
 )
 
 # Check for PowerShell Version Compatibility
@@ -39,7 +39,7 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 }
 
 # Bootstrap Script: Default Resources Setup
-# Creates default organization unit, user schema, admin user, system resource server, system action, admin role, and DEVELOP application
+# Creates default organization unit, user schema, admin user, system resource server, system action, admin role, and Console application
 
 
 $ErrorActionPreference = 'Stop'
@@ -122,6 +122,7 @@ $userSchemaData = ([ordered]@{
             type = "string"
             required = $true
             unique = $true
+            regex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         }
         email_verified = @{
             type = "boolean"
@@ -135,6 +136,10 @@ $userSchemaData = ([ordered]@{
             type = "string"
             required = $false
         }
+        mobileNumber = @{
+            type = "string"
+            required = $false
+        }
         phone_number = @{
             type = "string"
             required = $false
@@ -143,6 +148,26 @@ $userSchemaData = ([ordered]@{
             type = "boolean"
             required = $false
         }
+        sub = @{
+            type = "string"
+            required = $false
+        }
+        name = @{
+            type = "string"
+            required = $false
+        }
+        picture = @{
+            type = "string"
+            required = $false
+        }
+        password = @{
+            type = "string"
+            required = $true
+            credential = $true
+        }
+    }
+    systemAttributes = [ordered]@{
+        display = "username"
     }
 } | ConvertTo-Json -Depth 5)
 
@@ -169,7 +194,7 @@ Log-Info "Creating admin user..."
 
 $adminUserData = ([ordered]@{
     type = "Person"
-    organizationUnit = $DEFAULT_OU_ID
+    ouId = $DEFAULT_OU_ID
     attributes = @{
         username = "admin"
         password = "admin"
@@ -299,32 +324,459 @@ else {
 Write-Host ""
 
 # ============================================================================
-# Create System Action
+# Create System Resource Permissions (hierarchical permission model)
+# ============================================================================
+#
+# Permission auto-derivation:
+#   Resource Server identifier "system"
+#   └── Resource handle "system"           → permission "system"
+#       └── Resource handle "ou"           → permission "system:ou"
+#           └── Action handle "view"       → permission "system:ou:view"
+#       └── Resource handle "user"         → permission "system:user"
+#           └── Action handle "view"       → permission "system:user:view"
+#       └── Resource handle "group"        → permission "system:group"
+#           └── Action handle "view"       → permission "system:group:view"
+#       └── Resource handle "userschema"   → permission "system:userschema"
+#           └── Action handle "view"       → permission "system:userschema:view"
 # ============================================================================
 
-Log-Info "Creating 'system' action on resource server..."
+Log-Info "Creating 'system' resource under the system resource server..."
 
 if (-not $SYSTEM_RS_ID) {
-    Log-Error "System resource server ID is not available. Cannot create action."
+    Log-Error "System resource server ID is not available. Cannot create system resource."
     exit 1
 }
 
-$actionData = @{
-    name = "System Access"
-    description = "Full system access permission"
-    handle = "system"
+$systemResourceData = @{
+    name        = "System"
+    description = "System resource"
+    handle      = "system"
 } | ConvertTo-Json -Depth 10
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/actions" -Data $actionData
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $systemResourceData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
-    Log-Success "System action created successfully"
+    Log-Success "System resource created successfully (permission: system)"
+    $body = $response.Body | ConvertFrom-Json
+    $SYSTEM_RESOURCE_ID = $body.id
+    if ($SYSTEM_RESOURCE_ID) {
+        Log-Info "System resource ID: $SYSTEM_RESOURCE_ID"
+    }
+    else {
+        Log-Error "Could not extract system resource ID from response"
+        exit 1
+    }
 }
 elseif ($response.StatusCode -eq 409) {
-    Log-Warning "System action already exists, skipping"
+    Log-Warning "System resource already exists, retrieving ID..."
+    $response = Invoke-ThunderApi -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources"
+
+    if ($response.StatusCode -eq 200) {
+        $body = $response.Body | ConvertFrom-Json
+        $systemResource = $body.resources | Where-Object { $_.handle -eq "system" } | Select-Object -First 1
+
+        if ($systemResource) {
+            $SYSTEM_RESOURCE_ID = $systemResource.id
+            Log-Success "Found system resource ID: $SYSTEM_RESOURCE_ID"
+        }
+        else {
+            Log-Error "Could not find system resource in response"
+            exit 1
+        }
+    }
+    else {
+        Log-Error "Failed to fetch resources (HTTP $($response.StatusCode))"
+        exit 1
+    }
 }
 else {
-    Log-Error "Failed to create system action (HTTP $($response.StatusCode))"
+    Log-Error "Failed to create system resource (HTTP $($response.StatusCode))"
+    Write-Host "Response: $($response.Body)"
+    exit 1
+}
+
+Log-Info "Creating 'ou' sub-resource under the 'system' resource..."
+
+if (-not $SYSTEM_RESOURCE_ID) {
+    Log-Error "System resource ID is not available. Cannot create OU resource."
+    exit 1
+}
+
+$ouResourceData = @{
+    name        = "Organization Unit"
+    description = "Organization unit resource"
+    handle      = "ou"
+    parent      = $SYSTEM_RESOURCE_ID
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $ouResourceData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "OU resource created successfully (permission: system:ou)"
+    $body = $response.Body | ConvertFrom-Json
+    $OU_RESOURCE_ID = $body.id
+    if ($OU_RESOURCE_ID) {
+        Log-Info "OU resource ID: $OU_RESOURCE_ID"
+    }
+    else {
+        Log-Error "Could not extract OU resource ID from response"
+        exit 1
+    }
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "OU resource already exists, retrieving ID..."
+    $response = Invoke-ThunderApi -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources?parentId=$SYSTEM_RESOURCE_ID"
+
+    if ($response.StatusCode -eq 200) {
+        $body = $response.Body | ConvertFrom-Json
+        $ouResource = $body.resources | Where-Object { $_.handle -eq "ou" } | Select-Object -First 1
+
+        if ($ouResource) {
+            $OU_RESOURCE_ID = $ouResource.id
+            Log-Success "Found OU resource ID: $OU_RESOURCE_ID"
+        }
+        else {
+            Log-Error "Could not find OU resource in response"
+            exit 1
+        }
+    }
+    else {
+        Log-Error "Failed to fetch resources (HTTP $($response.StatusCode))"
+        exit 1
+    }
+}
+else {
+    Log-Error "Failed to create OU resource (HTTP $($response.StatusCode))"
+    Log-Error "Response: $($response.Body)"
+    exit 1
+}
+
+Log-Info "Creating 'view' action under the 'ou' resource..."
+
+$ouViewActionData = @{
+    name        = "View"
+    description = "Read-only access to organization units"
+    handle      = "view"
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources/$OU_RESOURCE_ID/actions" -Data $ouViewActionData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "OU view action created successfully (permission: system:ou:view)"
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "OU view action already exists, skipping"
+}
+else {
+    Log-Error "Failed to create OU view action (HTTP $($response.StatusCode))"
+    Log-Error "Response: $($response.Body)"
+    exit 1
+}
+
+Log-Info "Creating 'user' sub-resource under the 'system' resource..."
+
+if (-not $SYSTEM_RESOURCE_ID) {
+    Log-Error "System resource ID is not available. Cannot create user resource."
+    exit 1
+}
+
+$userResourceData = @{
+    name        = "User"
+    description = "User resource"
+    handle      = "user"
+    parent      = $SYSTEM_RESOURCE_ID
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $userResourceData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "User resource created successfully (permission: system:user)"
+    $body = $response.Body | ConvertFrom-Json
+    $USER_RESOURCE_ID = $body.id
+    if ($USER_RESOURCE_ID) {
+        Log-Info "User resource ID: $USER_RESOURCE_ID"
+    }
+    else {
+        Log-Error "Could not extract user resource ID from response"
+        exit 1
+    }
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "User resource already exists, retrieving ID..."
+    $response = Invoke-ThunderApi -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources?parentId=$SYSTEM_RESOURCE_ID"
+
+    if ($response.StatusCode -eq 200) {
+        $body = $response.Body | ConvertFrom-Json
+        $userResource = $body.resources | Where-Object { $_.handle -eq "user" } | Select-Object -First 1
+
+        if ($userResource) {
+            $USER_RESOURCE_ID = $userResource.id
+            Log-Success "Found user resource ID: $USER_RESOURCE_ID"
+        }
+        else {
+            Log-Error "Could not find user resource in response"
+            exit 1
+        }
+    }
+    else {
+        Log-Error "Failed to fetch resources (HTTP $($response.StatusCode))"
+        exit 1
+    }
+}
+else {
+    Log-Error "Failed to create user resource (HTTP $($response.StatusCode))"
+    Log-Error "Response: $($response.Body)"
+    exit 1
+}
+
+Log-Info "Creating 'view' action under the 'user' resource..."
+
+$userViewActionData = @{
+    name        = "View"
+    description = "Read-only access to users"
+    handle      = "view"
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources/$USER_RESOURCE_ID/actions" -Data $userViewActionData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "User view action created successfully (permission: system:user:view)"
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "User view action already exists, skipping"
+}
+else {
+    Log-Error "Failed to create user view action (HTTP $($response.StatusCode))"
+    Log-Error "Response: $($response.Body)"
+    exit 1
+}
+
+Log-Info "Creating 'userschema' sub-resource under the 'system' resource..."
+
+if (-not $SYSTEM_RESOURCE_ID) {
+    Log-Error "System resource ID is not available. Cannot create user schema resource."
+    exit 1
+}
+
+$userSchemaResourceData = @{
+    name        = "User Schema"
+    description = "User schema resource"
+    handle      = "userschema"
+    parent      = $SYSTEM_RESOURCE_ID
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $userSchemaResourceData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "User schema resource created successfully (permission: system:userschema)"
+    $body = $response.Body | ConvertFrom-Json
+    $USER_SCHEMA_RESOURCE_ID = $body.id
+    if ($USER_SCHEMA_RESOURCE_ID) {
+        Log-Info "User schema resource ID: $USER_SCHEMA_RESOURCE_ID"
+    }
+    else {
+        Log-Error "Could not extract user schema resource ID from response"
+        exit 1
+    }
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "User schema resource already exists, retrieving ID..."
+    $response = Invoke-ThunderApi -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources?parentId=$SYSTEM_RESOURCE_ID"
+
+    if ($response.StatusCode -eq 200) {
+        $body = $response.Body | ConvertFrom-Json
+        $userSchemaResource = $body.resources | Where-Object { $_.handle -eq "userschema" } | Select-Object -First 1
+
+        if ($userSchemaResource) {
+            $USER_SCHEMA_RESOURCE_ID = $userSchemaResource.id
+            Log-Success "Found user schema resource ID: $USER_SCHEMA_RESOURCE_ID"
+        }
+        else {
+            Log-Error "Could not find user schema resource in response"
+            exit 1
+        }
+    }
+    else {
+        Log-Error "Failed to fetch resources (HTTP $($response.StatusCode))"
+        exit 1
+    }
+}
+else {
+    Log-Error "Failed to create user schema resource (HTTP $($response.StatusCode))"
+    Log-Error "Response: $($response.Body)"
+    exit 1
+}
+
+Log-Info "Creating 'view' action under the 'userschema' resource..."
+
+$userSchemaViewActionData = @{
+    name        = "View"
+    description = "Read-only access to user schemas"
+    handle      = "view"
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources/$USER_SCHEMA_RESOURCE_ID/actions" -Data $userSchemaViewActionData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "User schema view action created successfully (permission: system:userschema:view)"
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "User schema view action already exists, skipping"
+}
+else {
+    Log-Error "Failed to create user schema view action (HTTP $($response.StatusCode))"
+    Log-Error "Response: $($response.Body)"
+    exit 1
+}
+
+Write-Host ""
+
+Log-Info "Creating 'group' sub-resource under the 'system' resource..."
+
+if (-not $SYSTEM_RESOURCE_ID) {
+    Log-Error "System resource ID is not available. Cannot create group resource."
+    exit 1
+}
+
+$groupResourceData = @{
+    name        = "Group"
+    description = "Group resource"
+    handle      = "group"
+    parent      = $SYSTEM_RESOURCE_ID
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources" -Data $groupResourceData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "Group resource created successfully (permission: system:group)"
+    $body = $response.Body | ConvertFrom-Json
+    $GROUP_RESOURCE_ID = $body.id
+    if ($GROUP_RESOURCE_ID) {
+        Log-Info "Group resource ID: $GROUP_RESOURCE_ID"
+    }
+    else {
+        Log-Error "Could not extract group resource ID from response"
+        exit 1
+    }
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "Group resource already exists, retrieving ID..."
+    $response = Invoke-ThunderApi -Method GET -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources?parentId=$SYSTEM_RESOURCE_ID"
+
+    if ($response.StatusCode -eq 200) {
+        $body = $response.Body | ConvertFrom-Json
+        $groupResource = $body.resources | Where-Object { $_.handle -eq "group" } | Select-Object -First 1
+
+        if ($groupResource) {
+            $GROUP_RESOURCE_ID = $groupResource.id
+            Log-Success "Found group resource ID: $GROUP_RESOURCE_ID"
+        }
+        else {
+            Log-Error "Could not find group resource in response"
+            exit 1
+        }
+    }
+    else {
+        Log-Error "Failed to fetch resources (HTTP $($response.StatusCode))"
+        exit 1
+    }
+}
+else {
+    Log-Error "Failed to create group resource (HTTP $($response.StatusCode))"
+    Log-Error "Response: $($response.Body)"
+    exit 1
+}
+
+Log-Info "Creating 'view' action under the 'group' resource..."
+
+$groupViewActionData = @{
+    name        = "View"
+    description = "Read-only access to groups"
+    handle      = "view"
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/resource-servers/$SYSTEM_RS_ID/resources/$GROUP_RESOURCE_ID/actions" -Data $groupViewActionData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "Group view action created successfully (permission: system:group:view)"
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "Group view action already exists, skipping"
+}
+else {
+    Log-Error "Failed to create group view action (HTTP $($response.StatusCode))"
+    Log-Error "Response: $($response.Body)"
+    exit 1
+}
+
+Write-Host ""
+
+# ============================================================================
+# Create Administrator Group
+# ============================================================================
+
+Log-Info "Creating administrator group..."
+
+if (-not $DEFAULT_OU_ID) {
+    Log-Error "Default OU ID is not available. Cannot create administrator group."
+    exit 1
+}
+
+if (-not $ADMIN_USER_ID) {
+    Log-Error "Admin user ID is not available. Cannot create administrator group with user membership."
+    exit 1
+}
+
+$administratorGroupData = @{
+    name = "Administrators"
+    description = "System Administrators group"
+    ouId = $DEFAULT_OU_ID
+    members = @(
+        @{
+            id = $ADMIN_USER_ID
+            type = "user"
+        }
+    )
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-ThunderApi -Method POST -Endpoint "/groups" -Data $administratorGroupData
+
+if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
+    Log-Success "Administrator group created successfully"
+    $body = $response.Body | ConvertFrom-Json
+    $ADMIN_GROUP_ID = $body.id
+    if ($ADMIN_GROUP_ID) {
+        Log-Info "Administrator group ID: $ADMIN_GROUP_ID"
+    }
+    else {
+        Log-Error "Could not extract administrator group ID from response"
+        exit 1
+    }
+}
+elseif ($response.StatusCode -eq 409) {
+    Log-Warning "Administrator group already exists, retrieving ID..."
+    $response = Invoke-ThunderApi -Method GET -Endpoint "/groups/tree/default?limit=100"
+
+    if ($response.StatusCode -eq 200) {
+        $body = $response.Body | ConvertFrom-Json
+        $adminGroup = $body.groups | Where-Object { $_.name -eq "Administrators" } | Select-Object -First 1
+
+        if ($adminGroup) {
+            $ADMIN_GROUP_ID = $adminGroup.id
+            Log-Success "Found administrator group ID: $ADMIN_GROUP_ID"
+        }
+        else {
+            Log-Error "Could not find administrator group in response"
+            exit 1
+        }
+    }
+    else {
+        Log-Error "Failed to fetch groups under default OU (HTTP $($response.StatusCode))"
+        exit 1
+    }
+}
+else {
+    Log-Error "Failed to create administrator group (HTTP $($response.StatusCode))"
     Write-Host "Response: $($response.Body)"
     exit 1
 }
@@ -337,8 +789,8 @@ Write-Host ""
 
 Log-Info "Creating admin role with 'system' permission..."
 
-if (-not $ADMIN_USER_ID) {
-    Log-Error "Admin user ID is not available. Cannot create role."
+if (-not $ADMIN_GROUP_ID) {
+    Log-Error "Administrator group ID is not available. Cannot create role."
     exit 1
 }
 
@@ -364,8 +816,8 @@ $roleData = @{
     )
     assignments = @(
         @{
-            id = $ADMIN_USER_ID
-            type = "user"
+            id = $ADMIN_GROUP_ID
+            type = "group"
         }
     )
 } | ConvertTo-Json -Depth 10
@@ -373,7 +825,7 @@ $roleData = @{
 $response = Invoke-ThunderApi -Method POST -Endpoint "/roles" -Data $roleData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
-    Log-Success "Admin role created and assigned to admin user"
+    Log-Success "Admin role created and assigned to administrator group"
     $body = $response.Body | ConvertFrom-Json
     $ADMIN_ROLE_ID = $body.id
     if ($ADMIN_ROLE_ID) {
@@ -391,9 +843,6 @@ else {
 
 Write-Host ""
 
-# ============================================================================
-# Create Default Flows
-# ============================================================================
 
 Log-Info "Creating default flows..."
 
@@ -700,29 +1149,29 @@ else {
 Write-Host ""
 
 # ============================================================================
-# Create DEVELOP Application
+# Create Console Application
 # ============================================================================
 
-Log-Info "Creating DEVELOP application..."
+Log-Info "Creating Console application..."
 
-# Get flow IDs for develop app from the APP_FLOW_IDS created/found during flow processing
-$DEVELOP_AUTH_FLOW_ID = ""
-$DEVELOP_REG_FLOW_ID = ""
+# Get flow IDs for console app from the APP_FLOW_IDS created/found during flow processing
+$CONSOLE_AUTH_FLOW_ID = ""
+$CONSOLE_REG_FLOW_ID = ""
 
-if ($APP_FLOW_IDS.ContainsKey("develop")) {
-    $DEVELOP_AUTH_FLOW_ID = $APP_FLOW_IDS["develop"].authFlowId
-    $DEVELOP_REG_FLOW_ID = $APP_FLOW_IDS["develop"].regFlowId
+if ($APP_FLOW_IDS.ContainsKey("console")) {
+    $CONSOLE_AUTH_FLOW_ID = $APP_FLOW_IDS["console"].authFlowId
+    $CONSOLE_REG_FLOW_ID = $APP_FLOW_IDS["console"].regFlowId
 }
 
 # Validate that flow IDs are available
-if (-not $DEVELOP_AUTH_FLOW_ID) {
-    Log-Error "Develop authentication flow ID not found, cannot create DEVELOP application"
-    Log-Error "Make sure flows/apps/develop/auth_flow_develop.json exists"
+if (-not $CONSOLE_AUTH_FLOW_ID) {
+    Log-Error "Console authentication flow ID not found, cannot create Console application"
+    Log-Error "Make sure flows/apps/console/auth_flow_console.json exists"
     exit 1
 }
-if (-not $DEVELOP_REG_FLOW_ID) {
-    Log-Error "Develop registration flow ID not found, cannot create DEVELOP application"
-    Log-Error "Make sure flows/apps/develop/registration_flow_develop.json exists"
+if (-not $CONSOLE_REG_FLOW_ID) {
+    Log-Error "Console registration flow ID not found, cannot create Console application"
+    Log-Error "Make sure flows/apps/console/registration_flow_console.json exists"
     exit 1
 }
 
@@ -730,29 +1179,29 @@ if (-not $DEVELOP_REG_FLOW_ID) {
 $PUBLIC_URL = if ($env:THUNDER_PUBLIC_URL) { $env:THUNDER_PUBLIC_URL } else { $env:THUNDER_API_BASE }
 
 # Build redirect URIs array - default + custom if provided
-$redirectUrisList = @("$PUBLIC_URL/develop")
-if ($DevelopRedirectUris) {
-    Log-Info "Adding custom redirect URIs: $DevelopRedirectUris"
+$redirectUrisList = @("$PUBLIC_URL/console")
+if ($ConsoleRedirectUris) {
+    Log-Info "Adding custom redirect URIs: $ConsoleRedirectUris"
     # Split comma-separated URIs and append to array
-    $customUris = $DevelopRedirectUris -split ',' | ForEach-Object { $_.Trim() }
+    $customUris = $ConsoleRedirectUris -split ',' | ForEach-Object { $_.Trim() }
     $redirectUrisList += $customUris
 }
 
 $appData = @{
-    name = "Develop"
-    description = "Developer application for Thunder"
-    url = "$PUBLIC_URL/develop"
-    logo_url = "$PUBLIC_URL/develop/assets/images/logo-mini.svg"
-    auth_flow_id = $DEVELOP_AUTH_FLOW_ID
-    registration_flow_id = $DEVELOP_REG_FLOW_ID
-    is_registration_flow_enabled = $true
+    name = "Console"
+    description = "Management application for Thunder"
+    url = "$PUBLIC_URL/console"
+    logo_url = "emoji:👨‍💻"
+    auth_flow_id = $CONSOLE_AUTH_FLOW_ID
+    registration_flow_id = $CONSOLE_REG_FLOW_ID
+    is_registration_flow_enabled = $false
     allowed_user_types = @("Person")
-    user_attributes = @("given_name", "family_name", "email", "groups", "name")
+    user_attributes = @("given_name", "family_name", "email", "groups", "name", "ouId")
     inbound_auth_config = @(
         @{
             type = "oauth2"
             config = @{
-                client_id = "DEVELOP"
+                client_id = "CONSOLE"
                 redirect_uris = $redirectUrisList
                 grant_types = @("authorization_code")
                 response_types = @("code")
@@ -760,21 +1209,21 @@ $appData = @{
                 token_endpoint_auth_method = "none"
                 public_client = $true
                 token = @{
-                    issuer = $PUBLIC_URL
                     access_token = @{
                         validity_period = 3600
-                        user_attributes = @("given_name", "family_name", "email", "groups", "name")
+                        user_attributes = @("given_name", "family_name", "email", "groups", "name", "ouId")
                     }
                     id_token = @{
                         validity_period = 3600
-                        user_attributes = @("given_name", "family_name", "email", "groups", "name")
-                        scope_claims = @{
-                            profile = @("name", "given_name", "family_name", "picture")
-                            email = @("email", "email_verified")
-                            phone = @("phone_number", "phone_number_verified")
-                            group = @("groups")
-                        }
+                        user_attributes = @("given_name", "family_name", "email", "groups", "name", "ouId")
                     }
+                }
+                scope_claims = @{
+                    profile = @("name", "given_name", "family_name", "picture")
+                    email = @("email", "email_verified")
+                    phone = @("phone_number", "phone_number_verified")
+                    group = @("groups")
+                    ou = @("ouId")
                 }
             }
         }
@@ -784,18 +1233,136 @@ $appData = @{
 $response = Invoke-ThunderApi -Method POST -Endpoint "/applications" -Data $appData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
-    Log-Success "DEVELOP application created successfully"
+    Log-Success "Console application created successfully"
 }
 elseif ($response.StatusCode -eq 409) {
-    Log-Warning "DEVELOP application already exists, skipping"
+    Log-Warning "Console application already exists, skipping"
 }
 elseif ($response.StatusCode -eq 400 -and ($response.Body -match "Application already exists|APP-1022")) {
-    Log-Warning "DEVELOP application already exists, skipping"
+    Log-Warning "Console application already exists, skipping"
 }
 else {
-    Log-Error "Failed to create DEVELOP application (HTTP $($response.StatusCode))"
+    Log-Error "Failed to create Console application (HTTP $($response.StatusCode))"
     Write-Host "Response: $($response.Body)"
     exit 1
+}
+
+Write-Host ""
+
+# ============================================================================
+# Create Themes
+# ============================================================================
+
+Log-Info "Creating themes..."
+
+# Get the script directory to locate theme files
+$themesDir = Join-Path $PSScriptRoot "themes"
+
+# Check if themes directory exists
+if (-not (Test-Path $themesDir)) {
+    Log-Warning "Themes directory not found at $themesDir, skipping theme creation"
+}
+else {
+    $themeFiles = Get-ChildItem -Path $themesDir -Filter "*.json" -File -ErrorAction SilentlyContinue
+    
+    if ($themeFiles.Count -gt 0) {
+        Log-Info "Processing themes from $themesDir..."
+        
+        $themeCount = 0
+        $themeSuccess = 0
+        $themeSkipped = 0
+        
+        foreach ($themeFile in $themeFiles) {
+            $themeCount++
+            
+            # Get theme name from file content
+            $themeContent = Get-Content -Path $themeFile.FullName -Raw | ConvertFrom-Json
+            $themeName = if ($themeContent.displayName) { $themeContent.displayName } else { $themeFile.BaseName }
+            
+            Log-Info "Creating theme: $themeName (from $($themeFile.Name))"
+            $themePayload = Get-Content $themeFile.FullName -Raw
+            
+            $response = Invoke-ThunderApi -Method POST -Endpoint "/design/themes" -Data $themePayload
+            
+            if ($response.StatusCode -in 200, 201) {
+                Log-Success "Theme '$themeName' created successfully"
+                $body = $response.Body | ConvertFrom-Json
+                $themeId = $body.id
+                if ($themeId) {
+                    Log-Info "Theme ID: $themeId"
+                }
+                $themeSuccess++
+            }
+            elseif ($response.StatusCode -eq 409) {
+                Log-Warning "Theme '$themeName' already exists, skipping"
+                $themeSkipped++
+            }
+            else {
+                Log-Error "Failed to create theme '$themeName' (HTTP $($response.StatusCode))"
+                Write-Host "Response: $($response.Body)"
+                exit 1
+            }
+        }
+        
+        Write-Host ""
+        Log-Info "Theme creation summary: $themeSuccess created, $themeSkipped skipped (Total: $themeCount)"
+    }
+    else {
+        Log-Warning "No theme files found in $themesDir"
+    }
+}
+
+Write-Host ""
+
+# ============================================================================
+# Seed i18n Translations
+# ============================================================================
+
+Log-Info "Seeding i18n translations..."
+
+$i18nDir = Join-Path $PSScriptRoot "i18n"
+
+if (-not (Test-Path $i18nDir)) {
+    Log-Warning "i18n directory not found at $i18nDir, skipping translation seeding"
+}
+else {
+    $i18nFiles = Get-ChildItem -Path $i18nDir -Filter "*.json" -File -ErrorAction SilentlyContinue
+
+    if ($i18nFiles.Count -gt 0) {
+        Log-Info "Processing i18n translations from $i18nDir..."
+
+        $i18nCount = 0
+        $i18nSuccess = 0
+
+        foreach ($i18nFile in $i18nFiles) {
+            $i18nCount++
+            $language = $i18nFile.BaseName
+
+            Log-Info "Seeding translations for language: $language (from $($i18nFile.Name))"
+
+            $payload = Get-Content $i18nFile.FullName -Raw
+
+            $response = Invoke-ThunderApi -Method POST -Endpoint "/i18n/languages/$language/translations" -Data $payload
+
+            if ($response.StatusCode -eq 200) {
+                $body = $response.Body | ConvertFrom-Json
+                $total = $body.totalResults
+                Log-Success "Translations for '$language' seeded successfully ($total translations)"
+                $i18nSuccess++
+            }
+            else {
+                Log-Error "Failed to seed translations for '$language' (HTTP $($response.StatusCode))"
+                Write-Host "Response: $($response.Body)"
+                exit 1
+            }
+        }
+
+        Write-Host ""
+        Log-Info "Translation seeding summary: $i18nSuccess seeded (Total: $i18nCount)"
+    }
+    else {
+        Log-Warning "No i18n translation files found in $i18nDir"
+    }
 }
 
 Write-Host ""
@@ -809,5 +1376,5 @@ Write-Host ""
 Log-Info "👤 Admin credentials:"
 Log-Info "   Username: admin"
 Log-Info "   Password: admin"
-Log-Info "   Role: Administrator (system permission)"
+Log-Info "   Role: Administrator (system permission via Administrators group)"
 Write-Host ""

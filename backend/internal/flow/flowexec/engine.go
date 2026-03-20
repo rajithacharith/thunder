@@ -26,10 +26,10 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/flow/executor"
-	"github.com/asgardeo/thunder/internal/observability"
-	"github.com/asgardeo/thunder/internal/observability/event"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/observability"
+	"github.com/asgardeo/thunder/internal/system/observability/event"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
@@ -94,7 +94,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 			UserInputs:        ctx.UserInputs,
 			CurrentNodeID:     ctx.CurrentNode.GetID(),
 			RuntimeData:       ctx.RuntimeData,
-			HTTPContext:       ctx.HTTPContext,
+			ForwardedData:     ctx.ForwardedData,
 			Application:       ctx.Application,
 			AuthenticatedUser: ctx.AuthenticatedUser,
 			ExecutionHistory:  ctx.ExecutionHistory,
@@ -108,6 +108,13 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 		if nodeCtx.RuntimeData == nil {
 			nodeCtx.RuntimeData = make(map[string]string)
 		}
+		if nodeCtx.ForwardedData == nil {
+			nodeCtx.ForwardedData = make(map[string]interface{})
+		}
+
+		// Clear ForwardedData from engine context after passing to node context
+		// This ensures ForwardedData is only available to the immediate next node
+		ctx.ForwardedData = nil
 
 		// Check if the node should be executed based on its condition
 		if !currentNode.ShouldExecute(nodeCtx) {
@@ -132,6 +139,9 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 
 		nodeResp, nodeErr := currentNode.Execute(nodeCtx)
 		executionEndTime := time.Now().UnixMilli()
+
+		// Clear sensitive inputs from context after executor has consumed them.
+		fe.clearSensitiveInputs(ctx, currentNode)
 
 		recordNodeExecution(ctx, currentNode, nodeResp, nodeErr, executionStartTime, executionEndTime)
 
@@ -269,6 +279,34 @@ func (fe *flowEngine) getExecutorByName(executorName string) (core.ExecutorInter
 	return exec, nil
 }
 
+// clearSensitiveInputs removes sensitive user inputs from the engine context after a node has executed.
+// This cleanup is only applied for authentication flows.
+func (fe *flowEngine) clearSensitiveInputs(ctx *EngineContext, node core.NodeInterface) {
+	if ctx.FlowType != common.FlowTypeAuthentication {
+		return
+	}
+
+	execNode, ok := node.(core.ExecutorBackedNodeInterface)
+	if !ok {
+		return
+	}
+
+	// Get inputs from the node configuration. If the node does not define its own inputs,
+	// fall back to the executor's default inputs.
+	inputs := execNode.GetInputs()
+	if len(inputs) == 0 {
+		if executor := execNode.GetExecutor(); executor != nil {
+			inputs = executor.GetDefaultInputs()
+		}
+	}
+
+	for _, input := range inputs {
+		if input.IsSensitive() {
+			delete(ctx.UserInputs, input.Identifier)
+		}
+	}
+}
+
 // updateContextWithNodeResponse updates the engine context with the node response and authenticated user.
 func (fe *flowEngine) updateContextWithNodeResponse(engineCtx *EngineContext, nodeResp *common.NodeResponse) {
 	engineCtx.CurrentNodeResponse = nodeResp
@@ -296,11 +334,13 @@ func (fe *flowEngine) updateContextWithNodeResponse(engineCtx *EngineContext, no
 
 	// Handle authenticated user from the node response
 	if fe.shouldUpdateAuthenticatedUser(engineCtx) {
-		prevAuthnUserAttrs := engineCtx.AuthenticatedUser.Attributes
+		prevAuthnUser := engineCtx.AuthenticatedUser
+
 		engineCtx.AuthenticatedUser = nodeResp.AuthenticatedUser
 
 		// If engine context already had authenticated user attributes, merge them with the new ones.
 		// Here if the same attribute exists in both, the one from the node response will take precedence.
+		prevAuthnUserAttrs := prevAuthnUser.Attributes
 		if len(prevAuthnUserAttrs) > 0 {
 			if engineCtx.AuthenticatedUser.Attributes == nil {
 				engineCtx.AuthenticatedUser.Attributes = prevAuthnUserAttrs
@@ -308,6 +348,12 @@ func (fe *flowEngine) updateContextWithNodeResponse(engineCtx *EngineContext, no
 				engineCtx.AuthenticatedUser.Attributes = sysutils.MergeInterfaceMaps(
 					prevAuthnUserAttrs, engineCtx.AuthenticatedUser.Attributes)
 			}
+		}
+
+		// If current node has not set an authenticated user token, retain the previous info
+		if engineCtx.AuthenticatedUser.Token == "" {
+			engineCtx.AuthenticatedUser.Token = prevAuthnUser.Token
+			engineCtx.AuthenticatedUser.AvailableAttributes = prevAuthnUser.AvailableAttributes
 		}
 
 		// Append user ID as a runtime data if not already set
@@ -325,6 +371,12 @@ func (fe *flowEngine) updateContextWithNodeResponse(engineCtx *EngineContext, no
 	// Add assertion to the context
 	if nodeResp.Assertion != "" {
 		engineCtx.Assertion = nodeResp.Assertion
+	}
+
+	// Handle forwarded data from the node response
+	// It replaces any existing forwarded data rather than merging
+	if len(nodeResp.ForwardedData) > 0 {
+		engineCtx.ForwardedData = nodeResp.ForwardedData
 	}
 }
 
@@ -368,6 +420,12 @@ func (fe *flowEngine) shouldUpdateAuthenticatedUser(engineCtx *EngineContext) bo
 		}
 
 		return executorInst.GetName() == executor.ExecutorNameProvisioning
+	}
+
+	// For user onboarding flows, update from authentication executors or from provisioning executor.
+	if engineCtx.FlowType == common.FlowTypeUserOnboarding {
+		return executorInst.GetType() == common.ExecutorTypeAuthentication ||
+			executorInst.GetName() == executor.ExecutorNameProvisioning
 	}
 
 	return false

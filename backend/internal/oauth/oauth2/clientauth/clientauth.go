@@ -20,85 +20,133 @@
 package clientauth
 
 import (
+	"context"
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/application"
+	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	"github.com/asgardeo/thunder/internal/cert"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
+	"github.com/asgardeo/thunder/internal/system/jose/jws"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
+	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
 // authenticate authenticates the OAuth2 client from the request.
 // It extracts credentials, validates them, and returns OAuthClientInfo on success.
 // Returns an authError on failure.
 func authenticate(
+	ctx context.Context,
 	r *http.Request,
 	appService application.ApplicationServiceInterface,
+	jwtService jwt.JWTServiceInterface,
+	discoveryService discovery.DiscoveryServiceInterface,
 ) (*OAuthClientInfo, *authError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ClientAuthMiddleware"))
+
+	// Extract all possible auth fields
+	hasAuthHeader := r.Header.Get(serverconst.AuthorizationHeaderName) != ""
+	clientIDFromBody := r.FormValue(constants.RequestParamClientID)
+	clientSecretFromBody := r.FormValue(constants.RequestParamClientSecret)
+	clientAssertionType := r.FormValue(constants.RequestParamClientAssertionType)
+	clientAssertion := r.FormValue(constants.RequestParamClientAssertion)
+
+	var detectedMethod constants.TokenEndpointAuthMethod
+
+	// Method 1: Basic Auth (header)
+	if hasAuthHeader {
+		detectedMethod = constants.TokenEndpointAuthMethodClientSecretBasic
+	}
+
+	// Method 2: Client credentials in body
+	if clientSecretFromBody != "" {
+		if detectedMethod != "" {
+			return nil, errMultipleAuthMethods
+		}
+		detectedMethod = constants.TokenEndpointAuthMethodClientSecretPost
+	}
+
+	// Method 3: Client assertion (private_key_jwt)
+	if clientAssertionType != "" || clientAssertion != "" {
+		if detectedMethod != "" {
+			return nil, errMultipleAuthMethods
+		}
+		detectedMethod = constants.TokenEndpointAuthMethodPrivateKeyJWT
+	}
+
+	// If no auth method but client_id exists -> public client
+	if detectedMethod == "" && clientIDFromBody != "" {
+		detectedMethod = constants.TokenEndpointAuthMethodNone
+	}
+
+	// Now process based on detected method
 	var clientID string
 	var clientSecret string
-	var tokenAuthMethod constants.TokenEndpointAuthMethod
 
-	// Check Authorization header (client_secret_basic)
-	if r.Header.Get(serverconst.AuthorizationHeaderName) != "" {
+	switch detectedMethod {
+	case constants.TokenEndpointAuthMethodClientSecretBasic:
 		var err *authError
 		clientID, clientSecret, err = extractBasicAuthCredentials(r)
 		if err != nil {
 			return nil, err
 		}
-	}
 
-	// Check request body (client_secret_post)
-	clientIDFromBody := r.FormValue(constants.RequestParamClientID)
-	clientSecretFromBody := r.FormValue(constants.RequestParamClientSecret)
-
-	// Error if both header and body have credentials
-	if (clientID != "" || clientSecret != "") &&
-		(clientIDFromBody != "" || clientSecretFromBody != "") {
-		return nil, errBothHeaderAndBody
-	}
-
-	// Determine authentication method
-	if clientID != "" && clientSecret != "" {
-		tokenAuthMethod = constants.TokenEndpointAuthMethodClientSecretBasic
-	}
-
-	if clientIDFromBody != "" {
-		clientID = clientIDFromBody
-		if clientSecretFromBody != "" {
-			clientSecret = clientSecretFromBody
-			tokenAuthMethod = constants.TokenEndpointAuthMethodClientSecretPost
-		} else {
-			tokenAuthMethod = constants.TokenEndpointAuthMethodNone
+	case constants.TokenEndpointAuthMethodClientSecretPost:
+		if clientIDFromBody == "" {
+			return nil, errMissingClientID
 		}
-	}
+		clientID = clientIDFromBody
+		clientSecret = clientSecretFromBody
 
-	// Validate required fields
-	if clientID == "" {
+	case constants.TokenEndpointAuthMethodPrivateKeyJWT:
+		if clientAssertionType != constants.SupportedClientAssertionType {
+			logger.Debug("Invalid client assertion: unsupported client assertion type")
+			return nil, errInvalidClientAssertion
+		}
+		extracted, err := extractClientIDFromAssertion(clientAssertion)
+		if err != nil {
+			return nil, err
+		}
+		clientID = extracted
+
+	case constants.TokenEndpointAuthMethodNone:
+		clientID = clientIDFromBody
+
+	default:
 		return nil, errMissingClientID
 	}
 
-	if clientSecret == "" && tokenAuthMethod != constants.TokenEndpointAuthMethodNone {
-		return nil, errMissingClientSecret
+	if clientIDFromBody != "" && clientID != clientIDFromBody {
+		return nil, errClientIDMismatch
 	}
 
-	// Retrieve the OAuth application
-	oauthApp, err := appService.GetOAuthApplication(clientID)
+	oauthApp, err := appService.GetOAuthApplication(ctx, clientID)
 	if err != nil || oauthApp == nil {
 		return nil, errInvalidClientCredentials
 	}
 
-	// Validate the token endpoint authentication method
-	if !oauthApp.IsAllowedTokenEndpointAuthMethod(tokenAuthMethod) {
-		if tokenAuthMethod == constants.TokenEndpointAuthMethodNone {
-			return nil, errMissingClientSecret
-		}
+	if !oauthApp.IsAllowedTokenEndpointAuthMethod(detectedMethod) {
 		return nil, errUnauthorizedAuthMethod
 	}
 
-	// Validate the client credentials
-	if tokenAuthMethod != constants.TokenEndpointAuthMethodNone {
+	// Validate credentials based on method
+	switch detectedMethod {
+	case constants.TokenEndpointAuthMethodPrivateKeyJWT:
+		if err := validateClientAssertion(ctx, oauthApp, jwtService, discoveryService, clientID,
+			clientAssertion); err != nil {
+			logger.Debug("Invalid client assertion: " + err.Error())
+			return nil, errInvalidClientAssertion
+		}
+	case constants.TokenEndpointAuthMethodClientSecretBasic,
+		constants.TokenEndpointAuthMethodClientSecretPost:
 		if !oauthApp.ValidateCredentials(clientID, clientSecret) {
 			return nil, errInvalidClientCredentials
 		}
@@ -114,11 +162,11 @@ func authenticate(
 // extractBasicAuthCredentials extracts the basic authentication credentials from the request header.
 func extractBasicAuthCredentials(r *http.Request) (string, string, *authError) {
 	authHeader := r.Header.Get(serverconst.AuthorizationHeaderName)
-	if !strings.HasPrefix(authHeader, serverconst.AuthSchemeBasic) {
+	if !utils.HasPrefixFold(authHeader, serverconst.AuthSchemeBasic) {
 		return "", "", errInvalidAuthorizationHeader
 	}
 
-	encodedCredentials := strings.TrimPrefix(authHeader, serverconst.AuthSchemeBasic)
+	encodedCredentials := utils.TrimPrefixFold(authHeader, serverconst.AuthSchemeBasic)
 	decodedCredentials, err := base64.StdEncoding.DecodeString(encodedCredentials)
 	if err != nil {
 		return "", "", errInvalidAuthorizationHeader
@@ -128,6 +176,104 @@ func extractBasicAuthCredentials(r *http.Request) (string, string, *authError) {
 	if len(credentials) != 2 {
 		return "", "", errInvalidAuthorizationHeader
 	}
+	if credentials[0] == "" {
+		return "", "", errMissingClientID
+	}
+	if credentials[1] == "" {
+		return "", "", errInvalidAuthorizationHeader
+	}
 
-	return credentials[0], credentials[1], nil
+	// URL-decode client credentials.
+	clientID, idErr := url.QueryUnescape(credentials[0])
+	if idErr != nil {
+		return "", "", errInvalidAuthorizationHeader
+	}
+	clientSecret, secretErr := url.QueryUnescape(credentials[1])
+	if secretErr != nil {
+		return "", "", errInvalidAuthorizationHeader
+	}
+
+	return clientID, clientSecret, nil
+}
+
+// extractClientIDFromAssertion extracts the client_id from the JWT assertion's 'sub' claim.
+// This parses the JWT WITHOUT signature verification to extract the subject.
+func extractClientIDFromAssertion(assertion string) (string, *authError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ClientAuthMiddleware"))
+
+	payload, err := jwt.DecodeJWTPayload(assertion)
+	if err != nil {
+		logger.Debug("Invalid client assertion: failed to decode jwt")
+		return "", errInvalidClientAssertion
+	}
+
+	subject, ok := payload["sub"].(string)
+
+	if !ok || subject == "" {
+		logger.Debug("Invalid client assertion: missing 'sub' claim or 'sub' claim is not a string")
+		return "", errInvalidClientAssertion
+	}
+
+	return subject, nil
+}
+
+// validateClientAssertion validates the provided client assertion JWT using the configured certificate and JWT service.
+func validateClientAssertion(
+	ctx context.Context,
+	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	jwtService jwt.JWTServiceInterface,
+	discoveryService discovery.DiscoveryServiceInterface,
+	clientID, clientAssertion string) error {
+	if oauthApp.Certificate == nil || oauthApp.Certificate.Type == cert.CertificateTypeNone {
+		return fmt.Errorf("no certificate configured for client assertion validation")
+	}
+
+	// Get token endpoint from discovery service for aud validation
+	tokenEndpoint := discoveryService.GetOAuth2AuthorizationServerMetadata(ctx).TokenEndpoint
+
+	if oauthApp.Certificate.Type == cert.CertificateTypeJWKSURI {
+		if err := jwtService.VerifyJWTWithJWKS(clientAssertion, oauthApp.Certificate.Value, tokenEndpoint,
+			clientID); err != nil {
+			return fmt.Errorf("client assertion verification with JWKS URI failed: %v", err.Error)
+		}
+		return nil
+	}
+
+	var jwks struct {
+		Keys []map[string]any `json:"keys"`
+	}
+	if err := json.Unmarshal([]byte(oauthApp.Certificate.Value), &jwks); err != nil {
+		return fmt.Errorf("invalid JWKS certificate format: %w", err)
+	}
+
+	var kid string
+	if header, err := jwt.DecodeJWTHeader(clientAssertion); err != nil {
+		return fmt.Errorf("failed to decode header: %w", err)
+	} else if k, ok := header["kid"].(string); !ok || k == "" {
+		return fmt.Errorf("JWT header missing 'kid' claim or 'kid' is not a string")
+	} else {
+		kid = k
+	}
+
+	var jwk map[string]any
+	for _, key := range jwks.Keys {
+		if keyID, ok := key["kid"].(string); ok && keyID == kid {
+			jwk = key
+			break
+		}
+	}
+	if jwk == nil {
+		return fmt.Errorf("no matching key found in JWKS for kid: %v", kid)
+	}
+
+	pubKey, err := jws.JWKToPublicKey(jwk)
+	if err != nil {
+		return fmt.Errorf("failed to convert JWK to public key: %w", err)
+	}
+
+	if err := jwtService.VerifyJWTWithPublicKey(clientAssertion, pubKey, tokenEndpoint, clientID); err != nil {
+		return fmt.Errorf("client assertion verification failed: %v", err.Error)
+	}
+
+	return nil
 }

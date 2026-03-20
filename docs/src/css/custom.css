@@ -91,11 +91,19 @@
   --ifm-menu-color-background-hover: none;
 
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+
+  /* Body Background */
+  --site-background-attachment: fixed;
+  --site-background-blend-mode: normal;
+  --site-background: radial-gradient(circle at 65% 30%, rgba(255, 116, 0, 0.1) 10%, rgba(255, 255, 255, 0) 40% 40%), radial-gradient(circle at 15% 50%, rgba(74, 41, 165, 0.1) 1%, rgba(255, 255, 255, 0) 40% 70%), radial-gradient(circle at center, rgba(255, 255, 255, 0.6) 0%, var(--oxygen-palette-background-default) 100%);
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme='dark'] {
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+
+  /* Body Background */
+  --site-background: radial-gradient(circle at 65% 30%, rgb(255 116 0 / 13%) 10%, rgba(0, 0, 0, 0) 60% 40%), radial-gradient(circle at 15% 50%, rgb(132 40 0 / 18%) 1%, rgba(0, 0, 0, 0) 40% 70%), radial-gradient(circle at center, rgba(0, 0, 0, 0.6) 0%, var(--oxygen-palette-background-default) 100%);
 }
 
 /* ------------------------------ Custom CSS -------------------------- */
@@ -104,15 +112,15 @@
 
 /* Manually inject the radial background since `@wso2/oxygen-ui` adds it to the body. */
 html[data-color-scheme='light'] #__docusaurus {
-    background-attachment: fixed;
-    background-image: radial-gradient(circle at 65% 30%, rgba(255, 116, 0, 0.1) 10%, rgba(255, 255, 255, 0) 40% 40%), radial-gradient(circle at 15% 50%, rgba(74, 41, 165, 0.1) 1%, rgba(255, 255, 255, 0) 40% 70%), radial-gradient(circle at center, rgba(255, 255, 255, 0.6) 0%, var(--oxygen-palette-background-default) 100%);
-    background-blend-mode: normal;
+    background-attachment: var(--site-background-attachment);
+    background-image: var(--site-background);
+    background-blend-mode: var(--site-background-blend-mode);
 }
 
 html[data-color-scheme='dark'] #__docusaurus {
-    background-attachment: fixed;
-    background-image: radial-gradient(circle at 65% 30%, rgb(255 116 0 / 13%) 10%, rgba(0, 0, 0, 0) 60% 40%), radial-gradient(circle at 15% 50%, rgb(132 40 0 / 18%) 1%, rgba(0, 0, 0, 0) 40% 70%), radial-gradient(circle at center, rgba(0, 0, 0, 0.6) 0%, var(--oxygen-palette-background-default) 100%);
-    background-blend-mode: screen;
+    background-attachment: var(--site-background-attachment);
+    background-image: var(--site-background);
+    background-blend-mode: var(--site-background-blend-mode);
 }
 
 /* ------------------------------ Font Adjustments ---------------------- */
@@ -148,14 +156,70 @@ html[data-theme='dark'] .theme-announcement-bar {
   color: var(--oxygen-palette-common-black);
 }
 
+
 /* ------------------------------ Header Adjustments ---------------------- */
 
 
 /* Adjust the navbar height and padding for larger screens */
 .navbar {
-  min-height: 72px;
   border-bottom: 1px solid var(--oxygen-palette-divider);
   box-shadow: none;
+  padding: 0 2rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease, backdrop-filter 0.3s ease;
+}
+
+/* Softer border in dark mode */
+html[data-theme='dark'] .navbar {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ---- Homepage frosted-glass navbar ---- */
+html[data-page='home'] .navbar,
+html[data-page='home'] .navbar.navbar--fixed-top {
+  --ifm-navbar-background-color: transparent;
+  background: rgba(255, 255, 255, 0.6) !important;
+  box-shadow: none !important;
+}
+
+@media (min-width: 997px) {
+  html[data-page='home'] .navbar,
+  html[data-page='home'] .navbar.navbar--fixed-top {
+    backdrop-filter: saturate(180%) blur(16px) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(16px) !important;
+  }
+}
+
+html[data-page='home'][data-theme='dark'] .navbar,
+html[data-page='home'][data-theme='dark'] .navbar.navbar--fixed-top {
+  background: rgba(10, 10, 10, 0.7) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+html[data-page='home'][data-theme='light'] .navbar,
+html[data-page='home'][data-theme='light'] .navbar.navbar--fixed-top {
+  border-bottom-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Homepage navbar link colors - dark mode: light text */
+html[data-page='home'][data-theme='dark'] .navbar .navbar__link,
+html[data-page='home'][data-theme='dark'] .navbar .navbar__item {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Homepage navbar link colors - light mode: dark text */
+html[data-page='home'][data-theme='light'] .navbar .navbar__link,
+html[data-page='home'][data-theme='light'] .navbar .navbar__item {
+  color: rgba(0, 0, 0, 0.75) !important;
+}
+
+html[data-page='home'] .navbar .navbar__link:hover,
+html[data-page='home'] .navbar .navbar__link--active {
+  color: #FF6B00 !important;
+}
+
+/* Homepage GitHub icon - dark mode */
+html[data-page='home'][data-theme='dark'] .navbar .navbar__github--link::before {
+  background-color: rgba(255, 255, 255, 0.85) !important;
 }
 
 /* Adjust the navbar toggle size */
@@ -167,15 +231,38 @@ html[data-theme='dark'] .theme-announcement-bar {
   }
 }
 
+/* backdrop-filter on .navbar creates a WebKit stacking context that causes the
+   navbar to render above the mobile sidebar overlay on Safari/iOS. Scope it to
+   desktop only where it is safe and visually relevant. */
+@media (min-width: 997px) {
+  .navbar {
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+  }
+}
+
 /* Override font size for navbar items and menu links */
 .navbar__item,
 .menu__link {
-  font-size: 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
-/* Make the GitHub link to use an icon only */
+/* Right-side navbar items - add gap between nav links and icon buttons */
+.navbar__items--right {
+  gap: 0.25rem;
+}
+
+/* Add separator gap before icon-only items (GitHub, color mode) */
 .navbar .navbar__github--link {
-  margin-right: calc(1 * var(--oxygen-spacing, 8px));
+  margin-left: 0.75rem;
+}
+
+/* Color mode toggle styling */
+.navbar .clean-btn[class*='toggleButton'] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .navbar .navbar__github--link::before {
@@ -190,6 +277,45 @@ html[data-theme='dark'] .theme-announcement-bar {
 
 .navbar .navbar__github--link:hover::before {
   background-color: var(--ifm-navbar-link-hover-color);
+}
+
+/* Resources dropdown icons */
+.navbar-resources__releases,
+.navbar-resources__discussions,
+.navbar-resources__issues {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-resources__releases::before,
+.navbar-resources__discussions::before,
+.navbar-resources__issues::before {
+  content: '';
+  display: inline-block;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  background-color: var(--ifm-dropdown-link-color);
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  transition: background-color var(--ifm-transition-fast) var(--ifm-transition-timing-default);
+}
+
+/* Book icon */
+.navbar-resources__releases::before {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20'/%3E%3C/svg%3E");
+}
+
+/* Chat bubble icon */
+.navbar-resources__discussions::before {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7.9 20A9 9 0 1 0 4 16.1L2 22Z'/%3E%3C/svg%3E");
+}
+
+/* Info circle icon */
+.navbar-resources__issues::before {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4'/%3E%3Cpath d='M12 8h.01'/%3E%3C/svg%3E");
 }
 
 /* Improve Dropdown Chevron */
@@ -219,6 +345,11 @@ html[data-theme='dark'] .dropdown>.navbar__link:after {
   background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' fill='none' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.293 8.293a1 1 0 0 1 1.414 0L12 14.586l6.293-6.293a1 1 0 1 1 1.414 1.414l-7 7a1 1 0 0 1-1.414 0l-7-7a1 1 0 0 1 0-1.414Z' fill='%23F87643'/%3E%3C/svg%3E") !important;
 }
 
+/* Homepage dropdown chevron - dark mode: white */
+html[data-page='home'][data-theme='dark'] .dropdown>.navbar__link:after {
+  background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' fill='none' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.293 8.293a1 1 0 0 1 1.414 0L12 14.586l6.293-6.293a1 1 0 1 1 1.414 1.414l-7 7a1 1 0 0 1-1.414 0l-7-7a1 1 0 0 1 0-1.414Z' fill='%23ffffffcc'/%3E%3C/svg%3E");
+}
+
 /* ------------------------------ Sidebar Adjustments ---------------------- */
 
 .menu__caret:before, .menu__link--sublist-caret:after {
@@ -229,58 +360,185 @@ html[data-theme='dark'] .dropdown>.navbar__link:after {
   background: var(--oxygen-palette-background-paper);
 }
 
+.navbar-sidebar {
+  background: var(--oxygen-palette-common-background);
+}
+
+/* Spacing for HTML section header items */
+.theme-doc-sidebar-menu > .menu__list > .sidebar-html-section-header {
+  margin-top: 0;
+  padding-top: 1.25rem;
+}
+
+.theme-doc-sidebar-menu > .menu__list > .sidebar-html-section-header:first-child {
+  padding-top: 0.5rem;
+}
+
+/* Divider line between sections */
+.sidebar-section + .sidebar-html-section-header {
+  border-top: 1px solid var(--ifm-toc-border-color);
+}
+
+/* Hide the Docusaurus category header — replaced by the HTML item above */
+.sidebar-section > .menu__list-item-collapsible {
+  display: none;
+}
+
+/* Section header content */
+.sidebar-section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ifm-color-emphasis-900);
+  padding: 0.35rem 0.75rem 0.35rem 0.5rem;
+  user-select: none;
+}
+
+/* Section header icon */
+.sidebar-section-label svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: var(--ifm-color-emphasis-700);
+}
+
+/* ---- Items list — left border track ---- */
+.sidebar-section > .menu__list {
+  border-left: 1px solid var(--ifm-toc-border-color);
+  margin-left: 1rem;
+  padding-left: 0;
+}
+
+/* Item links */
+.sidebar-section > .menu__list .menu__link {
+  border-radius: 0;
+  border-left: 2px solid transparent;
+  margin-left: -1px;
+  padding-left: 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--ifm-color-emphasis-700);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+/* Item hover */
+.sidebar-section > .menu__list .menu__link:hover {
+  color: var(--ifm-color-emphasis-900);
+  background: none;
+  border-left-color: var(--ifm-color-emphasis-400);
+}
+
+/* Active item */
+.sidebar-section > .menu__list .menu__link--active {
+  color: var(--ifm-color-primary);
+  font-weight: 500;
+  border-left-color: var(--ifm-color-primary);
+  background: none;
+}
+
+/* Nested sub-category (e.g. "Connect Your Application") caret alignment */
+.sidebar-section > .menu__list .menu__list-item-collapsible > .menu__link {
+  border-left: 2px solid transparent;
+  margin-left: -1px;
+}
+
+.sidebar-section > .menu__list .menu__list-item-collapsible > .menu__link:hover {
+  border-left-color: var(--ifm-color-emphasis-400);
+  background: none;
+}
+
+.sidebar-section > .menu__list .menu__list-item-collapsible > .menu__link--active {
+  color: var(--ifm-color-primary);
+  border-left-color: var(--ifm-color-primary);
+}
+
+/* Nested sub-list indentation */
+.sidebar-section > .menu__list .menu__list {
+  padding-left: 0.75rem;
+}
+
+/* ---- Working with AI section — gradient + sparkle ---- */
+.sidebar-section-label--ai span {
+  background: linear-gradient(90deg, #7B5CF6 0%, #EC4899 50%, #FF6B00 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.sidebar-section-label--ai svg {
+  color: #7B5CF6;
+  animation: ai-sparkle 3s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes ai-sparkle {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  30%       { transform: scale(1.25) rotate(20deg); opacity: 0.75; }
+  60%       { transform: scale(1.1) rotate(-12deg); opacity: 0.9; }
+}
+
 /* ------------------------------ API Doc Adjustments ---------------------- */
 
-.api-method > .menu__link,
-.schema > .menu__link {
-  align-items: center;
-  justify-content: space-between;
+.apis-page .scalar-api-reference aside {
+  width: var(--doc-sidebar-width);
+  background: var(--oxygen-palette-background-paper);
 }
 
-.api-method > .menu__link::after,
-.schema > .menu__link::after {
-  font-size: 12px;
-  margin-right: var(--ifm-spacing-horizontal);
-  text-transform: uppercase;
-  font-weight: 500;
+.apis-page .scalar-api-reference main, .apis-page .scalar-api-reference .narrow-references-container {
+  background-attachment: var(--site-background-attachment);
+  background-image: var(--site-background);
+  background-blend-mode: var(--site-background-blend-mode);
 }
 
-.get > .menu__link::after {
-  content: "get";
-  color: var(--ifm-color-primary);
+/* Capitalize the Scalar side bar item text transformation */
+.apis-page .scalar-api-reference aside .group\/items > .group\/item .group\/button {
+  text-transform: capitalize;
 }
 
-.post > .menu__link::after {
-  content: "post";
-  color: var(--openapi-code-green);
+/* Hide the introduction in side panel & content in Scalar since it's redundant with the content in the main page. */
+.apis-page .scalar-api-reference aside .group\/items > .group\/item:first-child {
+  display: none;
 }
 
-.delete > .menu__link::after {
-  content: "del";
-  color: var(--openapi-code-red);
+.apis-page .scalar-api-reference main .introduction-section {
+  display: none;
 }
 
-.put > .menu__link::after {
-  content: "put";
-  color: var(--openapi-code-blue);
+/* Capitalize section headers in the API reference */
+.apis-page .scalar-api-reference main .section-header-label {
+  text-transform: capitalize;
 }
 
-.patch > .menu__link::after {
-  content: "patch";
-  color: var(--openapi-code-orange);
+/* ------------------------------ Releases Page TOC Spacing ---------------------- */
+
+/* Increase space between main content and right sidebar TOC */
+.theme-doc-toc-desktop {
+  padding-left: 10rem;
 }
 
-.head > .menu__link::after {
-  content: "head";
-  color: var(--ifm-color-secondary-darkest);
-}
+/*
+ * Homepage animation keyframes have been moved inline into their
+ * respective components (HeroSection, ConstellationBackground, LoginBox)
+ * to prevent Docusaurus from tree-shaking them during production builds.
+ */
 
-.event > .menu__link::after {
-  content: "event";
-  color: var(--ifm-color-secondary-darkest);
-}
+/* Reduced-motion: disable animations for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 
-.schema > .menu__link::after {
-  content: "schema";
-  color: var(--ifm-color-secondary-darkest);
+  /* Also disable SVG <animate> elements */
+  animate {
+    animation-duration: 0.001ms !important;
+  }
 }

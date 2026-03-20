@@ -42,6 +42,7 @@ func newApplicationHandler(service ApplicationServiceInterface) *applicationHand
 
 // HandleApplicationPostRequest handles the application request.
 func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationHandler"))
 
 	appRequest, err := sysutils.DecodeJSONBody[model.ApplicationRequest](r)
@@ -61,23 +62,26 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 		AuthFlowID:                appRequest.AuthFlowID,
 		RegistrationFlowID:        appRequest.RegistrationFlowID,
 		IsRegistrationFlowEnabled: appRequest.IsRegistrationFlowEnabled,
-		BrandingID:                appRequest.BrandingID,
+		ThemeID:                   appRequest.ThemeID,
+		LayoutID:                  appRequest.LayoutID,
 		Template:                  appRequest.Template,
 		URL:                       appRequest.URL,
 		LogoURL:                   appRequest.LogoURL,
-		Token:                     appRequest.Token,
+		Assertion:                 appRequest.Assertion,
 		Certificate:               appRequest.Certificate,
 		TosURI:                    appRequest.TosURI,
 		PolicyURI:                 appRequest.PolicyURI,
 		Contacts:                  appRequest.Contacts,
 		AllowedUserTypes:          appRequest.AllowedUserTypes,
+		LoginConsent:              appRequest.LoginConsent,
+		Metadata:                  appRequest.Metadata,
 	}
 	appDTO.InboundAuthConfig = ah.processInboundAuthConfigFromRequest(appRequest.InboundAuthConfig)
 
 	// Create the app using the application service.
-	createdAppDTO, svcErr := ah.service.CreateApplication(&appDTO)
+	createdAppDTO, svcErr := ah.service.CreateApplication(ctx, &appDTO)
 	if svcErr != nil {
-		ah.handleError(w, svcErr)
+		ah.handleError(w, r, svcErr)
 		return
 	}
 
@@ -88,16 +92,19 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 		AuthFlowID:                createdAppDTO.AuthFlowID,
 		RegistrationFlowID:        createdAppDTO.RegistrationFlowID,
 		IsRegistrationFlowEnabled: createdAppDTO.IsRegistrationFlowEnabled,
-		BrandingID:                createdAppDTO.BrandingID,
+		ThemeID:                   createdAppDTO.ThemeID,
+		LayoutID:                  createdAppDTO.LayoutID,
 		Template:                  createdAppDTO.Template,
 		URL:                       createdAppDTO.URL,
 		LogoURL:                   createdAppDTO.LogoURL,
-		Token:                     createdAppDTO.Token,
+		Assertion:                 createdAppDTO.Assertion,
 		Certificate:               createdAppDTO.Certificate,
 		TosURI:                    createdAppDTO.TosURI,
 		PolicyURI:                 createdAppDTO.PolicyURI,
 		Contacts:                  createdAppDTO.Contacts,
 		AllowedUserTypes:          createdAppDTO.AllowedUserTypes,
+		LoginConsent:              createdAppDTO.LoginConsent,
+		Metadata:                  createdAppDTO.Metadata,
 	}
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
@@ -119,9 +126,10 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 
 // HandleApplicationListRequest handles the application request.
 func (ah *applicationHandler) HandleApplicationListRequest(w http.ResponseWriter, r *http.Request) {
-	listResponse, svcErr := ah.service.GetApplicationList()
+	ctx := r.Context()
+	listResponse, svcErr := ah.service.GetApplicationList(ctx)
 	if svcErr != nil {
-		ah.handleError(w, svcErr)
+		ah.handleError(w, r, svcErr)
 		return
 	}
 
@@ -130,6 +138,7 @@ func (ah *applicationHandler) HandleApplicationListRequest(w http.ResponseWriter
 
 // HandleApplicationGetRequest handles the application request.
 func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationHandler"))
 
 	id := r.PathValue("id")
@@ -143,9 +152,9 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 		return
 	}
 
-	appDTO, svcErr := ah.service.GetApplication(id)
+	appDTO, svcErr := ah.service.GetApplication(ctx, id)
 	if svcErr != nil {
-		ah.handleError(w, svcErr)
+		ah.handleError(w, r, svcErr)
 		return
 	}
 
@@ -156,16 +165,19 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 		AuthFlowID:                appDTO.AuthFlowID,
 		RegistrationFlowID:        appDTO.RegistrationFlowID,
 		IsRegistrationFlowEnabled: appDTO.IsRegistrationFlowEnabled,
-		BrandingID:                appDTO.BrandingID,
+		ThemeID:                   appDTO.ThemeID,
+		LayoutID:                  appDTO.LayoutID,
 		Template:                  appDTO.Template,
 		URL:                       appDTO.URL,
 		LogoURL:                   appDTO.LogoURL,
-		Token:                     appDTO.Token,
+		Assertion:                 appDTO.Assertion,
 		Certificate:               appDTO.Certificate,
 		TosURI:                    appDTO.TosURI,
 		PolicyURI:                 appDTO.PolicyURI,
 		Contacts:                  appDTO.Contacts,
 		AllowedUserTypes:          appDTO.AllowedUserTypes,
+		LoginConsent:              appDTO.LoginConsent,
+		Metadata:                  appDTO.Metadata,
 	}
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
@@ -222,6 +234,9 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 				PublicClient:            config.OAuthAppConfig.PublicClient,
 				Token:                   config.OAuthAppConfig.Token,
 				Scopes:                  config.OAuthAppConfig.Scopes,
+				UserInfo:                config.OAuthAppConfig.UserInfo,
+				ScopeClaims:             config.OAuthAppConfig.ScopeClaims,
+				Certificate:             config.OAuthAppConfig.Certificate,
 			}
 			returnInboundAuthConfigs = append(returnInboundAuthConfigs, model.InboundAuthConfig{
 				Type:           config.Type,
@@ -237,6 +252,7 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 
 // HandleApplicationPutRequest handles the application request.
 func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationHandler"))
 
 	id := r.PathValue("id")
@@ -268,23 +284,26 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 		AuthFlowID:                appRequest.AuthFlowID,
 		RegistrationFlowID:        appRequest.RegistrationFlowID,
 		IsRegistrationFlowEnabled: appRequest.IsRegistrationFlowEnabled,
-		BrandingID:                appRequest.BrandingID,
+		ThemeID:                   appRequest.ThemeID,
+		LayoutID:                  appRequest.LayoutID,
 		Template:                  appRequest.Template,
 		URL:                       appRequest.URL,
 		LogoURL:                   appRequest.LogoURL,
-		Token:                     appRequest.Token,
+		Assertion:                 appRequest.Assertion,
 		Certificate:               appRequest.Certificate,
 		TosURI:                    appRequest.TosURI,
 		PolicyURI:                 appRequest.PolicyURI,
 		Contacts:                  appRequest.Contacts,
 		AllowedUserTypes:          appRequest.AllowedUserTypes,
+		LoginConsent:              appRequest.LoginConsent,
+		Metadata:                  appRequest.Metadata,
 	}
 	updateReqAppDTO.InboundAuthConfig = ah.processInboundAuthConfigFromRequest(appRequest.InboundAuthConfig)
 
 	// Update the application using the application service.
-	updatedAppDTO, svcErr := ah.service.UpdateApplication(id, &updateReqAppDTO)
+	updatedAppDTO, svcErr := ah.service.UpdateApplication(ctx, id, &updateReqAppDTO)
 	if svcErr != nil {
-		ah.handleError(w, svcErr)
+		ah.handleError(w, r, svcErr)
 		return
 	}
 
@@ -295,16 +314,19 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 		AuthFlowID:                updatedAppDTO.AuthFlowID,
 		RegistrationFlowID:        updatedAppDTO.RegistrationFlowID,
 		IsRegistrationFlowEnabled: updatedAppDTO.IsRegistrationFlowEnabled,
-		BrandingID:                updatedAppDTO.BrandingID,
+		ThemeID:                   updatedAppDTO.ThemeID,
+		LayoutID:                  updatedAppDTO.LayoutID,
 		Template:                  updatedAppDTO.Template,
 		URL:                       updatedAppDTO.URL,
 		LogoURL:                   updatedAppDTO.LogoURL,
-		Token:                     updatedAppDTO.Token,
+		Assertion:                 updatedAppDTO.Assertion,
 		Certificate:               updatedAppDTO.Certificate,
 		TosURI:                    updatedAppDTO.TosURI,
 		PolicyURI:                 updatedAppDTO.PolicyURI,
 		Contacts:                  updatedAppDTO.Contacts,
 		AllowedUserTypes:          updatedAppDTO.AllowedUserTypes,
+		LoginConsent:              updatedAppDTO.LoginConsent,
+		Metadata:                  updatedAppDTO.Metadata,
 	}
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
@@ -326,6 +348,7 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 
 // HandleApplicationDeleteRequest handles the application request.
 func (ah *applicationHandler) HandleApplicationDeleteRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	id := r.PathValue("id")
 	if id == "" {
 		errResp := apierror.ErrorResponse{
@@ -337,9 +360,9 @@ func (ah *applicationHandler) HandleApplicationDeleteRequest(w http.ResponseWrit
 		return
 	}
 
-	svcErr := ah.service.DeleteApplication(id)
+	svcErr := ah.service.DeleteApplication(ctx, id)
 	if svcErr != nil {
-		ah.handleError(w, svcErr)
+		ah.handleError(w, r, svcErr)
 		return
 	}
 
@@ -390,6 +413,9 @@ func (ah *applicationHandler) processInboundAuthConfig(logger *log.Logger, appDT
 				PublicClient:            config.OAuthAppConfig.PublicClient,
 				Token:                   config.OAuthAppConfig.Token,
 				Scopes:                  config.OAuthAppConfig.Scopes,
+				UserInfo:                config.OAuthAppConfig.UserInfo,
+				ScopeClaims:             config.OAuthAppConfig.ScopeClaims,
+				Certificate:             config.OAuthAppConfig.Certificate,
 			}
 			returnInboundAuthConfigs = append(returnInboundAuthConfigs, model.InboundAuthConfigComplete{
 				Type:           config.Type,
@@ -404,7 +430,8 @@ func (ah *applicationHandler) processInboundAuthConfig(logger *log.Logger, appDT
 }
 
 // handleError handles service errors and returns appropriate HTTP responses.
-func (ah *applicationHandler) handleError(w http.ResponseWriter,
+// When the resolved status is 500, the error is logged with request context.
+func (ah *applicationHandler) handleError(w http.ResponseWriter, r *http.Request,
 	svcErr *serviceerror.ServiceError) {
 	errResp := apierror.ErrorResponse{
 		Code:        svcErr.Code,
@@ -419,6 +446,16 @@ func (ah *applicationHandler) handleError(w http.ResponseWriter,
 		} else {
 			statusCode = http.StatusBadRequest
 		}
+	}
+
+	if statusCode == http.StatusInternalServerError {
+		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationHandler"))
+		logger.Error("Internal server error processing application request",
+			log.String("method", r.Method),
+			log.String("path", r.URL.Path),
+			log.String("error_code", svcErr.Code),
+			log.String("error", svcErr.Error),
+		)
 	}
 
 	sysutils.WriteErrorResponse(w, statusCode, errResp)
@@ -450,6 +487,9 @@ func (ah *applicationHandler) processInboundAuthConfigFromRequest(
 				PublicClient:            config.OAuthAppConfig.PublicClient,
 				Token:                   config.OAuthAppConfig.Token,
 				Scopes:                  config.OAuthAppConfig.Scopes,
+				UserInfo:                config.OAuthAppConfig.UserInfo,
+				ScopeClaims:             config.OAuthAppConfig.ScopeClaims,
+				Certificate:             config.OAuthAppConfig.Certificate,
 			},
 		}
 		inboundAuthConfigDTOs = append(inboundAuthConfigDTOs, inboundAuthConfigDTO)

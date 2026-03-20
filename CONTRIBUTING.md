@@ -1,1 +1,1 @@
-Please refer to the [Contributing Guide](docs/contributing/README.md) for guidelines on how to contribute to this project.
+Please refer to the [Contributing Guide](https://asgardeo.github.io/thunder/docs/next/community/contributing/overview) for guidelines on how to contribute to this project.

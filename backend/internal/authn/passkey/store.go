@@ -35,12 +35,11 @@ import (
 type sessionStoreInterface interface {
 	storeSession(
 		sessionKey, userID, relyingPartyID string,
-		sessionData *sessionData,
+		session *sessionData,
 		expiryTime time.Time,
 	) error
 	retrieveSession(sessionKey string) (*sessionData, string, string, error)
 	deleteSession(sessionKey string) error
-	deleteExpiredSessions() error
 }
 
 // sessionStore provides the WebAuthn session store functionality using database.
@@ -61,7 +60,7 @@ func newSessionStore() sessionStoreInterface {
 
 // storeSession stores a WebAuthn session in the database.
 func (s *sessionStore) storeSession(sessionKey, userID, relyingPartyID string,
-	sessionData *sessionData, expiryTime time.Time) error {
+	session *sessionData, expiryTime time.Time) error {
 	dbClient, err := s.dbProvider.GetRuntimeDBClient()
 	if err != nil {
 		s.logger.Error("Failed to get database client", log.Error(err))
@@ -69,7 +68,7 @@ func (s *sessionStore) storeSession(sessionKey, userID, relyingPartyID string,
 	}
 
 	// Serialize session data to JSON
-	jsonDataBytes, err := s.serializeSessionData(sessionData)
+	jsonDataBytes, err := s.serializeSessionData(session)
 	if err != nil {
 		s.logger.Error("Failed to marshal session data to JSON", log.Error(err))
 		return err
@@ -163,26 +162,6 @@ func (s *sessionStore) deleteSession(sessionKey string) error {
 
 	s.logger.Debug("WebAuthn session deleted successfully",
 		log.String("sessionKey", log.MaskString(sessionKey)))
-
-	return nil
-}
-
-// deleteExpiredSessions removes all expired WebAuthn sessions from the database.
-func (s *sessionStore) deleteExpiredSessions() error {
-	dbClient, err := s.dbProvider.GetRuntimeDBClient()
-	if err != nil {
-		s.logger.Error("Failed to get database client", log.Error(err))
-		return err
-	}
-
-	now := time.Now()
-	_, err = dbClient.Execute(queryDeleteExpiredSessions, now, s.deploymentID)
-	if err != nil {
-		s.logger.Error("Failed to delete expired WebAuthn sessions", log.Error(err))
-		return err
-	}
-
-	s.logger.Debug("Deleted expired WebAuthn sessions")
 
 	return nil
 }

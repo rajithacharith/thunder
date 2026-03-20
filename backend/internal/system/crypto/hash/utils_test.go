@@ -83,3 +83,51 @@ func (suite *HashUtilsTestSuite) TestThumbprintString() {
 		})
 	}
 }
+
+func (suite *HashUtilsTestSuite) TestHash() {
+	data := []byte("hello world")
+
+	testCases := []struct {
+		name string
+		alg  HashAlgorithm
+	}{
+		{"SHA256", GenericSHA256},
+		{"SHA384", GenericSHA384},
+		{"SHA512", GenericSHA512},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			hashed, err := Hash(data, tc.alg)
+			suite.NoError(err)
+			suite.NotEmpty(hashed)
+		})
+	}
+
+	// Test unsupported algorithm
+	_, err := Hash(data, "INVALID")
+	suite.Error(err)
+}
+
+func (suite *HashUtilsTestSuite) TestGetHash() {
+	testCases := []struct {
+		name string
+		alg  HashAlgorithm
+	}{
+		{"SHA256", GenericSHA256},
+		{"SHA384", GenericSHA384},
+		{"SHA512", GenericSHA512},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			h, err := GetHash(tc.alg)
+			suite.NoError(err)
+			suite.NotNil(h)
+		})
+	}
+
+	// Test unsupported algorithm
+	_, err := GetHash("INVALID")
+	suite.Error(err)
+}

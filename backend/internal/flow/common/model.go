@@ -19,6 +19,8 @@
 package common
 
 import (
+	"slices"
+
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 )
 
@@ -29,6 +31,11 @@ type Input struct {
 	Type       string   `json:"type"`
 	Required   bool     `json:"required"`
 	Options    []string `json:"options,omitempty"`
+}
+
+// IsSensitive checks whether this input's type is considered sensitive.
+func (i Input) IsSensitive() bool {
+	return slices.Contains(sensitiveInputTypes, i.Type)
 }
 
 // Action represents an action to be executed in a flow step
@@ -55,6 +62,7 @@ type NodeResponse struct {
 	Meta              interface{}               `json:"meta,omitempty"`
 	NextNodeID        string                    `json:"next_node_id,omitempty"`
 	RuntimeData       map[string]string         `json:"runtime_data,omitempty"`
+	ForwardedData     map[string]interface{}    `json:"forwarded_data,omitempty"`
 	AuthenticatedUser authncm.AuthenticatedUser `json:"authenticated_user,omitempty"`
 	Assertion         string                    `json:"assertion,omitempty"`
 }
@@ -66,10 +74,10 @@ type ExecutorResponse struct {
 	AdditionalData    map[string]string         `json:"additional_data,omitempty"`
 	RedirectURL       string                    `json:"redirect_url,omitempty"`
 	RuntimeData       map[string]string         `json:"runtime_data,omitempty"`
+	ForwardedData     map[string]interface{}    `json:"forwarded_data,omitempty"`
 	AuthenticatedUser authncm.AuthenticatedUser `json:"authenticated_user,omitempty"`
 	Assertion         string                    `json:"assertion,omitempty"`
 	FailureReason     string                    `json:"failure_reason,omitempty"`
-	Meta              interface{}               `json:"meta,omitempty"`
 }
 
 // NodeExecutionRecord represents a record of a node execution in the flow.

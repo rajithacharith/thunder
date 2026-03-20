@@ -27,8 +27,5 @@ func Initialize(userSvc user.UserServiceInterface) PasskeyServiceInterface {
 	// Create the session store
 	sessionStore := newSessionStore()
 
-	// Start the periodic cleanup routine for expired sessions
-	startSessionCleanup(sessionStore)
-
 	return newPasskeyService(userSvc, sessionStore)
 }

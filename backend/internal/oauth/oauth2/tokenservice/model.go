@@ -21,6 +21,7 @@ package tokenservice
 
 import (
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 )
 
 // TokenType represents the type of token being processed.
@@ -43,25 +44,30 @@ type TokenConfig struct {
 
 // AccessTokenBuildContext contains all the information needed to build an access token.
 type AccessTokenBuildContext struct {
-	Subject        string
-	Audience       string
-	ClientID       string
-	Scopes         []string
-	UserAttributes map[string]interface{}
-	GrantType      string
-	OAuthApp       *appmodel.OAuthAppConfigProcessedDTO
-	ActorClaims    *SubjectTokenClaims
+	Subject          string
+	Audience         string
+	ClientID         string
+	Scopes           []string
+	UserAttributes   map[string]interface{}
+	AttributeCacheID string
+	GrantType        string
+	OAuthApp         *appmodel.OAuthAppConfigProcessedDTO
+	ActorClaims      *SubjectTokenClaims
+	ClaimsRequest    *oauth2model.ClaimsRequest
+	ClaimsLocales    string
 }
 
 // RefreshTokenBuildContext contains all the information needed to build a refresh token.
 type RefreshTokenBuildContext struct {
-	ClientID             string
-	Scopes               []string
-	GrantType            string
-	AccessTokenSubject   string
-	AccessTokenAudience  string
-	AccessTokenUserAttrs map[string]interface{}
-	OAuthApp             *appmodel.OAuthAppConfigProcessedDTO
+	ClientID            string
+	Scopes              []string
+	GrantType           string
+	AccessTokenSubject  string
+	AccessTokenAudience string
+	AttributeCacheID    string
+	OAuthApp            *appmodel.OAuthAppConfigProcessedDTO
+	ClaimsRequest       *oauth2model.ClaimsRequest
+	ClaimsLocales       string
 }
 
 // IDTokenBuildContext contains all the information needed to build an ID token (OIDC).
@@ -72,16 +78,20 @@ type IDTokenBuildContext struct {
 	UserAttributes map[string]interface{}
 	AuthTime       int64
 	OAuthApp       *appmodel.OAuthAppConfigProcessedDTO
+	ClaimsRequest  *oauth2model.ClaimsRequest
+	Nonce          string
 }
 
 // RefreshTokenClaims represents the validated claims from a refresh token.
 type RefreshTokenClaims struct {
-	Sub            string
-	Aud            string
-	GrantType      string
-	Scopes         []string
-	UserAttributes map[string]interface{}
-	Iat            int64
+	Sub              string
+	Aud              string
+	GrantType        string
+	Scopes           []string
+	AttributeCacheID string
+	Iat              int64
+	ClaimsRequest    *oauth2model.ClaimsRequest
+	ClaimsLocales    string
 }
 
 // SubjectTokenClaims represents the validated claims from a subject token (for token exchange).
@@ -92,4 +102,15 @@ type SubjectTokenClaims struct {
 	Scopes         []string
 	UserAttributes map[string]interface{}
 	NestedAct      map[string]interface{}
+}
+
+// AccessTokenClaims represents the validated claims from an access token.
+type AccessTokenClaims struct {
+	Sub       string
+	Iss       string
+	Aud       string
+	GrantType string
+	Scopes    []string
+	ClientID  string
+	Claims    map[string]interface{}
 }

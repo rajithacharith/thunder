@@ -89,8 +89,13 @@ if ((Test-Path $certFile) -and (Test-Path $keyFile)) {
     $protocol = "http"
 }
 
-# Start process and keep a handle to it
-$proc = Start-Process -FilePath "npx" -ArgumentList $arguments -PassThru -WorkingDirectory $scriptDir -NoNewWindow
+# Start npx serve process (use cmd /c on Windows since Start-Process cannot run .cmd files directly)
+if ($IsWindows) {
+    $argString = ($arguments | ForEach-Object { "`"$_`"" }) -join " "
+    $proc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "npx $argString" -PassThru -WorkingDirectory $scriptDir -NoNewWindow
+} else {
+    $proc = Start-Process -FilePath $npx.Source -ArgumentList $arguments -PassThru -WorkingDirectory $scriptDir -NoNewWindow
+}
 
 Write-Host ""
 Write-Host "[INFO] React SDK Sample App running at ${protocol}://localhost:$SERVER_PORT"

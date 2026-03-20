@@ -110,6 +110,29 @@ var (
 		Error:            "Invalid permissions",
 		ErrorDescription: "One or more permissions do not exist in the resource management system",
 	}
+	// ErrorImmutableRole is the error returned when attempting to modify a declarative role.
+	ErrorImmutableRole = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "ROL-1013",
+		Error:            "Cannot modify declarative role",
+		ErrorDescription: "The role is defined in declarative configuration and cannot be modified",
+	}
+	// ErrorImmutableAssignment is the error returned when attempting to modify a declarative assignment.
+	ErrorImmutableAssignment = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "ROL-1014",
+		Error:            "Cannot modify declarative assignment",
+		ErrorDescription: "The assignment is defined in declarative configuration and cannot be modified",
+	}
+	// ErrorDeclarativeModeCreateNotAllowed is the error returned when attempting to create
+	// a role in declarative-only mode.
+	ErrorDeclarativeModeCreateNotAllowed = serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "ROL-1015",
+		Error: "Cannot create role in declarative-only mode",
+		ErrorDescription: "Role creation is not allowed when running in declarative-only mode. " +
+			"Roles must be defined in declarative configuration files",
+	}
 )
 
 // Server errors for role management operations.
@@ -121,12 +144,23 @@ var (
 		Error:            "Internal server error",
 		ErrorDescription: "An unexpected error occurred while processing the request",
 	}
+	// ResultLimitExceededInCompositeMode is the error returned when the total number of records exceeds
+	// the maximum limit in composite mode (combining database and declarative resources).
+	ResultLimitExceededInCompositeMode = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "ROL-1016",
+		Error:            "Result limit exceeded in composite mode",
+		ErrorDescription: "The total number of records exceeds the maximum limit in composite mode",
+	}
 )
 
 // Internal error constants for role management operations.
 var (
 	// ErrRoleNotFound is returned when the role is not found in the system.
 	ErrRoleNotFound = errors.New("role not found")
+
+	// errResultLimitExceededInCompositeMode is the internal sentinel error for composite mode limit exceeded.
+	errResultLimitExceededInCompositeMode = errors.New("result limit exceeded in composite mode")
 
 	// ErrRoleHasAssignments is returned when attempting to delete a role that has active assignments.
 	ErrRoleHasAssignments = errors.New("role has active assignments")

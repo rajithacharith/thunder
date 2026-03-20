@@ -26,7 +26,7 @@ The credentials authentication API allows you to authenticate users by providing
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/users \
     -H 'Authorization: Bearer <token>' \
     -d '{
-        "organizationUnit": "{ou-id-from-above}",
+        "ouId": "{ou-id-from-above}",
         "type": "superhuman",
         "attributes": {
             "username": "thor",
@@ -45,8 +45,12 @@ The credentials authentication API allows you to authenticate users by providing
     ```bash
     curl -kL -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' https://localhost:8090/auth/credentials/authenticate \
     -d '{
-        "username": "thor",
-        "password": "<password>"
+        "identifiers": {
+            "username": "thor"
+        },
+        "credentials": {
+            "password": "<password>"
+        }
     }'
     ```
 
@@ -56,7 +60,7 @@ The credentials authentication API allows you to authenticate users by providing
     {
         "id": "550e8400-e29b-41d4-a716-446655440000",
         "type": "superhuman",
-        "organization_unit": "660e8400-e29b-41d4-a716-446655440000",
+        "ouId": "660e8400-e29b-41d4-a716-446655440000",
         "assertion": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
     }
     ```
@@ -66,8 +70,12 @@ The credentials authentication API allows you to authenticate users by providing
     ```bash
     curl -kL -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' https://localhost:8090/auth/credentials/authenticate \
     -d '{
-        "username": "thor",
-        "password": "<password>",
+        "identifiers": {
+            "username": "thor"
+        },
+        "credentials": {
+            "password": "<password>"
+        },
         "assertion": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
     }'
     ```
@@ -78,7 +86,7 @@ The credentials authentication API allows you to authenticate users by providing
     {
         "id": "550e8400-e29b-41d4-a716-446655440000",
         "type": "superhuman",
-        "organization_unit": "660e8400-e29b-41d4-a716-446655440000",
+        "ouId": "660e8400-e29b-41d4-a716-446655440000",
         "assertion": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
     }
     ```
@@ -173,7 +181,7 @@ The SMS OTP authentication API allows you to authenticate users by sending a One
     {
         "id": "550e8400-e29b-41d4-a716-446655440000",
         "type": "superhuman",
-        "organization_unit": "660e8400-e29b-41d4-a716-446655440000",
+        "ouId": "660e8400-e29b-41d4-a716-446655440000",
         "assertion": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
     }
     ```
@@ -278,7 +286,7 @@ The Google OAuth authentication API allows you to authenticate users using their
     {
         "id": "550e8400-e29b-41d4-a716-446655440000",
         "type": "superhuman",
-        "organization_unit": "660e8400-e29b-41d4-a716-446655440000",
+        "ouId": "660e8400-e29b-41d4-a716-446655440000",
         "assertion": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
     }
     ```
@@ -383,7 +391,7 @@ The GitHub OAuth authentication API allows you to authenticate users using their
     {
         "id": "550e8400-e29b-41d4-a716-446655440000",
         "type": "superhuman",
-        "organization_unit": "660e8400-e29b-41d4-a716-446655440000",
+        "ouId": "660e8400-e29b-41d4-a716-446655440000",
         "assertion": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
     }
     ```
@@ -502,7 +510,7 @@ The Standard OAuth IDP authentication API allows you to authenticate users using
     {
         "id": "550e8400-e29b-41d4-a716-446655440000",
         "type": "superhuman",
-        "organization_unit": "660e8400-e29b-41d4-a716-446655440000",
+        "ouId": "660e8400-e29b-41d4-a716-446655440000",
         "assertion": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
     }
     ```
@@ -527,8 +535,12 @@ Example:
 ```bash
 curl -kL -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' https://localhost:8090/auth/credentials/authenticate \
 -d '{
-    "username": "thor",
-    "password": "<password>",
+    "identifiers": {
+        "username": "thor"
+    },
+    "credentials": {
+        "password": "<password>"
+    },
     "skip_assertion": true
 }'
 ```

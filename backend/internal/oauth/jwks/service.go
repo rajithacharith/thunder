@@ -63,7 +63,7 @@ func (s *jwksService) GetJWKS() (*JWKSResponse, *serviceerror.ServiceError) {
 	}
 
 	if len(allCerts) == 0 {
-		return nil, ErrorNoCertificateFound
+		return nil, &serviceerror.InternalServerError
 	}
 
 	var jwksKeys []JWKS
@@ -98,7 +98,7 @@ func (s *jwksService) GetJWKS() (*JWKSResponse, *serviceerror.ServiceError) {
 	}
 
 	if len(jwksKeys) == 0 {
-		return nil, ErrorNoCertificateFound
+		return nil, &serviceerror.InternalServerError
 	}
 
 	return &JWKSResponse{

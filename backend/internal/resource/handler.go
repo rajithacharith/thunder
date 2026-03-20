@@ -45,13 +45,14 @@ func newResourceHandler(resourceService ResourceServiceInterface) *resourceHandl
 
 // HandleResourceServerListRequest handles listing resource servers.
 func (h *resourceHandler) HandleResourceServerListRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
 	}
 
-	result, svcErr := h.resourceService.GetResourceServerList(limit, offset)
+	result, svcErr := h.resourceService.GetResourceServerList(ctx, limit, offset)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -63,6 +64,7 @@ func (h *resourceHandler) HandleResourceServerListRequest(w http.ResponseWriter,
 
 // HandleResourceServerPostRequest handles creating a resource server.
 func (h *resourceHandler) HandleResourceServerPostRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	req, err := sysutils.DecodeJSONBody[CreateResourceServerRequest](r)
 	if err != nil {
 		handleError(w, &ErrorInvalidRequestFormat)
@@ -71,14 +73,14 @@ func (h *resourceHandler) HandleResourceServerPostRequest(w http.ResponseWriter,
 
 	sanitized := sanitizeCreateResourceServerRequest(req)
 	serviceReq := ResourceServer{
-		Name:               sanitized.Name,
-		Description:        sanitized.Description,
-		Identifier:         sanitized.Identifier,
-		OrganizationUnitID: sanitized.OrganizationUnitID,
-		Delimiter:          sanitized.Delimiter,
+		Name:        sanitized.Name,
+		Description: sanitized.Description,
+		Identifier:  sanitized.Identifier,
+		OUID:        sanitized.OUID,
+		Delimiter:   sanitized.Delimiter,
 	}
 
-	result, svcErr := h.resourceService.CreateResourceServer(serviceReq)
+	result, svcErr := h.resourceService.CreateResourceServer(ctx, serviceReq)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -90,8 +92,9 @@ func (h *resourceHandler) HandleResourceServerPostRequest(w http.ResponseWriter,
 
 // HandleResourceServerGetRequest handles getting a resource server.
 func (h *resourceHandler) HandleResourceServerGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	id := r.PathValue("id")
-	result, svcErr := h.resourceService.GetResourceServer(id)
+	result, svcErr := h.resourceService.GetResourceServer(ctx, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -103,6 +106,7 @@ func (h *resourceHandler) HandleResourceServerGetRequest(w http.ResponseWriter, 
 
 // HandleResourceServerPutRequest handles updating a resource server.
 func (h *resourceHandler) HandleResourceServerPutRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	id := r.PathValue("id")
 	req, err := sysutils.DecodeJSONBody[UpdateResourceServerRequest](r)
 	if err != nil {
@@ -112,13 +116,13 @@ func (h *resourceHandler) HandleResourceServerPutRequest(w http.ResponseWriter, 
 
 	sanitized := sanitizeUpdateResourceServerRequest(req)
 	serviceReq := ResourceServer{
-		Name:               sanitized.Name,
-		Description:        sanitized.Description,
-		Identifier:         sanitized.Identifier,
-		OrganizationUnitID: sanitized.OrganizationUnitID,
+		Name:        sanitized.Name,
+		Description: sanitized.Description,
+		Identifier:  sanitized.Identifier,
+		OUID:        sanitized.OUID,
 	}
 
-	result, svcErr := h.resourceService.UpdateResourceServer(id, serviceReq)
+	result, svcErr := h.resourceService.UpdateResourceServer(ctx, id, serviceReq)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -130,8 +134,9 @@ func (h *resourceHandler) HandleResourceServerPutRequest(w http.ResponseWriter, 
 
 // HandleResourceServerDeleteRequest handles deleting a resource server.
 func (h *resourceHandler) HandleResourceServerDeleteRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	id := r.PathValue("id")
-	svcErr := h.resourceService.DeleteResourceServer(id)
+	svcErr := h.resourceService.DeleteResourceServer(ctx, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -144,6 +149,7 @@ func (h *resourceHandler) HandleResourceServerDeleteRequest(w http.ResponseWrite
 
 // HandleResourceListRequest handles listing resources.
 func (h *resourceHandler) HandleResourceListRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rsID := r.PathValue("rsId")
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
 	if svcErr != nil {
@@ -159,7 +165,7 @@ func (h *resourceHandler) HandleResourceListRequest(w http.ResponseWriter, r *ht
 		parentID = &parentParam
 	}
 
-	result, svcErr := h.resourceService.GetResourceList(rsID, parentID, limit, offset)
+	result, svcErr := h.resourceService.GetResourceList(ctx, rsID, parentID, limit, offset)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -171,6 +177,7 @@ func (h *resourceHandler) HandleResourceListRequest(w http.ResponseWriter, r *ht
 
 // HandleResourcePostRequest handles creating a resource.
 func (h *resourceHandler) HandleResourcePostRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rsID := r.PathValue("rsId")
 	req, err := sysutils.DecodeJSONBody[CreateResourceRequest](r)
 	if err != nil {
@@ -183,10 +190,13 @@ func (h *resourceHandler) HandleResourcePostRequest(w http.ResponseWriter, r *ht
 		Name:        sanitized.Name,
 		Handle:      sanitized.Handle,
 		Description: sanitized.Description,
-		Parent:      sanitized.Parent,
+		Parent:      nil,
+	}
+	if sanitized.Parent != nil {
+		serviceReq.Parent = sanitized.Parent
 	}
 
-	result, svcErr := h.resourceService.CreateResource(rsID, serviceReq)
+	result, svcErr := h.resourceService.CreateResource(ctx, rsID, serviceReq)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -198,10 +208,11 @@ func (h *resourceHandler) HandleResourcePostRequest(w http.ResponseWriter, r *ht
 
 // HandleResourceGetRequest handles getting a resource.
 func (h *resourceHandler) HandleResourceGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rsID := r.PathValue("rsId")
 	id := r.PathValue("id")
 
-	result, svcErr := h.resourceService.GetResource(rsID, id)
+	result, svcErr := h.resourceService.GetResource(ctx, rsID, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -213,6 +224,7 @@ func (h *resourceHandler) HandleResourceGetRequest(w http.ResponseWriter, r *htt
 
 // HandleResourcePutRequest handles updating a resource.
 func (h *resourceHandler) HandleResourcePutRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rsID := r.PathValue("rsId")
 	id := r.PathValue("id")
 
@@ -228,7 +240,7 @@ func (h *resourceHandler) HandleResourcePutRequest(w http.ResponseWriter, r *htt
 		Description: sanitized.Description,
 	}
 
-	result, svcErr := h.resourceService.UpdateResource(rsID, id, serviceReq)
+	result, svcErr := h.resourceService.UpdateResource(ctx, rsID, id, serviceReq)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -240,10 +252,11 @@ func (h *resourceHandler) HandleResourcePutRequest(w http.ResponseWriter, r *htt
 
 // HandleResourceDeleteRequest handles deleting a resource.
 func (h *resourceHandler) HandleResourceDeleteRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rsID := r.PathValue("rsId")
 	id := r.PathValue("id")
 
-	svcErr := h.resourceService.DeleteResource(rsID, id)
+	svcErr := h.resourceService.DeleteResource(ctx, rsID, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -256,6 +269,7 @@ func (h *resourceHandler) HandleResourceDeleteRequest(w http.ResponseWriter, r *
 
 // HandleActionListAtResourceServerRequest handles listing actions at resource server level.
 func (h *resourceHandler) HandleActionListAtResourceServerRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rsID := r.PathValue("rsId")
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
 	if svcErr != nil {
@@ -263,7 +277,7 @@ func (h *resourceHandler) HandleActionListAtResourceServerRequest(w http.Respons
 		return
 	}
 
-	result, svcErr := h.resourceService.GetActionList(rsID, nil, limit, offset)
+	result, svcErr := h.resourceService.GetActionList(ctx, rsID, nil, limit, offset)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -275,6 +289,7 @@ func (h *resourceHandler) HandleActionListAtResourceServerRequest(w http.Respons
 
 // HandleActionPostAtResourceServerRequest handles creating an action at resource server level.
 func (h *resourceHandler) HandleActionPostAtResourceServerRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rsID := r.PathValue("rsId")
 	req, err := sysutils.DecodeJSONBody[CreateActionRequest](r)
 	if err != nil {
@@ -289,7 +304,7 @@ func (h *resourceHandler) HandleActionPostAtResourceServerRequest(w http.Respons
 		Description: sanitized.Description,
 	}
 
-	result, svcErr := h.resourceService.CreateAction(rsID, nil, serviceReq)
+	result, svcErr := h.resourceService.CreateAction(ctx, rsID, nil, serviceReq)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -301,10 +316,11 @@ func (h *resourceHandler) HandleActionPostAtResourceServerRequest(w http.Respons
 
 // HandleActionGetAtResourceServerRequest handles getting an action at resource server level.
 func (h *resourceHandler) HandleActionGetAtResourceServerRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rsID := r.PathValue("rsId")
 	id := r.PathValue("id")
 
-	result, svcErr := h.resourceService.GetAction(rsID, nil, id)
+	result, svcErr := h.resourceService.GetAction(ctx, rsID, nil, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -316,6 +332,7 @@ func (h *resourceHandler) HandleActionGetAtResourceServerRequest(w http.Response
 
 // HandleActionPutAtResourceServerRequest handles updating an action at resource server level.
 func (h *resourceHandler) HandleActionPutAtResourceServerRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rsID := r.PathValue("rsId")
 	id := r.PathValue("id")
 
@@ -331,7 +348,7 @@ func (h *resourceHandler) HandleActionPutAtResourceServerRequest(w http.Response
 		Description: sanitized.Description,
 	}
 
-	result, svcErr := h.resourceService.UpdateAction(rsID, nil, id, serviceReq)
+	result, svcErr := h.resourceService.UpdateAction(ctx, rsID, nil, id, serviceReq)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -343,10 +360,11 @@ func (h *resourceHandler) HandleActionPutAtResourceServerRequest(w http.Response
 
 // HandleActionDeleteAtResourceServerRequest handles deleting an action at resource server level.
 func (h *resourceHandler) HandleActionDeleteAtResourceServerRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rsID := r.PathValue("rsId")
 	id := r.PathValue("id")
 
-	svcErr := h.resourceService.DeleteAction(rsID, nil, id)
+	svcErr := h.resourceService.DeleteAction(ctx, rsID, nil, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -359,6 +377,7 @@ func (h *resourceHandler) HandleActionDeleteAtResourceServerRequest(w http.Respo
 
 // HandleActionListAtResourceRequest handles listing actions at resource level.
 func (h *resourceHandler) HandleActionListAtResourceRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rsID := r.PathValue("rsId")
 	resourceID := r.PathValue("resourceId")
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
@@ -367,7 +386,7 @@ func (h *resourceHandler) HandleActionListAtResourceRequest(w http.ResponseWrite
 		return
 	}
 
-	result, svcErr := h.resourceService.GetActionList(rsID, &resourceID, limit, offset)
+	result, svcErr := h.resourceService.GetActionList(ctx, rsID, &resourceID, limit, offset)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -379,6 +398,7 @@ func (h *resourceHandler) HandleActionListAtResourceRequest(w http.ResponseWrite
 
 // HandleActionPostAtResourceRequest handles creating an action at resource level.
 func (h *resourceHandler) HandleActionPostAtResourceRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rsID := r.PathValue("rsId")
 	resourceID := r.PathValue("resourceId")
 
@@ -395,7 +415,7 @@ func (h *resourceHandler) HandleActionPostAtResourceRequest(w http.ResponseWrite
 		Description: sanitized.Description,
 	}
 
-	result, svcErr := h.resourceService.CreateAction(rsID, &resourceID, serviceReq)
+	result, svcErr := h.resourceService.CreateAction(ctx, rsID, &resourceID, serviceReq)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -407,11 +427,12 @@ func (h *resourceHandler) HandleActionPostAtResourceRequest(w http.ResponseWrite
 
 // HandleActionGetAtResourceRequest handles getting an action at resource level.
 func (h *resourceHandler) HandleActionGetAtResourceRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rsID := r.PathValue("rsId")
 	resourceID := r.PathValue("resourceId")
 	id := r.PathValue("id")
 
-	result, svcErr := h.resourceService.GetAction(rsID, &resourceID, id)
+	result, svcErr := h.resourceService.GetAction(ctx, rsID, &resourceID, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -423,6 +444,7 @@ func (h *resourceHandler) HandleActionGetAtResourceRequest(w http.ResponseWriter
 
 // HandleActionPutAtResourceRequest handles updating an action at resource level.
 func (h *resourceHandler) HandleActionPutAtResourceRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rsID := r.PathValue("rsId")
 	resourceID := r.PathValue("resourceId")
 	id := r.PathValue("id")
@@ -439,7 +461,7 @@ func (h *resourceHandler) HandleActionPutAtResourceRequest(w http.ResponseWriter
 		Description: sanitized.Description,
 	}
 
-	result, svcErr := h.resourceService.UpdateAction(rsID, &resourceID, id, serviceReq)
+	result, svcErr := h.resourceService.UpdateAction(ctx, rsID, &resourceID, id, serviceReq)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -451,11 +473,12 @@ func (h *resourceHandler) HandleActionPutAtResourceRequest(w http.ResponseWriter
 
 // HandleActionDeleteAtResourceRequest handles deleting an action at resource level.
 func (h *resourceHandler) HandleActionDeleteAtResourceRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	rsID := r.PathValue("rsId")
 	resourceID := r.PathValue("resourceId")
 	id := r.PathValue("id")
 
-	svcErr := h.resourceService.DeleteAction(rsID, &resourceID, id)
+	svcErr := h.resourceService.DeleteAction(ctx, rsID, &resourceID, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -518,21 +541,21 @@ func handleError(w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
 // sanitizeCreateResourceServerRequest sanitizes input for creating a resource server.
 func sanitizeCreateResourceServerRequest(req *CreateResourceServerRequest) CreateResourceServerRequest {
 	return CreateResourceServerRequest{
-		Name:               sysutils.SanitizeString(req.Name),
-		Description:        sysutils.SanitizeString(req.Description),
-		Identifier:         sysutils.SanitizeString(req.Identifier),
-		OrganizationUnitID: sysutils.SanitizeString(req.OrganizationUnitID),
-		Delimiter:          sysutils.SanitizeString(req.Delimiter),
+		Name:        sysutils.SanitizeString(req.Name),
+		Description: sysutils.SanitizeString(req.Description),
+		Identifier:  sysutils.SanitizeString(req.Identifier),
+		OUID:        sysutils.SanitizeString(req.OUID),
+		Delimiter:   sysutils.SanitizeString(req.Delimiter),
 	}
 }
 
 // sanitizeUpdateResourceServerRequest sanitizes input for updating a resource server.
 func sanitizeUpdateResourceServerRequest(req *UpdateResourceServerRequest) UpdateResourceServerRequest {
 	return UpdateResourceServerRequest{
-		Name:               sysutils.SanitizeString(req.Name),
-		Description:        sysutils.SanitizeString(req.Description),
-		Identifier:         sysutils.SanitizeString(req.Identifier),
-		OrganizationUnitID: sysutils.SanitizeString(req.OrganizationUnitID),
+		Name:        sysutils.SanitizeString(req.Name),
+		Description: sysutils.SanitizeString(req.Description),
+		Identifier:  sysutils.SanitizeString(req.Identifier),
+		OUID:        sysutils.SanitizeString(req.OUID),
 	}
 }
 
@@ -583,12 +606,13 @@ func sanitizeUpdateActionRequest(req *UpdateActionRequest) UpdateActionRequest {
 // toResourceServerResponse transforms a ResourceServer to ResourceServerResponse.
 func toResourceServerResponse(rs *ResourceServer) *ResourceServerResponse {
 	return &ResourceServerResponse{
-		ID:                 rs.ID,
-		Name:               rs.Name,
-		Description:        rs.Description,
-		Identifier:         rs.Identifier,
-		OrganizationUnitID: rs.OrganizationUnitID,
-		Delimiter:          rs.Delimiter,
+		ID:          rs.ID,
+		Name:        rs.Name,
+		Description: rs.Description,
+		Identifier:  rs.Identifier,
+		OUID:        rs.OUID,
+		Delimiter:   rs.Delimiter,
+		IsReadOnly:  rs.IsReadOnly,
 	}
 }
 

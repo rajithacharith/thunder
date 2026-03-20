@@ -45,7 +45,7 @@ func (h *jwksHandler) HandleJWKSRequest(w http.ResponseWriter, r *http.Request) 
 
 	jwksResponse, svcErr := h.jwksService.GetJWKS()
 	if svcErr != nil {
-		h.handleError(w, svcErr)
+		h.logAndWriteError(w, logger, svcErr)
 		return
 	}
 
@@ -53,18 +53,19 @@ func (h *jwksHandler) HandleJWKSRequest(w http.ResponseWriter, r *http.Request) 
 	logger.Debug("JWKS response successfully sent")
 }
 
-// handleError handles errors by writing an appropriate error response to the HTTP response writer.
-func (h *jwksHandler) handleError(w http.ResponseWriter,
+// logAndWriteError logs server errors and writes an appropriate error response to the HTTP response writer.
+func (h *jwksHandler) logAndWriteError(w http.ResponseWriter, logger *log.Logger,
 	svcErr *serviceerror.ServiceError) {
+	statusCode := http.StatusBadRequest
+	if svcErr.Type == serviceerror.ServerErrorType {
+		statusCode = http.StatusInternalServerError
+		logger.Error("Failed to retrieve JWKS", log.String("error_code", svcErr.Code))
+	}
+
 	errResp := apierror.ErrorResponse{
 		Code:        svcErr.Code,
 		Message:     svcErr.Error,
 		Description: svcErr.ErrorDescription,
-	}
-
-	statusCode := http.StatusInternalServerError
-	if svcErr.Type == serviceerror.ClientErrorType {
-		statusCode = http.StatusBadRequest
 	}
 
 	sysutils.WriteErrorResponse(w, statusCode, errResp)

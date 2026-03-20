@@ -146,6 +146,34 @@ var (
 		Error:            "Delimiter conflict in handle",
 		ErrorDescription: "Handle cannot contain the delimiter character",
 	}
+	// ErrorImmutableResourceServer is returned when attempting to modify a declarative resource server.
+	ErrorImmutableResourceServer = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "RES-1018",
+		Error:            "Cannot modify declarative resource server",
+		ErrorDescription: "Resource server %s is defined in declarative configuration and cannot be modified",
+	}
+	// ErrorImmutableResource is returned when attempting to modify a declarative resource.
+	ErrorImmutableResource = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "RES-1019",
+		Error:            "Cannot modify declarative resource",
+		ErrorDescription: "Resource %s is defined in declarative configuration and cannot be modified",
+	}
+	// ErrorImmutableAction is returned when attempting to modify a declarative action.
+	ErrorImmutableAction = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "RES-1020",
+		Error:            "Cannot modify declarative action",
+		ErrorDescription: "Action %s is defined in declarative configuration and cannot be modified",
+	}
+	// ErrResultLimitExceededInCompositeMode is the error returned when the total number of records exceeds
+	ErrResultLimitExceededInCompositeMode = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "RES-1021",
+		Error:            "Result limit exceeded in composite mode",
+		ErrorDescription: "The total number of records exceeds the maximum limit in composite mode",
+	}
 )
 
 // Internal error constants.
@@ -158,4 +186,7 @@ var (
 
 	// errActionNotFound is returned when the action is not found.
 	errActionNotFound = errors.New("action not found")
+
+	// errResultLimitExceededInCompositeMode is the internal sentinel error for composite mode limit exceeded.
+	errResultLimitExceededInCompositeMode = errors.New("result limit exceeded in composite mode")
 )

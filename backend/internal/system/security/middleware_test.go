@@ -64,8 +64,8 @@ func (suite *MiddlewareTestSuite) TestMiddleware_SuccessfulAuthentication() {
 	ctx := newSecurityContext(
 		"user123",
 		"ou456",
-		"app789",
 		"test_token",
+		nil,
 		map[string]interface{}{
 			"scope": []string{"read", "write"},
 			"role":  "admin",
@@ -85,9 +85,8 @@ func (suite *MiddlewareTestSuite) TestMiddleware_SuccessfulAuthentication() {
 
 	// Verify enriched context was passed to next handler
 	assert.NotNil(suite.T(), suite.testCtx)
-	assert.Equal(suite.T(), "user123", GetUserID(suite.testCtx))
+	assert.Equal(suite.T(), "user123", GetSubject(suite.testCtx))
 	assert.Equal(suite.T(), "ou456", GetOUID(suite.testCtx))
-	assert.Equal(suite.T(), "app789", GetAppID(suite.testCtx))
 }
 
 // Test authentication failure with unauthorized error
@@ -96,7 +95,7 @@ func (suite *MiddlewareTestSuite) TestMiddleware_AuthenticationFailure_Unauthori
 	w := httptest.NewRecorder()
 
 	// Mock authentication failure
-	suite.mockService.EXPECT().Process(req).Return(context.TODO(), errUnauthorized)
+	suite.mockService.EXPECT().Process(req).Return(context.Background(), errUnauthorized)
 
 	handler := suite.middleware(suite.testHandler)
 	handler.ServeHTTP(w, req)
@@ -113,7 +112,7 @@ func (suite *MiddlewareTestSuite) TestMiddleware_AuthenticationFailure_InvalidTo
 	req := httptest.NewRequest(http.MethodPost, "/api/groups", nil)
 	w := httptest.NewRecorder()
 
-	suite.mockService.EXPECT().Process(req).Return(context.TODO(), errInvalidToken)
+	suite.mockService.EXPECT().Process(req).Return(context.Background(), errInvalidToken)
 
 	handler := suite.middleware(suite.testHandler)
 	handler.ServeHTTP(w, req)
@@ -127,7 +126,7 @@ func (suite *MiddlewareTestSuite) TestMiddleware_AuthenticationFailure_MissingAu
 	req := httptest.NewRequest(http.MethodPut, "/api/roles", nil)
 	w := httptest.NewRecorder()
 
-	suite.mockService.EXPECT().Process(req).Return(context.TODO(), errMissingAuthHeader)
+	suite.mockService.EXPECT().Process(req).Return(context.Background(), errMissingAuthHeader)
 
 	handler := suite.middleware(suite.testHandler)
 	handler.ServeHTTP(w, req)
@@ -141,7 +140,7 @@ func (suite *MiddlewareTestSuite) TestMiddleware_AuthenticationFailure_NoHandler
 	req := httptest.NewRequest(http.MethodDelete, "/api/applications", nil)
 	w := httptest.NewRecorder()
 
-	suite.mockService.EXPECT().Process(req).Return(context.TODO(), errNoHandlerFound)
+	suite.mockService.EXPECT().Process(req).Return(context.Background(), errNoHandlerFound)
 
 	handler := suite.middleware(suite.testHandler)
 	handler.ServeHTTP(w, req)
@@ -155,7 +154,7 @@ func (suite *MiddlewareTestSuite) TestMiddleware_AuthorizationFailure_Forbidden(
 	req := httptest.NewRequest(http.MethodGet, "/admin/users", nil)
 	w := httptest.NewRecorder()
 
-	suite.mockService.EXPECT().Process(req).Return(context.TODO(), errForbidden)
+	suite.mockService.EXPECT().Process(req).Return(context.Background(), errForbidden)
 
 	handler := suite.middleware(suite.testHandler)
 	handler.ServeHTTP(w, req)
@@ -164,12 +163,12 @@ func (suite *MiddlewareTestSuite) TestMiddleware_AuthorizationFailure_Forbidden(
 	assert.Nil(suite.T(), suite.testCtx)
 }
 
-// Test authorization failure with insufficient scopes error
-func (suite *MiddlewareTestSuite) TestMiddleware_AuthorizationFailure_InsufficientScopes() {
+// Test authorization failure with insufficient permissions error
+func (suite *MiddlewareTestSuite) TestMiddleware_AuthorizationFailure_InsufficientPermissions() {
 	req := httptest.NewRequest(http.MethodPost, "/admin/settings", nil)
 	w := httptest.NewRecorder()
 
-	suite.mockService.EXPECT().Process(req).Return(context.TODO(), errInsufficientScopes)
+	suite.mockService.EXPECT().Process(req).Return(context.Background(), errInsufficientPermissions)
 
 	handler := suite.middleware(suite.testHandler)
 	handler.ServeHTTP(w, req)
@@ -184,7 +183,7 @@ func (suite *MiddlewareTestSuite) TestMiddleware_UnknownError() {
 	w := httptest.NewRecorder()
 
 	unknownErr := errors.New("some unexpected error")
-	suite.mockService.EXPECT().Process(req).Return(context.TODO(), unknownErr)
+	suite.mockService.EXPECT().Process(req).Return(context.Background(), unknownErr)
 
 	handler := suite.middleware(suite.testHandler)
 	handler.ServeHTTP(w, req)
@@ -242,7 +241,7 @@ func (suite *MiddlewareTestSuite) TestMiddleware_DifferentHTTPMethods() {
 			// Reset test context for each iteration
 			suite.testCtx = nil
 
-			ctx := newSecurityContext("user", "ou", "app", "token", nil)
+			ctx := newSecurityContext("user", "ou", "token", nil, nil)
 			enrichedCtx := withSecurityContext(context.Background(), ctx)
 
 			suite.mockService.EXPECT().Process(req).Return(enrichedCtx, nil)
@@ -276,7 +275,7 @@ func (suite *MiddlewareTestSuite) TestMiddleware_Chaining() {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	ctx := newSecurityContext("user", "ou", "app", "token", nil)
+	ctx := newSecurityContext("user", "ou", "token", nil, nil)
 	enrichedCtx := withSecurityContext(context.Background(), ctx)
 	suite.mockService.EXPECT().Process(req).Return(enrichedCtx, nil)
 
@@ -294,7 +293,7 @@ func (suite *MiddlewareTestSuite) TestMiddleware_ErrorHandling_EdgeCases() {
 	w := httptest.NewRecorder()
 
 	// Test with service returning context but also error (edge case)
-	ctx := newSecurityContext("user", "ou", "app", "token", nil)
+	ctx := newSecurityContext("user", "ou", "token", nil, nil)
 	enrichedCtx := withSecurityContext(context.Background(), ctx)
 	suite.mockService.EXPECT().Process(req).Return(enrichedCtx, errUnauthorized)
 
@@ -385,8 +384,8 @@ func TestWriteSecurityError(t *testing.T) {
 			expectedAuthHeader: false,
 		},
 		{
-			name:               "Insufficient scopes error",
-			err:                errInsufficientScopes,
+			name:               "Insufficient permissions error",
+			err:                errInsufficientPermissions,
 			expectedStatus:     http.StatusForbidden,
 			expectedErrorCode:  "forbidden",
 			expectedDesc:       "You do not have sufficient permissions to access this resource",

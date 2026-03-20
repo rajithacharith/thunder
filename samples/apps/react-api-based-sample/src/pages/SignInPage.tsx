@@ -34,7 +34,7 @@ import { getConfig } from "../config";
 interface AuthResponse {
   id: string;
   type: string;
-  organization_unit?: string;
+  ouId?: string;
   assertion: string;
 }
 
@@ -75,8 +75,12 @@ function SignInPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            username: formData.username,
-            password: formData.password,
+            identifiers: {
+              username: formData.username,
+            },
+            credentials: {
+              password: formData.password,
+            },
           }),
         }
       );

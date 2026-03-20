@@ -35,9 +35,10 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/cache"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/security"
@@ -71,19 +72,8 @@ func main() {
 		logger.Fatal("Failed to initialize multiplexer")
 	}
 
-	// Load the server's private key for signing JWTs.
-	pkiService, err := pki.Initialize()
-	if err != nil {
-		logger.Fatal("Failed to initialize certificate service", log.Error(err))
-	}
-
-	jwtService, err := jwt.Initialize(pkiService)
-	if err != nil {
-		logger.Fatal("Failed to load private key", log.Error(err))
-	}
-
 	// Register the services.
-	registerServices(mux, jwtService, pkiService)
+	jwtService := registerServices(mux)
 
 	// Register static file handlers for frontend applications.
 	registerStaticFileHandlers(logger, mux, thunderHome)
@@ -104,7 +94,7 @@ func main() {
 	}
 
 	serverURL := config.GetServerURL(&cfg.Server)
-	consoleURL := fmt.Sprintf("%s/develop", strings.TrimSuffix(serverURL, "/"))
+	consoleURL := fmt.Sprintf("%s/console", strings.TrimSuffix(serverURL, "/"))
 	logger.Info("Thunder Server URL", log.String("url", serverURL))
 	logger.Info("Thunder Console URL", log.String("url", consoleURL))
 
@@ -192,14 +182,9 @@ func createHTTPServer(logger *log.Logger, cfg *config.Config, mux *http.ServeMux
 	securityMiddleware := createSecurityMiddleware(logger, mux, jwtService)
 
 	// Build the middleware chain with proper execution order.
-	// Request flow: CorrelationID (outermost) -> AccessLog -> Security (if enabled) -> Route Handler (innermost)
+	// Request flow: CorrelationID (outermost) -> AccessLog -> Security -> Route Handler (innermost)
 	// Note: Middlewares are wrapped in reverse order - the last added will execute first.
-	var handler http.Handler
-	if securityMiddleware != nil {
-		handler = log.AccessLogHandler(logger, securityMiddleware)
-	} else {
-		handler = log.AccessLogHandler(logger, mux)
-	}
+	handler := log.AccessLogHandler(logger, securityMiddleware)
 	handler = middleware.CorrelationIDMiddleware(handler)
 
 	// Build the server address using hostname and port from the configurations.
@@ -236,20 +221,6 @@ func createTLSListener(logger *log.Logger, server *http.Server, tlsConfig *tls.C
 
 func createSecurityMiddleware(logger *log.Logger, mux *http.ServeMux,
 	jwtService jwt.JWTServiceInterface) http.Handler {
-	// Check if security should be skipped via environment variable
-	skipSecurity := os.Getenv("THUNDER_SKIP_SECURITY")
-	if skipSecurity == "true" {
-		logger.Warn("============================================================")
-		logger.Warn("|       WARNING: SECURITY MIDDLEWARE DISABLED              |")
-		logger.Warn("|                                                          |")
-		logger.Warn("|        THUNDER_SKIP_SECURITY is set to 'true'            |")
-		logger.Warn("|  This is NOT RECOMMENDED for production environments!    |")
-		logger.Warn("| All endpoints will be accessible without authentication  |")
-		logger.Warn("|                                                          |")
-		logger.Warn("============================================================")
-		return nil
-	}
-
 	middlewareFunc, err := security.Initialize(jwtService)
 	if err != nil {
 		logger.Fatal("Failed to initialize security middleware", log.Error(err))
@@ -298,14 +269,14 @@ func registerStaticFileHandlers(logger *log.Logger, mux *http.ServeMux, thunderH
 		logger.Warn("Gate application directory not found", log.String("directory", gateDir))
 	}
 
-	// Serve develop application from /develop
-	developDir := path.Join(thunderHome, "apps", "develop")
-	if directoryExists(developDir) {
-		logger.Debug("Registering static file handler for Develop application",
-			log.String("path", "/develop/"), log.String("directory", developDir))
-		mux.Handle("/develop/", createStaticFileHandler("/develop/", developDir, logger))
+	// Serve console application from /console
+	consoleDir := path.Join(thunderHome, "apps", "console")
+	if directoryExists(consoleDir) {
+		logger.Debug("Registering static file handler for Console application",
+			log.String("path", "/console/"), log.String("directory", consoleDir))
+		mux.Handle("/console/", createStaticFileHandler("/console/", consoleDir, logger))
 	} else {
-		logger.Warn("Develop application directory not found", log.String("directory", developDir))
+		logger.Warn("Console application directory not found", log.String("directory", consoleDir))
 	}
 }
 
@@ -314,8 +285,24 @@ func createStaticFileHandler(routePrefix, directory string, logger *log.Logger) 
 	fileServer := http.FileServer(http.Dir(directory))
 
 	return http.StripPrefix(routePrefix, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle root path "/" by explicitly serving index.html
+		if r.URL.Path == "/" || r.URL.Path == "" {
+			indexPath := path.Join(directory, "index.html")
+			if fileExists(indexPath) {
+				// Set no-cache headers for index.html
+				w.Header().Set(constants.CacheControlHeaderName, constants.CacheControlNoCacheComposite)
+				w.Header().Set(constants.PragmaHeaderName, constants.PragmaNoCache)
+				w.Header().Set(constants.ExpiresHeaderName, constants.ExpiresZero)
+				http.ServeFile(w, r, indexPath)
+				return
+			}
+		}
+
 		// Get the file path
 		filePath := path.Join(directory, r.URL.Path)
+
+		// Check if the requested file is index.html
+		isIndexHTML := r.URL.Path == "/index.html" || path.Base(filePath) == "index.html"
 
 		// Check if file exists
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -325,6 +312,23 @@ func createStaticFileHandler(routePrefix, directory string, logger *log.Logger) 
 				logger.Debug("Serving index.html for SPA routing",
 					log.String("requested_path", r.URL.Path),
 					log.String("route_prefix", routePrefix))
+				// Set no-cache headers for index.html
+				w.Header().Set(constants.CacheControlHeaderName, constants.CacheControlNoCacheComposite)
+				w.Header().Set(constants.PragmaHeaderName, constants.PragmaNoCache)
+				w.Header().Set(constants.ExpiresHeaderName, constants.ExpiresZero)
+				http.ServeFile(w, r, indexPath)
+				return
+			}
+		}
+
+		// Serve index.html directly with no-cache headers when requested
+		if isIndexHTML {
+			indexPath := path.Join(directory, "index.html")
+			if fileExists(indexPath) {
+				// Set no-cache headers for index.html
+				w.Header().Set(constants.CacheControlHeaderName, constants.CacheControlNoCacheComposite)
+				w.Header().Set(constants.PragmaHeaderName, constants.PragmaNoCache)
+				w.Header().Set(constants.ExpiresHeaderName, constants.ExpiresZero)
 				http.ServeFile(w, r, indexPath)
 				return
 			}

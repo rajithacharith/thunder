@@ -24,18 +24,23 @@ import (
 	"errors"
 	"slices"
 	"sort"
+	"strconv"
+	"strings"
 
+	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/authn/assert"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
+	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const (
@@ -46,9 +51,11 @@ const (
 type authAssertExecutor struct {
 	core.ExecutorInterface
 	jwtService          jwt.JWTServiceInterface
-	userService         user.UserServiceInterface
 	ouService           ou.OrganizationUnitServiceInterface
 	authAssertGenerator assert.AuthAssertGeneratorInterface
+	credsAuthSvc        authncreds.CredentialsAuthnServiceInterface
+	userProvider        userprovider.UserProviderInterface
+	attributeCacheSvc   attributecache.AttributeCacheServiceInterface
 	logger              *log.Logger
 }
 
@@ -58,9 +65,11 @@ var _ core.ExecutorInterface = (*authAssertExecutor)(nil)
 func newAuthAssertExecutor(
 	flowFactory core.FlowFactoryInterface,
 	jwtService jwt.JWTServiceInterface,
-	userService user.UserServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	assertGenerator assert.AuthAssertGeneratorInterface,
+	credsAuthSvc authncreds.CredentialsAuthnServiceInterface,
+	userProvider userprovider.UserProviderInterface,
+	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 ) *authAssertExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, authAssertLoggerComponentName),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameAuthAssert))
@@ -71,9 +80,11 @@ func newAuthAssertExecutor(
 	return &authAssertExecutor{
 		ExecutorInterface:   base,
 		jwtService:          jwtService,
-		userService:         userService,
 		ouService:           ouService,
 		authAssertGenerator: assertGenerator,
+		credsAuthSvc:        credsAuthSvc,
+		userProvider:        userProvider,
+		attributeCacheSvc:   attributeCacheSvc,
 		logger:              logger,
 	}
 }
@@ -118,15 +129,11 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 
 	jwtClaims := make(map[string]interface{})
 	jwtConfig := config.GetThunderRuntime().Config.JWT
-	iss := ""
+	iss := jwtConfig.Issuer
 	validityPeriod := int64(0)
 
-	if ctx.Application.Token != nil {
-		iss = ctx.Application.Token.Issuer
-		validityPeriod = ctx.Application.Token.ValidityPeriod
-	}
-	if iss == "" {
-		iss = jwtConfig.Issuer
+	if ctx.Application.Assertion != nil {
+		validityPeriod = ctx.Application.Assertion.ValidityPeriod
 	}
 	if validityPeriod == 0 {
 		validityPeriod = jwtConfig.ValidityPeriod
@@ -157,40 +164,44 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 		jwtClaims["authorized_permissions"] = permissions
 	}
 
-	// Get user attributes from application token config
-	var userAttributes []string
-	if ctx.Application.Token != nil {
-		userAttributes = ctx.Application.Token.UserAttributes
+	requiredAttributes := a.getRequiredUserAttributes(ctx)
+
+	resolvedAttributes, attrErr := a.resolveUserAttributes(ctx, requiredAttributes)
+	if attrErr != nil {
+		return "", attrErr
 	}
 
-	if err := a.appendUserDetailsToClaims(ctx, jwtClaims, userAttributes); err != nil {
-		return "", err
-	}
-
-	// Handle groups if configured in user attributes
-	if slices.Contains(userAttributes, oauth2const.UserAttributeGroups) && ctx.AuthenticatedUser.UserID != "" {
-		if err := a.appendGroupsToClaims(ctx.AuthenticatedUser.UserID, jwtClaims); err != nil {
-			return "", err
+	if ttlSecondsStr, exists := ctx.RuntimeData[common.RuntimeKeyUserAttributesCacheTTLSeconds]; exists {
+		// We are not in an App Native flow, so we need to cache the user attributes
+		if len(resolvedAttributes) > 0 {
+			ttlSeconds, err := strconv.Atoi(ttlSecondsStr)
+			if err != nil {
+				logger.Error("Failed to parse TTL seconds from runtime data",
+					log.String("key", common.RuntimeKeyUserAttributesCacheTTLSeconds),
+					log.String("ttlValue", ttlSecondsStr),
+					log.String("error", err.Error()))
+				return "", errors.New("something went wrong while processing attribute cache configuration")
+			}
+			attributeCache := &attributecache.AttributeCache{
+				Attributes: resolvedAttributes,
+				TTLSeconds: ttlSeconds,
+			}
+			result, creationErr := a.attributeCacheSvc.CreateAttributeCache(ctx.Context, attributeCache)
+			if creationErr != nil {
+				logger.Error("Failed to create attribute cache",
+					log.String("error", creationErr.ErrorDescription.DefaultValue))
+				return "", errors.New("failed to create attribute cache")
+			}
+			jwtClaims["aci"] = result.ID
+		}
+	} else {
+		// We are in an App Native flow, so we need to add user attributes to the assertion
+		for attrKey, attrVal := range resolvedAttributes {
+			jwtClaims[attrKey] = attrVal
 		}
 	}
 
-	// Add user type to the claims
-	if slices.Contains(userAttributes, oauth2const.ClaimUserType) && ctx.AuthenticatedUser.UserType != "" {
-		jwtClaims[oauth2const.ClaimUserType] = ctx.AuthenticatedUser.UserType
-	}
-
-	// Add OU details to the claims
-	ouAttributesConfigured := slices.Contains(userAttributes, oauth2const.ClaimOUID) ||
-		slices.Contains(userAttributes, oauth2const.ClaimOUName) ||
-		slices.Contains(userAttributes, oauth2const.ClaimOUHandle)
-	if ouAttributesConfigured && ctx.AuthenticatedUser.OrganizationUnitID != "" {
-		if err := a.appendOUDetailsToClaims(
-			ctx.AuthenticatedUser.OrganizationUnitID, jwtClaims, userAttributes); err != nil {
-			return "", err
-		}
-	}
-
-	token, _, err := a.jwtService.GenerateJWT(tokenSub, ctx.AppID, iss, validityPeriod, jwtClaims)
+	token, _, err := a.jwtService.GenerateJWT(tokenSub, ctx.AppID, iss, validityPeriod, jwtClaims, jwt.TokenTypeJWT)
 	if err != nil {
 		logger.Error("Failed to generate JWT token", log.String("error", err.Error))
 		return "", errors.New("failed to generate JWT token: " + err.Error)
@@ -245,79 +256,216 @@ func (a *authAssertExecutor) extractAuthenticatorReferences(
 	return refs
 }
 
-// appendUserDetailsToClaims appends user details to the JWT claims.
-func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *core.NodeContext,
-	jwtClaims map[string]interface{}, userAttributes []string) error {
-	if len(userAttributes) > 0 && ctx.AuthenticatedUser.UserID != "" {
-		var user *user.User
-		var attrs map[string]interface{}
+// getRequiredUserAttributes determines the list of user attribute keys that should be included in the
+// assertion based on runtime and application configuration.
+func (a *authAssertExecutor) getRequiredUserAttributes(ctx *core.NodeContext) (userAttributes []string) {
+	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
-		for _, attr := range userAttributes {
-			// Skip attributes that are handled separately
-			if attr == oauth2const.UserAttributeGroups ||
-				attr == oauth2const.ClaimUserType ||
-				attr == oauth2const.ClaimOUID ||
-				attr == oauth2const.ClaimOUName ||
-				attr == oauth2const.ClaimOUHandle {
+	// Check if consent was recorded in this flow. If recorded, we should only include consented attributes
+	// We check RuntimeKeyConsentID to determine if the consent executor ran and recorded a consent.
+	if _, consentRecorded := ctx.RuntimeData[common.RuntimeKeyConsentID]; consentRecorded {
+		// Get user attributes from consented attributes if consent was collected in this flow
+		if consentedAttrsStr, exists := ctx.RuntimeData[common.RuntimeKeyConsentedAttributes]; exists {
+			logger.Debug("Consent recorded with approved attributes")
+			return strings.Fields(consentedAttrsStr)
+		}
+
+		// If consent was recorded but no attributes were approved, attributes are empty
+		logger.Debug("Consent recorded but no attributes approved")
+		return []string{}
+	}
+
+	// If consent was not recorded in this flow, check for essential/ optional attributes in runtime data.
+	// If present, we should apply attribute filtering based on these attributes
+	_, essentialExists := ctx.RuntimeData[common.RuntimeKeyRequiredEssentialAttributes]
+	_, optionalExists := ctx.RuntimeData[common.RuntimeKeyRequiredOptionalAttributes]
+
+	if essentialExists || optionalExists {
+		userAttributes = []string{}
+		logger.Debug("Essential/ optional attributes exists in runtime data. Applying attribute filtering")
+
+		if essentialExists {
+			logger.Debug("Adding required essential attributes to user attributes list")
+			userAttributes = append(userAttributes,
+				strings.Fields(ctx.RuntimeData[common.RuntimeKeyRequiredEssentialAttributes])...)
+		}
+		if optionalExists {
+			logger.Debug("Adding required optional attributes to user attributes list")
+			userAttributes = append(userAttributes,
+				strings.Fields(ctx.RuntimeData[common.RuntimeKeyRequiredOptionalAttributes])...)
+		}
+
+		return userAttributes
+	}
+
+	// If consent was not recorded and no essential/ optional attributes specified, fallback to
+	// application token config
+	if ctx.Application.Assertion != nil {
+		logger.Debug("Adding application token attributes to user attributes list")
+		return ctx.Application.Assertion.UserAttributes
+	}
+
+	logger.Debug("No user attributes configured for inclusion in assertion")
+	return []string{}
+}
+
+// resolveUserAttributes resolves the user attributes map from the requested attributes.
+func (a *authAssertExecutor) resolveUserAttributes(ctx *core.NodeContext, requestedAttributes []string) (
+	map[string]interface{}, error) {
+	if len(requestedAttributes) == 0 {
+		return nil, nil
+	}
+
+	attributes := make(map[string]interface{})
+	var fetchedAttributes map[string]interface{}
+
+	standardClaims := oauth2const.GetStandardClaims()
+
+	for _, attr := range requestedAttributes {
+		// Skip attributes that are handled separately
+		if attr == oauth2const.UserAttributeGroups ||
+			attr == oauth2const.ClaimUserType ||
+			attr == oauth2const.ClaimOUID ||
+			attr == oauth2const.ClaimOUName ||
+			attr == oauth2const.ClaimOUHandle {
+			continue
+		}
+
+		// Skip standard JWT claims if present in the user attributes
+		if slices.Contains(standardClaims, attr) {
+			continue
+		}
+
+		// Check for the attribute in authenticated user attributes
+		if val, ok := ctx.AuthenticatedUser.Attributes[attr]; ok {
+			attributes[attr] = val
+			continue
+		}
+
+		// Check runtime data as fallback
+		if val, exists := ctx.RuntimeData[attr]; exists && val != "" {
+			attributes[attr] = val
+			continue
+		}
+
+		// Fetch from user/authentication provider
+		if ctx.AuthenticatedUser.UserID != "" && fetchedAttributes == nil {
+			var err error
+			if ctx.AuthenticatedUser.Token != "" {
+				metadata := a.buildGetAttributesMetadata(ctx)
+				fetchedAttributes, err = a.getUserAttributesFromAuthnProvider(ctx.Context,
+					ctx.AuthenticatedUser.Token, requestedAttributes, metadata)
+			} else {
+				fetchedAttributes, err = a.getUserAttributesFromUserProvider(ctx.AuthenticatedUser.UserID)
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		// Check for the attribute in attributes fetched from user/authentication provider
+		if fetchedAttributes != nil {
+			if val, ok := fetchedAttributes[attr]; ok {
+				attributes[attr] = val
 				continue
-			}
-
-			// check for the attribute in authenticated user attributes
-			if val, ok := ctx.AuthenticatedUser.Attributes[attr]; ok {
-				jwtClaims[attr] = val
-				continue
-			}
-
-			// fetch user details only once
-			if user == nil {
-				var err error
-				user, attrs, err = a.getUserAttributes(ctx.AuthenticatedUser.UserID)
-				if err != nil {
-					return err
-				}
-			}
-
-			// check for the attribute in user store attributes
-			if val, ok := attrs[attr]; ok {
-				jwtClaims[attr] = val
 			}
 		}
 	}
 
-	return nil
+	// Handle groups if configured in user attributes
+	if slices.Contains(requestedAttributes, oauth2const.UserAttributeGroups) && ctx.AuthenticatedUser.UserID != "" {
+		if err := a.appendGroupsToClaims(ctx.AuthenticatedUser.UserID, attributes); err != nil {
+			return nil, err
+		}
+	}
+
+	// Add user type to the claims
+	if slices.Contains(requestedAttributes, oauth2const.ClaimUserType) && ctx.AuthenticatedUser.UserType != "" {
+		attributes[oauth2const.ClaimUserType] = ctx.AuthenticatedUser.UserType
+	}
+
+	// Add OU details to the claims
+	ouAttributesConfigured := slices.Contains(requestedAttributes, oauth2const.ClaimOUID) ||
+		slices.Contains(requestedAttributes, oauth2const.ClaimOUName) ||
+		slices.Contains(requestedAttributes, oauth2const.ClaimOUHandle)
+	if ouAttributesConfigured && ctx.AuthenticatedUser.OUID != "" {
+		if err := a.appendOUDetailsToClaims(
+			ctx.Context, ctx.AuthenticatedUser.OUID, attributes, requestedAttributes); err != nil {
+			return nil, err
+		}
+	}
+
+	return attributes, nil
 }
 
-// getUserAttributes retrieves user details and unmarshal the attributes.
-func (a *authAssertExecutor) getUserAttributes(userID string) (
-	*user.User, map[string]interface{}, error) {
+// getUserAttributesFromAuthnProvider retrieves user attributes from the authentication provider.
+func (a *authAssertExecutor) getUserAttributesFromAuthnProvider(ctx context.Context, token string,
+	requestedAttributes []string, metadata *authnprovider.GetAttributesMetadata) (map[string]interface{}, error) {
+	// Convert requested attributes from []string to *RequestedAttributes
+	reqAttrs := &authnprovider.RequestedAttributes{
+		Attributes:    make(map[string]*authnprovider.AttributeMetadataRequest),
+		Verifications: nil,
+	}
+	for _, attrName := range requestedAttributes {
+		reqAttrs.Attributes[attrName] = nil
+	}
+
+	res, svcErr := a.credsAuthSvc.GetAttributes(ctx, token, reqAttrs, metadata)
+	if svcErr != nil {
+		if svcErr.Type == serviceerror.ServerErrorType {
+			return nil, errors.New("something went wrong while fetching user attributes")
+		}
+		return nil, errors.New("failed to fetch user attributes: " + svcErr.ErrorDescription)
+	}
+
+	// Extract attribute values from AttributesResponse
+	attrs := make(map[string]interface{})
+	if res.AttributesResponse != nil && res.AttributesResponse.Attributes != nil {
+		for attrName, attrResp := range res.AttributesResponse.Attributes {
+			if attrResp != nil {
+				attrs[attrName] = attrResp.Value
+			}
+		}
+	}
+	return attrs, nil
+}
+
+// getUserAttributesFromUserProvider retrieves user attributes from the user provider.
+func (a *authAssertExecutor) getUserAttributesFromUserProvider(userID string) (
+	map[string]interface{}, error) {
 	logger := a.logger.With(log.String("userID", userID))
 
-	var svcErr *serviceerror.ServiceError
-	user, svcErr := a.userService.GetUser(context.TODO(), userID)
-	if svcErr != nil {
+	var jsonAttrs json.RawMessage
+	res, err := a.userProvider.GetUser(userID)
+	if err != nil {
 		logger.Error("Failed to fetch user attributes",
-			log.String("userID", userID), log.Any("error", svcErr))
-		return nil, nil, errors.New("something went wrong while fetching user attributes: " +
-			svcErr.ErrorDescription)
+			log.String("userID", userID), log.Any("error", err))
+		return nil, errors.New("something went wrong while fetching user attributes: " + err.Error())
+	}
+	jsonAttrs = res.Attributes
+
+	if len(jsonAttrs) == 0 {
+		logger.Error("No user attributes returned")
+		return nil, errors.New("no user attributes returned")
 	}
 
 	var attrs map[string]interface{}
-	if err := json.Unmarshal(user.Attributes, &attrs); err != nil {
+	if err := json.Unmarshal(jsonAttrs, &attrs); err != nil {
 		logger.Error("Failed to unmarshal user attributes", log.String("userID", userID),
 			log.Error(err))
-		return nil, nil, errors.New("something went wrong while unmarshalling user attributes: " + err.Error())
+		return nil, errors.New("something went wrong while unmarshalling user attributes: " + err.Error())
 	}
 
-	return user, attrs, nil
+	return attrs, nil
 }
 
 // appendOUDetailsToClaims appends organization unit details to the JWT claims.
 // Only adds attributes that are configured in userAttributes.
 func (a *authAssertExecutor) appendOUDetailsToClaims(
-	ouID string, jwtClaims map[string]interface{}, userAttributes []string) error {
+	ctx context.Context, ouID string, jwtClaims map[string]interface{}, userAttributes []string) error {
 	logger := a.logger.With(log.String(ouIDKey, ouID))
 
-	organizationUnit, svcErr := a.ouService.GetOrganizationUnit(ouID)
+	organizationUnit, svcErr := a.ouService.GetOrganizationUnit(ctx, ouID)
 	if svcErr != nil {
 		logger.Error("Failed to fetch organization unit details",
 			log.String(ouIDKey, ouID), log.Any("error", svcErr))
@@ -347,11 +495,11 @@ func (a *authAssertExecutor) appendGroupsToClaims(
 	userID string, jwtClaims map[string]interface{}) error {
 	logger := a.logger.With(log.String("userID", userID))
 
-	groups, svcErr := a.userService.GetUserGroups(context.TODO(), userID, oauth2const.DefaultGroupListLimit, 0)
-	if svcErr != nil {
+	groups, err := a.userProvider.GetUserGroups(userID, oauth2const.DefaultGroupListLimit, 0)
+	if err != nil {
 		logger.Error("Failed to fetch user groups",
-			log.String("userID", userID), log.Any("error", svcErr))
-		return errors.New("something went wrong while fetching user groups: " + svcErr.ErrorDescription)
+			log.String("userID", userID), log.Any("error", err))
+		return errors.New("something went wrong while fetching user groups: " + err.Description)
 	}
 
 	userGroups := make([]string, 0, len(groups.Groups))
@@ -364,4 +512,38 @@ func (a *authAssertExecutor) appendGroupsToClaims(
 	}
 
 	return nil
+}
+
+// buildGetAttributesMetadata constructs the metadata for fetching user attributes.
+func (a *authAssertExecutor) buildGetAttributesMetadata(ctx *core.NodeContext) *authnprovider.GetAttributesMetadata {
+	metadata := &authnprovider.GetAttributesMetadata{
+		AppMetadata: make(map[string]interface{}),
+	}
+
+	// Copy application metadata if present
+	if ctx.Application.Metadata != nil {
+		for key, value := range ctx.Application.Metadata {
+			metadata.AppMetadata[key] = value
+		}
+	}
+
+	// Extract client IDs from InboundAuthConfig
+	var clientIDs []string
+	for _, inboundConfig := range ctx.Application.InboundAuthConfig {
+		if inboundConfig.OAuthAppConfig != nil && inboundConfig.OAuthAppConfig.ClientID != "" {
+			clientIDs = append(clientIDs, inboundConfig.OAuthAppConfig.ClientID)
+		}
+	}
+
+	// Add client IDs to metadata if present
+	if len(clientIDs) > 0 {
+		metadata.AppMetadata["client_ids"] = clientIDs
+	}
+
+	// Set locale from runtime data if present
+	if locale, exists := ctx.RuntimeData["required_locales"]; exists && locale != "" {
+		metadata.Locale = locale
+	}
+
+	return metadata
 }

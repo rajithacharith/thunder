@@ -69,12 +69,20 @@ packages:
       pkgname: certmock
       filename: "{{.InterfaceName}}_mock.go"
 
-  github.com/asgardeo/thunder/internal/system/jwt:
+  github.com/asgardeo/thunder/internal/system/jose/jwt:
     config:
       all: true
-      dir: tests/mocks/jwtmock
+      dir: tests/mocks/jose/jwtmock
       structname: '{{.InterfaceName}}Mock'
       pkgname: jwtmock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/system/jose/jwe:
+    config:
+      all: true
+      dir: tests/mocks/jose/jwemock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: jwemock
       filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/oauth/scope:
@@ -130,6 +138,14 @@ packages:
       dir: tests/mocks/oauth/oauth2/introspectmock
       structname: '{{.InterfaceName}}Mock'
       pkgname: introspectmock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/oauth2/discovery:
+    config:
+      all: true
+      dir: tests/mocks/oauth/oauth2/discoverymock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: discoverymock
       filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/user:
@@ -212,6 +228,15 @@ packages:
           structname: 'WebAuthnAuthnServiceInterfaceMock'
           pkgname: passkeymock
           filename: "WebAuthnAuthnServiceInterface_mock.go"
+
+  github.com/asgardeo/thunder/internal/authn/consent:
+    interfaces:
+      ConsentEnforcerServiceInterface:
+        config:
+          dir: tests/mocks/authn/consentenforcermock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: consentenforcermock
+          filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/idp:
     config:
@@ -336,17 +361,49 @@ packages:
   github.com/asgardeo/thunder/internal/observability:
     config:
       all: true
-      dir: tests/mocks/observabilitymock
+      dir: tests/mocks/observability/observabilitymock
       structname: '{{.InterfaceName}}Mock'
       pkgname: observabilitymock
       filename: "{{.InterfaceName}}_mock.go"
 
-  github.com/asgardeo/thunder/internal/branding/mgt:
+  github.com/asgardeo/thunder/internal/observability/adapter:
     config:
       all: true
-      dir: tests/mocks/brandingmock
+      dir: tests/mocks/observability/adaptermock
       structname: '{{.InterfaceName}}Mock'
-      pkgname: brandingmock
+      pkgname: adaptermock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/design/theme/mgt:
+    config:
+      all: true
+      dir: tests/mocks/design/thememock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: thememock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/design/layout/mgt:
+    config:
+      all: true
+      dir: tests/mocks/design/layoutmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: layoutmock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/design/resolve:
+    config:
+      all: true
+      dir: tests/mocks/design/resolvemock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: resolvemock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/system/i18n/mgt:
+    config:
+      all: true
+      dir: tests/mocks/i18n/mgtmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: mgtmock
       filename: "{{.InterfaceName}}_mock.go"
   
   github.com/asgardeo/thunder/internal/system/crypto/hash:
@@ -371,4 +428,54 @@ packages:
       dir: tests/mocks/resourcemock
       structname: '{{.InterfaceName}}Mock'
       pkgname: resourcemock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/authnprovider:
+    config:
+      all: true
+      dir: tests/mocks/authnprovidermock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: authnprovidermock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/userprovider:
+    config:
+      all: true
+      dir: tests/mocks/userprovidermock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: userprovidermock
+      filename: "{{.InterfaceName}}_mock.go"
+  
+  github.com/asgardeo/thunder/internal/system/sysauthz:
+    interfaces:
+      SystemAuthorizationServiceInterface:
+        config:
+          dir: tests/mocks/sysauthzmock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: sysauthzmock
+          filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/consent:
+    interfaces:
+      ConsentServiceInterface:
+        config:
+          dir: tests/mocks/consentmock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: consentmock
+          filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/attributecache:
+    config:
+      all: true
+      dir: tests/mocks/attributecachemock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: attributecachemock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/system/email:
+    config:
+      all: true
+      dir: tests/mocks/emailmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: emailmock
       filename: "{{.InterfaceName}}_mock.go"

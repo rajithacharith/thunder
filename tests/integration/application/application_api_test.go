@@ -25,6 +25,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sync"
 	"testing"
 	"time"
 
@@ -551,10 +552,17 @@ func retrieveAndValidateApplicationDetails(ts *ApplicationAPITestSuite, expected
 	appForComparison.AuthFlowID = defaultAuthFlowID
 	appForComparison.RegistrationFlowID = defaultRegistrationFlowID
 
-	// If expected doesn't have Token but API returned one (default), copy it to expected
-	// This handles cases where the server provides default token config
-	if appForComparison.Token == nil && app.Token != nil {
-		appForComparison.Token = app.Token
+	// If expected doesn't have assertion token but API returned one (default), copy it to expected
+	// This handles cases where the server provides default assertion config
+	if appForComparison.Assertion == nil && app.Assertion != nil {
+		appForComparison.Assertion = app.Assertion
+	}
+
+	// Ensure login consent config is set in expected app if it's null
+	if appForComparison.LoginConsent == nil {
+		appForComparison.LoginConsent = &LoginConsentConfig{
+			ValidityPeriod: 0,
+		}
 	}
 
 	if !app.equals(appForComparison) {
@@ -600,7 +608,8 @@ func createApplication(app Application) (string, error) {
 	// Verify client secret is present in the create response for confidential clients
 	if len(createdApp.InboundAuthConfig) > 0 &&
 		createdApp.InboundAuthConfig[0].OAuthAppConfig != nil &&
-		!createdApp.InboundAuthConfig[0].OAuthAppConfig.PublicClient &&
+		(createdApp.InboundAuthConfig[0].OAuthAppConfig.TokenEndpointAuthMethod == "client_secret_basic" ||
+			createdApp.InboundAuthConfig[0].OAuthAppConfig.TokenEndpointAuthMethod == "client_secret_post") &&
 		createdApp.InboundAuthConfig[0].OAuthAppConfig.ClientSecret == "" {
 		return "", fmt.Errorf("expected client secret in create response but got empty string")
 	}
@@ -886,6 +895,172 @@ func (ts *ApplicationAPITestSuite) TestApplicationCreationWithPartialDefaults() 
 	}
 }
 
+// TestApplicationCreationWithPrivateKeyJWT tests creating an application with private_key_jwt token endpoint auth method.
+func (ts *ApplicationAPITestSuite) TestApplicationCreationWithPrivateKeyJWT() {
+	jwksJSON := `{"keys":[{"kty":"RSA","use":"sig","kid":"test-key","n":"0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw","e":"AQAB"}]}`
+
+	testCases := []struct {
+		name              string
+		app               Application
+		expectError       bool
+		expectedCertType  string
+		expectedCertValue string
+	}{
+		{
+			name: "successful creation with JWKS_URI certificate",
+			app: Application{
+				Name:                      "Private Key JWT JWKS URI App",
+				Description:               "Application with private_key_jwt and JWKS_URI certificate",
+				URL:                       "https://pkjwt-jwksuri.example.com",
+				AuthFlowID:                defaultAuthFlowID,
+				RegistrationFlowID:        defaultRegistrationFlowID,
+				IsRegistrationFlowEnabled: false,
+				InboundAuthConfig: []InboundAuthConfig{
+					{
+						Type: "oauth2",
+						OAuthAppConfig: &OAuthAppConfig{
+							RedirectURIs:            []string{"https://pkjwt-jwksuri.example.com/callback"},
+							GrantTypes:              []string{"authorization_code", "client_credentials"},
+							ResponseTypes:           []string{"code"},
+							TokenEndpointAuthMethod: "private_key_jwt",
+							PKCERequired:            false,
+							PublicClient:            false,
+							Certificate: &ApplicationCert{
+								Type:  "JWKS_URI",
+								Value: "https://pkjwt-jwksuri.example.com/.well-known/jwks.json",
+							},
+						},
+					},
+				},
+			},
+			expectError:       false,
+			expectedCertType:  "JWKS_URI",
+			expectedCertValue: "https://pkjwt-jwksuri.example.com/.well-known/jwks.json",
+		},
+		{
+			name: "successful creation with inline JWKS certificate",
+			app: Application{
+				Name:                      "Private Key JWT JWKS App",
+				Description:               "Application with private_key_jwt and inline JWKS certificate",
+				URL:                       "https://pkjwt-jwks.example.com",
+				AuthFlowID:                defaultAuthFlowID,
+				RegistrationFlowID:        defaultRegistrationFlowID,
+				IsRegistrationFlowEnabled: false,
+				InboundAuthConfig: []InboundAuthConfig{
+					{
+						Type: "oauth2",
+						OAuthAppConfig: &OAuthAppConfig{
+							RedirectURIs:            []string{"https://pkjwt-jwks.example.com/callback"},
+							GrantTypes:              []string{"authorization_code"},
+							ResponseTypes:           []string{"code"},
+							TokenEndpointAuthMethod: "private_key_jwt",
+							PKCERequired:            false,
+							PublicClient:            false,
+							Certificate: &ApplicationCert{
+								Type:  "JWKS",
+								Value: jwksJSON,
+							},
+						},
+					},
+				},
+			},
+			expectError:       false,
+			expectedCertType:  "JWKS",
+			expectedCertValue: jwksJSON,
+		},
+		{
+			name: "failure - private_key_jwt without certificate (NONE type)",
+			app: Application{
+				Name:                      "Private Key JWT No Cert App",
+				Description:               "Application with private_key_jwt but no certificate",
+				URL:                       "https://pkjwt-nocert.example.com",
+				AuthFlowID:                defaultAuthFlowID,
+				RegistrationFlowID:        defaultRegistrationFlowID,
+				IsRegistrationFlowEnabled: false,
+				Certificate: &ApplicationCert{
+					Type:  "NONE",
+					Value: "",
+				},
+				InboundAuthConfig: []InboundAuthConfig{
+					{
+						Type: "oauth2",
+						OAuthAppConfig: &OAuthAppConfig{
+							RedirectURIs:            []string{"https://pkjwt-nocert.example.com/callback"},
+							GrantTypes:              []string{"authorization_code"},
+							ResponseTypes:           []string{"code"},
+							TokenEndpointAuthMethod: "private_key_jwt",
+							PKCERequired:            false,
+							PublicClient:            false,
+						},
+					},
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "failure - private_key_jwt with client secret",
+			app: Application{
+				Name:                      "Private Key JWT With Secret App",
+				Description:               "Application with private_key_jwt and client secret",
+				URL:                       "https://pkjwt-secret.example.com",
+				AuthFlowID:                defaultAuthFlowID,
+				RegistrationFlowID:        defaultRegistrationFlowID,
+				IsRegistrationFlowEnabled: false,
+				InboundAuthConfig: []InboundAuthConfig{
+					{
+						Type: "oauth2",
+						OAuthAppConfig: &OAuthAppConfig{
+							ClientSecret:            "should_not_be_allowed",
+							RedirectURIs:            []string{"https://pkjwt-secret.example.com/callback"},
+							GrantTypes:              []string{"authorization_code"},
+							ResponseTypes:           []string{"code"},
+							TokenEndpointAuthMethod: "private_key_jwt",
+							PKCERequired:            false,
+							PublicClient:            false,
+							Certificate: &ApplicationCert{
+								Type:  "JWKS_URI",
+								Value: "https://pkjwt-secret.example.com/.well-known/jwks.json",
+							},
+						},
+					},
+				},
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		ts.Run(tc.name, func() {
+			appID, err := createApplication(tc.app)
+			if tc.expectError {
+				ts.Require().Error(err)
+				return
+			}
+
+			ts.Require().NoError(err)
+			ts.Require().NotEmpty(appID)
+			defer func() {
+				if err := deleteApplication(appID); err != nil {
+					ts.T().Logf("Failed to delete test application: %v", err)
+				}
+			}()
+
+			retrievedApp, err := getApplicationByID(appID)
+			ts.Require().NoError(err)
+			ts.Require().NotEmpty(retrievedApp.InboundAuthConfig)
+			ts.Require().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig)
+
+			oauthConfig := retrievedApp.InboundAuthConfig[0].OAuthAppConfig
+			ts.Assert().Equal("private_key_jwt", oauthConfig.TokenEndpointAuthMethod)
+			ts.Require().NotNil(oauthConfig.Certificate)
+			ts.Assert().Equal(tc.expectedCertType, oauthConfig.Certificate.Type)
+			ts.Assert().Equal(tc.expectedCertValue, oauthConfig.Certificate.Value)
+			ts.Assert().Empty(oauthConfig.ClientSecret, "private_key_jwt app should not have a client secret")
+		})
+	}
+}
+
 // TestApplicationWithJWKSURICertificate tests creating application with JWKS_URI certificate.
 func (ts *ApplicationAPITestSuite) TestApplicationWithJWKSURICertificate() {
 	app := Application{
@@ -965,6 +1140,190 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithJWKSCertificate() {
 	err = deleteApplication(appID)
 	if err != nil {
 		ts.T().Logf("Failed to delete test application: %v", err)
+	}
+}
+
+// TestCreateApplicationCertLifecycle verifies that a certificate created with an
+// application is also removed from the database when the application is deleted.
+// This confirms that the cert INSERT and the app INSERT are part of the same
+// database transaction and that cleanup is complete.
+func (ts *ApplicationAPITestSuite) TestCreateApplicationCertLifecycle() {
+	const testClientID = "cert_lifecycle_test_oauth_client"
+	const jwksURI = "https://cert-lifecycle.example.com/.well-known/jwks.json"
+
+	app := Application{
+		Name:                      "Cert Lifecycle Test App",
+		Description:               "Test cert lifecycle atomicity with app lifecycle",
+		URL:                       "https://cert-lifecycle.example.com",
+		AuthFlowID:                defaultAuthFlowID,
+		RegistrationFlowID:        defaultRegistrationFlowID,
+		IsRegistrationFlowEnabled: false,
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://cert-lifecycle.example.com/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "private_key_jwt",
+					PKCERequired:            false,
+					PublicClient:            false,
+					Certificate: &ApplicationCert{
+						Type:  "JWKS_URI",
+						Value: jwksURI,
+					},
+				},
+			},
+		},
+	}
+
+	// Step 1: create the application with a JWKS_URI certificate.
+	appID, err := createApplication(app)
+	ts.Require().NoError(err, "expected application creation to succeed")
+	ts.Require().NotEmpty(appID)
+
+	// Step 2 (SQLite only): verify the cert row was written to the CERTIFICATE table.
+	if testutils.GetDBType() == "sqlite" {
+		query := fmt.Sprintf(
+			"SELECT COUNT(*) FROM CERTIFICATE WHERE REF_TYPE='OAUTH_APP' AND REF_ID='%s';",
+			testClientID,
+		)
+		count, queryErr := testutils.QueryConfigDB(query)
+		ts.Require().NoError(queryErr, "failed to query CERTIFICATE table after creation")
+		ts.Assert().Equal("1", count,
+			"expected exactly 1 cert row in CERTIFICATE after successful app creation; "+
+				"cert and app must be created atomically")
+	}
+
+	// Step 3: delete the application.
+	ts.Require().NoError(deleteApplication(appID), "expected application deletion to succeed")
+
+	// Step 4 (SQLite only): verify the cert row was also removed.
+	// This confirms that the deletion is also transactional and that no orphaned
+	// cert rows are left behind after the application is removed.
+	if testutils.GetDBType() == "sqlite" {
+		query := fmt.Sprintf(
+			"SELECT COUNT(*) FROM CERTIFICATE WHERE REF_TYPE='OAUTH_APP' AND REF_ID='%s';",
+			testClientID,
+		)
+		count, queryErr := testutils.QueryConfigDB(query)
+		ts.Require().NoError(queryErr, "failed to query CERTIFICATE table after deletion")
+		ts.Assert().Equal("0", count,
+			"expected 0 cert rows in CERTIFICATE after app deletion; "+
+				"deleting the app must also clean up its certificate")
+	}
+}
+
+// TestConcurrentApplicationCreationCertAtomicity verifies that when two goroutines
+// simultaneously create applications with the same client_id and JWKS_URI certificate,
+// the final database state contains exactly one certificate row for that client_id.
+//
+// Two potential failure paths exercise the cert rollback guarantee:
+//   - Service-layer pre-check: the second request detects the duplicate client_id
+//     after the first has committed and never enters the transaction – no cert written.
+//   - Mid-transaction DB failure: if the second request passes the pre-check (read
+//     before the first transaction commits) and enters the transaction, its cert INSERT
+//     succeeds but the APP_OAUTH_INBOUND_CONFIG INSERT fails on the PRIMARY KEY
+//     constraint; the transaction is rolled back, removing the cert row.
+//
+// In either path the end-state invariant is the same: the CERTIFICATE table must
+// contain exactly one row for the shared client_id (belonging to the successful app).
+func (ts *ApplicationAPITestSuite) TestConcurrentApplicationCreationCertAtomicity() {
+	const sharedClientID = "cert_test_client"
+	const jwksURI = "https://cert-concurrent.example.com/.well-known/jwks.json"
+
+	makeApp := func(name string) Application {
+		return Application{
+			Name:                      name,
+			Description:               "Concurrent cert atomicity test",
+			URL:                       "https://cert-concurrent.example.com",
+			AuthFlowID:                defaultAuthFlowID,
+			RegistrationFlowID:        defaultRegistrationFlowID,
+			IsRegistrationFlowEnabled: false,
+			InboundAuthConfig: []InboundAuthConfig{
+				{
+					Type: "oauth2",
+					OAuthAppConfig: &OAuthAppConfig{
+						ClientID:                sharedClientID,
+						RedirectURIs:            []string{"https://cert-concurrent.example.com/callback"},
+						GrantTypes:              []string{"authorization_code"},
+						ResponseTypes:           []string{"code"},
+						TokenEndpointAuthMethod: "private_key_jwt",
+						PKCERequired:            false,
+						PublicClient:            false,
+						Certificate: &ApplicationCert{
+							Type:  "JWKS_URI",
+							Value: jwksURI,
+						},
+					},
+				},
+			},
+		}
+	}
+
+	type result struct {
+		id  string
+		err error
+	}
+
+	var wg sync.WaitGroup
+	results := make([]result, 2)
+	start := make(chan struct{})
+
+	for i := 0; i < 2; i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			// Block until the main goroutine signals to start, so both requests
+			// are in-flight concurrently and each has a chance to pass the
+			// service-layer pre-check before the other commits.
+			<-start
+			id, err := createApplication(makeApp(fmt.Sprintf("Cert Concurrent App %d", i)))
+			results[i] = result{id: id, err: err}
+		}()
+	}
+
+	close(start) // fire both goroutines simultaneously
+	wg.Wait()
+
+	// Exactly one creation should succeed.
+	successCount := 0
+	var successID string
+	for _, r := range results {
+		if r.err == nil {
+			successCount++
+			successID = r.id
+		}
+	}
+	ts.Require().Equal(1, successCount,
+		"expected exactly one application creation to succeed when two goroutines"+
+			" race with the same client_id")
+
+	// Cleanup: delete the successfully created application.
+	if successID != "" {
+		defer func() {
+			if err := deleteApplication(successID); err != nil {
+				ts.T().Logf("cleanup: failed to delete concurrent test application: %v", err)
+			}
+		}()
+	}
+
+	// SQLite-only: verify the CERTIFICATE table contains exactly one row for the
+	// shared client_id. Two rows would indicate the losing goroutine's cert INSERT
+	// committed without a matching app row (the pre-refactor bug).
+	if testutils.GetDBType() == "sqlite" {
+		query := fmt.Sprintf(
+			"SELECT COUNT(*) FROM CERTIFICATE WHERE REF_TYPE='OAUTH_APP' AND REF_ID='%s';",
+			sharedClientID,
+		)
+		count, queryErr := testutils.QueryConfigDB(query)
+		ts.Require().NoError(queryErr, "failed to query CERTIFICATE table")
+		ts.Assert().Equal("1", count,
+			"expected exactly 1 cert row for client_id %q; "+
+				"a second row would indicate the losing goroutine's cert was not rolled back",
+			sharedClientID)
 	}
 }
 
@@ -1351,7 +1710,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithTokenConfiguration() {
 					TokenEndpointAuthMethod: "client_secret_basic",
 					Scopes:                  []string{"openid", "profile"},
 					Token: &OAuthTokenConfig{
-						Issuer: "https://tokenconfig.example.com",
 						AccessToken: &AccessTokenConfig{
 							ValidityPeriod: 3600,
 							UserAttributes: []string{"email", "username"},
@@ -1359,11 +1717,11 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithTokenConfiguration() {
 						IDToken: &IDTokenConfig{
 							ValidityPeriod: 3600,
 							UserAttributes: []string{"sub", "email"},
-							ScopeClaims: map[string][]string{
-								"profile": {"name", "given_name", "family_name"},
-								"email":   {"email", "email_verified"},
-							},
 						},
+					},
+					ScopeClaims: map[string][]string{
+						"profile": {"name", "given_name", "family_name"},
+						"email":   {"email", "email_verified"},
 					},
 				},
 			},
@@ -1379,7 +1737,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithTokenConfiguration() {
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token)
-	ts.Assert().Equal("https://tokenconfig.example.com", retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.Issuer)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken)
 	ts.Assert().Equal(int64(3600), retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken.ValidityPeriod)
 }
@@ -1404,13 +1761,13 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithIDTokenScopeClaims() {
 						IDToken: &IDTokenConfig{
 							ValidityPeriod: 7200,
 							UserAttributes: []string{"sub", "email", "name"},
-							ScopeClaims: map[string][]string{
-								"profile": {"name", "given_name", "family_name", "middle_name", "nickname", "preferred_username"},
-								"email":   {"email", "email_verified"},
-								"address": {"address"},
-								"phone":   {"phone_number", "phone_number_verified"},
-							},
 						},
+					},
+					ScopeClaims: map[string][]string{
+						"profile": {"name", "given_name", "family_name", "middle_name", "nickname", "preferred_username"},
+						"email":   {"email", "email_verified"},
+						"address": {"address"},
+						"phone":   {"phone_number", "phone_number_verified"},
 					},
 				},
 			},
@@ -1424,9 +1781,9 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithIDTokenScopeClaims() {
 	// Retrieve and verify scope claims
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
-	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims)
-	ts.Assert().Contains(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims, "profile")
-	ts.Assert().Contains(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims["email"], "email")
+	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims)
+	ts.Assert().Contains(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims, "profile")
+	ts.Assert().Contains(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims["email"], "email")
 }
 
 // TestApplicationUpdateWithTokenConfigChanges tests updating token configuration.
@@ -1462,7 +1819,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithTokenConfigChanges()
 
 	// Update with more complex token config
 	app.InboundAuthConfig[0].OAuthAppConfig.Token = &OAuthTokenConfig{
-		Issuer: "https://tokenconfigupdate.example.com",
 		AccessToken: &AccessTokenConfig{
 			ValidityPeriod: 7200,
 			UserAttributes: []string{"email", "username", "role"},
@@ -1470,10 +1826,10 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithTokenConfigChanges()
 		IDToken: &IDTokenConfig{
 			ValidityPeriod: 3600,
 			UserAttributes: []string{"sub", "email", "name"},
-			ScopeClaims: map[string][]string{
-				"profile": {"name", "picture"},
-			},
 		},
+	}
+	app.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims = map[string][]string{
+		"profile": {"name", "picture"},
 	}
 
 	appJSON, _ := json.Marshal(app)
@@ -1687,7 +2043,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyAccessToken() {
 					TokenEndpointAuthMethod: "client_secret_basic",
 					Scopes:                  []string{"api.read", "api.write"},
 					Token: &OAuthTokenConfig{
-						Issuer: "https://accesstokenonly.example.com",
 						AccessToken: &AccessTokenConfig{
 							ValidityPeriod: 7200,
 							UserAttributes: []string{"email", "username", "role", "department"},
@@ -1733,11 +2088,11 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyIDToken() {
 						IDToken: &IDTokenConfig{
 							ValidityPeriod: 3600,
 							UserAttributes: []string{"sub", "email", "name", "picture"},
-							ScopeClaims: map[string][]string{
-								"profile": {"name", "given_name", "family_name", "middle_name"},
-								"email":   {"email", "email_verified"},
-							},
 						},
+					},
+					ScopeClaims: map[string][]string{
+						"profile": {"name", "given_name", "family_name", "middle_name"},
+						"email":   {"email", "email_verified"},
 					},
 				},
 			},
@@ -1754,7 +2109,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyIDToken() {
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken)
 	ts.Assert().Equal(int64(3600), retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ValidityPeriod)
-	ts.Assert().Len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims, 2)
+	ts.Assert().Len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims, 2)
 }
 
 // TestApplicationWithBothTokenTypes tests creating application with both AccessToken and IDToken.
@@ -1774,7 +2129,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithBothTokenTypes() {
 					TokenEndpointAuthMethod: "client_secret_post",
 					Scopes:                  []string{"openid", "profile", "email"},
 					Token: &OAuthTokenConfig{
-						Issuer: "https://bothtokens.example.com",
 						AccessToken: &AccessTokenConfig{
 							ValidityPeriod: 5400,
 							UserAttributes: []string{"email", "username"},
@@ -1782,11 +2136,11 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithBothTokenTypes() {
 						IDToken: &IDTokenConfig{
 							ValidityPeriod: 3600,
 							UserAttributes: []string{"sub", "email"},
-							ScopeClaims: map[string][]string{
-								"profile": {"name"},
-								"email":   {"email"},
-							},
 						},
+					},
+					ScopeClaims: map[string][]string{
+						"profile": {"name"},
+						"email":   {"email"},
 					},
 				},
 			},
@@ -1895,43 +2249,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithMultipleGrantAndResponseTy
 	ts.Assert().Len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Scopes, 6)
 }
 
-// TestApplicationWithEmptyTokenIssuer tests token config with empty issuer.
-func (ts *ApplicationAPITestSuite) TestApplicationWithEmptyTokenIssuer() {
-	app := Application{
-		Name:        "Empty Token Issuer Test",
-		Description: "Test with empty token issuer",
-		URL:         "https://emptyissuer.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
-		InboundAuthConfig: []InboundAuthConfig{
-			{
-				Type: "oauth2",
-				OAuthAppConfig: &OAuthAppConfig{
-					RedirectURIs:            []string{"https://emptyissuer.example.com/callback"},
-					GrantTypes:              []string{"authorization_code"},
-					ResponseTypes:           []string{"code"},
-					TokenEndpointAuthMethod: "client_secret_basic",
-					Scopes:                  []string{"openid"},
-					Token: &OAuthTokenConfig{
-						// Empty Issuer
-						AccessToken: &AccessTokenConfig{
-							ValidityPeriod: 3600,
-						},
-					},
-				},
-			},
-		},
-	}
-
-	appID, err := createApplication(app)
-	ts.Require().NoError(err)
-	defer deleteApplication(appID)
-
-	// Retrieve and verify
-	retrievedApp, err := getApplicationByID(appID)
-	ts.Require().NoError(err)
-	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token)
-}
-
 // TestApplicationWithMinimalTokenConfig tests minimal token configuration.
 func (ts *ApplicationAPITestSuite) TestApplicationWithMinimalTokenConfig() {
 	app := Application{
@@ -1948,8 +2265,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithMinimalTokenConfig() {
 					ResponseTypes:           []string{"code"},
 					TokenEndpointAuthMethod: "client_secret_basic",
 					Scopes:                  []string{"openid"},
-					Token: &OAuthTokenConfig{
-						Issuer: "https://minimaltoken.example.com",
+					Token:                   &OAuthTokenConfig{
 						// No AccessToken or IDToken
 					},
 				},
@@ -1965,7 +2281,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithMinimalTokenConfig() {
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token)
-	ts.Assert().Equal("https://minimaltoken.example.com", retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.Issuer)
 }
 
 // TestApplicationWithComplexScopeClaims tests complex scope claims mapping.
@@ -1988,23 +2303,23 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithComplexScopeClaims() {
 						IDToken: &IDTokenConfig{
 							ValidityPeriod: 3600,
 							UserAttributes: []string{"sub", "email", "name"},
-							ScopeClaims: map[string][]string{
-								"profile": {
-									"name", "given_name", "family_name", "middle_name",
-									"nickname", "preferred_username", "profile", "picture",
-									"website", "gender", "birthdate", "zoneinfo", "locale",
-									"updated_at",
-								},
-								"email": {"email", "email_verified"},
-								"address": {
-									"address.formatted", "address.street_address",
-									"address.locality", "address.region",
-									"address.postal_code", "address.country",
-								},
-								"phone":  {"phone_number", "phone_number_verified"},
-								"custom": {"organization", "department", "employee_id"},
-							},
 						},
+					},
+					ScopeClaims: map[string][]string{
+						"profile": {
+							"name", "given_name", "family_name", "middle_name",
+							"nickname", "preferred_username", "profile", "picture",
+							"website", "gender", "birthdate", "zoneinfo", "locale",
+							"updated_at",
+						},
+						"email": {"email", "email_verified"},
+						"address": {
+							"address.formatted", "address.street_address",
+							"address.locality", "address.region",
+							"address.postal_code", "address.country",
+						},
+						"phone":  {"phone_number", "phone_number_verified"},
+						"custom": {"organization", "department", "employee_id"},
 					},
 				},
 			},
@@ -2019,9 +2334,9 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithComplexScopeClaims() {
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken)
-	ts.Assert().Len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims, 5)
-	ts.Assert().Contains(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims, "profile")
-	ts.Assert().GreaterOrEqual(len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims["profile"]), 10)
+	ts.Assert().Len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims, 5)
+	ts.Assert().Contains(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims, "profile")
+	ts.Assert().GreaterOrEqual(len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims["profile"]), 10)
 }
 
 // TestApplicationCertificateRollbackOnOAuthFail tests certificate rollback when OAuth creation fails.
@@ -2278,8 +2593,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 		PolicyURI:   "https://completemeta.example.com/privacy",
 		Contacts:    []string{"admin@completemeta.example.com", "support@completemeta.example.com"},
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
-		Token: &TokenConfig{
-			Issuer:         "https://custom-issuer.example.com",
+		Assertion: &AssertionConfig{
 			ValidityPeriod: 7200,
 			UserAttributes: []string{"email", "username", "groups"},
 		},
@@ -2293,7 +2607,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 					TokenEndpointAuthMethod: "client_secret_basic",
 					Scopes:                  []string{"openid", "profile", "email"},
 					Token: &OAuthTokenConfig{
-						Issuer: "https://oauth-issuer.example.com",
 						AccessToken: &AccessTokenConfig{
 							ValidityPeriod: 3600,
 							UserAttributes: []string{"sub", "email"},
@@ -2301,11 +2614,11 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 						IDToken: &IDTokenConfig{
 							ValidityPeriod: 3600,
 							UserAttributes: []string{"sub", "email", "name"},
-							ScopeClaims: map[string][]string{
-								"profile": {"name", "given_name", "family_name"},
-								"email":   {"email", "email_verified"},
-							},
 						},
+					},
+					ScopeClaims: map[string][]string{
+						"profile": {"name", "given_name", "family_name"},
+						"email":   {"email", "email_verified"},
 					},
 				},
 			},
@@ -2331,11 +2644,10 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 	ts.Assert().Equal("https://completemeta.example.com/privacy", retrievedApp.PolicyURI)
 	ts.Assert().Equal([]string{"admin@completemeta.example.com", "support@completemeta.example.com"}, retrievedApp.Contacts)
 
-	// Verify root token config
-	ts.Require().NotNil(retrievedApp.Token)
-	ts.Assert().Equal("https://custom-issuer.example.com", retrievedApp.Token.Issuer)
-	ts.Assert().Equal(int64(7200), retrievedApp.Token.ValidityPeriod)
-	ts.Assert().Equal([]string{"email", "username", "groups"}, retrievedApp.Token.UserAttributes)
+	// Verify assertion config
+	ts.Require().NotNil(retrievedApp.Assertion)
+	ts.Assert().Equal(int64(7200), retrievedApp.Assertion.ValidityPeriod)
+	ts.Assert().Equal([]string{"email", "username", "groups"}, retrievedApp.Assertion.UserAttributes)
 
 	// Verify OAuth config fields
 	ts.Require().Len(retrievedApp.InboundAuthConfig, 1)
@@ -2347,7 +2659,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 
 	// Verify OAuth token config
 	ts.Require().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token)
-	ts.Assert().Equal("https://oauth-issuer.example.com", retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.Issuer)
 
 	// Verify access token config
 	ts.Require().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken)
@@ -2358,8 +2669,8 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 	ts.Require().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken)
 	ts.Assert().Equal(int64(3600), retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ValidityPeriod)
 	ts.Assert().Equal([]string{"sub", "email", "name"}, retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.UserAttributes)
-	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims)
-	ts.Assert().Equal([]string{"name", "given_name", "family_name"}, retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims["profile"])
+	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims)
+	ts.Assert().Equal([]string{"name", "given_name", "family_name"}, retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims["profile"])
 }
 
 // TestApplicationWithOnlyRootToken tests app with only root token config.
@@ -2368,8 +2679,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyRootToken() {
 		Name:        "Root Token Only App",
 		Description: "App with only root token",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
-		Token: &TokenConfig{
-			Issuer:         "https://root-issuer.example.com",
+		Assertion: &AssertionConfig{
 			ValidityPeriod: 5400,
 		},
 	}
@@ -2380,9 +2690,8 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyRootToken() {
 
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
-	ts.Require().NotNil(retrievedApp.Token)
-	ts.Assert().Equal("https://root-issuer.example.com", retrievedApp.Token.Issuer)
-	ts.Assert().Equal(int64(5400), retrievedApp.Token.ValidityPeriod)
+	ts.Require().NotNil(retrievedApp.Assertion)
+	ts.Assert().Equal(int64(5400), retrievedApp.Assertion.ValidityPeriod)
 }
 
 // TestApplicationUpdateMetadataFields tests updating metadata fields.
@@ -2537,8 +2846,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateTokenConfiguration() {
 		Name:        "Update Token Config App",
 		Description: "App to update token config",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
-		Token: &TokenConfig{
-			Issuer:         "https://initial-issuer.example.com",
+		Assertion: &AssertionConfig{
 			ValidityPeriod: 3600,
 		},
 		InboundAuthConfig: []InboundAuthConfig{
@@ -2560,9 +2868,8 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateTokenConfiguration() {
 	defer deleteApplication(appID)
 
 	// Update token config
-	app.Token.Issuer = "https://updated-issuer.example.com"
-	app.Token.ValidityPeriod = 7200
-	app.Token.UserAttributes = []string{"email", "username"}
+	app.Assertion.ValidityPeriod = 7200
+	app.Assertion.UserAttributes = []string{"email", "username"}
 
 	payload, _ := json.Marshal(app)
 	req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/applications/%s", testServerURL, appID), bytes.NewReader(payload))
@@ -2578,10 +2885,9 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateTokenConfiguration() {
 	// Verify token config update
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
-	ts.Require().NotNil(retrievedApp.Token)
-	ts.Assert().Equal("https://updated-issuer.example.com", retrievedApp.Token.Issuer)
-	ts.Assert().Equal(int64(7200), retrievedApp.Token.ValidityPeriod)
-	ts.Assert().Equal([]string{"email", "username"}, retrievedApp.Token.UserAttributes)
+	ts.Require().NotNil(retrievedApp.Assertion)
+	ts.Assert().Equal(int64(7200), retrievedApp.Assertion.ValidityPeriod)
+	ts.Assert().Equal([]string{"email", "username"}, retrievedApp.Assertion.UserAttributes)
 }
 
 // TestApplicationWithEmptyContacts tests app with empty contacts array.
@@ -2649,11 +2955,11 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithIDTokenScopeClaimsOnly() {
 					Token: &OAuthTokenConfig{
 						IDToken: &IDTokenConfig{
 							ValidityPeriod: 3600,
-							ScopeClaims: map[string][]string{
-								"profile": {"name", "picture"},
-								"email":   {"email"},
-							},
 						},
+					},
+					ScopeClaims: map[string][]string{
+						"profile": {"name", "picture"},
+						"email":   {"email"},
 					},
 				},
 			},
@@ -2668,41 +2974,8 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithIDTokenScopeClaimsOnly() {
 	ts.Require().NoError(err)
 	ts.Require().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token)
 	ts.Require().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken)
-	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims)
-	ts.Assert().Equal([]string{"name", "picture"}, retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims["profile"])
-}
-
-// TestApplicationWithOAuthTokenIssuerOnly tests app with only OAuth token issuer.
-func (ts *ApplicationAPITestSuite) TestApplicationWithOAuthTokenIssuerOnly() {
-	app := Application{
-		Name:        "OAuth Token Issuer Only App",
-		Description: "App with only OAuth token issuer",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
-		InboundAuthConfig: []InboundAuthConfig{
-			{
-				Type: "oauth2",
-				OAuthAppConfig: &OAuthAppConfig{
-					RedirectURIs:            []string{"https://oauth-issuer-only.example.com/callback"},
-					GrantTypes:              []string{"authorization_code"},
-					ResponseTypes:           []string{"code"},
-					TokenEndpointAuthMethod: "client_secret_basic",
-					Scopes:                  []string{"openid"},
-					Token: &OAuthTokenConfig{
-						Issuer: "https://custom-oauth-issuer.example.com",
-					},
-				},
-			},
-		},
-	}
-
-	appID, err := createApplication(app)
-	ts.Require().NoError(err)
-	defer deleteApplication(appID)
-
-	retrievedApp, err := getApplicationByID(appID)
-	ts.Require().NoError(err)
-	ts.Require().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token)
-	ts.Assert().Equal("https://custom-oauth-issuer.example.com", retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.Issuer)
+	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims)
+	ts.Assert().Equal([]string{"name", "picture"}, retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims["profile"])
 }
 
 // TestApplicationGetByNonExistentID tests retrieving app by non-existent ID.
@@ -3573,17 +3846,17 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithNilApp() {
 	ts.Assert().Equal(http.StatusBadRequest, resp.StatusCode)
 }
 
-// Helper function to create a branding configuration for testing
-func createBrandingForTest(preferences []byte) (string, error) {
+// Helper function to create a theme configuration for testing
+func createThemeForTest(theme []byte) (string, error) {
 	payload, err := json.Marshal(map[string]interface{}{
-		"displayName": "Test Application Branding",
-		"preferences": json.RawMessage(preferences),
+		"displayName": "Test Theme",
+		"theme":       json.RawMessage(theme),
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal branding request: %w", err)
+		return "", fmt.Errorf("failed to marshal theme request: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", testServerURL+"/branding", bytes.NewReader(payload))
+	req, err := http.NewRequest("POST", testServerURL+"/design/themes", bytes.NewReader(payload))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
@@ -3602,22 +3875,22 @@ func createBrandingForTest(preferences []byte) (string, error) {
 		return "", fmt.Errorf("expected status 201, got %d. Response: %s", resp.StatusCode, string(responseBody))
 	}
 
-	var brandingResponse map[string]interface{}
-	err = json.NewDecoder(resp.Body).Decode(&brandingResponse)
+	var themeResponse map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&themeResponse)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse response body: %w", err)
 	}
 
-	brandingID, ok := brandingResponse["id"].(string)
+	themeID, ok := themeResponse["id"].(string)
 	if !ok {
 		return "", fmt.Errorf("response does not contain id or id is not a string")
 	}
-	return brandingID, nil
+	return themeID, nil
 }
 
-// Helper function to delete a branding configuration for testing
-func deleteBrandingForTest(brandingID string) error {
-	req, err := http.NewRequest("DELETE", testServerURL+"/branding/"+brandingID, nil)
+// Helper function to delete a theme configuration for testing
+func deleteThemeForTest(themeID string) error {
+	req, err := http.NewRequest("DELETE", testServerURL+"/design/themes/"+themeID, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create delete request: %w", err)
 	}
@@ -3637,10 +3910,75 @@ func deleteBrandingForTest(brandingID string) error {
 	return nil
 }
 
-// TestApplicationWithBrandingID tests creating an application with a valid branding ID
-func (ts *ApplicationAPITestSuite) TestApplicationWithBrandingID() {
-	// Create a branding configuration first
-	brandingPreferences := []byte(`{
+// Helper function to create a layout configuration for testing
+func createLayoutForTest(layout []byte, description string) (string, error) {
+	payload, err := json.Marshal(map[string]interface{}{
+		"displayName": "Test Layout",
+		"description": description,
+		"layout":      json.RawMessage(layout),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal layout request: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", testServerURL+"/design/layouts", bytes.NewReader(payload))
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := testutils.GetHTTPClient()
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		responseBody, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("expected status 201, got %d. Response: %s", resp.StatusCode, string(responseBody))
+	}
+
+	var layoutResponse map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&layoutResponse)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse response body: %w", err)
+	}
+
+	layoutID, ok := layoutResponse["id"].(string)
+	if !ok {
+		return "", fmt.Errorf("response does not contain id or id is not a string")
+	}
+	return layoutID, nil
+}
+
+// Helper function to delete a layout configuration for testing
+func deleteLayoutForTest(layoutID string) error {
+	req, err := http.NewRequest("DELETE", testServerURL+"/design/layouts/"+layoutID, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create delete request: %w", err)
+	}
+
+	client := testutils.GetHTTPClient()
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send delete request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusNotFound {
+		responseBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("expected status 204 or 404, got %d. Response: %s", resp.StatusCode, string(responseBody))
+	}
+	return nil
+}
+
+// TestApplicationWithThemeAndLayoutID tests creating an application with a valid theme ID and layout ID
+func (ts *ApplicationAPITestSuite) TestApplicationWithThemeAndLayoutID() {
+	// Create a theme configuration first
+	themePreferences := []byte(`{
 		"theme": {
 			"activeColorScheme": "dark",
 			"colorSchemes": {
@@ -3656,21 +3994,33 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithBrandingID() {
 			}
 		}
 	}`)
-	brandingID, err := createBrandingForTest(brandingPreferences)
-	ts.Require().NoError(err, "Failed to create branding for test")
-	defer deleteBrandingForTest(brandingID)
+	themeID, err := createThemeForTest(themePreferences)
+	ts.Require().NoError(err, "Failed to create theme for test")
+	defer deleteThemeForTest(themeID)
 
-	// Create application with branding ID
+	// Create a layout configuration
+	layoutPreferences := []byte(`{
+		"layout": {
+			"type": "centered",
+			"showLogo": true
+		}
+	}`)
+	layoutID, err := createLayoutForTest(layoutPreferences, "Test Layout")
+	ts.Require().NoError(err, "Failed to create layout for test")
+	defer deleteLayoutForTest(layoutID)
+
+	// Create application with theme and layout IDs
 	app := Application{
-		Name:        "App With Branding",
-		Description: "Application with branding configuration",
-		BrandingID:  brandingID,
+		Name:        "App With Theme and Layout",
+		Description: "Application with theme and layout configuration",
+		ThemeID:     themeID,
+		LayoutID:    layoutID,
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
 				OAuthAppConfig: &OAuthAppConfig{
-					RedirectURIs:            []string{"https://branding-app.example.com/callback"},
+					RedirectURIs:            []string{"https://design-app.example.com/callback"},
 					GrantTypes:              []string{"authorization_code"},
 					ResponseTypes:           []string{"code"},
 					TokenEndpointAuthMethod: "client_secret_basic",
@@ -3683,24 +4033,25 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithBrandingID() {
 	ts.Require().NoError(err)
 	defer deleteApplication(appID)
 
-	// Verify the branding ID is stored
+	// Verify the theme and layout IDs are stored
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
-	ts.Assert().Equal(brandingID, retrievedApp.BrandingID)
+	ts.Assert().Equal(themeID, retrievedApp.ThemeID)
+	ts.Assert().Equal(layoutID, retrievedApp.LayoutID)
 }
 
-// TestApplicationWithInvalidBrandingID tests creating an application with an invalid branding ID
-func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidBrandingID() {
+// TestApplicationWithInvalidThemeAndLayoutID tests creating an application with invalid theme/layout IDs
+func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidThemeAndLayoutID() {
 	app := Application{
-		Name:        "App With Invalid Branding",
-		Description: "Application with invalid branding ID",
-		BrandingID:  "00000000-0000-0000-0000-000000000000",
+		Name:        "App With Invalid Theme",
+		Description: "Application with invalid theme ID",
+		ThemeID:     "00000000-0000-0000-0000-000000000000",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
 				OAuthAppConfig: &OAuthAppConfig{
-					RedirectURIs:            []string{"https://invalid-branding.example.com/callback"},
+					RedirectURIs:            []string{"https://invalid-design.example.com/callback"},
 					GrantTypes:              []string{"authorization_code"},
 					ResponseTypes:           []string{"code"},
 					TokenEndpointAuthMethod: "client_secret_basic",
@@ -3733,39 +4084,47 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidBrandingID() {
 	ts.Assert().Equal("APP-1026", errResp["code"])
 }
 
-// TestApplicationUpdateWithBrandingID tests updating an application with a branding ID
-func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithBrandingID() {
-	// Create a branding configuration first
-	brandingPreferences := []byte(`{
-		"theme": {
-			"activeColorScheme": "light",
-			"colorSchemes": {
-				"light": {
-					"colors": {
-						"primary": {
-							"main": "#2196f3",
-							"dark": "#1976d2",
-							"contrastText": "#ffffff"
-						}
+// TestApplicationUpdateWithThemeAndLayout tests updating an application with theme and layout IDs
+func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithThemeAndLayout() {
+	// Create a theme configuration first
+	themePreferences := []byte(`{
+		"activeColorScheme": "light",
+		"colorSchemes": {
+			"light": {
+				"colors": {
+					"primary": {
+						"main": "#2196f3",
+						"dark": "#1976d2",
+						"contrastText": "#ffffff"
 					}
 				}
 			}
 		}
 	}`)
-	brandingID, err := createBrandingForTest(brandingPreferences)
-	ts.Require().NoError(err, "Failed to create branding for test")
-	defer deleteBrandingForTest(brandingID)
+	themeID, err := createThemeForTest(themePreferences)
+	ts.Require().NoError(err, "Failed to create theme for test")
+	defer deleteThemeForTest(themeID)
 
-	// Create application without branding
+	// Create a layout configuration
+	layoutPreferences := []byte(`{
+		"header": {
+			"showLogo": true
+		}
+	}`)
+	layoutID, err := createLayoutForTest(layoutPreferences, "Test Layout")
+	ts.Require().NoError(err, "Failed to create layout for test")
+	defer deleteLayoutForTest(layoutID)
+
+	// Create application without theme/layout
 	app := Application{
-		Name:        "App To Update Branding",
-		Description: "Application to update with branding",
+		Name:        "App To Update Design",
+		Description: "Application to update with theme and layout",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
 				OAuthAppConfig: &OAuthAppConfig{
-					RedirectURIs:            []string{"https://update-branding.example.com/callback"},
+					RedirectURIs:            []string{"https://update-design.example.com/callback"},
 					GrantTypes:              []string{"authorization_code"},
 					ResponseTypes:           []string{"code"},
 					TokenEndpointAuthMethod: "client_secret_basic",
@@ -3778,8 +4137,9 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithBrandingID() {
 	ts.Require().NoError(err)
 	defer deleteApplication(appID)
 
-	// Update application with branding ID
-	app.BrandingID = brandingID
+	// Update application with theme and layout IDs
+	app.ThemeID = themeID
+	app.LayoutID = layoutID
 	appJSON, err := json.Marshal(app)
 	ts.Require().NoError(err)
 
@@ -3795,18 +4155,19 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithBrandingID() {
 
 	ts.Assert().Equal(http.StatusOK, resp.StatusCode)
 
-	// Verify the branding ID is updated
+	// Verify the theme and layout IDs are updated
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
-	ts.Assert().Equal(brandingID, retrievedApp.BrandingID)
+	ts.Assert().Equal(themeID, retrievedApp.ThemeID)
+	ts.Assert().Equal(layoutID, retrievedApp.LayoutID)
 }
 
-// TestApplicationUpdateWithInvalidBrandingID tests updating an application with an invalid branding ID
-func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidBrandingID() {
-	// Create application without branding
+// TestApplicationUpdateWithInvalidThemeAndLayoutID tests updating an application with invalid theme/layout IDs
+func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidThemeAndLayoutID() {
+	// Create application without theme/layout
 	app := Application{
-		Name:        "App To Update Invalid Branding",
-		Description: "Application to update with invalid branding",
+		Name:        "App To Update Invalid Design",
+		Description: "Application to update with invalid theme/layout",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
 		InboundAuthConfig: []InboundAuthConfig{
 			{
@@ -3825,8 +4186,8 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidBrandingID() 
 	ts.Require().NoError(err)
 	defer deleteApplication(appID)
 
-	// Update application with invalid branding ID
-	app.BrandingID = "00000000-0000-0000-0000-000000000000"
+	// Update application with invalid theme ID
+	app.ThemeID = "00000000-0000-0000-0000-000000000000"
 	appJSON, err := json.Marshal(app)
 	ts.Require().NoError(err)
 
@@ -3851,34 +4212,32 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidBrandingID() 
 	ts.Assert().Equal("APP-1026", errResp["code"])
 }
 
-// TestBrandingCannotDeleteWhenAssociatedWithApplication tests that branding cannot be deleted when associated with an application
-func (ts *ApplicationAPITestSuite) TestBrandingCannotDeleteWhenAssociatedWithApplication() {
-	// Create a branding configuration
-	brandingPreferences := []byte(`{
-		"theme": {
-			"activeColorScheme": "dark",
-			"colorSchemes": {
-				"dark": {
-					"colors": {
-						"primary": {
-							"main": "#1976d2",
-							"dark": "#0d47a1",
-							"contrastText": "#ffffff"
-						}
+// TestThemeAndLayoutCannotDeleteWhenAssociatedWithApplication tests that theme/layout cannot be deleted when associated with an application
+func (ts *ApplicationAPITestSuite) TestThemeAndLayoutCannotDeleteWhenAssociatedWithApplication() {
+	// Create a theme configuration
+	themePreferences := []byte(`{
+		"activeColorScheme": "dark",
+		"colorSchemes": {
+			"dark": {
+				"colors": {
+					"primary": {
+						"main": "#1976d2",
+						"dark": "#0d47a1",
+						"contrastText": "#ffffff"
 					}
 				}
 			}
 		}
 	}`)
-	brandingID, err := createBrandingForTest(brandingPreferences)
-	ts.Require().NoError(err, "Failed to create branding for test")
-	defer deleteBrandingForTest(brandingID)
+	themeID, err := createThemeForTest(themePreferences)
+	ts.Require().NoError(err, "Failed to create theme for test")
+	defer deleteThemeForTest(themeID)
 
-	// Create application with branding ID
+	// Create application with theme ID
 	app := Application{
-		Name:        "App Preventing Branding Delete",
-		Description: "Application that prevents branding deletion",
-		BrandingID:  brandingID,
+		Name:        "App Preventing Theme Delete",
+		Description: "Application that prevents theme deletion",
+		ThemeID:     themeID,
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
 		InboundAuthConfig: []InboundAuthConfig{
 			{
@@ -3897,8 +4256,8 @@ func (ts *ApplicationAPITestSuite) TestBrandingCannotDeleteWhenAssociatedWithApp
 	ts.Require().NoError(err)
 	defer deleteApplication(appID)
 
-	// Try to delete the branding - should fail
-	req, err := http.NewRequest("DELETE", testServerURL+"/branding/"+brandingID, nil)
+	// Try to delete the theme - should fail
+	req, err := http.NewRequest("DELETE", testServerURL+"/design/themes/"+themeID, nil)
 	ts.Require().NoError(err)
 
 	client := testutils.GetHTTPClient()
@@ -3915,13 +4274,13 @@ func (ts *ApplicationAPITestSuite) TestBrandingCannotDeleteWhenAssociatedWithApp
 	var errResp map[string]interface{}
 	err = json.Unmarshal(bodyBytes, &errResp)
 	ts.Require().NoError(err)
-	ts.Assert().Equal("BRD-1004", errResp["code"])
+	ts.Assert().Equal("THM-1004", errResp["code"])
 
 	// Delete the application first
 	err = deleteApplication(appID)
 	ts.Require().NoError(err)
 
-	// Now the branding should be deletable
+	// Now the theme should be deletable
 	resp, err = client.Do(req)
 	ts.Require().NoError(err)
 	defer resp.Body.Close()
@@ -3934,7 +4293,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithAllowedUserTypes() {
 	// Create test user schemas first
 	employeeSchema := testutils.UserSchema{
 		Name:               "employee",
-		OrganizationUnitId: testOUID,
+		OUID:               testOUID,
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
 				"type": "string",
@@ -3946,7 +4305,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithAllowedUserTypes() {
 	}
 	customerSchema := testutils.UserSchema{
 		Name:               "customer",
-		OrganizationUnitId: testOUID,
+		OUID:               testOUID,
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
 				"type": "string",
@@ -4074,7 +4433,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithAllowedUserTypes() {
 	// Create test user schemas
 	employeeSchema := testutils.UserSchema{
 		Name:               "employee_update",
-		OrganizationUnitId: testOUID,
+		OUID:               testOUID,
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
 				"type": "string",
@@ -4083,7 +4442,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithAllowedUserTypes() {
 	}
 	partnerSchema := testutils.UserSchema{
 		Name:               "partner",
-		OrganizationUnitId: testOUID,
+		OUID:               testOUID,
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
 				"type": "string",
@@ -4287,7 +4646,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithPartialInvalidAllowedUserT
 	// Create one valid user schema
 	validSchema := testutils.UserSchema{
 		Name:               "valid_user_type",
-		OrganizationUnitId: testOUID,
+		OUID:               testOUID,
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
 				"type": "string",
@@ -4356,4 +4715,198 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithPartialInvalidAllowedUserT
 	err = json.NewDecoder(resp.Body).Decode(&errorResp)
 	ts.Require().NoError(err)
 	ts.Assert().Equal("APP-1025", errorResp.Code, "Error code should be APP-1025")
+}
+
+func (ts *ApplicationAPITestSuite) TestApplicationWithUserInfoConfig() {
+	app := Application{
+		Name:                      "App With UserInfo Config",
+		Description:               "Testing UserInfo and ScopeClaims persistence",
+		IsRegistrationFlowEnabled: false,
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "userinfo_config_app_test_client",
+					ClientSecret:            "userinfo_config_app_test_secret",
+					RedirectURIs:            []string{"http://localhost/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+					PKCERequired:            false,
+					PublicClient:            false,
+					Scopes:                  []string{"openid", "profile", "email"},
+					Token: &OAuthTokenConfig{
+						IDToken: &IDTokenConfig{
+							UserAttributes: []string{"sub"},
+						},
+					},
+					UserInfo: &UserInfoConfig{
+						UserAttributes: []string{"email", "given_name", "family_name"},
+					},
+					ScopeClaims: map[string][]string{
+						"profile": {"given_name", "family_name"},
+						"email":   {"email"},
+					},
+				},
+			},
+		},
+	}
+
+	// Set flow IDs (using defaults from suite)
+	app.AuthFlowID = defaultAuthFlowID
+	app.RegistrationFlowID = defaultRegistrationFlowID
+
+	// Create
+	appID, err := createApplication(app)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	// Get
+	retrievedApp, err := getApplicationByID(appID)
+	ts.Require().NoError(err)
+
+	// Validate
+	ts.Require().NotEmpty(retrievedApp.InboundAuthConfig)
+	oauthConfig := retrievedApp.InboundAuthConfig[0].OAuthAppConfig
+	ts.Require().NotNil(oauthConfig)
+
+	// Check UserInfo
+	ts.Require().NotNil(oauthConfig.UserInfo)
+	ts.Assert().ElementsMatch([]string{"email", "given_name", "family_name"}, oauthConfig.UserInfo.UserAttributes)
+
+	// Check ScopeClaims
+	ts.Require().NotNil(oauthConfig.ScopeClaims)
+	ts.Assert().ElementsMatch([]string{"given_name", "family_name"}, oauthConfig.ScopeClaims["profile"])
+
+	// Check IDToken is separate
+	ts.Require().NotNil(oauthConfig.Token.IDToken)
+	ts.Assert().ElementsMatch([]string{"sub"}, oauthConfig.Token.IDToken.UserAttributes)
+}
+
+func (ts *ApplicationAPITestSuite) TestApplicationUserInfoWithFallback() {
+	app := Application{
+		Name:                      "App UserInfo Fallback",
+		Description:               "Testing UserInfo fallback logic",
+		IsRegistrationFlowEnabled: false,
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "userinfo_fallback_test_client",
+					ClientSecret:            "userinfo_fallback_test_secret",
+					RedirectURIs:            []string{"http://localhost/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+					PKCERequired:            false,
+					PublicClient:            false,
+					Scopes:                  []string{"openid", "email"},
+					Token: &OAuthTokenConfig{
+						IDToken: &IDTokenConfig{
+							UserAttributes: []string{"email", "sub"},
+						},
+					},
+					// UserInfo not specified
+				},
+			},
+		},
+	}
+
+	// Set flow IDs (using defaults from suite)
+	app.AuthFlowID = defaultAuthFlowID
+	app.RegistrationFlowID = defaultRegistrationFlowID
+
+	// Create
+	appID, err := createApplication(app)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	// Get
+	retrievedApp, err := getApplicationByID(appID)
+	ts.Require().NoError(err)
+
+	// Validate
+	ts.Require().NotEmpty(retrievedApp.InboundAuthConfig)
+	oauthConfig := retrievedApp.InboundAuthConfig[0].OAuthAppConfig
+	ts.Require().NotNil(oauthConfig)
+
+	// Check UserInfo inherited from IDToken
+	ts.Require().NotNil(oauthConfig.UserInfo)
+	ts.Assert().ElementsMatch([]string{"email", "sub"}, oauthConfig.UserInfo.UserAttributes)
+}
+
+func (ts *ApplicationAPITestSuite) TestApplicationUserInfoResponseTypeJWS() {
+	app := Application{
+		Name:        "App UserInfo JWS",
+		Description: "Testing JWS response type",
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "userinfo_jws_test_client",
+					ClientSecret:            "userinfo_jws_test_secret",
+					RedirectURIs:            []string{"http://localhost/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+					UserInfo: &UserInfoConfig{
+						ResponseType:   "JWS",
+						UserAttributes: []string{"email"},
+					},
+				},
+			},
+		},
+	}
+
+	app.AuthFlowID = defaultAuthFlowID
+	app.RegistrationFlowID = defaultRegistrationFlowID
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	retrievedApp, err := getApplicationByID(appID)
+	ts.Require().NoError(err)
+
+	oauth := retrievedApp.InboundAuthConfig[0].OAuthAppConfig
+	ts.Require().NotNil(oauth.UserInfo)
+	ts.Assert().Equal("JWS", oauth.UserInfo.ResponseType)
+}
+
+func (ts *ApplicationAPITestSuite) TestApplicationUserInfoResponseTypeInvalidFallback() {
+	app := Application{
+		Name:        "App UserInfo Invalid Fallback",
+		Description: "Testing invalid response type fallback",
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "userinfo_invalid_test_client",
+					ClientSecret:            "userinfo_invalid_test_secret",
+					RedirectURIs:            []string{"http://localhost/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+					UserInfo: &UserInfoConfig{
+						ResponseType:   "INVALID",
+						UserAttributes: []string{"email"},
+					},
+				},
+			},
+		},
+	}
+
+	app.AuthFlowID = defaultAuthFlowID
+	app.RegistrationFlowID = defaultRegistrationFlowID
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	retrievedApp, err := getApplicationByID(appID)
+	ts.Require().NoError(err)
+
+	oauth := retrievedApp.InboundAuthConfig[0].OAuthAppConfig
+	ts.Require().NotNil(oauth.UserInfo)
+	ts.Assert().Equal("JSON", oauth.UserInfo.ResponseType)
 }

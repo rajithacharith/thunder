@@ -53,6 +53,7 @@ var googleUserSchema = testutils.UserSchema{
 		},
 		"password": map[string]interface{}{
 			"type": "string",
+			"credential": true,
 		},
 		"sub": map[string]interface{}{
 			"type": "string",
@@ -106,7 +107,7 @@ func (suite *GoogleAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err, "Failed to create test organization unit")
 	suite.ouID = ouID
 
-	googleUserSchema.OrganizationUnitId = suite.ouID
+	googleUserSchema.OUID = suite.ouID
 	schemaID, err := testutils.CreateUserType(googleUserSchema)
 	suite.Require().NoError(err, "Failed to create Google user schema")
 	suite.userSchemaID = schemaID
@@ -125,7 +126,7 @@ func (suite *GoogleAuthTestSuite) SetupSuite() {
 
 	user := testutils.User{
 		Type:             googleUserSchema.Name,
-		OrganizationUnit: suite.ouID,
+		OUID:             suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 
@@ -335,7 +336,7 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthCompleteFlowSuccess() {
 
 	suite.NotEmpty(authResponse.ID, "Response should contain user ID")
 	suite.NotEmpty(authResponse.Type, "Response should contain user type")
-	suite.NotEmpty(authResponse.OrganizationUnit, "Response should contain organization unit")
+	suite.NotEmpty(authResponse.OUID, "Response should contain organization unit")
 	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
 	suite.NotEmpty(authResponse.Assertion, "Response should contain assertion token by default")
 }
@@ -432,7 +433,7 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthCompleteFlowWithSkipAssertionFal
 
 	suite.NotEmpty(authResponse.ID, "Response should contain user ID")
 	suite.NotEmpty(authResponse.Type, "Response should contain user type")
-	suite.NotEmpty(authResponse.OrganizationUnit, "Response should contain organization unit")
+	suite.NotEmpty(authResponse.OUID, "Response should contain organization unit")
 	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
 	suite.NotEmpty(authResponse.Assertion, "Response should contain assertion token when skip_assertion is false")
 }
@@ -490,7 +491,7 @@ func (suite *GoogleAuthTestSuite) TestGoogleAuthCompleteFlowWithSkipAssertionTru
 
 	suite.NotEmpty(authResponse.ID, "Response should contain user ID")
 	suite.NotEmpty(authResponse.Type, "Response should contain user type")
-	suite.NotEmpty(authResponse.OrganizationUnit, "Response should contain organization unit")
+	suite.NotEmpty(authResponse.OUID, "Response should contain organization unit")
 	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
 	suite.Empty(authResponse.Assertion, "Response should not contain assertion token when skip_assertion is true")
 }

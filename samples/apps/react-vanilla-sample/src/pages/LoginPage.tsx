@@ -313,6 +313,15 @@ const LoginPage = () => {
                 setRegOnlySuccess(true);
             }
         } else if (data.type === "VIEW") {
+            // Check for passkey creation options in additionalData - check this first
+            if (data.data?.additionalData?.passkeyCreationOptions) {
+                setPasskeyCreationOptions(data.data.additionalData.passkeyCreationOptions);
+            }
+            // Check for passkey authentication challenge in additionalData - check this first
+            if (data.data?.additionalData?.passkeyChallenge) {
+                setPasskeyChallenge(data.data.additionalData.passkeyChallenge);
+            }
+
             // Handle the VIEW response
             // Check if this is an input prompt (has inputs to collect)
             if (data.data?.inputs && data.data.inputs.length > 0) {
@@ -324,14 +333,6 @@ const LoginPage = () => {
                 // Also store actions for form submission
                 if (data.data?.actions) {
                     setAvailableActions(data.data.actions);
-                }
-                // Check for passkey creation options in additionalData
-                if (data.data?.additionalData?.passkeyCreationOptions) {
-                    setPasskeyCreationOptions(data.data.additionalData.passkeyCreationOptions);
-                }
-                // Check for passkey authentication challenge in additionalData
-                if (data.data?.additionalData?.passkeyChallenge) {
-                    setPasskeyChallenge(data.data.additionalData.passkeyChallenge);
                 }
             } else if (data.data?.actions && data.data.actions.length > 1) {
                 // This is a decision screen - multiple actions to choose from
@@ -404,6 +405,8 @@ const LoginPage = () => {
         setRedirectURL(null);
         setSocialIdpName('');
         setRegOnlySuccess(false);
+        setPasskeyCreationOptions(null);
+        setPasskeyChallenge(null);
 
         initiateNativeAuthFlow(isSignupMode ? 'REGISTRATION' : 'LOGIN')
             .then((result) => {
@@ -419,6 +422,15 @@ const LoginPage = () => {
                     setError(true);
                     setErrorMessage(data.failureReason || defaultMessage);
                 } else if (data.type === "VIEW") {
+                    // Check for passkey creation options in additionalData - check this first
+                    if (data.data?.additionalData?.passkeyCreationOptions) {
+                        setPasskeyCreationOptions(data.data.additionalData.passkeyCreationOptions);
+                    }
+                    // Check for passkey authentication challenge in additionalData - check this first
+                    if (data.data?.additionalData?.passkeyChallenge) {
+                        setPasskeyChallenge(data.data.additionalData.passkeyChallenge);
+                    }
+
                     // Handle the VIEW response
                     // Check if this is an input prompt (has inputs to collect)
                     if (data.data?.inputs && data.data.inputs.length > 0) {
@@ -483,6 +495,8 @@ const LoginPage = () => {
         setSocialIdpName('');
         setRegOnlySuccess(false);
         setPromptRegistration(false);
+        setPasskeyCreationOptions(null);
+        setPasskeyChallenge(null);
 
         // Ensure all input fields are present in formData, even if empty
         const completeFormData = { ...formData };
@@ -504,6 +518,15 @@ const LoginPage = () => {
                     setError(true);
                     setErrorMessage(data.failureReason || 'Registration failed. Please check your information.');
                 } else if (data.type === "VIEW") {
+                    // Check for passkey creation options in additionalData - check this first
+                    if (data.data?.additionalData?.passkeyCreationOptions) {
+                        setPasskeyCreationOptions(data.data.additionalData.passkeyCreationOptions);
+                    }
+                    // Check for passkey authentication challenge in additionalData - check this first
+                    if (data.data?.additionalData?.passkeyChallenge) {
+                        setPasskeyChallenge(data.data.additionalData.passkeyChallenge);
+                    }
+
                     // Handle the VIEW response
                     // Check if this is an input prompt (has inputs to collect)
                     if (data.data?.inputs && data.data.inputs.length > 0) {
@@ -634,6 +657,9 @@ const LoginPage = () => {
             })
             .catch((error) => {
                 console.error("Error submitting passkey credential:", error);
+                setConnectionError(false);
+                setNeedsDecision(false);
+                setAvailableActions([]);
                 handleSubmissionError(error);
             });
     };
@@ -667,6 +693,11 @@ const LoginPage = () => {
             })
             .catch((error) => {
                 console.error("Error submitting passkey assertion:", error);
+                setNeedsDecision(false);
+                setAvailableActions([]);
+                setSelectedAction(null);
+                setFormData({});
+                setInputs([]);
                 handleSubmissionError(error);
             });
     };

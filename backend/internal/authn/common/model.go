@@ -23,16 +23,19 @@ import (
 	"context"
 	"time"
 
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/idp"
 )
 
 // AuthenticatedUser represents the user information of an authenticated user.
 type AuthenticatedUser struct {
-	IsAuthenticated    bool
-	UserID             string
-	OrganizationUnitID string
-	UserType           string
-	Attributes         map[string]interface{}
+	IsAuthenticated     bool
+	UserID              string
+	OUID                string
+	UserType            string
+	Attributes          map[string]interface{}
+	AvailableAttributes *authnprovider.AvailableAttributes
+	Token               string
 }
 
 // AuthenticationContext represents the context of an authentication session.
@@ -46,10 +49,10 @@ type AuthenticationContext struct {
 
 // AuthenticationResponse represents the response after successful authentication.
 type AuthenticationResponse struct {
-	ID               string
-	Type             string
-	OrganizationUnit string
-	Assertion        string
+	ID        string
+	Type      string
+	OUID      string
+	Assertion string
 }
 
 // AuthenticatorMeta represents an authenticator's metadata including authentication factors.

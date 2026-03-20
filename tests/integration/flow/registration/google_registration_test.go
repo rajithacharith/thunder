@@ -47,7 +47,60 @@ var (
 				"executor": map[string]interface{}{
 					"name": "UserTypeResolver",
 				},
-				"onSuccess": "google_auth",
+				"onSuccess":    "google_auth",
+				"onIncomplete": "prompt_usertype",
+			},
+			{
+				"id":   "prompt_usertype",
+				"type": "PROMPT",
+				"meta": map[string]interface{}{
+					"components": []map[string]interface{}{
+						{
+							"type":    "TEXT",
+							"id":      "heading_usertype",
+							"label":   "Sign Up",
+							"variant": "HEADING_2",
+						},
+						{
+							"type": "BLOCK",
+							"id":   "block_usertype",
+							"components": []map[string]interface{}{
+								{
+									"type":        "SELECT",
+									"id":          "usertype_input",
+									"ref":         "userType",
+									"label":       "User Type",
+									"placeholder": "Select your user type",
+									"required":    true,
+									"options":     []interface{}{},
+								},
+								{
+									"type":      "ACTION",
+									"id":        "action_usertype",
+									"label":     "Continue",
+									"variant":   "PRIMARY",
+									"eventType": "SUBMIT",
+								},
+							},
+						},
+					},
+				},
+				"prompts": []map[string]interface{}{
+					{
+						"inputs": []map[string]interface{}{
+							{
+								"ref":        "usertype_input",
+								"identifier": "userType",
+								"type":       "SELECT",
+								"required":   true,
+							},
+						},
+						"action": map[string]interface{}{
+							"ref":      "action_usertype",
+							"nextNode": "user_type_resolver",
+						},
+					},
+				},
 			},
 			{
 				"id":   "google_auth",
@@ -151,6 +204,7 @@ var (
 			},
 			"password": map[string]interface{}{
 				"type": "string",
+				"credential": true,
 			},
 			"sub": map[string]interface{}{
 				"type": "string",
@@ -158,10 +212,28 @@ var (
 			"email": map[string]interface{}{
 				"type": "string",
 			},
+			"email_verified": map[string]interface{}{
+				"type": "string",
+			},
+			"name": map[string]interface{}{
+				"type": "string",
+			},
+			"given_name": map[string]interface{}{
+				"type": "string",
+			},
+			"family_name": map[string]interface{}{
+				"type": "string",
+			},
 			"givenName": map[string]interface{}{
 				"type": "string",
 			},
 			"familyName": map[string]interface{}{
+				"type": "string",
+			},
+			"picture": map[string]interface{}{
+				"type": "string",
+			},
+			"locale": map[string]interface{}{
 				"type": "string",
 			},
 		},
@@ -175,7 +247,7 @@ var (
 		ClientSecret:              "google_reg_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{googleRegUserSchema.Name},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
@@ -233,7 +305,7 @@ func (ts *GoogleRegistrationFlowTestSuite) SetupSuite() {
 	googleRegTestOUID = ouID
 
 	// Create user schema
-	googleRegUserSchema.OrganizationUnitId = googleRegTestOUID
+	googleRegUserSchema.OUID = googleRegTestOUID
 	googleRegUserSchema.AllowSelfRegistration = true
 	schemaID, err := testutils.CreateUserType(googleRegUserSchema)
 	ts.Require().NoError(err, "Failed to create Google user schema")
@@ -295,7 +367,7 @@ func (ts *GoogleRegistrationFlowTestSuite) SetupSuite() {
 
 	// Update flow definitions with created IDP ID
 	nodes := googleRegistrationFlow.Nodes.([]map[string]interface{})
-	nodes[2]["properties"].(map[string]interface{})["idpId"] = idpID
+	nodes[3]["properties"].(map[string]interface{})["idpId"] = idpID
 	googleRegistrationFlow.Nodes = nodes
 
 	nodesWithExisting := googleRegistrationFlowWithExistingUser.Nodes.([]map[string]interface{})
@@ -465,7 +537,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowCompleteSuc
 
 	// Validate JWT contains expected user type and OU ID
 	ts.Require().Equal(googleRegUserSchema.Name, jwtClaims.UserType, "Expected userType to match created schema")
-	ts.Require().NotEmpty(jwtClaims.OuID, "Expected ouId to be present")
+	ts.Require().NotEmpty(jwtClaims.OUID, "Expected ouId to be present")
 	ts.Require().Equal(googleRegTestAppID, jwtClaims.Aud, "Expected aud to match the application ID")
 	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
 

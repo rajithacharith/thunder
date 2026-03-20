@@ -19,8 +19,11 @@
 package authz
 
 import (
+	"context"
 	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/mock"
 
 	enginemock "github.com/asgardeo/thunder/tests/mocks/authz/engine"
 
@@ -51,10 +54,11 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_Success
 	}
 	expectedPermissions := []string{"perm1", "perm3"}
 
-	suite.mockEngine.On("GetAuthorizedPermissions", request.UserID, request.GroupIDs, request.RequestedPermissions).
+	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.UserID, request.GroupIDs,
+		request.RequestedPermissions).
 		Return(expectedPermissions, nil)
 
-	response, err := suite.service.GetAuthorizedPermissions(request)
+	response, err := suite.service.GetAuthorizedPermissions(context.Background(), request)
 
 	suite.Nil(err)
 	suite.NotNil(response)
@@ -69,10 +73,11 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_Missing
 	}
 
 	// Mock engine to return error (validation happens in underlying service)
-	suite.mockEngine.On("GetAuthorizedPermissions", request.UserID, request.GroupIDs, request.RequestedPermissions).
+	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.UserID, request.GroupIDs,
+		request.RequestedPermissions).
 		Return(nil, errors.New("role service error: Either userId or groups must be provided"))
 
-	response, err := suite.service.GetAuthorizedPermissions(request)
+	response, err := suite.service.GetAuthorizedPermissions(context.Background(), request)
 
 	suite.Nil(response)
 	suite.NotNil(err)
@@ -87,10 +92,11 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_Missing
 	}
 
 	// Mock engine to return error (validation happens in underlying service)
-	suite.mockEngine.On("GetAuthorizedPermissions", request.UserID, []string{}, request.RequestedPermissions).
+	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.UserID, []string{},
+		request.RequestedPermissions).
 		Return(nil, errors.New("role service error: Either userId or groups must be provided"))
 
-	response, err := suite.service.GetAuthorizedPermissions(request)
+	response, err := suite.service.GetAuthorizedPermissions(context.Background(), request)
 
 	suite.Nil(response)
 	suite.NotNil(err)
@@ -104,7 +110,7 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_EmptyRe
 		RequestedPermissions: []string{},
 	}
 
-	response, err := suite.service.GetAuthorizedPermissions(request)
+	response, err := suite.service.GetAuthorizedPermissions(context.Background(), request)
 
 	suite.Nil(err)
 	suite.NotNil(response)
@@ -118,7 +124,7 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_NilRequ
 		RequestedPermissions: nil,
 	}
 
-	response, err := suite.service.GetAuthorizedPermissions(request)
+	response, err := suite.service.GetAuthorizedPermissions(context.Background(), request)
 
 	suite.Nil(err)
 	suite.NotNil(response)
@@ -133,10 +139,11 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_UserOnl
 	}
 	expectedPermissions := []string{"perm1"}
 
-	suite.mockEngine.On("GetAuthorizedPermissions", request.UserID, request.GroupIDs, request.RequestedPermissions).
+	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.UserID, request.GroupIDs,
+		request.RequestedPermissions).
 		Return(expectedPermissions, nil)
 
-	response, err := suite.service.GetAuthorizedPermissions(request)
+	response, err := suite.service.GetAuthorizedPermissions(context.Background(), request)
 
 	suite.Nil(err)
 	suite.NotNil(response)
@@ -151,10 +158,11 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_GroupsO
 	}
 	expectedPermissions := []string{"perm2"}
 
-	suite.mockEngine.On("GetAuthorizedPermissions", request.UserID, request.GroupIDs, request.RequestedPermissions).
+	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.UserID, request.GroupIDs,
+		request.RequestedPermissions).
 		Return(expectedPermissions, nil)
 
-	response, err := suite.service.GetAuthorizedPermissions(request)
+	response, err := suite.service.GetAuthorizedPermissions(context.Background(), request)
 
 	suite.Nil(err)
 	suite.NotNil(response)
@@ -169,10 +177,11 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_NilGrou
 	}
 	expectedPermissions := []string{"perm1"}
 
-	suite.mockEngine.On("GetAuthorizedPermissions", request.UserID, []string{}, request.RequestedPermissions).
+	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.UserID, []string{},
+		request.RequestedPermissions).
 		Return(expectedPermissions, nil)
 
-	response, err := suite.service.GetAuthorizedPermissions(request)
+	response, err := suite.service.GetAuthorizedPermissions(context.Background(), request)
 
 	suite.Nil(err)
 	suite.NotNil(response)
@@ -186,10 +195,11 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_EngineE
 		RequestedPermissions: []string{"perm1", "perm2"},
 	}
 
-	suite.mockEngine.On("GetAuthorizedPermissions", request.UserID, request.GroupIDs, request.RequestedPermissions).
+	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.UserID, request.GroupIDs,
+		request.RequestedPermissions).
 		Return(nil, errors.New("engine failed"))
 
-	response, err := suite.service.GetAuthorizedPermissions(request)
+	response, err := suite.service.GetAuthorizedPermissions(context.Background(), request)
 
 	suite.Nil(response)
 	suite.NotNil(err)
@@ -203,10 +213,11 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_NoAutho
 		RequestedPermissions: []string{"perm1", "perm2"},
 	}
 
-	suite.mockEngine.On("GetAuthorizedPermissions", request.UserID, request.GroupIDs, request.RequestedPermissions).
+	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.UserID, request.GroupIDs,
+		request.RequestedPermissions).
 		Return([]string{}, nil)
 
-	response, err := suite.service.GetAuthorizedPermissions(request)
+	response, err := suite.service.GetAuthorizedPermissions(context.Background(), request)
 
 	suite.Nil(err)
 	suite.NotNil(response)
@@ -220,10 +231,11 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_AllPerm
 		RequestedPermissions: []string{"perm1", "perm2"},
 	}
 
-	suite.mockEngine.On("GetAuthorizedPermissions", request.UserID, request.GroupIDs, request.RequestedPermissions).
+	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.UserID, request.GroupIDs,
+		request.RequestedPermissions).
 		Return(request.RequestedPermissions, nil)
 
-	response, err := suite.service.GetAuthorizedPermissions(request)
+	response, err := suite.service.GetAuthorizedPermissions(context.Background(), request)
 
 	suite.Nil(err)
 	suite.NotNil(response)

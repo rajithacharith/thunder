@@ -221,7 +221,7 @@ var (
 		ClientSecret:              "sms_auth_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"sms_auth_user"},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
@@ -234,14 +234,15 @@ var (
 			},
 			"password": map[string]interface{}{
 				"type": "string",
+				"credential": true,
 			},
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 			"mobileNumber": map[string]interface{}{
@@ -256,8 +257,8 @@ var (
 			"username": "smsuser",
 			"password": "testpassword",
 			"email": "smsuser@example.com",
-			"firstName": "SMS",
-			"lastName": "User",
+			"given_name": "SMS",
+			"family_name": "User",
 			"mobileNumber": "+1234567890"
 		}`),
 	}
@@ -298,7 +299,7 @@ func (ts *SMSAuthFlowTestSuite) SetupSuite() {
 	smsAuthTestOU.ID = ouID
 
 	// Create test user schema within the OU
-	smsAuthUserSchema.OrganizationUnitId = ouID
+	smsAuthUserSchema.OUID = ouID
 	schemaID, err := testutils.CreateUserType(smsAuthUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
@@ -316,7 +317,7 @@ func (ts *SMSAuthFlowTestSuite) SetupSuite() {
 
 	// Create test user with mobile number using the created OU
 	testUserWithMobile := testUserWithMobile
-	testUserWithMobile.OrganizationUnit = smsAuthTestOU.ID
+	testUserWithMobile.OUID = smsAuthTestOU.ID
 	userIDs, err := testutils.CreateMultipleUsers(testUserWithMobile)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user during setup: %v", err)

@@ -20,6 +20,8 @@ package authz
 
 import (
 	"time"
+
+	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 )
 
 // OAuthMessage represents the OAuth message.
@@ -37,7 +39,7 @@ type AuthorizationCode struct {
 	ClientID            string
 	RedirectURI         string
 	AuthorizedUserID    string
-	UserAttributes      map[string]interface{}
+	AttributeCacheID    string
 	TimeCreated         time.Time
 	ExpiryTime          time.Time
 	Scopes              string
@@ -45,6 +47,9 @@ type AuthorizationCode struct {
 	CodeChallenge       string
 	CodeChallengeMethod string
 	Resource            string
+	ClaimsRequest       *oauth2model.ClaimsRequest
+	ClaimsLocales       string
+	Nonce               string
 }
 
 // AuthZPostRequest represents the request body for the authorization POST request.
@@ -58,9 +63,23 @@ type AuthZPostResponse struct {
 	RedirectURI string `json:"redirect_uri"`
 }
 
+// AuthorizationInitResult holds the result of a successful initial authorization request processing.
+type AuthorizationInitResult struct {
+	QueryParams map[string]string
+}
+
+// AuthorizationError holds structured error info for authorization failures.
+type AuthorizationError struct {
+	Code              string
+	Message           string
+	SendErrorToClient bool   // if true, redirect error to client's redirect_uri rather than the error page
+	ClientRedirectURI string // populated when SendErrorToClient is true
+	State             string // from the original request
+}
+
 // assertionClaims represents the claims extracted from the flow assertion JWT.
 type assertionClaims struct {
 	userID                string
 	authorizedPermissions string
-	userAttributes        map[string]interface{}
+	attributeCacheID      string
 }

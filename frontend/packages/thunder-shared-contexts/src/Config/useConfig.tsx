@@ -54,21 +54,21 @@ import ConfigContext, {ConfigContextType} from './ConfigContext';
  * ```
  *
  * @example
- * Getting client UUID for branding resolution:
+ * Getting client UUID for design resolution:
  * ```tsx
  * import useConfig from './useConfig';
- * import useGetBrandingResolve from './useGetBrandingResolve';
+ * import useGetDesignResolve from './useGetDesignResolve';
  *
- * function BrandedComponent() {
+ * function DesignedComponent() {
  *   const { getClientUuid } = useConfig();
  *   const clientUuid = getClientUuid();
  *
- *   const { data: branding } = useGetBrandingResolve({
+ *   const { data: design } = useGetDesignResolve({
  *     type: 'APP',
  *     id: clientUuid || ''
  *   });
  *
- *   return <div>Component with branding...</div>;
+ *   return <div>Component with design...</div>;
  * }
  * ```
  *

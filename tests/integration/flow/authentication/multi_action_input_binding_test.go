@@ -118,7 +118,7 @@ var (
 		ClientSecret:              "multi_action_input_binding_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"multi_action_input_binding_test_person"},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
@@ -138,6 +138,7 @@ var (
 			},
 			"password": map[string]interface{}{
 				"type": "string",
+				"credential": true,
 			},
 			"email": map[string]interface{}{
 				"type": "string",
@@ -214,7 +215,7 @@ func (ts *MultiActionInputBindingTestSuite) SetupSuite() {
 	multiActionInputBindingTestOUID = ouID
 
 	// Create test user schema within the OU
-	multiActionInputBindingUserSchema.OrganizationUnitId = multiActionInputBindingTestOUID
+	multiActionInputBindingUserSchema.OUID = multiActionInputBindingTestOUID
 	schemaID, err := testutils.CreateUserType(multiActionInputBindingUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema: %v", err)
@@ -223,7 +224,7 @@ func (ts *MultiActionInputBindingTestSuite) SetupSuite() {
 
 	// Create test user with the created OU
 	testUser := testUserMultiActionInputBinding
-	testUser.OrganizationUnit = multiActionInputBindingTestOUID
+	testUser.OUID = multiActionInputBindingTestOUID
 	userID, err := testutils.CreateUser(testUser)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user: %v", err)

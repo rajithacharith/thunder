@@ -20,12 +20,15 @@ package executor
 
 import (
 	"encoding/json"
+	"errors"
 
 	authzsvc "github.com/asgardeo/thunder/internal/authz"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const (
@@ -39,6 +42,7 @@ const (
 type authorizationExecutor struct {
 	core.ExecutorInterface
 	authzService authzsvc.AuthorizationServiceInterface
+	userProvider userprovider.UserProviderInterface
 	logger       *log.Logger
 }
 
@@ -48,6 +52,7 @@ var _ core.ExecutorInterface = (*authorizationExecutor)(nil)
 func newAuthorizationExecutor(
 	flowFactory core.FlowFactoryInterface,
 	authZService authzsvc.AuthorizationServiceInterface,
+	userProvider userprovider.UserProviderInterface,
 ) *authorizationExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, authzLoggerComponentName),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameAuthorization))
@@ -58,6 +63,7 @@ func newAuthorizationExecutor(
 	return &authorizationExecutor{
 		ExecutorInterface: base,
 		authzService:      authZService,
+		userProvider:      userProvider,
 		logger:            logger,
 	}
 }
@@ -70,6 +76,12 @@ func (a *authorizationExecutor) Execute(ctx *core.NodeContext) (*common.Executor
 
 	execResp := &common.ExecutorResponse{
 		RuntimeData: make(map[string]string),
+	}
+
+	if !ctx.AuthenticatedUser.IsAuthenticated && ctx.FlowType == common.FlowTypeRegistration {
+		logger.Debug("Sending executor complete response for unauthenticated user in registration flow")
+		execResp.Status = common.ExecComplete
+		return execResp, nil
 	}
 
 	if !ctx.AuthenticatedUser.IsAuthenticated {
@@ -91,7 +103,10 @@ func (a *authorizationExecutor) Execute(ctx *core.NodeContext) (*common.Executor
 
 	// Extract user ID and group IDs
 	userID := ctx.AuthenticatedUser.UserID
-	groupIDs := a.extractGroupIDs(ctx)
+	groupIDs, err := a.extractGroupIDs(ctx)
+	if err != nil {
+		return nil, errors.Join(errors.New("Failed to extract group IDs"), err)
+	}
 
 	logger.Debug("Calling authorization service",
 		log.String("userID", userID),
@@ -105,7 +120,7 @@ func (a *authorizationExecutor) Execute(ctx *core.NodeContext) (*common.Executor
 		RequestedPermissions: requestedPerms,
 	}
 
-	authzResp, svcErr := a.authzService.GetAuthorizedPermissions(authzReq)
+	authzResp, svcErr := a.authzService.GetAuthorizedPermissions(ctx.Context, authzReq)
 	if svcErr != nil {
 		logger.Error("Authorization service call failed", log.String("error", svcErr.Error))
 		execResp.Status = common.ExecFailure
@@ -137,13 +152,14 @@ func setAuthorizedPermissions(execResp *common.ExecutorResponse, authorizedPermi
 }
 
 // extractGroupIDs extracts group IDs from the authenticated user's attributes or runtime data.
-func (a *authorizationExecutor) extractGroupIDs(ctx *core.NodeContext) []string {
+// If neither provides group information, it fetches them using the user service.
+func (a *authorizationExecutor) extractGroupIDs(ctx *core.NodeContext) ([]string, error) {
 	// Try to get groups from authenticated user attributes
 	if groupsAttr, ok := ctx.AuthenticatedUser.Attributes[userAttributeGroups]; ok {
 		// Handle different group attribute formats
 		switch v := groupsAttr.(type) {
 		case []string:
-			return v
+			return v, nil
 		case []interface{}:
 			groups := make([]string, 0, len(v))
 			for _, item := range v {
@@ -151,10 +167,10 @@ func (a *authorizationExecutor) extractGroupIDs(ctx *core.NodeContext) []string 
 					groups = append(groups, str)
 				}
 			}
-			return groups
+			return groups, nil
 		case string:
 			// Single group as string
-			return []string{v}
+			return []string{v}, nil
 		}
 	}
 
@@ -162,10 +178,29 @@ func (a *authorizationExecutor) extractGroupIDs(ctx *core.NodeContext) []string 
 	if groupsJSON, ok := ctx.RuntimeData[userAttributeGroups]; ok && groupsJSON != "" {
 		var groups []string
 		if err := json.Unmarshal([]byte(groupsJSON), &groups); err == nil {
-			return groups
+			return groups, nil
+		}
+	}
+
+	// If no groups found in context, fetch from user service
+	if a.userProvider != nil && ctx.AuthenticatedUser.UserID != "" {
+		a.logger.Debug("Groups not found in context, fetching from user service",
+			log.String("userID", ctx.AuthenticatedUser.UserID))
+
+		groupsResp, err := a.userProvider.GetUserGroups(ctx.AuthenticatedUser.UserID,
+			oauth2const.DefaultGroupListLimit, 0)
+		if err != nil {
+			return nil, err
+		}
+		if groupsResp != nil {
+			groups := make([]string, 0, len(groupsResp.Groups))
+			for _, g := range groupsResp.Groups {
+				groups = append(groups, g.ID)
+			}
+			return groups, nil
 		}
 	}
 
 	// No groups found
-	return []string{}
+	return []string{}, nil
 }

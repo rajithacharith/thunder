@@ -19,14 +19,16 @@
 package authz
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"time"
 
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
-	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
@@ -37,9 +39,9 @@ type authRequestContext struct {
 
 // authorizationRequestStoreInterface defines the interface for authorization request storage.
 type authorizationRequestStoreInterface interface {
-	AddRequest(value authRequestContext) string
-	GetRequest(key string) (bool, authRequestContext)
-	ClearRequest(key string)
+	AddRequest(ctx context.Context, value authRequestContext) (string, error)
+	GetRequest(ctx context.Context, key string) (bool, authRequestContext, error)
+	ClearRequest(ctx context.Context, key string) error
 }
 
 // authorizationRequestStore provides the authorization request store functionality using database.
@@ -47,7 +49,6 @@ type authorizationRequestStore struct {
 	dbProvider     provider.DBProviderInterface
 	validityPeriod time.Duration
 	deploymentID   string
-	logger         *log.Logger
 }
 
 // newAuthorizationRequestStore creates a new instance of authorizationRequestStore with injected dependencies.
@@ -56,19 +57,20 @@ func newAuthorizationRequestStore() authorizationRequestStoreInterface {
 		dbProvider:     provider.GetDBProvider(),
 		validityPeriod: 10 * time.Minute,
 		deploymentID:   config.GetThunderRuntime().Config.Server.Identifier,
-		logger:         log.GetLogger().With(log.String(log.LoggerKeyComponentName, "AuthorizationRequestStore")),
 	}
 }
 
 // AddRequest adds an authorization request context entry to the store.
-func (authzRS *authorizationRequestStore) AddRequest(value authRequestContext) string {
+func (authzRS *authorizationRequestStore) AddRequest(ctx context.Context, value authRequestContext) (string, error) {
 	dbClient, err := authzRS.dbProvider.GetRuntimeDBClient()
 	if err != nil {
-		authzRS.logger.Error("Failed to get database client", log.Error(err))
-		return ""
+		return "", fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	key := utils.GenerateUUID()
+	key, err := utils.GenerateUUIDv7()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate UUID: %w", err)
+	}
 	// Calculate expiry based on current time
 	requestInitiatedTime := time.Now()
 	expiryTime := requestInitiatedTime.Add(authzRS.validityPeriod)
@@ -76,69 +78,66 @@ func (authzRS *authorizationRequestStore) AddRequest(value authRequestContext) s
 	// Serialize authRequestContext to JSON
 	jsonDataBytes, err := authzRS.getJSONDataBytes(value)
 	if err != nil {
-		authzRS.logger.Error("Failed to marshal request context to JSON", log.Error(err))
-		return ""
+		return "", fmt.Errorf("failed to marshal request context to JSON: %w", err)
 	}
 
-	_, err = dbClient.Execute(queryInsertAuthRequest, key, jsonDataBytes, expiryTime, authzRS.deploymentID)
+	_, err = dbClient.ExecuteContext(ctx, queryInsertAuthRequest, key, jsonDataBytes, expiryTime, authzRS.deploymentID)
 	if err != nil {
-		authzRS.logger.Error("Failed to insert authorization request", log.Error(err))
-		return ""
+		return "", fmt.Errorf("failed to insert authorization request: %w", err)
 	}
 
-	return key
+	return key, nil
 }
 
 // GetRequest retrieves an authorization request context entry from the store.
-func (authzRS *authorizationRequestStore) GetRequest(key string) (bool, authRequestContext) {
+func (authzRS *authorizationRequestStore) GetRequest(
+	ctx context.Context, key string) (bool, authRequestContext, error) {
 	if key == "" {
-		return false, authRequestContext{}
+		return false, authRequestContext{}, nil
 	}
 
 	dbClient, err := authzRS.dbProvider.GetRuntimeDBClient()
 	if err != nil {
-		authzRS.logger.Error("Failed to get database client", log.Error(err))
-		return false, authRequestContext{}
+		return false, authRequestContext{}, fmt.Errorf("failed to get database client: %w", err)
 	}
 
 	// Check expiry by comparing with current time
 	now := time.Now()
-	results, err := dbClient.Query(queryGetAuthRequest, key, now, authzRS.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryGetAuthRequest, key, now, authzRS.deploymentID)
 	if err != nil {
-		authzRS.logger.Error("Failed to query authorization request", log.Error(err))
-		return false, authRequestContext{}
+		return false, authRequestContext{}, fmt.Errorf("failed to query authorization request: %w", err)
 	}
 
 	if len(results) == 0 {
-		return false, authRequestContext{}
+		return false, authRequestContext{}, nil
 	}
 
 	row := results[0]
 	authRequestCtx, err := authzRS.buildAuthRequestContextFromResultRow(row)
 	if err != nil {
-		authzRS.logger.Error("Failed to build authorization request context from result", log.Error(err))
-		return false, authRequestContext{}
+		return false, authRequestContext{}, fmt.Errorf("failed to build authorization request context: %w", err)
 	}
 
-	return true, authRequestCtx
+	return true, authRequestCtx, nil
 }
 
 // ClearRequest removes a specific authorization request context entry from the store.
-func (authzRS *authorizationRequestStore) ClearRequest(key string) {
+func (authzRS *authorizationRequestStore) ClearRequest(ctx context.Context, key string) error {
 	if key == "" {
-		return
+		return nil
 	}
 
 	dbClient, err := authzRS.dbProvider.GetRuntimeDBClient()
 	if err != nil {
-		authzRS.logger.Error("Failed to get database client", log.Error(err))
-		return
+		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	_, err = dbClient.Execute(queryDeleteAuthRequest, key, authzRS.deploymentID)
+	_, err = dbClient.ExecuteContext(ctx, queryDeleteAuthRequest, key, authzRS.deploymentID)
 	if err != nil {
-		authzRS.logger.Error("Failed to delete authorization request", log.Error(err))
+		return fmt.Errorf("failed to delete authorization request: %w", err)
 	}
+
+	return nil
 }
 
 // getJSONDataBytes prepares the JSON data bytes for the authorization request context.
@@ -153,6 +152,13 @@ func (authzRS *authorizationRequestStore) getJSONDataBytes(authRequestCtx authRe
 		jsonKeyCodeChallenge:       authRequestCtx.OAuthParameters.CodeChallenge,
 		jsonKeyCodeChallengeMethod: authRequestCtx.OAuthParameters.CodeChallengeMethod,
 		jsonKeyResource:            authRequestCtx.OAuthParameters.Resource,
+		jsonKeyClaimsLocales:       authRequestCtx.OAuthParameters.ClaimsLocales,
+		jsonKeyNonce:               authRequestCtx.OAuthParameters.Nonce,
+	}
+
+	// Add claims_request if present
+	if authRequestCtx.OAuthParameters.ClaimsRequest != nil {
+		jsonData[jsonKeyClaimsRequest] = authRequestCtx.OAuthParameters.ClaimsRequest
 	}
 
 	jsonDataBytes, err := json.Marshal(jsonData)
@@ -221,6 +227,25 @@ func (authzRS *authorizationRequestStore) buildAuthRequestContextFromResultRow(
 	}
 	if resource, ok := requestDataMap[jsonKeyResource].(string); ok {
 		oauthParams.Resource = resource
+	}
+	if claimsLocales, ok := requestDataMap[jsonKeyClaimsLocales].(string); ok {
+		oauthParams.ClaimsLocales = claimsLocales
+	}
+	// Nonce is OIDC-specific and should only be set when openid scope is present
+	if slices.Contains(oauthParams.StandardScopes, constants.ScopeOpenID) {
+		if nonce, ok := requestDataMap[jsonKeyNonce].(string); ok {
+			oauthParams.Nonce = nonce
+		}
+	}
+
+	// Parse claims_request if present
+	if claimsData, ok := requestDataMap[jsonKeyClaimsRequest]; ok && claimsData != nil {
+		claimsRequest, err := parseClaimsRequestFromJSON(claimsData)
+		if err != nil {
+			return authRequestContext{}, fmt.Errorf(
+				"failed to parse claims_request from authorization request: %w", err)
+		}
+		oauthParams.ClaimsRequest = claimsRequest
 	}
 
 	return authRequestContext{

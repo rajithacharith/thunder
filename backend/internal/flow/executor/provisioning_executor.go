@@ -30,14 +30,14 @@ import (
 	"github.com/asgardeo/thunder/internal/group"
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 // provisioningExecutor implements the ExecutorInterface for user provisioning in a flow.
 type provisioningExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
-	userService  user.UserServiceInterface
+	userProvider userprovider.UserProviderInterface
 	groupService group.GroupServiceInterface
 	roleService  role.RoleServiceInterface
 	logger       *log.Logger
@@ -49,9 +49,9 @@ var _ identifyingExecutorInterface = (*provisioningExecutor)(nil)
 // newProvisioningExecutor creates a new instance of ProvisioningExecutor.
 func newProvisioningExecutor(
 	flowFactory core.FlowFactoryInterface,
-	userService user.UserServiceInterface,
 	groupService group.GroupServiceInterface,
 	roleService role.RoleServiceInterface,
+	userProvider userprovider.UserProviderInterface,
 ) *provisioningExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, ExecutorNameProvisioning),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameProvisioning))
@@ -60,12 +60,12 @@ func newProvisioningExecutor(
 		[]common.Input{}, []common.Input{})
 
 	identifyingExec := newIdentifyingExecutor(ExecutorNameProvisioning,
-		[]common.Input{}, []common.Input{}, flowFactory, userService)
+		[]common.Input{}, []common.Input{}, flowFactory, userProvider)
 
 	return &provisioningExecutor{
 		ExecutorInterface:            base,
 		identifyingExecutorInterface: identifyingExec,
-		userService:                  userService,
+		userProvider:                 userProvider,
 		groupService:                 groupService,
 		roleService:                  roleService,
 		logger:                       logger,
@@ -148,19 +148,19 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 		execResp.FailureReason = "Failed to create user"
 		return execResp, nil
 	}
-	if createdUser == nil || createdUser.ID == "" {
+	if createdUser == nil || createdUser.UserID == "" {
 		logger.Error("Created user is nil or has no ID")
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Something went wrong while creating the user"
 		return execResp, nil
 	}
 
-	logger.Debug("User created successfully", log.String("userID", createdUser.ID))
+	logger.Debug("User created successfully", log.String("userID", createdUser.UserID))
 
 	// Assign user to groups and roles
-	if err := p.assignGroupsAndRoles(ctx, createdUser.ID); err != nil {
+	if err := p.assignGroupsAndRoles(ctx, createdUser.UserID); err != nil {
 		logger.Error("Failed to assign groups and roles to provisioned user",
-			log.String("userID", createdUser.ID),
+			log.String("userID", createdUser.UserID),
 			log.Error(err))
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Failed to assign groups and roles"
@@ -174,17 +174,17 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 	}
 
 	authenticatedUser := authncm.AuthenticatedUser{
-		IsAuthenticated:    true,
-		UserID:             createdUser.ID,
-		OrganizationUnitID: createdUser.OrganizationUnit,
-		UserType:           createdUser.Type,
-		Attributes:         retAttributes,
+		IsAuthenticated: true,
+		UserID:          createdUser.UserID,
+		OUID:            createdUser.OUID,
+		UserType:        createdUser.UserType,
+		Attributes:      retAttributes,
 	}
 	execResp.AuthenticatedUser = authenticatedUser
 	execResp.Status = common.ExecComplete
 
 	// Set user id in runtime data
-	execResp.RuntimeData[userAttributeUserID] = createdUser.ID
+	execResp.RuntimeData[userAttributeUserID] = createdUser.UserID
 
 	// Set the auto-provisioned flag if it's a user auto provisioning scenario
 	if ctx.FlowType == common.FlowTypeAuthentication {
@@ -302,11 +302,11 @@ func (p *provisioningExecutor) appendNonIdentifyingAttributes(ctx *core.NodeCont
 
 // createUserInStore creates a new user in the user store with the provided attributes.
 func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
-	userAttributes map[string]interface{}) (*user.User, error) {
+	userAttributes map[string]interface{}) (*userprovider.User, error) {
 	logger := p.logger.With(log.String(log.LoggerKeyFlowID, nodeCtx.FlowID))
 	logger.Debug("Creating the user account")
 
-	ouID := p.getOuID(nodeCtx)
+	ouID := p.getOUID(nodeCtx)
 	if ouID == "" {
 		return nil, fmt.Errorf("organization unit ID not found")
 	}
@@ -315,9 +315,9 @@ func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
 		return nil, fmt.Errorf("user type not found")
 	}
 
-	newUser := user.User{
-		OrganizationUnit: ouID,
-		Type:             userType,
+	newUser := userprovider.User{
+		OUID:     ouID,
+		UserType: userType,
 	}
 
 	// Convert the user attributes to JSON.
@@ -327,25 +327,19 @@ func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
 	}
 	newUser.Attributes = attributesJSON
 
-	// Use the context from the node context if available, otherwise use background context
-	execCtx := nodeCtx.Context
-	if execCtx == nil {
-		execCtx = context.Background()
-	}
-
-	retUser, svcErr := p.userService.CreateUser(execCtx, &newUser)
+	retUser, svcErr := p.userProvider.CreateUser(&newUser)
 	if svcErr != nil {
-		return nil, fmt.Errorf("failed to create user in the store: %s", svcErr.Error)
+		return nil, fmt.Errorf("failed to create user in the store: %s", svcErr.Message)
 	}
-	if retUser != nil && retUser.ID != "" {
-		logger.Debug("User account created successfully", log.String("userID", retUser.ID))
+	if retUser != nil && retUser.UserID != "" {
+		logger.Debug("User account created successfully", log.String("userID", retUser.UserID))
 	}
 
 	return retUser, nil
 }
 
-// getOuID retrieves the organization unit ID from runtime data.
-func (p *provisioningExecutor) getOuID(ctx *core.NodeContext) string {
+// getOUID retrieves the organization unit ID from runtime data.
+func (p *provisioningExecutor) getOUID(ctx *core.NodeContext) string {
 	ouID := ""
 	// Check for ouId in runtime data
 	if val, ok := ctx.RuntimeData[ouIDKey]; ok && val != "" {
@@ -397,13 +391,13 @@ func (p *provisioningExecutor) assignGroupsAndRoles(
 	var groupErr, roleErr error
 	// Assign to group
 	if groupID != "" {
-		if err := p.assignToGroup(userID, groupID, logger); err != nil {
+		if err := p.assignToGroup(ctx.Context, userID, groupID, logger); err != nil {
 			groupErr = fmt.Errorf("failed to assign user to group %s: %w", groupID, err)
 		}
 	}
 	// Assign to role
 	if roleID != "" {
-		if err := p.assignToRole(userID, roleID, logger); err != nil {
+		if err := p.assignToRole(ctx.Context, userID, roleID, logger); err != nil {
 			roleErr = fmt.Errorf("failed to assign user to role %s: %w", roleID, err)
 		}
 	}
@@ -460,39 +454,26 @@ func (p *provisioningExecutor) getRoleToAssign(ctx *core.NodeContext) string {
 }
 
 // assignToGroup adds the user to the specified group.
-func (p *provisioningExecutor) assignToGroup(userID string, groupID string, logger *log.Logger) error {
+func (p *provisioningExecutor) assignToGroup(
+	ctx context.Context,
+	userID string,
+	groupID string,
+	logger *log.Logger,
+) error {
 	logger.Debug("Adding user to group",
 		log.String("userID", userID),
 		log.String("groupID", groupID))
 
-	// Get existing group to retrieve current members
-	existingGroup, svcErr := p.groupService.GetGroup(groupID)
+	members := []group.Member{
+		{
+			ID:   userID,
+			Type: group.MemberTypeUser,
+		},
+	}
+
+	_, svcErr := p.groupService.AddGroupMembers(ctx, groupID, members)
 	if svcErr != nil {
-		logger.Error("Failed to retrieve group for assignment",
-			log.String("groupID", groupID),
-			log.String("error", svcErr.Error))
-		return fmt.Errorf("group not found: %s", groupID)
-	}
-
-	// Build updated member list (append new user)
-	updatedMembers := make([]group.Member, len(existingGroup.Members)+1)
-	copy(updatedMembers, existingGroup.Members)
-	updatedMembers[len(existingGroup.Members)] = group.Member{
-		ID:   userID,
-		Type: group.MemberTypeUser,
-	}
-
-	// Update group with new member list
-	updateRequest := group.UpdateGroupRequest{
-		Name:               existingGroup.Name,
-		Description:        existingGroup.Description,
-		OrganizationUnitID: existingGroup.OrganizationUnitID,
-		Members:            updatedMembers,
-	}
-
-	_, svcErr = p.groupService.UpdateGroup(groupID, updateRequest)
-	if svcErr != nil {
-		logger.Error("Failed to update group with new member",
+		logger.Error("Failed to add user to group",
 			log.String("groupID", groupID),
 			log.String("userID", userID),
 			log.String("error", svcErr.Error))
@@ -506,7 +487,8 @@ func (p *provisioningExecutor) assignToGroup(userID string, groupID string, logg
 }
 
 // assignToRole adds the user to the specified role.
-func (p *provisioningExecutor) assignToRole(userID string, roleID string, logger *log.Logger) error {
+func (p *provisioningExecutor) assignToRole(
+	ctx context.Context, userID string, roleID string, logger *log.Logger) error {
 	logger.Debug("Adding user to role",
 		log.String("userID", userID),
 		log.String("roleID", roleID))
@@ -519,7 +501,7 @@ func (p *provisioningExecutor) assignToRole(userID string, roleID string, logger
 		},
 	}
 
-	svcErr := p.roleService.AddAssignments(roleID, assignments)
+	svcErr := p.roleService.AddAssignments(ctx, roleID, assignments)
 	if svcErr != nil {
 		logger.Error("Failed to add role assignment",
 			log.String("roleID", roleID),

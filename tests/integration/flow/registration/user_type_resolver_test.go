@@ -58,11 +58,11 @@ func (ts *UserTypeResolverRuntimeTestSuite) SetupSuite() {
 	// Create first user type with self-registration enabled
 	userType1 := testutils.UserSchema{
 		Name:                  "runtime-test-customer",
-		OrganizationUnitId:    ts.testOUID1,
+		OUID:                  ts.testOUID1,
 		AllowSelfRegistration: true,
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{"type": "string"},
-			"password": map[string]interface{}{"type": "string"},
+			"password": map[string]interface{}{"type": "string", "credential": true},
 			"email":    map[string]interface{}{"type": "string"},
 		},
 	}
@@ -76,11 +76,11 @@ func (ts *UserTypeResolverRuntimeTestSuite) SetupSuite() {
 	// Create second user type with self-registration enabled
 	userType2 := testutils.UserSchema{
 		Name:                  "runtime-test-employee",
-		OrganizationUnitId:    ts.testOUID1,
+		OUID:                  ts.testOUID1,
 		AllowSelfRegistration: true,
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{"type": "string"},
-			"password": map[string]interface{}{"type": "string"},
+			"password": map[string]interface{}{"type": "string", "credential": true},
 			"email":    map[string]interface{}{"type": "string"},
 		},
 	}
@@ -100,7 +100,7 @@ func (ts *UserTypeResolverRuntimeTestSuite) SetupSuite() {
 		ClientSecret:              "runtime_meta_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{ts.testUserTypeName1, ts.testUserTypeName2},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}

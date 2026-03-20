@@ -19,7 +19,6 @@
 package executor
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,10 +27,10 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/passkey"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
-	"github.com/asgardeo/thunder/internal/observability"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/system/observability"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const (
@@ -73,7 +72,7 @@ type passkeyAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
 	passkeyService   passkey.PasskeyServiceInterface
-	userService      user.UserServiceInterface
+	userProvider     userprovider.UserProviderInterface
 	observabilitySvc observability.ObservabilityServiceInterface
 	logger           *log.Logger
 }
@@ -84,9 +83,9 @@ var _ identifyingExecutorInterface = (*passkeyAuthExecutor)(nil)
 // newPasskeyAuthExecutor creates a new instance of PasskeyAuthExecutor.
 func newPasskeyAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
-	userService user.UserServiceInterface,
 	passkeyService passkey.PasskeyServiceInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
+	userProvider userprovider.UserProviderInterface,
 ) *passkeyAuthExecutor {
 	defaultInputs := []common.Input{
 		{
@@ -120,7 +119,7 @@ func newPasskeyAuthExecutor(
 		{
 			Identifier: userAttributeUserID,
 			Type:       "string",
-			Required:   true,
+			Required:   false, // Optional to support usernameless flow
 		},
 	}
 
@@ -128,7 +127,7 @@ func newPasskeyAuthExecutor(
 		log.String(log.LoggerKeyExecutorName, ExecutorNamePasskeyAuth))
 
 	identifyExec := newIdentifyingExecutor(ExecutorNamePasskeyAuth, defaultInputs, prerequisites,
-		flowFactory, userService)
+		flowFactory, userProvider)
 	base := flowFactory.CreateExecutor(ExecutorNamePasskeyAuth, common.ExecutorTypeAuthentication,
 		defaultInputs, prerequisites)
 
@@ -136,7 +135,7 @@ func newPasskeyAuthExecutor(
 		ExecutorInterface:            base,
 		identifyingExecutorInterface: identifyExec,
 		passkeyService:               passkeyService,
-		userService:                  userService,
+		userProvider:                 userProvider,
 		observabilitySvc:             observabilitySvc,
 		logger:                       logger,
 	}
@@ -176,13 +175,14 @@ func (p *passkeyAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRe
 func (p *passkeyAuthExecutor) executeChallenge(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
 	logger := p.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
-	logger.Debug("Generating passkey authentication challenge")
 
+	// Get userID from context (may be empty for usernameless flow)
 	userID := p.GetUserIDFromContext(ctx)
+
 	if userID == "" {
-		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "User ID is required for passkey authentication"
-		return execResp, nil
+		logger.Debug("Generating usernameless passkey authentication challenge")
+	} else {
+		logger.Debug("Generating passkey authentication challenge", log.String("userID", userID))
 	}
 
 	// Get relying party ID from node properties or use a default
@@ -192,12 +192,12 @@ func (p *passkeyAuthExecutor) executeChallenge(ctx *core.NodeContext,
 		return execResp, errors.New("relying party ID is not configured in node properties")
 	}
 
-	// Start passkey authentication
+	// Start passkey authentication (service will detect usernameless flow if userID is empty)
 	startReq := &passkey.PasskeyAuthenticationStartRequest{
-		UserID:         userID,
+		UserID:         userID, // May be empty for usernameless flow
 		RelyingPartyID: relyingPartyID,
 	}
-	startData, svcErr := p.passkeyService.StartAuthentication(startReq)
+	startData, svcErr := p.passkeyService.StartAuthentication(ctx.Context, startReq)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Failed to start passkey authentication",
@@ -225,7 +225,11 @@ func (p *passkeyAuthExecutor) executeChallenge(ctx *core.NodeContext,
 	execResp.AdditionalData[runtimePasskeyChallenge] = string(challengeJSON)
 	execResp.Status = common.ExecComplete
 
-	logger.Debug("Passkey challenge generated successfully", log.String("userID", userID))
+	if userID == "" {
+		logger.Debug("Usernameless passkey challenge generated successfully")
+	} else {
+		logger.Debug("Passkey challenge generated successfully", log.String("userID", userID))
+	}
 	return execResp, nil
 }
 
@@ -300,7 +304,7 @@ func (p *passkeyAuthExecutor) validatePasskey(ctx *core.NodeContext, execResp *c
 		UserHandle:        userHandle,
 		SessionToken:      sessionToken,
 	}
-	authResp, svcErr := p.passkeyService.FinishAuthentication(finishReq)
+	authResp, svcErr := p.passkeyService.FinishAuthentication(ctx.Context, finishReq)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Passkey verification failed", log.String("userID", userID),
@@ -338,10 +342,10 @@ func (p *passkeyAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 		return nil, errors.New("user ID is empty after passkey authentication")
 	}
 
-	// Get user details from user service
-	user, svcErr := p.userService.GetUser(context.TODO(), userID)
-	if svcErr != nil {
-		return nil, fmt.Errorf("failed to get user details: %s", svcErr.Error)
+	// Get user details from user provider
+	user, providerErr := p.userProvider.GetUser(userID)
+	if providerErr != nil {
+		return nil, fmt.Errorf("failed to get user details: %s", providerErr.Error())
 	}
 
 	// Extract user attributes
@@ -351,11 +355,11 @@ func (p *passkeyAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	}
 
 	authenticatedUser := &authncm.AuthenticatedUser{
-		IsAuthenticated:    true,
-		UserID:             user.ID,
-		OrganizationUnitID: user.OrganizationUnit,
-		UserType:           user.Type,
-		Attributes:         attrs,
+		IsAuthenticated: true,
+		UserID:          user.UserID,
+		OUID:            user.OUID,
+		UserType:        user.UserType,
+		Attributes:      attrs,
 	}
 
 	return authenticatedUser, nil
@@ -396,7 +400,7 @@ func (p *passkeyAuthExecutor) executeRegisterStart(ctx *core.NodeContext,
 	}
 
 	// Start passkey registration
-	startData, svcErr := p.passkeyService.StartRegistration(regReq)
+	startData, svcErr := p.passkeyService.StartRegistration(ctx.Context, regReq)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Failed to start passkey registration",
@@ -486,7 +490,7 @@ func (p *passkeyAuthExecutor) executeRegisterFinish(ctx *core.NodeContext,
 	}
 
 	// Call passkey service to finish registration
-	finishData, svcErr := p.passkeyService.FinishRegistration(finishReq)
+	finishData, svcErr := p.passkeyService.FinishRegistration(ctx.Context, finishReq)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Passkey registration failed", log.String("error", svcErr.ErrorDescription))

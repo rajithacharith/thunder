@@ -19,6 +19,7 @@
 package dcr
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -42,21 +43,28 @@ func TestDCRServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(DCRServiceTestSuite))
 }
 
+// MockTransactioner is a simple implementation of Transactioner for testing.
+type MockTransactioner struct{}
+
+func (m *MockTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) error {
+	return txFunc(ctx)
+}
+
 func (s *DCRServiceTestSuite) SetupTest() {
 	s.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(s.T())
-	s.service = newDCRService(s.mockAppService)
+	s.service = newDCRService(s.mockAppService, &MockTransactioner{})
 }
 
 // TestNewDCRService tests the service constructor
 func (s *DCRServiceTestSuite) TestNewDCRService() {
-	service := newDCRService(s.mockAppService)
+	service := newDCRService(s.mockAppService, &MockTransactioner{})
 	s.NotNil(service)
 	s.Implements((*DCRServiceInterface)(nil), service)
 }
 
 // TestRegisterClient_NilRequest tests nil request handling
 func (s *DCRServiceTestSuite) TestRegisterClient_NilRequest() {
-	response, err := s.service.RegisterClient(nil)
+	response, err := s.service.RegisterClient(context.Background(), nil)
 
 	s.Nil(response)
 	s.NotNil(err)
@@ -72,7 +80,7 @@ func (s *DCRServiceTestSuite) TestRegisterClient_JWKSConflict() {
 		JWKS:         map[string]interface{}{"keys": []interface{}{}},
 	}
 
-	response, err := s.service.RegisterClient(request)
+	response, err := s.service.RegisterClient(context.Background(), request)
 
 	s.Nil(response)
 	s.NotNil(err)
@@ -103,10 +111,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ClientNameProvided() {
 	}
 
 	s.mockAppService.On(
-		"CreateApplication", mock.AnythingOfType("*model.ApplicationDTO"),
+		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(appDTO, (*serviceerror.ServiceError)(nil))
 
-	response, err := s.service.RegisterClient(request)
+	response, err := s.service.RegisterClient(context.Background(), request)
 
 	s.NotNil(response)
 	s.Nil(err)
@@ -143,10 +151,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_JWKSUriProvided() {
 	}
 
 	s.mockAppService.On(
-		"CreateApplication", mock.AnythingOfType("*model.ApplicationDTO"),
+		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(appDTO, (*serviceerror.ServiceError)(nil))
 
-	response, err := s.service.RegisterClient(request)
+	response, err := s.service.RegisterClient(context.Background(), request)
 
 	s.NotNil(response)
 	s.Nil(err)
@@ -167,9 +175,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ApplicationServiceError() {
 		ErrorDescription: "The redirect URI is invalid",
 	}
 
-	s.mockAppService.On("CreateApplication", mock.AnythingOfType("*model.ApplicationDTO")).Return(nil, appServiceErr)
+	s.mockAppService.On("CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO")).
+		Return(nil, appServiceErr)
 
-	response, err := s.service.RegisterClient(request)
+	response, err := s.service.RegisterClient(context.Background(), request)
 
 	s.Nil(response)
 	s.NotNil(err)
@@ -184,9 +193,9 @@ func (s *DCRServiceTestSuite) TestMapApplicationErrorToDCRError() {
 		expectedDCRCode string
 	}{
 		{
-			name:            "Redirect URI Error APP-1006",
+			name:            "Invalid Logo URL Error APP-1006",
 			appErrCode:      "APP-1006",
-			expectedDCRCode: ErrorInvalidRedirectURI.Code,
+			expectedDCRCode: ErrorInvalidClientMetadata.Code,
 		},
 		{
 			name:            "Redirect URI Error APP-1014",
@@ -237,13 +246,13 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ConvertDCRToApplicationError() 
 	}
 
 	s.mockAppService.On(
-		"CreateApplication", mock.AnythingOfType("*model.ApplicationDTO"),
+		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(nil, &serviceerror.ServiceError{
 		Type: serviceerror.ServerErrorType,
 		Code: "APP-5001",
 	})
 
-	response, err := s.service.RegisterClient(request)
+	response, err := s.service.RegisterClient(context.Background(), request)
 
 	s.Nil(response)
 	s.NotNil(err)
@@ -277,10 +286,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_ConvertApplicationToDCRResponse
 	}
 
 	s.mockAppService.On(
-		"CreateApplication", mock.AnythingOfType("*model.ApplicationDTO"),
+		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(appDTO, (*serviceerror.ServiceError)(nil))
 
-	response, err := s.service.RegisterClient(request)
+	response, err := s.service.RegisterClient(context.Background(), request)
 
 	s.Nil(response)
 	s.NotNil(err)
@@ -315,10 +324,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_WithJWKS() {
 	}
 
 	s.mockAppService.On(
-		"CreateApplication", mock.AnythingOfType("*model.ApplicationDTO"),
+		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(appDTO, (*serviceerror.ServiceError)(nil))
 
-	response, err := s.service.RegisterClient(request)
+	response, err := s.service.RegisterClient(context.Background(), request)
 
 	s.NotNil(response)
 	s.Nil(err)
@@ -349,10 +358,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_WithScope() {
 	}
 
 	s.mockAppService.On(
-		"CreateApplication", mock.AnythingOfType("*model.ApplicationDTO"),
+		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(appDTO, (*serviceerror.ServiceError)(nil))
 
-	response, err := s.service.RegisterClient(request)
+	response, err := s.service.RegisterClient(context.Background(), request)
 
 	s.NotNil(response)
 	s.Nil(err)
@@ -373,10 +382,10 @@ func (s *DCRServiceTestSuite) TestRegisterClient_EmptyInboundAuthConfig() {
 	}
 
 	s.mockAppService.On(
-		"CreateApplication", mock.AnythingOfType("*model.ApplicationDTO"),
+		"CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO"),
 	).Return(appDTO, (*serviceerror.ServiceError)(nil))
 
-	response, err := s.service.RegisterClient(request)
+	response, err := s.service.RegisterClient(context.Background(), request)
 
 	s.NotNil(response)
 	s.Nil(err)

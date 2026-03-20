@@ -19,6 +19,8 @@
 package application
 
 import (
+	"context"
+
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -34,19 +36,21 @@ import (
 
 // oAuthConfig is the structure for unmarshaling OAuth configuration JSON.
 type oAuthConfig struct {
-	RedirectURIs            []string          `json:"redirect_uris"`
-	GrantTypes              []string          `json:"grant_types"`
-	ResponseTypes           []string          `json:"response_types"`
-	TokenEndpointAuthMethod string            `json:"token_endpoint_auth_method"`
-	PKCERequired            bool              `json:"pkce_required"`
-	PublicClient            bool              `json:"public_client"`
-	Token                   *oAuthTokenConfig `json:"token,omitempty"`
-	Scopes                  []string          `json:"scopes,omitempty"`
+	RedirectURIs            []string                      `json:"redirect_uris"`
+	GrantTypes              []string                      `json:"grant_types"`
+	ResponseTypes           []string                      `json:"response_types"`
+	TokenEndpointAuthMethod string                        `json:"token_endpoint_auth_method"`
+	PKCERequired            bool                          `json:"pkce_required"`
+	PublicClient            bool                          `json:"public_client"`
+	Token                   *oAuthTokenConfig             `json:"token,omitempty"`
+	Scopes                  []string                      `json:"scopes,omitempty"`
+	UserInfo                *userInfoConfig               `json:"user_info,omitempty"`
+	ScopeClaims             map[string][]string           `json:"scope_claims,omitempty"`
+	Certificate             *model.ApplicationCertificate `json:"certificate,omitempty"`
 }
 
 // oAuthTokenConfig represents the OAuth token configuration structure for JSON marshaling/unmarshaling.
 type oAuthTokenConfig struct {
-	Issuer      string             `json:"issuer,omitempty"`
 	AccessToken *accessTokenConfig `json:"access_token,omitempty"`
 	IDToken     *idTokenConfig     `json:"id_token,omitempty"`
 }
@@ -59,73 +63,96 @@ type accessTokenConfig struct {
 
 // idTokenConfig represents the ID token configuration structure for JSON marshaling/unmarshaling.
 type idTokenConfig struct {
-	ValidityPeriod int64               `json:"validity_period,omitempty"`
-	UserAttributes []string            `json:"user_attributes,omitempty"`
-	ScopeClaims    map[string][]string `json:"scope_claims,omitempty"`
+	ValidityPeriod int64    `json:"validity_period,omitempty"`
+	UserAttributes []string `json:"user_attributes,omitempty"`
+}
+
+// userInfoConfig represents the user info endpoint configuration structure for JSON marshaling/unmarshaling.
+type userInfoConfig struct {
+	ResponseType   model.UserInfoResponseType `json:"response_type,omitempty"`
+	UserAttributes []string                   `json:"user_attributes,omitempty"`
 }
 
 // ApplicationStoreInterface defines the interface for application data persistence operations.
 type applicationStoreInterface interface {
-	CreateApplication(app model.ApplicationProcessedDTO) error
-	GetTotalApplicationCount() (int, error)
-	GetApplicationList() ([]model.BasicApplicationDTO, error)
-	GetOAuthApplication(clientID string) (*model.OAuthAppConfigProcessedDTO, error)
-	GetApplicationByID(id string) (*model.ApplicationProcessedDTO, error)
-	GetApplicationByName(name string) (*model.ApplicationProcessedDTO, error)
-	UpdateApplication(existingApp, updatedApp *model.ApplicationProcessedDTO) error
-	DeleteApplication(id string) error
+	CreateApplication(ctx context.Context, app model.ApplicationProcessedDTO) error
+	GetTotalApplicationCount(ctx context.Context) (int, error)
+	GetApplicationList(ctx context.Context) ([]model.BasicApplicationDTO, error)
+	GetOAuthApplication(ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, error)
+	GetApplicationByID(ctx context.Context, id string) (*model.ApplicationProcessedDTO, error)
+	GetApplicationByName(ctx context.Context, name string) (*model.ApplicationProcessedDTO, error)
+	UpdateApplication(ctx context.Context, existingApp, updatedApp *model.ApplicationProcessedDTO) error
+	DeleteApplication(ctx context.Context, id string) error
+	IsApplicationExists(ctx context.Context, id string) (bool, error)
+	IsApplicationExistsByName(ctx context.Context, name string) (bool, error)
+	IsApplicationDeclarative(ctx context.Context, id string) bool
 }
 
 // applicationStore implements the applicationStoreInterface for handling application data persistence.
 type applicationStore struct {
+	dbProvider   provider.DBProviderInterface
 	deploymentID string
 }
 
 // NewApplicationStore creates a new instance of applicationStore.
 func newApplicationStore() applicationStoreInterface {
 	return &applicationStore{
+		dbProvider:   provider.GetDBProvider(),
 		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
 	}
 }
 
 // CreateApplication creates a new application in the database.
-func (st *applicationStore) CreateApplication(app model.ApplicationProcessedDTO) error {
+func (st *applicationStore) CreateApplication(ctx context.Context, app model.ApplicationProcessedDTO) error {
+	dbClient, err := st.dbProvider.GetConfigDBClient()
+	if err != nil {
+		return fmt.Errorf("failed to get database client: %w", err)
+	}
+
 	jsonDataBytes, err := getAppJSONDataBytes(&app)
 	if err != nil {
 		return err
 	}
 
-	queries := []func(tx dbmodel.TxInterface) error{
-		func(tx dbmodel.TxInterface) error {
-			isRegistrationEnabledStr := utils.BoolToNumString(app.IsRegistrationFlowEnabled)
-			var brandingID interface{}
-			if app.BrandingID != "" {
-				brandingID = app.BrandingID
-			} else {
-				brandingID = nil
-			}
-			_, err := tx.Exec(QueryCreateApplication, app.ID, app.Name, app.Description,
-				app.AuthFlowID, app.RegistrationFlowID, isRegistrationEnabledStr, brandingID,
-				jsonDataBytes, st.deploymentID)
-			return err
-		},
+	isRegistrationEnabledStr := utils.BoolToNumString(app.IsRegistrationFlowEnabled)
+	var themeID interface{}
+	if app.ThemeID != "" {
+		themeID = app.ThemeID
+	} else {
+		themeID = nil
 	}
-	// TODO: Need to refactor when supporting other/multiple inbound auth types.
-	if len(app.InboundAuthConfig) > 0 {
-		queries = append(queries, createOAuthAppQuery(&app, QueryCreateOAuthApplication, st.deploymentID))
+	var layoutID interface{}
+	if app.LayoutID != "" {
+		layoutID = app.LayoutID
+	} else {
+		layoutID = nil
 	}
 
-	return executeTransaction(queries)
+	_, err = dbClient.ExecuteContext(ctx, queryCreateApplication, app.ID, app.Name, app.Description,
+		app.AuthFlowID, app.RegistrationFlowID, isRegistrationEnabledStr, themeID, layoutID,
+		jsonDataBytes, st.deploymentID)
+	if err != nil {
+		return fmt.Errorf("failed to insert application: %w", err)
+	}
+
+	// TODO: Need to refactor when supporting other/multiple inbound auth types.
+	if len(app.InboundAuthConfig) > 0 {
+		if err := st.createOAuthApp(ctx, dbClient, &app, queryCreateOAuthApplication); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // GetTotalApplicationCount retrieves the total count of applications from the database.
-func (st *applicationStore) GetTotalApplicationCount() (int, error) {
-	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
+func (st *applicationStore) GetTotalApplicationCount(ctx context.Context) (int, error) {
+	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetApplicationCount, st.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryGetApplicationCount, st.deploymentID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -143,16 +170,16 @@ func (st *applicationStore) GetTotalApplicationCount() (int, error) {
 }
 
 // GetApplicationList retrieves a list of applications from the database.
-func (st *applicationStore) GetApplicationList() ([]model.BasicApplicationDTO, error) {
+func (st *applicationStore) GetApplicationList(ctx context.Context) ([]model.BasicApplicationDTO, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationPersistence"))
 
-	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
+	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		logger.Error("Failed to get database client", log.Error(err))
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetApplicationList, st.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryGetApplicationList, st.deploymentID)
 	if err != nil {
 		logger.Error("Failed to execute query", log.Error(err))
 		return nil, fmt.Errorf("failed to execute query: %w", err)
@@ -173,16 +200,17 @@ func (st *applicationStore) GetApplicationList() ([]model.BasicApplicationDTO, e
 }
 
 // GetOAuthApplication retrieves an OAuth application by its client ID.
-func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAppConfigProcessedDTO, error) {
+func (st *applicationStore) GetOAuthApplication(
+	ctx context.Context, clientID string) (*model.OAuthAppConfigProcessedDTO, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
 
-	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
+	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		logger.Error("Failed to get database client", log.Error(err))
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetOAuthApplicationByClientID, clientID, st.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryGetOAuthApplicationByClientID, clientID, st.deploymentID)
 	if err != nil {
 		return nil, err
 	}
@@ -197,9 +225,9 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 		return nil, errors.New("failed to parse app_id as string")
 	}
 
-	hashedClientSecret, ok := row["consumer_secret"].(string)
+	hashedClientSecret, ok := row["client_secret"].(string)
 	if !ok {
-		return nil, errors.New("failed to parse consumer_secret as string")
+		return nil, errors.New("failed to parse client_secret as string")
 	}
 
 	// Extract OAuth JSON data
@@ -235,9 +263,7 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 	// Convert token config if present
 	var oauthTokenConfig *model.OAuthTokenConfig
 	if oAuthConfig.Token != nil {
-		oauthTokenConfig = &model.OAuthTokenConfig{
-			Issuer: oAuthConfig.Token.Issuer,
-		}
+		oauthTokenConfig = &model.OAuthTokenConfig{}
 		if oAuthConfig.Token.AccessToken != nil {
 			userAttributes := oAuthConfig.Token.AccessToken.UserAttributes
 			if userAttributes == nil {
@@ -253,16 +279,30 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 			if userAttributes == nil {
 				userAttributes = make([]string, 0)
 			}
-			scopeClaims := oAuthConfig.Token.IDToken.ScopeClaims
-			if scopeClaims == nil {
-				scopeClaims = make(map[string][]string)
-			}
 			oauthTokenConfig.IDToken = &model.IDTokenConfig{
 				ValidityPeriod: oAuthConfig.Token.IDToken.ValidityPeriod,
 				UserAttributes: userAttributes,
-				ScopeClaims:    scopeClaims,
 			}
 		}
+	}
+
+	// Handle UserInfo config
+	var userInfoConfig *model.UserInfoConfig
+	if oAuthConfig.UserInfo != nil {
+		userAttributes := oAuthConfig.UserInfo.UserAttributes
+		if userAttributes == nil {
+			userAttributes = make([]string, 0)
+		}
+		userInfoConfig = &model.UserInfoConfig{
+			ResponseType:   oAuthConfig.UserInfo.ResponseType,
+			UserAttributes: userAttributes,
+		}
+	}
+
+	// Handle ScopeClaims config
+	scopeClaims := oAuthConfig.ScopeClaims
+	if scopeClaims == nil {
+		scopeClaims = make(map[string][]string)
 	}
 
 	return &model.OAuthAppConfigProcessedDTO{
@@ -277,31 +317,35 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 		PublicClient:            oAuthConfig.PublicClient,
 		Token:                   oauthTokenConfig,
 		Scopes:                  oAuthConfig.Scopes,
+		UserInfo:                userInfoConfig,
+		ScopeClaims:             scopeClaims,
+		Certificate:             oAuthConfig.Certificate,
 	}, nil
 }
 
 // GetApplicationByID retrieves a specific application by its ID from the database.
-func (st *applicationStore) GetApplicationByID(id string) (*model.ApplicationProcessedDTO, error) {
-	return st.getApplicationByQuery(QueryGetApplicationByAppID, id, st.deploymentID)
+func (st *applicationStore) GetApplicationByID(ctx context.Context, id string) (*model.ApplicationProcessedDTO, error) {
+	return st.getApplicationByQuery(ctx, queryGetApplicationByAppID, id, st.deploymentID)
 }
 
 // GetApplicationByName retrieves a specific application by its name from the database.
-func (st *applicationStore) GetApplicationByName(name string) (*model.ApplicationProcessedDTO, error) {
-	return st.getApplicationByQuery(QueryGetApplicationByName, name, st.deploymentID)
+func (st *applicationStore) GetApplicationByName(
+	ctx context.Context, name string) (*model.ApplicationProcessedDTO, error) {
+	return st.getApplicationByQuery(ctx, queryGetApplicationByName, name, st.deploymentID)
 }
 
 // getApplicationByQuery retrieves a specific application from the database using the provided query and parameter.
-func (st *applicationStore) getApplicationByQuery(query dbmodel.DBQuery, params ...interface{}) (
+func (st *applicationStore) getApplicationByQuery(ctx context.Context, query dbmodel.DBQuery, params ...interface{}) (
 	*model.ApplicationProcessedDTO, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
 
-	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
+	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		logger.Error("Failed to get database client", log.Error(err))
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(query, params...)
+	results, err := dbClient.QueryContext(ctx, query, params...)
 	if err != nil {
 		logger.Error("Failed to execute query", log.Error(err))
 		return nil, fmt.Errorf("failed to execute query: %w", err)
@@ -326,60 +370,121 @@ func (st *applicationStore) getApplicationByQuery(query dbmodel.DBQuery, params 
 }
 
 // UpdateApplication updates an existing application in the database.
-func (st *applicationStore) UpdateApplication(existingApp, updatedApp *model.ApplicationProcessedDTO) error {
+func (st *applicationStore) UpdateApplication(
+	ctx context.Context, existingApp, updatedApp *model.ApplicationProcessedDTO) error {
+	dbClient, err := st.dbProvider.GetConfigDBClient()
+	if err != nil {
+		return fmt.Errorf("failed to get database client: %w", err)
+	}
+
 	jsonDataBytes, err := getAppJSONDataBytes(updatedApp)
 	if err != nil {
 		return err
 	}
 
-	queries := []func(tx dbmodel.TxInterface) error{
-		func(tx dbmodel.TxInterface) error {
-			isRegistrationEnabledStr := utils.BoolToNumString(updatedApp.IsRegistrationFlowEnabled)
-			var brandingID interface{}
-			if updatedApp.BrandingID != "" {
-				brandingID = updatedApp.BrandingID
-			} else {
-				brandingID = nil
-			}
-			_, err := tx.Exec(QueryUpdateApplicationByAppID, updatedApp.ID, updatedApp.Name,
-				updatedApp.Description, updatedApp.AuthFlowID, updatedApp.RegistrationFlowID,
-				isRegistrationEnabledStr, brandingID, jsonDataBytes, st.deploymentID)
-			return err
-		},
+	isRegistrationEnabledStr := utils.BoolToNumString(updatedApp.IsRegistrationFlowEnabled)
+	var themeID interface{}
+	if updatedApp.ThemeID != "" {
+		themeID = updatedApp.ThemeID
+	} else {
+		themeID = nil
 	}
+	var layoutID interface{}
+	if updatedApp.LayoutID != "" {
+		layoutID = updatedApp.LayoutID
+	} else {
+		layoutID = nil
+	}
+	_, err = dbClient.ExecuteContext(ctx, queryUpdateApplicationByAppID, updatedApp.ID, updatedApp.Name,
+		updatedApp.Description, updatedApp.AuthFlowID, updatedApp.RegistrationFlowID,
+		isRegistrationEnabledStr, themeID, layoutID, jsonDataBytes, st.deploymentID)
+	if err != nil {
+		return fmt.Errorf("failed to update application: %w", err)
+	}
+
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
 	if len(updatedApp.InboundAuthConfig) > 0 && len(existingApp.InboundAuthConfig) > 0 {
-		queries = append(queries, createOAuthAppQuery(updatedApp, QueryUpdateOAuthApplicationByAppID, st.deploymentID))
+		if err := st.createOAuthApp(ctx, dbClient, updatedApp, queryUpdateOAuthApplicationByAppID); err != nil {
+			return err
+		}
 	} else if len(existingApp.InboundAuthConfig) > 0 {
 		clientID := ""
 		if len(existingApp.InboundAuthConfig) > 0 && existingApp.InboundAuthConfig[0].OAuthAppConfig != nil {
 			clientID = existingApp.InboundAuthConfig[0].OAuthAppConfig.ClientID
 		}
-		queries = append(queries, deleteOAuthAppQuery(clientID, st.deploymentID))
+		if err := st.deleteOAuthApp(ctx, dbClient, clientID); err != nil {
+			return err
+		}
 	} else if len(updatedApp.InboundAuthConfig) > 0 {
-		queries = append(queries, createOAuthAppQuery(updatedApp, QueryCreateOAuthApplication, st.deploymentID))
+		if err := st.createOAuthApp(ctx, dbClient, updatedApp, queryCreateOAuthApplication); err != nil {
+			return err
+		}
 	}
 
-	return executeTransaction(queries)
+	return nil
 }
 
 // DeleteApplication deletes an application from the database by its ID.
-func (st *applicationStore) DeleteApplication(id string) error {
+func (st *applicationStore) DeleteApplication(ctx context.Context, id string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
 
-	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
+	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		logger.Error("Failed to get database client", log.Error(err))
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	_, err = dbClient.Execute(QueryDeleteApplicationByAppID, id, st.deploymentID)
+	_, err = dbClient.ExecuteContext(ctx, queryDeleteApplicationByAppID, id, st.deploymentID)
 	if err != nil {
 		logger.Error("Failed to execute query", log.Error(err))
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
 
 	return nil
+}
+
+// IsApplicationExists checks if an application exists in the database by ID.
+func (st *applicationStore) IsApplicationExists(ctx context.Context, id string) (bool, error) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
+
+	dbClient, err := st.dbProvider.GetConfigDBClient()
+	if err != nil {
+		logger.Error("Failed to get database client", log.Error(err))
+		return false, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	results, err := dbClient.QueryContext(ctx, queryCheckApplicationExistsByID, id, st.deploymentID)
+	if err != nil {
+		logger.Error("Failed to execute existence check query", log.Error(err))
+		return false, fmt.Errorf("failed to execute existence check query: %w", err)
+	}
+
+	return parseBoolFromCount(results)
+}
+
+// IsApplicationExistsByName checks if an application exists in the database by name.
+func (st *applicationStore) IsApplicationExistsByName(ctx context.Context, name string) (bool, error) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
+
+	dbClient, err := st.dbProvider.GetConfigDBClient()
+	if err != nil {
+		logger.Error("Failed to get database client", log.Error(err))
+		return false, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	results, err := dbClient.QueryContext(ctx, queryCheckApplicationExistsByName, name, st.deploymentID)
+	if err != nil {
+		logger.Error("Failed to execute existence check query", log.Error(err))
+		return false, fmt.Errorf("failed to execute existence check query: %w", err)
+	}
+
+	return parseBoolFromCount(results)
+}
+
+// IsApplicationDeclarative checks if an application is immutable.
+// For database store, all applications are mutable (not declarative).
+func (st *applicationStore) IsApplicationDeclarative(ctx context.Context, id string) bool {
+	return false
 }
 
 // getAppJSONDataBytes constructs the JSON data bytes for the application.
@@ -402,27 +507,37 @@ func getAppJSONDataBytes(app *model.ApplicationProcessedDTO) ([]byte, error) {
 		jsonData["allowed_user_types"] = app.AllowedUserTypes
 	}
 
-	// Include token config if present
-	if app.Token != nil {
-		tokenData := map[string]interface{}{}
-		if app.Token.Issuer != "" {
-			tokenData["issuer"] = app.Token.Issuer
+	// Include metadata if present
+	if app.Metadata != nil {
+		jsonData["metadata"] = app.Metadata
+	}
+
+	// Include assertion config if present
+	if app.Assertion != nil {
+		assertionData := map[string]interface{}{}
+		if app.Assertion.ValidityPeriod != 0 {
+			assertionData["validity_period"] = app.Assertion.ValidityPeriod
 		}
-		if app.Token.ValidityPeriod != 0 {
-			tokenData["validity_period"] = app.Token.ValidityPeriod
+		if len(app.Assertion.UserAttributes) > 0 {
+			assertionData["user_attributes"] = app.Assertion.UserAttributes
 		}
-		if len(app.Token.UserAttributes) > 0 {
-			tokenData["user_attributes"] = app.Token.UserAttributes
+		if len(assertionData) > 0 {
+			jsonData["assertion"] = assertionData
 		}
-		if len(tokenData) > 0 {
-			jsonData["token"] = tokenData
-		}
+	}
+
+	// Include login consent config if present
+	if app.LoginConsent != nil {
+		loginConsentData := map[string]interface{}{}
+		loginConsentData["validity_period"] = app.LoginConsent.ValidityPeriod
+		jsonData["login_consent"] = loginConsentData
 	}
 
 	jsonDataBytes, err := json.Marshal(jsonData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal application JSON: %w", err)
 	}
+
 	return jsonDataBytes, nil
 }
 
@@ -440,9 +555,7 @@ func getOAuthConfigJSONBytes(inboundAuthConfig model.InboundAuthConfigProcessedD
 
 	// Include token config if present
 	if inboundAuthConfig.OAuthAppConfig.Token != nil {
-		oauthConfig.Token = &oAuthTokenConfig{
-			Issuer: inboundAuthConfig.OAuthAppConfig.Token.Issuer,
-		}
+		oauthConfig.Token = &oAuthTokenConfig{}
 		if inboundAuthConfig.OAuthAppConfig.Token.AccessToken != nil {
 			oauthConfig.Token.AccessToken = &accessTokenConfig{
 				ValidityPeriod: inboundAuthConfig.OAuthAppConfig.Token.AccessToken.ValidityPeriod,
@@ -453,10 +566,20 @@ func getOAuthConfigJSONBytes(inboundAuthConfig model.InboundAuthConfigProcessedD
 			oauthConfig.Token.IDToken = &idTokenConfig{
 				ValidityPeriod: inboundAuthConfig.OAuthAppConfig.Token.IDToken.ValidityPeriod,
 				UserAttributes: inboundAuthConfig.OAuthAppConfig.Token.IDToken.UserAttributes,
-				ScopeClaims:    inboundAuthConfig.OAuthAppConfig.Token.IDToken.ScopeClaims,
 			}
 		}
 	}
+
+	// Handle UserInfo config
+	if inboundAuthConfig.OAuthAppConfig.UserInfo != nil {
+		oauthConfig.UserInfo = &userInfoConfig{
+			ResponseType:   inboundAuthConfig.OAuthAppConfig.UserInfo.ResponseType,
+			UserAttributes: inboundAuthConfig.OAuthAppConfig.UserInfo.UserAttributes,
+		}
+	}
+
+	// Handle ScopeClaims config
+	oauthConfig.ScopeClaims = inboundAuthConfig.OAuthAppConfig.ScopeClaims
 
 	oauthConfigJSONBytes, err := json.Marshal(oauthConfig)
 	if err != nil {
@@ -465,9 +588,9 @@ func getOAuthConfigJSONBytes(inboundAuthConfig model.InboundAuthConfigProcessedD
 	return oauthConfigJSONBytes, nil
 }
 
-// createOAuthAppQuery creates a query function for creating or updating an OAuth application.
-func createOAuthAppQuery(app *model.ApplicationProcessedDTO,
-	oauthAppMgtQuery dbmodel.DBQuery, deploymentID string) func(tx dbmodel.TxInterface) error {
+// createOAuthApp creates or updates an OAuth application.
+func (st *applicationStore) createOAuthApp(ctx context.Context, dbClient provider.DBClientInterface,
+	app *model.ApplicationProcessedDTO, oauthAppMgtQuery dbmodel.DBQuery) error {
 	inboundAuthConfig := app.InboundAuthConfig[0]
 	clientID := inboundAuthConfig.OAuthAppConfig.ClientID
 	clientSecret := inboundAuthConfig.OAuthAppConfig.HashedClientSecret
@@ -475,30 +598,32 @@ func createOAuthAppQuery(app *model.ApplicationProcessedDTO,
 	// Generate the OAuth config JSON
 	oauthConfigJSON, err := getOAuthConfigJSONBytes(inboundAuthConfig)
 	if err != nil {
-		return func(tx dbmodel.TxInterface) error {
-			return err
-		}
-	}
-
-	return func(tx dbmodel.TxInterface) error {
-		_, err := tx.Exec(oauthAppMgtQuery, app.ID, clientID, clientSecret, oauthConfigJSON, deploymentID)
 		return err
 	}
+
+	_, err = dbClient.ExecuteContext(ctx, oauthAppMgtQuery, app.ID, clientID,
+		clientSecret, oauthConfigJSON, st.deploymentID)
+	if err != nil {
+		return fmt.Errorf("failed to create/update OAuth application: %w", err)
+	}
+	return nil
 }
 
-// deleteOAuthAppQuery creates a query function for deleting an OAuth application by client ID.
-func deleteOAuthAppQuery(clientID string, deploymentID string) func(tx dbmodel.TxInterface) error {
-	return func(tx dbmodel.TxInterface) error {
-		_, err := tx.Exec(QueryDeleteOAuthApplicationByClientID, clientID, deploymentID)
-		return err
+// deleteOAuthApp deletes an OAuth application by client ID.
+func (st *applicationStore) deleteOAuthApp(ctx context.Context, dbClient provider.DBClientInterface,
+	clientID string) error {
+	_, err := dbClient.ExecuteContext(ctx, queryDeleteOAuthApplicationByClientID, clientID, st.deploymentID)
+	if err != nil {
+		return fmt.Errorf("failed to delete OAuth application: %w", err)
 	}
+	return nil
 }
 
 // buildBasicApplicationFromResultRow constructs a BasicApplicationDTO from a database result row.
 func buildBasicApplicationFromResultRow(row map[string]interface{}) (model.BasicApplicationDTO, error) {
-	appID, ok := row["app_id"].(string)
+	appID, ok := row["id"].(string)
 	if !ok {
-		return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse app_id as string")
+		return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse id as string")
 	}
 
 	appName, ok := row["app_name"].(string)
@@ -541,10 +666,17 @@ func buildBasicApplicationFromResultRow(row map[string]interface{}) (model.Basic
 	}
 	isRegistrationFlowEnabled := utils.NumStringToBool(isRegistrationFlowEnabledStr)
 
-	var brandingID string
-	if row["branding_id"] != nil {
-		if bid, ok := row["branding_id"].(string); ok {
-			brandingID = bid
+	var themeID string
+	if row["theme_id"] != nil {
+		if tid, ok := row["theme_id"].(string); ok {
+			themeID = tid
+		}
+	}
+
+	var layoutID string
+	if row["layout_id"] != nil {
+		if lid, ok := row["layout_id"].(string); ok {
+			layoutID = lid
 		}
 	}
 
@@ -555,13 +687,14 @@ func buildBasicApplicationFromResultRow(row map[string]interface{}) (model.Basic
 		AuthFlowID:                authFlowID,
 		RegistrationFlowID:        regisFlowID,
 		IsRegistrationFlowEnabled: isRegistrationFlowEnabled,
-		BrandingID:                brandingID,
+		ThemeID:                   themeID,
+		LayoutID:                  layoutID,
 	}
 
-	if row["consumer_key"] != nil {
-		clientID, ok := row["consumer_key"].(string)
+	if row["client_id"] != nil {
+		clientID, ok := row["client_id"].(string)
 		if !ok {
-			return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse consumer_key as string")
+			return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse client_id as string")
 		}
 		application.ClientID = clientID
 	}
@@ -630,31 +763,51 @@ func extractStringArrayFromJSON(data map[string]interface{}, key string) ([]stri
 	return nil, fmt.Errorf("failed to parse %s from app JSON", key)
 }
 
-// extractTokenConfigFromJSON extracts token configuration from JSON data.
-func extractTokenConfigFromJSON(data map[string]interface{}) *model.TokenConfig {
-	tokenData, exists := data["token"]
-	if !exists || tokenData == nil {
+// extractAssertionConfigFromJSON extracts assertion configuration from JSON data.
+func extractAssertionConfigFromJSON(data map[string]interface{}) *model.AssertionConfig {
+	assertionData, exists := data["assertion"]
+	if !exists || assertionData == nil {
 		return nil
 	}
-	tokenMap, ok := tokenData.(map[string]interface{})
+	assertionMap, ok := assertionData.(map[string]interface{})
 	if !ok {
 		return nil
 	}
 
-	config := &model.TokenConfig{}
-	if issuer, ok := tokenMap["issuer"].(string); ok {
-		config.Issuer = issuer
-	}
-	if validityPeriod, ok := tokenMap["validity_period"].(float64); ok {
+	config := &model.AssertionConfig{}
+	if validityPeriod, ok := assertionMap["validity_period"].(float64); ok {
 		config.ValidityPeriod = int64(validityPeriod)
 	}
-	if userAttrs, ok := tokenMap["user_attributes"].([]interface{}); ok {
+	if userAttrs, ok := assertionMap["user_attributes"].([]interface{}); ok {
 		for _, attr := range userAttrs {
 			if attrStr, ok := attr.(string); ok {
 				config.UserAttributes = append(config.UserAttributes, attrStr)
 			}
 		}
 	}
+	return config
+}
+
+// extractLoginConsentConfigFromJSON extracts login consent configuration from JSON data.
+func extractLoginConsentConfigFromJSON(data map[string]interface{}) *model.LoginConsentConfig {
+	consentData, exists := data["login_consent"]
+	if !exists || consentData == nil {
+		return nil
+	}
+
+	consentMap, ok := consentData.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	config := &model.LoginConsentConfig{
+		ValidityPeriod: 0, // default to indicate no expiry
+	}
+
+	if validityPeriod, ok := consentMap["validity_period"].(float64); ok {
+		config.ValidityPeriod = int64(validityPeriod)
+	}
+
 	return config
 }
 
@@ -714,7 +867,15 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 		return model.ApplicationProcessedDTO{}, err
 	}
 
-	rootTokenConfig := extractTokenConfigFromJSON(appJSONData)
+	assertionConfig := extractAssertionConfigFromJSON(appJSONData)
+
+	// Extract metadata from app JSON if present
+	var metadata map[string]interface{}
+	if appJSONData["metadata"] != nil {
+		if m, ok := appJSONData["metadata"].(map[string]interface{}); ok {
+			metadata = m
+		}
+	}
 
 	// Extract template from app JSON if present
 	template, err := extractStringFromJSON(appJSONData, "template")
@@ -729,15 +890,18 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 		AuthFlowID:                basicApp.AuthFlowID,
 		RegistrationFlowID:        basicApp.RegistrationFlowID,
 		IsRegistrationFlowEnabled: basicApp.IsRegistrationFlowEnabled,
-		BrandingID:                basicApp.BrandingID,
+		ThemeID:                   basicApp.ThemeID,
+		LayoutID:                  basicApp.LayoutID,
 		Template:                  template,
 		URL:                       url,
 		LogoURL:                   logoURL,
-		Token:                     rootTokenConfig,
+		Assertion:                 assertionConfig,
 		TosURI:                    tosURI,
 		PolicyURI:                 policyURI,
 		Contacts:                  contacts,
 		AllowedUserTypes:          allowedUserTypes,
+		LoginConsent:              extractLoginConsentConfigFromJSON(appJSONData),
+		Metadata:                  metadata,
 	}
 
 	if basicApp.ClientID != "" {
@@ -754,9 +918,9 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 // buildOAuthInboundAuthConfig builds OAuth inbound auth configuration from database row and basic app data.
 func buildOAuthInboundAuthConfig(row map[string]interface{}, basicApp model.BasicApplicationDTO) (
 	model.InboundAuthConfigProcessedDTO, error) {
-	hashedClientSecret, ok := row["consumer_secret"].(string)
+	hashedClientSecret, ok := row["client_secret"].(string)
 	if !ok {
-		return model.InboundAuthConfigProcessedDTO{}, fmt.Errorf("failed to parse consumer_secret as string")
+		return model.InboundAuthConfigProcessedDTO{}, fmt.Errorf("failed to parse client_secret as string")
 	}
 
 	// Extract OAuth JSON data from the row.
@@ -793,9 +957,7 @@ func buildOAuthInboundAuthConfig(row map[string]interface{}, basicApp model.Basi
 	// Extract token config from OAuth config if present
 	var oauthTokenConfig *model.OAuthTokenConfig
 	if oauthConfig.Token != nil {
-		oauthTokenConfig = &model.OAuthTokenConfig{
-			Issuer: oauthConfig.Token.Issuer,
-		}
+		oauthTokenConfig = &model.OAuthTokenConfig{}
 		if oauthConfig.Token.AccessToken != nil {
 			userAttributes := oauthConfig.Token.AccessToken.UserAttributes
 			if userAttributes == nil {
@@ -811,16 +973,30 @@ func buildOAuthInboundAuthConfig(row map[string]interface{}, basicApp model.Basi
 			if userAttributes == nil {
 				userAttributes = make([]string, 0)
 			}
-			scopeClaims := oauthConfig.Token.IDToken.ScopeClaims
-			if scopeClaims == nil {
-				scopeClaims = make(map[string][]string)
-			}
 			oauthTokenConfig.IDToken = &model.IDTokenConfig{
 				ValidityPeriod: oauthConfig.Token.IDToken.ValidityPeriod,
 				UserAttributes: userAttributes,
-				ScopeClaims:    scopeClaims,
 			}
 		}
+	}
+
+	// Handle UserInfo config
+	var userInfoConfig *model.UserInfoConfig
+	if oauthConfig.UserInfo != nil {
+		userAttributes := oauthConfig.UserInfo.UserAttributes
+		if userAttributes == nil {
+			userAttributes = make([]string, 0)
+		}
+		userInfoConfig = &model.UserInfoConfig{
+			ResponseType:   oauthConfig.UserInfo.ResponseType,
+			UserAttributes: userAttributes,
+		}
+	}
+
+	// Handle ScopeClaims config
+	scopeClaims := oauthConfig.ScopeClaims
+	if scopeClaims == nil {
+		scopeClaims = make(map[string][]string)
 	}
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
@@ -838,38 +1014,20 @@ func buildOAuthInboundAuthConfig(row map[string]interface{}, basicApp model.Basi
 			PublicClient:            oauthConfig.PublicClient,
 			Token:                   oauthTokenConfig,
 			Scopes:                  oauthConfig.Scopes,
+			UserInfo:                userInfoConfig,
+			ScopeClaims:             scopeClaims,
 		},
 	}
 	return inboundAuthConfig, nil
 }
 
-// executeTransaction is a helper function to handle database transactions.
-func executeTransaction(queries []func(tx dbmodel.TxInterface) error) error {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
-
-	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
-	if err != nil {
-		return fmt.Errorf("failed to get database client: %w", err)
+// parseBoolFromCount parses the count result from an existence check query.
+func parseBoolFromCount(results []map[string]interface{}) (bool, error) {
+	if len(results) == 0 {
+		return false, nil
 	}
-
-	tx, err := dbClient.BeginTx()
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+	if countVal, ok := results[0]["count"].(int64); ok {
+		return countVal > 0, nil
 	}
-
-	for _, query := range queries {
-		if err := query(tx); err != nil {
-			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				logger.Error("Failed to rollback transaction", log.Error(rollbackErr))
-				err = errors.Join(err, errors.New("failed to rollback transaction: "+rollbackErr.Error()))
-			}
-			return err
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
-	return nil
+	return false, fmt.Errorf("failed to parse count from query result")
 }

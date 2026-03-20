@@ -23,12 +23,15 @@ import (
 	"time"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 )
 
 // TokenValidatorInterface defines the interface for validating tokens.
 type TokenValidatorInterface interface {
+	ValidateAccessToken(token string) (*AccessTokenClaims, error)
 	ValidateRefreshToken(token string, clientID string) (*RefreshTokenClaims, error)
 	ValidateSubjectToken(token string, oauthApp *appmodel.OAuthAppConfigProcessedDTO) (*SubjectTokenClaims, error)
 }
@@ -45,10 +48,68 @@ func newTokenValidator(jwtService jwt.JWTServiceInterface) TokenValidatorInterfa
 	}
 }
 
+// ValidateAccessToken validates an access token and extracts the claims.
+func (tv *tokenValidator) ValidateAccessToken(token string) (*AccessTokenClaims, error) {
+	// Verify signature and standard claims.
+	expectedIss := config.GetThunderRuntime().Config.JWT.Issuer
+	if err := tv.jwtService.VerifyJWT(token, "", expectedIss); err != nil {
+		return nil, fmt.Errorf("access token verification failed: %v", err.Error)
+	}
+
+	// Validate the typ header.
+	header, err := jwt.DecodeJWTHeader(token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode access token header: %w", err)
+	}
+
+	typ, _ := header["typ"].(string)
+	if typ != jwt.TokenTypeAccessToken {
+		return nil, fmt.Errorf(
+			"invalid token type: expected %q, got %q", jwt.TokenTypeAccessToken, typ)
+	}
+
+	// Decode payload claims.
+	claims, err := jwt.DecodeJWTPayload(token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode access token payload: %w", err)
+	}
+
+	// Extract and validate claims.
+	sub, subErr := extractStringClaim(claims, "sub")
+	if subErr != nil {
+		return nil, fmt.Errorf("missing required 'sub' claim in access token")
+	}
+	iss, issErr := extractStringClaim(claims, "iss")
+	if issErr != nil {
+		return nil, fmt.Errorf("missing required 'iss' claim in access token")
+	}
+	aud, audErr := extractStringClaim(claims, "aud")
+	if audErr != nil {
+		return nil, fmt.Errorf("missing required 'aud' claim in access token")
+	}
+	clientID, cidErr := extractStringClaim(claims, "client_id")
+	if cidErr != nil {
+		return nil, fmt.Errorf("missing required 'client_id' claim in access token")
+	}
+
+	grantType, _ := extractStringClaim(claims, "grant_type")
+	scopes := extractScopesFromClaims(claims, false)
+
+	return &AccessTokenClaims{
+		Sub:       sub,
+		Iss:       iss,
+		Aud:       aud,
+		GrantType: grantType,
+		Scopes:    scopes,
+		ClientID:  clientID,
+		Claims:    claims,
+	}, nil
+}
+
 // ValidateRefreshToken validates a refresh token and extracts the claims.
 func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*RefreshTokenClaims, error) {
 	if err := tv.jwtService.VerifyJWT(token, "", ""); err != nil {
-		return nil, fmt.Errorf("invalid refresh token: %v", err)
+		return nil, fmt.Errorf("invalid refresh token: %v", err.Error)
 	}
 
 	claims, err := jwt.DecodeJWTPayload(token)
@@ -66,21 +127,32 @@ func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*
 	grantType, _ := extractStringClaim(claims, "grant_type")
 	iat, _ := extractInt64Claim(claims, "iat")
 	scopes := extractScopesFromClaims(claims, false)
+	attributeCacheID, _ := extractStringClaim(claims, "aci")
 
-	// Extract user attributes if present
-	var userAttributes map[string]interface{}
-	if userAttrs, ok := claims["access_token_user_attributes"].(map[string]interface{}); ok {
-		userAttributes = userAttrs
+	// Extract claims request if present
+	var claimsRequest *oauth2model.ClaimsRequest
+	if claimsJSON, ok := claims["access_token_claims_request"].(string); ok && claimsJSON != "" {
+		parsed, err := utils.ParseClaimsRequest(claimsJSON)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"failed to parse claims_request from refresh token: %w", err)
+		}
+		claimsRequest = parsed
 	}
+
+	// Extract claims_locales if present
+	claimsLocales, _ := extractStringClaim(claims, "access_token_claims_locales")
 
 	// Extract user type and organizational unit details if present
 	return &RefreshTokenClaims{
-		Sub:            sub,
-		Aud:            aud,
-		GrantType:      grantType,
-		Scopes:         scopes,
-		UserAttributes: userAttributes,
-		Iat:            iat,
+		Sub:              sub,
+		Aud:              aud,
+		GrantType:        grantType,
+		Scopes:           scopes,
+		AttributeCacheID: attributeCacheID,
+		Iat:              iat,
+		ClaimsRequest:    claimsRequest,
+		ClaimsLocales:    claimsLocales,
 	}, nil
 }
 
@@ -171,7 +243,7 @@ func (tv *tokenValidator) verifyTokenSignatureByIssuer(
 	if issuers[issuer] {
 		svcErr := tv.jwtService.VerifyJWTSignature(token)
 		if svcErr != nil {
-			return fmt.Errorf("failed to verify token signature: %v", svcErr)
+			return fmt.Errorf("failed to verify token signature: %v", svcErr.Error)
 		}
 		return nil
 	}

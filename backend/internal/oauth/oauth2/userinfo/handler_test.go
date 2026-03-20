@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
@@ -45,7 +46,7 @@ func (s *UserInfoHandlerTestSuite) SetupTest() {
 	s.handler = newUserInfoHandler(s.mockService)
 }
 
-// TestHandleUserInfo_MissingAuthorizationHeader tests missing Authorization header
+// TestHandleUserInfo_MissingAuthorizationHeader tests missing Authorization header.
 func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_MissingAuthorizationHeader() {
 	req := httptest.NewRequest(http.MethodGet, "/oauth2/userinfo", nil)
 	rr := httptest.NewRecorder()
@@ -53,11 +54,11 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_MissingAuthorizationHeader
 	s.handler.HandleUserInfo(rr, req)
 
 	assert.Equal(s.T(), http.StatusUnauthorized, rr.Code)
-	assert.Contains(s.T(), rr.Body.String(), constants.ErrorInvalidRequest)
-	assert.Contains(s.T(), rr.Body.String(), "missing Authorization header")
+	assert.Equal(s.T(), "Bearer", rr.Header().Get("WWW-Authenticate"))
+	assert.Empty(s.T(), rr.Body.String())
 }
 
-// TestHandleUserInfo_InvalidAuthorizationHeaderFormat tests invalid Authorization header format
+// TestHandleUserInfo_InvalidAuthorizationHeaderFormat tests invalid Authorization header format.
 func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_InvalidAuthorizationHeaderFormat() {
 	req := httptest.NewRequest(http.MethodGet, "/oauth2/userinfo", nil)
 	req.Header.Set("Authorization", "InvalidFormat token123")
@@ -66,11 +67,12 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_InvalidAuthorizationHeader
 	s.handler.HandleUserInfo(rr, req)
 
 	assert.Equal(s.T(), http.StatusUnauthorized, rr.Code)
-	assert.Contains(s.T(), rr.Body.String(), constants.ErrorInvalidRequest)
-	assert.Contains(s.T(), rr.Body.String(), "invalid Authorization header format")
+	assert.Equal(s.T(), "Bearer", rr.Header().Get("WWW-Authenticate"))
+	assert.Empty(s.T(), rr.Body.String())
 }
 
-// TestHandleUserInfo_MissingBearerToken tests missing Bearer token
+// TestHandleUserInfo_MissingBearerToken tests missing Bearer token.
+// RFC 6750 §3.1: Malformed Bearer request should return 400 with invalid_request.
 func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_MissingBearerToken() {
 	req := httptest.NewRequest(http.MethodGet, "/oauth2/userinfo", nil)
 	req.Header.Set("Authorization", "Bearer ")
@@ -78,41 +80,24 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_MissingBearerToken() {
 
 	s.handler.HandleUserInfo(rr, req)
 
-	assert.Equal(s.T(), http.StatusUnauthorized, rr.Code)
+	assert.Equal(s.T(), http.StatusBadRequest, rr.Code)
 	assert.Contains(s.T(), rr.Body.String(), constants.ErrorInvalidRequest)
-	assert.Contains(s.T(), rr.Body.String(), "missing access token")
+	assert.Contains(s.T(), rr.Body.String(), "Invalid or malformed Bearer token")
+	wwwAuth := rr.Header().Get("WWW-Authenticate")
+	assert.Contains(s.T(), wwwAuth, "Bearer")
+	assert.Contains(s.T(), wwwAuth, constants.ErrorInvalidRequest)
 }
 
 // TestHandleUserInfo_InvalidToken tests invalid token error
 func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_InvalidToken() {
-	req := httptest.NewRequest(http.MethodGet, "/oauth2/userinfo", nil)
-	req.Header.Set("Authorization", "Bearer invalid-token")
-	rr := httptest.NewRecorder()
-
-	s.mockService.On("GetUserInfo", "invalid-token").Return(nil, &errorInvalidAccessToken)
-
-	s.handler.HandleUserInfo(rr, req)
-
-	assert.Equal(s.T(), http.StatusUnauthorized, rr.Code)
-	assert.Contains(s.T(), rr.Body.String(), errorInvalidAccessToken.Code)
-	assert.Contains(s.T(), rr.Body.String(), errorInvalidAccessToken.ErrorDescription)
-	s.mockService.AssertExpectations(s.T())
+	s.assertServiceErrorResponse("invalid-token", &errorInvalidAccessToken,
+		http.StatusUnauthorized, "invalid_token")
 }
 
 // TestHandleUserInfo_MissingSubClaim tests missing sub claim error
 func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_MissingSubClaim() {
-	req := httptest.NewRequest(http.MethodGet, "/oauth2/userinfo", nil)
-	req.Header.Set("Authorization", "Bearer token123")
-	rr := httptest.NewRecorder()
-
-	s.mockService.On("GetUserInfo", "token123").Return(nil, &errorMissingSubClaim)
-
-	s.handler.HandleUserInfo(rr, req)
-
-	assert.Equal(s.T(), http.StatusUnauthorized, rr.Code)
-	assert.Contains(s.T(), rr.Body.String(), errorMissingSubClaim.Code)
-	assert.Contains(s.T(), rr.Body.String(), errorMissingSubClaim.ErrorDescription)
-	s.mockService.AssertExpectations(s.T())
+	s.assertServiceErrorResponse("token123", &errorMissingSubClaim,
+		http.StatusUnauthorized, "invalid_token")
 }
 
 // TestHandleUserInfo_ServerError tests server error
@@ -123,14 +108,23 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_ServerError() {
 
 	expectedError := serviceerror.CustomServiceError(serviceerror.InternalServerError,
 		"An error occurred while fetching user attributes or groups")
-	s.mockService.On("GetUserInfo", "token123").Return(nil, expectedError)
+	s.mockService.On("GetUserInfo", mock.Anything, "token123").Return(nil, expectedError)
 
 	s.handler.HandleUserInfo(rr, req)
 
 	assert.Equal(s.T(), http.StatusInternalServerError, rr.Code)
-	assert.Contains(s.T(), rr.Body.String(), expectedError.Code)
-	assert.Contains(s.T(), rr.Body.String(), expectedError.ErrorDescription)
+	assert.Contains(s.T(), rr.Body.String(), "server_error")
+	assert.Contains(s.T(), rr.Body.String(), serviceerror.InternalServerError.Error)
+	assert.NotContains(s.T(), rr.Body.String(), expectedError.ErrorDescription)
+	// Server errors should not include WWW-Authenticate
+	assert.Empty(s.T(), rr.Header().Get("WWW-Authenticate"))
 	s.mockService.AssertExpectations(s.T())
+}
+
+// TestHandleUserInfo_InsufficientScope tests insufficient scope error returns 403 with WWW-Authenticate
+func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_InsufficientScope() {
+	s.assertServiceErrorResponse("token123", &errorInsufficientScope,
+		http.StatusForbidden, "insufficient_scope")
 }
 
 // TestHandleUserInfo_Success tests successful response
@@ -145,7 +139,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_Success() {
 		"email": "john@example.com",
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", mock.Anything, "valid-token").Return(jsonResponse(userInfo), nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -169,7 +163,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_Success_POST() {
 		"sub": "user123",
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", mock.Anything, "valid-token").Return(jsonResponse(userInfo), nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -190,7 +184,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_Success_WithGroups() {
 		"groups": []interface{}{"admin", "users"},
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", mock.Anything, "valid-token").Return(jsonResponse(userInfo), nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -211,7 +205,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_CaseInsensitiveBearer() {
 		"sub": "user123",
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", mock.Anything, "valid-token").Return(jsonResponse(userInfo), nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -229,7 +223,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_BEARERUpperCase() {
 		"sub": "user123",
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", mock.Anything, "valid-token").Return(jsonResponse(userInfo), nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -247,7 +241,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_EmptyResponse() {
 		"sub": "user123",
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", mock.Anything, "valid-token").Return(jsonResponse(userInfo), nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -256,7 +250,8 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_EmptyResponse() {
 	s.mockService.AssertExpectations(s.T())
 }
 
-// TestHandleUserInfo_InvalidAuthorizationHeaderSinglePart tests invalid Authorization header with only one part
+// TestHandleUserInfo_InvalidAuthorizationHeaderSinglePart tests "Bearer" without a token.
+// RFC 6750 §3.1: Malformed Bearer request should return 400 with invalid_request.
 func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_InvalidAuthorizationHeaderSinglePart() {
 	req := httptest.NewRequest(http.MethodGet, "/oauth2/userinfo", nil)
 	req.Header.Set("Authorization", "Bearer")
@@ -264,9 +259,9 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_InvalidAuthorizationHeader
 
 	s.handler.HandleUserInfo(rr, req)
 
-	assert.Equal(s.T(), http.StatusUnauthorized, rr.Code)
+	assert.Equal(s.T(), http.StatusBadRequest, rr.Code)
 	assert.Contains(s.T(), rr.Body.String(), constants.ErrorInvalidRequest)
-	assert.Contains(s.T(), rr.Body.String(), "invalid Authorization header format")
+	assert.Contains(s.T(), rr.Body.String(), "Invalid or malformed Bearer token")
 }
 
 // TestHandleUserInfo_EncodingError tests encoding error handling
@@ -282,7 +277,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_EncodingError() {
 		"func": func() {}, // Function cannot be JSON encoded and will cause an error
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", mock.Anything, "valid-token").Return(jsonResponse(userInfo), nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -305,7 +300,7 @@ func (s *UserInfoHandlerTestSuite) TestWriteServiceErrorResponse_DefaultCase() {
 		Code:             "unknown_error",
 		ErrorDescription: "An unknown error occurred",
 	}
-	s.mockService.On("GetUserInfo", "token123").Return(nil, unknownError)
+	s.mockService.On("GetUserInfo", mock.Anything, "token123").Return(nil, unknownError)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -313,5 +308,37 @@ func (s *UserInfoHandlerTestSuite) TestWriteServiceErrorResponse_DefaultCase() {
 	assert.Equal(s.T(), http.StatusUnauthorized, rr.Code)
 	assert.Contains(s.T(), rr.Body.String(), "unknown_error")
 	assert.Contains(s.T(), rr.Body.String(), "An unknown error occurred")
+	// RFC 6750 §3: WWW-Authenticate header must be present on 401 responses
+	wwwAuth := rr.Header().Get("WWW-Authenticate")
+	assert.Contains(s.T(), wwwAuth, "Bearer")
+	assert.Contains(s.T(), wwwAuth, "unknown_error")
 	s.mockService.AssertExpectations(s.T())
+}
+
+// assertServiceErrorResponse is a helper to test service error responses with WWW-Authenticate headers.
+func (s *UserInfoHandlerTestSuite) assertServiceErrorResponse(
+	token string, svcErr *serviceerror.ServiceError, expectedStatus int, expectedWWWAuthError string,
+) {
+	req := httptest.NewRequest(http.MethodGet, "/oauth2/userinfo", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	rr := httptest.NewRecorder()
+
+	s.mockService.On("GetUserInfo", mock.Anything, token).Return(nil, svcErr)
+
+	s.handler.HandleUserInfo(rr, req)
+
+	assert.Equal(s.T(), expectedStatus, rr.Code)
+	assert.Contains(s.T(), rr.Body.String(), svcErr.Code)
+	assert.Contains(s.T(), rr.Body.String(), svcErr.ErrorDescription)
+	// RFC 6750 §3: WWW-Authenticate header must be present on error responses
+	wwwAuth := rr.Header().Get("WWW-Authenticate")
+	assert.Contains(s.T(), wwwAuth, "Bearer")
+	assert.Contains(s.T(), wwwAuth, expectedWWWAuthError)
+	s.mockService.AssertExpectations(s.T())
+}
+
+func jsonResponse(body map[string]interface{}) *UserInfoResponse {
+	return &UserInfoResponse{
+		JSONBody: body,
+	}
 }

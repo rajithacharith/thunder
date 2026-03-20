@@ -151,7 +151,7 @@ Create a user in your organization unit:
 USER_ID=$(curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/users \
 -H 'Authorization: Bearer <token>' \
 -d '{
-    "organizationUnit": "'"$OU_ID"'",
+    "ouId": "'"$OU_ID"'",
     "type": "hotel-employee",
     "attributes": {
         "username": "alice.smith",
@@ -261,7 +261,7 @@ GROUP_ID=$(curl -kL -X POST -H 'Content-Type: application/json' https://localhos
 -d '{
     "name": "Front Desk Team",
     "description": "All front desk agents",
-    "organizationUnitId": "'"$OU_ID"'"
+    "ouId": "'"$OU_ID"'",
     "members": [
         {
             "id": ""'"$USER_ID"'"",

@@ -140,8 +140,8 @@ cleanup() {
     fi
 }
 
-# Cleanup on Ctrl+C
-trap cleanup SIGINT
+# Cleanup on Ctrl+C or termination
+trap cleanup SIGINT SIGTERM EXIT
 
 # Status
 echo ""

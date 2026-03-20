@@ -18,6 +18,8 @@
 
 package group
 
+import "github.com/asgardeo/thunder/internal/system/utils"
+
 // MemberType represents the type of member entity.
 type MemberType string
 
@@ -30,64 +32,63 @@ const (
 
 // Member represents a member of a group (either user or another group).
 type Member struct {
-	ID   string     `json:"id"`
-	Type MemberType `json:"type"`
+	ID      string     `json:"id"`
+	Type    MemberType `json:"type"`
+	Display string     `json:"display,omitempty"`
 }
 
 // GroupBasic represents the basic information of a group.
 type GroupBasic struct {
-	ID                 string `json:"id"`
-	Name               string `json:"name"`
-	Description        string `json:"description,omitempty"`
-	OrganizationUnitID string `json:"organizationUnitId"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	OUID        string `json:"ouId"`
 }
 
 // GroupBasicDAO represents a data access object for basic group information,
 type GroupBasicDAO struct {
-	ID                 string
-	Name               string
-	Description        string
-	OrganizationUnitID string
+	ID          string
+	Name        string
+	Description string
+	OUID        string
 }
 
 // Group represents a complete group with members.
 type Group struct {
-	ID                 string   `json:"id"`
-	Name               string   `json:"name"`
-	Description        string   `json:"description,omitempty"`
-	OrganizationUnitID string   `json:"organizationUnitId"`
-	Members            []Member `json:"members,omitempty"`
+	ID          string   `json:"id"`
+	Name        string   `json:"name"`
+	Description string   `json:"description,omitempty"`
+	OUID        string   `json:"ouId"`
+	Members     []Member `json:"members,omitempty"`
 }
 
 // GroupDAO represents a data access object for a group, used for database operations.
 type GroupDAO struct {
-	ID                 string
-	Name               string
-	Description        string
-	OrganizationUnitID string
-	Members            []Member
+	ID          string
+	Name        string
+	Description string
+	OUID        string
+	Members     []Member
+}
+
+// MembersRequest represents the request body for adding or removing members from a group.
+type MembersRequest struct {
+	Members []Member `json:"members"`
 }
 
 // CreateGroupRequest represents the request body for creating a group.
 type CreateGroupRequest struct {
-	Name               string   `json:"name"`
-	Description        string   `json:"description,omitempty"`
-	OrganizationUnitID string   `json:"organizationUnitId"`
-	Members            []Member `json:"members,omitempty"`
+	Name        string   `json:"name"`
+	Description string   `json:"description,omitempty"`
+	OUID        string   `json:"ouId"`
+	Members     []Member `json:"members,omitempty"`
 }
 
 // UpdateGroupRequest represents the request body for updating a group.
 type UpdateGroupRequest struct {
-	Name               string   `json:"name"`
-	Description        string   `json:"description,omitempty"`
-	OrganizationUnitID string   `json:"organizationUnitId"`
-	Members            []Member `json:"members,omitempty"`
-}
-
-// Link represents a pagination link.
-type Link struct {
-	Href string `json:"href"`
-	Rel  string `json:"rel"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	OUID        string `json:"ouId"`
 }
 
 // GroupListResponse represents the response for listing groups with pagination.
@@ -96,16 +97,16 @@ type GroupListResponse struct {
 	StartIndex   int          `json:"startIndex"`
 	Count        int          `json:"count"`
 	Groups       []GroupBasic `json:"groups"`
-	Links        []Link       `json:"links"`
+	Links        []utils.Link `json:"links"`
 }
 
 // MemberListResponse represents the response for listing group members with pagination.
 type MemberListResponse struct {
-	TotalResults int      `json:"totalResults"`
-	StartIndex   int      `json:"startIndex"`
-	Count        int      `json:"count"`
-	Members      []Member `json:"members"`
-	Links        []Link   `json:"links"`
+	TotalResults int          `json:"totalResults"`
+	StartIndex   int          `json:"startIndex"`
+	Count        int          `json:"count"`
+	Members      []Member     `json:"members"`
+	Links        []utils.Link `json:"links"`
 }
 
 // CreateGroupByPathRequest represents the request body for creating a group under a specific OU path.

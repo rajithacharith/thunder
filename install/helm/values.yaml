@@ -56,11 +56,11 @@ deployment:
     port: 8090
   resources:
     limits:
-      cpu: 1.5
-      memory: 512Mi
+      cpu: 200m
+      memory: 100Mi
     requests:
-      cpu: 1
-      memory: 256Mi
+      cpu: 100m
+      memory: 50Mi
   # Controls the THUNDER_SKIP_SECURITY environment variable. Set this to true only
   # in non-production environments for testing purposes to bypass REST API security checks.
   skipSecurity: false
@@ -87,6 +87,7 @@ service:
   port: 8090
 
 ingress:
+  enabled: true
   className: "nginx"
   commonAnnotations: &commonAnnotations
     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
@@ -110,6 +111,27 @@ ingress:
       pathType: Prefix
   tlsSecretsName: "thunder-tls"
 
+# Gateway API configuration (Envoy Gateway)
+gateway:
+  enabled: false
+  name: "thunder-gateway"
+  className: "eg"
+  tls:
+    enabled: true
+    secretName: "thunder-tls"
+    mode: Terminate
+
+# Gateway API HTTPRoute configuration (alternative to Ingress)
+httproute:
+  enabled: false
+  annotations: {}
+  # parentRefs specify which Gateway(s) this route attaches to
+  parentRefs:
+    - name: "thunder-gateway"
+    #   namespace: gateway-ns
+  hostnames: []
+    # - thunder.example.com
+
 # Thunder specific configurations
 configuration:
   # Server configuration
@@ -125,11 +147,11 @@ configuration:
     scheme: "https"
     path: "/gate"
 
-  # Developer client configuration
-  developerClient:
-    path: "/develop"
-    clientId: "DEVELOP"
-    scopes: "['openid', 'profile', 'email', 'system']"
+  # Console client configuration
+  consoleClient:
+    path: "/console"
+    clientId: "CONSOLE"
+    scopes: "['openid', 'profile', 'email', 'ou', 'system', 'system:user', 'system:group', 'system:ou:view', 'system:userschema:view']"
 
   # TLS configuration
   tls:
@@ -142,17 +164,27 @@ configuration:
     encryption:
       # WARNING: Replace the default key with a 32-byte (64 character) hex string in production deployments
       key: "file://repository/resources/security/crypto.key"
+    passwordHashing:
+      algorithm: "PBKDF2"
+      parameters:
+        iterations: 600000
+        keySize: 32
+        saltSize: 16
+    keys:
+      - id: "default-key"
+        certFile: "repository/resources/security/signing.cert"
+        keyFile: "repository/resources/security/signing.key"
 
   # Database configuration
   database:
-    identity:
+    config:
       # WARNING: Use sqlite only if you are running a single pod.
       type: "postgres" # postgres or sqlite
       # Below two parameters are only required for sqlite
-      sqlitePath: "repository/database/thunderdb.db" # Only required for sqlite
-      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000" # Only required for sqlite
+      sqlitePath: "repository/database/configdb.db" # Only required for sqlite
+      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)" # Only required for sqlite
       # Below parameters are only required for Postgres
-      name: "thunderdb" 
+      name: "configdb" 
       host: "localhost" 
       port: "5432" 
       username: "asgthunder"
@@ -167,7 +199,7 @@ configuration:
       type: "postgres" # postgres or sqlite
       # Below two parameters are only required for sqlite
       sqlitePath: "repository/database/runtimedb.db" # Only required for sqlite
-      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000" # Only required for sqlite
+      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)" # Only required for sqlite
       # Below parameters are only required for Postgres
       name: "runtimedb" 
       host: "localhost" 
@@ -183,7 +215,7 @@ configuration:
       type: "postgres" # postgres or sqlite
       # Below two parameters are only required for sqlite
       sqlitePath: "repository/database/userdb.db" # Only required for sqlite
-      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000" # Only required for sqlite
+      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)" # Only required for sqlite
       # Below parameters are only required for Postgres
       name: "userdb" 
       host: "localhost" 
@@ -197,7 +229,7 @@ configuration:
 
   # Cache configuration
   cache:
-    disabled: false
+    disabled: true
     type: "inmemory"
     size: 1000
     ttl: 3600
@@ -208,6 +240,8 @@ configuration:
   jwt:
     validityPeriod: 3600
     audience: "application"
+    # This must match the key ID defined in the crypto.keys section
+    preferredKeyId: "default-key"
 
   # OAuth configuration
   oauth:
@@ -216,6 +250,8 @@ configuration:
       validityPeriod: 86400
     authorizationCode:
       validityPeriod: 600
+    dcr:
+      insecure: false
 
   # Flow configuration
   flow:
@@ -232,6 +268,13 @@ configuration:
   passkey:
     allowedOrigins:
       - "https://localhost:8090"
+
+  # Consent configuration
+  consent:
+    enabled: false
+    baseUrl: ""
+    timeout: 5
+    maxRetries: 3
 
 # Persistence configuration for SQLite databases
 # Only relevant when using SQLite as the database type
@@ -272,11 +315,11 @@ setup:
   # Resource limits for setup job
   resources:
     limits:
-      cpu: 500m
-      memory: 256Mi
+      cpu: 200m
+      memory: 100Mi
     requests:
-      cpu: 250m
-      memory: 128Mi
+      cpu: 100m
+      memory: 50Mi
   # Additional volume mounts for setup job
   extraVolumeMounts: []
     # Example:

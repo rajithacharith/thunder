@@ -19,11 +19,13 @@
 package granthandlers
 
 import (
+	"context"
 	"net/url"
 	"slices"
 	"time"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
@@ -31,36 +33,35 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/user"
 )
 
 // authorizationCodeGrantHandler handles the authorization code grant type.
 type authorizationCodeGrantHandler struct {
-	authzService authz.AuthorizeServiceInterface
-	userService  user.UserServiceInterface
-	tokenBuilder tokenservice.TokenBuilderInterface
+	authzService   authz.AuthorizeServiceInterface
+	tokenBuilder   tokenservice.TokenBuilderInterface
+	attributeCache attributecache.AttributeCacheServiceInterface
 }
 
 // newAuthorizationCodeGrantHandler creates a new instance of AuthorizationCodeGrantHandler.
 func newAuthorizationCodeGrantHandler(
-	userService user.UserServiceInterface,
 	authzService authz.AuthorizeServiceInterface,
 	tokenBuilder tokenservice.TokenBuilderInterface,
+	attributeCache attributecache.AttributeCacheServiceInterface,
 ) GrantHandlerInterface {
 	return &authorizationCodeGrantHandler{
-		authzService: authzService,
-		userService:  userService,
-		tokenBuilder: tokenBuilder,
+		authzService:   authzService,
+		tokenBuilder:   tokenBuilder,
+		attributeCache: attributeCache,
 	}
 }
 
 // ValidateGrant validates the authorization code grant request.
-func (h *authorizationCodeGrantHandler) ValidateGrant(tokenRequest *model.TokenRequest,
+func (h *authorizationCodeGrantHandler) ValidateGrant(ctx context.Context, tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO) *model.ErrorResponse {
 	if tokenRequest.GrantType == "" {
 		return &model.ErrorResponse{
 			Error:            constants.ErrorInvalidRequest,
-			ErrorDescription: "Missing grant type",
+			ErrorDescription: "Missing grant_type parameter",
 		}
 	}
 	if constants.GrantType(tokenRequest.GrantType) != constants.GrantTypeAuthorizationCode {
@@ -71,14 +72,14 @@ func (h *authorizationCodeGrantHandler) ValidateGrant(tokenRequest *model.TokenR
 	}
 	if tokenRequest.Code == "" {
 		return &model.ErrorResponse{
-			Error:            constants.ErrorInvalidGrant,
+			Error:            constants.ErrorInvalidRequest,
 			ErrorDescription: "Authorization code is required",
 		}
 	}
 	if tokenRequest.ClientID == "" {
 		return &model.ErrorResponse{
 			Error:            constants.ErrorInvalidClient,
-			ErrorDescription: "Client Id is required",
+			ErrorDescription: "client_id is required",
 		}
 	}
 
@@ -112,13 +113,13 @@ func (h *authorizationCodeGrantHandler) ValidateGrant(tokenRequest *model.TokenR
 }
 
 // HandleGrant processes the authorization code grant request and generates a token response.
-func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
+func (h *authorizationCodeGrantHandler) HandleGrant(ctx context.Context, tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO) (
 	*model.TokenResponseDTO, *model.ErrorResponse) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "AuthorizationCodeGrantHandler"))
 
 	// Retrieve and validate authorization code
-	authCode, errResponse := h.retrieveAndValidateAuthCode(tokenRequest, oauthApp, logger)
+	authCode, errResponse := h.retrieveAndValidateAuthCode(ctx, tokenRequest, oauthApp, logger)
 	if errResponse != nil {
 		return nil, errResponse
 	}
@@ -126,23 +127,34 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 	// Parse authorized scopes
 	authorizedScopes := tokenservice.ParseScopes(authCode.Scopes)
 
-	// Use user attributes from the authorization code
-	attrs := authCode.UserAttributes
-	if attrs == nil {
-		attrs = make(map[string]interface{})
+	// Get user attributes from attribute cache
+	attrs := make(map[string]interface{})
+	if authCode.AttributeCacheID != "" {
+		userAttributes, err := h.attributeCache.GetAttributeCache(ctx, authCode.AttributeCacheID)
+		if err != nil {
+			logger.Error("Failed to get user attributes from attribute cache. " + err.ErrorDescription.DefaultValue)
+			return nil, &model.ErrorResponse{
+				Error:            constants.ErrorServerError,
+				ErrorDescription: "Failed to get user attributes from attribute cache",
+			}
+		}
+		attrs = userAttributes.Attributes
 	}
 
 	audience := tokenservice.DetermineAudience("", authCode.Resource, "", authCode.ClientID)
 
 	// Generate access token using tokenBuilder (attributes will be filtered in BuildAccessToken)
 	accessToken, err := h.tokenBuilder.BuildAccessToken(&tokenservice.AccessTokenBuildContext{
-		Subject:        authCode.AuthorizedUserID,
-		Audience:       audience,
-		ClientID:       tokenRequest.ClientID,
-		Scopes:         authorizedScopes,
-		UserAttributes: attrs,
-		GrantType:      string(constants.GrantTypeAuthorizationCode),
-		OAuthApp:       oauthApp,
+		Subject:          authCode.AuthorizedUserID,
+		Audience:         audience,
+		ClientID:         tokenRequest.ClientID,
+		Scopes:           authorizedScopes,
+		UserAttributes:   attrs,
+		AttributeCacheID: authCode.AttributeCacheID,
+		GrantType:        string(constants.GrantTypeAuthorizationCode),
+		OAuthApp:         oauthApp,
+		ClaimsRequest:    authCode.ClaimsRequest,
+		ClaimsLocales:    authCode.ClaimsLocales,
 	})
 	if err != nil {
 		return nil, &model.ErrorResponse{
@@ -157,7 +169,7 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 	}
 
 	// Generate ID token if 'openid' scope is present
-	if slices.Contains(authorizedScopes, "openid") {
+	if slices.Contains(authorizedScopes, constants.ScopeOpenID) {
 		idToken, err := h.tokenBuilder.BuildIDToken(&tokenservice.IDTokenBuildContext{
 			Subject:        authCode.AuthorizedUserID,
 			Audience:       tokenRequest.ClientID,
@@ -165,12 +177,14 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 			UserAttributes: attrs,
 			AuthTime:       authCode.TimeCreated.Unix(),
 			OAuthApp:       oauthApp,
+			ClaimsRequest:  authCode.ClaimsRequest,
+			Nonce:          authCode.Nonce,
 		})
 		if err != nil {
 			logger.Error("Failed to generate ID token", log.Error(err))
 			return nil, &model.ErrorResponse{
 				Error:            constants.ErrorServerError,
-				ErrorDescription: "Failed to generate ID token",
+				ErrorDescription: "Failed to generate token",
 			}
 		}
 		tokenResponse.IDToken = *idToken
@@ -179,13 +193,13 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 	return tokenResponse, nil
 }
 
-// retrieveAndValidateAuthCode retrieves and validates the authorization code, including PKCE validation.
 func (h *authorizationCodeGrantHandler) retrieveAndValidateAuthCode(
+	ctx context.Context,
 	tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
 	logger *log.Logger,
 ) (*authz.AuthorizationCode, *model.ErrorResponse) {
-	authCode, codeErr := h.authzService.GetAuthorizationCodeDetails(tokenRequest.ClientID, tokenRequest.Code)
+	authCode, codeErr := h.authzService.GetAuthorizationCodeDetails(ctx, tokenRequest.ClientID, tokenRequest.Code)
 	if codeErr != nil {
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorInvalidGrant,
@@ -226,8 +240,8 @@ func validateAuthorizationCode(tokenRequest *model.TokenRequest,
 	code authz.AuthorizationCode) *model.ErrorResponse {
 	if tokenRequest.ClientID != code.ClientID {
 		return &model.ErrorResponse{
-			Error:            constants.ErrorInvalidClient,
-			ErrorDescription: "Invalid client Id",
+			Error:            constants.ErrorInvalidGrant,
+			ErrorDescription: "Invalid authorization code",
 		}
 	}
 
@@ -244,20 +258,6 @@ func validateAuthorizationCode(tokenRequest *model.TokenRequest,
 		return &model.ErrorResponse{
 			Error:            constants.ErrorInvalidTarget,
 			ErrorDescription: "Resource parameter mismatch",
-		}
-	}
-
-	if code.State == authz.AuthCodeStateInactive {
-		// TODO: Revoke all the tokens issued for this authorization code.
-
-		return &model.ErrorResponse{
-			Error:            constants.ErrorInvalidGrant,
-			ErrorDescription: "Inactive authorization code",
-		}
-	} else if code.State != authz.AuthCodeStateActive {
-		return &model.ErrorResponse{
-			Error:            constants.ErrorInvalidGrant,
-			ErrorDescription: "Inactive authorization code",
 		}
 	}
 

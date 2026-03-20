@@ -19,6 +19,7 @@
 package introspect
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
@@ -29,7 +30,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/sign"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -70,7 +71,7 @@ func (s *TokenIntrospectionServiceTestSuite) SetupTest() {
 }
 
 func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_EmptyToken() {
-	response, err := s.introspectService.IntrospectToken("", "")
+	response, err := s.introspectService.IntrospectToken(context.Background(), "", "")
 	assert.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "token is required")
 	assert.Nil(s.T(), response)
@@ -86,7 +87,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_PublicKeyNotAva
 			ErrorDescription: "The public key is not available for verification",
 		})
 
-	response, err := s.introspectService.IntrospectToken(s.validToken, "")
+	response, err := s.introspectService.IntrospectToken(context.Background(), s.validToken, "")
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), response)
 	assert.False(s.T(), response.Active)
@@ -124,7 +125,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_InvalidSignatur
 		})
 
 	// Test with a token having invalid signature
-	response, err := s.introspectService.IntrospectToken(invalidToken, "")
+	response, err := s.introspectService.IntrospectToken(context.Background(), invalidToken, "")
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), response)
 	assert.False(s.T(), response.Active)
@@ -138,7 +139,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_DecodeFailsAfte
 
 	s.jwtServiceMock.On("VerifyJWT", malformedToken, "", "").Return(nil)
 
-	response, err := s.introspectService.IntrospectToken(malformedToken, "")
+	response, err := s.introspectService.IntrospectToken(context.Background(), malformedToken, "")
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), response)
 	assert.False(s.T(), response.Active)
@@ -190,6 +191,15 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 			},
 		},
 		{
+			name:        "ValidTokenWithArrayAud",
+			tokenFn:     func(s *TokenIntrospectionServiceTestSuite) string { return s.createArrayAudToken() },
+			expectError: false,
+			active:      true,
+			expectedFields: map[string]interface{}{
+				"Aud": []string{"api.example.com", "api2.example.com"},
+			},
+		},
+		{
 			name: "TokenWithMissingExpClaim",
 			tokenFn: func(s *TokenIntrospectionServiceTestSuite) string {
 				claims := map[string]interface{}{
@@ -224,7 +234,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 				"ClientID":  "",
 				"Username":  "",
 				"Sub":       "",
-				"Aud":       "",
+				"Aud":       nil,
 				"Iss":       "",
 				"Jti":       "",
 			},
@@ -290,7 +300,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(nil)
 			}
 
-			response, err := s.introspectService.IntrospectToken(token, "")
+			response, err := s.introspectService.IntrospectToken(context.Background(), token, "")
 
 			if tc.expectError {
 				assert.Error(s.T(), err)
@@ -409,6 +419,17 @@ func (s *TokenIntrospectionServiceTestSuite) createMissingClaimsToken() string {
 	claims := map[string]interface{}{
 		"exp": float64(time.Now().Add(time.Hour).Unix()),
 		"nbf": float64(time.Now().Add(-time.Minute).Unix()),
+	}
+
+	return s.createToken(claims)
+}
+
+func (s *TokenIntrospectionServiceTestSuite) createArrayAudToken() string {
+	claims := map[string]interface{}{
+		"exp": float64(time.Now().Add(time.Hour).Unix()),
+		"nbf": float64(time.Now().Add(-time.Minute).Unix()),
+		"iat": float64(time.Now().Unix()),
+		"aud": []string{"api.example.com", "api2.example.com"},
 	}
 
 	return s.createToken(claims)

@@ -75,7 +75,7 @@ var (
 		ClientSecret:              "google_auth_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"google_auth_user"},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
@@ -101,7 +101,8 @@ var googleUserSchema = testutils.UserSchema{
 			"type": "string",
 		},
 		"password": map[string]interface{}{
-			"type": "string",
+			"type":       "string",
+			"credential": true,
 		},
 		"sub": map[string]interface{}{
 			"type": "string",
@@ -109,10 +110,28 @@ var googleUserSchema = testutils.UserSchema{
 		"email": map[string]interface{}{
 			"type": "string",
 		},
+		"email_verified": map[string]interface{}{
+			"type": "boolean",
+		},
+		"name": map[string]interface{}{
+			"type": "string",
+		},
+		"given_name": map[string]interface{}{
+			"type": "string",
+		},
+		"family_name": map[string]interface{}{
+			"type": "string",
+		},
 		"givenName": map[string]interface{}{
 			"type": "string",
 		},
 		"familyName": map[string]interface{}{
+			"type": "string",
+		},
+		"picture": map[string]interface{}{
+			"type": "string",
+		},
+		"locale": map[string]interface{}{
 			"type": "string",
 		},
 	},
@@ -162,7 +181,7 @@ func (ts *GoogleAuthFlowTestSuite) SetupSuite() {
 	googleAuthTestOU.ID = ouID
 
 	// Create user schema
-	googleUserSchema.OrganizationUnitId = ouID
+	googleUserSchema.OUID = ouID
 	schemaID, err := testutils.CreateUserType(googleUserSchema)
 	ts.Require().NoError(err, "Failed to create Google user schema")
 	ts.userSchemaID = schemaID
@@ -183,7 +202,7 @@ func (ts *GoogleAuthFlowTestSuite) SetupSuite() {
 	// Create user in the pre-configured OU from database scripts
 	user := testutils.User{
 		Type:             googleUserSchema.Name,
-		OrganizationUnit: googleUserSchema.OrganizationUnitId,
+		OUID:             googleUserSchema.OUID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 

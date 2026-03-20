@@ -22,12 +22,13 @@ package resource
 
 // ResourceServerResponse represents a resource server.
 type ResourceServerResponse struct {
-	ID                 string `json:"id"`
-	Name               string `json:"name"`
-	Description        string `json:"description,omitempty"`
-	Identifier         string `json:"identifier,omitempty"`
-	OrganizationUnitID string `json:"ouId"`
-	Delimiter          string `json:"delimiter"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Identifier  string `json:"identifier,omitempty"`
+	OUID        string `json:"ouId"`
+	Delimiter   string `json:"delimiter"`
+	IsReadOnly  bool   `json:"isReadOnly,omitempty"`
 }
 
 // ResourceResponse represents a resource.
@@ -84,19 +85,19 @@ type ActionListResponse struct {
 
 // CreateResourceServerRequest represents the request to create a resource server.
 type CreateResourceServerRequest struct {
-	Name               string `json:"name"`
-	Description        string `json:"description,omitempty"`
-	Identifier         string `json:"identifier,omitempty"`
-	OrganizationUnitID string `json:"ouId"`
-	Delimiter          string `json:"delimiter,omitempty"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Identifier  string `json:"identifier,omitempty"`
+	OUID        string `json:"ouId"`
+	Delimiter   string `json:"delimiter,omitempty"`
 }
 
 // UpdateResourceServerRequest represents the request to update a resource server.
 type UpdateResourceServerRequest struct {
-	Name               string `json:"name"`
-	Description        string `json:"description,omitempty"`
-	Identifier         string `json:"identifier,omitempty"`
-	OrganizationUnitID string `json:"ouId"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Identifier  string `json:"identifier,omitempty"`
+	OUID        string `json:"ouId"`
 }
 
 // CreateResourceRequest represents the request to create a resource.
@@ -124,37 +125,6 @@ type CreateActionRequest struct {
 type UpdateActionRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
-}
-
-// Service layer structs
-
-// ResourceServer represents a resource server in the service layer.
-type ResourceServer struct {
-	ID                 string
-	Name               string
-	Description        string
-	Identifier         string
-	OrganizationUnitID string
-	Delimiter          string
-}
-
-// Resource represents a resource in the service layer.
-type Resource struct {
-	ID          string
-	Name        string
-	Handle      string
-	Description string
-	Parent      *string
-	Permission  string
-}
-
-// Action represents an action in the service layer.
-type Action struct {
-	ID          string
-	Name        string
-	Handle      string
-	Description string
-	Permission  string
 }
 
 // Link represents a pagination link in the service layer.
@@ -188,4 +158,43 @@ type ActionList struct {
 	Count        int
 	Actions      []Action
 	Links        []Link
+}
+
+// Consolidated resource models for YAML parsing, processing, and service layer
+// These models use:
+// - yaml tags for YAML parsing (serialize/deserialize)
+// - json tags for many fields (e.g., in Action, Resource, ResourceServer) for service/API use
+// - Computed/internal fields marked with json:"-" and yaml:"-" as appropriate
+
+// Action represents an action in both declarative resources and service layer.
+type Action struct {
+	ID          string `yaml:"-" json:"-"` // Set when retrieved from database
+	Name        string `yaml:"name" json:"name"`
+	Handle      string `yaml:"handle" json:"handle"`
+	Description string `yaml:"description,omitempty" json:"description,omitempty"`
+	Permission  string `yaml:"-" json:"-"` // Computed permission string, not serialized to YAML
+}
+
+// Resource represents a resource in both declarative resources and service layer.
+type Resource struct {
+	ID           string   `yaml:"-" json:"-"` // Set when retrieved from database
+	Name         string   `yaml:"name" json:"name"`
+	Handle       string   `yaml:"handle" json:"handle"`
+	Description  string   `yaml:"description,omitempty" json:"description,omitempty"`
+	Parent       *string  `yaml:"-" json:"-"`                               // Resolved parent ID
+	ParentHandle string   `yaml:"parent,omitempty" json:"parent,omitempty"` // Parent handle during YAML parsing only
+	Permission   string   `yaml:"-" json:"-"`                               // Computed permission string
+	Actions      []Action `yaml:"actions,omitempty" json:"actions,omitempty"`
+}
+
+// ResourceServer represents a resource server in both declarative resources and service layer.
+type ResourceServer struct {
+	ID          string     `yaml:"id" json:"-"`
+	Name        string     `yaml:"name" json:"name"`
+	Description string     `yaml:"description,omitempty" json:"description,omitempty"`
+	Identifier  string     `yaml:"identifier,omitempty" json:"identifier,omitempty"`
+	OUID        string     `yaml:"ou_id" json:"ou_id"`
+	Delimiter   string     `yaml:"delimiter,omitempty" json:"delimiter,omitempty"`
+	IsReadOnly  bool       `yaml:"-" json:"-"`
+	Resources   []Resource `yaml:"resources,omitempty" json:"resources,omitempty"`
 }

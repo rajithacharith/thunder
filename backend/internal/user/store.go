@@ -34,6 +34,10 @@ import (
 type userStoreInterface interface {
 	GetUserListCount(ctx context.Context, filters map[string]interface{}) (int, error)
 	GetUserList(ctx context.Context, limit, offset int, filters map[string]interface{}) ([]User, error)
+	GetUserListCountByOUIDs(ctx context.Context, ouIDs []string, filters map[string]interface{}) (int, error)
+	GetUserListByOUIDs(
+		ctx context.Context, ouIDs []string, limit, offset int, filters map[string]interface{},
+	) ([]User, error)
 	CreateUser(ctx context.Context, user User, credentials Credentials) error
 	GetUser(ctx context.Context, id string) (User, error)
 	GetGroupCountForUser(ctx context.Context, userID string) (int, error)
@@ -44,6 +48,9 @@ type userStoreInterface interface {
 	IdentifyUser(ctx context.Context, filters map[string]interface{}) (*string, error)
 	GetCredentials(ctx context.Context, id string) (User, Credentials, error)
 	ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, error)
+	GetUsersByIDs(ctx context.Context, userIDs []string) ([]User, error)
+	ValidateUserIDsInOUs(ctx context.Context, userIDs []string, ouIDs []string) ([]string, error)
+	IsUserDeclarative(ctx context.Context, id string) (bool, error)
 }
 
 // userStore is the default implementation of userStoreInterface.
@@ -136,6 +143,71 @@ func (us *userStore) GetUserList(ctx context.Context, limit, offset int,
 	return users, nil
 }
 
+// GetUserListCountByOUIDs retrieves the total count of users scoped to a list of organization unit IDs.
+func (us *userStore) GetUserListCountByOUIDs(
+	ctx context.Context, ouIDs []string, filters map[string]interface{},
+) (int, error) {
+	if len(ouIDs) == 0 {
+		return 0, nil
+	}
+	dbClient, err := us.dbProvider.GetUserDBClient()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	countQuery, args, err := buildUserCountQueryByOUIDs(ouIDs, filters, us.deploymentID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to build count query: %w", err)
+	}
+
+	countResults, err := dbClient.QueryContext(ctx, countQuery, args...)
+	if err != nil {
+		return 0, fmt.Errorf("failed to execute count query: %w", err)
+	}
+
+	var totalCount int
+	if len(countResults) > 0 {
+		if count, ok := countResults[0]["total"].(int64); ok {
+			totalCount = int(count)
+		} else {
+			return 0, fmt.Errorf("unexpected type for total: %T", countResults[0]["total"])
+		}
+	}
+
+	return totalCount, nil
+}
+
+// GetUserListByOUIDs retrieves a list of users scoped to a list of organization unit IDs.
+func (us *userStore) GetUserListByOUIDs(
+	ctx context.Context, ouIDs []string, limit, offset int, filters map[string]interface{},
+) ([]User, error) {
+	dbClient, err := us.dbProvider.GetUserDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	listQuery, args, err := buildUserListQueryByOUIDs(ouIDs, filters, limit, offset, us.deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build list query: %w", err)
+	}
+
+	results, err := dbClient.QueryContext(ctx, listQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute paginated query: %w", err)
+	}
+
+	users := make([]User, 0)
+	for _, row := range results {
+		user, err := buildUserFromResultRow(row)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build user from result row: %w", err)
+		}
+		users = append(users, user)
+	}
+
+	return users, nil
+}
+
 // CreateUser handles the user creation in the database.
 func (us *userStore) CreateUser(ctx context.Context, user User, credentials Credentials) error {
 	dbClient, err := us.dbProvider.GetUserDBClient()
@@ -166,7 +238,7 @@ func (us *userStore) CreateUser(ctx context.Context, user User, credentials Cred
 		ctx,
 		QueryCreateUser,
 		user.ID,
-		user.OrganizationUnit,
+		user.OUID,
 		user.Type,
 		string(attributes),
 		credentialsJSON,
@@ -228,7 +300,7 @@ func (us *userStore) UpdateUser(ctx context.Context, user *User) error {
 	// Update user
 	rowsAffected, err := dbClient.ExecuteContext(
 		ctx,
-		QueryUpdateUserByUserID, user.ID, user.OrganizationUnit, user.Type, string(attributes), us.deploymentID)
+		QueryUpdateUserByUserID, user.ID, user.OUID, user.Type, string(attributes), us.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute update user query: %w", err)
 	}
@@ -373,9 +445,9 @@ func (us *userStore) IdentifyUser(ctx context.Context, filters map[string]interf
 	}
 
 	row := results[0]
-	userID, ok := row["user_id"].(string)
+	userID, ok := row["id"].(string)
 	if !ok {
-		return nil, fmt.Errorf("failed to parse user_id as string")
+		return nil, fmt.Errorf("failed to parse id as string")
 	}
 
 	return &userID, nil
@@ -450,7 +522,7 @@ func (us *userStore) ValidateUserIDs(ctx context.Context, userIDs []string) ([]s
 
 	existingUserIDs := make(map[string]bool)
 	for _, row := range results {
-		if userID, ok := row["user_id"].(string); ok {
+		if userID, ok := row["id"].(string); ok {
 			existingUserIDs[userID] = true
 		}
 	}
@@ -463,6 +535,94 @@ func (us *userStore) ValidateUserIDs(ctx context.Context, userIDs []string) ([]s
 	}
 
 	return invalidUserIDs, nil
+}
+
+// GetUsersByIDs retrieves users by a list of IDs.
+func (us *userStore) GetUsersByIDs(ctx context.Context, userIDs []string) ([]User, error) {
+	const batchSize = 100
+
+	if len(userIDs) == 0 {
+		return []User{}, nil
+	}
+
+	dbClient, err := us.dbProvider.GetUserDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	users := make([]User, 0, len(userIDs))
+
+	for start := 0; start < len(userIDs); start += batchSize {
+		end := start + batchSize
+		if end > len(userIDs) {
+			end = len(userIDs)
+		}
+		chunk := userIDs[start:end]
+
+		query, args, err := buildGetUsersByIDsQuery(chunk, us.deploymentID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build get users by IDs query: %w", err)
+		}
+
+		results, err := dbClient.QueryContext(ctx, query, args...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to execute query: %w", err)
+		}
+
+		for _, row := range results {
+			user, err := buildUserFromResultRow(row)
+			if err != nil {
+				return nil, fmt.Errorf("failed to build user from result row: %w", err)
+			}
+			users = append(users, user)
+		}
+	}
+
+	return users, nil
+}
+
+// ValidateUserIDsInOUs checks which of the provided user IDs belong to the given OU scope.
+// It returns user IDs that exist but are not in any of the provided OUs.
+func (us *userStore) ValidateUserIDsInOUs(
+	ctx context.Context, userIDs []string, ouIDs []string,
+) ([]string, error) {
+	if len(userIDs) == 0 {
+		return []string{}, nil
+	}
+	if len(ouIDs) == 0 {
+		// No accessible OUs — all provided IDs are out of scope.
+		return append([]string{}, userIDs...), nil
+	}
+
+	dbClient, err := us.dbProvider.GetUserDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	query, args, err := buildBulkUserExistsQueryInOUs(userIDs, ouIDs, us.deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	results, err := dbClient.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	inScopeIDs := make(map[string]bool, len(results))
+	for _, row := range results {
+		if id, ok := row["id"].(string); ok {
+			inScopeIDs[id] = true
+		}
+	}
+
+	outOfScopeIDs := make([]string, 0)
+	for _, userID := range userIDs {
+		if !inScopeIDs[userID] {
+			outOfScopeIDs = append(outOfScopeIDs, userID)
+		}
+	}
+	return outOfScopeIDs, nil
 }
 
 // GetGroupCountForUser retrieves the total count of groups a user belongs to.
@@ -513,9 +673,9 @@ func (us *userStore) GetUserGroups(ctx context.Context, userID string, limit, of
 }
 
 func buildUserFromResultRow(row map[string]interface{}) (User, error) {
-	userID, ok := row["user_id"].(string)
+	userID, ok := row["id"].(string)
 	if !ok {
-		return User{}, fmt.Errorf("failed to parse user_id as string")
+		return User{}, fmt.Errorf("failed to parse id as string")
 	}
 
 	orgID, ok := row["ou_id"].(string)
@@ -539,9 +699,9 @@ func buildUserFromResultRow(row map[string]interface{}) (User, error) {
 	}
 
 	user := User{
-		ID:               userID,
-		OrganizationUnit: orgID,
-		Type:             userType,
+		ID:   userID,
+		OUID: orgID,
+		Type: userType,
 	}
 
 	// Unmarshal JSON attributes
@@ -554,9 +714,9 @@ func buildUserFromResultRow(row map[string]interface{}) (User, error) {
 
 // buildGroupFromResultRow constructs a UserGroup from a database result row.
 func buildGroupFromResultRow(row map[string]interface{}) (UserGroup, error) {
-	groupID, ok := row["group_id"].(string)
+	groupID, ok := row["id"].(string)
 	if !ok {
-		return UserGroup{}, fmt.Errorf("failed to parse group_id as string")
+		return UserGroup{}, fmt.Errorf("failed to parse id as string")
 	}
 
 	name, ok := row["name"].(string)
@@ -570,9 +730,9 @@ func buildGroupFromResultRow(row map[string]interface{}) (UserGroup, error) {
 	}
 
 	group := UserGroup{
-		ID:                 groupID,
-		Name:               name,
-		OrganizationUnitID: ouID,
+		ID:   groupID,
+		Name: name,
+		OUID: ouID,
 	}
 
 	return group, nil
@@ -701,4 +861,13 @@ func validateIndexedAttributesConfig(configuredAttrs []string) error {
 			len(configuredAttrs), MaxIndexedAttributesCount)
 	}
 	return nil
+}
+
+// IsUserDeclarative returns false for database store (all database users are mutable).
+func (us *userStore) IsUserDeclarative(ctx context.Context, id string) (bool, error) {
+	_, err := us.GetUser(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	return false, nil
 }

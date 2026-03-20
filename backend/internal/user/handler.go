@@ -69,8 +69,11 @@ func (uh *userHandler) HandleUserListRequest(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Parse include parameter to check if display names should be included.
+	includeDisplay := r.URL.Query().Get(sysutils.QueryParamInclude) == sysutils.IncludeValueDisplay
+
 	// Get the user list using the user service.
-	userListResponse, svcErr := uh.userService.GetUserList(ctx, limit, offset, filters)
+	userListResponse, svcErr := uh.userService.GetUserList(ctx, limit, offset, filters, includeDisplay)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -274,7 +277,10 @@ func (uh *userHandler) HandleUserListByPathRequest(w http.ResponseWriter, r *htt
 		return
 	}
 
-	userListResponse, svcErr := uh.userService.GetUsersByPath(ctx, path, limit, offset, filters)
+	// Parse include parameter to check if display names should be included.
+	includeDisplay := r.URL.Query().Get(sysutils.QueryParamInclude) == sysutils.IncludeValueDisplay
+
+	userListResponse, svcErr := uh.userService.GetUsersByPath(ctx, path, limit, offset, filters, includeDisplay)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -326,7 +332,7 @@ func (uh *userHandler) HandleSelfUserGetRequest(w http.ResponseWriter, r *http.R
 	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
-	userID := security.GetUserID(ctx)
+	userID := security.GetSubject(ctx)
 	if strings.TrimSpace(userID) == "" {
 		handleError(w, &ErrorAuthenticationFailed)
 		return
@@ -348,7 +354,7 @@ func (uh *userHandler) HandleSelfUserPutRequest(w http.ResponseWriter, r *http.R
 	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
-	userID := security.GetUserID(ctx)
+	userID := security.GetSubject(ctx)
 	if strings.TrimSpace(userID) == "" {
 		handleError(w, &ErrorAuthenticationFailed)
 		return
@@ -381,7 +387,7 @@ func (uh *userHandler) HandleSelfUserCredentialUpdateRequest(w http.ResponseWrit
 	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
-	userID := security.GetUserID(ctx)
+	userID := security.GetSubject(ctx)
 	if strings.TrimSpace(userID) == "" {
 		handleError(w, &ErrorAuthenticationFailed)
 		return
@@ -454,6 +460,8 @@ func handleError(w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
 			statusCode = http.StatusBadRequest
 		case ErrorAuthenticationFailed.Code:
 			statusCode = http.StatusUnauthorized
+		case serviceerror.ErrorUnauthorized.Code:
+			statusCode = http.StatusForbidden
 		default:
 			statusCode = http.StatusBadRequest
 		}

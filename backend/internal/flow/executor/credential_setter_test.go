@@ -27,22 +27,22 @@ import (
 
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
-	"github.com/asgardeo/thunder/tests/mocks/usermock"
+	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
 type CredentialSetterTestSuite struct {
 	suite.Suite
 	mockFlowFactory  *coremock.FlowFactoryInterfaceMock
-	mockUserService  *usermock.UserServiceInterfaceMock
+	mockUserProvider *userprovidermock.UserProviderInterfaceMock
 	mockBaseExecutor *coremock.ExecutorInterfaceMock
 	executor         *credentialSetter
 }
 
 func (suite *CredentialSetterTestSuite) SetupTest() {
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
-	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
+	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
 	suite.mockBaseExecutor = coremock.NewExecutorInterfaceMock(suite.T())
 
 	suite.mockFlowFactory.On("CreateExecutor",
@@ -52,12 +52,12 @@ func (suite *CredentialSetterTestSuite) SetupTest() {
 		[]common.Input{
 			{
 				Identifier: userAttributeUserID,
-				Type:       "TEXT",
+				Type:       common.InputTypeText,
 				Required:   true,
 			},
 		}).Return(suite.mockBaseExecutor)
 
-	suite.executor = newCredentialSetter(suite.mockFlowFactory, suite.mockUserService)
+	suite.executor = newCredentialSetter(suite.mockFlowFactory, suite.mockUserProvider)
 }
 
 func (suite *CredentialSetterTestSuite) TestExecute_Success() {
@@ -79,13 +79,13 @@ func (suite *CredentialSetterTestSuite) TestExecute_Success() {
 	suite.mockBaseExecutor.On("GetRequiredInputs", ctx).Return([]common.Input{
 		{
 			Identifier: userAttributePassword,
-			Type:       "PASSWORD_INPUT",
+			Type:       common.InputTypePassword,
 			Required:   true,
 		},
 	})
 
 	// Use mock.Anything for credentials JSON bytes to avoid strict byte checking
-	suite.mockUserService.On("UpdateUserCredentials", mock.Anything, userID, mock.Anything).Return(nil)
+	suite.mockUserProvider.On("UpdateUserCredentials", userID, mock.Anything).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -141,7 +141,7 @@ func (suite *CredentialSetterTestSuite) TestExecute_EmptyPassword() {
 	suite.mockBaseExecutor.On("GetRequiredInputs", ctx).Return([]common.Input{
 		{
 			Identifier: userAttributePassword,
-			Type:       "PASSWORD_INPUT",
+			Type:       common.InputTypePassword,
 			Required:   true,
 		},
 	})
@@ -169,13 +169,13 @@ func (suite *CredentialSetterTestSuite) TestExecute_ServiceError() {
 	suite.mockBaseExecutor.On("GetRequiredInputs", ctx).Return([]common.Input{
 		{
 			Identifier: userAttributePassword,
-			Type:       "PASSWORD_INPUT",
+			Type:       common.InputTypePassword,
 			Required:   true,
 		},
 	})
 
-	suite.mockUserService.On("UpdateUserCredentials", mock.Anything, userID, mock.Anything).
-		Return(&serviceerror.ServiceError{Error: "db error"})
+	suite.mockUserProvider.On("UpdateUserCredentials", userID, mock.Anything).
+		Return(userprovider.NewUserProviderError(userprovider.ErrorCodeSystemError, "db error", ""))
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -207,13 +207,13 @@ func (suite *CredentialSetterTestSuite) TestExecute_CustomAttribute() {
 		{
 			Identifier: customAttr,
 			Required:   true,
-			Type:       "TEXT",
+			Type:       common.InputTypeText,
 		},
 	})
 
 	// Expect UpdateUserCredentials with custom attribute
 	expectedCredentialsJSON := `{"pin":"1234"}` //nolint:gosec // G101: This is test data, not a real credential
-	suite.mockUserService.On("UpdateUserCredentials", mock.Anything, userID, mock.MatchedBy(func(data []byte) bool {
+	suite.mockUserProvider.On("UpdateUserCredentials", userID, mock.MatchedBy(func(data []byte) bool {
 		return string(data) == expectedCredentialsJSON
 	})).Return(nil)
 
@@ -265,7 +265,7 @@ func (suite *CredentialSetterTestSuite) TestExecute_EmptyInputIdentifier() {
 	suite.mockBaseExecutor.On("GetRequiredInputs", ctx).Return([]common.Input{
 		{
 			Identifier: "",
-			Type:       "PASSWORD_INPUT",
+			Type:       common.InputTypePassword,
 			Required:   true,
 		},
 	})

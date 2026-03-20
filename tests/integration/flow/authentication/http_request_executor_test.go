@@ -191,7 +191,7 @@ var (
 		ClientSecret:              "http_request_executor_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"http_request_test_person"},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
@@ -210,14 +210,15 @@ var (
 			},
 			"password": map[string]interface{}{
 				"type": "string",
+				"credential": true,
 			},
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 		},
@@ -229,8 +230,8 @@ var (
 			"username": "httprequestuser",
 			"password": "SecurePass123!",
 			"email": "httprequest@test.com",
-			"firstName": "HTTP",
-			"lastName": "User"
+			"given_name": "HTTP",
+			"family_name": "User"
 		}`),
 	}
 )
@@ -261,7 +262,7 @@ func (ts *HTTPRequestExecutorTestSuite) SetupSuite() {
 	ts.ouID = ouID
 
 	// Create test user schema within the OU
-	httpRequestTestUserSchema.OrganizationUnitId = ts.ouID
+	httpRequestTestUserSchema.OUID = ts.ouID
 	schemaID, err := testutils.CreateUserType(httpRequestTestUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
@@ -279,7 +280,7 @@ func (ts *HTTPRequestExecutorTestSuite) SetupSuite() {
 
 	// Create test user for authentication
 	testUser := httpRequestTestUser
-	testUser.OrganizationUnit = ts.ouID
+	testUser.OUID = ts.ouID
 	userIDs, err := testutils.CreateMultipleUsers(testUser)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user during setup: %v", err)

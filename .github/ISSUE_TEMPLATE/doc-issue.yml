@@ -1,5 +1,6 @@
 name: '📚 Documentation Issue'
 description: Report an issue if something is missing or incorrect in existing official documents or suggest new content to enhance clarity and usability.
+title: "[Docs] "
 labels: ["Type/Docs"]
 body:
   - type: dropdown

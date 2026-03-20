@@ -18,7 +18,18 @@
 
 package application
 
-import "github.com/asgardeo/thunder/internal/system/error/serviceerror"
+import (
+	"errors"
+
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+)
+
+// Store-level errors for application operations.
+var (
+	// errResultLimitExceededInCompositeMode is returned when the result limit is exceeded in composite mode.
+	errResultLimitExceededInCompositeMode = errors.New("result limit exceeded in composite mode")
+)
 
 // Client errors for application operations.
 var (
@@ -201,19 +212,56 @@ var (
 		Error:            "Invalid user type",
 		ErrorDescription: "One or more user types in allowed_user_types do not exist in the system",
 	}
-	// ErrorBrandingNotFound is the error returned when branding is not found.
-	ErrorBrandingNotFound = serviceerror.ServiceError{
+	// ErrorThemeNotFound is the error returned when theme is not found.
+	ErrorThemeNotFound = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "APP-1026",
-		Error:            "Branding not found",
-		ErrorDescription: "The specified branding configuration does not exist",
+		Error:            "Theme not found",
+		ErrorDescription: "The specified theme configuration does not exist",
+	}
+	// ErrorLayoutNotFound is the error returned when layout is not found.
+	ErrorLayoutNotFound = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1027",
+		Error:            "Layout not found",
+		ErrorDescription: "The specified layout configuration does not exist",
 	}
 	// ErrorWhileRetrievingFlowDefinition is the error returned when there is an issue retrieving flow definition.
 	ErrorWhileRetrievingFlowDefinition = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
-		Code:             "APP-1027",
+		Code:             "APP-1028",
 		Error:            "Error retrieving flow definition",
 		ErrorDescription: "An error occurred while retrieving the flow definition",
+	}
+	// ErrorResultLimitExceeded is the error returned when the result limit is exceeded in composite mode.
+	ErrorResultLimitExceeded = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1029",
+		Error:            "Result limit exceeded",
+		ErrorDescription: serverconst.CompositeStoreLimitWarning,
+	}
+	// ErrorCannotModifyDeclarativeResource is the error returned when trying to modify a declarative resource.
+	ErrorCannotModifyDeclarativeResource = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1030",
+		Error:            "Cannot modify declarative resource",
+		ErrorDescription: "The application is declarative and cannot be modified or deleted",
+	}
+	// ErrorConsentSyncFailed is the error returned when an application's attributes changes failed to sync
+	// with the consent service.
+	ErrorConsentSyncFailed = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1031",
+		Error:            "Consent synchronization failed",
+		ErrorDescription: "Failed to synchronize consent configurations for the application",
+	}
+	// ErrorConsentServiceNotEnabled is the error returned when enabling consent for application while
+	// the consent service is not enabled.
+	ErrorConsentServiceNotEnabled = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1032",
+		Error:            "Consent service not enabled",
+		ErrorDescription: "Cannot enable consent for the application as the consent service is not enabled",
 	}
 )
 

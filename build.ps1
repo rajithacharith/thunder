@@ -174,14 +174,19 @@ $SERVER_DB_SCRIPTS_DIR = Join-Path $BACKEND_BASE_DIR "dbscripts"
 $SECURITY_DIR = "repository/resources/security"
 $FRONTEND_BASE_DIR = "frontend"
 $GATE_APP_DIST_DIR = "apps/gate"
-$DEVELOP_APP_DIST_DIR = "apps/develop"
+$CONSOLE_APP_DIST_DIR = "apps/console"
 $FRONTEND_GATE_APP_SOURCE_DIR = Join-Path $FRONTEND_BASE_DIR "apps/thunder-gate"
-$FRONTEND_DEVELOP_APP_SOURCE_DIR = Join-Path $FRONTEND_BASE_DIR "apps/thunder-develop"
+$FRONTEND_CONSOLE_APP_SOURCE_DIR = Join-Path $FRONTEND_BASE_DIR "apps/thunder-console"
 $SAMPLE_BASE_DIR = "samples"
 $VANILLA_SAMPLE_APP_DIR = Join-Path $SAMPLE_BASE_DIR "apps/react-vanilla-sample"
 $VANILLA_SAMPLE_APP_SERVER_DIR = Join-Path $VANILLA_SAMPLE_APP_DIR "server"
 $REACT_SDK_SAMPLE_APP_DIR = Join-Path $SAMPLE_BASE_DIR "apps/react-sdk-sample"
 $REACT_API_SAMPLE_APP_DIR = Join-Path $SAMPLE_BASE_DIR "apps/react-api-based-sample"
+
+# Default ports
+$GATE_APP_DEFAULT_PORT = 5190
+$CONSOLE_APP_DEFAULT_PORT = 5191
+$DOCS_DEFAULT_PORT = 3000
 
 # ============================================================================
 # Read Configuration from deployment.yaml
@@ -422,6 +427,32 @@ function Build-Frontend {
     Write-Host "================================================================"
 }
 
+function Build-Docs {
+    Write-Host "================================================================"
+    Write-Host "Building documentation..."
+    
+    # Check if pnpm is installed, if not install it
+    if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
+        Write-Host "pnpm not found, installing..."
+        & npm install -g pnpm
+    }
+    
+    # Navigate to frontend directory first to ensure build:docs script can run
+    Push-Location $FRONTEND_BASE_DIR
+    try {
+        Write-Host "Installing frontend dependencies (required for docs build)..."
+        & pnpm install --frozen-lockfile
+        
+        Write-Host "Building documentation..."
+        & pnpm run build:docs
+    }
+    finally {
+        Pop-Location
+    }
+    
+    Write-Host "================================================================"
+}
+
 function Initialize-Databases {
     param(
         [bool]$override = $false
@@ -448,8 +479,8 @@ function Initialize-Databases {
 
     New-Item -Path $REPOSITORY_DB_DIR -ItemType Directory -Force | Out-Null
 
-    $db_files = @("thunderdb.db", "runtimedb.db", "userdb.db")
-    $script_paths = @("thunderdb/sqlite.sql", "runtimedb/sqlite.sql", "userdb/sqlite.sql")
+    $db_files = @("configdb.db", "runtimedb.db", "userdb.db")
+    $script_paths = @("configdb/sqlite.sql", "runtimedb/sqlite.sql", "userdb/sqlite.sql")
 
     for ($i = 0; $i -lt $db_files.Length; $i++) {
         $db_file = $db_files[$i]
@@ -515,7 +546,8 @@ function Prepare-Backend-For-Packaging {
     Copy-Item -Path (Join-Path $BACKEND_DIR "bootstrap") -Destination $package_folder -Recurse -Force
 
     Write-Host "=== Ensuring server certificates exist in the distribution ==="
-    Ensure-Certificates -cert_dir $security_dir
+    Ensure-Certificates -cert_dir $security_dir -cert_name_prefix "server"
+    Ensure-Certificates -cert_dir $security_dir -cert_name_prefix "signing"
     Write-Host "================================================================"
 
     Write-Host "=== Ensuring crypto file exists in the distribution ==="
@@ -529,28 +561,24 @@ function Prepare-Frontend-For-Packaging {
 
     $package_folder = Join-Path $DIST_DIR $PRODUCT_FOLDER
     New-Item -Path (Join-Path $package_folder $GATE_APP_DIST_DIR) -ItemType Directory -Force | Out-Null
-    New-Item -Path (Join-Path $package_folder $DEVELOP_APP_DIST_DIR) -ItemType Directory -Force | Out-Null
+    New-Item -Path (Join-Path $package_folder $CONSOLE_APP_DIST_DIR) -ItemType Directory -Force | Out-Null
 
     # Copy gate app build output
     if (Test-Path (Join-Path $FRONTEND_GATE_APP_SOURCE_DIR "dist")) {
         Write-Host "Copying Gate app build output..."
-        Get-ChildItem -Path (Join-Path $FRONTEND_GATE_APP_SOURCE_DIR "dist") -Force | ForEach-Object {
-            Copy-Item -Path $_.FullName -Destination (Join-Path $package_folder $GATE_APP_DIST_DIR) -Recurse -Force
-        }
+        Copy-Item -Path (Join-Path $FRONTEND_GATE_APP_SOURCE_DIR "dist\*") -Destination (Join-Path $package_folder $GATE_APP_DIST_DIR) -Recurse -Force
     }
     else {
         Write-Host "Warning: Gate app build output not found at $((Join-Path $FRONTEND_GATE_APP_SOURCE_DIR "dist"))"
     }
     
-    # Copy develop app build output
-    if (Test-Path (Join-Path $FRONTEND_DEVELOP_APP_SOURCE_DIR "dist")) {
-        Write-Host "Copying Develop app build output..."
-        Get-ChildItem -Path (Join-Path $FRONTEND_DEVELOP_APP_SOURCE_DIR "dist") -Force | ForEach-Object {
-            Copy-Item -Path $_.FullName -Destination (Join-Path $package_folder $DEVELOP_APP_DIST_DIR) -Recurse -Force
-        }
+    # Copy console app build output
+    if (Test-Path (Join-Path $FRONTEND_CONSOLE_APP_SOURCE_DIR "dist")) {
+        Write-Host "Copying Console app build output..."
+        Copy-Item -Path (Join-Path $FRONTEND_CONSOLE_APP_SOURCE_DIR "dist\*") -Destination (Join-Path $package_folder $CONSOLE_APP_DIST_DIR) -Recurse -Force
     }
     else {
-        Write-Host "Warning: Develop app build output not found at $((Join-Path $FRONTEND_DEVELOP_APP_SOURCE_DIR "dist"))"
+        Write-Host "Warning: Console app build output not found at $((Join-Path $FRONTEND_CONSOLE_APP_SOURCE_DIR "dist"))"
     }
 
     Write-Host "================================================================"
@@ -601,7 +629,7 @@ function Build-Sample-App {
     # Build React Vanilla sample
     Write-Host "=== Building React Vanilla sample app ==="
     Write-Host "=== Ensuring React Vanilla sample app certificates exist ==="
-    Ensure-Certificates -cert_dir $VANILLA_SAMPLE_APP_DIR
+    Ensure-Certificates -cert_dir $VANILLA_SAMPLE_APP_DIR -cert_name_prefix "server"
 
     Push-Location $VANILLA_SAMPLE_APP_DIR
     try {
@@ -668,20 +696,20 @@ function Build-Sample-App {
 
     # Ensure certificates exist for React SDK sample
     Write-Host "=== Ensuring React SDK sample app certificates exist ==="
-    Ensure-Certificates -cert_dir $REACT_SDK_SAMPLE_APP_DIR
+    Ensure-Certificates -cert_dir $REACT_SDK_SAMPLE_APP_DIR -cert_name_prefix "server"
 
     Push-Location $REACT_SDK_SAMPLE_APP_DIR
     try {
         Write-Host "Installing React SDK sample dependencies..."
-        & pnpm install --frozen-lockfile
+        & npm ci
         if ($LASTEXITCODE -ne 0) {
-            throw "pnpm install failed with exit code $LASTEXITCODE"
+            throw "npm ci failed with exit code $LASTEXITCODE"
         }
 
         Write-Host "Building React SDK sample app..."
-        & pnpm run build
+        & npm run build
         if ($LASTEXITCODE -ne 0) {
-            throw "pnpm build failed with exit code $LASTEXITCODE"
+            throw "npm run build failed with exit code $LASTEXITCODE"
         }
     }
     finally {
@@ -794,7 +822,7 @@ function Package-Vanilla-Sample {
 
     # Ensure the certificates exist in the sample app directory
     Write-Host "=== Ensuring certificates exist in the React Vanilla sample distribution ==="
-    Ensure-Certificates -cert_dir $vanilla_sample_app_folder
+    Ensure-Certificates -cert_dir $vanilla_sample_app_folder -cert_name_prefix "server"
 
     # Copy the appropriate startup script based on the target OS
     if ($SAMPLE_DIST_OS -eq "win") {
@@ -944,7 +972,7 @@ function Test-Unit {
         
         if ($gotestsum) {
             Write-Host "Running unit tests with coverage using gotestsum..."
-            & gotestsum -- -v -coverprofile=coverage_unit.out -covermode=atomic "-coverpkg=$coverpkg" ./...
+            & gotestsum -- -v -count=1 "-coverprofile=coverage_unit.out" "-covermode=atomic" "-coverpkg=$coverpkg" ./...
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "There are unit test failures."
                 exit 1
@@ -952,7 +980,7 @@ function Test-Unit {
         }
         else {
             Write-Host "Running unit tests with coverage using go test..."
-            & go test -v -coverprofile=coverage_unit.out -covermode=atomic "-coverpkg=$coverpkg" ./...
+            & go test -v -count=1 "-coverprofile=coverage_unit.out" "-covermode=atomic" "-coverpkg=$coverpkg" ./...
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "There are unit test failures."
                 exit 1
@@ -962,14 +990,14 @@ function Test-Unit {
         Write-Host "Unit test coverage profile generated in: backend/coverage_unit.out"
         
         # Generate HTML coverage report for unit tests
-        & go tool cover -html=coverage_unit.out -o=coverage_unit.html
+        & go tool cover "-html=coverage_unit.out" "-o=coverage_unit.html"
         Write-Host "Unit test coverage HTML report generated in: backend/coverage_unit.html"
         
         # Display unit test coverage summary
         Write-Host ""
         Write-Host "================================================================"
         Write-Host "Unit Test Coverage Summary:"
-        & go tool cover -func=coverage_unit.out | Select-Object -Last 1
+        & go tool cover "-func=coverage_unit.out" | Select-Object -Last 1
         Write-Host "================================================================"
         Write-Host ""
     }
@@ -1215,10 +1243,10 @@ function Export-CertificateAndKeyToPem {
 
 function Ensure-Certificates {
     param(
-        [string]$cert_dir
+        [string]$cert_dir,
+        [string]$cert_name_prefix = "server"  # Default to "server" if not specified
     )
     
-    $cert_name_prefix = "server"
     $cert_file_name = "${cert_name_prefix}.cert"
     $key_file_name = "${cert_name_prefix}.key"
 
@@ -1229,7 +1257,8 @@ function Ensure-Certificates {
     if (-not (Test-Path $local_cert_file) -or -not (Test-Path $local_key_file)) {
         New-Item -Path $LOCAL_CERT_DIR -ItemType Directory -Force | Out-Null
         
-        Write-Host "Generating SSL certificates in $LOCAL_CERT_DIR..."
+        Write-Host "Generating certificates ($cert_name_prefix) in $LOCAL_CERT_DIR..."
+        
         try {
             $openssl = Get-Command openssl -ErrorAction SilentlyContinue
             if ($openssl) {
@@ -1238,12 +1267,12 @@ function Ensure-Certificates {
                     -out $local_cert_file `
                     -subj "/O=WSO2/OU=Thunder/CN=localhost" 2>$null
                 if ($LASTEXITCODE -ne 0) {
-                    throw "Error generating SSL certificates: OpenSSL failed with exit code $LASTEXITCODE"
+                    throw "Error generating certificates: OpenSSL failed with exit code $LASTEXITCODE"
                 }
                 Write-Host "Certificates generated successfully in $LOCAL_CERT_DIR using OpenSSL."
             }
             else {
-                Write-Host "OpenSSL not found - generating self-signed cert using .NET CertificateRequest (no UI)."
+                Write-Host "OpenSSL not found - generating certificates using .NET CertificateRequest (no UI)."
                 # Use .NET CertificateRequest to avoid CertEnroll / smartcard enrollment UI issues.
                 try {
                     $rsa = [System.Security.Cryptography.RSA]::Create(2048)
@@ -1302,17 +1331,17 @@ function Ensure-Certificates {
                     Write-Host "Certificates generated successfully in $LOCAL_CERT_DIR using .NET CertificateRequest." 
                 }
                 catch {
-                    throw "Error creating self-signed certificate using .NET APIs: $_"
+                    throw "Error creating certificates using .NET APIs: $_"
                 }
             }
         }
         catch {
-            Write-Error "Error generating SSL certificates: $_"
+            Write-Error "Error generating certificates: $_"
             exit 1
         }
     }
     else {
-        Write-Host "Certificates already exist in $LOCAL_CERT_DIR."
+        Write-Host "Certificates ($cert_name_prefix) already exist in $LOCAL_CERT_DIR."
     }
 
     # Copy the generated certificates to the specified directory
@@ -1322,13 +1351,13 @@ function Ensure-Certificates {
     if (-not (Test-Path $cert_file) -or -not (Test-Path $key_file)) {
         New-Item -Path $cert_dir -ItemType Directory -Force | Out-Null
         
-        Write-Host "Copying certificates to $cert_dir..."
+        Write-Host "Copying certificates ($cert_name_prefix) to $cert_dir..."
         Copy-Item -Path $local_cert_file -Destination $cert_file -Force
         Copy-Item -Path $local_key_file -Destination $key_file -Force
         Write-Host "Certificates copied successfully to $cert_dir."
     }
     else {
-        Write-Host "Certificates already exist in $cert_dir."
+        Write-Host "Certificates ($cert_name_prefix) already exist in $cert_dir."
     }
 }
 
@@ -1438,18 +1467,54 @@ function Run {
     $script:ORIGINAL_THUNDER_SKIP_SECURITY = $env:THUNDER_SKIP_SECURITY
     $env:THUNDER_SKIP_SECURITY = "true"
     Run-Backend -ShowFinalOutput $false
-    
-    $GATE_APP_DEFAULT_PORT = 5190
-    $DEVELOP_APP_DEFAULT_PORT = 5191
 
     # Run initial data setup
     Write-Host "⚙️  Running initial data setup..."
     Write-Host ""
     
-    # Run the setup script - it will handle server readiness checking
-    # In dev mode, add the frontend dev server redirect URI
-    $setupScript = Join-Path $BACKEND_BASE_DIR "scripts/setup_initial_data.sh"
-    & $setupScript -port $PORT --develop-redirect-uris "https://localhost:${DEVELOP_APP_DEFAULT_PORT}/develop"
+    # Wait for server to be ready
+    $MAX_RETRIES = 30
+    $RETRY_INTERVAL = 2
+    $retries = 0
+    
+    # Configure TLS to use modern protocols (required for HTTPS requests on Windows)
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
+    } catch {
+        # Fallback to TLS 1.2 if TLS 1.3 is not available
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    }
+    
+    Write-Host "[INFO] Waiting for Thunder server to be ready..."
+    while ($retries -lt $MAX_RETRIES) {
+        try {
+            $response = Invoke-WebRequest -Uri "$BASE_URL/health/readiness" -UseBasicParsing -SkipCertificateCheck -ErrorAction Stop
+            if ($response.StatusCode -eq 200) {
+                Write-Host "✓ Server is ready!"
+                break
+            }
+        }
+        catch {
+            # Server not ready yet
+        }
+        
+        $retries++
+        if ($retries -ge $MAX_RETRIES) {
+            Write-Host "❌ Server did not become ready after $MAX_RETRIES attempts"
+            Write-Host "💡 Please ensure the Thunder server is running at $BASE_URL"
+            exit 1
+        }
+        
+        Write-Host "[WAITING] Attempt $retries/$MAX_RETRIES - Server not ready yet, retrying in ${RETRY_INTERVAL}s..."
+        Start-Sleep -Seconds $RETRY_INTERVAL
+    }
+    
+    Write-Host ""
+    
+    # Run the bootstrap script directly with environment variable and arguments
+    $env:THUNDER_API_BASE = $BASE_URL
+    $bootstrapScript = Join-Path $BACKEND_BASE_DIR "cmd/server/bootstrap/01-default-resources.ps1"
+    & $bootstrapScript -ConsoleRedirectUris "https://localhost:${CONSOLE_APP_DEFAULT_PORT}/console"
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "❌ Initial data setup failed"
@@ -1473,7 +1538,7 @@ function Run {
     Write-Host "  👉 Backend : $BASE_URL"
     Write-Host "  📱 Frontend :"
     Write-Host "      🚪 Gate (Login/Register): https://localhost:${GATE_APP_DEFAULT_PORT}/gate"
-    Write-Host "      🛠️  Develop (Admin Console): https://localhost:${DEVELOP_APP_DEFAULT_PORT}/develop"
+    Write-Host "      🛠️  Console (System Management): https://localhost:${CONSOLE_APP_DEFAULT_PORT}/console"
     Write-Host ""
 
     Write-Host "Press Ctrl+C to stop."
@@ -1523,10 +1588,11 @@ function Run-Backend {
     )
 
     Write-Host "=== Ensuring server certificates exist ==="
-    Ensure-Certificates -cert_dir (Join-Path $BACKEND_DIR $SECURITY_DIR)
+    Ensure-Certificates -cert_dir (Join-Path $BACKEND_DIR $SECURITY_DIR) -cert_name_prefix "server"
+    Ensure-Certificates -cert_dir (Join-Path $BACKEND_DIR $SECURITY_DIR) -cert_name_prefix "signing"
 
     Write-Host "=== Ensuring React Vanilla sample app certificates exist ==="
-    Ensure-Certificates -cert_dir $VANILLA_SAMPLE_APP_DIR
+    Ensure-Certificates -cert_dir $VANILLA_SAMPLE_APP_DIR -cert_name_prefix "server"
 
     Write-Host "=== Ensuring crypto file exists for run ==="
     Ensure-Crypto-File -conf_dir (Join-Path $BACKEND_DIR "repository/conf")
@@ -1611,8 +1677,43 @@ function Run-Frontend {
         
         Write-Host "Starting frontend applications in the background..."
         # Start frontend processes in background
-        $frontendProcess = Start-Process -FilePath "pnpm" -ArgumentList "-r", "--parallel", "--filter", "@thunder/develop", "--filter", "@thunder/gate", "dev" -PassThru -NoNewWindow
+        $frontendProcess = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "pnpm", "-r", "--parallel", "--filter", "@thunder/console", "--filter", "@thunder/gate", "dev" -PassThru -NoNewWindow
         $script:FRONTEND_PID = $frontendProcess.Id
+    }
+    finally {
+        Pop-Location
+    }
+    
+    Write-Host "================================================================"
+}
+
+function Run-Docs {
+    Write-Host "================================================================"
+    Write-Host "Starting documentation development server..."
+    
+    # Check if pnpm is installed, if not install it
+    if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
+        Write-Host "pnpm not found, installing..."
+        & npm install -g pnpm
+    }
+    
+    # Navigate to frontend directory first to install all dependencies
+    Push-Location $FRONTEND_BASE_DIR
+    try {
+        Write-Host "Installing frontend dependencies (required for docs)..."
+        & pnpm install --frozen-lockfile
+    }
+    finally {
+        Pop-Location
+    }
+    
+    # Navigate to docs directory
+    Push-Location (Join-Path $SCRIPT_DIR "docs")
+    try {
+        Write-Host "Starting documentation server with live reload..."
+        Write-Host "📚 Documentation will be available at http://localhost:$DOCS_DEFAULT_PORT"
+        Write-Host "Press Ctrl+C to stop."
+        & pnpm dev
     }
     finally {
         Pop-Location
@@ -1623,67 +1724,52 @@ function Run-Frontend {
 
 # Main script logic
 switch ($Command) {
-    "clean" {
+    'clean' {
         Clean
     }
-    "build_backend" {
+    'build_backend' {
         Build-Backend
         Package
     }
-    "build_frontend" {
+    'build_frontend' {
         Build-Frontend
     }
-    "build_samples" {
+    'build_docs' {
+        Build-Docs
+    }
+    'build_samples' {
         Build-Sample-App
+    }
+    'package_samples' {
         Package-Sample-App
     }
-    "package_samples" {
-        Package-Sample-App
-    }
-    "build" {
-        Build-Backend
-        Build-Frontend
-        Package
-        Build-Sample-App
-        Package-Sample-App
-    }
-    "test_unit" {
+    'test_unit' {
         Test-Unit
     }
-    "test_integration" {
+    'test_integration' {
         Test-Integration
     }
-    "merge_coverage" {
+    'merge_coverage' {
         Merge-Coverage
     }
-    "test" {
+    'run' {
+        Run
+    }
+    'run_backend' {
+        Run-Backend
+    }
+    'run_frontend' {
+        Run-Frontend
+    }
+    'run_docs' {
+        Run-Docs
+    }
+    'test' {
         Test-Unit
         Test-Integration
     }
-    "run" {
-        Run
-    }
-    "run_backend" {
-        Run-Backend
-    }
-    "run_frontend" {
-        Run-Frontend
-    }
     default {
-        Write-Host "Usage: ./build.ps1 {clean|build|build_backend|build_frontend|test|run} [OS] [ARCH]"
-        Write-Host ""
-        Write-Host "  clean                    - Clean build artifacts"
-        Write-Host "  build                    - Build the complete Thunder application (backend + frontend + samples)"
-        Write-Host "  build_backend            - Build only the Thunder backend server"
-        Write-Host "  build_frontend           - Build only the Next.js frontend applications"
-        Write-Host "  build_samples            - Build the sample applications"
-        Write-Host "  test_unit                - Run unit tests with coverage"
-        Write-Host "  test_integration         - Run integration tests. Use -TestRun and -TestPackage for filtering."
-        Write-Host "  merge_coverage           - Merge unit and integration test coverage reports"
-        Write-Host "  test                     - Run all tests (unit and integration)"
-        Write-Host "  run                      - Run the Thunder server for development (with automatic initial data setup)"
-        Write-Host "  run_backend              - Run the Thunder backend for development"
-        Write-Host "  run_frontend             - Run the Thunder frontend for development"
+        Write-Host "Usage: $($MyInvocation.MyCommand.Name) {clean|build_backend|build_frontend|build_docs|build_samples|package_samples|test_unit|test_integration|merge_coverage|run|run_backend|run_frontend|run_docs|test}"
         exit 1
     }
 }

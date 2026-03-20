@@ -186,6 +186,7 @@ var (
 			},
 			"password": map[string]interface{}{
 				"type": "string",
+				"credential": true,
 			},
 			"email": map[string]interface{}{
 				"type": "string",
@@ -201,7 +202,7 @@ var (
 		ClientSecret:              "verbose_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{verboseTestUserSchema.Name},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
@@ -243,7 +244,7 @@ func (ts *VerboseMetaTestSuite) SetupSuite() {
 	ts.ouID = ouID
 
 	// Create user schema
-	verboseTestUserSchema.OrganizationUnitId = ouID
+	verboseTestUserSchema.OUID = ouID
 	schemaID, err := testutils.CreateUserType(verboseTestUserSchema)
 	ts.Require().NoError(err, "Failed to create user schema")
 	verboseUserSchemaID = schemaID
@@ -266,7 +267,7 @@ func (ts *VerboseMetaTestSuite) SetupSuite() {
 	verboseTestAppID = appID
 
 	// Create test user
-	verboseTestUser.OrganizationUnit = ouID
+	verboseTestUser.OUID = ouID
 	userID, err := testutils.CreateUser(verboseTestUser)
 	ts.Require().NoError(err, "Failed to create test user")
 	ts.config.CreatedUserIDs = []string{userID}

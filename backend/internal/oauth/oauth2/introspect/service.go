@@ -20,16 +20,17 @@
 package introspect
 
 import (
+	"context"
 	"errors"
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
 // TokenIntrospectionServiceInterface defines the interface for OAuth 2.0 token introspection.
 type TokenIntrospectionServiceInterface interface {
-	IntrospectToken(token, tokenTypeHint string) (*IntrospectResponse, error)
+	IntrospectToken(ctx context.Context, token, tokenTypeHint string) (*IntrospectResponse, error)
 }
 
 // tokenIntrospectionService implements the TokenIntrospectionServiceInterface.
@@ -46,7 +47,9 @@ func newTokenIntrospectionService(jwtService jwt.JWTServiceInterface) TokenIntro
 
 // IntrospectToken validates and introspects the token. It only returns an error if a server error occurs.
 // All other failures are treated as inactive token as defined in the RFC 7662.
-func (s *tokenIntrospectionService) IntrospectToken(token, tokenTypeHint string) (*IntrospectResponse, error) {
+func (s *tokenIntrospectionService) IntrospectToken(
+	ctx context.Context, token, tokenTypeHint string,
+) (*IntrospectResponse, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "TokenIntrospectionService"))
 
 	if token == "" {
@@ -113,8 +116,19 @@ func (s *tokenIntrospectionService) prepareValidResponse(payload map[string]inte
 	if sub, ok := payload[constants.ClaimSub].(string); ok {
 		response.Sub = sub
 	}
-	if aud, ok := payload[constants.ClaimAud].(string); ok {
+	switch aud := payload[constants.ClaimAud].(type) {
+	case string:
 		response.Aud = aud
+	case []interface{}:
+		audSlice := make([]string, 0, len(aud))
+		for _, v := range aud {
+			if s, ok := v.(string); ok {
+				audSlice = append(audSlice, s)
+			}
+		}
+		if len(audSlice) > 0 {
+			response.Aud = audSlice
+		}
 	}
 	if iss, ok := payload[constants.ClaimIss].(string); ok {
 		response.Iss = iss

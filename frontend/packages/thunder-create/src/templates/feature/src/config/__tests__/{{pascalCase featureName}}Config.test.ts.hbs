@@ -1,0 +1,215 @@
+/**
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {describe, it, expect} from 'vitest';
+import {
+  DEFAULT_{{constantCase featureName}}_CONFIG,
+  get{{pascalCase featureName}}Config,
+  validate{{pascalCase featureName}}Config,
+  type {{pascalCase featureName}}FeatureConfig,
+} from '../{{pascalCase featureName}}Config';
+import {{pascalCase featureName}}Status from '../../models/{{camelCase featureName}}';
+
+describe('{{pascalCase featureName}}Config', () => {
+  describe('DEFAULT_{{constantCase featureName}}_CONFIG', () => {
+    it('should have valid default values', () => {
+      expect(DEFAULT_{{constantCase featureName}}_CONFIG.maxPageSize).toBeGreaterThan(0);
+      expect(DEFAULT_{{constantCase featureName}}_CONFIG.defaultPageSize).toBeGreaterThan(0);
+      expect(DEFAULT_{{constantCase featureName}}_CONFIG.defaultPageSize).toBeLessThanOrEqual(
+        DEFAULT_{{constantCase featureName}}_CONFIG.maxPageSize
+      );
+      expect(DEFAULT_{{constantCase featureName}}_CONFIG.maxNameLength).toBeGreaterThan(0);
+      expect(DEFAULT_{{constantCase featureName}}_CONFIG.maxDescriptionLength).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should include all supported statuses', () => {
+      expect(DEFAULT_{{constantCase featureName}}_CONFIG.supportedStatuses).toContain({{pascalCase featureName}}Status.ACTIVE);
+      expect(DEFAULT_{{constantCase featureName}}_CONFIG.supportedStatuses).toContain({{pascalCase featureName}}Status.INACTIVE);
+      expect(DEFAULT_{{constantCase featureName}}_CONFIG.supportedStatuses).toContain({{pascalCase featureName}}Status.PENDING);
+    });
+
+    it('should have all features enabled by default', () => {
+      const features = DEFAULT_{{constantCase featureName}}_CONFIG.features;
+      expect(features.searchEnabled).toBe(true);
+      expect(features.sortingEnabled).toBe(true);
+      expect(features.paginationEnabled).toBe(true);
+      expect(features.bulkOperationsEnabled).toBe(true);
+      expect(features.exportEnabled).toBe(true);
+    });
+
+    it('should have valid UI configuration', () => {
+      const ui = DEFAULT_{{constantCase featureName}}_CONFIG.ui;
+      expect(ui.defaultViewMode).toBeDefined();
+      expect(['list', 'grid', 'compact']).toContain(ui.defaultViewMode);
+    });
+
+    it('should have valid validation rules', () => {
+      const validation = DEFAULT_{{constantCase featureName}}_CONFIG.validation;
+      expect(validation.minNameLength).toBeGreaterThanOrEqual(0);
+      expect(validation.minDescriptionLength).toBeGreaterThanOrEqual(0);
+      expect(validation.requiredFields).toContain('name');
+      expect(validation.namePattern).toBeInstanceOf(RegExp);
+    });
+  });
+
+  describe('get{{pascalCase featureName}}Config', () => {
+    it('should return default config when no overrides provided', () => {
+      const config = get{{pascalCase featureName}}Config();
+      expect(config).toEqual(DEFAULT_{{constantCase featureName}}_CONFIG);
+    });
+
+    it('should merge top-level overrides', () => {
+      const config = get{{pascalCase featureName}}Config({
+        maxPageSize: 200,
+        defaultPageSize: 20,
+      });
+
+      expect(config.maxPageSize).toBe(200);
+      expect(config.defaultPageSize).toBe(20);
+      expect(config.maxNameLength).toBe(DEFAULT_{{constantCase featureName}}_CONFIG.maxNameLength);
+    });
+
+    it('should merge nested feature overrides', () => {
+      const config = get{{pascalCase featureName}}Config({
+        features: {
+          searchEnabled: false,
+        },
+      });
+
+      expect(config.features.searchEnabled).toBe(false);
+      expect(config.features.sortingEnabled).toBe(DEFAULT_{{constantCase featureName}}_CONFIG.features.sortingEnabled);
+    });
+
+    it('should merge nested UI overrides', () => {
+      const config = get{{pascalCase featureName}}Config({
+        ui: {
+          defaultViewMode: 'grid',
+          showStatus: false,
+        },
+      });
+
+      expect(config.ui.defaultViewMode).toBe('grid');
+      expect(config.ui.showStatus).toBe(false);
+      expect(config.ui.showCreatedAt).toBe(DEFAULT_{{constantCase featureName}}_CONFIG.ui.showCreatedAt);
+    });
+
+    it('should merge nested validation overrides', () => {
+      const config = get{{pascalCase featureName}}Config({
+        validation: {
+          minNameLength: 5,
+          requiredFields: ['name'],
+        },
+      });
+
+      expect(config.validation.minNameLength).toBe(5);
+      expect(config.validation.requiredFields).toEqual(['name']);
+      expect(config.validation.namePattern).toBe(DEFAULT_{{constantCase featureName}}_CONFIG.validation.namePattern);
+    });
+  });
+
+  describe('validate{{pascalCase featureName}}Config', () => {
+    it('should validate default config as valid', () => {
+      const result = validate{{pascalCase featureName}}Config(DEFAULT_{{constantCase featureName}}_CONFIG);
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it('should detect invalid page sizes', () => {
+      const config: {{pascalCase featureName}}FeatureConfig = {
+        ...DEFAULT_{{constantCase featureName}}_CONFIG,
+        defaultPageSize: 0,
+        maxPageSize: -1,
+      };
+
+      const result = validate{{pascalCase featureName}}Config(config);
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('defaultPageSize must be greater than 0');
+      expect(result.errors).toContain('maxPageSize must be greater than 0');
+    });
+
+    it('should detect when defaultPageSize exceeds maxPageSize', () => {
+      const config: {{pascalCase featureName}}FeatureConfig = {
+        ...DEFAULT_{{constantCase featureName}}_CONFIG,
+        defaultPageSize: 50,
+        maxPageSize: 25,
+      };
+
+      const result = validate{{pascalCase featureName}}Config(config);
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('defaultPageSize cannot exceed maxPageSize');
+    });
+
+    it('should detect invalid length configurations', () => {
+      const config: {{pascalCase featureName}}FeatureConfig = {
+        ...DEFAULT_{{constantCase featureName}}_CONFIG,
+        maxNameLength: 0,
+        maxDescriptionLength: -1,
+        validation: {
+          ...DEFAULT_{{constantCase featureName}}_CONFIG.validation,
+          minNameLength: -1,
+        },
+      };
+
+      const result = validate{{pascalCase featureName}}Config(config);
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('maxNameLength must be greater than 0');
+      expect(result.errors).toContain('maxDescriptionLength cannot be negative');
+      expect(result.errors).toContain('minNameLength cannot be negative');
+    });
+
+    it('should detect when minNameLength exceeds maxNameLength', () => {
+      const config: {{pascalCase featureName}}FeatureConfig = {
+        ...DEFAULT_{{constantCase featureName}}_CONFIG,
+        maxNameLength: 10,
+        validation: {
+          ...DEFAULT_{{constantCase featureName}}_CONFIG.validation,
+          minNameLength: 20,
+        },
+      };
+
+      const result = validate{{pascalCase featureName}}Config(config);
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('minNameLength cannot exceed maxNameLength');
+    });
+
+    it('should detect invalid cache times', () => {
+      const config: {{pascalCase featureName}}FeatureConfig = {
+        ...DEFAULT_{{constantCase featureName}}_CONFIG,
+        defaultCacheTime: -1,
+        staleTime: -1,
+      };
+
+      const result = validate{{pascalCase featureName}}Config(config);
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('defaultCacheTime cannot be negative');
+      expect(result.errors).toContain('staleTime cannot be negative');
+    });
+
+    it('should return empty errors for valid config', () => {
+      const config: {{pascalCase featureName}}FeatureConfig = {
+        ...DEFAULT_{{constantCase featureName}}_CONFIG,
+        maxPageSize: 50,
+        defaultPageSize: 25,
+      };
+
+      const result = validate{{pascalCase featureName}}Config(config);
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+  });
+});

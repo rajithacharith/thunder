@@ -88,8 +88,8 @@ func (ts *UserTreeValidationTestSuite) TestCreateUserByPathWithValidSchema() {
 	createUserReq := CreateUserByPathRequest{
 		Type: schemaName,
 		Attributes: json.RawMessage(`{
-			"firstName": "Alice",
-			"lastName": "Johnson",
+			"given_name": "Alice",
+			"family_name": "Johnson",
 			"email": "alice.johnson@company.com",
 			"department": "Marketing",
 			"isManager": true
@@ -105,12 +105,12 @@ func (ts *UserTreeValidationTestSuite) TestCreateUserByPathWithInvalidSchema() {
 	// Create a user schema
 	_, schemaName := ts.createEmployeeSchema()
 
-	// Create a user with invalid data (wrong type for firstName)
+	// Create a user with invalid data (wrong type for given_name)
 	createUserReq := CreateUserByPathRequest{
 		Type: schemaName,
 		Attributes: json.RawMessage(`{
-			"firstName": 456,
-			"lastName": "Smith",
+			"given_name": 456,
+			"family_name": "Smith",
 			"email": "invalid@company.com",
 			"department": "HR",
 			"isManager": false
@@ -176,14 +176,14 @@ func (ts *UserTreeValidationTestSuite) createEmployeeSchema() (string, string) {
 	schema := CreateUserSchemaRequest{
 		Name: schemaName,
 		Schema: json.RawMessage(`{
-			"firstName": {"type": "string"},
-			"lastName": {"type": "string"},
+			"given_name": {"type": "string"},
+			"family_name": {"type": "string"},
 			"email": {"type": "string"},
 			"department": {"type": "string"},
 			"isManager": {"type": "boolean"}
 		}`),
 	}
-	schema.OrganizationUnitID = ts.ou1ID
+	schema.OUID = ts.ou1ID
 
 	schemaID := ts.createSchema(schema)
 	return schemaID, schemaName
@@ -218,7 +218,7 @@ func (ts *UserTreeValidationTestSuite) createComplexSchema() (string, string) {
 			}
 		}`),
 	}
-	schema.OrganizationUnitID = ts.ou1ID
+	schema.OUID = ts.ou1ID
 
 	schemaID := ts.createSchema(schema)
 	return schemaID, schemaName

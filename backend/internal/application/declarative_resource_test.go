@@ -19,6 +19,9 @@
 package application_test
 
 import (
+	"github.com/stretchr/testify/mock"
+
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,11 +35,11 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 )
 
-// ApplicationExporterTestSuite tests the ApplicationExporter.
+// ApplicationExporterTestSuite tests the applicationExporter.
 type ApplicationExporterTestSuite struct {
 	suite.Suite
 	mockService *applicationmock.ApplicationServiceInterfaceMock
-	exporter    *application.ApplicationExporter
+	exporter    declarativeresource.ResourceExporter
 	logger      *log.Logger
 }
 
@@ -70,9 +73,9 @@ func (s *ApplicationExporterTestSuite) TestGetAllResourceIDs_Success() {
 		},
 	}
 
-	s.mockService.EXPECT().GetApplicationList().Return(expectedApps, nil)
+	s.mockService.EXPECT().GetApplicationList(mock.Anything).Return(expectedApps, nil)
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 2)
@@ -86,9 +89,9 @@ func (s *ApplicationExporterTestSuite) TestGetAllResourceIDs_Error() {
 		Error: "test error",
 	}
 
-	s.mockService.EXPECT().GetApplicationList().Return(nil, expectedError)
+	s.mockService.EXPECT().GetApplicationList(mock.Anything).Return(nil, expectedError)
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), ids)
 	assert.Equal(s.T(), expectedError, err)
@@ -99,9 +102,9 @@ func (s *ApplicationExporterTestSuite) TestGetAllResourceIDs_EmptyList() {
 		Applications: []model.BasicApplicationResponse{},
 	}
 
-	s.mockService.EXPECT().GetApplicationList().Return(expectedApps, nil)
+	s.mockService.EXPECT().GetApplicationList(mock.Anything).Return(expectedApps, nil)
 
-	ids, err := s.exporter.GetAllResourceIDs()
+	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 0)
@@ -113,9 +116,9 @@ func (s *ApplicationExporterTestSuite) TestGetResourceByID_Success() {
 		Name: "Test App",
 	}
 
-	s.mockService.EXPECT().GetApplication("app1").Return(expectedApp, nil)
+	s.mockService.EXPECT().GetApplication(mock.Anything, "app1").Return(expectedApp, nil)
 
-	resource, name, err := s.exporter.GetResourceByID("app1")
+	resource, name, err := s.exporter.GetResourceByID(context.Background(), "app1")
 
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), "Test App", name)
@@ -128,9 +131,9 @@ func (s *ApplicationExporterTestSuite) TestGetResourceByID_Error() {
 		Error: "test error",
 	}
 
-	s.mockService.EXPECT().GetApplication("app1").Return(nil, expectedError)
+	s.mockService.EXPECT().GetApplication(mock.Anything, "app1").Return(nil, expectedError)
 
-	resource, name, err := s.exporter.GetResourceByID("app1")
+	resource, name, err := s.exporter.GetResourceByID(context.Background(), "app1")
 
 	assert.Nil(s.T(), resource)
 	assert.Empty(s.T(), name)
@@ -175,8 +178,4 @@ func (s *ApplicationExporterTestSuite) TestValidateResource_EmptyName() {
 	assert.Equal(s.T(), "app1", err.ResourceID)
 	assert.Equal(s.T(), "APP_VALIDATION_ERROR", err.Code)
 	assert.Contains(s.T(), err.Error, "name is empty")
-}
-
-func (s *ApplicationExporterTestSuite) TestApplicationExporterImplementsInterface() {
-	var _ declarativeresource.ResourceExporter = (*application.ApplicationExporter)(nil)
 }

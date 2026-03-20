@@ -19,10 +19,13 @@
 package authz
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 
+	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
+	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 )
@@ -41,16 +44,17 @@ const (
 	jsonDataKeyCodeChallenge       = "code_challenge"
 	jsonDataKeyCodeChallengeMethod = "code_challenge_method"
 	jsonDataKeyResource            = "resource"
-	jsonDataKeyUserAttributes      = "user_attributes"
+	jsonDataKeyAttributeCacheID    = "attribute_cache_id"
+	jsonDataKeyClaimsRequest       = "claims_request"
+	jsonDataKeyClaimsLocales       = "claims_locales"
+	jsonDataKeyNonce               = "nonce"
 )
 
 // AuthorizationCodeStoreInterface defines the interface for managing authorization codes.
 type AuthorizationCodeStoreInterface interface {
-	InsertAuthorizationCode(authzCode AuthorizationCode) error
-	GetAuthorizationCode(clientID, authCode string) (*AuthorizationCode, error)
-	DeactivateAuthorizationCode(authzCode AuthorizationCode) error
-	RevokeAuthorizationCode(authzCode AuthorizationCode) error
-	ExpireAuthorizationCode(authzCode AuthorizationCode) error
+	InsertAuthorizationCode(ctx context.Context, authzCode AuthorizationCode) error
+	ConsumeAuthorizationCode(ctx context.Context, clientID, authCode string) (bool, error)
+	GetAuthorizationCode(ctx context.Context, clientID, authCode string) (*AuthorizationCode, error)
 }
 
 // authorizationCodeStore implements the AuthorizationCodeStoreInterface for managing authorization codes.
@@ -68,7 +72,7 @@ func newAuthorizationCodeStore() AuthorizationCodeStoreInterface {
 }
 
 // InsertAuthorizationCode inserts a new authorization code into the database.
-func (acs *authorizationCodeStore) InsertAuthorizationCode(authzCode AuthorizationCode) error {
+func (acs *authorizationCodeStore) InsertAuthorizationCode(ctx context.Context, authzCode AuthorizationCode) error {
 	dbClient, err := acs.dbProvider.GetRuntimeDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -79,7 +83,7 @@ func (acs *authorizationCodeStore) InsertAuthorizationCode(authzCode Authorizati
 		return err
 	}
 
-	_, err = dbClient.Execute(queryInsertAuthorizationCode, authzCode.CodeID, authzCode.Code,
+	_, err = dbClient.ExecuteContext(ctx, queryInsertAuthorizationCode, authzCode.CodeID, authzCode.Code,
 		authzCode.ClientID, authzCode.State, jsonDataBytes, authzCode.TimeCreated, authzCode.ExpiryTime,
 		acs.deploymentID)
 	if err != nil {
@@ -89,50 +93,44 @@ func (acs *authorizationCodeStore) InsertAuthorizationCode(authzCode Authorizati
 	return nil
 }
 
+// ConsumeAuthorizationCode atomically consumes an active authorization code (ACTIVE → INACTIVE).
+// Returns true if this call consumed the code, false if the code was not in ACTIVE state.
+func (acs *authorizationCodeStore) ConsumeAuthorizationCode(
+	ctx context.Context, clientID, authCode string,
+) (bool, error) {
+	dbClient, err := acs.dbProvider.GetRuntimeDBClient()
+	if err != nil {
+		return false, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	rowsAffected, err := dbClient.ExecuteContext(ctx, queryConsumeAuthorizationCode,
+		AuthCodeStateInactive, clientID, authCode, AuthCodeStateActive, acs.deploymentID)
+	if err != nil {
+		return false, fmt.Errorf("error consuming authorization code: %w", err)
+	}
+
+	return rowsAffected > 0, nil
+}
+
 // GetAuthorizationCode retrieves an authorization code by client Id and authorization code.
-func (acs *authorizationCodeStore) GetAuthorizationCode(clientID, authCode string) (*AuthorizationCode, error) {
+func (acs *authorizationCodeStore) GetAuthorizationCode(
+	ctx context.Context, clientID, authCode string,
+) (*AuthorizationCode, error) {
 	dbClient, err := acs.dbProvider.GetRuntimeDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryGetAuthorizationCode, clientID, authCode, acs.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryGetAuthorizationCode, clientID, authCode, acs.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("error while retrieving authorization code: %w", err)
 	}
 	if len(results) == 0 {
-		return nil, ErrAuthorizationCodeNotFound
+		return nil, errAuthorizationCodeNotFound
 	}
 	row := results[0]
 
 	return buildAuthorizationCodeFromResultRow(row)
-}
-
-// DeactivateAuthorizationCode deactivates an authorization code.
-func (acs *authorizationCodeStore) DeactivateAuthorizationCode(authzCode AuthorizationCode) error {
-	return acs.updateAuthorizationCodeState(authzCode, AuthCodeStateInactive)
-}
-
-// RevokeAuthorizationCode revokes an authorization code.
-func (acs *authorizationCodeStore) RevokeAuthorizationCode(authzCode AuthorizationCode) error {
-	return acs.updateAuthorizationCodeState(authzCode, AuthCodeStateRevoked)
-}
-
-// ExpireAuthorizationCode expires an authorization code.
-func (acs *authorizationCodeStore) ExpireAuthorizationCode(authzCode AuthorizationCode) error {
-	return acs.updateAuthorizationCodeState(authzCode, AuthCodeStateExpired)
-}
-
-// updateAuthorizationCodeState updates the state of an authorization code.
-func (acs *authorizationCodeStore) updateAuthorizationCodeState(authzCode AuthorizationCode,
-	newState string) error {
-	dbClient, err := acs.dbProvider.GetRuntimeDBClient()
-	if err != nil {
-		return fmt.Errorf("failed to get database client: %w", err)
-	}
-
-	_, err = dbClient.Execute(queryUpdateAuthorizationCodeState, newState, authzCode.CodeID, acs.deploymentID)
-	return err
 }
 
 // getJSONDataBytes prepares the JSON data bytes for the authorization code.
@@ -144,11 +142,18 @@ func (acs *authorizationCodeStore) getJSONDataBytes(authzCode AuthorizationCode)
 		jsonDataKeyCodeChallenge:       authzCode.CodeChallenge,
 		jsonDataKeyCodeChallengeMethod: authzCode.CodeChallengeMethod,
 		jsonDataKeyResource:            authzCode.Resource,
+		jsonDataKeyClaimsLocales:       authzCode.ClaimsLocales,
+		jsonDataKeyNonce:               authzCode.Nonce,
 	}
 
 	// Include user attributes if present
-	if len(authzCode.UserAttributes) > 0 {
-		jsonData[jsonDataKeyUserAttributes] = authzCode.UserAttributes
+	if len(authzCode.AttributeCacheID) > 0 {
+		jsonData[jsonDataKeyAttributeCacheID] = authzCode.AttributeCacheID
+	}
+
+	// Include claims request if present
+	if authzCode.ClaimsRequest != nil {
+		jsonData[jsonDataKeyClaimsRequest] = authzCode.ClaimsRequest
 	}
 
 	jsonDataBytes, err := json.Marshal(jsonData)
@@ -165,7 +170,7 @@ func buildAuthorizationCodeFromResultRow(row map[string]interface{}) (*Authoriza
 		return nil, errors.New("code ID is of unexpected type")
 	}
 	if codeID == "" {
-		return nil, ErrAuthorizationCodeNotFound
+		return nil, errAuthorizationCodeNotFound
 	}
 
 	authorizationCode, ok := row[columnNameAuthorizationCode].(string)
@@ -250,10 +255,38 @@ func appendAuthzDataJSON(row map[string]interface{}, authzCode *AuthorizationCod
 	if resource, ok := authzData[jsonDataKeyResource].(string); ok {
 		authzCode.Resource = resource
 	}
+	if claimsLocales, ok := authzData[jsonDataKeyClaimsLocales].(string); ok {
+		authzCode.ClaimsLocales = claimsLocales
+	}
+	if nonce, ok := authzData[jsonDataKeyNonce].(string); ok {
+		authzCode.Nonce = nonce
+	}
+	if attributeCacheID, ok := authzData[jsonDataKeyAttributeCacheID].(string); ok {
+		authzCode.AttributeCacheID = attributeCacheID
+	}
 
-	if userAttrs, ok := authzData[jsonDataKeyUserAttributes].(map[string]interface{}); ok && userAttrs != nil {
-		authzCode.UserAttributes = userAttrs
+	if claimsData, ok := authzData[jsonDataKeyClaimsRequest]; ok && claimsData != nil {
+		claimsRequest, err := parseClaimsRequestFromJSON(claimsData)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse claims_request from authorization code: %w", err)
+		}
+		authzCode.ClaimsRequest = claimsRequest
 	}
 
 	return authzCode, nil
+}
+
+// parseClaimsRequestFromJSON parses a ClaimsRequest from JSON data stored in the database.
+func parseClaimsRequestFromJSON(data interface{}) (*oauth2model.ClaimsRequest, error) {
+	if data == nil {
+		return nil, nil
+	}
+
+	// Marshal the data to JSON string
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal claims_request: %w", err)
+	}
+
+	return oauth2utils.ParseClaimsRequest(string(jsonBytes))
 }

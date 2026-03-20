@@ -63,15 +63,16 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
+				"credential": true,
 			},
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 		},
@@ -129,13 +130,13 @@ var (
 						{
 							"ref":        "input_001",
 							"identifier": "username",
-							"type":       "string",
+							"type":       "TEXT_INPUT",
 							"required":   true,
 						},
 						{
 							"ref":        "input_002",
 							"identifier": "password",
-							"type":       "string",
+							"type":       "PASSWORD_INPUT",
 							"required":   true,
 						},
 					},
@@ -189,7 +190,7 @@ func (ts *AuthzTestSuite) SetupSuite() {
 	}
 	testOUID = ouID
 
-	testUserSchema.OrganizationUnitId = ouID
+	testUserSchema.OUID = ouID
 	schemaID, err := testutils.CreateUserType(testUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user type: %v", err)
@@ -327,7 +328,7 @@ func (ts *AuthzTestSuite) TestBasicAuthorizationRequest() {
 			Scope:          "openid",
 			State:          "test_state_456",
 			ExpectedStatus: http.StatusFound,
-			ExpectedError:  "invalid_client",
+			ExpectedError:  "invalid_request",
 		},
 		{
 			Name:           "Invalid Response Type",
@@ -415,14 +416,14 @@ func (ts *AuthzTestSuite) TestTokenRequestValidation() {
 	password := "testpass123"
 
 	user := testutils.User{
-		OrganizationUnit: testOUID,
+		OUID:             testOUID,
 		Type:             "authz-test-person",
 		Attributes: json.RawMessage(fmt.Sprintf(`{
 			"username": "%s",
 			"password": "%s",
 			"email": "%s@example.com",
-			"firstName": "Test",
-			"lastName": "User"
+			"given_name": "Test",
+			"family_name": "User"
 		}`, username, password, username)),
 	}
 	userID, err := testutils.CreateUser(user)
@@ -455,7 +456,7 @@ func (ts *AuthzTestSuite) TestTokenRequestValidation() {
 			RedirectURI:    redirectURI,
 			GrantType:      "authorization_code",
 			ExpectedStatus: http.StatusBadRequest,
-			ExpectedError:  "invalid_grant",
+			ExpectedError:  "invalid_request",
 		},
 		{
 			Name:           "No Client ID",
@@ -464,8 +465,8 @@ func (ts *AuthzTestSuite) TestTokenRequestValidation() {
 			Code:           validAuthzCode,
 			RedirectURI:    redirectURI,
 			GrantType:      "authorization_code",
-			ExpectedStatus: http.StatusUnauthorized,
-			ExpectedError:  "invalid_client",
+			ExpectedStatus: http.StatusBadRequest,
+			ExpectedError:  "invalid_request",
 		},
 		{
 			Name:           "No Client ID and Secret",
@@ -474,8 +475,8 @@ func (ts *AuthzTestSuite) TestTokenRequestValidation() {
 			Code:           validAuthzCode,
 			RedirectURI:    redirectURI,
 			GrantType:      "authorization_code",
-			ExpectedStatus: http.StatusUnauthorized,
-			ExpectedError:  "invalid_client",
+			ExpectedStatus: http.StatusBadRequest,
+			ExpectedError:  "invalid_request",
 		},
 		{
 			Name:           "No Client Secret",
@@ -774,14 +775,14 @@ func (ts *AuthzTestSuite) TestCompleteAuthorizationCodeFlow() {
 		ts.Run(tc.Name, func() {
 			// Create test user with credentials
 			user := testutils.User{
-				OrganizationUnit: testOUID,
+				OUID:             testOUID,
 				Type:             "authz-test-person",
 				Attributes: json.RawMessage(fmt.Sprintf(`{
 					"username": "%s",
 					"password": "%s",
 					"email": "%s@example.com",
-					"firstName": "Test",
-					"lastName": "User"
+					"given_name": "Test",
+					"family_name": "User"
 				}`, tc.Username, tc.Password, tc.Username)),
 			}
 			userID, err := testutils.CreateUser(user)
@@ -904,14 +905,14 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeErrorScenarios() {
 		ts.Run(tc.Name, func() {
 			// Create test user
 			user := testutils.User{
-				OrganizationUnit: testOUID,
+				OUID:             testOUID,
 				Type:             "authz-test-person",
 				Attributes: json.RawMessage(fmt.Sprintf(`{
 					"username": "%s",
 					"password": "%s",
 					"email": "%s@example.com",
-					"firstName": "Test",
-					"lastName": "User"
+					"given_name": "Test",
+					"family_name": "User"
 				}`, tc.Username, tc.Password, tc.Username)),
 			}
 			userID, err := testutils.CreateUser(user)
@@ -989,14 +990,14 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithResourceParameter() {
 
 	// Create test user
 	user := testutils.User{
-		OrganizationUnit: testOUID,
+		OUID:             testOUID,
 		Type:             "authz-test-person",
 		Attributes: json.RawMessage(`{
 			"username": "resourcetest",
 			"password": "testpass123",
 			"email": "resourcetest@example.com",
-			"firstName": "Resource",
-			"lastName": "Test"
+			"given_name": "Resource",
+			"family_name": "Test"
 		}`),
 	}
 	userID, err := testutils.CreateUser(user)
@@ -1090,4 +1091,277 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithResourceParameter() {
 	aud, ok := claims["aud"]
 	ts.True(ok, "Audience claim should be present in access token")
 	ts.Equal(resourceURL, aud, "Audience should match the resource parameter")
+}
+
+// TestAuthorizationCodeFlowWithClaimsLocales tests that claims_locales parameter is accepted and stored
+func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithClaimsLocales() {
+	// Test that claims_locales parameter is properly handled in authorization flow
+	claimsLocales := "en-US fr-CA ja"
+
+	// Create test user
+	user := testutils.User{
+		OUID:             testOUID,
+		Type:             "authz-test-person",
+		Attributes: json.RawMessage(`{
+			"username": "localestest",
+			"password": "testpass123",
+			"email": "localestest@example.com",
+			"given_name": "Locales",
+			"family_name": "Test"
+		}`),
+	}
+	userID, err := testutils.CreateUser(user)
+	ts.NoError(err, "Failed to create test user")
+	defer func() {
+		if err := testutils.DeleteUser(userID); err != nil {
+			ts.T().Logf("Warning: Failed to delete test user: %v", err)
+		}
+	}()
+
+	// Start authorization flow with claims_locales parameter
+	resp, err := testutils.InitiateAuthorizationFlowWithClaimsLocales(
+		clientID, redirectURI, "code", "openid", "test_locales_state", claimsLocales,
+	)
+	ts.NoError(err, "Failed to initiate authorization flow with claims_locales")
+	if resp == nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	ts.Equal(http.StatusFound, resp.StatusCode, "Expected redirect status")
+	location := resp.Header.Get("Location")
+	ts.NotEmpty(location, "Expected redirect location header")
+
+	authId, flowId, err := testutils.ExtractAuthData(location)
+	ts.NoError(err, "Failed to extract auth ID")
+
+	// Initiate authentication flow
+	_, err = testutils.ExecuteAuthenticationFlow(flowId, nil, "")
+	ts.NoError(err, "Failed to initiate authentication flow")
+
+	// Execute authentication flow
+	flowStep, err := testutils.ExecuteAuthenticationFlow(flowId, map[string]string{
+		"username": "localestest",
+		"password": "testpass123",
+	}, "action_001")
+	ts.NoError(err, "Failed to execute authentication flow")
+	ts.Equal("COMPLETE", flowStep.FlowStatus, "Expected flow status COMPLETE")
+
+	// Complete authorization
+	authzResponse, err := testutils.CompleteAuthorization(authId, flowStep.Assertion)
+	ts.NoError(err, "Failed to complete authorization")
+
+	// Extract authorization code
+	authzCode, err := testutils.ExtractAuthorizationCode(authzResponse.RedirectURI)
+	ts.NoError(err, "Failed to extract authorization code")
+	ts.NotEmpty(authzCode, "Authorization code should be present")
+
+	// Exchange authorization code for access token
+	result, err := testutils.RequestToken(clientID, clientSecret, authzCode, redirectURI, "authorization_code")
+	ts.NoError(err, "Failed to exchange code for token")
+	ts.Equal(http.StatusOK, result.StatusCode, "Token request should succeed")
+
+	// Verify token response
+	tokenResponse := result.Token
+	ts.NotEmpty(tokenResponse.AccessToken, "Access token should be present")
+	ts.Equal("Bearer", tokenResponse.TokenType, "Token type should be Bearer")
+	ts.True(tokenResponse.ExpiresIn > 0, "Expires in should be greater than 0")
+
+	// Decode JWT to verify basic claims
+	parts := strings.Split(tokenResponse.AccessToken, ".")
+	ts.Len(parts, 3, "Access token should be a JWT with 3 parts")
+
+	payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[1])
+	ts.NoError(err, "Failed to decode JWT payload")
+
+	var claims map[string]interface{}
+	err = json.Unmarshal(payloadBytes, &claims)
+	ts.NoError(err, "Failed to unmarshal JWT claims")
+
+	ts.Equal(clientID, claims["aud"], "Audience claim should match client_id")
+	ts.Equal("openid", claims["scope"], "Scope claim should match requested scope")
+	ts.Equal(userID, claims["sub"], "Subject claim should match authenticated user ID")
+	ts.Equal(claimsLocales, claims["claims_locales"], "claims_locales claim should match requested value")
+}
+
+// TestAuthorizationCodeFlowWithNonce verifies that when a nonce is sent in the
+// authorization request, the same nonce value is included in the issued ID token.
+// This ensures compliance with OIDC replay protection requirements.
+func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithNonce() {
+	nonce := "test-nonce-123"
+
+	// Create test user
+	user := testutils.User{
+		OUID:             testOUID,
+		Type:             "authz-test-person",
+		Attributes: json.RawMessage(`{
+			"username": "noncetest",
+			"password": "testpass123",
+			"email": "noncetest@example.com",
+			"given_name": "Nonce",
+			"family_name": "Test"
+		}`),
+	}
+
+	userID, err := testutils.CreateUser(user)
+	ts.NoError(err, "Failed to create test user")
+	defer func() {
+		_ = testutils.DeleteUser(userID)
+	}()
+
+	// Start authorization flow WITH nonce
+	resp, err := testutils.InitiateAuthorizationFlowWithNonce(
+		clientID,
+		redirectURI,
+		"code",
+		"openid",
+		"test_nonce_state",
+		nonce,
+	)
+	ts.NoError(err)
+	defer resp.Body.Close()
+
+	ts.Equal(http.StatusFound, resp.StatusCode)
+
+	location := resp.Header.Get("Location")
+	authId, flowId, err := testutils.ExtractAuthData(location)
+	ts.NoError(err)
+
+	// Initiate auth flow
+	_, err = testutils.ExecuteAuthenticationFlow(flowId, nil, "")
+	ts.NoError(err)
+
+	// Execute credentials
+	flowStep, err := testutils.ExecuteAuthenticationFlow(flowId, map[string]string{
+		"username": "noncetest",
+		"password": "testpass123",
+	}, "action_001")
+	ts.NoError(err)
+	ts.Equal("COMPLETE", flowStep.FlowStatus)
+
+	// Complete authorization
+	authzResponse, err := testutils.CompleteAuthorization(authId, flowStep.Assertion)
+	ts.NoError(err)
+
+	authzCode, err := testutils.ExtractAuthorizationCode(authzResponse.RedirectURI)
+	ts.NoError(err)
+
+	// Exchange code for token
+	result, err := testutils.RequestToken(
+		clientID,
+		clientSecret,
+		authzCode,
+		redirectURI,
+		"authorization_code",
+	)
+	ts.NoError(err)
+	ts.Equal(http.StatusOK, result.StatusCode)
+
+	tokenResponse := result.Token
+
+	ts.NotEmpty(tokenResponse.IDToken, "ID token must be present")
+
+	// Decode ID token
+	parts := strings.Split(tokenResponse.IDToken, ".")
+	ts.Len(parts, 3)
+
+	payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[1])
+	ts.NoError(err)
+
+	var claims map[string]interface{}
+	err = json.Unmarshal(payloadBytes, &claims)
+	ts.NoError(err)
+
+	ts.Equal(nonce, claims["nonce"], "Nonce claim must match requested nonce")
+}
+
+// TestNonceIgnoredWithoutOpenIDScope verifies that nonce is ignored
+// when openid scope is NOT requested
+func (ts *AuthzTestSuite) TestNonceIgnoredWithoutOpenIDScope() {
+
+	nonce := "should-not-be-present"
+
+	// Create test user
+	user := testutils.User{
+		OUID:             testOUID,
+		Type:             "authz-test-person",
+		Attributes: json.RawMessage(`{
+			"username": "nonopeniduser",
+			"password": "testpass123",
+			"email": "nonopeniduser@example.com",
+			"given_name": "No",
+			"family_name": "OpenID"
+		}`),
+	}
+
+	userID, err := testutils.CreateUser(user)
+	ts.NoError(err)
+	defer func() {
+		_ = testutils.DeleteUser(userID)
+	}()
+
+	// Start authorization flow WITHOUT openid scope
+	resp, err := testutils.InitiateAuthorizationFlowWithNonce(
+		clientID,
+		redirectURI,
+		"code",
+		"profile", // No openid scope
+		"test_state_no_openid",
+		nonce,
+	)
+	ts.NoError(err)
+	defer resp.Body.Close()
+
+	ts.Equal(http.StatusFound, resp.StatusCode)
+
+	location := resp.Header.Get("Location")
+	authId, flowId, err := testutils.ExtractAuthData(location)
+	ts.NoError(err)
+
+	// Execute authentication flow
+	_, err = testutils.ExecuteAuthenticationFlow(flowId, nil, "")
+	ts.NoError(err)
+
+	flowStep, err := testutils.ExecuteAuthenticationFlow(flowId, map[string]string{
+		"username": "nonopeniduser",
+		"password": "testpass123",
+	}, "action_001")
+	ts.NoError(err)
+	ts.Equal("COMPLETE", flowStep.FlowStatus)
+
+	// Complete authorization
+	authzResponse, err := testutils.CompleteAuthorization(authId, flowStep.Assertion)
+	ts.NoError(err)
+
+	authzCode, err := testutils.ExtractAuthorizationCode(authzResponse.RedirectURI)
+	ts.NoError(err)
+
+	// Exchange code for token
+	result, err := testutils.RequestToken(
+		clientID,
+		clientSecret,
+		authzCode,
+		redirectURI,
+		"authorization_code",
+	)
+	ts.NoError(err)
+	ts.Equal(http.StatusOK, result.StatusCode)
+
+	tokenResponse := result.Token
+
+	// 🔎 If ID token exists, ensure nonce is NOT present
+	if tokenResponse.IDToken != "" {
+		parts := strings.Split(tokenResponse.IDToken, ".")
+		ts.Len(parts, 3)
+
+		payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[1])
+		ts.NoError(err)
+
+		var claims map[string]interface{}
+		err = json.Unmarshal(payloadBytes, &claims)
+		ts.NoError(err)
+
+		_, exists := claims["nonce"]
+		ts.False(exists, "Nonce must not be included when openid scope is absent")
+	}
 }

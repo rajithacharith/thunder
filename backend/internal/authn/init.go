@@ -21,7 +21,10 @@ package authn
 import (
 	"net/http"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+
 	"github.com/asgardeo/thunder/internal/authn/assert"
+	"github.com/asgardeo/thunder/internal/authn/consent"
 	"github.com/asgardeo/thunder/internal/authn/credentials"
 	"github.com/asgardeo/thunder/internal/authn/github"
 	"github.com/asgardeo/thunder/internal/authn/google"
@@ -29,11 +32,15 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/authn/otp"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
+	"github.com/asgardeo/thunder/internal/authn/reactsdk"
+	"github.com/asgardeo/thunder/internal/authnprovider"
+	consentmgt "github.com/asgardeo/thunder/internal/consent"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 // AuthServiceRegistry holds references to all authentication services.
@@ -46,17 +53,23 @@ type AuthServiceRegistry struct {
 	GoogleOIDCAuthnService  google.GoogleOIDCAuthnServiceInterface
 	AuthAssertGenerator     assert.AuthAssertGeneratorInterface
 	PasskeyService          passkey.PasskeyServiceInterface
+	ConsentEnforcerService  consent.ConsentEnforcerServiceInterface
 }
 
 // Initialize initializes the authentication service and registers its routes.
 func Initialize(
 	mux *http.ServeMux,
+	mcpServer *mcp.Server,
 	idpSvc idp.IDPServiceInterface,
 	jwtSvc jwt.JWTServiceInterface,
 	userSvc user.UserServiceInterface,
+	userProvider userprovider.UserProviderInterface,
 	otpSvc notification.OTPServiceInterface,
+	authnProvider authnprovider.AuthnProviderInterface,
+	consentSvc consentmgt.ConsentServiceInterface,
 ) (AuthenticationServiceInterface, *AuthServiceRegistry) {
-	authServiceRegistry := createAuthServiceRegistry(idpSvc, jwtSvc, userSvc, otpSvc)
+	authServiceRegistry := createAuthServiceRegistry(idpSvc, jwtSvc,
+		userSvc, userProvider, otpSvc, authnProvider, consentSvc)
 	authnService := newAuthenticationService(
 		idpSvc,
 		jwtSvc,
@@ -73,6 +86,11 @@ func Initialize(
 	authnHandler := newAuthenticationHandler(authnService)
 	registerRoutes(mux, authnHandler)
 
+	// Register MCP tools
+	if mcpServer != nil {
+		reactsdk.RegisterTools(mcpServer)
+	}
+
 	return authnService, authServiceRegistry
 }
 
@@ -81,17 +99,21 @@ func createAuthServiceRegistry(
 	idpSvc idp.IDPServiceInterface,
 	jwtSvc jwt.JWTServiceInterface,
 	userSvc user.UserServiceInterface,
+	userProvider userprovider.UserProviderInterface,
 	otpSvc notification.OTPServiceInterface,
+	authnProvider authnprovider.AuthnProviderInterface,
+	consentSvc consentmgt.ConsentServiceInterface,
 ) *AuthServiceRegistry {
 	return &AuthServiceRegistry{
-		CredentialsAuthnService: credentials.Initialize(userSvc),
-		OTPAuthnService:         otp.Initialize(otpSvc, userSvc),
-		OAuthAuthnService:       oauth.Initialize(idpSvc, userSvc),
-		OIDCAuthnService:        oidc.Initialize(idpSvc, userSvc, jwtSvc),
-		GithubOAuthAuthnService: github.Initialize(idpSvc, userSvc),
-		GoogleOIDCAuthnService:  google.Initialize(idpSvc, userSvc, jwtSvc),
+		CredentialsAuthnService: credentials.Initialize(authnProvider),
+		OTPAuthnService:         otp.Initialize(otpSvc, userProvider),
+		OAuthAuthnService:       oauth.Initialize(idpSvc, userProvider),
+		OIDCAuthnService:        oidc.Initialize(idpSvc, userProvider, jwtSvc),
+		GithubOAuthAuthnService: github.Initialize(idpSvc, userProvider),
+		GoogleOIDCAuthnService:  google.Initialize(idpSvc, userProvider, jwtSvc),
 		PasskeyService:          passkey.Initialize(userSvc),
 		AuthAssertGenerator:     assert.Initialize(),
+		ConsentEnforcerService:  consent.Initialize(consentSvc, jwtSvc),
 	}
 }
 

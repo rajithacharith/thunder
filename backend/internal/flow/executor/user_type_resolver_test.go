@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -79,7 +80,6 @@ func createMockUserTypeResolverExecutor(t *testing.T) core.ExecutorInterface {
 	mockExec.On("GetName").Return(ExecutorNameUserTypeResolver).Maybe()
 	mockExec.On("GetType").Return(common.ExecutorTypeRegistration).Maybe()
 	mockExec.On("GetDefaultInputs").Return(defaultInputs).Maybe()
-	mockExec.On("GetDefaultMeta").Return(nil).Maybe()
 	mockExec.On("GetPrerequisites").Return([]common.Input{}).Maybe()
 
 	// HasRequiredInputs returns true if userType input is present
@@ -233,10 +233,10 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_Succ
 			userSchema := &userschema.UserSchema{
 				ID:                    "schema-123",
 				Name:                  tc.providedUserType,
-				OrganizationUnitID:    tc.expectedOUID,
+				OUID:                  tc.expectedOUID,
 				AllowSelfRegistration: true,
 			}
-			suite.mockUserSchemaService.On("GetUserSchemaByName", tc.providedUserType).
+			suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, tc.providedUserType).
 				Return(userSchema, nil)
 
 			result, err := suite.executor.Execute(ctx)
@@ -270,10 +270,10 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_NoOU
 	userSchema := &userschema.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
-		OrganizationUnitID:    "",
+		OUID:                  "",
 		AllowSelfRegistration: true,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(userSchema, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -329,7 +329,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_OURe
 		Error:            "Internal Server Error",
 		ErrorDescription: "Failed to retrieve OU",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(nil, svcErr)
 
 	result, err := suite.executor.Execute(ctx)
@@ -378,10 +378,10 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_Succes
 	userSchema := &userschema.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
-		OrganizationUnitID:    "ou-123",
+		OUID:                  "ou-123",
 		AllowSelfRegistration: true,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(userSchema, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -411,10 +411,10 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_NoOU()
 	userSchema := &userschema.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
-		OrganizationUnitID:    "",
+		OUID:                  "",
 		AllowSelfRegistration: true,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(userSchema, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -444,7 +444,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_OUReso
 		Error:            "Internal Server Error",
 		ErrorDescription: "Failed to retrieve OU",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(nil, svcErr)
 
 	result, err := suite.executor.Execute(ctx)
@@ -473,10 +473,10 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Pro
 		userSchema := &userschema.UserSchema{
 			ID:                    "schema-" + userType,
 			Name:                  userType,
-			OrganizationUnitID:    "ou-" + userType,
+			OUID:                  "ou-" + userType,
 			AllowSelfRegistration: true,
 		}
-		suite.mockUserSchemaService.On("GetUserSchemaByName", userType).
+		suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, userType).
 			Return(userSchema, nil)
 	}
 
@@ -518,10 +518,10 @@ func (suite *UserTypeResolverTestSuite) TestExecute_EmptyUserTypeInput() {
 		userSchema := &userschema.UserSchema{
 			ID:                    "schema-" + userType,
 			Name:                  userType,
-			OrganizationUnitID:    "ou-" + userType,
+			OUID:                  "ou-" + userType,
 			AllowSelfRegistration: true,
 		}
-		suite.mockUserSchemaService.On("GetUserSchemaByName", userType).
+		suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, userType).
 			Return(userSchema, nil)
 	}
 
@@ -558,10 +558,10 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_Self
 	userSchema := &userschema.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
-		OrganizationUnitID:    "ou-123",
+		OUID:                  "ou-123",
 		AllowSelfRegistration: false,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "employee").
 		Return(userSchema, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -589,10 +589,10 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_SelfRe
 	userSchema := &userschema.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
-		OrganizationUnitID:    "ou-123",
+		OUID:                  "ou-123",
 		AllowSelfRegistration: false,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "employee").
 		Return(userSchema, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -621,27 +621,27 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Onl
 	employeeSchema := &userschema.UserSchema{
 		ID:                    "schema-employee",
 		Name:                  "employee",
-		OrganizationUnitID:    "ou-employee",
+		OUID:                  "ou-employee",
 		AllowSelfRegistration: false,
 	}
 	customerSchema := &userschema.UserSchema{
 		ID:                    "schema-customer",
 		Name:                  "customer",
-		OrganizationUnitID:    "ou-customer",
+		OUID:                  "ou-customer",
 		AllowSelfRegistration: true,
 	}
 	partnerSchema := &userschema.UserSchema{
 		ID:                    "schema-partner",
 		Name:                  "partner",
-		OrganizationUnitID:    "ou-partner",
+		OUID:                  "ou-partner",
 		AllowSelfRegistration: false,
 	}
 
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(employeeSchema, nil)
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "customer").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "customer").
 		Return(customerSchema, nil)
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "partner").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "partner").
 		Return(partnerSchema, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -671,19 +671,19 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_NoS
 	employeeSchema := &userschema.UserSchema{
 		ID:                    "schema-employee",
 		Name:                  "employee",
-		OrganizationUnitID:    "ou-employee",
+		OUID:                  "ou-employee",
 		AllowSelfRegistration: false,
 	}
 	customerSchema := &userschema.UserSchema{
 		ID:                    "schema-customer",
 		Name:                  "customer",
-		OrganizationUnitID:    "ou-customer",
+		OUID:                  "ou-customer",
 		AllowSelfRegistration: false,
 	}
 
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(employeeSchema, nil)
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "customer").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "customer").
 		Return(customerSchema, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -712,7 +712,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Sch
 	employeeSchema := &userschema.UserSchema{
 		ID:                    "schema-employee",
 		Name:                  "employee",
-		OrganizationUnitID:    "ou-employee",
+		OUID:                  "ou-employee",
 		AllowSelfRegistration: true,
 	}
 	svcErr := &serviceerror.ServiceError{
@@ -722,9 +722,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Sch
 		ErrorDescription: "Failed to retrieve schema",
 	}
 
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(employeeSchema, nil)
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "customer").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "customer").
 		Return(nil, svcErr)
 
 	result, err := suite.executor.Execute(ctx)
@@ -741,13 +741,13 @@ func (suite *UserTypeResolverTestSuite) TestGetUserSchemaAndOU_Success() {
 	userSchema := &userschema.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
-		OrganizationUnitID:    "ou-123",
+		OUID:                  "ou-123",
 		AllowSelfRegistration: true,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", context.Background(), "employee").
 		Return(userSchema, nil)
 
-	schema, ouID, err := suite.executor.getUserSchemaAndOU("employee")
+	schema, ouID, err := suite.executor.getUserSchemaAndOU(context.Background(), "employee")
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), schema)
@@ -762,13 +762,13 @@ func (suite *UserTypeResolverTestSuite) TestGetUserSchemaAndOU_NoOUFound() {
 	userSchema := &userschema.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
-		OrganizationUnitID:    "",
+		OUID:                  "",
 		AllowSelfRegistration: true,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", context.Background(), "employee").
 		Return(userSchema, nil)
 
-	schema, ouID, err := suite.executor.getUserSchemaAndOU("employee")
+	schema, ouID, err := suite.executor.getUserSchemaAndOU(context.Background(), "employee")
 
 	assert.NotNil(suite.T(), err)
 	assert.Nil(suite.T(), schema)
@@ -786,40 +786,16 @@ func (suite *UserTypeResolverTestSuite) TestGetUserSchemaAndOU_SchemaNotFound() 
 		Error:            "Not Found",
 		ErrorDescription: "User schema not found",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", context.Background(), "employee").
 		Return(nil, svcErr)
 
-	schema, ouID, err := suite.executor.getUserSchemaAndOU("employee")
+	schema, ouID, err := suite.executor.getUserSchemaAndOU(context.Background(), "employee")
 
 	assert.NotNil(suite.T(), err)
 	assert.Nil(suite.T(), schema)
 	assert.Equal(suite.T(), "", ouID)
 	assert.Contains(suite.T(), err.Error(), "failed to resolve user schema for user type")
 	suite.mockUserSchemaService.AssertExpectations(suite.T())
-}
-
-func (suite *UserTypeResolverTestSuite) TestGetDefaultMeta() {
-	suite.SetupTest()
-
-	meta := suite.executor.GetDefaultMeta()
-
-	// Verify meta is returned and has proper structure
-	assert.NotNil(suite.T(), meta)
-	metaStruct, ok := meta.(core.MetaStructure)
-	assert.True(suite.T(), ok, "Meta should be of type core.MetaStructure")
-	assert.NotEmpty(suite.T(), metaStruct.Components, "Meta should contain components")
-
-	// MetaBuilder creates TEXT (heading), BLOCK (containing inputs), and ACTION (submit button) components
-	// Verify we have at least a BLOCK component (which contains the inputs)
-	foundBlock := false
-	for _, component := range metaStruct.Components {
-		if component.Type == "BLOCK" {
-			foundBlock = true
-			assert.NotEmpty(suite.T(), component.Components, "BLOCK should contain nested components (inputs)")
-			break
-		}
-	}
-	assert.True(suite.T(), foundBlock, "Meta should contain a BLOCK component with inputs")
 }
 
 func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeProvided_Success() {
@@ -835,11 +811,11 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeP
 	}
 
 	userSchema := &userschema.UserSchema{
-		ID:                 "schema-123",
-		Name:               "employee",
-		OrganizationUnitID: "ou-123",
+		ID:   "schema-123",
+		Name: "employee",
+		OUID: "ou-123",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
 		Return(userSchema, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -872,7 +848,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeP
 		Error:            "Not Found",
 		ErrorDescription: "User schema not found",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "invalid_user").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "invalid_user").
 		Return(nil, svcErr)
 
 	result, err := suite.executor.Execute(ctx)
@@ -899,7 +875,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 	emptyList := &userschema.UserSchemaListResponse{
 		Schemas: []userschema.UserSchemaListItem{},
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaList", 100, 0).
+	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0).
 		Return(emptyList, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -924,7 +900,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 		Type:  serviceerror.ServerErrorType,
 		Error: "Simulated Error",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaList", 100, 0).
+	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0).
 		Return(nil, svcErr)
 
 	result, err := suite.executor.Execute(ctx)
@@ -952,7 +928,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 			{Name: "customer"},
 		},
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaList", 100, 0).
+	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0).
 		Return(schemaList, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -966,4 +942,80 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 	requiredInput := result.Inputs[0]
 	assert.Equal(suite.T(), userTypeKey, requiredInput.Identifier)
 	assert.ElementsMatch(suite.T(), []string{"employee", "customer"}, requiredInput.Options)
+}
+
+func (suite *UserTypeResolverTestSuite) TestPromptUserSelection_ForwardsInputsInForwardedData() {
+	suite.SetupTest()
+
+	options := []string{"employee", "customer", "partner"}
+	execResp := &common.ExecutorResponse{
+		ForwardedData: map[string]interface{}{},
+	}
+
+	suite.executor.promptUserSelection(execResp, options)
+
+	// Verify status and inputs are set
+	assert.Equal(suite.T(), common.ExecUserInputRequired, execResp.Status)
+	assert.Len(suite.T(), execResp.Inputs, 1)
+	assert.Equal(suite.T(), userTypeKey, execResp.Inputs[0].Identifier)
+	assert.ElementsMatch(suite.T(), options, execResp.Inputs[0].Options)
+
+	// Verify ForwardedData is set with inputs
+	assert.NotNil(suite.T(), execResp.ForwardedData)
+	forwardedInputs, ok := execResp.ForwardedData[common.ForwardedDataKeyInputs]
+	assert.True(suite.T(), ok, "ForwardedData should contain 'inputs' key")
+
+	// Type assert and verify
+	inputsSlice, ok := forwardedInputs.([]common.Input)
+	assert.True(suite.T(), ok, "ForwardedData['inputs'] should be []common.Input")
+	assert.Len(suite.T(), inputsSlice, 1)
+	assert.Equal(suite.T(), userTypeKey, inputsSlice[0].Identifier)
+	assert.ElementsMatch(suite.T(), options, inputsSlice[0].Options)
+}
+
+func (suite *UserTypeResolverTestSuite) TestPromptUserSelection_WithEmptyOptions() {
+	suite.SetupTest()
+
+	options := []string{}
+	execResp := &common.ExecutorResponse{
+		ForwardedData: map[string]interface{}{},
+	}
+
+	suite.executor.promptUserSelection(execResp, options)
+
+	// Verify status is set
+	assert.Equal(suite.T(), common.ExecUserInputRequired, execResp.Status)
+	assert.Len(suite.T(), execResp.Inputs, 1)
+
+	// Verify ForwardedData is still set even with empty options
+	assert.NotNil(suite.T(), execResp.ForwardedData)
+	forwardedInputs, ok := execResp.ForwardedData[common.ForwardedDataKeyInputs]
+	assert.True(suite.T(), ok, "ForwardedData should contain 'inputs' key even with empty options")
+
+	inputsSlice, ok := forwardedInputs.([]common.Input)
+	assert.True(suite.T(), ok)
+	assert.Len(suite.T(), inputsSlice, 1)
+	assert.Empty(suite.T(), inputsSlice[0].Options)
+}
+
+func (suite *UserTypeResolverTestSuite) TestPromptUserSelection_PreservesExistingForwardedData() {
+	suite.SetupTest()
+
+	options := []string{"employee"}
+	execResp := &common.ExecutorResponse{
+		ForwardedData: map[string]interface{}{
+			"existingKey": "existingValue",
+		},
+	}
+
+	suite.executor.promptUserSelection(execResp, options)
+
+	// Verify existing ForwardedData is preserved
+	assert.NotNil(suite.T(), execResp.ForwardedData)
+	assert.Equal(suite.T(), "existingValue", execResp.ForwardedData["existingKey"])
+
+	// Verify new inputs key is added
+	forwardedInputs, ok := execResp.ForwardedData[common.ForwardedDataKeyInputs]
+	assert.True(suite.T(), ok)
+	assert.NotNil(suite.T(), forwardedInputs)
 }

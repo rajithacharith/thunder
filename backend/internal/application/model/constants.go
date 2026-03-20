@@ -28,8 +28,30 @@ const (
 	OAuthInboundAuthType InboundAuthType = "oauth2"
 )
 
+// UserInfoResponseType represents the response format of the UserInfo endpoint.
+type UserInfoResponseType string
+
+const (
+	// UserInfoResponseTypeJSON represents the JSON userinfo response type.
+	UserInfoResponseTypeJSON UserInfoResponseType = "JSON"
+
+	// UserInfoResponseTypeJWS represents the JWS userinfo response type.
+	UserInfoResponseTypeJWS UserInfoResponseType = "JWS"
+)
+
 // ApplicationNotFoundError is the error returned when an application is not found.
 var ApplicationNotFoundError error = errors.New("application not found")
 
 // ApplicationDataCorruptedError is the error returned when application data is corrupted.
 var ApplicationDataCorruptedError error = errors.New("application data is corrupted")
+
+// Constants for MCP tool defaults
+var (
+	// DefaultUserAttributes are the standard user attributes for application templates.
+	DefaultUserAttributes = []string{
+		"email", "name", "given_name", "family_name",
+		"profile", "picture", "phone_number", "address", "created_at",
+	}
+	// DefaultScopes are the standard OAuth scopes for application templates.
+	DefaultScopes = []string{"openid", "profile", "email"}
+)

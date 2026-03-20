@@ -37,7 +37,7 @@ jobs:
       distribution-path: ${{ steps.build.outputs.distribution-path }}
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
@@ -45,7 +45,7 @@ jobs:
         uses: ./.github/actions/setup-go
 
       - name: 🗄️ Cache Go Modules
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         id: cache-go-modules
         with:
           path: |
@@ -84,7 +84,7 @@ jobs:
           echo "Built distribution: $DIST_PATH"
 
       - name: 📦 Upload Built Distribution
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: thunder-distribution
           path: target/dist/*.zip
@@ -136,13 +136,13 @@ jobs:
           --health-retries 5
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: ⚙️ Set up Go Environment
         uses: ./.github/actions/setup-go
 
       - name: 🗄️ Cache Go Modules
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         id: cache-go-modules
         with:
           path: |
@@ -153,7 +153,7 @@ jobs:
             ${{ runner.os }}-go-modules-
 
       - name: 📥 Download Built Distribution
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: thunder-distribution
           path: target/dist/
@@ -179,7 +179,7 @@ jobs:
           coverage-enabled: true
 
       - name: 📊 Upload Coverage Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: postgres-coverage-report

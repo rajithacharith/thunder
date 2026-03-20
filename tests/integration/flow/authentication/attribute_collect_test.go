@@ -54,26 +54,26 @@ var (
 					"inputs": []map[string]interface{}{
 						{
 							"ref":        "input_003",
-							"identifier": "firstName",
-							"type":       "string",
+							"identifier": "given_name",
+							"type":       "TEXT_INPUT",
 							"required":   true,
 						},
 						{
 							"ref":        "input_004",
-							"identifier": "lastName",
-							"type":       "string",
+							"identifier": "family_name",
+							"type":       "TEXT_INPUT",
 							"required":   true,
 						},
 						{
 							"ref":        "input_005",
 							"identifier": "email",
-							"type":       "string",
+							"type":       "TEXT_INPUT",
 							"required":   true,
 						},
 						{
 							"ref":        "input_006",
 							"identifier": "mobileNumber",
-							"type":       "string",
+							"type":       "TEXT_INPUT",
 							"required":   false,
 						},
 					},
@@ -103,7 +103,7 @@ var (
 		ClientSecret:              "attr_collect_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"attr_collect_flow_user"},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
@@ -123,11 +123,12 @@ var (
 			},
 			"password": map[string]interface{}{
 				"type": "string",
+				"credential": true,
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 			"email": map[string]interface{}{
@@ -153,8 +154,8 @@ var (
 		Attributes: json.RawMessage(`{
 			"username": "partialuser",
 			"password": "testpassword",
-			"firstName": "Partial",
-			"lastName": "User"
+			"given_name": "Partial",
+			"family_name": "User"
 		}`),
 	}
 
@@ -163,8 +164,8 @@ var (
 		Attributes: json.RawMessage(`{
 			"username": "fulluser",
 			"password": "testpassword",
-			"firstName": "Full",
-			"lastName": "User",
+			"given_name": "Full",
+			"family_name": "User",
 			"email": "fulluser@example.com",
 			"mobileNumber": "+1234567890"
 		}`),
@@ -215,7 +216,7 @@ func (ts *AttributeCollectFlowTestSuite) SetupSuite() {
 	attrCollectTestOUID = ouID
 
 	// Create test user schema within the OU
-	attrCollectUserSchema.OrganizationUnitId = attrCollectTestOUID
+	attrCollectUserSchema.OUID = attrCollectTestOUID
 	schemaID, err := testutils.CreateUserType(attrCollectUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
@@ -237,27 +238,27 @@ func (ts *AttributeCollectFlowTestSuite) SetupSuite() {
 
 	// Create users with the created OU ID
 	testUserNoAttributes := testUserNoAttributes
-	testUserNoAttributes.OrganizationUnit = attrCollectTestOUID
+	testUserNoAttributes.OUID = attrCollectTestOUID
 	testUserPartialAttributes := testUserPartialAttributes
-	testUserPartialAttributes.OrganizationUnit = attrCollectTestOUID
+	testUserPartialAttributes.OUID = attrCollectTestOUID
 	testUserFullAttributes := testUserFullAttributes
-	testUserFullAttributes.OrganizationUnit = attrCollectTestOUID
+	testUserFullAttributes.OUID = attrCollectTestOUID
 	testUserNoAttributes2 := testUserNoAttributes2
-	testUserNoAttributes2.OrganizationUnit = attrCollectTestOUID
+	testUserNoAttributes2.OUID = attrCollectTestOUID
 
 	// Setup test data
 	ts.testData = []AttributeCollectTestData{
 		{
 			name:                 "UserWithNoAttributes",
 			user:                 testUserNoAttributes,
-			expectedMissingAttrs: []string{"firstName", "lastName", "email", "mobileNumber"},
+			expectedMissingAttrs: []string{"given_name", "family_name", "email", "mobileNumber"},
 			credentials: map[string]string{
 				"username": "noattrsuser",
 				"password": "testpassword",
 			},
 			providedAttrs: map[string]string{
-				"firstName":    "John",
-				"lastName":     "Doe",
+				"given_name":    "John",
+				"family_name":     "Doe",
 				"email":        "john.doe@example.com",
 				"mobileNumber": "+1987654321",
 			},
@@ -409,8 +410,8 @@ func (ts *AttributeCollectFlowTestSuite) TestSingleRequestLogin_WithAllInputs() 
 	allInputs := map[string]string{
 		"username":     "fulluser",
 		"password":     "testpassword",
-		"firstName":    "Full",
-		"lastName":     "User",
+		"given_name":    "Full",
+		"family_name":     "User",
 		"email":        "john.doe2@example.com",
 		"mobileNumber": "+1987654345",
 	}
@@ -432,7 +433,7 @@ func (ts *AttributeCollectFlowTestSuite) TestInvalidCredentials() {
 	errorResp, err := common.CompleteFlow(flowStep.FlowID, invalidCredentials, "")
 	ts.Require().NoError(err, "Expected error response for invalid credentials")
 	ts.Require().NotEmpty(errorResp.FailureReason, "Expected failure reason for invalid credentials")
-	ts.Require().Contains(errorResp.FailureReason, "No user found",
+	ts.Require().Contains(errorResp.FailureReason, "User not found",
 		"Expected failure reason to indicate user not found")
 }
 
@@ -458,7 +459,7 @@ func (ts *AttributeCollectFlowTestSuite) validateRequiredInputs(actualInputs []c
 		if expectedName == "password" {
 			ts.Require().Equal("PASSWORD_INPUT", input.Type, "Expected input password to be of type PASSWORD_INPUT")
 		} else {
-			ts.Require().Equal("string", input.Type, "Expected input '%s' to be of type string", expectedName)
+			ts.Require().Equal("TEXT_INPUT", input.Type, "Expected input '%s' to be of type string", expectedName)
 		}
 
 		// Check if required field is set correctly based on the flow definition

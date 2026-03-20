@@ -19,19 +19,22 @@
 package oidc
 
 import (
+	"context"
 	"testing"
+
+	"github.com/stretchr/testify/mock"
 
 	"github.com/stretchr/testify/suite"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oauthmock"
 	"github.com/asgardeo/thunder/tests/mocks/httpmock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
-	"github.com/asgardeo/thunder/tests/mocks/usermock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
 const (
@@ -43,7 +46,7 @@ type OIDCAuthnServiceTestSuite struct {
 	mockOAuthService *oauthmock.OAuthAuthnServiceInterfaceMock
 	mockHTTPClient   *httpmock.HTTPClientInterfaceMock
 	mockIdpService   *idpmock.IDPServiceInterfaceMock
-	mockUserService  *usermock.UserServiceInterfaceMock
+	mockUserProvider *userprovidermock.UserProviderInterfaceMock
 	mockJWTService   *jwtmock.JWTServiceInterfaceMock
 	endpoints        oauth.OAuthEndpoints
 	service          oidcAuthnService
@@ -57,7 +60,7 @@ func (suite *OIDCAuthnServiceTestSuite) SetupTest() {
 	suite.mockOAuthService = oauthmock.NewOAuthAuthnServiceInterfaceMock(suite.T())
 	suite.mockHTTPClient = httpmock.NewHTTPClientInterfaceMock(suite.T())
 	suite.mockIdpService = idpmock.NewIDPServiceInterfaceMock(suite.T())
-	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
+	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.endpoints = oauth.OAuthEndpoints{
 		AuthorizationEndpoint: "https://localhost:8090/oauth/authorize",
@@ -66,7 +69,7 @@ func (suite *OIDCAuthnServiceTestSuite) SetupTest() {
 	}
 
 	service := newOIDCAuthnService(suite.mockHTTPClient, suite.mockIdpService,
-		suite.mockUserService, suite.mockJWTService)
+		suite.mockUserProvider, suite.mockJWTService)
 
 	cast, ok := service.(*oidcAuthnService)
 	suite.True(ok, "service is not of type *oidcAuthnService")
@@ -81,9 +84,9 @@ func (suite *OIDCAuthnServiceTestSuite) TestGetOAuthClientConfigWithOpenIDScope(
 		ClientSecret: "secret",
 		Scopes:       []string{"openid", "profile", "email"},
 	}
-	suite.mockOAuthService.On("GetOAuthClientConfig", idpID).Return(config, nil)
+	suite.mockOAuthService.On("GetOAuthClientConfig", mock.Anything, idpID).Return(config, nil)
 
-	result, err := suite.service.GetOAuthClientConfig(idpID)
+	result, err := suite.service.GetOAuthClientConfig(context.Background(), idpID)
 	suite.Nil(err)
 	suite.NotNil(result)
 
@@ -102,9 +105,9 @@ func (suite *OIDCAuthnServiceTestSuite) TestGetOAuthClientConfigWithoutOpenIDSco
 		ClientSecret: "secret",
 		Scopes:       []string{"profile"},
 	}
-	suite.mockOAuthService.On("GetOAuthClientConfig", idpID).Return(config, nil)
+	suite.mockOAuthService.On("GetOAuthClientConfig", mock.Anything, idpID).Return(config, nil)
 
-	result, err := suite.service.GetOAuthClientConfig(idpID)
+	result, err := suite.service.GetOAuthClientConfig(context.Background(), idpID)
 	suite.Nil(err)
 	suite.NotNil(result)
 
@@ -115,9 +118,9 @@ func (suite *OIDCAuthnServiceTestSuite) TestGetOAuthClientConfigWithoutOpenIDSco
 
 func (suite *OIDCAuthnServiceTestSuite) TestBuildAuthorizeURLSuccess() {
 	expectedURL := "https://example.com/authorize?client_id=test"
-	suite.mockOAuthService.On("BuildAuthorizeURL", testOIDCIDPID).Return(expectedURL, nil)
+	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, testOIDCIDPID).Return(expectedURL, nil)
 
-	url, err := suite.service.BuildAuthorizeURL(testOIDCIDPID)
+	url, err := suite.service.BuildAuthorizeURL(context.Background(), testOIDCIDPID)
 	suite.Nil(err)
 	suite.Equal(expectedURL, url)
 }
@@ -127,9 +130,9 @@ func (suite *OIDCAuthnServiceTestSuite) TestBuildAuthorizeURLError() {
 		Code:             "ERROR",
 		ErrorDescription: "Failed to build URL",
 	}
-	suite.mockOAuthService.On("BuildAuthorizeURL", testOIDCIDPID).Return("", svcErr)
+	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, testOIDCIDPID).Return("", svcErr)
 
-	url, err := suite.service.BuildAuthorizeURL(testOIDCIDPID)
+	url, err := suite.service.BuildAuthorizeURL(context.Background(), testOIDCIDPID)
 	suite.Empty(url)
 	suite.NotNil(err)
 	suite.Equal(svcErr.Code, err.Code)
@@ -151,10 +154,13 @@ func (suite *OIDCAuthnServiceTestSuite) TestExchangeCodeForTokenSuccess() {
 					IDToken:     "id_token",
 					TokenType:   "Bearer",
 				}
-				suite.mockOAuthService.On("ExchangeCodeForToken", testOIDCIDPID, code, false).Return(tokenResp, nil)
-				suite.mockOAuthService.On("GetOAuthClientConfig", testOIDCIDPID).Return(&oauth.OAuthClientConfig{
+				suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, testOIDCIDPID, code, false).
+					Return(tokenResp, nil)
+				cfg := &oauth.OAuthClientConfig{
 					OAuthEndpoints: oauth.OAuthEndpoints{JwksEndpoint: "https://example.com/jwks"},
-				}, nil)
+				}
+				suite.mockOAuthService.On("GetOAuthClientConfig", mock.Anything, testOIDCIDPID).
+					Return(cfg, nil)
 				suite.mockJWTService.On("VerifyJWTWithJWKS", "id_token",
 					"https://example.com/jwks", "", "").Return(nil)
 			},
@@ -169,7 +175,8 @@ func (suite *OIDCAuthnServiceTestSuite) TestExchangeCodeForTokenSuccess() {
 					IDToken:     "id_token",
 					TokenType:   "Bearer",
 				}
-				suite.mockOAuthService.On("ExchangeCodeForToken", testOIDCIDPID, code, false).Return(tokenResp, nil)
+				suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, testOIDCIDPID, code, false).
+					Return(tokenResp, nil)
 			},
 		},
 	}
@@ -180,7 +187,7 @@ func (suite *OIDCAuthnServiceTestSuite) TestExchangeCodeForTokenSuccess() {
 			suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 
 			service := newOIDCAuthnService(suite.mockHTTPClient, suite.mockIdpService,
-				suite.mockUserService, suite.mockJWTService)
+				suite.mockUserProvider, suite.mockJWTService)
 			cast, ok := service.(*oidcAuthnService)
 			suite.True(ok, "service is not of type *oidcAuthnService")
 			suite.service = *cast
@@ -188,7 +195,9 @@ func (suite *OIDCAuthnServiceTestSuite) TestExchangeCodeForTokenSuccess() {
 
 			tc.setupMocks()
 
-			result, err := suite.service.ExchangeCodeForToken(testOIDCIDPID, "auth_code", tc.validateResponse)
+			result, err := suite.service.ExchangeCodeForToken(context.Background(), testOIDCIDPID, "auth_code",
+				tc.validateResponse)
+
 			suite.Nil(err)
 			suite.NotNil(result)
 			suite.Equal("access_token", result.AccessToken)
@@ -206,9 +215,11 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseSuccess() {
 			name:            "WithIDTokenValidation",
 			validateIDToken: true,
 			setupMocks: func() {
-				suite.mockOAuthService.On("GetOAuthClientConfig", testOIDCIDPID).Return(&oauth.OAuthClientConfig{
+				cfg := &oauth.OAuthClientConfig{
 					OAuthEndpoints: oauth.OAuthEndpoints{JwksEndpoint: "https://example.com/jwks"},
-				}, nil)
+				}
+				suite.mockOAuthService.On("GetOAuthClientConfig", mock.Anything, testOIDCIDPID).
+					Return(cfg, nil)
 				suite.mockJWTService.On("VerifyJWTWithJWKS", "id_token",
 					"https://example.com/jwks", "", "").Return(nil)
 			},
@@ -226,7 +237,7 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseSuccess() {
 			suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 
 			service := newOIDCAuthnService(suite.mockHTTPClient, suite.mockIdpService,
-				suite.mockUserService, suite.mockJWTService)
+				suite.mockUserProvider, suite.mockJWTService)
 			cast, ok := service.(*oidcAuthnService)
 			suite.True(ok, "service is not of type *oidcAuthnService")
 			suite.service = *cast
@@ -239,7 +250,8 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseSuccess() {
 				IDToken:     "id_token",
 				TokenType:   "Bearer",
 			}
-			err := suite.service.ValidateTokenResponse(testOIDCIDPID, tokenResp, tc.validateIDToken)
+			err := suite.service.ValidateTokenResponse(
+				context.Background(), testOIDCIDPID, tokenResp, tc.validateIDToken)
 			suite.Nil(err)
 		})
 	}
@@ -266,7 +278,7 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseWithError() {
 
 	for _, tc := range tests {
 		suite.Run(tc.name, func() {
-			err := suite.service.ValidateTokenResponse(testOIDCIDPID, tc.resp, false)
+			err := suite.service.ValidateTokenResponse(context.Background(), testOIDCIDPID, tc.resp, false)
 			suite.NotNil(err)
 			suite.Equal(oauth.ErrorInvalidTokenResponse.Code, err.Code)
 		})
@@ -281,9 +293,11 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 		{
 			name: "WithJWKSEndpoint",
 			setupMocks: func() {
-				suite.mockOAuthService.On("GetOAuthClientConfig", testOIDCIDPID).Return(&oauth.OAuthClientConfig{
+				cfg := &oauth.OAuthClientConfig{
 					OAuthEndpoints: oauth.OAuthEndpoints{JwksEndpoint: "https://example.com/jwks"},
-				}, nil)
+				}
+				suite.mockOAuthService.On("GetOAuthClientConfig", mock.Anything, testOIDCIDPID).
+					Return(cfg, nil)
 				suite.mockJWTService.On("VerifyJWTWithJWKS", "valid_id_token",
 					"https://example.com/jwks", "", "").Return(nil)
 			},
@@ -291,9 +305,11 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 		{
 			name: "WithoutJWKSEndpoint",
 			setupMocks: func() {
-				suite.mockOAuthService.On("GetOAuthClientConfig", testOIDCIDPID).Return(&oauth.OAuthClientConfig{
+				cfg := &oauth.OAuthClientConfig{
 					OAuthEndpoints: oauth.OAuthEndpoints{},
-				}, nil)
+				}
+				suite.mockOAuthService.On("GetOAuthClientConfig", mock.Anything, testOIDCIDPID).
+					Return(cfg, nil)
 			},
 		},
 	}
@@ -304,7 +320,7 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 			suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 
 			service := newOIDCAuthnService(suite.mockHTTPClient, suite.mockIdpService,
-				suite.mockUserService, suite.mockJWTService)
+				suite.mockUserProvider, suite.mockJWTService)
 			cast, ok := service.(*oidcAuthnService)
 			suite.True(ok, "service is not of type *oidcAuthnService")
 			suite.service = *cast
@@ -312,14 +328,14 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 
 			tc.setupMocks()
 
-			err := suite.service.ValidateIDToken(testOIDCIDPID, "valid_id_token")
+			err := suite.service.ValidateIDToken(context.Background(), testOIDCIDPID, "valid_id_token")
 			suite.Nil(err)
 		})
 	}
 }
 
 func (suite *OIDCAuthnServiceTestSuite) TestValidateIDTokenEmptyToken() {
-	err := suite.service.ValidateIDToken(testOIDCIDPID, "")
+	err := suite.service.ValidateIDToken(context.Background(), testOIDCIDPID, "")
 	suite.NotNil(err)
 	suite.Equal(ErrorInvalidIDToken.Code, err.Code)
 }
@@ -349,9 +365,9 @@ func (suite *OIDCAuthnServiceTestSuite) TestFetchUserInfoSuccess() {
 		"sub":   "user123",
 		"email": "user@example.com",
 	}
-	suite.mockOAuthService.On("FetchUserInfo", testOIDCIDPID, accessToken).Return(userInfo, nil)
+	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, testOIDCIDPID, accessToken).Return(userInfo, nil)
 
-	result, err := suite.service.FetchUserInfo(testOIDCIDPID, accessToken)
+	result, err := suite.service.FetchUserInfo(context.Background(), testOIDCIDPID, accessToken)
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(userInfo["sub"], result["sub"])
@@ -359,23 +375,23 @@ func (suite *OIDCAuthnServiceTestSuite) TestFetchUserInfoSuccess() {
 
 func (suite *OIDCAuthnServiceTestSuite) TestGetInternalUserSuccess() {
 	sub := "user123"
-	user := &user.User{
-		ID:   "user123",
-		Type: "person",
+	user := &userprovider.User{
+		UserID:   "user123",
+		UserType: "person",
 	}
 	suite.mockOAuthService.On("GetInternalUser", sub).Return(user, nil)
 
 	result, err := suite.service.GetInternalUser(sub)
 	suite.Nil(err)
 	suite.NotNil(result)
-	suite.Equal(user.ID, result.ID)
+	suite.Equal(user.UserID, result.UserID)
 }
 
 func (suite *OIDCAuthnServiceTestSuite) TestExchangeCodeForTokenInternalError() {
-	suite.mockOAuthService.On("ExchangeCodeForToken", testOIDCIDPID, "auth_code", false).
+	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, testOIDCIDPID, "auth_code", false).
 		Return(nil, &serviceerror.ServiceError{Code: "INT-ERR"})
 
-	result, err := suite.service.ExchangeCodeForToken(testOIDCIDPID, "auth_code", false)
+	result, err := suite.service.ExchangeCodeForToken(context.Background(), testOIDCIDPID, "auth_code", false)
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal("INT-ERR", err.Code)
@@ -387,14 +403,14 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseValidateIDToken
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 
 	service := newOIDCAuthnService(suite.mockHTTPClient, suite.mockIdpService,
-		suite.mockUserService, suite.mockJWTService)
+		suite.mockUserProvider, suite.mockJWTService)
 	cast, ok := service.(*oidcAuthnService)
 	suite.True(ok)
 	suite.service = *cast
 	suite.service.internal = suite.mockOAuthService
 
 	// GetOAuthClientConfig returns a config with jwks endpoint
-	suite.mockOAuthService.On("GetOAuthClientConfig", testOIDCIDPID).Return(&oauth.OAuthClientConfig{
+	suite.mockOAuthService.On("GetOAuthClientConfig", mock.Anything, testOIDCIDPID).Return(&oauth.OAuthClientConfig{
 		OAuthEndpoints: oauth.OAuthEndpoints{JwksEndpoint: "https://example.com/jwks"},
 	}, nil)
 
@@ -408,13 +424,13 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseValidateIDToken
 		})
 
 	tokenResp := &oauth.TokenResponse{AccessToken: "access", IDToken: "id_token"}
-	err := suite.service.ValidateTokenResponse(testOIDCIDPID, tokenResp, true)
+	err := suite.service.ValidateTokenResponse(context.Background(), testOIDCIDPID, tokenResp, true)
 	suite.NotNil(err)
 	suite.Equal(ErrorInvalidIDTokenSignature.Code, err.Code)
 }
 
 func (suite *OIDCAuthnServiceTestSuite) TestNewOIDCAuthnService_HttpClientFallback() {
-	svc := NewOIDCAuthnService(nil, suite.mockIdpService, suite.mockUserService, suite.mockJWTService)
+	svc := NewOIDCAuthnService(nil, suite.mockIdpService, suite.mockUserProvider, suite.mockJWTService)
 	suite.NotNil(svc)
 	// type assert to concrete to inspect metadata
 	if concrete, ok := svc.(*oidcAuthnService); ok {
@@ -446,10 +462,10 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateIDTokenWithJWKSEndpoint() {
 		},
 	}
 
-	suite.mockOAuthService.On("GetOAuthClientConfig", testOIDCIDPID).Return(config, nil)
+	suite.mockOAuthService.On("GetOAuthClientConfig", mock.Anything, testOIDCIDPID).Return(config, nil)
 	suite.mockJWTService.On("VerifyJWTWithJWKS", idToken, "https://idp.com/jwks", "", "").Return(nil)
 
-	err := suite.service.ValidateIDToken(testOIDCIDPID, idToken)
+	err := suite.service.ValidateIDToken(context.Background(), testOIDCIDPID, idToken)
 	suite.Nil(err)
 }
 
@@ -468,9 +484,9 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateIDTokenWithoutJWKSEndpoint()
 		},
 	}
 
-	suite.mockOAuthService.On("GetOAuthClientConfig", testOIDCIDPID).Return(config, nil)
+	suite.mockOAuthService.On("GetOAuthClientConfig", mock.Anything, testOIDCIDPID).Return(config, nil)
 	// VerifyJWTWithJWKS should not be called when JWKS endpoint is empty
 
-	err := suite.service.ValidateIDToken(testOIDCIDPID, idToken)
+	err := suite.service.ValidateIDToken(context.Background(), testOIDCIDPID, idToken)
 	suite.Nil(err)
 }

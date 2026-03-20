@@ -20,6 +20,7 @@
 package oidc
 
 import (
+	"context"
 	"strings"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
@@ -27,9 +28,9 @@ import (
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	httpservice "github.com/asgardeo/thunder/internal/system/http"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const (
@@ -39,14 +40,14 @@ const (
 // OIDCAuthnCoreServiceInterface defines the core contract for OIDC based authenticator services.
 type OIDCAuthnCoreServiceInterface interface {
 	authnoauth.OAuthAuthnCoreServiceInterface
-	ValidateIDToken(idpID, idToken string) *serviceerror.ServiceError
+	ValidateIDToken(ctx context.Context, idpID, idToken string) *serviceerror.ServiceError
 	GetIDTokenClaims(idToken string) (map[string]interface{}, *serviceerror.ServiceError)
 }
 
 // OIDCAuthnServiceInterface defines the contract for OIDC based authenticator services.
 type OIDCAuthnServiceInterface interface {
 	OIDCAuthnCoreServiceInterface
-	ValidateTokenResponse(idpID string, tokenResp *authnoauth.TokenResponse,
+	ValidateTokenResponse(ctx context.Context, idpID string, tokenResp *authnoauth.TokenResponse,
 		validateIDToken bool) *serviceerror.ServiceError
 }
 
@@ -59,9 +60,9 @@ type oidcAuthnService struct {
 
 // newOIDCAuthnService creates a new instance of OIDC authenticator service.
 func newOIDCAuthnService(httpClient httpservice.HTTPClientInterface,
-	idpSvc idp.IDPServiceInterface, userSvc user.UserServiceInterface,
+	idpSvc idp.IDPServiceInterface, userProvider userprovider.UserProviderInterface,
 	jwtSvc jwt.JWTServiceInterface) OIDCAuthnServiceInterface {
-	internal := authnoauth.NewOAuthAuthnService(httpClient, idpSvc, userSvc)
+	internal := authnoauth.NewOAuthAuthnService(httpClient, idpSvc, userProvider)
 
 	service := &oidcAuthnService{
 		internal:   internal,
@@ -77,33 +78,33 @@ func newOIDCAuthnService(httpClient httpservice.HTTPClientInterface,
 // [Deprecated: use dependency injection to get the instance instead].
 // TODO: Should be removed when executors are migrated to di pattern.
 func NewOIDCAuthnService(httpClient httpservice.HTTPClientInterface,
-	idpSvc idp.IDPServiceInterface, userSvc user.UserServiceInterface,
+	idpSvc idp.IDPServiceInterface, userProvider userprovider.UserProviderInterface,
 	jwtSvc jwt.JWTServiceInterface) OIDCAuthnServiceInterface {
-	return newOIDCAuthnService(httpClient, idpSvc, userSvc, jwtSvc)
+	return newOIDCAuthnService(httpClient, idpSvc, userProvider, jwtSvc)
 }
 
 // GetOAuthClientConfig retrieves the OAuth client configuration for the given identity provider ID.
-func (s *oidcAuthnService) GetOAuthClientConfig(idpID string) (
+func (s *oidcAuthnService) GetOAuthClientConfig(ctx context.Context, idpID string) (
 	*authnoauth.OAuthClientConfig, *serviceerror.ServiceError) {
-	return s.internal.GetOAuthClientConfig(idpID)
+	return s.internal.GetOAuthClientConfig(ctx, idpID)
 }
 
 // BuildAuthorizeURL constructs the authorization request URL for the external identity provider.
-func (s *oidcAuthnService) BuildAuthorizeURL(idpID string) (string, *serviceerror.ServiceError) {
-	return s.internal.BuildAuthorizeURL(idpID)
+func (s *oidcAuthnService) BuildAuthorizeURL(ctx context.Context, idpID string) (string, *serviceerror.ServiceError) {
+	return s.internal.BuildAuthorizeURL(ctx, idpID)
 }
 
 // ExchangeCodeForToken exchanges the authorization code for a token with the external identity provider
 // and validates the token response if validateResponse is true.
-func (s *oidcAuthnService) ExchangeCodeForToken(idpID, code string, validateResponse bool) (
+func (s *oidcAuthnService) ExchangeCodeForToken(ctx context.Context, idpID, code string, validateResponse bool) (
 	*authnoauth.TokenResponse, *serviceerror.ServiceError) {
-	tokenResp, svcErr := s.internal.ExchangeCodeForToken(idpID, code, false)
+	tokenResp, svcErr := s.internal.ExchangeCodeForToken(ctx, idpID, code, false)
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
 	if validateResponse {
-		svcErr = s.ValidateTokenResponse(idpID, tokenResp, true)
+		svcErr = s.ValidateTokenResponse(ctx, idpID, tokenResp, true)
 		if svcErr != nil {
 			return nil, svcErr
 		}
@@ -115,8 +116,8 @@ func (s *oidcAuthnService) ExchangeCodeForToken(idpID, code string, validateResp
 // ValidateTokenResponse validates the token response returned by the identity provider.
 // ExchangeCodeForToken method calls this method to validate the token response if validateResponse is set
 // to true. Hence generally you may not need to call this method explicitly.
-func (s *oidcAuthnService) ValidateTokenResponse(idpID string, tokenResp *authnoauth.TokenResponse,
-	validateIDToken bool) *serviceerror.ServiceError {
+func (s *oidcAuthnService) ValidateTokenResponse(ctx context.Context, idpID string,
+	tokenResp *authnoauth.TokenResponse, validateIDToken bool) *serviceerror.ServiceError {
 	logger := s.logger
 	logger.Debug("Validating token response")
 
@@ -134,7 +135,7 @@ func (s *oidcAuthnService) ValidateTokenResponse(idpID string, tokenResp *authno
 	}
 
 	if validateIDToken {
-		svcErr := s.ValidateIDToken(idpID, tokenResp.IDToken)
+		svcErr := s.ValidateIDToken(ctx, idpID, tokenResp.IDToken)
 		if svcErr != nil {
 			return svcErr
 		}
@@ -147,7 +148,7 @@ func (s *oidcAuthnService) ValidateTokenResponse(idpID string, tokenResp *authno
 // ValidateTokenResponse method calls this method to validate the token response if validateIDToken is set
 // to true. Hence generally you may not need to call this method explicitly if ExchangeCodeForToken method
 // is called with validateResponse set to true.
-func (s *oidcAuthnService) ValidateIDToken(idpID, idToken string) *serviceerror.ServiceError {
+func (s *oidcAuthnService) ValidateIDToken(ctx context.Context, idpID, idToken string) *serviceerror.ServiceError {
 	logger := s.logger.With(log.String("idpId", idpID))
 	logger.Debug("Validating ID token")
 
@@ -156,7 +157,7 @@ func (s *oidcAuthnService) ValidateIDToken(idpID, idToken string) *serviceerror.
 		return &ErrorInvalidIDToken
 	}
 
-	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(idpID)
+	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(ctx, idpID)
 	if svcErr != nil {
 		return svcErr
 	}
@@ -200,13 +201,13 @@ func (s *oidcAuthnService) GetIDTokenClaims(idToken string) (
 }
 
 // FetchUserInfo retrieves user information from the external identity provider.
-func (s *oidcAuthnService) FetchUserInfo(idpID, accessToken string) (
+func (s *oidcAuthnService) FetchUserInfo(ctx context.Context, idpID, accessToken string) (
 	map[string]interface{}, *serviceerror.ServiceError) {
-	return s.internal.FetchUserInfo(idpID, accessToken)
+	return s.internal.FetchUserInfo(ctx, idpID, accessToken)
 }
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
-func (s *oidcAuthnService) GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError) {
+func (s *oidcAuthnService) GetInternalUser(sub string) (*userprovider.User, *serviceerror.ServiceError) {
 	return s.internal.GetInternalUser(sub)
 }
 

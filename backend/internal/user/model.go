@@ -22,14 +22,16 @@ import (
 	"encoding/json"
 
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
 // User represents a user in the system.
 type User struct {
-	ID               string          `json:"id,omitempty"`
-	OrganizationUnit string          `json:"organizationUnit,omitempty"`
-	Type             string          `json:"type,omitempty"`
-	Attributes       json.RawMessage `json:"attributes,omitempty"`
+	ID         string          `json:"id,omitempty"`
+	OUID       string          `json:"ouId,omitempty"`
+	Type       string          `json:"type,omitempty"`
+	Attributes json.RawMessage `json:"attributes,omitempty"`
+	Display    string          `json:"display,omitempty"`
 }
 
 // Credential represents the credentials of a user.
@@ -45,51 +47,45 @@ type Credential struct {
 // Value: Array of credentials of that type
 type Credentials map[CredentialType][]Credential
 
-// Link represents a pagination link.
-type Link struct {
-	Href string `json:"href"`
-	Rel  string `json:"rel"`
-}
-
 // UserListResponse represents the response for listing users with pagination.
 type UserListResponse struct {
-	TotalResults int    `json:"totalResults"`
-	StartIndex   int    `json:"startIndex"`
-	Count        int    `json:"count"`
-	Users        []User `json:"users"`
-	Links        []Link `json:"links"`
+	TotalResults int          `json:"totalResults"`
+	StartIndex   int          `json:"startIndex"`
+	Count        int          `json:"count"`
+	Users        []User       `json:"users"`
+	Links        []utils.Link `json:"links"`
 }
 
 // UserGroup represents a group with basic information for user endpoints.
 type UserGroup struct {
-	ID                 string `json:"id"`
-	Name               string `json:"name"`
-	OrganizationUnitID string `json:"organizationUnit"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	OUID string `json:"ouId"`
 }
 
 // UserGroupListResponse represents the response for listing groups that a user belongs to.
 type UserGroupListResponse struct {
-	TotalResults int         `json:"totalResults"`
-	StartIndex   int         `json:"startIndex"`
-	Count        int         `json:"count"`
-	Groups       []UserGroup `json:"groups"`
-	Links        []Link      `json:"links"`
+	TotalResults int          `json:"totalResults"`
+	StartIndex   int          `json:"startIndex"`
+	Count        int          `json:"count"`
+	Groups       []UserGroup  `json:"groups"`
+	Links        []utils.Link `json:"links"`
 }
 
 // CreateUserRequest represents the request body for creating a user.
 type CreateUserRequest struct {
-	OrganizationUnit string          `json:"organizationUnit"`
-	Type             string          `json:"type"`
-	Groups           []string        `json:"groups,omitempty"`
-	Attributes       json.RawMessage `json:"attributes,omitempty"`
+	OUID       string          `json:"ouId"`
+	Type       string          `json:"type"`
+	Groups     []string        `json:"groups,omitempty"`
+	Attributes json.RawMessage `json:"attributes,omitempty"`
 }
 
 // UpdateUserRequest represents the request body for updating a user.
 type UpdateUserRequest struct {
-	OrganizationUnit string          `json:"organizationUnit,omitempty"`
-	Type             string          `json:"type,omitempty"`
-	Groups           []string        `json:"groups,omitempty"`
-	Attributes       json.RawMessage `json:"attributes,omitempty"`
+	OUID       string          `json:"ouId,omitempty"`
+	Type       string          `json:"type,omitempty"`
+	Groups     []string        `json:"groups,omitempty"`
+	Attributes json.RawMessage `json:"attributes,omitempty"`
 }
 
 // UpdateSelfUserRequest represents the request body for updating the authenticated user.
@@ -104,12 +100,9 @@ type CreateUserByPathRequest struct {
 	Attributes json.RawMessage `json:"attributes,omitempty"`
 }
 
-// AuthenticateUserRequest represents the request body for authenticating a user.
-type AuthenticateUserRequest map[string]interface{}
-
 // AuthenticateUserResponse represents the response body for authenticating a user.
 type AuthenticateUserResponse struct {
-	ID               string `json:"id"`
-	Type             string `json:"type"`
-	OrganizationUnit string `json:"organizationUnit"`
+	ID   string `json:"id"`
+	Type string `json:"type"`
+	OUID string `json:"ouId"`
 }

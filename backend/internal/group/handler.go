@@ -46,6 +46,8 @@ func newGroupHandler(groupService GroupServiceInterface) *groupHandler {
 
 // HandleGroupListRequest handles the list groups request.
 func (gh *groupHandler) HandleGroupListRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
@@ -54,7 +56,7 @@ func (gh *groupHandler) HandleGroupListRequest(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	groupListResponse, svcErr := gh.groupService.GetGroupList(limit, offset)
+	groupListResponse, svcErr := gh.groupService.GetGroupList(ctx, limit, offset)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
@@ -70,6 +72,8 @@ func (gh *groupHandler) HandleGroupListRequest(w http.ResponseWriter, r *http.Re
 
 // HandleGroupListByPathRequest handles the list groups by OU path request.
 func (gh *groupHandler) HandleGroupListByPathRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	path, pathValidationFailed := extractAndValidatePath(w, r)
@@ -83,7 +87,7 @@ func (gh *groupHandler) HandleGroupListByPathRequest(w http.ResponseWriter, r *h
 		return
 	}
 
-	groupListResponse, svcErr := gh.groupService.GetGroupsByPath(path, limit, offset)
+	groupListResponse, svcErr := gh.groupService.GetGroupsByPath(ctx, path, limit, offset)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
@@ -99,6 +103,8 @@ func (gh *groupHandler) HandleGroupListByPathRequest(w http.ResponseWriter, r *h
 
 // HandleGroupPostRequest handles the create group request.
 func (gh *groupHandler) HandleGroupPostRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	createRequest, err := sysutils.DecodeJSONBody[CreateGroupRequest](r)
@@ -113,7 +119,7 @@ func (gh *groupHandler) HandleGroupPostRequest(w http.ResponseWriter, r *http.Re
 	}
 
 	sanitizedRequest := gh.sanitizeCreateGroupRequest(createRequest)
-	createdGroup, svcErr := gh.groupService.CreateGroup(sanitizedRequest)
+	createdGroup, svcErr := gh.groupService.CreateGroup(ctx, sanitizedRequest)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
@@ -126,6 +132,8 @@ func (gh *groupHandler) HandleGroupPostRequest(w http.ResponseWriter, r *http.Re
 
 // HandleGroupPostByPathRequest handles the create group by OU path request.
 func (gh *groupHandler) HandleGroupPostByPathRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	path, pathValidationFailed := extractAndValidatePath(w, r)
@@ -144,7 +152,7 @@ func (gh *groupHandler) HandleGroupPostByPathRequest(w http.ResponseWriter, r *h
 		return
 	}
 
-	group, svcErr := gh.groupService.CreateGroupByPath(path, *createRequest)
+	group, svcErr := gh.groupService.CreateGroupByPath(ctx, path, *createRequest)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
@@ -157,6 +165,8 @@ func (gh *groupHandler) HandleGroupPostByPathRequest(w http.ResponseWriter, r *h
 
 // HandleGroupGetRequest handles the get group by id request.
 func (gh *groupHandler) HandleGroupGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
@@ -170,7 +180,7 @@ func (gh *groupHandler) HandleGroupGetRequest(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	group, svcErr := gh.groupService.GetGroup(id)
+	group, svcErr := gh.groupService.GetGroup(ctx, id)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
@@ -183,6 +193,8 @@ func (gh *groupHandler) HandleGroupGetRequest(w http.ResponseWriter, r *http.Req
 
 // HandleGroupPutRequest handles the update group request.
 func (gh *groupHandler) HandleGroupPutRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
@@ -208,7 +220,7 @@ func (gh *groupHandler) HandleGroupPutRequest(w http.ResponseWriter, r *http.Req
 	}
 
 	sanitizedRequest := gh.sanitizeUpdateGroupRequest(updateRequest)
-	group, svcErr := gh.groupService.UpdateGroup(id, sanitizedRequest)
+	group, svcErr := gh.groupService.UpdateGroup(ctx, id, sanitizedRequest)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
@@ -221,6 +233,8 @@ func (gh *groupHandler) HandleGroupPutRequest(w http.ResponseWriter, r *http.Req
 
 // HandleGroupDeleteRequest handles the delete group request.
 func (gh *groupHandler) HandleGroupDeleteRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
@@ -234,7 +248,7 @@ func (gh *groupHandler) HandleGroupDeleteRequest(w http.ResponseWriter, r *http.
 		return
 	}
 
-	svcErr := gh.groupService.DeleteGroup(id)
+	svcErr := gh.groupService.DeleteGroup(ctx, id)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
@@ -246,6 +260,8 @@ func (gh *groupHandler) HandleGroupDeleteRequest(w http.ResponseWriter, r *http.
 
 // HandleGroupMembersGetRequest handles the get group members request.
 func (gh *groupHandler) HandleGroupMembersGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
@@ -265,7 +281,9 @@ func (gh *groupHandler) HandleGroupMembersGetRequest(w http.ResponseWriter, r *h
 		return
 	}
 
-	memberListResponse, svcErr := gh.groupService.GetGroupMembers(id, limit, offset)
+	includeDisplay := r.URL.Query().Get(sysutils.QueryParamInclude) == sysutils.IncludeValueDisplay
+
+	memberListResponse, svcErr := gh.groupService.GetGroupMembers(ctx, id, limit, offset, includeDisplay)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
@@ -277,6 +295,64 @@ func (gh *groupHandler) HandleGroupMembersGetRequest(w http.ResponseWriter, r *h
 		log.Int("limit", limit), log.Int("offset", offset),
 		log.Int("totalResults", memberListResponse.TotalResults),
 		log.Int("count", memberListResponse.Count))
+}
+
+// HandleGroupMembersAddRequest handles the add members to group request.
+func (gh *groupHandler) HandleGroupMembersAddRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
+
+	id := r.PathValue("id")
+	if id == "" {
+		gh.handleError(w, logger, &ErrorMissingGroupID)
+		return
+	}
+
+	membersRequest, err := sysutils.DecodeJSONBody[MembersRequest](r)
+	if err != nil {
+		gh.handleError(w, logger, &ErrorInvalidRequestFormat)
+		return
+	}
+
+	sanitizedRequest := gh.sanitizeMembersRequest(membersRequest)
+
+	group, svcErr := gh.groupService.AddGroupMembers(ctx, id, sanitizedRequest.Members)
+	if svcErr != nil {
+		gh.handleError(w, logger, svcErr)
+		return
+	}
+
+	sysutils.WriteSuccessResponse(w, http.StatusOK, group)
+	logger.Debug("Successfully added members to group", log.String("group id", id))
+}
+
+// HandleGroupMembersRemoveRequest handles the remove members from group request.
+func (gh *groupHandler) HandleGroupMembersRemoveRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
+
+	id := r.PathValue("id")
+	if id == "" {
+		gh.handleError(w, logger, &ErrorMissingGroupID)
+		return
+	}
+
+	membersRequest, err := sysutils.DecodeJSONBody[MembersRequest](r)
+	if err != nil {
+		gh.handleError(w, logger, &ErrorInvalidRequestFormat)
+		return
+	}
+
+	sanitizedRequest := gh.sanitizeMembersRequest(membersRequest)
+
+	group, svcErr := gh.groupService.RemoveGroupMembers(ctx, id, sanitizedRequest.Members)
+	if svcErr != nil {
+		gh.handleError(w, logger, svcErr)
+		return
+	}
+
+	sysutils.WriteSuccessResponse(w, http.StatusOK, group)
+	logger.Debug("Successfully removed members from group", log.String("group id", id))
 }
 
 // handleError handles service errors and returns appropriate HTTP responses.
@@ -291,8 +367,12 @@ func (gh *groupHandler) handleError(w http.ResponseWriter, logger *log.Logger,
 			statusCode = http.StatusConflict
 		case ErrorInvalidOUID.Code, ErrorCannotDeleteGroup.Code,
 			ErrorInvalidRequestFormat.Code, ErrorMissingGroupID.Code,
-			ErrorInvalidLimit.Code, ErrorInvalidOffset.Code:
+			ErrorInvalidLimit.Code, ErrorInvalidOffset.Code,
+			ErrorEmptyMembers.Code, ErrorInvalidUserMemberID.Code,
+			ErrorInvalidGroupMemberID.Code:
 			statusCode = http.StatusBadRequest
+		case serviceerror.ErrorUnauthorized.Code:
+			statusCode = http.StatusForbidden
 		default:
 			statusCode = http.StatusBadRequest
 		}
@@ -316,9 +396,9 @@ func (gh *groupHandler) handleError(w http.ResponseWriter, logger *log.Logger,
 // sanitizeCreateGroupRequest sanitizes the create group request input.
 func (gh *groupHandler) sanitizeCreateGroupRequest(request *CreateGroupRequest) CreateGroupRequest {
 	sanitized := CreateGroupRequest{
-		Name:               sysutils.SanitizeString(request.Name),
-		Description:        sysutils.SanitizeString(request.Description),
-		OrganizationUnitID: sysutils.SanitizeString(request.OrganizationUnitID),
+		Name:        sysutils.SanitizeString(request.Name),
+		Description: sysutils.SanitizeString(request.Description),
+		OUID:        sysutils.SanitizeString(request.OUID),
 	}
 
 	if request.Members != nil {
@@ -336,12 +416,16 @@ func (gh *groupHandler) sanitizeCreateGroupRequest(request *CreateGroupRequest) 
 
 // sanitizeUpdateGroupRequest sanitizes the update group request input.
 func (gh *groupHandler) sanitizeUpdateGroupRequest(request *UpdateGroupRequest) UpdateGroupRequest {
-	sanitized := UpdateGroupRequest{
-		Name:               sysutils.SanitizeString(request.Name),
-		Description:        sysutils.SanitizeString(request.Description),
-		OrganizationUnitID: sysutils.SanitizeString(request.OrganizationUnitID),
+	return UpdateGroupRequest{
+		Name:        sysutils.SanitizeString(request.Name),
+		Description: sysutils.SanitizeString(request.Description),
+		OUID:        sysutils.SanitizeString(request.OUID),
 	}
+}
 
+// sanitizeMembersRequest sanitizes the members request input.
+func (gh *groupHandler) sanitizeMembersRequest(request *MembersRequest) MembersRequest {
+	sanitized := MembersRequest{}
 	if request.Members != nil {
 		sanitized.Members = make([]Member, len(request.Members))
 		for i, member := range request.Members {
@@ -351,7 +435,6 @@ func (gh *groupHandler) sanitizeUpdateGroupRequest(request *UpdateGroupRequest) 
 			}
 		}
 	}
-
 	return sanitized
 }
 

@@ -19,6 +19,7 @@
 package flowexec
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,12 +35,22 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
 )
 
+// txMarkerKey is an unexported type used as a context key for the transaction marker in tests.
+type txMarkerKey struct{}
+
+// stubTransactioner is a stub implementation of Transactioner for testing.
+type stubTransactioner struct{}
+
+func (s *stubTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) error {
+	txCtx := context.WithValue(ctx, txMarkerKey{}, "tx")
+	return txFunc(txCtx)
+}
 func TestInitiateFlowNilContext(t *testing.T) {
 	// Setup
 	service := &flowExecService{}
 
 	// Execute
-	flowID, err := service.InitiateFlow(nil)
+	flowID, err := service.InitiateFlow(context.Background(), nil)
 
 	// Assert
 	assert.NotNil(t, err)
@@ -58,7 +69,7 @@ func TestInitiateFlowEmptyApplicationID(t *testing.T) {
 	}
 
 	// Execute
-	flowID, err := service.InitiateFlow(initContext)
+	flowID, err := service.InitiateFlow(context.Background(), initContext)
 
 	// Assert
 	assert.NotNil(t, err)
@@ -77,7 +88,7 @@ func TestInitiateFlowEmptyFlowType(t *testing.T) {
 	}
 
 	// Execute
-	flowID, err := service.InitiateFlow(initContext)
+	flowID, err := service.InitiateFlow(context.Background(), initContext)
 
 	// Assert
 	assert.NotNil(t, err)
@@ -96,7 +107,7 @@ func TestInitiateFlowInvalidFlowType(t *testing.T) {
 	}
 
 	// Execute
-	flowID, err := service.InitiateFlow(initContext)
+	flowID, err := service.InitiateFlow(context.Background(), initContext)
 
 	// Assert
 	assert.NotNil(t, err)
@@ -193,6 +204,7 @@ func TestInitiateFlowSuccessScenarios(t *testing.T) {
 				flowStore:      mockStore,
 				appService:     mockAppService,
 				flowEngine:     nil,
+				transactioner:  &stubTransactioner{},
 			}
 
 			initContext := &FlowInitContext{
@@ -213,14 +225,16 @@ func TestInitiateFlowSuccessScenarios(t *testing.T) {
 				// Mock flow management service to return flow by handle
 				mockFlow := &flowmgt.CompleteFlowDefinition{ID: "onboarding-flow-123"}
 				mockFlowMgtSvc.EXPECT().GetFlowByHandle(mock.Anything,
-					common.FlowTypeUserOnboarding).Return(mockFlow, nil)
+					mock.Anything, common.FlowTypeUserOnboarding).Return(mockFlow, nil)
 
 				// Mock GetGraph call which is made during initContext
 				inviteGraph := flowFactory.CreateGraph("onboarding-flow-123", common.FlowTypeUserOnboarding)
-				mockFlowMgtSvc.EXPECT().GetGraph("onboarding-flow-123").Return(inviteGraph, nil)
+				mockFlowMgtSvc.EXPECT().GetGraph(mock.Anything, "onboarding-flow-123").Return(inviteGraph, nil)
 
 				// For system flows, StoreFlowContext is called with empty AppID
-				mockStore.EXPECT().StoreFlowContext(mock.MatchedBy(func(ctx EngineContext) bool {
+				mockStore.EXPECT().StoreFlowContext(mock.MatchedBy(func(ctx context.Context) bool {
+					return ctx.Value(txMarkerKey{}) == "tx"
+				}), mock.MatchedBy(func(ctx EngineContext) bool {
 					// Verify flowID is generated
 					if ctx.FlowID == "" {
 						return false
@@ -237,11 +251,13 @@ func TestInitiateFlowSuccessScenarios(t *testing.T) {
 						return false
 					}
 					return true
-				})).Return(nil)
+				}), mock.Anything).Return(nil)
 			} else {
-				mockAppService.EXPECT().GetApplication(appID).Return(mockApp, nil)
-				mockFlowMgtSvc.EXPECT().GetGraph("auth-graph-1").Return(testGraph, nil)
-				mockStore.EXPECT().StoreFlowContext(mock.MatchedBy(func(ctx EngineContext) bool {
+				mockAppService.EXPECT().GetApplication(mock.Anything, appID).Return(mockApp, nil)
+				mockFlowMgtSvc.EXPECT().GetGraph(mock.Anything, "auth-graph-1").Return(testGraph, nil)
+				mockStore.EXPECT().StoreFlowContext(mock.MatchedBy(func(ctx context.Context) bool {
+					return ctx.Value(txMarkerKey{}) == "tx"
+				}), mock.MatchedBy(func(ctx EngineContext) bool {
 					// Verify flowID is generated
 					if ctx.FlowID == "" {
 						return false
@@ -258,11 +274,11 @@ func TestInitiateFlowSuccessScenarios(t *testing.T) {
 						return false
 					}
 					return true
-				})).Return(nil)
+				}), mock.Anything).Return(nil)
 			}
 
 			// Execute
-			flowID, svcErr := service.InitiateFlow(initContext)
+			flowID, svcErr := service.InitiateFlow(context.Background(), initContext)
 
 			// Assert
 			assert.NotEmpty(t, flowID)
@@ -305,7 +321,7 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 					Error:            "Application not found",
 					ErrorDescription: "The requested application could not be found",
 				}
-				mockAppService.EXPECT().GetApplication(appID).Return(nil, appNotFoundErr)
+				mockAppService.EXPECT().GetApplication(mock.Anything, appID).Return(nil, appNotFoundErr)
 				// No other mocks needed as it fails early
 			},
 			expectedErrorCode: "FES-1003", // ErrorInvalidAppID (converted from application not found)
@@ -318,7 +334,8 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 				mockFlowMgtSvc *flowmgtmock.FlowMgtServiceInterfaceMock,
 			) {
 				// Mock application service to return a different client error
-				mockAppService.EXPECT().GetApplication(appID).Return(nil, &ErrorApplicationRetrievalClientError)
+				mockAppService.EXPECT().GetApplication(mock.Anything, appID).
+					Return(nil, &ErrorApplicationRetrievalClientError)
 				// No other mocks needed as it fails early
 			},
 			expectedErrorCode: "FES-1007", // ErrorApplicationRetrievalClientError
@@ -335,10 +352,11 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 					ID:         "app-id-123",
 					AuthFlowID: "auth-graph-1",
 				}
-				mockAppService.EXPECT().GetApplication(appID).Return(mockApp, nil)
+				mockAppService.EXPECT().GetApplication(mock.Anything, appID).Return(mockApp, nil)
 
 				// Mock flow management service to return error (graph not found)
-				mockFlowMgtSvc.EXPECT().GetGraph("auth-graph-1").Return(nil, &serviceerror.InternalServerError)
+				mockFlowMgtSvc.EXPECT().GetGraph(mock.Anything, "auth-graph-1").
+					Return(nil, &serviceerror.InternalServerError)
 				// No store mock needed as it fails before storing
 			},
 			expectedErrorCode: serviceerror.InternalServerError.Code,
@@ -355,14 +373,18 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 					ID:         "app-id-123",
 					AuthFlowID: "auth-graph-1",
 				}
-				mockAppService.EXPECT().GetApplication(appID).Return(mockApp, nil)
+				mockAppService.EXPECT().GetApplication(mock.Anything, appID).Return(mockApp, nil)
 
 				// Mock flow management service to return valid graph
 				testGraph := flowFactory.CreateGraph("auth-graph-1", common.FlowTypeAuthentication)
-				mockFlowMgtSvc.EXPECT().GetGraph("auth-graph-1").Return(testGraph, nil)
+				mockFlowMgtSvc.EXPECT().GetGraph(mock.Anything, "auth-graph-1").Return(testGraph, nil)
 
 				// Mock store to return error
-				mockStore.EXPECT().StoreFlowContext(mock.AnythingOfType("EngineContext")).Return(assert.AnError)
+				mockStore.EXPECT().StoreFlowContext(
+					mock.MatchedBy(func(ctx context.Context) bool {
+						return ctx.Value(txMarkerKey{}) == "tx"
+					}),
+					mock.AnythingOfType("EngineContext"), mock.Anything).Return(assert.AnError)
 			},
 			expectedErrorCode: serviceerror.InternalServerError.Code,
 		},
@@ -381,6 +403,7 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 				flowStore:      mockStore,
 				appService:     mockAppService,
 				flowEngine:     nil,
+				transactioner:  &stubTransactioner{},
 			}
 
 			initContext := &FlowInitContext{
@@ -395,7 +418,7 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 			tt.setupMocks(mockStore, mockAppService, mockFlowMgtSvc)
 
 			// Execute
-			flowID, svcErr := service.InitiateFlow(initContext)
+			flowID, svcErr := service.InitiateFlow(context.Background(), initContext)
 
 			// Assert
 			assert.Empty(t, flowID)
@@ -403,6 +426,44 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 			assert.Equal(t, tt.expectedErrorCode, svcErr.Code)
 
 			// All mocks automatically verified by mockery
+		})
+	}
+}
+
+func TestGetFlowExpirySeconds(t *testing.T) {
+	service := &flowExecService{}
+
+	tests := []struct {
+		name     string
+		flowType common.FlowType
+		expected int64
+	}{
+		{
+			name:     "Authentication flow",
+			flowType: common.FlowTypeAuthentication,
+			expected: defaultAuthFlowExpiry,
+		},
+		{
+			name:     "Registration flow",
+			flowType: common.FlowTypeRegistration,
+			expected: defaultRegistrationFlowExpiry,
+		},
+		{
+			name:     "User onboarding flow",
+			flowType: common.FlowTypeUserOnboarding,
+			expected: defaultUserOnboardingFlowExpiry,
+		},
+		{
+			name:     "Unknown flow type (fallback)",
+			flowType: common.FlowType("UNKNOWN_FLOW"),
+			expected: defaultAuthFlowExpiry,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := service.getFlowExpirySeconds(tt.flowType)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

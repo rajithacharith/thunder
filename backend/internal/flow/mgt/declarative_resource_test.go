@@ -19,10 +19,12 @@
 package flowmgt
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/yaml.v3"
@@ -182,10 +184,10 @@ func (s *DeclarativeResourceTestSuite) TestFlowGraphExporter_GetAllResourceIDs()
 	}
 
 	// Use common.FlowType to match the service interface type
-	mockService.EXPECT().ListFlows(10000, 0, common.FlowType("")).Return(listResponse, nil)
+	mockService.EXPECT().ListFlows(mock.Anything, 10000, 0, common.FlowType("")).Return(listResponse, nil)
 
 	exporter := newFlowGraphExporter(mockService)
-	ids, err := exporter.GetAllResourceIDs()
+	ids, err := exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 2)
@@ -202,10 +204,10 @@ func (s *DeclarativeResourceTestSuite) TestFlowGraphExporter_GetAllResourceIDs_E
 		Error: "test error",
 	}
 
-	mockService.EXPECT().ListFlows(10000, 0, common.FlowType("")).Return(nil, expectedError)
+	mockService.EXPECT().ListFlows(mock.Anything, 10000, 0, common.FlowType("")).Return(nil, expectedError)
 
 	exporter := newFlowGraphExporter(mockService)
-	ids, err := exporter.GetAllResourceIDs()
+	ids, err := exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), ids)
 	assert.Equal(s.T(), expectedError, err)
@@ -220,10 +222,10 @@ func (s *DeclarativeResourceTestSuite) TestFlowGraphExporter_GetAllResourceIDs_E
 		Count: 0,
 	}
 
-	mockService.EXPECT().ListFlows(10000, 0, common.FlowType("")).Return(listResponse, nil)
+	mockService.EXPECT().ListFlows(mock.Anything, 10000, 0, common.FlowType("")).Return(listResponse, nil)
 
 	exporter := newFlowGraphExporter(mockService)
-	ids, err := exporter.GetAllResourceIDs()
+	ids, err := exporter.GetAllResourceIDs(context.Background())
 
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 0)
@@ -238,10 +240,10 @@ func (s *DeclarativeResourceTestSuite) TestFlowGraphExporter_GetResourceByID() {
 		Name: "Auth Flow",
 	}
 
-	mockService.EXPECT().GetFlow("flow-001").Return(flow, nil)
+	mockService.EXPECT().GetFlow(mock.Anything, "flow-001").Return(flow, nil)
 
 	exporter := newFlowGraphExporter(mockService)
-	resource, name, err := exporter.GetResourceByID("flow-001")
+	resource, name, err := exporter.GetResourceByID(context.Background(), "flow-001")
 
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), flow, resource)
@@ -257,10 +259,10 @@ func (s *DeclarativeResourceTestSuite) TestFlowGraphExporter_GetResourceByID_Err
 		Error: "test error",
 	}
 
-	mockService.EXPECT().GetFlow("flow-001").Return(nil, expectedError)
+	mockService.EXPECT().GetFlow(mock.Anything, "flow-001").Return(nil, expectedError)
 
 	exporter := newFlowGraphExporter(mockService)
-	resource, name, err := exporter.GetResourceByID("flow-001")
+	resource, name, err := exporter.GetResourceByID(context.Background(), "flow-001")
 
 	assert.Nil(s.T(), resource)
 	assert.Empty(s.T(), name)
@@ -335,7 +337,7 @@ func (s *DeclarativeResourceTestSuite) TestFileBasedStore_CreateFlow() {
 		},
 	}
 
-	completeFlow, err := store.CreateFlow("flow-001", flowDef)
+	completeFlow, err := store.CreateFlow(context.Background(), "flow-001", flowDef)
 	require.NoError(s.T(), err)
 
 	assert.Equal(s.T(), "flow-001", completeFlow.ID)
@@ -359,10 +361,10 @@ func (s *DeclarativeResourceTestSuite) TestFileBasedStore_GetFlowByID() {
 		},
 	}
 
-	_, err := store.CreateFlow("flow-001", flowDef)
+	_, err := store.CreateFlow(context.Background(), "flow-001", flowDef)
 	require.NoError(s.T(), err)
 
-	retrieved, err := store.GetFlowByID("flow-001")
+	retrieved, err := store.GetFlowByID(context.Background(), "flow-001")
 	require.NoError(s.T(), err)
 
 	assert.Equal(s.T(), "flow-001", retrieved.ID)
@@ -374,7 +376,7 @@ func (s *DeclarativeResourceTestSuite) TestFileBasedStore_GetFlowByID_NotFound()
 	_ = entity.GetInstance().Clear()
 	store := newFileBasedStore()
 
-	_, err := store.GetFlowByID("non-existent")
+	_, err := store.GetFlowByID(context.Background(), "non-existent")
 	assert.Error(s.T(), err)
 }
 
@@ -394,10 +396,10 @@ func (s *DeclarativeResourceTestSuite) TestFileBasedStore_GetFlowByHandle() {
 		},
 	}
 
-	_, err := store.CreateFlow("flow-001", flowDef)
+	_, err := store.CreateFlow(context.Background(), "flow-001", flowDef)
 	require.NoError(s.T(), err)
 
-	retrieved, err := store.GetFlowByHandle("test-flow", "AUTHENTICATION")
+	retrieved, err := store.GetFlowByHandle(context.Background(), "test-flow", "AUTHENTICATION")
 	require.NoError(s.T(), err)
 
 	assert.Equal(s.T(), "flow-001", retrieved.ID)
@@ -420,11 +422,11 @@ func (s *DeclarativeResourceTestSuite) TestFileBasedStore_ListFlows() {
 				{ID: "end", Type: "END"},
 			},
 		}
-		_, err := store.CreateFlow(fmt.Sprintf("flow-%03d", i), flowDef)
+		_, err := store.CreateFlow(context.Background(), fmt.Sprintf("flow-%03d", i), flowDef)
 		require.NoError(s.T(), err)
 	}
 
-	flows, count, err := store.ListFlows(10, 0, "")
+	flows, count, err := store.ListFlows(context.Background(), 10, 0, "")
 	require.NoError(s.T(), err)
 
 	assert.Equal(s.T(), 3, count)
@@ -447,14 +449,14 @@ func (s *DeclarativeResourceTestSuite) TestFileBasedStore_IsFlowExists() {
 		},
 	}
 
-	_, err := store.CreateFlow("flow-001", flowDef)
+	_, err := store.CreateFlow(context.Background(), "flow-001", flowDef)
 	require.NoError(s.T(), err)
 
-	exists, err := store.IsFlowExists("flow-001")
+	exists, err := store.IsFlowExists(context.Background(), "flow-001")
 	require.NoError(s.T(), err)
 	assert.True(s.T(), exists)
 
-	exists, err = store.IsFlowExists("non-existent")
+	exists, err = store.IsFlowExists(context.Background(), "non-existent")
 	require.NoError(s.T(), err)
 	assert.False(s.T(), exists)
 }
@@ -475,27 +477,27 @@ func (s *DeclarativeResourceTestSuite) TestFileBasedStore_UnsupportedOperations(
 		},
 	}
 
-	_, err := store.CreateFlow("flow-001", flowDef)
+	_, err := store.CreateFlow(context.Background(), "flow-001", flowDef)
 	require.NoError(s.T(), err)
 
 	// UpdateFlow
-	_, err = store.UpdateFlow("flow-001", flowDef)
+	_, err = store.UpdateFlow(context.Background(), "flow-001", flowDef)
 	assert.Error(s.T(), err)
 
 	// DeleteFlow
-	err = store.DeleteFlow("flow-001")
+	err = store.DeleteFlow(context.Background(), "flow-001")
 	assert.Error(s.T(), err)
 
 	// ListFlowVersions
-	_, err = store.ListFlowVersions("flow-001")
+	_, err = store.ListFlowVersions(context.Background(), "flow-001")
 	assert.Error(s.T(), err)
 
 	// GetFlowVersion
-	_, err = store.GetFlowVersion("flow-001", 1)
+	_, err = store.GetFlowVersion(context.Background(), "flow-001", 1)
 	assert.Error(s.T(), err)
 
 	// RestoreFlowVersion
-	_, err = store.RestoreFlowVersion("flow-001", 1)
+	_, err = store.RestoreFlowVersion(context.Background(), "flow-001", 1)
 	assert.Error(s.T(), err)
 }
 
@@ -556,18 +558,18 @@ func (s *DeclarativeResourceTestSuite) TestFlowGraphExporterIntegration() {
 		Count: 1,
 	}
 
-	mockService.EXPECT().ListFlows(10000, 0, common.FlowType("")).Return(listResponse, nil)
-	mockService.EXPECT().GetFlow("flow-001").Return(flow, nil)
+	mockService.EXPECT().ListFlows(mock.Anything, 10000, 0, common.FlowType("")).Return(listResponse, nil)
+	mockService.EXPECT().GetFlow(mock.Anything, "flow-001").Return(flow, nil)
 
 	exporter := newFlowGraphExporter(mockService)
 
 	// Get all IDs
-	ids, err := exporter.GetAllResourceIDs()
+	ids, err := exporter.GetAllResourceIDs(context.Background())
 	assert.Nil(s.T(), err)
 	assert.Len(s.T(), ids, 1)
 
 	// Get resource by ID
-	resource, name, err := exporter.GetResourceByID(ids[0])
+	resource, name, err := exporter.GetResourceByID(context.Background(), ids[0])
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), flow, resource)
 	assert.Equal(s.T(), "Authentication Flow", name)
@@ -784,8 +786,8 @@ func (s *DeclarativeResourceTestSuite) TestCompleteFlowDefinition_MarshalUnmarsh
 	// Create a complete flow definition with complex meta
 	originalFlow := &CompleteFlowDefinition{
 		ID:            "019b4495-793d-7172-b3e5-ebc3d61afe36",
-		Handle:        "develop-app-flow",
-		Name:          "Develop App Authentication Flow",
+		Handle:        "console-app-flow",
+		Name:          "Console App Authentication Flow",
 		FlowType:      "AUTHENTICATION",
 		ActiveVersion: 1,
 		Nodes: []NodeDefinition{
@@ -939,10 +941,10 @@ func (s *DeclarativeResourceTestSuite) TestFlowExport_WithComplexMeta() {
 		},
 	}
 
-	mockService.EXPECT().GetFlow("test-flow-001").Return(complexFlow, nil)
+	mockService.EXPECT().GetFlow(mock.Anything, "test-flow-001").Return(complexFlow, nil)
 
 	exporter := newFlowGraphExporter(mockService)
-	resource, name, err := exporter.GetResourceByID("test-flow-001")
+	resource, name, err := exporter.GetResourceByID(context.Background(), "test-flow-001")
 
 	require.Nil(s.T(), err)
 	assert.Equal(s.T(), "Test Flow with Complex Meta", name)

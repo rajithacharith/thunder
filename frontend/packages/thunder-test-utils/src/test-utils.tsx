@@ -18,10 +18,16 @@
 
 /* eslint-disable react-refresh/only-export-components */
 import {useMemo, type ReactElement, type ReactNode} from 'react';
-import {render, renderHook as rtlRenderHook, type RenderOptions, type RenderHookOptions, type RenderResult} from '@testing-library/react';
+import {
+  render,
+  renderHook as rtlRenderHook,
+  type RenderOptions,
+  type RenderHookOptions,
+  type RenderResult,
+} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
 import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
-import {ConfigProvider} from '@thunder/shared-contexts';
+import {ConfigProvider, ToastProvider} from '@thunder/shared-contexts';
 import {LoggerProvider, LogLevel} from '@thunder/logger';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
@@ -30,7 +36,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
  */
 export interface ThunderTestConfig {
   /**
-   * Base path for the application (e.g., '/develop', '/gate')
+   * Base path for the application (e.g., '/console', '/gate')
    */
   base: string;
   /**
@@ -60,10 +66,10 @@ interface ProvidersProps {
   config?: ThunderTestConfig;
 }
 
-// Default configuration for thunder-develop (backwards compatibility)
+// Default configuration for console (backwards compatibility)
 const defaultConfig: ThunderTestConfig = {
-  base: '/develop',
-  clientId: 'DEVELOP',
+  base: '/console',
+  clientId: 'CONSOLE',
 };
 
 // Store the current config
@@ -92,6 +98,9 @@ function Providers({children, queryClient = undefined, config = undefined}: Prov
   if (typeof window !== 'undefined' && !window.__THUNDER_RUNTIME_CONFIG__) {
     // eslint-disable-next-line no-underscore-dangle
     window.__THUNDER_RUNTIME_CONFIG__ = {
+      brand: {
+        product_name: 'Thunder',
+      },
       client: {
         base: testConfig.base,
         client_id: testConfig.clientId,
@@ -118,7 +127,9 @@ function Providers({children, queryClient = undefined, config = undefined}: Prov
               transports: [],
             }}
           >
-            <OxygenUIThemeProvider>{children}</OxygenUIThemeProvider>
+            <ToastProvider>
+              <OxygenUIThemeProvider>{children}</OxygenUIThemeProvider>
+            </ToastProvider>
           </LoggerProvider>
         </ConfigProvider>
       </QueryClientProvider>

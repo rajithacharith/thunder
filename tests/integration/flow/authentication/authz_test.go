@@ -44,14 +44,15 @@ var (
 			},
 			"password": map[string]interface{}{
 				"type": "string",
+				"credential": true,
 			},
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 		},
@@ -102,13 +103,13 @@ var (
 						{
 							"ref":        "input_001",
 							"identifier": "username",
-							"type":       "string",
+							"type":       "TEXT_INPUT",
 							"required":   true,
 						},
 						{
 							"ref":        "input_002",
 							"identifier": "password",
-							"type":       "string",
+							"type":       "PASSWORD_INPUT",
 							"required":   true,
 						},
 					},
@@ -146,7 +147,7 @@ var (
 		ClientSecret:              "authz_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"authz-test-person"},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
@@ -157,8 +158,8 @@ var (
 			"username": "authorized_user",
 			"password": "SecurePass123!",
 			"email": "authorized@test.com",
-			"firstName": "Authorized",
-			"lastName": "User"
+			"given_name": "Authorized",
+			"family_name": "User"
 		}`),
 	}
 
@@ -168,8 +169,8 @@ var (
 			"username": "unauthorized_user",
 			"password": "SecurePass123!",
 			"email": "unauthorized@test.com",
-			"firstName": "Unauthorized",
-			"lastName": "User"
+			"given_name": "Unauthorized",
+			"family_name": "User"
 		}`),
 	}
 
@@ -210,7 +211,7 @@ func (ts *FlowAuthzTestSuite) SetupSuite() {
 	}
 
 	// Create user schema within the test organization unit
-	authzTestUserSchema.OrganizationUnitId = authzTestOUID
+	authzTestUserSchema.OUID = authzTestOUID
 	authzUserSchemaID, err = testutils.CreateUserType(authzTestUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create user schema during setup: %v", err)
@@ -230,7 +231,7 @@ func (ts *FlowAuthzTestSuite) SetupSuite() {
 
 	// Create user with role
 	userWithRoleCopy := userWithRole
-	userWithRoleCopy.OrganizationUnit = authzTestOUID
+	userWithRoleCopy.OUID = authzTestOUID
 	authzUserWithRole, err = testutils.CreateUser(userWithRoleCopy)
 	if err != nil {
 		ts.T().Fatalf("Failed to create user with role during setup: %v", err)
@@ -238,7 +239,7 @@ func (ts *FlowAuthzTestSuite) SetupSuite() {
 
 	// Create user without role
 	userNoRoleCopy := userNoRole
-	userNoRoleCopy.OrganizationUnit = authzTestOUID
+	userNoRoleCopy.OUID = authzTestOUID
 	authzUserNoRole, err = testutils.CreateUser(userNoRoleCopy)
 	if err != nil {
 		ts.T().Fatalf("Failed to create user without role during setup: %v", err)
@@ -249,7 +250,7 @@ func (ts *FlowAuthzTestSuite) SetupSuite() {
 		Name:               "Document Management System",
 		Description:        "System for managing documents",
 		Identifier:         "document-mgmt",
-		OrganizationUnitID: authzTestOUID,
+		OUID:               authzTestOUID,
 	}
 	actions := []testutils.Action{
 		{
@@ -270,7 +271,7 @@ func (ts *FlowAuthzTestSuite) SetupSuite() {
 
 	// Create role with user assignment
 	roleToCreate := documentEditorRole
-	roleToCreate.OrganizationUnitID = authzTestOUID
+	roleToCreate.OUID = authzTestOUID
 	roleToCreate.Permissions = []testutils.ResourcePermissions{
 		{
 			ResourceServerID: authzTestResourceServer,

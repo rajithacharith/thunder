@@ -38,7 +38,7 @@ func TestContextTestSuite(t *testing.T) {
 }
 
 func (suite *ContextTestSuite) TestGetOAuthClient_WithNilContext() {
-	client := GetOAuthClient(context.TODO())
+	client := GetOAuthClient(context.Background())
 	assert.Nil(suite.T(), client)
 }
 
@@ -89,7 +89,7 @@ func (suite *ContextTestSuite) TestWithOAuthClient_NilContext() {
 		ClientID: "test-client-id",
 	}
 
-	ctx := withOAuthClient(context.TODO(), expectedClient)
+	ctx := withOAuthClient(context.Background(), expectedClient)
 	client := GetOAuthClient(ctx)
 
 	assert.NotNil(suite.T(), client)

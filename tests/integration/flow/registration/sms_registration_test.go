@@ -45,7 +45,60 @@ var (
 				"executor": map[string]interface{}{
 					"name": "UserTypeResolver",
 				},
-				"onSuccess": "prompt_mobile",
+				"onSuccess":    "prompt_mobile",
+				"onIncomplete": "prompt_usertype",
+			},
+			{
+				"id":   "prompt_usertype",
+				"type": "PROMPT",
+				"meta": map[string]interface{}{
+					"components": []map[string]interface{}{
+						{
+							"type":    "TEXT",
+							"id":      "heading_usertype",
+							"label":   "Sign Up",
+							"variant": "HEADING_2",
+						},
+						{
+							"type": "BLOCK",
+							"id":   "block_usertype",
+							"components": []map[string]interface{}{
+								{
+									"type":        "SELECT",
+									"id":          "usertype_input",
+									"ref":         "userType",
+									"label":       "User Type",
+									"placeholder": "Select your user type",
+									"required":    true,
+									"options":     []interface{}{},
+								},
+								{
+									"type":      "ACTION",
+									"id":        "action_usertype",
+									"label":     "Continue",
+									"variant":   "PRIMARY",
+									"eventType": "SUBMIT",
+								},
+							},
+						},
+					},
+				},
+				"prompts": []map[string]interface{}{
+					{
+						"inputs": []map[string]interface{}{
+							{
+								"ref":        "usertype_input",
+								"identifier": "userType",
+								"type":       "SELECT",
+								"required":   true,
+							},
+						},
+						"action": map[string]interface{}{
+							"ref":      "action_usertype",
+							"nextNode": "user_type_resolver",
+						},
+					},
+				},
 			},
 			{
 				"id":   "prompt_mobile",
@@ -119,13 +172,13 @@ var (
 					"inputs": []map[string]interface{}{
 						{
 							"ref":        "input_002",
-							"identifier": "firstName",
+							"identifier": "given_name",
 							"type":       "string",
 							"required":   false,
 						},
 						{
 							"ref":        "input_003",
-							"identifier": "lastName",
+							"identifier": "family_name",
 							"type":       "string",
 							"required":   false,
 						},
@@ -175,14 +228,15 @@ var (
 			},
 			"password": map[string]interface{}{
 				"type": "string",
+				"credential": true,
 			},
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 			"mobileNumber": map[string]interface{}{
@@ -200,7 +254,7 @@ var (
 		ClientSecret:              "sms_reg_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{smsRegTestUserSchema.Name},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
@@ -235,7 +289,7 @@ func (ts *SMSRegistrationFlowTestSuite) SetupSuite() {
 	ts.testOUID = ouID
 
 	// Create test user schema for SMS tests
-	smsRegTestUserSchema.OrganizationUnitId = ts.testOUID
+	smsRegTestUserSchema.OUID = ts.testOUID
 	schemaID, err := testutils.CreateUserType(smsRegTestUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
@@ -280,8 +334,8 @@ func (ts *SMSRegistrationFlowTestSuite) SetupSuite() {
 
 	// Update registration flow with created sender ID
 	smsNodes := smsRegistrationFlow.Nodes.([]map[string]interface{})
-	smsNodes[3]["properties"].(map[string]interface{})["senderId"] = senderID // sms_otp_send node
-	smsNodes[5]["properties"].(map[string]interface{})["senderId"] = senderID // sms_otp_verify node
+	smsNodes[4]["properties"].(map[string]interface{})["senderId"] = senderID // sms_otp_send node
+	smsNodes[6]["properties"].(map[string]interface{})["senderId"] = senderID // sms_otp_verify node
 	smsRegistrationFlow.Nodes = smsNodes
 
 	// Create the SMS registration flow
@@ -389,7 +443,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlow() {
 	ts.Require().True(common.HasInput(otpFlowStep.Data.Inputs, "otp"), "OTP input should be required")
 
 	// Wait for SMS to be sent
-	time.Sleep(1000 * time.Millisecond)
+	time.Sleep(1 * time.Second)
 
 	// Verify SMS was sent
 	lastMessage := ts.mockServer.GetLastMessage()
@@ -417,12 +471,12 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlow() {
 	// Step 4: Provide additional attributes
 	fillInputs := []common.Inputs{
 		{
-			Identifier: "firstName",
+			Identifier: "given_name",
 			Type:       "string",
 			Required:   true,
 		},
 		{
-			Identifier: "lastName",
+			Identifier: "family_name",
 			Type:       "string",
 			Required:   true,
 		},
@@ -448,7 +502,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlow() {
 
 	// Validate JWT contains expected user type and OU ID
 	ts.Require().Equal(smsRegTestUserSchema.Name, jwtClaims.UserType, "Expected userType to match created schema")
-	ts.Require().Equal(ts.testOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
+	ts.Require().Equal(ts.testOUID, jwtClaims.OUID, "Expected ouId to match the created organization unit")
 	ts.Require().Equal(ts.testAppID, jwtClaims.Aud, "Expected aud to match the application ID")
 	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
 
@@ -500,7 +554,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowInvalidOTP() {
 	ts.Require().Equal("INCOMPLETE", otpFlowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 
 	// Wait for SMS to be sent
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(1 * time.Second)
 
 	// Step 2: Try with invalid OTP
 	invalidOTPInputs := map[string]string{
@@ -558,7 +612,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowSingleRequestWith
 	ts.Require().Equal("VIEW", otpStep.Type, "Expected flow type to be VIEW")
 
 	// Wait for SMS to be sent
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(1 * time.Second)
 
 	// Get the OTP from mock server
 	lastMessage := ts.mockServer.GetLastMessage()
@@ -580,8 +634,8 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowSingleRequestWith
 
 	// Step 4: Provide user attributes
 	userInputs := map[string]string{
-		"firstName":    "Test",
-		"lastName":     "User",
+		"given_name":    "Test",
+		"family_name":     "User",
 		"email":        fmt.Sprintf("%s@example.com", mobileNumber),
 		"mobileNumber": mobileNumber,
 	}
@@ -605,7 +659,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowSingleRequestWith
 
 	// Validate JWT contains expected user type and OU ID
 	ts.Require().Equal(smsRegTestUserSchema.Name, jwtClaims.UserType, "Expected userType to match created schema")
-	ts.Require().Equal(ts.testOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
+	ts.Require().Equal(ts.testOUID, jwtClaims.OUID, "Expected ouId to match the created organization unit")
 	ts.Require().Equal(ts.testAppID, jwtClaims.Aud, "Expected aud to match the application ID")
 	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
 
@@ -628,10 +682,10 @@ func fillRequiredRegistrationAttributes(inputs []common.Inputs, mobile string) m
 	for _, input := range inputs {
 		if input.Required {
 			switch input.Identifier {
-			case "firstName":
-				attrInputs["firstName"] = "Test"
-			case "lastName":
-				attrInputs["lastName"] = "User"
+			case "given_name":
+				attrInputs["given_name"] = "Test"
+			case "family_name":
+				attrInputs["family_name"] = "User"
 			case "email":
 				attrInputs["email"] = fmt.Sprintf("%s@example.com", mobile)
 			default:

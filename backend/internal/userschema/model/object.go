@@ -26,12 +26,25 @@ import (
 )
 
 type object struct {
-	required   bool
-	properties map[string]property
+	required    bool
+	displayName string
+	properties  map[string]property
 }
 
 func (p *object) isRequired() bool {
 	return p.required
+}
+
+func (p *object) isCredential() bool {
+	return false
+}
+
+func (p *object) isDisplayable() bool {
+	return false
+}
+
+func (p *object) isUnique() bool {
+	return false
 }
 
 func (p *object) validateValue(value interface{}, path string, logger *log.Logger) (bool, error) {
@@ -62,6 +75,15 @@ func (p *object) validateValue(value interface{}, path string, logger *log.Logge
 			return false, err
 		}
 		if !isValid {
+			return false, nil
+		}
+	}
+
+	// Reject any nested keys not declared in the object schema.
+	for key := range valueMap {
+		if _, declared := p.properties[key]; !declared {
+			logger.Debug("Attribute not defined in schema",
+				log.String("attribute", path+"."+key))
 			return false, nil
 		}
 	}
@@ -103,9 +125,10 @@ func (p *object) validateUniqueness(
 
 func compileObjectProperty(propMap map[string]json.RawMessage) (property, error) {
 	allowedFields := map[string]struct{}{
-		"type":       {},
-		"properties": {},
-		"required":   {},
+		"type":        {},
+		"properties":  {},
+		"required":    {},
+		"displayName": {},
 	}
 
 	for field := range propMap {
@@ -121,6 +144,12 @@ func compileObjectProperty(propMap map[string]json.RawMessage) (property, error)
 	if raw, exists := propMap["required"]; exists {
 		if err := json.Unmarshal(raw, &prop.required); err != nil {
 			return nil, fmt.Errorf("'required' field must be a boolean")
+		}
+	}
+
+	if raw, exists := propMap["displayName"]; exists {
+		if err := json.Unmarshal(raw, &prop.displayName); err != nil {
+			return nil, fmt.Errorf("'displayName' field must be a string")
 		}
 	}
 

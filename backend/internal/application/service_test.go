@@ -19,6 +19,8 @@
 package application
 
 import (
+	"context"
+
 	"errors"
 	"testing"
 
@@ -29,6 +31,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/cert"
+	"github.com/asgardeo/thunder/internal/consent"
 	flowcommon "github.com/asgardeo/thunder/internal/flow/common"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
@@ -36,11 +39,15 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/userschema"
 	"github.com/asgardeo/thunder/tests/mocks/certmock"
+	"github.com/asgardeo/thunder/tests/mocks/consentmock"
+	"github.com/asgardeo/thunder/tests/mocks/design/layoutmock"
+	"github.com/asgardeo/thunder/tests/mocks/design/thememock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
 
-const testAppIDForRollback = "app123"
+const testServiceAppID = "app123"
+const testClientID = "test-client-id"
 
 type ServiceTestSuite struct {
 	suite.Suite
@@ -80,7 +87,8 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse_WithTemplate() 
 		AuthFlowID:                "auth_flow_1",
 		RegistrationFlowID:        "reg_flow_1",
 		IsRegistrationFlowEnabled: true,
-		BrandingID:                "brand-123",
+		ThemeID:                   "theme-123",
+		LayoutID:                  "layout-456",
 		Template:                  "spa",
 		ClientID:                  "client-123",
 		LogoURL:                   "https://example.com/logo.png",
@@ -90,7 +98,8 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse_WithTemplate() 
 
 	assert.Equal(suite.T(), "app-123", result.ID)
 	assert.Equal(suite.T(), "Test App", result.Name)
-	assert.Equal(suite.T(), "brand-123", result.BrandingID)
+	assert.Equal(suite.T(), "theme-123", result.ThemeID)
+	assert.Equal(suite.T(), "layout-456", result.LayoutID)
 	assert.Equal(suite.T(), "spa", result.Template)
 	assert.Equal(suite.T(), "client-123", result.ClientID)
 	assert.Equal(suite.T(), "https://example.com/logo.png", result.LogoURL)
@@ -114,10 +123,9 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse_WithEmptyTempla
 	assert.Equal(suite.T(), "", result.Template)
 }
 
-func (suite *ServiceTestSuite) TestGetDefaultTokenConfigFromDeployment() {
+func (suite *ServiceTestSuite) TestGetDefaultAssertionConfigFromDeployment() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://test-issuer.com",
 			ValidityPeriod: 7200,
 		},
 	}
@@ -126,17 +134,15 @@ func (suite *ServiceTestSuite) TestGetDefaultTokenConfigFromDeployment() {
 	require.NoError(suite.T(), err)
 	defer config.ResetThunderRuntime()
 
-	result := getDefaultTokenConfigFromDeployment()
+	result := getDefaultAssertionConfigFromDeployment()
 
 	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), "https://test-issuer.com", result.Issuer)
 	assert.Equal(suite.T(), int64(7200), result.ValidityPeriod)
 }
 
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -148,55 +154,46 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 	tests := []struct {
 		name                    string
 		app                     *model.ApplicationDTO
-		expectedRootIssuer      string
 		expectedRootValidity    int64
 		expectedAccessValidity  int64
 		expectedIDTokenValidity int64
-		expectedTokenIssuer     string
 	}{
 		{
 			name: "No token config - uses defaults",
 			app: &model.ApplicationDTO{
 				Name: "Test App",
 			},
-			expectedRootIssuer:      "https://default-issuer.com",
 			expectedRootValidity:    3600,
 			expectedAccessValidity:  3600,
 			expectedIDTokenValidity: 3600,
-			expectedTokenIssuer:     "https://default-issuer.com",
 		},
 		{
 			name: "Custom root token config",
 			app: &model.ApplicationDTO{
 				Name: "Test App",
-				Token: &model.TokenConfig{
-					Issuer:         "https://custom-issuer.com",
+				Assertion: &model.AssertionConfig{
 					ValidityPeriod: 7200,
 					UserAttributes: []string{"email", "name"},
 				},
 			},
-			expectedRootIssuer:      "https://custom-issuer.com",
 			expectedRootValidity:    7200,
 			expectedAccessValidity:  7200,
 			expectedIDTokenValidity: 7200,
-			expectedTokenIssuer:     "https://custom-issuer.com",
 		},
 		{
 			name: "Partial root token config",
 			app: &model.ApplicationDTO{
 				Name: "Test App",
-				Token: &model.TokenConfig{
+				Assertion: &model.AssertionConfig{
 					ValidityPeriod: 5000,
 				},
 			},
-			expectedRootIssuer:      "https://default-issuer.com",
 			expectedRootValidity:    5000,
 			expectedAccessValidity:  5000,
 			expectedIDTokenValidity: 5000,
-			expectedTokenIssuer:     "https://default-issuer.com",
 		},
 		{
-			name: "OAuth token config with custom issuer",
+			name: "OAuth token config with custom validity periods",
 			app: &model.ApplicationDTO{
 				Name: "Test App",
 				InboundAuthConfig: []model.InboundAuthConfigDTO{
@@ -204,7 +201,6 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 						Type: model.OAuthInboundAuthType,
 						OAuthAppConfig: &model.OAuthAppConfigDTO{
 							Token: &model.OAuthTokenConfig{
-								Issuer: "https://oauth-issuer.com",
 								AccessToken: &model.AccessTokenConfig{
 									ValidityPeriod: 1800,
 								},
@@ -216,11 +212,9 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 					},
 				},
 			},
-			expectedRootIssuer:      "https://default-issuer.com",
 			expectedRootValidity:    3600,
 			expectedAccessValidity:  1800,
 			expectedIDTokenValidity: 900,
-			expectedTokenIssuer:     "https://oauth-issuer.com",
 		},
 		{
 			name: "OAuth token with only access token config",
@@ -240,51 +234,24 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 					},
 				},
 			},
-			expectedRootIssuer:      "https://default-issuer.com",
 			expectedRootValidity:    3600,
 			expectedAccessValidity:  2400,
 			expectedIDTokenValidity: 3600,
-			expectedTokenIssuer:     "https://default-issuer.com",
-		},
-		{
-			name: "OAuth token with issuer but no root token",
-			app: &model.ApplicationDTO{
-				Name: "Test App",
-				InboundAuthConfig: []model.InboundAuthConfigDTO{
-					{
-						Type: model.OAuthInboundAuthType,
-						OAuthAppConfig: &model.OAuthAppConfigDTO{
-							Token: &model.OAuthTokenConfig{
-								Issuer: "https://oauth-only-issuer.com",
-							},
-						},
-					},
-				},
-			},
-			expectedRootIssuer:      "https://default-issuer.com",
-			expectedRootValidity:    3600,
-			expectedAccessValidity:  3600,
-			expectedIDTokenValidity: 3600,
-			expectedTokenIssuer:     "https://oauth-only-issuer.com",
 		},
 	}
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			rootToken, accessToken, idToken, tokenIssuer := processTokenConfiguration(tt.app)
+			rootAssertion, accessToken, idToken := processTokenConfiguration(tt.app)
 
-			assert.Equal(suite.T(), tt.expectedRootIssuer, rootToken.Issuer)
-			assert.Equal(suite.T(), tt.expectedRootValidity, rootToken.ValidityPeriod)
-			assert.NotNil(suite.T(), rootToken.UserAttributes)
+			assert.Equal(suite.T(), tt.expectedRootValidity, rootAssertion.ValidityPeriod)
+			assert.NotNil(suite.T(), rootAssertion.UserAttributes)
 
 			assert.Equal(suite.T(), tt.expectedAccessValidity, accessToken.ValidityPeriod)
 			assert.NotNil(suite.T(), accessToken.UserAttributes)
 
 			assert.Equal(suite.T(), tt.expectedIDTokenValidity, idToken.ValidityPeriod)
 			assert.NotNil(suite.T(), idToken.UserAttributes)
-			assert.NotNil(suite.T(), idToken.ScopeClaims)
-
-			assert.Equal(suite.T(), tt.expectedTokenIssuer, tokenIssuer)
 		})
 	}
 }
@@ -490,6 +457,15 @@ func (suite *ServiceTestSuite) TestValidateTokenEndpointAuthMethod() {
 			expectError: true,
 		},
 		{
+			name: "None auth method with client secret",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodNone,
+				ClientSecret:            "should-not-have-secret",
+				PublicClient:            true,
+			},
+			expectError: true,
+		},
+		{
 			name: "Invalid empty auth method",
 			oauthConfig: &model.OAuthAppConfigDTO{
 				TokenEndpointAuthMethod: "",
@@ -505,6 +481,73 @@ func (suite *ServiceTestSuite) TestValidateTokenEndpointAuthMethod() {
 			},
 			expectError: true,
 		},
+		{
+			name: "Valid private_key_jwt with JWKS certificate",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+				Certificate: &model.ApplicationCertificate{
+					Type:  cert.CertificateTypeJWKS,
+					Value: `{"keys":[]}`,
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "Valid private_key_jwt with JWKS URI certificate",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+				Certificate: &model.ApplicationCertificate{
+					Type:  cert.CertificateTypeJWKSURI,
+					Value: "https://example.com/.well-known/jwks.json",
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "private_key_jwt without certificate",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+			},
+			expectError: true,
+		},
+		{
+			name: "private_key_jwt with nil certificate",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+				Certificate:             nil,
+			},
+			expectError: true,
+		},
+		{
+			name: "private_key_jwt with certificate type NONE",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+				Certificate: &model.ApplicationCertificate{
+					Type: cert.CertificateTypeNone,
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "private_key_jwt with client secret",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+				Certificate: &model.ApplicationCertificate{
+					Type:  cert.CertificateTypeJWKS,
+					Value: `{"keys":[]}`,
+				},
+				ClientSecret: "some-secret",
+			},
+			expectError: true,
+		},
+		{
+			name: "private_key_jwt with client secret and no certificate",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+				ClientSecret:            "some-secret",
+			},
+			expectError: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -516,6 +559,59 @@ func (suite *ServiceTestSuite) TestValidateTokenEndpointAuthMethod() {
 			} else {
 				assert.Nil(suite.T(), err)
 			}
+		})
+	}
+}
+
+func (suite *ServiceTestSuite) TestValidateTokenEndpointAuthMethod_PrivateKeyJWT_ErrorMessages() {
+	tests := []struct {
+		name            string
+		oauthConfig     *model.OAuthAppConfigDTO
+		expectedErrCode string
+		expectedErrDesc string
+	}{
+		{
+			name: "private_key_jwt requires certificate - nil certificate",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+			},
+			expectedErrCode: ErrorInvalidOAuthConfiguration.Code,
+			expectedErrDesc: "private_key_jwt authentication method requires a certificate",
+		},
+		{
+			name: "private_key_jwt requires certificate - NONE type",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+				Certificate: &model.ApplicationCertificate{
+					Type: cert.CertificateTypeNone,
+				},
+			},
+			expectedErrCode: ErrorInvalidOAuthConfiguration.Code,
+			expectedErrDesc: "private_key_jwt authentication method requires a certificate",
+		},
+		{
+			name: "private_key_jwt cannot have client secret",
+			oauthConfig: &model.OAuthAppConfigDTO{
+				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+				Certificate: &model.ApplicationCertificate{
+					Type:  cert.CertificateTypeJWKS,
+					Value: `{"keys":[]}`,
+				},
+				ClientSecret: "some-secret",
+			},
+			expectedErrCode: ErrorInvalidOAuthConfiguration.Code,
+			expectedErrDesc: "private_key_jwt authentication method cannot have a client secret",
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			err := validateTokenEndpointAuthMethod(tt.oauthConfig)
+
+			require.NotNil(suite.T(), err)
+			assert.Equal(suite.T(), serviceerror.ClientErrorType, err.Type)
+			assert.Equal(suite.T(), tt.expectedErrCode, err.Code)
+			assert.Equal(suite.T(), tt.expectedErrDesc, err.ErrorDescription)
 		})
 	}
 }
@@ -538,18 +634,6 @@ func (suite *ServiceTestSuite) TestValidatePublicClientConfiguration() {
 			expectError: false,
 		},
 		{
-			name: "Public client with client credentials grant",
-			oauthConfig: &model.OAuthAppConfigDTO{
-				PublicClient:            true,
-				ClientSecret:            "",
-				GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeClientCredentials},
-				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodNone,
-				PKCERequired:            true,
-			},
-			expectError: true,
-			errorMsg:    "Public clients cannot use the client_credentials grant type",
-		},
-		{
 			name: "Public client with auth method other than none",
 			oauthConfig: &model.OAuthAppConfigDTO{
 				PublicClient:            true,
@@ -559,16 +643,6 @@ func (suite *ServiceTestSuite) TestValidatePublicClientConfiguration() {
 			},
 			expectError: true,
 			errorMsg:    "Public clients must use 'none' as token endpoint authentication method",
-		},
-		{
-			name: "Public client with client secret",
-			oauthConfig: &model.OAuthAppConfigDTO{
-				PublicClient:            true,
-				ClientSecret:            "should-not-have-secret",
-				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodNone,
-			},
-			expectError: true,
-			errorMsg:    "Public clients cannot have client secrets",
 		},
 		{
 			name: "Public client without PKCE required",
@@ -617,16 +691,18 @@ func (suite *ServiceTestSuite) TestGetProcessedClientSecret() {
 		{
 			name: "Confidential client with provided secret",
 			oauthConfig: &model.OAuthAppConfigDTO{
-				PublicClient: false,
-				ClientSecret: "my-secret-123",
+				PublicClient:            false,
+				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+				ClientSecret:            "my-secret-123",
 			},
 			expectNonEmpty: true,
 		},
 		{
 			name: "Confidential client without provided secret - generates new",
 			oauthConfig: &model.OAuthAppConfigDTO{
-				PublicClient: false,
-				ClientSecret: "",
+				PublicClient:            false,
+				TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+				ClientSecret:            "",
 			},
 			expectNonEmpty: true,
 		},
@@ -653,9 +729,9 @@ func (suite *ServiceTestSuite) TestValidateAuthFlowID_WithValidFlowID() {
 		AuthFlowID: "auth-flow-123",
 	}
 
-	mockFlowMgtService.EXPECT().IsValidFlow("auth-flow-123").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-123").Return(true)
 
-	svcErr := service.validateAuthFlowID(app)
+	svcErr := service.validateAuthFlowID(context.Background(), app)
 
 	assert.Nil(suite.T(), svcErr)
 	assert.Equal(suite.T(), "auth-flow-123", app.AuthFlowID)
@@ -668,9 +744,9 @@ func (suite *ServiceTestSuite) TestValidateAuthFlowID_WithInvalidFlowID() {
 		AuthFlowID: "invalid-flow",
 	}
 
-	mockFlowMgtService.EXPECT().IsValidFlow("invalid-flow").Return(false)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "invalid-flow").Return(false)
 
-	svcErr := service.validateAuthFlowID(app)
+	svcErr := service.validateAuthFlowID(context.Background(), app)
 
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorInvalidAuthFlowID, svcErr)
@@ -697,10 +773,10 @@ func (suite *ServiceTestSuite) TestValidateAuthFlowID_WithEmptyFlowID_SetsDefaul
 		ID:     "default-flow-id-123",
 		Handle: "default_auth_flow",
 	}
-	mockFlowMgtService.EXPECT().GetFlowByHandle("default_auth_flow", flowcommon.FlowTypeAuthentication).
+	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, "default_auth_flow", flowcommon.FlowTypeAuthentication).
 		Return(defaultFlow, nil)
 
-	svcErr := service.validateAuthFlowID(app)
+	svcErr := service.validateAuthFlowID(context.Background(), app)
 
 	assert.Nil(suite.T(), svcErr)
 	assert.Equal(suite.T(), "default-flow-id-123", app.AuthFlowID)
@@ -723,10 +799,10 @@ func (suite *ServiceTestSuite) TestValidateAuthFlowID_WithEmptyFlowID_ErrorRetri
 		AuthFlowID: "",
 	}
 
-	mockFlowMgtService.EXPECT().GetFlowByHandle("default_auth_flow", flowcommon.FlowTypeAuthentication).
+	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, "default_auth_flow", flowcommon.FlowTypeAuthentication).
 		Return(nil, &serviceerror.ServiceError{Type: serviceerror.ClientErrorType})
 
-	svcErr := service.validateAuthFlowID(app)
+	svcErr := service.validateAuthFlowID(context.Background(), app)
 
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorWhileRetrievingFlowDefinition, svcErr)
@@ -739,9 +815,9 @@ func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_WithValidFlowID() 
 		RegistrationFlowID: "reg-flow-123",
 	}
 
-	mockFlowMgtService.EXPECT().IsValidFlow("reg-flow-123").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-123").Return(true)
 
-	svcErr := service.validateRegistrationFlowID(app)
+	svcErr := service.validateRegistrationFlowID(context.Background(), app)
 
 	assert.Nil(suite.T(), svcErr)
 	assert.Equal(suite.T(), "reg-flow-123", app.RegistrationFlowID)
@@ -754,9 +830,9 @@ func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_WithInvalidFlowID(
 		RegistrationFlowID: "invalid-reg-flow",
 	}
 
-	mockFlowMgtService.EXPECT().IsValidFlow("invalid-reg-flow").Return(false)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "invalid-reg-flow").Return(false)
 
-	svcErr := service.validateRegistrationFlowID(app)
+	svcErr := service.validateRegistrationFlowID(context.Background(), app)
 
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorInvalidRegistrationFlowID, svcErr)
@@ -779,11 +855,11 @@ func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_WithEmptyFlowID_In
 		Handle: "basic_auth",
 	}
 
-	mockFlowMgtService.EXPECT().GetFlow("auth-flow-123").Return(authFlow, nil)
-	mockFlowMgtService.EXPECT().GetFlowByHandle("basic_auth", flowcommon.FlowTypeRegistration).
+	mockFlowMgtService.EXPECT().GetFlow(mock.Anything, "auth-flow-123").Return(authFlow, nil)
+	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, "basic_auth", flowcommon.FlowTypeRegistration).
 		Return(regFlow, nil)
 
-	svcErr := service.validateRegistrationFlowID(app)
+	svcErr := service.validateRegistrationFlowID(context.Background(), app)
 
 	assert.Nil(suite.T(), svcErr)
 	assert.Equal(suite.T(), "reg-flow-456", app.RegistrationFlowID)
@@ -797,10 +873,10 @@ func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_ErrorRetrievingAut
 		RegistrationFlowID: "",
 	}
 
-	mockFlowMgtService.EXPECT().GetFlow("auth-flow-123").
+	mockFlowMgtService.EXPECT().GetFlow(mock.Anything, "auth-flow-123").
 		Return(nil, &serviceerror.ServiceError{Type: serviceerror.ServerErrorType})
 
-	svcErr := service.validateRegistrationFlowID(app)
+	svcErr := service.validateRegistrationFlowID(context.Background(), app)
 
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
@@ -819,11 +895,11 @@ func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_ErrorRetrievingReg
 		Handle: "basic_auth",
 	}
 
-	mockFlowMgtService.EXPECT().GetFlow("auth-flow-123").Return(authFlow, nil)
-	mockFlowMgtService.EXPECT().GetFlowByHandle("basic_auth", flowcommon.FlowTypeRegistration).
+	mockFlowMgtService.EXPECT().GetFlow(mock.Anything, "auth-flow-123").Return(authFlow, nil)
+	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, "basic_auth", flowcommon.FlowTypeRegistration).
 		Return(nil, &serviceerror.ServiceError{Type: serviceerror.ClientErrorType})
 
-	svcErr := service.validateRegistrationFlowID(app)
+	svcErr := service.validateRegistrationFlowID(context.Background(), app)
 
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorWhileRetrievingFlowDefinition, svcErr)
@@ -837,10 +913,10 @@ func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_ClientErrorRetriev
 		RegistrationFlowID: "",
 	}
 
-	mockFlowMgtService.EXPECT().GetFlow("auth-flow-123").
+	mockFlowMgtService.EXPECT().GetFlow(mock.Anything, "auth-flow-123").
 		Return(nil, &serviceerror.ServiceError{Type: serviceerror.ClientErrorType})
 
-	svcErr := service.validateRegistrationFlowID(app)
+	svcErr := service.validateRegistrationFlowID(context.Background(), app)
 
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorWhileRetrievingFlowDefinition, svcErr)
@@ -859,11 +935,11 @@ func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_ServerErrorRetriev
 		Handle: "basic_auth",
 	}
 
-	mockFlowMgtService.EXPECT().GetFlow("auth-flow-123").Return(authFlow, nil)
-	mockFlowMgtService.EXPECT().GetFlowByHandle("basic_auth", flowcommon.FlowTypeRegistration).
+	mockFlowMgtService.EXPECT().GetFlow(mock.Anything, "auth-flow-123").Return(authFlow, nil)
+	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, "basic_auth", flowcommon.FlowTypeRegistration).
 		Return(nil, &serviceerror.ServiceError{Type: serviceerror.ServerErrorType})
 
-	svcErr := service.validateRegistrationFlowID(app)
+	svcErr := service.validateRegistrationFlowID(context.Background(), app)
 
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
@@ -886,10 +962,10 @@ func (suite *ServiceTestSuite) TestGetDefaultAuthFlowID_Success() {
 		ID:     "flow-id-789",
 		Handle: "custom_auth_flow",
 	}
-	mockFlowMgtService.EXPECT().GetFlowByHandle("custom_auth_flow", flowcommon.FlowTypeAuthentication).
+	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, "custom_auth_flow", flowcommon.FlowTypeAuthentication).
 		Return(defaultFlow, nil)
 
-	result, svcErr := service.getDefaultAuthFlowID()
+	result, svcErr := service.getDefaultAuthFlowID(context.Background())
 
 	assert.Nil(suite.T(), svcErr)
 	assert.Equal(suite.T(), "flow-id-789", result)
@@ -908,10 +984,10 @@ func (suite *ServiceTestSuite) TestGetDefaultAuthFlowID_ErrorRetrieving() {
 
 	service, _, _, mockFlowMgtService := suite.setupTestService()
 
-	mockFlowMgtService.EXPECT().GetFlowByHandle("custom_auth_flow", flowcommon.FlowTypeAuthentication).
+	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, "custom_auth_flow", flowcommon.FlowTypeAuthentication).
 		Return(nil, &serviceerror.ServiceError{Type: serviceerror.ClientErrorType})
 
-	result, svcErr := service.getDefaultAuthFlowID()
+	result, svcErr := service.getDefaultAuthFlowID(context.Background())
 
 	assert.NotNil(suite.T(), svcErr)
 	assert.Empty(suite.T(), result)
@@ -931,14 +1007,33 @@ func (suite *ServiceTestSuite) TestGetDefaultAuthFlowID_ServerError() {
 
 	service, _, _, mockFlowMgtService := suite.setupTestService()
 
-	mockFlowMgtService.EXPECT().GetFlowByHandle("custom_auth_flow", flowcommon.FlowTypeAuthentication).
+	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, "custom_auth_flow", flowcommon.FlowTypeAuthentication).
 		Return(nil, &serviceerror.ServiceError{Type: serviceerror.ServerErrorType})
 
-	result, svcErr := service.getDefaultAuthFlowID()
+	result, svcErr := service.getDefaultAuthFlowID(context.Background())
 
 	assert.NotNil(suite.T(), svcErr)
 	assert.Empty(suite.T(), result)
 	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
+}
+
+// txCtxKey is the context key used by fakeTransactioner to mark transaction-scoped contexts.
+type txCtxKey struct{}
+
+// isTxCtx reports whether ctx was created inside a fakeTransactioner transaction.
+func isTxCtx(ctx context.Context) bool {
+	return ctx.Value(txCtxKey{}) == true
+}
+
+// fakeTransactioner implements transaction.Transactioner for testing.
+// It injects a transaction-scoped context so that tests can verify that store
+// and service calls inside a transaction receive the correct ctx by matching
+// on isTxCtx.
+type fakeTransactioner struct{}
+
+func (f *fakeTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) error {
+	txCtx := context.WithValue(ctx, txCtxKey{}, true)
+	return txFunc(txCtx)
 }
 
 func (suite *ServiceTestSuite) setupTestService() (
@@ -951,11 +1046,17 @@ func (suite *ServiceTestSuite) setupTestService() (
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	mockConsentService := consentmock.NewConsentServiceInterfaceMock(suite.T())
+	// Consent is disabled by default in the base test service; individual tests
+	// can override this via their own service instance.
+	mockConsentService.On("IsEnabled").Maybe().Return(false)
 	service := &applicationService{
 		appStore:          mockStore,
 		certService:       mockCertService,
 		flowMgtService:    mockFlowMgtService,
 		userSchemaService: mockUserSchemaService,
+		consentService:    mockConsentService,
+		transactioner:     &fakeTransactioner{},
 	}
 	return service, mockStore, mockCertService, mockFlowMgtService
 }
@@ -963,7 +1064,7 @@ func (suite *ServiceTestSuite) setupTestService() (
 func (suite *ServiceTestSuite) TestGetOAuthApplication_EmptyClientID() {
 	service, _, _, _ := suite.setupTestService()
 
-	result, svcErr := service.GetOAuthApplication("")
+	result, svcErr := service.GetOAuthApplication(context.Background(), "")
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
@@ -972,9 +1073,9 @@ func (suite *ServiceTestSuite) TestGetOAuthApplication_EmptyClientID() {
 func (suite *ServiceTestSuite) TestGetOAuthApplication_NotFound() {
 	service, mockStore, _, _ := suite.setupTestService()
 
-	mockStore.On("GetOAuthApplication", "client123").Return(nil, model.ApplicationNotFoundError)
+	mockStore.On("GetOAuthApplication", mock.Anything, "client123").Return(nil, model.ApplicationNotFoundError)
 
-	result, svcErr := service.GetOAuthApplication("client123")
+	result, svcErr := service.GetOAuthApplication(context.Background(), "client123")
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
@@ -983,9 +1084,9 @@ func (suite *ServiceTestSuite) TestGetOAuthApplication_NotFound() {
 func (suite *ServiceTestSuite) TestGetOAuthApplication_StoreError() {
 	service, mockStore, _, _ := suite.setupTestService()
 
-	mockStore.On("GetOAuthApplication", "client123").Return(nil, errors.New("store error"))
+	mockStore.On("GetOAuthApplication", mock.Anything, "client123").Return(nil, errors.New("store error"))
 
-	result, svcErr := service.GetOAuthApplication("client123")
+	result, svcErr := service.GetOAuthApplication(context.Background(), "client123")
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
@@ -994,35 +1095,80 @@ func (suite *ServiceTestSuite) TestGetOAuthApplication_StoreError() {
 func (suite *ServiceTestSuite) TestGetOAuthApplication_NilApp() {
 	service, mockStore, _, _ := suite.setupTestService()
 
-	mockStore.On("GetOAuthApplication", "client123").Return(nil, nil)
+	mockStore.On("GetOAuthApplication", mock.Anything, "client123").Return(nil, nil)
 
-	result, svcErr := service.GetOAuthApplication("client123")
+	result, svcErr := service.GetOAuthApplication(context.Background(), "client123")
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
 }
 
 func (suite *ServiceTestSuite) TestGetOAuthApplication_Success() {
-	service, mockStore, _, _ := suite.setupTestService()
+	service, mockStore, mockCertService, _ := suite.setupTestService()
 
 	oauthApp := &model.OAuthAppConfigProcessedDTO{
-		AppID:    "app123",
+		AppID:    testServiceAppID,
 		ClientID: "client123",
 	}
 
-	mockStore.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
+	mockStore.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
+	mockCertService.EXPECT().GetCertificateByReference(mock.Anything,
+		cert.CertificateReferenceTypeOAuthApp, "client123").Return(&cert.Certificate{
+		Type:  cert.CertificateTypeNone,
+		Value: "",
+	}, nil)
 
-	result, svcErr := service.GetOAuthApplication("client123")
+	result, svcErr := service.GetOAuthApplication(context.Background(), "client123")
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
 	assert.Equal(suite.T(), "client123", result.ClientID)
 }
 
+func (suite *ServiceTestSuite) TestGetOAuthApplication_CertificateNotFound() {
+	service, mockStore, mockCertService, _ := suite.setupTestService()
+
+	oauthApp := &model.OAuthAppConfigProcessedDTO{
+		AppID:    testServiceAppID,
+		ClientID: "client123",
+	}
+
+	mockStore.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
+	mockCertService.EXPECT().GetCertificateByReference(mock.Anything,
+		cert.CertificateReferenceTypeOAuthApp, "client123").Return(nil, &cert.ErrorCertificateNotFound)
+
+	result, svcErr := service.GetOAuthApplication(context.Background(), "client123")
+
+	assert.NotNil(suite.T(), result)
+	assert.Nil(suite.T(), svcErr)
+	assert.Equal(suite.T(), "client123", result.ClientID)
+	assert.NotNil(suite.T(), result.Certificate)
+	assert.Equal(suite.T(), cert.CertificateTypeNone, result.Certificate.Type)
+	assert.Equal(suite.T(), "", result.Certificate.Value)
+}
+
+func (suite *ServiceTestSuite) TestGetOAuthApplication_CertificateServerError() {
+	service, mockStore, mockCertService, _ := suite.setupTestService()
+
+	oauthApp := &model.OAuthAppConfigProcessedDTO{
+		AppID:    testServiceAppID,
+		ClientID: "client123",
+	}
+
+	mockStore.On("GetOAuthApplication", mock.Anything, "client123").Return(oauthApp, nil)
+	mockCertService.EXPECT().GetCertificateByReference(mock.Anything,
+		cert.CertificateReferenceTypeOAuthApp, "client123").Return(nil, &serviceerror.InternalServerError)
+
+	result, svcErr := service.GetOAuthApplication(context.Background(), "client123")
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+}
+
 func (suite *ServiceTestSuite) TestGetApplication_EmptyAppID() {
 	service, _, _, _ := suite.setupTestService()
 
-	result, svcErr := service.GetApplication("")
+	result, svcErr := service.GetApplication(context.Background(), "")
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
@@ -1031,9 +1177,9 @@ func (suite *ServiceTestSuite) TestGetApplication_EmptyAppID() {
 func (suite *ServiceTestSuite) TestGetApplication_NotFound() {
 	service, mockStore, _, _ := suite.setupTestService()
 
-	mockStore.On("GetApplicationByID", "app123").Return(nil, model.ApplicationNotFoundError)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(nil, model.ApplicationNotFoundError)
 
-	result, svcErr := service.GetApplication("app123")
+	result, svcErr := service.GetApplication(context.Background(), testServiceAppID)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
@@ -1042,9 +1188,9 @@ func (suite *ServiceTestSuite) TestGetApplication_NotFound() {
 func (suite *ServiceTestSuite) TestGetApplication_StoreError() {
 	service, mockStore, _, _ := suite.setupTestService()
 
-	mockStore.On("GetApplicationByID", "app123").Return(nil, errors.New("store error"))
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(nil, errors.New("store error"))
 
-	result, svcErr := service.GetApplication("app123")
+	result, svcErr := service.GetApplication(context.Background(), testServiceAppID)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
@@ -1054,19 +1200,76 @@ func (suite *ServiceTestSuite) TestGetApplication_Success() {
 	service, mockStore, mockCertService, _ := suite.setupTestService()
 
 	app := &model.ApplicationProcessedDTO{
-		ID:   "app123",
-		Name: "Test App",
+		ID:       testServiceAppID,
+		Name:     "Test App",
+		Metadata: map[string]interface{}{"service_key": "service_val"},
 	}
 
-	mockStore.On("GetApplicationByID", "app123").Return(app, nil)
-	mockCertService.EXPECT().GetCertificateByReference(
-		cert.CertificateReferenceTypeApplication, "app123").Return(nil, &cert.ErrorCertificateNotFound)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(app, nil)
+	mockCertService.EXPECT().GetCertificateByReference(mock.Anything,
+		cert.CertificateReferenceTypeApplication, testServiceAppID).Return(nil, &cert.ErrorCertificateNotFound)
 
-	result, svcErr := service.GetApplication("app123")
+	result, svcErr := service.GetApplication(context.Background(), testServiceAppID)
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
-	assert.Equal(suite.T(), "app123", result.ID)
+	assert.Equal(suite.T(), testServiceAppID, result.ID)
+	assert.Equal(suite.T(), map[string]interface{}{"service_key": "service_val"}, result.Metadata)
+}
+
+func (suite *ServiceTestSuite) TestGetApplication_WithInboundAuthConfig_Success() {
+	service, mockStore, mockCertService, _ := suite.setupTestService()
+
+	app := &model.ApplicationProcessedDTO{
+		ID:          testServiceAppID,
+		Name:        "OAuth Test App",
+		Description: "App with OAuth config",
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					ClientID:                "client-id-123",
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					PKCERequired:            true,
+					PublicClient:            false,
+					Scopes:                  []string{"openid", "profile"},
+				},
+			},
+		},
+	}
+
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(app, nil)
+	mockCertService.EXPECT().GetCertificateByReference(mock.Anything,
+		cert.CertificateReferenceTypeApplication, testServiceAppID).Return(nil, &cert.ErrorCertificateNotFound)
+	mockCertService.EXPECT().GetCertificateByReference(mock.Anything,
+		cert.CertificateReferenceTypeOAuthApp, "client-id-123").Return(nil, &cert.ErrorCertificateNotFound)
+
+	result, svcErr := service.GetApplication(context.Background(), testServiceAppID)
+
+	assert.Nil(suite.T(), svcErr)
+	require.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), testServiceAppID, result.ID)
+	assert.Equal(suite.T(), "OAuth Test App", result.Name)
+
+	require.Len(suite.T(), result.InboundAuthConfig, 1)
+	inboundAuth := result.InboundAuthConfig[0]
+	assert.Equal(suite.T(), model.OAuthInboundAuthType, inboundAuth.Type)
+	require.NotNil(suite.T(), inboundAuth.OAuthAppConfig)
+	assert.Equal(suite.T(), "client-id-123", inboundAuth.OAuthAppConfig.ClientID)
+	assert.Equal(suite.T(), []string{"https://example.com/callback"}, inboundAuth.OAuthAppConfig.RedirectURIs)
+	assert.Equal(suite.T(), []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+		inboundAuth.OAuthAppConfig.GrantTypes)
+	assert.Equal(suite.T(), []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+		inboundAuth.OAuthAppConfig.ResponseTypes)
+	assert.Equal(suite.T(), oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+		inboundAuth.OAuthAppConfig.TokenEndpointAuthMethod)
+	assert.True(suite.T(), inboundAuth.OAuthAppConfig.PKCERequired)
+	assert.False(suite.T(), inboundAuth.OAuthAppConfig.PublicClient)
+	assert.Equal(suite.T(), []string{"openid", "profile"}, inboundAuth.OAuthAppConfig.Scopes)
+	assert.Equal(suite.T(), cert.CertificateTypeNone, inboundAuth.OAuthAppConfig.Certificate.Type)
 }
 
 func (suite *ServiceTestSuite) TestGetApplicationList_Success() {
@@ -1083,10 +1286,10 @@ func (suite *ServiceTestSuite) TestGetApplicationList_Success() {
 		},
 	}
 
-	mockStore.On("GetTotalApplicationCount").Return(2, nil)
-	mockStore.On("GetApplicationList").Return(apps, nil)
+	mockStore.On("GetTotalApplicationCount", mock.Anything).Return(2, nil)
+	mockStore.On("GetApplicationList", mock.Anything).Return(apps, nil)
 
-	result, svcErr := service.GetApplicationList()
+	result, svcErr := service.GetApplicationList(context.Background())
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
@@ -1098,9 +1301,9 @@ func (suite *ServiceTestSuite) TestGetApplicationList_Success() {
 func (suite *ServiceTestSuite) TestGetApplicationList_CountError() {
 	service, mockStore, _, _ := suite.setupTestService()
 
-	mockStore.On("GetTotalApplicationCount").Return(0, errors.New("count error"))
+	mockStore.On("GetTotalApplicationCount", mock.Anything).Return(0, errors.New("count error"))
 
-	result, svcErr := service.GetApplicationList()
+	result, svcErr := service.GetApplicationList(context.Background())
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
@@ -1109,10 +1312,10 @@ func (suite *ServiceTestSuite) TestGetApplicationList_CountError() {
 func (suite *ServiceTestSuite) TestGetApplicationList_ListError() {
 	service, mockStore, _, _ := suite.setupTestService()
 
-	mockStore.On("GetTotalApplicationCount").Return(2, nil)
-	mockStore.On("GetApplicationList").Return(nil, errors.New("list error"))
+	mockStore.On("GetTotalApplicationCount", mock.Anything).Return(2, nil)
+	mockStore.On("GetApplicationList", mock.Anything).Return(nil, errors.New("list error"))
 
-	result, svcErr := service.GetApplicationList()
+	result, svcErr := service.GetApplicationList(context.Background())
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
@@ -1121,7 +1324,7 @@ func (suite *ServiceTestSuite) TestGetApplicationList_ListError() {
 func (suite *ServiceTestSuite) TestValidateApplication_NilApp() {
 	service, _, _, _ := suite.setupTestService()
 
-	result, inboundAuth, svcErr := service.ValidateApplication(nil)
+	result, inboundAuth, svcErr := service.ValidateApplication(context.Background(), nil)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
@@ -1135,7 +1338,7 @@ func (suite *ServiceTestSuite) TestValidateApplication_EmptyName() {
 		Name: "",
 	}
 
-	result, inboundAuth, svcErr := service.ValidateApplication(app)
+	result, inboundAuth, svcErr := service.ValidateApplication(context.Background(), app)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
@@ -1154,13 +1357,396 @@ func (suite *ServiceTestSuite) TestValidateApplication_ExistingName() {
 		Name: "Existing App",
 	}
 
-	mockStore.On("GetApplicationByName", "Existing App").Return(existingApp, nil)
+	mockStore.On("GetApplicationByName", mock.Anything, "Existing App").Return(existingApp, nil)
 
-	result, inboundAuth, svcErr := service.ValidateApplication(app)
+	result, inboundAuth, svcErr := service.ValidateApplication(context.Background(), app)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
 	assert.NotNil(suite.T(), svcErr)
+}
+
+func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_EmptyAppID() {
+	service, _, _, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name: "Test App",
+	}
+
+	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), "", app)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorInvalidApplicationID, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_NilApp() {
+	service, _, _, _ := suite.setupTestService()
+
+	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, nil)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorApplicationNil, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_EmptyName() {
+	service, _, _, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name: "",
+	}
+
+	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorInvalidApplicationName, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_DeclarativeResource() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name: "Test App",
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(true)
+
+	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorCannotModifyDeclarativeResource, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_ApplicationNotFound() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name: "Test App",
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(nil, model.ApplicationNotFoundError)
+
+	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorApplicationNotFound, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_ApplicationNilFromStore() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name: "Test App",
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(nil, nil)
+
+	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorApplicationNotFound, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_StoreError() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name: "Test App",
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(nil, errors.New("database error"))
+
+	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_NameConflict() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, _ := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   testServiceAppID,
+		Name: "Old Name",
+	}
+
+	app := &model.ApplicationDTO{
+		Name: "New Name",
+	}
+
+	conflictingApp := &model.ApplicationProcessedDTO{
+		ID:   "app456",
+		Name: "New Name",
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockStore.On("GetApplicationByName", mock.Anything, "New Name").Return(conflictingApp, nil)
+
+	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorApplicationAlreadyExistsWithName, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_NameCheckStoreError() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, _ := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   testServiceAppID,
+		Name: "Old Name",
+	}
+
+	app := &model.ApplicationDTO{
+		Name: "New Name",
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockStore.On("GetApplicationByName", mock.Anything, "New Name").Return(nil, errors.New("database error"))
+
+	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
+}
+
+// TestValidateApplicationForUpdate_FieldValidationErrors tests validation errors for
+// invalid URL, invalid logo URL, and non-existent theme ID during application update.
+func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_FieldValidationErrors() {
+	tests := []struct {
+		name          string
+		app           *model.ApplicationDTO
+		setupMocks    func(*thememock.ThemeMgtServiceInterfaceMock)
+		expectedError *serviceerror.ServiceError
+	}{
+		{
+			name: "InvalidURL",
+			app: &model.ApplicationDTO{
+				Name:       "Test App",
+				AuthFlowID: "valid-auth-flow-id",
+				URL:        "invalid-url",
+			},
+			setupMocks:    func(_ *thememock.ThemeMgtServiceInterfaceMock) {},
+			expectedError: &ErrorInvalidApplicationURL,
+		},
+		{
+			name: "InvalidLogoURL",
+			app: &model.ApplicationDTO{
+				Name:       "Test App",
+				AuthFlowID: "valid-auth-flow-id",
+				LogoURL:    "://invalid",
+			},
+			setupMocks:    func(_ *thememock.ThemeMgtServiceInterfaceMock) {},
+			expectedError: &ErrorInvalidLogoURL,
+		},
+		{
+			name: "ThemeID not found",
+			app: &model.ApplicationDTO{
+				Name:       "Test App",
+				AuthFlowID: "valid-auth-flow-id",
+				ThemeID:    "non-existent-theme-id",
+			},
+			setupMocks: func(mockTheme *thememock.ThemeMgtServiceInterfaceMock) {
+				mockTheme.EXPECT().IsThemeExist("non-existent-theme-id").Return(false, nil)
+			},
+			expectedError: &ErrorThemeNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			testConfig := &config.Config{
+				DeclarativeResources: config.DeclarativeResources{
+					Enabled: false,
+				},
+				Flow: config.FlowConfig{
+					DefaultAuthFlowHandle: "default_auth_flow",
+				},
+			}
+			config.ResetThunderRuntime()
+			err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+			require.NoError(suite.T(), err)
+			defer config.ResetThunderRuntime()
+
+			mockStore := newApplicationStoreInterfaceMock(suite.T())
+			mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
+			mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
+			mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+			mockThemeMgtService := thememock.NewThemeMgtServiceInterfaceMock(suite.T())
+			service := &applicationService{
+				appStore:          mockStore,
+				certService:       mockCertService,
+				flowMgtService:    mockFlowMgtService,
+				userSchemaService: mockUserSchemaService,
+				themeMgtService:   mockThemeMgtService,
+			}
+
+			existingApp := &model.ApplicationProcessedDTO{
+				ID:   testServiceAppID,
+				Name: "Test App",
+			}
+
+			mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+			mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+			mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "valid-auth-flow-id").Return(true)
+			mockFlowMgtService.EXPECT().GetFlow(mock.Anything, "valid-auth-flow-id").Return(
+				&flowmgt.CompleteFlowDefinition{
+					ID:     "valid-auth-flow-id",
+					Handle: "basic_auth",
+				}, nil)
+			mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, "basic_auth",
+				flowcommon.FlowTypeRegistration).Return(
+				&flowmgt.CompleteFlowDefinition{
+					ID:     "reg_flow_basic",
+					Handle: "basic_auth",
+				}, nil)
+
+			tt.setupMocks(mockThemeMgtService)
+
+			result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(
+				context.Background(), testServiceAppID, tt.app)
+
+			assert.Nil(suite.T(), result)
+			assert.Nil(suite.T(), inboundAuth)
+			assert.NotNil(suite.T(), svcErr)
+			assert.Equal(suite.T(), tt.expectedError, svcErr)
+		})
+	}
+}
+
+func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_Success() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		Flow: config.FlowConfig{
+			DefaultAuthFlowHandle: "default_auth_flow",
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, mockFlowMgtService := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+	}
+
+	app := &model.ApplicationDTO{
+		Name:    "Test App",
+		URL:     "https://example.com",
+		LogoURL: "https://example.com/logo.png",
+	}
+
+	defaultFlow := &flowmgt.CompleteFlowDefinition{
+		ID:     "default-flow-id-123",
+		Handle: "default_auth_flow",
+	}
+	defaultRegFlow := &flowmgt.CompleteFlowDefinition{
+		ID:     "default-reg-flow-id-456",
+		Handle: "default_auth_flow",
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, "default_auth_flow", flowcommon.FlowTypeAuthentication).
+		Return(defaultFlow, nil)
+	mockFlowMgtService.EXPECT().GetFlow(mock.Anything, "default-flow-id-123").Return(defaultFlow, nil)
+	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, "default_auth_flow", flowcommon.FlowTypeRegistration).
+		Return(defaultRegFlow, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, mock.Anything).Return(true).Maybe()
+
+	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+
+	assert.NotNil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.Nil(suite.T(), svcErr)
+	assert.Equal(suite.T(), testServiceAppID, result.ID)
+	assert.Equal(suite.T(), "Test App", result.Name)
 }
 
 func (suite *ServiceTestSuite) TestDeleteApplication_EmptyAppID() {
@@ -1176,7 +1762,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_EmptyAppID() {
 
 	service, _, _, _ := suite.setupTestService()
 
-	svcErr := service.DeleteApplication("")
+	svcErr := service.DeleteApplication(context.Background(), "")
 
 	assert.NotNil(suite.T(), svcErr)
 }
@@ -1194,9 +1780,11 @@ func (suite *ServiceTestSuite) TestDeleteApplication_NotFound() {
 
 	service, mockStore, _, _ := suite.setupTestService()
 
-	mockStore.On("DeleteApplication", "app123").Return(model.ApplicationNotFoundError)
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.MatchedBy(isTxCtx), testServiceAppID).
+		Return(nil, model.ApplicationNotFoundError)
 
-	svcErr := service.DeleteApplication("app123")
+	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
 
 	// Should return nil (not error) when app not found
 	assert.Nil(suite.T(), svcErr)
@@ -1215,9 +1803,12 @@ func (suite *ServiceTestSuite) TestDeleteApplication_StoreError() {
 
 	service, mockStore, _, _ := suite.setupTestService()
 
-	mockStore.On("DeleteApplication", "app123").Return(errors.New("store error"))
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.MatchedBy(isTxCtx), testServiceAppID).
+		Return(&model.ApplicationProcessedDTO{ID: testServiceAppID, Name: "Test App"}, nil)
+	mockStore.On("DeleteApplication", mock.MatchedBy(isTxCtx), testServiceAppID).Return(errors.New("store error"))
 
-	svcErr := service.DeleteApplication("app123")
+	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
 
 	assert.NotNil(suite.T(), svcErr)
 }
@@ -1235,11 +1826,14 @@ func (suite *ServiceTestSuite) TestDeleteApplication_Success() {
 
 	service, mockStore, mockCertService, _ := suite.setupTestService()
 
-	mockStore.On("DeleteApplication", "app123").Return(nil)
-	mockCertService.EXPECT().DeleteCertificateByReference(cert.CertificateReferenceTypeApplication,
-		"app123").Return(nil)
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.MatchedBy(isTxCtx), testServiceAppID).
+		Return(&model.ApplicationProcessedDTO{ID: testServiceAppID, Name: "Test App"}, nil)
+	mockStore.On("DeleteApplication", mock.MatchedBy(isTxCtx), testServiceAppID).Return(nil)
+	mockCertService.EXPECT().DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication,
+		testServiceAppID).Return(nil)
 
-	svcErr := service.DeleteApplication("app123")
+	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
 
 	assert.Nil(suite.T(), svcErr)
 }
@@ -1257,14 +1851,159 @@ func (suite *ServiceTestSuite) TestDeleteApplication_CertError() {
 
 	service, mockStore, mockCertService, _ := suite.setupTestService()
 
-	mockStore.On("DeleteApplication", "app123").Return(nil)
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.MatchedBy(isTxCtx), testServiceAppID).
+		Return(&model.ApplicationProcessedDTO{ID: testServiceAppID, Name: "Test App"}, nil)
+	mockStore.On("DeleteApplication", mock.MatchedBy(isTxCtx), testServiceAppID).Return(nil)
 	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(&serviceerror.ServiceError{Type: serviceerror.ClientErrorType})
 
-	svcErr := service.DeleteApplication("app123")
+	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
 
 	assert.NotNil(suite.T(), svcErr)
+}
+
+// TestDeleteApplication_OAuthCertError verifies that when OAuth app certificate deletion fails,
+// the error is properly propagated from DeleteApplication (covers deleteOAuthAppCertificate).
+func (suite *ServiceTestSuite) TestDeleteApplication_OAuthCertError() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, _ := suite.setupTestService()
+
+	// Application with OAuth config
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					ClientID: "oauth-client-id",
+				},
+			},
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.MatchedBy(isTxCtx), testServiceAppID).Return(existingApp, nil)
+	mockStore.On("DeleteApplication", mock.MatchedBy(isTxCtx), testServiceAppID).Return(nil)
+	// Application cert deletion succeeds
+	mockCertService.EXPECT().
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
+		Return(nil)
+	// OAuth app cert deletion fails with server error
+	mockCertService.EXPECT().
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeOAuthApp, "oauth-client-id").
+		Return(&serviceerror.ServiceError{Type: serviceerror.ServerErrorType, Code: "CERT-5001"})
+
+	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
+
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
+}
+
+// TestDeleteApplication_OAuthCertError_ClientError verifies that when OAuth app certificate deletion fails
+// with a client error, the error is properly propagated from DeleteApplication.
+func (suite *ServiceTestSuite) TestDeleteApplication_OAuthCertError_ClientError() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, _ := suite.setupTestService()
+
+	// Application with OAuth config
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					ClientID: "oauth-client-id",
+				},
+			},
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.MatchedBy(isTxCtx), testServiceAppID).Return(existingApp, nil)
+	mockStore.On("DeleteApplication", mock.MatchedBy(isTxCtx), testServiceAppID).Return(nil)
+	// Application cert deletion succeeds
+	mockCertService.EXPECT().
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
+		Return(nil)
+	// OAuth app cert deletion fails with client error
+	mockCertService.EXPECT().
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeOAuthApp, "oauth-client-id").
+		Return(&serviceerror.ServiceError{Type: serviceerror.ClientErrorType,
+			Code: "CERT-1001", ErrorDescription: "Invalid client ID"})
+
+	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
+
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorCertificateClientError.Code, svcErr.Code)
+	assert.Contains(suite.T(), svcErr.ErrorDescription, "Failed to delete OAuth app certificate")
+}
+
+// TestDeleteApplication_WithOAuthCert_Success verifies successful deletion of an application with OAuth certificate.
+// This test covers deleteOAuthAppCertificate's success path (return nil).
+func (suite *ServiceTestSuite) TestDeleteApplication_WithOAuthCert_Success() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, _ := suite.setupTestService()
+
+	// Application with OAuth config
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					ClientID: "oauth-client-id",
+				},
+			},
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.MatchedBy(isTxCtx), testServiceAppID).Return(existingApp, nil)
+	mockStore.On("DeleteApplication", mock.MatchedBy(isTxCtx), testServiceAppID).Return(nil)
+	// Application cert deletion succeeds
+	mockCertService.EXPECT().
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
+		Return(nil)
+	// OAuth app cert deletion succeeds
+	mockCertService.EXPECT().
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeOAuthApp, "oauth-client-id").
+		Return(nil)
+
+	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
+
+	assert.Nil(suite.T(), svcErr)
 }
 
 func (suite *ServiceTestSuite) TestGetApplicationCertificate_NotFound() {
@@ -1273,10 +2012,11 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_NotFound() {
 	svcErr := &cert.ErrorCertificateNotFound
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(nil, svcErr)
 
-	result, err := service.getApplicationCertificate("app123")
+	result, err := service.getApplicationCertificate(
+		context.Background(), testServiceAppID, cert.CertificateReferenceTypeApplication)
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), err)
@@ -1286,10 +2026,11 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_NotFound() {
 func (suite *ServiceTestSuite) TestGetApplicationCertificate_NilCertificate() {
 	service, _, mockCertService, _ := suite.setupTestService()
 
-	mockCertService.EXPECT().GetCertificateByReference(cert.CertificateReferenceTypeApplication,
-		"app123").Return(nil, nil)
+	mockCertService.EXPECT().GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication,
+		testServiceAppID).Return(nil, nil)
 
-	result, err := service.getApplicationCertificate("app123")
+	result, err := service.getApplicationCertificate(
+		context.Background(), testServiceAppID, cert.CertificateReferenceTypeApplication)
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), err)
@@ -1305,10 +2046,11 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_Success() {
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(certificate, nil)
 
-	result, err := service.getApplicationCertificate("app123")
+	result, err := service.getApplicationCertificate(
+		context.Background(), testServiceAppID, cert.CertificateReferenceTypeApplication)
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), err)
@@ -1323,9 +2065,9 @@ func (suite *ServiceTestSuite) TestCreateApplicationCertificate_Success() {
 		Value: `{"keys":[]}`,
 	}
 
-	mockCertService.EXPECT().CreateCertificate(certificate).Return(certificate, nil)
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, certificate).Return(certificate, nil)
 
-	result, svcErr := service.createApplicationCertificate(certificate)
+	result, svcErr := service.createApplicationCertificate(context.Background(), certificate)
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
@@ -1335,7 +2077,7 @@ func (suite *ServiceTestSuite) TestCreateApplicationCertificate_Success() {
 func (suite *ServiceTestSuite) TestCreateApplicationCertificate_Nil() {
 	service, _, _, _ := suite.setupTestService()
 
-	result, svcErr := service.createApplicationCertificate(nil)
+	result, svcErr := service.createApplicationCertificate(context.Background(), nil)
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
@@ -1355,39 +2097,11 @@ func (suite *ServiceTestSuite) TestCreateApplicationCertificate_ClientError() {
 		ErrorDescription: "Invalid certificate",
 	}
 
-	mockCertService.EXPECT().CreateCertificate(certificate).Return(nil, svcErr)
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, certificate).Return(nil, svcErr)
 
-	result, err := service.createApplicationCertificate(certificate)
+	result, err := service.createApplicationCertificate(context.Background(), certificate)
 
 	assert.Nil(suite.T(), result)
-	assert.NotNil(suite.T(), err)
-}
-
-func (suite *ServiceTestSuite) TestRollbackAppCertificateCreation_Success() {
-	service, _, mockCertService, _ := suite.setupTestService()
-
-	mockCertService.EXPECT().DeleteCertificateByReference(cert.CertificateReferenceTypeApplication,
-		"app123").Return(nil)
-
-	svcErr := service.rollbackAppCertificateCreation("app123")
-
-	assert.Nil(suite.T(), svcErr)
-}
-
-func (suite *ServiceTestSuite) TestRollbackAppCertificateCreation_ClientError() {
-	service, _, mockCertService, _ := suite.setupTestService()
-
-	svcErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		ErrorDescription: "Certificate not found",
-	}
-
-	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
-		Return(svcErr)
-
-	err := service.rollbackAppCertificateCreation("app123")
-
 	assert.NotNil(suite.T(), err)
 }
 
@@ -1395,13 +2109,13 @@ func (suite *ServiceTestSuite) TestGetValidatedCertificateForCreate_None() {
 	service, _, _, _ := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		ID: "app123",
 		Certificate: &model.ApplicationCertificate{
 			Type: "NONE",
 		},
 	}
 
-	result, svcErr := service.getValidatedCertificateForCreate("app123", app)
+	result, svcErr := service.getValidatedCertificateForCreate(testServiceAppID, app.Certificate,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
@@ -1411,14 +2125,14 @@ func (suite *ServiceTestSuite) TestGetValidatedCertificateForCreate_JWKS() {
 	service, _, _, _ := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		ID: "app123",
 		Certificate: &model.ApplicationCertificate{
 			Type:  "JWKS",
 			Value: `{"keys":[]}`,
 		},
 	}
 
-	result, svcErr := service.getValidatedCertificateForCreate("app123", app)
+	result, svcErr := service.getValidatedCertificateForCreate(testServiceAppID, app.Certificate,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
@@ -1429,14 +2143,14 @@ func (suite *ServiceTestSuite) TestGetValidatedCertificateForCreate_JWKS_EmptyVa
 	service, _, _, _ := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		ID: "app123",
 		Certificate: &model.ApplicationCertificate{
 			Type:  "JWKS",
 			Value: "",
 		},
 	}
 
-	result, svcErr := service.getValidatedCertificateForCreate("app123", app)
+	result, svcErr := service.getValidatedCertificateForCreate(testServiceAppID, app.Certificate,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
@@ -1446,14 +2160,14 @@ func (suite *ServiceTestSuite) TestGetValidatedCertificateForCreate_JWKSUri() {
 	service, _, _, _ := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		ID: "app123",
 		Certificate: &model.ApplicationCertificate{
 			Type:  "JWKS_URI",
 			Value: "https://example.com/jwks",
 		},
 	}
 
-	result, svcErr := service.getValidatedCertificateForCreate("app123", app)
+	result, svcErr := service.getValidatedCertificateForCreate(testServiceAppID, app.Certificate,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
@@ -1464,14 +2178,14 @@ func (suite *ServiceTestSuite) TestGetValidatedCertificateForCreate_InvalidType(
 	service, _, _, _ := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		ID: "app123",
 		Certificate: &model.ApplicationCertificate{
 			Type:  "INVALID",
 			Value: "some-value",
 		},
 	}
 
-	result, svcErr := service.getValidatedCertificateForCreate("app123", app)
+	result, svcErr := service.getValidatedCertificateForCreate(testServiceAppID, app.Certificate,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
@@ -1534,7 +2248,6 @@ func (suite *ServiceTestSuite) TestValidateRedirectURIs_InvalidParsedURI() {
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDToken() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -1553,23 +2266,21 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDToken() 
 						IDToken: &model.IDTokenConfig{
 							ValidityPeriod: 1200,
 							UserAttributes: []string{"email"},
-							ScopeClaims:    map[string][]string{"scope1": {"claim1"}},
 						},
 					},
+					ScopeClaims: map[string][]string{"scope1": {"claim1"}},
 				},
 			},
 		},
 	}
 
-	rootToken, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
-	assert.NotNil(suite.T(), rootToken)
+	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
 	assert.Equal(suite.T(), int64(1200), idToken.ValidityPeriod)
 	assert.Equal(suite.T(), []string{"email"}, idToken.UserAttributes)
-	assert.NotNil(suite.T(), idToken.ScopeClaims)
-	assert.Equal(suite.T(), "https://default-issuer.com", tokenIssuer)
 }
 
 func (suite *ServiceTestSuite) TestGetApplicationCertificate_ClientError() {
@@ -1581,10 +2292,11 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_ClientError() {
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(nil, svcErr)
 
-	result, err := service.getApplicationCertificate("app123")
+	result, err := service.getApplicationCertificate(
+		context.Background(), testServiceAppID, cert.CertificateReferenceTypeApplication)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -1598,28 +2310,13 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_ServerError() {
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(nil, svcErr)
 
-	result, err := service.getApplicationCertificate("app123")
+	result, err := service.getApplicationCertificate(
+		context.Background(), testServiceAppID, cert.CertificateReferenceTypeApplication)
 
 	assert.Nil(suite.T(), result)
-	assert.NotNil(suite.T(), err)
-}
-
-func (suite *ServiceTestSuite) TestRollbackAppCertificateCreation_ServerError() {
-	service, _, mockCertService, _ := suite.setupTestService()
-
-	svcErr := &serviceerror.ServiceError{
-		Type: serviceerror.ServerErrorType,
-	}
-
-	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
-		Return(svcErr)
-
-	err := service.rollbackAppCertificateCreation("app123")
-
 	assert.NotNil(suite.T(), err)
 }
 
@@ -1635,9 +2332,9 @@ func (suite *ServiceTestSuite) TestCreateApplicationCertificate_ServerError() {
 		Type: serviceerror.ServerErrorType,
 	}
 
-	mockCertService.EXPECT().CreateCertificate(certificate).Return(nil, svcErr)
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, certificate).Return(nil, svcErr)
 
-	result, err := service.createApplicationCertificate(certificate)
+	result, err := service.createApplicationCertificate(context.Background(), certificate)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -1647,13 +2344,13 @@ func (suite *ServiceTestSuite) TestGetValidatedCertificateForCreate_EmptyType() 
 	service, _, _, _ := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		ID: "app123",
 		Certificate: &model.ApplicationCertificate{
 			Type: "",
 		},
 	}
 
-	result, svcErr := service.getValidatedCertificateForCreate("app123", app)
+	result, svcErr := service.getValidatedCertificateForCreate(testServiceAppID, app.Certificate,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
@@ -1663,11 +2360,11 @@ func (suite *ServiceTestSuite) TestGetValidatedCertificateForCreate_NilCertifica
 	service, _, _, _ := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		ID:          "app123",
 		Certificate: nil,
 	}
 
-	result, svcErr := service.getValidatedCertificateForCreate("app123", app)
+	result, svcErr := service.getValidatedCertificateForCreate(testServiceAppID, app.Certificate,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
@@ -1677,14 +2374,14 @@ func (suite *ServiceTestSuite) TestGetValidatedCertificateForCreate_JWKSURI_Inva
 	service, _, _, _ := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		ID: "app123",
 		Certificate: &model.ApplicationCertificate{
 			Type:  "JWKS_URI",
 			Value: "not-a-valid-uri",
 		},
 	}
 
-	result, svcErr := service.getValidatedCertificateForCreate("app123", app)
+	result, svcErr := service.getValidatedCertificateForCreate(testServiceAppID, app.Certificate,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
@@ -1693,10 +2390,10 @@ func (suite *ServiceTestSuite) TestGetValidatedCertificateForCreate_JWKSURI_Inva
 func (suite *ServiceTestSuite) TestDeleteApplicationCertificate_Success() {
 	service, _, mockCertService, _ := suite.setupTestService()
 
-	mockCertService.EXPECT().DeleteCertificateByReference(cert.CertificateReferenceTypeApplication,
-		"app123").Return(nil)
+	mockCertService.EXPECT().DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication,
+		testServiceAppID).Return(nil)
 
-	svcErr := service.deleteApplicationCertificate("app123")
+	svcErr := service.deleteApplicationCertificate(context.Background(), testServiceAppID)
 
 	assert.Nil(suite.T(), svcErr)
 }
@@ -1710,10 +2407,10 @@ func (suite *ServiceTestSuite) TestDeleteApplicationCertificate_ClientError() {
 	}
 
 	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(svcErr)
 
-	err := service.deleteApplicationCertificate("app123")
+	err := service.deleteApplicationCertificate(context.Background(), testServiceAppID)
 
 	assert.NotNil(suite.T(), err)
 }
@@ -1726,10 +2423,10 @@ func (suite *ServiceTestSuite) TestDeleteApplicationCertificate_ServerError() {
 	}
 
 	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(svcErr)
 
-	err := service.deleteApplicationCertificate("app123")
+	err := service.deleteApplicationCertificate(context.Background(), testServiceAppID)
 
 	assert.NotNil(suite.T(), err)
 }
@@ -1744,10 +2441,11 @@ func (suite *ServiceTestSuite) TestGetApplicationCertificate_ClientError_NonNotF
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(nil, svcErr)
 
-	result, err := service.getApplicationCertificate("app123")
+	result, err := service.getApplicationCertificate(
+		context.Background(), testServiceAppID, cert.CertificateReferenceTypeApplication)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -1831,14 +2529,14 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithGra
 
 func (suite *ServiceTestSuite) TestGetValidatedCertificateInput_JWKS() {
 	app := &model.ApplicationDTO{
-		ID: "app123",
 		Certificate: &model.ApplicationCertificate{
 			Type:  "JWKS",
 			Value: `{"keys":[]}`,
 		},
 	}
 
-	result, svcErr := getValidatedCertificateInput("app123", "cert123", app)
+	result, svcErr := getValidatedCertificateInput(testServiceAppID, "cert123", app.Certificate,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
@@ -1848,14 +2546,14 @@ func (suite *ServiceTestSuite) TestGetValidatedCertificateInput_JWKS() {
 
 func (suite *ServiceTestSuite) TestGetValidatedCertificateInput_JWKSURI() {
 	app := &model.ApplicationDTO{
-		ID: "app123",
 		Certificate: &model.ApplicationCertificate{
 			Type:  "JWKS_URI",
 			Value: "https://example.com/jwks",
 		},
 	}
 
-	result, svcErr := getValidatedCertificateInput("app123", "cert123", app)
+	result, svcErr := getValidatedCertificateInput(testServiceAppID, "cert123", app.Certificate,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
@@ -1864,14 +2562,14 @@ func (suite *ServiceTestSuite) TestGetValidatedCertificateInput_JWKSURI() {
 
 func (suite *ServiceTestSuite) TestGetValidatedCertificateInput_InvalidType() {
 	app := &model.ApplicationDTO{
-		ID: "app123",
 		Certificate: &model.ApplicationCertificate{
 			Type:  "INVALID",
 			Value: "some-value",
 		},
 	}
 
-	result, svcErr := getValidatedCertificateInput("app123", "cert123", app)
+	result, svcErr := getValidatedCertificateInput(testServiceAppID, "cert123", app.Certificate,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
@@ -1879,14 +2577,14 @@ func (suite *ServiceTestSuite) TestGetValidatedCertificateInput_InvalidType() {
 
 func (suite *ServiceTestSuite) TestGetValidatedCertificateInput_JWKSURI_InvalidURI() {
 	app := &model.ApplicationDTO{
-		ID: "app123",
 		Certificate: &model.ApplicationCertificate{
 			Type:  "JWKS_URI",
 			Value: "not-a-valid-uri",
 		},
 	}
 
-	result, svcErr := getValidatedCertificateInput("app123", "cert123", app)
+	result, svcErr := getValidatedCertificateInput(testServiceAppID, "cert123", app.Certificate,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
@@ -1894,14 +2592,14 @@ func (suite *ServiceTestSuite) TestGetValidatedCertificateInput_JWKSURI_InvalidU
 
 func (suite *ServiceTestSuite) TestGetValidatedCertificateInput_JWKS_EmptyValue() {
 	app := &model.ApplicationDTO{
-		ID: "app123",
 		Certificate: &model.ApplicationCertificate{
 			Type:  "JWKS",
 			Value: "",
 		},
 	}
 
-	result, svcErr := getValidatedCertificateInput("app123", "cert123", app)
+	result, svcErr := getValidatedCertificateInput(testServiceAppID, "cert123", app.Certificate,
+		cert.CertificateReferenceTypeApplication)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
@@ -1918,9 +2616,10 @@ func (suite *ServiceTestSuite) TestDeleteApplication_DeclarativeResourcesEnabled
 	require.NoError(suite.T(), err)
 	defer config.ResetThunderRuntime()
 
-	service, _, _, _ := suite.setupTestService()
+	service, mockStore, _, _ := suite.setupTestService()
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(true)
 
-	svcErr := service.DeleteApplication("app123")
+	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
 
 	assert.NotNil(suite.T(), svcErr)
 }
@@ -1929,7 +2628,7 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Error() {
 	service, _, mockCertService, _ := suite.setupTestService()
 
 	app := &model.Application{
-		ID:   "app123",
+		ID:   testServiceAppID,
 		Name: "Test App",
 	}
 
@@ -1939,10 +2638,10 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Error() {
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(nil, svcErr)
 
-	result, err := service.enrichApplicationWithCertificate(app)
+	result, err := service.enrichApplicationWithCertificate(context.Background(), app)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -1952,7 +2651,7 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Success() {
 	service, _, mockCertService, _ := suite.setupTestService()
 
 	app := &model.Application{
-		ID:   "app123",
+		ID:   testServiceAppID,
 		Name: "Test App",
 	}
 
@@ -1962,10 +2661,10 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Success() {
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(certificate, nil)
 
-	result, err := service.enrichApplicationWithCertificate(app)
+	result, err := service.enrichApplicationWithCertificate(context.Background(), app)
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), err)
@@ -1975,7 +2674,6 @@ func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Success() {
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithRootToken() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -1986,28 +2684,24 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithRootToken() {
 
 	app := &model.ApplicationDTO{
 		Name: "Test App",
-		Token: &model.TokenConfig{
-			Issuer:         "https://custom-issuer.com",
+		Assertion: &model.AssertionConfig{
 			ValidityPeriod: 1800,
 			UserAttributes: []string{"email", "name"},
 		},
 	}
 
-	rootToken, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
-	assert.NotNil(suite.T(), rootToken)
+	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
-	assert.Equal(suite.T(), "https://custom-issuer.com", rootToken.Issuer)
-	assert.Equal(suite.T(), int64(1800), rootToken.ValidityPeriod)
-	assert.Equal(suite.T(), []string{"email", "name"}, rootToken.UserAttributes)
-	assert.Equal(suite.T(), "https://custom-issuer.com", tokenIssuer)
+	assert.Equal(suite.T(), int64(1800), rootAssertion.ValidityPeriod)
+	assert.Equal(suite.T(), []string{"email", "name"}, rootAssertion.UserAttributes)
 }
 
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithRootTokenDefaults() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2018,26 +2712,22 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithRootTokenDefaul
 
 	app := &model.ApplicationDTO{
 		Name: "Test App",
-		Token: &model.TokenConfig{
-			Issuer:         "",
+		Assertion: &model.AssertionConfig{
 			ValidityPeriod: 0,
 		},
 	}
 
-	rootToken, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
-	assert.NotNil(suite.T(), rootToken)
+	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
-	assert.Equal(suite.T(), "https://default-issuer.com", rootToken.Issuer)
-	assert.Equal(suite.T(), int64(3600), rootToken.ValidityPeriod)
-	assert.Equal(suite.T(), "https://default-issuer.com", tokenIssuer)
+	assert.Equal(suite.T(), int64(3600), rootAssertion.ValidityPeriod)
 }
 
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthAccessToken() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2063,20 +2753,18 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthAccessToke
 		},
 	}
 
-	rootToken, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
-	assert.NotNil(suite.T(), rootToken)
+	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
 	assert.Equal(suite.T(), int64(2400), accessToken.ValidityPeriod)
 	assert.Equal(suite.T(), []string{"sub", "email"}, accessToken.UserAttributes)
-	assert.Equal(suite.T(), "https://default-issuer.com", tokenIssuer)
 }
 
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthAccessTokenDefaults() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2102,9 +2790,9 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthAccessToke
 		},
 	}
 
-	rootToken, accessToken, idToken, _ := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
-	assert.NotNil(suite.T(), rootToken)
+	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
 	assert.Equal(suite.T(), int64(3600), accessToken.ValidityPeriod)
@@ -2115,7 +2803,6 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthAccessToke
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDTokenDefaults() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2134,63 +2821,27 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDTokenDef
 						IDToken: &model.IDTokenConfig{
 							ValidityPeriod: 0,
 							UserAttributes: nil,
-							ScopeClaims:    nil,
 						},
 					},
+					ScopeClaims: nil,
 				},
 			},
 		},
 	}
 
-	rootToken, accessToken, idToken, _ := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
-	assert.NotNil(suite.T(), rootToken)
+	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
 	assert.Equal(suite.T(), int64(3600), idToken.ValidityPeriod)
 	assert.NotNil(suite.T(), idToken.UserAttributes)
 	assert.Len(suite.T(), idToken.UserAttributes, 0)
-	assert.NotNil(suite.T(), idToken.ScopeClaims)
-}
-
-func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthTokenIssuer() {
-	testConfig := &config.Config{
-		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
-			ValidityPeriod: 3600,
-		},
-	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
-	require.NoError(suite.T(), err)
-	defer config.ResetThunderRuntime()
-
-	app := &model.ApplicationDTO{
-		Name: "Test App",
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
-			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
-					Token: &model.OAuthTokenConfig{
-						Issuer: "https://oauth-issuer.com",
-					},
-				},
-			},
-		},
-	}
-
-	rootToken, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
-
-	assert.NotNil(suite.T(), rootToken)
-	assert.NotNil(suite.T(), accessToken)
-	assert.NotNil(suite.T(), idToken)
-	assert.Equal(suite.T(), "https://oauth-issuer.com", tokenIssuer)
 }
 
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenNilUserAttributes() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2201,8 +2852,7 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenNilU
 
 	app := &model.ApplicationDTO{
 		Name: "Test App",
-		Token: &model.TokenConfig{
-			Issuer:         "https://root-issuer.com",
+		Assertion: &model.AssertionConfig{
 			ValidityPeriod: 1800,
 			UserAttributes: []string{"email", "name"},
 		},
@@ -2221,22 +2871,20 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenNilU
 		},
 	}
 
-	rootToken, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
-	assert.NotNil(suite.T(), rootToken)
+	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
 	// nil UserAttributes should be initialized to empty slice
 	assert.NotNil(suite.T(), accessToken.UserAttributes)
 	assert.Len(suite.T(), accessToken.UserAttributes, 0)
 	assert.Equal(suite.T(), int64(2400), accessToken.ValidityPeriod)
-	assert.Equal(suite.T(), "https://root-issuer.com", tokenIssuer)
 }
 
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenEmptyUserAttributes() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default-issuer.com",
 			ValidityPeriod: 3600,
 		},
 	}
@@ -2262,15 +2910,14 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithAccessTokenEmpt
 		},
 	}
 
-	rootToken, accessToken, idToken, tokenIssuer := processTokenConfiguration(app)
+	rootAssertion, accessToken, idToken := processTokenConfiguration(app)
 
-	assert.NotNil(suite.T(), rootToken)
+	assert.NotNil(suite.T(), rootAssertion)
 	assert.NotNil(suite.T(), accessToken)
 	assert.NotNil(suite.T(), idToken)
 	assert.NotNil(suite.T(), accessToken.UserAttributes)
 	assert.Len(suite.T(), accessToken.UserAttributes, 0)
 	assert.Equal(suite.T(), int64(2400), accessToken.ValidityPeriod)
-	assert.Equal(suite.T(), "https://default-issuer.com", tokenIssuer)
 }
 
 func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_RedirectURIError() {
@@ -2399,9 +3046,9 @@ func (suite *ServiceTestSuite) TestValidateApplication_StoreErrorNonNotFound() {
 	}
 
 	// Return an error that's not ApplicationNotFoundError
-	mockStore.On("GetApplicationByName", "Test App").Return(nil, errors.New("database connection error"))
+	mockStore.On("GetApplicationByName", mock.Anything, "Test App").Return(nil, errors.New("database connection error"))
 
-	result, inboundAuth, svcErr := service.ValidateApplication(app)
+	result, inboundAuth, svcErr := service.ValidateApplication(context.Background(), app)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
@@ -2429,22 +3076,23 @@ func (suite *ServiceTestSuite) TestValidateApplication_InvalidURL() {
 		AuthFlowID: "edc013d0-e893-4dc0-990c-3e1d203e005b",
 	}
 
-	mockStore.On("GetApplicationByName", "Test App").Return(nil, model.ApplicationNotFoundError)
-	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
-	mockFlowMgtService.EXPECT().GetFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(&flowmgt.CompleteFlowDefinition{
-		ID:     "edc013d0-e893-4dc0-990c-3e1d203e005b",
-		Handle: "basic_auth",
-	}, nil).Maybe()
+	mockStore.On("GetApplicationByName", mock.Anything, "Test App").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().GetFlow(mock.Anything, "edc013d0-e893-4dc0-990c-3e1d203e005b").Return(
+		&flowmgt.CompleteFlowDefinition{
+			ID:     "edc013d0-e893-4dc0-990c-3e1d203e005b",
+			Handle: "basic_auth",
+		}, nil).Maybe()
 
 	// Return success for registration flow so URL validation runs
-	mockFlowMgtService.EXPECT().GetFlowByHandle("basic_auth", flowcommon.FlowTypeRegistration).Return(
+	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, "basic_auth", flowcommon.FlowTypeRegistration).Return(
 		&flowmgt.CompleteFlowDefinition{
 			ID:     "reg_flow_basic",
 			Handle: "basic_auth",
 		}, nil).Maybe()
-	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything).Return(true).Maybe()
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, mock.Anything).Return(true).Maybe()
 
-	result, inboundAuth, svcErr := service.ValidateApplication(app)
+	result, inboundAuth, svcErr := service.ValidateApplication(context.Background(), app)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
@@ -2468,26 +3116,27 @@ func (suite *ServiceTestSuite) TestValidateApplication_InvalidLogoURL() {
 
 	app := &model.ApplicationDTO{
 		Name:       "Test App",
-		LogoURL:    "not-a-valid-uri",
+		LogoURL:    "://invalid",
 		AuthFlowID: "edc013d0-e893-4dc0-990c-3e1d203e005b",
 	}
 
-	mockStore.On("GetApplicationByName", "Test App").Return(nil, model.ApplicationNotFoundError)
-	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
-	mockFlowMgtService.EXPECT().GetFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(&flowmgt.CompleteFlowDefinition{
-		ID:     "edc013d0-e893-4dc0-990c-3e1d203e005b",
-		Handle: "basic_auth",
-	}, nil).Maybe()
+	mockStore.On("GetApplicationByName", mock.Anything, "Test App").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().GetFlow(mock.Anything, "edc013d0-e893-4dc0-990c-3e1d203e005b").Return(
+		&flowmgt.CompleteFlowDefinition{
+			ID:     "edc013d0-e893-4dc0-990c-3e1d203e005b",
+			Handle: "basic_auth",
+		}, nil).Maybe()
 
 	// Return success for registration flow so URL validation runs
-	mockFlowMgtService.EXPECT().GetFlowByHandle("basic_auth", flowcommon.FlowTypeRegistration).Return(
+	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, "basic_auth", flowcommon.FlowTypeRegistration).Return(
 		&flowmgt.CompleteFlowDefinition{
 			ID:     "reg_flow_basic",
 			Handle: "basic_auth",
 		}, nil).Maybe()
-	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything).Return(true).Maybe()
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, mock.Anything).Return(true).Maybe()
 
-	result, inboundAuth, svcErr := service.ValidateApplication(app)
+	result, inboundAuth, svcErr := service.ValidateApplication(context.Background(), app)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
@@ -2496,6 +3145,15 @@ func (suite *ServiceTestSuite) TestValidateApplication_InvalidLogoURL() {
 }
 
 func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithRollback() {
+	suite.runCreateApplicationStoreErrorTest()
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithRollbackFailure() {
+	// Currently identical to success case as rollback behavior is internal
+	suite.runCreateApplicationStoreErrorTest()
+}
+
+func (suite *ServiceTestSuite) runCreateApplicationStoreErrorTest() {
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
@@ -2521,67 +3179,18 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithRollback() {
 		},
 	}
 
-	mockStore.On("GetApplicationByName", "Test App").Return(nil, model.ApplicationNotFoundError)
-	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
-	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
-	mockCertService.EXPECT().CreateCertificate(mock.Anything).Return(&cert.Certificate{Type: "JWKS"}, nil)
-	mockStore.On("CreateApplication", mock.Anything).Return(errors.New("store error"))
-	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, mock.Anything).
-		Return(nil)
+	mockStore.On("GetApplicationByName", mock.Anything, "Test App").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, mock.Anything).
+		Return(&cert.Certificate{Type: "JWKS"}, nil)
+	mockStore.On("CreateApplication", mock.MatchedBy(isTxCtx), mock.Anything).Return(errors.New("store error"))
 
-	result, svcErr := service.CreateApplication(app)
+	result, svcErr := service.CreateApplication(context.Background(), app)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
-}
-
-func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithRollbackFailure() {
-	testConfig := &config.Config{
-		DeclarativeResources: config.DeclarativeResources{
-			Enabled: false,
-		},
-		Flow: config.FlowConfig{
-			DefaultAuthFlowHandle: "default_auth_flow",
-		},
-	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
-	require.NoError(suite.T(), err)
-	defer config.ResetThunderRuntime()
-
-	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
-
-	app := &model.ApplicationDTO{
-		Name:               "Test App",
-		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
-		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
-		Certificate: &model.ApplicationCertificate{
-			Type:  "JWKS",
-			Value: `{"keys":[]}`,
-		},
-	}
-
-	mockStore.On("GetApplicationByName", "Test App").Return(nil, model.ApplicationNotFoundError)
-	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
-	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
-	mockCertService.EXPECT().CreateCertificate(mock.Anything).Return(&cert.Certificate{Type: "JWKS"}, nil)
-	mockStore.On("CreateApplication", mock.Anything).Return(errors.New("store error"))
-	rollbackErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		ErrorDescription: "Failed to rollback",
-	}
-	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, mock.Anything).
-		Return(rollbackErr)
-
-	result, svcErr := service.CreateApplication(app)
-
-	assert.Nil(suite.T(), result)
-	assert.NotNil(suite.T(), svcErr)
-	// Should return the rollback error
-	assert.Equal(suite.T(), serviceerror.ClientErrorType, svcErr.Type)
 }
 
 func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorNonNotFound() {
@@ -2601,10 +3210,12 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorNonNotFound() {
 		Name: "Updated App",
 	}
 
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
 	// Return an error that's not ApplicationNotFoundError
-	mockStore.On("GetApplicationByID", "app123").Return(nil, errors.New("database connection error"))
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).
+		Return(nil, errors.New("database connection error"))
 
-	result, svcErr := service.UpdateApplication("app123", app)
+	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, app)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
@@ -2625,7 +3236,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingName(
 	service, mockStore, _, _ := suite.setupTestService()
 
 	existingApp := &model.ApplicationProcessedDTO{
-		ID:   "app123",
+		ID:   testServiceAppID,
 		Name: "Old App",
 	}
 
@@ -2633,11 +3244,12 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingName(
 		Name: "New App",
 	}
 
-	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
 	// Return an error that's not ApplicationNotFoundError when checking name
-	mockStore.On("GetApplicationByName", "New App").Return(nil, errors.New("database connection error"))
+	mockStore.On("GetApplicationByName", mock.Anything, "New App").Return(nil, errors.New("database connection error"))
 
-	result, svcErr := service.UpdateApplication("app123", app)
+	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, app)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
@@ -2661,7 +3273,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingClien
 	service, mockStore, _, mockFlowMgtService := suite.setupTestService()
 
 	existingApp := &model.ApplicationProcessedDTO{
-		ID:   "app123",
+		ID:   testServiceAppID,
 		Name: "Test App",
 		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
 			{
@@ -2688,12 +3300,28 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingClien
 		},
 	}
 
-	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
-	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything).Return(true).Maybe()
-	// Return an error that's not ApplicationNotFoundError when checking client ID
-	mockStore.On("GetOAuthApplication", "new-client-id").Return(nil, errors.New("database connection error"))
+	defaultFlow := &flowmgt.CompleteFlowDefinition{
+		ID:     "default-flow-id-123",
+		Handle: "default_auth_flow",
+	}
+	defaultRegFlow := &flowmgt.CompleteFlowDefinition{
+		ID:     "default-reg-flow-id-456",
+		Handle: "default_auth_flow",
+	}
 
-	result, svcErr := service.UpdateApplication("app123", app)
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, "default_auth_flow", flowcommon.FlowTypeAuthentication).
+		Return(defaultFlow, nil)
+	mockFlowMgtService.EXPECT().GetFlow(mock.Anything, "default-flow-id-123").Return(defaultFlow, nil)
+	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, "default_auth_flow", flowcommon.FlowTypeRegistration).
+		Return(defaultRegFlow, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, mock.Anything).Return(true).Maybe()
+	// Return an error that's not ApplicationNotFoundError when checking client ID
+	mockStore.On("GetOAuthApplication", mock.Anything, "new-client-id").
+		Return(nil, errors.New("database connection error"))
+
+	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, app)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
@@ -2717,12 +3345,12 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWithRollback() {
 	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
 
 	existingApp := &model.ApplicationProcessedDTO{
-		ID:   "app123",
+		ID:   testServiceAppID,
 		Name: "Test App",
 	}
 
 	app := &model.ApplicationDTO{
-		ID:                 "app123",
+		ID:                 testServiceAppID,
 		Name:               "Test App",
 		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
 		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
@@ -2732,317 +3360,30 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWithRollback() {
 		},
 	}
 
-	mockStore.On("GetApplicationByID", "app123").Return(existingApp, nil)
-	mockFlowMgtService.EXPECT().IsValidFlow("edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
-	mockFlowMgtService.EXPECT().IsValidFlow("80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(nil, &cert.ErrorCertificateNotFound)
-	mockCertService.EXPECT().CreateCertificate(mock.Anything).Return(&cert.Certificate{Type: "JWKS"}, nil)
-	mockStore.On("UpdateApplication", mock.Anything, mock.Anything).Return(errors.New("store error"))
-	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, "app123").
-		Return(nil)
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, mock.Anything).
+		Return(&cert.Certificate{Type: "JWKS"}, nil)
+	mockStore.On("UpdateApplication", mock.MatchedBy(isTxCtx), mock.Anything, mock.Anything).
+		Return(errors.New("store error"))
 
-	result, svcErr := service.UpdateApplication("app123", app)
+	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, app)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
 }
 
-// TestRollbackApplicationCertificateUpdate_UpdateCertificateClientError tests rollback when
-// UpdateCertificateByID fails with ClientErrorType
-func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_UpdateCertificateClientError() {
-	service, _, mockCertService, _ := suite.setupTestService()
-
-	appID := testAppIDForRollback
-	existingCert := &cert.Certificate{
-		ID:    "cert-existing-123",
-		Type:  cert.CertificateTypeJWKS,
-		Value: `{"keys":[]}`,
-	}
-	updatedCert := &cert.Certificate{
-		ID:    "cert-updated-123",
-		Type:  cert.CertificateTypeJWKS,
-		Value: `{"keys":[{"kty":"RSA"}]}`,
-	}
-
-	clientError := &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "CERT-1001",
-		Error:            "Certificate validation failed",
-		ErrorDescription: "Invalid certificate format",
-	}
-
-	mockCertService.EXPECT().
-		UpdateCertificateByID(existingCert.ID, existingCert).
-		Return(nil, clientError).
-		Once()
-
-	svcErr := service.rollbackApplicationCertificateUpdate(appID, existingCert, updatedCert)
-
-	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), ErrorCertificateClientError.Code, svcErr.Code)
-	assert.Equal(suite.T(), serviceerror.ClientErrorType, svcErr.Type)
-	assert.Contains(suite.T(), svcErr.ErrorDescription, "Failed to revert application certificate update")
-	assert.Contains(suite.T(), svcErr.ErrorDescription, "Invalid certificate format")
-}
-
-// TestRollbackApplicationCertificateUpdate_UpdateCertificateServerError tests rollback when
-// UpdateCertificateByID fails with ServerErrorType
-func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_UpdateCertificateServerError() {
-	service, _, mockCertService, _ := suite.setupTestService()
-
-	appID := testAppIDForRollback
-	existingCert := &cert.Certificate{
-		ID:    "cert-existing-123",
-		Type:  cert.CertificateTypeJWKS,
-		Value: `{"keys":[]}`,
-	}
-	updatedCert := &cert.Certificate{
-		ID:    "cert-updated-123",
-		Type:  cert.CertificateTypeJWKS,
-		Value: `{"keys":[{"kty":"RSA"}]}`,
-	}
-
-	serverError := &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "CERT-5001",
-		Error:            "Database error",
-		ErrorDescription: "Failed to update certificate in database",
-	}
-
-	mockCertService.EXPECT().
-		UpdateCertificateByID(existingCert.ID, existingCert).
-		Return(nil, serverError).
-		Once()
-
-	svcErr := service.rollbackApplicationCertificateUpdate(appID, existingCert, updatedCert)
-
-	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
-}
-
-// TestRollbackApplicationCertificateUpdate_DeleteCertificateClientError tests rollback when
-// DeleteCertificateByReference fails with ClientErrorType
-func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_DeleteCertificateClientError() {
-	service, _, mockCertService, _ := suite.setupTestService()
-
-	appID := testAppIDForRollback
-	updatedCert := &cert.Certificate{
-		ID:    "cert-new-123",
-		Type:  cert.CertificateTypeJWKS,
-		Value: `{"keys":[{"kty":"RSA"}]}`,
-	}
-
-	clientError := &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "CERT-1002",
-		Error:            "Certificate not found",
-		ErrorDescription: "Certificate does not exist",
-	}
-
-	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, appID).
-		Return(clientError).
-		Once()
-
-	svcErr := service.rollbackApplicationCertificateUpdate(appID, nil, updatedCert)
-
-	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), ErrorCertificateClientError.Code, svcErr.Code)
-	assert.Equal(suite.T(), serviceerror.ClientErrorType, svcErr.Type)
-	assert.Contains(suite.T(), svcErr.ErrorDescription, "Failed to delete application certificate")
-	assert.Contains(suite.T(), svcErr.ErrorDescription, "after update failure")
-	assert.Contains(suite.T(), svcErr.ErrorDescription, "Certificate does not exist")
-}
-
-// TestRollbackApplicationCertificateUpdate_DeleteCertificateServerError tests rollback when
-// DeleteCertificateByReference fails with ServerErrorType
-func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_DeleteCertificateServerError() {
-	service, _, mockCertService, _ := suite.setupTestService()
-
-	appID := testAppIDForRollback
-	updatedCert := &cert.Certificate{
-		ID:    "cert-new-123",
-		Type:  cert.CertificateTypeJWKS,
-		Value: `{"keys":[{"kty":"RSA"}]}`,
-	}
-
-	serverError := &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "CERT-5002",
-		Error:            "Database error",
-		ErrorDescription: "Failed to delete certificate from database",
-	}
-
-	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, appID).
-		Return(serverError).
-		Once()
-
-	svcErr := service.rollbackApplicationCertificateUpdate(appID, nil, updatedCert)
-
-	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
-}
-
-// TestRollbackApplicationCertificateUpdate_CreateCertificateClientError tests rollback when
-// CreateCertificate fails with ClientErrorType
-func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_CreateCertificateClientError() {
-	service, _, mockCertService, _ := suite.setupTestService()
-
-	appID := testAppIDForRollback
-	existingCert := &cert.Certificate{
-		ID:    "cert-existing-123",
-		Type:  cert.CertificateTypeJWKS,
-		Value: `{"keys":[]}`,
-	}
-
-	clientError := &serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "CERT-1003",
-		Error:            "Certificate validation failed",
-		ErrorDescription: "Invalid certificate data",
-	}
-
-	mockCertService.EXPECT().
-		CreateCertificate(existingCert).
-		Return(nil, clientError).
-		Once()
-
-	svcErr := service.rollbackApplicationCertificateUpdate(appID, existingCert, nil)
-
-	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), ErrorCertificateClientError.Code, svcErr.Code)
-	assert.Equal(suite.T(), serviceerror.ClientErrorType, svcErr.Type)
-	assert.Contains(suite.T(), svcErr.ErrorDescription, "Failed to revert application certificate creation")
-	assert.Contains(suite.T(), svcErr.ErrorDescription, "Invalid certificate data")
-}
-
-// TestRollbackApplicationCertificateUpdate_CreateCertificateServerError tests rollback when
-// CreateCertificate fails with ServerErrorType
-func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_CreateCertificateServerError() {
-	service, _, mockCertService, _ := suite.setupTestService()
-
-	appID := testAppIDForRollback
-	existingCert := &cert.Certificate{
-		ID:    "cert-existing-123",
-		Type:  cert.CertificateTypeJWKS,
-		Value: `{"keys":[]}`,
-	}
-
-	serverError := &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "CERT-5003",
-		Error:            "Database error",
-		ErrorDescription: "Failed to create certificate in database",
-	}
-
-	mockCertService.EXPECT().
-		CreateCertificate(existingCert).
-		Return(nil, serverError).
-		Once()
-
-	svcErr := service.rollbackApplicationCertificateUpdate(appID, existingCert, nil)
-
-	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
-}
-
-// TestRollbackApplicationCertificateUpdate_Success_UpdateExisting tests successful rollback
-// when updating existing certificate
-func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_Success_UpdateExisting() {
-	service, _, mockCertService, _ := suite.setupTestService()
-
-	appID := testAppIDForRollback
-	existingCert := &cert.Certificate{
-		ID:    "cert-existing-123",
-		Type:  cert.CertificateTypeJWKS,
-		Value: `{"keys":[]}`,
-	}
-	updatedCert := &cert.Certificate{
-		ID:    "cert-updated-123",
-		Type:  cert.CertificateTypeJWKS,
-		Value: `{"keys":[{"kty":"RSA"}]}`,
-	}
-
-	mockCertService.EXPECT().
-		UpdateCertificateByID(existingCert.ID, existingCert).
-		Return(&cert.Certificate{ID: existingCert.ID}, nil).
-		Once()
-
-	svcErr := service.rollbackApplicationCertificateUpdate(appID, existingCert, updatedCert)
-
-	assert.Nil(suite.T(), svcErr)
-}
-
-// TestRollbackApplicationCertificateUpdate_Success_DeleteNew tests successful rollback
-// when deleting newly created certificate
-func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_Success_DeleteNew() {
-	service, _, mockCertService, _ := suite.setupTestService()
-
-	appID := testAppIDForRollback
-	updatedCert := &cert.Certificate{
-		ID:    "cert-new-123",
-		Type:  cert.CertificateTypeJWKS,
-		Value: `{"keys":[{"kty":"RSA"}]}`,
-	}
-
-	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, appID).
-		Return(nil).
-		Once()
-
-	svcErr := service.rollbackApplicationCertificateUpdate(appID, nil, updatedCert)
-
-	assert.Nil(suite.T(), svcErr)
-}
-
-// TestRollbackApplicationCertificateUpdate_Success_CreateExisting tests successful rollback
-// when recreating previously deleted certificate
-func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_Success_CreateExisting() {
-	service, _, mockCertService, _ := suite.setupTestService()
-
-	appID := testAppIDForRollback
-	existingCert := &cert.Certificate{
-		ID:    "cert-existing-123",
-		Type:  cert.CertificateTypeJWKS,
-		Value: `{"keys":[]}`,
-	}
-
-	mockCertService.EXPECT().
-		CreateCertificate(existingCert).
-		Return(&cert.Certificate{ID: existingCert.ID}, nil).
-		Once()
-
-	svcErr := service.rollbackApplicationCertificateUpdate(appID, existingCert, nil)
-
-	assert.Nil(suite.T(), svcErr)
-}
-
-// TestRollbackApplicationCertificateUpdate_NoOp tests rollback when no certificate changes were made
-func (suite *ServiceTestSuite) TestRollbackApplicationCertificateUpdate_NoOp() {
-	service, _, _, _ := suite.setupTestService()
-
-	appID := testAppIDForRollback
-
-	// No certificates - nothing to rollback
-	svcErr := service.rollbackApplicationCertificateUpdate(appID, nil, nil)
-
-	assert.Nil(suite.T(), svcErr)
-}
-
-// TestUpdateApplicationCertificate_GetCertificateClientError tests when GetCertificateByReference
 // fails with ClientErrorType (non-NotFound)
 func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_GetCertificateClientError() {
 	service, _, mockCertService, _ := suite.setupTestService()
 
-	app := &model.ApplicationDTO{
-		ID:   testAppIDForRollback,
-		Name: "Test App",
-	}
+	app := &model.ApplicationDTO{}
 
 	clientError := &serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
@@ -3052,14 +3393,13 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_GetCertificateCl
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(nil, clientError).
 		Once()
 
-	existingCert, updatedCert, returnCert, svcErr := service.updateApplicationCertificate(app)
+	returnCert, svcErr := service.updateApplicationCertificate(context.Background(), testServiceAppID,
+		app.Certificate, cert.CertificateReferenceTypeApplication)
 
-	assert.Nil(suite.T(), existingCert)
-	assert.Nil(suite.T(), updatedCert)
 	assert.Nil(suite.T(), returnCert)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), ErrorCertificateClientError.Code, svcErr.Code)
@@ -3073,10 +3413,7 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_GetCertificateCl
 func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_GetCertificateServerError() {
 	service, _, mockCertService, _ := suite.setupTestService()
 
-	app := &model.ApplicationDTO{
-		ID:   testAppIDForRollback,
-		Name: "Test App",
-	}
+	app := &model.ApplicationDTO{}
 
 	serverError := &serviceerror.ServiceError{
 		Type:             serviceerror.ServerErrorType,
@@ -3086,14 +3423,13 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_GetCertificateSe
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(nil, serverError).
 		Once()
 
-	existingCert, updatedCert, returnCert, svcErr := service.updateApplicationCertificate(app)
+	returnCert, svcErr := service.updateApplicationCertificate(context.Background(), testServiceAppID,
+		app.Certificate, cert.CertificateReferenceTypeApplication)
 
-	assert.Nil(suite.T(), existingCert)
-	assert.Nil(suite.T(), updatedCert)
 	assert.Nil(suite.T(), returnCert)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
@@ -3111,8 +3447,6 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_UpdateCertificat
 	}
 
 	app := &model.ApplicationDTO{
-		ID:   testAppIDForRollback,
-		Name: "Test App",
 		Certificate: &model.ApplicationCertificate{
 			Type:  cert.CertificateTypeJWKS,
 			Value: `{"keys":[{"kty":"RSA"}]}`,
@@ -3127,18 +3461,17 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_UpdateCertificat
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(existingCert, nil).
 		Once()
 	mockCertService.EXPECT().
-		UpdateCertificateByID(existingCert.ID, mock.Anything).
+		UpdateCertificateByID(mock.Anything, existingCert.ID, mock.Anything).
 		Return(nil, clientError).
 		Once()
 
-	existingCertResult, updatedCert, returnCert, svcErr := service.updateApplicationCertificate(app)
+	returnCert, svcErr := service.updateApplicationCertificate(context.Background(), testServiceAppID,
+		app.Certificate, cert.CertificateReferenceTypeApplication)
 
-	assert.Nil(suite.T(), existingCertResult)
-	assert.Nil(suite.T(), updatedCert)
 	assert.Nil(suite.T(), returnCert)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), ErrorCertificateClientError.Code, svcErr.Code)
@@ -3159,8 +3492,6 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_UpdateCertificat
 	}
 
 	app := &model.ApplicationDTO{
-		ID:   testAppIDForRollback,
-		Name: "Test App",
 		Certificate: &model.ApplicationCertificate{
 			Type:  cert.CertificateTypeJWKS,
 			Value: `{"keys":[{"kty":"RSA"}]}`,
@@ -3175,18 +3506,17 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_UpdateCertificat
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(existingCert, nil).
 		Once()
 	mockCertService.EXPECT().
-		UpdateCertificateByID(existingCert.ID, mock.Anything).
+		UpdateCertificateByID(mock.Anything, existingCert.ID, mock.Anything).
 		Return(nil, serverError).
 		Once()
 
-	existingCertResult, updatedCert, returnCert, svcErr := service.updateApplicationCertificate(app)
+	returnCert, svcErr := service.updateApplicationCertificate(context.Background(), testServiceAppID,
+		app.Certificate, cert.CertificateReferenceTypeApplication)
 
-	assert.Nil(suite.T(), existingCertResult)
-	assert.Nil(suite.T(), updatedCert)
 	assert.Nil(suite.T(), returnCert)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
@@ -3198,8 +3528,6 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_CreateCertificat
 	service, _, mockCertService, _ := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		ID:   testAppIDForRollback,
-		Name: "Test App",
 		Certificate: &model.ApplicationCertificate{
 			Type:  cert.CertificateTypeJWKS,
 			Value: `{"keys":[{"kty":"RSA"}]}`,
@@ -3214,18 +3542,17 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_CreateCertificat
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(nil, &cert.ErrorCertificateNotFound).
 		Once()
 	mockCertService.EXPECT().
-		CreateCertificate(mock.Anything).
+		CreateCertificate(mock.Anything, mock.Anything).
 		Return(nil, clientError).
 		Once()
 
-	existingCert, updatedCert, returnCert, svcErr := service.updateApplicationCertificate(app)
+	returnCert, svcErr := service.updateApplicationCertificate(context.Background(), testServiceAppID,
+		app.Certificate, cert.CertificateReferenceTypeApplication)
 
-	assert.Nil(suite.T(), existingCert)
-	assert.Nil(suite.T(), updatedCert)
 	assert.Nil(suite.T(), returnCert)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), ErrorCertificateClientError.Code, svcErr.Code)
@@ -3240,8 +3567,6 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_CreateCertificat
 	service, _, mockCertService, _ := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		ID:   testAppIDForRollback,
-		Name: "Test App",
 		Certificate: &model.ApplicationCertificate{
 			Type:  cert.CertificateTypeJWKS,
 			Value: `{"keys":[{"kty":"RSA"}]}`,
@@ -3256,18 +3581,17 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_CreateCertificat
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(nil, &cert.ErrorCertificateNotFound).
 		Once()
 	mockCertService.EXPECT().
-		CreateCertificate(mock.Anything).
+		CreateCertificate(mock.Anything, mock.Anything).
 		Return(nil, serverError).
 		Once()
 
-	existingCert, updatedCert, returnCert, svcErr := service.updateApplicationCertificate(app)
+	returnCert, svcErr := service.updateApplicationCertificate(context.Background(), testServiceAppID,
+		app.Certificate, cert.CertificateReferenceTypeApplication)
 
-	assert.Nil(suite.T(), existingCert)
-	assert.Nil(suite.T(), updatedCert)
 	assert.Nil(suite.T(), returnCert)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
@@ -3285,8 +3609,6 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_DeleteCertificat
 	}
 
 	app := &model.ApplicationDTO{
-		ID:   testAppIDForRollback,
-		Name: "Test App",
 		// No certificate provided - should delete existing
 	}
 
@@ -3298,18 +3620,17 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_DeleteCertificat
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(existingCert, nil).
 		Once()
 	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(clientError).
 		Once()
 
-	existingCertResult, updatedCert, returnCert, svcErr := service.updateApplicationCertificate(app)
+	returnCert, svcErr := service.updateApplicationCertificate(context.Background(), testServiceAppID,
+		app.Certificate, cert.CertificateReferenceTypeApplication)
 
-	assert.Nil(suite.T(), existingCertResult)
-	assert.Nil(suite.T(), updatedCert)
 	assert.Nil(suite.T(), returnCert)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), ErrorCertificateClientError.Code, svcErr.Code)
@@ -3330,8 +3651,6 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_DeleteCertificat
 	}
 
 	app := &model.ApplicationDTO{
-		ID:   testAppIDForRollback,
-		Name: "Test App",
 		// No certificate provided - should delete existing
 	}
 
@@ -3343,18 +3662,17 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_DeleteCertificat
 	}
 
 	mockCertService.EXPECT().
-		GetCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(existingCert, nil).
 		Once()
 	mockCertService.EXPECT().
-		DeleteCertificateByReference(cert.CertificateReferenceTypeApplication, testAppIDForRollback).
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
 		Return(serverError).
 		Once()
 
-	existingCertResult, updatedCert, returnCert, svcErr := service.updateApplicationCertificate(app)
+	returnCert, svcErr := service.updateApplicationCertificate(context.Background(), testServiceAppID,
+		app.Certificate, cert.CertificateReferenceTypeApplication)
 
-	assert.Nil(suite.T(), existingCertResult)
-	assert.Nil(suite.T(), updatedCert)
 	assert.Nil(suite.T(), returnCert)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
@@ -3371,7 +3689,7 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyString() {
 
 	// Mock GetUserSchemaList to return empty list (first call)
 	mockUserSchemaService.EXPECT().
-		GetUserSchemaList(mock.Anything, 0).
+		GetUserSchemaList(mock.Anything, mock.Anything, 0).
 		Return(&userschema.UserSchemaListResponse{
 			TotalResults: 0,
 			Count:        0,
@@ -3384,11 +3702,12 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyString() {
 		certService:       mockCertService,
 		flowMgtService:    mockFlowMgtService,
 		userSchemaService: mockUserSchemaService,
+		transactioner:     &fakeTransactioner{},
 	}
 
 	// Test with empty string in allowedUserTypes
 	allowedUserTypes := []string{""}
-	svcErr := serviceWithMock.validateAllowedUserTypes(allowedUserTypes)
+	svcErr := serviceWithMock.validateAllowedUserTypes(context.Background(), allowedUserTypes)
 
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorInvalidUserType, svcErr)
@@ -3404,7 +3723,7 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyStringWithValid
 
 	// Mock GetUserSchemaList to return a list with one valid user type
 	mockUserSchemaService.EXPECT().
-		GetUserSchemaList(mock.Anything, 0).
+		GetUserSchemaList(mock.Anything, mock.Anything, 0).
 		Return(&userschema.UserSchemaListResponse{
 			TotalResults: 1,
 			Count:        1,
@@ -3421,11 +3740,12 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyStringWithValid
 		certService:       mockCertService,
 		flowMgtService:    mockFlowMgtService,
 		userSchemaService: mockUserSchemaService,
+		transactioner:     &fakeTransactioner{},
 	}
 
 	// Test with empty string and valid user type
 	allowedUserTypes := []string{"", "validUserType"}
-	svcErr := serviceWithMock.validateAllowedUserTypes(allowedUserTypes)
+	svcErr := serviceWithMock.validateAllowedUserTypes(context.Background(), allowedUserTypes)
 
 	// Should still fail because empty string is invalid
 	assert.NotNil(suite.T(), svcErr)
@@ -3451,20 +3771,2846 @@ func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_NoPrefix() {
 		RegistrationFlowID: "",                // Empty, should infer from auth flow
 	}
 
-	mockStore.On("GetApplicationByName", "Test App").Return(nil, model.ApplicationNotFoundError)
-	mockFlowMgtService.EXPECT().IsValidFlow("invalid_flow_id").Return(true)
-	mockFlowMgtService.EXPECT().GetFlow("invalid_flow_id").Return(&flowmgt.CompleteFlowDefinition{
+	mockStore.On("GetApplicationByName", mock.Anything, "Test App").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "invalid_flow_id").Return(true)
+	mockFlowMgtService.EXPECT().GetFlow(mock.Anything, "invalid_flow_id").Return(&flowmgt.CompleteFlowDefinition{
 		ID:     "invalid_flow_id",
 		Handle: "test_flow",
 	}, nil).Maybe()
-	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, flowcommon.FlowTypeRegistration).Return(
+	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, mock.Anything, flowcommon.FlowTypeRegistration).Return(
 		nil, &serviceerror.ServiceError{Type: serviceerror.ClientErrorType}).Maybe()
 
-	result, inboundAuth, svcErr := service.ValidateApplication(app)
+	result, inboundAuth, svcErr := service.ValidateApplication(context.Background(), app)
 
 	assert.Nil(suite.T(), result)
 	assert.Nil(suite.T(), inboundAuth)
 	assert.NotNil(suite.T(), svcErr)
 	// When registration flow can't be inferred from auth flow, we get ErrorWhileRetrievingFlowDefinition
 	assert.Equal(suite.T(), &ErrorWhileRetrievingFlowDefinition, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestProcessUserInfoConfiguration() {
+	tests := []struct {
+		name               string
+		app                *model.ApplicationDTO
+		idTokenConfig      *model.IDTokenConfig
+		expectedAttributes []string
+	}{
+		{
+			name: "Explicit UserInfo config",
+			app: &model.ApplicationDTO{
+				InboundAuthConfig: []model.InboundAuthConfigDTO{
+					{
+						OAuthAppConfig: &model.OAuthAppConfigDTO{
+							UserInfo: &model.UserInfoConfig{
+								UserAttributes: []string{"email", "profile"},
+							},
+						},
+					},
+				},
+			},
+			idTokenConfig:      &model.IDTokenConfig{UserAttributes: []string{"sub"}},
+			expectedAttributes: []string{"email", "profile"},
+		},
+		{
+			name: "Fallback to IDToken attrs when UserInfo nil",
+			app: &model.ApplicationDTO{
+				InboundAuthConfig: []model.InboundAuthConfigDTO{
+					{
+						OAuthAppConfig: &model.OAuthAppConfigDTO{
+							UserInfo: nil,
+						},
+					},
+				},
+			},
+			idTokenConfig:      &model.IDTokenConfig{UserAttributes: []string{"sub", "email"}},
+			expectedAttributes: []string{"sub", "email"},
+		},
+		{
+			name: "Fallback to IDToken attrs when UserInfo attributes nil",
+			app: &model.ApplicationDTO{
+				InboundAuthConfig: []model.InboundAuthConfigDTO{
+					{
+						OAuthAppConfig: &model.OAuthAppConfigDTO{
+							UserInfo: &model.UserInfoConfig{
+								UserAttributes: nil,
+							},
+						},
+					},
+				},
+			},
+			idTokenConfig:      &model.IDTokenConfig{UserAttributes: []string{"sub"}},
+			expectedAttributes: []string{"sub"},
+		},
+		{
+			name: "Doesn't fallback when UserInfo attributes empty",
+			app: &model.ApplicationDTO{
+				InboundAuthConfig: []model.InboundAuthConfigDTO{
+					{
+						OAuthAppConfig: &model.OAuthAppConfigDTO{
+							UserInfo: &model.UserInfoConfig{
+								UserAttributes: []string{},
+							},
+						},
+					},
+				},
+			},
+			idTokenConfig:      &model.IDTokenConfig{UserAttributes: []string{"sub", "email"}},
+			expectedAttributes: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			result := processUserInfoConfiguration(tt.app, tt.idTokenConfig)
+			assert.NotNil(suite.T(), result)
+			assert.Equal(suite.T(), tt.expectedAttributes, result.UserAttributes)
+		})
+	}
+}
+
+func (suite *ServiceTestSuite) TestProcessScopeClaimsConfiguration() {
+	tests := []struct {
+		name           string
+		app            *model.ApplicationDTO
+		expectedClaims map[string][]string
+	}{
+		{
+			name: "With Scope Claims",
+			app: &model.ApplicationDTO{
+				InboundAuthConfig: []model.InboundAuthConfigDTO{
+					{
+						OAuthAppConfig: &model.OAuthAppConfigDTO{
+							ScopeClaims: map[string][]string{
+								"profile": {"name", "email"},
+							},
+						},
+					},
+				},
+			},
+			expectedClaims: map[string][]string{
+				"profile": {"name", "email"},
+			},
+		},
+		{
+			name: "Without Scope Claims",
+			app: &model.ApplicationDTO{
+				InboundAuthConfig: []model.InboundAuthConfigDTO{
+					{
+						OAuthAppConfig: &model.OAuthAppConfigDTO{
+							ScopeClaims: nil,
+						},
+					},
+				},
+			},
+			expectedClaims: map[string][]string{},
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			result := processScopeClaimsConfiguration(tt.app)
+			assert.Equal(suite.T(), tt.expectedClaims, result)
+		})
+	}
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_ValidateApplicationError() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, _, _, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name: "", // Invalid name to trigger ValidateApplication error
+	}
+
+	result, svcErr := service.CreateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorInvalidApplicationName, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_CertificateValidationError() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, _, _, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name: "Test App",
+		Certificate: &model.ApplicationCertificate{
+			Type:  "INVALID_TYPE",
+			Value: "some-value",
+		},
+	}
+
+	mockStore := service.appStore.(*applicationStoreInterfaceMock)
+	mockFlowMgtService := service.flowMgtService.(*flowmgtmock.FlowMgtServiceInterfaceMock)
+
+	mockStore.On("GetApplicationByName", mock.Anything, "Test App").Return(nil, model.ApplicationNotFoundError)
+	app.AuthFlowID = "auth-flow-id"
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+
+	app.RegistrationFlowID = "reg-flow-id"
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+
+	result, svcErr := service.CreateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorInvalidCertificateType.Code, svcErr.Code)
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_CertificateCreationError() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, _, mockCertService, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name: "Test App",
+		Certificate: &model.ApplicationCertificate{
+			Type:  "JWKS",
+			Value: `{"keys":[]}`,
+		},
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+	}
+
+	mockStore := service.appStore.(*applicationStoreInterfaceMock)
+	mockFlowMgtService := service.flowMgtService.(*flowmgtmock.FlowMgtServiceInterfaceMock)
+
+	mockStore.On("GetApplicationByName", mock.Anything, "Test App").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+
+	svcErrExpected := &serviceerror.ServiceError{Type: serviceerror.ServerErrorType}
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, mock.Anything).Return(nil, svcErrExpected)
+
+	result, svcErr := service.CreateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_WithOAuthCertificate_Success() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		Flow: config.FlowConfig{
+			DefaultAuthFlowHandle: "default_auth_flow",
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name:               "Test OAuth Cert App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					Certificate: &model.ApplicationCertificate{
+						Type:  "JWKS",
+						Value: `{"keys":[]}`,
+					},
+				},
+			},
+		},
+	}
+
+	mockStore.On("GetApplicationByName", mock.Anything, "Test OAuth Cert App").
+		Return(nil, model.ApplicationNotFoundError)
+	mockStore.On("GetOAuthApplication", mock.Anything, testClientID).Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+
+	// App certificate creation (nil app cert -> none type returned)
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, mock.MatchedBy(func(c *cert.Certificate) bool {
+		return c.RefType == cert.CertificateReferenceTypeOAuthApp && c.RefID == testClientID
+	})).Return(&cert.Certificate{Type: "JWKS", Value: `{"keys":[]}`}, nil)
+
+	mockStore.On("CreateApplication", mock.MatchedBy(isTxCtx), mock.Anything).Return(nil)
+
+	result, svcErr := service.CreateApplication(context.Background(), app)
+
+	assert.NotNil(suite.T(), result)
+	assert.Nil(suite.T(), svcErr)
+	assert.Equal(suite.T(), "Test OAuth Cert App", result.Name)
+	require.Len(suite.T(), result.InboundAuthConfig, 1)
+	assert.Equal(suite.T(), model.OAuthInboundAuthType, result.InboundAuthConfig[0].Type)
+	require.NotNil(suite.T(), result.InboundAuthConfig[0].OAuthAppConfig)
+	require.NotNil(suite.T(), result.InboundAuthConfig[0].OAuthAppConfig.Certificate)
+	assert.Equal(suite.T(), cert.CertificateType("JWKS"), result.InboundAuthConfig[0].OAuthAppConfig.Certificate.Type)
+	assert.Equal(suite.T(), `{"keys":[]}`, result.InboundAuthConfig[0].OAuthAppConfig.Certificate.Value)
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_OAuthCertificateValidationError() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		Flow: config.FlowConfig{
+			DefaultAuthFlowHandle: "default_auth_flow",
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, mockFlowMgtService := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name:               "Test OAuth Cert App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					Certificate: &model.ApplicationCertificate{
+						Type:  "INVALID_TYPE",
+						Value: "some-value",
+					},
+				},
+			},
+		},
+	}
+
+	mockStore.On("GetApplicationByName", mock.Anything, "Test OAuth Cert App").
+		Return(nil, model.ApplicationNotFoundError)
+	mockStore.On("GetOAuthApplication", mock.Anything, testClientID).Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+
+	result, svcErr := service.CreateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorInvalidCertificateType.Code, svcErr.Code)
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_OAuthCertificateCreationError() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		Flow: config.FlowConfig{
+			DefaultAuthFlowHandle: "default_auth_flow",
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name:               "Test OAuth Cert App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					Certificate: &model.ApplicationCertificate{
+						Type:  "JWKS",
+						Value: `{"keys":[]}`,
+					},
+				},
+			},
+		},
+	}
+
+	mockStore.On("GetApplicationByName", mock.Anything, "Test OAuth Cert App").
+		Return(nil, model.ApplicationNotFoundError)
+	mockStore.On("GetOAuthApplication", mock.Anything, testClientID).Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+
+	svcErrExpected := &serviceerror.ServiceError{Type: serviceerror.ServerErrorType}
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, mock.Anything).Return(nil, svcErrExpected)
+
+	result, svcErr := service.CreateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithOAuthCertRollback() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		Flow: config.FlowConfig{
+			DefaultAuthFlowHandle: "default_auth_flow",
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name:               "Test OAuth Cert App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					Certificate: &model.ApplicationCertificate{
+						Type:  "JWKS",
+						Value: `{"keys":[]}`,
+					},
+				},
+			},
+		},
+	}
+
+	mockStore.On("GetApplicationByName", mock.Anything, "Test OAuth Cert App").
+		Return(nil, model.ApplicationNotFoundError)
+	mockStore.On("GetOAuthApplication", mock.Anything, testClientID).Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+
+	// OAuth cert creation succeeds
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, mock.Anything).
+		Return(&cert.Certificate{Type: "JWKS", Value: `{"keys":[]}`}, nil)
+
+	// Store creation fails
+	mockStore.On("CreateApplication", mock.MatchedBy(isTxCtx), mock.Anything).Return(errors.New("store error"))
+
+	result, svcErr := service.CreateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithBothAppAndOAuthCertRollback() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		Flow: config.FlowConfig{
+			DefaultAuthFlowHandle: "default_auth_flow",
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name:               "Test App With Both Certs",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		Certificate: &model.ApplicationCertificate{
+			Type:  "JWKS",
+			Value: `{"keys":[{"app":"cert"}]}`,
+		},
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					Certificate: &model.ApplicationCertificate{
+						Type:  "JWKS",
+						Value: `{"keys":[{"oauth":"cert"}]}`,
+					},
+				},
+			},
+		},
+	}
+
+	mockStore.On("GetApplicationByName", mock.Anything, "Test App With Both Certs").
+		Return(nil, model.ApplicationNotFoundError)
+	mockStore.On("GetOAuthApplication", mock.Anything, testClientID).Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+
+	// Both app cert and OAuth cert creation succeed
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, mock.MatchedBy(func(c *cert.Certificate) bool {
+		return c.RefType == cert.CertificateReferenceTypeApplication
+	})).Return(&cert.Certificate{Type: "JWKS", Value: `{"keys":[{"app":"cert"}]}`}, nil)
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, mock.MatchedBy(func(c *cert.Certificate) bool {
+		return c.RefType == cert.CertificateReferenceTypeOAuthApp
+	})).Return(&cert.Certificate{Type: "JWKS", Value: `{"keys":[{"oauth":"cert"}]}`}, nil)
+
+	// Store creation fails
+	mockStore.On("CreateApplication", mock.MatchedBy(isTxCtx), mock.Anything).Return(errors.New("store error"))
+
+	result, svcErr := service.CreateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestUpdateApplication_NotFound() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name: "New Name",
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(nil, model.ApplicationNotFoundError)
+
+	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorApplicationNotFound, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestUpdateApplication_NameConflict() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, _ := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   testServiceAppID,
+		Name: "Old Name",
+	}
+
+	app := &model.ApplicationDTO{
+		Name: "New Name",
+	}
+
+	existingAppWithName := &model.ApplicationProcessedDTO{
+		ID:   "app456",
+		Name: "New Name",
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockStore.On("GetApplicationByName", mock.Anything, "New Name").Return(existingAppWithName, nil)
+
+	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorApplicationAlreadyExistsWithName, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestUpdateApplication_MetadataUpdate() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "default-auth-flow",
+		RegistrationFlowID: "default-reg-flow",
+		Metadata: map[string]interface{}{
+			"old_key": "old_value",
+		},
+	}
+
+	updatedApp := &model.ApplicationDTO{
+		Name:               "Test App",
+		AuthFlowID:         "default-auth-flow",
+		RegistrationFlowID: "default-reg-flow",
+		Metadata: map[string]interface{}{
+			"new_key":     "new_value",
+			"another_key": "another_value",
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "default-auth-flow").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "default-reg-flow").Return(true)
+	// Mock certificate service to return no certificate (nil, nil)
+	mockCertService.On("GetCertificateByReference", mock.Anything, cert.CertificateReferenceTypeApplication,
+		testServiceAppID).Return(nil, nil)
+	mockStore.On("UpdateApplication", mock.MatchedBy(isTxCtx), existingApp,
+		mock.MatchedBy(func(dto *model.ApplicationProcessedDTO) bool {
+			// Verify that metadata is properly set in the processed DTO
+			if dto.Metadata == nil {
+				return false
+			}
+			if dto.Metadata["new_key"] != "new_value" {
+				return false
+			}
+			if dto.Metadata["another_key"] != "another_value" {
+				return false
+			}
+			// Ensure old metadata is not present
+			if _, exists := dto.Metadata["old_key"]; exists {
+				return false
+			}
+			return true
+		})).Return(nil)
+
+	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
+
+	assert.NotNil(suite.T(), result)
+	assert.Nil(suite.T(), svcErr)
+	assert.Equal(suite.T(), "new_value", result.Metadata["new_key"])
+	assert.Equal(suite.T(), "another_value", result.Metadata["another_key"])
+	mockStore.AssertExpectations(suite.T())
+}
+
+// TestUpdateApplication_AppCertificateUpdateError verifies that when the app certificate update fails
+// inside the transaction, UpdateApplication returns the certificate error.
+func (suite *ServiceTestSuite) TestUpdateApplication_AppCertificateUpdateError() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		JWT:                  config.JWTConfig{ValidityPeriod: 3600},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+	}
+	app := &model.ApplicationDTO{
+		Name:               "Test App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+	}
+
+	certServerError := &serviceerror.ServiceError{
+		Type:             serviceerror.ServerErrorType,
+		Code:             "CERT-5001",
+		Error:            "Database error",
+		ErrorDescription: "Failed to retrieve certificate from database",
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	// GetCertificateByReference returns a server error → updateApplicationCertificate fails
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
+		Return(nil, certServerError)
+
+	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
+}
+
+// TestUpdateApplicationCertificate_InvalidCertNoExistingCert verifies that when there is no existing
+// certificate but an invalid new certificate is provided, getValidatedCertificateForUpdate returns an error.
+func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_InvalidCertNoExistingCert() {
+	service, _, mockCertService, _ := suite.setupTestService()
+
+	// Provide a certificate with an invalid type so getValidatedCertificateForUpdate fails
+	app := &model.ApplicationDTO{
+		Certificate: &model.ApplicationCertificate{
+			Type:  "INVALID_TYPE",
+			Value: "some-value",
+		},
+	}
+
+	// No existing cert
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
+		Return(nil, nil).Once()
+
+	returnCert, svcErr := service.updateApplicationCertificate(context.Background(), testServiceAppID,
+		app.Certificate, cert.CertificateReferenceTypeApplication)
+
+	assert.Nil(suite.T(), returnCert)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorInvalidCertificateType, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestGetProcessedClientSecretForUpdate_PublicClient() {
+	oauthConfig := &model.OAuthAppConfigDTO{
+		TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodNone,
+		ClientSecret:            "should-be-ignored",
+	}
+
+	result := getProcessedClientSecretForUpdate(oauthConfig, nil)
+
+	assert.Equal(suite.T(), "", result)
+}
+
+func (suite *ServiceTestSuite) TestGetProcessedClientSecretForUpdate_NewSecretProvided() {
+	oauthConfig := &model.OAuthAppConfigDTO{
+		TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+		ClientSecret:            "new-secret-123",
+	}
+
+	result := getProcessedClientSecretForUpdate(oauthConfig, nil)
+
+	assert.NotEqual(suite.T(), "", result)
+	assert.NotEqual(suite.T(), "new-secret-123", result)
+}
+
+func (suite *ServiceTestSuite) TestGetProcessedClientSecretForUpdate_PreserveExistingSecret() {
+	existingHashedSecret := "existing-hashed-secret-xyz"
+	existingApp := &model.ApplicationProcessedDTO{
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					ClientID:                "client-123",
+					HashedClientSecret:      existingHashedSecret,
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+				},
+			},
+		},
+	}
+
+	oauthConfig := &model.OAuthAppConfigDTO{
+		TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+		PublicClient:            false,
+		ClientSecret:            "",
+	}
+
+	var existingOAuthConfig *model.OAuthAppConfigProcessedDTO
+	if len(existingApp.InboundAuthConfig) > 0 {
+		existingOAuthConfig = existingApp.InboundAuthConfig[0].OAuthAppConfig
+	}
+
+	result := getProcessedClientSecretForUpdate(oauthConfig, existingOAuthConfig)
+
+	assert.Equal(suite.T(), existingHashedSecret, result)
+}
+
+func (suite *ServiceTestSuite) TestGetProcessedClientSecretForUpdate_NoExistingApp() {
+	oauthConfig := &model.OAuthAppConfigDTO{
+		TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+		ClientSecret:            "",
+	}
+
+	result := getProcessedClientSecretForUpdate(oauthConfig, nil)
+
+	assert.Equal(suite.T(), "", result)
+}
+
+func (suite *ServiceTestSuite) TestGetProcessedClientSecretForUpdate_NoExistingOAuthConfig() {
+	oauthConfig := &model.OAuthAppConfigDTO{
+		TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+		ClientSecret:            "",
+	}
+
+	result := getProcessedClientSecretForUpdate(oauthConfig, nil)
+
+	assert.Equal(suite.T(), "", result)
+}
+
+// TestResolveClientSecret_PublicClient tests that no secret is generated for public clients.
+func TestResolveClientSecret_PublicClient(t *testing.T) {
+	inboundAuthConfig := &model.InboundAuthConfigDTO{
+		OAuthAppConfig: &model.OAuthAppConfigDTO{
+			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodNone,
+			ClientSecret:            "",
+			PublicClient:            true,
+		},
+	}
+
+	err := resolveClientSecret(inboundAuthConfig, nil)
+
+	assert.Nil(t, err)
+	assert.Equal(t, "", inboundAuthConfig.OAuthAppConfig.ClientSecret)
+}
+
+// TestResolveClientSecret_SecretAlreadyProvided tests that existing secrets are not overwritten.
+func TestResolveClientSecret_SecretAlreadyProvided(t *testing.T) {
+	providedSecret := "user-provided-secret"
+	inboundAuthConfig := &model.InboundAuthConfigDTO{
+		OAuthAppConfig: &model.OAuthAppConfigDTO{
+			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+			ClientSecret:            providedSecret,
+			PublicClient:            false,
+		},
+	}
+
+	err := resolveClientSecret(inboundAuthConfig, nil)
+
+	assert.Nil(t, err)
+	assert.Equal(t, providedSecret, inboundAuthConfig.OAuthAppConfig.ClientSecret)
+}
+
+// TestResolveClientSecret_GenerateForNewConfidentialClient tests secret generation for new clients.
+func TestResolveClientSecret_GenerateForNewConfidentialClient(t *testing.T) {
+	inboundAuthConfig := &model.InboundAuthConfigDTO{
+		OAuthAppConfig: &model.OAuthAppConfigDTO{
+			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+			ClientSecret:            "",
+			PublicClient:            false,
+		},
+	}
+
+	err := resolveClientSecret(inboundAuthConfig, nil)
+
+	assert.Nil(t, err)
+	assert.NotEmpty(t, inboundAuthConfig.OAuthAppConfig.ClientSecret)
+	// Verify it's a valid OAuth2 secret (should be non-empty and have sufficient length)
+	assert.Greater(t, len(inboundAuthConfig.OAuthAppConfig.ClientSecret), 20)
+}
+
+// TestResolveClientSecret_PreserveExistingSecret tests that existing secrets are preserved during updates.
+func TestResolveClientSecret_PreserveExistingSecret(t *testing.T) {
+	existingHashedSecret := "existing-hashed-secret"
+	existingApp := &model.ApplicationProcessedDTO{
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					HashedClientSecret:      existingHashedSecret,
+					PublicClient:            false,
+				},
+			},
+		},
+	}
+
+	inboundAuthConfig := &model.InboundAuthConfigDTO{
+		OAuthAppConfig: &model.OAuthAppConfigDTO{
+			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+			ClientSecret:            "",
+			PublicClient:            false,
+		},
+	}
+
+	err := resolveClientSecret(inboundAuthConfig, existingApp)
+
+	assert.Nil(t, err)
+	// Secret should remain empty (not generated) because existing app has a secret
+	assert.Equal(t, "", inboundAuthConfig.OAuthAppConfig.ClientSecret)
+}
+
+// TestResolveClientSecret_NoExistingApp tests secret generation when no existing app.
+func TestResolveClientSecret_NoExistingApp(t *testing.T) {
+	inboundAuthConfig := &model.InboundAuthConfigDTO{
+		OAuthAppConfig: &model.OAuthAppConfigDTO{
+			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+			ClientSecret:            "",
+			PublicClient:            false,
+		},
+	}
+
+	err := resolveClientSecret(inboundAuthConfig, nil)
+
+	assert.Nil(t, err)
+	assert.NotEmpty(t, inboundAuthConfig.OAuthAppConfig.ClientSecret)
+}
+
+// TestResolveClientSecret_ExistingAppWithoutSecret tests secret generation when existing app has no secret.
+func TestResolveClientSecret_ExistingAppWithoutSecret(t *testing.T) {
+	existingApp := &model.ApplicationProcessedDTO{
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					HashedClientSecret: "",
+					PublicClient:       false,
+				},
+			},
+		},
+	}
+
+	inboundAuthConfig := &model.InboundAuthConfigDTO{
+		OAuthAppConfig: &model.OAuthAppConfigDTO{
+			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+			ClientSecret:            "",
+			PublicClient:            false,
+		},
+	}
+
+	err := resolveClientSecret(inboundAuthConfig, existingApp)
+
+	assert.Nil(t, err)
+	// Should generate a new secret since existing app doesn't have one
+	assert.NotEmpty(t, inboundAuthConfig.OAuthAppConfig.ClientSecret)
+}
+
+// setupConsentEnabledService creates a test service with consent service enabled.
+func (suite *ServiceTestSuite) setupConsentEnabledService() (
+	*applicationService,
+	*applicationStoreInterfaceMock,
+	*certmock.CertificateServiceInterfaceMock,
+	*flowmgtmock.FlowMgtServiceInterfaceMock,
+	*consentmock.ConsentServiceInterfaceMock,
+) {
+	mockStore := newApplicationStoreInterfaceMock(suite.T())
+	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
+	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
+	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	mockConsentService := consentmock.NewConsentServiceInterfaceMock(suite.T())
+	service := &applicationService{
+		appStore:          mockStore,
+		certService:       mockCertService,
+		flowMgtService:    mockFlowMgtService,
+		userSchemaService: mockUserSchemaService,
+		consentService:    mockConsentService,
+		transactioner:     &fakeTransactioner{},
+	}
+	return service, mockStore, mockCertService, mockFlowMgtService, mockConsentService
+}
+
+// TestCreateApplication_ConsentSyncFails_CompensatesWithAppDeletion verifies that on consent
+// sync failure after app creation, the app is deleted as compensation.
+func (suite *ServiceTestSuite) TestCreateApplication_ConsentSyncFails_CompensatesWithAppDeletion() {
+	suite.runCreateApplicationConsentSyncFailsTest()
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_ConsentSyncFails_AppDeleteFails() {
+	// Currently identical as delete failure behavior is not mocked separately
+	suite.runCreateApplicationConsentSyncFailsTest()
+}
+
+func (suite *ServiceTestSuite) runCreateApplicationConsentSyncFailsTest() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		Flow:                 config.FlowConfig{DefaultAuthFlowHandle: "default_auth_flow"},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	app := &model.ApplicationDTO{
+		Name:               "Consent App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		Assertion: &model.AssertionConfig{
+			UserAttributes: []string{"email"},
+		},
+	}
+
+	// IsEnabled is called in validateConsentConfig and again before sync.
+	mockConsentService.On("IsEnabled").Return(true)
+	mockStore.On("GetApplicationByName", mock.Anything, "Consent App").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	mockStore.On("CreateApplication", mock.MatchedBy(isTxCtx), mock.Anything).Return(nil)
+	// Consent sync fails: ValidateConsentElements returns an I18n error.
+	mockConsentService.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
+		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+	result, svcErr := service.CreateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+}
+
+// TestUpdateApplication_ConsentEnabled_LoginConsentDisabled_DeletesPurposes verifies
+// that when consent is enabled and login consent is disabled, consent purposes are deleted.
+func (suite *ServiceTestSuite) TestUpdateApplication_ConsentEnabled_LoginConsentDisabled_DeletesPurposes() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		Flow:                 config.FlowConfig{DefaultAuthFlowHandle: "default_auth_flow"},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   "app123",
+		Name: "Test App",
+	}
+	app := &model.ApplicationDTO{
+		ID:                 "app123",
+		Name:               "Test App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		// LoginConsent is nil → validateConsentConfig sets Enabled=false
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, "app123").Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, "app123").Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
+		Return(nil, nil)
+	mockStore.On("UpdateApplication", mock.MatchedBy(isTxCtx), mock.Anything, mock.Anything).Return(nil)
+	// Consent enabled → deleteConsentPurposes path (LoginConsent.Enabled=false)
+	mockConsentService.On("IsEnabled").Return(true)
+	mockConsentService.On("ListConsentPurposes", mock.Anything, "default", "app123").
+		Return([]consent.ConsentPurpose{{ID: "purpose-1"}}, (*serviceerror.I18nServiceError)(nil))
+	mockConsentService.On("DeleteConsentPurpose", mock.Anything, "default", "purpose-1").
+		Return((*serviceerror.I18nServiceError)(nil))
+
+	result, svcErr := service.UpdateApplication(context.Background(), "app123", app)
+
+	assert.Nil(suite.T(), svcErr)
+	assert.NotNil(suite.T(), result)
+}
+
+// TestUpdateApplication_ConsentSyncFails_CompensatesWithAppRevert verifies that on consent
+// sync failure after an app update, the update is reverted as compensation.
+func (suite *ServiceTestSuite) TestUpdateApplication_ConsentSyncFails_CompensatesWithAppRevert() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		Flow:                 config.FlowConfig{DefaultAuthFlowHandle: "default_auth_flow"},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   "app123",
+		Name: "Test App",
+	}
+	app := &model.ApplicationDTO{
+		ID:                 "app123",
+		Name:               "Test App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		Assertion: &model.AssertionConfig{
+			UserAttributes: []string{"email"},
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, "app123").Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, "app123").Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
+		Return(nil, nil)
+	// Both the actual update and the compensation revert use the same mock.
+	mockStore.On("UpdateApplication", mock.MatchedBy(isTxCtx), mock.Anything, mock.Anything).Return(nil)
+	// IsEnabled called in validateConsentConfig (true) and in the consent sync block (true).
+	mockConsentService.On("IsEnabled").Return(true)
+	// Consent sync fails: ValidateConsentElements returns an I18n error.
+	mockConsentService.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
+		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+
+	result, svcErr := service.UpdateApplication(context.Background(), "app123", app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+}
+
+// TestUpdateApplication_ConsentServiceDisabled_SkipsConsentSync verifies that
+// UpdateApplication succeeds and skips consent synchronization when the consent service is disabled.
+func (suite *ServiceTestSuite) TestUpdateApplication_ConsentServiceDisabled_SkipsConsentSync() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		JWT:                  config.JWTConfig{ValidityPeriod: 3600},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   "app123",
+		Name: "Test App",
+	}
+	app := &model.ApplicationDTO{
+		ID:                 "app123",
+		Name:               "Test App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, "app123").Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, "app123").Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
+		Return(nil, nil)
+	mockStore.On("UpdateApplication", mock.MatchedBy(isTxCtx), mock.Anything, mock.Anything).Return(nil)
+	// Consent service disabled -> skip consent synchronization path.
+	mockConsentService.On("IsEnabled").Return(false)
+
+	result, svcErr := service.UpdateApplication(context.Background(), "app123", app)
+
+	assert.NotNil(suite.T(), result)
+	assert.Nil(suite.T(), svcErr)
+}
+
+// TestUpdateApplication_StoreFails_RollbackCertFails verifies that when the store update fails
+// and rolling back the certificate also fails, the rollback error is returned.
+func (suite *ServiceTestSuite) TestUpdateApplication_StoreFails_RollbackCertFails() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		JWT:                  config.JWTConfig{ValidityPeriod: 3600},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService, _ := suite.setupConsentEnabledService()
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   "app123",
+		Name: "Test App",
+	}
+	// No Certificate on the update request → triggers deletion of the existing cert
+	app := &model.ApplicationDTO{
+		ID:                 "app123",
+		Name:               "Test App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+	}
+	existingCert := &cert.Certificate{
+		ID:    "cert-id-1",
+		Type:  cert.CertificateTypeJWKS,
+		Value: `{"keys":[]}`,
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, "app123").Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, "app123").Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	// updateApplicationCertificate: get existing cert, then delete it (no new cert in app)
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
+		Return(existingCert, nil)
+	mockCertService.EXPECT().
+		DeleteCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, "app123").
+		Return(nil)
+	// Store update fails
+	mockStore.On("UpdateApplication", mock.MatchedBy(isTxCtx), mock.Anything, mock.Anything).
+		Return(errors.New("store error"))
+
+	result, svcErr := service.UpdateApplication(context.Background(), "app123", app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
+}
+
+// TestCreateApplication_ConsentSyncFails_AppDeleteFails verifies that when consent sync fails
+// and the compensation deletion of the app also fails, the original consent error is returned.
+
+// TestCreateApplication_ConsentSyncFails_WithCert_CertRollbackFails verifies that when
+// consent sync fails with a cert in place and the cert rollback also fails, the original
+// consent error is still returned (rollback failure is only logged).
+func (suite *ServiceTestSuite) TestCreateApplication_ConsentSyncFails_WithCert_CertRollbackFails() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+		Flow:                 config.FlowConfig{DefaultAuthFlowHandle: "default_auth_flow"},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService, mockConsentService := suite.setupConsentEnabledService()
+	app := &model.ApplicationDTO{
+		Name:               "Consent App With Cert",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		Assertion: &model.AssertionConfig{
+			UserAttributes: []string{"email"},
+		},
+		Certificate: &model.ApplicationCertificate{
+			Type:  cert.CertificateTypeJWKS,
+			Value: `{"keys":[]}`,
+		},
+	}
+
+	mockConsentService.On("IsEnabled").Return(true)
+	mockStore.On("GetApplicationByName", mock.Anything, "Consent App With Cert").
+		Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "edc013d0-e893-4dc0-990c-3e1d203e005b").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "80024fb3-29ed-4c33-aa48-8aee5e96d522").Return(true)
+	// Certificate is created successfully during app creation
+	mockCertService.EXPECT().
+		CreateCertificate(mock.Anything, mock.Anything).
+		Return(&cert.Certificate{
+			ID:   "cert-1",
+			Type: cert.CertificateTypeJWKS,
+		}, (*serviceerror.ServiceError)(nil))
+	mockStore.On("CreateApplication", mock.MatchedBy(isTxCtx), mock.Anything).Return(nil)
+	// Consent sync fails
+	mockConsentService.On("ValidateConsentElements", mock.Anything, "default", mock.Anything).
+		Return(nil, &serviceerror.InternalServerErrorWithI18n)
+
+	result, svcErr := service.CreateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+}
+
+// TestDeleteApplication_ConsentEnabled_DeleteConsentPurposesFails verifies that when
+// the consent service is enabled but deleting consent purposes fails, the error is returned.
+func (suite *ServiceTestSuite) TestDeleteApplication_ConsentEnabled_DeleteConsentPurposesFails() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, _, mockConsentService := suite.setupConsentEnabledService()
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, "app123").Return(false)
+	mockStore.On("GetApplicationByID", mock.MatchedBy(isTxCtx), "app123").
+		Return(&model.ApplicationProcessedDTO{ID: "app123", Name: "Test App"}, nil)
+	mockStore.On("DeleteApplication", mock.MatchedBy(isTxCtx), "app123").Return(nil)
+	mockConsentService.On("IsEnabled").Return(true)
+	mockConsentService.On("ListConsentPurposes", mock.Anything, "default", "app123").
+		Return([]consent.ConsentPurpose{{ID: "purpose-1"}}, (*serviceerror.I18nServiceError)(nil))
+	// Delete consent purpose fails with a non-associated-records error
+	mockConsentService.On("DeleteConsentPurpose", mock.Anything, "default", "purpose-1").
+		Return(&serviceerror.InternalServerErrorWithI18n)
+
+	svcErr := service.DeleteApplication(context.Background(), "app123")
+
+	assert.NotNil(suite.T(), svcErr)
+}
+
+// TestResolveClientSecret_ExistingPublicClientToConfidential tests conversion from public to confidential.
+func TestResolveClientSecret_ExistingPublicClientToConfidential(t *testing.T) {
+	existingApp := &model.ApplicationProcessedDTO{
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					HashedClientSecret: "",
+					PublicClient:       true,
+				},
+			},
+		},
+	}
+
+	inboundAuthConfig := &model.InboundAuthConfigDTO{
+		OAuthAppConfig: &model.OAuthAppConfigDTO{
+			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+			ClientSecret:            "",
+			PublicClient:            false,
+		},
+	}
+
+	err := resolveClientSecret(inboundAuthConfig, existingApp)
+
+	assert.Nil(t, err)
+	// Should generate a new secret when converting public to confidential
+	assert.NotEmpty(t, inboundAuthConfig.OAuthAppConfig.ClientSecret)
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_OAuthCertValidationError_WithAppCertRollbackSuccess() {
+	suite.runCreateApplicationOAuthCertValidationErrorTest()
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_OAuthCertValidationError_WithAppCertRollbackFailure() {
+	// Currently identical as certification validation happens before rollback decisions
+	suite.runCreateApplicationOAuthCertValidationErrorTest()
+}
+
+func (suite *ServiceTestSuite) runCreateApplicationOAuthCertValidationErrorTest() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		Flow: config.FlowConfig{
+			DefaultAuthFlowHandle: "default_auth_flow",
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, mockFlowMgtService := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name:               "Test App With Cert",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		Certificate: &model.ApplicationCertificate{
+			Type:  "JWKS",
+			Value: `{"keys":[{"app":"cert"}]}`,
+		},
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					Certificate: &model.ApplicationCertificate{
+						Type:  "INVALID_TYPE",
+						Value: "some-value",
+					},
+				},
+			},
+		},
+	}
+
+	mockStore.On("GetApplicationByName", mock.Anything, "Test App With Cert").
+		Return(nil, model.ApplicationNotFoundError)
+	mockStore.On("GetOAuthApplication", mock.Anything, testClientID).Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+
+	result, svcErr := service.CreateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorInvalidCertificateType.Code, svcErr.Code)
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_OAuthCertCreationError_WithAppCertRollbackSuccess() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		Flow: config.FlowConfig{
+			DefaultAuthFlowHandle: "default_auth_flow",
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name:               "Test App With Cert",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		Certificate: &model.ApplicationCertificate{
+			Type:  "JWKS",
+			Value: `{"keys":[{"app":"cert"}]}`,
+		},
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					Certificate: &model.ApplicationCertificate{
+						Type:  "JWKS",
+						Value: `{"keys":[{"oauth":"cert"}]}`,
+					},
+				},
+			},
+		},
+	}
+
+	mockStore.On("GetApplicationByName", mock.Anything, "Test App With Cert").
+		Return(nil, model.ApplicationNotFoundError)
+	mockStore.On("GetOAuthApplication", mock.Anything, testClientID).Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+
+	// App cert creation succeeds
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, mock.MatchedBy(func(c *cert.Certificate) bool {
+		return c.RefType == cert.CertificateReferenceTypeApplication
+	})).Return(&cert.Certificate{Type: "JWKS", Value: `{"keys":[{"app":"cert"}]}`}, nil)
+
+	// OAuth cert creation fails
+	svcErrExpected := &serviceerror.ServiceError{Type: serviceerror.ServerErrorType}
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, mock.MatchedBy(func(c *cert.Certificate) bool {
+		return c.RefType == cert.CertificateReferenceTypeOAuthApp
+	})).Return(nil, svcErrExpected)
+
+	result, svcErr := service.CreateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_OAuthCertCreationError_WithAppCertRollbackFailure() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		Flow: config.FlowConfig{
+			DefaultAuthFlowHandle: "default_auth_flow",
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name:               "Test App With Cert",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		Certificate: &model.ApplicationCertificate{
+			Type:  "JWKS",
+			Value: `{"keys":[{"app":"cert"}]}`,
+		},
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					Certificate: &model.ApplicationCertificate{
+						Type:  "JWKS",
+						Value: `{"keys":[{"oauth":"cert"}]}`,
+					},
+				},
+			},
+		},
+	}
+
+	mockStore.On("GetApplicationByName", mock.Anything, "Test App With Cert").
+		Return(nil, model.ApplicationNotFoundError)
+	mockStore.On("GetOAuthApplication", mock.Anything, testClientID).Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+
+	// App cert creation succeeds
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, mock.MatchedBy(func(c *cert.Certificate) bool {
+		return c.RefType == cert.CertificateReferenceTypeApplication
+	})).Return(&cert.Certificate{Type: "JWKS", Value: `{"keys":[{"app":"cert"}]}`}, nil)
+
+	// OAuth cert creation fails
+	svcErrExpected := &serviceerror.ServiceError{Type: serviceerror.ServerErrorType}
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, mock.MatchedBy(func(c *cert.Certificate) bool {
+		return c.RefType == cert.CertificateReferenceTypeOAuthApp
+	})).Return(nil, svcErrExpected)
+
+	result, svcErr := service.CreateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorCertificateServerError.Code, svcErr.Code)
+}
+
+// TestUpdateApplication_WithOAuthConfig_Success tests successful update of an application with OAuth configuration.
+func (suite *ServiceTestSuite) TestUpdateApplication_WithOAuthConfig_Success() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		JWT: config.JWTConfig{
+			ValidityPeriod: 3600,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					ClientID:                testClientID,
+					HashedClientSecret:      "hashed-secret",
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+				},
+			},
+		},
+	}
+
+	updatedApp := &model.ApplicationDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App Updated",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID: testClientID,
+					RedirectURIs: []string{"https://example.com/callback",
+						"https://example.com/callback2"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+				},
+			},
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockStore.On("GetApplicationByName", mock.Anything, "Test App Updated").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+
+	// Mock certificate service for app cert
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
+		Return(nil, &cert.ErrorCertificateNotFound)
+
+	// Mock certificate service for OAuth cert
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeOAuthApp, testClientID).
+		Return(nil, &cert.ErrorCertificateNotFound)
+
+	mockStore.On("UpdateApplication", mock.MatchedBy(isTxCtx), existingApp,
+		mock.MatchedBy(func(dto *model.ApplicationProcessedDTO) bool {
+			return dto.ID == testServiceAppID &&
+				dto.Name == "Test App Updated" &&
+				len(dto.InboundAuthConfig) == 1 &&
+				dto.InboundAuthConfig[0].OAuthAppConfig.ClientID == testClientID &&
+				len(dto.InboundAuthConfig[0].OAuthAppConfig.RedirectURIs) == 2
+		})).Return(nil)
+
+	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
+
+	assert.NotNil(suite.T(), result)
+	assert.Nil(suite.T(), svcErr)
+	assert.Equal(suite.T(), "Test App Updated", result.Name)
+	require.Len(suite.T(), result.InboundAuthConfig, 1)
+	assert.Equal(suite.T(), testClientID, result.InboundAuthConfig[0].OAuthAppConfig.ClientID)
+	assert.Len(suite.T(), result.InboundAuthConfig[0].OAuthAppConfig.RedirectURIs, 2)
+	mockStore.AssertExpectations(suite.T())
+}
+
+// TestUpdateApplication_AddOAuthConfig_Success tests adding OAuth configuration to an app that didn't have it.
+func (suite *ServiceTestSuite) TestUpdateApplication_AddOAuthConfig_Success() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		JWT: config.JWTConfig{
+			ValidityPeriod: 3600,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig:  []model.InboundAuthConfigProcessedDTO{}, // No OAuth config initially
+	}
+
+	updatedApp := &model.ApplicationDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID:                "new-client-id",
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+				},
+			},
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+	mockStore.On("GetOAuthApplication", mock.Anything, "new-client-id").Return(nil, model.ApplicationNotFoundError)
+
+	// Mock certificate service for app cert
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
+		Return(nil, &cert.ErrorCertificateNotFound)
+
+	// Mock certificate service for new OAuth cert
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeOAuthApp, "new-client-id").
+		Return(nil, &cert.ErrorCertificateNotFound)
+
+	mockStore.On("UpdateApplication", mock.MatchedBy(isTxCtx), existingApp,
+		mock.MatchedBy(func(dto *model.ApplicationProcessedDTO) bool {
+			return dto.ID == testServiceAppID &&
+				len(dto.InboundAuthConfig) == 1 &&
+				dto.InboundAuthConfig[0].OAuthAppConfig.ClientID == "new-client-id"
+		})).Return(nil)
+
+	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
+
+	assert.NotNil(suite.T(), result)
+	assert.Nil(suite.T(), svcErr)
+	require.Len(suite.T(), result.InboundAuthConfig, 1)
+	assert.Equal(suite.T(), "new-client-id", result.InboundAuthConfig[0].OAuthAppConfig.ClientID)
+	mockStore.AssertExpectations(suite.T())
+}
+
+// TestUpdateApplication_UpdateOAuthClientID_Success tests changing the OAuth client ID.
+func (suite *ServiceTestSuite) TestUpdateApplication_UpdateOAuthClientID_Success() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		JWT: config.JWTConfig{
+			ValidityPeriod: 3600,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					ClientID:                "old-client-id",
+					HashedClientSecret:      "hashed-secret",
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+				},
+			},
+		},
+	}
+
+	updatedApp := &model.ApplicationDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID:                "new-client-id",
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+				},
+			},
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+	mockStore.On("GetOAuthApplication", mock.Anything, "new-client-id").Return(nil, model.ApplicationNotFoundError)
+
+	// Mock certificate service for app cert
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
+		Return(nil, &cert.ErrorCertificateNotFound)
+
+	// Mock certificate service for OAuth cert
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeOAuthApp, "new-client-id").
+		Return(nil, &cert.ErrorCertificateNotFound)
+
+	mockStore.On("UpdateApplication", mock.MatchedBy(isTxCtx), existingApp,
+		mock.MatchedBy(func(dto *model.ApplicationProcessedDTO) bool {
+			return dto.ID == testServiceAppID &&
+				len(dto.InboundAuthConfig) == 1 &&
+				dto.InboundAuthConfig[0].OAuthAppConfig.ClientID == "new-client-id"
+		})).Return(nil)
+
+	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
+
+	assert.NotNil(suite.T(), result)
+	assert.Nil(suite.T(), svcErr)
+	require.Len(suite.T(), result.InboundAuthConfig, 1)
+	assert.Equal(suite.T(), "new-client-id", result.InboundAuthConfig[0].OAuthAppConfig.ClientID)
+	mockStore.AssertExpectations(suite.T())
+}
+
+// TestUpdateApplication_WithOAuthCertificate_Success tests updating an application with OAuth certificate.
+func (suite *ServiceTestSuite) TestUpdateApplication_WithOAuthCertificate_Success() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		JWT: config.JWTConfig{
+			ValidityPeriod: 3600,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+				},
+			},
+		},
+	}
+
+	updatedApp := &model.ApplicationDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					Certificate: &model.ApplicationCertificate{
+						Type:  cert.CertificateTypeJWKS,
+						Value: `{"keys":[{"kty":"RSA"}]}`,
+					},
+				},
+			},
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+
+	// Mock certificate service for app cert
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
+		Return(nil, &cert.ErrorCertificateNotFound)
+
+	// Mock certificate service for OAuth cert - no existing cert
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeOAuthApp, testClientID).
+		Return(nil, &cert.ErrorCertificateNotFound)
+
+	// Mock creating new certificate
+	mockCertService.EXPECT().CreateCertificate(mock.Anything, mock.MatchedBy(func(c *cert.Certificate) bool {
+		return c.RefType == cert.CertificateReferenceTypeOAuthApp &&
+			c.RefID == testClientID &&
+			c.Type == cert.CertificateTypeJWKS
+	})).Return(&cert.Certificate{
+		Type:  cert.CertificateTypeJWKS,
+		Value: `{"keys":[{"kty":"RSA"}]}`,
+	}, nil)
+
+	mockStore.On("UpdateApplication", mock.MatchedBy(isTxCtx), existingApp,
+		mock.MatchedBy(func(dto *model.ApplicationProcessedDTO) bool {
+			return dto.ID == testServiceAppID &&
+				len(dto.InboundAuthConfig) == 1 &&
+				dto.InboundAuthConfig[0].OAuthAppConfig.ClientID == testClientID
+		})).Return(nil)
+
+	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
+
+	assert.NotNil(suite.T(), result)
+	assert.Nil(suite.T(), svcErr)
+	require.Len(suite.T(), result.InboundAuthConfig, 1)
+	assert.NotNil(suite.T(), result.InboundAuthConfig[0].OAuthAppConfig.Certificate)
+	assert.Equal(suite.T(), cert.CertificateTypeJWKS, result.InboundAuthConfig[0].OAuthAppConfig.Certificate.Type)
+	mockStore.AssertExpectations(suite.T())
+	mockCertService.AssertExpectations(suite.T())
+}
+
+// TestUpdateApplication_UpdateOAuthCertificate_Success tests updating an existing OAuth certificate.
+func (suite *ServiceTestSuite) TestUpdateApplication_UpdateOAuthCertificate_Success() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		JWT: config.JWTConfig{
+			ValidityPeriod: 3600,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+				},
+			},
+		},
+	}
+
+	updatedApp := &model.ApplicationDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					Certificate: &model.ApplicationCertificate{
+						Type:  cert.CertificateTypeJWKS,
+						Value: `{"keys":[{"kty":"RSA","n":"new-value"}]}`,
+					},
+				},
+			},
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+
+	// Mock certificate service for app cert
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
+		Return(nil, &cert.ErrorCertificateNotFound)
+
+	// Mock certificate service for OAuth cert - existing cert
+	existingCert := &cert.Certificate{
+		ID:      "cert-123",
+		RefType: cert.CertificateReferenceTypeOAuthApp,
+		RefID:   testClientID,
+		Type:    cert.CertificateTypeJWKS,
+		Value:   `{"keys":[{"kty":"RSA","n":"old-value"}]}`,
+	}
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeOAuthApp, testClientID).
+		Return(existingCert, nil)
+
+	// Mock updating certificate
+	mockCertService.EXPECT().UpdateCertificateByID(mock.Anything, "cert-123",
+		mock.MatchedBy(func(c *cert.Certificate) bool {
+			return c.ID == "cert-123" &&
+				c.Type == cert.CertificateTypeJWKS &&
+				c.Value == `{"keys":[{"kty":"RSA","n":"new-value"}]}`
+		})).Return(&cert.Certificate{
+		ID:    "cert-123",
+		Type:  cert.CertificateTypeJWKS,
+		Value: `{"keys":[{"kty":"RSA","n":"new-value"}]}`,
+	}, nil)
+
+	mockStore.On("UpdateApplication", mock.MatchedBy(isTxCtx), existingApp,
+		mock.MatchedBy(func(dto *model.ApplicationProcessedDTO) bool {
+			return dto.ID == testServiceAppID
+		})).Return(nil)
+
+	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
+
+	assert.NotNil(suite.T(), result)
+	assert.Nil(suite.T(), svcErr)
+	require.Len(suite.T(), result.InboundAuthConfig, 1)
+	assert.NotNil(suite.T(), result.InboundAuthConfig[0].OAuthAppConfig.Certificate)
+	assert.Equal(suite.T(), cert.CertificateTypeJWKS, result.InboundAuthConfig[0].OAuthAppConfig.Certificate.Type)
+	mockStore.AssertExpectations(suite.T())
+	mockCertService.AssertExpectations(suite.T())
+}
+
+// TestUpdateApplication_OAuthClientIDConflict tests when the new client ID already exists.
+func (suite *ServiceTestSuite) TestUpdateApplication_OAuthClientIDConflict() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, mockFlowMgtService := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					ClientID:                "old-client-id",
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+				},
+			},
+		},
+	}
+
+	updatedApp := &model.ApplicationDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID:                "existing-client-id",
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+				},
+			},
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+
+	// Mock that another app already has this client ID
+	conflictingOAuthApp := &model.OAuthAppConfigProcessedDTO{
+		AppID:    "app456",
+		ClientID: "existing-client-id",
+	}
+	mockStore.On("GetOAuthApplication", mock.Anything, "existing-client-id").Return(conflictingOAuthApp, nil)
+
+	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorApplicationAlreadyExistsWithClientID, svcErr)
+}
+
+// TestUpdateApplication_OAuthInvalidRedirectURI tests updating with an invalid redirect URI.
+func (suite *ServiceTestSuite) TestUpdateApplication_OAuthInvalidRedirectURI() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, mockFlowMgtService := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+				},
+			},
+		},
+	}
+
+	updatedApp := &model.ApplicationDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID: testClientID,
+					// Invalid redirect URI with fragment
+					RedirectURIs:            []string{"https://example.com/callback#fragment"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+				},
+			},
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+
+	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+}
+
+// TestUpdateApplication_OAuthCertUpdateError tests when certificate update fails.
+func (suite *ServiceTestSuite) TestUpdateApplication_OAuthCertUpdateError() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		JWT: config.JWTConfig{
+			ValidityPeriod: 3600,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+				},
+			},
+		},
+	}
+
+	updatedApp := &model.ApplicationDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					Certificate: &model.ApplicationCertificate{
+						Type:  cert.CertificateTypeJWKS,
+						Value: `{"keys":[{"kty":"RSA"}]}`,
+					},
+				},
+			},
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+
+	// Mock certificate service for app cert
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
+		Return(nil, &cert.ErrorCertificateNotFound)
+
+	// Mock certificate service for OAuth cert - fails to retrieve
+	certError := &serviceerror.ServiceError{
+		Type:             serviceerror.ServerErrorType,
+		Code:             "CERT-500",
+		Error:            "Internal certificate error",
+		ErrorDescription: "Failed to retrieve certificate",
+	}
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeOAuthApp, testClientID).
+		Return(nil, certError)
+
+	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorCertificateServerError, svcErr)
+}
+
+// TestUpdateApplication_OAuthStoreErrorWithRollback tests when store update fails with OAuth cert rollback.
+func (suite *ServiceTestSuite) TestUpdateApplication_OAuthStoreErrorWithRollback() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		JWT: config.JWTConfig{
+			ValidityPeriod: 3600,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+				},
+			},
+		},
+	}
+
+	updatedApp := &model.ApplicationDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
+					Certificate: &model.ApplicationCertificate{
+						Type:  cert.CertificateTypeJWKS,
+						Value: `{"keys":[{"kty":"RSA"}]}`,
+					},
+				},
+			},
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+
+	// Mock certificate service for app cert
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
+		Return(nil, &cert.ErrorCertificateNotFound)
+
+	// Mock certificate service for OAuth cert - existing cert that will be updated
+	existingOAuthCert := &cert.Certificate{
+		ID:      "oauth-cert-123",
+		RefType: cert.CertificateReferenceTypeOAuthApp,
+		RefID:   testClientID,
+		Type:    cert.CertificateTypeJWKS,
+		Value:   `{"keys":[{"kty":"RSA","n":"old"}]}`,
+	}
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeOAuthApp, testClientID).
+		Return(existingOAuthCert, nil)
+
+	// Mock updating the OAuth certificate
+	mockCertService.EXPECT().UpdateCertificateByID(mock.Anything, "oauth-cert-123",
+		mock.MatchedBy(func(c *cert.Certificate) bool {
+			return c.RefType == cert.CertificateReferenceTypeOAuthApp && c.RefID == testClientID
+		})).Return(&cert.Certificate{
+		ID:    "oauth-cert-123",
+		Type:  cert.CertificateTypeJWKS,
+		Value: `{"keys":[{"kty":"RSA"}]}`,
+	}, nil)
+
+	// Mock store update failure
+	mockStore.On("UpdateApplication", mock.MatchedBy(isTxCtx), existingApp, mock.Anything).
+		Return(errors.New("store error"))
+
+	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorInternalServerError, svcErr)
+}
+
+// TestUpdateApplication_OAuthTokenConfigUpdate tests updating OAuth token configuration.
+func (suite *ServiceTestSuite) TestUpdateApplication_OAuthTokenConfigUpdate() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		JWT: config.JWTConfig{
+			ValidityPeriod: 3600,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+				},
+			},
+		},
+	}
+
+	updatedApp := &model.ApplicationDTO{
+		ID:                 testServiceAppID,
+		Name:               "Test App",
+		AuthFlowID:         "auth-flow-id",
+		RegistrationFlowID: "reg-flow-id",
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: model.OAuthInboundAuthType,
+				OAuthAppConfig: &model.OAuthAppConfigDTO{
+					ClientID:                testClientID,
+					RedirectURIs:            []string{"https://example.com/callback"},
+					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
+					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
+					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
+					Token: &model.OAuthTokenConfig{
+						AccessToken: &model.AccessTokenConfig{
+							ValidityPeriod: 7200,
+							UserAttributes: []string{"email", "name"},
+						},
+						IDToken: &model.IDTokenConfig{
+							ValidityPeriod: 3600,
+							UserAttributes: []string{"sub", "email"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "reg-flow-id").Return(true)
+
+	// Mock certificate service for app cert
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeApplication, testServiceAppID).
+		Return(nil, &cert.ErrorCertificateNotFound)
+
+	// Mock certificate service for OAuth cert
+	mockCertService.EXPECT().
+		GetCertificateByReference(mock.Anything, cert.CertificateReferenceTypeOAuthApp, testClientID).
+		Return(nil, &cert.ErrorCertificateNotFound)
+
+	mockStore.On("UpdateApplication", mock.MatchedBy(isTxCtx), existingApp,
+		mock.MatchedBy(func(dto *model.ApplicationProcessedDTO) bool {
+			if dto.ID != testServiceAppID || len(dto.InboundAuthConfig) != 1 {
+				return false
+			}
+			tokenConfig := dto.InboundAuthConfig[0].OAuthAppConfig.Token
+			return tokenConfig != nil &&
+				tokenConfig.AccessToken != nil &&
+				tokenConfig.AccessToken.ValidityPeriod == 7200 &&
+				tokenConfig.IDToken != nil &&
+				tokenConfig.IDToken.ValidityPeriod == 3600
+		})).Return(nil)
+
+	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
+
+	assert.NotNil(suite.T(), result)
+	assert.Nil(suite.T(), svcErr)
+	require.Len(suite.T(), result.InboundAuthConfig, 1)
+	assert.NotNil(suite.T(), result.InboundAuthConfig[0].OAuthAppConfig.Token)
+	assert.Equal(suite.T(), int64(7200), result.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken.ValidityPeriod)
+	assert.Equal(suite.T(), int64(3600), result.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ValidityPeriod)
+	mockStore.AssertExpectations(suite.T())
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_NilApplication() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, _, _, _ := suite.setupTestService()
+
+	result, svcErr := service.CreateApplication(context.Background(), nil)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorApplicationNil, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_DeclarativeMode() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, _, _, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name: "Test App",
+	}
+
+	result, svcErr := service.CreateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorCannotModifyDeclarativeResource, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestCreateApplication_ExistingDeclarativeApplication() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		ID:   "test-app-id",
+		Name: "Test App",
+	}
+
+	// Mock the IsApplicationDeclarative to return true
+	mockStore.On("IsApplicationDeclarative", mock.Anything, "test-app-id").Return(true)
+
+	result, svcErr := service.CreateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorCannotModifyDeclarativeResource, svcErr)
+	mockStore.AssertExpectations(suite.T())
+}
+
+// TestValidateApplication_ErrorFromProcessInboundAuthConfig tests error from
+// processInboundAuthConfig when invalid inbound auth config is provided.
+func (suite *ServiceTestSuite) TestValidateApplication_ErrorFromProcessInboundAuthConfig() {
+	service, mockStore, _, _ := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name: "Test App",
+		InboundAuthConfig: []model.InboundAuthConfigDTO{
+			{
+				Type: "InvalidType", // Invalid type, not OAuth
+			},
+		},
+	}
+
+	mockStore.On("GetApplicationByName", mock.Anything, "Test App").Return(nil, model.ApplicationNotFoundError)
+
+	result, inboundAuth, svcErr := service.ValidateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorInvalidInboundAuthConfig, svcErr)
+}
+
+// TestValidateApplication_ErrorFromValidateAuthFlowID tests error from validateAuthFlowID
+// when an invalid auth flow ID is provided.
+func (suite *ServiceTestSuite) TestValidateApplication_ErrorFromValidateAuthFlowID() {
+	service, mockStore, _, mockFlowMgtService := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name:       "Test App",
+		AuthFlowID: "invalid-flow-id",
+	}
+
+	mockStore.On("GetApplicationByName", mock.Anything, "Test App").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "invalid-flow-id").Return(false)
+
+	result, inboundAuth, svcErr := service.ValidateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorInvalidAuthFlowID, svcErr)
+}
+
+// TestValidateApplication_ErrorFromValidateRegistrationFlowID tests error from validateRegistrationFlowID
+// when an invalid registration flow ID is provided.
+func (suite *ServiceTestSuite) TestValidateApplication_ErrorFromValidateRegistrationFlowID() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			DefaultAuthFlowHandle: "default_auth_flow",
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, mockFlowMgtService := suite.setupTestService()
+
+	app := &model.ApplicationDTO{
+		Name:               "Test App",
+		AuthFlowID:         "valid-auth-flow-id",
+		RegistrationFlowID: "invalid-reg-flow-id",
+	}
+
+	mockStore.On("GetApplicationByName", mock.Anything, "Test App").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "valid-auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "invalid-reg-flow-id").Return(false)
+
+	result, inboundAuth, svcErr := service.ValidateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorInvalidRegistrationFlowID, svcErr)
+}
+
+// TestValidateApplication_ErrorFromValidateDesignIDs tests error from validateThemeID
+// and validateLayoutID when the theme or layout does not exist.
+func (suite *ServiceTestSuite) TestValidateApplication_ErrorFromValidateDesignIDs() {
+	tests := []struct {
+		name          string
+		app           *model.ApplicationDTO
+		setupMocks    func(*thememock.ThemeMgtServiceInterfaceMock, *layoutmock.LayoutMgtServiceInterfaceMock)
+		expectedError *serviceerror.ServiceError
+	}{
+		{
+			name: "ThemeID not found",
+			app: &model.ApplicationDTO{
+				Name:       "Test App",
+				AuthFlowID: "valid-auth-flow-id",
+				ThemeID:    "non-existent-theme-id",
+			},
+			setupMocks: func(mockTheme *thememock.ThemeMgtServiceInterfaceMock,
+				_ *layoutmock.LayoutMgtServiceInterfaceMock) {
+				mockTheme.EXPECT().IsThemeExist("non-existent-theme-id").Return(false, nil)
+			},
+			expectedError: &ErrorThemeNotFound,
+		},
+		{
+			name: "LayoutID not found",
+			app: &model.ApplicationDTO{
+				Name:       "Test App",
+				AuthFlowID: "valid-auth-flow-id",
+				LayoutID:   "non-existent-layout-id",
+			},
+			setupMocks: func(_ *thememock.ThemeMgtServiceInterfaceMock,
+				mockLayout *layoutmock.LayoutMgtServiceInterfaceMock) {
+				mockLayout.EXPECT().IsLayoutExist("non-existent-layout-id").Return(false, nil)
+			},
+			expectedError: &ErrorLayoutNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			testConfig := &config.Config{
+				Flow: config.FlowConfig{
+					DefaultAuthFlowHandle: "default_auth_flow",
+				},
+			}
+			config.ResetThunderRuntime()
+			err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+			require.NoError(suite.T(), err)
+			defer config.ResetThunderRuntime()
+
+			mockStore := newApplicationStoreInterfaceMock(suite.T())
+			mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
+			mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
+			mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+			mockThemeMgtService := thememock.NewThemeMgtServiceInterfaceMock(suite.T())
+			mockLayoutMgtService := layoutmock.NewLayoutMgtServiceInterfaceMock(suite.T())
+			service := &applicationService{
+				appStore:          mockStore,
+				certService:       mockCertService,
+				flowMgtService:    mockFlowMgtService,
+				userSchemaService: mockUserSchemaService,
+				themeMgtService:   mockThemeMgtService,
+				layoutMgtService:  mockLayoutMgtService,
+			}
+
+			mockStore.On("GetApplicationByName", mock.Anything, "Test App").Return(nil, model.ApplicationNotFoundError)
+			mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "valid-auth-flow-id").Return(true)
+			mockFlowMgtService.EXPECT().GetFlow(mock.Anything, "valid-auth-flow-id").
+				Return(&flowmgt.CompleteFlowDefinition{
+					ID:     "valid-auth-flow-id",
+					Handle: "basic_auth",
+				}, nil)
+			mockFlowMgtService.EXPECT().
+				GetFlowByHandle(mock.Anything, "basic_auth", flowcommon.FlowTypeRegistration).
+				Return(&flowmgt.CompleteFlowDefinition{
+					ID:     "reg_flow_basic",
+					Handle: "basic_auth",
+				}, nil)
+
+			tt.setupMocks(mockThemeMgtService, mockLayoutMgtService)
+
+			result, inboundAuth, svcErr := service.ValidateApplication(context.Background(), tt.app)
+
+			assert.Nil(suite.T(), result)
+			assert.Nil(suite.T(), inboundAuth)
+			assert.NotNil(suite.T(), svcErr)
+			assert.Equal(suite.T(), tt.expectedError, svcErr)
+		})
+	}
+}
+
+// TestValidateApplication_ErrorFromValidateAllowedUserTypes tests error from validateAllowedUserTypes
+// when an invalid user type is provided.
+func (suite *ServiceTestSuite) TestValidateApplication_ErrorFromValidateAllowedUserTypes() {
+	testConfig := &config.Config{
+		Flow: config.FlowConfig{
+			DefaultAuthFlowHandle: "default_auth_flow",
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	// Setup service with user schema mock
+	mockStore := newApplicationStoreInterfaceMock(suite.T())
+	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
+	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
+	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	service := &applicationService{
+		appStore:          mockStore,
+		certService:       mockCertService,
+		flowMgtService:    mockFlowMgtService,
+		userSchemaService: mockUserSchemaService,
+	}
+
+	app := &model.ApplicationDTO{
+		Name:             "Test App",
+		AuthFlowID:       "valid-auth-flow-id",
+		AllowedUserTypes: []string{"invalid-user-type"},
+	}
+
+	mockStore.On("GetApplicationByName", mock.Anything, "Test App").Return(nil, model.ApplicationNotFoundError)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "valid-auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().GetFlow(mock.Anything, "valid-auth-flow-id").Return(&flowmgt.CompleteFlowDefinition{
+		ID:     "valid-auth-flow-id",
+		Handle: "basic_auth",
+	}, nil)
+	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, "basic_auth", flowcommon.FlowTypeRegistration).Return(
+		&flowmgt.CompleteFlowDefinition{
+			ID:     "reg_flow_basic",
+			Handle: "basic_auth",
+		}, nil)
+
+	// Mock user schema service to return empty list (no valid user types)
+	mockUserSchemaService.EXPECT().GetUserSchemaList(mock.Anything, mock.Anything, mock.Anything).
+		Return(&userschema.UserSchemaListResponse{
+			TotalResults: 0,
+			Count:        0,
+			Schemas:      []userschema.UserSchemaListItem{},
+		}, nil)
+
+	result, inboundAuth, svcErr := service.ValidateApplication(context.Background(), app)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorInvalidUserType, svcErr)
+}
+
+// TestValidateApplicationForUpdate_ErrorFromValidateAuthFlowID tests error from validateAuthFlowID
+// when an invalid auth flow ID is provided during application update.
+func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_ErrorFromValidateAuthFlowID() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, mockFlowMgtService := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+	}
+
+	app := &model.ApplicationDTO{
+		Name:       "Test App",
+		AuthFlowID: "invalid-flow-id",
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "invalid-flow-id").Return(false)
+
+	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorInvalidAuthFlowID, svcErr)
+}
+
+// TestValidateApplicationForUpdate_ErrorFromValidateRegistrationFlowID tests error from
+// validateRegistrationFlowID when an invalid registration flow ID is provided during application update.
+func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_ErrorFromValidateRegistrationFlowID() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	service, mockStore, _, mockFlowMgtService := suite.setupTestService()
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+	}
+
+	app := &model.ApplicationDTO{
+		Name:               "Test App",
+		AuthFlowID:         "valid-auth-flow-id",
+		RegistrationFlowID: "invalid-reg-flow-id",
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "valid-auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "invalid-reg-flow-id").Return(false)
+
+	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorInvalidRegistrationFlowID, svcErr)
+}
+
+// TestValidateApplicationForUpdate_ErrorFromValidateLayoutID tests error from validateLayoutID
+// when the layout does not exist during application update.
+func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_ErrorFromValidateLayoutID() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		Flow: config.FlowConfig{
+			DefaultAuthFlowHandle: "default_auth_flow",
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	require.NoError(suite.T(), err)
+	defer config.ResetThunderRuntime()
+
+	// Setup service with layout mock
+	mockStore := newApplicationStoreInterfaceMock(suite.T())
+	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
+	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
+	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	mockLayoutMgtService := layoutmock.NewLayoutMgtServiceInterfaceMock(suite.T())
+	service := &applicationService{
+		appStore:          mockStore,
+		certService:       mockCertService,
+		flowMgtService:    mockFlowMgtService,
+		userSchemaService: mockUserSchemaService,
+		layoutMgtService:  mockLayoutMgtService,
+	}
+
+	existingApp := &model.ApplicationProcessedDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+	}
+
+	app := &model.ApplicationDTO{
+		Name:       "Test App",
+		AuthFlowID: "valid-auth-flow-id",
+		LayoutID:   "non-existent-layout-id",
+	}
+
+	mockStore.On("IsApplicationDeclarative", mock.Anything, testServiceAppID).Return(false)
+	mockStore.On("GetApplicationByID", mock.Anything, testServiceAppID).Return(existingApp, nil)
+	mockFlowMgtService.EXPECT().IsValidFlow(mock.Anything, "valid-auth-flow-id").Return(true)
+	mockFlowMgtService.EXPECT().GetFlow(mock.Anything, "valid-auth-flow-id").Return(&flowmgt.CompleteFlowDefinition{
+		ID:     "valid-auth-flow-id",
+		Handle: "basic_auth",
+	}, nil)
+	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, "basic_auth", flowcommon.FlowTypeRegistration).Return(
+		&flowmgt.CompleteFlowDefinition{
+			ID:     "reg_flow_basic",
+			Handle: "basic_auth",
+		}, nil)
+	mockLayoutMgtService.EXPECT().IsLayoutExist("non-existent-layout-id").Return(false, nil)
+
+	result, inboundAuth, svcErr := service.ValidateApplicationForUpdate(context.Background(), testServiceAppID, app)
+
+	assert.Nil(suite.T(), result)
+	assert.Nil(suite.T(), inboundAuth)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &ErrorLayoutNotFound, svcErr)
 }

@@ -41,8 +41,8 @@ func (_m *UserServiceInterfaceMock) EXPECT() *UserServiceInterfaceMock_Expecter 
 }
 
 // AuthenticateUser provides a mock function for the type UserServiceInterfaceMock
-func (_mock *UserServiceInterfaceMock) AuthenticateUser(ctx context.Context, request user.AuthenticateUserRequest) (*user.AuthenticateUserResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(ctx, request)
+func (_mock *UserServiceInterfaceMock) AuthenticateUser(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{}) (*user.AuthenticateUserResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, identifiers, credentials)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthenticateUser")
@@ -50,18 +50,18 @@ func (_mock *UserServiceInterfaceMock) AuthenticateUser(ctx context.Context, req
 
 	var r0 *user.AuthenticateUserResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, user.AuthenticateUserRequest) (*user.AuthenticateUserResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(ctx, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}, map[string]interface{}) (*user.AuthenticateUserResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, identifiers, credentials)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, user.AuthenticateUserRequest) *user.AuthenticateUserResponse); ok {
-		r0 = returnFunc(ctx, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}, map[string]interface{}) *user.AuthenticateUserResponse); ok {
+		r0 = returnFunc(ctx, identifiers, credentials)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*user.AuthenticateUserResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, user.AuthenticateUserRequest) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(ctx, request)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, map[string]interface{}, map[string]interface{}) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, identifiers, credentials)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -77,24 +77,30 @@ type UserServiceInterfaceMock_AuthenticateUser_Call struct {
 
 // AuthenticateUser is a helper method to define mock.On call
 //   - ctx context.Context
-//   - request user.AuthenticateUserRequest
-func (_e *UserServiceInterfaceMock_Expecter) AuthenticateUser(ctx interface{}, request interface{}) *UserServiceInterfaceMock_AuthenticateUser_Call {
-	return &UserServiceInterfaceMock_AuthenticateUser_Call{Call: _e.mock.On("AuthenticateUser", ctx, request)}
+//   - identifiers map[string]interface{}
+//   - credentials map[string]interface{}
+func (_e *UserServiceInterfaceMock_Expecter) AuthenticateUser(ctx interface{}, identifiers interface{}, credentials interface{}) *UserServiceInterfaceMock_AuthenticateUser_Call {
+	return &UserServiceInterfaceMock_AuthenticateUser_Call{Call: _e.mock.On("AuthenticateUser", ctx, identifiers, credentials)}
 }
 
-func (_c *UserServiceInterfaceMock_AuthenticateUser_Call) Run(run func(ctx context.Context, request user.AuthenticateUserRequest)) *UserServiceInterfaceMock_AuthenticateUser_Call {
+func (_c *UserServiceInterfaceMock_AuthenticateUser_Call) Run(run func(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{})) *UserServiceInterfaceMock_AuthenticateUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 user.AuthenticateUserRequest
+		var arg1 map[string]interface{}
 		if args[1] != nil {
-			arg1 = args[1].(user.AuthenticateUserRequest)
+			arg1 = args[1].(map[string]interface{})
+		}
+		var arg2 map[string]interface{}
+		if args[2] != nil {
+			arg2 = args[2].(map[string]interface{})
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -105,7 +111,7 @@ func (_c *UserServiceInterfaceMock_AuthenticateUser_Call) Return(authenticateUse
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_AuthenticateUser_Call) RunAndReturn(run func(ctx context.Context, request user.AuthenticateUserRequest) (*user.AuthenticateUserResponse, *serviceerror.ServiceError)) *UserServiceInterfaceMock_AuthenticateUser_Call {
+func (_c *UserServiceInterfaceMock_AuthenticateUser_Call) RunAndReturn(run func(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{}) (*user.AuthenticateUserResponse, *serviceerror.ServiceError)) *UserServiceInterfaceMock_AuthenticateUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -544,8 +550,8 @@ func (_c *UserServiceInterfaceMock_GetUserGroups_Call) RunAndReturn(run func(ctx
 }
 
 // GetUserList provides a mock function for the type UserServiceInterfaceMock
-func (_mock *UserServiceInterfaceMock) GetUserList(ctx context.Context, limit int, offset int, filters map[string]interface{}) (*user.UserListResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(ctx, limit, offset, filters)
+func (_mock *UserServiceInterfaceMock) GetUserList(ctx context.Context, limit int, offset int, filters map[string]interface{}, includeDisplay bool) (*user.UserListResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, limit, offset, filters, includeDisplay)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserList")
@@ -553,18 +559,18 @@ func (_mock *UserServiceInterfaceMock) GetUserList(ctx context.Context, limit in
 
 	var r0 *user.UserListResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, map[string]interface{}) (*user.UserListResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(ctx, limit, offset, filters)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, map[string]interface{}, bool) (*user.UserListResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, limit, offset, filters, includeDisplay)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, map[string]interface{}) *user.UserListResponse); ok {
-		r0 = returnFunc(ctx, limit, offset, filters)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, map[string]interface{}, bool) *user.UserListResponse); ok {
+		r0 = returnFunc(ctx, limit, offset, filters, includeDisplay)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*user.UserListResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, int, int, map[string]interface{}) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(ctx, limit, offset, filters)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, int, int, map[string]interface{}, bool) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, limit, offset, filters, includeDisplay)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -583,11 +589,12 @@ type UserServiceInterfaceMock_GetUserList_Call struct {
 //   - limit int
 //   - offset int
 //   - filters map[string]interface{}
-func (_e *UserServiceInterfaceMock_Expecter) GetUserList(ctx interface{}, limit interface{}, offset interface{}, filters interface{}) *UserServiceInterfaceMock_GetUserList_Call {
-	return &UserServiceInterfaceMock_GetUserList_Call{Call: _e.mock.On("GetUserList", ctx, limit, offset, filters)}
+//   - includeDisplay bool
+func (_e *UserServiceInterfaceMock_Expecter) GetUserList(ctx interface{}, limit interface{}, offset interface{}, filters interface{}, includeDisplay interface{}) *UserServiceInterfaceMock_GetUserList_Call {
+	return &UserServiceInterfaceMock_GetUserList_Call{Call: _e.mock.On("GetUserList", ctx, limit, offset, filters, includeDisplay)}
 }
 
-func (_c *UserServiceInterfaceMock_GetUserList_Call) Run(run func(ctx context.Context, limit int, offset int, filters map[string]interface{})) *UserServiceInterfaceMock_GetUserList_Call {
+func (_c *UserServiceInterfaceMock_GetUserList_Call) Run(run func(ctx context.Context, limit int, offset int, filters map[string]interface{}, includeDisplay bool)) *UserServiceInterfaceMock_GetUserList_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -605,11 +612,16 @@ func (_c *UserServiceInterfaceMock_GetUserList_Call) Run(run func(ctx context.Co
 		if args[3] != nil {
 			arg3 = args[3].(map[string]interface{})
 		}
+		var arg4 bool
+		if args[4] != nil {
+			arg4 = args[4].(bool)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
+			arg4,
 		)
 	})
 	return _c
@@ -620,14 +632,84 @@ func (_c *UserServiceInterfaceMock_GetUserList_Call) Return(userListResponse *us
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_GetUserList_Call) RunAndReturn(run func(ctx context.Context, limit int, offset int, filters map[string]interface{}) (*user.UserListResponse, *serviceerror.ServiceError)) *UserServiceInterfaceMock_GetUserList_Call {
+func (_c *UserServiceInterfaceMock_GetUserList_Call) RunAndReturn(run func(ctx context.Context, limit int, offset int, filters map[string]interface{}, includeDisplay bool) (*user.UserListResponse, *serviceerror.ServiceError)) *UserServiceInterfaceMock_GetUserList_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetUsersByIDs provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) GetUsersByIDs(ctx context.Context, userIDs []string) (map[string]*user.User, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, userIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUsersByIDs")
+	}
+
+	var r0 map[string]*user.User
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) (map[string]*user.User, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, userIDs)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) map[string]*user.User); ok {
+		r0 = returnFunc(ctx, userIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]*user.User)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, userIDs)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// UserServiceInterfaceMock_GetUsersByIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUsersByIDs'
+type UserServiceInterfaceMock_GetUsersByIDs_Call struct {
+	*mock.Call
+}
+
+// GetUsersByIDs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userIDs []string
+func (_e *UserServiceInterfaceMock_Expecter) GetUsersByIDs(ctx interface{}, userIDs interface{}) *UserServiceInterfaceMock_GetUsersByIDs_Call {
+	return &UserServiceInterfaceMock_GetUsersByIDs_Call{Call: _e.mock.On("GetUsersByIDs", ctx, userIDs)}
+}
+
+func (_c *UserServiceInterfaceMock_GetUsersByIDs_Call) Run(run func(ctx context.Context, userIDs []string)) *UserServiceInterfaceMock_GetUsersByIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []string
+		if args[1] != nil {
+			arg1 = args[1].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_GetUsersByIDs_Call) Return(stringToUser map[string]*user.User, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_GetUsersByIDs_Call {
+	_c.Call.Return(stringToUser, serviceError)
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_GetUsersByIDs_Call) RunAndReturn(run func(ctx context.Context, userIDs []string) (map[string]*user.User, *serviceerror.ServiceError)) *UserServiceInterfaceMock_GetUsersByIDs_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetUsersByPath provides a mock function for the type UserServiceInterfaceMock
-func (_mock *UserServiceInterfaceMock) GetUsersByPath(ctx context.Context, handlePath string, limit int, offset int, filters map[string]interface{}) (*user.UserListResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(ctx, handlePath, limit, offset, filters)
+func (_mock *UserServiceInterfaceMock) GetUsersByPath(ctx context.Context, handlePath string, limit int, offset int, filters map[string]interface{}, includeDisplay bool) (*user.UserListResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, handlePath, limit, offset, filters, includeDisplay)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUsersByPath")
@@ -635,18 +717,18 @@ func (_mock *UserServiceInterfaceMock) GetUsersByPath(ctx context.Context, handl
 
 	var r0 *user.UserListResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int, map[string]interface{}) (*user.UserListResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(ctx, handlePath, limit, offset, filters)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int, map[string]interface{}, bool) (*user.UserListResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, handlePath, limit, offset, filters, includeDisplay)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int, map[string]interface{}) *user.UserListResponse); ok {
-		r0 = returnFunc(ctx, handlePath, limit, offset, filters)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int, map[string]interface{}, bool) *user.UserListResponse); ok {
+		r0 = returnFunc(ctx, handlePath, limit, offset, filters, includeDisplay)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*user.UserListResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int, int, map[string]interface{}) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(ctx, handlePath, limit, offset, filters)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int, int, map[string]interface{}, bool) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, handlePath, limit, offset, filters, includeDisplay)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -666,11 +748,12 @@ type UserServiceInterfaceMock_GetUsersByPath_Call struct {
 //   - limit int
 //   - offset int
 //   - filters map[string]interface{}
-func (_e *UserServiceInterfaceMock_Expecter) GetUsersByPath(ctx interface{}, handlePath interface{}, limit interface{}, offset interface{}, filters interface{}) *UserServiceInterfaceMock_GetUsersByPath_Call {
-	return &UserServiceInterfaceMock_GetUsersByPath_Call{Call: _e.mock.On("GetUsersByPath", ctx, handlePath, limit, offset, filters)}
+//   - includeDisplay bool
+func (_e *UserServiceInterfaceMock_Expecter) GetUsersByPath(ctx interface{}, handlePath interface{}, limit interface{}, offset interface{}, filters interface{}, includeDisplay interface{}) *UserServiceInterfaceMock_GetUsersByPath_Call {
+	return &UserServiceInterfaceMock_GetUsersByPath_Call{Call: _e.mock.On("GetUsersByPath", ctx, handlePath, limit, offset, filters, includeDisplay)}
 }
 
-func (_c *UserServiceInterfaceMock_GetUsersByPath_Call) Run(run func(ctx context.Context, handlePath string, limit int, offset int, filters map[string]interface{})) *UserServiceInterfaceMock_GetUsersByPath_Call {
+func (_c *UserServiceInterfaceMock_GetUsersByPath_Call) Run(run func(ctx context.Context, handlePath string, limit int, offset int, filters map[string]interface{}, includeDisplay bool)) *UserServiceInterfaceMock_GetUsersByPath_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -692,12 +775,17 @@ func (_c *UserServiceInterfaceMock_GetUsersByPath_Call) Run(run func(ctx context
 		if args[4] != nil {
 			arg4 = args[4].(map[string]interface{})
 		}
+		var arg5 bool
+		if args[5] != nil {
+			arg5 = args[5].(bool)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
 			arg4,
+			arg5,
 		)
 	})
 	return _c
@@ -708,7 +796,7 @@ func (_c *UserServiceInterfaceMock_GetUsersByPath_Call) Return(userListResponse 
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_GetUsersByPath_Call) RunAndReturn(run func(ctx context.Context, handlePath string, limit int, offset int, filters map[string]interface{}) (*user.UserListResponse, *serviceerror.ServiceError)) *UserServiceInterfaceMock_GetUsersByPath_Call {
+func (_c *UserServiceInterfaceMock_GetUsersByPath_Call) RunAndReturn(run func(ctx context.Context, handlePath string, limit int, offset int, filters map[string]interface{}, includeDisplay bool) (*user.UserListResponse, *serviceerror.ServiceError)) *UserServiceInterfaceMock_GetUsersByPath_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -779,6 +867,74 @@ func (_c *UserServiceInterfaceMock_IdentifyUser_Call) Return(s *string, serviceE
 }
 
 func (_c *UserServiceInterfaceMock_IdentifyUser_Call) RunAndReturn(run func(ctx context.Context, filters map[string]interface{}) (*string, *serviceerror.ServiceError)) *UserServiceInterfaceMock_IdentifyUser_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// IsUserDeclarative provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) IsUserDeclarative(ctx context.Context, userID string) (bool, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsUserDeclarative")
+	}
+
+	var r0 bool
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, userID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, userID)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, userID)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// UserServiceInterfaceMock_IsUserDeclarative_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsUserDeclarative'
+type UserServiceInterfaceMock_IsUserDeclarative_Call struct {
+	*mock.Call
+}
+
+// IsUserDeclarative is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID string
+func (_e *UserServiceInterfaceMock_Expecter) IsUserDeclarative(ctx interface{}, userID interface{}) *UserServiceInterfaceMock_IsUserDeclarative_Call {
+	return &UserServiceInterfaceMock_IsUserDeclarative_Call{Call: _e.mock.On("IsUserDeclarative", ctx, userID)}
+}
+
+func (_c *UserServiceInterfaceMock_IsUserDeclarative_Call) Run(run func(ctx context.Context, userID string)) *UserServiceInterfaceMock_IsUserDeclarative_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_IsUserDeclarative_Call) Return(b bool, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_IsUserDeclarative_Call {
+	_c.Call.Return(b, serviceError)
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_IsUserDeclarative_Call) RunAndReturn(run func(ctx context.Context, userID string) (bool, *serviceerror.ServiceError)) *UserServiceInterfaceMock_IsUserDeclarative_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1066,6 +1222,82 @@ func (_c *UserServiceInterfaceMock_ValidateUserIDs_Call) Return(strings []string
 }
 
 func (_c *UserServiceInterfaceMock_ValidateUserIDs_Call) RunAndReturn(run func(ctx context.Context, userIDs []string) ([]string, *serviceerror.ServiceError)) *UserServiceInterfaceMock_ValidateUserIDs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ValidateUserIDsInOUs provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) ValidateUserIDsInOUs(ctx context.Context, userIDs []string, ouIDs []string) ([]string, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, userIDs, ouIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ValidateUserIDsInOUs")
+	}
+
+	var r0 []string
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string, []string) ([]string, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, userIDs, ouIDs)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string, []string) []string); ok {
+		r0 = returnFunc(ctx, userIDs, ouIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []string, []string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, userIDs, ouIDs)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// UserServiceInterfaceMock_ValidateUserIDsInOUs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ValidateUserIDsInOUs'
+type UserServiceInterfaceMock_ValidateUserIDsInOUs_Call struct {
+	*mock.Call
+}
+
+// ValidateUserIDsInOUs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userIDs []string
+//   - ouIDs []string
+func (_e *UserServiceInterfaceMock_Expecter) ValidateUserIDsInOUs(ctx interface{}, userIDs interface{}, ouIDs interface{}) *UserServiceInterfaceMock_ValidateUserIDsInOUs_Call {
+	return &UserServiceInterfaceMock_ValidateUserIDsInOUs_Call{Call: _e.mock.On("ValidateUserIDsInOUs", ctx, userIDs, ouIDs)}
+}
+
+func (_c *UserServiceInterfaceMock_ValidateUserIDsInOUs_Call) Run(run func(ctx context.Context, userIDs []string, ouIDs []string)) *UserServiceInterfaceMock_ValidateUserIDsInOUs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []string
+		if args[1] != nil {
+			arg1 = args[1].([]string)
+		}
+		var arg2 []string
+		if args[2] != nil {
+			arg2 = args[2].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_ValidateUserIDsInOUs_Call) Return(strings []string, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_ValidateUserIDsInOUs_Call {
+	_c.Call.Return(strings, serviceError)
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_ValidateUserIDsInOUs_Call) RunAndReturn(run func(ctx context.Context, userIDs []string, ouIDs []string) ([]string, *serviceerror.ServiceError)) *UserServiceInterfaceMock_ValidateUserIDsInOUs_Call {
 	_c.Call.Return(run)
 	return _c
 }

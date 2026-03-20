@@ -14,7 +14,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-{{- $usingSqlite := or (eq .Values.configuration.database.identity.type "sqlite") (eq .Values.configuration.database.runtime.type "sqlite") (eq .Values.configuration.database.user.type "sqlite") }}
+{{- $usingSqlite := or (eq .Values.configuration.database.config.type "sqlite") (eq .Values.configuration.database.runtime.type "sqlite") (eq .Values.configuration.database.user.type "sqlite") }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -143,9 +143,9 @@ spec:
             - name: gate-config-volume
               mountPath: /opt/thunder/apps/gate/config.js
               subPath: gate-config.js
-            - name: develop-config-volume
-              mountPath: /opt/thunder/apps/develop/config.js
-              subPath: develop-config.js
+            - name: console-config-volume
+              mountPath: /opt/thunder/apps/console/config.js
+              subPath: console-config.js
       volumes:
         {{- if or .Values.persistence.enabled $usingSqlite }}
         - name: database-storage
@@ -158,6 +158,6 @@ spec:
         - name: gate-config-volume
           configMap:
             name: {{ include "thunder.fullname" . }}-config-map
-        - name: develop-config-volume
+        - name: console-config-volume
           configMap:
             name: {{ include "thunder.fullname" . }}-config-map

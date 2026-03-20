@@ -48,10 +48,11 @@ type Application struct {
 	URL                       string              `json:"url,omitempty"`
 	LogoURL                   string              `json:"logo_url,omitempty"`
 	Certificate               *ApplicationCert    `json:"certificate,omitempty"`
-	Token                     *TokenConfig        `json:"token,omitempty"`
+	Assertion                 *AssertionConfig    `json:"assertion,omitempty"`
 	TosURI                    string              `json:"tos_uri,omitempty"`
 	PolicyURI                 string              `json:"policy_uri,omitempty"`
 	Contacts                  []string            `json:"contacts,omitempty"`
+	LoginConsent              *LoginConsentConfig `json:"login_consent,omitempty"`
 	InboundAuthConfig         []InboundAuthConfig `json:"inbound_auth_config,omitempty"`
 }
 
@@ -83,14 +84,18 @@ type OAuthAppConfig struct {
 
 // OAuthTokenConfig represents the OAuth token configuration.
 type OAuthTokenConfig struct {
-	Issuer      string         `json:"issuer,omitempty"`
-	AccessToken *TokenConfig   `json:"access_token,omitempty"`
-	IDToken     *IDTokenConfig `json:"id_token,omitempty"`
+	AccessToken *AccessTokenConfig `json:"access_token,omitempty"`
+	IDToken     *IDTokenConfig     `json:"id_token,omitempty"`
 }
 
-// TokenConfig represents the token configuration.
-type TokenConfig struct {
-	Issuer         string   `json:"issuer,omitempty"`
+// AssertionConfig represents the assertion configuration (for application-level).
+type AssertionConfig struct {
+	ValidityPeriod int64    `json:"validity_period,omitempty"`
+	UserAttributes []string `json:"user_attributes,omitempty"`
+}
+
+// AccessTokenConfig represents the access token configuration.
+type AccessTokenConfig struct {
 	ValidityPeriod int64    `json:"validity_period,omitempty"`
 	UserAttributes []string `json:"user_attributes,omitempty"`
 }
@@ -99,6 +104,11 @@ type TokenConfig struct {
 type IDTokenConfig struct {
 	ValidityPeriod int64    `json:"validity_period,omitempty"`
 	UserAttributes []string `json:"user_attributes,omitempty"`
+}
+
+// LoginConsentConfig represents the login consent configuration for an application.
+type LoginConsentConfig struct {
+	ValidityPeriod int64 `json:"validity_period,omitempty"`
 }
 
 // IDPProperty represents a property of an identity provider.

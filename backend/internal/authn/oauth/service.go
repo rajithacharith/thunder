@@ -30,7 +30,7 @@ import (
 	syshttp "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const (
@@ -39,11 +39,12 @@ const (
 
 // OAuthAuthnCoreServiceInterface defines the core contract for OAuth based authenticator services.
 type OAuthAuthnCoreServiceInterface interface {
-	BuildAuthorizeURL(idpID string) (string, *serviceerror.ServiceError)
-	ExchangeCodeForToken(idpID, code string, validateResponse bool) (*TokenResponse, *serviceerror.ServiceError)
-	FetchUserInfo(idpID, accessToken string) (map[string]interface{}, *serviceerror.ServiceError)
-	GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError)
-	GetOAuthClientConfig(idpID string) (*OAuthClientConfig, *serviceerror.ServiceError)
+	BuildAuthorizeURL(ctx context.Context, idpID string) (string, *serviceerror.ServiceError)
+	ExchangeCodeForToken(ctx context.Context, idpID, code string, validateResponse bool) (
+		*TokenResponse, *serviceerror.ServiceError)
+	FetchUserInfo(ctx context.Context, idpID, accessToken string) (map[string]interface{}, *serviceerror.ServiceError)
+	GetInternalUser(sub string) (*userprovider.User, *serviceerror.ServiceError)
+	GetOAuthClientConfig(ctx context.Context, idpID string) (*OAuthClientConfig, *serviceerror.ServiceError)
 }
 
 // OAuthAuthnServiceInterface defines the contract for OAuth based authenticator services.
@@ -56,21 +57,21 @@ type OAuthAuthnServiceInterface interface {
 
 // oAuthAuthnService is the default implementation of OAuthAuthnServiceInterface.
 type oAuthAuthnService struct {
-	httpClient  syshttp.HTTPClientInterface
-	idpService  idp.IDPServiceInterface
-	userService user.UserServiceInterface
-	logger      *log.Logger
+	httpClient   syshttp.HTTPClientInterface
+	idpService   idp.IDPServiceInterface
+	userProvider userprovider.UserProviderInterface
+	logger       *log.Logger
 }
 
 // newOAuthAuthnService creates a new instance of OAuth authenticator service.
 func newOAuthAuthnService(httpClient syshttp.HTTPClientInterface,
-	idpSvc idp.IDPServiceInterface, userSvc user.UserServiceInterface,
+	idpSvc idp.IDPServiceInterface, userProvider userprovider.UserProviderInterface,
 ) OAuthAuthnServiceInterface {
 	service := &oAuthAuthnService{
-		httpClient:  httpClient,
-		idpService:  idpSvc,
-		userService: userSvc,
-		logger:      log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
+		httpClient:   httpClient,
+		idpService:   idpSvc,
+		userProvider: userProvider,
+		logger:       log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
 	}
 	common.RegisterAuthenticator(service.getMetadata())
 
@@ -81,19 +82,19 @@ func newOAuthAuthnService(httpClient syshttp.HTTPClientInterface,
 // [Deprecated: use dependency injection to get the instance instead].
 // TODO: Should be removed when executors are migrated to di pattern.
 func NewOAuthAuthnService(httpClient syshttp.HTTPClientInterface,
-	idpSvc idp.IDPServiceInterface, userSvc user.UserServiceInterface) OAuthAuthnServiceInterface {
-	return newOAuthAuthnService(httpClient, idpSvc, userSvc)
+	idpSvc idp.IDPServiceInterface, userProvider userprovider.UserProviderInterface) OAuthAuthnServiceInterface {
+	return newOAuthAuthnService(httpClient, idpSvc, userProvider)
 }
 
 // GetOAuthClientConfig retrieves the OAuth client configuration for the given identity provider ID.
-func (s *oAuthAuthnService) GetOAuthClientConfig(idpID string) (
+func (s *oAuthAuthnService) GetOAuthClientConfig(ctx context.Context, idpID string) (
 	*OAuthClientConfig, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("idpId", idpID))
 	if strings.TrimSpace(idpID) == "" {
 		return nil, &ErrorEmptyIdpID
 	}
 
-	idp, svcErr := s.idpService.GetIdentityProvider(idpID)
+	idp, svcErr := s.idpService.GetIdentityProvider(ctx, idpID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			return nil, serviceerror.CustomServiceError(ErrorClientErrorWhileRetrievingIDP,
@@ -117,11 +118,11 @@ func (s *oAuthAuthnService) GetOAuthClientConfig(idpID string) (
 }
 
 // BuildAuthorizeURL constructs the authorization request URL for the external identity provider.
-func (s *oAuthAuthnService) BuildAuthorizeURL(idpID string) (string, *serviceerror.ServiceError) {
+func (s *oAuthAuthnService) BuildAuthorizeURL(ctx context.Context, idpID string) (string, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("idpId", idpID))
 	logger.Debug("Building authorize URL")
 
-	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(idpID)
+	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(ctx, idpID)
 	if svcErr != nil {
 		return "", svcErr
 	}
@@ -158,7 +159,7 @@ func (s *oAuthAuthnService) BuildAuthorizeURL(idpID string) (string, *serviceerr
 
 // ExchangeCodeForToken exchanges the authorization code for a token with the external identity provider
 // and validates the token response if validateResponse is true.
-func (s *oAuthAuthnService) ExchangeCodeForToken(idpID, code string, validateResponse bool) (
+func (s *oAuthAuthnService) ExchangeCodeForToken(ctx context.Context, idpID, code string, validateResponse bool) (
 	*TokenResponse, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("idpId", idpID))
 	logger.Debug("Exchanging authorization code for token")
@@ -167,7 +168,7 @@ func (s *oAuthAuthnService) ExchangeCodeForToken(idpID, code string, validateRes
 		return nil, &ErrorEmptyAuthorizationCode
 	}
 
-	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(idpID)
+	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(ctx, idpID)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -216,9 +217,9 @@ func (s *oAuthAuthnService) ValidateTokenResponse(idpID string, tokenResp *Token
 }
 
 // FetchUserInfo retrieves user information from the external identity provider.
-func (s *oAuthAuthnService) FetchUserInfo(idpID, accessToken string) (
+func (s *oAuthAuthnService) FetchUserInfo(ctx context.Context, idpID, accessToken string) (
 	map[string]interface{}, *serviceerror.ServiceError) {
-	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(idpID)
+	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(ctx, idpID)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -257,7 +258,7 @@ func (s *oAuthAuthnService) FetchUserInfoWithClientConfig(oAuthClientConfig *OAu
 }
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
-func (s *oAuthAuthnService) GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError) {
+func (s *oAuthAuthnService) GetInternalUser(sub string) (*userprovider.User, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("sub", log.MaskString(sub)))
 	logger.Debug("Retrieving internal user for the given sub claim")
 
@@ -268,17 +269,14 @@ func (s *oAuthAuthnService) GetInternalUser(sub string) (*user.User, *serviceerr
 	filters := map[string]interface{}{
 		"sub": sub,
 	}
-	userID, svcErr := s.userService.IdentifyUser(context.TODO(), filters)
-	if svcErr != nil {
-		if svcErr.Code == user.ErrorUserNotFound.Code {
+	userID, upErr := s.userProvider.IdentifyUser(filters)
+	if upErr != nil {
+		if upErr.Code == userprovider.ErrorCodeUserNotFound {
 			logger.Debug("No user found for the provided sub claim")
 			return nil, &common.ErrorUserNotFound
 		}
-		if svcErr.Type == serviceerror.ClientErrorType {
-			return nil, &ErrorClientErrorWhileRetrievingUser
-		}
-		logger.Error("Error while identifying user", log.String("errorCode", svcErr.Code),
-			log.String("description", svcErr.ErrorDescription))
+		logger.Error("Error while identifying user", log.String("errorCode", string(upErr.Code)),
+			log.String("description", upErr.Description))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -287,13 +285,13 @@ func (s *oAuthAuthnService) GetInternalUser(sub string) (*user.User, *serviceerr
 		return nil, &common.ErrorUserNotFound
 	}
 
-	user, svcErr := s.userService.GetUser(context.TODO(), *userID)
-	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
-			return nil, &ErrorClientErrorWhileRetrievingUser
+	user, upErr := s.userProvider.GetUser(*userID)
+	if upErr != nil {
+		if upErr.Code == userprovider.ErrorCodeUserNotFound {
+			return nil, &common.ErrorUserNotFound
 		}
-		logger.Error("Error while retrieving user", log.String("errorCode", svcErr.Code),
-			log.String("description", svcErr.ErrorDescription))
+		logger.Error("Error while retrieving user", log.String("errorCode", string(upErr.Code)),
+			log.String("description", upErr.Description))
 		return nil, &serviceerror.InternalServerError
 	}
 

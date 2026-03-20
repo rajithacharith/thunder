@@ -21,13 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: ⚙️ Set up Go Environment
         uses: ./.github/actions/setup-go
 
       - name: 🗄️ Cache Go Modules
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             ~/.cache/go-build
@@ -45,43 +45,14 @@ jobs:
       - name: ✅ Verify All Build Artifacts
         run: ./scripts/verify-build-artifacts.sh
 
-      - name: 📦 Upload Documentation Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: thunder-docs
-          path: docs/build
-          if-no-files-found: error
-
-  deploy-docs:
-    name: 📚 Deploy Documentation
-    runs-on: ubuntu-latest
-    needs: validate-complete-build
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: 📥 Checkout Code
-        uses: actions/checkout@v4
-
-      - name: 📚 Deploy Documentation
-        id: deployment
-        uses: ./.github/actions/deploy-docs
-        with:
-          docs-artifact-name: 'thunder-docs'
-          build-docs: 'false'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 📝 Add Docs Deployment Summary
+      - name: ✅ Verify Docs Artifacts
         run: |
-          echo "# 📚 Nightly Documentation Deployment" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Nightly documentation has been deployed to GitHub Pages!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 View at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> $GITHUB_STEP_SUMMARY
+          if [ ! -d "docs/build" ] || [ -z "$(ls -A docs/build)" ]; then
+            echo "Docs build directory is missing or empty!"
+            exit 1
+          else
+            echo "Docs build artifacts verified successfully."
+          fi
 
   validate-sample-packaging-linux:
     name: 📦 Validate Linux & Windows Sample Packaging
@@ -99,7 +70,7 @@ jobs:
       fail-fast: false
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: ⚙️ Setup Samples Environment
         uses: ./.github/actions/setup-samples-environment
@@ -117,7 +88,7 @@ jobs:
       fail-fast: false
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: ⚙️ Setup Samples Environment
         uses: ./.github/actions/setup-samples-environment
@@ -128,11 +99,11 @@ jobs:
   report-results:
     name: 📊 Report Results
     runs-on: ubuntu-latest
-    needs: [validate-complete-build, validate-sample-packaging-linux, validate-sample-packaging-macos, deploy-docs]
+    needs: [validate-complete-build, validate-sample-packaging-linux, validate-sample-packaging-macos]
     if: always()
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: 📊 Check Overall Status
         id: check_status
@@ -140,23 +111,21 @@ jobs:
           BUILD_STATUS="${{ needs.validate-complete-build.result }}"
           LINUX_STATUS="${{ needs.validate-sample-packaging-linux.result }}"
           MACOS_STATUS="${{ needs.validate-sample-packaging-macos.result }}"
-          DOCS_STATUS="${{ needs.deploy-docs.result }}"
 
           echo "Complete build: $BUILD_STATUS"
           echo "Linux/Windows samples: $LINUX_STATUS"
           echo "macOS samples: $MACOS_STATUS"
-          echo "Docs deployment: $DOCS_STATUS"
 
           # Check if all jobs succeeded
-          if [ "$BUILD_STATUS" = "success" ] && [ "$LINUX_STATUS" = "success" ] && [ "$MACOS_STATUS" = "success" ] && [ "$DOCS_STATUS" = "success" ]; then
+          if [ "$BUILD_STATUS" = "success" ] && [ "$LINUX_STATUS" = "success" ] && [ "$MACOS_STATUS" = "success" ]; then
             echo "status=success" >> $GITHUB_OUTPUT
             echo "message=✅ All nightly build validations passed successfully!" >> $GITHUB_OUTPUT
           # Check if any job was cancelled
-          elif [ "$BUILD_STATUS" = "cancelled" ] || [ "$LINUX_STATUS" = "cancelled" ] || [ "$MACOS_STATUS" = "cancelled" ] || [ "$DOCS_STATUS" = "cancelled" ]; then
+          elif [ "$BUILD_STATUS" = "cancelled" ] || [ "$LINUX_STATUS" = "cancelled" ] || [ "$MACOS_STATUS" = "cancelled" ]; then
             echo "status=cancelled" >> $GITHUB_OUTPUT
             echo "message=⚠️ Nightly build validation was cancelled." >> $GITHUB_OUTPUT
           # Check if any job was skipped
-          elif [ "$BUILD_STATUS" = "skipped" ] || [ "$LINUX_STATUS" = "skipped" ] || [ "$MACOS_STATUS" = "skipped" ] || [ "$DOCS_STATUS" = "skipped" ]; then
+          elif [ "$BUILD_STATUS" = "skipped" ] || [ "$LINUX_STATUS" = "skipped" ] || [ "$MACOS_STATUS" = "skipped" ]; then
             echo "status=skipped" >> $GITHUB_OUTPUT
             echo "message=⚠️ Some nightly build validation jobs were skipped." >> $GITHUB_OUTPUT
           # Otherwise, treat as failure
@@ -178,11 +147,10 @@ jobs:
           echo "- Complete Build (All Platforms): ${{ needs.validate-complete-build.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Linux/Windows Samples: ${{ needs.validate-sample-packaging-linux.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- macOS Samples: ${{ needs.validate-sample-packaging-macos.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Docs Deployment: ${{ needs.deploy-docs.result }}" >> $GITHUB_STEP_SUMMARY
 
       - name: 🔔 Notify on Failure
         if: steps.check_status.outputs.status == 'failure'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         env:
           BUILD_RESULT: ${{ needs.validate-complete-build.result }}
           LINUX_RESULT: ${{ needs.validate-sample-packaging-linux.result }}

@@ -56,39 +56,64 @@ func newInviteExecutor(flowFactory core.FlowFactoryInterface) *inviteExecutor {
 	}
 }
 
-// Execute generates the invite link and returns it in AdditionalData.
+// Execute delegates to the appropriate mode handler based on the executor mode.
 func (e *inviteExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
+	switch ctx.ExecutorMode {
+	case ExecutorModeGenerate:
+		return e.executeGenerate(ctx)
+	case ExecutorModeVerify:
+		return e.executeVerify(ctx)
+	default:
+		return nil, fmt.Errorf("invalid executor mode for InviteExecutor: %s", ctx.ExecutorMode)
+	}
+}
+
+// executeGenerate generates the invite token and link.
+func (e *inviteExecutor) executeGenerate(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
-	logger.Debug("Executing invite executor")
+	logger.Debug("Executing invite executor in generate mode")
 
 	execResp := &common.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
 
-	// Check if inviteToken is provided by the user
+	inviteToken, err := e.getOrGenerateToken(ctx)
+	if err != nil {
+		logger.Debug("Failed to get or generate invite token", log.Error(err))
+		execResp.Status = common.ExecFailure
+		return execResp, nil
+	}
+
+	inviteLink := e.generateInviteLink(ctx, inviteToken)
+
+	execResp.RuntimeData[common.RuntimeKeyStoredInviteToken] = inviteToken
+	execResp.RuntimeData[common.RuntimeKeyInviteLink] = inviteLink
+	execResp.AdditionalData[common.DataInviteLink] = inviteLink
+
+	execResp.Status = common.ExecComplete
+	return execResp, nil
+}
+
+// executeVerify validates the user-provided invite token against the stored token.
+func (e *inviteExecutor) executeVerify(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
+	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger.Debug("Executing invite executor in verify mode")
+
+	execResp := &common.ExecutorResponse{
+		AdditionalData: make(map[string]string),
+		RuntimeData:    make(map[string]string),
+	}
+
+	// If the user has not yet provided the invite token, request it
 	if !e.HasRequiredInputs(ctx, execResp) {
-		inviteToken, err := e.getOrGenerateToken(ctx)
-		if err != nil {
-			logger.Debug("Failed to get or generate invite token", log.Error(err))
-			execResp.Status = common.ExecFailure
-			execResp.FailureReason = "Failed to generate invite token"
-			return execResp, nil
-		}
-
-		inviteLink := e.generateInviteLink(ctx, inviteToken)
-
-		// Store the token for validation and return the link
-		execResp.RuntimeData[runtimeKeyStoredInviteToken] = inviteToken
-		execResp.AdditionalData["inviteLink"] = inviteLink
-
 		execResp.Status = common.ExecUserInputRequired
 		return execResp, nil
 	}
 
 	// User has provided the invite token, validate it against stored token
 	inviteTokenInput := ctx.UserInputs[userInputInviteToken]
-	storedToken, hasStoredToken := ctx.RuntimeData[runtimeKeyStoredInviteToken]
+	storedToken, hasStoredToken := ctx.RuntimeData[common.RuntimeKeyStoredInviteToken]
 
 	if !hasStoredToken {
 		logger.Debug("No invite token found in runtime data")
@@ -111,7 +136,7 @@ func (e *inviteExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRespons
 
 // getOrGenerateToken retrieves the existing invite token from runtime data or generates a new one.
 func (e *inviteExecutor) getOrGenerateToken(ctx *core.NodeContext) (string, error) {
-	if storedToken, exists := ctx.RuntimeData[runtimeKeyStoredInviteToken]; exists && storedToken != "" {
+	if storedToken, exists := ctx.RuntimeData[common.RuntimeKeyStoredInviteToken]; exists && storedToken != "" {
 		return storedToken, nil
 	}
 

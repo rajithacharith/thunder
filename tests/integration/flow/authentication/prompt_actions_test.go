@@ -70,13 +70,13 @@ var (
 						{
 							"ref":        "input_001",
 							"identifier": "username",
-							"type":       "string",
+							"type":       "TEXT_INPUT",
 							"required":   true,
 						},
 						{
 							"ref":        "input_002",
 							"identifier": "password",
-							"type":       "string",
+							"type":       "PASSWORD_INPUT",
 							"required":   true,
 						},
 					},
@@ -186,7 +186,7 @@ var (
 		ClientSecret:              "prompt_actions_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"prompt_actions_test_person"},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
@@ -206,14 +206,15 @@ var (
 			},
 			"password": map[string]interface{}{
 				"type": "string",
+				"credential": true,
 			},
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 			"mobileNumber": map[string]interface{}{
@@ -228,8 +229,8 @@ var (
 			"username": "promptactionsuser1",
 			"password": "testpassword",
 			"email": "promptactionsuser1@example.com",
-			"firstName": "PromptActions",
-			"lastName": "User1",
+			"given_name": "PromptActions",
+			"family_name": "User1",
 			"mobileNumber": "+1234567890"
 		}`),
 	}
@@ -240,8 +241,8 @@ var (
 			"username": "promptactionsuser2",
 			"password": "testpassword",
 			"email": "promptactionsuser2@example.com",
-			"firstName": "PromptActions",
-			"lastName": "User2"
+			"given_name": "PromptActions",
+			"family_name": "User2"
 		}`),
 	}
 )
@@ -275,7 +276,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) SetupSuite() {
 	promptActionsTestOUID = ouID
 
 	// Create test user schema within the OU
-	promptActionsUserSchema.OrganizationUnitId = promptActionsTestOUID
+	promptActionsUserSchema.OUID = promptActionsTestOUID
 	schemaID, err := testutils.CreateUserType(promptActionsUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
@@ -293,9 +294,9 @@ func (ts *PromptActionsAndMFAFlowTestSuite) SetupSuite() {
 
 	// Create test users with the created OU
 	userWithMobile := testUserWithMobilePromptActions
-	userWithMobile.OrganizationUnit = promptActionsTestOUID
+	userWithMobile.OUID = promptActionsTestOUID
 	userWithoutMobile := testUserWithoutMobilePromptActions
-	userWithoutMobile.OrganizationUnit = promptActionsTestOUID
+	userWithoutMobile.OUID = promptActionsTestOUID
 
 	userIDs, err := testutils.CreateMultipleUsers(userWithMobile, userWithoutMobile)
 	if err != nil {

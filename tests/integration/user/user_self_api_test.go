@@ -61,12 +61,12 @@ func (s *SelfUserEndpointsSuite) SetupSuite() {
 
 	schema := testutils.UserSchema{
 		Name:                  s.userType,
-		OrganizationUnitId:    ouID,
+		OUID:                  ouID,
 		AllowSelfRegistration: true,
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{"type": "string", "required": true, "unique": true},
 			"email":    map[string]interface{}{"type": "string", "required": true, "unique": true},
-			"password": map[string]interface{}{"type": "string"},
+			"password": map[string]interface{}{"type": "string", "credential": true},
 		},
 	}
 	schemaID, err := testutils.CreateUserType(schema)
@@ -81,7 +81,7 @@ func (s *SelfUserEndpointsSuite) SetupSuite() {
 	s.Require().NoError(err)
 
 	userID, err := testutils.CreateUser(testutils.User{
-		OrganizationUnit: ouID,
+		OUID:             ouID,
 		Type:             s.userType,
 		Attributes:       attrs,
 	})

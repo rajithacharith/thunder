@@ -43,14 +43,15 @@ var (
 			},
 			"password": map[string]interface{}{
 				"type": "string",
+				"credential": true,
 			},
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 			"mobileNumber": map[string]interface{}{
@@ -86,7 +87,7 @@ func (ts *BasicRegistrationFlowTestSuite) SetupSuite() {
 	ts.testOUID = ouID
 
 	// Create test user schema
-	testUserSchema.OrganizationUnitId = ts.testOUID
+	testUserSchema.OUID = ts.testOUID
 	schemaID, err := testutils.CreateUserType(testUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
@@ -105,7 +106,7 @@ func (ts *BasicRegistrationFlowTestSuite) SetupSuite() {
 		ClientSecret:              "reg_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{testUserSchema.Name},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
@@ -183,13 +184,13 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSuccess() {
 	ts.Require().NotEmpty(completeFlowStep.Data, "Flow data should not be empty after first step")
 	ts.Require().NotEmpty(completeFlowStep.Data.Inputs, "Flow should require additional inputs after first step")
 	ts.Require().True(common.ValidateRequiredInputs(completeFlowStep.Data.Inputs,
-		[]string{"email", "firstName", "lastName"}),
+		[]string{"email", "given_name", "family_name"}),
 		"Email, first name, and last name should be required inputs after first step")
 
 	inputs = map[string]string{
 		"email":     username + "@example.com",
-		"firstName": "Test",
-		"lastName":  "User",
+		"given_name": "Test",
+		"family_name":  "User",
 	}
 	completeFlowStep, err = common.CompleteFlow(completeFlowStep.FlowID, inputs, "action_user_info")
 	if err != nil {
@@ -209,7 +210,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSuccess() {
 
 	// Validate JWT contains expected user type and OU ID
 	ts.Require().Equal(testUserSchema.Name, jwtClaims.UserType, "Expected userType to match created schema")
-	ts.Require().Equal(ts.testOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
+	ts.Require().Equal(ts.testOUID, jwtClaims.OUID, "Expected ouId to match the created organization unit")
 	ts.Require().Equal(ts.testAppID, jwtClaims.Aud, "Expected aud to match the application ID")
 	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
 
@@ -229,14 +230,14 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSuccess() {
 func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowDuplicateUser() {
 	// Create a test user first
 	testUser := testutils.User{
-		OrganizationUnit: ts.testOUID,
+		OUID:             ts.testOUID,
 		Type:             testUserSchema.Name,
 		Attributes: json.RawMessage(`{
 			"username": "duplicateuser",
 			"password": "testpassword",
 			"email": "duplicate@example.com",
-			"firstName": "Duplicate",
-			"lastName": "User"
+			"given_name": "Duplicate",
+			"family_name": "User"
 		}`),
 	}
 
@@ -310,13 +311,13 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowInitialInvali
 	ts.Require().NotEmpty(completeFlowStep.Data, "Flow data should not be empty after first step")
 	ts.Require().NotEmpty(completeFlowStep.Data.Inputs, "Flow should require additional inputs after first step")
 	ts.Require().True(common.ValidateRequiredInputs(completeFlowStep.Data.Inputs,
-		[]string{"email", "firstName", "lastName"}),
+		[]string{"email", "given_name", "family_name"}),
 		"Email, first name, and last name should be required inputs after first step")
 
 	inputs = map[string]string{
 		"email":     username + "@example.com",
-		"firstName": "Test",
-		"lastName":  "User",
+		"given_name": "Test",
+		"family_name":  "User",
 	}
 	completeFlowStep, err = common.CompleteFlow(completeFlowStep.FlowID, inputs, "action_user_info")
 	if err != nil {
@@ -336,7 +337,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowInitialInvali
 
 	// Validate JWT contains expected user type and OU ID
 	ts.Require().Equal(testUserSchema.Name, jwtClaims.UserType, "Expected userType to match created schema")
-	ts.Require().Equal(ts.testOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
+	ts.Require().Equal(ts.testOUID, jwtClaims.OUID, "Expected ouId to match the created organization unit")
 	ts.Require().Equal(ts.testAppID, jwtClaims.Aud, "Expected aud to match the application ID")
 	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
 
@@ -362,8 +363,8 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSingleRequest
 		"username":  username,
 		"password":  "testpassword123",
 		"email":     username + "@example.com",
-		"firstName": "Single",
-		"lastName":  "Request",
+		"given_name": "Single",
+		"family_name":  "Request",
 	}
 
 	flowStep, err := common.InitiateRegistrationFlow(ts.testAppID, false, inputs, "")
@@ -384,7 +385,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSingleRequest
 
 	// Validate JWT contains expected user type and OU ID
 	ts.Require().Equal(testUserSchema.Name, jwtClaims.UserType, "Expected userType to match created schema")
-	ts.Require().Equal(ts.testOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
+	ts.Require().Equal(ts.testOUID, jwtClaims.OUID, "Expected ouId to match the created organization unit")
 	ts.Require().Equal(ts.testAppID, jwtClaims.Aud, "Expected aud to match the application ID")
 	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
 
@@ -440,8 +441,8 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlow_WithoutToken
 
 	inputs = map[string]string{
 		"email":     username + "@example.com",
-		"firstName": "Test",
-		"lastName":  "User",
+		"given_name": "Test",
+		"family_name":  "User",
 	}
 	completeFlowStep, err = common.CompleteFlow(completeFlowStep.FlowID, inputs, "action_user_info")
 	ts.Require().NoError(err, "Failed to complete registration flow with additional attributes")
@@ -460,7 +461,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlow_WithoutToken
 
 	// Verify userType and OU attributes are NOT present (since TokenConfig is not specified)
 	ts.Require().Empty(jwtClaims.UserType, "userType should NOT be present when TokenConfig is not specified")
-	ts.Require().Empty(jwtClaims.OuID, "ouId should NOT be present when TokenConfig is not specified")
+	ts.Require().Empty(jwtClaims.OUID, "ouId should NOT be present when TokenConfig is not specified")
 	ts.Require().Empty(jwtClaims.OuName, "ouName should NOT be present when TokenConfig is not specified")
 	ts.Require().Empty(jwtClaims.OuHandle, "ouHandle should NOT be present when TokenConfig is not specified")
 }
@@ -477,7 +478,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlow_WithEmptyUse
 		ClientSecret:              "reg_flow_test_secret_empty_attrs",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{testUserSchema.Name},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{}, // Empty array
 		},
 	}
@@ -506,8 +507,8 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlow_WithEmptyUse
 
 	inputs = map[string]string{
 		"email":     username + "@example.com",
-		"firstName": "Test",
-		"lastName":  "User",
+		"given_name": "Test",
+		"family_name":  "User",
 	}
 	completeFlowStep, err = common.CompleteFlow(completeFlowStep.FlowID, inputs, "action_user_info")
 	ts.Require().NoError(err, "Failed to complete registration flow with additional attributes")
@@ -526,7 +527,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlow_WithEmptyUse
 
 	// Verify userType and OU attributes are NOT present (since user_attributes is empty)
 	ts.Require().Empty(jwtClaims.UserType, "userType should NOT be present when user_attributes is empty")
-	ts.Require().Empty(jwtClaims.OuID, "ouId should NOT be present when user_attributes is empty")
+	ts.Require().Empty(jwtClaims.OUID, "ouId should NOT be present when user_attributes is empty")
 	ts.Require().Empty(jwtClaims.OuName, "ouName should NOT be present when user_attributes is empty")
 	ts.Require().Empty(jwtClaims.OuHandle, "ouHandle should NOT be present when user_attributes is empty")
 }

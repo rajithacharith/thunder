@@ -1,0 +1,193 @@
+/**
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import type {{pascalCase featureName}}Status from '../models/{{camelCase featureName}}';
+
+/**
+ * Configuration for {{camelCase featureName}} feature.
+ */
+export interface {{pascalCase featureName}}FeatureConfig {
+  /** Maximum number of {{camelCase featureName}}s to fetch per page */
+  maxPageSize: number;
+  /** Default page size for {{camelCase featureName}} lists */
+  defaultPageSize: number;
+  /** Maximum length for {{camelCase featureName}} names */
+  maxNameLength: number;
+  /** Maximum length for {{camelCase featureName}} descriptions */
+  maxDescriptionLength: number;
+  /** Default cache time for {{camelCase featureName}} queries (in milliseconds) */
+  defaultCacheTime: number;
+  /** Stale time for {{camelCase featureName}} queries (in milliseconds) */
+  staleTime: number;
+  /** Supported {{camelCase featureName}} statuses */
+  supportedStatuses: {{pascalCase featureName}}Status[];
+  /** Enable/disable features */
+  features: {
+    /** Enable search functionality */
+    searchEnabled: boolean;
+    /** Enable sorting functionality */
+    sortingEnabled: boolean;
+    /** Enable pagination */
+    paginationEnabled: boolean;
+    /** Enable bulk operations */
+    bulkOperationsEnabled: boolean;
+    /** Enable export functionality */
+    exportEnabled: boolean;
+  };
+  /** UI configuration */
+  ui: {
+    /** Show creation timestamps */
+    showCreatedAt: boolean;
+    /** Show update timestamps */
+    showUpdatedAt: boolean;
+    /** Show {{camelCase featureName}} status */
+    showStatus: boolean;
+    /** Enable compact view mode */
+    compactViewEnabled: boolean;
+    /** Default view mode */
+    defaultViewMode: 'list' | 'grid' | 'compact';
+  };
+  /** Validation rules */
+  validation: {
+    /** Minimum name length */
+    minNameLength: number;
+    /** Minimum description length */
+    minDescriptionLength: number;
+    /** Required fields */
+    requiredFields: string[];
+    /** Name pattern (regex) */
+    namePattern: RegExp;
+  };
+}
+
+/**
+ * Default configuration for {{camelCase featureName}} feature.
+ */
+export const DEFAULT_{{constantCase featureName}}_CONFIG: {{pascalCase featureName}}FeatureConfig = {
+  maxPageSize: 100,
+  defaultPageSize: 10,
+  maxNameLength: 100,
+  maxDescriptionLength: 500,
+  defaultCacheTime: 5 * 60 * 1000, // 5 minutes
+  staleTime: 2 * 60 * 1000, // 2 minutes
+  supportedStatuses: [
+    {{pascalCase featureName}}Status.ACTIVE,
+    {{pascalCase featureName}}Status.INACTIVE,
+    {{pascalCase featureName}}Status.PENDING,
+  ],
+  features: {
+    searchEnabled: true,
+    sortingEnabled: true,
+    paginationEnabled: true,
+    bulkOperationsEnabled: true,
+    exportEnabled: true,
+  },
+  ui: {
+    showCreatedAt: true,
+    showUpdatedAt: true,
+    showStatus: true,
+    compactViewEnabled: true,
+    defaultViewMode: 'list',
+  },
+  validation: {
+    minNameLength: 1,
+    minDescriptionLength: 0,
+    requiredFields: ['name', 'description'],
+    namePattern: /^[a-zA-Z0-9\s\-_]+$/,
+  },
+};
+
+/**
+ * Get {{camelCase featureName}} feature configuration.
+ * This function allows for runtime configuration overrides.
+ *
+ * @param overrides - Configuration overrides
+ * @returns Merged configuration
+ */
+export function get{{pascalCase featureName}}Config(
+  overrides: Partial<{{pascalCase featureName}}FeatureConfig> = {}
+): {{pascalCase featureName}}FeatureConfig {
+  return {
+    ...DEFAULT_{{constantCase featureName}}_CONFIG,
+    ...overrides,
+    features: {
+      ...DEFAULT_{{constantCase featureName}}_CONFIG.features,
+      ...overrides.features,
+    },
+    ui: {
+      ...DEFAULT_{{constantCase featureName}}_CONFIG.ui,
+      ...overrides.ui,
+    },
+    validation: {
+      ...DEFAULT_{{constantCase featureName}}_CONFIG.validation,
+      ...overrides.validation,
+    },
+  };
+}
+
+/**
+ * Validate {{camelCase featureName}} configuration.
+ *
+ * @param config - Configuration to validate
+ * @returns Validation result
+ */
+export function validate{{pascalCase featureName}}Config(
+  config: {{pascalCase featureName}}FeatureConfig
+): { isValid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  // Validate page sizes
+  if (config.defaultPageSize <= 0) {
+    errors.push('defaultPageSize must be greater than 0');
+  }
+  if (config.maxPageSize <= 0) {
+    errors.push('maxPageSize must be greater than 0');
+  }
+  if (config.defaultPageSize > config.maxPageSize) {
+    errors.push('defaultPageSize cannot exceed maxPageSize');
+  }
+
+  // Validate lengths
+  if (config.maxNameLength <= 0) {
+    errors.push('maxNameLength must be greater than 0');
+  }
+  if (config.maxDescriptionLength < 0) {
+    errors.push('maxDescriptionLength cannot be negative');
+  }
+  if (config.validation.minNameLength < 0) {
+    errors.push('minNameLength cannot be negative');
+  }
+  if (config.validation.minNameLength > config.maxNameLength) {
+    errors.push('minNameLength cannot exceed maxNameLength');
+  }
+
+  // Validate cache times
+  if (config.defaultCacheTime < 0) {
+    errors.push('defaultCacheTime cannot be negative');
+  }
+  if (config.staleTime < 0) {
+    errors.push('staleTime cannot be negative');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
+export default DEFAULT_{{constantCase featureName}}_CONFIG;

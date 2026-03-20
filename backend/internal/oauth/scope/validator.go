@@ -19,6 +19,8 @@
 // Package scope provides functionality for validating scopes.
 package scope
 
+import "context"
+
 // ScopeError represents an error during scope validation.
 type ScopeError struct {
 	Error            string
@@ -27,7 +29,7 @@ type ScopeError struct {
 
 // ScopeValidatorInterface defines the interface for scope validation.
 type ScopeValidatorInterface interface {
-	ValidateScopes(requestedScopes, clientID string) (string, *ScopeError)
+	ValidateScopes(ctx context.Context, requestedScopes, clientID string) (string, *ScopeError)
 }
 
 // apiScopeValidator is the implementation of API scope validation.
@@ -39,7 +41,9 @@ func newAPIScopeValidator() *apiScopeValidator {
 }
 
 // ValidateScopes validates and filters the requested scopes against the authorized scopes for the application.
-func (sv *apiScopeValidator) ValidateScopes(requestedScopes, clientID string) (string, *ScopeError) {
+func (sv *apiScopeValidator) ValidateScopes(
+	ctx context.Context, requestedScopes, clientID string,
+) (string, *ScopeError) {
 	if requestedScopes == "" {
 		return "", nil
 	}

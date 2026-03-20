@@ -20,6 +20,16 @@ codecov:
   require_ci_to_pass: true
   notify:
     wait_for_ci: true
+    # Wait for exactly 5 coverage uploads before reporting status:
+    #   1. backend-unit (from build job)
+    #   2. backend-integration-sqlite (from test-integration matrix)
+    #   3. backend-integration-postgres (from test-integration matrix)
+    #   4. frontend-apps-console-unit (from upload-frontend-coverage)
+    #   5. frontend-apps-gate-unit (from upload-frontend-coverage)
+    # Without this, Codecov status checks can intermittently hang at
+    # "Expected — Waiting for status to be reported" when CI signal is delayed.
+    # See: https://about.codecov.io/blog/delay-notifications-for-flags-with-after_n_builds/
+    after_n_builds: 5
 
 flags:
   backend-unit:
@@ -42,10 +52,10 @@ flags:
   #   carryforward: false
   #   paths:
   #     - backend/
-  frontend-apps-develop-unit:
+  frontend-apps-console-unit:
     carryforward: false
     paths:
-      - frontend/apps/thunder-develop/
+      - frontend/apps/thunder-console/
   frontend-apps-gate-unit:
     carryforward: false
     paths:
@@ -58,7 +68,7 @@ coverage:
         enabled: true
         target: auto
         threshold: 1%
-        informational: false
+        informational: true
       backend-unit:
         flags:
           - backend-unit
@@ -79,9 +89,9 @@ coverage:
       #   target: auto
       #   threshold: 1%
       #   informational: false
-      frontend-apps-develop-unit:
+      frontend-apps-console-unit:
         flags:
-          - frontend-apps-develop-unit
+          - frontend-apps-console-unit
         target: auto
         threshold: 1%
         informational: false
@@ -95,7 +105,7 @@ coverage:
       default:
         target: 80%
         threshold: 1%
-        informational: false
+        informational: true
 
 ignore:
   - "backend/tests/**"

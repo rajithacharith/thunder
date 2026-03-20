@@ -75,7 +75,7 @@ var (
 		ClientSecret:              "github_auth_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"github_auth_user"},
-		TokenConfig: map[string]interface{}{
+		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
@@ -102,6 +102,7 @@ var githubUserSchema = testutils.UserSchema{
 		},
 		"password": map[string]interface{}{
 			"type": "string",
+			"credential": true,
 		},
 		"sub": map[string]interface{}{
 			"type": "string",
@@ -168,7 +169,7 @@ func (ts *GithubAuthFlowTestSuite) SetupSuite() {
 	githubAuthTestOU.ID = ouID
 
 	// Create user schema
-	githubUserSchema.OrganizationUnitId = ouID
+	githubUserSchema.OUID = ouID
 	schemaID, err := testutils.CreateUserType(githubUserSchema)
 	ts.Require().NoError(err, "Failed to create GitHub user schema")
 	ts.userSchemaID = schemaID
@@ -189,7 +190,7 @@ func (ts *GithubAuthFlowTestSuite) SetupSuite() {
 	// Create user in the pre-configured OU from database scripts
 	user := testutils.User{
 		Type:             githubUserSchema.Name,
-		OrganizationUnit: githubUserSchema.OrganizationUnitId,
+		OUID:             githubUserSchema.OUID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 

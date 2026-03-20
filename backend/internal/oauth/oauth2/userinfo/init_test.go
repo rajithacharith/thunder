@@ -27,15 +27,20 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
-	usersvcmock "github.com/asgardeo/thunder/tests/mocks/usermock"
+	"github.com/asgardeo/thunder/tests/mocks/attributecachemock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/tokenservicemock"
+	"github.com/asgardeo/thunder/tests/mocks/oumock"
 )
 
 type InitTestSuite struct {
 	suite.Suite
-	mockJWTService  *jwtmock.JWTServiceInterfaceMock
-	mockAppService  *applicationmock.ApplicationServiceInterfaceMock
-	mockUserService *usersvcmock.UserServiceInterfaceMock
+	mockJWTService            *jwtmock.JWTServiceInterfaceMock
+	mockTokenValidator        *tokenservicemock.TokenValidatorInterfaceMock
+	mockAppService            *applicationmock.ApplicationServiceInterfaceMock
+	mockOUService             *oumock.OrganizationUnitServiceInterfaceMock
+	mockAttributeCacheService *attributecachemock.AttributeCacheServiceInterfaceMock
+	mockTransactioner         *MockTransactioner
 }
 
 func TestInitTestSuite(t *testing.T) {
@@ -44,14 +49,19 @@ func TestInitTestSuite(t *testing.T) {
 
 func (suite *InitTestSuite) SetupTest() {
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockTokenValidator = tokenservicemock.NewTokenValidatorInterfaceMock(suite.T())
 	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
-	suite.mockUserService = usersvcmock.NewUserServiceInterfaceMock(suite.T())
+	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+	suite.mockAttributeCacheService = attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
+	suite.mockTransactioner = &MockTransactioner{}
 }
 
 func (suite *InitTestSuite) TestInitialize() {
 	mux := http.NewServeMux()
 
-	service := Initialize(mux, suite.mockJWTService, suite.mockAppService, suite.mockUserService)
+	service := Initialize(mux, suite.mockJWTService,
+		suite.mockTokenValidator, suite.mockAppService,
+		suite.mockOUService, suite.mockAttributeCacheService, suite.mockTransactioner)
 
 	assert.NotNil(suite.T(), service)
 }
@@ -59,7 +69,9 @@ func (suite *InitTestSuite) TestInitialize() {
 func (suite *InitTestSuite) TestInitialize_RegistersRoutes() {
 	mux := http.NewServeMux()
 
-	_ = Initialize(mux, suite.mockJWTService, suite.mockAppService, suite.mockUserService)
+	Initialize(mux, suite.mockJWTService,
+		suite.mockTokenValidator, suite.mockAppService,
+		suite.mockOUService, suite.mockAttributeCacheService, suite.mockTransactioner)
 
 	// Verify that the routes are registered by attempting to get a handler for them.
 	// The pattern includes the method because of CORS middleware wrapping.

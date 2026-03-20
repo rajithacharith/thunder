@@ -35,6 +35,9 @@ var (
 		Handle:      "engineering",
 		Description: "Engineering Unit",
 		Parent:      nil,
+		LogoURL:     "https://example.com/path-logo.png",
+		ThemeID:     "theme-path",
+		LayoutID:    "layout-path",
 	}
 )
 
@@ -97,6 +100,9 @@ func (suite *OUPathAPITestSuite) TestGetOrganizationUnitByPath() {
 	suite.Equal(pathTestOU.Handle, retrievedOU.Handle)
 	suite.Equal(pathTestOU.Description, retrievedOU.Description)
 	suite.Equal(pathTestOU.Parent, retrievedOU.Parent)
+	suite.Equal(pathTestOU.LogoURL, retrievedOU.LogoURL)
+	suite.Equal(pathTestOU.ThemeID, retrievedOU.ThemeID)
+	suite.Equal(pathTestOU.LayoutID, retrievedOU.LayoutID)
 }
 
 // TestGetOrganizationUnitByInvalidPath tests retrieving an organization unit by invalid handle path
@@ -137,6 +143,9 @@ func (suite *OUPathAPITestSuite) TestUpdateOrganizationUnitByPath() {
 		Handle:      "engineering",
 		Name:        "Updated OU via Path",
 		Description: "Updated description via path",
+		LogoURL:     "https://example.com/updated-path-logo.png",
+		ThemeID:     "theme-updated-path",
+		LayoutID:    "layout-updated-path",
 	}
 
 	jsonData, err := json.Marshal(updateRequest)
@@ -171,6 +180,9 @@ func (suite *OUPathAPITestSuite) TestUpdateOrganizationUnitByPath() {
 	suite.Equal(updateRequest.Name, updatedOU.Name)
 	suite.Equal(updateRequest.Description, updatedOU.Description)
 	suite.Equal(updateRequest.Handle, updatedOU.Handle)
+	suite.Equal(updateRequest.LogoURL, updatedOU.LogoURL)
+	suite.Equal(updateRequest.ThemeID, updatedOU.ThemeID)
+	suite.Equal(updateRequest.LayoutID, updatedOU.LayoutID)
 
 	// Update the global test data for subsequent tests
 	pathTestOU.Name = updateRequest.Name

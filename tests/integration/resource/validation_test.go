@@ -56,7 +56,7 @@ func (suite *ValidationTestSuite) SetupSuite() {
 	rsReq := CreateResourceServerRequest{
 		Name:               "validation-test-server",
 		Description:        "Resource server for validation testing",
-		OrganizationUnitID: ouID,
+		OUID: ouID,
 	}
 	rsID, err := createResourceServer(rsReq)
 	suite.Require().NoError(err, "Failed to create test resource server")
@@ -77,7 +77,7 @@ func (suite *ValidationTestSuite) TearDownSuite() {
 func (suite *ValidationTestSuite) TestCreateResourceServerMissingName() {
 	req := CreateResourceServerRequest{
 		Name:               "",
-		OrganizationUnitID: suite.ouID,
+		OUID: suite.ouID,
 	}
 
 	_, err := createResourceServer(req)
@@ -88,7 +88,7 @@ func (suite *ValidationTestSuite) TestCreateResourceServerMissingName() {
 func (suite *ValidationTestSuite) TestCreateResourceServerMissingOrgUnit() {
 	req := CreateResourceServerRequest{
 		Name:               "missing-ou-server",
-		OrganizationUnitID: "",
+		OUID: "",
 	}
 
 	_, err := createResourceServer(req)
@@ -100,7 +100,7 @@ func (suite *ValidationTestSuite) TestUpdateResourceServerMissingName() {
 	// Create a resource server first
 	createReq := CreateResourceServerRequest{
 		Name:               "update-validation-server",
-		OrganizationUnitID: suite.ouID,
+		OUID: suite.ouID,
 	}
 	rsID, err := createResourceServer(createReq)
 	suite.Require().NoError(err)
@@ -109,7 +109,7 @@ func (suite *ValidationTestSuite) TestUpdateResourceServerMissingName() {
 	// Try to update with empty name
 	updateReq := UpdateResourceServerRequest{
 		Name:               "",
-		OrganizationUnitID: suite.ouID,
+		OUID: suite.ouID,
 	}
 
 	err = updateResourceServer(rsID, updateReq)
@@ -121,7 +121,7 @@ func (suite *ValidationTestSuite) TestDeleteResourceServerWithDependencies() {
 	// Create resource server
 	rsReq := CreateResourceServerRequest{
 		Name:               "server-with-dependencies",
-		OrganizationUnitID: suite.ouID,
+		OUID: suite.ouID,
 	}
 	rsID, err := createResourceServer(rsReq)
 	suite.Require().NoError(err)
@@ -147,7 +147,7 @@ func (suite *ValidationTestSuite) TestDeleteResourceServerWithActions() {
 	// Create resource server
 	rsReq := CreateResourceServerRequest{
 		Name:               "server-with-actions",
-		OrganizationUnitID: suite.ouID,
+		OUID: suite.ouID,
 	}
 	rsID, err := createResourceServer(rsReq)
 	suite.Require().NoError(err)
@@ -310,7 +310,7 @@ func (suite *ValidationTestSuite) TestCreateResourceInDifferentResourceServer() 
 	// Create second resource server
 	rsReq := CreateResourceServerRequest{
 		Name:               "second-server",
-		OrganizationUnitID: suite.ouID,
+		OUID: suite.ouID,
 	}
 	rs2ID, err := createResourceServer(rsReq)
 	suite.Require().NoError(err)
@@ -341,7 +341,7 @@ func (suite *ValidationTestSuite) TestGetResourceFromWrongResourceServer() {
 	// Create second resource server
 	rsReq := CreateResourceServerRequest{
 		Name:               "wrong-server",
-		OrganizationUnitID: suite.ouID,
+		OUID: suite.ouID,
 	}
 	rs2ID, err := createResourceServer(rsReq)
 	suite.Require().NoError(err)
@@ -386,7 +386,7 @@ func (suite *ValidationTestSuite) TestInvalidContentType() {
 
 	req := CreateResourceServerRequest{
 		Name:               "test-server",
-		OrganizationUnitID: suite.ouID,
+		OUID: suite.ouID,
 	}
 	body, _ := json.Marshal(req)
 
@@ -412,7 +412,7 @@ func (suite *ValidationTestSuite) TestCreateResourceHandleContainsDelimiter() {
 	// First create a resource server to get its delimiter
 	rsReq := CreateResourceServerRequest{
 		Name:               "delimiter-test-server",
-		OrganizationUnitID: suite.ouID,
+		OUID: suite.ouID,
 	}
 	rsID, err := createResourceServer(rsReq)
 	suite.Require().NoError(err)
@@ -438,7 +438,7 @@ func (suite *ValidationTestSuite) TestCreateActionHandleContainsDelimiter() {
 	// First create a resource server to get its delimiter
 	rsReq := CreateResourceServerRequest{
 		Name:               "action-delimiter-test-server",
-		OrganizationUnitID: suite.ouID,
+		OUID: suite.ouID,
 	}
 	rsID, err := createResourceServer(rsReq)
 	suite.Require().NoError(err)

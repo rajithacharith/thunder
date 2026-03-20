@@ -49,15 +49,16 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
+				"credential": true,
 			},
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 		},
@@ -93,7 +94,7 @@ func (ts *UserInfoTestSuite) SetupSuite() {
 	ts.ouID = ouID
 
 	// Create user schema
-	testUserSchema.OrganizationUnitId = ts.ouID
+	testUserSchema.OUID = ts.ouID
 	schemaID, err := testutils.CreateUserType(testUserSchema)
 	ts.Require().NoError(err, "Failed to create test user schema")
 	ts.userSchemaID = schemaID
@@ -144,8 +145,8 @@ func (ts *UserInfoTestSuite) createTestUser() string {
 		"username":  "userinfo_test_user",
 		"password":  "SecurePass123!",
 		"email":     "userinfo_test@example.com",
-		"firstName": "UserInfo",
-		"lastName":  "Test",
+		"given_name": "UserInfo",
+		"family_name":  "Test",
 	}
 
 	attributesJSON, err := json.Marshal(attributes)
@@ -153,7 +154,7 @@ func (ts *UserInfoTestSuite) createTestUser() string {
 
 	user := testutils.User{
 		Type:             "userinfo-person",
-		OrganizationUnit: ts.ouID,
+		OUID:             ts.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 
@@ -210,13 +211,13 @@ func (ts *UserInfoTestSuite) createTestAuthenticationFlow() string {
 						{
 							"ref":        "input_001",
 							"identifier": "username",
-							"type":       "string",
+							"type":       "TEXT_INPUT",
 							"required":   true,
 						},
 						{
 							"ref":        "input_002",
 							"identifier": "password",
-							"type":       "string",
+							"type":       "PASSWORD_INPUT",
 							"required":   true,
 						},
 					},
@@ -268,15 +269,15 @@ func (ts *UserInfoTestSuite) createTestApplication(authFlowID string) string {
 					"response_types":             []string{"code"},
 					"token_endpoint_auth_method": "client_secret_basic",
 					"scopes":                     []string{"openid", "profile", "email"},
-				},
-			},
-		},
-		"token_config": map[string]interface{}{
-			"id_token": map[string]interface{}{
-				"user_attributes": []string{"email", "firstName", "lastName", "name"},
-				"scope_claims": map[string][]string{
-					"profile": {"firstName", "lastName", "name"},
-					"email":   {"email"},
+					"token": map[string]interface{}{
+						"id_token": map[string]interface{}{
+							"user_attributes": []string{"email", "given_name", "family_name", "name"},
+						},
+					},
+					"scope_claims": map[string][]string{
+						"profile": {"given_name", "family_name", "name"},
+						"email":   {"email"},
+					},
 				},
 			},
 		},
@@ -635,6 +636,7 @@ func (ts *UserInfoTestSuite) TestUserInfo_AuthorizationCodeGrant_Allowed() {
 
 	// Should return 200 OK
 	assert.Equal(ts.T(), http.StatusOK, resp.StatusCode, "Should return 200 for authorization_code grant")
+	assert.Equal(ts.T(), "application/json", resp.Header.Get("Content-Type"))
 
 	// Parse response
 	var userInfo map[string]interface{}
@@ -664,6 +666,7 @@ func (ts *UserInfoTestSuite) TestUserInfo_RefreshTokenGrant_Allowed() {
 
 	// Should return 200 OK
 	assert.Equal(ts.T(), http.StatusOK, resp.StatusCode, "Should return 200 for refresh_token grant")
+	assert.Equal(ts.T(), "application/json", resp.Header.Get("Content-Type"))
 
 	// Parse response
 	var userInfo map[string]interface{}
@@ -691,6 +694,7 @@ func (ts *UserInfoTestSuite) TestUserInfo_TokenExchangeGrant_Allowed() {
 
 	// Should return 200 OK
 	assert.Equal(ts.T(), http.StatusOK, resp.StatusCode, "Should return 200 for token_exchange grant")
+	assert.Equal(ts.T(), "application/json", resp.Header.Get("Content-Type"))
 
 	// Parse response
 	var userInfo map[string]interface{}
@@ -723,7 +727,6 @@ func (ts *UserInfoTestSuite) TestUserInfo_InvalidToken() {
 	assert.Equal(ts.T(), "invalid_token", errorResp["error"], "Error should be invalid_token")
 }
 
-// TestUserInfo_MissingToken tests that missing tokens are rejected
 func (ts *UserInfoTestSuite) TestUserInfo_MissingToken() {
 	// Call UserInfo endpoint without token
 	req, err := http.NewRequest("GET", testServerURL+"/oauth2/userinfo", nil)
@@ -733,14 +736,320 @@ func (ts *UserInfoTestSuite) TestUserInfo_MissingToken() {
 	ts.Require().NoError(err, "Failed to call UserInfo endpoint")
 	defer resp.Body.Close()
 
-	// Should return 401 Unauthorized (OAuth2 spec: missing authentication returns 401)
+	// Should return 401 Unauthorized (RFC 6750 §3.1: missing authentication returns 401)
 	assert.Equal(ts.T(), http.StatusUnauthorized, resp.StatusCode, "Should return 401 for missing token")
 
-	// Parse error response
-	var errorResp map[string]interface{}
-	err = json.NewDecoder(resp.Body).Decode(&errorResp)
-	ts.Require().NoError(err, "Failed to parse error response")
+	// RFC 6750 §3.1: bare WWW-Authenticate: Bearer challenge for missing auth
+	assert.Equal(ts.T(), "Bearer", resp.Header.Get("WWW-Authenticate"),
+		"Should include bare WWW-Authenticate: Bearer challenge")
+}
 
-	// Verify error details
-	assert.Equal(ts.T(), "invalid_request", errorResp["error"], "Error should be invalid_request")
+func (ts *UserInfoTestSuite) TestUserInfo_SeparateAttributesConfiguration() {
+	// Create a dedicated app for this test with specific UserInfo config
+	// UserInfo config allows ONLY "email", while IDToken config allows "email", "given_name", "family_name"
+	config := map[string]interface{}{
+		"client_id":      "userinfo_config_test_client",
+		"client_secret":  "userinfo_config_test_secret",
+		"redirect_uris":  []string{redirectURI},
+		"grant_types":    []string{"authorization_code"},
+		"response_types": []string{"code"},
+		"scopes":         []string{"openid", "profile", "email"},
+		"token": map[string]interface{}{
+			"id_token": map[string]interface{}{
+				"user_attributes": []string{"email", "given_name", "family_name"},
+			},
+		},
+		"user_info": map[string]interface{}{
+			"user_attributes": []string{"email"}, // UserInfo strictly limited to email
+		},
+		"scope_claims": map[string][]string{
+			"profile": {"given_name", "family_name", "name"},
+			"email":   {"email"},
+		},
+	}
+
+	appID := ts.createApplicationWithConfig("UserInfoConfigTestApp", config)
+	defer ts.deleteApplication(appID)
+
+	// Get access token using the new app's credentials
+	accessToken, err := ts.getAuthorizationCodeTokenWithClient(
+		"openid profile email", "userinfo_config_test_client", "userinfo_config_test_secret")
+	ts.Require().NoError(err, "Failed to get authorization_code token")
+
+	// Call UserInfo endpoint
+	resp, err := ts.callUserInfo(accessToken)
+	ts.Require().NoError(err, "Failed to call UserInfo endpoint")
+	defer resp.Body.Close()
+
+	assert.Equal(ts.T(), http.StatusOK, resp.StatusCode)
+	assert.Equal(ts.T(), "application/json", resp.Header.Get("Content-Type"))
+
+	var userInfo map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&userInfo)
+	ts.Require().NoError(err)
+
+	// Verify sub claim is always present (required by OIDC spec)
+	assert.Contains(ts.T(), userInfo, "sub")
+
+	// Verify ONLY email is returned (plus sub), and NOT given_name/family_name
+	// despite being in profile scope and IDToken config
+	assert.Contains(ts.T(), userInfo, "email")
+	assert.NotContains(ts.T(), userInfo, "given_name")
+	assert.NotContains(ts.T(), userInfo, "family_name")
+}
+
+func (ts *UserInfoTestSuite) TestUserInfo_FallbackConfiguration() {
+	// Create app with NO UserInfo config, but with IDToken config
+	config := map[string]interface{}{
+		"client_id":      "userinfo_fallback_test_client",
+		"client_secret":  "userinfo_fallback_test_secret",
+		"redirect_uris":  []string{redirectURI},
+		"grant_types":    []string{"authorization_code"},
+		"response_types": []string{"code"},
+		"scopes":         []string{"openid", "profile", "email"},
+		"token": map[string]interface{}{
+			"id_token": map[string]interface{}{
+				"user_attributes": []string{"email", "given_name"},
+			},
+		},
+		// No user_info config
+		"scope_claims": map[string][]string{
+			"profile": {"given_name", "family_name", "name"},
+			"email":   {"email"},
+		},
+	}
+
+	appID := ts.createApplicationWithConfig("UserInfoFallbackTestApp", config)
+	defer ts.deleteApplication(appID)
+
+	accessToken, err := ts.getAuthorizationCodeTokenWithClient(
+		"openid profile email", "userinfo_fallback_test_client", "userinfo_fallback_test_secret")
+	ts.Require().NoError(err)
+
+	resp, err := ts.callUserInfo(accessToken)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	var userInfo map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&userInfo)
+	ts.Require().NoError(err)
+
+	// Verify sub claim is always present (required by OIDC spec)
+	assert.Contains(ts.T(), userInfo, "sub")
+
+	// Should fallback to IDToken attributes: email AND given_name
+	assert.Contains(ts.T(), userInfo, "email")
+	assert.Contains(ts.T(), userInfo, "given_name")
+	assert.Equal(ts.T(), "UserInfo", userInfo["given_name"])
+}
+
+func (ts *UserInfoTestSuite) TestUserInfo_DefaultClaims() {
+	// Create app with UserInfo config that includes default claims
+	config := map[string]interface{}{
+		"client_id":      "userinfo_default_claims_client",
+		"client_secret":  "userinfo_default_claims_secret",
+		"redirect_uris":  []string{redirectURI},
+		"grant_types":    []string{"authorization_code"},
+		"response_types": []string{"code"},
+		"scopes":         []string{"openid", "profile"},
+		"token": map[string]interface{}{
+			"id_token": map[string]interface{}{
+				"user_attributes": []string{"email"},
+			},
+		},
+		"user_info": map[string]interface{}{
+			"user_attributes": []string{"userType", "ouId", "ouHandle", "ouName", "email"},
+		},
+		"scope_claims": map[string][]string{
+			"profile": {"given_name", "family_name", "userType", "ouId", "ouHandle", "ouName"},
+		},
+	}
+
+	appID := ts.createApplicationWithConfig("UserInfoDefaultClaimsApp", config)
+	defer ts.deleteApplication(appID)
+
+	// Get access token using the new app's credentials
+	accessToken, err := ts.getAuthorizationCodeTokenWithClient(
+		"openid profile", "userinfo_default_claims_client", "userinfo_default_claims_secret")
+	ts.Require().NoError(err, "Failed to get authorization_code token")
+
+	// Call UserInfo endpoint
+	resp, err := ts.callUserInfo(accessToken)
+	ts.Require().NoError(err, "Failed to call UserInfo endpoint")
+	defer resp.Body.Close()
+
+	assert.Equal(ts.T(), http.StatusOK, resp.StatusCode)
+	assert.Equal(ts.T(), "application/json", resp.Header.Get("Content-Type"))
+
+	var userInfo map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&userInfo)
+	ts.Require().NoError(err)
+
+	// Verify sub claim is always present (required by OIDC spec)
+	assert.Contains(ts.T(), userInfo, "sub")
+
+	// Verify default claims are present
+	assert.Contains(ts.T(), userInfo, "userType", "userType should be in response")
+	assert.Contains(ts.T(), userInfo, "ouId", "ouId should be in response")
+	assert.Contains(ts.T(), userInfo, "ouHandle", "ouHandle should be in response")
+	assert.Contains(ts.T(), userInfo, "ouName", "ouName should be in response")
+
+	// Verify the values match the test user's OU
+	assert.Equal(ts.T(), "userinfo-person", userInfo["userType"])
+	assert.Equal(ts.T(), ts.ouID, userInfo["ouId"])
+	assert.Equal(ts.T(), "userinfo-test-ou", userInfo["ouHandle"])
+	assert.Equal(ts.T(), "UserInfo Test OU", userInfo["ouName"])
+}
+
+// createApplicationWithConfig creates an OAuth application with the given config
+func (ts *UserInfoTestSuite) createApplicationWithConfig(name string, oauthConfig map[string]interface{}) string {
+	app := map[string]interface{}{
+		"name":                         name,
+		"description":                  "Application for UserInfo integration tests",
+		"auth_flow_id":                 ts.flowID,
+		"is_registration_flow_enabled": false,
+		"allowed_user_types":           []string{"userinfo-person"},
+		"inbound_auth_config": []map[string]interface{}{
+			{
+				"type":   "oauth2",
+				"config": oauthConfig,
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(app)
+	ts.Require().NoError(err)
+
+	req, err := http.NewRequest("POST", testServerURL+"/applications", bytes.NewBuffer(jsonData))
+	ts.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := ts.client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	ts.Require().Equal(http.StatusCreated, resp.StatusCode)
+
+	var respData map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&respData)
+	ts.Require().NoError(err)
+
+	return respData["id"].(string)
+}
+
+// getAuthorizationCodeTokenWithClient is a helper that performs the full auth code flow
+// using the specified client credentials
+func (ts *UserInfoTestSuite) getAuthorizationCodeTokenWithClient(scope, cID, cSecret string) (string, error) {
+	// 1. Initiate
+	authzResp, err := testutils.InitiateAuthorizationFlow(cID, redirectURI, "code", scope, "test_state")
+	if err != nil {
+		return "", err
+	}
+	defer authzResp.Body.Close()
+	location := authzResp.Header.Get("Location")
+
+	// 2. Extract
+	authId, flowID, err := testutils.ExtractAuthData(location)
+	if err != nil {
+		return "", err
+	}
+
+	// 3. Initiate Auth
+	_, err = testutils.ExecuteAuthenticationFlow(flowID, nil, "")
+	if err != nil {
+		return "", err
+	}
+
+	// 4. Authenticate
+	authInputs := map[string]string{
+		"username": "userinfo_test_user",
+		"password": "SecurePass123!",
+	}
+	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, authInputs, "action_001")
+	if err != nil {
+		return "", err
+	}
+
+	// 5. Complete
+	if flowStep.Assertion == "" {
+		return "", fmt.Errorf("Assertion missing")
+	}
+	authzResponse, err := testutils.CompleteAuthorization(authId, flowStep.Assertion)
+	if err != nil {
+		return "", err
+	}
+
+	// 6. Extract Code
+	code, err := testutils.ExtractAuthorizationCode(authzResponse.RedirectURI)
+	if err != nil {
+		return "", err
+	}
+
+	// 7. Exchange
+	tokenResult, err := testutils.RequestToken(cID, cSecret, code, redirectURI, "authorization_code")
+	if err != nil {
+		return "", err
+	}
+	if tokenResult.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("status %d", tokenResult.StatusCode)
+	}
+	if tokenResult.Token == nil {
+		return "", fmt.Errorf("token response is nil")
+	}
+	return tokenResult.Token.AccessToken, nil
+}
+
+func (ts *UserInfoTestSuite) TestUserInfo_JWS_Response() {
+
+	config := map[string]interface{}{
+		"client_id":      "userinfo_jws_test_client",
+		"client_secret":  "userinfo_jws_test_secret",
+		"redirect_uris":  []string{redirectURI},
+		"grant_types":    []string{"authorization_code"},
+		"response_types": []string{"code"},
+		"scopes":         []string{"openid", "profile", "email"},
+		"token": map[string]interface{}{
+			"id_token": map[string]interface{}{
+				"user_attributes": []string{"email", "given_name", "family_name"},
+			},
+		},
+		"user_info": map[string]interface{}{
+			"response_type":   "JWS",
+			"user_attributes": []string{"email", "given_name", "family_name"},
+		},
+		"scope_claims": map[string][]string{
+			"profile": {"given_name", "family_name"},
+			"email":   {"email"},
+		},
+	}
+
+	appID := ts.createApplicationWithConfig("UserInfoJWSTestApp", config)
+	defer ts.deleteApplication(appID)
+
+	accessToken, err := ts.getAuthorizationCodeTokenWithClient(
+		"openid profile email",
+		"userinfo_jws_test_client",
+		"userinfo_jws_test_secret",
+	)
+	ts.Require().NoError(err)
+
+	resp, err := ts.callUserInfo(accessToken)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	// Status check
+	assert.Equal(ts.T(), http.StatusOK, resp.StatusCode)
+
+	// Content-Type check
+	assert.Equal(ts.T(), "application/jwt", resp.Header.Get("Content-Type"))
+
+	// Validate JWT format
+	bodyBytes, err := io.ReadAll(resp.Body)
+	ts.Require().NoError(err)
+
+	jwtString := string(bodyBytes)
+	ts.Require().NotEmpty(jwtString)
+
+	parts := strings.Split(jwtString, ".")
+	ts.Require().Equal(3, len(parts), "Invalid JWT format")
 }

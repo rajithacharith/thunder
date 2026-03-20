@@ -19,17 +19,17 @@
 /**
  * User Management E2E Tests
  *
- * Tests for user CRUD operations in the Developer Portal.
+ * Tests for user CRUD operations in the Console.
  * Uses Page Object Model pattern via fixtures.
  *
  * Required environment variables:
- * - BASE_URL: Developer portal base URL
+ * - BASE_URL: Console base URL
  * - TEST_USER_USERNAME: Base username for test user creation
  * - ADMIN_USERNAME: Admin credentials for authentication
  * - ADMIN_PASSWORD: Admin password for authentication
  */
 
-import { test, type UserFormData } from "../../fixtures/developer-portal";
+import { test, type UserFormData } from "../../fixtures/console";
 
 const baseUsername = process.env.TEST_USER_USERNAME as string;
 
@@ -45,8 +45,8 @@ const generateTestData = (suffix: string = ""): UserFormData => {
   return {
     username: `${baseUsername}${uniqueSuffix}`,
     email: `${baseUsername}${uniqueSuffix}@wso2.com`,
-    firstName: `Testfname${suffix}`,
-    lastName: `Testlname${suffix}`,
+    given_name: `Testfname${suffix}`,
+    family_name: `Testlname${suffix}`,
   };
 };
 
@@ -70,10 +70,17 @@ test.describe("User Management - CRUD Operations", () => {
         console.log("Clicked Add User button");
       });
 
-      await test.step("Verify user creation form appears", async () => {
+      await test.step("Verify user creation wizard appears", async () => {
         await usersPage.waitForUserForm();
-        console.log("User creation form appeared");
-        await usersPage.screenshot("debug-create-user-form");
+        console.log("User creation wizard appeared");
+        await usersPage.screenshot("debug-create-user-wizard");
+      });
+
+      await test.step("Select user type and continue", async () => {
+        console.log("Selecting user type...");
+        await usersPage.selectUserTypeAndContinue();
+        console.log("User type selected, advanced to details step");
+        await usersPage.screenshot("debug-user-details-step");
       });
 
       await test.step("Fill in user details", async () => {

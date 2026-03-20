@@ -45,12 +45,12 @@ const (
 
 type TokenExchangeTestSuite struct {
 	suite.Suite
-	applicationID      string
-	userID             string
-	organizationUnitID string
-	userSchemaID       string
-	client             *http.Client
-	assertionToken     string
+	applicationID  string
+	userID         string
+	oUID           string
+	userSchemaID   string
+	client         *http.Client
+	assertionToken string
 }
 
 var (
@@ -61,7 +61,8 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
+				"credential": true,
 			},
 			"email": map[string]interface{}{
 				"type": "string",
@@ -79,10 +80,10 @@ func (ts *TokenExchangeTestSuite) SetupSuite() {
 	ts.client = testutils.GetHTTPClient()
 
 	// Create test organization unit for user creation
-	ts.organizationUnitID = ts.createTestOrganizationUnit()
+	ts.oUID = ts.createTestOrganizationUnit()
 
 	// Create user schema for person type
-	testUserSchema.OrganizationUnitId = ts.organizationUnitID
+	testUserSchema.OUID = ts.oUID
 	schemaID, err := testutils.CreateUserType(testUserSchema)
 	ts.Require().NoError(err, "Failed to create test user schema")
 	ts.userSchemaID = schemaID
@@ -109,8 +110,8 @@ func (ts *TokenExchangeTestSuite) TearDownSuite() {
 	}
 
 	// Clean up organization unit
-	if ts.organizationUnitID != "" {
-		ts.deleteOrganizationUnit(ts.organizationUnitID)
+	if ts.oUID != "" {
+		ts.deleteOrganizationUnit(ts.oUID)
 	}
 
 	// Clean up user schema
@@ -185,9 +186,9 @@ func (ts *TokenExchangeTestSuite) createTestUser() string {
 	ts.Require().NoError(err, "Failed to marshal user attributes")
 
 	user := testutils.User{
-		Type:             "token-test-person",
-		OrganizationUnit: ts.organizationUnitID,
-		Attributes:       json.RawMessage(attributesJSON),
+		Type:       "token-test-person",
+		OUID:       ts.oUID,
+		Attributes: json.RawMessage(attributesJSON),
 	}
 
 	userID, err := testutils.CreateUser(user)
@@ -268,8 +269,12 @@ func (ts *TokenExchangeTestSuite) deleteApplication(appID string) {
 
 func (ts *TokenExchangeTestSuite) getUserAssertion() string {
 	authRequest := map[string]interface{}{
-		"username": tokenExchangeTestUser,
-		"password": tokenExchangeTestPassword,
+		"identifiers": map[string]interface{}{
+			"username": tokenExchangeTestUser,
+		},
+		"credentials": map[string]interface{}{
+			"password": tokenExchangeTestPassword,
+		},
 	}
 
 	requestJSON, err := json.Marshal(authRequest)
@@ -463,7 +468,7 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_InvalidSubjectToken() {
 	resp, statusCode, err := ts.exchangeToken(formData.Encode(), authHeader)
 	ts.Require().NoError(err)
 	ts.Equal(http.StatusBadRequest, statusCode)
-	ts.Equal("invalid_grant", resp.Error)
+	ts.Equal("invalid_request", resp.Error)
 	ts.Contains(resp.ErrorDescription, "Invalid subject_token")
 }
 
@@ -550,7 +555,7 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_ApplicationNotRegisteredForG
 
 		tokenResp, statusCode, err := ts.exchangeToken(formData.Encode(), authHeader)
 		ts.Require().NoError(err)
-		ts.Equal(http.StatusUnauthorized, statusCode)
+		ts.Equal(http.StatusBadRequest, statusCode)
 		ts.Equal("unauthorized_client", tokenResp.Error)
 		ts.Contains(tokenResp.ErrorDescription, "not authorized")
 	}
@@ -661,7 +666,7 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_SubjectTokenMissingIssClaim(
 	resp, statusCode, err := ts.exchangeToken(formData.Encode(), authHeader)
 	ts.Require().NoError(err)
 	ts.Equal(http.StatusBadRequest, statusCode)
-	ts.Equal("invalid_grant", resp.Error)
+	ts.Equal("invalid_request", resp.Error)
 	ts.Contains(resp.ErrorDescription, "Invalid subject_token")
 }
 
@@ -679,6 +684,6 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_SubjectTokenUnsupportedIssue
 	resp, statusCode, err := ts.exchangeToken(formData.Encode(), authHeader)
 	ts.Require().NoError(err)
 	ts.Equal(http.StatusBadRequest, statusCode)
-	ts.Equal("invalid_grant", resp.Error)
+	ts.Equal("invalid_request", resp.Error)
 	ts.Contains(resp.ErrorDescription, "Invalid subject_token")
 }

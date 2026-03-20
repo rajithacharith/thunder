@@ -109,6 +109,14 @@ packages:
       pkgname: executor
       filename: "{{.InterfaceName}}_mock_test.go"
 
+  github.com/asgardeo/thunder/internal/flow/flowmeta:
+    config:
+      all: true
+      dir: internal/flow/flowmeta
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: flowmeta
+      filename: "{{.InterfaceName}}_mock_test.go"
+
   github.com/asgardeo/thunder/internal/user:
     config:
       all: true
@@ -157,20 +165,28 @@ packages:
       pkgname: security
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/asgardeo/thunder/internal/branding/mgt:
+  github.com/asgardeo/thunder/internal/design/theme/mgt:
     config:
       all: true
-      dir: internal/branding/mgt
+      dir: internal/design/theme/mgt
       structname: '{{.InterfaceName}}Mock'
-      pkgname: brandingmgt
+      pkgname: thememgt
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/asgardeo/thunder/internal/branding/resolve:
+  github.com/asgardeo/thunder/internal/design/layout/mgt:
     config:
       all: true
-      dir: internal/branding/resolve
+      dir: internal/design/layout/mgt
       structname: '{{.InterfaceName}}Mock'
-      pkgname: brandingresolve
+      pkgname: layoutmgt
+      filename: "{{.InterfaceName}}_mock_test.go"
+
+  github.com/asgardeo/thunder/internal/design/resolve:
+    config:
+      all: true
+      dir: internal/design/resolve
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: resolve
       filename: "{{.InterfaceName}}_mock_test.go"
 
   github.com/asgardeo/thunder/internal/oauth/oauth2/userinfo:
@@ -227,4 +243,20 @@ packages:
       dir: internal/system/i18n/mgt
       structname: '{{.InterfaceName}}Mock'
       pkgname: mgt
+      filename: "{{.InterfaceName}}_mock_test.go"
+
+  github.com/asgardeo/thunder/internal/consent:
+    config:
+      all: true
+      dir: internal/consent
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: consent
+      filename: "{{.InterfaceName}}_mock_test.go"
+
+  github.com/asgardeo/thunder/internal/attributecache:
+    config:
+      all: true
+      dir: internal/attributecache
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: attributecache
       filename: "{{.InterfaceName}}_mock_test.go"

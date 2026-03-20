@@ -19,6 +19,7 @@
 package resource
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -29,39 +30,46 @@ import (
 // resourceStoreInterface defines the interface for resource store operations.
 type resourceStoreInterface interface {
 	// Resource Server operations
-	CreateResourceServer(id string, rs ResourceServer) error
-	GetResourceServer(id string) (int, ResourceServer, error)
-	GetResourceServerList(limit, offset int) ([]ResourceServer, error)
-	GetResourceServerListCount() (int, error)
-	UpdateResourceServer(id string, rs ResourceServer) error
-	DeleteResourceServer(id string) error
-	CheckResourceServerNameExists(name string) (bool, error)
-	CheckResourceServerIdentifierExists(identifier string) (bool, error)
-	CheckResourceServerHasDependencies(resServerInternalID int) (bool, error)
+	CreateResourceServer(ctx context.Context, id string, rs ResourceServer) error
+	GetResourceServer(ctx context.Context, id string) (ResourceServer, error)
+	GetResourceServerList(ctx context.Context, limit, offset int) ([]ResourceServer, error)
+	GetResourceServerListCount(ctx context.Context) (int, error)
+	UpdateResourceServer(ctx context.Context, id string, rs ResourceServer) error
+	DeleteResourceServer(ctx context.Context, id string) error
+	CheckResourceServerNameExists(ctx context.Context, name string) (bool, error)
+	CheckResourceServerIdentifierExists(ctx context.Context, identifier string) (bool, error)
+	CheckResourceServerHasDependencies(ctx context.Context, resServerID string) (bool, error)
+	IsResourceServerDeclarative(id string) bool
 
 	// Resource operations
-	CreateResource(uuid string, resServerInternalID int, parentInternalID *int, res Resource) error
-	GetResource(id string, resServerInternalID int) (int, Resource, error)
-	GetResourceList(resServerInternalID int, limit, offset int) ([]Resource, error)
-	GetResourceListByParent(resServerInternalID int, parentInternalID *int, limit, offset int) ([]Resource, error)
-	GetResourceListCount(resServerInternalID int) (int, error)
-	GetResourceListCountByParent(resServerInternalID int, parentInternalID *int) (int, error)
-	UpdateResource(id string, resServerInternalID int, res Resource) error
-	DeleteResource(id string, resServerInternalID int) error
-	CheckResourceHandleExists(resServerInternalID int, handle string, parentInternalID *int) (bool, error)
-	CheckResourceHasDependencies(resInternalID int) (bool, error)
-	CheckCircularDependency(resourceID, newParentID string) (bool, error)
+	CreateResource(ctx context.Context, uuid string, resServerID string, parentID *string, res Resource) error
+	GetResource(ctx context.Context, id string, resServerID string) (Resource, error)
+	GetResourceList(ctx context.Context, resServerID string, limit, offset int) ([]Resource, error)
+	GetResourceListByParent(
+		ctx context.Context, resServerID string, parentID *string, limit, offset int,
+	) ([]Resource, error)
+	GetResourceListCount(ctx context.Context, resServerID string) (int, error)
+	GetResourceListCountByParent(ctx context.Context, resServerID string, parentID *string) (int, error)
+	UpdateResource(ctx context.Context, id string, resServerID string, res Resource) error
+	DeleteResource(ctx context.Context, id string, resServerID string) error
+	CheckResourceHandleExists(
+		ctx context.Context, resServerID string, handle string, parentID *string,
+	) (bool, error)
+	CheckResourceHasDependencies(ctx context.Context, resID string) (bool, error)
+	CheckCircularDependency(ctx context.Context, resourceID, newParentID string) (bool, error)
 
 	// Action operations
-	CreateAction(uuid string, resServerInternalID int, resInternalID *int, action Action) error
-	GetAction(id string, resServerInternalID int, resInternalID *int) (Action, error)
-	GetActionList(resServerInternalID int, resInternalID *int, limit, offset int) ([]Action, error)
-	GetActionListCount(resServerInternalID int, resInternalID *int) (int, error)
-	UpdateAction(id string, resServerInternalID int, resInternalID *int, action Action) error
-	DeleteAction(id string, resServerInternalID int, resInternalID *int) error
-	IsActionExist(id string, resServerInternalID int, resInternalID *int) (bool, error)
-	CheckActionHandleExists(resServerInternalID int, resInternalID *int, handle string) (bool, error)
-	ValidatePermissions(resServerInternalID int, permissions []string) ([]string, error)
+	CreateAction(ctx context.Context, uuid string, resServerID string, resID *string, action Action) error
+	GetAction(ctx context.Context, id string, resServerID string, resID *string) (Action, error)
+	GetActionList(ctx context.Context, resServerID string, resID *string, limit, offset int) ([]Action, error)
+	GetActionListCount(ctx context.Context, resServerID string, resID *string) (int, error)
+	UpdateAction(ctx context.Context, id string, resServerID string, resID *string, action Action) error
+	DeleteAction(ctx context.Context, id string, resServerID string, resID *string) error
+	IsActionExist(ctx context.Context, id string, resServerID string, resID *string) (bool, error)
+	CheckActionHandleExists(
+		ctx context.Context, resServerID string, resID *string, handle string,
+	) (bool, error)
+	ValidatePermissions(ctx context.Context, resServerID string, permissions []string) ([]string, error)
 }
 
 // resourceStore is the default implementation of resourceStoreInterface.
@@ -84,12 +92,13 @@ func newResourceStore() resourceStoreInterface {
 }
 
 // CreateResourceServer creates a new resource server in the database.
-func (s *resourceStore) CreateResourceServer(id string, rs ResourceServer) error {
+func (s *resourceStore) CreateResourceServer(ctx context.Context, id string, rs ResourceServer) error {
 	return s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		_, err := dbClient.Execute(
+		_, err := dbClient.ExecuteContext(
+			ctx,
 			queryCreateResourceServer,
 			id,
-			rs.OrganizationUnitID,
+			rs.OUID,
 			rs.Name,
 			rs.Description,
 			resolveIdentifier(rs.Identifier),
@@ -104,12 +113,11 @@ func (s *resourceStore) CreateResourceServer(id string, rs ResourceServer) error
 	})
 }
 
-// GetResourceServer retrieves a resource server and internal ID by UUID.
-func (s *resourceStore) GetResourceServer(id string) (int, ResourceServer, error) {
+// GetResourceServer retrieves a resource server by UUID.
+func (s *resourceStore) GetResourceServer(ctx context.Context, id string) (ResourceServer, error) {
 	var rs ResourceServer
-	var internalID int
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.Query(queryGetResourceServerByID, id, s.deploymentID)
+		results, err := dbClient.QueryContext(ctx, queryGetResourceServerByID, id, s.deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to get resource server: %w", err)
 		}
@@ -118,24 +126,24 @@ func (s *resourceStore) GetResourceServer(id string) (int, ResourceServer, error
 			return errResourceServerNotFound
 		}
 
-		internalID, rs, err = buildResourceServerFromResultRow(results[0])
+		rs, err = buildResourceServerFromResultRow(results[0])
 		return err
 	})
-	return internalID, rs, err
+	return rs, err
 }
 
 // GetResourceServerList retrieves a list of resource servers with pagination.
-func (s *resourceStore) GetResourceServerList(limit, offset int) ([]ResourceServer, error) {
+func (s *resourceStore) GetResourceServerList(ctx context.Context, limit, offset int) ([]ResourceServer, error) {
 	var resourceServers []ResourceServer
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.Query(queryGetResourceServerList, limit, offset, s.deploymentID)
+		results, err := dbClient.QueryContext(ctx, queryGetResourceServerList, limit, offset, s.deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to get resource server list: %w", err)
 		}
 
 		resourceServers = make([]ResourceServer, 0, len(results))
 		for _, row := range results {
-			_, rs, err := buildResourceServerFromResultRow(row)
+			rs, err := buildResourceServerFromResultRow(row)
 			if err != nil {
 				return fmt.Errorf("failed to build resource server: %w", err)
 			}
@@ -151,10 +159,10 @@ func (s *resourceStore) GetResourceServerList(limit, offset int) ([]ResourceServ
 }
 
 // GetResourceServerListCount retrieves the total count of resource servers.
-func (s *resourceStore) GetResourceServerListCount() (int, error) {
+func (s *resourceStore) GetResourceServerListCount(ctx context.Context) (int, error) {
 	var count int
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.Query(queryGetResourceServerListCount, s.deploymentID)
+		results, err := dbClient.QueryContext(ctx, queryGetResourceServerListCount, s.deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to get resource server count: %w", err)
 		}
@@ -166,11 +174,12 @@ func (s *resourceStore) GetResourceServerListCount() (int, error) {
 }
 
 // UpdateResourceServer updates a resource server.
-func (s *resourceStore) UpdateResourceServer(id string, rs ResourceServer) error {
+func (s *resourceStore) UpdateResourceServer(ctx context.Context, id string, rs ResourceServer) error {
 	return s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		_, err := dbClient.Execute(
+		_, err := dbClient.ExecuteContext(
+			ctx,
 			queryUpdateResourceServer,
-			rs.OrganizationUnitID,
+			rs.OUID,
 			rs.Name,
 			rs.Description,
 			resolveIdentifier(rs.Identifier),
@@ -187,9 +196,9 @@ func (s *resourceStore) UpdateResourceServer(id string, rs ResourceServer) error
 }
 
 // DeleteResourceServer deletes a resource server.
-func (s *resourceStore) DeleteResourceServer(id string) error {
+func (s *resourceStore) DeleteResourceServer(ctx context.Context, id string) error {
 	return s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		_, err := dbClient.Execute(queryDeleteResourceServer, id, s.deploymentID)
+		_, err := dbClient.ExecuteContext(ctx, queryDeleteResourceServer, id, s.deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to delete resource server: %w", err)
 		}
@@ -199,10 +208,10 @@ func (s *resourceStore) DeleteResourceServer(id string) error {
 }
 
 // CheckResourceServerNameExists checks if a resource server name exists.
-func (s *resourceStore) CheckResourceServerNameExists(name string) (bool, error) {
+func (s *resourceStore) CheckResourceServerNameExists(ctx context.Context, name string) (bool, error) {
 	var exists bool
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.Query(queryCheckResourceServerNameExists, name, s.deploymentID)
+		results, err := dbClient.QueryContext(ctx, queryCheckResourceServerNameExists, name, s.deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to check resource server name: %w", err)
 		}
@@ -214,10 +223,10 @@ func (s *resourceStore) CheckResourceServerNameExists(name string) (bool, error)
 }
 
 // CheckResourceServerIdentifierExists checks if a resource server identifier exists.
-func (s *resourceStore) CheckResourceServerIdentifierExists(identifier string) (bool, error) {
+func (s *resourceStore) CheckResourceServerIdentifierExists(ctx context.Context, identifier string) (bool, error) {
 	var exists bool
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.Query(queryCheckResourceServerIdentifierExists, identifier, s.deploymentID)
+		results, err := dbClient.QueryContext(ctx, queryCheckResourceServerIdentifierExists, identifier, s.deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to check resource server identifier: %w", err)
 		}
@@ -229,10 +238,12 @@ func (s *resourceStore) CheckResourceServerIdentifierExists(identifier string) (
 }
 
 // CheckResourceServerHasDependencies checks if resource server has dependencies.
-func (s *resourceStore) CheckResourceServerHasDependencies(resServerInternalID int) (bool, error) {
+func (s *resourceStore) CheckResourceServerHasDependencies(ctx context.Context, resServerID string) (bool, error) {
 	var hasDeps bool
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.Query(queryCheckResourceServerHasDependencies, resServerInternalID, s.deploymentID)
+		results, err := dbClient.QueryContext(
+			ctx, queryCheckResourceServerHasDependencies, resServerID, s.deploymentID,
+		)
 		if err != nil {
 			return fmt.Errorf("failed to check dependencies: %w", err)
 		}
@@ -243,27 +254,35 @@ func (s *resourceStore) CheckResourceServerHasDependencies(resServerInternalID i
 	return hasDeps, err
 }
 
+// IsResourceServerDeclarative checks if a resource server is declarative (immutable).
+// For database store, all resource servers are mutable, so this always returns false.
+func (s *resourceStore) IsResourceServerDeclarative(id string) bool {
+	return false
+}
+
 // Resource Store Methods
 
 // CreateResource creates a new resource.
 func (s *resourceStore) CreateResource(
+	ctx context.Context,
 	uuid string,
-	resServerInternalID int,
-	parentInternalID *int,
+	resServerID string,
+	parentID *string,
 	res Resource,
 ) error {
 	return s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		_, err := dbClient.Execute(
+		_, err := dbClient.ExecuteContext(
+			ctx,
 			queryCreateResource,
-			uuid,                // $1: RESOURCE_ID (UUID)
-			resServerInternalID, // $2: RESOURCE_SERVER_ID (int FK)
-			res.Name,            // $3: NAME
-			res.Handle,          // $4: HANDLE
-			res.Description,     // $5: DESCRIPTION
-			res.Permission,      // $6: PERMISSION
-			"{}",                // $7: PROPERTIES (empty JSON).
-			parentInternalID,    // $8: PARENT_RESOURCE_ID (int FK or NULL)
-			s.deploymentID,      // $9: DEPLOYMENT_ID
+			uuid,            // $1: RESOURCE_ID (UUID)
+			resServerID,     // $2: RESOURCE_SERVER_ID (UUID FK)
+			res.Name,        // $3: NAME
+			res.Handle,      // $4: HANDLE
+			res.Description, // $5: DESCRIPTION
+			res.Permission,  // $6: PERMISSION
+			"{}",            // $7: PROPERTIES (empty JSON).
+			parentID,        // $8: PARENT_RESOURCE_ID (UUID FK or NULL)
+			s.deploymentID,  // $9: DEPLOYMENT_ID
 		)
 		if err != nil {
 			return fmt.Errorf("failed to create resource: %w", err)
@@ -273,12 +292,11 @@ func (s *resourceStore) CreateResource(
 	})
 }
 
-// GetResource retrieves a resource and internal ID by UUID.
-func (s *resourceStore) GetResource(id string, resServerInternalID int) (int, Resource, error) {
+// GetResource retrieves a resource by UUID.
+func (s *resourceStore) GetResource(ctx context.Context, id string, resServerID string) (Resource, error) {
 	var res Resource
-	var internalID int
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.Query(queryGetResourceByID, id, resServerInternalID, s.deploymentID)
+		results, err := dbClient.QueryContext(ctx, queryGetResourceByID, id, resServerID, s.deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to get resource: %w", err)
 		}
@@ -287,24 +305,28 @@ func (s *resourceStore) GetResource(id string, resServerInternalID int) (int, Re
 			return errResourceNotFound
 		}
 
-		internalID, res, err = buildResourceFromResultRow(results[0])
+		res, err = buildResourceFromResultRow(results[0])
 		return err
 	})
-	return internalID, res, err
+	return res, err
 }
 
 // GetResourceList retrieves all resources for a resource server.
-func (s *resourceStore) GetResourceList(resServerInternalID int, limit, offset int) ([]Resource, error) {
+func (s *resourceStore) GetResourceList(
+	ctx context.Context, resServerID string, limit, offset int,
+) ([]Resource, error) {
 	var resources []Resource
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.Query(queryGetResourceList, resServerInternalID, limit, offset, s.deploymentID)
+		results, err := dbClient.QueryContext(
+			ctx, queryGetResourceList, resServerID, limit, offset, s.deploymentID,
+		)
 		if err != nil {
 			return fmt.Errorf("failed to get resource list: %w", err)
 		}
 
 		resources = make([]Resource, 0, len(results))
 		for _, row := range results {
-			_, res, err := buildResourceFromResultRow(row)
+			res, err := buildResourceFromResultRow(row)
 			if err != nil {
 				return fmt.Errorf("failed to build resource: %w", err)
 			}
@@ -321,20 +343,23 @@ func (s *resourceStore) GetResourceList(resServerInternalID int, limit, offset i
 
 // GetResourceListByParent retrieves resources filtered by parent.
 func (s *resourceStore) GetResourceListByParent(
-	resServerInternalID int, parentInternalID *int, limit, offset int,
+	ctx context.Context,
+	resServerID string, parentID *string, limit, offset int,
 ) ([]Resource, error) {
 	var resources []Resource
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
 		var results []map[string]interface{}
 		var err error
 		// Treat nil parent ID as top-level resources
-		if parentInternalID == nil {
-			results, err = dbClient.Query(
-				queryGetResourceListByNullParent, resServerInternalID, limit, offset, s.deploymentID,
+		if parentID == nil {
+			results, err = dbClient.QueryContext(
+				ctx,
+				queryGetResourceListByNullParent, resServerID, limit, offset, s.deploymentID,
 			)
 		} else {
-			results, err = dbClient.Query(
-				queryGetResourceListByParent, resServerInternalID, *parentInternalID, limit, offset, s.deploymentID,
+			results, err = dbClient.QueryContext(
+				ctx,
+				queryGetResourceListByParent, resServerID, *parentID, limit, offset, s.deploymentID,
 			)
 		}
 
@@ -344,7 +369,7 @@ func (s *resourceStore) GetResourceListByParent(
 
 		resources = make([]Resource, 0, len(results))
 		for _, row := range results {
-			_, res, err := buildResourceFromResultRow(row)
+			res, err := buildResourceFromResultRow(row)
 			if err != nil {
 				return fmt.Errorf("failed to build resource: %w", err)
 			}
@@ -360,10 +385,10 @@ func (s *resourceStore) GetResourceListByParent(
 }
 
 // GetResourceListCount retrieves the count of all resources.
-func (s *resourceStore) GetResourceListCount(resServerInternalID int) (int, error) {
+func (s *resourceStore) GetResourceListCount(ctx context.Context, resServerID string) (int, error) {
 	var count int
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.Query(queryGetResourceListCount, resServerInternalID, s.deploymentID)
+		results, err := dbClient.QueryContext(ctx, queryGetResourceListCount, resServerID, s.deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to get resource count: %w", err)
 		}
@@ -375,17 +400,22 @@ func (s *resourceStore) GetResourceListCount(resServerInternalID int) (int, erro
 }
 
 // GetResourceListCountByParent retrieves count of resources by parent.
-func (s *resourceStore) GetResourceListCountByParent(resServerInternalID int, parentInternalID *int) (int, error) {
+func (s *resourceStore) GetResourceListCountByParent(
+	ctx context.Context, resServerID string, parentID *string,
+) (int, error) {
 	var count int
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
 		var results []map[string]interface{}
 		var err error
 		// Treat nil parent ID as top-level resources
-		if parentInternalID == nil {
-			results, err = dbClient.Query(queryGetResourceListCountByNullParent, resServerInternalID, s.deploymentID)
+		if parentID == nil {
+			results, err = dbClient.QueryContext(
+				ctx, queryGetResourceListCountByNullParent, resServerID, s.deploymentID,
+			)
 		} else {
-			results, err = dbClient.Query(
-				queryGetResourceListCountByParent, resServerInternalID, *parentInternalID, s.deploymentID)
+			results, err = dbClient.QueryContext(
+				ctx,
+				queryGetResourceListCountByParent, resServerID, *parentID, s.deploymentID)
 		}
 
 		if err != nil {
@@ -399,16 +429,17 @@ func (s *resourceStore) GetResourceListCountByParent(resServerInternalID int, pa
 }
 
 // UpdateResource updates a resource.
-func (s *resourceStore) UpdateResource(id string, resServerInternalID int, res Resource) error {
+func (s *resourceStore) UpdateResource(ctx context.Context, id string, resServerID string, res Resource) error {
 	return s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		_, err := dbClient.Execute(
+		_, err := dbClient.ExecuteContext(
+			ctx,
 			queryUpdateResource,
-			res.Name,            // $1: NAME
-			res.Description,     // $2: DESCRIPTION
-			"{}",                // $3: PROPERTIES (empty JSON).
-			id,                  // $4: RESOURCE_ID
-			resServerInternalID, // $5: RESOURCE_SERVER_ID (internal ID)
-			s.deploymentID,      // $6: DEPLOYMENT_ID
+			res.Name,        // $1: NAME
+			res.Description, // $2: DESCRIPTION
+			"{}",            // $3: PROPERTIES (empty JSON).
+			id,              // $4: RESOURCE_ID
+			resServerID,     // $5: RESOURCE_SERVER_ID (UUID FK)
+			s.deploymentID,  // $6: DEPLOYMENT_ID
 		)
 		if err != nil {
 			return fmt.Errorf("failed to update resource: %w", err)
@@ -419,9 +450,9 @@ func (s *resourceStore) UpdateResource(id string, resServerInternalID int, res R
 }
 
 // DeleteResource deletes a resource.
-func (s *resourceStore) DeleteResource(id string, resServerInternalID int) error {
+func (s *resourceStore) DeleteResource(ctx context.Context, id string, resServerID string) error {
 	return s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		_, err := dbClient.Execute(queryDeleteResource, id, resServerInternalID, s.deploymentID)
+		_, err := dbClient.ExecuteContext(ctx, queryDeleteResource, id, resServerID, s.deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to delete resource: %w", err)
 		}
@@ -430,21 +461,24 @@ func (s *resourceStore) DeleteResource(id string, resServerInternalID int) error
 	})
 }
 
-// CheckResourceHandleExistsUnderParent checks if resource handle exists under parent.
+// CheckResourceHandleExists checks if resource handle exists under parent.
 func (s *resourceStore) CheckResourceHandleExists(
-	resServerInternalID int, handle string, parentInternalID *int,
+	ctx context.Context,
+	resServerID string, handle string, parentID *string,
 ) (bool, error) {
 	var exists bool
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
 		var results []map[string]interface{}
 		var err error
-		if parentInternalID == nil {
-			results, err = dbClient.Query(
-				queryCheckResourceHandleExistsUnderNullParent, resServerInternalID, handle, s.deploymentID,
+		if parentID == nil {
+			results, err = dbClient.QueryContext(
+				ctx,
+				queryCheckResourceHandleExistsUnderNullParent, resServerID, handle, s.deploymentID,
 			)
 		} else {
-			results, err = dbClient.Query(
-				queryCheckResourceHandleExistsUnderParent, resServerInternalID, handle, *parentInternalID,
+			results, err = dbClient.QueryContext(
+				ctx,
+				queryCheckResourceHandleExistsUnderParent, resServerID, handle, *parentID,
 				s.deploymentID,
 			)
 		}
@@ -460,10 +494,10 @@ func (s *resourceStore) CheckResourceHandleExists(
 }
 
 // CheckResourceHasDependencies checks if resource has dependencies.
-func (s *resourceStore) CheckResourceHasDependencies(resInternalID int) (bool, error) {
+func (s *resourceStore) CheckResourceHasDependencies(ctx context.Context, resID string) (bool, error) {
 	var hasDeps bool
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.Query(queryCheckResourceHasDependencies, resInternalID, s.deploymentID)
+		results, err := dbClient.QueryContext(ctx, queryCheckResourceHasDependencies, resID, s.deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to check dependencies: %w", err)
 		}
@@ -475,10 +509,12 @@ func (s *resourceStore) CheckResourceHasDependencies(resInternalID int) (bool, e
 }
 
 // CheckCircularDependency checks if setting a parent would create circular dependency.
-func (s *resourceStore) CheckCircularDependency(resourceID, newParentID string) (bool, error) {
+func (s *resourceStore) CheckCircularDependency(ctx context.Context, resourceID, newParentID string) (bool, error) {
 	var hasCircular bool
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.Query(queryCheckCircularDependency, newParentID, resourceID, s.deploymentID)
+		results, err := dbClient.QueryContext(
+			ctx, queryCheckCircularDependency, newParentID, resourceID, s.deploymentID,
+		)
 		if err != nil {
 			return fmt.Errorf("failed to check circular dependency: %w", err)
 		}
@@ -493,23 +529,25 @@ func (s *resourceStore) CheckCircularDependency(resourceID, newParentID string) 
 
 // CreateAction creates a new action.
 func (s *resourceStore) CreateAction(
+	ctx context.Context,
 	uuid string,
-	resServerInternalID int,
-	resInternalID *int,
+	resServerID string,
+	resID *string,
 	action Action,
 ) error {
 	return s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		_, err := dbClient.Execute(
+		_, err := dbClient.ExecuteContext(
+			ctx,
 			queryCreateAction,
-			uuid,                // $1: ACTION_ID (UUID)
-			resServerInternalID, // $2: RESOURCE_SERVER_ID (int FK)
-			resInternalID,       // $3: RESOURCE_ID (int FK or NULL)
-			action.Name,         // $4: NAME
-			action.Handle,       // $5: handle
-			action.Description,  // $6: DESCRIPTION
-			action.Permission,   // $7: PERMISSION
-			"{}",                // $8: PROPERTIES (empty JSON).
-			s.deploymentID,      // $9: DEPLOYMENT_ID
+			uuid,               // $1: ACTION_ID (UUID)
+			resServerID,        // $2: RESOURCE_SERVER_ID (UUID FK)
+			resID,              // $3: RESOURCE_ID (UUID FK or NULL)
+			action.Name,        // $4: NAME
+			action.Handle,      // $5: HANDLE
+			action.Description, // $6: DESCRIPTION
+			action.Permission,  // $7: PERMISSION
+			"{}",               // $8: PROPERTIES (empty JSON).
+			s.deploymentID,     // $9: DEPLOYMENT_ID
 		)
 		if err != nil {
 			return fmt.Errorf("failed to create action: %w", err)
@@ -519,14 +557,18 @@ func (s *resourceStore) CreateAction(
 	})
 }
 
-// GetAction retrieves an action and internal ID by UUID.
-// If resInternalID is nil, retrieves action at resource server level.
-// If resInternalID is provided, retrieves action at resource level.
-func (s *resourceStore) GetAction(id string, resServerInternalID int, resInternalID *int) (Action, error) {
+// GetAction retrieves an action by UUID.
+// If resID is nil, retrieves action at resource server level.
+// If resID is provided, retrieves action at resource level.
+func (s *resourceStore) GetAction(
+	ctx context.Context, id string, resServerID string, resID *string,
+) (Action, error) {
 	var action Action
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
 		// Single unified query handles both resource server and resource level via nullable parameter
-		results, err := dbClient.Query(queryGetActionByID, id, resServerInternalID, resInternalID, s.deploymentID)
+		results, err := dbClient.QueryContext(
+			ctx, queryGetActionByID, id, resServerID, resID, s.deploymentID,
+		)
 		if err != nil {
 			return fmt.Errorf("failed to get action: %w", err)
 		}
@@ -543,12 +585,15 @@ func (s *resourceStore) GetAction(id string, resServerInternalID int, resInterna
 
 // GetActionList retrieves actions with pagination.
 func (s *resourceStore) GetActionList(
-	resServerInternalID int, resInternalID *int, limit, offset int,
+	ctx context.Context,
+	resServerID string, resID *string, limit, offset int,
 ) ([]Action, error) {
 	var actions []Action
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.Query(queryGetActionList, resServerInternalID, resInternalID, limit, offset,
-			s.deploymentID)
+		results, err := dbClient.QueryContext(
+			ctx, queryGetActionList, resServerID, resID, limit, offset,
+			s.deploymentID,
+		)
 		if err != nil {
 			return fmt.Errorf("failed to get action list: %w", err)
 		}
@@ -571,10 +616,14 @@ func (s *resourceStore) GetActionList(
 }
 
 // GetActionListCount retrieves count of actions.
-func (s *resourceStore) GetActionListCount(resServerInternalID int, resInternalID *int) (int, error) {
+func (s *resourceStore) GetActionListCount(
+	ctx context.Context, resServerID string, resID *string,
+) (int, error) {
 	var count int
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.Query(queryGetActionListCount, resServerInternalID, resInternalID, s.deploymentID)
+		results, err := dbClient.QueryContext(
+			ctx, queryGetActionListCount, resServerID, resID, s.deploymentID,
+		)
 		if err != nil {
 			return fmt.Errorf("failed to get action count: %w", err)
 		}
@@ -586,18 +635,21 @@ func (s *resourceStore) GetActionListCount(resServerInternalID int, resInternalI
 }
 
 // UpdateAction updates an action.
-func (s *resourceStore) UpdateAction(id string, resServerInternalID int, resInternalID *int, action Action) error {
+func (s *resourceStore) UpdateAction(
+	ctx context.Context, id string, resServerID string, resID *string, action Action,
+) error {
 	return s.withDBClient(func(dbClient provider.DBClientInterface) error {
 		// Single unified query handles both levels via nullable parameter
-		_, err := dbClient.Execute(
+		_, err := dbClient.ExecuteContext(
+			ctx,
 			queryUpdateAction,
-			action.Name,         // $1: NAME
-			action.Description,  // $2: DESCRIPTION
-			"{}",                // $3: PROPERTIES (empty JSON).
-			id,                  // $4: ACTION_ID
-			resServerInternalID, // $5: RESOURCE_SERVER_ID (internal ID)
-			resInternalID,       // $6: RESOURCE_ID (internal ID or NULL)
-			s.deploymentID,      // $7: DEPLOYMENT_ID
+			action.Name,        // $1: NAME
+			action.Description, // $2: DESCRIPTION
+			"{}",               // $3: PROPERTIES (empty JSON).
+			id,                 // $4: ACTION_ID
+			resServerID,        // $5: RESOURCE_SERVER_ID (UUID FK)
+			resID,              // $6: RESOURCE_ID (UUID FK or NULL)
+			s.deploymentID,     // $7: DEPLOYMENT_ID
 		)
 		if err != nil {
 			return fmt.Errorf("failed to update action: %w", err)
@@ -608,14 +660,17 @@ func (s *resourceStore) UpdateAction(id string, resServerInternalID int, resInte
 }
 
 // DeleteAction deletes an action.
-func (s *resourceStore) DeleteAction(id string, resServerInternalID int, resInternalID *int) error {
+func (s *resourceStore) DeleteAction(
+	ctx context.Context, id string, resServerID string, resID *string,
+) error {
 	return s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		_, err := dbClient.Execute(
+		_, err := dbClient.ExecuteContext(
+			ctx,
 			queryDeleteAction,
-			id,                  // $1: ACTION_ID
-			resServerInternalID, // $2: RESOURCE_SERVER_ID (internal ID)
-			resInternalID,       // $3: RESOURCE_ID (internal ID or NULL)
-			s.deploymentID,      // $4: DEPLOYMENT_ID
+			id,             // $1: ACTION_ID
+			resServerID,    // $2: RESOURCE_SERVER_ID (UUID FK)
+			resID,          // $3: RESOURCE_ID (UUID FK or NULL)
+			s.deploymentID, // $4: DEPLOYMENT_ID
 		)
 		if err != nil {
 			return fmt.Errorf("failed to delete action: %w", err)
@@ -626,10 +681,14 @@ func (s *resourceStore) DeleteAction(id string, resServerInternalID int, resInte
 }
 
 // IsActionExist checks if an action exists.
-func (s *resourceStore) IsActionExist(id string, resServerInternalID int, resInternalID *int) (bool, error) {
+func (s *resourceStore) IsActionExist(
+	ctx context.Context, id string, resServerID string, resID *string,
+) (bool, error) {
 	var exists bool
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.Query(queryCheckActionExists, id, resServerInternalID, resInternalID, s.deploymentID)
+		results, err := dbClient.QueryContext(
+			ctx, queryCheckActionExists, id, resServerID, resID, s.deploymentID,
+		)
 		if err != nil {
 			return fmt.Errorf("failed to check action existence: %w", err)
 		}
@@ -642,12 +701,14 @@ func (s *resourceStore) IsActionExist(id string, resServerInternalID int, resInt
 
 // CheckActionHandleExists checks if action handle exists.
 func (s *resourceStore) CheckActionHandleExists(
-	resServerInternalID int, resInternalID *int, handle string,
+	ctx context.Context,
+	resServerID string, resID *string, handle string,
 ) (bool, error) {
 	var exists bool
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.Query(
-			queryCheckActionHandleExists, resServerInternalID, resInternalID, handle, s.deploymentID,
+		results, err := dbClient.QueryContext(
+			ctx,
+			queryCheckActionHandleExists, resServerID, resID, handle, s.deploymentID,
 		)
 		if err != nil {
 			return fmt.Errorf("failed to check action handle: %w", err)
@@ -661,7 +722,9 @@ func (s *resourceStore) CheckActionHandleExists(
 
 // ValidatePermissions validates that permissions exist for a given resource server.
 // Returns array of invalid permissions (empty if all are valid).
-func (s *resourceStore) ValidatePermissions(resServerInternalID int, permissions []string) ([]string, error) {
+func (s *resourceStore) ValidatePermissions(
+	ctx context.Context, resServerID string, permissions []string,
+) ([]string, error) {
 	// Early return for empty input
 	if len(permissions) == 0 {
 		return []string{}, nil
@@ -677,9 +740,10 @@ func (s *resourceStore) ValidatePermissions(resServerInternalID int, permissions
 		}
 
 		// Query directly returns invalid permissions
-		results, err := dbClient.Query(
+		results, err := dbClient.QueryContext(
+			ctx,
 			queryValidatePermissions,
-			resServerInternalID,
+			resServerID,
 			s.deploymentID,
 			string(permissionsJSON),
 		)
@@ -708,11 +772,11 @@ func (s *resourceStore) ValidatePermissions(resServerInternalID int, permissions
 
 // Helper methods
 
-// getConfigDBClient retrieves the identity database client.
+// getConfigDBClient retrieves the config database client.
 func (s *resourceStore) getConfigDBClient() (provider.DBClientInterface, error) {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get identity DB client: %w", err)
+		return nil, fmt.Errorf("failed to get config DB client: %w", err)
 	}
 	return dbClient, nil
 }
@@ -769,21 +833,6 @@ func parseBoolFromCount(results []map[string]interface{}) (bool, error) {
 	return count > 0, nil
 }
 
-// resolveInternalID extracts and converts the internal ID from a database result row.
-// Handles different integer types returned by various database drivers.
-func resolveInternalID(row map[string]interface{}) (int, error) {
-	switch v := row["id"].(type) {
-	case int:
-		return v, nil
-	case int64:
-		return int(v), nil
-	case float64:
-		return int(v), nil
-	default:
-		return 0, fmt.Errorf("unexpected internal ID type: %T", v)
-	}
-}
-
 // resolveProperties extracts and sets the properties from the PROPERTIES column.
 func resolveProperties(row map[string]interface{}, rs *ResourceServer) {
 	if propsVal, ok := row["properties"]; ok && propsVal != nil {
@@ -815,29 +864,25 @@ func buildPropertiesJSON(rs ResourceServer) interface{} {
 }
 
 // buildResourceServerFromResultRow builds a ResourceServer from a database result row.
-func buildResourceServerFromResultRow(row map[string]interface{}) (int, ResourceServer, error) {
+func buildResourceServerFromResultRow(row map[string]interface{}) (ResourceServer, error) {
 	rs := ResourceServer{}
 
-	internalID, err := resolveInternalID(row)
-	if err != nil {
-		return 0, rs, err
-	}
-	if id, ok := row["resource_server_id"].(string); ok {
+	if id, ok := row["id"].(string); ok {
 		rs.ID = id
 	} else {
-		return 0, rs, fmt.Errorf("resource_server_id field is missing or invalid")
+		return rs, fmt.Errorf("id field is missing or invalid")
 	}
 
 	if ouID, ok := row["ou_id"].(string); ok {
-		rs.OrganizationUnitID = ouID
+		rs.OUID = ouID
 	} else {
-		return 0, rs, fmt.Errorf("ou_id field is missing or invalid")
+		return rs, fmt.Errorf("ou_id field is missing or invalid")
 	}
 
 	if name, ok := row["name"].(string); ok {
 		rs.Name = name
 	} else {
-		return 0, rs, fmt.Errorf("name field is missing or invalid")
+		return rs, fmt.Errorf("name field is missing or invalid")
 	}
 
 	if desc, ok := row["description"].(string); ok {
@@ -850,32 +895,29 @@ func buildResourceServerFromResultRow(row map[string]interface{}) (int, Resource
 
 	resolveProperties(row, &rs)
 
-	return internalID, rs, nil
+	return rs, nil
 }
 
 // buildResourceFromResultRow builds a Resource from a database result row.
-func buildResourceFromResultRow(row map[string]interface{}) (int, Resource, error) {
+func buildResourceFromResultRow(row map[string]interface{}) (Resource, error) {
 	res := Resource{}
-	internalID, err := resolveInternalID(row)
-	if err != nil {
-		return 0, res, err
-	}
-	if id, ok := row["resource_id"].(string); ok {
+
+	if id, ok := row["id"].(string); ok {
 		res.ID = id
 	} else {
-		return 0, res, fmt.Errorf("resource_id field is missing or invalid")
+		return res, fmt.Errorf("id field is missing or invalid")
 	}
 
 	if name, ok := row["name"].(string); ok {
 		res.Name = name
 	} else {
-		return 0, res, fmt.Errorf("name field is missing or invalid")
+		return res, fmt.Errorf("name field is missing or invalid")
 	}
 
 	if handle, ok := row["handle"].(string); ok {
 		res.Handle = handle
 	} else {
-		return 0, res, fmt.Errorf("handle field is missing or invalid")
+		return res, fmt.Errorf("handle field is missing or invalid")
 	}
 
 	if desc, ok := row["description"].(string); ok {
@@ -892,17 +934,17 @@ func buildResourceFromResultRow(row map[string]interface{}) (int, Resource, erro
 		res.Parent = &parentID
 	}
 
-	return internalID, res, nil
+	return res, nil
 }
 
 // buildActionFromResultRow builds an Action from a database result row.
 func buildActionFromResultRow(row map[string]interface{}) (Action, error) {
 	action := Action{}
 
-	if id, ok := row["action_id"].(string); ok {
+	if id, ok := row["id"].(string); ok {
 		action.ID = id
 	} else {
-		return action, fmt.Errorf("action_id field is missing or invalid")
+		return action, fmt.Errorf("id field is missing or invalid")
 	}
 
 	if name, ok := row["name"].(string); ok {

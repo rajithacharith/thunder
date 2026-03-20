@@ -51,6 +51,7 @@
   "devDependencies": {
     "@thunder/eslint-plugin-thunder": "workspace:^",
     "@thunder/prettier-config": "workspace:^",
+    "@thunder/test-utils": "workspace:^",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "eslint": "catalog:",
@@ -60,19 +61,19 @@
     "rimraf": "catalog:",
     "rolldown": "catalog:",
     "typescript": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
+    "playwright": "catalog:",
     "vitest": "catalog:"
   },
   "publishConfig": {
     "access": "public"
   },
   "dependencies": {
+    "@thunder/utils": "workspace:^",
     "lucide-react": "catalog:",
     "tslib": "catalog:"
   },
   "peerDependencies": {
-    "@emotion/react": "catalog:",
-    "@emotion/styled": "catalog:",
-    "@mui/material": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"
   }

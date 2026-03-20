@@ -5,6 +5,8 @@
 package dcr
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -37,8 +39,8 @@ func (_m *DCRServiceInterfaceMock) EXPECT() *DCRServiceInterfaceMock_Expecter {
 }
 
 // RegisterClient provides a mock function for the type DCRServiceInterfaceMock
-func (_mock *DCRServiceInterfaceMock) RegisterClient(request *DCRRegistrationRequest) (*DCRRegistrationResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(request)
+func (_mock *DCRServiceInterfaceMock) RegisterClient(ctx context.Context, request *DCRRegistrationRequest) (*DCRRegistrationResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, request)
 
 	if len(ret) == 0 {
 		panic("no return value specified for RegisterClient")
@@ -46,18 +48,18 @@ func (_mock *DCRServiceInterfaceMock) RegisterClient(request *DCRRegistrationReq
 
 	var r0 *DCRRegistrationResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(*DCRRegistrationRequest) (*DCRRegistrationResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *DCRRegistrationRequest) (*DCRRegistrationResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, request)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*DCRRegistrationRequest) *DCRRegistrationResponse); ok {
-		r0 = returnFunc(request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *DCRRegistrationRequest) *DCRRegistrationResponse); ok {
+		r0 = returnFunc(ctx, request)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*DCRRegistrationResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*DCRRegistrationRequest) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(request)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *DCRRegistrationRequest) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, request)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -72,19 +74,25 @@ type DCRServiceInterfaceMock_RegisterClient_Call struct {
 }
 
 // RegisterClient is a helper method to define mock.On call
+//   - ctx context.Context
 //   - request *DCRRegistrationRequest
-func (_e *DCRServiceInterfaceMock_Expecter) RegisterClient(request interface{}) *DCRServiceInterfaceMock_RegisterClient_Call {
-	return &DCRServiceInterfaceMock_RegisterClient_Call{Call: _e.mock.On("RegisterClient", request)}
+func (_e *DCRServiceInterfaceMock_Expecter) RegisterClient(ctx interface{}, request interface{}) *DCRServiceInterfaceMock_RegisterClient_Call {
+	return &DCRServiceInterfaceMock_RegisterClient_Call{Call: _e.mock.On("RegisterClient", ctx, request)}
 }
 
-func (_c *DCRServiceInterfaceMock_RegisterClient_Call) Run(run func(request *DCRRegistrationRequest)) *DCRServiceInterfaceMock_RegisterClient_Call {
+func (_c *DCRServiceInterfaceMock_RegisterClient_Call) Run(run func(ctx context.Context, request *DCRRegistrationRequest)) *DCRServiceInterfaceMock_RegisterClient_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *DCRRegistrationRequest
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*DCRRegistrationRequest)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *DCRRegistrationRequest
+		if args[1] != nil {
+			arg1 = args[1].(*DCRRegistrationRequest)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -95,7 +103,7 @@ func (_c *DCRServiceInterfaceMock_RegisterClient_Call) Return(dCRRegistrationRes
 	return _c
 }
 
-func (_c *DCRServiceInterfaceMock_RegisterClient_Call) RunAndReturn(run func(request *DCRRegistrationRequest) (*DCRRegistrationResponse, *serviceerror.ServiceError)) *DCRServiceInterfaceMock_RegisterClient_Call {
+func (_c *DCRServiceInterfaceMock_RegisterClient_Call) RunAndReturn(run func(ctx context.Context, request *DCRRegistrationRequest) (*DCRRegistrationResponse, *serviceerror.ServiceError)) *DCRServiceInterfaceMock_RegisterClient_Call {
 	_c.Call.Return(run)
 	return _c
 }

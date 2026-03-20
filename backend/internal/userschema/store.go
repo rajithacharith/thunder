@@ -19,6 +19,7 @@
 package userschema
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -28,15 +29,60 @@ import (
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
+// marshalSystemAttributes marshals SystemAttributes to a JSON string for DB storage.
+// Returns nil if the input is nil, so the DB column stores NULL.
+func marshalSystemAttributes(sa *SystemAttributes) (interface{}, error) {
+	if sa == nil {
+		return nil, nil
+	}
+	data, err := json.Marshal(sa)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal system attributes: %w", err)
+	}
+	return string(data), nil
+}
+
+// parseSystemAttributes parses the SYSTEM_ATTRIBUTES column value into a *SystemAttributes.
+// Returns nil if the column is NULL or empty.
+func parseSystemAttributes(value interface{}) (*SystemAttributes, error) {
+	if value == nil {
+		return nil, nil
+	}
+
+	var raw string
+	switch v := value.(type) {
+	case string:
+		raw = v
+	case []byte:
+		raw = string(v)
+	default:
+		return nil, fmt.Errorf("unexpected type for system_attributes: %T", value)
+	}
+
+	if raw == "" {
+		return nil, nil
+	}
+
+	var sa SystemAttributes
+	if err := json.Unmarshal([]byte(raw), &sa); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal system_attributes: %w", err)
+	}
+	return &sa, nil
+}
+
 // userSchemaStoreInterface defines the interface for user schema store operations.
 type userSchemaStoreInterface interface {
-	GetUserSchemaListCount() (int, error)
-	GetUserSchemaList(limit, offset int) ([]UserSchemaListItem, error)
-	CreateUserSchema(userSchema UserSchema) error
-	GetUserSchemaByID(schemaID string) (UserSchema, error)
-	GetUserSchemaByName(name string) (UserSchema, error)
-	UpdateUserSchemaByID(schemaID string, userSchema UserSchema) error
-	DeleteUserSchemaByID(schemaID string) error
+	GetUserSchemaListCount(ctx context.Context) (int, error)
+	GetUserSchemaList(ctx context.Context, limit, offset int) ([]UserSchemaListItem, error)
+	GetUserSchemaListByOUIDs(ctx context.Context, ouIDs []string, limit, offset int) ([]UserSchemaListItem, error)
+	GetUserSchemaListCountByOUIDs(ctx context.Context, ouIDs []string) (int, error)
+	CreateUserSchema(ctx context.Context, userSchema UserSchema) error
+	GetUserSchemaByID(ctx context.Context, schemaID string) (UserSchema, error)
+	GetUserSchemaByName(ctx context.Context, name string) (UserSchema, error)
+	UpdateUserSchemaByID(ctx context.Context, schemaID string, userSchema UserSchema) error
+	DeleteUserSchemaByID(ctx context.Context, schemaID string) error
+	IsUserSchemaDeclarative(schemaID string) bool
+	GetDisplayAttributesByNames(ctx context.Context, names []string) (map[string]string, error)
 }
 
 // userSchemaStore is the default implementation of userSchemaStoreInterface.
@@ -54,13 +100,13 @@ func newUserSchemaStore() userSchemaStoreInterface {
 }
 
 // GetUserSchemaListCount retrieves the total count of user schemas.
-func (s *userSchemaStore) GetUserSchemaListCount() (int, error) {
+func (s *userSchemaStore) GetUserSchemaListCount(ctx context.Context) (int, error) {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	countResults, err := dbClient.Query(queryGetUserSchemaCount, s.deploymentID)
+	countResults, err := dbClient.QueryContext(ctx, queryGetUserSchemaCount, s.deploymentID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to execute count query: %w", err)
 	}
@@ -78,7 +124,7 @@ func (s *userSchemaStore) GetUserSchemaListCount() (int, error) {
 }
 
 // GetUserSchemaList retrieves a list of user schemas with pagination.
-func (s *userSchemaStore) GetUserSchemaList(limit, offset int) ([]UserSchemaListItem, error) {
+func (s *userSchemaStore) GetUserSchemaList(ctx context.Context, limit, offset int) ([]UserSchemaListItem, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserSchemaPersistence"))
 
 	dbClient, err := s.dbProvider.GetConfigDBClient()
@@ -86,7 +132,7 @@ func (s *userSchemaStore) GetUserSchemaList(limit, offset int) ([]UserSchemaList
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryGetUserSchemaList, limit, offset, s.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryGetUserSchemaList, limit, offset, s.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -104,20 +150,101 @@ func (s *userSchemaStore) GetUserSchemaList(limit, offset int) ([]UserSchemaList
 	return userSchemas, nil
 }
 
+// GetUserSchemaListByOUIDs retrieves a paginated list of user schemas filtered by OU IDs.
+func (s *userSchemaStore) GetUserSchemaListByOUIDs(ctx context.Context, ouIDs []string, limit, offset int) (
+	[]UserSchemaListItem, error) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserSchemaPersistence"))
+
+	if len(ouIDs) == 0 {
+		return []UserSchemaListItem{}, nil
+	}
+
+	dbClient, err := s.dbProvider.GetConfigDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	query := buildGetUserSchemaListByOUIDsQuery(ouIDs)
+	args := make([]interface{}, 0, len(ouIDs)+3)
+	for _, id := range ouIDs {
+		args = append(args, id)
+	}
+	args = append(args, s.deploymentID, limit, offset)
+
+	results, err := dbClient.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	userSchemas := make([]UserSchemaListItem, 0, len(results))
+	for _, row := range results {
+		userSchema, err := parseUserSchemaListItemFromRow(row)
+		if err != nil {
+			logger.Error("Failed to parse user schema list item from row", log.Error(err))
+			continue
+		}
+		userSchemas = append(userSchemas, userSchema)
+	}
+
+	return userSchemas, nil
+}
+
+// GetUserSchemaListCountByOUIDs retrieves the total count of user schemas filtered by OU IDs.
+func (s *userSchemaStore) GetUserSchemaListCountByOUIDs(ctx context.Context, ouIDs []string) (int, error) {
+	if len(ouIDs) == 0 {
+		return 0, nil
+	}
+
+	dbClient, err := s.dbProvider.GetConfigDBClient()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	query := buildGetUserSchemaCountByOUIDsQuery(ouIDs)
+	args := make([]interface{}, 0, len(ouIDs)+1)
+	for _, id := range ouIDs {
+		args = append(args, id)
+	}
+	args = append(args, s.deploymentID)
+
+	countResults, err := dbClient.QueryContext(ctx, query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("failed to execute count query: %w", err)
+	}
+
+	var totalCount int
+	if len(countResults) > 0 {
+		if count, ok := countResults[0]["total"].(int64); ok {
+			totalCount = int(count)
+		} else {
+			return 0, fmt.Errorf("failed to parse count result")
+		}
+	}
+
+	return totalCount, nil
+}
+
 // CreateUserSchema creates a new user schema.
-func (s *userSchemaStore) CreateUserSchema(userSchema UserSchema) error {
+func (s *userSchemaStore) CreateUserSchema(ctx context.Context, userSchema UserSchema) error {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	_, err = dbClient.Query(
+	sysAttrs, err := marshalSystemAttributes(userSchema.SystemAttributes)
+	if err != nil {
+		return err
+	}
+
+	_, err = dbClient.QueryContext(
+		ctx,
 		queryCreateUserSchema,
 		userSchema.ID,
 		userSchema.Name,
-		userSchema.OrganizationUnitID,
+		userSchema.OUID,
 		userSchema.AllowSelfRegistration,
 		string(userSchema.Schema),
+		sysAttrs,
 		s.deploymentID,
 	)
 	if err != nil {
@@ -128,13 +255,13 @@ func (s *userSchemaStore) CreateUserSchema(userSchema UserSchema) error {
 }
 
 // GetUserSchemaByID retrieves a user schema by its ID.
-func (s *userSchemaStore) GetUserSchemaByID(schemaID string) (UserSchema, error) {
+func (s *userSchemaStore) GetUserSchemaByID(ctx context.Context, schemaID string) (UserSchema, error) {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return UserSchema{}, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryGetUserSchemaByID, schemaID, s.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryGetUserSchemaByID, schemaID, s.deploymentID)
 	if err != nil {
 		return UserSchema{}, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -147,13 +274,13 @@ func (s *userSchemaStore) GetUserSchemaByID(schemaID string) (UserSchema, error)
 }
 
 // GetUserSchemaByName retrieves a user schema by its name.
-func (s *userSchemaStore) GetUserSchemaByName(name string) (UserSchema, error) {
+func (s *userSchemaStore) GetUserSchemaByName(ctx context.Context, name string) (UserSchema, error) {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return UserSchema{}, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryGetUserSchemaByName, name, s.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryGetUserSchemaByName, name, s.deploymentID)
 	if err != nil {
 		return UserSchema{}, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -166,18 +293,25 @@ func (s *userSchemaStore) GetUserSchemaByName(name string) (UserSchema, error) {
 }
 
 // UpdateUserSchemaByID updates a user schema by its ID.
-func (s *userSchemaStore) UpdateUserSchemaByID(schemaID string, userSchema UserSchema) error {
+func (s *userSchemaStore) UpdateUserSchemaByID(ctx context.Context, schemaID string, userSchema UserSchema) error {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	_, err = dbClient.Query(
+	sysAttrs, err := marshalSystemAttributes(userSchema.SystemAttributes)
+	if err != nil {
+		return err
+	}
+
+	_, err = dbClient.QueryContext(
+		ctx,
 		queryUpdateUserSchemaByID,
 		userSchema.Name,
-		userSchema.OrganizationUnitID,
+		userSchema.OUID,
 		userSchema.AllowSelfRegistration,
 		string(userSchema.Schema),
+		sysAttrs,
 		schemaID,
 		s.deploymentID,
 	)
@@ -189,7 +323,7 @@ func (s *userSchemaStore) UpdateUserSchemaByID(schemaID string, userSchema UserS
 }
 
 // DeleteUserSchemaByID deletes a user schema by its ID.
-func (s *userSchemaStore) DeleteUserSchemaByID(schemaID string) error {
+func (s *userSchemaStore) DeleteUserSchemaByID(ctx context.Context, schemaID string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserSchemaPersistence"))
 
 	dbClient, err := s.dbProvider.GetConfigDBClient()
@@ -197,7 +331,7 @@ func (s *userSchemaStore) DeleteUserSchemaByID(schemaID string) error {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	rowsAffected, err := dbClient.Execute(queryDeleteUserSchemaByID, schemaID, s.deploymentID)
+	rowsAffected, err := dbClient.ExecuteContext(ctx, queryDeleteUserSchemaByID, schemaID, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to delete user schema: %w", err)
 	}
@@ -209,11 +343,65 @@ func (s *userSchemaStore) DeleteUserSchemaByID(schemaID string) error {
 	return nil
 }
 
+// IsUserSchemaDeclarative returns false as database-backed schemas are always mutable.
+func (s *userSchemaStore) IsUserSchemaDeclarative(schemaID string) bool {
+	return false
+}
+
+// GetDisplayAttributesByNames retrieves display attributes for a list of user schema names.
+func (s *userSchemaStore) GetDisplayAttributesByNames(ctx context.Context, names []string) (map[string]string, error) {
+	if len(names) == 0 {
+		return map[string]string{}, nil
+	}
+
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserSchemaPersistence"))
+
+	dbClient, err := s.dbProvider.GetConfigDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	query := buildGetDisplayAttributesByNamesQuery(names)
+	args := make([]interface{}, 0, len(names)+1)
+	for _, name := range names {
+		args = append(args, name)
+	}
+	args = append(args, s.deploymentID)
+
+	results, err := dbClient.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute display attributes query: %w", err)
+	}
+
+	displayAttrs := make(map[string]string, len(results))
+	for _, row := range results {
+		name, ok := row["name"].(string)
+		if !ok {
+			logger.Error("Failed to parse name from display attributes query")
+			continue
+		}
+
+		sysAttrs, err := parseSystemAttributes(row["system_attributes"])
+		if err != nil {
+			logger.Error("Failed to parse system attributes", log.String("schemaName", name), log.Error(err))
+			continue
+		}
+
+		if sysAttrs != nil {
+			displayAttrs[name] = sysAttrs.Display
+		} else {
+			displayAttrs[name] = ""
+		}
+	}
+
+	return displayAttrs, nil
+}
+
 // parseUserSchemaFromRow parses a user schema from a database row.
 func parseUserSchemaFromRow(row map[string]interface{}) (UserSchema, error) {
-	schemaID, ok := row["schema_id"].(string)
+	schemaID, ok := row["id"].(string)
 	if !ok {
-		return UserSchema{}, fmt.Errorf("failed to parse schema_id as string")
+		return UserSchema{}, fmt.Errorf("failed to parse id as string")
 	}
 
 	name, ok := row["name"].(string)
@@ -221,7 +409,7 @@ func parseUserSchemaFromRow(row map[string]interface{}) (UserSchema, error) {
 		return UserSchema{}, fmt.Errorf("failed to parse name as string")
 	}
 
-	organizationUnitID, ok := row["ou_id"].(string)
+	oUID, ok := row["ou_id"].(string)
 	if !ok {
 		return UserSchema{}, fmt.Errorf("failed to parse ou_id as string")
 	}
@@ -241,11 +429,17 @@ func parseUserSchemaFromRow(row map[string]interface{}) (UserSchema, error) {
 		return UserSchema{}, fmt.Errorf("failed to parse schema_def as string")
 	}
 
+	systemAttributes, err := parseSystemAttributes(row["system_attributes"])
+	if err != nil {
+		return UserSchema{}, err
+	}
+
 	userSchema := UserSchema{
 		ID:                    schemaID,
 		Name:                  name,
-		OrganizationUnitID:    organizationUnitID,
+		OUID:                  oUID,
 		AllowSelfRegistration: allowSelfRegistration,
+		SystemAttributes:      systemAttributes,
 		Schema:                json.RawMessage(schemaDef),
 	}
 
@@ -254,9 +448,9 @@ func parseUserSchemaFromRow(row map[string]interface{}) (UserSchema, error) {
 
 // parseUserSchemaListItemFromRow parses a simplified user schema list item from a database row.
 func parseUserSchemaListItemFromRow(row map[string]interface{}) (UserSchemaListItem, error) {
-	schemaID, ok := row["schema_id"].(string)
+	schemaID, ok := row["id"].(string)
 	if !ok {
-		return UserSchemaListItem{}, fmt.Errorf("failed to parse schema_id as string")
+		return UserSchemaListItem{}, fmt.Errorf("failed to parse id as string")
 	}
 
 	name, ok := row["name"].(string)
@@ -264,7 +458,7 @@ func parseUserSchemaListItemFromRow(row map[string]interface{}) (UserSchemaListI
 		return UserSchemaListItem{}, fmt.Errorf("failed to parse name as string")
 	}
 
-	organizationUnitID, ok := row["ou_id"].(string)
+	oUID, ok := row["ou_id"].(string)
 	if !ok {
 		return UserSchemaListItem{}, fmt.Errorf("failed to parse ou_id as string")
 	}
@@ -274,11 +468,17 @@ func parseUserSchemaListItemFromRow(row map[string]interface{}) (UserSchemaListI
 		return UserSchemaListItem{}, err
 	}
 
+	systemAttributes, err := parseSystemAttributes(row["system_attributes"])
+	if err != nil {
+		return UserSchemaListItem{}, err
+	}
+
 	userSchemaListItem := UserSchemaListItem{
 		ID:                    schemaID,
 		Name:                  name,
-		OrganizationUnitID:    organizationUnitID,
+		OUID:                  oUID,
 		AllowSelfRegistration: allowSelfRegistration,
+		SystemAttributes:      systemAttributes,
 	}
 
 	return userSchemaListItem, nil

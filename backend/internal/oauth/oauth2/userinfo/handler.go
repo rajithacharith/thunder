@@ -19,8 +19,10 @@
 package userinfo
 
 import (
+	"fmt"
 	"net/http"
 
+	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -50,12 +52,17 @@ func (h *userInfoHandler) HandleUserInfo(w http.ResponseWriter, r *http.Request)
 	authHeader := r.Header.Get(serverconst.AuthorizationHeaderName)
 	accessToken, err := utils.ExtractBearerToken(authHeader)
 	if err != nil {
-		utils.WriteJSONError(w, constants.ErrorInvalidRequest,
-			err.Error(), http.StatusUnauthorized, nil)
+		if authHeader == "" || !utils.IsBearerAuth(authHeader) {
+			w.Header().Set(serverconst.WWWAuthenticateHeaderName, serverconst.TokenTypeBearer)
+			w.WriteHeader(http.StatusUnauthorized)
+		} else {
+			writeBearerError(w, constants.ErrorInvalidRequest,
+				"Invalid or malformed Bearer token", http.StatusBadRequest)
+		}
 		return
 	}
 
-	userInfo, svcErr := h.service.GetUserInfo(accessToken)
+	result, svcErr := h.service.GetUserInfo(r.Context(), accessToken)
 	if svcErr != nil {
 		h.writeServiceErrorResponse(w, svcErr)
 		return
@@ -64,7 +71,13 @@ func (h *userInfoHandler) HandleUserInfo(w http.ResponseWriter, r *http.Request)
 	w.Header().Set(serverconst.CacheControlHeaderName, serverconst.CacheControlNoStore)
 	w.Header().Set(serverconst.PragmaHeaderName, serverconst.PragmaNoCache)
 
-	utils.WriteSuccessResponse(w, http.StatusOK, userInfo)
+	if result.Type == appmodel.UserInfoResponseTypeJWS {
+		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJWT)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(result.JWTBody))
+	} else {
+		utils.WriteSuccessResponse(w, http.StatusOK, result.JSONBody)
+	}
 
 	h.logger.Debug("UserInfo response sent successfully")
 }
@@ -75,12 +88,27 @@ func (h *userInfoHandler) writeServiceErrorResponse(w http.ResponseWriter, svcEr
 
 	switch svcErr.Type {
 	case serviceerror.ClientErrorType:
-		statusCode = http.StatusUnauthorized
+		if svcErr.Code == errorInsufficientScope.Code {
+			statusCode = http.StatusForbidden
+		} else {
+			statusCode = http.StatusUnauthorized
+		}
 	case serviceerror.ServerErrorType:
 		statusCode = http.StatusInternalServerError
 	default:
 		statusCode = http.StatusUnauthorized
 	}
 
-	utils.WriteJSONError(w, svcErr.Code, svcErr.ErrorDescription, statusCode, nil)
+	if statusCode == http.StatusInternalServerError {
+		utils.WriteJSONError(w, constants.ErrorServerError, serviceerror.InternalServerError.Error, statusCode, nil)
+	} else {
+		writeBearerError(w, svcErr.Code, svcErr.ErrorDescription, statusCode)
+	}
+}
+
+// writeBearerError writes a JSON error response with a WWW-Authenticate: Bearer header.
+func writeBearerError(w http.ResponseWriter, errorCode, errorDescription string, statusCode int) {
+	wwwAuth := fmt.Sprintf("Bearer error=%q, error_description=%q", errorCode, errorDescription)
+	utils.WriteJSONError(w, errorCode, errorDescription, statusCode,
+		[]map[string]string{{serverconst.WWWAuthenticateHeaderName: wwwAuth}})
 }

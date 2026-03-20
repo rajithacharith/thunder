@@ -33,6 +33,8 @@ import (
 	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/security"
+	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
@@ -42,9 +44,9 @@ const loggerComponentName = "UserService"
 // UserServiceInterface defines the interface for the user service.
 type UserServiceInterface interface {
 	GetUserList(ctx context.Context, limit, offset int,
-		filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError)
+		filters map[string]interface{}, includeDisplay bool) (*UserListResponse, *serviceerror.ServiceError)
 	GetUsersByPath(ctx context.Context, handlePath string, limit, offset int,
-		filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError)
+		filters map[string]interface{}, includeDisplay bool) (*UserListResponse, *serviceerror.ServiceError)
 	CreateUser(ctx context.Context, user *User) (*User, *serviceerror.ServiceError)
 	CreateUserByPath(ctx context.Context, handlePath string,
 		request CreateUserByPathRequest) (*User, *serviceerror.ServiceError)
@@ -61,14 +63,20 @@ type UserServiceInterface interface {
 	VerifyUser(ctx context.Context, userID string,
 		credentials map[string]interface{}) (*User, *serviceerror.ServiceError)
 	AuthenticateUser(ctx context.Context,
-		request AuthenticateUserRequest) (*AuthenticateUserResponse, *serviceerror.ServiceError)
+		identifiers map[string]interface{},
+		credentials map[string]interface{}) (*AuthenticateUserResponse, *serviceerror.ServiceError)
 	ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, *serviceerror.ServiceError)
+	GetUsersByIDs(ctx context.Context, userIDs []string) (map[string]*User, *serviceerror.ServiceError)
+	ValidateUserIDsInOUs(ctx context.Context, userIDs []string,
+		ouIDs []string) ([]string, *serviceerror.ServiceError)
 	GetUserCredentialsByType(ctx context.Context, userID string,
 		credentialType string) ([]Credential, *serviceerror.ServiceError)
+	IsUserDeclarative(ctx context.Context, userID string) (bool, *serviceerror.ServiceError)
 }
 
 // userService is the default implementation of the UserServiceInterface.
 type userService struct {
+	authzService      sysauthz.SystemAuthorizationServiceInterface
 	userStore         userStoreInterface
 	ouService         oupkg.OrganizationUnitServiceInterface
 	userSchemaService userschema.UserSchemaServiceInterface
@@ -78,6 +86,7 @@ type userService struct {
 
 // newUserService creates a new instance of userService with injected dependencies.
 func newUserService(
+	authzService sysauthz.SystemAuthorizationServiceInterface,
 	userStore userStoreInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
@@ -85,6 +94,7 @@ func newUserService(
 	transactioner transaction.Transactioner,
 ) UserServiceInterface {
 	return &userService{
+		authzService:      authzService,
 		userStore:         userStore,
 		ouService:         ouService,
 		userSchemaService: userSchemaService,
@@ -93,16 +103,37 @@ func newUserService(
 	}
 }
 
-// GetUserList lists the users.
 // GetUserList retrieves a list of users with pagination and filtering.
 func (us *userService) GetUserList(ctx context.Context, limit, offset int,
-	filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError) {
+	filters map[string]interface{}, includeDisplay bool) (*UserListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
 	}
 
+	// Resolve the set of organization units the caller is authorized to list users from.
+	accessible, svcErr := us.authzService.GetAccessibleResources(
+		ctx, security.ActionListUsers, security.ResourceTypeOU)
+	if svcErr != nil {
+		logger.Error("Failed to resolve accessible resources for listing users", log.Any("error", svcErr))
+		return nil, &ErrorInternalServerError
+	}
+
+	// Unfiltered path: system-level caller — return all users.
+	if accessible.AllAllowed {
+		return us.listAllUsers(ctx, limit, offset, filters, includeDisplay, logger)
+	}
+
+	// Filtered path: return users belonging to the accessible OUs.
+	return us.listUsersByOUIDs(ctx, accessible.IDs, limit, offset, filters, includeDisplay, logger)
+}
+
+// listAllUsers retrieves users without OU filtering.
+func (us *userService) listAllUsers(
+	ctx context.Context, limit, offset int, filters map[string]interface{},
+	includeDisplay bool, logger *log.Logger,
+) (*UserListResponse, *serviceerror.ServiceError) {
 	totalCount, err := us.userStore.GetUserListCount(ctx, filters)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to get user list count", err)
@@ -113,20 +144,56 @@ func (us *userService) GetUserList(ctx context.Context, limit, offset int,
 		return nil, logErrorAndReturnServerError(logger, "Failed to get user list", err)
 	}
 
-	response := &UserListResponse{
+	if includeDisplay {
+		us.populateUserDisplayNames(ctx, users, logger)
+	}
+
+	return buildUserListResponse(users, totalCount, limit, offset, utils.DisplayQueryParam(includeDisplay)), nil
+}
+
+// listUsersByOUIDs retrieves users scoped to the given organization unit IDs.
+func (us *userService) listUsersByOUIDs(
+	ctx context.Context, ouIDs []string, limit, offset int, filters map[string]interface{},
+	includeDisplay bool, logger *log.Logger,
+) (*UserListResponse, *serviceerror.ServiceError) {
+	displayQuery := utils.DisplayQueryParam(includeDisplay)
+
+	if len(ouIDs) == 0 {
+		return buildUserListResponse([]User{}, 0, limit, offset, displayQuery), nil
+	}
+
+	totalCount, err := us.userStore.GetUserListCountByOUIDs(ctx, ouIDs, filters)
+	if err != nil {
+		return nil, logErrorAndReturnServerError(logger, "Failed to get user list count", err)
+	}
+
+	users, err := us.userStore.GetUserListByOUIDs(ctx, ouIDs, limit, offset, filters)
+	if err != nil {
+		return nil, logErrorAndReturnServerError(logger, "Failed to get user list", err)
+	}
+
+	if includeDisplay {
+		us.populateUserDisplayNames(ctx, users, logger)
+	}
+
+	return buildUserListResponse(users, totalCount, limit, offset, displayQuery), nil
+}
+
+// buildUserListResponse constructs a paginated UserListResponse.
+func buildUserListResponse(users []User, totalCount, limit, offset int, displayQuery string) *UserListResponse {
+	return &UserListResponse{
 		TotalResults: totalCount,
 		StartIndex:   offset + 1,
 		Count:        len(users),
 		Users:        users,
-		Links:        buildPaginationLinks("/users", limit, offset, totalCount),
+		Links:        utils.BuildPaginationLinks("/users", limit, offset, totalCount, displayQuery),
 	}
-
-	return response, nil
 }
 
 // GetUsersByPath retrieves a list of users by hierarchical handle path.
 func (us *userService) GetUsersByPath(
 	ctx context.Context, handlePath string, limit, offset int, filters map[string]interface{},
+	includeDisplay bool,
 ) (*UserListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Getting users by path", log.String("path", handlePath))
@@ -136,7 +203,7 @@ func (us *userService) GetUsersByPath(
 		return nil, serviceError
 	}
 
-	ou, svcErr := us.ouService.GetOrganizationUnitByPath(handlePath)
+	ou, svcErr := us.ouService.GetOrganizationUnitByPath(ctx, handlePath)
 	if svcErr != nil {
 		return nil, mapOUServiceError(
 			svcErr,
@@ -149,13 +216,18 @@ func (us *userService) GetUsersByPath(
 			log.String("path", handlePath),
 		)
 	}
-	organizationUnitID := ou.ID
+	oUID := ou.ID
+
+	// Check if caller is authorized to list users in the resolved OU.
+	if svcErr := us.checkUserAccess(ctx, security.ActionListUsers, oUID, ""); svcErr != nil {
+		return nil, svcErr
+	}
 
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
 	}
 
-	ouResponse, svcErr := us.ouService.GetOrganizationUnitUsers(organizationUnitID, limit, offset)
+	ouResponse, svcErr := us.ouService.GetOrganizationUnitUsers(ctx, oUID, limit, offset, false)
 	if svcErr != nil {
 		return nil, mapOUServiceError(
 			svcErr,
@@ -166,16 +238,60 @@ func (us *userService) GetUsersByPath(
 				oupkg.ErrorInvalidLimit.Code:             &ErrorInvalidLimit,
 				oupkg.ErrorInvalidOffset.Code:            &ErrorInvalidOffset,
 			},
-			log.String("organizationUnitID", organizationUnitID),
+			log.String("oUID", oUID),
 			log.Int("limit", limit),
 			log.Int("offset", offset),
 		)
 	}
+	if ouResponse == nil {
+		return &UserListResponse{}, nil
+	}
 
-	users := make([]User, len(ouResponse.Users))
-	for i, ouUser := range ouResponse.Users {
-		users[i] = User{
-			ID: ouUser.ID,
+	var users []User
+	if includeDisplay && len(ouResponse.Users) > 0 {
+		// Batch-fetch full user data to resolve display names.
+		userIDs := make([]string, len(ouResponse.Users))
+		for i, ouUser := range ouResponse.Users {
+			userIDs[i] = ouUser.ID
+		}
+		fetchedUsers, err := us.userStore.GetUsersByIDs(ctx, userIDs)
+		if err != nil {
+			logger.Warn("Failed to batch fetch users for display names, skipping display resolution", log.Error(err))
+			// Fall back to bare IDs without display — partial display is worse than none.
+			users = make([]User, len(ouResponse.Users))
+			for i, ouUser := range ouResponse.Users {
+				users[i] = User{ID: ouUser.ID}
+			}
+		} else {
+			// Build an ID-keyed map for display resolution, but only expose ID + Display.
+			userMap := make(map[string]User, len(fetchedUsers))
+			for _, u := range fetchedUsers {
+				userMap[u.ID] = u
+			}
+
+			// Resolve display attribute paths for the fetched user types.
+			userTypes := make([]string, 0, len(fetchedUsers))
+			for _, u := range fetchedUsers {
+				userTypes = append(userTypes, u.Type)
+			}
+			displayAttrPaths := ResolveDisplayAttributePaths(ctx, userTypes, us.userSchemaService, logger)
+
+			users = make([]User, len(ouResponse.Users))
+			for i, ouUser := range ouResponse.Users {
+				if u, ok := userMap[ouUser.ID]; ok {
+					users[i] = User{
+						ID:      u.ID,
+						Display: utils.ResolveDisplay(u.ID, u.Type, u.Attributes, displayAttrPaths),
+					}
+				} else {
+					users[i] = User{ID: ouUser.ID}
+				}
+			}
+		}
+	} else {
+		users = make([]User, len(ouResponse.Users))
+		for i, ouUser := range ouResponse.Users {
+			users[i] = User{ID: ouUser.ID}
 		}
 	}
 
@@ -184,7 +300,8 @@ func (us *userService) GetUsersByPath(
 		StartIndex:   ouResponse.StartIndex,
 		Count:        ouResponse.Count,
 		Users:        users,
-		Links:        buildTreePaginationLinks(handlePath, limit, offset, ouResponse.TotalResults),
+		Links: buildTreePaginationLinks(
+			handlePath, limit, offset, ouResponse.TotalResults, utils.DisplayQueryParam(includeDisplay)),
 	}
 
 	return response, nil
@@ -198,17 +315,36 @@ func (us *userService) CreateUser(ctx context.Context, user *User) (*User, *serv
 		return nil, &ErrorInvalidRequestFormat
 	}
 
-	if svcErr := us.validateOrganizationUnitForUserType(user.Type, user.OrganizationUnit, logger); svcErr != nil {
+	// Check if caller is authorized to create users in the target OU.
+	if svcErr := us.checkUserAccess(ctx, security.ActionCreateUser, user.OUID, ""); svcErr != nil {
 		return nil, svcErr
 	}
 
-	if svcErr := us.validateUserAndUniqueness(ctx, user.Type, user.Attributes, logger); svcErr != nil {
+	if svcErr := us.validateOrganizationUnitForUserType(ctx, user.Type, user.OUID, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
-	user.ID = utils.GenerateUUID()
+	if svcErr := us.validateUserAndUniqueness(ctx, user.Type, user.Attributes, logger, ""); svcErr != nil {
+		return nil, svcErr
+	}
 
-	credentials, err := us.extractCredentials(user)
+	var err error
+	user.ID, err = utils.GenerateUUIDv7()
+	if err != nil {
+		logger.Error("Failed to generate UUID", log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
+
+	schemaCredentialAttributes, svcErr := us.userSchemaService.GetCredentialAttributes(ctx, user.Type)
+	if svcErr != nil {
+		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
+			return nil, &ErrorUserSchemaNotFound
+		}
+		return nil, logErrorAndReturnServerError(logger, "Failed to get credential attributes from schema",
+			fmt.Errorf("schema service error: %s", svcErr.ErrorDescription))
+	}
+
+	credentials, err := us.extractCredentials(user, schemaCredentialAttributes)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to create user DTO", err)
 	}
@@ -237,7 +373,7 @@ func (us *userService) CreateUserByPath(
 		return nil, serviceError
 	}
 
-	ou, svcErr := us.ouService.GetOrganizationUnitByPath(handlePath)
+	ou, svcErr := us.ouService.GetOrganizationUnitByPath(ctx, handlePath)
 	if svcErr != nil {
 		return nil, mapOUServiceError(
 			svcErr,
@@ -252,16 +388,17 @@ func (us *userService) CreateUserByPath(
 	}
 
 	user := &User{
-		OrganizationUnit: ou.ID,
-		Type:             request.Type,
-		Attributes:       request.Attributes,
+		OUID:       ou.ID,
+		Type:       request.Type,
+		Attributes: request.Attributes,
 	}
 
 	return us.CreateUser(ctx, user)
 }
 
-// extractCredentials extracts the credentials from the user attributes and returns Credentials struct.
-func (us *userService) extractCredentials(user *User) (Credentials, error) {
+// extractCredentials extracts credentials from user attributes based on schema-defined credential attributes.
+// Schema-defined credentials are always hashed. System-managed credentials are also extracted defensively.
+func (us *userService) extractCredentials(user *User, schemaCredentialAttributes []string) (Credentials, error) {
 	if user.Attributes == nil {
 		return Credentials{}, nil
 	}
@@ -273,15 +410,20 @@ func (us *userService) extractCredentials(user *User) (Credentials, error) {
 
 	credentials := make(Credentials)
 
-	for _, credType := range SupportedCredentialTypes {
-		credField := string(credType)
+	// Extract schema-defined credential attributes (always hashed).
+	for _, credField := range schemaCredentialAttributes {
 		if credValue, ok := attrsMap[credField].(string); ok {
+			delete(attrsMap, credField)
+
+			// Skip empty credential values.
+			if credValue == "" {
+				continue
+			}
+
 			credHash, err := us.hashService.Generate([]byte(credValue))
 			if err != nil {
 				return nil, err
 			}
-
-			delete(attrsMap, credField)
 
 			credential := Credential{
 				StorageType: "hash",
@@ -294,7 +436,29 @@ func (us *userService) extractCredentials(user *User) (Credentials, error) {
 				Value: credHash.Hash,
 			}
 
-			// Initialize the credential type array if it doesn't exist
+			credType := CredentialType(credField)
+			if credentials[credType] == nil {
+				credentials[credType] = []Credential{}
+			}
+			credentials[credType] = append(credentials[credType], credential)
+		}
+	}
+
+	// Extract system-managed credential types defensively.
+	for _, credType := range systemManagedCredentialTypes {
+		credField := string(credType)
+		if credValue, ok := attrsMap[credField].(string); ok {
+			delete(attrsMap, credField)
+
+			// Skip empty credential values.
+			if credValue == "" {
+				continue
+			}
+
+			credential := Credential{
+				Value: credValue,
+			}
+
 			if credentials[credType] == nil {
 				credentials[credType] = []Credential{}
 			}
@@ -331,6 +495,11 @@ func (us *userService) GetUser(ctx context.Context, userID string) (*User, *serv
 		return nil, logErrorAndReturnServerError(logger, "Failed to retrieve user", err, log.String("id", userID))
 	}
 
+	// Check authz using the user's OU ID (fetched from store).
+	if svcErr := us.checkUserAccess(ctx, security.ActionReadUser, user.OUID, userID); svcErr != nil {
+		return nil, svcErr
+	}
+
 	logger.Debug("Successfully retrieved user", log.String("id", userID))
 	return &user, nil
 }
@@ -348,15 +517,19 @@ func (as *userService) GetUserGroups(ctx context.Context, userID string, limit, 
 		return nil, err
 	}
 
-	invalidUserIDs, err := as.userStore.ValidateUserIDs(ctx, []string{userID})
+	// Fetch user to resolve the OU ID for the authorization check.
+	user, err := as.userStore.GetUser(ctx, userID)
 	if err != nil {
-		logger.Error("Failed to validate user IDs", log.String("error", err.Error()))
-		return nil, &ErrorInternalServerError
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("id", userID))
+			return nil, &ErrorUserNotFound
+		}
+		return nil, logErrorAndReturnServerError(logger, "Failed to retrieve user", err, log.String("id", userID))
 	}
 
-	if len(invalidUserIDs) > 0 {
-		logger.Debug("User not found", log.String("id", userID))
-		return nil, &ErrorUserNotFound
+	// Check authz using the user's OU ID.
+	if svcErr := as.checkUserAccess(ctx, security.ActionReadUser, user.OUID, userID); svcErr != nil {
+		return nil, svcErr
 	}
 
 	totalCount, err := as.userStore.GetGroupCountForUser(ctx, userID)
@@ -372,7 +545,7 @@ func (as *userService) GetUserGroups(ctx context.Context, userID string, limit, 
 	}
 
 	path := fmt.Sprintf("/users/%s/groups", userID)
-	links := buildPaginationLinks(path, limit, offset, totalCount)
+	links := utils.BuildPaginationLinks(path, limit, offset, totalCount, "")
 
 	response := &UserGroupListResponse{
 		TotalResults: totalCount,
@@ -398,19 +571,68 @@ func (us *userService) UpdateUser(ctx context.Context, userID string, user *User
 		return nil, &ErrorInvalidRequestFormat
 	}
 
+	// Fetch the existing user to obtain its OU ID for the authorization check.
+	existingUser, err := us.userStore.GetUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("id", userID))
+			return nil, &ErrorUserNotFound
+		}
+		return nil, logErrorAndReturnServerError(logger, "Failed to retrieve user", err, log.String("id", userID))
+	}
+
+	// Check authz using the existing user's OU ID.
+	if svcErr := us.checkUserAccess(
+		ctx, security.ActionUpdateUser, existingUser.OUID, userID); svcErr != nil {
+		return nil, svcErr
+	}
+
+	// If the user is moving to a different OU, require authorization for the destination OU as well.
+	if user.OUID != existingUser.OUID {
+		if svcErr := us.checkUserAccess(
+			ctx, security.ActionUpdateUser, user.OUID, userID); svcErr != nil {
+			return nil, svcErr
+		}
+	}
+
+	// Check if user is declarative (immutable)
+	if svcErr := us.checkUserDeclarative(ctx, userID, logger); svcErr != nil {
+		return nil, svcErr
+	}
+
 	// Ensure the user object has the correct ID
 	user.ID = userID
 
-	var updatedUser *User
+	if us.userSchemaService == nil {
+		logger.Error("User schema service is not configured for user operations")
+		return nil, &ErrorInternalServerError
+	}
+
+	schemaCredentialAttributes, svcErr := us.userSchemaService.GetCredentialAttributes(ctx, user.Type)
+	if svcErr != nil {
+		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
+			return nil, &ErrorUserSchemaNotFound
+		}
+		return nil, logErrorAndReturnServerError(logger, "Failed to get credential attributes from schema",
+			fmt.Errorf("schema service error: %s", svcErr.ErrorDescription), log.String("id", userID))
+	}
+
+	credentials, err := us.extractCredentials(user, schemaCredentialAttributes)
+	if err != nil {
+		return nil, logErrorAndReturnServerError(logger, "Failed to extract credentials", err, log.String("id", userID))
+	}
+
 	var capturedSvcErr *serviceerror.ServiceError
 
-	err := us.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		if svcErr := us.validateOrganizationUnitForUserType(user.Type, user.OrganizationUnit, logger); svcErr != nil {
+	err = us.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		if svcErr := us.validateOrganizationUnitForUserType(
+			txCtx, user.Type, user.OUID, logger,
+		); svcErr != nil {
 			capturedSvcErr = svcErr
 			return errors.New("rollback for validation error")
 		}
 
-		if svcErr := us.validateUserAndUniqueness(txCtx, user.Type, user.Attributes, logger); svcErr != nil {
+		if svcErr := us.validateUserAndUniqueness(txCtx, user.Type, user.Attributes, logger, user.ID); svcErr != nil {
 			capturedSvcErr = svcErr
 			return errors.New("rollback for validation error")
 		}
@@ -419,7 +641,19 @@ func (us *userService) UpdateUser(ctx context.Context, userID string, user *User
 		if err != nil {
 			return err
 		}
-		updatedUser = user
+
+		if len(credentials) > 0 {
+			_, existingCredentials, err := us.userStore.GetCredentials(txCtx, userID)
+			if err != nil {
+				return err
+			}
+			mergedCredentials := us.mergeCredentials(existingCredentials, credentials)
+			err = us.userStore.UpdateUserCredentials(txCtx, userID, mergedCredentials)
+			if err != nil {
+				return err
+			}
+		}
+
 		return nil
 	})
 
@@ -436,7 +670,7 @@ func (us *userService) UpdateUser(ctx context.Context, userID string, user *User
 	}
 
 	logger.Debug("Successfully updated user", log.String("id", userID))
-	return updatedUser, nil
+	return user, nil
 }
 
 // UpdateUserAttributes updates only the attributes of a user while preserving immutable fields.
@@ -454,7 +688,31 @@ func (us *userService) UpdateUserAttributes(
 		return nil, &ErrorInvalidRequestFormat
 	}
 
-	hasCredentials, svcErr := us.containsCredentialFields(attributes)
+	// Pre-fetch user to get the type for credential field lookup (outside transaction).
+	existingUser, getErr := us.userStore.GetUser(ctx, userID)
+	if getErr != nil {
+		if errors.Is(getErr, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("id", userID))
+			return nil, &ErrorUserNotFound
+		}
+		return nil, logErrorAndReturnServerError(logger, "Failed to get user", getErr, log.String("id", userID))
+	}
+
+	if us.userSchemaService == nil {
+		logger.Error("User schema service is not configured for user operations")
+		return nil, &ErrorInternalServerError
+	}
+
+	schemaCredentialAttributes, svcErr := us.userSchemaService.GetCredentialAttributes(ctx, existingUser.Type)
+	if svcErr != nil {
+		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
+			return nil, &ErrorUserSchemaNotFound
+		}
+		return nil, logErrorAndReturnServerError(logger, "Failed to get credential attributes from schema",
+			fmt.Errorf("schema service error: %s", svcErr.ErrorDescription), log.String("id", userID))
+	}
+
+	hasCredentials, svcErr := us.containsCredentialAttributes(attributes, schemaCredentialAttributes)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -462,24 +720,30 @@ func (us *userService) UpdateUserAttributes(
 		return nil, &ErrorInvalidRequestFormat
 	}
 
+	// Check authz outside the transaction so a denial is returned directly without a rollback.
+	if svcErr := us.checkUserAccess(
+		ctx, security.ActionUpdateUser, existingUser.OUID, userID); svcErr != nil {
+		return nil, svcErr
+	}
+
+	// Check if user is declarative (immutable)
+	if svcErr := us.checkUserDeclarative(ctx, userID, logger); svcErr != nil {
+		return nil, svcErr
+	}
+
 	var updatedUser User
 	var capturedSvcErr *serviceerror.ServiceError
 
 	err := us.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		existingUser, err := us.userStore.GetUser(txCtx, userID)
-		if err != nil {
-			return err
-		}
-
 		existingUser.Attributes = attributes
 
 		if svcErr := us.validateUserAndUniqueness(txCtx, existingUser.Type,
-			existingUser.Attributes, logger); svcErr != nil {
+			existingUser.Attributes, logger, userID); svcErr != nil {
 			capturedSvcErr = svcErr
 			return errors.New("rollback for validation error")
 		}
 
-		err = us.userStore.UpdateUser(txCtx, &existingUser)
+		err := us.userStore.UpdateUser(txCtx, &existingUser)
 		if err != nil {
 			return err
 		}
@@ -504,8 +768,11 @@ func (us *userService) UpdateUserAttributes(
 	return &updatedUser, nil
 }
 
-// containsCredentialFields checks whether the attributes include credential fields.
-func (us *userService) containsCredentialFields(attributes json.RawMessage) (bool, *serviceerror.ServiceError) {
+// containsCredentialAttributes checks whether the attributes include credential attributes
+// (either schema-defined or system-managed).
+func (us *userService) containsCredentialAttributes(
+	attributes json.RawMessage, schemaCredentialAttributes []string,
+) (bool, *serviceerror.ServiceError) {
 	if len(attributes) == 0 {
 		return false, nil
 	}
@@ -515,7 +782,13 @@ func (us *userService) containsCredentialFields(attributes json.RawMessage) (boo
 		return false, &ErrorInvalidRequestFormat
 	}
 
-	for _, credType := range SupportedCredentialTypes {
+	for _, credField := range schemaCredentialAttributes {
+		if _, ok := attrs[credField]; ok {
+			return true, nil
+		}
+	}
+
+	for _, credType := range systemManagedCredentialTypes {
 		if _, ok := attrs[string(credType)]; ok {
 			return true, nil
 		}
@@ -567,11 +840,32 @@ func (us *userService) batchUpdateUserCredentials(
 		log.String("userID", userID),
 		log.Int("credentialTypesCount", len(credentialsMap)))
 
+	// Fetch user outside the transaction to resolve the OU ID for the authorization check.
+	existingUser, err := us.userStore.GetUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("userID", userID))
+			return &ErrorUserNotFound
+		}
+		return logErrorAndReturnServerError(logger, "Failed to retrieve user", err, log.String("userID", userID))
+	}
+
+	// Check authz outside the transaction so a denial is returned directly without a rollback.
+	if svcErr := us.checkUserAccess(
+		ctx, security.ActionUpdateUser, existingUser.OUID, userID); svcErr != nil {
+		return svcErr
+	}
+
+	// Check if user is declarative (immutable)
+	if svcErr := us.checkUserDeclarative(ctx, userID, logger); svcErr != nil {
+		return svcErr
+	}
+
 	var capturedSvcErr *serviceerror.ServiceError
 
-	err := us.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		// Get existing credentials once at the beginning
-		_, existingCredentials, err := us.userStore.GetCredentials(txCtx, userID)
+	err = us.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		// Get existing credentials and user info
+		existingUser, existingCredentials, err := us.userStore.GetCredentials(txCtx, userID)
 		if err != nil {
 			if errors.Is(err, ErrUserNotFound) {
 				logger.Debug("User not found", log.String("userID", userID))
@@ -579,13 +873,31 @@ func (us *userService) batchUpdateUserCredentials(
 				return errors.New("rollback for user not found")
 			}
 
-			capturedSvcErr = logErrorAndReturnServerError(
-				logger,
-				"Failed to retrieve existing user credentials",
-				err,
-				log.String("userID", userID),
-			)
-			return errors.New("rollback for database error")
+			return err
+		}
+
+		// Get schema credential attributes for the user's type
+		if us.userSchemaService == nil {
+			return errors.New("user schema service not configured")
+		}
+
+		schemaCredentialAttributes, svcErr := us.userSchemaService.GetCredentialAttributes(txCtx, existingUser.Type)
+		if svcErr != nil {
+			if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
+				capturedSvcErr = &ErrorUserSchemaNotFound
+				return errors.New("rollback for schema not found")
+			}
+			return fmt.Errorf("schema service error: %s", svcErr.ErrorDescription)
+		}
+
+		// Build set of valid credential field names
+		validCredentialAttributes := make(
+			map[string]struct{}, len(schemaCredentialAttributes)+len(systemManagedCredentialTypes))
+		for _, field := range schemaCredentialAttributes {
+			validCredentialAttributes[field] = struct{}{}
+		}
+		for _, credType := range systemManagedCredentialTypes {
+			validCredentialAttributes[string(credType)] = struct{}{}
 		}
 
 		// Process all credential types first (validation and hashing)
@@ -593,8 +905,8 @@ func (us *userService) batchUpdateUserCredentials(
 		for credTypeStr, credValue := range credentialsMap {
 			credType := CredentialType(credTypeStr)
 
-			// Validate credential type
-			if !credType.IsValid() {
+			// Validate credential type against schema + system-managed types
+			if _, valid := validCredentialAttributes[credTypeStr]; !valid {
 				logger.Debug("Invalid credential type", log.String("credentialType", credTypeStr))
 				errorDesc := fmt.Sprintf("Invalid credential type: %s", credType)
 				capturedSvcErr = serviceerror.CustomServiceError(ErrorInvalidCredential, errorDesc)
@@ -632,10 +944,6 @@ func (us *userService) batchUpdateUserCredentials(
 	}
 
 	if err != nil {
-		if errors.Is(err, ErrUserNotFound) {
-			logger.Debug("User not found", log.String("userID", userID))
-			return &ErrorUserNotFound
-		}
 		return logErrorAndReturnServerError(
 			logger,
 			"Failed to update user credentials",
@@ -673,8 +981,9 @@ func (us *userService) processCredentialType(
 		credentials = []Credential{{Value: stringValue}}
 	}
 
-	// Validate that only passkey type supports multiple credentials
-	if credentialType.RequiresHashing() && len(credentials) > 1 {
+	// System-managed credentials (e.g., passkey) support multiple values.
+	// Schema-defined credentials only support a single value.
+	if !credentialType.IsSystemManaged() && len(credentials) > 1 {
 		logger.Debug("Multiple credentials not supported for this credential type",
 			log.String("credentialType", string(credentialType)),
 			log.Int("count", len(credentials)))
@@ -694,25 +1003,24 @@ func (us *userService) processCredentialType(
 		}
 	}
 
-	// Hash credentials if needed
-	hashedCredentials, svcErr := us.hashCredentialsIfNeeded(credentialType, credentials, logger)
-	if svcErr != nil {
-		return nil, svcErr
+	// Schema-defined credentials are always hashed. System-managed credentials are stored as-is.
+	if !credentialType.IsSystemManaged() {
+		hashedCredentials, svcErr := us.hashCredentials(credentials, credentialType, logger)
+		if svcErr != nil {
+			return nil, svcErr
+		}
+		return hashedCredentials, nil
 	}
 
-	return hashedCredentials, nil
+	return credentials, nil
 }
 
-// hashCredentialsIfNeeded hashes credentials for types that require hashing.
-func (us *userService) hashCredentialsIfNeeded(
-	credType CredentialType,
+// hashCredentials hashes all credentials in the provided list.
+func (us *userService) hashCredentials(
 	credentials []Credential,
+	credType CredentialType,
 	logger *log.Logger,
 ) ([]Credential, *serviceerror.ServiceError) {
-	if !credType.RequiresHashing() {
-		return credentials, nil
-	}
-
 	hashedCredentials := make([]Credential, 0, len(credentials))
 	for _, cred := range credentials {
 		credHash, err := us.hashService.Generate([]byte(cred.Value))
@@ -777,7 +1085,28 @@ func (us *userService) DeleteUser(ctx context.Context, userID string) *serviceer
 		return &ErrorMissingUserID
 	}
 
-	err := us.transactioner.Transact(ctx, func(txCtx context.Context) error {
+	// Fetch the user to resolve the OU ID for the authorization check.
+	existingUser, err := us.userStore.GetUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("id", userID))
+			return &ErrorUserNotFound
+		}
+		return logErrorAndReturnServerError(logger, "Failed to retrieve user", err, log.String("id", userID))
+	}
+
+	// Check authz using the user's OU ID.
+	if svcErr := us.checkUserAccess(
+		ctx, security.ActionDeleteUser, existingUser.OUID, userID); svcErr != nil {
+		return svcErr
+	}
+
+	// Check if user is declarative (immutable)
+	if svcErr := us.checkUserDeclarative(ctx, userID, logger); svcErr != nil {
+		return svcErr
+	}
+
+	err = us.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		return us.userStore.DeleteUser(txCtx, userID)
 	})
 
@@ -828,11 +1157,24 @@ func (us *userService) VerifyUser(
 		return nil, &ErrorInvalidRequestFormat
 	}
 
-	credentialsToVerify := make(map[string]string)
+	user, storedCredentials, err := us.userStore.GetCredentials(ctx, userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("id", userID))
+			return nil, &ErrorUserNotFound
+		}
+		return nil, logErrorAndReturnServerError(logger, "Failed to verify user", err, log.String("id", userID))
+	}
 
+	if len(storedCredentials) == 0 {
+		logger.Debug("No credentials found for user", log.String("userID", log.MaskString(userID)))
+		return nil, &ErrorAuthenticationFailed
+	}
+
+	// Filter credentials to verify: only include those that have stored credential keys.
+	credentialsToVerify := make(map[string]string)
 	for credType, credValueInterface := range credentials {
-		ct := CredentialType(credType)
-		if !ct.IsValid() {
+		if _, exists := storedCredentials[CredentialType(credType)]; !exists {
 			continue
 		}
 
@@ -845,32 +1187,12 @@ func (us *userService) VerifyUser(
 	}
 
 	if len(credentialsToVerify) == 0 {
-		logger.Debug("No valid credentials provided for verification", log.String("userID", userID))
-		return nil, &ErrorAuthenticationFailed
-	}
-
-	user, storedCredentials, err := us.userStore.GetCredentials(ctx, userID)
-	if err != nil {
-		if errors.Is(err, ErrUserNotFound) {
-			logger.Debug("User not found", log.String("id", userID))
-			return nil, &ErrorUserNotFound
-		}
-		return nil, logErrorAndReturnServerError(logger, "Failed to verify user", err, log.String("id", userID))
-	}
-
-	if len(storedCredentials) == 0 {
-		logger.Debug("No credentials found for user", log.String("userID", userID))
+		logger.Debug("No valid credentials provided for verification", log.String("userID", log.MaskString(userID)))
 		return nil, &ErrorAuthenticationFailed
 	}
 
 	for credType, credValue := range credentialsToVerify {
-		// Get credentials of this type from the map
-		credList, exists := storedCredentials[CredentialType(credType)]
-		if !exists || len(credList) == 0 {
-			logger.Debug("No stored credential found for type",
-				log.String("userID", userID), log.String("credType", credType))
-			return nil, &ErrorAuthenticationFailed
-		}
+		credList := storedCredentials[CredentialType(credType)]
 
 		// Try to verify against any credential of this type (typically first one)
 		verified := false
@@ -888,7 +1210,7 @@ func (us *userService) VerifyUser(
 
 			if err == nil && hashVerified {
 				logger.Debug("Credential verified successfully",
-					log.String("userID", userID), log.String("credType", credType))
+					log.String("userID", log.MaskString(userID)), log.String("credType", credType))
 				verified = true
 				break
 			}
@@ -896,7 +1218,7 @@ func (us *userService) VerifyUser(
 
 		if !verified {
 			logger.Debug("Credential verification failed",
-				log.String("userID", userID), log.String("credType", credType))
+				log.String("userID", log.MaskString(userID)), log.String("credType", credType))
 			return nil, &ErrorAuthenticationFailed
 		}
 	}
@@ -906,29 +1228,16 @@ func (us *userService) VerifyUser(
 }
 
 // AuthenticateUser authenticates a user by combining identify and verify operations.
+// Identifiers are used to find the user, and credentials are verified against stored values.
 func (us *userService) AuthenticateUser(
-	ctx context.Context, request AuthenticateUserRequest,
+	ctx context.Context,
+	identifiers map[string]interface{},
+	credentials map[string]interface{},
 ) (*AuthenticateUserResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Authenticating user")
 
-	if len(request) == 0 {
-		return nil, &ErrorInvalidRequestFormat
-	}
-
-	identifyFilters := make(map[string]interface{})
-	credentials := make(map[string]interface{})
-
-	for key, value := range request {
-		ct := CredentialType(key)
-		if ct.IsValid() {
-			credentials[key] = value
-		} else {
-			identifyFilters[key] = value
-		}
-	}
-
-	if len(identifyFilters) == 0 {
+	if len(identifiers) == 0 {
 		return nil, &ErrorMissingRequiredFields
 	}
 
@@ -936,7 +1245,7 @@ func (us *userService) AuthenticateUser(
 		return nil, &ErrorMissingCredentials
 	}
 
-	userID, svcErr := us.IdentifyUser(ctx, identifyFilters)
+	userID, svcErr := us.IdentifyUser(ctx, identifiers)
 	if svcErr != nil {
 		if svcErr.Code == ErrorUserNotFound.Code {
 			return nil, &ErrorUserNotFound
@@ -951,9 +1260,9 @@ func (us *userService) AuthenticateUser(
 
 	logger.Debug("User authenticated successfully", log.String("userID", *userID))
 	return &AuthenticateUserResponse{
-		ID:               user.ID,
-		Type:             user.Type,
-		OrganizationUnit: user.OrganizationUnit,
+		ID:   user.ID,
+		Type: user.Type,
+		OUID: user.OUID,
 	}, nil
 }
 
@@ -971,6 +1280,81 @@ func (us *userService) ValidateUserIDs(ctx context.Context, userIDs []string) ([
 	}
 
 	return invalidUserIDs, nil
+}
+
+// GetUsersByIDs retrieves users by a list of IDs.
+func (us *userService) GetUsersByIDs(
+	ctx context.Context, userIDs []string,
+) (map[string]*User, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if len(userIDs) == 0 {
+		return map[string]*User{}, nil
+	}
+
+	// Deduplicate IDs before passing to store.
+	seen := make(map[string]struct{}, len(userIDs))
+	uniqueIDs := make([]string, 0, len(userIDs))
+	for _, id := range userIDs {
+		if _, ok := seen[id]; !ok {
+			seen[id] = struct{}{}
+			uniqueIDs = append(uniqueIDs, id)
+		}
+	}
+
+	users, err := us.userStore.GetUsersByIDs(ctx, uniqueIDs)
+	if err != nil {
+		return nil, logErrorAndReturnServerError(logger, "Failed to get users by IDs", err)
+	}
+
+	result := make(map[string]*User, len(users))
+	for i := range users {
+		result[users[i].ID] = &users[i]
+	}
+
+	return result, nil
+}
+
+// populateUserDisplayNames resolves display names for a slice of users in-place.
+// It batch-fetches display attribute paths from the user schema service and extracts the
+// display value from each user's attributes. Falls back to user ID if extraction fails.
+func (us *userService) populateUserDisplayNames(ctx context.Context, users []User, logger *log.Logger) {
+	// Collect user types for display attribute resolution.
+	userTypes := make([]string, 0, len(users))
+	for _, u := range users {
+		userTypes = append(userTypes, u.Type)
+	}
+
+	displayAttrPaths := ResolveDisplayAttributePaths(
+		ctx, userTypes, us.userSchemaService, logger)
+
+	// Resolve display for each user.
+	for i := range users {
+		users[i].Display = utils.ResolveDisplay(
+			users[i].ID, users[i].Type, users[i].Attributes, displayAttrPaths)
+	}
+}
+
+// ValidateUserIDsInOUs validates that all provided user IDs belong to one of the given OUs.
+// Returns IDs that are outside the allowed OU scope.
+func (us *userService) ValidateUserIDsInOUs(
+	ctx context.Context, userIDs []string, ouIDs []string,
+) ([]string, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if len(userIDs) == 0 {
+		return []string{}, nil
+	}
+	if len(ouIDs) == 0 {
+		// No accessible OUs — all IDs are out of scope.
+		return append([]string{}, userIDs...), nil
+	}
+
+	outOfScopeIDs, err := us.userStore.ValidateUserIDsInOUs(ctx, userIDs, ouIDs)
+	if err != nil {
+		return nil, logErrorAndReturnServerError(logger, "Failed to validate user IDs in OUs", err)
+	}
+	return outOfScopeIDs, nil
 }
 
 // GetUserCredentialsByType retrieves credentials of a specific type for a user.
@@ -1027,16 +1411,36 @@ func (us *userService) GetUserCredentialsByType(
 	return credentials, nil
 }
 
+// IsUserDeclarative checks if a user is immutable (declarative) or mutable.
+func (us *userService) IsUserDeclarative(ctx context.Context, userID string) (bool, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if strings.TrimSpace(userID) == "" {
+		return false, &ErrorMissingUserID
+	}
+
+	isDeclarative, err := us.userStore.IsUserDeclarative(ctx, userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("userID", userID))
+			return false, &ErrorUserNotFound
+		}
+		return false, logErrorAndReturnServerError(logger, "Failed to check if user is declarative", err)
+	}
+
+	return isDeclarative, nil
+}
+
 // validateOrganizationUnitForUserType ensures that the organization unit ID is valid and belongs to the user type.
 func (us *userService) validateOrganizationUnitForUserType(
-	userType, organizationUnitID string, logger *log.Logger,
+	ctx context.Context, userType, oUID string, logger *log.Logger,
 ) *serviceerror.ServiceError {
 	if strings.TrimSpace(userType) == "" {
 		return &ErrorUserSchemaNotFound
 	}
 
-	if strings.TrimSpace(organizationUnitID) == "" || !utils.IsValidUUID(organizationUnitID) {
-		return &ErrorInvalidOrganizationUnitID
+	if strings.TrimSpace(oUID) == "" {
+		return &ErrorInvalidOUID
 	}
 
 	if us.ouService == nil {
@@ -1044,18 +1448,18 @@ func (us *userService) validateOrganizationUnitForUserType(
 		return &ErrorInternalServerError
 	}
 
-	exists, svcErr := us.ouService.IsOrganizationUnitExists(organizationUnitID)
+	exists, svcErr := us.ouService.IsOrganizationUnitExists(ctx, oUID)
 	if svcErr != nil {
 		return mapOUServiceError(
 			svcErr,
 			logger,
 			"verifying organization unit existence",
 			map[string]*serviceerror.ServiceError{
-				oupkg.ErrorOrganizationUnitNotFound.Code:  &ErrorOrganizationUnitNotFound,
-				oupkg.ErrorInvalidRequestFormat.Code:      &ErrorInvalidOrganizationUnitID,
-				oupkg.ErrorMissingOrganizationUnitID.Code: &ErrorInvalidOrganizationUnitID,
+				oupkg.ErrorOrganizationUnitNotFound.Code: &ErrorOrganizationUnitNotFound,
+				oupkg.ErrorInvalidRequestFormat.Code:     &ErrorInvalidOUID,
+				oupkg.ErrorMissingOUID.Code:              &ErrorInvalidOUID,
 			},
-			log.String("organizationUnitID", organizationUnitID),
+			log.String("oUID", oUID),
 		)
 	}
 	if !exists {
@@ -1067,7 +1471,7 @@ func (us *userService) validateOrganizationUnitForUserType(
 		return &ErrorInternalServerError
 	}
 
-	userSchema, svcErr := us.userSchemaService.GetUserSchemaByName(userType)
+	userSchema, svcErr := us.userSchemaService.GetUserSchemaByName(ctx, userType)
 	if svcErr != nil {
 		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
 			return &ErrorUserSchemaNotFound
@@ -1082,11 +1486,11 @@ func (us *userService) validateOrganizationUnitForUserType(
 		return &ErrorInternalServerError
 	}
 
-	if userSchema.OrganizationUnitID == organizationUnitID {
+	if userSchema.OUID == oUID {
 		return nil
 	}
 
-	isParent, svcErr := us.ouService.IsParent(userSchema.OrganizationUnitID, organizationUnitID)
+	isParent, svcErr := us.ouService.IsParent(ctx, userSchema.OUID, oUID)
 	if svcErr != nil {
 		return mapOUServiceError(
 			svcErr,
@@ -1096,16 +1500,16 @@ func (us *userService) validateOrganizationUnitForUserType(
 				oupkg.ErrorOrganizationUnitNotFound.Code: &ErrorOrganizationUnitNotFound,
 			},
 			log.String("userType", userType),
-			log.String("organizationUnitID", organizationUnitID),
-			log.String("schemaOrganizationUnitID", userSchema.OrganizationUnitID),
+			log.String("oUID", oUID),
+			log.String("schemaOUID", userSchema.OUID),
 		)
 	}
 
 	if !isParent {
 		logger.Debug("Organization unit mismatch for user type",
 			log.String("userType", userType),
-			log.String("organizationUnitID", organizationUnitID),
-			log.String("schemaOrganizationUnitID", userSchema.OrganizationUnitID))
+			log.String("oUID", oUID),
+			log.String("schemaOUID", userSchema.OUID))
 		return &ErrorOrganizationUnitMismatch
 	}
 
@@ -1114,9 +1518,9 @@ func (us *userService) validateOrganizationUnitForUserType(
 
 // validateUserAndUniqueness validates the user schema and checks for uniqueness.
 func (us *userService) validateUserAndUniqueness(
-	ctx context.Context, userType string, attributes []byte, logger *log.Logger,
+	ctx context.Context, userType string, attributes []byte, logger *log.Logger, excludeUserID string,
 ) *serviceerror.ServiceError {
-	isValid, svcErr := us.userSchemaService.ValidateUser(userType, attributes)
+	isValid, svcErr := us.userSchemaService.ValidateUser(ctx, userType, attributes)
 	if svcErr != nil {
 		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
 			return &ErrorUserSchemaNotFound
@@ -1127,7 +1531,7 @@ func (us *userService) validateUserAndUniqueness(
 		return &ErrorSchemaValidationFailed
 	}
 
-	isValid, svcErr = us.userSchemaService.ValidateUserUniqueness(userType, attributes,
+	isValid, svcErr = us.userSchemaService.ValidateUserUniqueness(ctx, userType, attributes,
 		func(filters map[string]interface{}) (*string, error) {
 			userID, svcErr := us.IdentifyUser(ctx, filters)
 			if svcErr != nil {
@@ -1136,6 +1540,9 @@ func (us *userService) validateUserAndUniqueness(
 				} else {
 					return nil, errors.New(svcErr.Error)
 				}
+			}
+			if excludeUserID != "" && userID != nil && *userID == excludeUserID {
+				return nil, nil
 			}
 			return userID, nil
 		})
@@ -1227,47 +1634,46 @@ func mapOUServiceError(
 	return &ErrorInternalServerError
 }
 
-// buildPaginationLinks builds pagination links for the response.
-func buildPaginationLinks(path string, limit, offset, totalResults int) []Link {
-	links := make([]Link, 0)
-
-	if offset > 0 {
-		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=0&limit=%d", path, limit),
-			Rel:  "first",
-		})
-
-		prevOffset := offset - limit
-		if prevOffset < 0 {
-			prevOffset = 0
+// checkUserDeclarative checks if a user is declarative and returns an error if it is.
+func (us *userService) checkUserDeclarative(
+	ctx context.Context, userID string, logger *log.Logger,
+) *serviceerror.ServiceError {
+	isDeclarative, err := us.userStore.IsUserDeclarative(ctx, userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			return &ErrorUserNotFound
 		}
-		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=%d&limit=%d", path, prevOffset, limit),
-			Rel:  "prev",
-		})
+		logger.Error("Failed to check if user is declarative",
+			log.String("userID", userID), log.Error(err))
+		return &ErrorInternalServerError
 	}
-
-	if offset+limit < totalResults {
-		nextOffset := offset + limit
-		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=%d&limit=%d", path, nextOffset, limit),
-			Rel:  "next",
-		})
+	if isDeclarative {
+		return &ErrorCannotModifyDeclarativeResource
 	}
+	return nil
+}
 
-	lastPageOffset := ((totalResults - 1) / limit) * limit
-	if offset < lastPageOffset {
-		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=%d&limit=%d", path, lastPageOffset, limit),
-			Rel:  "last",
-		})
+// checkUserAccess validates that the caller is authorized to perform the given action on a user.
+func (us *userService) checkUserAccess(
+	ctx context.Context, action security.Action, ouID string, resourceID string,
+) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	allowed, svcErr := us.authzService.IsActionAllowed(ctx, action,
+		&sysauthz.ActionContext{ResourceType: security.ResourceTypeUser, OUID: ouID, ResourceID: resourceID})
+	if svcErr != nil {
+		logger.Error("Failed to check authorization for action",
+			log.String("action", string(action)), log.Any("error", svcErr))
+		return &ErrorInternalServerError
 	}
-
-	return links
+	if !allowed {
+		return &serviceerror.ErrorUnauthorized
+	}
+	return nil
 }
 
 // buildTreePaginationLinks builds pagination links for user responses.
-func buildTreePaginationLinks(handlePath string, limit, offset, totalResults int) []Link {
-	path := fmt.Sprintf("/users/tree/%s", path.Clean(handlePath))
-	return buildPaginationLinks(path, limit, offset, totalResults)
+func buildTreePaginationLinks(handlePath string, limit, offset, totalResults int, displayQuery string) []utils.Link {
+	treePath := fmt.Sprintf("/users/tree/%s", path.Clean(handlePath))
+	return utils.BuildPaginationLinks(treePath, limit, offset, totalResults, displayQuery)
 }

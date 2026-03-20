@@ -29,7 +29,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 )
 
 const (
@@ -47,6 +47,7 @@ func TestInitTestSuite(t *testing.T) {
 }
 
 func (suite *InitTestSuite) SetupSuite() {
+	config.ResetThunderRuntime()
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
 			Issuer:         "test-issuer",
@@ -55,6 +56,12 @@ func (suite *InitTestSuite) SetupSuite() {
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{
 				Key: testCryptoKey,
+			},
+		},
+		Database: config.DatabaseConfig{
+			Config: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
 			},
 		},
 	}
@@ -67,6 +74,10 @@ func (suite *InitTestSuite) SetupSuite() {
 func (suite *InitTestSuite) SetupTest() {
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mux = http.NewServeMux()
+}
+
+func (suite *InitTestSuite) TearDownSuite() {
+	config.ResetThunderRuntime()
 }
 
 func (suite *InitTestSuite) TestInitialize() {
@@ -190,6 +201,12 @@ properties:
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{
 				Key: testCryptoKey,
+			},
+		},
+		Database: config.DatabaseConfig{
+			Config: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
 			},
 		},
 	}
@@ -479,6 +496,12 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesEnabled_Inval
 				Key: testCryptoKey,
 			},
 		},
+		Database: config.DatabaseConfig{
+			Config: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
@@ -503,6 +526,12 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesEnabled_Inval
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{
 				Key: testCryptoKey,
+			},
+		},
+		Database: config.DatabaseConfig{
+			Config: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
 			},
 		},
 	}
@@ -545,6 +574,12 @@ properties:
 				Key: testCryptoKey,
 			},
 		},
+		Database: config.DatabaseConfig{
+			Config: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
@@ -569,6 +604,12 @@ properties:
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{
 				Key: testCryptoKey,
+			},
+		},
+		Database: config.DatabaseConfig{
+			Config: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
 			},
 		},
 	}

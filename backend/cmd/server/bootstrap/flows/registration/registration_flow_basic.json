@@ -14,7 +14,71 @@
             "executor": {
                 "name": "UserTypeResolver"
             },
-            "onSuccess": "prompt_credentials"
+            "onSuccess": "prompt_credentials",
+            "onIncomplete": "prompt_usertype"
+        },
+        {
+            "id": "prompt_usertype",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "alt": "{{ t(signup:images.app_logo.alt) }}",
+                        "category": "DISPLAY",
+                        "height": "60",
+                        "id": "image",
+                        "resourceType": "ELEMENT",
+                        "src": "{{ meta(application.logo_url) }}",
+                        "type": "IMAGE",
+                        "width": ""
+                    },
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "heading_usertype",
+                        "label": "{{ t(signup:forms.user_type.title) }}",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_usertype",
+                        "components": [
+                            {
+                                "type": "SELECT",
+                                "id": "usertype_input",
+                                "ref": "userType",
+                                "label": "{{ t(signup:forms.user_type.fields.user_type.label) }}",
+                                "placeholder": "{{ t(signup:forms.user_type.fields.user_type.placeholder) }}",
+                                "required": true,
+                                "options": []
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_usertype",
+                                "label": "{{ t(signup:forms.user_type.actions.continue.label) }}",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "prompts": [
+                {
+                    "inputs": [
+                        {
+                            "ref": "usertype_input",
+                            "identifier": "userType",
+                            "type": "SELECT",
+                            "required": true
+                        }
+                    ],
+                    "action": {
+                        "ref": "action_usertype",
+                        "nextNode": "user_type_resolver"
+                    }
+                }
+            ]
         },
         {
             "id": "prompt_credentials",
@@ -22,10 +86,21 @@
             "meta": {
                 "components": [
                     {
+                        "alt": "{{ t(signup:images.app_logo.alt) }}",
+                        "category": "DISPLAY",
+                        "height": "60",
+                        "id": "image",
+                        "resourceType": "ELEMENT",
+                        "src": "{{ meta(application.logo_url) }}",
+                        "type": "IMAGE",
+                        "width": ""
+                    },
+                    {
+                        "align": "center",
                         "type": "TEXT",
                         "id": "heading_credentials",
-                        "label": "Sign Up",
-                        "variant": "HEADING_2"
+                        "label": "{{ t(signup:forms.credentials.title) }}",
+                        "variant": "HEADING_1"
                     },
                     {
                         "type": "BLOCK",
@@ -35,22 +110,22 @@
                                 "type": "TEXT_INPUT",
                                 "id": "input_username",
                                 "ref": "username",
-                                "label": "Username",
-                                "placeholder": "Enter your username",
+                                "label": "{{ t(signup:forms.credentials.fields.username.label) }}",
+                                "placeholder": "{{ t(signup:forms.credentials.fields.username.placeholder) }}",
                                 "required": true
                             },
                             {
                                 "type": "PASSWORD_INPUT",
                                 "id": "input_password",
                                 "ref": "password",
-                                "label": "Password",
-                                "placeholder": "Enter your password",
+                                "label": "{{ t(signup:forms.credentials.fields.password.label) }}",
+                                "placeholder": "{{ t(signup:forms.credentials.fields.password.placeholder) }}",
                                 "required": true
                             },
                             {
                                 "type": "ACTION",
                                 "id": "action_credentials",
-                                "label": "Continue",
+                                "label": "{{ t(signup:forms.credentials.actions.continue.label) }}",
                                 "variant": "PRIMARY",
                                 "eventType": "SUBMIT"
                             }
@@ -95,10 +170,21 @@
             "meta": {
                 "components": [
                     {
+                        "alt": "{{ t(signup:images.app_logo.alt) }}",
+                        "category": "DISPLAY",
+                        "height": "60",
+                        "id": "image",
+                        "resourceType": "ELEMENT",
+                        "src": "{{ meta(application.logo_url) }}",
+                        "type": "IMAGE",
+                        "width": ""
+                    },
+                    {
+                        "align": "center",
                         "type": "TEXT",
                         "id": "heading_user_info",
-                        "label": "Sign Up",
-                        "variant": "HEADING_2"
+                        "label": "{{ t(signup:forms.user_info.title) }}",
+                        "variant": "HEADING_1"
                     },
                     {
                         "type": "BLOCK",
@@ -106,32 +192,32 @@
                         "components": [
                             {
                                 "type": "TEXT_INPUT",
-                                "id": "input_firstName",
-                                "ref": "firstName",
-                                "label": "First Name",
-                                "placeholder": "Enter your first name",
+                                "id": "input_given_name",
+                                "ref": "given_name",
+                                "label": "{{ t(signup:forms.user_info.fields.first_name.label) }}",
+                                "placeholder": "{{ t(signup:forms.user_info.fields.first_name.placeholder) }}",
                                 "required": true
                             },
                             {
                                 "type": "TEXT_INPUT",
-                                "id": "input_lastName",
-                                "ref": "lastName",
-                                "label": "Last Name",
-                                "placeholder": "Enter your last name",
+                                "id": "input_family_name",
+                                "ref": "family_name",
+                                "label": "{{ t(signup:forms.user_info.fields.last_name.label) }}",
+                                "placeholder": "{{ t(signup:forms.user_info.fields.last_name.placeholder) }}",
                                 "required": true
                             },
                             {
                                 "type": "EMAIL_INPUT",
                                 "id": "input_email",
                                 "ref": "email",
-                                "label": "Email Address",
-                                "placeholder": "Enter your email address",
+                                "label": "{{ t(signup:forms.user_info.fields.email_address.label) }}",
+                                "placeholder": "{{ t(signup:forms.user_info.fields.email_address.placeholder) }}",
                                 "required": true
                             },
                             {
                                 "type": "ACTION",
                                 "id": "action_user_info",
-                                "label": "Sign Up",
+                                "label": "{{ t(signup:forms.user_info.actions.submit.label) }}",
                                 "variant": "PRIMARY",
                                 "eventType": "SUBMIT"
                             }
@@ -143,14 +229,14 @@
                 {
                     "inputs": [
                         {
-                            "ref": "input_firstName",
-                            "identifier": "firstName",
+                            "ref": "input_given_name",
+                            "identifier": "given_name",
                             "type": "TEXT_INPUT",
                             "required": true
                         },
                         {
-                            "ref": "input_lastName",
-                            "identifier": "lastName",
+                            "ref": "input_family_name",
+                            "identifier": "family_name",
                             "type": "TEXT_INPUT",
                             "required": true
                         },
@@ -188,13 +274,13 @@
                     },
                     {
                         "ref": "input_003",
-                        "identifier": "firstName",
+                        "identifier": "given_name",
                         "type": "TEXT_INPUT",
                         "required": true
                     },
                     {
                         "ref": "input_004",
-                        "identifier": "lastName",
+                        "identifier": "family_name",
                         "type": "TEXT_INPUT",
                         "required": true
                     },

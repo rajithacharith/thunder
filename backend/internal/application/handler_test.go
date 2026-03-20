@@ -60,15 +60,18 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_Success() {
 	appRequest := model.ApplicationRequest{
 		Name:        "TestApp",
 		Description: "Test Description",
+		Metadata:    map[string]interface{}{"key1": "val1"},
 	}
 
 	expectedApp := &model.ApplicationDTO{
 		ID:          "test-app-id",
 		Name:        "TestApp",
 		Description: "Test Description",
+		Metadata:    map[string]interface{}{"key1": "val1"},
 	}
 
-	mockService.On("CreateApplication", mock.AnythingOfType("*model.ApplicationDTO")).Return(expectedApp, nil)
+	mockService.On("CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO")).
+		Return(expectedApp, nil)
 
 	body, _ := json.Marshal(appRequest)
 	req := httptest.NewRequest(http.MethodPost, "/applications", bytes.NewBuffer(body))
@@ -85,6 +88,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_Success() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "test-app-id", response.ID)
 	assert.Equal(suite.T(), "TestApp", response.Name)
+	assert.Equal(suite.T(), map[string]interface{}{"key1": "val1"}, response.Metadata)
 
 	mockService.AssertExpectations(suite.T())
 }
@@ -130,7 +134,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_SuccessWithOAuth
 		},
 	}
 
-	mockService.On("CreateApplication", mock.AnythingOfType("*model.ApplicationDTO")).Return(expectedApp, nil)
+	mockService.On("CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO")).
+		Return(expectedApp, nil)
 
 	body, _ := json.Marshal(appRequest)
 	req := httptest.NewRequest(http.MethodPost, "/applications", bytes.NewBuffer(body))
@@ -188,7 +193,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_TemplateScenario
 				Template:    tc.expectedTemplate,
 			}
 
-			mockService.On("CreateApplication", mock.AnythingOfType("*model.ApplicationDTO")).Return(expectedApp, nil)
+			mockService.On("CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO")).
+				Return(expectedApp, nil)
 
 			body, _ := json.Marshal(appRequest)
 			req := httptest.NewRequest(http.MethodPost, "/applications", bytes.NewBuffer(body))
@@ -259,7 +265,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_ServiceError() {
 				Name: "TestApp",
 			}
 
-			mockService.On("CreateApplication", mock.AnythingOfType("*model.ApplicationDTO")).Return(nil, tt.svcErr)
+			mockService.On("CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO")).
+				Return(nil, tt.svcErr)
 
 			body, _ := json.Marshal(appRequest)
 			req := httptest.NewRequest(http.MethodPost, "/applications", bytes.NewBuffer(body))
@@ -307,7 +314,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_ProcessInboundAu
 		},
 	}
 
-	mockService.On("CreateApplication", mock.AnythingOfType("*model.ApplicationDTO")).Return(expectedApp, nil)
+	mockService.On("CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO")).
+		Return(expectedApp, nil)
 
 	body, _ := json.Marshal(appRequest)
 	req := httptest.NewRequest(http.MethodPost, "/applications", bytes.NewBuffer(body))
@@ -342,7 +350,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationListRequest_Success() {
 		},
 	}
 
-	mockService.On("GetApplicationList").Return(expectedList, nil)
+	mockService.On("GetApplicationList", mock.Anything).Return(expectedList, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/applications", nil)
 	w := httptest.NewRecorder()
@@ -385,7 +393,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationListRequest_WithTemplate() {
 		},
 	}
 
-	mockService.On("GetApplicationList").Return(expectedList, nil)
+	mockService.On("GetApplicationList", mock.Anything).Return(expectedList, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/applications", nil)
 	w := httptest.NewRecorder()
@@ -410,7 +418,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationListRequest_ServiceError() {
 
 	svcErr := &ErrorInternalServerError
 
-	mockService.On("GetApplicationList").Return(nil, svcErr)
+	mockService.On("GetApplicationList", mock.Anything).Return(nil, svcErr)
 
 	req := httptest.NewRequest(http.MethodGet, "/applications", nil)
 	w := httptest.NewRecorder()
@@ -436,9 +444,10 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_Success() {
 		ID:          "test-app-id",
 		Name:        "TestApp",
 		Description: "Test Description",
+		Metadata:    map[string]interface{}{"key3": "val3"},
 	}
 
-	mockService.On("GetApplication", "test-app-id").Return(expectedApp, nil)
+	mockService.On("GetApplication", mock.Anything, "test-app-id").Return(expectedApp, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/applications/test-app-id", nil)
 	req.SetPathValue("id", "test-app-id")
@@ -454,6 +463,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_Success() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "test-app-id", response.ID)
 	assert.Equal(suite.T(), "TestApp", response.Name)
+	assert.Equal(suite.T(), map[string]interface{}{"key3": "val3"}, response.Metadata)
 
 	mockService.AssertExpectations(suite.T())
 }
@@ -480,7 +490,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_SuccessWithOAuth(
 		},
 	}
 
-	mockService.On("GetApplication", "test-app-id").Return(expectedApp, nil)
+	mockService.On("GetApplication", mock.Anything, "test-app-id").Return(expectedApp, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/applications/test-app-id", nil)
 	req.SetPathValue("id", "test-app-id")
@@ -509,11 +519,12 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_WithTemplate() {
 		ID:          "test-app-id",
 		Name:        "TestApp",
 		Description: "Test Description",
-		BrandingID:  "brand-123",
+		ThemeID:     "theme-123",
+		LayoutID:    "layout-456",
 		Template:    "spa",
 	}
 
-	mockService.On("GetApplication", "test-app-id").Return(expectedApp, nil)
+	mockService.On("GetApplication", mock.Anything, "test-app-id").Return(expectedApp, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/applications/test-app-id", nil)
 	req.SetPathValue("id", "test-app-id")
@@ -527,7 +538,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_WithTemplate() {
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "test-app-id", response.ID)
-	assert.Equal(suite.T(), "brand-123", response.BrandingID)
+	assert.Equal(suite.T(), "theme-123", response.ThemeID)
+	assert.Equal(suite.T(), "layout-456", response.LayoutID)
 	assert.Equal(suite.T(), "spa", response.Template)
 
 	mockService.AssertExpectations(suite.T())
@@ -544,7 +556,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_WithEmptyTemplate
 		Template:    "",
 	}
 
-	mockService.On("GetApplication", "test-app-id").Return(expectedApp, nil)
+	mockService.On("GetApplication", mock.Anything, "test-app-id").Return(expectedApp, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/applications/test-app-id", nil)
 	req.SetPathValue("id", "test-app-id")
@@ -589,7 +601,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_NotFound() {
 
 	svcErr := &ErrorApplicationNotFound
 
-	mockService.On("GetApplication", "non-existent-id").Return(nil, svcErr)
+	mockService.On("GetApplication", mock.Anything, "non-existent-id").Return(nil, svcErr)
 
 	req := httptest.NewRequest(http.MethodGet, "/applications/non-existent-id", nil)
 	req.SetPathValue("id", "non-existent-id")
@@ -615,7 +627,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_ServiceError() {
 
 	svcErr := &ErrorInternalServerError
 
-	mockService.On("GetApplication", "test-app-id").Return(nil, svcErr)
+	mockService.On("GetApplication", mock.Anything, "test-app-id").Return(nil, svcErr)
 
 	req := httptest.NewRequest(http.MethodGet, "/applications/test-app-id", nil)
 	req.SetPathValue("id", "test-app-id")
@@ -649,7 +661,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_UnsupportedInboun
 		},
 	}
 
-	mockService.On("GetApplication", "test-app-id").Return(expectedApp, nil)
+	mockService.On("GetApplication", mock.Anything, "test-app-id").Return(expectedApp, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/applications/test-app-id", nil)
 	req.SetPathValue("id", "test-app-id")
@@ -677,7 +689,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_NilOAuthConfig() 
 		},
 	}
 
-	mockService.On("GetApplication", "test-app-id").Return(expectedApp, nil)
+	mockService.On("GetApplication", mock.Anything, "test-app-id").Return(expectedApp, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/applications/test-app-id", nil)
 	req.SetPathValue("id", "test-app-id")
@@ -697,15 +709,18 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_Success() {
 	appRequest := model.ApplicationRequest{
 		Name:        "UpdatedApp",
 		Description: "Updated Description",
+		Metadata:    map[string]interface{}{"key2": "val2"},
 	}
 
 	expectedApp := &model.ApplicationDTO{
 		ID:          "test-app-id",
 		Name:        "UpdatedApp",
 		Description: "Updated Description",
+		Metadata:    map[string]interface{}{"key2": "val2"},
 	}
 
-	mockService.On("UpdateApplication", "test-app-id", mock.AnythingOfType("*model.ApplicationDTO")).
+	mockService.On("UpdateApplication", mock.Anything, "test-app-id",
+		mock.AnythingOfType("*model.ApplicationDTO")).
 		Return(expectedApp, nil)
 
 	body, _ := json.Marshal(appRequest)
@@ -724,6 +739,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_Success() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "test-app-id", response.ID)
 	assert.Equal(suite.T(), "UpdatedApp", response.Name)
+	assert.Equal(suite.T(), map[string]interface{}{"key2": "val2"}, response.Metadata)
 
 	mockService.AssertExpectations(suite.T())
 }
@@ -745,7 +761,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_WithTemplate() {
 		Template:    "mobile",
 	}
 
-	mockService.On("UpdateApplication", "test-app-id", mock.AnythingOfType("*model.ApplicationDTO")).
+	mockService.On("UpdateApplication", mock.Anything, "test-app-id",
+		mock.AnythingOfType("*model.ApplicationDTO")).
 		Return(expectedApp, nil)
 
 	body, _ := json.Marshal(appRequest)
@@ -803,7 +820,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_TemplateScenarios
 				Template:    tc.expectedTemplate,
 			}
 
-			mockService.On("UpdateApplication", "test-app-id", mock.AnythingOfType("*model.ApplicationDTO")).
+			mockService.On("UpdateApplication", mock.Anything, "test-app-id",
+				mock.AnythingOfType("*model.ApplicationDTO")).
 				Return(expectedApp, nil)
 
 			body, _ := json.Marshal(appRequest)
@@ -881,7 +899,9 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_ServiceError() {
 
 	svcErr := &ErrorInvalidApplicationName
 
-	mockService.On("UpdateApplication", "test-app-id", mock.AnythingOfType("*model.ApplicationDTO")).Return(nil, svcErr)
+	mockService.On("UpdateApplication", mock.Anything, "test-app-id",
+		mock.AnythingOfType("*model.ApplicationDTO")).
+		Return(nil, svcErr)
 
 	body, _ := json.Marshal(appRequest)
 	req := httptest.NewRequest(http.MethodPut, "/applications/test-app-id", bytes.NewBuffer(body))
@@ -912,7 +932,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_NotFound() {
 
 	svcErr := &ErrorApplicationNotFound
 
-	mockService.On("UpdateApplication", "non-existent-id", mock.AnythingOfType("*model.ApplicationDTO")).
+	mockService.On("UpdateApplication", mock.Anything, "non-existent-id", mock.AnythingOfType("*model.ApplicationDTO")).
 		Return(nil, svcErr)
 
 	body, _ := json.Marshal(appRequest)
@@ -932,7 +952,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationDeleteRequest_Success() {
 	mockService := NewApplicationServiceInterfaceMock(suite.T())
 	handler := newApplicationHandler(mockService)
 
-	mockService.On("DeleteApplication", "test-app-id").Return(nil)
+	mockService.On("DeleteApplication", mock.Anything, "test-app-id").Return(nil)
 
 	req := httptest.NewRequest(http.MethodDelete, "/applications/test-app-id", nil)
 	req.SetPathValue("id", "test-app-id")
@@ -970,7 +990,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationDeleteRequest_NotFound() {
 
 	svcErr := &ErrorApplicationNotFound
 
-	mockService.On("DeleteApplication", "non-existent-id").Return(svcErr)
+	mockService.On("DeleteApplication", mock.Anything, "non-existent-id").Return(svcErr)
 
 	req := httptest.NewRequest(http.MethodDelete, "/applications/non-existent-id", nil)
 	req.SetPathValue("id", "non-existent-id")
@@ -989,7 +1009,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationDeleteRequest_ServiceError()
 
 	svcErr := &ErrorInternalServerError
 
-	mockService.On("DeleteApplication", "test-app-id").Return(svcErr)
+	mockService.On("DeleteApplication", mock.Anything, "test-app-id").Return(svcErr)
 
 	req := httptest.NewRequest(http.MethodDelete, "/applications/test-app-id", nil)
 	req.SetPathValue("id", "test-app-id")
@@ -1186,10 +1206,11 @@ func (suite *HandlerTestSuite) TestHandleError_ClientError() {
 	handler := newApplicationHandler(mockService)
 
 	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "/applications", nil)
 
 	svcErr := &ErrorInvalidApplicationName
 
-	handler.handleError(w, svcErr)
+	handler.handleError(w, r, svcErr)
 
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 	assert.Equal(suite.T(), "application/json", w.Header().Get("Content-Type"))
@@ -1205,10 +1226,11 @@ func (suite *HandlerTestSuite) TestHandleError_NotFoundError() {
 	handler := newApplicationHandler(mockService)
 
 	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "/applications", nil)
 
 	svcErr := &ErrorApplicationNotFound
 
-	handler.handleError(w, svcErr)
+	handler.handleError(w, r, svcErr)
 
 	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
 	assert.Equal(suite.T(), "application/json", w.Header().Get("Content-Type"))
@@ -1224,10 +1246,11 @@ func (suite *HandlerTestSuite) TestHandleError_ServerError() {
 	handler := newApplicationHandler(mockService)
 
 	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "/applications", nil)
 
 	svcErr := &ErrorInternalServerError
 
-	handler.handleError(w, svcErr)
+	handler.handleError(w, r, svcErr)
 
 	assert.Equal(suite.T(), http.StatusInternalServerError, w.Code)
 	assert.Equal(suite.T(), "application/json", w.Header().Get("Content-Type"))
@@ -1358,7 +1381,6 @@ func (suite *HandlerTestSuite) TestProcessInboundAuthConfigFromRequest_WithToken
 				ClientID:     "test-client-id",
 				ClientSecret: "test-secret",
 				Token: &model.OAuthTokenConfig{
-					Issuer: "https://issuer.example.com",
 					AccessToken: &model.AccessTokenConfig{
 						ValidityPeriod: 3600,
 						UserAttributes: []string{"email", "name"},
@@ -1377,7 +1399,6 @@ func (suite *HandlerTestSuite) TestProcessInboundAuthConfigFromRequest_WithToken
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result, 1)
 	assert.NotNil(suite.T(), result[0].OAuthAppConfig.Token)
-	assert.Equal(suite.T(), "https://issuer.example.com", result[0].OAuthAppConfig.Token.Issuer)
 }
 
 func (suite *HandlerTestSuite) TestProcessInboundAuthConfigFromRequest_WithScopes() {
@@ -1449,7 +1470,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_WithCertificate(
 		},
 	}
 
-	mockService.On("CreateApplication", mock.AnythingOfType("*model.ApplicationDTO")).Return(expectedApp, nil)
+	mockService.On("CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO")).
+		Return(expectedApp, nil)
 
 	body, _ := json.Marshal(appRequest)
 	req := httptest.NewRequest(http.MethodPost, "/applications", bytes.NewBuffer(body))
@@ -1485,7 +1507,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_WithEmptyArrays()
 		},
 	}
 
-	mockService.On("GetApplication", "test-app-id").Return(expectedApp, nil)
+	mockService.On("GetApplication", mock.Anything, "test-app-id").Return(expectedApp, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/applications/test-app-id", nil)
 	req.SetPathValue("id", "test-app-id")
@@ -1547,7 +1569,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_WithOAuth() {
 		},
 	}
 
-	mockService.On("UpdateApplication", "test-app-id", mock.AnythingOfType("*model.ApplicationDTO")).
+	mockService.On("UpdateApplication", mock.Anything, "test-app-id",
+		mock.AnythingOfType("*model.ApplicationDTO")).
 		Return(expectedApp, nil)
 
 	body, _ := json.Marshal(appRequest)
@@ -1622,7 +1645,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationListRequest_EncodeResponseEr
 		Count:        1,
 	}
 
-	mockService.On("GetApplicationList").Return(listResponse, nil)
+	mockService.On("GetApplicationList", mock.Anything).Return(listResponse, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/applications", nil)
 	w := &failingResponseWriter{failOnce: true}
@@ -1693,7 +1716,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_EncodeResponseEr
 		Description: "Test Description",
 	}
 
-	mockService.On("CreateApplication", mock.AnythingOfType("*model.ApplicationDTO")).Return(createdApp, nil)
+	mockService.On("CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO")).
+		Return(createdApp, nil)
 
 	body, _ := json.Marshal(appRequest)
 	req := httptest.NewRequest(http.MethodPost, "/applications", bytes.NewBuffer(body))
@@ -1722,7 +1746,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_EncodeResponseErr
 		Description: "Updated Description",
 	}
 
-	mockService.On("UpdateApplication", "test-app-id", mock.AnythingOfType("*model.ApplicationDTO")).
+	mockService.On("UpdateApplication", mock.Anything, "test-app-id",
+		mock.AnythingOfType("*model.ApplicationDTO")).
 		Return(updatedApp, nil)
 
 	body, _ := json.Marshal(appRequest)
@@ -1748,7 +1773,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_EncodeResponseErr
 		Description: "Test Description",
 	}
 
-	mockService.On("GetApplication", "test-app-id").Return(expectedApp, nil)
+	mockService.On("GetApplication", mock.Anything, "test-app-id").Return(expectedApp, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/applications/test-app-id", nil)
 	req.SetPathValue("id", "test-app-id")
@@ -1825,7 +1850,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_MultipleInboundA
 		},
 	}
 
-	mockService.On("CreateApplication", mock.AnythingOfType("*model.ApplicationDTO")).Return(createdApp, nil)
+	mockService.On("CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO")).
+		Return(createdApp, nil)
 
 	body, _ := json.Marshal(appRequest)
 	req := httptest.NewRequest(http.MethodPost, "/applications", bytes.NewBuffer(body))
@@ -1850,7 +1876,7 @@ func (suite *HandlerTestSuite) TestHandleError_EncodeErrorResponseFails() {
 	mockService := NewApplicationServiceInterfaceMock(suite.T())
 	handler := newApplicationHandler(mockService)
 
-	mockService.On("GetApplication", "test-id").Return(nil, &ErrorApplicationNotFound)
+	mockService.On("GetApplication", mock.Anything, "test-id").Return(nil, &ErrorApplicationNotFound)
 
 	req := httptest.NewRequest(http.MethodGet, "/applications/test-id", nil)
 	req.SetPathValue("id", "test-id")
@@ -1901,7 +1927,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_UnsupportedInbou
 		},
 	}
 
-	mockService.On("CreateApplication", mock.AnythingOfType("*model.ApplicationDTO")).Return(createdApp, nil)
+	mockService.On("CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO")).
+		Return(createdApp, nil)
 
 	body, _ := json.Marshal(appRequest)
 	req := httptest.NewRequest(http.MethodPost, "/applications", bytes.NewBuffer(body))
@@ -1944,7 +1971,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_NilOAuthConfig()
 		},
 	}
 
-	mockService.On("CreateApplication", mock.AnythingOfType("*model.ApplicationDTO")).Return(createdApp, nil)
+	mockService.On("CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO")).
+		Return(createdApp, nil)
 
 	body, _ := json.Marshal(appRequest)
 	req := httptest.NewRequest(http.MethodPost, "/applications", bytes.NewBuffer(body))
@@ -1987,7 +2015,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_ProcessInboundAu
 		},
 	}
 
-	mockService.On("CreateApplication", mock.AnythingOfType("*model.ApplicationDTO")).Return(createdApp, nil)
+	mockService.On("CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO")).
+		Return(createdApp, nil)
 
 	body, _ := json.Marshal(appRequest)
 	req := httptest.NewRequest(http.MethodPost, "/applications", bytes.NewBuffer(body))
@@ -2016,7 +2045,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_SuccessResponseE
 		Description: "Test Description",
 	}
 
-	mockService.On("CreateApplication", mock.AnythingOfType("*model.ApplicationDTO")).Return(expectedApp, nil)
+	mockService.On("CreateApplication", mock.Anything, mock.AnythingOfType("*model.ApplicationDTO")).
+		Return(expectedApp, nil)
 
 	body, _ := json.Marshal(appRequest)
 	req := httptest.NewRequest(http.MethodPost, "/applications", bytes.NewBuffer(body))
@@ -2054,7 +2084,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_UnsupportedInboun
 		},
 	}
 
-	mockService.On("UpdateApplication", "test-app-id", mock.AnythingOfType("*model.ApplicationDTO")).
+	mockService.On("UpdateApplication", mock.Anything, "test-app-id",
+		mock.AnythingOfType("*model.ApplicationDTO")).
 		Return(updatedApp, nil)
 
 	body, _ := json.Marshal(appRequest)
@@ -2099,7 +2130,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_NilOAuthConfig() 
 		},
 	}
 
-	mockService.On("UpdateApplication", "test-app-id", mock.AnythingOfType("*model.ApplicationDTO")).
+	mockService.On("UpdateApplication", mock.Anything, "test-app-id",
+		mock.AnythingOfType("*model.ApplicationDTO")).
 		Return(updatedApp, nil)
 
 	body, _ := json.Marshal(appRequest)
@@ -2143,7 +2175,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_ProcessInboundAut
 		},
 	}
 
-	mockService.On("UpdateApplication", "test-app-id", mock.AnythingOfType("*model.ApplicationDTO")).
+	mockService.On("UpdateApplication", mock.Anything, "test-app-id",
+		mock.AnythingOfType("*model.ApplicationDTO")).
 		Return(updatedApp, nil)
 
 	body, _ := json.Marshal(appRequest)
@@ -2174,7 +2207,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_SuccessResponseEn
 		Description: "Updated Description",
 	}
 
-	mockService.On("UpdateApplication", "test-app-id", mock.AnythingOfType("*model.ApplicationDTO")).
+	mockService.On("UpdateApplication", mock.Anything, "test-app-id",
+		mock.AnythingOfType("*model.ApplicationDTO")).
 		Return(updatedApp, nil)
 
 	body, _ := json.Marshal(appRequest)
@@ -2254,7 +2288,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_UnsupportedAuthTy
 			},
 		},
 	}
-	mockService.On("GetApplication", "test-app-id").Return(app, nil)
+	mockService.On("GetApplication", mock.Anything, "test-app-id").Return(app, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/applications/test-app-id", nil)
 	req.SetPathValue("id", "test-app-id")
@@ -2282,7 +2316,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_NilOAuthConfigErr
 			},
 		},
 	}
-	mockService.On("GetApplication", "test-app-id").Return(app, nil)
+	mockService.On("GetApplication", mock.Anything, "test-app-id").Return(app, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/applications/test-app-id", nil)
 	req.SetPathValue("id", "test-app-id")
@@ -2314,7 +2348,7 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_EmptyResponseType
 			},
 		},
 	}
-	mockService.On("GetApplication", "test-app-id").Return(app, nil)
+	mockService.On("GetApplication", mock.Anything, "test-app-id").Return(app, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/applications/test-app-id", nil)
 	req.SetPathValue("id", "test-app-id")

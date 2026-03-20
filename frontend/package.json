@@ -22,24 +22,28 @@
     "wso2"
   ],
   "scripts": {
-    "build": "nx run-many --target=build --all && pnpm run build:docs",
-    "build:docs": "node ./scripts/build-docs.js",
+    "build": "nx run-many --target=build --all",
+    "build:apps": "nx run-many --target=build --projects=apps/*",
+    "build:docs": "pnpm run build:packages && node ./scripts/build-docs.js",
+    "build:packages": "nx run-many --target=build --projects=packages/*",
     "clean": "nx run-many --target=clean --all",
+    "i18n:extract": "pnpm i18next-cli sync",
     "lint": "nx run-many --target=lint --all --parallel",
     "lint:fix": "nx run-many --target=fix:lint --all --parallel",
     "test": "nx run-many --target=test --all --parallel",
     "typecheck": "nx run-many --target=typecheck --all --parallel"
   },
   "devDependencies": {
-    "@nx/js": "21.6.4",
-    "@swc-node/register": "1.9.1",
-    "@swc/core": "1.5.7",
-    "@swc/helpers": "0.5.11",
-    "@thunder/logger": "workspace:^",
+    "@nx/js": "22.5.1",
+    "@swc-node/register": "1.11.1",
+    "@swc/core": "1.15.8",
+    "@swc/helpers": "0.5.18",
     "@thunder/eslint-plugin-thunder": "workspace:^",
+    "@thunder/logger": "workspace:^",
     "@thunder/prettier-config": "workspace:^",
     "eslint": "catalog:",
-    "nx": "21.6.4",
+    "i18next-cli": "^1.47.12",
+    "nx": "22.5.1",
     "prettier": "catalog:",
     "rimraf": "catalog:",
     "tslib": "catalog:",
@@ -47,7 +51,18 @@
   },
   "pnpm": {
     "overrides": {
-      "vite": "catalog:"
+      "flatted@3.3.3": ">=3.4.0",
+      "minimatch@10.1.1": ">=10.2.1",
+      "vite": "catalog:",
+      "nx>axios": ">=1.13.5",
+      "rollup": ">=4.59.0"
+    },
+    "packageExtensions": {
+      "@hookform/resolvers": {
+        "peerDependencies": {
+          "zod": "*"
+        }
+      }
     }
   }
 }

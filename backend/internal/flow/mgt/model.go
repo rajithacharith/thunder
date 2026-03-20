@@ -27,6 +27,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/system/mcp/tool"
 )
 
 // FlowDefinition represents the structure of a flow definition.
@@ -47,6 +48,7 @@ type CompleteFlowDefinition struct {
 	Nodes         []NodeDefinition `json:"nodes,omitempty" yaml:"nodes" jsonschema:"List of nodes defining the flow logic."`
 	CreatedAt     string           `json:"createdAt,omitempty" yaml:"createdAt" jsonschema:"Timestamp when the flow was created."`
 	UpdatedAt     string           `json:"updatedAt,omitempty" yaml:"updatedAt" jsonschema:"Timestamp when the flow was last updated."`
+	IsReadOnly    bool             `json:"isReadOnly,omitempty" yaml:"isReadOnly" jsonschema:"Whether the flow is immutable (declarative)."`
 }
 
 // BasicFlowDefinition represents basic information about a flow definition.
@@ -58,6 +60,7 @@ type BasicFlowDefinition struct {
 	ActiveVersion int             `json:"activeVersion" jsonschema:"Current active version number."`
 	CreatedAt     string          `json:"createdAt" jsonschema:"Creation timestamp."`
 	UpdatedAt     string          `json:"updatedAt" jsonschema:"Last update timestamp."`
+	IsReadOnly    bool            `json:"isReadOnly" jsonschema:"Whether the flow is immutable (declarative)."`
 }
 
 // FlowListResponse represents a paginated list of flow definitions.
@@ -125,16 +128,17 @@ type NodePosition struct {
 
 // NodeDefinition represents a single node in a flow definition.
 type NodeDefinition struct {
-	ID         string                 `json:"id" yaml:"id" jsonschema:"Unique node identifier within the flow. Example: 'start', 'username-password', 'end'"`
-	Type       string                 `json:"type" yaml:"type" jsonschema:"Node type: 'START' (entry point), 'END' (exit point), 'TASK_EXECUTION' (backend logic), or 'PROMPT' (user input)"`
-	Layout     *NodeLayout            `json:"layout,omitempty" yaml:"layout,omitempty" jsonschema:"Optional UI layout information for flow composer (position and size on canvas)"`
-	Meta       interface{}            `json:"meta,omitempty" yaml:"meta,omitempty" jsonschema:"Optional metadata. For PROMPT nodes, must include 'components' array for UI rendering. See existing flows for examples."`
-	Prompts    []PromptDefinition     `json:"prompts,omitempty" yaml:"prompts,omitempty" jsonschema:"For PROMPT nodes: defines user inputs and actions. Each prompt has inputs (form fields) and an action (what happens on submit)."`
-	Properties map[string]interface{} `json:"properties,omitempty" yaml:"properties,omitempty" jsonschema:"Optional node-specific properties for configuration"`
-	Executor   *ExecutorDefinition    `json:"executor,omitempty" yaml:"executor,omitempty" jsonschema:"For TASK_EXECUTION nodes: defines which executor to run (e.g., 'UsernamePasswordAuthenticator', 'OTPGenerator')"`
-	OnSuccess  string                 `json:"onSuccess,omitempty" yaml:"onSuccess,omitempty" jsonschema:"ID of the next node to execute on successful completion"`
-	OnFailure  string                 `json:"onFailure,omitempty" yaml:"onFailure,omitempty" jsonschema:"ID of the next node to execute on failure"`
-	Condition  *ConditionDefinition   `json:"condition,omitempty" yaml:"condition,omitempty" jsonschema:"Optional condition to determine if this node should execute"`
+	ID           string                 `json:"id" yaml:"id" jsonschema:"Unique node identifier within the flow. Example: 'start', 'username-password', 'end'"`
+	Type         string                 `json:"type" yaml:"type" jsonschema:"Node type: 'START' (entry point), 'END' (exit point), 'TASK_EXECUTION' (backend logic), or 'PROMPT' (user input)"`
+	Layout       *NodeLayout            `json:"layout,omitempty" yaml:"layout,omitempty" jsonschema:"Optional UI layout information for flow composer (position and size on canvas)"`
+	Meta         interface{}            `json:"meta,omitempty" yaml:"meta,omitempty" jsonschema:"Optional metadata. For PROMPT nodes, must include 'components' array for UI rendering. See existing flows for examples."`
+	Prompts      []PromptDefinition     `json:"prompts,omitempty" yaml:"prompts,omitempty" jsonschema:"For PROMPT nodes: defines user inputs and actions. Each prompt has inputs (form fields) and an action (what happens on submit)."`
+	Properties   map[string]interface{} `json:"properties,omitempty" yaml:"properties,omitempty" jsonschema:"Optional node-specific properties for configuration"`
+	Executor     *ExecutorDefinition    `json:"executor,omitempty" yaml:"executor,omitempty" jsonschema:"For TASK_EXECUTION nodes: defines which executor to run (e.g., 'UsernamePasswordAuthenticator', 'OTPGenerator')"`
+	OnSuccess    string                 `json:"onSuccess,omitempty" yaml:"onSuccess,omitempty" jsonschema:"ID of the next node to execute on successful completion"`
+	OnFailure    string                 `json:"onFailure,omitempty" yaml:"onFailure,omitempty" jsonschema:"ID of the next node to execute on failure"`
+	OnIncomplete string                 `json:"onIncomplete,omitempty" yaml:"onIncomplete,omitempty" jsonschema:"For TASK_EXECUTION nodes: ID of the PROMPT node to forward to when user input is required."`
+	Condition    *ConditionDefinition   `json:"condition,omitempty" yaml:"condition,omitempty" jsonschema:"Optional condition to determine if this node should execute"`
 }
 
 // InputDefinition represents an input parameter for a node.
@@ -223,4 +227,29 @@ func (nd *NodeDefinition) UnmarshalYAML(value *yaml.Node) error {
 	}
 
 	return nil
+}
+
+// listFlowsInput represents the input for the list_flows tool.
+type listFlowsInput struct {
+	tool.PaginationInput
+	FlowType string `json:"flow_type,omitempty" jsonschema:"Filter by flow type: 'AUTHENTICATION' for login flows or 'REGISTRATION' for signup flows. Omit to see all flows."`
+}
+
+// flowListOutput represents the output for list_flows tool.
+type flowListOutput struct {
+	TotalCount int                   `json:"total_count" jsonschema:"Total number of flows available."`
+	Flows      []BasicFlowDefinition `json:"flows" jsonschema:"List of flow definitions."`
+}
+
+// getFlowByHandleInput represents the input for get_flow_by_handle tool.
+type getFlowByHandleInput struct {
+	Handle   string `json:"handle" jsonschema:"Flow handle to search for."`
+	FlowType string `json:"flow_type" jsonschema:"Flow type: 'AUTHENTICATION' or 'REGISTRATION'. Required to uniquely identify the flow."`
+}
+
+// updateFlowInput represents the input for update_flow tool.
+type updateFlowInput struct {
+	ID    string           `json:"id" jsonschema:"The unique identifier of the flow to update. Required."`
+	Name  string           `json:"name" jsonschema:"Display name for the flow. Required for PUT."`
+	Nodes []NodeDefinition `json:"nodes" jsonschema:"Array of nodes defining the flow steps. Required for PUT."`
 }

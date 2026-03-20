@@ -49,14 +49,15 @@ var (
 			"email": map[string]interface{}{
 				"type": "string",
 			},
-			"firstName": map[string]interface{}{
+			"given_name": map[string]interface{}{
 				"type": "string",
 			},
-			"lastName": map[string]interface{}{
+			"family_name": map[string]interface{}{
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
+				"credential": true,
 			},
 		},
 	}
@@ -65,8 +66,8 @@ var (
 		Type: "role-person",
 		Attributes: json.RawMessage(`{
 			"email": "roleuser1@example.com",
-			"firstName": "Role",
-			"lastName": "User1",
+			"given_name": "Role",
+			"family_name": "User1",
 			"password": "TestPassword123!"
 		}`),
 	}
@@ -75,8 +76,8 @@ var (
 		Type: "role-person",
 		Attributes: json.RawMessage(`{
 			"email": "roleuser2@example.com",
-			"firstName": "Role",
-			"lastName": "User2",
+			"given_name": "Role",
+			"family_name": "User2",
 			"password": "TestPassword123!"
 		}`),
 	}
@@ -122,7 +123,7 @@ func (suite *RoleAPITestSuite) SetupSuite() {
 	ouID, err := testutils.CreateOrganizationUnit(testOU)
 	suite.Require().NoError(err, "Failed to create test organization unit")
 	testOUID = ouID
-	testUserSchema.OrganizationUnitId = testOUID
+	testUserSchema.OUID = testOUID
 
 	// Create user schema
 	schemaID, err := testutils.CreateUserType(testUserSchema)
@@ -131,30 +132,30 @@ func (suite *RoleAPITestSuite) SetupSuite() {
 
 	// Create test users
 	user1 := testUser1
-	user1.OrganizationUnit = testOUID
+	user1.OUID = testOUID
 	userID1, err := testutils.CreateUser(user1)
 	suite.Require().NoError(err, "Failed to create test user 1")
 	testUserID1 = userID1
 
 	user2 := testUser2
-	user2.OrganizationUnit = testOUID
+	user2.OUID = testOUID
 	userID2, err := testutils.CreateUser(user2)
 	suite.Require().NoError(err, "Failed to create test user 2")
 	testUserID2 = userID2
 
 	// Create test group
 	groupToCreate := testGroup
-	groupToCreate.OrganizationUnitId = testOUID
+	groupToCreate.OUID = testOUID
 	groupID, err := testutils.CreateGroup(groupToCreate)
 	suite.Require().NoError(err, "Failed to create test group")
 	testGroupID = groupID
 
 	// Create test resource servers
 	rs1 := testutils.ResourceServer{
-		Name:               "Test Booking System",
-		Description:        "Resource server for testing role permissions",
-		Identifier:         "test-booking-system",
-		OrganizationUnitID: testOUID,
+		Name:        "Test Booking System",
+		Description: "Resource server for testing role permissions",
+		Identifier:  "test-booking-system",
+		OUID:        testOUID,
 	}
 	// Create actions on resource server 1
 	action1 := testutils.Action{
@@ -172,10 +173,10 @@ func (suite *RoleAPITestSuite) SetupSuite() {
 	testResourceServer1ID = rsID1
 
 	rs2 := testutils.ResourceServer{
-		Name:               "Test Payment System",
-		Description:        "Second resource server for multi-server testing",
-		Identifier:         "test-payment-system",
-		OrganizationUnitID: testOUID,
+		Name:        "Test Payment System",
+		Description: "Second resource server for multi-server testing",
+		Identifier:  "test-payment-system",
+		OUID:        testOUID,
 	}
 	action3 := testutils.Action{
 		Name:        "Process Payments",
@@ -188,9 +189,9 @@ func (suite *RoleAPITestSuite) SetupSuite() {
 
 	// Create a shared role that can be used by multiple tests
 	sharedRole := CreateRoleRequest{
-		Name:               "Test Admin Role",
-		Description:        "Admin role for testing",
-		OrganizationUnitID: testOUID,
+		Name:        "Test Admin Role",
+		Description: "Admin role for testing",
+		OUID:        testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -240,9 +241,9 @@ func (suite *RoleAPITestSuite) TearDownSuite() {
 // Test 1: Create Role
 func (suite *RoleAPITestSuite) TestCreateRole_Success() {
 	roleRequest := CreateRoleRequest{
-		Name:               "Test Create Role Success",
-		Description:        "Test role created in TestCreateRole_Success",
-		OrganizationUnitID: testOUID,
+		Name:        "Test Create Role Success",
+		Description: "Test role created in TestCreateRole_Success",
+		OUID:        testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -258,7 +259,7 @@ func (suite *RoleAPITestSuite) TestCreateRole_Success() {
 	suite.NotEmpty(role.ID)
 	suite.Equal(roleRequest.Name, role.Name)
 	suite.Equal(roleRequest.Description, role.Description)
-	suite.Equal(roleRequest.OrganizationUnitID, role.OrganizationUnitID)
+	suite.Equal(roleRequest.OUID, role.OUID)
 	suite.Equal(1, len(role.Permissions))
 	suite.Equal(testResourceServer1ID, role.Permissions[0].ResourceServerID)
 	suite.Equal(2, len(role.Permissions[0].Permissions))
@@ -270,9 +271,9 @@ func (suite *RoleAPITestSuite) TestCreateRole_Success() {
 // Test 2: Create Role with Assignments
 func (suite *RoleAPITestSuite) TestCreateRole_WithAssignments() {
 	roleRequest := CreateRoleRequest{
-		Name:               "Test Role With Assignments",
-		Description:        "Role with initial assignments",
-		OrganizationUnitID: testOUID,
+		Name:        "Test Role With Assignments",
+		Description: "Role with initial assignments",
+		OUID:        testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -299,10 +300,10 @@ func (suite *RoleAPITestSuite) TestCreateRole_WithAssignments() {
 // Test 3: Create Role without Permissions
 func (suite *RoleAPITestSuite) TestCreateRole_WithoutPermissions() {
 	roleRequest := CreateRoleRequest{
-		Name:               "Test Role Without Permissions",
-		Description:        "Role without permissions",
-		OrganizationUnitID: testOUID,
-		Permissions:        []ResourcePermissions{},
+		Name:        "Test Role Without Permissions",
+		Description: "Role without permissions",
+		OUID:        testOUID,
+		Permissions: []ResourcePermissions{},
 		Assignments: []Assignment{
 			{ID: testUserID1, Type: AssigneeTypeUser},
 		},
@@ -330,7 +331,7 @@ func (suite *RoleAPITestSuite) TestCreateRole_ValidationErrors() {
 		{
 			name: "Missing Name",
 			roleRequest: CreateRoleRequest{
-				OrganizationUnitID: testOUID,
+				OUID: testOUID,
 				Permissions: []ResourcePermissions{
 					{
 						ResourceServerID: testResourceServer1ID,
@@ -341,7 +342,7 @@ func (suite *RoleAPITestSuite) TestCreateRole_ValidationErrors() {
 			expectedErr: "ROL-1001",
 		},
 		{
-			name: "Missing OrganizationUnitID",
+			name: "Missing OUID",
 			roleRequest: CreateRoleRequest{
 				Name: "Test Role",
 				Permissions: []ResourcePermissions{
@@ -356,8 +357,8 @@ func (suite *RoleAPITestSuite) TestCreateRole_ValidationErrors() {
 		{
 			name: "Invalid Organization Unit",
 			roleRequest: CreateRoleRequest{
-				Name:               "Test Role",
-				OrganizationUnitID: "nonexistent-ou",
+				Name: "Test Role",
+				OUID: "nonexistent-ou",
 				Permissions: []ResourcePermissions{
 					{
 						ResourceServerID: testResourceServer1ID,
@@ -430,8 +431,8 @@ func (suite *RoleAPITestSuite) TestListRoles_Success() {
 func (suite *RoleAPITestSuite) TestListRoles_Pagination() {
 	// Create additional roles for pagination testing
 	role1Request := CreateRoleRequest{
-		Name:               "Pagination Test Role 1",
-		OrganizationUnitID: testOUID,
+		Name: "Pagination Test Role 1",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -440,8 +441,8 @@ func (suite *RoleAPITestSuite) TestListRoles_Pagination() {
 		},
 	}
 	role2Request := CreateRoleRequest{
-		Name:               "Pagination Test Role 2",
-		OrganizationUnitID: testOUID,
+		Name: "Pagination Test Role 2",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -474,9 +475,9 @@ func (suite *RoleAPITestSuite) TestUpdateRole_Success() {
 	suite.Require().NotEmpty(sharedRoleID, "Shared role must be created in SetupSuite")
 
 	updateRequest := UpdateRoleRequest{
-		Name:               "Updated Admin Role",
-		Description:        "Updated description",
-		OrganizationUnitID: testOUID,
+		Name:        "Updated Admin Role",
+		Description: "Updated description",
+		OUID:        testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -502,8 +503,8 @@ func (suite *RoleAPITestSuite) TestUpdateRole_Success() {
 // Test 10: Update Role - Not Found
 func (suite *RoleAPITestSuite) TestUpdateRole_NotFound() {
 	updateRequest := UpdateRoleRequest{
-		Name:               "Updated Role",
-		OrganizationUnitID: testOUID,
+		Name: "Updated Role",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -522,8 +523,8 @@ func (suite *RoleAPITestSuite) TestUpdateRole_NotFound() {
 func (suite *RoleAPITestSuite) TestAddAssignments_User() {
 	// Create a role for this test
 	roleRequest := CreateRoleRequest{
-		Name:               "Test Role for User Assignment",
-		OrganizationUnitID: testOUID,
+		Name: "Test Role for User Assignment",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -556,8 +557,8 @@ func (suite *RoleAPITestSuite) TestAddAssignments_User() {
 func (suite *RoleAPITestSuite) TestAddAssignments_Group() {
 	// Create a role for this test
 	roleRequest := CreateRoleRequest{
-		Name:               "Test Role for Group Assignment",
-		OrganizationUnitID: testOUID,
+		Name: "Test Role for Group Assignment",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -598,8 +599,8 @@ func (suite *RoleAPITestSuite) TestAddAssignments_Group() {
 func (suite *RoleAPITestSuite) TestAddAssignments_Multiple() {
 	// Create a new role for this test
 	roleRequest := CreateRoleRequest{
-		Name:               "Multi Assignment Role",
-		OrganizationUnitID: testOUID,
+		Name: "Multi Assignment Role",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -632,8 +633,8 @@ func (suite *RoleAPITestSuite) TestAddAssignments_Multiple() {
 func (suite *RoleAPITestSuite) TestAddAssignments_InvalidUser() {
 	// Create a role for this test
 	roleRequest := CreateRoleRequest{
-		Name:               "Test Role for Invalid Assignment",
-		OrganizationUnitID: testOUID,
+		Name: "Test Role for Invalid Assignment",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -660,8 +661,8 @@ func (suite *RoleAPITestSuite) TestAddAssignments_InvalidUser() {
 func (suite *RoleAPITestSuite) TestGetRoleAssignments_Success() {
 	// Create a role with an assignment for this test
 	roleRequest := CreateRoleRequest{
-		Name:               "Test Role for Get Assignments",
-		OrganizationUnitID: testOUID,
+		Name: "Test Role for Get Assignments",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -686,8 +687,8 @@ func (suite *RoleAPITestSuite) TestGetRoleAssignments_Success() {
 func (suite *RoleAPITestSuite) TestGetRoleAssignments_Pagination() {
 	// Create a role with multiple assignments for pagination testing
 	roleRequest := CreateRoleRequest{
-		Name:               "Test Role for Pagination",
-		OrganizationUnitID: testOUID,
+		Name: "Test Role for Pagination",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -720,8 +721,8 @@ func (suite *RoleAPITestSuite) TestGetRoleAssignments_Pagination() {
 func (suite *RoleAPITestSuite) TestRemoveAssignments_Success() {
 	// Create a role with assignments for this test
 	roleRequest := CreateRoleRequest{
-		Name:               "Test Role for Remove Assignments",
-		OrganizationUnitID: testOUID,
+		Name: "Test Role for Remove Assignments",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -763,8 +764,8 @@ func (suite *RoleAPITestSuite) TestRemoveAssignments_Success() {
 func (suite *RoleAPITestSuite) TestDeleteRole_WithAssignments() {
 	// Create a role with assignments
 	roleRequest := CreateRoleRequest{
-		Name:               "Role to Delete with Assignments",
-		OrganizationUnitID: testOUID,
+		Name: "Role to Delete with Assignments",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -801,8 +802,8 @@ func (suite *RoleAPITestSuite) TestDeleteRole_WithAssignments() {
 func (suite *RoleAPITestSuite) TestDeleteRole_Success() {
 	// Create a role without assignments
 	roleRequest := CreateRoleRequest{
-		Name:               "Role to Delete",
-		OrganizationUnitID: testOUID,
+		Name: "Role to Delete",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -835,8 +836,8 @@ func (suite *RoleAPITestSuite) TestDeleteRole_NotFound() {
 func (suite *RoleAPITestSuite) TestGetRoleAssignments_WithDisplay() {
 	// Create a role with both user and group assignments
 	roleRequest := CreateRoleRequest{
-		Name:               "Test Role for Display Names",
-		OrganizationUnitID: testOUID,
+		Name: "Test Role for Display Names",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -895,8 +896,8 @@ func (suite *RoleAPITestSuite) TestGetRoleAssignments_WithDisplay() {
 // Test 22: Create Role - Invalid Resource Server ID
 func (suite *RoleAPITestSuite) TestCreateRole_InvalidResourceServerID() {
 	roleRequest := CreateRoleRequest{
-		Name:               "Role With Invalid Resource Server",
-		OrganizationUnitID: testOUID,
+		Name: "Role With Invalid Resource Server",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: "00000000-0000-0000-0000-000000000000",
@@ -914,8 +915,8 @@ func (suite *RoleAPITestSuite) TestCreateRole_InvalidResourceServerID() {
 // Test 23: Create Role - Invalid Permissions for Valid Resource Server
 func (suite *RoleAPITestSuite) TestCreateRole_InvalidPermissionsForValidResourceServer() {
 	roleRequest := CreateRoleRequest{
-		Name:               "Role With Invalid Permissions",
-		OrganizationUnitID: testOUID,
+		Name: "Role With Invalid Permissions",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -933,8 +934,8 @@ func (suite *RoleAPITestSuite) TestCreateRole_InvalidPermissionsForValidResource
 // Test 24: Create Role - Empty Permissions Array for Resource Server
 func (suite *RoleAPITestSuite) TestCreateRole_EmptyPermissionsArrayForResourceServer() {
 	roleRequest := CreateRoleRequest{
-		Name:               "Role With Empty Permissions Array",
-		OrganizationUnitID: testOUID,
+		Name: "Role With Empty Permissions Array",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -955,9 +956,9 @@ func (suite *RoleAPITestSuite) TestCreateRole_EmptyPermissionsArrayForResourceSe
 // Test 25: Create Role - Multiple Resource Servers
 func (suite *RoleAPITestSuite) TestCreateRole_MultipleResourceServers() {
 	roleRequest := CreateRoleRequest{
-		Name:               "Multi-Server Role",
-		Description:        "Role with permissions from multiple resource servers",
-		OrganizationUnitID: testOUID,
+		Name:        "Multi-Server Role",
+		Description: "Role with permissions from multiple resource servers",
+		OUID:        testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -995,8 +996,8 @@ func (suite *RoleAPITestSuite) TestCreateRole_MultipleResourceServers() {
 // Test 26: Create Role - Multiple Resource Servers with One Invalid
 func (suite *RoleAPITestSuite) TestCreateRole_MultipleResourceServers_OneInvalid() {
 	roleRequest := CreateRoleRequest{
-		Name:               "Multi-Server Role With Invalid",
-		OrganizationUnitID: testOUID,
+		Name: "Multi-Server Role With Invalid",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -1019,8 +1020,8 @@ func (suite *RoleAPITestSuite) TestCreateRole_MultipleResourceServers_OneInvalid
 func (suite *RoleAPITestSuite) TestUpdateRole_InvalidPermissions() {
 	// Create valid role first
 	roleRequest := CreateRoleRequest{
-		Name:               "Role to Update with Invalid Permissions",
-		OrganizationUnitID: testOUID,
+		Name: "Role to Update with Invalid Permissions",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -1034,8 +1035,8 @@ func (suite *RoleAPITestSuite) TestUpdateRole_InvalidPermissions() {
 
 	// Update with invalid permissions
 	updateRequest := UpdateRoleRequest{
-		Name:               "Updated Role Name",
-		OrganizationUnitID: testOUID,
+		Name: "Updated Role Name",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -1054,8 +1055,8 @@ func (suite *RoleAPITestSuite) TestUpdateRole_InvalidPermissions() {
 func (suite *RoleAPITestSuite) TestUpdateRole_AddSecondResourceServer() {
 	// Create role with one resource server
 	roleRequest := CreateRoleRequest{
-		Name:               "Role to Expand",
-		OrganizationUnitID: testOUID,
+		Name: "Role to Expand",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -1069,8 +1070,8 @@ func (suite *RoleAPITestSuite) TestUpdateRole_AddSecondResourceServer() {
 
 	// Update to add second resource server
 	updateRequest := UpdateRoleRequest{
-		Name:               "Expanded Role",
-		OrganizationUnitID: testOUID,
+		Name: "Expanded Role",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -1092,8 +1093,8 @@ func (suite *RoleAPITestSuite) TestUpdateRole_AddSecondResourceServer() {
 // Test 29: Create Role - Mix of Valid and Invalid Permissions
 func (suite *RoleAPITestSuite) TestCreateRole_MixedValidInvalidPermissions() {
 	roleRequest := CreateRoleRequest{
-		Name:               "Role With Mixed Permissions",
-		OrganizationUnitID: testOUID,
+		Name: "Role With Mixed Permissions",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: testResourceServer1ID,
@@ -1111,8 +1112,8 @@ func (suite *RoleAPITestSuite) TestCreateRole_MixedValidInvalidPermissions() {
 // Test 30: Create Role - Missing Resource Server ID
 func (suite *RoleAPITestSuite) TestCreateRole_MissingResourceServerID() {
 	roleRequest := CreateRoleRequest{
-		Name:               "Role With Missing Resource Server ID",
-		OrganizationUnitID: testOUID,
+		Name: "Role With Missing Resource Server ID",
+		OUID: testOUID,
 		Permissions: []ResourcePermissions{
 			{
 				ResourceServerID: "",
