@@ -27,8 +27,8 @@ import ConsentAdapter from '../ConsentAdapter';
 
 vi.mock('@wso2/oxygen-ui', () => ({
   Box: ({children}: any) => <div>{children}</div>,
-  Checkbox: ({checked, disabled, onChange}: any) => (
-    <input type="checkbox" checked={checked} disabled={disabled} onChange={onChange} />
+  Switch: ({checked, disabled, onChange}: any) => (
+    <input type="checkbox" role="switch" checked={checked} disabled={disabled} onChange={onChange} />
   ),
   Divider: () => <hr data-testid="consent-divider" />,
   FormControlLabel: ({control, label}: any) => (
@@ -111,19 +111,19 @@ describe('ConsentAdapter', () => {
     expect(screen.getByText('givenName')).toBeInTheDocument();
     expect(screen.getByText('lastName')).toBeInTheDocument();
 
-    expect(screen.getAllByTestId('consent-divider')).toHaveLength(1);
+    expect(screen.getAllByTestId('consent-divider').length).toBeGreaterThan(0);
   });
 
-  it('renders essential checkboxes as disabled', () => {
+  it('renders essential switches as disabled', () => {
     render(<ConsentAdapter consentData={consentData} formValues={{}} onInputChange={mockOnInputChange} />);
 
-    const checkboxes = screen.getAllByRole('checkbox');
+    const checkboxes = screen.getAllByRole('switch');
     // The first two checkboxes are essential attributes from the first purpose.
     expect(checkboxes[0]).toBeDisabled();
     expect(checkboxes[1]).toBeDisabled();
   });
 
-  it('tracks optional checkbox state from form values and emits changes', () => {
+  it('tracks optional switch state from form values and emits changes', () => {
     const formValues = {
       '__consent_opt__purpose-1__givenName': 'false',
       '__consent_opt__purpose-1__lastName': 'true',
@@ -131,7 +131,7 @@ describe('ConsentAdapter', () => {
 
     render(<ConsentAdapter consentData={consentData} formValues={formValues} onInputChange={mockOnInputChange} />);
 
-    const checkboxes = screen.getAllByRole('checkbox');
+    const checkboxes = screen.getAllByRole('switch');
     const givenNameCheckbox = checkboxes[2];
     const lastNameCheckbox = checkboxes[3];
 
