@@ -41,6 +41,7 @@ type layoutMgtStoreInterface interface {
 	DeleteLayout(id string) error
 	GetApplicationsCountByLayoutID(id string) (int, error)
 	IsLayoutDeclarative(id string) bool
+	IsLayoutHandleConflict(handle string, excludeID string) (bool, error)
 }
 
 // layoutMgtStore is the default implementation of layoutMgtStoreInterface.
@@ -108,7 +109,8 @@ func (s *layoutMgtStore) CreateLayout(id string, layout CreateLayoutRequest) err
 		return fmt.Errorf("failed to marshal layout: %w", err)
 	}
 
-	_, err = dbClient.Execute(queryCreateLayout, id, layout.DisplayName, layout.Description, layoutJSON, s.deploymentID)
+	_, err = dbClient.Execute(queryCreateLayout, id, layout.Handle, layout.DisplayName, layout.Description,
+		layoutJSON, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -272,6 +274,11 @@ func (s *layoutMgtStore) buildLayoutListItemFromResultRow(row map[string]interfa
 		return Layout{}, fmt.Errorf("id not found or invalid type")
 	}
 
+	handle := ""
+	if h, ok := row["handle"].(string); ok {
+		handle = h
+	}
+
 	displayName, ok := row["display_name"].(string)
 	if !ok {
 		return Layout{}, fmt.Errorf("display_name not found or invalid type")
@@ -294,6 +301,7 @@ func (s *layoutMgtStore) buildLayoutListItemFromResultRow(row map[string]interfa
 
 	return Layout{
 		ID:          id,
+		Handle:      handle,
 		DisplayName: displayName,
 		Description: description,
 		CreatedAt:   createdAt,
@@ -306,6 +314,11 @@ func (s *layoutMgtStore) buildLayoutFromResultRow(row map[string]interface{}) (L
 	id, ok := row["id"].(string)
 	if !ok {
 		return Layout{}, fmt.Errorf("id not found or invalid type")
+	}
+
+	handle := ""
+	if h, ok := row["handle"].(string); ok {
+		handle = h
 	}
 
 	displayName, ok := row["display_name"].(string)
@@ -345,10 +358,31 @@ func (s *layoutMgtStore) buildLayoutFromResultRow(row map[string]interface{}) (L
 
 	return Layout{
 		ID:          id,
+		Handle:      handle,
 		DisplayName: displayName,
 		Description: description,
 		Layout:      layout,
 		CreatedAt:   createdAt,
 		UpdatedAt:   updatedAt,
 	}, nil
+}
+
+// IsLayoutHandleConflict checks if a layout handle already exists for the deployment, excluding a specific ID.
+func (s *layoutMgtStore) IsLayoutHandleConflict(handle string, excludeID string) (bool, error) {
+	dbClient, err := s.getConfigDBClient()
+	if err != nil {
+		return false, err
+	}
+
+	results, err := dbClient.Query(queryCheckLayoutHandleConflict, handle, s.deploymentID, excludeID)
+	if err != nil {
+		return false, fmt.Errorf("failed to check layout handle conflict: %w", err)
+	}
+
+	count, err := parseCountResult(results)
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }

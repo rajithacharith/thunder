@@ -41,6 +41,7 @@ type themeMgtStoreInterface interface {
 	DeleteTheme(id string) error
 	GetApplicationsCountByThemeID(id string) (int, error)
 	IsThemeDeclarative(id string) bool
+	IsThemeHandleConflict(handle string, excludeID string) (bool, error)
 }
 
 // themeMgtStore is the default implementation of themeMgtStoreInterface.
@@ -108,7 +109,8 @@ func (s *themeMgtStore) CreateTheme(id string, theme CreateThemeRequest) error {
 		return fmt.Errorf("failed to marshal theme: %w", err)
 	}
 
-	_, err = dbClient.Execute(queryCreateTheme, id, theme.DisplayName, theme.Description, themeJSON, s.deploymentID)
+	_, err = dbClient.Execute(queryCreateTheme, id, theme.Handle, theme.DisplayName, theme.Description,
+		themeJSON, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -278,6 +280,11 @@ func (s *themeMgtStore) buildThemeListItemFromResultRow(row map[string]interface
 		return Theme{}, fmt.Errorf("id not found or invalid type")
 	}
 
+	handle, ok := row["handle"].(string)
+	if !ok {
+		return Theme{}, fmt.Errorf("handle not found or invalid type")
+	}
+
 	displayName, ok := row["display_name"].(string)
 	if !ok {
 		return Theme{}, fmt.Errorf("display_name not found or invalid type")
@@ -300,6 +307,7 @@ func (s *themeMgtStore) buildThemeListItemFromResultRow(row map[string]interface
 
 	return Theme{
 		ID:          id,
+		Handle:      handle,
 		DisplayName: displayName,
 		Description: description,
 		CreatedAt:   createdAt,
@@ -312,6 +320,11 @@ func (s *themeMgtStore) buildThemeFromResultRow(row map[string]interface{}) (The
 	id, ok := row["id"].(string)
 	if !ok {
 		return Theme{}, fmt.Errorf("id not found or invalid type")
+	}
+
+	handle := ""
+	if h, ok := row["handle"].(string); ok {
+		handle = h
 	}
 
 	displayName, ok := row["display_name"].(string)
@@ -351,10 +364,31 @@ func (s *themeMgtStore) buildThemeFromResultRow(row map[string]interface{}) (The
 
 	return Theme{
 		ID:          id,
+		Handle:      handle,
 		DisplayName: displayName,
 		Description: description,
 		Theme:       theme,
 		CreatedAt:   createdAt,
 		UpdatedAt:   updatedAt,
 	}, nil
+}
+
+// IsThemeHandleConflict checks if a theme handle already exists for the deployment, excluding a specific ID.
+func (s *themeMgtStore) IsThemeHandleConflict(handle string, excludeID string) (bool, error) {
+	dbClient, err := s.getConfigDBClient()
+	if err != nil {
+		return false, err
+	}
+
+	results, err := dbClient.Query(queryCheckThemeHandleConflict, handle, s.deploymentID, excludeID)
+	if err != nil {
+		return false, fmt.Errorf("failed to check theme handle conflict: %w", err)
+	}
+
+	count, err := parseCountResult(results)
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }

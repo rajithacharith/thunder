@@ -1264,26 +1264,26 @@ if (-not (Test-Path $themesDir)) {
 }
 else {
     $themeFiles = Get-ChildItem -Path $themesDir -Filter "*.json" -File -ErrorAction SilentlyContinue
-    
+
     if ($themeFiles.Count -gt 0) {
         Log-Info "Processing themes from $themesDir..."
-        
+
         $themeCount = 0
-        $themeSuccess = 0
-        $themeSkipped = 0
-        
+        $themeCreated = 0
+        $themeUpdated = 0
+
         foreach ($themeFile in $themeFiles) {
             $themeCount++
-            
+
             # Get theme name from file content
             $themeContent = Get-Content -Path $themeFile.FullName -Raw | ConvertFrom-Json
-            $themeName = if ($themeContent.displayName) { $themeContent.displayName } else { $themeFile.BaseName }
-            
-            Log-Info "Creating theme: $themeName (from $($themeFile.Name))"
+            $themeName    = if ($themeContent.displayName) { $themeContent.displayName } else { $themeFile.BaseName }
+            $themeHandle  = $themeContent.handle
             $themePayload = Get-Content $themeFile.FullName -Raw
-            
+
+            Log-Info "Creating theme: $themeName (from $($themeFile.Name))"
             $response = Invoke-ThunderApi -Method POST -Endpoint "/design/themes" -Data $themePayload
-            
+
             if ($response.StatusCode -in 200, 201) {
                 Log-Success "Theme '$themeName' created successfully"
                 $body = $response.Body | ConvertFrom-Json
@@ -1291,11 +1291,31 @@ else {
                 if ($themeId) {
                     Log-Info "Theme ID: $themeId"
                 }
-                $themeSuccess++
+                $themeCreated++
             }
-            elseif ($response.StatusCode -eq 409) {
-                Log-Warning "Theme '$themeName' already exists, skipping"
-                $themeSkipped++
+            elseif ($response.StatusCode -eq 409 -or ($response.Body -match '"THM-1015"')) {
+                Log-Warning "Theme '$themeName' already exists, updating..."
+                $response = Invoke-ThunderApi -Method GET -Endpoint "/design/themes"
+                if ($response.StatusCode -eq 200) {
+                    $body = $response.Body | ConvertFrom-Json
+                    $existingTheme = $body.themes | Where-Object { $_.handle -eq $themeHandle } | Select-Object -First 1
+                    $themeId = $existingTheme.id
+                }
+                if (-not $themeId) {
+                    Log-Error "Failed to retrieve existing theme ID for '$themeName'"
+                    exit 1
+                }
+                Log-Info "Found existing theme ID: $themeId"
+                $response = Invoke-ThunderApi -Method PUT -Endpoint "/design/themes/$themeId" -Data $themePayload
+                if ($response.StatusCode -eq 200) {
+                    Log-Success "Theme '$themeName' updated successfully"
+                    $themeUpdated++
+                }
+                else {
+                    Log-Error "Failed to update theme '$themeName' (HTTP $($response.StatusCode))"
+                    Write-Host "Response: $($response.Body)"
+                    exit 1
+                }
             }
             else {
                 Log-Error "Failed to create theme '$themeName' (HTTP $($response.StatusCode))"
@@ -1303,9 +1323,9 @@ else {
                 exit 1
             }
         }
-        
+
         Write-Host ""
-        Log-Info "Theme creation summary: $themeSuccess created, $themeSkipped skipped (Total: $themeCount)"
+        Log-Info "Theme bootstrap summary: $themeCreated created, $themeUpdated updated (Total: $themeCount)"
     }
     else {
         Log-Warning "No theme files found in $themesDir"

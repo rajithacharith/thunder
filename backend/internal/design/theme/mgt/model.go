@@ -23,6 +23,7 @@ import "encoding/json"
 // Theme represents a theme configuration.
 type Theme struct {
 	ID          string          `json:"id" yaml:"id,omitempty"`
+	Handle      string          `json:"handle" yaml:"handle"`
 	DisplayName string          `json:"displayName" yaml:"displayName"`
 	Description string          `json:"description" yaml:"description,omitempty"`
 	Theme       json.RawMessage `json:"theme" yaml:"theme"`
@@ -33,6 +34,7 @@ type Theme struct {
 // ThemeListItem represents a theme item in the list response.
 type ThemeListItem struct {
 	ID          string `json:"id"`
+	Handle      string `json:"handle"`
 	DisplayName string `json:"displayName"`
 	Description string `json:"description"`
 	CreatedAt   string `json:"createdAt"`
@@ -41,6 +43,7 @@ type ThemeListItem struct {
 
 // CreateThemeRequest represents the request body for creating a theme configuration.
 type CreateThemeRequest struct {
+	Handle      string          `json:"handle"`
 	DisplayName string          `json:"displayName"`
 	Description string          `json:"description"`
 	Theme       json.RawMessage `json:"theme"`
@@ -48,6 +51,7 @@ type CreateThemeRequest struct {
 
 // UpdateThemeRequest represents the request body for updating a theme configuration.
 type UpdateThemeRequest struct {
+	Handle      string          `json:"handle"`
 	DisplayName string          `json:"displayName"`
 	Description string          `json:"description"`
 	Theme       json.RawMessage `json:"theme"`
@@ -56,6 +60,7 @@ type UpdateThemeRequest struct {
 // themeRequestWithID represents the request structure for creating a theme from file-based config.
 type themeRequestWithID struct {
 	ID          string      `yaml:"id"`
+	Handle      string      `yaml:"handle"`
 	DisplayName string      `yaml:"displayName"`
 	Description string      `yaml:"description,omitempty"`
 	Theme       interface{} `yaml:"theme"`

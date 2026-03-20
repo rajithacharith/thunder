@@ -61,28 +61,38 @@ CREATE TABLE THEME (
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     ID VARCHAR(36) PRIMARY KEY,
     DISPLAY_NAME VARCHAR(255) NOT NULL,
+    HANDLE VARCHAR(255) NOT NULL,
     DESCRIPTION VARCHAR(512),
     THEME TEXT NOT NULL,
     CREATED_AT TEXT DEFAULT (datetime('now')),
-    UPDATED_AT TEXT DEFAULT (datetime('now'))
+    UPDATED_AT TEXT DEFAULT (datetime('now')),
+    UNIQUE (DEPLOYMENT_ID, HANDLE)
 );
 
 -- Index for deployment isolation on THEME
 CREATE INDEX idx_theme_deployment_id ON THEME (DEPLOYMENT_ID);
+
+-- Unique index for theme handle per deployment
+CREATE UNIQUE INDEX idx_theme_handle_deployment ON THEME (HANDLE, DEPLOYMENT_ID);
 
 -- Table to store layout configurations.
 CREATE TABLE LAYOUT (
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     ID VARCHAR(36) PRIMARY KEY,
     DISPLAY_NAME VARCHAR(255) NOT NULL,
+    HANDLE VARCHAR(255) NOT NULL,
     DESCRIPTION VARCHAR(512),
     LAYOUT TEXT NOT NULL,
     CREATED_AT TEXT DEFAULT (datetime('now')),
-    UPDATED_AT TEXT DEFAULT (datetime('now'))
+    UPDATED_AT TEXT DEFAULT (datetime('now')),
+    UNIQUE (DEPLOYMENT_ID, HANDLE)
 );
 
 -- Index for deployment isolation on LAYOUT
 CREATE INDEX idx_layout_deployment_id ON LAYOUT (DEPLOYMENT_ID);
+
+-- Unique index for layout handle per deployment
+CREATE UNIQUE INDEX idx_layout_handle_deployment ON LAYOUT (HANDLE, DEPLOYMENT_ID);
 
 -- Table to store application details.
 CREATE TABLE APPLICATION (

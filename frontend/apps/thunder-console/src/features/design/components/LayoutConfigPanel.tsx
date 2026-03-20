@@ -89,7 +89,7 @@ export default function LayoutConfigPanel({
     const updatedLayout = {...layout.layout, screens: updatedScreens};
     mutateAsync({
       layoutId: layout.id,
-      data: {displayName: layout.displayName, layout: updatedLayout},
+      data: {handle: layout.handle, displayName: layout.displayName, layout: updatedLayout},
     })
       .then(() => onDirtyChange?.(false))
       .catch(() => undefined);

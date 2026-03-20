@@ -95,6 +95,12 @@ vi.mock('@wso2/oxygen-ui', async () => {
         </>
       ),
       RowActions: ({children}: {children: React.ReactNode}) => children,
+      CellIcon: ({primary, secondary = null}: {primary: React.ReactNode; secondary?: React.ReactNode}) => (
+        <div>
+          <span>{primary}</span>
+          {secondary}
+        </div>
+      ),
     },
   };
 });

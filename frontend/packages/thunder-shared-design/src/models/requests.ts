@@ -23,6 +23,7 @@ import type {LayoutConfig} from './layout';
  * Request payload for creating a new theme configuration
  */
 export interface CreateThemeRequest {
+  handle: string;
   displayName: string;
   description?: string;
   theme: Theme;
@@ -32,6 +33,7 @@ export interface CreateThemeRequest {
  * Request payload for updating an existing theme configuration
  */
 export interface UpdateThemeRequest {
+  handle: string;
   displayName: string;
   description?: string;
   theme: Theme;
@@ -41,6 +43,7 @@ export interface UpdateThemeRequest {
  * Request payload for creating a new layout configuration
  */
 export interface CreateLayoutRequest {
+  handle: string;
   displayName: string;
   layout: LayoutConfig;
 }
@@ -49,6 +52,7 @@ export interface CreateLayoutRequest {
  * Request payload for updating an existing layout configuration
  */
 export interface UpdateLayoutRequest {
+  handle: string;
   displayName: string;
   layout: LayoutConfig;
 }

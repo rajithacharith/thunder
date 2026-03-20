@@ -22,6 +22,7 @@ import "encoding/json"
 
 // CreateThemeRequest represents the request payload for creating a theme.
 type CreateThemeRequest struct {
+	Handle      string          `json:"handle"`
 	DisplayName string          `json:"displayName"`
 	Description string          `json:"description,omitempty"`
 	Theme       json.RawMessage `json:"theme"`
@@ -29,6 +30,7 @@ type CreateThemeRequest struct {
 
 // UpdateThemeRequest represents the request payload for updating a theme.
 type UpdateThemeRequest struct {
+	Handle      string          `json:"handle"`
 	DisplayName string          `json:"displayName"`
 	Description string          `json:"description,omitempty"`
 	Theme       json.RawMessage `json:"theme"`
@@ -37,6 +39,7 @@ type UpdateThemeRequest struct {
 // ThemeResponse represents a theme response.
 type ThemeResponse struct {
 	ID          string          `json:"id"`
+	Handle      string          `json:"handle"`
 	DisplayName string          `json:"displayName"`
 	Description string          `json:"description,omitempty"`
 	Theme       json.RawMessage `json:"theme"`
@@ -45,6 +48,7 @@ type ThemeResponse struct {
 // ThemeListItem represents a theme in the list response.
 type ThemeListItem struct {
 	ID          string `json:"id"`
+	Handle      string `json:"handle"`
 	DisplayName string `json:"displayName"`
 }
 
@@ -59,6 +63,7 @@ type ThemeListResponse struct {
 
 // CreateLayoutRequest represents the request payload for creating a layout.
 type CreateLayoutRequest struct {
+	Handle      string          `json:"handle"`
 	DisplayName string          `json:"displayName"`
 	Description string          `json:"description,omitempty"`
 	Layout      json.RawMessage `json:"layout"`
@@ -66,6 +71,7 @@ type CreateLayoutRequest struct {
 
 // UpdateLayoutRequest represents the request payload for updating a layout.
 type UpdateLayoutRequest struct {
+	Handle      string          `json:"handle"`
 	DisplayName string          `json:"displayName"`
 	Description string          `json:"description,omitempty"`
 	Layout      json.RawMessage `json:"layout"`
@@ -74,6 +80,7 @@ type UpdateLayoutRequest struct {
 // LayoutResponse represents a layout response.
 type LayoutResponse struct {
 	ID          string          `json:"id"`
+	Handle      string          `json:"handle"`
 	DisplayName string          `json:"displayName"`
 	Description string          `json:"description,omitempty"`
 	Layout      json.RawMessage `json:"layout"`
@@ -82,6 +89,7 @@ type LayoutResponse struct {
 // LayoutListItem represents a layout in the list response.
 type LayoutListItem struct {
 	ID          string `json:"id"`
+	Handle      string `json:"handle"`
 	DisplayName string `json:"displayName"`
 	Description string `json:"description,omitempty"`
 }

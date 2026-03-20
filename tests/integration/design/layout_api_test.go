@@ -93,6 +93,7 @@ func (suite *LayoutAPITestSuite) SetupSuite() {
 
 	// Create a shared layout that can be used by multiple tests
 	sharedLayout := CreateLayoutRequest{
+		Handle:      "shared-test-layout",
 		DisplayName: "Shared Test Layout",
 		Description: "Shared layout for testing",
 		Layout:      testLayout,
@@ -298,6 +299,7 @@ func (suite *LayoutAPITestSuite) deleteLayout(id string) error {
 // Create Layout - Success
 func (suite *LayoutAPITestSuite) TestCreateLayout_Success() {
 	request := CreateLayoutRequest{
+		Handle:      "test-layout-success",
 		DisplayName: "Test Layout Success",
 		Description: "Test layout for success case",
 		Layout:      testLayout2,
@@ -330,22 +332,22 @@ func (suite *LayoutAPITestSuite) TestCreateLayout_ValidationErrors() {
 		},
 		{
 			name:        "Missing Layout",
-			requestBody: `{"displayName": "Test"}`,
+			requestBody: `{"displayName": "Test", "handle": "test-handle"}`,
 			expectedErr: "LAY-1006",
 		},
 		{
 			name:        "Invalid JSON Layout",
-			requestBody: `{"displayName": "Test", "layout": invalid json}`,
+			requestBody: `{"displayName": "Test", "handle": "test-handle", "layout": invalid json}`,
 			expectedErr: "LAY-1001",
 		},
 		{
 			name:        "Array Instead of Object",
-			requestBody: `{"displayName": "Test", "layout": ["item1", "item2"]}`,
+			requestBody: `{"displayName": "Test", "handle": "test-handle", "layout": ["item1", "item2"]}`,
 			expectedErr: "LAY-1007",
 		},
 		{
 			name:        "Primitive Instead of Object",
-			requestBody: `{"displayName": "Test", "layout": "string"}`,
+			requestBody: `{"displayName": "Test", "handle": "test-handle", "layout": "string"}`,
 			expectedErr: "LAY-1007",
 		},
 	}
@@ -421,6 +423,7 @@ func (suite *LayoutAPITestSuite) TestListLayouts_Success() {
 func (suite *LayoutAPITestSuite) TestListLayouts_Pagination() {
 	// Create additional layouts for pagination testing
 	layout1, err := suite.createLayout(CreateLayoutRequest{
+		Handle:      "pagination-layout-1",
 		DisplayName: "Pagination Layout 1",
 		Description: "Layout for pagination test",
 		Layout:      testLayout2,
@@ -429,6 +432,7 @@ func (suite *LayoutAPITestSuite) TestListLayouts_Pagination() {
 	defer suite.deleteLayout(layout1.ID)
 
 	layout2, err := suite.createLayout(CreateLayoutRequest{
+		Handle:      "pagination-layout-2",
 		DisplayName: "Pagination Layout 2",
 		Description: "Layout for pagination test",
 		Layout:      testLayout2,
@@ -530,6 +534,7 @@ func (suite *LayoutAPITestSuite) TestListLayouts_InvalidPagination() {
 func (suite *LayoutAPITestSuite) TestUpdateLayout_Success() {
 	// Create a layout for update testing
 	layout, err := suite.createLayout(CreateLayoutRequest{
+		Handle:      "test-layout-update",
 		DisplayName: "Test Layout Update",
 		Description: "Original description",
 		Layout:      testLayout,
@@ -538,6 +543,7 @@ func (suite *LayoutAPITestSuite) TestUpdateLayout_Success() {
 	defer suite.deleteLayout(layout.ID)
 
 	updateRequest := UpdateLayoutRequest{
+		Handle:      "test-layout-update",
 		DisplayName: "Updated Test Layout",
 		Description: "Updated description",
 		Layout:      testLayoutUpdate,
@@ -561,6 +567,7 @@ func (suite *LayoutAPITestSuite) TestUpdateLayout_Success() {
 // Update Layout - Not Found
 func (suite *LayoutAPITestSuite) TestUpdateLayout_NotFound() {
 	updateRequest := UpdateLayoutRequest{
+		Handle:      "test-layout-not-found",
 		DisplayName: "Test Layout",
 		Description: "Test description",
 		Layout:      testLayoutUpdate,
@@ -576,6 +583,7 @@ func (suite *LayoutAPITestSuite) TestUpdateLayout_NotFound() {
 func (suite *LayoutAPITestSuite) TestUpdateLayout_ValidationErrors() {
 	// Create a layout for update testing
 	layout, err := suite.createLayout(CreateLayoutRequest{
+		Handle:      "test-layout-validation",
 		DisplayName: "Test Layout Validation",
 		Description: "Test layout for validation",
 		Layout:      testLayout,
@@ -595,22 +603,22 @@ func (suite *LayoutAPITestSuite) TestUpdateLayout_ValidationErrors() {
 		},
 		{
 			name:        "Missing Layout",
-			requestBody: `{"displayName": "Test"}`,
+			requestBody: `{"displayName": "Test", "handle": "test-layout-validation"}`,
 			expectedErr: "LAY-1006",
 		},
 		{
 			name:        "Invalid JSON Layout",
-			requestBody: `{"displayName": "Test", "layout": invalid json}`,
+			requestBody: `{"displayName": "Test", "handle": "test-layout-validation", "layout": invalid json}`,
 			expectedErr: "LAY-1001",
 		},
 		{
 			name:        "Array Instead of Object",
-			requestBody: `{"displayName": "Test", "layout": ["item1", "item2"]}`,
+			requestBody: `{"displayName": "Test", "handle": "test-layout-validation", "layout": ["item1", "item2"]}`,
 			expectedErr: "LAY-1007",
 		},
 		{
 			name:        "Primitive Instead of Object",
-			requestBody: `{"displayName": "Test", "layout": "string"}`,
+			requestBody: `{"displayName": "Test", "handle": "test-layout-validation", "layout": "string"}`,
 			expectedErr: "LAY-1007",
 		},
 	}
@@ -642,6 +650,7 @@ func (suite *LayoutAPITestSuite) TestUpdateLayout_ValidationErrors() {
 func (suite *LayoutAPITestSuite) TestDeleteLayout_Success() {
 	// Create a layout for delete testing
 	layout, err := suite.createLayout(CreateLayoutRequest{
+		Handle:      "test-layout-delete",
 		DisplayName: "Test Layout Delete",
 		Description: "Layout to be deleted",
 		Layout:      testLayout,

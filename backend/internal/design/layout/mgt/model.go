@@ -23,6 +23,7 @@ import "encoding/json"
 // Layout represents a layout configuration.
 type Layout struct {
 	ID          string          `json:"id" yaml:"id,omitempty"`
+	Handle      string          `json:"handle" yaml:"handle"`
 	DisplayName string          `json:"displayName" yaml:"displayName"`
 	Description string          `json:"description,omitempty" yaml:"description,omitempty"`
 	Layout      json.RawMessage `json:"layout" yaml:"layout"`
@@ -33,6 +34,7 @@ type Layout struct {
 // LayoutListItem represents a layout item in the list response.
 type LayoutListItem struct {
 	ID          string `json:"id"`
+	Handle      string `json:"handle"`
 	DisplayName string `json:"displayName"`
 	Description string `json:"description,omitempty"`
 	CreatedAt   string `json:"createdAt"`
@@ -41,6 +43,7 @@ type LayoutListItem struct {
 
 // CreateLayoutRequest represents the request body for creating a layout configuration.
 type CreateLayoutRequest struct {
+	Handle      string          `json:"handle"`
 	DisplayName string          `json:"displayName"`
 	Description string          `json:"description,omitempty"`
 	Layout      json.RawMessage `json:"layout"`
@@ -48,6 +51,7 @@ type CreateLayoutRequest struct {
 
 // UpdateLayoutRequest represents the request body for updating a layout configuration.
 type UpdateLayoutRequest struct {
+	Handle      string          `json:"handle"`
 	DisplayName string          `json:"displayName"`
 	Description string          `json:"description,omitempty"`
 	Layout      json.RawMessage `json:"layout"`
@@ -56,6 +60,7 @@ type UpdateLayoutRequest struct {
 // layoutRequestWithID represents the request structure for creating a layout from file-based config.
 type layoutRequestWithID struct {
 	ID          string      `yaml:"id"`
+	Handle      string      `yaml:"handle"`
 	DisplayName string      `yaml:"displayName"`
 	Description string      `yaml:"description,omitempty"`
 	Layout      interface{} `yaml:"layout"`

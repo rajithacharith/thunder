@@ -79,7 +79,7 @@ export default function ThemeConfigPanel({
     if (!draftTheme || !theme) return;
     mutateAsync({
       themeId: theme.id,
-      data: {displayName: theme.displayName, description: theme.description, theme: draftTheme},
+      data: {handle: theme.handle, displayName: theme.displayName, description: theme.description, theme: draftTheme},
     })
       .then(() => setIsDirty(false))
       .catch(() => undefined);

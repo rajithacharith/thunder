@@ -112,9 +112,10 @@ describe('useCreateFlow', () => {
   });
 
   it('should set pending state during creation', async () => {
+    let resolveRequest!: (value: {data: FlowDefinitionResponse}) => void;
     mockHttpRequest.mockReturnValue(
-      new Promise((resolve) => {
-        setTimeout(() => resolve({data: mockFlowResponse}), 100);
+      new Promise<{data: FlowDefinitionResponse}>((resolve) => {
+        resolveRequest = resolve;
       }),
     );
 
@@ -126,10 +127,13 @@ describe('useCreateFlow', () => {
       expect(result.current.isPending).toBe(true);
     });
 
+    await act(async () => {
+      resolveRequest({data: mockFlowResponse});
+    });
+
     await waitFor(() => {
       expect(result.current.isPending).toBe(false);
     });
-
     expect(result.current.isSuccess).toBe(true);
   });
 

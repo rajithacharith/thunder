@@ -24,6 +24,7 @@ import type {LayoutConfig} from './layout';
  */
 export interface ThemeListItem {
   id: string;
+  handle: string;
   displayName: string;
   description?: string;
   theme: Theme | null;
@@ -34,6 +35,7 @@ export interface ThemeListItem {
  */
 export interface LayoutListItem {
   id: string;
+  handle: string;
   displayName: string;
   layout: LayoutConfig | null;
 }
@@ -62,6 +64,7 @@ export interface ThemeListResponse {
  */
 export interface ThemeResponse {
   id: string;
+  handle: string;
   displayName: string;
   description?: string;
   theme: Theme;
@@ -83,6 +86,7 @@ export interface LayoutListResponse {
  */
 export interface LayoutResponse {
   id: string;
+  handle: string;
   displayName: string;
   layout: LayoutConfig;
 }

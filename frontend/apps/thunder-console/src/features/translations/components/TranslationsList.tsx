@@ -19,14 +19,16 @@
 import {useCallback, useMemo, useState, type JSX} from 'react';
 import {useNavigate} from 'react-router';
 import {useLogger} from '@thunder/logger/react';
-import {Box, Chip, DataGrid, IconButton, ListingTable, Tooltip, Typography} from '@wso2/oxygen-ui';
+import {Chip, DataGrid, IconButton, ListingTable, Tooltip, useTheme} from '@wso2/oxygen-ui';
 import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {getDisplayNameForCode, toFlagEmoji, useGetLanguages} from '@thunder/i18n';
+import ResourceAvatar from '@/components/ResourceAvatar';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import TranslationDeleteDialog from './TranslationDeleteDialog';
 
 export default function TranslationsList(): JSX.Element {
+  const theme = useTheme();
   const {t} = useTranslation('translations');
   const navigate = useNavigate();
   const logger = useLogger('TranslationsList');
@@ -68,20 +70,32 @@ export default function TranslationsList(): JSX.Element {
         flex: 1,
         minWidth: 240,
         renderCell: (params: DataGrid.GridRenderCellParams<{id: string; code: string}>): JSX.Element => (
-          <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, height: '100%'}}>
-            <Typography sx={{fontSize: '1.4rem', lineHeight: 1, userSelect: 'none'}}>
-              {toFlagEmoji(params.row.code)}
-            </Typography>
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'flex-start'}}>
-              <Typography variant="body2">{getDisplayNameForCode(params.row.code)}</Typography>
+          <ListingTable.CellIcon
+            sx={{width: '100%'}}
+            icon={
+              <ResourceAvatar
+                value={toFlagEmoji(params.row.code)}
+                size={30}
+                fallbackIcon="emoji:globe"
+                sx={{
+                  backgroundColor: theme.vars?.palette.grey[500],
+                  fontSize: '1rem',
+                  ...theme.applyStyles('dark', {
+                    backgroundColor: theme.vars?.palette.grey[900],
+                  }),
+                }}
+              />
+            }
+            primary={getDisplayNameForCode(params.row.code)}
+            secondary={
               <Chip
                 label={params.row.code}
                 size="small"
                 variant="outlined"
                 sx={{fontSize: '0.7rem', fontFamily: 'monospace', height: 18}}
               />
-            </Box>
-          </Box>
+            }
+          />
         ),
       },
       {
@@ -122,7 +136,7 @@ export default function TranslationsList(): JSX.Element {
         ),
       },
     ],
-    [handleDeleteClick, handleEditClick, t],
+    [handleDeleteClick, handleEditClick, t, theme],
   );
 
   return (
@@ -155,11 +169,7 @@ export default function TranslationsList(): JSX.Element {
         </ListingTable.Container>
       </ListingTable.Provider>
 
-      <TranslationDeleteDialog
-        open={deleteDialogOpen}
-        language={selectedLanguage}
-        onClose={handleDeleteDialogClose}
-      />
+      <TranslationDeleteDialog open={deleteDialogOpen} language={selectedLanguage} onClose={handleDeleteDialogClose} />
     </>
   );
 }

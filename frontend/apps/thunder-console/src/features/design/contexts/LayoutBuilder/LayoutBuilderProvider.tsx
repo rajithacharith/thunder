@@ -68,6 +68,7 @@ export default function LayoutBuilderProvider({children}: LayoutBuilderProviderP
   const [extraScreens, setExtraScreens] = useState<Record<string, Record<string, unknown>>>({});
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
+  const handle = layoutData?.handle ?? null;
   const displayName = layoutData?.displayName ?? null;
 
   // Initialize draft when layout data loads
@@ -158,6 +159,7 @@ export default function LayoutBuilderProvider({children}: LayoutBuilderProviderP
   const contextValue: LayoutBuilderContextType = useMemo(
     () => ({
       layoutId,
+      handle,
       originalLayout: layoutData?.layout as LayoutConfig | null,
       displayName,
       draftLayout,
@@ -180,6 +182,7 @@ export default function LayoutBuilderProvider({children}: LayoutBuilderProviderP
     }),
     [
       layoutId,
+      handle,
       layoutData?.layout,
       displayName,
       draftLayout,

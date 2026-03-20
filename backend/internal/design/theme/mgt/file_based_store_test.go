@@ -335,3 +335,40 @@ func (suite *ThemeFileBasedStoreTestSuite) TestGetThemeList_OffsetBeyondList() {
 	suite.NoError(err)
 	suite.Empty(themes)
 }
+
+func (suite *ThemeFileBasedStoreTestSuite) TestIsThemeHandleConflict_Conflict() {
+	// Arrange
+	themeReq := suite.createTestTheme("Handle Conflict Test")
+	themeReq.Handle = "conflict-handle"
+	_ = suite.store.CreateTheme("theme-hc1", themeReq)
+
+	// Act - different ID with same handle should conflict
+	conflict, err := suite.store.IsThemeHandleConflict("conflict-handle", "other-id")
+
+	// Assert
+	suite.NoError(err)
+	suite.True(conflict)
+}
+
+func (suite *ThemeFileBasedStoreTestSuite) TestIsThemeHandleConflict_NoConflict() {
+	// Act - non-existent handle should not conflict
+	conflict, err := suite.store.IsThemeHandleConflict("non-existent-handle", "")
+
+	// Assert
+	suite.NoError(err)
+	suite.False(conflict)
+}
+
+func (suite *ThemeFileBasedStoreTestSuite) TestIsThemeHandleConflict_SameIDExcluded() {
+	// Arrange
+	themeReq := suite.createTestTheme("Same ID Exclude Test")
+	themeReq.Handle = "same-id-handle"
+	_ = suite.store.CreateTheme("theme-hc2", themeReq)
+
+	// Act - same ID should be excluded from conflict check
+	conflict, err := suite.store.IsThemeHandleConflict("same-id-handle", "theme-hc2")
+
+	// Assert
+	suite.NoError(err)
+	suite.False(conflict)
+}
