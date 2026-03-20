@@ -537,9 +537,11 @@ func TestInitializeStore_MutableMode(t *testing.T) {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(t, err)
 
-	store := initializeStore(getUserSchemaStoreMode())
+	store, transactioner, err := initializeStore(getUserSchemaStoreMode())
 
+	assert.NoError(t, err)
 	assert.NotNil(t, store)
+	assert.NotNil(t, transactioner)
 	// In mutable mode, should return userSchemaStore (not composite or file-based)
 	_, isComposite := store.(*compositeUserSchemaStore)
 	assert.False(t, isComposite, "Store should not be composite in mutable mode")
@@ -568,9 +570,11 @@ func TestInitializeStore_DeclarativeMode(t *testing.T) {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(t, err)
 
-	store := initializeStore(getUserSchemaStoreMode())
+	store, transactioner, err := initializeStore(getUserSchemaStoreMode())
 
+	assert.NoError(t, err)
 	assert.NotNil(t, store)
+	assert.NotNil(t, transactioner)
 	// In declarative mode, should return file-based store
 	_, isFileBased := store.(*userSchemaFileBasedStore)
 	assert.True(t, isFileBased, "Store should be file-based in declarative mode")
@@ -597,9 +601,11 @@ func TestInitializeStore_CompositeMode(t *testing.T) {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(t, err)
 
-	store := initializeStore(getUserSchemaStoreMode())
+	store, transactioner, err := initializeStore(getUserSchemaStoreMode())
 
+	assert.NoError(t, err)
 	assert.NotNil(t, store)
+	assert.NotNil(t, transactioner)
 	// In composite mode, should return composite store
 	compositeStore, isComposite := store.(*compositeUserSchemaStore)
 	assert.True(t, isComposite, "Store should be composite in composite mode")
@@ -628,9 +634,11 @@ func TestInitializeStore_DefaultFallbackToMutable(t *testing.T) {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(t, err)
 
-	store := initializeStore(getUserSchemaStoreMode())
+	store, transactioner, err := initializeStore(getUserSchemaStoreMode())
 
+	assert.NoError(t, err)
 	assert.NotNil(t, store)
+	assert.NotNil(t, transactioner)
 	// Should default to mutable mode (database store)
 	_, isComposite := store.(*compositeUserSchemaStore)
 	assert.False(t, isComposite, "Store should not be composite when not specified")
@@ -659,9 +667,11 @@ func TestInitializeStore_GlobalDeclarativeEnabled(t *testing.T) {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(t, err)
 
-	store := initializeStore(getUserSchemaStoreMode())
+	store, transactioner, err := initializeStore(getUserSchemaStoreMode())
 
+	assert.NoError(t, err)
 	assert.NotNil(t, store)
+	assert.NotNil(t, transactioner)
 	// Should use declarative mode when global declarative resources enabled
 	_, isFileBased := store.(*userSchemaFileBasedStore)
 	assert.True(t, isFileBased, "Store should be file-based when global declarative enabled")

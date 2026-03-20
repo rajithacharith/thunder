@@ -376,7 +376,7 @@ func (suite *FileBasedStoreTestSuite) TestGetOAuthApplication_NilOAuthConfig() {
 }
 
 func (suite *FileBasedStoreTestSuite) TestNewFileBasedStore() {
-	store := newFileBasedStore()
+	store, _ := newFileBasedStore()
 
 	suite.NotNil(store)
 	suite.IsType(&fileBasedStore{}, store)

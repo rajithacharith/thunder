@@ -3849,6 +3849,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithNilApp() {
 // Helper function to create a theme configuration for testing
 func createThemeForTest(theme []byte) (string, error) {
 	payload, err := json.Marshal(map[string]interface{}{
+		"handle":      fmt.Sprintf("test-theme-%d", time.Now().UnixNano()),
 		"displayName": "Test Theme",
 		"theme":       json.RawMessage(theme),
 	})
@@ -3913,6 +3914,7 @@ func deleteThemeForTest(themeID string) error {
 // Helper function to create a layout configuration for testing
 func createLayoutForTest(layout []byte, description string) (string, error) {
 	payload, err := json.Marshal(map[string]interface{}{
+		"handle":      fmt.Sprintf("test-layout-%d", time.Now().UnixNano()),
 		"displayName": "Test Layout",
 		"description": description,
 		"layout":      json.RawMessage(layout),

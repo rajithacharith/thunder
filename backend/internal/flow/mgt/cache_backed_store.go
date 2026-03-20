@@ -25,6 +25,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/system/cache"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 const cacheBackedStoreLoggerComponentName = "CacheBackedFlowStore"
@@ -38,14 +39,18 @@ type cacheBackedFlowStore struct {
 }
 
 // newCacheBackedFlowStore creates a new instance of cacheBackedFlowStore.
-func newCacheBackedFlowStore() flowStoreInterface {
+func newCacheBackedFlowStore() (flowStoreInterface, transaction.Transactioner, error) {
+	store, transactioner, err := newFlowStore()
+	if err != nil {
+		return nil, nil, err
+	}
 	return &cacheBackedFlowStore{
 		flowByIDCache:     cache.GetCache[*CompleteFlowDefinition]("FlowByIDCache"),
 		flowByHandleCache: cache.GetCache[*CompleteFlowDefinition]("FlowByHandleCache"),
-		store:             newFlowStore(),
+		store:             store,
 		logger: log.GetLogger().With(
 			log.String(log.LoggerKeyComponentName, cacheBackedStoreLoggerComponentName)),
-	}
+	}, transactioner, nil
 }
 
 // ListFlows retrieves a paginated list of flow definitions.

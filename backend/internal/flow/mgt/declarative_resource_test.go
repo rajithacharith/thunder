@@ -324,7 +324,7 @@ func (s *DeclarativeResourceTestSuite) TestFlowGraphExporter_ValidateResource_Em
 // TestFileBasedStore_CreateFlow tests creating a flow in file-based store
 func (s *DeclarativeResourceTestSuite) TestFileBasedStore_CreateFlow() {
 	_ = entity.GetInstance().Clear()
-	store := newFileBasedStore()
+	store, _ := newFileBasedStore()
 
 	flowDef := &FlowDefinition{
 		Handle:   "test-flow",
@@ -348,7 +348,7 @@ func (s *DeclarativeResourceTestSuite) TestFileBasedStore_CreateFlow() {
 // TestFileBasedStore_GetFlowByID tests retrieving flow by ID
 func (s *DeclarativeResourceTestSuite) TestFileBasedStore_GetFlowByID() {
 	_ = entity.GetInstance().Clear()
-	store := newFileBasedStore()
+	store, _ := newFileBasedStore()
 
 	flowDef := &FlowDefinition{
 		Handle:   "test-flow",
@@ -374,7 +374,7 @@ func (s *DeclarativeResourceTestSuite) TestFileBasedStore_GetFlowByID() {
 // TestFileBasedStore_GetFlowByID_NotFound tests retrieving non-existent flow
 func (s *DeclarativeResourceTestSuite) TestFileBasedStore_GetFlowByID_NotFound() {
 	_ = entity.GetInstance().Clear()
-	store := newFileBasedStore()
+	store, _ := newFileBasedStore()
 
 	_, err := store.GetFlowByID(context.Background(), "non-existent")
 	assert.Error(s.T(), err)
@@ -383,7 +383,7 @@ func (s *DeclarativeResourceTestSuite) TestFileBasedStore_GetFlowByID_NotFound()
 // TestFileBasedStore_GetFlowByHandle tests retrieving flow by handle
 func (s *DeclarativeResourceTestSuite) TestFileBasedStore_GetFlowByHandle() {
 	_ = entity.GetInstance().Clear()
-	store := newFileBasedStore()
+	store, _ := newFileBasedStore()
 
 	flowDef := &FlowDefinition{
 		Handle:   "test-flow",
@@ -409,7 +409,7 @@ func (s *DeclarativeResourceTestSuite) TestFileBasedStore_GetFlowByHandle() {
 // TestFileBasedStore_ListFlows tests listing flows with pagination
 func (s *DeclarativeResourceTestSuite) TestFileBasedStore_ListFlows() {
 	_ = entity.GetInstance().Clear()
-	store := newFileBasedStore()
+	store, _ := newFileBasedStore()
 
 	for i := 0; i < 3; i++ {
 		flowDef := &FlowDefinition{
@@ -436,7 +436,7 @@ func (s *DeclarativeResourceTestSuite) TestFileBasedStore_ListFlows() {
 // TestFileBasedStore_IsFlowExists tests checking flow existence
 func (s *DeclarativeResourceTestSuite) TestFileBasedStore_IsFlowExists() {
 	_ = entity.GetInstance().Clear()
-	store := newFileBasedStore()
+	store, _ := newFileBasedStore()
 
 	flowDef := &FlowDefinition{
 		Handle:   "test-flow",
@@ -464,7 +464,7 @@ func (s *DeclarativeResourceTestSuite) TestFileBasedStore_IsFlowExists() {
 // TestFileBasedStore_UnsupportedOperations tests that unsupported operations return errors
 func (s *DeclarativeResourceTestSuite) TestFileBasedStore_UnsupportedOperations() {
 	_ = entity.GetInstance().Clear()
-	store := newFileBasedStore()
+	store, _ := newFileBasedStore()
 
 	flowDef := &FlowDefinition{
 		Handle:   "test-flow",

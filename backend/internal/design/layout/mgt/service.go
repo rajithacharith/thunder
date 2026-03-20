@@ -94,9 +94,22 @@ func (ls *layoutMgtService) CreateLayout(layout CreateLayoutRequest) (*Layout, *
 		return nil, &ErrorMissingDisplayName
 	}
 
+	if layout.Handle == "" {
+		return nil, &ErrorMissingLayoutHandle
+	}
+
 	// Check if store is in pure declarative mode
 	if isDeclarativeModeEnabled() {
 		return nil, &ErrorCannotModifyDeclarativeResource
+	}
+
+	conflict, err := ls.layoutMgtStore.IsLayoutHandleConflict(layout.Handle, "")
+	if err != nil {
+		ls.logger.Error("Failed to check layout handle conflict", log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
+	if conflict {
+		return nil, &ErrorDuplicateLayoutHandle
 	}
 
 	if err := ls.validateLayoutPreferences(layout.Layout); err != nil {
@@ -116,6 +129,7 @@ func (ls *layoutMgtService) CreateLayout(layout CreateLayoutRequest) (*Layout, *
 
 	createdLayout := &Layout{
 		ID:          id,
+		Handle:      layout.Handle,
 		DisplayName: layout.DisplayName,
 		Description: layout.Description,
 		Layout:      layout.Layout,
@@ -164,19 +178,23 @@ func (ls *layoutMgtService) UpdateLayout(id string, layout UpdateLayoutRequest) 
 		return nil, &ErrorCannotModifyDeclarativeResource
 	}
 
-	if err := ls.validateLayoutPreferences(layout.Layout); err != nil {
-		return nil, err
-	}
-
-	// Check if layout exists
-	exists, err := ls.layoutMgtStore.IsLayoutExist(id)
+	// Fetch existing layout to enforce handle immutability
+	existingLayout, err := ls.layoutMgtStore.GetLayout(id)
 	if err != nil {
-		ls.logger.Error("Failed to check layout existence", log.String("id", id), log.Error(err))
+		if errors.Is(err, errLayoutNotFound) {
+			return nil, &ErrorLayoutNotFound
+		}
+		ls.logger.Error("Failed to retrieve layout", log.String("id", id), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
-	if !exists {
-		return nil, &ErrorLayoutNotFound
+	// Handle is immutable; reject if a different value is provided
+	if layout.Handle != "" && layout.Handle != existingLayout.Handle {
+		return nil, &ErrorLayoutHandleImmutable
+	}
+
+	if err := ls.validateLayoutPreferences(layout.Layout); err != nil {
+		return nil, err
 	}
 
 	if err := ls.layoutMgtStore.UpdateLayout(id, layout); err != nil {
@@ -186,6 +204,7 @@ func (ls *layoutMgtService) UpdateLayout(id string, layout UpdateLayoutRequest) 
 
 	updatedLayout := &Layout{
 		ID:          id,
+		Handle:      existingLayout.Handle,
 		DisplayName: layout.DisplayName,
 		Description: layout.Description,
 		Layout:      layout.Layout,

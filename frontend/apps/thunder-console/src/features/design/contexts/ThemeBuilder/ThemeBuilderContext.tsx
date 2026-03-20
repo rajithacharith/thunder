@@ -35,6 +35,11 @@ export interface ThemeBuilderContextType {
   themeId: string | null;
 
   /**
+   * The handle (unique kebab-case identifier) of the theme
+   */
+  handle: string | null;
+
+  /**
    * The original theme configuration from the API
    */
   originalTheme: Theme | null;

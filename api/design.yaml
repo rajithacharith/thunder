@@ -49,11 +49,13 @@ paths:
                 count: 5
                 themes:
                   - id: "019c4e3a-198e-7e4c-99b5-26e327b9bbfc"
+                    handle: "classic"
                     displayName: "Classic"
                     description: "A timeless theme with warm accents and readable contrast for programming."
                     createdAt: ""
                     updatedAt: ""
                   - id: "019c4e3a-19ad-7159-bb2b-228692f96008"
+                    handle: "high-contrast"
                     displayName: "High Contrast"
                     description: "A high contrast theme optimized for accessibility with bold colors and maximum readability."
                     createdAt: ""
@@ -78,6 +80,7 @@ paths:
             schema:
               $ref: '#/components/schemas/ThemeRequest'
             example:
+              handle: "corporate-theme"
               displayName: "Corporate Theme"
               theme:
                 primaryColor: "#1976d2"
@@ -93,6 +96,7 @@ paths:
                 $ref: '#/components/schemas/ThemeResponse'
               example:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                handle: "corporate-theme"
                 displayName: "Corporate Theme"
                 theme:
                   primaryColor: "#1976d2"
@@ -123,6 +127,7 @@ paths:
                 $ref: '#/components/schemas/ThemeResponse'
               example:
                 id: "019c4e3a-198e-7e4c-99b5-26e327b9bbfc"
+                handle: "classic"
                 displayName: "Classic"
                 description: "A timeless theme with warm accents and readable contrast for programming."
                 theme:
@@ -190,6 +195,7 @@ paths:
             schema:
               $ref: '#/components/schemas/ThemeRequest'
             example:
+              handle: "corporate-theme"
               displayName: "Updated Corporate Theme"
               theme:
                 primaryColor: "#1976d2"
@@ -253,6 +259,7 @@ paths:
                 count: 1
                 layouts:
                   - id: "019c50f8-c0d6-7055-8e03-e19bac6ef649"
+                    handle: "modern"
                     displayName: "Modern"
                     description: "A clean, modern authentication layout with a centered card experience, soft gradients, and balanced spacing."
                     createdAt: ""
@@ -277,6 +284,7 @@ paths:
             schema:
               $ref: '#/components/schemas/LayoutRequest'
             example:
+              handle: "modern-layout"
               displayName: "Modern Layout"
               layout:
                 contentAlignment: "center"
@@ -292,6 +300,7 @@ paths:
                 $ref: '#/components/schemas/LayoutResponse'
               example:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                handle: "modern-layout"
                 displayName: "Modern Layout"
                 layout:
                   contentAlignment: "center"
@@ -322,6 +331,7 @@ paths:
                 $ref: '#/components/schemas/LayoutResponse'
               example:
                 id: "019c50f8-c0d6-7055-8e03-e19bac6ef649"
+                handle: "modern"
                 displayName: "Modern"
                 description: "A clean, modern authentication layout with a centered card experience, soft gradients, and balanced spacing."
                 layout:
@@ -434,6 +444,7 @@ paths:
             schema:
               $ref: '#/components/schemas/LayoutRequest'
             example:
+              handle: "modern-layout"
               displayName: "Updated Modern Layout"
               layout:
                 contentAlignment: "left"
@@ -581,9 +592,14 @@ components:
     ThemeRequest:
       type: object
       required:
+        - handle
         - displayName
         - theme
       properties:
+        handle:
+          type: string
+          description: Unique kebab-case identifier for the theme
+          example: "corporate-theme"
         displayName:
           type: string
           description: Display name for the theme
@@ -610,6 +626,10 @@ components:
           format: uuid
           description: Unique identifier for the theme
           example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        handle:
+          type: string
+          description: Unique kebab-case identifier for the theme
+          example: "corporate-theme"
         displayName:
           type: string
           description: Display name for the theme
@@ -646,6 +666,10 @@ components:
           format: uuid
           description: Unique identifier for the theme
           example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        handle:
+          type: string
+          description: Unique kebab-case identifier for the theme
+          example: "corporate-theme"
         displayName:
           type: string
           description: Display name for the theme
@@ -705,9 +729,14 @@ components:
     LayoutRequest:
       type: object
       required:
+        - handle
         - displayName
         - layout
       properties:
+        handle:
+          type: string
+          description: Unique kebab-case identifier for the layout
+          example: "modern-layout"
         displayName:
           type: string
           description: Display name for the layout
@@ -730,6 +759,10 @@ components:
           format: uuid
           description: Unique identifier for the layout
           example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        handle:
+          type: string
+          description: Unique kebab-case identifier for the layout
+          example: "modern-layout"
         displayName:
           type: string
           description: Display name for the layout
@@ -762,6 +795,10 @@ components:
           format: uuid
           description: Unique identifier for the layout
           example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        handle:
+          type: string
+          description: Unique kebab-case identifier for the layout
+          example: "modern-layout"
         displayName:
           type: string
           description: Display name for the layout

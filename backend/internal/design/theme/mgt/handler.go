@@ -65,8 +65,11 @@ func (th *themeMgtHandler) HandleThemeListRequest(w http.ResponseWriter, r *http
 	for _, theme := range themeList.Themes {
 		themes = append(themes, ThemeListItem{
 			ID:          theme.ID,
+			Handle:      theme.Handle,
 			DisplayName: theme.DisplayName,
 			Description: theme.Description,
+			CreatedAt:   theme.CreatedAt,
+			UpdatedAt:   theme.UpdatedAt,
 		})
 	}
 
@@ -102,6 +105,7 @@ func (th *themeMgtHandler) HandleThemePostRequest(w http.ResponseWriter, r *http
 
 	themeResponse := Theme{
 		ID:          createdTheme.ID,
+		Handle:      createdTheme.Handle,
 		DisplayName: createdTheme.DisplayName,
 		Description: createdTheme.Description,
 		Theme:       createdTheme.Theme,
@@ -123,6 +127,7 @@ func (th *themeMgtHandler) HandleThemeGetRequest(w http.ResponseWriter, r *http.
 
 	themeResponse := Theme{
 		ID:          theme.ID,
+		Handle:      theme.Handle,
 		DisplayName: theme.DisplayName,
 		Description: theme.Description,
 		Theme:       theme.Theme,
@@ -150,6 +155,7 @@ func (th *themeMgtHandler) HandleThemePutRequest(w http.ResponseWriter, r *http.
 
 	themeResponse := Theme{
 		ID:          updatedTheme.ID,
+		Handle:      updatedTheme.Handle,
 		DisplayName: updatedTheme.DisplayName,
 		Description: updatedTheme.Description,
 		Theme:       updatedTheme.Theme,

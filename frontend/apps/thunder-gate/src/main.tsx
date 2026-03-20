@@ -20,10 +20,17 @@ import * as ReactDOM from 'react-dom/client';
 import {StrictMode} from 'react';
 import {ConfigProvider} from '@thunder/shared-contexts';
 import {LoggerProvider, LogLevel} from '@thunder/logger/react';
+import {setCnPrefix} from '@thunder/utils';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
 import AppWithDecorators from './AppWithDecorators';
 import './index.css';
+
+// Initialize the class name prefix from runtime config (e.g., "Thunder" -> "ThunderSignIn--root")
+if (typeof window !== 'undefined') {
+  // eslint-disable-next-line no-underscore-dangle
+  setCnPrefix(window.__THUNDER_RUNTIME_CONFIG__?.brand?.product_name ?? 'Thunder');
+}
 
 const queryClient: QueryClient = new QueryClient({
   defaultOptions: {

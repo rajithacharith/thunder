@@ -23,8 +23,8 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/application"
-	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 // Initialize initializes the DCR service and registers its routes.

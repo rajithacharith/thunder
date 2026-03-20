@@ -41,7 +41,7 @@ type FileBasedStoreTestSuite struct {
 func (s *FileBasedStoreTestSuite) SetupTest() {
 	// Clear the singleton store before each test to ensure isolation
 	_ = entity.GetInstance().Clear()
-	s.store = newFileBasedStore()
+	s.store, _ = newFileBasedStore()
 }
 
 func (s *FileBasedStoreTestSuite) createTestFlow(handle string) *FlowDefinition {
@@ -383,7 +383,7 @@ func (s *FileBasedStoreTestSuite) TestIsFlowExistsByHandle_TypeAssertionSkip() {
 
 func (s *FileBasedStoreTestSuite) TestIsFlowExistsByHandle_ListError() {
 	// Create a new store instance to test error path
-	store := newFileBasedStore()
+	store, _ := newFileBasedStore()
 
 	// IsFlowExistsByHandle should handle list errors gracefully
 	// In the current implementation, it returns the error from List()

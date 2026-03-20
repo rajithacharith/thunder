@@ -65,8 +65,11 @@ func (lh *layoutMgtHandler) HandleLayoutListRequest(w http.ResponseWriter, r *ht
 	for _, layout := range layoutList.Layouts {
 		layouts = append(layouts, LayoutListItem{
 			ID:          layout.ID,
+			Handle:      layout.Handle,
 			DisplayName: layout.DisplayName,
 			Description: layout.Description,
+			CreatedAt:   layout.CreatedAt,
+			UpdatedAt:   layout.UpdatedAt,
 		})
 	}
 
@@ -102,6 +105,7 @@ func (lh *layoutMgtHandler) HandleLayoutPostRequest(w http.ResponseWriter, r *ht
 
 	layoutResponse := Layout{
 		ID:          createdLayout.ID,
+		Handle:      createdLayout.Handle,
 		DisplayName: createdLayout.DisplayName,
 		Description: createdLayout.Description,
 		Layout:      createdLayout.Layout,
@@ -123,6 +127,7 @@ func (lh *layoutMgtHandler) HandleLayoutGetRequest(w http.ResponseWriter, r *htt
 
 	layoutResponse := Layout{
 		ID:          layout.ID,
+		Handle:      layout.Handle,
 		DisplayName: layout.DisplayName,
 		Description: layout.Description,
 		Layout:      layout.Layout,
@@ -150,6 +155,7 @@ func (lh *layoutMgtHandler) HandleLayoutPutRequest(w http.ResponseWriter, r *htt
 
 	layoutResponse := Layout{
 		ID:          updatedLayout.ID,
+		Handle:      updatedLayout.Handle,
 		DisplayName: updatedLayout.DisplayName,
 		Description: updatedLayout.Description,
 		Layout:      updatedLayout.Layout,

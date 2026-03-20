@@ -419,3 +419,60 @@ func (suite *CompositeLayoutStoreTestSuite) TestMergeAndDeduplicateLayouts_Empty
 
 	suite.Len(merged, 0)
 }
+
+// Test IsLayoutHandleConflict - Conflict in file store (returns early)
+func (suite *CompositeLayoutStoreTestSuite) TestIsLayoutHandleConflict_ConflictInFileStore() {
+	suite.mockFileStore.On("IsLayoutHandleConflict", "classic", "").Return(true, nil)
+
+	conflict, err := suite.store.IsLayoutHandleConflict("classic", "")
+
+	suite.NoError(err)
+	suite.True(conflict)
+}
+
+// Test IsLayoutHandleConflict - No conflict in file, conflict in DB store
+func (suite *CompositeLayoutStoreTestSuite) TestIsLayoutHandleConflict_ConflictInDBStore() {
+	suite.mockFileStore.On("IsLayoutHandleConflict", "classic", "layout1").Return(false, nil)
+	suite.mockDBStore.On("IsLayoutHandleConflict", "classic", "layout1").Return(true, nil)
+
+	conflict, err := suite.store.IsLayoutHandleConflict("classic", "layout1")
+
+	suite.NoError(err)
+	suite.True(conflict)
+}
+
+// Test IsLayoutHandleConflict - No conflict in either store
+func (suite *CompositeLayoutStoreTestSuite) TestIsLayoutHandleConflict_NoConflict() {
+	suite.mockFileStore.On("IsLayoutHandleConflict", "unique-handle", "layout1").Return(false, nil)
+	suite.mockDBStore.On("IsLayoutHandleConflict", "unique-handle", "layout1").Return(false, nil)
+
+	conflict, err := suite.store.IsLayoutHandleConflict("unique-handle", "layout1")
+
+	suite.NoError(err)
+	suite.False(conflict)
+}
+
+// Test IsLayoutHandleConflict - File store error
+func (suite *CompositeLayoutStoreTestSuite) TestIsLayoutHandleConflict_FileStoreError() {
+	testErr := errors.New("file store error")
+	suite.mockFileStore.On("IsLayoutHandleConflict", "classic", "").Return(false, testErr)
+
+	conflict, err := suite.store.IsLayoutHandleConflict("classic", "")
+
+	suite.Error(err)
+	suite.Equal(testErr, err)
+	suite.False(conflict)
+}
+
+// Test IsLayoutHandleConflict - DB store error
+func (suite *CompositeLayoutStoreTestSuite) TestIsLayoutHandleConflict_DBStoreError() {
+	testErr := errors.New("db store error")
+	suite.mockFileStore.On("IsLayoutHandleConflict", "classic", "layout1").Return(false, nil)
+	suite.mockDBStore.On("IsLayoutHandleConflict", "classic", "layout1").Return(false, testErr)
+
+	conflict, err := suite.store.IsLayoutHandleConflict("classic", "layout1")
+
+	suite.Error(err)
+	suite.Equal(testErr, err)
+	suite.False(conflict)
+}

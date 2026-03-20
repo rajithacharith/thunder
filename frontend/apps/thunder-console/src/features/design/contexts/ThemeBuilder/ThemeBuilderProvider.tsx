@@ -69,6 +69,7 @@ export default function ThemeBuilderProvider({children}: ThemeBuilderProviderPro
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
+  const handle = themeData?.handle ?? null;
   const displayName = themeData?.displayName ?? null;
 
   // When theme data loads, sync previewColorScheme with the draft's defaultColorScheme
@@ -128,6 +129,7 @@ export default function ThemeBuilderProvider({children}: ThemeBuilderProviderPro
   const contextValue: ThemeBuilderContextType = useMemo(
     () => ({
       themeId,
+      handle,
       originalTheme: themeData?.theme ?? null,
       displayName,
       draftTheme,
@@ -147,6 +149,7 @@ export default function ThemeBuilderProvider({children}: ThemeBuilderProviderPro
     }),
     [
       themeId,
+      handle,
       themeData?.theme,
       displayName,
       draftTheme,

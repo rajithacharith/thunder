@@ -194,15 +194,10 @@ describe('useUpdateApplication', () => {
   });
 
   it('should set pending state during update', async () => {
+    let resolveRequest!: (value: {data: Application}) => void;
     mockHttpRequest.mockReturnValue(
       new Promise((resolve) => {
-        setTimeout(
-          () =>
-            resolve({
-              data: mockApplication,
-            }),
-          100,
-        );
+        resolveRequest = resolve;
       }),
     );
 
@@ -215,12 +210,11 @@ describe('useUpdateApplication', () => {
       expect(result.current.isPending).toBe(true);
     });
 
-    await waitFor(
-      () => {
-        expect(result.current.isSuccess).toBe(true);
-      },
-      {timeout: 200},
-    );
+    resolveRequest({data: mockApplication});
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
 
     expect(result.current.isPending).toBe(false);
   });

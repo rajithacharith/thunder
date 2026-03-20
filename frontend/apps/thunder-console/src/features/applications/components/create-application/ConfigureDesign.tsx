@@ -16,7 +16,18 @@
  * under the License.
  */
 
-import {Typography, Stack, Button, Card, Box, Grid, useTheme} from '@wso2/oxygen-ui';
+import {
+  Typography,
+  Stack,
+  Button,
+  Card,
+  Box,
+  Grid,
+  useTheme,
+  Autocomplete,
+  TextField,
+  CircularProgress,
+} from '@wso2/oxygen-ui';
 import {Palette, Shuffle, Plus} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useState, useMemo, useEffect} from 'react';
@@ -87,12 +98,15 @@ export default function ConfigureDesign({
 }: ConfigureDesignProps): JSX.Element {
   const {t} = useTranslation();
   const theme = useTheme();
-  const {data: themesData} = useGetThemes({limit: 100});
+  const {data: themesData, isLoading: loadingThemes} = useGetThemes({limit: 100});
 
   const [selectedThemeId, setSelectedThemeId] = useState<string | null>(externallyProvidedThemeId ?? null);
   const {data: selectedThemeDetails} = useGetTheme(selectedThemeId ?? '');
 
-  const hasThemes = Boolean(themesData?.themes?.length);
+  const THEME_GRID_THRESHOLD = 8;
+  const themeList = themesData?.themes ?? [];
+  const hasThemes = Boolean(themeList.length);
+  const useAutocomplete = themeList.length > THEME_GRID_THRESHOLD;
   const primaryColorLight: string =
     selectedThemeProp?.colorSchemes?.light?.palette?.primary?.main ?? theme.vars?.palette.primary.main ?? '';
   const primaryColorDark: string =
@@ -159,6 +173,104 @@ export default function ConfigureDesign({
   const handleThemeSelect = (themeItem: ThemeListItem): void => {
     setSelectedThemeId(themeItem.id);
   };
+
+  let themeSelectionContent: JSX.Element;
+
+  if (!hasThemes) {
+    themeSelectionContent = (
+      <Stack
+        direction="column"
+        spacing={2}
+        alignItems="center"
+        sx={{
+          p: 4,
+          borderRadius: '12px',
+          border: `1px dashed ${theme.vars?.palette.divider}`,
+        }}
+      >
+        <Palette size={32} color={theme.vars?.palette.text.secondary} />
+        <Typography variant="body1" color="text.secondary" textAlign="center">
+          {t('applications:onboarding.configure.design.theme.emptyState')}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" textAlign="center">
+          {t('applications:onboarding.configure.design.theme.emptyStateHint')}
+        </Typography>
+      </Stack>
+    );
+  } else if (useAutocomplete) {
+    themeSelectionContent = (
+      <Autocomplete
+        fullWidth
+        options={themeList}
+        getOptionLabel={(option) => (typeof option === 'string' ? option : option.displayName)}
+        value={themeList.find((themeListItem) => themeListItem.id === selectedThemeId) ?? null}
+        onChange={(_event, newValue): void => {
+          if (newValue) handleThemeSelect(newValue);
+        }}
+        loading={loadingThemes}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            placeholder={t('applications:onboarding.configure.design.theme.title')}
+            slotProps={{
+              input: {
+                ...params.InputProps,
+                endAdornment: (
+                  <>
+                    {loadingThemes ? <CircularProgress color="inherit" size={20} /> : null}
+                    {params.InputProps.endAdornment}
+                  </>
+                ),
+              },
+            }}
+          />
+        )}
+      />
+    );
+  } else {
+    themeSelectionContent = (
+      <Grid container spacing={2}>
+        {themeList.map((themeItem: ThemeListItem) => {
+          const isSelected: boolean = selectedThemeId === themeItem.id;
+          return (
+            <Grid key={themeItem.id} size={{xs: 2, sm: 3, md: 4, lg: 3}}>
+              <Card
+                data-testid={`theme-card-${themeItem.id}`}
+                onClick={(): void => handleThemeSelect(themeItem)}
+                sx={{
+                  cursor: 'pointer',
+                  border: isSelected ? `2px solid ${theme.vars?.palette.primary.main}` : undefined,
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                    transform: 'translateY(-2px)',
+                  },
+                }}
+              >
+                <Box sx={{aspectRatio: '4/3', overflow: 'hidden', position: 'relative'}}>
+                  <ThemeThumbnail theme={themeItem} />
+                </Box>
+                <Box sx={{px: 1.5, py: 1, borderTop: '1px solid', borderColor: 'divider'}}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: isSelected ? 600 : 500,
+                      fontSize: '0.8125rem',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {themeItem.displayName}
+                  </Typography>
+                </Box>
+              </Card>
+            </Grid>
+          );
+        })}
+      </Grid>
+    );
+  }
 
   return (
     <Stack direction="column" spacing={4}>
@@ -255,67 +367,7 @@ export default function ConfigureDesign({
           <Typography variant="h6">{t('applications:onboarding.configure.design.theme.title')}</Typography>
         </Stack>
 
-        {hasThemes ? (
-          <Grid container spacing={2}>
-            {themesData?.themes?.map((themeItem: ThemeListItem) => {
-              const isSelected: boolean = selectedThemeId === themeItem.id;
-              return (
-                <Grid key={themeItem.id} size={{xs: 2, sm: 3, md: 4, lg: 3}}>
-                  <Card
-                    data-testid={`theme-card-${themeItem.id}`}
-                    onClick={(): void => handleThemeSelect(themeItem)}
-                    sx={{
-                      cursor: 'pointer',
-                      border: isSelected ? `2px solid ${theme.vars?.palette.primary.main}` : undefined,
-                      '&:hover': {
-                        borderColor: 'primary.main',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                        transform: 'translateY(-2px)',
-                      },
-                    }}
-                  >
-                    <Box sx={{aspectRatio: '4/3', overflow: 'hidden', position: 'relative'}}>
-                      <ThemeThumbnail theme={themeItem} />
-                    </Box>
-                    <Box sx={{px: 1.5, py: 1, borderTop: '1px solid', borderColor: 'divider'}}>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          fontWeight: isSelected ? 600 : 500,
-                          fontSize: '0.8125rem',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {themeItem.displayName}
-                      </Typography>
-                    </Box>
-                  </Card>
-                </Grid>
-              );
-            })}
-          </Grid>
-        ) : (
-          <Stack
-            direction="column"
-            spacing={2}
-            alignItems="center"
-            sx={{
-              p: 4,
-              borderRadius: '12px',
-              border: `1px dashed ${theme.vars?.palette.divider}`,
-            }}
-          >
-            <Palette size={32} color={theme.vars?.palette.text.secondary} />
-            <Typography variant="body1" color="text.secondary" textAlign="center">
-              {t('applications:onboarding.configure.design.theme.emptyState')}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" textAlign="center">
-              {t('applications:onboarding.configure.design.theme.emptyStateHint')}
-            </Typography>
-          </Stack>
-        )}
+        {themeSelectionContent}
       </Stack>
     </Stack>
   );

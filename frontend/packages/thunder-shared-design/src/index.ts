@@ -52,6 +52,10 @@ export * from './models/requests';
 export * from './models/responses';
 export * from './models/theme';
 
+// Components
+export {default as StylesheetInjector} from './components/StylesheetInjector';
+export type {StylesheetInjectorProps} from './components/StylesheetInjector';
+
 // Utils
 export {default as extractLayoutFromDesign} from './utils/extractLayoutFromDesign';
 export {default as mapEmbeddedFlowTextVariant} from './utils/mapEmbeddedFlowTextVariant';

@@ -19,6 +19,7 @@
 package flowmgt
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -27,7 +28,25 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
+	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
+
+// mockTransactioner is a simple no-op transactioner for tests.
+type mockTransactioner struct{}
+
+func (m *mockTransactioner) Transact(ctx context.Context, operation func(txCtx context.Context) error) error {
+	return operation(ctx)
+}
+
+// setupMockDBProvider sets up a mock DB provider that returns a no-op transactioner.
+func setupMockDBProvider() func() {
+	mockProvider := &providermock.DBProviderInterfaceMock{}
+	mockProvider.On("GetConfigDBTransactioner").Return(&mockTransactioner{}, nil)
+	originalGetDBProvider := getDBProvider
+	getDBProvider = func() provider.DBProviderInterface { return mockProvider }
+	return func() { getDBProvider = originalGetDBProvider }
+}
 
 const (
 	testFlowIDInit = "test-flow-id"
@@ -723,7 +742,10 @@ func (s *InitTestSuite) TestInitializeStore_MutableMode() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 	defer config.ResetThunderRuntime()
 
-	store, compositeStore, err := initializeStore()
+	cleanup := setupMockDBProvider()
+	defer cleanup()
+
+	store, compositeStore, _, err := initializeStore()
 
 	s.NoError(err)
 	s.NotNil(store)
@@ -760,7 +782,7 @@ func (s *InitTestSuite) TestInitializeStore_DeclarativeMode() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 	defer config.ResetThunderRuntime()
 
-	store, compositeStore, err := initializeStore()
+	store, compositeStore, _, err := initializeStore()
 
 	// Note: err might occur if declarative resources path doesn't exist, but that's expected
 	// We're testing store type initialization, not resource loading
@@ -799,7 +821,10 @@ func (s *InitTestSuite) TestInitializeStore_CompositeMode() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 	defer config.ResetThunderRuntime()
 
-	store, compositeStore, err := initializeStore()
+	cleanup := setupMockDBProvider()
+	defer cleanup()
+
+	store, compositeStore, _, err := initializeStore()
 
 	// Note: err might occur if declarative resources path doesn't exist, but that's expected
 	// We're testing store type initialization, not resource loading
@@ -840,7 +865,7 @@ func (s *InitTestSuite) TestInitializeStore_DeclarativeMode_ResourceLoadingError
 	_ = config.InitializeThunderRuntime("test", testConfig)
 	defer config.ResetThunderRuntime()
 
-	store, compositeStore, err := initializeStore()
+	store, compositeStore, _, err := initializeStore()
 
 	// When declarative resources path doesn't exist or has issues, error is returned
 	// The store and compositeStore should be nil when error occurs
@@ -881,7 +906,10 @@ func (s *InitTestSuite) TestInitializeStore_CompositeMode_ResourceLoadingError()
 	_ = config.InitializeThunderRuntime("test", testConfig)
 	defer config.ResetThunderRuntime()
 
-	store, compositeStore, err := initializeStore()
+	cleanup := setupMockDBProvider()
+	defer cleanup()
+
+	store, compositeStore, _, err := initializeStore()
 
 	// When declarative resources path doesn't exist or has issues, error is returned
 	// The store and compositeStore should be nil when error occurs
@@ -922,7 +950,10 @@ func (s *InitTestSuite) TestInitializeStore_DefaultMode() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 	defer config.ResetThunderRuntime()
 
-	store, compositeStore, err := initializeStore()
+	cleanup := setupMockDBProvider()
+	defer cleanup()
+
+	store, compositeStore, _, err := initializeStore()
 
 	s.NoError(err)
 	s.NotNil(store)
@@ -959,7 +990,10 @@ func (s *InitTestSuite) TestInitializeStore_ModeNormalization() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 	defer config.ResetThunderRuntime()
 
-	store, compositeStore, err := initializeStore()
+	cleanup := setupMockDBProvider()
+	defer cleanup()
+
+	store, compositeStore, _, err := initializeStore()
 
 	// Note: err might occur if declarative resources path doesn't exist, but that's expected
 	// We're testing store type initialization and mode normalization

@@ -111,4 +111,6 @@ var defaultMessages = map[string]string{
 	"error.i18nservice.translation_not_found_description": "The requested translation does not exist for the specified language, namespace, and key",
 	"error.internal_server_error": "Internal server error",
 	"error.internal_server_error_description": "An unexpected error occurred while processing the request",
+	"error.templateservice.template_not_found": "Template not found",
+	"error.templateservice.template_not_found_description": "The requested template does not exist for the given scenario",
 }

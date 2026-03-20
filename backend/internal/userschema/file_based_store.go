@@ -25,6 +25,7 @@ import (
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 type userSchemaFileBasedStore struct {
@@ -229,9 +230,9 @@ func (f *userSchemaFileBasedStore) GetDisplayAttributesByNames(
 }
 
 // newUserSchemaFileBasedStore creates a new instance of a file-based store.
-func newUserSchemaFileBasedStore() userSchemaStoreInterface {
+func newUserSchemaFileBasedStore() (userSchemaStoreInterface, transaction.Transactioner) {
 	genericStore := declarativeresource.NewGenericFileBasedStore(entity.KeyTypeUserSchema)
 	return &userSchemaFileBasedStore{
 		GenericFileBasedStore: genericStore,
-	}
+	}, transaction.NewNoOpTransactioner()
 }

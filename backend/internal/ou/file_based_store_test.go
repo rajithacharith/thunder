@@ -575,7 +575,7 @@ func (s *FileBasedStoreTestSuite) TestChildrenListIncludesDesignFields() {
 
 func (s *FileBasedStoreTestSuite) TestNewFileBasedStore() {
 	// Test that newFileBasedStore creates a valid store
-	store := newFileBasedStore()
+	store, _ := newFileBasedStore()
 	assert.NotNil(s.T(), store)
 
 	// Verify it implements the interface by using it

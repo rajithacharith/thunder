@@ -32,10 +32,10 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/scope"
 	sysContext "github.com/asgardeo/thunder/internal/system/context"
-	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/observability"
 	"github.com/asgardeo/thunder/internal/system/observability/event"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 // TokenServiceInterface defines the interface for OAuth 2.0 token processing.

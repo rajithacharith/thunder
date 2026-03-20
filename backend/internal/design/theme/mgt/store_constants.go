@@ -24,21 +24,21 @@ var (
 	// queryCreateTheme creates a new theme configuration.
 	queryCreateTheme = dbmodel.DBQuery{
 		ID: "THQ-THEME_MGT-01",
-		Query: "INSERT INTO THEME (ID, DISPLAY_NAME, DESCRIPTION, THEME, DEPLOYMENT_ID) " +
-			"VALUES ($1, $2, $3, $4, $5)",
+		Query: "INSERT INTO THEME (ID, HANDLE, DISPLAY_NAME, DESCRIPTION, THEME, DEPLOYMENT_ID) " +
+			"VALUES ($1, $2, $3, $4, $5, $6)",
 	}
 
 	// queryGetThemeByID retrieves a theme configuration by ID.
 	queryGetThemeByID = dbmodel.DBQuery{
 		ID: "THQ-THEME_MGT-02",
-		Query: "SELECT ID, DISPLAY_NAME, DESCRIPTION, THEME, CREATED_AT, UPDATED_AT FROM THEME " +
+		Query: "SELECT ID, HANDLE, DISPLAY_NAME, DESCRIPTION, THEME, CREATED_AT, UPDATED_AT FROM THEME " +
 			"WHERE ID = $1 AND DEPLOYMENT_ID = $2",
 	}
 
 	// queryGetThemeList retrieves a list of theme configurations with pagination.
 	queryGetThemeList = dbmodel.DBQuery{
 		ID: "THQ-THEME_MGT-03",
-		Query: "SELECT ID, DISPLAY_NAME, DESCRIPTION, CREATED_AT, UPDATED_AT FROM THEME " +
+		Query: "SELECT ID, HANDLE, DISPLAY_NAME, DESCRIPTION, CREATED_AT, UPDATED_AT FROM THEME " +
 			"WHERE DEPLOYMENT_ID = $3 ORDER BY CREATED_AT DESC LIMIT $1 OFFSET $2",
 	}
 
@@ -75,5 +75,11 @@ var (
 	queryGetApplicationsCountByThemeID = dbmodel.DBQuery{
 		ID:    "THQ-THEME_MGT-08",
 		Query: "SELECT COUNT(*) as total FROM APPLICATION WHERE THEME_ID = $1 AND DEPLOYMENT_ID = $2",
+	}
+
+	// queryCheckThemeHandleConflict checks if a theme handle already exists for a deployment (excluding a given ID).
+	queryCheckThemeHandleConflict = dbmodel.DBQuery{
+		ID:    "THQ-THEME_MGT-09",
+		Query: "SELECT COUNT(*) as total FROM THEME WHERE HANDLE = $1 AND DEPLOYMENT_ID = $2 AND ID != $3",
 	}
 )

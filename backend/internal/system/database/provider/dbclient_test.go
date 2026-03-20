@@ -28,7 +28,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 
 	"github.com/asgardeo/thunder/internal/system/database/model"
-	"github.com/asgardeo/thunder/internal/system/database/transaction"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"

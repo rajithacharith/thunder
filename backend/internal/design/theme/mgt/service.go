@@ -94,9 +94,22 @@ func (ts *themeMgtService) CreateTheme(theme CreateThemeRequest) (*Theme, *servi
 		return nil, &ErrorMissingDisplayName
 	}
 
+	if theme.Handle == "" {
+		return nil, &ErrorMissingThemeHandle
+	}
+
 	// Check if store is in pure declarative mode
 	if isDeclarativeModeEnabled() {
 		return nil, &ErrorCannotModifyDeclarativeResource
+	}
+
+	conflict, err := ts.themeMgtStore.IsThemeHandleConflict(theme.Handle, "")
+	if err != nil {
+		ts.logger.Error("Failed to check theme handle conflict", log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
+	if conflict {
+		return nil, &ErrorDuplicateThemeHandle
 	}
 
 	if err := ts.validateThemePreferences(theme.Theme); err != nil {
@@ -116,6 +129,7 @@ func (ts *themeMgtService) CreateTheme(theme CreateThemeRequest) (*Theme, *servi
 
 	createdTheme := &Theme{
 		ID:          id,
+		Handle:      theme.Handle,
 		DisplayName: theme.DisplayName,
 		Description: theme.Description,
 		Theme:       theme.Theme,
@@ -164,19 +178,23 @@ func (ts *themeMgtService) UpdateTheme(id string, theme UpdateThemeRequest) (*Th
 		return nil, &ErrorCannotModifyDeclarativeResource
 	}
 
-	if err := ts.validateThemePreferences(theme.Theme); err != nil {
-		return nil, err
-	}
-
-	// Check if theme exists
-	exists, err := ts.themeMgtStore.IsThemeExist(id)
+	// Fetch existing theme to enforce handle immutability
+	existingTheme, err := ts.themeMgtStore.GetTheme(id)
 	if err != nil {
-		ts.logger.Error("Failed to check theme existence", log.String("id", id), log.Error(err))
+		if errors.Is(err, errThemeNotFound) {
+			return nil, &ErrorThemeNotFound
+		}
+		ts.logger.Error("Failed to retrieve theme", log.String("id", id), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
-	if !exists {
-		return nil, &ErrorThemeNotFound
+	// Handle is immutable; reject if a different value is provided
+	if theme.Handle != "" && theme.Handle != existingTheme.Handle {
+		return nil, &ErrorThemeHandleImmutable
+	}
+
+	if err := ts.validateThemePreferences(theme.Theme); err != nil {
+		return nil, err
 	}
 
 	if err := ts.themeMgtStore.UpdateTheme(id, theme); err != nil {
@@ -186,6 +204,7 @@ func (ts *themeMgtService) UpdateTheme(id string, theme UpdateThemeRequest) (*Th
 
 	updatedTheme := &Theme{
 		ID:          id,
+		Handle:      existingTheme.Handle,
 		DisplayName: theme.DisplayName,
 		Description: theme.Description,
 		Theme:       theme.Theme,

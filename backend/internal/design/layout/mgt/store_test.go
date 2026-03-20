@@ -92,6 +92,7 @@ func (suite *LayoutStoreTestSuite) TestGetLayoutList_Success() {
 	results := []map[string]interface{}{
 		{
 			"id":           "layout-1",
+			"handle":       "layout-one",
 			"display_name": "Layout 1",
 			"description":  "Description 1",
 			"created_at":   "2024-01-15T10:30:00Z",
@@ -99,6 +100,7 @@ func (suite *LayoutStoreTestSuite) TestGetLayoutList_Success() {
 		},
 		{
 			"id":           "layout-2",
+			"handle":       "layout-two",
 			"display_name": "Layout 2",
 			"description":  "Description 2",
 			"created_at":   "2024-01-15T10:30:00Z",
@@ -129,10 +131,11 @@ func (suite *LayoutStoreTestSuite) TestGetLayoutList_DBClientError() {
 // Test CreateLayout - Success
 func (suite *LayoutStoreTestSuite) TestCreateLayout_Success() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", mock.Anything, "layout-1", "Test", "Desc",
+	suite.mockDBClient.On("Execute", mock.Anything, "layout-1", "classic", "Test", "Desc",
 		mock.Anything, "test-deployment").Return(int64(1), nil)
 
 	err := suite.store.CreateLayout("layout-1", CreateLayoutRequest{
+		Handle:      "classic",
 		DisplayName: "Test",
 		Description: "Desc",
 		Layout:      json.RawMessage(`{"structure": "grid"}`),
@@ -146,6 +149,7 @@ func (suite *LayoutStoreTestSuite) TestGetLayout_Success() {
 	results := []map[string]interface{}{
 		{
 			"id":           "layout-123",
+			"handle":       "classic",
 			"display_name": "Test Layout",
 			"description":  "A test layout",
 			"layout":       `{"structure": "centered"}`,
@@ -278,6 +282,7 @@ func (suite *LayoutStoreTestSuite) TestParseCountResult_UnsupportedType() {
 func (suite *LayoutStoreTestSuite) TestBuildLayoutListItemFromResultRow_Success() {
 	row := map[string]interface{}{
 		"id":           "layout-1",
+		"handle":       "classic",
 		"display_name": "Test Layout",
 		"description":  "A description",
 		"created_at":   "2024-01-15T10:30:00Z",
@@ -305,6 +310,7 @@ func (suite *LayoutStoreTestSuite) TestBuildLayoutListItemFromResultRow_MissingI
 func (suite *LayoutStoreTestSuite) TestBuildLayoutListItemFromResultRow_MissingDisplayName() {
 	row := map[string]interface{}{
 		"id":          "layout-1",
+		"handle":      "classic",
 		"description": "Desc",
 	}
 
@@ -315,6 +321,7 @@ func (suite *LayoutStoreTestSuite) TestBuildLayoutListItemFromResultRow_MissingD
 func (suite *LayoutStoreTestSuite) TestBuildLayoutListItemFromResultRow_NilDescription() {
 	row := map[string]interface{}{
 		"id":           "layout-1",
+		"handle":       "classic",
 		"display_name": "Test",
 		"description":  nil,
 		"created_at":   "2024-01-15T10:30:00Z",
@@ -380,5 +387,77 @@ func (suite *LayoutStoreTestSuite) TestBuildLayoutFromResultRow_UnsupportedLayou
 	}
 
 	_, err := suite.store.buildLayoutFromResultRow(row)
+	assert.Error(suite.T(), err)
+}
+
+// Test IsLayoutHandleConflict - Conflict found
+func (suite *LayoutStoreTestSuite) TestIsLayoutHandleConflict_Conflict() {
+	results := []map[string]interface{}{
+		{"total": int64(1)},
+	}
+	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("Query", mock.Anything, "classic", "test-deployment", "").Return(results, nil)
+
+	conflict, err := suite.store.IsLayoutHandleConflict("classic", "")
+
+	assert.NoError(suite.T(), err)
+	assert.True(suite.T(), conflict)
+}
+
+// Test IsLayoutHandleConflict - No conflict
+func (suite *LayoutStoreTestSuite) TestIsLayoutHandleConflict_NoConflict() {
+	results := []map[string]interface{}{
+		{"total": int64(0)},
+	}
+	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("Query", mock.Anything, "unique-handle", "test-deployment", "layout-1").Return(results, nil)
+
+	conflict, err := suite.store.IsLayoutHandleConflict("unique-handle", "layout-1")
+
+	assert.NoError(suite.T(), err)
+	assert.False(suite.T(), conflict)
+}
+
+// Test IsLayoutHandleConflict - DB client error
+func (suite *LayoutStoreTestSuite) TestIsLayoutHandleConflict_DBClientError() {
+	suite.mockDBProvider.On("GetConfigDBClient").Return(nil, errors.New("connection error"))
+
+	conflict, err := suite.store.IsLayoutHandleConflict("classic", "")
+
+	assert.Error(suite.T(), err)
+	assert.False(suite.T(), conflict)
+}
+
+// Test IsLayoutHandleConflict - Query error
+func (suite *LayoutStoreTestSuite) TestIsLayoutHandleConflict_QueryError() {
+	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("Query", mock.Anything, "classic", "test-deployment", "").
+		Return(nil, errors.New("query error"))
+
+	conflict, err := suite.store.IsLayoutHandleConflict("classic", "")
+
+	assert.Error(suite.T(), err)
+	assert.False(suite.T(), conflict)
+}
+
+// Test UpdateLayout - DB client error
+func (suite *LayoutStoreTestSuite) TestUpdateLayout_DBClientError() {
+	suite.mockDBProvider.On("GetConfigDBClient").Return(nil, errors.New("connection error"))
+
+	err := suite.store.UpdateLayout("layout-1", UpdateLayoutRequest{
+		DisplayName: "Updated",
+		Description: "Updated Desc",
+		Layout:      json.RawMessage(`{"structure": "grid"}`),
+	})
+
+	assert.Error(suite.T(), err)
+}
+
+// Test DeleteLayout - DB client error
+func (suite *LayoutStoreTestSuite) TestDeleteLayout_DBClientError() {
+	suite.mockDBProvider.On("GetConfigDBClient").Return(nil, errors.New("connection error"))
+
+	err := suite.store.DeleteLayout("layout-1")
+
 	assert.Error(suite.T(), err)
 }

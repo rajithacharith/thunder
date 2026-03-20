@@ -334,7 +334,7 @@ func (suite *InitTestSuite) TestNewResourceService() {
 // TestNewResourceStore tests the newResourceStore constructor
 func (suite *InitTestSuite) TestNewResourceStore() {
 	// Execute
-	store := newResourceStore()
+	store, _, _ := newResourceStore()
 
 	// Assert
 	suite.NotNil(store)
@@ -483,7 +483,7 @@ func (suite *InitTestSuite) TestInitializeStore_MutableMode() {
 	runtime.Config.DeclarativeResources.Enabled = false
 
 	// Execute
-	store, err := initializeStore()
+	store, _, err := initializeStore()
 
 	// Assert
 	suite.NoError(err)
@@ -501,7 +501,7 @@ func (suite *InitTestSuite) TestInitializeStore_DeclarativeMode() {
 	runtime.Config.Resource.Store = "declarative"
 
 	// Execute
-	store, err := initializeStore()
+	store, _, err := initializeStore()
 
 	// Assert
 	suite.NoError(err)
@@ -519,7 +519,7 @@ func (suite *InitTestSuite) TestInitializeStore_CompositeMode() {
 	runtime.Config.Resource.Store = testStoreModeComposite
 
 	// Execute
-	store, err := initializeStore()
+	store, _, err := initializeStore()
 
 	// Assert
 	suite.NoError(err)
@@ -551,7 +551,7 @@ func (suite *InitTestSuite) TestInitializeStore_CompositeMode_FileStoreInitializ
 	runtime.Config.Resource.Store = testStoreModeComposite
 
 	// Execute (in normal conditions, this should succeed)
-	store, err := initializeStore()
+	store, _, err := initializeStore()
 
 	// Assert - in composite mode, it should succeed with a valid store
 	suite.NoError(err)
@@ -572,7 +572,7 @@ func (suite *InitTestSuite) TestInitializeStore_InvalidMode_ReturnedFromInitiali
 	runtime.Config.DeclarativeResources.Enabled = false
 
 	// Execute
-	store, err := initializeStore()
+	store, _, err := initializeStore()
 
 	// Assert - invalid mode falls back to mutable (global disabled), so we get a store
 	suite.NoError(err)
@@ -601,7 +601,7 @@ func (suite *InitTestSuite) TestInitializeStore_CaseInsensitiveMode() {
 			runtime := config.GetThunderRuntime()
 			runtime.Config.Resource.Store = tc.storeMode
 
-			store, err := initializeStore()
+			store, _, err := initializeStore()
 
 			suite.NoError(err, "Store mode '%s' should be valid", tc.storeMode)
 			suite.NotNil(store, "Store should not be nil for mode '%s'", tc.storeMode)
@@ -639,7 +639,7 @@ func (suite *InitTestSuite) TestInitializeStore_WithWhitespace() {
 			runtime := config.GetThunderRuntime()
 			runtime.Config.Resource.Store = tc.storeMode
 
-			store, err := initializeStore()
+			store, _, err := initializeStore()
 
 			if tc.shouldSucceed {
 				suite.NoError(err)
@@ -681,7 +681,7 @@ func (suite *InitTestSuite) TestInitializeStore_FallbackToGlobalConfig() {
 			runtime.Config.Resource.Store = tc.serviceStore
 			runtime.Config.DeclarativeResources.Enabled = tc.globalEnabled
 
-			store, err := initializeStore()
+			store, _, err := initializeStore()
 
 			suite.NoError(err)
 			suite.NotNil(store)

@@ -25,28 +25,15 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
-
-var getDBProvider = provider.GetDBProvider
 
 // Initialize initializes the IDP service and registers its routes.
 func Initialize(mux *http.ServeMux) (IDPServiceInterface, declarativeresource.ResourceExporter, error) {
-	// Create store based on configuration
-	idpStore, err := initializeStore()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Get transactioner from DB provider
-	dbProvider := getDBProvider()
-	dbClient, err := dbProvider.GetConfigDBClient()
-	if err != nil {
-		return nil, nil, err
-	}
-	transactioner, err := dbClient.GetTransactioner()
+	// Create store and transactioner based on store mode
+	idpStore, transactioner, err := initializeStore()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -88,33 +75,32 @@ func Initialize(mux *http.ServeMux) (IDPServiceInterface, declarativeresource.Re
 // - If identity_provider.store is not specified, falls back to global declarative_resources.enabled:
 //   - If declarative_resources.enabled = true: behaves as IMMUTABLE mode
 //   - If declarative_resources.enabled = false: behaves as MUTABLE mode
-func initializeStore() (idpStoreInterface, error) {
-	var idpStore idpStoreInterface
-
+func initializeStore() (idpStoreInterface, transaction.Transactioner, error) {
 	storeMode := getIdentityProviderStoreMode()
 
 	switch storeMode {
 	case serverconst.StoreModeComposite:
-		fileStore := newIDPFileBasedStore()
-		dbStore := newIDPStore()
-		idpStore = newCompositeIDPStore(fileStore, dbStore)
-		if err := loadDeclarativeResources(fileStore); err != nil {
-			return nil, err
+		fileStore, _ := newIDPFileBasedStore()
+		dbStore, transactioner, err := newIDPStore()
+		if err != nil {
+			return nil, nil, err
 		}
+		idpStore := newCompositeIDPStore(fileStore, dbStore)
+		if err := loadDeclarativeResources(fileStore); err != nil {
+			return nil, nil, err
+		}
+		return idpStore, transactioner, nil
 
 	case serverconst.StoreModeDeclarative:
-		fileStore := newIDPFileBasedStore()
-		idpStore = fileStore
-
+		fileStore, transactioner := newIDPFileBasedStore()
 		if err := loadDeclarativeResources(fileStore); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
+		return fileStore, transactioner, nil
 
 	default:
-		idpStore = newIDPStore()
+		return newIDPStore()
 	}
-
-	return idpStore, nil
 }
 
 // getIdentityProviderStoreMode determines the store mode for identity providers.

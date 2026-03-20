@@ -479,3 +479,11 @@ packages:
       structname: '{{.InterfaceName}}Mock'
       pkgname: emailmock
       filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/system/template:
+    config:
+      all: true
+      dir: tests/mocks/templatemock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: templatemock
+      filename: "{{.InterfaceName}}_mock.go"

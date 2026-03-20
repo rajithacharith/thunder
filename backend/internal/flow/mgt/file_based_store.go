@@ -25,6 +25,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 type fileBasedStore struct {
@@ -194,8 +195,8 @@ func (f *fileBasedStore) IsFlowExistsByHandle(_ context.Context, handle string,
 }
 
 // newFileBasedStore creates a new instance of a file-based store.
-func newFileBasedStore() flowStoreInterface {
+func newFileBasedStore() (flowStoreInterface, transaction.Transactioner) {
 	return &fileBasedStore{
 		GenericFileBasedStore: declarativeresource.NewGenericFileBasedStore(entity.KeyTypeFlow),
-	}
+	}, transaction.NewNoOpTransactioner()
 }

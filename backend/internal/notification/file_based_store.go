@@ -25,6 +25,7 @@ import (
 	"github.com/asgardeo/thunder/internal/notification/common"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 type notificationFileBasedStore struct {
@@ -97,9 +98,9 @@ func (f *notificationFileBasedStore) updateSender(
 }
 
 // newNotificationFileBasedStore creates a new instance of a file-based store.
-func newNotificationFileBasedStore() notificationStoreInterface {
+func newNotificationFileBasedStore() (notificationStoreInterface, transaction.Transactioner) {
 	genericStore := declarativeresource.NewGenericFileBasedStore(entity.KeyTypeNotificationSender)
 	return &notificationFileBasedStore{
 		GenericFileBasedStore: genericStore,
-	}
+	}, transaction.NewNoOpTransactioner()
 }

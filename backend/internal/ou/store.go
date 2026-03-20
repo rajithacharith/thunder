@@ -28,6 +28,7 @@ import (
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 const storeLoggerComponentName = "OrganizationUnitStore"
@@ -58,11 +59,16 @@ type organizationUnitStore struct {
 }
 
 // newOrganizationUnitStore creates a new instance of organizationUnitStore.
-func newOrganizationUnitStore() organizationUnitStoreInterface {
-	return &organizationUnitStore{
-		dbProvider:   provider.GetDBProvider(),
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+func newOrganizationUnitStore() (organizationUnitStoreInterface, transaction.Transactioner, error) {
+	dbProvider := provider.GetDBProvider()
+	transactioner, err := dbProvider.GetUserDBTransactioner()
+	if err != nil {
+		return nil, nil, err
 	}
+	return &organizationUnitStore{
+		dbProvider:   dbProvider,
+		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+	}, transactioner, nil
 }
 
 // GetOrganizationUnitListCount retrieves the total count of organization units.

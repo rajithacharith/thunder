@@ -92,6 +92,7 @@ func (suite *ThemeStoreTestSuite) TestGetThemeList_Success() {
 	results := []map[string]interface{}{
 		{
 			"id":           "theme-1",
+			"handle":       "theme-one",
 			"display_name": "Theme 1",
 			"description":  "Description 1",
 			"created_at":   "2024-01-15T10:30:00Z",
@@ -99,6 +100,7 @@ func (suite *ThemeStoreTestSuite) TestGetThemeList_Success() {
 		},
 		{
 			"id":           "theme-2",
+			"handle":       "theme-two",
 			"display_name": "Theme 2",
 			"description":  "Description 2",
 			"created_at":   "2024-01-15T10:30:00Z",
@@ -129,10 +131,11 @@ func (suite *ThemeStoreTestSuite) TestGetThemeList_DBClientError() {
 // Test CreateTheme - Success
 func (suite *ThemeStoreTestSuite) TestCreateTheme_Success() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", mock.Anything, "theme-1", "Test", "Desc",
+	suite.mockDBClient.On("Execute", mock.Anything, "theme-1", "classic", "Test", "Desc",
 		mock.Anything, "test-deployment").Return(int64(1), nil)
 
 	err := suite.store.CreateTheme("theme-1", CreateThemeRequest{
+		Handle:      "classic",
 		DisplayName: "Test",
 		Description: "Desc",
 		Theme:       json.RawMessage(`{"colors": {"primary": "#007bff"}}`),
@@ -146,6 +149,7 @@ func (suite *ThemeStoreTestSuite) TestGetTheme_Success() {
 	results := []map[string]interface{}{
 		{
 			"id":           "theme-123",
+			"handle":       "classic",
 			"display_name": "Test Theme",
 			"description":  "A test theme",
 			"theme":        `{"colors": {"primary": "#007bff"}}`,
@@ -292,6 +296,7 @@ func (suite *ThemeStoreTestSuite) TestParseCountResult_UnsupportedType() {
 func (suite *ThemeStoreTestSuite) TestBuildThemeListItemFromResultRow_Success() {
 	row := map[string]interface{}{
 		"id":           "theme-1",
+		"handle":       "classic",
 		"display_name": "Test Theme",
 		"description":  "A description",
 		"created_at":   "2024-01-15T10:30:00Z",
@@ -316,9 +321,21 @@ func (suite *ThemeStoreTestSuite) TestBuildThemeListItemFromResultRow_MissingID(
 	assert.Error(suite.T(), err)
 }
 
+func (suite *ThemeStoreTestSuite) TestBuildThemeListItemFromResultRow_MissingHandle() {
+	row := map[string]interface{}{
+		"id":           "theme-1",
+		"display_name": "Test",
+		"description":  "Desc",
+	}
+
+	_, err := suite.store.buildThemeListItemFromResultRow(row)
+	assert.Error(suite.T(), err)
+}
+
 func (suite *ThemeStoreTestSuite) TestBuildThemeListItemFromResultRow_MissingDisplayName() {
 	row := map[string]interface{}{
 		"id":          "theme-1",
+		"handle":      "classic",
 		"description": "Desc",
 	}
 
@@ -329,6 +346,7 @@ func (suite *ThemeStoreTestSuite) TestBuildThemeListItemFromResultRow_MissingDis
 func (suite *ThemeStoreTestSuite) TestBuildThemeListItemFromResultRow_MissingDescription() {
 	row := map[string]interface{}{
 		"id":           "theme-1",
+		"handle":       "classic",
 		"display_name": "Test",
 	}
 
@@ -340,6 +358,7 @@ func (suite *ThemeStoreTestSuite) TestBuildThemeListItemFromResultRow_MissingDes
 func (suite *ThemeStoreTestSuite) TestBuildThemeFromResultRow_StringTheme() {
 	row := map[string]interface{}{
 		"id":           "theme-1",
+		"handle":       "classic",
 		"display_name": "Test Theme",
 		"description":  "A description",
 		"theme":        `{"colors": {"primary": "#007bff"}}`,
@@ -357,6 +376,7 @@ func (suite *ThemeStoreTestSuite) TestBuildThemeFromResultRow_StringTheme() {
 func (suite *ThemeStoreTestSuite) TestBuildThemeFromResultRow_ByteTheme() {
 	row := map[string]interface{}{
 		"id":           "theme-1",
+		"handle":       "classic",
 		"display_name": "Test Theme",
 		"description":  "Desc",
 		"theme":        []byte(`{"colors": {}}`),
@@ -393,9 +413,82 @@ func (suite *ThemeStoreTestSuite) TestBuildThemeFromResultRow_UnsupportedThemeTy
 	assert.Error(suite.T(), err)
 }
 
+// Test IsThemeHandleConflict - Conflict found
+func (suite *ThemeStoreTestSuite) TestIsThemeHandleConflict_Conflict() {
+	results := []map[string]interface{}{
+		{"total": int64(1)},
+	}
+	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("Query", mock.Anything, "classic", "test-deployment", "").Return(results, nil)
+
+	conflict, err := suite.store.IsThemeHandleConflict("classic", "")
+
+	assert.NoError(suite.T(), err)
+	assert.True(suite.T(), conflict)
+}
+
+// Test IsThemeHandleConflict - No conflict
+func (suite *ThemeStoreTestSuite) TestIsThemeHandleConflict_NoConflict() {
+	results := []map[string]interface{}{
+		{"total": int64(0)},
+	}
+	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("Query", mock.Anything, "unique-handle", "test-deployment", "theme-1").Return(results, nil)
+
+	conflict, err := suite.store.IsThemeHandleConflict("unique-handle", "theme-1")
+
+	assert.NoError(suite.T(), err)
+	assert.False(suite.T(), conflict)
+}
+
+// Test IsThemeHandleConflict - DB client error
+func (suite *ThemeStoreTestSuite) TestIsThemeHandleConflict_DBClientError() {
+	suite.mockDBProvider.On("GetConfigDBClient").Return(nil, errors.New("connection error"))
+
+	conflict, err := suite.store.IsThemeHandleConflict("classic", "")
+
+	assert.Error(suite.T(), err)
+	assert.False(suite.T(), conflict)
+}
+
+// Test IsThemeHandleConflict - Query error
+func (suite *ThemeStoreTestSuite) TestIsThemeHandleConflict_QueryError() {
+	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("Query", mock.Anything, "classic", "test-deployment", "").
+		Return(nil, errors.New("query error"))
+
+	conflict, err := suite.store.IsThemeHandleConflict("classic", "")
+
+	assert.Error(suite.T(), err)
+	assert.False(suite.T(), conflict)
+}
+
+// Test UpdateTheme - DB client error
+func (suite *ThemeStoreTestSuite) TestUpdateTheme_DBClientError() {
+	suite.mockDBProvider.On("GetConfigDBClient").Return(nil, errors.New("connection error"))
+
+	err := suite.store.UpdateTheme("theme-1", UpdateThemeRequest{
+		DisplayName: "Updated",
+		Description: "Updated Desc",
+		Theme:       json.RawMessage(`{"colors": {}}`),
+	})
+
+	assert.Error(suite.T(), err)
+}
+
+// Test DeleteTheme - DB client error
+func (suite *ThemeStoreTestSuite) TestDeleteTheme_DBClientError() {
+	suite.mockDBProvider.On("GetConfigDBClient").Return(nil, errors.New("connection error"))
+
+	err := suite.store.DeleteTheme("theme-1")
+
+	assert.Error(suite.T(), err)
+}
+
 func (suite *ThemeStoreTestSuite) TestBuildThemeFromResultRow_OptionalDescription() {
 	row := map[string]interface{}{
 		"id":           "theme-1",
+		"handle":       "classic",
 		"display_name": "Test Theme",
 		"theme":        `{"colors": {}}`,
 		"created_at":   "2024-01-15T10:30:00Z",

@@ -31,6 +31,7 @@ import (
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/transaction"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
@@ -94,12 +95,23 @@ type applicationStore struct {
 	deploymentID string
 }
 
+var getDBProvider = provider.GetDBProvider
+
 // NewApplicationStore creates a new instance of applicationStore.
-func newApplicationStore() applicationStoreInterface {
-	return &applicationStore{
-		dbProvider:   provider.GetDBProvider(),
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+func newApplicationStore() (applicationStoreInterface, transaction.Transactioner, error) {
+	dbProvider := getDBProvider()
+	client, err := dbProvider.GetConfigDBClient()
+	if err != nil {
+		return nil, nil, err
 	}
+	transactioner, err := client.GetTransactioner()
+	if err != nil {
+		return nil, nil, err
+	}
+	return &applicationStore{
+		dbProvider:   dbProvider,
+		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+	}, transactioner, nil
 }
 
 // CreateApplication creates a new application in the database.
