@@ -44,8 +44,8 @@ func newFlowMetaHandler(flowMetaService FlowMetaServiceInterface) *flowMetaHandl
 // HandleGetFlowMetadata handles the GET /flow/meta endpoint.
 func (h *flowMetaHandler) HandleGetFlowMetadata(w http.ResponseWriter, r *http.Request) {
 	// Get query parameters
-	metaType := r.URL.Query().Get("type")
-	id := r.URL.Query().Get("id")
+	metaType := sysutils.SanitizeString(r.URL.Query().Get("type"))
+	id := sysutils.SanitizeString(r.URL.Query().Get("id"))
 
 	var language *string
 	var namespace *string
@@ -58,20 +58,16 @@ func (h *flowMetaHandler) HandleGetFlowMetadata(w http.ResponseWriter, r *http.R
 		namespace = &ns
 	}
 
-	// Validate required parameters
-	if metaType == "" {
+	// Validate parameter combinations: id requires type, and type requires id
+	if id != "" && metaType == "" {
 		handleServiceError(w, &ErrorMissingType)
 		return
 	}
 
-	if id == "" {
+	if metaType != "" && id == "" {
 		handleServiceError(w, &ErrorMissingID)
 		return
 	}
-
-	// Sanitize inputs
-	metaType = sysutils.SanitizeString(metaType)
-	id = sysutils.SanitizeString(id)
 	if language != nil {
 		lang := sysutils.SanitizeString(*language)
 		language = &lang

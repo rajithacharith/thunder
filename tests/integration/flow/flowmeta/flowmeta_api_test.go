@@ -276,7 +276,8 @@ func (suite *FlowMetaAPITestSuite) TestGetFlowMetadataMissingID() {
 	suite.Equal("Missing required parameter", errorResp.Message)
 }
 
-// TestGetFlowMetadataMissingBothParams tests GET /flow/meta without any parameters
+// TestGetFlowMetadataMissingBothParams tests GET /flow/meta without any parameters.
+// When neither type nor id is provided, the endpoint returns i18n metadata only (system flow).
 func (suite *FlowMetaAPITestSuite) TestGetFlowMetadataMissingBothParams() {
 	client := testutils.GetHTTPClient()
 
@@ -288,17 +289,20 @@ func (suite *FlowMetaAPITestSuite) TestGetFlowMetadataMissingBothParams() {
 	suite.Require().NoError(err)
 	defer resp.Body.Close()
 
-	suite.Equal(http.StatusBadRequest, resp.StatusCode)
+	suite.Equal(http.StatusOK, resp.StatusCode)
 
 	body, err := io.ReadAll(resp.Body)
 	suite.Require().NoError(err)
 
-	var errorResp ErrorResponse
-	err = json.Unmarshal(body, &errorResp)
+	var metadata FlowMetadataResponse
+	err = json.Unmarshal(body, &metadata)
 	suite.Require().NoError(err)
 
-	// Missing type is checked first
-	suite.Equal("FM-1004", errorResp.Code)
+	// No type/id means system flow: only i18n metadata is returned
+	suite.Nil(metadata.Application)
+	suite.Nil(metadata.OU)
+	suite.NotNil(metadata.I18n.Languages)
+	suite.NotEmpty(metadata.I18n.Languages)
 }
 
 // TestGetFlowMetadataInvalidType tests GET /flow/meta with invalid type parameter
