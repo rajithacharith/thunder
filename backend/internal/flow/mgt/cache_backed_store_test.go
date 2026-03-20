@@ -439,63 +439,6 @@ func (s *CacheBackedFlowStoreTestSuite) TestDeleteFlowNilFromStore() {
 	s.NoError(err)
 }
 
-// IsFlowExists Tests
-
-func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsFromCache() {
-	// Add flow to cache
-	flow := s.createTestFlow()
-	s.cacheData["flow-1"] = flow
-
-	exists, err := s.cachedStore.IsFlowExists(context.Background(), "flow-1")
-
-	s.NoError(err)
-	s.True(exists)
-	// Verify store was not called since it's in cache
-	s.mockStore.AssertNotCalled(s.T(), "IsFlowExists", "flow-1")
-}
-
-func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsFromStore() {
-	// Not in cache, should query store
-	s.mockStore.EXPECT().IsFlowExists(mock.Anything, "flow-2").Return(true, nil)
-
-	exists, err := s.cachedStore.IsFlowExists(context.Background(), "flow-2")
-
-	s.NoError(err)
-	s.True(exists)
-}
-
-func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsNotFound() {
-	// Not in cache, store returns false
-	s.mockStore.EXPECT().IsFlowExists(mock.Anything, "non-existent").Return(false, nil)
-
-	exists, err := s.cachedStore.IsFlowExists(context.Background(), "non-existent")
-
-	s.NoError(err)
-	s.False(exists)
-}
-
-func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsCacheNil() {
-	// Nil value in cache should query store
-	s.cacheData["flow-3"] = nil
-	s.mockStore.EXPECT().IsFlowExists(mock.Anything, "flow-3").Return(true, nil)
-
-	exists, err := s.cachedStore.IsFlowExists(context.Background(), "flow-3")
-
-	s.NoError(err)
-	s.True(exists)
-}
-
-func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsStoreError() {
-	// Not in cache, store returns error
-	s.mockStore.EXPECT().IsFlowExists(mock.Anything, "flow-error").Return(false, errors.New("db connection error"))
-
-	exists, err := s.cachedStore.IsFlowExists(context.Background(), "flow-error")
-
-	s.Error(err)
-	s.Contains(err.Error(), "db connection error")
-	s.False(exists)
-}
-
 // IsFlowExistsByHandle Tests
 
 func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsByHandleFromCache() {

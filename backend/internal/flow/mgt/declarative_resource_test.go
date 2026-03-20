@@ -433,34 +433,6 @@ func (s *DeclarativeResourceTestSuite) TestFileBasedStore_ListFlows() {
 	assert.Len(s.T(), flows, 3)
 }
 
-// TestFileBasedStore_IsFlowExists tests checking flow existence
-func (s *DeclarativeResourceTestSuite) TestFileBasedStore_IsFlowExists() {
-	_ = entity.GetInstance().Clear()
-	store, _ := newFileBasedStore()
-
-	flowDef := &FlowDefinition{
-		Handle:   "test-flow",
-		Name:     "Test Flow",
-		FlowType: "AUTHENTICATION",
-		Nodes: []NodeDefinition{
-			{ID: "start", Type: "START"},
-			{ID: "login", Type: "BASIC_AUTHENTICATION"},
-			{ID: "end", Type: "END"},
-		},
-	}
-
-	_, err := store.CreateFlow(context.Background(), "flow-001", flowDef)
-	require.NoError(s.T(), err)
-
-	exists, err := store.IsFlowExists(context.Background(), "flow-001")
-	require.NoError(s.T(), err)
-	assert.True(s.T(), exists)
-
-	exists, err = store.IsFlowExists(context.Background(), "non-existent")
-	require.NoError(s.T(), err)
-	assert.False(s.T(), exists)
-}
-
 // TestFileBasedStore_UnsupportedOperations tests that unsupported operations return errors
 func (s *DeclarativeResourceTestSuite) TestFileBasedStore_UnsupportedOperations() {
 	_ = entity.GetInstance().Clear()

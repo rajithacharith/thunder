@@ -166,15 +166,6 @@ func (f *fileBasedStore) RestoreFlowVersion(_ context.Context, flowID string, ve
 	return nil, errors.New("RestoreFlowVersion is not supported in file-based store")
 }
 
-// IsFlowExists implements flowStoreInterface.
-func (f *fileBasedStore) IsFlowExists(_ context.Context, flowID string) (bool, error) {
-	_, err := f.GenericFileBasedStore.Get(flowID)
-	if err != nil {
-		return false, nil
-	}
-	return true, nil
-}
-
 // IsFlowExistsByHandle implements flowStoreInterface.
 func (f *fileBasedStore) IsFlowExistsByHandle(_ context.Context, handle string,
 	flowType common.FlowType) (bool, error) {

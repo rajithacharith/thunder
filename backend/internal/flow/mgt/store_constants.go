@@ -126,12 +126,6 @@ var (
 			"VERSION = (SELECT MIN(VERSION) FROM FLOW_VERSION WHERE FLOW_ID = $1 AND DEPLOYMENT_ID = $2)",
 	}
 
-	// queryCheckFlowExistsByID is the query to check if a flow exists by its ID.
-	queryCheckFlowExistsByID = model.DBQuery{
-		ID:    "FLQ-FLOW_MGT-16",
-		Query: "SELECT 1 FROM FLOW WHERE ID = $1 AND DEPLOYMENT_ID = $2 LIMIT 1",
-	}
-
 	// queryCheckFlowExistsByHandle is the query to check if a flow exists by handle and flow type.
 	queryCheckFlowExistsByHandle = model.DBQuery{
 		ID:    "FLQ-FLOW_MGT-17",

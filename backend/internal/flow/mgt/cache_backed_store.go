@@ -151,19 +151,6 @@ func (s *cacheBackedFlowStore) DeleteFlow(ctx context.Context, flowID string) er
 	return nil
 }
 
-// IsFlowExists checks if a flow exists with a given flow ID, using cache if available.
-func (s *cacheBackedFlowStore) IsFlowExists(ctx context.Context, flowID string) (bool, error) {
-	cacheKey := cache.CacheKey{
-		Key: flowID,
-	}
-	cachedFlow, ok := s.flowByIDCache.Get(cacheKey)
-	if ok && cachedFlow != nil {
-		return true, nil
-	}
-
-	return s.store.IsFlowExists(ctx, flowID)
-}
-
 // IsFlowExistsByHandle checks if a flow exists with a given handle and flow type, using cache if available.
 func (s *cacheBackedFlowStore) IsFlowExistsByHandle(ctx context.Context, handle string,
 	flowType common.FlowType) (bool, error) {

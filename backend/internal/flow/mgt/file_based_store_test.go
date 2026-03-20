@@ -184,24 +184,6 @@ func (s *FileBasedStoreTestSuite) TestListFlows_Pagination() {
 	assert.Len(s.T(), flows, 0)
 }
 
-func (s *FileBasedStoreTestSuite) TestIsFlowExists_Found() {
-	flowDef := s.createTestFlow("test-flow")
-	_, err := s.store.CreateFlow(context.Background(), "flow-001", flowDef)
-	require.NoError(s.T(), err)
-
-	exists, err := s.store.IsFlowExists(context.Background(), "flow-001")
-
-	require.NoError(s.T(), err)
-	assert.True(s.T(), exists)
-}
-
-func (s *FileBasedStoreTestSuite) TestIsFlowExists_NotFound() {
-	exists, err := s.store.IsFlowExists(context.Background(), "non-existent")
-
-	require.NoError(s.T(), err)
-	assert.False(s.T(), exists)
-}
-
 func (s *FileBasedStoreTestSuite) TestIsFlowExistsByHandle_Found() {
 	flowDef := s.createTestFlow("test-flow")
 	_, err := s.store.CreateFlow(context.Background(), "flow-001", flowDef)

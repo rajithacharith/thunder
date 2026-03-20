@@ -157,14 +157,6 @@ func (c *compositeFlowStore) RestoreFlowVersion(ctx context.Context, flowID stri
 	return c.dbStore.RestoreFlowVersion(ctx, flowID, version)
 }
 
-// IsFlowExists checks if a flow exists in either store.
-func (c *compositeFlowStore) IsFlowExists(ctx context.Context, flowID string) (bool, error) {
-	return declarativeresource.CompositeBooleanCheckHelper(
-		func() (bool, error) { return c.fileStore.IsFlowExists(ctx, flowID) },
-		func() (bool, error) { return c.dbStore.IsFlowExists(ctx, flowID) },
-	)
-}
-
 // IsFlowExistsByHandle checks if a flow exists by handle in either store.
 func (c *compositeFlowStore) IsFlowExistsByHandle(ctx context.Context, handle string,
 	flowType common.FlowType) (bool, error) {

@@ -64,7 +64,7 @@ type FlowMgtServiceInterface interface {
 	RestoreFlowVersion(ctx context.Context, flowID string, version int) (
 		*CompleteFlowDefinition, *serviceerror.ServiceError)
 	GetGraph(ctx context.Context, flowID string) (core.GraphInterface, *serviceerror.ServiceError)
-	IsValidFlow(ctx context.Context, flowID string) bool
+	IsValidFlow(ctx context.Context, flowID string, flowType common.FlowType) (bool, *serviceerror.ServiceError)
 }
 
 // flowMgtService is the default implementation of the FlowMgtServiceInterface.
@@ -457,19 +457,24 @@ func (s *flowMgtService) GetGraph(ctx context.Context, flowID string) (
 	return s.graphBuilder.GetGraph(flow)
 }
 
-// IsValidFlow checks if a valid flow exists for the given flow ID.
-func (s *flowMgtService) IsValidFlow(ctx context.Context, flowID string) bool {
+// IsValidFlow checks if a flow exists for the given flow ID and matches the expected type.
+// Returns (false, nil) when the flow is not found or the type does not match (client error).
+// Returns (false, *serviceerror.ServiceError) when a store failure occurs (server error).
+func (s *flowMgtService) IsValidFlow(
+	ctx context.Context, flowID string, flowType common.FlowType) (bool, *serviceerror.ServiceError) {
 	if flowID == "" {
-		return false
+		return false, nil
 	}
 
-	exists, err := s.store.IsFlowExists(ctx, flowID)
+	flow, err := s.store.GetFlowByID(ctx, flowID)
 	if err != nil {
-		s.logger.Error("Failed to check flow existence", log.String(logKeyFlowID, flowID), log.Error(err))
-		return false
+		if errors.Is(err, errFlowNotFound) {
+			return false, nil
+		}
+		return false, &serviceerror.InternalServerError
 	}
 
-	return exists
+	return flow.FlowType == flowType, nil
 }
 
 // Helper functions
