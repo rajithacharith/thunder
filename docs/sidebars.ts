@@ -226,7 +226,6 @@ const sidebars: SidebarsConfig = {
             {
               type: 'doc',
               id: 'guides/key-concepts/authentication/overview',
-              label: 'Overview',
             },
             {
               type: 'category',
@@ -236,7 +235,6 @@ const sidebars: SidebarsConfig = {
                 {
                   type: 'doc',
                   id: 'guides/key-concepts/authentication/passwordless/overview',
-                  label: 'Overview',
                 },
                 {
                   type: 'doc',

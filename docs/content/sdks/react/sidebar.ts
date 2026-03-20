@@ -23,7 +23,6 @@ const sidebar: SidebarsConfig = {
     {
       type: 'doc',
       id: 'sdks/react/overview',
-      label: 'Overview',
     },
     {
       type: 'category',
@@ -174,7 +173,6 @@ const sidebar: SidebarsConfig = {
             {
               type: 'doc',
               id: 'sdks/react/guides/protecting-routes/overview',
-              label: 'Overview',
             },
             {
               type: 'doc',
