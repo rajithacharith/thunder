@@ -277,16 +277,6 @@
             "meta": {
                 "components": [
                     {
-                        "alt": "{{ t(signup:images.app_logo.alt) }}",
-                        "category": "DISPLAY",
-                        "height": "60",
-                        "id": "image",
-                        "resourceType": "ELEMENT",
-                        "src": "{{ meta(application.logo_url) }}",
-                        "type": "IMAGE",
-                        "width": ""
-                    },
-                    {
                         "align": "center",
                         "type": "TEXT",
                         "id": "text_header_pwd",
