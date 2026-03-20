@@ -93,13 +93,41 @@ func (fms *flowMetaService) GetFlowMetadata(
 	language *string,
 	namespace *string,
 ) (*FlowMetadataResponse, *serviceerror.ServiceError) {
-	// Validate type parameter
+	response := newFlowMetadataResponse()
+	lang, ns := resolveLanguageAndNamespace(language, namespace)
+
+	if metaType == "" {
+		fms.populateI18nMetadata(response, lang, ns)
+		return response, nil
+	}
+
 	if !metaType.IsValid() {
 		return nil, &ErrorInvalidType
 	}
 
+	ouID, svcErr := fms.populateTypeMetadata(ctx, metaType, id, response)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
+	if svcErr := fms.populateOUMetadata(ctx, ouID, response); svcErr != nil {
+		return nil, svcErr
+	}
+
+	fms.populateDesignMetadata(ctx, metaType, id, ouID, response)
+	fms.populateI18nMetadata(response, lang, ns)
+
+	fms.logger.Debug("Successfully retrieved flow metadata",
+		log.String("type", string(metaType)),
+		log.String("id", id))
+
+	return response, nil
+}
+
+func newFlowMetadataResponse() *FlowMetadataResponse {
 	emptyJSON, _ := json.Marshal(map[string]interface{}{})
-	response := &FlowMetadataResponse{
+
+	return &FlowMetadataResponse{
 		Design: DesignMetadata{
 			Theme:  json.RawMessage(emptyJSON),
 			Layout: json.RawMessage(emptyJSON),
@@ -108,109 +136,10 @@ func (fms *flowMetaService) GetFlowMetadata(
 			Translations: make(map[string]map[string]string),
 		},
 	}
+}
 
-	var ouID string
-
-	// Get application or OU details based on type
-	if metaType == MetaTypeAPP {
-		app, svcErr := fms.applicationService.GetApplication(ctx, id)
-		if svcErr != nil {
-			if svcErr.Code == application.ErrorApplicationNotFound.Code {
-				return nil, &ErrorApplicationNotFound
-			}
-
-			fms.logger.Error("Failed to get application",
-				log.String("appID", id),
-				log.String("error", svcErr.Error),
-				log.String("code", svcErr.Code))
-			return nil, &ErrorApplicationFetchFailed
-		}
-
-		response.IsRegistrationFlowEnabled = app.IsRegistrationFlowEnabled
-		response.Application = &ApplicationMetadata{
-			ID:        app.ID,
-			Name:      app.Name,
-			LogoURL:   app.LogoURL,
-			URL:       app.URL,
-			TosURI:    app.TosURI,
-			PolicyURI: app.PolicyURI,
-		}
-
-		// Get the root OU for the deployment since applications are scoped to the deployment.
-		// Only populate OU metadata if there is exactly one OU in the deployment.
-		ouList, ouErr := fms.ouService.GetOrganizationUnitList(ctx, 1, 0)
-		if ouErr != nil {
-			if ouErr.Code == ou.ErrorOrganizationUnitNotFound.Code {
-				return nil, &ErrorOUNotFound
-			}
-
-			fms.logger.Error("Failed to get root organization unit",
-				log.String("error", ouErr.Error),
-				log.String("code", ouErr.Code))
-			return nil, &ErrorOUFetchFailed
-		}
-		if ouList != nil && ouList.TotalResults == 1 && len(ouList.OrganizationUnits) > 0 {
-			ouID = ouList.OrganizationUnits[0].ID
-		}
-	} else {
-		// For OU type, use the provided ID as the OU ID
-		ouID = id
-		response.IsRegistrationFlowEnabled = false
-	}
-
-	// Get OU details
-	if ouID != "" {
-		orgUnit, svcErr := fms.ouService.GetOrganizationUnit(ctx, ouID)
-		if svcErr != nil {
-			if svcErr.Code == ou.ErrorOrganizationUnitNotFound.Code {
-				return nil, &ErrorOUNotFound
-			}
-
-			fms.logger.Error("Failed to get organization unit",
-				log.String("ouID", ouID),
-				log.String("error", svcErr.Error),
-				log.String("code", svcErr.Code))
-			return nil, &ErrorOUFetchFailed
-		}
-
-		response.OU = &OUMetadata{
-			ID:              orgUnit.ID,
-			Handle:          orgUnit.Handle,
-			Name:            orgUnit.Name,
-			Description:     orgUnit.Description,
-			LogoURL:         orgUnit.LogoURL,
-			TosURI:          orgUnit.TosURI,
-			PolicyURI:       orgUnit.PolicyURI,
-			CookiePolicyURI: orgUnit.CookiePolicyURI,
-		}
-	}
-
-	// Get design configuration (theme and layout)
-	designType := common.DesignResolveTypeAPP
-	designID := id
-	if metaType == MetaTypeOU {
-		designType = common.DesignResolveTypeOU
-		designID = ouID
-	}
-
-	designResp, svcErr := fms.designResolve.ResolveDesign(ctx, designType, designID)
-	if svcErr != nil {
-		// Design is optional, log and continue with empty design
-		fms.logger.Debug("Failed to get design configuration",
-			log.String("type", string(designType)),
-			log.String("id", designID),
-			log.String("error", svcErr.Error))
-	} else if designResp != nil {
-		if designResp.Theme != nil {
-			response.Design.Theme = designResp.Theme
-		}
-		if designResp.Layout != nil {
-			response.Design.Layout = designResp.Layout
-		}
-	}
-
-	// Get i18n translations
-	lang := "en-US"
+func resolveLanguageAndNamespace(language *string, namespace *string) (string, string) {
+	lang := i18nmgt.SystemLanguage
 	if language != nil && *language != "" {
 		lang = *language
 	}
@@ -220,9 +149,136 @@ func (fms *flowMetaService) GetFlowMetadata(
 		ns = *namespace
 	}
 
+	return lang, ns
+}
+
+func (fms *flowMetaService) populateTypeMetadata(
+	ctx context.Context,
+	metaType MetaType,
+	id string,
+	response *FlowMetadataResponse,
+) (string, *serviceerror.ServiceError) {
+	if metaType == MetaTypeOU {
+		response.IsRegistrationFlowEnabled = false
+		return id, nil
+	}
+
+	app, svcErr := fms.applicationService.GetApplication(ctx, id)
+	if svcErr != nil {
+		if svcErr.Code == application.ErrorApplicationNotFound.Code {
+			return "", &ErrorApplicationNotFound
+		}
+
+		fms.logger.Error("Failed to get application",
+			log.String("appID", id),
+			log.String("error", svcErr.Error),
+			log.String("code", svcErr.Code))
+		return "", &ErrorApplicationFetchFailed
+	}
+
+	response.IsRegistrationFlowEnabled = app.IsRegistrationFlowEnabled
+	response.Application = &ApplicationMetadata{
+		ID:        app.ID,
+		Name:      app.Name,
+		LogoURL:   app.LogoURL,
+		URL:       app.URL,
+		TosURI:    app.TosURI,
+		PolicyURI: app.PolicyURI,
+	}
+
+	ouList, ouErr := fms.ouService.GetOrganizationUnitList(ctx, 1, 0)
+	if ouErr != nil {
+		if ouErr.Code == ou.ErrorOrganizationUnitNotFound.Code {
+			return "", &ErrorOUNotFound
+		}
+
+		fms.logger.Error("Failed to get root organization unit",
+			log.String("error", ouErr.Error),
+			log.String("code", ouErr.Code))
+		return "", &ErrorOUFetchFailed
+	}
+
+	if ouList != nil && ouList.TotalResults == 1 && len(ouList.OrganizationUnits) > 0 {
+		return ouList.OrganizationUnits[0].ID, nil
+	}
+
+	return "", nil
+}
+
+func (fms *flowMetaService) populateOUMetadata(
+	ctx context.Context,
+	ouID string,
+	response *FlowMetadataResponse,
+) *serviceerror.ServiceError {
+	if ouID == "" {
+		return nil
+	}
+
+	orgUnit, svcErr := fms.ouService.GetOrganizationUnit(ctx, ouID)
+	if svcErr != nil {
+		if svcErr.Code == ou.ErrorOrganizationUnitNotFound.Code {
+			return &ErrorOUNotFound
+		}
+
+		fms.logger.Error("Failed to get organization unit",
+			log.String("ouID", ouID),
+			log.String("error", svcErr.Error),
+			log.String("code", svcErr.Code))
+		return &ErrorOUFetchFailed
+	}
+
+	response.OU = &OUMetadata{
+		ID:              orgUnit.ID,
+		Handle:          orgUnit.Handle,
+		Name:            orgUnit.Name,
+		Description:     orgUnit.Description,
+		LogoURL:         orgUnit.LogoURL,
+		TosURI:          orgUnit.TosURI,
+		PolicyURI:       orgUnit.PolicyURI,
+		CookiePolicyURI: orgUnit.CookiePolicyURI,
+	}
+
+	return nil
+}
+
+func (fms *flowMetaService) populateDesignMetadata(
+	ctx context.Context,
+	metaType MetaType,
+	id string,
+	ouID string,
+	response *FlowMetadataResponse,
+) {
+	designType := common.DesignResolveTypeAPP
+	designID := id
+	if metaType == MetaTypeOU {
+		designType = common.DesignResolveTypeOU
+		designID = ouID
+	}
+
+	designResp, svcErr := fms.designResolve.ResolveDesign(ctx, designType, designID)
+	if svcErr != nil {
+		fms.logger.Debug("Failed to get design configuration",
+			log.String("type", string(designType)),
+			log.String("id", designID),
+			log.String("error", svcErr.Error))
+		return
+	}
+
+	if designResp == nil {
+		return
+	}
+
+	if designResp.Theme != nil {
+		response.Design.Theme = designResp.Theme
+	}
+	if designResp.Layout != nil {
+		response.Design.Layout = designResp.Layout
+	}
+}
+
+func (fms *flowMetaService) populateI18nMetadata(response *FlowMetadataResponse, lang string, ns string) {
 	i18nResp, i18nErr := fms.i18nService.ResolveTranslations(lang, ns)
 	if i18nErr != nil {
-		// i18n is optional, log and continue with empty translations
 		fms.logger.Debug("Failed to get i18n translations",
 			log.String("language", lang),
 			log.String("namespace", ns),
@@ -233,20 +289,13 @@ func (fms *flowMetaService) GetFlowMetadata(
 		response.I18n.Translations = i18nResp.Translations
 	}
 
-	// Get list of available languages
 	languages, i18nErr := fms.i18nService.ListLanguages()
 	if i18nErr != nil {
 		fms.logger.Debug("Failed to list languages",
 			log.String("error", i18nErr.Error.DefaultValue))
-
-		response.I18n.Languages = []string{"en"}
-	} else {
-		response.I18n.Languages = languages
+		response.I18n.Languages = []string{i18nmgt.SystemLanguage}
+		return
 	}
 
-	fms.logger.Debug("Successfully retrieved flow metadata",
-		log.String("type", string(metaType)),
-		log.String("id", id))
-
-	return response, nil
+	response.I18n.Languages = languages
 }
