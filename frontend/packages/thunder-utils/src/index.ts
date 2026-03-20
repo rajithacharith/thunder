@@ -16,6 +16,9 @@
  * under the License.
  */
 
+// Classname Utilities
+export {default as cn, setCnPrefix, getCnPrefix} from './classnames/cn';
+
 // String Operations
 export {default as generateRandomHumanReadableIdentifiers} from './string/generateRandomHumanReadableIdentifiers';
 

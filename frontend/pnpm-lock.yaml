@@ -914,6 +914,9 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.90.5(react@19.2.3)
+      '@thunder/logger':
+        specifier: workspace:^
+        version: link:../thunder-logger
       '@thunder/shared-contexts':
         specifier: workspace:^
         version: link:../thunder-shared-contexts

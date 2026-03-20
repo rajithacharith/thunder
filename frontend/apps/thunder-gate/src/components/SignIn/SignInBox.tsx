@@ -23,7 +23,7 @@ import {Box, Alert, styled, Paper, ColorSchemeImage, Stack, CircularProgress} fr
 import {useState} from 'react';
 import {EmbeddedFlowComponentType, SignIn, type EmbeddedFlowComponent} from '@asgardeo/react';
 import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
-import {TemplateLiteralType} from '@thunder/utils';
+import {cn, TemplateLiteralType} from '@thunder/utils';
 import {useSearchParams} from 'react-router';
 import {useTranslation} from 'react-i18next';
 import {useDesign} from '@thunder/shared-design';
@@ -88,8 +88,9 @@ export default function SignInBox(): JSX.Element {
   };
 
   return (
-    <Stack gap={2}>
+    <Stack gap={2} className={cn('SignInBox--root')}>
       <ColorSchemeImage
+        className={cn('SignInBox--logo')}
         src={{
           light: `${import.meta.env.BASE_URL}/assets/images/logo.svg`,
           dark: `${import.meta.env.BASE_URL}/assets/images/logo-inverted.svg`,
@@ -104,7 +105,7 @@ export default function SignInBox(): JSX.Element {
           display: !isDesignEnabled ? {xs: 'flex', md: 'none'} : 'none',
         }}
       />
-      <StyledPaper variant="outlined">
+      <StyledPaper variant="outlined" className={cn('SignInBox--paper')}>
         <SignIn>
           {({onSubmit, isLoading, components, error, isInitialized, meta: flowMeta, additionalData}) =>
             (isLoading ?? !isInitialized) ? (

@@ -28,6 +28,7 @@ import BlockAdapter from './adapters/BlockAdapter';
 import StandaloneTriggerAdapter from './adapters/StandaloneTriggerAdapter';
 import ConsentAdapter from './adapters/ConsentAdapter';
 import TimerAdapter from './adapters/TimerAdapter';
+import DividerAdapter from './adapters/DividerAdapter';
 import type {FlowComponent, FlowComponentRendererProps} from '../../models/flow';
 
 /**
@@ -39,6 +40,7 @@ import type {FlowComponent, FlowComponentRendererProps} from '../../models/flow'
  * - `IMAGE` → {@link ImageAdapter}
  * - `ICON` → {@link IconAdapter}
  * - `STACK` → {@link StackAdapter}
+ * - `DIVIDER` → {@link DividerAdapter}
  * - `BLOCK` (form or trigger) → {@link BlockAdapter}
  * - `ACTION / TRIGGER` (standalone) → {@link StandaloneTriggerAdapter}
  *
@@ -125,6 +127,11 @@ export default function FlowComponentRenderer({
     const textTemplate = resolve(comp.label) ?? 'Time remaining: {time}';
 
     return <TimerAdapter expiresIn={expiresIn} textTemplate={textTemplate} />;
+  }
+
+  // DIVIDER
+  if (comp.type === 'DIVIDER') {
+    return <DividerAdapter component={comp} resolve={resolve} />;
   }
 
   // BLOCK (form block or trigger block)

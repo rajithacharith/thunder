@@ -17,7 +17,7 @@
  */
 
 import {useState, type JSX, type ComponentType, type MouseEvent} from 'react';
-import {useDesign, type Theme} from '@thunder/shared-design';
+import {useDesign, StylesheetInjector, type Theme} from '@thunder/shared-design';
 import {LanguageSwitcher} from '@asgardeo/react';
 import {
   OxygenUIThemeProvider,
@@ -38,6 +38,7 @@ export default function withTheme<P extends object>(WrappedComponent: ComponentT
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     return (
       <OxygenUIThemeProvider theme={theme}>
+        <StylesheetInjector />
         <ColorSchemeToggle
           sx={{
             position: 'fixed',
