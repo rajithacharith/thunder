@@ -24,21 +24,21 @@ var (
 	// queryCreateLayout creates a new layout configuration.
 	queryCreateLayout = dbmodel.DBQuery{
 		ID: "LAQ-LAYOUT_MGT-01",
-		Query: "INSERT INTO LAYOUT (ID, DISPLAY_NAME, DESCRIPTION, LAYOUT, DEPLOYMENT_ID) " +
-			"VALUES ($1, $2, $3, $4, $5)",
+		Query: "INSERT INTO LAYOUT (ID, HANDLE, DISPLAY_NAME, DESCRIPTION, LAYOUT, DEPLOYMENT_ID) " +
+			"VALUES ($1, $2, $3, $4, $5, $6)",
 	}
 
 	// queryGetLayoutByID retrieves a layout configuration by ID.
 	queryGetLayoutByID = dbmodel.DBQuery{
 		ID: "LAQ-LAYOUT_MGT-02",
-		Query: "SELECT ID, DISPLAY_NAME, DESCRIPTION, LAYOUT, CREATED_AT, UPDATED_AT FROM LAYOUT " +
+		Query: "SELECT ID, HANDLE, DISPLAY_NAME, DESCRIPTION, LAYOUT, CREATED_AT, UPDATED_AT FROM LAYOUT " +
 			"WHERE ID = $1 AND DEPLOYMENT_ID = $2",
 	}
 
 	// queryGetLayoutList retrieves a list of layout configurations with pagination.
 	queryGetLayoutList = dbmodel.DBQuery{
 		ID: "LAQ-LAYOUT_MGT-03",
-		Query: "SELECT ID, DISPLAY_NAME, DESCRIPTION, CREATED_AT, UPDATED_AT FROM LAYOUT " +
+		Query: "SELECT ID, HANDLE, DISPLAY_NAME, DESCRIPTION, CREATED_AT, UPDATED_AT FROM LAYOUT " +
 			"WHERE DEPLOYMENT_ID = $3 ORDER BY CREATED_AT DESC LIMIT $1 OFFSET $2",
 	}
 
@@ -75,5 +75,11 @@ var (
 	queryGetApplicationsCountByLayoutID = dbmodel.DBQuery{
 		ID:    "LAQ-LAYOUT_MGT-08",
 		Query: "SELECT COUNT(*) as total FROM APPLICATION WHERE LAYOUT_ID = $1 AND DEPLOYMENT_ID = $2",
+	}
+
+	// queryCheckLayoutHandleConflict checks if a layout handle already exists for a deployment (excluding a given ID).
+	queryCheckLayoutHandleConflict = dbmodel.DBQuery{
+		ID:    "LAQ-LAYOUT_MGT-09",
+		Query: "SELECT COUNT(*) as total FROM LAYOUT WHERE HANDLE = $1 AND DEPLOYMENT_ID = $2 AND ID != $3",
 	}
 )

@@ -18,6 +18,7 @@
 
 // String Operations
 export {default as generateRandomHumanReadableIdentifiers} from './string/generateRandomHumanReadableIdentifiers';
+export {default as kebabCase} from './string/kebabCase';
 
 // Path Operations
 export {default as isAbsoluteUrl} from './path/isAbsoluteUrl';

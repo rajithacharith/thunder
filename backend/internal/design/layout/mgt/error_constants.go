@@ -152,6 +152,30 @@ var (
 		Error:            "Cannot modify declarative resource",
 		ErrorDescription: "The layout is declarative and cannot be modified or deleted",
 	}
+
+	// ErrorDuplicateLayoutHandle is returned when a layout with the same handle already exists.
+	ErrorDuplicateLayoutHandle = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "LAY-1016",
+		Error:            "Duplicate layout handle",
+		ErrorDescription: "A layout with the same handle already exists",
+	}
+
+	// ErrorMissingLayoutHandle is returned when handle is not provided.
+	ErrorMissingLayoutHandle = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "LAY-1017",
+		Error:            "Missing layout handle",
+		ErrorDescription: "Layout handle is required",
+	}
+
+	// ErrorLayoutHandleImmutable is returned when attempting to change the handle of an existing layout.
+	ErrorLayoutHandleImmutable = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "LAY-1018",
+		Error:            "Layout handle is immutable",
+		ErrorDescription: "The layout handle cannot be changed after creation",
+	}
 )
 
 // errCannotUpdateDeclarativeLayout is an internal error for composite store operations.

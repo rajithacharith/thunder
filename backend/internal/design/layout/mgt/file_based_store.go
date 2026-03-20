@@ -37,6 +37,7 @@ func (f *layoutFileBasedStore) Create(id string, data interface{}) error {
 		return errors.New("invalid data type: expected *Layout")
 	}
 	createReq := CreateLayoutRequest{
+		Handle:      layout.Handle,
 		DisplayName: layout.DisplayName,
 		Description: layout.Description,
 		Layout:      layout.Layout,
@@ -48,6 +49,7 @@ func (f *layoutFileBasedStore) Create(id string, data interface{}) error {
 func (f *layoutFileBasedStore) CreateLayout(id string, layout CreateLayoutRequest) error {
 	layoutData := &Layout{
 		ID:          id,
+		Handle:      layout.Handle,
 		DisplayName: layout.DisplayName,
 		Description: layout.Description,
 		Layout:      layout.Layout,
@@ -143,6 +145,22 @@ func (f *layoutFileBasedStore) GetApplicationsCountByLayoutID(id string) (int, e
 // IsLayoutDeclarative checks if a layout is immutable (in file-based store, all layouts are immutable).
 func (f *layoutFileBasedStore) IsLayoutDeclarative(id string) bool {
 	return true
+}
+
+// IsLayoutHandleConflict checks if a layout handle already exists (excluding a specific ID).
+func (f *layoutFileBasedStore) IsLayoutHandleConflict(handle string, excludeID string) (bool, error) {
+	list, err := f.GenericFileBasedStore.List()
+	if err != nil {
+		return false, err
+	}
+	for _, item := range list {
+		if layout, ok := item.Data.(*Layout); ok {
+			if layout.Handle == handle && layout.ID != excludeID {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }
 
 // newLayoutFileBasedStore creates a new instance of a file-based store.

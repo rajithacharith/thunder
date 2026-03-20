@@ -419,3 +419,60 @@ func (suite *CompositeThemeStoreTestSuite) TestMergeAndDeduplicateThemes_EmptySt
 
 	suite.Len(merged, 0)
 }
+
+// Test IsThemeHandleConflict - Conflict in file store (returns early)
+func (suite *CompositeThemeStoreTestSuite) TestIsThemeHandleConflict_ConflictInFileStore() {
+	suite.mockFileStore.On("IsThemeHandleConflict", "classic", "").Return(true, nil)
+
+	conflict, err := suite.store.IsThemeHandleConflict("classic", "")
+
+	suite.NoError(err)
+	suite.True(conflict)
+}
+
+// Test IsThemeHandleConflict - No conflict in file, conflict in DB store
+func (suite *CompositeThemeStoreTestSuite) TestIsThemeHandleConflict_ConflictInDBStore() {
+	suite.mockFileStore.On("IsThemeHandleConflict", "classic", "theme1").Return(false, nil)
+	suite.mockDBStore.On("IsThemeHandleConflict", "classic", "theme1").Return(true, nil)
+
+	conflict, err := suite.store.IsThemeHandleConflict("classic", "theme1")
+
+	suite.NoError(err)
+	suite.True(conflict)
+}
+
+// Test IsThemeHandleConflict - No conflict in either store
+func (suite *CompositeThemeStoreTestSuite) TestIsThemeHandleConflict_NoConflict() {
+	suite.mockFileStore.On("IsThemeHandleConflict", "unique-handle", "theme1").Return(false, nil)
+	suite.mockDBStore.On("IsThemeHandleConflict", "unique-handle", "theme1").Return(false, nil)
+
+	conflict, err := suite.store.IsThemeHandleConflict("unique-handle", "theme1")
+
+	suite.NoError(err)
+	suite.False(conflict)
+}
+
+// Test IsThemeHandleConflict - File store error
+func (suite *CompositeThemeStoreTestSuite) TestIsThemeHandleConflict_FileStoreError() {
+	testErr := errors.New("file store error")
+	suite.mockFileStore.On("IsThemeHandleConflict", "classic", "").Return(false, testErr)
+
+	conflict, err := suite.store.IsThemeHandleConflict("classic", "")
+
+	suite.Error(err)
+	suite.Equal(testErr, err)
+	suite.False(conflict)
+}
+
+// Test IsThemeHandleConflict - DB store error
+func (suite *CompositeThemeStoreTestSuite) TestIsThemeHandleConflict_DBStoreError() {
+	testErr := errors.New("db store error")
+	suite.mockFileStore.On("IsThemeHandleConflict", "classic", "theme1").Return(false, nil)
+	suite.mockDBStore.On("IsThemeHandleConflict", "classic", "theme1").Return(false, testErr)
+
+	conflict, err := suite.store.IsThemeHandleConflict("classic", "theme1")
+
+	suite.Error(err)
+	suite.Equal(testErr, err)
+	suite.False(conflict)
+}

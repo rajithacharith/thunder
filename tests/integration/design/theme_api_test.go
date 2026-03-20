@@ -307,6 +307,7 @@ func (suite *ThemeAPITestSuite) SetupSuite() {
 
 	// Create a shared theme that can be used by multiple tests
 	sharedTheme := CreateThemeRequest{
+		Handle:      "shared-test-theme",
 		DisplayName: "Shared Test Theme",
 		Description: "Test description",
 		Theme:       testTheme,
@@ -512,6 +513,7 @@ func (suite *ThemeAPITestSuite) deleteTheme(id string) error {
 // Create Theme - Success
 func (suite *ThemeAPITestSuite) TestCreateTheme_Success() {
 	request := CreateThemeRequest{
+		Handle:      "test-theme-success",
 		DisplayName: "Test Theme Success",
 		Description: "Test description",
 		Theme:       testTheme2,
@@ -543,22 +545,22 @@ func (suite *ThemeAPITestSuite) TestCreateTheme_ValidationErrors() {
 		},
 		{
 			name:        "Missing Theme",
-			requestBody: `{"displayName": "Test"}`,
+			requestBody: `{"displayName": "Test", "handle": "test-handle"}`,
 			expectedErr: "THM-1006",
 		},
 		{
 			name:        "Invalid JSON Theme",
-			requestBody: `{"displayName": "Test", "theme": invalid json}`,
+			requestBody: `{"displayName": "Test", "handle": "test-handle", "theme": invalid json}`,
 			expectedErr: "THM-1001",
 		},
 		{
 			name:        "Array Instead of Object",
-			requestBody: `{"displayName": "Test", "theme": ["item1", "item2"]}`,
+			requestBody: `{"displayName": "Test", "handle": "test-handle", "theme": ["item1", "item2"]}`,
 			expectedErr: "THM-1007",
 		},
 		{
 			name:        "Primitive Instead of Object",
-			requestBody: `{"displayName": "Test", "theme": "string"}`,
+			requestBody: `{"displayName": "Test", "handle": "test-handle", "theme": "string"}`,
 			expectedErr: "THM-1007",
 		},
 	}
@@ -634,6 +636,7 @@ func (suite *ThemeAPITestSuite) TestListThemes_Success() {
 func (suite *ThemeAPITestSuite) TestListThemes_Pagination() {
 	// Create additional themes for pagination testing
 	theme1, err := suite.createTheme(CreateThemeRequest{
+		Handle:      "pagination-theme-1",
 		DisplayName: "Pagination Theme 1",
 		Description: "Test description",
 		Theme:       testTheme2,
@@ -642,6 +645,7 @@ func (suite *ThemeAPITestSuite) TestListThemes_Pagination() {
 	defer suite.deleteTheme(theme1.ID)
 
 	theme2, err := suite.createTheme(CreateThemeRequest{
+		Handle:      "pagination-theme-2",
 		DisplayName: "Pagination Theme 2",
 		Description: "Test description",
 		Theme:       testTheme2,
@@ -743,6 +747,7 @@ func (suite *ThemeAPITestSuite) TestListThemes_InvalidPagination() {
 func (suite *ThemeAPITestSuite) TestUpdateTheme_Success() {
 	// Create a theme for update testing
 	theme, err := suite.createTheme(CreateThemeRequest{
+		Handle:      "test-theme-update",
 		DisplayName: "Test Theme Update",
 		Description: "Test description",
 		Theme:       testTheme,
@@ -751,6 +756,7 @@ func (suite *ThemeAPITestSuite) TestUpdateTheme_Success() {
 	defer suite.deleteTheme(theme.ID)
 
 	updateRequest := UpdateThemeRequest{
+		Handle:      "test-theme-update",
 		DisplayName: "Updated Test Theme",
 		Description: "Test description",
 		Theme:       testThemeUpdate,
@@ -773,6 +779,7 @@ func (suite *ThemeAPITestSuite) TestUpdateTheme_Success() {
 // Update Theme - Not Found
 func (suite *ThemeAPITestSuite) TestUpdateTheme_NotFound() {
 	updateRequest := UpdateThemeRequest{
+		Handle:      "test-theme-not-found",
 		DisplayName: "Test Theme",
 		Description: "Test description",
 		Theme:       testThemeUpdate,
@@ -788,6 +795,7 @@ func (suite *ThemeAPITestSuite) TestUpdateTheme_NotFound() {
 func (suite *ThemeAPITestSuite) TestUpdateTheme_ValidationErrors() {
 	// Create a theme for update testing
 	theme, err := suite.createTheme(CreateThemeRequest{
+		Handle:      "test-theme-validation",
 		DisplayName: "Test Theme Validation",
 		Description: "Test description",
 		Theme:       testTheme,
@@ -807,22 +815,22 @@ func (suite *ThemeAPITestSuite) TestUpdateTheme_ValidationErrors() {
 		},
 		{
 			name:        "Missing Theme",
-			requestBody: `{"displayName": "Test"}`,
+			requestBody: `{"displayName": "Test", "handle": "test-theme-validation"}`,
 			expectedErr: "THM-1006",
 		},
 		{
 			name:        "Invalid JSON Theme",
-			requestBody: `{"displayName": "Test", "theme": invalid json}`,
+			requestBody: `{"displayName": "Test", "handle": "test-theme-validation", "theme": invalid json}`,
 			expectedErr: "THM-1001",
 		},
 		{
 			name:        "Array Instead of Object",
-			requestBody: `{"displayName": "Test", "theme": ["item1", "item2"]}`,
+			requestBody: `{"displayName": "Test", "handle": "test-theme-validation", "theme": ["item1", "item2"]}`,
 			expectedErr: "THM-1007",
 		},
 		{
 			name:        "Primitive Instead of Object",
-			requestBody: `{"displayName": "Test", "theme": "string"}`,
+			requestBody: `{"displayName": "Test", "handle": "test-theme-validation", "theme": "string"}`,
 			expectedErr: "THM-1007",
 		},
 	}
@@ -854,6 +862,7 @@ func (suite *ThemeAPITestSuite) TestUpdateTheme_ValidationErrors() {
 func (suite *ThemeAPITestSuite) TestDeleteTheme_Success() {
 	// Create a theme for delete testing
 	theme, err := suite.createTheme(CreateThemeRequest{
+		Handle:      "test-theme-delete",
 		DisplayName: "Test Theme Delete",
 		Description: "Test description",
 		Theme:       testTheme,

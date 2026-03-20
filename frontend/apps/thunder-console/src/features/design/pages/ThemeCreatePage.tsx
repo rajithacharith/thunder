@@ -32,6 +32,7 @@ import {
 } from '@wso2/oxygen-ui';
 import {ChevronRight, X} from '@wso2/oxygen-ui-icons-react';
 import {useCreateTheme, useGetTheme, useGetThemes, type Theme} from '@thunder/shared-design';
+import {kebabCase} from '@thunder/utils';
 import ConfigureThemeName from '../components/create-theme/ConfigureThemeName';
 import ConfigureThemeColor from '../components/create-theme/ConfigureThemeColor';
 import GatePreview from '../../../components/GatePreview/GatePreview';
@@ -123,8 +124,10 @@ export default function ThemeCreatePage(): JSX.Element {
 
   const handleCreate = (): void => {
     setError(null);
+    const handle = kebabCase(themeName);
     createTheme.mutate(
       {
+        handle,
         displayName: themeName.trim(),
         theme: buildThemeFromPrimaryColor(effectiveBaseTheme, primaryColor),
       },

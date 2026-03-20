@@ -41,6 +41,11 @@ export interface LayoutBuilderContextType {
   layoutId: string | null;
 
   /**
+   * The handle (unique kebab-case identifier) of the layout
+   */
+  handle: string | null;
+
+  /**
    * The original layout configuration from the API
    */
   originalLayout: LayoutConfig | null;

@@ -37,6 +37,7 @@ func (f *themeFileBasedStore) Create(id string, data interface{}) error {
 		return errors.New("invalid data type: expected *Theme")
 	}
 	createReq := CreateThemeRequest{
+		Handle:      theme.Handle,
 		DisplayName: theme.DisplayName,
 		Description: theme.Description,
 		Theme:       theme.Theme,
@@ -48,6 +49,7 @@ func (f *themeFileBasedStore) Create(id string, data interface{}) error {
 func (f *themeFileBasedStore) CreateTheme(id string, theme CreateThemeRequest) error {
 	themeData := &Theme{
 		ID:          id,
+		Handle:      theme.Handle,
 		DisplayName: theme.DisplayName,
 		Description: theme.Description,
 		Theme:       theme.Theme,
@@ -143,6 +145,22 @@ func (f *themeFileBasedStore) GetApplicationsCountByThemeID(id string) (int, err
 // IsThemeDeclarative checks if a theme is immutable (in file-based store, all themes are immutable).
 func (f *themeFileBasedStore) IsThemeDeclarative(id string) bool {
 	return true
+}
+
+// IsThemeHandleConflict checks if a theme handle already exists (excluding a specific ID).
+func (f *themeFileBasedStore) IsThemeHandleConflict(handle string, excludeID string) (bool, error) {
+	list, err := f.GenericFileBasedStore.List()
+	if err != nil {
+		return false, err
+	}
+	for _, item := range list {
+		if theme, ok := item.Data.(*Theme); ok {
+			if theme.Handle == handle && theme.ID != excludeID {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }
 
 // newThemeFileBasedStore creates a new instance of a file-based store.

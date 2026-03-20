@@ -140,6 +140,20 @@ func (c *compositeThemeStore) IsThemeDeclarative(id string) bool {
 	return err == nil && exists
 }
 
+// IsThemeHandleConflict checks if a theme handle conflicts in either store.
+func (c *compositeThemeStore) IsThemeHandleConflict(handle string, excludeID string) (bool, error) {
+	// Check file store first
+	conflict, err := c.fileStore.IsThemeHandleConflict(handle, excludeID)
+	if err != nil {
+		return false, err
+	}
+	if conflict {
+		return true, nil
+	}
+	// Then check db store
+	return c.dbStore.IsThemeHandleConflict(handle, excludeID)
+}
+
 // mergeAndDeduplicateThemes merges themes from DB and file stores, removing duplicates.
 // File store (declarative) themes take precedence over DB themes with the same ID.
 func mergeAndDeduplicateThemes(dbThemes, fileThemes []Theme) []Theme {

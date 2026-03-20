@@ -337,3 +337,40 @@ func (suite *LayoutFileBasedStoreTestSuite) TestGetLayoutList_OffsetBeyondList()
 	suite.NoError(err)
 	suite.Empty(layouts)
 }
+
+func (suite *LayoutFileBasedStoreTestSuite) TestIsLayoutHandleConflict_Conflict() {
+	// Arrange
+	layoutReq := suite.createTestLayout("Handle Conflict Test")
+	layoutReq.Handle = "conflict-handle"
+	_ = suite.store.CreateLayout("layout-hc1", layoutReq)
+
+	// Act - different ID with same handle should conflict
+	conflict, err := suite.store.IsLayoutHandleConflict("conflict-handle", "other-id")
+
+	// Assert
+	suite.NoError(err)
+	suite.True(conflict)
+}
+
+func (suite *LayoutFileBasedStoreTestSuite) TestIsLayoutHandleConflict_NoConflict() {
+	// Act - non-existent handle should not conflict
+	conflict, err := suite.store.IsLayoutHandleConflict("non-existent-handle", "")
+
+	// Assert
+	suite.NoError(err)
+	suite.False(conflict)
+}
+
+func (suite *LayoutFileBasedStoreTestSuite) TestIsLayoutHandleConflict_SameIDExcluded() {
+	// Arrange
+	layoutReq := suite.createTestLayout("Same ID Exclude Test")
+	layoutReq.Handle = "same-id-handle"
+	_ = suite.store.CreateLayout("layout-hc2", layoutReq)
+
+	// Act - same ID should be excluded from conflict check
+	conflict, err := suite.store.IsLayoutHandleConflict("same-id-handle", "layout-hc2")
+
+	// Assert
+	suite.NoError(err)
+	suite.False(conflict)
+}

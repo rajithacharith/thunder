@@ -140,6 +140,20 @@ func (c *compositeLayoutStore) IsLayoutDeclarative(id string) bool {
 	return err == nil && exists
 }
 
+// IsLayoutHandleConflict checks if a layout handle conflicts in either store.
+func (c *compositeLayoutStore) IsLayoutHandleConflict(handle string, excludeID string) (bool, error) {
+	// Check file store first
+	conflict, err := c.fileStore.IsLayoutHandleConflict(handle, excludeID)
+	if err != nil {
+		return false, err
+	}
+	if conflict {
+		return true, nil
+	}
+	// Then check db store
+	return c.dbStore.IsLayoutHandleConflict(handle, excludeID)
+}
+
 // mergeAndDeduplicateLayouts merges layouts from DB and file stores, removing duplicates.
 // File store (declarative) layouts take precedence over DB layouts with the same ID.
 func mergeAndDeduplicateLayouts(dbLayouts, fileLayouts []Layout) []Layout {

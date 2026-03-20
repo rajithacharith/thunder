@@ -144,6 +144,30 @@ var (
 		Error:            "Cannot modify declarative resource",
 		ErrorDescription: "The theme is declarative and cannot be modified or deleted",
 	}
+
+	// ErrorDuplicateThemeHandle is returned when a theme with the same handle already exists.
+	ErrorDuplicateThemeHandle = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "THM-1015",
+		Error:            "Duplicate theme handle",
+		ErrorDescription: "A theme with the same handle already exists",
+	}
+
+	// ErrorMissingThemeHandle is returned when handle is not provided.
+	ErrorMissingThemeHandle = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "THM-1016",
+		Error:            "Missing theme handle",
+		ErrorDescription: "Theme handle is required",
+	}
+
+	// ErrorThemeHandleImmutable is returned when attempting to change the handle of an existing theme.
+	ErrorThemeHandleImmutable = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "THM-1017",
+		Error:            "Theme handle is immutable",
+		ErrorDescription: "The theme handle cannot be changed after creation",
+	}
 )
 
 // errCannotUpdateDeclarativeTheme is an internal error for composite store operations.
