@@ -48,7 +48,7 @@ func CreateUserType(schema UserSchema) (string, error) {
 		return "", fmt.Errorf("failed to marshal user schema: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", TestServerURL+"/user-schemas", bytes.NewReader(payload))
+	req, err := http.NewRequest("POST", TestServerURL+"/user-types", bytes.NewReader(payload))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
@@ -127,7 +127,7 @@ func CreateUser(user User) (string, error) {
 
 // DeleteUserType deletes a user type by ID
 func DeleteUserType(schemaID string) error {
-	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/user-schemas/%s", TestServerURL, schemaID), nil)
+	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/user-types/%s", TestServerURL, schemaID), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create delete request: %w", err)
 	}

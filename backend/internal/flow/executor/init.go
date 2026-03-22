@@ -35,7 +35,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/template"
 	"github.com/asgardeo/thunder/internal/userprovider"
 
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 // Initialize registers available executors and returns the executor registry.
@@ -47,7 +47,7 @@ func Initialize(
 	jwtService jwt.JWTServiceInterface,
 	authRegistry *authn.AuthServiceRegistry,
 	authZService authz.AuthorizationServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	userSchemaService usertype.UserSchemaServiceInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
 	groupService group.GroupServiceInterface,
 	roleService role.RoleServiceInterface,

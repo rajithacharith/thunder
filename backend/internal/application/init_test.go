@@ -31,7 +31,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/tests/mocks/certmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -70,13 +70,13 @@ type InitTestSuite struct {
 	suite.Suite
 	mockCertService       *certmock.CertificateServiceInterfaceMock
 	mockFlowMgtService    *flowmgtmock.FlowMgtServiceInterfaceMock
-	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
+	mockUserSchemaService *usertypemock.UserSchemaServiceInterfaceMock
 }
 
 func (suite *InitTestSuite) SetupTest() {
 	suite.mockCertService = certmock.NewCertificateServiceInterfaceMock(suite.T())
 	suite.mockFlowMgtService = flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
-	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockUserSchemaService = usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 }
 
 func (suite *InitTestSuite) TearDownTest() {
@@ -537,7 +537,7 @@ func TestInitialize_Standalone(t *testing.T) {
 	mux := http.NewServeMux()
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(t)
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(t)
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	mockUserSchemaService := usertypemock.NewUserSchemaServiceInterfaceMock(t)
 
 	// Execute
 	service, _, err := Initialize(
@@ -586,7 +586,7 @@ func TestInitialize_WithDeclarativeResources_Standalone(t *testing.T) {
 	mux := http.NewServeMux()
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(t)
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(t)
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	mockUserSchemaService := usertypemock.NewUserSchemaServiceInterfaceMock(t)
 
 	// Execute
 	service, _, err := Initialize(

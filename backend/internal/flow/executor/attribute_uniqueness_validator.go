@@ -27,7 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/internal/userprovider"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 // attributeUniquenessValidator checks whether values supplied for unique schema attributes
@@ -36,7 +36,7 @@ import (
 // before any creation executor runs.
 type attributeUniquenessValidator struct {
 	core.ExecutorInterface
-	userSchemaService userschema.UserSchemaServiceInterface
+	userSchemaService usertype.UserSchemaServiceInterface
 	userProvider      userprovider.UserProviderInterface
 	logger            *log.Logger
 }
@@ -44,7 +44,7 @@ type attributeUniquenessValidator struct {
 // newAttributeUniquenessValidator creates a new instance of attributeUniquenessValidator.
 func newAttributeUniquenessValidator(
 	flowFactory core.FlowFactoryInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	userSchemaService usertype.UserSchemaServiceInterface,
 	userProvider userprovider.UserProviderInterface,
 ) *attributeUniquenessValidator {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, ExecutorNameAttributeUniquenessValidator))

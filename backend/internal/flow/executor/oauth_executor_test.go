@@ -33,18 +33,18 @@ import (
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/userprovider"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oauthmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 )
 
 type OAuthExecutorTestSuite struct {
 	suite.Suite
 	mockOAuthService      *oauthmock.OAuthAuthnCoreServiceInterfaceMock
 	mockIDPService        *idpmock.IDPServiceInterfaceMock
-	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
+	mockUserSchemaService *usertypemock.UserSchemaServiceInterfaceMock
 	mockFlowFactory       *coremock.FlowFactoryInterfaceMock
 	executor              oAuthExecutorInterface
 }
@@ -56,7 +56,7 @@ func TestOAuthExecutorSuite(t *testing.T) {
 func (suite *OAuthExecutorTestSuite) SetupTest() {
 	suite.mockOAuthService = oauthmock.NewOAuthAuthnCoreServiceInterfaceMock(suite.T())
 	suite.mockIDPService = idpmock.NewIDPServiceInterfaceMock(suite.T())
-	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockUserSchemaService = usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 
 	defaultInputs := []common.Input{{Identifier: "code", Type: "string", Required: true}}
@@ -945,7 +945,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWithou
 			Type: serviceerror.ClientErrorType,
 		})
 	suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "INTERNAL").
-		Return(&userschema.UserSchema{
+		Return(&usertype.UserSchema{
 			Name:                  "INTERNAL",
 			AllowSelfRegistration: true,
 			OUID:                  "ou-123",
@@ -1131,7 +1131,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning() {
 	}
 
 	suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "INTERNAL").
-		Return(&userschema.UserSchema{
+		Return(&usertype.UserSchema{
 			Name:                  "INTERNAL",
 			AllowSelfRegistration: true,
 			OUID:                  "ou-123",
@@ -1162,7 +1162,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 			allowedUserTypes: []string{"INTERNAL"},
 			mockSetup: func() {
 				suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "INTERNAL").
-					Return(&userschema.UserSchema{
+					Return(&usertype.UserSchema{
 						Name:                  "INTERNAL",
 						AllowSelfRegistration: false,
 						OUID:                  "ou-123",
@@ -1174,13 +1174,13 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 			allowedUserTypes: []string{"INTERNAL", "CUSTOMER"},
 			mockSetup: func() {
 				suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "INTERNAL").
-					Return(&userschema.UserSchema{
+					Return(&usertype.UserSchema{
 						Name:                  "INTERNAL",
 						AllowSelfRegistration: true,
 						OUID:                  "ou-123",
 					}, nil).Once()
 				suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "CUSTOMER").
-					Return(&userschema.UserSchema{
+					Return(&usertype.UserSchema{
 						Name:                  "CUSTOMER",
 						AllowSelfRegistration: true,
 						OUID:                  "ou-456",
@@ -1379,7 +1379,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 	tests := []struct {
 		name             string
 		allowedUserTypes []string
-		userSchemas      map[string]*userschema.UserSchema
+		userSchemas      map[string]*usertype.UserSchema
 	}{
 		{
 			name:             "NoAllowedUserTypes",
@@ -1389,7 +1389,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 		{
 			name:             "NoSelfRegistrationEnabled",
 			allowedUserTypes: []string{"TYPE1", "TYPE2"},
-			userSchemas: map[string]*userschema.UserSchema{
+			userSchemas: map[string]*usertype.UserSchema{
 				"TYPE1": {
 					Name:                  "TYPE1",
 					AllowSelfRegistration: false,
@@ -1403,7 +1403,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 		{
 			name:             "MultipleEligibleTypes",
 			allowedUserTypes: []string{"TYPE1", "TYPE2"},
-			userSchemas: map[string]*userschema.UserSchema{
+			userSchemas: map[string]*usertype.UserSchema{
 				"TYPE1": {
 					Name:                  "TYPE1",
 					AllowSelfRegistration: true,

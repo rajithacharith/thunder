@@ -17,12 +17,12 @@
  */
 
 /**
- * TypeScript types and interfaces for User Types (User Schemas) feature
- * Based on the OpenAPI specification for UserSchema endpoints
+ * TypeScript types and interfaces for User Types feature
+ * Based on the OpenAPI specification for UserType endpoints
  */
 
 /**
- * Base property definition types for user schema
+ * Base property definition types for user type schema
  */
 interface BasePropertyDefinition {
   required?: boolean;
@@ -95,38 +95,32 @@ export type PropertyDefinition =
   | ArrayPropertyDefinition;
 
 /**
- * User schema definition (key-value pairs of property definitions)
+ * User type schema definition (key-value pairs of property definitions)
  */
-export type UserSchemaDefinition = Record<string, PropertyDefinition>;
+export type UserTypeDefinition = Record<string, PropertyDefinition>;
 
 /**
- * System-level metadata for a user schema.
+ * Complete User Type object as returned by API
  */
-export interface SystemAttributes {
-  display?: string;
-}
-
-/**
- * Complete User Schema object as returned by API
- */
-export interface ApiUserSchema {
+export interface ApiUserType {
   id: string;
   name: string;
   ouId: string;
   allowSelfRegistration: boolean;
-  systemAttributes?: SystemAttributes;
-  schema: UserSchemaDefinition;
+  systemAttributes?: {
+    display?: string;
+  };
+  schema: UserTypeDefinition;
 }
 
 /**
- * User Schema list item (minimal representation)
+ * User type list item (minimal representation)
  */
-export interface UserSchemaListItem {
+export interface UserTypeListItem {
   id: string;
   name: string;
   ouId: string;
   allowSelfRegistration: boolean;
-  systemAttributes?: SystemAttributes;
 }
 
 /**
@@ -138,42 +132,46 @@ export interface Link {
 }
 
 /**
- * Response for GET /user-schemas (list with pagination)
+ * Response for GET /user-types (list with pagination)
  */
-export interface UserSchemaListResponse {
+export interface UserTypeListResponse {
   totalResults: number;
   startIndex: number;
   count: number;
-  schemas: UserSchemaListItem[];
+  schemas: UserTypeListItem[];
   links?: Link[];
 }
 
 /**
- * Request body for POST /user-schemas (create)
+ * Request body for POST /user-types (create)
  */
-export interface CreateUserSchemaRequest {
+export interface CreateUserTypeRequest {
   name: string;
   ouId: string;
   allowSelfRegistration?: boolean;
-  systemAttributes?: SystemAttributes;
-  schema: UserSchemaDefinition;
+  systemAttributes?: {
+    display?: string;
+  };
+  schema: UserTypeDefinition;
 }
 
 /**
- * Request body for PUT /user-schemas/{id} (update)
+ * Request body for PUT /user-types/{id} (update)
  */
-export interface UpdateUserSchemaRequest {
+export interface UpdateUserTypeRequest {
   name: string;
   ouId: string;
   allowSelfRegistration?: boolean;
-  systemAttributes?: SystemAttributes;
-  schema: UserSchemaDefinition;
+  systemAttributes?: {
+    display?: string;
+  };
+  schema: UserTypeDefinition;
 }
 
 /**
- * Query parameters for listing user schemas
+ * Query parameters for listing user types
  */
-export interface UserSchemaListParams {
+export interface UserTypeListParams {
   limit?: number;
   offset?: number;
 }
@@ -203,15 +201,24 @@ export type UIPropertyType = PropertyType | 'enum';
 export interface SchemaPropertyInput {
   id: string;
   name: string;
-  displayName: string;
   type: UIPropertyType;
   required: boolean;
   unique: boolean;
-  credential: boolean;
+  displayName: string;
   enum: string[];
   regex: string;
-  /** Preserved array item definition for round-trip fidelity. */
-  items?: ArrayItemDefinition;
-  /** Preserved nested object properties for round-trip fidelity. */
+  credential: boolean;
+  items?: {
+    type: string;
+  };
   properties?: Record<string, PropertyDefinition>;
 }
+
+// Backwards-compatible aliases for user schema naming.
+export type UserSchemaDefinition = UserTypeDefinition;
+export type ApiUserSchema = ApiUserType;
+export type UserSchemaListItem = UserTypeListItem;
+export type UserSchemaListResponse = UserTypeListResponse;
+export type CreateUserSchemaRequest = CreateUserTypeRequest;
+export type UpdateUserSchemaRequest = UpdateUserTypeRequest;
+export type UserSchemaListParams = UserTypeListParams;

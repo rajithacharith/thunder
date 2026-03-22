@@ -27,7 +27,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 )
 
 // DisplayUtilTestSuite tests the display attribute resolution utility functions.
@@ -40,7 +40,7 @@ func TestDisplayUtilTestSuite(t *testing.T) {
 }
 
 func (suite *DisplayUtilTestSuite) TestResolveDisplayAttributePaths_DeduplicatesTypes() {
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	schemaMock := usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 	schemaMock.On("GetDisplayAttributesByNames", mock.Anything,
 		mock.MatchedBy(func(names []string) bool {
 			if len(names) != 2 {
@@ -63,19 +63,19 @@ func (suite *DisplayUtilTestSuite) TestResolveDisplayAttributePaths_NilSchemaSer
 }
 
 func (suite *DisplayUtilTestSuite) TestResolveDisplayAttributePaths_EmptyTypes() {
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	schemaMock := usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 	result := ResolveDisplayAttributePaths(context.Background(), []string{}, schemaMock, nil)
 	suite.Nil(result)
 }
 
 func (suite *DisplayUtilTestSuite) TestResolveDisplayAttributePaths_AllEmptyStrings() {
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	schemaMock := usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 	result := ResolveDisplayAttributePaths(context.Background(), []string{"", ""}, schemaMock, nil)
 	suite.Nil(result)
 }
 
 func (suite *DisplayUtilTestSuite) TestResolveDisplayAttributePaths_SchemaServiceError() {
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	schemaMock := usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
 		Return((map[string]string)(nil),
 			&serviceerror.ServiceError{Code: "500", Error: "schema unavailable"})

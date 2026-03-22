@@ -54,7 +54,7 @@ var publicPaths = []string{
 type ResourceType string
 
 // ResourceType defines the category of system resource being acted upon.
-// ResourceTypeOU, ResourceTypeUser, ResourceTypeGroup, and ResourceTypeUserSchema are the supported values.
+// ResourceTypeOU, ResourceTypeUser, ResourceTypeGroup, and ResourceTypeUserType are the supported values.
 const (
 	// ResourceTypeOU identifies an organization unit resource.
 	ResourceTypeOU ResourceType = "ou"
@@ -62,8 +62,8 @@ const (
 	ResourceTypeUser ResourceType = "user"
 	// ResourceTypeGroup identifies a group resource.
 	ResourceTypeGroup ResourceType = "group"
-	// ResourceTypeUserSchema identifies a user schema resource.
-	ResourceTypeUserSchema ResourceType = "userschema"
+	// ResourceTypeUserType identifies a user type resource.
+	ResourceTypeUserType ResourceType = "usertype"
 )
 
 // ---- Actions ----
@@ -107,16 +107,16 @@ const (
 	// ActionListGroups lists groups.
 	ActionListGroups Action = "group:list"
 
-	// ActionCreateUserSchema creates a new user schema.
-	ActionCreateUserSchema Action = "userschema:create"
-	// ActionReadUserSchema reads a user schema.
-	ActionReadUserSchema Action = "userschema:read"
-	// ActionUpdateUserSchema updates a user schema.
-	ActionUpdateUserSchema Action = "userschema:update"
-	// ActionDeleteUserSchema deletes a user schema.
-	ActionDeleteUserSchema Action = "userschema:delete"
-	// ActionListUserSchemas lists user schemas.
-	ActionListUserSchemas Action = "userschema:list"
+	// ActionCreateUserType creates a new user type.
+	ActionCreateUserType Action = "usertype:create"
+	// ActionReadUserType reads a user type.
+	ActionReadUserType Action = "usertype:read"
+	// ActionUpdateUserType updates a user type.
+	ActionUpdateUserType Action = "usertype:update"
+	// ActionDeleteUserType deletes a user type.
+	ActionDeleteUserType Action = "usertype:delete"
+	// ActionListUserTypes lists user types.
+	ActionListUserTypes Action = "usertype:list"
 )
 
 // ---- Permissions ----
@@ -128,14 +128,14 @@ const SystemPermission = "system"
 // Fine-grained permissions. Each constant is a child scope of SystemPermission.
 // Hierarchy uses ":" as delimiter: "system:ou" covers "system:ou:view".
 const (
-	PermissionOU             = "system:ou"
-	PermissionOUView         = "system:ou:view"
-	PermissionUser           = "system:user"
-	PermissionUserView       = "system:user:view"
-	PermissionGroup          = "system:group"
-	PermissionGroupView      = "system:group:view"
-	PermissionUserSchema     = "system:userschema"
-	PermissionUserSchemaView = "system:userschema:view"
+	PermissionOU           = "system:ou"
+	PermissionOUView       = "system:ou:view"
+	PermissionUser         = "system:user"
+	PermissionUserView     = "system:user:view"
+	PermissionGroup        = "system:group"
+	PermissionGroupView    = "system:group:view"
+	PermissionUserType     = "system:usertype"
+	PermissionUserTypeView = "system:usertype:view"
 )
 
 // ---- Action → Permission map ----
@@ -165,12 +165,12 @@ var actionPermissionMap = map[Action]string{
 	ActionDeleteGroup: PermissionGroup,
 	ActionListGroups:  PermissionGroupView,
 
-	// User schema actions.
-	ActionCreateUserSchema: PermissionUserSchema,
-	ActionReadUserSchema:   PermissionUserSchemaView,
-	ActionUpdateUserSchema: PermissionUserSchema,
-	ActionDeleteUserSchema: PermissionUserSchema,
-	ActionListUserSchemas:  PermissionUserSchemaView,
+	// User type actions.
+	ActionCreateUserType: PermissionUserType,
+	ActionReadUserType:   PermissionUserTypeView,
+	ActionUpdateUserType: PermissionUserType,
+	ActionDeleteUserType: PermissionUserType,
+	ActionListUserTypes:  PermissionUserTypeView,
 }
 
 // ---- API → Permission map ----
@@ -225,12 +225,12 @@ var apiPermissionEntries = []apiPermissionEntry{
 	{"PUT /groups/**", PermissionGroup},
 	{"DELETE /groups/**", PermissionGroup},
 
-	// User schema APIs.
-	{"GET /user-schemas", PermissionUserSchemaView},
-	{"POST /user-schemas", PermissionUserSchema},
-	{"GET /user-schemas/**", PermissionUserSchemaView},
-	{"PUT /user-schemas/**", PermissionUserSchema},
-	{"DELETE /user-schemas/**", PermissionUserSchema},
+	// User type APIs.
+	{"GET /user-types", PermissionUserTypeView},
+	{"POST /user-types", PermissionUserType},
+	{"GET /user-types/**", PermissionUserTypeView},
+	{"PUT /user-types/**", PermissionUserType},
+	{"DELETE /user-types/**", PermissionUserType},
 }
 
 // ---- Helper functions ----

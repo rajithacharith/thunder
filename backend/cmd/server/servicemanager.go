@@ -60,7 +60,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/template"
 	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/internal/userprovider"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 // observabilitySvc is the observability service instance. This is used for graceful shutdown.
@@ -116,7 +116,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	consentService := consent.Initialize()
 
 	// Initialize user schema service
-	userSchemaService, userSchemaExporter, err := userschema.Initialize(
+	userSchemaService, userSchemaExporter, err := usertype.Initialize(
 		mux, ouService, ouAuthzService, consentService)
 	if err != nil {
 		logger.Fatal("Failed to initialize UserSchemaService", log.Error(err))

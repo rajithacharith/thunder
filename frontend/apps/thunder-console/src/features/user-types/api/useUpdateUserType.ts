@@ -55,7 +55,7 @@ export default function useUpdateUserType(): UseMutationResult<ApiUserSchema, Er
       const response: {
         data: ApiUserSchema;
       } = await http.request({
-        url: `${serverUrl}/user-schemas/${userTypeId}`,
+        url: `${serverUrl}/user-types/${userTypeId}`,
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

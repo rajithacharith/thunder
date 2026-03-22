@@ -49,7 +49,7 @@ export default function useGetUserTypes(params?: UserSchemaListParams): UseQuery
       }
 
       const queryString: string = queryParams.toString();
-      const url = `${serverUrl}/user-schemas${queryString ? `?${queryString}` : ''}`;
+      const url = `${serverUrl}/user-types${queryString ? `?${queryString}` : ''}`;
 
       const response: {
         data: UserSchemaListResponse;

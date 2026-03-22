@@ -33,7 +33,7 @@ import (
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/transaction"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 // Initialize initializes the application service and registers its routes.
@@ -44,7 +44,7 @@ func Initialize(
 	flowMgtService flowmgt.FlowMgtServiceInterface,
 	themeMgtService thememgt.ThemeMgtServiceInterface,
 	layoutMgtService layoutmgt.LayoutMgtServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	userSchemaService usertype.UserSchemaServiceInterface,
 	consentService consent.ConsentServiceInterface,
 ) (ApplicationServiceInterface, declarativeresource.ResourceExporter, error) {
 	// Step 1: Initialize store and transactioner based on store mode

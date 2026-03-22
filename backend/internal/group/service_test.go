@@ -38,7 +38,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	"github.com/asgardeo/thunder/tests/mocks/sysauthzmock"
 	"github.com/asgardeo/thunder/tests/mocks/usermock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 )
 
 // stubTransactioner is a stub implementation of Transactioner for testing.
@@ -1581,7 +1581,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers_WithDisplay
 			},
 		}, (*serviceerror.ServiceError)(nil)).Once()
 
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	schemaMock := usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything).
 		Return(map[string]string{"employee": "name"}, (*serviceerror.ServiceError)(nil)).Once()
 
@@ -2322,7 +2322,7 @@ func TestPopulateMemberDisplayNames_MixedMembers(t *testing.T) {
 			},
 		}, (*serviceerror.ServiceError)(nil)).Once()
 
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaMock := usertypemock.NewUserSchemaServiceInterfaceMock(t)
 	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything).
 		Return(map[string]string{"employee": "name"}, (*serviceerror.ServiceError)(nil)).Once()
 
@@ -2356,7 +2356,7 @@ func TestPopulateMemberDisplayNames_UserFallbackToID(t *testing.T) {
 			"user-1": {ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{}`)},
 		}, (*serviceerror.ServiceError)(nil)).Once()
 
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaMock := usertypemock.NewUserSchemaServiceInterfaceMock(t)
 	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything).
 		Return(map[string]string{"employee": "missing"}, (*serviceerror.ServiceError)(nil)).Once()
 
@@ -2434,7 +2434,7 @@ func TestPopulateMemberDisplayNames_SchemaServiceError(t *testing.T) {
 			},
 		}, (*serviceerror.ServiceError)(nil)).Once()
 
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaMock := usertypemock.NewUserSchemaServiceInterfaceMock(t)
 	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything).
 		Return(map[string]string(nil), &serviceerror.ServiceError{Code: "ERR"}).Once()
 
@@ -2466,7 +2466,7 @@ func TestPopulateMemberDisplayNames_SchemaServiceError_WithGroupMember(t *testin
 			},
 		}, (*serviceerror.ServiceError)(nil)).Once()
 
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaMock := usertypemock.NewUserSchemaServiceInterfaceMock(t)
 	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything).
 		Return(map[string]string(nil), &serviceerror.ServiceError{Code: "ERR"}).Once()
 

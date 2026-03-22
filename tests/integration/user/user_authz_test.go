@@ -185,7 +185,7 @@ func (ts *UserAuthzTestSuite) SetupSuite() {
 		Permissions: []testutils.ResourcePermissions{
 			{
 				ResourceServerID: systemRSID,
-				Permissions:      []string{"system:user", "system:userschema:view"},
+				Permissions:      []string{"system:user", "system:usertype:view"},
 			},
 		},
 		Assignments: []testutils.Assignment{
@@ -199,7 +199,7 @@ func (ts *UserAuthzTestSuite) SetupSuite() {
 	tokenResp, err := testutils.ObtainAccessTokenWithPassword(
 		userAuthzDevelopClientID,
 		userAuthzDevelopRedirectURI,
-		"system system:user system:userschema:view",
+		"system system:user system:usertype:view",
 		userMgrUsername,
 		userMgrPassword,
 		true,

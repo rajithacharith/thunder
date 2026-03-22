@@ -26,7 +26,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 const (
@@ -35,14 +35,14 @@ const (
 
 // schemaWithOU represents a user schema along with its associated organization unit ID.
 type schemaWithOU struct {
-	userSchema *userschema.UserSchema
+	userSchema *usertype.UserSchema
 	ouID       string
 }
 
 // userTypeResolver is a registration-flow executor that resolves the user type at flow start.
 type userTypeResolver struct {
 	core.ExecutorInterface
-	userSchemaService userschema.UserSchemaServiceInterface
+	userSchemaService usertype.UserSchemaServiceInterface
 	logger            *log.Logger
 }
 
@@ -51,7 +51,7 @@ var _ core.ExecutorInterface = (*userTypeResolver)(nil)
 // newUserTypeResolver creates a new instance of the UserTypeResolver executor.
 func newUserTypeResolver(
 	flowFactory core.FlowFactoryInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	userSchemaService usertype.UserSchemaServiceInterface,
 ) *userTypeResolver {
 	logger := log.GetLogger().With(
 		log.String(log.LoggerKeyComponentName, userTypeResolverLoggerComponentName),
@@ -317,7 +317,7 @@ func (u *userTypeResolver) resolveUserTypeFromMultipleAllowed(ctx context.Contex
 // getUserSchemaAndOU retrieves the user schema by name and returns the schema and organization unit ID.
 func (u *userTypeResolver) getUserSchemaAndOU(
 	ctx context.Context, userType string,
-) (*userschema.UserSchema, string, error) {
+) (*usertype.UserSchema, string, error) {
 	logger := u.logger.With(log.String(userTypeKey, userType))
 
 	userSchema, svcErr := u.userSchemaService.GetUserSchemaByName(ctx, userType)

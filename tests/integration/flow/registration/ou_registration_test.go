@@ -378,7 +378,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{
@@ -603,8 +603,8 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOU() {
 				"ouName":        tc.ouName,
 				"ouHandle":      tc.ouHandle,
 				"ouDescription": tc.ouDescription,
-				"given_name":     "Test",
-				"family_name":      "User",
+				"given_name":    "Test",
+				"family_name":   "User",
 				"email":         username + "@example.com",
 			}
 
@@ -696,8 +696,8 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOUCreationDu
 				"ouName":        tc.newOUName,
 				"ouHandle":      newHandle,
 				"ouDescription": "Should fail due to duplicate",
-				"given_name":     "Test",
-				"family_name":      "User",
+				"given_name":    "Test",
+				"family_name":   "User",
 				"email":         username + "@example.com",
 			}
 
@@ -781,8 +781,8 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 			// Step 5: Submit user details
 			inputs = map[string]string{
 				"mobileNumber": mobileNumber,
-				"given_name":    "Test",
-				"family_name":     "User",
+				"given_name":   "Test",
+				"family_name":  "User",
 				"email":        mobileNumber + "@example.com",
 			}
 
@@ -920,5 +920,6 @@ func generateUniqueHandle(prefix string) string {
 
 // Helper function to generate unique mobile numbers
 func generateUniqueMobileNumber() string {
-	return fmt.Sprintf("+1234567%d", time.Now().UnixNano()%10000)
+	// Keep E.164-like format while minimizing collisions across fast test runs.
+	return fmt.Sprintf("+1%010d", time.Now().UnixNano()%10000000000)
 }

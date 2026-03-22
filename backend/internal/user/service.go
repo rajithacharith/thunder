@@ -36,7 +36,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/system/transaction"
 	"github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 const loggerComponentName = "UserService"
@@ -79,7 +79,7 @@ type userService struct {
 	authzService      sysauthz.SystemAuthorizationServiceInterface
 	userStore         userStoreInterface
 	ouService         oupkg.OrganizationUnitServiceInterface
-	userSchemaService userschema.UserSchemaServiceInterface
+	userSchemaService usertype.UserSchemaServiceInterface
 	hashService       hash.HashServiceInterface
 	transactioner     transaction.Transactioner
 }
@@ -89,7 +89,7 @@ func newUserService(
 	authzService sysauthz.SystemAuthorizationServiceInterface,
 	userStore userStoreInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	userSchemaService usertype.UserSchemaServiceInterface,
 	hashService hash.HashServiceInterface,
 	transactioner transaction.Transactioner,
 ) UserServiceInterface {
@@ -337,7 +337,7 @@ func (us *userService) CreateUser(ctx context.Context, user *User) (*User, *serv
 
 	schemaCredentialAttributes, svcErr := us.userSchemaService.GetCredentialAttributes(ctx, user.Type)
 	if svcErr != nil {
-		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
+		if svcErr.Code == usertype.ErrorUserSchemaNotFound.Code {
 			return nil, &ErrorUserSchemaNotFound
 		}
 		return nil, logErrorAndReturnServerError(logger, "Failed to get credential attributes from schema",
@@ -610,7 +610,7 @@ func (us *userService) UpdateUser(ctx context.Context, userID string, user *User
 
 	schemaCredentialAttributes, svcErr := us.userSchemaService.GetCredentialAttributes(ctx, user.Type)
 	if svcErr != nil {
-		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
+		if svcErr.Code == usertype.ErrorUserSchemaNotFound.Code {
 			return nil, &ErrorUserSchemaNotFound
 		}
 		return nil, logErrorAndReturnServerError(logger, "Failed to get credential attributes from schema",
@@ -705,7 +705,7 @@ func (us *userService) UpdateUserAttributes(
 
 	schemaCredentialAttributes, svcErr := us.userSchemaService.GetCredentialAttributes(ctx, existingUser.Type)
 	if svcErr != nil {
-		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
+		if svcErr.Code == usertype.ErrorUserSchemaNotFound.Code {
 			return nil, &ErrorUserSchemaNotFound
 		}
 		return nil, logErrorAndReturnServerError(logger, "Failed to get credential attributes from schema",
@@ -883,7 +883,7 @@ func (us *userService) batchUpdateUserCredentials(
 
 		schemaCredentialAttributes, svcErr := us.userSchemaService.GetCredentialAttributes(txCtx, existingUser.Type)
 		if svcErr != nil {
-			if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
+			if svcErr.Code == usertype.ErrorUserSchemaNotFound.Code {
 				capturedSvcErr = &ErrorUserSchemaNotFound
 				return errors.New("rollback for schema not found")
 			}
@@ -1473,7 +1473,7 @@ func (us *userService) validateOrganizationUnitForUserType(
 
 	userSchema, svcErr := us.userSchemaService.GetUserSchemaByName(ctx, userType)
 	if svcErr != nil {
-		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
+		if svcErr.Code == usertype.ErrorUserSchemaNotFound.Code {
 			return &ErrorUserSchemaNotFound
 		}
 		logger.Error("Failed to retrieve user schema",
@@ -1522,7 +1522,7 @@ func (us *userService) validateUserAndUniqueness(
 ) *serviceerror.ServiceError {
 	isValid, svcErr := us.userSchemaService.ValidateUser(ctx, userType, attributes)
 	if svcErr != nil {
-		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
+		if svcErr.Code == usertype.ErrorUserSchemaNotFound.Code {
 			return &ErrorUserSchemaNotFound
 		}
 		return logErrorAndReturnServerError(logger, "Failed to validate user schema", nil)
@@ -1547,7 +1547,7 @@ func (us *userService) validateUserAndUniqueness(
 			return userID, nil
 		})
 	if svcErr != nil {
-		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
+		if svcErr.Code == usertype.ErrorUserSchemaNotFound.Code {
 			return &ErrorUserSchemaNotFound
 		}
 		return logErrorAndReturnServerError(logger, "Failed to validate user schema", nil)

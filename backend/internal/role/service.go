@@ -33,7 +33,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/transaction"
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/user"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 const loggerComponentName = "RoleMgtService"
@@ -64,7 +64,7 @@ type roleService struct {
 	groupService      group.GroupServiceInterface
 	ouService         oupkg.OrganizationUnitServiceInterface
 	resourceService   resourcepkg.ResourceServiceInterface
-	userSchemaService userschema.UserSchemaServiceInterface
+	userSchemaService usertype.UserSchemaServiceInterface
 	transactioner     transaction.Transactioner
 }
 
@@ -75,7 +75,7 @@ func newRoleService(
 	groupService group.GroupServiceInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	resourceService resourcepkg.ResourceServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	userSchemaService usertype.UserSchemaServiceInterface,
 	transactioner transaction.Transactioner,
 ) RoleServiceInterface {
 	return &roleService{

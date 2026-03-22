@@ -9,7 +9,7 @@
 /backend/internal/authnprovider/ @darshanasbg @ThumulaPerera
 /backend/internal/userprovider/ @darshanasbg @ThumulaPerera
 /backend/internal/user/ @darshanasbg
-/backend/internal/userschema/ @darshanasbg
+/backend/internal/usertype/ @darshanasbg
 /backend/internal/group/ @darshanasbg
 /backend/internal/ou/ @darshanasbg
 

@@ -34,7 +34,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/transaction"
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/user"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 const loggerComponentName = "GroupMgtService"
@@ -63,7 +63,7 @@ type groupService struct {
 	groupStore        groupStoreInterface
 	ouService         oupkg.OrganizationUnitServiceInterface
 	userService       user.UserServiceInterface
-	userSchemaService userschema.UserSchemaServiceInterface
+	userSchemaService usertype.UserSchemaServiceInterface
 	transactioner     transaction.Transactioner
 	authzService      sysauthz.SystemAuthorizationServiceInterface
 }
@@ -73,7 +73,7 @@ func newGroupServiceWithStore(
 	store groupStoreInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	userService user.UserServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	userSchemaService usertype.UserSchemaServiceInterface,
 	authzService sysauthz.SystemAuthorizationServiceInterface,
 	transactioner transaction.Transactioner,
 ) GroupServiceInterface {

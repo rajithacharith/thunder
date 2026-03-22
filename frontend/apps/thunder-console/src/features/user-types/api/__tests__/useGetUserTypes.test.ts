@@ -50,7 +50,7 @@ describe('useGetUserTypes', () => {
       {id: '123', name: 'UserType1', ouId: 'root-ou', allowSelfRegistration: false},
       {id: '456', name: 'UserType2', ouId: 'child-ou', allowSelfRegistration: true},
     ],
-    links: [{rel: 'self', href: 'https://api.test.com/user-schemas'}],
+    links: [{rel: 'self', href: 'https://api.test.com/user-types'}],
   };
 
   beforeEach(() => {
@@ -113,7 +113,7 @@ describe('useGetUserTypes', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.url).toBe('https://api.test.com/user-schemas');
+    expect(callArgs.url).toBe('https://api.test.com/user-types');
   });
 
   it('should build URL with limit parameter only', async () => {
@@ -130,7 +130,7 @@ describe('useGetUserTypes', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.url).toBe('https://api.test.com/user-schemas?limit=10');
+    expect(callArgs.url).toBe('https://api.test.com/user-types?limit=10');
   });
 
   it('should build URL with offset parameter only', async () => {
@@ -147,7 +147,7 @@ describe('useGetUserTypes', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.url).toBe('https://api.test.com/user-schemas?offset=5');
+    expect(callArgs.url).toBe('https://api.test.com/user-types?offset=5');
   });
 
   it('should build URL with both limit and offset parameters', async () => {
@@ -197,7 +197,7 @@ describe('useGetUserTypes', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.url).toContain('https://api.test.com/user-schemas');
+    expect(callArgs.url).toContain('https://api.test.com/user-types');
   });
 
   it('should include correct headers', async () => {

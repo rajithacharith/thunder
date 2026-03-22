@@ -109,7 +109,7 @@ describe('useCreateUserType', () => {
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'https://api.test.com/user-schemas',
+        url: 'https://api.test.com/user-types',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -29,7 +29,7 @@ import (
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 )
 
 func TestOUUserResolver_GetUserCountByOUID(t *testing.T) {
@@ -105,7 +105,7 @@ func TestOUUserResolver_GetUserListByOUID(t *testing.T) {
 				{ID: "user-2", Type: "contractor", Attributes: json.RawMessage(`{"profile":{"fullName":"Bob Smith"}}`)},
 			}, nil).Once()
 
-		schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+		schemaMock := usertypemock.NewUserSchemaServiceInterfaceMock(t)
 		schemaMock.On("GetDisplayAttributesByNames", mock.Anything,
 			mock.MatchedBy(func(names []string) bool {
 				if len(names) != 2 {
@@ -136,7 +136,7 @@ func TestOUUserResolver_GetUserListByOUID(t *testing.T) {
 				{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"email":"alice@example.com"}`)},
 			}, nil).Once()
 
-		schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+		schemaMock := usertypemock.NewUserSchemaServiceInterfaceMock(t)
 		schemaErr := &serviceerror.ServiceError{Code: "500", Error: "schema unavailable"}
 		schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
 			Return((map[string]string)(nil), schemaErr).Once()
@@ -158,7 +158,7 @@ func TestOUUserResolver_GetUserListByOUID(t *testing.T) {
 				{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"name":"Alice"}`)},
 			}, nil).Once()
 
-		schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+		schemaMock := usertypemock.NewUserSchemaServiceInterfaceMock(t)
 		schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
 			Return(map[string]string{"employee": "email"}, (*serviceerror.ServiceError)(nil)).Once()
 

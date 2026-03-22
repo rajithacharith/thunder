@@ -38,7 +38,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	"github.com/asgardeo/thunder/tests/mocks/resourcemock"
 	"github.com/asgardeo/thunder/tests/mocks/usermock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 )
 
 const (
@@ -67,7 +67,7 @@ type RoleServiceTestSuite struct {
 	mockGroupService      *groupmock.GroupServiceInterfaceMock
 	mockOUService         *oumock.OrganizationUnitServiceInterfaceMock
 	mockResourceService   *resourcemock.ResourceServiceInterfaceMock
-	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
+	mockUserSchemaService *usertypemock.UserSchemaServiceInterfaceMock
 	transactioner         *fakeTransactioner
 	service               RoleServiceInterface
 }
@@ -94,7 +94,7 @@ func (suite *RoleServiceTestSuite) SetupTest() {
 	suite.mockGroupService = groupmock.NewGroupServiceInterfaceMock(suite.T())
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	suite.mockResourceService = resourcemock.NewResourceServiceInterfaceMock(suite.T())
-	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockUserSchemaService = usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 	suite.transactioner = &fakeTransactioner{}
 	suite.service = newRoleService(
 		suite.mockStore,

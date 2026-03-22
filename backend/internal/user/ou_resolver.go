@@ -24,7 +24,7 @@ import (
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 // ouUserResolverAdapter implements oupkg.OUUserResolver using the user store.
@@ -32,12 +32,12 @@ import (
 // accessing the USER table, breaking the cross-DB access boundary.
 type ouUserResolverAdapter struct {
 	store             userStoreInterface
-	userSchemaService userschema.UserSchemaServiceInterface
+	userSchemaService usertype.UserSchemaServiceInterface
 }
 
 // newOUUserResolver creates a new OUUserResolver backed by the given user store.
 func newOUUserResolver(
-	store userStoreInterface, userSchemaService userschema.UserSchemaServiceInterface,
+	store userStoreInterface, userSchemaService usertype.UserSchemaServiceInterface,
 ) oupkg.OUUserResolver {
 	return &ouUserResolverAdapter{store: store, userSchemaService: userSchemaService}
 }
@@ -75,7 +75,7 @@ func (a *ouUserResolverAdapter) GetUserListByOUID(
 
 // resolveOUUserDisplayPaths collects user types and resolves their display attribute paths.
 func resolveOUUserDisplayPaths(
-	ctx context.Context, users []User, schemaService userschema.UserSchemaServiceInterface,
+	ctx context.Context, users []User, schemaService usertype.UserSchemaServiceInterface,
 ) map[string]string {
 	userTypes := make([]string, 0, len(users))
 	for _, u := range users {

@@ -23,14 +23,14 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 // ResolveDisplayAttributePaths collects unique user types and resolves their display
 // attribute paths from the user schema service.
 // Returns nil if there are no types to resolve or if the lookup fails.
 func ResolveDisplayAttributePaths(
-	ctx context.Context, userTypes []string, schemaService userschema.UserSchemaServiceInterface,
+	ctx context.Context, userTypes []string, schemaService usertype.UserSchemaServiceInterface,
 	logger *log.Logger,
 ) map[string]string {
 	if schemaService == nil || len(userTypes) == 0 {

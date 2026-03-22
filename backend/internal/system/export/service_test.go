@@ -36,12 +36,12 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
 	"github.com/asgardeo/thunder/tests/mocks/notification/notificationmock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -66,7 +66,7 @@ type ExportServiceTestSuite struct {
 	appServiceMock          *applicationmock.ApplicationServiceInterfaceMock
 	idpServiceMock          *idpmock.IDPServiceInterfaceMock
 	mockNotificationService *notificationmock.NotificationSenderMgtSvcInterfaceMock
-	mockUserSchemaService   *userschemamock.UserSchemaServiceInterfaceMock
+	mockUserSchemaService   *usertypemock.UserSchemaServiceInterfaceMock
 	mockFlowService         *flowmgtmock.FlowMgtServiceInterfaceMock
 	exportService           ExportServiceInterface
 }
@@ -94,7 +94,7 @@ func (suite *ExportServiceTestSuite) SetupTest() {
 	suite.appServiceMock = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
 	suite.idpServiceMock = idpmock.NewIDPServiceInterfaceMock(suite.T())
 	suite.mockNotificationService = notificationmock.NewNotificationSenderMgtSvcInterfaceMock(suite.T())
-	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockUserSchemaService = usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 	suite.mockFlowService = flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
 
 	// Create exporters
@@ -102,7 +102,7 @@ func (suite *ExportServiceTestSuite) SetupTest() {
 		application.NewApplicationExporterForTest(suite.appServiceMock),
 		idp.NewIDPExporterForTest(suite.idpServiceMock),
 		notification.NewNotificationSenderExporterForTest(suite.mockNotificationService),
-		userschema.NewUserSchemaExporterForTest(suite.mockUserSchemaService),
+		usertype.NewUserSchemaExporterForTest(suite.mockUserSchemaService),
 		flowmgt.NewFlowGraphExporterForTest(suite.mockFlowService),
 	}
 
@@ -1166,7 +1166,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_TemplateGenerationError
 		application.NewApplicationExporterForTest(suite.appServiceMock),
 		idp.NewIDPExporterForTest(suite.idpServiceMock),
 		notification.NewNotificationSenderExporterForTest(suite.mockNotificationService),
-		userschema.NewUserSchemaExporterForTest(suite.mockUserSchemaService),
+		usertype.NewUserSchemaExporterForTest(suite.mockUserSchemaService),
 	}
 
 	// Create a new export service with the mock parameterizer
@@ -1487,13 +1487,13 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_WildcardParti
 // TestExportUserSchemas_Success tests successful export of user schemas.
 func (suite *ExportServiceTestSuite) TestExportUserSchemas_Success() {
 	request := &ExportRequest{
-		UserSchemas: []string{"schema1"},
+		UserTypes: []string{"schema1"},
 		Options: &ExportOptions{
 			Format: "yaml",
 		},
 	}
 
-	mockSchema := &userschema.UserSchema{
+	mockSchema := &usertype.UserSchema{
 		ID:                    "schema1",
 		Name:                  "Test Schema",
 		OUID:                  "ou1",
@@ -1509,22 +1509,22 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Success() {
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result.Files, 1)
 	assert.Equal(suite.T(), 1, result.Summary.TotalFiles)
-	assert.Contains(suite.T(), result.Summary.ResourceTypes, "user_schema")
+	assert.Contains(suite.T(), result.Summary.ResourceTypes, "user_type")
 	assert.Equal(suite.T(), "Test_Schema.yaml", result.Files[0].FileName)
-	assert.Equal(suite.T(), "user_schema", result.Files[0].ResourceType)
+	assert.Equal(suite.T(), "user_type", result.Files[0].ResourceType)
 	assert.Contains(suite.T(), result.Files[0].Content, "name: Test Schema")
 }
 
 // TestExportUserSchemas_Multiple tests exporting multiple user schemas.
 func (suite *ExportServiceTestSuite) TestExportUserSchemas_Multiple() {
 	request := &ExportRequest{
-		UserSchemas: []string{"schema1", "schema2"},
+		UserTypes: []string{"schema1", "schema2"},
 		Options: &ExportOptions{
 			Format: "yaml",
 		},
 	}
 
-	mockSchema1 := &userschema.UserSchema{
+	mockSchema1 := &usertype.UserSchema{
 		ID:                    "schema1",
 		Name:                  "Customer Schema",
 		OUID:                  "ou1",
@@ -1532,7 +1532,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Multiple() {
 		Schema:                []byte(`{"type":"object","properties":{"email":{"type":"string"}}}`),
 	}
 
-	mockSchema2 := &userschema.UserSchema{
+	mockSchema2 := &usertype.UserSchema{
 		ID:                    "schema2",
 		Name:                  "Employee Schema",
 		OUID:                  "ou1",
@@ -1549,19 +1549,19 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Multiple() {
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result.Files, 2)
 	assert.Equal(suite.T(), 2, result.Summary.TotalFiles)
-	assert.Equal(suite.T(), 2, result.Summary.ResourceTypes["user_schema"])
+	assert.Equal(suite.T(), 2, result.Summary.ResourceTypes["user_type"])
 }
 
 // TestExportUserSchemas_Wildcard tests exporting all user schemas using wildcard.
 func (suite *ExportServiceTestSuite) TestExportUserSchemas_Wildcard() {
 	request := &ExportRequest{
-		UserSchemas: []string{"*"},
+		UserTypes: []string{"*"},
 		Options: &ExportOptions{
 			Format: "yaml",
 		},
 	}
 
-	mockSchema1 := &userschema.UserSchema{
+	mockSchema1 := &usertype.UserSchema{
 		ID:                    "schema1",
 		Name:                  "Customer Schema",
 		OUID:                  "ou1",
@@ -1569,7 +1569,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Wildcard() {
 		Schema:                []byte(`{"type":"object","properties":{"email":{"type":"string"}}}`),
 	}
 
-	mockSchema2 := &userschema.UserSchema{
+	mockSchema2 := &usertype.UserSchema{
 		ID:                    "schema2",
 		Name:                  "Employee Schema",
 		OUID:                  "ou1",
@@ -1577,10 +1577,10 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Wildcard() {
 		Schema:                []byte(`{"type":"object","properties":{"empId":{"type":"string"}}}`),
 	}
 
-	mockSchemaList := &userschema.UserSchemaListResponse{
+	mockSchemaList := &usertype.UserSchemaListResponse{
 		TotalResults: 2,
 		Count:        2,
-		Schemas: []userschema.UserSchemaListItem{
+		Schemas: []usertype.UserSchemaListItem{
 			{ID: "schema1", Name: "Customer Schema", OUID: "ou1"},
 			{ID: "schema2", Name: "Employee Schema", OUID: "ou1"},
 		},
@@ -1601,7 +1601,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Wildcard() {
 // TestExportUserSchemas_NotFound tests error handling when schema not found.
 func (suite *ExportServiceTestSuite) TestExportUserSchemas_NotFound() {
 	request := &ExportRequest{
-		UserSchemas: []string{"non-existent-schema"},
+		UserTypes: []string{"non-existent-schema"},
 		Options: &ExportOptions{
 			Format: "yaml",
 		},
@@ -1624,13 +1624,13 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_NotFound() {
 // TestExportUserSchemas_EmptyName tests validation for schema with empty name.
 func (suite *ExportServiceTestSuite) TestExportUserSchemas_EmptyName() {
 	request := &ExportRequest{
-		UserSchemas: []string{"schema-no-name"},
+		UserTypes: []string{"schema-no-name"},
 		Options: &ExportOptions{
 			Format: "yaml",
 		},
 	}
 
-	mockSchema := &userschema.UserSchema{
+	mockSchema := &usertype.UserSchema{
 		ID:                    "schema-no-name",
 		Name:                  "", // Empty name
 		OUID:                  "ou1",
@@ -1650,13 +1650,13 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_EmptyName() {
 // TestExportUserSchemas_NoSchema tests exporting schema with no schema definition.
 func (suite *ExportServiceTestSuite) TestExportUserSchemas_NoSchema() {
 	request := &ExportRequest{
-		UserSchemas: []string{"schema-no-def"},
+		UserTypes: []string{"schema-no-def"},
 		Options: &ExportOptions{
 			Format: "yaml",
 		},
 	}
 
-	mockSchema := &userschema.UserSchema{
+	mockSchema := &usertype.UserSchema{
 		ID:                    "schema-no-def",
 		Name:                  "Empty Schema",
 		OUID:                  "ou1",
@@ -1679,13 +1679,13 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_NoSchema() {
 // TestExportUserSchemas_WildcardPartialFailure tests wildcard export with partial failures.
 func (suite *ExportServiceTestSuite) TestExportUserSchemas_WildcardPartialFailure() {
 	request := &ExportRequest{
-		UserSchemas: []string{"*"},
+		UserTypes: []string{"*"},
 		Options: &ExportOptions{
 			Format: "yaml",
 		},
 	}
 
-	mockSchema1 := &userschema.UserSchema{
+	mockSchema1 := &usertype.UserSchema{
 		ID:                    "schema1",
 		Name:                  "Customer Schema",
 		OUID:                  "ou1",
@@ -1693,7 +1693,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_WildcardPartialFailur
 		Schema:                []byte(`{"type":"object"}`),
 	}
 
-	mockSchema3 := &userschema.UserSchema{
+	mockSchema3 := &usertype.UserSchema{
 		ID:                    "schema3",
 		Name:                  "Partner Schema",
 		OUID:                  "ou1",
@@ -1701,10 +1701,10 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_WildcardPartialFailur
 		Schema:                []byte(`{"type":"object"}`),
 	}
 
-	mockSchemaList := &userschema.UserSchemaListResponse{
+	mockSchemaList := &usertype.UserSchemaListResponse{
 		TotalResults: 3,
 		Count:        3,
-		Schemas: []userschema.UserSchemaListItem{
+		Schemas: []usertype.UserSchemaListItem{
 			{ID: "schema1", Name: "Customer Schema"},
 			{ID: "schema2", Name: "Employee Schema"},
 			{ID: "schema3", Name: "Partner Schema"},
@@ -1727,9 +1727,9 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_WildcardPartialFailur
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result.Files, 2) // 2 successful exports
 	assert.Equal(suite.T(), 2, result.Summary.TotalFiles)
-	assert.Equal(suite.T(), 2, result.Summary.ResourceTypes["user_schema"])
+	assert.Equal(suite.T(), 2, result.Summary.ResourceTypes["user_type"])
 	assert.Len(suite.T(), result.Summary.Errors, 1) // One error recorded
-	assert.Equal(suite.T(), "user_schema", result.Summary.Errors[0].ResourceType)
+	assert.Equal(suite.T(), "user_type", result.Summary.Errors[0].ResourceType)
 	assert.Equal(suite.T(), "schema2", result.Summary.Errors[0].ResourceID)
 }
 
@@ -2063,7 +2063,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_Notificatio
 // TestExportResourcesWithExporter_UserSchema tests export with user schema exporter.
 func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_UserSchema() {
 	schemaID := "schema-test-id"
-	mockSchema := &userschema.UserSchema{
+	mockSchema := &usertype.UserSchema{
 		ID:                    schemaID,
 		Name:                  "Test Schema",
 		OUID:                  "ou1",
@@ -2073,7 +2073,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_UserSchema(
 
 	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, schemaID).Return(mockSchema, nil)
 
-	exporter, exists := suite.exportService.(*exportService).registry.Get(resourceTypeUserSchema)
+	exporter, exists := suite.exportService.(*exportService).registry.Get(resourceTypeUserType)
 	assert.True(suite.T(), exists, "User schema exporter should be registered")
 
 	options := &ExportOptions{Format: formatYAML}
@@ -2084,7 +2084,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_UserSchema(
 	assert.Len(suite.T(), files, 1)
 	assert.Len(suite.T(), errors, 0)
 	assert.Equal(suite.T(), "Test_Schema.yaml", files[0].FileName)
-	assert.Equal(suite.T(), resourceTypeUserSchema, files[0].ResourceType)
+	assert.Equal(suite.T(), resourceTypeUserType, files[0].ResourceType)
 	assert.Equal(suite.T(), schemaID, files[0].ResourceID)
 }
 

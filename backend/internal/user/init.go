@@ -29,14 +29,14 @@ import (
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/system/transaction"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 // Initialize initializes the user service and registers its routes.
 func Initialize(
 	mux *http.ServeMux,
 	ouService oupkg.OrganizationUnitServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	userSchemaService usertype.UserSchemaServiceInterface,
 	hashService hash.HashServiceInterface,
 	authzService sysauthz.SystemAuthorizationServiceInterface,
 ) (UserServiceInterface, oupkg.OUUserResolver, declarativeresource.ResourceExporter, error) {

@@ -31,7 +31,7 @@ import (
 	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 )
 
 const (
@@ -42,7 +42,7 @@ const (
 type AttributeUniquenessValidatorTestSuite struct {
 	suite.Suite
 	mockFlowFactory       *coremock.FlowFactoryInterfaceMock
-	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
+	mockUserSchemaService *usertypemock.UserSchemaServiceInterfaceMock
 	mockUserProvider      *userprovidermock.UserProviderInterfaceMock
 	mockBaseExecutor      *coremock.ExecutorInterfaceMock
 	executor              *attributeUniquenessValidator
@@ -50,7 +50,7 @@ type AttributeUniquenessValidatorTestSuite struct {
 
 func (suite *AttributeUniquenessValidatorTestSuite) SetupTest() {
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
-	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockUserSchemaService = usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
 
 	suite.mockBaseExecutor = coremock.NewExecutorInterfaceMock(suite.T())

@@ -33,7 +33,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/log"
 	systemutils "github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/userprovider"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 const (
@@ -74,7 +74,7 @@ type oAuthExecutor struct {
 	core.ExecutorInterface
 	authService       authnoauth.OAuthAuthnCoreServiceInterface
 	idpService        idp.IDPServiceInterface
-	userSchemaService userschema.UserSchemaServiceInterface
+	userSchemaService usertype.UserSchemaServiceInterface
 	logger            *log.Logger
 }
 
@@ -86,7 +86,7 @@ func newOAuthExecutor(
 	defaultInputs, prerequisites []common.Input,
 	flowFactory core.FlowFactoryInterface,
 	idpService idp.IDPServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	userSchemaService usertype.UserSchemaServiceInterface,
 	authService authnoauth.OAuthAuthnCoreServiceInterface,
 ) oAuthExecutorInterface {
 	if name == "" {
@@ -514,7 +514,7 @@ func (o *oAuthExecutor) resolveUserTypeForAutoProvisioning(ctx *core.NodeContext
 	}
 
 	// Filter allowed user types to only those with self-registration enabled
-	selfRegEnabledSchemas := make([]userschema.UserSchema, 0)
+	selfRegEnabledSchemas := make([]usertype.UserSchema, 0)
 	for _, userType := range ctx.Application.AllowedUserTypes {
 		userSchema, svcErr := o.userSchemaService.GetUserSchemaByName(ctx.Context, userType)
 		if svcErr != nil {

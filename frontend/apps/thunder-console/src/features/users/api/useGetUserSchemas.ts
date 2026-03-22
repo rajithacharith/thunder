@@ -51,7 +51,7 @@ export default function useGetUserSchemas(params?: SchemaListParams): UseQueryRe
       const response: {
         data: UserSchemaListResponse;
       } = await http.request({
-        url: `${serverUrl}/user-schemas${queryString ? `?${queryString}` : ''}`,
+        url: `${serverUrl}/user-types${queryString ? `?${queryString}` : ''}`,
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

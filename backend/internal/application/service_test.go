@@ -37,13 +37,13 @@ import (
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 	"github.com/asgardeo/thunder/tests/mocks/certmock"
 	"github.com/asgardeo/thunder/tests/mocks/consentmock"
 	"github.com/asgardeo/thunder/tests/mocks/design/layoutmock"
 	"github.com/asgardeo/thunder/tests/mocks/design/thememock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 )
 
 const testServiceAppID = "app123"
@@ -1045,7 +1045,7 @@ func (suite *ServiceTestSuite) setupTestService() (
 	mockStore := newApplicationStoreInterfaceMock(suite.T())
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	mockUserSchemaService := usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 	mockConsentService := consentmock.NewConsentServiceInterfaceMock(suite.T())
 	// Consent is disabled by default in the base test service; individual tests
 	// can override this via their own service instance.
@@ -1652,7 +1652,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_FieldValidationE
 			mockStore := newApplicationStoreInterfaceMock(suite.T())
 			mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
 			mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
-			mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+			mockUserSchemaService := usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 			mockThemeMgtService := thememock.NewThemeMgtServiceInterfaceMock(suite.T())
 			service := &applicationService{
 				appStore:          mockStore,
@@ -3685,15 +3685,15 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyString() {
 	mockStore := newApplicationStoreInterfaceMock(suite.T())
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	mockUserSchemaService := usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 
 	// Mock GetUserSchemaList to return empty list (first call)
 	mockUserSchemaService.EXPECT().
 		GetUserSchemaList(mock.Anything, mock.Anything, 0).
-		Return(&userschema.UserSchemaListResponse{
+		Return(&usertype.UserSchemaListResponse{
 			TotalResults: 0,
 			Count:        0,
-			Schemas:      []userschema.UserSchemaListItem{},
+			Schemas:      []usertype.UserSchemaListItem{},
 		}, nil).
 		Once()
 
@@ -3719,15 +3719,15 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyStringWithValid
 	mockStore := newApplicationStoreInterfaceMock(suite.T())
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	mockUserSchemaService := usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 
 	// Mock GetUserSchemaList to return a list with one valid user type
 	mockUserSchemaService.EXPECT().
 		GetUserSchemaList(mock.Anything, mock.Anything, 0).
-		Return(&userschema.UserSchemaListResponse{
+		Return(&usertype.UserSchemaListResponse{
 			TotalResults: 1,
 			Count:        1,
-			Schemas: []userschema.UserSchemaListItem{
+			Schemas: []usertype.UserSchemaListItem{
 				{
 					Name: "validUserType",
 				},
@@ -4728,7 +4728,7 @@ func (suite *ServiceTestSuite) setupConsentEnabledService() (
 	mockStore := newApplicationStoreInterfaceMock(suite.T())
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	mockUserSchemaService := usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 	mockConsentService := consentmock.NewConsentServiceInterfaceMock(suite.T())
 	service := &applicationService{
 		appStore:          mockStore,
@@ -6379,7 +6379,7 @@ func (suite *ServiceTestSuite) TestValidateApplication_ErrorFromValidateDesignID
 			mockStore := newApplicationStoreInterfaceMock(suite.T())
 			mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
 			mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
-			mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+			mockUserSchemaService := usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 			mockThemeMgtService := thememock.NewThemeMgtServiceInterfaceMock(suite.T())
 			mockLayoutMgtService := layoutmock.NewLayoutMgtServiceInterfaceMock(suite.T())
 			service := &applicationService{
@@ -6434,7 +6434,7 @@ func (suite *ServiceTestSuite) TestValidateApplication_ErrorFromValidateAllowedU
 	mockStore := newApplicationStoreInterfaceMock(suite.T())
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	mockUserSchemaService := usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 	service := &applicationService{
 		appStore:          mockStore,
 		certService:       mockCertService,
@@ -6462,10 +6462,10 @@ func (suite *ServiceTestSuite) TestValidateApplication_ErrorFromValidateAllowedU
 
 	// Mock user schema service to return empty list (no valid user types)
 	mockUserSchemaService.EXPECT().GetUserSchemaList(mock.Anything, mock.Anything, mock.Anything).
-		Return(&userschema.UserSchemaListResponse{
+		Return(&usertype.UserSchemaListResponse{
 			TotalResults: 0,
 			Count:        0,
-			Schemas:      []userschema.UserSchemaListItem{},
+			Schemas:      []usertype.UserSchemaListItem{},
 		}, nil)
 
 	result, inboundAuth, svcErr := service.ValidateApplication(context.Background(), app)
@@ -6572,7 +6572,7 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_ErrorFromValidat
 	mockStore := newApplicationStoreInterfaceMock(suite.T())
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	mockUserSchemaService := usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 	mockLayoutMgtService := layoutmock.NewLayoutMgtServiceInterfaceMock(suite.T())
 	service := &applicationService{
 		appStore:          mockStore,

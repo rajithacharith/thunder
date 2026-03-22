@@ -56,7 +56,7 @@ function useGetUserTypes() {
     queryFn: async (): Promise<UserSchemaListResponse> => {
       const serverUrl = getServerUrl();
       const response = await http.request({
-        url: `${serverUrl}/user-schemas?limit=100`,
+        url: `${serverUrl}/user-types?limit=100`,
         method: 'GET',
       } as unknown as Parameters<typeof http.request>[0]);
 
@@ -262,7 +262,7 @@ export default function EditTokenSettings({
         const schemaPromises = schemaIds.map(async (id) => {
           try {
             const response = await http.request({
-              url: `${serverUrl}/user-schemas/${id}`,
+              url: `${serverUrl}/user-types/${id}`,
               method: 'GET',
             } as unknown as Parameters<typeof http.request>[0]);
             return response.data as ApiUserSchema;

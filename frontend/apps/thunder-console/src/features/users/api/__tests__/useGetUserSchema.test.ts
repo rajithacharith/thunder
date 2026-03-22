@@ -112,7 +112,7 @@ describe('useGetUserSchema', () => {
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: `https://api.test.com/user-schemas/${schemaId}`,
+        url: `https://api.test.com/user-types/${schemaId}`,
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -193,7 +193,7 @@ describe('useGetUserSchema', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.url).toContain('https://api.test.com/user-schemas/schema-1');
+    expect(callArgs.url).toContain('https://api.test.com/user-types/schema-1');
   });
 
   it('should include correct headers', async () => {

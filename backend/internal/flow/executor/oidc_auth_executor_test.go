@@ -33,18 +33,18 @@ import (
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/userprovider"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oidcmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 )
 
 type OIDCAuthExecutorTestSuite struct {
 	suite.Suite
 	mockOIDCService       *oidcmock.OIDCAuthnCoreServiceInterfaceMock
 	mockIDPService        *idpmock.IDPServiceInterfaceMock
-	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
+	mockUserSchemaService *usertypemock.UserSchemaServiceInterfaceMock
 	mockFlowFactory       *coremock.FlowFactoryInterfaceMock
 	executor              oidcAuthExecutorInterface
 }
@@ -56,7 +56,7 @@ func TestOIDCAuthExecutorSuite(t *testing.T) {
 func (suite *OIDCAuthExecutorTestSuite) SetupTest() {
 	suite.mockOIDCService = oidcmock.NewOIDCAuthnCoreServiceInterfaceMock(suite.T())
 	suite.mockIDPService = idpmock.NewIDPServiceInterfaceMock(suite.T())
-	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockUserSchemaService = usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 
 	defaultInputs := []common.Input{{Identifier: "code", Type: "string", Required: true}}
@@ -1132,7 +1132,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWit
 			Type: serviceerror.ClientErrorType,
 		})
 	suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "INTERNAL").
-		Return(&userschema.UserSchema{
+		Return(&usertype.UserSchema{
 			Name:                  "INTERNAL",
 			AllowSelfRegistration: true,
 			OUID:                  "ou-123",

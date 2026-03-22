@@ -112,7 +112,7 @@ describe('useGetUserSchemas', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.url).toBe('https://api.test.com/user-schemas');
+    expect(callArgs.url).toBe('https://api.test.com/user-types');
   });
 
   it('should use custom pagination parameters', async () => {
@@ -192,7 +192,7 @@ describe('useGetUserSchemas', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.url).toContain('https://api.test.com/user-schemas');
+    expect(callArgs.url).toContain('https://api.test.com/user-types');
   });
 
   it('should include correct headers', async () => {
@@ -339,7 +339,7 @@ describe('useGetUserSchemas', () => {
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const url = callArgs.url as string;
-    expect(url).toContain('user-schemas?');
+    expect(url).toContain('user-types?');
     expect(url).toContain('limit=50');
     expect(url).toContain('offset=100');
   });

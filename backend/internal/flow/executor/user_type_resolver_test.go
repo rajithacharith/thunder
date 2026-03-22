@@ -30,14 +30,14 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 )
 
 type UserTypeResolverTestSuite struct {
 	suite.Suite
-	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
+	mockUserSchemaService *usertypemock.UserSchemaServiceInterfaceMock
 	mockFlowFactory       *coremock.FlowFactoryInterfaceMock
 	executor              *userTypeResolver
 }
@@ -47,7 +47,7 @@ func TestUserTypeResolverSuite(t *testing.T) {
 }
 
 func (suite *UserTypeResolverTestSuite) SetupTest() {
-	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockUserSchemaService = usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 
 	defaultInputs := []common.Input{
@@ -97,7 +97,7 @@ func createMockUserTypeResolverExecutor(t *testing.T) core.ExecutorInterface {
 
 func (suite *UserTypeResolverTestSuite) TestNewUserTypeResolver() {
 	mockFlowFactory := coremock.NewFlowFactoryInterfaceMock(suite.T())
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	mockUserSchemaService := usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 
 	defaultInputs := []common.Input{
 		{
@@ -230,7 +230,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_Succ
 				RuntimeData: map[string]string{},
 			}
 
-			userSchema := &userschema.UserSchema{
+			userSchema := &usertype.UserSchema{
 				ID:                    "schema-123",
 				Name:                  tc.providedUserType,
 				OUID:                  tc.expectedOUID,
@@ -267,7 +267,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_NoOU
 		RuntimeData: map[string]string{},
 	}
 
-	userSchema := &userschema.UserSchema{
+	userSchema := &usertype.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
 		OUID:                  "",
@@ -375,7 +375,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_Succes
 		RuntimeData: map[string]string{},
 	}
 
-	userSchema := &userschema.UserSchema{
+	userSchema := &usertype.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
 		OUID:                  "ou-123",
@@ -408,7 +408,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_NoOU()
 		RuntimeData: map[string]string{},
 	}
 
-	userSchema := &userschema.UserSchema{
+	userSchema := &usertype.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
 		OUID:                  "",
@@ -470,7 +470,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Pro
 
 	// Mock all three user types with self registration enabled
 	for _, userType := range []string{"employee", "customer", "partner"} {
-		userSchema := &userschema.UserSchema{
+		userSchema := &usertype.UserSchema{
 			ID:                    "schema-" + userType,
 			Name:                  userType,
 			OUID:                  "ou-" + userType,
@@ -515,7 +515,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_EmptyUserTypeInput() {
 
 	// Mock both user types with self registration enabled
 	for _, userType := range []string{"employee", "customer"} {
-		userSchema := &userschema.UserSchema{
+		userSchema := &usertype.UserSchema{
 			ID:                    "schema-" + userType,
 			Name:                  userType,
 			OUID:                  "ou-" + userType,
@@ -555,7 +555,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_Self
 		RuntimeData: map[string]string{},
 	}
 
-	userSchema := &userschema.UserSchema{
+	userSchema := &usertype.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
 		OUID:                  "ou-123",
@@ -586,7 +586,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_SelfRe
 		RuntimeData: map[string]string{},
 	}
 
-	userSchema := &userschema.UserSchema{
+	userSchema := &usertype.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
 		OUID:                  "ou-123",
@@ -618,19 +618,19 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Onl
 	}
 
 	// Only customer has self-registration enabled
-	employeeSchema := &userschema.UserSchema{
+	employeeSchema := &usertype.UserSchema{
 		ID:                    "schema-employee",
 		Name:                  "employee",
 		OUID:                  "ou-employee",
 		AllowSelfRegistration: false,
 	}
-	customerSchema := &userschema.UserSchema{
+	customerSchema := &usertype.UserSchema{
 		ID:                    "schema-customer",
 		Name:                  "customer",
 		OUID:                  "ou-customer",
 		AllowSelfRegistration: true,
 	}
-	partnerSchema := &userschema.UserSchema{
+	partnerSchema := &usertype.UserSchema{
 		ID:                    "schema-partner",
 		Name:                  "partner",
 		OUID:                  "ou-partner",
@@ -668,13 +668,13 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_NoS
 	}
 
 	// None have self-registration enabled
-	employeeSchema := &userschema.UserSchema{
+	employeeSchema := &usertype.UserSchema{
 		ID:                    "schema-employee",
 		Name:                  "employee",
 		OUID:                  "ou-employee",
 		AllowSelfRegistration: false,
 	}
-	customerSchema := &userschema.UserSchema{
+	customerSchema := &usertype.UserSchema{
 		ID:                    "schema-customer",
 		Name:                  "customer",
 		OUID:                  "ou-customer",
@@ -709,7 +709,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Sch
 	}
 
 	// First schema succeeds, second fails
-	employeeSchema := &userschema.UserSchema{
+	employeeSchema := &usertype.UserSchema{
 		ID:                    "schema-employee",
 		Name:                  "employee",
 		OUID:                  "ou-employee",
@@ -738,7 +738,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Sch
 func (suite *UserTypeResolverTestSuite) TestGetUserSchemaAndOU_Success() {
 	suite.SetupTest()
 
-	userSchema := &userschema.UserSchema{
+	userSchema := &usertype.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
 		OUID:                  "ou-123",
@@ -759,7 +759,7 @@ func (suite *UserTypeResolverTestSuite) TestGetUserSchemaAndOU_Success() {
 func (suite *UserTypeResolverTestSuite) TestGetUserSchemaAndOU_NoOUFound() {
 	suite.SetupTest()
 
-	userSchema := &userschema.UserSchema{
+	userSchema := &usertype.UserSchema{
 		ID:                    "schema-123",
 		Name:                  "employee",
 		OUID:                  "",
@@ -810,7 +810,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeP
 		RuntimeData: map[string]string{},
 	}
 
-	userSchema := &userschema.UserSchema{
+	userSchema := &usertype.UserSchema{
 		ID:   "schema-123",
 		Name: "employee",
 		OUID: "ou-123",
@@ -872,8 +872,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 	}
 
 	// Mock GetUserSchemaList returning empty list
-	emptyList := &userschema.UserSchemaListResponse{
-		Schemas: []userschema.UserSchemaListItem{},
+	emptyList := &usertype.UserSchemaListResponse{
+		Schemas: []usertype.UserSchemaListItem{},
 	}
 	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0).
 		Return(emptyList, nil)
@@ -922,8 +922,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 	}
 
 	// Mock GetUserSchemaList returning schemas
-	schemaList := &userschema.UserSchemaListResponse{
-		Schemas: []userschema.UserSchemaListItem{
+	schemaList := &usertype.UserSchemaListResponse{
+		Schemas: []usertype.UserSchemaListItem{
 			{Name: "employee"},
 			{Name: "customer"},
 		},

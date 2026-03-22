@@ -39,11 +39,11 @@ import (
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
 	"github.com/asgardeo/thunder/tests/mocks/notification/notificationmock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -55,7 +55,7 @@ type HandlerTestSuite struct {
 	mockAppService          *applicationmock.ApplicationServiceInterfaceMock
 	mockIDPService          *idpmock.IDPServiceInterfaceMock
 	mockNotificationService *notificationmock.NotificationSenderMgtSvcInterfaceMock
-	mockUserSchemaService   *userschemamock.UserSchemaServiceInterfaceMock
+	mockUserSchemaService   *usertypemock.UserSchemaServiceInterfaceMock
 	exportService           ExportServiceInterface
 	handler                 *exportHandler
 }
@@ -75,12 +75,12 @@ func (suite *HandlerTestSuite) SetupTest() {
 	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
 	suite.mockIDPService = idpmock.NewIDPServiceInterfaceMock(suite.T())
 	suite.mockNotificationService = notificationmock.NewNotificationSenderMgtSvcInterfaceMock(suite.T())
-	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockUserSchemaService = usertypemock.NewUserSchemaServiceInterfaceMock(suite.T())
 	exporters := []declarativeresource.ResourceExporter{
 		application.NewApplicationExporterForTest(suite.mockAppService),
 		idp.NewIDPExporterForTest(suite.mockIDPService),
 		notification.NewNotificationSenderExporterForTest(suite.mockNotificationService),
-		userschema.NewUserSchemaExporterForTest(suite.mockUserSchemaService),
+		usertype.NewUserSchemaExporterForTest(suite.mockUserSchemaService),
 	}
 	parameterizer := newParameterizer(templatingRules{})
 	suite.exportService = newExportService(exporters, parameterizer)
@@ -368,12 +368,12 @@ func TestGenerateAndSendZipResponse_Standalone(t *testing.T) {
 	mockAppService := applicationmock.NewApplicationServiceInterfaceMock(t)
 	mockIDPService := idpmock.NewIDPServiceInterfaceMock(t)
 	mockNotificationService := notificationmock.NewNotificationSenderMgtSvcInterfaceMock(t)
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	mockUserSchemaService := usertypemock.NewUserSchemaServiceInterfaceMock(t)
 	exporters := []declarativeresource.ResourceExporter{
 		application.NewApplicationExporterForTest(mockAppService),
 		idp.NewIDPExporterForTest(mockIDPService),
 		notification.NewNotificationSenderExporterForTest(mockNotificationService),
-		userschema.NewUserSchemaExporterForTest(mockUserSchemaService),
+		usertype.NewUserSchemaExporterForTest(mockUserSchemaService),
 	}
 	parameterizer := newParameterizer(templatingRules{})
 	exportService := newExportService(exporters, parameterizer)
@@ -407,12 +407,12 @@ func TestNewExportHandler(t *testing.T) {
 	mockAppService := applicationmock.NewApplicationServiceInterfaceMock(t)
 	mockIDPService := idpmock.NewIDPServiceInterfaceMock(t)
 	mockNotificationService := notificationmock.NewNotificationSenderMgtSvcInterfaceMock(t)
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	mockUserSchemaService := usertypemock.NewUserSchemaServiceInterfaceMock(t)
 	exporters := []declarativeresource.ResourceExporter{
 		application.NewApplicationExporterForTest(mockAppService),
 		idp.NewIDPExporterForTest(mockIDPService),
 		notification.NewNotificationSenderExporterForTest(mockNotificationService),
-		userschema.NewUserSchemaExporterForTest(mockUserSchemaService),
+		usertype.NewUserSchemaExporterForTest(mockUserSchemaService),
 	}
 	parameterizer := newParameterizer(templatingRules{})
 	exportService := newExportService(exporters, parameterizer)
@@ -832,12 +832,12 @@ func BenchmarkGenerateAndSendZipResponse(b *testing.B) {
 	mockAppService := applicationmock.NewApplicationServiceInterfaceMock(b)
 	mockIDPService := idpmock.NewIDPServiceInterfaceMock(b)
 	mockNotificationService := notificationmock.NewNotificationSenderMgtSvcInterfaceMock(b)
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(b)
+	mockUserSchemaService := usertypemock.NewUserSchemaServiceInterfaceMock(b)
 	exporters := []declarativeresource.ResourceExporter{
 		application.NewApplicationExporterForTest(mockAppService),
 		idp.NewIDPExporterForTest(mockIDPService),
 		notification.NewNotificationSenderExporterForTest(mockNotificationService),
-		userschema.NewUserSchemaExporterForTest(mockUserSchemaService),
+		usertype.NewUserSchemaExporterForTest(mockUserSchemaService),
 	}
 	parameterizer := newParameterizer(templatingRules{})
 	exportService := newExportService(exporters, parameterizer)
@@ -872,12 +872,12 @@ func setupBenchmarkTest(b *testing.B) (*exportHandler, []byte) {
 	mockAppService := applicationmock.NewApplicationServiceInterfaceMock(b)
 	mockIDPService := idpmock.NewIDPServiceInterfaceMock(b)
 	mockNotificationService := notificationmock.NewNotificationSenderMgtSvcInterfaceMock(b)
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(b)
+	mockUserSchemaService := usertypemock.NewUserSchemaServiceInterfaceMock(b)
 	exporters := []declarativeresource.ResourceExporter{
 		application.NewApplicationExporterForTest(mockAppService),
 		idp.NewIDPExporterForTest(mockIDPService),
 		notification.NewNotificationSenderExporterForTest(mockNotificationService),
-		userschema.NewUserSchemaExporterForTest(mockUserSchemaService),
+		usertype.NewUserSchemaExporterForTest(mockUserSchemaService),
 	}
 	parameterizer := newParameterizer(templatingRules{})
 	exportService := newExportService(exporters, parameterizer)

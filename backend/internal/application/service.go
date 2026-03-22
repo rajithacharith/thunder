@@ -42,7 +42,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/internal/system/transaction"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 // ApplicationServiceInterface defines the interface for the application service.
@@ -68,7 +68,7 @@ type applicationService struct {
 	flowMgtService    flowmgt.FlowMgtServiceInterface
 	themeMgtService   thememgt.ThemeMgtServiceInterface
 	layoutMgtService  layoutmgt.LayoutMgtServiceInterface
-	userSchemaService userschema.UserSchemaServiceInterface
+	userSchemaService usertype.UserSchemaServiceInterface
 	consentService    consent.ConsentServiceInterface
 	transactioner     transaction.Transactioner
 }
@@ -80,7 +80,7 @@ func newApplicationService(
 	flowMgtService flowmgt.FlowMgtServiceInterface,
 	themeMgtService thememgt.ThemeMgtServiceInterface,
 	layoutMgtService layoutmgt.LayoutMgtServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	userSchemaService usertype.UserSchemaServiceInterface,
 	consentService consent.ConsentServiceInterface,
 	transactioner transaction.Transactioner,
 ) ApplicationServiceInterface {

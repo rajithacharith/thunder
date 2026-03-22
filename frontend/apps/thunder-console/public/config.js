@@ -34,7 +34,7 @@ window.__THUNDER_RUNTIME_CONFIG__ = {
       'system:user',
       'system:group',
       'system:ou:view',
-      'system:userschema:view',
+      'system:usertype:view',
     ],
   },
   server: {

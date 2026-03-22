@@ -40,7 +40,7 @@ export default function useGetUserSchema(id?: string): UseQueryResult<ApiUserSch
       const response: {
         data: ApiUserSchema;
       } = await http.request({
-        url: `${serverUrl}/user-schemas/${id}`,
+        url: `${serverUrl}/user-types/${id}`,
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

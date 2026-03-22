@@ -38,7 +38,7 @@ export default function useDeleteUserType(): UseMutationResult<void, Error, stri
     mutationFn: async (userTypeId: string): Promise<void> => {
       const serverUrl: string = getServerUrl();
       await http.request({
-        url: `${serverUrl}/user-schemas/${userTypeId}`,
+        url: `${serverUrl}/user-types/${userTypeId}`,
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

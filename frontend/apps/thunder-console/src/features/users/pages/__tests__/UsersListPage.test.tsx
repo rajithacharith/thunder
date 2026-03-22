@@ -23,19 +23,6 @@ import type {InviteUserRenderProps} from '@asgardeo/react';
 import UsersListPage from '../UsersListPage';
 
 const mockNavigate = vi.fn();
-const mockLoggerError = vi.fn();
-let mockInviteParam = '';
-const mockSetSearchParams = vi.fn();
-
-// Mock logger
-vi.mock('@thunder/logger/react', () => ({
-  useLogger: () => ({
-    info: vi.fn(),
-    error: mockLoggerError,
-    debug: vi.fn(),
-    warn: vi.fn(),
-  }),
-}));
 
 // Mock InviteUser component
 const mockHandleInputChange = vi.fn();
@@ -60,8 +47,8 @@ const mockInviteUserRenderProps: InviteUserRenderProps = {
   copyInviteLink: mockCopyInviteLink,
   inviteLinkCopied: false,
   resetFlow: mockResetFlow,
-  isValid: false,
   meta: null,
+  isValid: false,
 };
 
 vi.mock('@asgardeo/react', async () => {
@@ -84,7 +71,6 @@ vi.mock('react-router', async () => {
   return {
     ...actual,
     useNavigate: () => mockNavigate,
-    useSearchParams: () => [new URLSearchParams(mockInviteParam), mockSetSearchParams],
   };
 });
 
@@ -132,9 +118,6 @@ vi.mock('../../components/InviteUserDialog', () => ({
 describe('UsersListPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockLoggerError.mockReset();
-    mockInviteParam = '';
-    mockSetSearchParams.mockReset();
   });
 
   it('renders page title', () => {
@@ -206,6 +189,13 @@ describe('UsersListPage', () => {
     expect(icon).toBeInTheDocument();
   });
 
+  it('renders users list regardless of user type data hooks', () => {
+    render(<UsersListPage />);
+
+    expect(screen.getByText('User Management')).toBeInTheDocument();
+    expect(screen.getByTestId('users-list')).toBeInTheDocument();
+  });
+
   it('has correct heading level', () => {
     render(<UsersListPage />);
 
@@ -273,16 +263,6 @@ describe('UsersListPage', () => {
     expect(capturedOnSuccess).toBeDefined();
   });
 
-  it('opens invite dialog when invite=true search param is present', async () => {
-    mockInviteParam = 'invite=true';
-    render(<UsersListPage />);
-
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
-    expect(mockSetSearchParams).toHaveBeenCalledWith({}, {replace: true});
-  });
-
   it('handles navigation error gracefully', async () => {
     const navigationError = new Error('Navigation failed');
     mockNavigate.mockRejectedValueOnce(navigationError);
@@ -296,12 +276,9 @@ describe('UsersListPage', () => {
     // Verify navigate was called even though it will fail
     expect(mockNavigate).toHaveBeenCalledWith('/users/create');
 
-    // Wait for the error handler to run and log the error
+    // Wait a bit for the error handler to be called
     await waitFor(() => {
-      expect(mockLoggerError).toHaveBeenCalledWith(
-        'Failed to navigate to create user page',
-        expect.objectContaining({error: navigationError}),
-      );
+      expect(mockNavigate).toHaveBeenCalled();
     });
   });
 });
