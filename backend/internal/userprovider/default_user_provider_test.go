@@ -88,8 +88,8 @@ func (suite *DefaultUserProviderTestSuite) TestGetUser() {
 	}
 
 	// Test Success
-	suite.mockService.On("GetUser", mock.Anything, userID).Return(expectedUser, (*serviceerror.ServiceError)(nil)).
-		Once()
+	suite.mockService.On("GetUser", mock.Anything, userID, false).
+		Return(expectedUser, (*serviceerror.ServiceError)(nil)).Once()
 
 	u, err := suite.provider.GetUser(userID)
 	suite.Nil(err)
@@ -98,7 +98,7 @@ func (suite *DefaultUserProviderTestSuite) TestGetUser() {
 	suite.Equal("ou1", u.OUID)
 
 	// Test Not Found
-	suite.mockService.On("GetUser", mock.Anything, userID).Return(nil, &user.ErrorUserNotFound).
+	suite.mockService.On("GetUser", mock.Anything, userID, false).Return(nil, &user.ErrorUserNotFound).
 		Once()
 
 	u, err = suite.provider.GetUser(userID)

@@ -109,7 +109,7 @@ describe('useGetUser', () => {
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: `https://api.test.com/users/${userId}`,
+        url: `https://api.test.com/users/${userId}?include=display`,
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

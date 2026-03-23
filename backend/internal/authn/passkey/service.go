@@ -99,7 +99,7 @@ func (w *passkeyService) StartRegistration(
 	}
 
 	// Retrieve core user
-	coreUser, svcErr := w.userService.GetUser(ctx, req.UserID)
+	coreUser, svcErr := w.userService.GetUser(ctx, req.UserID, false)
 	if svcErr != nil {
 		return nil, handleUserRetrievalError(svcErr, req.UserID, logger)
 	}
@@ -225,7 +225,7 @@ func (w *passkeyService) FinishRegistration(ctx context.Context, req *PasskeyReg
 	}
 
 	// Get core user
-	coreUser, svcErr := w.userService.GetUser(ctx, userID)
+	coreUser, svcErr := w.userService.GetUser(ctx, userID, false)
 	if svcErr != nil {
 		logger.Error("Failed to retrieve user", log.String("error", svcErr.Error))
 		return nil, &serviceerror.InternalServerError
@@ -334,7 +334,7 @@ func (w *passkeyService) StartAuthentication(ctx context.Context, req *PasskeyAu
 	} else {
 		// Username-based flow: Retrieve user and credentials
 		// Retrieve user by userID to verify user exists
-		coreUser, svcErr := w.userService.GetUser(ctx, req.UserID)
+		coreUser, svcErr := w.userService.GetUser(ctx, req.UserID, false)
 		if svcErr != nil {
 			return nil, handleUserRetrievalError(svcErr, req.UserID, logger)
 		}
@@ -443,7 +443,7 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 	}
 
 	// Get core user
-	coreUser, svcErr := w.userService.GetUser(ctx, userID)
+	coreUser, svcErr := w.userService.GetUser(ctx, userID, false)
 	if svcErr != nil {
 		logger.Error("Failed to retrieve user", log.String("error", svcErr.Error))
 		return nil, &serviceerror.InternalServerError

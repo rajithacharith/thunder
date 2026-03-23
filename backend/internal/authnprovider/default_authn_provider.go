@@ -55,7 +55,7 @@ func (p *defaultAuthnProvider) Authenticate(
 		return nil, NewError(ErrorCodeSystemError, authErr.Error, authErr.ErrorDescription)
 	}
 
-	userResult, getUserErr := p.userSvc.GetUser(ctx, authResponse.ID)
+	userResult, getUserErr := p.userSvc.GetUser(ctx, authResponse.ID, false)
 	if getUserErr != nil {
 		if getUserErr.Code == user.ErrorUserNotFound.Code {
 			return nil, NewError(ErrorCodeUserNotFound, getUserErr.Error, getUserErr.ErrorDescription)
@@ -101,7 +101,7 @@ func (p *defaultAuthnProvider) GetAttributes(
 ) (*GetAttributesResult, *AuthnProviderError) {
 	userID := token
 
-	userResult, authErr := p.userSvc.GetUser(ctx, userID)
+	userResult, authErr := p.userSvc.GetUser(ctx, userID, false)
 	if authErr != nil {
 		if authErr.Type == serviceerror.ClientErrorType {
 			return nil, NewError(ErrorCodeInvalidToken, authErr.Error, authErr.ErrorDescription)
