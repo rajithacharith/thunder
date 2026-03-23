@@ -267,52 +267,6 @@ func (s *FlowStoreTestSuite) TestDeleteFlowExecuteError() {
 	s.Contains(err.Error(), "failed to delete flow")
 }
 
-// IsFlowExists Tests
-
-func (s *FlowStoreTestSuite) TestIsFlowExistsSuccess() {
-	s.mockDBProvider.EXPECT().GetConfigDBClient().Return(s.mockDBClient, nil)
-	s.mockDBClient.EXPECT().QueryContext(mock.Anything, queryCheckFlowExistsByID, "flow-1", "test-deployment").
-		Return([]map[string]interface{}{{"exists": 1}}, nil).Once()
-
-	exists, err := s.store.IsFlowExists(context.Background(), "flow-1")
-
-	s.NoError(err)
-	s.True(exists)
-}
-
-func (s *FlowStoreTestSuite) TestIsFlowExistsNotFound() {
-	s.mockDBProvider.EXPECT().GetConfigDBClient().Return(s.mockDBClient, nil)
-	s.mockDBClient.EXPECT().QueryContext(mock.Anything, queryCheckFlowExistsByID, "non-existent", "test-deployment").
-		Return([]map[string]interface{}{}, nil).Once()
-
-	exists, err := s.store.IsFlowExists(context.Background(), "non-existent")
-
-	s.NoError(err)
-	s.False(exists)
-}
-
-func (s *FlowStoreTestSuite) TestIsFlowExistsDBError() {
-	s.mockDBProvider.EXPECT().GetConfigDBClient().Return(nil, errors.New("connection error"))
-
-	exists, err := s.store.IsFlowExists(context.Background(), "flow-1")
-
-	s.Error(err)
-	s.Contains(err.Error(), "failed to get database client")
-	s.False(exists)
-}
-
-func (s *FlowStoreTestSuite) TestIsFlowExistsQueryError() {
-	s.mockDBProvider.EXPECT().GetConfigDBClient().Return(s.mockDBClient, nil)
-	s.mockDBClient.EXPECT().QueryContext(mock.Anything, queryCheckFlowExistsByID, "flow-1", "test-deployment").
-		Return(nil, errors.New("query error")).Once()
-
-	exists, err := s.store.IsFlowExists(context.Background(), "flow-1")
-
-	s.Error(err)
-	s.Contains(err.Error(), "failed to check flow existence")
-	s.False(exists)
-}
-
 // GetFlowByHandle Tests
 
 func (s *FlowStoreTestSuite) TestGetFlowByHandleSuccess() {

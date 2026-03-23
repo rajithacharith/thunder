@@ -58,7 +58,6 @@ type flowStoreInterface interface {
 	ListFlowVersions(ctx context.Context, flowID string) ([]BasicFlowVersion, error)
 	GetFlowVersion(ctx context.Context, flowID string, version int) (*FlowVersion, error)
 	RestoreFlowVersion(ctx context.Context, flowID string, version int) (*CompleteFlowDefinition, error)
-	IsFlowExists(ctx context.Context, flowID string) (bool, error)
 	IsFlowExistsByHandle(ctx context.Context, handle string, flowType common.FlowType) (bool, error)
 }
 
@@ -264,22 +263,6 @@ func (s *flowStore) DeleteFlow(ctx context.Context, flowID string) error {
 		}
 		return nil
 	})
-}
-
-// IsFlowExists checks if a flow exists with a given flow ID.
-func (s *flowStore) IsFlowExists(ctx context.Context, flowID string) (bool, error) {
-	var exists bool
-	err := s.withDBClientContext(ctx, func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.QueryContext(ctx, queryCheckFlowExistsByID, flowID, s.deploymentID)
-		if err != nil {
-			return fmt.Errorf("failed to check flow existence: %w", err)
-		}
-
-		exists = len(results) > 0
-		return nil
-	})
-
-	return exists, err
 }
 
 // IsFlowExistsByHandle checks if a flow exists with the given handle and flow type.
