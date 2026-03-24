@@ -57,9 +57,13 @@ vi.mock('@thunder/i18n', () => ({
   useGetTranslations: mockUseGetTranslations,
   useUpdateTranslation: mockUseUpdateTranslation,
   NamespaceConstants: {
+    CUSTOM_NAMESPACE: 'custom',
     COMMON: 'common',
     AUTH: 'auth',
     LOGIN_FLOW: 'loginFlow',
+  },
+  I18nDefaultConstants: {
+    FALLBACK_LANGUAGE: 'en-US',
   },
 }));
 
@@ -81,7 +85,7 @@ vi.mock('../../components/edit-translation/TranslationEditorHeader', () => ({
     hasDirtyChanges: boolean;
     isSaving: boolean;
     selectedLanguage: string | null;
-    isEnglish: boolean;
+    isFallbackLanguage: boolean;
     hasNamespace: boolean;
     dirtyCount: number;
   }) => {
@@ -102,7 +106,7 @@ vi.mock('../../components/edit-translation/TranslationEditorHeader', () => ({
         </button>
         <span data-testid="header-language">{props.selectedLanguage}</span>
         <span data-testid="header-dirty-count">{props.dirtyCount}</span>
-        <span data-testid="header-is-english">{String(props.isEnglish)}</span>
+        <span data-testid="header-is-english">{String(props.isFallbackLanguage)}</span>
       </div>
     );
   },
@@ -113,7 +117,7 @@ vi.mock('../../components/edit-translation/NamespaceSelector', () => ({
     mockNamespaceSelector(props);
     return (
       <div data-testid="namespace-selector">
-        <button type="button" onClick={() => props.onChange('loginFlow')}>
+        <button type="button" onClick={() => props.onChange('auth')}>
           select namespace
         </button>
         <span data-testid="ns-value">{props.value ?? ''}</span>
@@ -200,6 +204,32 @@ describe('TranslationsEditPage', () => {
 
     it('initializes with the first namespace from the translation data', () => {
       render(<TranslationsEditPage />);
+
+      expect(screen.getByTestId('ns-value')).toHaveTextContent('common');
+    });
+
+    it('switches from no namespace to the first loaded namespace', () => {
+      let isLoaded = false;
+      mockUseGetTranslations.mockImplementation(({language}: {language: string}) => {
+        if (language === 'fr-FR') {
+          return {
+            data: isLoaded ? sampleTranslations : undefined,
+            isLoading: !isLoaded,
+          };
+        }
+
+        return {
+          data: undefined,
+          isLoading: false,
+        };
+      });
+
+      const {rerender} = render(<TranslationsEditPage />);
+
+      expect(screen.getByTestId('ns-value')).toHaveTextContent('');
+
+      isLoaded = true;
+      rerender(<TranslationsEditPage />);
 
       expect(screen.getByTestId('ns-value')).toHaveTextContent('common');
     });
@@ -321,7 +351,7 @@ describe('TranslationsEditPage', () => {
 
       await user.click(screen.getByText('select namespace'));
 
-      expect(screen.getByTestId('ns-value')).toHaveTextContent('loginFlow');
+      expect(screen.getByTestId('ns-value')).toHaveTextContent('auth');
     });
 
     it('resets dirty changes when the namespace changes', async () => {

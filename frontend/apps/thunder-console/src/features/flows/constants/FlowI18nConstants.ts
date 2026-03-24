@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {NamespaceConstants} from '@thunder/i18n';
+import {I18nDefaultConstants, NamespaceConstants} from '@thunder/i18n';
 
 /**
  * i18n namespace constants for flow feature translations.
@@ -43,7 +43,7 @@ const FlowI18nConstants = {
   /**
    * Namespace for default flow translations (e.g., built-in or system flows)
    */
-  DEFAULT_LANGUAGE: 'en-US',
+  DEFAULT_LANGUAGE: I18nDefaultConstants.FALLBACK_LANGUAGE,
 } as const;
 
 export default FlowI18nConstants;

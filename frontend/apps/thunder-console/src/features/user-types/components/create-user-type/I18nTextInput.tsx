@@ -39,12 +39,16 @@ import {
   Typography,
 } from '@wso2/oxygen-ui';
 import {PlusIcon, SquareFunction, XIcon} from '@wso2/oxygen-ui-icons-react';
-import {useGetLanguages, useGetTranslations, useUpdateTranslation, NamespaceConstants} from '@thunder/i18n';
+import {
+  useGetLanguages,
+  useGetTranslations,
+  useUpdateTranslation,
+  NamespaceConstants,
+  I18nDefaultConstants,
+} from '@thunder/i18n';
 import {isI18nTemplatePattern, I18N_KEY_PATTERN} from '@thunder/utils';
 import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import {invalidateI18nCache} from '../../../../i18n/invalidate-i18n-cache';
-
-const DEFAULT_LANGUAGE = 'en-US';
 
 /**
  * Sanitizes a string for use as a translation key.
@@ -84,11 +88,18 @@ interface I18nContentProps {
 /**
  * Content component for the i18n popover with select and create modes.
  */
-function I18nContent({i18nKey, isActive, isCreateMode, onChange, onCreateModeChange, defaultNewKey = undefined}: I18nContentProps): ReactElement {
+function I18nContent({
+  i18nKey,
+  isActive,
+  isCreateMode,
+  onChange,
+  onCreateModeChange,
+  defaultNewKey = undefined,
+}: I18nContentProps): ReactElement {
   const {t, i18n} = useTranslation();
   const {data: languagesData} = useGetLanguages();
   const {data: translationsData, isLoading} = useGetTranslations({
-    language: DEFAULT_LANGUAGE,
+    language: I18nDefaultConstants.FALLBACK_LANGUAGE,
     namespace: NamespaceConstants.CUSTOM_NAMESPACE,
     enabled: isActive,
   });
@@ -101,7 +112,7 @@ function I18nContent({i18nKey, isActive, isCreateMode, onChange, onCreateModeCha
   const sanitizedDefaultKey = defaultNewKey ? sanitizeTranslationKey(defaultNewKey) : '';
   const [newKey, setNewKey] = useState(sanitizedDefaultKey);
   const [newValue, setNewValue] = useState('');
-  const [selectedLanguage, setSelectedLanguage] = useState(DEFAULT_LANGUAGE);
+  const [selectedLanguage, setSelectedLanguage] = useState(I18nDefaultConstants.FALLBACK_LANGUAGE as string);
   const [error, setError] = useState<string | null>(null);
 
   const availableKeys = useMemo(() => {
@@ -143,13 +154,13 @@ function I18nContent({i18nKey, isActive, isCreateMode, onChange, onCreateModeCha
     if (languagesData?.languages && languagesData.languages.length > 0) {
       return languagesData.languages;
     }
-    return [DEFAULT_LANGUAGE];
+    return [I18nDefaultConstants.FALLBACK_LANGUAGE];
   }, [languagesData]);
 
   const resetCreateForm = useCallback(() => {
     setNewKey(sanitizedDefaultKey);
     setNewValue('');
-    setSelectedLanguage(DEFAULT_LANGUAGE);
+    setSelectedLanguage(I18nDefaultConstants.FALLBACK_LANGUAGE as string);
     setError(null);
   }, [sanitizedDefaultKey]);
 
@@ -163,7 +174,12 @@ function I18nContent({i18nKey, isActive, isCreateMode, onChange, onCreateModeCha
       return;
     }
     if (!/^[a-zA-Z0-9._-]+$/.test(newKey)) {
-      setError(t('userTypes:displayNameI18n.invalidKeyFormat', 'Key may only contain letters, numbers, dots, hyphens, and underscores'));
+      setError(
+        t(
+          'userTypes:displayNameI18n.invalidKeyFormat',
+          'Key may only contain letters, numbers, dots, hyphens, and underscores',
+        ),
+      );
       return;
     }
 
@@ -220,7 +236,7 @@ function I18nContent({i18nKey, isActive, isCreateMode, onChange, onCreateModeCha
             options={availableLanguages}
             value={selectedLanguage}
             onChange={(_e: SyntheticEvent, newLang: string | null) =>
-              setSelectedLanguage(newLang ?? DEFAULT_LANGUAGE)
+              setSelectedLanguage(newLang ?? I18nDefaultConstants.FALLBACK_LANGUAGE)
             }
             renderInput={(params: AutocompleteRenderInputParams) => <TextField {...params} size="small" />}
             disableClearable
@@ -352,7 +368,14 @@ interface I18nPopoverProps {
 /**
  * Popover with i18n key selection and creation UI.
  */
-function I18nPopover({open, anchorEl, onClose, value, onChange, defaultNewKey = undefined}: I18nPopoverProps): ReactElement {
+function I18nPopover({
+  open,
+  anchorEl,
+  onClose,
+  value,
+  onChange,
+  defaultNewKey = undefined,
+}: I18nPopoverProps): ReactElement {
   const {t} = useTranslation();
   const [isCreateMode, setIsCreateMode] = useState(false);
 
@@ -411,14 +434,20 @@ function I18nPopover({open, anchorEl, onClose, value, onChange, defaultNewKey = 
  * or creating translation keys. Similar to the flow builder's TextPropertyField
  * but standalone (no flow builder context dependency).
  */
-export default function I18nTextInput({label, value, onChange, placeholder = undefined, defaultNewKey = undefined}: I18nTextInputProps): ReactElement {
+export default function I18nTextInput({
+  label,
+  value,
+  onChange,
+  placeholder = undefined,
+  defaultNewKey = undefined,
+}: I18nTextInputProps): ReactElement {
   const {t} = useTranslation();
   const {resolve} = useTemplateLiteralResolver();
   const iconButtonRef = useRef<HTMLButtonElement>(null);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   const isDynamic = isI18nTemplatePattern(value);
-  const resolvedValue = isDynamic ? resolve(value, {t}) ?? '' : '';
+  const resolvedValue = isDynamic ? (resolve(value, {t}) ?? '') : '';
 
   return (
     <FormControl fullWidth>

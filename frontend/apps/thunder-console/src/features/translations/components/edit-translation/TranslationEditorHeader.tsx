@@ -36,8 +36,8 @@ export interface TranslationEditorHeaderProps {
   dirtyCount: number;
   /** Whether a save or reset operation is in progress. */
   isSaving: boolean;
-  /** Whether the selected language is English (disables Reset to Default). */
-  isEnglish: boolean;
+  /** Whether the selected language is the fallback language (disables Reset to Default). */
+  isFallbackLanguage: boolean;
   /** Whether a namespace is selected (required to enable Reset to Default). */
   hasNamespace: boolean;
   /** Called when the user clicks the back button. */
@@ -66,7 +66,7 @@ export default function TranslationEditorHeader({
   hasDirtyChanges,
   dirtyCount,
   isSaving,
-  isEnglish,
+  isFallbackLanguage,
   hasNamespace,
   onBack,
   onDiscard,
@@ -104,7 +104,7 @@ export default function TranslationEditorHeader({
           <Button size="small" onClick={onDiscard} disabled={!hasDirtyChanges || isSaving}>
             {t('actions.discardChanges')}
           </Button>
-          {!isEnglish && (
+          {!isFallbackLanguage && (
             <Button size="small" onClick={onResetToDefault} disabled={!hasNamespace || isSaving}>
               {t('actions.resetToDefault')}
             </Button>

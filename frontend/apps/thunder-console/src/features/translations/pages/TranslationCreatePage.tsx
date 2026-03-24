@@ -18,10 +18,7 @@
 
 import {Alert, Box, Breadcrumbs, Button, IconButton, LinearProgress, Typography} from '@wso2/oxygen-ui';
 import {ChevronRight, X} from '@wso2/oxygen-ui-icons-react';
-import {useAsgardeo} from '@asgardeo/react';
-import {useQueryClient} from '@tanstack/react-query';
-import {I18nQueryKeys, useGetTranslations} from '@thunder/i18n';
-import {useConfig} from '@thunder/shared-contexts';
+import {useGetTranslations, useCreateTranslations, I18nDefaultConstants} from '@thunder/i18n';
 import {useLogger} from '@thunder/logger/react';
 import {useCallback, useEffect, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -64,12 +61,13 @@ const STEPS: TranslationCreateFlowStep[] = [
  */
 export default function TranslationCreatePage(): JSX.Element {
   const {t} = useTranslation('translations');
-  const {getServerUrl} = useConfig();
-  const serverUrl = getServerUrl();
   const navigate = useNavigate();
   const logger = useLogger('TranslationCreatePage');
-  const queryClient = useQueryClient();
-  const {refetch: fetchEnTranslations} = useGetTranslations({language: 'en-US', enabled: false});
+  const {refetch: fetchEnTranslations} = useGetTranslations({
+    language: I18nDefaultConstants.FALLBACK_LANGUAGE,
+    enabled: false,
+  });
+  const createTranslations = useCreateTranslations();
 
   const {
     currentStep,
@@ -90,17 +88,6 @@ export default function TranslationCreatePage(): JSX.Element {
     error,
     setError,
   } = useTranslationCreate();
-
-  const {http} = useAsgardeo() as unknown as {
-    http: {
-      request: (config: {
-        url: string;
-        method: string;
-        headers?: Record<string, string>;
-        data?: string;
-      }) => Promise<{data: unknown}>;
-    };
-  };
 
   const [stepReady, setStepReady] = useState<Record<TranslationCreateFlowStep, boolean>>({
     COUNTRY: false,
@@ -159,40 +146,29 @@ export default function TranslationCreatePage(): JSX.Element {
       setIsCreating(false);
       return;
     }
-    const enTranslations = enData.translations;
 
-    const entries: {namespace: string; key: string; value: string}[] = [];
-    Object.entries(enTranslations).forEach(([ns, nsValues]) => {
+    const translations: Record<string, Record<string, string>> = {};
+    Object.entries(enData.translations).forEach(([ns, nsValues]) => {
+      translations[ns] = {};
       Object.entries(nsValues).forEach(([key, val]) => {
-        entries.push({namespace: ns, key, value: populateFromEnglish ? val : ''});
+        translations[ns][key] = populateFromEnglish ? val : '';
       });
     });
 
-    let completed = 0;
-    const total = entries.length;
-
-    await Promise.allSettled(
-      entries.map(async ({namespace, key, value}) => {
-        try {
-          await (http as {request: (config: unknown) => Promise<unknown>}).request({
-            url: `${serverUrl}/i18n/languages/${localeCode}/translations/ns/${namespace}/keys/${key}`,
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            data: JSON.stringify({value}),
-          });
-        } finally {
-          completed += 1;
-          setProgress(Math.round((completed / total) * 100));
-        }
-      }),
-    );
+    try {
+      await createTranslations.mutateAsync({language: localeCode, translations});
+      setProgress(100);
+    } catch (_err: unknown) {
+      logger.error('Failed to create translations', {error: _err});
+      setError(t('language.add.error'));
+      setIsCreating(false);
+      return;
+    }
 
     try {
-      await queryClient.invalidateQueries({queryKey: [I18nQueryKeys.TRANSLATIONS]});
-      await queryClient.invalidateQueries({queryKey: [I18nQueryKeys.LANGUAGES]});
       await navigate(`/translations/${localeCode}`);
-    } catch {
-      setError(t('language.add.error'));
+    } catch (_err: unknown) {
+      logger.error('Translations created but navigation failed', {error: _err, localeCode});
       setIsCreating(false);
     }
   };

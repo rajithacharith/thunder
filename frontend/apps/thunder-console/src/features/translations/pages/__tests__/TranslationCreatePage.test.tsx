@@ -40,30 +40,17 @@ vi.mock('react-router', async () => {
   };
 });
 
-const mockHttpRequest = vi.fn().mockResolvedValue({data: {}});
-vi.mock('@asgardeo/react', () => ({
-  useAsgardeo: () => ({
-    http: {
-      request: mockHttpRequest,
-    },
-  }),
+const {mockRefetch, mockCreateTranslationsMutateAsync} = vi.hoisted(() => ({
+  mockRefetch: vi.fn(),
+  mockCreateTranslationsMutateAsync: vi.fn().mockResolvedValue({}),
 }));
 
-vi.mock('@tanstack/react-query', async () => {
-  const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
-  return {
-    ...actual,
-    useQueryClient: () => ({
-      invalidateQueries: vi.fn().mockResolvedValue(undefined),
-    }),
-  };
-});
-
-const mockRefetch = vi.hoisted(() => vi.fn());
-
 vi.mock('@thunder/i18n', () => ({
-  I18nQueryKeys: {TRANSLATIONS: 'translations', LANGUAGES: 'languages'},
   useGetTranslations: vi.fn().mockReturnValue({data: undefined, isLoading: false, refetch: mockRefetch}),
+  useCreateTranslations: vi.fn().mockReturnValue({mutateAsync: mockCreateTranslationsMutateAsync}),
+  I18nDefaultConstants: {
+    FALLBACK_LANGUAGE: 'en-US',
+  },
   enUS: {},
 }));
 
@@ -384,7 +371,12 @@ describe('TranslationCreatePage', () => {
 
       // Wait for async create to complete
       await vi.waitFor(() => {
-        expect(mockHttpRequest).toHaveBeenCalled();
+        expect(mockCreateTranslationsMutateAsync).toHaveBeenCalledWith({
+          language: 'fr-FR',
+          translations: {
+            common: {'actions.save': 'Save'},
+          },
+        });
       });
     });
 
@@ -396,6 +388,40 @@ describe('TranslationCreatePage', () => {
         data: null,
         error: new Error('Fetch failed'),
       });
+
+      mockUseTranslationCreate.mockReturnValue({
+        ...baseContext,
+        currentStep: TranslationCreateFlowStep.INITIALIZE,
+        localeCode: 'fr-FR',
+        setError,
+        setIsCreating,
+        setProgress: vi.fn(),
+      });
+
+      const user = userEvent.setup();
+      render(<TranslationCreatePage />);
+
+      await user.click(screen.getByText('language.create.createButton'));
+
+      await vi.waitFor(() => {
+        expect(setError).toHaveBeenCalledWith('language.add.error');
+        expect(setIsCreating).toHaveBeenCalledWith(false);
+      });
+    });
+
+    it('sets error when creating translations fails after fetching defaults', async () => {
+      const setError = vi.fn();
+      const setIsCreating = vi.fn();
+
+      mockRefetch.mockResolvedValue({
+        data: {
+          translations: {
+            common: {'actions.save': 'Save'},
+          },
+        },
+        error: null,
+      });
+      mockCreateTranslationsMutateAsync.mockRejectedValueOnce(new Error('Create failed'));
 
       mockUseTranslationCreate.mockReturnValue({
         ...baseContext,
