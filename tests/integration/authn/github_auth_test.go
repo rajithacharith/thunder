@@ -214,7 +214,7 @@ func (suite *GithubAuthTestSuite) TearDownSuite() {
 func (suite *GithubAuthTestSuite) TestGithubAuthStartSuccess() {
 	// Start authentication
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -235,10 +235,10 @@ func (suite *GithubAuthTestSuite) TestGithubAuthStartSuccess() {
 	suite.Require().NoError(err)
 
 	// Verify response contains redirect_url and session_token
-	suite.Contains(startResponse, "redirect_url")
-	suite.Contains(startResponse, "session_token")
+	suite.Contains(startResponse, "redirectUrl")
+	suite.Contains(startResponse, "sessionToken")
 
-	redirectURL, ok := startResponse["redirect_url"].(string)
+	redirectURL, ok := startResponse["redirectUrl"].(string)
 	suite.Require().True(ok)
 	suite.Contains(redirectURL, suite.mockGithubServer.GetURL())
 	suite.Contains(redirectURL, "client_id=test-github-client")
@@ -246,7 +246,7 @@ func (suite *GithubAuthTestSuite) TestGithubAuthStartSuccess() {
 
 func (suite *GithubAuthTestSuite) TestGithubAuthStartInvalidIDPID() {
 	startRequest := map[string]interface{}{
-		"idp_id": "invalid-idp-id",
+		"idpId": "invalid-idp-id",
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -289,7 +289,7 @@ func (suite *GithubAuthTestSuite) TestGithubAuthStartMissingIDPID() {
 func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowSuccess() {
 	// Step 1: Start authentication
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -309,8 +309,8 @@ func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowSuccess() {
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	sessionToken := startResponse["session_token"].(string)
-	redirectURL := startResponse["redirect_url"].(string)
+	sessionToken := startResponse["sessionToken"].(string)
+	redirectURL := startResponse["redirectUrl"].(string)
 
 	// Step 2: Simulate user authorization at GitHub (get authorization code)
 	authCode := suite.simulateGithubAuthorization(redirectURL)
@@ -318,7 +318,7 @@ func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowSuccess() {
 
 	// Step 3: Finish authentication
 	finishRequest := map[string]interface{}{
-		"session_token": sessionToken,
+		"sessionToken": sessionToken,
 		"code":          authCode,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
@@ -347,7 +347,7 @@ func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowSuccess() {
 
 func (suite *GithubAuthTestSuite) TestGithubAuthFinishInvalidSessionToken() {
 	finishRequest := map[string]interface{}{
-		"session_token": "invalid-session-token",
+		"sessionToken": "invalid-session-token",
 		"code":          "some-auth-code",
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
@@ -367,7 +367,7 @@ func (suite *GithubAuthTestSuite) TestGithubAuthFinishInvalidSessionToken() {
 
 func (suite *GithubAuthTestSuite) TestGithubAuthFinishMissingCode() {
 	finishRequest := map[string]interface{}{
-		"session_token": "some-session-token",
+		"sessionToken": "some-session-token",
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -388,7 +388,7 @@ func (suite *GithubAuthTestSuite) TestGithubAuthFinishMissingCode() {
 func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowWithSkipAssertionFalse() {
 	// Step 1: Start authentication
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -408,8 +408,8 @@ func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowWithSkipAssertionFal
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	sessionToken := startResponse["session_token"].(string)
-	redirectURL := startResponse["redirect_url"].(string)
+	sessionToken := startResponse["sessionToken"].(string)
+	redirectURL := startResponse["redirectUrl"].(string)
 
 	// Step 2: Simulate user authorization at GitHub
 	authCode := suite.simulateGithubAuthorization(redirectURL)
@@ -417,9 +417,9 @@ func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowWithSkipAssertionFal
 
 	// Step 3: Finish authentication with skip_assertion=false
 	finishRequest := map[string]interface{}{
-		"session_token":  sessionToken,
+		"sessionToken":  sessionToken,
 		"code":           authCode,
-		"skip_assertion": false,
+		"skipAssertion": false,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -449,7 +449,7 @@ func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowWithSkipAssertionFal
 func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowWithSkipAssertionTrue() {
 	// Step 1: Start authentication
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -469,8 +469,8 @@ func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowWithSkipAssertionTru
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	sessionToken := startResponse["session_token"].(string)
-	redirectURL := startResponse["redirect_url"].(string)
+	sessionToken := startResponse["sessionToken"].(string)
+	redirectURL := startResponse["redirectUrl"].(string)
 
 	// Step 2: Simulate user authorization at GitHub
 	authCode := suite.simulateGithubAuthorization(redirectURL)
@@ -478,9 +478,9 @@ func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowWithSkipAssertionTru
 
 	// Step 3: Finish authentication with skip_assertion=true
 	finishRequest := map[string]interface{}{
-		"session_token":  sessionToken,
+		"sessionToken":  sessionToken,
 		"code":           authCode,
-		"skip_assertion": true,
+		"skipAssertion": true,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -510,7 +510,7 @@ func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowWithSkipAssertionTru
 func (suite *GithubAuthTestSuite) TestGithubAuthWithAssuranceLevelAAL1() {
 	// Step 1: Start authentication
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -528,12 +528,12 @@ func (suite *GithubAuthTestSuite) TestGithubAuthWithAssuranceLevelAAL1() {
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	sessionToken := startResponse["session_token"].(string)
-	authCode := suite.simulateGithubAuthorization(startResponse["redirect_url"].(string))
+	sessionToken := startResponse["sessionToken"].(string)
+	authCode := suite.simulateGithubAuthorization(startResponse["redirectUrl"].(string))
 
 	// Step 2: Finish authentication
 	finishRequest := map[string]interface{}{
-		"session_token": sessionToken,
+		"sessionToken": sessionToken,
 		"code":          authCode,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)

@@ -71,15 +71,15 @@ curl -kL -X POST https://localhost:8090/applications \
   -H 'Content-Type: application/json' \
   -d '{
     "name": "my-react-app",
-    "inbound_auth_config": [{
+    "inboundAuthConfig": [{
       "type": "oauth2",
       "config": {
-        "grant_types": ["authorization_code", "refresh_token"],
-        "response_types": ["code"],
-        "redirect_uris": ["http://localhost:5173"],
-        "token_endpoint_auth_method": "none",
-        "public_client": true,
-        "pkce_required": true
+        "grantTypes": ["authorization_code", "refresh_token"],
+        "responseTypes": ["code"],
+        "redirectUris": ["http://localhost:5173"],
+        "tokenEndpointAuthMethod": "none",
+        "publicClient": true,
+        "pkceRequired": true
       }
     }]
   }'

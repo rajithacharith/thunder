@@ -205,25 +205,25 @@ func (ts *AuthzTestSuite) SetupSuite() {
 	app := map[string]interface{}{
 		"name":                         appName,
 		"description":                  "Application for authorization integration tests",
-		"auth_flow_id":                 ts.authFlowID,
-		"is_registration_flow_enabled": false,
-		"allowed_user_types":           []string{"authz-test-person"},
-		"inbound_auth_config": []map[string]interface{}{
+		"authFlowId":                 ts.authFlowID,
+		"isRegistrationFlowEnabled": false,
+		"allowedUserTypes":           []string{"authz-test-person"},
+		"inboundAuthConfig": []map[string]interface{}{
 			{
 				"type": "oauth2",
 				"config": map[string]interface{}{
-					"client_id":     clientID,
-					"client_secret": clientSecret,
-					"redirect_uris": []string{redirectURI},
-					"grant_types": []string{
+					"clientId":     clientID,
+					"clientSecret": clientSecret,
+					"redirectUris": []string{redirectURI},
+					"grantTypes": []string{
 						"client_credentials",
 						"authorization_code",
 						"refresh_token",
 					},
-					"response_types": []string{
+					"responseTypes": []string{
 						"code",
 					},
-					"token_endpoint_auth_method": "client_secret_basic",
+					"tokenEndpointAuthMethod": "client_secret_basic",
 				},
 			},
 		},

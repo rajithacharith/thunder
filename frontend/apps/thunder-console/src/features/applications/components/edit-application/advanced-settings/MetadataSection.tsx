@@ -46,27 +46,27 @@ interface MetadataSectionProps {
 export default function MetadataSection({application}: MetadataSectionProps) {
   const {t} = useTranslation();
 
-  if (!application.created_at && !application.updated_at) {
+  if (!application.createdAt && !application.updatedAt) {
     return null;
   }
 
   return (
     <SettingsCard title={t('applications:edit.advanced.labels.metadata')}>
       <Stack spacing={2}>
-        {application.created_at && (
+        {application.createdAt && (
           <Box>
             <Typography variant="subtitle2" color="text.secondary">
               {t('applications:edit.advanced.labels.createdAt')}
             </Typography>
-            <Typography variant="body1">{new Date(application.created_at).toLocaleString()}</Typography>
+            <Typography variant="body1">{new Date(application.createdAt).toLocaleString()}</Typography>
           </Box>
         )}
-        {application.updated_at && (
+        {application.updatedAt && (
           <Box>
             <Typography variant="subtitle2" color="text.secondary">
               {t('applications:edit.advanced.labels.updatedAt')}
             </Typography>
-            <Typography variant="body1">{new Date(application.updated_at).toLocaleString()}</Typography>
+            <Typography variant="body1">{new Date(application.updatedAt).toLocaleString()}</Typography>
           </Box>
         )}
       </Stack>

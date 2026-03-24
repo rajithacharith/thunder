@@ -70,8 +70,8 @@ export default function AppearanceSection({application, editedApp, onFieldChange
           fullWidth
           options={themeOptions}
           getOptionLabel={(option) => (typeof option === 'string' ? option : option.displayName)}
-          value={themeOptions.find((theme) => theme.id === (editedApp.theme_id! ?? application.theme_id!)) ?? null}
-          onChange={(_event, newValue) => onFieldChange('theme_id' as keyof Application, newValue?.id ?? '')}
+          value={themeOptions.find((theme) => theme.id === (editedApp.themeId! ?? application.themeId!)) ?? null}
+          onChange={(_event, newValue) => onFieldChange('themeId' as keyof Application, newValue?.id ?? '')}
           loading={loadingThemes}
           renderInput={(params) => (
             <TextField

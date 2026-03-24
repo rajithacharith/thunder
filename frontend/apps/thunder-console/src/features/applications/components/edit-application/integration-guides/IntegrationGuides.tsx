@@ -57,7 +57,7 @@ export default function IntegrationGuides({application, oauth2Config = undefined
     <Stack spacing={4}>
       {integrationGuides ? (
         <IntegrationGuide
-          clientId={oauth2Config?.client_id ?? ''}
+          clientId={oauth2Config?.clientId ?? ''}
           applicationId={application?.id}
           integrationGuides={integrationGuides}
           templateId={application?.template ?? null}

@@ -101,7 +101,7 @@ func (ts *UserTypeResolverRuntimeTestSuite) SetupSuite() {
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{ts.testUserTypeName1, ts.testUserTypeName2},
 		AssertionConfig: map[string]interface{}{
-			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
+			"userAttributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
 

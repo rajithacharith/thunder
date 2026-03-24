@@ -23,7 +23,7 @@ import {IdentityProviderTypes} from '@/features/integrations/models/identity-pro
 
 interface PreviewMeta {
   application?: {
-    logo_url?: string;
+    logoUrl?: string;
   };
 }
 
@@ -70,7 +70,7 @@ export default function buildPreviewMock(
     category: 'DISPLAY',
     id: 'app_logo',
     resourceType: 'ELEMENT',
-    src: meta?.application?.logo_url ?? '',
+    src: meta?.application?.logoUrl ?? '',
     type: 'IMAGE',
     width: '60px',
     height: '60px',

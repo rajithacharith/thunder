@@ -37,7 +37,7 @@ export type OAuth2GrantType = 'authorization_code' | 'refresh_token' | 'client_c
  * @example
  * ```typescript
  * const config = {
- *   grant_types: [OAuth2GrantTypes.AUTHORIZATION_CODE, OAuth2GrantTypes.REFRESH_TOKEN]
+ *   grantTypes: [OAuth2GrantTypes.AUTHORIZATION_CODE, OAuth2GrantTypes.REFRESH_TOKEN]
  * };
  * ```
  */
@@ -126,7 +126,7 @@ export const TokenEndpointAuthMethods = {
  * @public
  * @remarks
  * Standard OIDC scopes include:
- * - `profile`: Name, family name, given name, middle name, nickname, preferred username, picture, website, gender, birthdate, zoneinfo, locale, updated_at
+ * - `profile`: Name, family name, given name, middle name, nickname, preferred username, picture, website, gender, birthdate, zoneinfo, locale, updatedAt
  * - `email`: Email address and email_verified flag
  * - `phone`: Phone number and phone_number_verified flag
  * - `address`: Formatted address, street address, locality, region, postal code, country
@@ -183,15 +183,15 @@ export interface ScopeClaims {
  * @public
  * @remarks
  * ID tokens are JWT tokens that contain user identity information.
- * The scope_claims mapping controls which user attributes are included
+ * The scopeClaims mapping controls which user attributes are included
  * in the ID token based on the requested OAuth2 scopes.
  *
  * @example
  * ```typescript
  * const idTokenConfig: IDTokenConfig = {
- *   validity_period: 3600,
- *   user_attributes: ['sub', 'email', 'name'],
- *   scope_claims: {
+ *   validityPeriod: 3600,
+ *   userAttributes: ['sub', 'email', 'name'],
+ *   scopeClaims: {
  *     profile: ['name', 'given_name', 'family_name', 'picture'],
  *     email: ['email', 'email_verified'],
  *     phone: ['phone_number', 'phone_number_verified']
@@ -205,7 +205,7 @@ export interface IDTokenConfig extends TokenConfig {
    * Defines which user attributes should be included in the ID token
    * for each requested scope
    */
-  scope_claims: ScopeClaims;
+  scopeClaims: ScopeClaims;
 }
 
 /**
@@ -221,14 +221,14 @@ export interface IDTokenConfig extends TokenConfig {
  * @example
  * ```typescript
  * const tokenSettings: OAuth2Token = {
- *   access_token: {
- *     validity_period: 3600,
- *     user_attributes: ['email', 'username']
+ *   accessToken: {
+ *     validityPeriod: 3600,
+ *     userAttributes: ['email', 'username']
  *   },
- *   id_token: {
- *     validity_period: 3600,
- *     user_attributes: ['sub', 'email', 'name'],
- *     scope_claims: {
+ *   idToken: {
+ *     validityPeriod: 3600,
+ *     userAttributes: ['sub', 'email', 'name'],
+ *     scopeClaims: {
  *       profile: ['name', 'picture'],
  *       email: ['email', 'email_verified']
  *     }
@@ -241,13 +241,13 @@ export interface OAuth2Token {
    * Access token configuration
    * Defines the validity period and included user attributes for access tokens
    */
-  access_token: TokenConfig;
+  accessToken: TokenConfig;
 
   /**
    * ID token configuration
    * Defines the validity period, user attributes, and scope-to-claims mapping for ID tokens
    */
-  id_token: IDTokenConfig;
+  idToken: IDTokenConfig;
 }
 
 /**
@@ -263,33 +263,33 @@ export interface OAuth2Token {
  * to define how OAuth2/OIDC authentication should work for that application.
  *
  * Key security considerations:
- * - Use `pkce_required: true` for mobile and SPA applications
- * - Set `public_client: true` only for applications that cannot securely store credentials
- * - Validate all redirect_uris to prevent open redirect vulnerabilities
+ * - Use `pkceRequired: true` for mobile and SPA applications
+ * - Set `publicClient: true` only for applications that cannot securely store credentials
+ * - Validate all redirectUris to prevent open redirect vulnerabilities
  * - Use authorization_code grant with PKCE for the most secure flow
  *
  * @example
  * ```typescript
  * // Secure web application configuration
  * const webAppConfig: OAuth2Config = {
- *   client_id: 'my-web-app',
- *   client_secret: 'super-secret-value',
- *   redirect_uris: ['https://myapp.com/callback'],
- *   grant_types: [OAuth2GrantTypes.AUTHORIZATION_CODE, OAuth2GrantTypes.REFRESH_TOKEN],
- *   response_types: [OAuth2ResponseTypes.CODE],
- *   token_endpoint_auth_method: TokenEndpointAuthMethods.CLIENT_SECRET_BASIC,
- *   pkce_required: false,
- *   public_client: false,
+ *   clientId: 'my-web-app',
+ *   clientSecret: 'super-secret-value',
+ *   redirectUris: ['https://myapp.com/callback'],
+ *   grantTypes: [OAuth2GrantTypes.AUTHORIZATION_CODE, OAuth2GrantTypes.REFRESH_TOKEN],
+ *   responseTypes: [OAuth2ResponseTypes.CODE],
+ *   tokenEndpointAuthMethod: TokenEndpointAuthMethods.CLIENT_SECRET_BASIC,
+ *   pkceRequired: false,
+ *   publicClient: false,
  *   scopes: ['openid', 'profile', 'email'],
  *   token: {
- *     access_token: {
- *       validity_period: 3600,
- *       user_attributes: ['email', 'username']
+ *     accessToken: {
+ *       validityPeriod: 3600,
+ *       userAttributes: ['email', 'username']
  *     },
- *     id_token: {
- *       validity_period: 3600,
- *       user_attributes: ['sub', 'email', 'name'],
- *       scope_claims: {
+ *     idToken: {
+ *       validityPeriod: 3600,
+ *       userAttributes: ['sub', 'email', 'name'],
+ *       scopeClaims: {
  *         profile: ['name', 'picture'],
  *         email: ['email', 'email_verified']
  *       }
@@ -299,18 +299,18 @@ export interface OAuth2Token {
  *
  * // SPA or mobile app configuration (with PKCE)
  * const spaConfig: OAuth2Config = {
- *   redirect_uris: ['http://localhost:3000/callback'],
- *   grant_types: [OAuth2GrantTypes.AUTHORIZATION_CODE, OAuth2GrantTypes.REFRESH_TOKEN],
- *   response_types: [OAuth2ResponseTypes.CODE],
- *   pkce_required: true,
- *   public_client: true,
+ *   redirectUris: ['http://localhost:3000/callback'],
+ *   grantTypes: [OAuth2GrantTypes.AUTHORIZATION_CODE, OAuth2GrantTypes.REFRESH_TOKEN],
+ *   responseTypes: [OAuth2ResponseTypes.CODE],
+ *   pkceRequired: true,
+ *   publicClient: true,
  *   scopes: ['openid', 'profile', 'email'],
  *   token: {
- *     access_token: { validity_period: 3600, user_attributes: ['email'] },
- *     id_token: {
- *       validity_period: 3600,
- *       user_attributes: ['sub', 'email'],
- *       scope_claims: { email: ['email'] }
+ *     accessToken: { validityPeriod: 3600, userAttributes: ['email'] },
+ *     idToken: {
+ *       validityPeriod: 3600,
+ *       userAttributes: ['sub', 'email'],
+ *       scopeClaims: { email: ['email'] }
  *     }
  *   }
  * };
@@ -323,7 +323,7 @@ export interface OAuth2Config {
    * Generated by the server if not provided during creation
    * @example 'my-web-app-client-id'
    */
-  client_id?: string;
+  clientId?: string;
 
   /**
    * OAuth2 client secret
@@ -332,7 +332,7 @@ export interface OAuth2Config {
    * Should be securely stored and never exposed to end users
    * @example 'super-secret-value'
    */
-  client_secret?: string;
+  clientSecret?: string;
 
   /**
    * Allowed redirect URIs
@@ -340,21 +340,21 @@ export interface OAuth2Config {
    * All URIs must be pre-registered to prevent open redirect attacks
    * @example ['https://myapp.com/callback', 'https://myapp.com/oauth/callback']
    */
-  redirect_uris?: string[];
+  redirectUris?: string[];
 
   /**
    * Allowed OAuth2 grant types
    * Defines which OAuth2 flows the application can use
    * @example [OAuth2GrantTypes.AUTHORIZATION_CODE, OAuth2GrantTypes.REFRESH_TOKEN]
    */
-  grant_types: string[];
+  grantTypes: string[];
 
   /**
    * Allowed OAuth2 response types
    * Defines what the authorization endpoint should return
    * @example [OAuth2ResponseTypes.CODE]
    */
-  response_types: string[];
+  responseTypes: string[];
 
   /**
    * Token endpoint authentication method
@@ -362,7 +362,7 @@ export interface OAuth2Config {
    * @defaultValue 'client_secret_basic'
    * @example TokenEndpointAuthMethods.CLIENT_SECRET_BASIC
    */
-  token_endpoint_auth_method?: string;
+  tokenEndpointAuthMethod?: string;
 
   /**
    * Whether PKCE (Proof Key for Code Exchange) is required
@@ -371,15 +371,15 @@ export interface OAuth2Config {
    * @defaultValue false
    * @see https://oauth.net/2/pkce/
    */
-  pkce_required?: boolean;
+  pkceRequired?: boolean;
 
   /**
    * Whether this is a public client
    * Public clients cannot securely store credentials (e.g., SPAs, mobile apps)
-   * If true, client_secret should not be used
+   * If true, clientSecret should not be used
    * @defaultValue false
    */
-  public_client?: boolean;
+  publicClient?: boolean;
 
   /**
    * OAuth2/OIDC scopes
@@ -399,7 +399,7 @@ export interface OAuth2Config {
    * User Info configuration
    * Defines which attributes are returned in the user info response
    */
-  user_info?: UserInfoConfig;
+  userInfo?: UserInfoConfig;
 }
 
 /**
@@ -414,7 +414,7 @@ export interface UserInfoConfig {
   /**
    * List of user attributes to include in the user info response
    */
-  user_attributes: string[];
+  userAttributes: string[];
 }
 
 /**
@@ -428,22 +428,22 @@ export interface UserInfoConfig {
  */
 export function getDefaultOAuthConfig(): OAuth2Config {
   return {
-    redirect_uris: [],
-    grant_types: [OAuth2GrantTypes.CLIENT_CREDENTIALS],
-    response_types: [], // Client credentials doesn't use response types
-    token_endpoint_auth_method: TokenEndpointAuthMethods.CLIENT_SECRET_BASIC,
-    pkce_required: false,
-    public_client: false,
+    redirectUris: [],
+    grantTypes: [OAuth2GrantTypes.CLIENT_CREDENTIALS],
+    responseTypes: [], // Client credentials doesn't use response types
+    tokenEndpointAuthMethod: TokenEndpointAuthMethods.CLIENT_SECRET_BASIC,
+    pkceRequired: false,
+    publicClient: false,
     scopes: ['openid', 'profile', 'email'],
     token: {
-      access_token: {
-        validity_period: 3600,
-        user_attributes: ['email', 'username'],
+      accessToken: {
+        validityPeriod: 3600,
+        userAttributes: ['email', 'username'],
       },
-      id_token: {
-        validity_period: 3600,
-        user_attributes: ['sub', 'email', 'name'],
-        scope_claims: {
+      idToken: {
+        validityPeriod: 3600,
+        userAttributes: ['sub', 'email', 'name'],
+        scopeClaims: {
           profile: ['name', 'given_name', 'family_name', 'picture'],
           email: ['email', 'email_verified'],
         },

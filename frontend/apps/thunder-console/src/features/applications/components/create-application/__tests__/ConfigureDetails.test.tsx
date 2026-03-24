@@ -40,13 +40,13 @@ vi.mock('react-i18next', () => ({
 const createTemplate = (name: string, redirectUris?: string[]): ApplicationTemplate => ({
   name,
   description: `${name} description`,
-  inbound_auth_config: [
+  inboundAuthConfig: [
     {
       type: 'oauth2',
       config: {
         ...getDefaultOAuthConfig(),
-        redirect_uris: redirectUris,
-        token_endpoint_auth_method: TokenEndpointAuthMethods.CLIENT_SECRET_BASIC,
+        redirectUris,
+        tokenEndpointAuthMethod: TokenEndpointAuthMethods.CLIENT_SECRET_BASIC,
       },
     },
   ],
@@ -155,7 +155,9 @@ describe('ConfigureDetails', () => {
       },
     );
 
-    expect(screen.queryByText('applications:onboarding.configure.details.noConfigRequired.title')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('applications:onboarding.configure.details.noConfigRequired.title'),
+    ).not.toBeInTheDocument();
     expect(screen.getByText('applications:onboarding.configure.details.passkey.title')).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText('applications:onboarding.configure.details.relyingPartyId.placeholder'),
@@ -367,10 +369,10 @@ describe('ConfigureDetails', () => {
   });
 
   it('renders user type selection when multiple user types are available', () => {
-    // Create template with empty allowed_user_types array to trigger user type selection
+    // Create template with empty allowedUserTypes array to trigger user type selection
     const template = {
       ...createTemplate('Browser App', []),
-      allowed_user_types: [], // Empty array means user types selection is required
+      allowedUserTypes: [], // Empty array means user types selection is required
     };
     const userTypes = [
       {id: 'user-type-1', name: 'Customer', ouId: 'ou-1', allowSelfRegistration: true},
@@ -395,10 +397,10 @@ describe('ConfigureDetails', () => {
   });
 
   it('calls onUserTypesChange when user type selection changes', async () => {
-    // Create template with empty allowed_user_types array to trigger user type selection
+    // Create template with empty allowedUserTypes array to trigger user type selection
     const template = {
       ...createTemplate('Browser App', []),
-      allowed_user_types: [], // Empty array means user types selection is required
+      allowedUserTypes: [], // Empty array means user types selection is required
     };
     const userTypes = [
       {id: 'user-type-1', name: 'Customer', ouId: 'ou-1', allowSelfRegistration: true},
@@ -637,9 +639,7 @@ describe('ConfigureDetails', () => {
       },
     );
 
-    const relyingPartyIdInput = screen.getByDisplayValue(
-      window.location.hostname,
-    );
+    const relyingPartyIdInput = screen.getByDisplayValue(window.location.hostname);
     const relyingPartyNameInput = screen.getByDisplayValue('Test App');
 
     expect(relyingPartyIdInput).toHaveValue(window.location.hostname);

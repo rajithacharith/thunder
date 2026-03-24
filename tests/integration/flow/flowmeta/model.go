@@ -22,7 +22,7 @@ import "encoding/json"
 
 // FlowMetadataResponse represents the aggregated metadata response from /flow/meta.
 type FlowMetadataResponse struct {
-	IsRegistrationFlowEnabled bool                 `json:"is_registration_flow_enabled"`
+	IsRegistrationFlowEnabled bool                 `json:"isRegistrationFlowEnabled"`
 	Application               *ApplicationMetadata `json:"application,omitempty"`
 	OU                        *OUMetadata          `json:"ou,omitempty"`
 	Design                    DesignMetadata       `json:"design"`
@@ -33,10 +33,10 @@ type FlowMetadataResponse struct {
 type ApplicationMetadata struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
-	LogoURL   string `json:"logo_url,omitempty"`
+	LogoURL   string `json:"logoUrl,omitempty"`
 	URL       string `json:"url,omitempty"`
-	TosURI    string `json:"tos_uri,omitempty"`
-	PolicyURI string `json:"policy_uri,omitempty"`
+	TosURI    string `json:"tosUri,omitempty"`
+	PolicyURI string `json:"policyUri,omitempty"`
 }
 
 // OUMetadata represents organization unit metadata.
@@ -45,10 +45,10 @@ type OUMetadata struct {
 	Handle          string `json:"handle,omitempty"`
 	Name            string `json:"name,omitempty"`
 	Description     string `json:"description,omitempty"`
-	LogoURL         string `json:"logo_url,omitempty"`
-	TosURI          string `json:"tos_uri,omitempty"`
-	PolicyURI       string `json:"policy_uri,omitempty"`
-	CookiePolicyURI string `json:"cookie_policy_uri,omitempty"`
+	LogoURL         string `json:"logoUrl,omitempty"`
+	TosURI          string `json:"tosUri,omitempty"`
+	PolicyURI       string `json:"policyUri,omitempty"`
+	CookiePolicyURI string `json:"cookiePolicyUri,omitempty"`
 }
 
 // DesignMetadata represents theme and layout configuration.

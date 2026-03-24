@@ -27,7 +27,7 @@ export type NotificationSenderProvider = 'twilio' | 'vonage' | 'custom';
 export interface NotificationSenderProperty {
   name: string;
   value: string;
-  is_secret?: boolean;
+  isSecret?: boolean;
 }
 
 /**

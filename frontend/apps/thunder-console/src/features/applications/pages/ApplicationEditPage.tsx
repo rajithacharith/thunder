@@ -185,7 +185,7 @@ export default function ApplicationEditPage() {
     );
   }
 
-  const oauth2Config: OAuth2Config | undefined = application.inbound_auth_config?.find(
+  const oauth2Config: OAuth2Config | undefined = application.inboundAuthConfig?.find(
     (config) => config.type === 'oauth2',
   )?.config;
 
@@ -198,10 +198,10 @@ export default function ApplicationEditPage() {
         </PageTitle.BackButton>
         <PageTitle.Avatar sx={{overflow: 'visible'}}>
           <ResourceAvatar
-            value={editedApp.logo_url ?? application.logo_url}
+            value={editedApp.logoUrl ?? application.logoUrl}
             fallbackIcon={<AppWindow />}
             editAriaLabel={t('applications:edit.page.logoUpdate.label')}
-            onSelect={(newLogoUrl: string) => setEditedApp((prev) => ({...prev, logo_url: newLogoUrl}))}
+            onSelect={(newLogoUrl: string) => setEditedApp((prev) => ({...prev, logoUrl: newLogoUrl}))}
           />
         </PageTitle.Avatar>
         <PageTitle.Header>

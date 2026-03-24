@@ -34,8 +34,8 @@ describe('UrlsSection', () => {
     name: 'Test Application',
     description: 'Test Description',
     template: 'custom',
-    tos_uri: 'https://example.com/terms',
-    policy_uri: 'https://example.com/privacy',
+    tosUri: 'https://example.com/terms',
+    policyUri: 'https://example.com/privacy',
   } as Application;
 
   const mockOnFieldChange = vi.fn();
@@ -87,8 +87,8 @@ describe('UrlsSection', () => {
 
     it('should prioritize editedApp URLs over application', () => {
       const editedApp = {
-        tos_uri: 'https://edited.com/terms',
-        policy_uri: 'https://edited.com/privacy',
+        tosUri: 'https://edited.com/terms',
+        policyUri: 'https://edited.com/privacy',
       };
 
       render(<UrlsSection application={mockApplication} editedApp={editedApp} onFieldChange={mockOnFieldChange} />);
@@ -102,8 +102,8 @@ describe('UrlsSection', () => {
 
     it('should display empty strings when URLs are not provided', () => {
       const appWithoutUrls = {...mockApplication};
-      delete (appWithoutUrls as Partial<Application>).tos_uri;
-      delete (appWithoutUrls as Partial<Application>).policy_uri;
+      delete (appWithoutUrls as Partial<Application>).tosUri;
+      delete (appWithoutUrls as Partial<Application>).policyUri;
 
       render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -118,7 +118,7 @@ describe('UrlsSection', () => {
   describe('URL Validation', () => {
     it('should show error for invalid ToS URL', async () => {
       const user = userEvent.setup({delay: null});
-      const appWithoutUrls = {...mockApplication, tos_uri: '', policy_uri: ''};
+      const appWithoutUrls = {...mockApplication, tosUri: '', policyUri: ''};
 
       render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -133,7 +133,7 @@ describe('UrlsSection', () => {
 
     it('should show error for invalid Policy URL', async () => {
       const user = userEvent.setup({delay: null});
-      const appWithoutUrls = {...mockApplication, tos_uri: '', policy_uri: ''};
+      const appWithoutUrls = {...mockApplication, tosUri: '', policyUri: ''};
 
       render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -148,7 +148,7 @@ describe('UrlsSection', () => {
 
     it('should not show error for valid ToS URL', async () => {
       const user = userEvent.setup({delay: null});
-      const appWithoutUrls = {...mockApplication, tos_uri: '', policy_uri: ''};
+      const appWithoutUrls = {...mockApplication, tosUri: '', policyUri: ''};
 
       render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -180,7 +180,7 @@ describe('UrlsSection', () => {
   describe('User Input', () => {
     it('should accept valid ToS URL input', async () => {
       const user = userEvent.setup({delay: null});
-      const appWithoutUrls = {...mockApplication, tos_uri: '', policy_uri: ''};
+      const appWithoutUrls = {...mockApplication, tosUri: '', policyUri: ''};
 
       render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -193,7 +193,7 @@ describe('UrlsSection', () => {
 
     it('should accept valid Policy URL input', async () => {
       const user = userEvent.setup({delay: null});
-      const appWithoutUrls = {...mockApplication, tos_uri: '', policy_uri: ''};
+      const appWithoutUrls = {...mockApplication, tosUri: '', policyUri: ''};
 
       render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -208,8 +208,8 @@ describe('UrlsSection', () => {
   describe('Edge Cases', () => {
     it('should handle missing URLs in application', () => {
       const appWithoutUrls = {...mockApplication};
-      delete (appWithoutUrls as Partial<Application>).tos_uri;
-      delete (appWithoutUrls as Partial<Application>).policy_uri;
+      delete (appWithoutUrls as Partial<Application>).tosUri;
+      delete (appWithoutUrls as Partial<Application>).policyUri;
 
       render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
@@ -219,7 +219,7 @@ describe('UrlsSection', () => {
 
     it('should validate URLs with different protocols', async () => {
       const user = userEvent.setup({delay: null});
-      const appWithoutUrls = {...mockApplication, tos_uri: '', policy_uri: ''};
+      const appWithoutUrls = {...mockApplication, tosUri: '', policyUri: ''};
 
       render(<UrlsSection application={appWithoutUrls} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 

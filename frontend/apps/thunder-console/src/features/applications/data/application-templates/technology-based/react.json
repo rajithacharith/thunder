@@ -3,27 +3,27 @@
   "displayName": "React",
   "name": "React Application",
   "description": "Single Page Application built with React",
-  "inbound_auth_config": [
+  "inboundAuthConfig": [
     {
       "type": "oauth2",
       "config": {
-        "grant_types": [
+        "grantTypes": [
           "authorization_code",
           "refresh_token"
         ],
-        "response_types": [
+        "responseTypes": [
           "code"
         ],
-        "redirect_uris": [
+        "redirectUris": [
           "http://localhost:5173"
         ],
-        "pkce_required": true,
-        "token_endpoint_auth_method": "none",
-        "public_client": true
+        "pkceRequired": true,
+        "tokenEndpointAuthMethod": "none",
+        "publicClient": true
       }
     }
   ],
-  "allowed_user_types": [],
+  "allowedUserTypes": [],
   "integration_guides": {
     "INBUILT": {
       "llm_prompt": {

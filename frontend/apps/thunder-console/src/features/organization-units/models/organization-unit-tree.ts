@@ -41,7 +41,7 @@ import type {OrganizationUnit} from './organization-unit';
  * };
  * ```
  */
-export interface OrganizationUnitTreeItem extends Pick<OrganizationUnit, 'id' | 'handle' | 'description' | 'logo_url'> {
+export interface OrganizationUnitTreeItem extends Pick<OrganizationUnit, 'id' | 'handle' | 'description' | 'logoUrl'> {
   /**
    * Display label shown in the tree view
    * @example 'Engineering'

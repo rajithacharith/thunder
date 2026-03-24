@@ -91,10 +91,10 @@ describe('EditTokenSettings', () => {
   const mockApplication: Application = {
     id: 'app-123',
     name: 'Test App',
-    allowed_user_types: ['default'],
+    allowedUserTypes: ['default'],
     token: {
-      validity_period: 3600,
-      user_attributes: ['email'],
+      validityPeriod: 3600,
+      userAttributes: ['email'],
     },
   } as Application;
 
@@ -139,13 +139,13 @@ describe('EditTokenSettings', () => {
   describe.skip('OAuth2/OIDC Mode - SKIPPED: Component hangs due to async operations', () => {
     const mockOAuth2Config: OAuth2Config = {
       token: {
-        access_token: {
-          validity_period: 1800,
-          user_attributes: ['sub', 'email'],
+        accessToken: {
+          validityPeriod: 1800,
+          userAttributes: ['sub', 'email'],
         },
-        id_token: {
-          validity_period: 3600,
-          user_attributes: ['sub', 'name', 'email'],
+        idToken: {
+          validityPeriod: 3600,
+          userAttributes: ['sub', 'name', 'email'],
         },
       },
     } as OAuth2Config;
@@ -233,10 +233,10 @@ describe('EditTokenSettings', () => {
       expect(container).toBeTruthy();
     });
 
-    it('should handle empty allowed_user_types array', () => {
+    it('should handle empty allowedUserTypes array', () => {
       const appWithoutUserTypes = {
         ...mockApplication,
-        allowed_user_types: [],
+        allowedUserTypes: [],
       };
 
       const {container} = render(
@@ -251,8 +251,8 @@ describe('EditTokenSettings', () => {
     it('should render all sections for OAuth mode', () => {
       const mockOAuth2Config: OAuth2Config = {
         token: {
-          access_token: {validity_period: 1800, user_attributes: []},
-          id_token: {validity_period: 3600, user_attributes: []},
+          accessToken: {validityPeriod: 1800, userAttributes: []},
+          idToken: {validityPeriod: 3600, userAttributes: []},
         },
       } as unknown as OAuth2Config;
 
@@ -285,7 +285,7 @@ describe('EditTokenSettings', () => {
     it('should render User Info section with Inherit checkbox checked by default (No UserInfo Config)', () => {
       const mockConfig = {
         token: {
-          id_token: {user_attributes: idTokenAttrs},
+          idToken: {userAttributes: idTokenAttrs},
         },
       } as OAuth2Config;
 
@@ -300,10 +300,10 @@ describe('EditTokenSettings', () => {
     it('should verify "Inherited" state (Checked) when explicit UserInfo attributes MATCH ID Token attributes', () => {
       const mockConfig = {
         token: {
-          id_token: {user_attributes: idTokenAttrs},
+          idToken: {userAttributes: idTokenAttrs},
         },
-        user_info: {
-          user_attributes: ['sub', 'email'], // Explicit but Match
+        userInfo: {
+          userAttributes: ['sub', 'email'], // Explicit but Match
         },
       } as OAuth2Config;
 
@@ -316,10 +316,10 @@ describe('EditTokenSettings', () => {
     it('should verify "Custom" state (Unchecked) when UserInfo attributes DIFFER from ID Token attributes', () => {
       const mockConfig = {
         token: {
-          id_token: {user_attributes: idTokenAttrs},
+          idToken: {userAttributes: idTokenAttrs},
         },
-        user_info: {
-          user_attributes: ['sub', 'email', 'phone'], // Different
+        userInfo: {
+          userAttributes: ['sub', 'email', 'phone'], // Different
         },
       } as OAuth2Config;
 

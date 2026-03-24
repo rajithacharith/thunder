@@ -40,12 +40,12 @@ describe('Organization Unit Tree Models', () => {
         handle: 'engineering',
         description: 'Software engineering team',
         isPlaceholder: false,
-        logo_url: 'https://example.com/logo.png',
+        logoUrl: 'https://example.com/logo.png',
       };
 
       expect(item.description).toBe('Software engineering team');
       expect(item.isPlaceholder).toBe(false);
-      expect(item.logo_url).toBe('https://example.com/logo.png');
+      expect(item.logoUrl).toBe('https://example.com/logo.png');
     });
 
     it('should accept nested children', () => {

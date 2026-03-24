@@ -68,20 +68,20 @@ func (ts *TokenTestSuite) createTestApplication(authMethod string) string {
 	app := map[string]interface{}{
 		"name":                         appName,
 		"description":                  "Application for token integration tests",
-		"is_registration_flow_enabled": false,
-		"inbound_auth_config": []map[string]interface{}{
+		"isRegistrationFlowEnabled": false,
+		"inboundAuthConfig": []map[string]interface{}{
 			{
 				"type": "oauth2",
 				"config": map[string]interface{}{
-					"client_id":     clientId,
-					"client_secret": clientSecret,
-					"redirect_uris": []string{"https://localhost:3000"},
-					"grant_types": []string{
+					"clientId":     clientId,
+					"clientSecret": clientSecret,
+					"redirectUris": []string{"https://localhost:3000"},
+					"grantTypes": []string{
 						"client_credentials",
 						"authorization_code",
 						"refresh_token",
 					},
-					"token_endpoint_auth_method": authMethod,
+					"tokenEndpointAuthMethod": authMethod,
 				},
 			},
 		},

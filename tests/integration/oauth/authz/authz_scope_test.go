@@ -133,8 +133,8 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 
 	// Create user with role
 	userWithRole := testutils.User{
-		OUID:             scopeTestOUID,
-		Type:             "authz-test-person",
+		OUID: scopeTestOUID,
+		Type: "authz-test-person",
 		Attributes: json.RawMessage(`{
 			"username": "oauth_authorized_user",
 			"password": "SecurePass123!",
@@ -150,8 +150,8 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 
 	// Create user without role
 	userNoRole := testutils.User{
-		OUID:             scopeTestOUID,
-		Type:             "authz-test-person",
+		OUID: scopeTestOUID,
+		Type: "authz-test-person",
 		Attributes: json.RawMessage(`{
 			"username": "oauth_unauthorized_user",
 			"password": "SecurePass123!",
@@ -167,8 +167,8 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 
 	// Create user to be assigned to the authz group
 	userWithGroup := testutils.User{
-		OUID:             scopeTestOUID,
-		Type:             "authz-test-person",
+		OUID: scopeTestOUID,
+		Type: "authz-test-person",
 		Attributes: json.RawMessage(`{
 			"username": "oauth_authorized_group_user",
 			"password": "SecurePass123!",
@@ -184,9 +184,9 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 
 	// Create group and assign user to group
 	group := testutils.Group{
-		Name:               "OAuth_DocumentEditors",
-		Description:        "Group for document editors (OAuth test)",
-		OUID:               scopeTestOUID,
+		Name:        "OAuth_DocumentEditors",
+		Description: "Group for document editors (OAuth test)",
+		OUID:        scopeTestOUID,
 		Members: []testutils.Member{
 			{
 				Id:   scopeUserWithGroup,
@@ -201,10 +201,10 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 
 	// Create resource server with actions for permissions
 	resourceServer := testutils.ResourceServer{
-		Name:               "OAuth Document Management System",
-		Description:        "System for managing documents via OAuth",
-		Identifier:         "oauth-document-mgmt",
-		OUID:               scopeTestOUID,
+		Name:        "OAuth Document Management System",
+		Description: "System for managing documents via OAuth",
+		Identifier:  "oauth-document-mgmt",
+		OUID:        scopeTestOUID,
 	}
 	actions := []testutils.Action{
 		{
@@ -225,9 +225,9 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 
 	// Create role with permissions and assign to first user
 	role := testutils.Role{
-		Name:               "OAuth_DocumentEditor",
-		Description:        "Can read and write documents (OAuth test)",
-		OUID:               scopeTestOUID,
+		Name:        "OAuth_DocumentEditor",
+		Description: "Can read and write documents (OAuth test)",
+		OUID:        scopeTestOUID,
 		Permissions: []testutils.ResourcePermissions{
 			{
 				ResourceServerID: scopeTestResourceServer,
@@ -404,21 +404,21 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithNoAuthorizedScopes() 
 // createOAuthApplication creates an OAuth application using the low-level API
 func (ts *OAuthAuthzScopeTestSuite) createOAuthApplication(authFlowID string) (string, error) {
 	app := map[string]interface{}{
-		"name":                         scopeTestAppName,
-		"description":                  "OAuth application for scope authorization testing",
-		"auth_flow_id":                 authFlowID,
-		"is_registration_flow_enabled": false,
-		"allowed_user_types":           []string{"authz-test-person"},
-		"inbound_auth_config": []map[string]interface{}{
+		"name":                      scopeTestAppName,
+		"description":               "OAuth application for scope authorization testing",
+		"authFlowId":                authFlowID,
+		"isRegistrationFlowEnabled": false,
+		"allowedUserTypes":          []string{"authz-test-person"},
+		"inboundAuthConfig": []map[string]interface{}{
 			{
 				"type": "oauth2",
 				"config": map[string]interface{}{
-					"client_id":                  scopeTestClientID,
-					"client_secret":              scopeTestClientSecret,
-					"redirect_uris":              []string{scopeTestRedirectURI},
-					"grant_types":                []string{"authorization_code", "refresh_token"},
-					"response_types":             []string{"code"},
-					"token_endpoint_auth_method": "client_secret_post",
+					"clientId":                scopeTestClientID,
+					"clientSecret":            scopeTestClientSecret,
+					"redirectUris":            []string{scopeTestRedirectURI},
+					"grantTypes":              []string{"authorization_code", "refresh_token"},
+					"responseTypes":           []string{"code"},
+					"tokenEndpointAuthMethod": "client_secret_post",
 				},
 			},
 		},
@@ -552,32 +552,32 @@ func (ts *OAuthAuthzScopeTestSuite) createTestAuthenticationFlow() string {
 func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithRequiredAttributes() {
 	// Create OAuth app with IDToken and AccessToken configs
 	appConfig := map[string]interface{}{
-		"name":                       "RequiredAttributesTestApp",
-		"client_id":                  "required_attrs_test_client",
-		"redirect_uris":              []string{scopeTestRedirectURI},
-		"grant_types":                []string{"authorization_code", "refresh_token"},
-		"response_types":             []string{"code"},
-		"token_endpoint_auth_method": "client_secret_basic",
-		"auth_flow_id":               ts.flowID,
-		"inbound_auth_config": []map[string]interface{}{
+		"name":                    "RequiredAttributesTestApp",
+		"clientId":                "required_attrs_test_client",
+		"redirectUris":            []string{scopeTestRedirectURI},
+		"grantTypes":              []string{"authorization_code", "refresh_token"},
+		"responseTypes":           []string{"code"},
+		"tokenEndpointAuthMethod": "client_secret_basic",
+		"authFlowId":              ts.flowID,
+		"inboundAuthConfig": []map[string]interface{}{
 			{
 				"type": "oauth2",
 				"config": map[string]interface{}{
-					"client_id":                  "required_attrs_test_client",
-					"client_secret":              "required_attrs_test_secret",
-					"redirect_uris":              []string{scopeTestRedirectURI},
-					"grant_types":                []string{"authorization_code", "refresh_token"},
-					"response_types":             []string{"code"},
-					"token_endpoint_auth_method": "client_secret_basic",
+					"clientId":                "required_attrs_test_client",
+					"clientSecret":            "required_attrs_test_secret",
+					"redirectUris":            []string{scopeTestRedirectURI},
+					"grantTypes":              []string{"authorization_code", "refresh_token"},
+					"responseTypes":           []string{"code"},
+					"tokenEndpointAuthMethod": "client_secret_basic",
 					"token": map[string]interface{}{
-						"id_token": map[string]interface{}{
-							"user_attributes": []string{"sub", "name", "email"}, // Only allow these in ID token
+						"idToken": map[string]interface{}{
+							"userAttributes": []string{"sub", "name", "email"}, // Only allow these in ID token
 						},
-						"access_token": map[string]interface{}{
-							"user_attributes": []string{"groups", "roles"}, // Access token attributes
+						"accessToken": map[string]interface{}{
+							"userAttributes": []string{"groups", "roles"}, // Access token attributes
 						},
 					},
-					"scope_claims": map[string]interface{}{
+					"scopeClaims": map[string]interface{}{
 						"profile": []string{"name"}, // Custom mapping
 					},
 				},
@@ -606,9 +606,9 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithRequiredAttributes() 
 	}`
 
 	user := testutils.User{
-		OUID:             scopeTestOUID,
-		Type:             "authz-test-person",
-		Attributes:       json.RawMessage(userAttributesJSON),
+		OUID:       scopeTestOUID,
+		Type:       "authz-test-person",
+		Attributes: json.RawMessage(userAttributesJSON),
 	}
 
 	userID, err := testutils.CreateUser(user)

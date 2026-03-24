@@ -3,16 +3,16 @@
   "displayName": "Backend",
   "name": "Backend Application",
   "description": "Machine-to-machine backend service",
-  "inbound_auth_config": [
+  "inboundAuthConfig": [
     {
       "type": "oauth2",
       "config": {
-        "grant_types": [
+        "grantTypes": [
           "client_credentials"
         ],
-        "pkce_required": false,
-        "token_endpoint_auth_method": "client_secret_basic",
-        "public_client": false
+        "pkceRequired": false,
+        "tokenEndpointAuthMethod": "client_secret_basic",
+        "publicClient": false
       }
     }
   ]

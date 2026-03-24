@@ -469,12 +469,12 @@ describe('ConfigureStack', () => {
     renderWithContext(
       {
         oauthConfig: {
-          public_client: true,
-          pkce_required: true,
-          grant_types: ['authorization_code'],
-          response_types: ['code'],
-          redirect_uris: ['http://localhost:3000/callback'],
-          token_endpoint_auth_method: 'none',
+          publicClient: true,
+          pkceRequired: true,
+          grantTypes: ['authorization_code'],
+          responseTypes: ['code'],
+          redirectUris: ['http://localhost:3000/callback'],
+          tokenEndpointAuthMethod: 'none',
           scopes: ['openid', 'profile'],
         },
         onOAuthConfigChange: mockOnOAuthConfigChange,
@@ -590,11 +590,11 @@ describe('ConfigureStack', () => {
 
     expect(mockOnOAuthConfigChange).toHaveBeenCalledWith(
       expect.objectContaining({
-        public_client: expect.any(Boolean) as boolean,
-        pkce_required: expect.any(Boolean) as boolean,
-        grant_types: expect.any(Array) as string[],
-        response_types: expect.any(Array) as string[],
-        redirect_uris: expect.any(Array) as string[],
+        publicClient: expect.any(Boolean) as boolean,
+        pkceRequired: expect.any(Boolean) as boolean,
+        grantTypes: expect.any(Array) as string[],
+        responseTypes: expect.any(Array) as string[],
+        redirectUris: expect.any(Array) as string[],
         scopes: ['openid', 'profile', 'email'],
       }),
     );
@@ -711,7 +711,7 @@ describe('ConfigureStack', () => {
   });
 
   describe('OAuth config template handling', () => {
-    it('should handle template with empty redirect_uris', () => {
+    it('should handle template with empty redirectUris', () => {
       const mockOnOAuthConfigChange = vi.fn();
 
       renderWithContext(
@@ -725,12 +725,12 @@ describe('ConfigureStack', () => {
 
       expect(mockOnOAuthConfigChange).toHaveBeenCalledWith(
         expect.objectContaining({
-          redirect_uris: expect.any(Array) as string[],
+          redirectUris: expect.any(Array) as string[],
         }),
       );
     });
 
-    it('should handle template with response_types', () => {
+    it('should handle template with responseTypes', () => {
       const mockOnOAuthConfigChange = vi.fn();
 
       renderWithContext(
@@ -744,7 +744,7 @@ describe('ConfigureStack', () => {
 
       expect(mockOnOAuthConfigChange).toHaveBeenCalledWith(
         expect.objectContaining({
-          response_types: expect.any(Array) as string[],
+          responseTypes: expect.any(Array) as string[],
         }),
       );
     });

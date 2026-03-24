@@ -216,10 +216,10 @@ curl -k -X GET "https://localhost:8090/applications/<console-application-id>"
 
 💡 **Note**: Replace `<console-application-id>` with the actual application ID (e.g., `6100bc91-ba99-4ce9-87dd-6d4d80178c38`) obtained from the previous step. The `-k` flag allows curl to work with self-signed SSL certificates in development.
 
-3. Copy the response from step 2 and update the `redirect_uris` in the JSON object to include the local development URL (ex: https://localhost:5191/console). Locate the `inbound_auth_config > config` section and modify the `redirect_uris` array:
+3. Copy the response from step 2 and update the `redirectUris` in the JSON object to include the local development URL (ex: https://localhost:5191/console). Locate the `inboundAuthConfig > config` section and modify the `redirectUris` array:
 
 ```json
-"redirect_uris": [
+"redirectUris": [
   "https://localhost:8090/console",
   "https://localhost:5191/console"
 ]

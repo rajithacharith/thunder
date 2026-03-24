@@ -449,7 +449,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 							req.Name == "Finance &lt;script&gt;" &&
 							req.Description == "desc"
 					})).
-					Return(OrganizationUnit{ID: "ou-1", Handle: "finance"}, nil).
+					Return(OrganizationUnit{ID: "ou-1", Name: "Finance &lt;script&gt;"}, nil).
 					Once()
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
@@ -465,9 +465,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			body: `{
 				"handle": "finance",
 				"name": "` + testOUNameFinance + `",
-				"theme_id": "theme-123",
-				"layout_id": "layout-456",
-				"logo_url": "https://example.com/logo.png"
+				"themeId": "theme-123",
+				"layoutId": "layout-456",
+				"logoUrl": "https://example.com/logo.png"
 			}`,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
@@ -504,9 +504,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			body: `{
 				"handle": "finance",
 				"name": "` + testOUNameFinance + `",
-				"tos_uri": "https://example.com/tos",
-				"policy_uri": "https://example.com/privacy",
-				"cookie_policy_uri": "https://example.com/cookie-policy"
+				"tosUri": "https://example.com/tos",
+				"policyUri": "https://example.com/privacy",
+				"cookiePolicyUri": "https://example.com/cookie-policy"
 			}`,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.
@@ -839,9 +839,9 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 			body: `{
 				"handle": "finance",
 				"name": "` + testOUNameFinance + `",
-				"theme_id": "theme-new",
-				"layout_id": "layout-new",
-				"logo_url": "https://example.com/new-logo.png"
+				"themeId": "theme-new",
+				"layoutId": "layout-new",
+				"logoUrl": "https://example.com/new-logo.png"
 			}`,
 			setJSONHeader:  true,
 			pathParamKey:   "id",

@@ -206,7 +206,7 @@ func (suite *OAuthAuthTestSuite) TearDownSuite() {
 func (suite *OAuthAuthTestSuite) TestOAuthAuthStartSuccess() {
 	// Start authentication
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -227,10 +227,10 @@ func (suite *OAuthAuthTestSuite) TestOAuthAuthStartSuccess() {
 	suite.Require().NoError(err)
 
 	// Verify response contains redirect_url and session_token
-	suite.Contains(startResponse, "redirect_url")
-	suite.Contains(startResponse, "session_token")
+	suite.Contains(startResponse, "redirectUrl")
+	suite.Contains(startResponse, "sessionToken")
 
-	redirectURL, ok := startResponse["redirect_url"].(string)
+	redirectURL, ok := startResponse["redirectUrl"].(string)
 	suite.Require().True(ok)
 	suite.Contains(redirectURL, suite.mockOAuthServer.GetURL())
 	suite.Contains(redirectURL, "client_id=test-oauth-client")
@@ -238,7 +238,7 @@ func (suite *OAuthAuthTestSuite) TestOAuthAuthStartSuccess() {
 
 func (suite *OAuthAuthTestSuite) TestOAuthAuthStartInvalidIDPID() {
 	startRequest := map[string]interface{}{
-		"idp_id": "invalid-idp-id",
+		"idpId": "invalid-idp-id",
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -280,7 +280,7 @@ func (suite *OAuthAuthTestSuite) TestOAuthAuthStartMissingIDPID() {
 
 func (suite *OAuthAuthTestSuite) TestOAuthAuthCompleteFlowSuccess() {
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -300,14 +300,14 @@ func (suite *OAuthAuthTestSuite) TestOAuthAuthCompleteFlowSuccess() {
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	sessionToken := startResponse["session_token"].(string)
-	redirectURL := startResponse["redirect_url"].(string)
+	sessionToken := startResponse["sessionToken"].(string)
+	redirectURL := startResponse["redirectUrl"].(string)
 
 	authCode := suite.simulateOAuthAuthorization(redirectURL)
 	suite.Require().NotEmpty(authCode)
 
 	finishRequest := map[string]interface{}{
-		"session_token": sessionToken,
+		"sessionToken": sessionToken,
 		"code":          authCode,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
@@ -336,7 +336,7 @@ func (suite *OAuthAuthTestSuite) TestOAuthAuthCompleteFlowSuccess() {
 
 func (suite *OAuthAuthTestSuite) TestOAuthAuthFinishInvalidSessionToken() {
 	finishRequest := map[string]interface{}{
-		"session_token": "invalid-session-token",
+		"sessionToken": "invalid-session-token",
 		"code":          "some-auth-code",
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
@@ -356,7 +356,7 @@ func (suite *OAuthAuthTestSuite) TestOAuthAuthFinishInvalidSessionToken() {
 
 func (suite *OAuthAuthTestSuite) TestOAuthAuthFinishMissingCode() {
 	finishRequest := map[string]interface{}{
-		"session_token": "some-session-token",
+		"sessionToken": "some-session-token",
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -376,7 +376,7 @@ func (suite *OAuthAuthTestSuite) TestOAuthAuthFinishMissingCode() {
 func (suite *OAuthAuthTestSuite) TestOAuthAuthFinishWithError() {
 	// Start authentication to get a session token
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -394,11 +394,11 @@ func (suite *OAuthAuthTestSuite) TestOAuthAuthFinishWithError() {
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	sessionToken := startResponse["session_token"].(string)
+	sessionToken := startResponse["sessionToken"].(string)
 
 	// Try to finish with error parameter instead of code
 	finishRequest := map[string]interface{}{
-		"session_token":     sessionToken,
+		"sessionToken":     sessionToken,
 		"error":             "access_denied",
 		"error_description": "User denied access",
 	}
@@ -419,7 +419,7 @@ func (suite *OAuthAuthTestSuite) TestOAuthAuthFinishWithError() {
 // TestOAuthAuthCompleteFlowWithSkipAssertionFalse tests complete OAuth flow with skip_assertion=false
 func (suite *OAuthAuthTestSuite) TestOAuthAuthCompleteFlowWithSkipAssertionFalse() {
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -439,16 +439,16 @@ func (suite *OAuthAuthTestSuite) TestOAuthAuthCompleteFlowWithSkipAssertionFalse
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	sessionToken := startResponse["session_token"].(string)
-	redirectURL := startResponse["redirect_url"].(string)
+	sessionToken := startResponse["sessionToken"].(string)
+	redirectURL := startResponse["redirectUrl"].(string)
 
 	authCode := suite.simulateOAuthAuthorization(redirectURL)
 	suite.Require().NotEmpty(authCode)
 
 	finishRequest := map[string]interface{}{
-		"session_token":  sessionToken,
+		"sessionToken":  sessionToken,
 		"code":           authCode,
-		"skip_assertion": false,
+		"skipAssertion": false,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -477,7 +477,7 @@ func (suite *OAuthAuthTestSuite) TestOAuthAuthCompleteFlowWithSkipAssertionFalse
 // TestOAuthAuthCompleteFlowWithSkipAssertionTrue tests complete OAuth flow with skip_assertion=true
 func (suite *OAuthAuthTestSuite) TestOAuthAuthCompleteFlowWithSkipAssertionTrue() {
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -497,16 +497,16 @@ func (suite *OAuthAuthTestSuite) TestOAuthAuthCompleteFlowWithSkipAssertionTrue(
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	sessionToken := startResponse["session_token"].(string)
-	redirectURL := startResponse["redirect_url"].(string)
+	sessionToken := startResponse["sessionToken"].(string)
+	redirectURL := startResponse["redirectUrl"].(string)
 
 	authCode := suite.simulateOAuthAuthorization(redirectURL)
 	suite.Require().NotEmpty(authCode)
 
 	finishRequest := map[string]interface{}{
-		"session_token":  sessionToken,
+		"sessionToken":  sessionToken,
 		"code":           authCode,
-		"skip_assertion": true,
+		"skipAssertion": true,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)
 	suite.Require().NoError(err)
@@ -536,7 +536,7 @@ func (suite *OAuthAuthTestSuite) TestOAuthAuthCompleteFlowWithSkipAssertionTrue(
 func (suite *OAuthAuthTestSuite) TestOAuthAuthWithAssuranceLevelAAL1() {
 	// Step 1: Start authentication
 	startRequest := map[string]interface{}{
-		"idp_id": suite.idpID,
+		"idpId": suite.idpID,
 	}
 	startRequestJSON, err := json.Marshal(startRequest)
 	suite.Require().NoError(err)
@@ -554,12 +554,12 @@ func (suite *OAuthAuthTestSuite) TestOAuthAuthWithAssuranceLevelAAL1() {
 	err = json.NewDecoder(resp.Body).Decode(&startResponse)
 	suite.Require().NoError(err)
 
-	sessionToken := startResponse["session_token"].(string)
-	authCode := suite.simulateOAuthAuthorization(startResponse["redirect_url"].(string))
+	sessionToken := startResponse["sessionToken"].(string)
+	authCode := suite.simulateOAuthAuthorization(startResponse["redirectUrl"].(string))
 
 	// Step 2: Finish authentication
 	finishRequest := map[string]interface{}{
-		"session_token": sessionToken,
+		"sessionToken": sessionToken,
 		"code":          authCode,
 	}
 	finishRequestJSON, err := json.Marshal(finishRequest)

@@ -189,8 +189,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/IDPAuthInitResponse'
               example:
-                redirect_url: "https://accounts.google.com/o/oauth2/auth?client_id=your-client-id&response_type=code&scope=openid%20email%20profile&redirect_uri=https://yourapp.com/callback"
-                session_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                redirectUrl: "https://accounts.google.com/o/oauth2/auth?client_id=your-client-id&response_type=code&scope=openid%20email%20profile&redirect_uri=https://yourapp.com/callback"
+                sessionToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         "400":
           description: 'Bad Request: The request body is malformed or contains invalid data.'
           content:
@@ -266,8 +266,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/IDPAuthInitResponse'
               example:
-                redirect_url: "https://github.com/login/oauth/authorize?client_id=your-client-id&redirect_uri=https://yourapp.com/callback&scope=user"
-                session_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                redirectUrl: "https://github.com/login/oauth/authorize?client_id=your-client-id&redirect_uri=https://yourapp.com/callback&scope=user"
+                sessionToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         "400":
           description: 'Bad Request: The request body is malformed or contains invalid data.'
           content:
@@ -343,8 +343,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/IDPAuthInitResponse'
               example:
-                redirect_url: "https://your-idp.com/oauth2/authorize?client_id=your-client-id&response_type=code&scope=openid%20email%20profile&redirect_uri=https://yourapp.com/callback"
-                session_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                redirectUrl: "https://your-idp.com/oauth2/authorize?client_id=your-client-id&response_type=code&scope=openid%20email%20profile&redirect_uri=https://yourapp.com/callback"
+                sessionToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         "400":
           description: 'Bad Request: The request body is malformed or contains invalid data.'
           content:
@@ -537,7 +537,7 @@ components:
           additionalProperties: true
           example:
             password: "SecurePassword123!"
-        skip_assertion:
+        skipAssertion:
           type: boolean
           description: Skip generating assertion token in the response
           default: false
@@ -554,7 +554,7 @@ components:
     SendOtpAuthRequest:
       type: object
       properties:
-        sender_id:
+        senderId:
           type: string
           description: ID of the message notification sender to use
           example: "550e8400-e29b-41d4-a716-446655440000"
@@ -563,7 +563,7 @@ components:
           description: Recipient's mobile number
           example: "+1234567890"
       required:
-        - sender_id
+        - senderId
         - recipient
 
     SendOtpAuthResponse:
@@ -573,7 +573,7 @@ components:
           type: string
           description: Status of the OTP send request
           example: "SUCCESS"
-        session_token:
+        sessionToken:
           type: string
           description: JWT token for the authentication session
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -581,7 +581,7 @@ components:
     VerifyOtpAuthRequest:
       type: object
       properties:
-        session_token:
+        sessionToken:
           type: string
           description: JWT token for the OTP session
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -589,7 +589,7 @@ components:
           type: string
           description: The OTP code received by the user
           example: "123456"
-        skip_assertion:
+        skipAssertion:
           type: boolean
           description: Skip generating assertion token in the response
           default: false
@@ -599,7 +599,7 @@ components:
           description: Optional existing JWT assertion token to enrich with new authentication
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
       required:
-        - session_token
+        - sessionToken
         - otp
     
     AuthenticationResponse:
@@ -624,9 +624,9 @@ components:
     IDPAuthInitRequest:
       type: object
       required:
-        - idp_id
+        - idpId
       properties:
-        idp_id:
+        idpId:
           type: string
           description: Identity provider ID
           example: "550e8400-e29b-41d4-a716-446655440000"
@@ -634,11 +634,11 @@ components:
     IDPAuthInitResponse:
       type: object
       properties:
-        redirect_url:
+        redirectUrl:
           type: string
           description: URL to redirect the user for authentication
           example: "https://accounts.google.com/o/oauth2/auth?client_id=your-client-id&response_type=code&scope=openid%20email%20profile&redirect_uri=https://yourapp.com/callback"
-        session_token:
+        sessionToken:
           type: string
           description: JWT token for the authentication session
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -646,17 +646,17 @@ components:
     IDPAuthFinishRequest:
       type: object
       required:
-        - session_token
+        - sessionToken
         - code
       properties:
-        session_token:
+        sessionToken:
           type: string
           description: JWT token for the authentication session
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         code:
           type: string
           description: Authorization code received from the identity provider
-        skip_assertion:
+        skipAssertion:
           type: boolean
           description: Skip generating assertion token in the response
           default: false
@@ -740,13 +740,13 @@ components:
                 id: "AdC-ff_z-Z1gY2s6e_2A-g"
                 transports: ["internal", "hybrid"]
             userVerification: "preferred"
-        session_token:
+        sessionToken:
           type: string
           description: JWT token for the WebAuthn authentication session
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
       required:
         - publicKeyCredentialRequestOptions
-        - session_token
+        - sessionToken
 
     WebAuthnFinishRequest:
       type: object
@@ -811,11 +811,11 @@ components:
               signature: "MEUCIQCHLpP8Z8AsiWEnMLHLmVzzuoMdl2MFAAAAAQ"
               userHandle: "aWQxMjM0NQ"
             authenticatorAttachment: "platform"
-        session_token:
+        sessionToken:
           type: string
           description: JWT token for the WebAuthn authentication session
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-        skip_assertion:
+        skipAssertion:
           type: boolean
           description: Skip generating assertion token in the response
           default: false
@@ -826,7 +826,7 @@ components:
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
       required:
         - publicKeyCredential
-        - session_token
+        - sessionToken
 
     ErrorResponse:
       type: object

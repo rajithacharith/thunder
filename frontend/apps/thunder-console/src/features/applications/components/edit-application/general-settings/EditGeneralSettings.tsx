@@ -86,8 +86,8 @@ export default function EditGeneralSettings({
   const [newClientSecret, setNewClientSecret] = useState<string>('');
 
   const isConfidentialClient =
-    oauth2Config?.token_endpoint_auth_method === TokenEndpointAuthMethods.CLIENT_SECRET_BASIC ||
-    oauth2Config?.token_endpoint_auth_method === TokenEndpointAuthMethods.CLIENT_SECRET_POST;
+    oauth2Config?.tokenEndpointAuthMethod === TokenEndpointAuthMethods.CLIENT_SECRET_BASIC ||
+    oauth2Config?.tokenEndpointAuthMethod === TokenEndpointAuthMethods.CLIENT_SECRET_POST;
 
   const handleRegenerateClick = useCallback((): void => {
     setRegenerateDialogOpen(true);

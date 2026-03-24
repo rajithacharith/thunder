@@ -41,7 +41,7 @@ describe('AppearanceSection', () => {
     name: 'Test Application',
     description: 'Test Description',
     template: 'custom',
-    theme_id: 'theme-1',
+    themeId: 'theme-1',
   } as Application;
 
   const mockThemes = [
@@ -109,9 +109,9 @@ describe('AppearanceSection', () => {
       expect(input).toHaveValue('Default Theme');
     });
 
-    it('should prioritize editedApp theme_id over application', () => {
+    it('should prioritize editedApp themeId over application', () => {
       const editedApp = {
-        theme_id: 'theme-2',
+        themeId: 'theme-2',
       };
 
       render(
@@ -148,7 +148,7 @@ describe('AppearanceSection', () => {
       const darkThemeOption = within(listbox).getByText('Dark Theme');
       await user.click(darkThemeOption);
 
-      expect(mockOnFieldChange).toHaveBeenCalledWith('theme_id', 'theme-2');
+      expect(mockOnFieldChange).toHaveBeenCalledWith('themeId', 'theme-2');
     });
 
     it('should handle clearing theme selection', async () => {
@@ -161,15 +161,15 @@ describe('AppearanceSection', () => {
 
       if (clearButton) {
         await user.click(clearButton);
-        expect(mockOnFieldChange).toHaveBeenCalledWith('theme_id', '');
+        expect(mockOnFieldChange).toHaveBeenCalledWith('themeId', '');
       }
     });
   });
 
   describe('Edge Cases', () => {
-    it('should handle missing theme_id in application', () => {
+    it('should handle missing themeId in application', () => {
       const appWithoutTheme: Partial<Application> = {...mockApplication};
-      delete appWithoutTheme.theme_id;
+      delete appWithoutTheme.themeId;
 
       render(
         <AppearanceSection
@@ -205,8 +205,8 @@ describe('AppearanceSection', () => {
       expect(screen.getByRole('combobox')).toBeInTheDocument();
     });
 
-    it('should handle theme_id not found in themes list', () => {
-      const appWithInvalidTheme = {...mockApplication, theme_id: 'non-existent-id'};
+    it('should handle themeId not found in themes list', () => {
+      const appWithInvalidTheme = {...mockApplication, themeId: 'non-existent-id'};
 
       render(<AppearanceSection application={appWithInvalidTheme} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 

@@ -34,10 +34,10 @@ type UserSchema struct {
 
 // User represents a user in the system
 type User struct {
-	ID               string          `json:"id"`
-	OUID             string          `json:"ouId"`
-	Type             string          `json:"type"`
-	Attributes       json.RawMessage `json:"attributes"`
+	ID         string          `json:"id"`
+	OUID       string          `json:"ouId"`
+	Type       string          `json:"type"`
+	Attributes json.RawMessage `json:"attributes"`
 }
 
 // Application represents an application in the system
@@ -45,15 +45,15 @@ type Application struct {
 	ID                        string                   `json:"id,omitempty"`
 	Name                      string                   `json:"name"`
 	Description               string                   `json:"description"`
-	IsRegistrationFlowEnabled bool                     `json:"is_registration_flow_enabled"`
-	AuthFlowID                string                   `json:"auth_flow_id,omitempty"`
-	RegistrationFlowID        string                   `json:"registration_flow_id,omitempty"`
-	ClientID                  string                   `json:"client_id,omitempty"`
-	ClientSecret              string                   `json:"client_secret,omitempty"`
-	RedirectURIs              []string                 `json:"redirect_uris,omitempty"`
-	AllowedUserTypes          []string                 `json:"allowed_user_types,omitempty"`
+	IsRegistrationFlowEnabled bool                     `json:"isRegistrationFlowEnabled"`
+	AuthFlowID                string                   `json:"authFlowId,omitempty"`
+	RegistrationFlowID        string                   `json:"registrationFlowId,omitempty"`
+	ClientID                  string                   `json:"clientId,omitempty"`
+	ClientSecret              string                   `json:"clientSecret,omitempty"`
+	RedirectURIs              []string                 `json:"redirectUris,omitempty"`
+	AllowedUserTypes          []string                 `json:"allowedUserTypes,omitempty"`
 	Certificate               map[string]interface{}   `json:"certificate,omitempty"`
-	InboundAuthConfig         []map[string]interface{} `json:"inbound_auth_config,omitempty"`
+	InboundAuthConfig         []map[string]interface{} `json:"inboundAuthConfig,omitempty"`
 	AssertionConfig           map[string]interface{}   `json:"assertion,omitempty"`
 }
 
@@ -64,17 +64,17 @@ type OrganizationUnit struct {
 	Name            string  `json:"name"`
 	Description     string  `json:"description,omitempty"`
 	Parent          *string `json:"parent,omitempty"`
-	LogoURL         string  `json:"logo_url,omitempty"`
-	TosURI          string  `json:"tos_uri,omitempty"`
-	PolicyURI       string  `json:"policy_uri,omitempty"`
-	CookiePolicyURI string  `json:"cookie_policy_uri,omitempty"`
+	LogoURL         string  `json:"logoUrl,omitempty"`
+	TosURI          string  `json:"tosUri,omitempty"`
+	PolicyURI       string  `json:"policyUri,omitempty"`
+	CookiePolicyURI string  `json:"cookiePolicyUri,omitempty"`
 }
 
 // IDPProperty represents a property of an identity provider
 type IDPProperty struct {
 	Name     string `json:"name"`
 	Value    string `json:"value"`
-	IsSecret bool   `json:"is_secret"`
+	IsSecret bool   `json:"isSecret"`
 }
 
 // IDP represents an identity provider in the system
@@ -110,10 +110,10 @@ type ErrorResponse struct {
 
 // AuthenticationResponse represents the response from an authentication request
 type AuthenticationResponse struct {
-	ID               string `json:"id"`
-	Type             string `json:"type"`
-	OUID             string `json:"ouId"`
-	Assertion        string `json:"assertion,omitempty"`
+	ID        string `json:"id"`
+	Type      string `json:"type"`
+	OUID      string `json:"ouId"`
+	Assertion string `json:"assertion,omitempty"`
 }
 
 // GroupMember represents a member of a group
@@ -125,11 +125,11 @@ type GroupMember struct {
 
 // Group represents a group in the system
 type Group struct {
-	ID                 string   `json:"id,omitempty"`
-	Name               string   `json:"name"`
-	Description        string   `json:"description,omitempty"`
-	OUID               string   `json:"ouId,omitempty"`
-	Members            []Member `json:"members,omitempty"`
+	ID          string   `json:"id,omitempty"`
+	Name        string   `json:"name"`
+	Description string   `json:"description,omitempty"`
+	OUID        string   `json:"ouId,omitempty"`
+	Members     []Member `json:"members,omitempty"`
 }
 
 // Member represents a member of a group (either user or another group).
@@ -147,12 +147,12 @@ type Assignment struct {
 
 // Role represents a role in the system
 type Role struct {
-	ID                 string                `json:"id,omitempty"`
-	Name               string                `json:"name"`
-	Description        string                `json:"description,omitempty"`
-	OUID               string                `json:"ouId"`
-	Permissions        []ResourcePermissions `json:"permissions,omitempty"`
-	Assignments        []Assignment          `json:"assignments,omitempty"`
+	ID          string                `json:"id,omitempty"`
+	Name        string                `json:"name"`
+	Description string                `json:"description,omitempty"`
+	OUID        string                `json:"ouId"`
+	Permissions []ResourcePermissions `json:"permissions,omitempty"`
+	Assignments []Assignment          `json:"assignments,omitempty"`
 }
 
 // TokenResponse represents the response from token exchange
@@ -180,12 +180,12 @@ type AuthorizationResponse struct {
 
 // ResourceServer represents a resource server in the system
 type ResourceServer struct {
-	ID                 string  `json:"id,omitempty"`
-	Name               string  `json:"name"`
-	Description        string  `json:"description,omitempty"`
-	Identifier         string  `json:"identifier,omitempty"`
-	OUID               string  `json:"ouId"`
-	Delimiter          *string `json:"delimiter,omitempty"`
+	ID          string  `json:"id,omitempty"`
+	Name        string  `json:"name"`
+	Description string  `json:"description,omitempty"`
+	Identifier  string  `json:"identifier,omitempty"`
+	OUID        string  `json:"ouId"`
+	Delimiter   *string `json:"delimiter,omitempty"`
 }
 
 // Action represents an action in the resource system
@@ -267,5 +267,5 @@ type NotificationSender struct {
 type SenderProperty struct {
 	Name     string `json:"name"`
 	Value    string `json:"value"`
-	IsSecret bool   `json:"is_secret"`
+	IsSecret bool   `json:"isSecret"`
 }

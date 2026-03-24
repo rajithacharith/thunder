@@ -1158,7 +1158,7 @@ components:
           type: string
         description:
           type: string
-        logo_url:
+        logoUrl:
           type: string
           format: uri
           description: "Logo URL for the organization unit"
@@ -1223,27 +1223,27 @@ components:
           type: string
           description: "Optional description of the organization unit"
           example: "Team responsible for frontend development and UI/UX"
-        theme_id:
+        themeId:
           type: string
           format: uuid
           description: "Theme configuration ID for the organization unit"
-        layout_id:
+        layoutId:
           type: string
           format: uuid
           description: "Layout configuration ID for the organization unit"
-        logo_url:
+        logoUrl:
           type: string
           format: uri
           description: "Logo URL for the organization unit"
-        tos_uri:
+        tosUri:
           type: string
           format: uri
           description: "Terms of Service URI"
-        policy_uri:
+        policyUri:
           type: string
           format: uri
           description: "Privacy Policy URI"
-        cookie_policy_uri:
+        cookiePolicyUri:
           type: string
           format: uri
           description: "Cookie Policy URI"
@@ -1264,27 +1264,27 @@ components:
           type: string
           description: "Optional description of the organization unit"
           example: "Team responsible for frontend development and UI/UX"
-        theme_id:
+        themeId:
           type: string
           format: uuid
           description: "Theme configuration ID for the organization unit"
-        layout_id:
+        layoutId:
           type: string
           format: uuid
           description: "Layout configuration ID for the organization unit"
-        logo_url:
+        logoUrl:
           type: string
           format: uri
           description: "Logo URL for the organization unit"
-        tos_uri:
+        tosUri:
           type: string
           format: uri
           description: "Terms of Service URI"
-        policy_uri:
+        policyUri:
           type: string
           format: uri
           description: "Privacy Policy URI"
-        cookie_policy_uri:
+        cookiePolicyUri:
           type: string
           format: uri
           description: "Cookie Policy URI"

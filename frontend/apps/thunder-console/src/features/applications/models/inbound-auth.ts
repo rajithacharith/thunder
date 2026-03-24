@@ -68,21 +68,21 @@ export const InboundAuthTypes = {
  * const inboundAuth: InboundAuthConfig = {
  *   type: InboundAuthTypes.OAUTH2,
  *   config: {
- *     client_id: 'my-web-app',
- *     client_secret: 'super-secret',
- *     redirect_uris: ['https://myapp.com/callback'],
- *     grant_types: ['authorization_code', 'refresh_token'],
- *     response_types: ['code'],
+ *     clientId: 'my-web-app',
+ *     clientSecret: 'super-secret',
+ *     redirectUris: ['https://myapp.com/callback'],
+ *     grantTypes: ['authorization_code', 'refresh_token'],
+ *     responseTypes: ['code'],
  *     scopes: ['openid', 'profile', 'email'],
  *     token: {
- *       access_token: {
- *         validity_period: 3600,
- *         user_attributes: ['email', 'username']
+ *       accessToken: {
+ *         validityPeriod: 3600,
+ *         userAttributes: ['email', 'username']
  *       },
- *       id_token: {
- *         validity_period: 3600,
- *         user_attributes: ['sub', 'email', 'name'],
- *         scope_claims: {
+ *       idToken: {
+ *         validityPeriod: 3600,
+ *         userAttributes: ['sub', 'email', 'name'],
+ *         scopeClaims: {
  *           profile: ['name', 'picture'],
  *           email: ['email', 'email_verified']
  *         }
@@ -98,21 +98,21 @@ export const InboundAuthTypes = {
  * const spaInboundAuth: InboundAuthConfig = {
  *   type: InboundAuthTypes.OAUTH2,
  *   config: {
- *     redirect_uris: ['http://localhost:3000/callback'],
- *     grant_types: ['authorization_code', 'refresh_token'],
- *     response_types: ['code'],
- *     pkce_required: true,
- *     public_client: true,
+ *     redirectUris: ['http://localhost:3000/callback'],
+ *     grantTypes: ['authorization_code', 'refresh_token'],
+ *     responseTypes: ['code'],
+ *     pkceRequired: true,
+ *     publicClient: true,
  *     scopes: ['openid', 'profile', 'email'],
  *     token: {
- *       access_token: {
- *         validity_period: 3600,
- *         user_attributes: ['email']
+ *       accessToken: {
+ *         validityPeriod: 3600,
+ *         userAttributes: ['email']
  *       },
- *       id_token: {
- *         validity_period: 3600,
- *         user_attributes: ['sub', 'email'],
- *         scope_claims: {
+ *       idToken: {
+ *         validityPeriod: 3600,
+ *         userAttributes: ['sub', 'email'],
+ *         scopeClaims: {
  *           email: ['email', 'email_verified']
  *         }
  *       }

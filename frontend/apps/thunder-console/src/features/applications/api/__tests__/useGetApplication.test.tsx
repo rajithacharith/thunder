@@ -47,33 +47,33 @@ describe('useGetApplication', () => {
     name: 'Test Application',
     description: 'Test application description',
     url: 'https://test-app.com',
-    logo_url: 'https://test-app.com/logo.png',
-    tos_uri: 'https://test-app.com/terms',
-    policy_uri: 'https://test-app.com/privacy',
+    logoUrl: 'https://test-app.com/logo.png',
+    tosUri: 'https://test-app.com/terms',
+    policyUri: 'https://test-app.com/privacy',
     contacts: ['admin@test-app.com'],
-    auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
-    registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
-    is_registration_flow_enabled: true,
-    inbound_auth_config: [
+    authFlowId: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+    registrationFlowId: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
+    isRegistrationFlowEnabled: true,
+    inboundAuthConfig: [
       {
         type: 'oauth2',
         config: {
-          client_id: 'test-client-id',
-          redirect_uris: ['https://test-app.com/callback'],
-          grant_types: ['authorization_code'],
-          response_types: ['code'],
-          pkce_required: false,
-          token_endpoint_auth_method: 'none',
-          public_client: true,
+          clientId: 'test-client-id',
+          redirectUris: ['https://test-app.com/callback'],
+          grantTypes: ['authorization_code'],
+          responseTypes: ['code'],
+          pkceRequired: false,
+          tokenEndpointAuthMethod: 'none',
+          publicClient: true,
           token: {
-            access_token: {
-              validity_period: 3600,
-              user_attributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
+            accessToken: {
+              validityPeriod: 3600,
+              userAttributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
             },
-            id_token: {
-              validity_period: 3600,
-              user_attributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
-              scope_claims: {
+            idToken: {
+              validityPeriod: 3600,
+              userAttributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
+              scopeClaims: {
                 profile: ['name', 'given_name', 'family_name', 'picture'],
                 email: ['email', 'email_verified'],
                 phone: ['phone_number', 'phone_number_verified'],
@@ -85,9 +85,9 @@ describe('useGetApplication', () => {
         },
       },
     ],
-    user_attributes: ['email', 'username'],
-    created_at: '2025-11-13T10:00:00Z',
-    updated_at: '2025-11-13T10:00:00Z',
+    userAttributes: ['email', 'username'],
+    createdAt: '2025-11-13T10:00:00Z',
+    updatedAt: '2025-11-13T10:00:00Z',
   };
 
   beforeEach(() => {
@@ -261,11 +261,11 @@ describe('useGetApplication', () => {
       id: '550e8400-e29b-41d4-a716-446655440000',
       name: '',
       description: '',
-      auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
-      registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
-      is_registration_flow_enabled: false,
-      created_at: '2025-11-13T10:00:00Z',
-      updated_at: '2025-11-13T10:00:00Z',
+      authFlowId: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+      registrationFlowId: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
+      isRegistrationFlowEnabled: false,
+      createdAt: '2025-11-13T10:00:00Z',
+      updatedAt: '2025-11-13T10:00:00Z',
     };
 
     mockHttpRequest.mockResolvedValueOnce({
@@ -349,33 +349,33 @@ describe('useGetApplication', () => {
       name: 'Complete Test App',
       description: 'A complete test application with all fields',
       url: 'https://complete-app.com',
-      logo_url: 'https://complete-app.com/logo.png',
-      tos_uri: 'https://complete-app.com/terms',
-      policy_uri: 'https://complete-app.com/privacy',
+      logoUrl: 'https://complete-app.com/logo.png',
+      tosUri: 'https://complete-app.com/terms',
+      policyUri: 'https://complete-app.com/privacy',
       contacts: ['admin@complete-app.com', 'support@complete-app.com'],
-      auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
-      registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
-      is_registration_flow_enabled: true,
-      inbound_auth_config: [
+      authFlowId: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+      registrationFlowId: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
+      isRegistrationFlowEnabled: true,
+      inboundAuthConfig: [
         {
           type: 'oauth2',
           config: {
-            client_id: 'test-client-id',
-            redirect_uris: ['https://complete-app.com/callback'],
-            grant_types: ['authorization_code'],
-            response_types: ['code'],
-            pkce_required: false,
-            token_endpoint_auth_method: 'none',
-            public_client: true,
+            clientId: 'test-client-id',
+            redirectUris: ['https://complete-app.com/callback'],
+            grantTypes: ['authorization_code'],
+            responseTypes: ['code'],
+            pkceRequired: false,
+            tokenEndpointAuthMethod: 'none',
+            publicClient: true,
             token: {
-              access_token: {
-                validity_period: 3600,
-                user_attributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
+              accessToken: {
+                validityPeriod: 3600,
+                userAttributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
               },
-              id_token: {
-                validity_period: 3600,
-                user_attributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
-                scope_claims: {
+              idToken: {
+                validityPeriod: 3600,
+                userAttributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
+                scopeClaims: {
                   profile: ['name', 'given_name', 'family_name', 'picture'],
                   email: ['email', 'email_verified'],
                   phone: ['phone_number', 'phone_number_verified'],
@@ -387,9 +387,9 @@ describe('useGetApplication', () => {
           },
         },
       ],
-      user_attributes: ['email', 'username', 'profile', 'phone'],
-      created_at: '2025-11-13T10:00:00Z',
-      updated_at: '2025-11-14T15:30:00Z',
+      userAttributes: ['email', 'username', 'profile', 'phone'],
+      createdAt: '2025-11-13T10:00:00Z',
+      updatedAt: '2025-11-14T15:30:00Z',
     };
 
     mockHttpRequest.mockResolvedValueOnce({
@@ -403,6 +403,6 @@ describe('useGetApplication', () => {
     });
 
     expect(result.current.data).toEqual(completeApplication);
-    expect(result.current.data?.user_attributes).toHaveLength(4);
+    expect(result.current.data?.userAttributes).toHaveLength(4);
   });
 });

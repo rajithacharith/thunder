@@ -43,10 +43,10 @@ describe('OAuth2ConfigSection', () => {
 
     it('should render OAuth2 config section with all elements', () => {
       const oauth2Config: OAuth2Config = {
-        grant_types: ['authorization_code', 'refresh_token'],
-        response_types: ['code'],
-        pkce_required: true,
-        public_client: false,
+        grantTypes: ['authorization_code', 'refresh_token'],
+        responseTypes: ['code'],
+        pkceRequired: true,
+        publicClient: false,
       };
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
@@ -59,10 +59,10 @@ describe('OAuth2ConfigSection', () => {
   describe('Grant Types Display', () => {
     it('should display all grant types as chips', () => {
       const oauth2Config: OAuth2Config = {
-        grant_types: ['authorization_code', 'refresh_token', 'client_credentials'],
-        response_types: ['code'],
-        pkce_required: false,
-        public_client: false,
+        grantTypes: ['authorization_code', 'refresh_token', 'client_credentials'],
+        responseTypes: ['code'],
+        pkceRequired: false,
+        publicClient: false,
       };
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
@@ -76,10 +76,10 @@ describe('OAuth2ConfigSection', () => {
 
     it('should handle single grant type', () => {
       const oauth2Config: OAuth2Config = {
-        grant_types: ['authorization_code'],
-        response_types: ['code'],
-        pkce_required: false,
-        public_client: false,
+        grantTypes: ['authorization_code'],
+        responseTypes: ['code'],
+        pkceRequired: false,
+        publicClient: false,
       };
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
@@ -90,10 +90,10 @@ describe('OAuth2ConfigSection', () => {
 
     it('should handle empty grant types array', () => {
       const oauth2Config: OAuth2Config = {
-        grant_types: [],
-        response_types: ['code'],
-        pkce_required: false,
-        public_client: false,
+        grantTypes: [],
+        responseTypes: ['code'],
+        pkceRequired: false,
+        publicClient: false,
       };
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
@@ -106,10 +106,10 @@ describe('OAuth2ConfigSection', () => {
   describe('Response Types Display', () => {
     it('should display all response types as chips', () => {
       const oauth2Config: OAuth2Config = {
-        grant_types: ['authorization_code'],
-        response_types: ['code', 'token'],
-        pkce_required: false,
-        public_client: false,
+        grantTypes: ['authorization_code'],
+        responseTypes: ['code', 'token'],
+        pkceRequired: false,
+        publicClient: false,
       };
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
@@ -121,10 +121,10 @@ describe('OAuth2ConfigSection', () => {
 
     it('should handle single response type', () => {
       const oauth2Config: OAuth2Config = {
-        grant_types: ['authorization_code'],
-        response_types: ['code'],
-        pkce_required: false,
-        public_client: false,
+        grantTypes: ['authorization_code'],
+        responseTypes: ['code'],
+        pkceRequired: false,
+        publicClient: false,
       };
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
@@ -134,10 +134,10 @@ describe('OAuth2ConfigSection', () => {
 
     it('should handle empty response types array', () => {
       const oauth2Config: OAuth2Config = {
-        grant_types: ['authorization_code'],
-        response_types: [],
-        pkce_required: false,
-        public_client: false,
+        grantTypes: ['authorization_code'],
+        responseTypes: [],
+        pkceRequired: false,
+        publicClient: false,
       };
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
@@ -149,10 +149,10 @@ describe('OAuth2ConfigSection', () => {
   describe('Public Client Status', () => {
     it('should display public client as yes when true', () => {
       const oauth2Config: OAuth2Config = {
-        grant_types: ['authorization_code'],
-        response_types: ['code'],
-        pkce_required: false,
-        public_client: true,
+        grantTypes: ['authorization_code'],
+        responseTypes: ['code'],
+        pkceRequired: false,
+        publicClient: true,
       };
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
@@ -164,10 +164,10 @@ describe('OAuth2ConfigSection', () => {
 
     it('should display public client as no when false', () => {
       const oauth2Config: OAuth2Config = {
-        grant_types: ['authorization_code'],
-        response_types: ['code'],
-        pkce_required: false,
-        public_client: false,
+        grantTypes: ['authorization_code'],
+        responseTypes: ['code'],
+        pkceRequired: false,
+        publicClient: false,
       };
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
@@ -177,11 +177,11 @@ describe('OAuth2ConfigSection', () => {
       expect(screen.getByText('applications:edit.advanced.publicClient.confidential')).toBeInTheDocument();
     });
 
-    it('should handle undefined public_client as false', () => {
+    it('should handle undefined publicClient as false', () => {
       const oauth2Config: OAuth2Config = {
-        grant_types: ['authorization_code'],
-        response_types: ['code'],
-        pkce_required: false,
+        grantTypes: ['authorization_code'],
+        responseTypes: ['code'],
+        pkceRequired: false,
       };
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
@@ -193,10 +193,10 @@ describe('OAuth2ConfigSection', () => {
   describe('PKCE Requirement Status', () => {
     it('should display PKCE as required when true', () => {
       const oauth2Config: OAuth2Config = {
-        grant_types: ['authorization_code'],
-        response_types: ['code'],
-        pkce_required: true,
-        public_client: false,
+        grantTypes: ['authorization_code'],
+        responseTypes: ['code'],
+        pkceRequired: true,
+        publicClient: false,
       };
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
@@ -208,10 +208,10 @@ describe('OAuth2ConfigSection', () => {
 
     it('should display PKCE as not required when false', () => {
       const oauth2Config: OAuth2Config = {
-        grant_types: ['authorization_code'],
-        response_types: ['code'],
-        pkce_required: false,
-        public_client: false,
+        grantTypes: ['authorization_code'],
+        responseTypes: ['code'],
+        pkceRequired: false,
+        publicClient: false,
       };
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
@@ -221,11 +221,11 @@ describe('OAuth2ConfigSection', () => {
       expect(screen.getByText('applications:edit.advanced.pkce.disabled')).toBeInTheDocument();
     });
 
-    it('should handle undefined pkce_required as false', () => {
+    it('should handle undefined pkceRequired as false', () => {
       const oauth2Config: OAuth2Config = {
-        grant_types: ['authorization_code'],
-        response_types: ['code'],
-        public_client: false,
+        grantTypes: ['authorization_code'],
+        responseTypes: ['code'],
+        publicClient: false,
       };
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
@@ -237,10 +237,10 @@ describe('OAuth2ConfigSection', () => {
   describe('Layout and Styling', () => {
     it('should render grant type chips with correct styling', () => {
       const oauth2Config: OAuth2Config = {
-        grant_types: ['authorization_code'],
-        response_types: ['code'],
-        pkce_required: false,
-        public_client: false,
+        grantTypes: ['authorization_code'],
+        responseTypes: ['code'],
+        pkceRequired: false,
+        publicClient: false,
       };
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
@@ -252,10 +252,10 @@ describe('OAuth2ConfigSection', () => {
 
     it('should render in a Stack with proper spacing', () => {
       const oauth2Config: OAuth2Config = {
-        grant_types: ['authorization_code'],
-        response_types: ['code'],
-        pkce_required: false,
-        public_client: false,
+        grantTypes: ['authorization_code'],
+        responseTypes: ['code'],
+        pkceRequired: false,
+        publicClient: false,
       };
 
       const {container} = render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
@@ -268,8 +268,8 @@ describe('OAuth2ConfigSection', () => {
   describe('Edge Cases', () => {
     it('should handle minimal OAuth2 config', () => {
       const oauth2Config: OAuth2Config = {
-        grant_types: ['authorization_code'],
-        response_types: ['code'],
+        grantTypes: ['authorization_code'],
+        responseTypes: ['code'],
       };
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
@@ -281,15 +281,15 @@ describe('OAuth2ConfigSection', () => {
 
     it('should handle multiple grant types correctly', () => {
       const oauth2Config: OAuth2Config = {
-        grant_types: [
+        grantTypes: [
           'authorization_code',
           'refresh_token',
           'client_credentials',
           'urn:ietf:params:oauth:grant-type:token-exchange',
         ],
-        response_types: ['code'],
-        pkce_required: true,
-        public_client: false,
+        responseTypes: ['code'],
+        pkceRequired: true,
+        publicClient: false,
       };
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);

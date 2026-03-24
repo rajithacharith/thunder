@@ -39,15 +39,15 @@ describe('EditAdvancedSettings', () => {
       type: CertificateTypes.NONE,
       value: '',
     },
-    created_at: '2025-01-01T00:00:00Z',
-    updated_at: '2025-01-15T00:00:00Z',
+    createdAt: '2025-01-01T00:00:00Z',
+    updatedAt: '2025-01-15T00:00:00Z',
   } as Application;
 
   const mockOAuth2Config: OAuth2Config = {
-    grant_types: ['authorization_code', 'refresh_token'],
-    response_types: ['code'],
-    pkce_required: true,
-    public_client: false,
+    grantTypes: ['authorization_code', 'refresh_token'],
+    responseTypes: ['code'],
+    pkceRequired: true,
+    publicClient: false,
   };
 
   const mockOnFieldChange = vi.fn();
@@ -78,8 +78,8 @@ describe('EditAdvancedSettings', () => {
 
     it('should render without metadata section when timestamps are missing', () => {
       const appWithoutMetadata = {...mockApplication};
-      delete (appWithoutMetadata as Partial<Application>).created_at;
-      delete (appWithoutMetadata as Partial<Application>).updated_at;
+      delete (appWithoutMetadata as Partial<Application>).createdAt;
+      delete (appWithoutMetadata as Partial<Application>).updatedAt;
 
       render(
         <EditAdvancedSettings

@@ -142,20 +142,20 @@ func (ts *UserInfoTestSuite) TearDownSuite() {
 
 func (ts *UserInfoTestSuite) createTestUser() string {
 	attributes := map[string]interface{}{
-		"username":  "userinfo_test_user",
-		"password":  "SecurePass123!",
-		"email":     "userinfo_test@example.com",
-		"given_name": "UserInfo",
-		"family_name":  "Test",
+		"username":    "userinfo_test_user",
+		"password":    "SecurePass123!",
+		"email":       "userinfo_test@example.com",
+		"given_name":  "UserInfo",
+		"family_name": "Test",
 	}
 
 	attributesJSON, err := json.Marshal(attributes)
 	ts.Require().NoError(err, "Failed to marshal user attributes")
 
 	user := testutils.User{
-		Type:             "userinfo-person",
-		OUID:             ts.ouID,
-		Attributes:       json.RawMessage(attributesJSON),
+		Type:       "userinfo-person",
+		OUID:       ts.ouID,
+		Attributes: json.RawMessage(attributesJSON),
 	}
 
 	userID, err := testutils.CreateUser(user)
@@ -248,33 +248,33 @@ func (ts *UserInfoTestSuite) createTestAuthenticationFlow() string {
 
 func (ts *UserInfoTestSuite) createTestApplication(authFlowID string) string {
 	app := map[string]interface{}{
-		"name":                         appName,
-		"description":                  "Application for UserInfo integration tests",
-		"auth_flow_id":                 authFlowID,
-		"is_registration_flow_enabled": false,
-		"allowed_user_types":           []string{"userinfo-person"},
-		"inbound_auth_config": []map[string]interface{}{
+		"name":                      appName,
+		"description":               "Application for UserInfo integration tests",
+		"authFlowId":                authFlowID,
+		"isRegistrationFlowEnabled": false,
+		"allowedUserTypes":          []string{"userinfo-person"},
+		"inboundAuthConfig": []map[string]interface{}{
 			{
 				"type": "oauth2",
 				"config": map[string]interface{}{
-					"client_id":     clientID,
-					"client_secret": clientSecret,
-					"redirect_uris": []string{redirectURI},
-					"grant_types": []string{
+					"clientId":     clientID,
+					"clientSecret": clientSecret,
+					"redirectUris": []string{redirectURI},
+					"grantTypes": []string{
 						"client_credentials",
 						"authorization_code",
 						"refresh_token",
 						"urn:ietf:params:oauth:grant-type:token-exchange",
 					},
-					"response_types":             []string{"code"},
-					"token_endpoint_auth_method": "client_secret_basic",
-					"scopes":                     []string{"openid", "profile", "email"},
+					"responseTypes":           []string{"code"},
+					"tokenEndpointAuthMethod": "client_secret_basic",
+					"scopes":                  []string{"openid", "profile", "email"},
 					"token": map[string]interface{}{
-						"id_token": map[string]interface{}{
-							"user_attributes": []string{"email", "given_name", "family_name", "name"},
+						"idToken": map[string]interface{}{
+							"userAttributes": []string{"email", "given_name", "family_name", "name"},
 						},
 					},
-					"scope_claims": map[string][]string{
+					"scopeClaims": map[string][]string{
 						"profile": {"given_name", "family_name", "name"},
 						"email":   {"email"},
 					},
@@ -748,21 +748,21 @@ func (ts *UserInfoTestSuite) TestUserInfo_SeparateAttributesConfiguration() {
 	// Create a dedicated app for this test with specific UserInfo config
 	// UserInfo config allows ONLY "email", while IDToken config allows "email", "given_name", "family_name"
 	config := map[string]interface{}{
-		"client_id":      "userinfo_config_test_client",
-		"client_secret":  "userinfo_config_test_secret",
-		"redirect_uris":  []string{redirectURI},
-		"grant_types":    []string{"authorization_code"},
-		"response_types": []string{"code"},
-		"scopes":         []string{"openid", "profile", "email"},
+		"clientId":      "userinfo_config_test_client",
+		"clientSecret":  "userinfo_config_test_secret",
+		"redirectUris":  []string{redirectURI},
+		"grantTypes":    []string{"authorization_code"},
+		"responseTypes": []string{"code"},
+		"scopes":        []string{"openid", "profile", "email"},
 		"token": map[string]interface{}{
-			"id_token": map[string]interface{}{
-				"user_attributes": []string{"email", "given_name", "family_name"},
+			"idToken": map[string]interface{}{
+				"userAttributes": []string{"email", "given_name", "family_name"},
 			},
 		},
-		"user_info": map[string]interface{}{
-			"user_attributes": []string{"email"}, // UserInfo strictly limited to email
+		"userInfo": map[string]interface{}{
+			"userAttributes": []string{"email"}, // UserInfo strictly limited to email
 		},
-		"scope_claims": map[string][]string{
+		"scopeClaims": map[string][]string{
 			"profile": {"given_name", "family_name", "name"},
 			"email":   {"email"},
 		},
@@ -801,19 +801,19 @@ func (ts *UserInfoTestSuite) TestUserInfo_SeparateAttributesConfiguration() {
 func (ts *UserInfoTestSuite) TestUserInfo_FallbackConfiguration() {
 	// Create app with NO UserInfo config, but with IDToken config
 	config := map[string]interface{}{
-		"client_id":      "userinfo_fallback_test_client",
-		"client_secret":  "userinfo_fallback_test_secret",
-		"redirect_uris":  []string{redirectURI},
-		"grant_types":    []string{"authorization_code"},
-		"response_types": []string{"code"},
-		"scopes":         []string{"openid", "profile", "email"},
+		"clientId":      "userinfo_fallback_test_client",
+		"clientSecret":  "userinfo_fallback_test_secret",
+		"redirectUris":  []string{redirectURI},
+		"grantTypes":    []string{"authorization_code"},
+		"responseTypes": []string{"code"},
+		"scopes":        []string{"openid", "profile", "email"},
 		"token": map[string]interface{}{
-			"id_token": map[string]interface{}{
-				"user_attributes": []string{"email", "given_name"},
+			"idToken": map[string]interface{}{
+				"userAttributes": []string{"email", "given_name"},
 			},
 		},
 		// No user_info config
-		"scope_claims": map[string][]string{
+		"scopeClaims": map[string][]string{
 			"profile": {"given_name", "family_name", "name"},
 			"email":   {"email"},
 		},
@@ -846,21 +846,21 @@ func (ts *UserInfoTestSuite) TestUserInfo_FallbackConfiguration() {
 func (ts *UserInfoTestSuite) TestUserInfo_DefaultClaims() {
 	// Create app with UserInfo config that includes default claims
 	config := map[string]interface{}{
-		"client_id":      "userinfo_default_claims_client",
-		"client_secret":  "userinfo_default_claims_secret",
-		"redirect_uris":  []string{redirectURI},
-		"grant_types":    []string{"authorization_code"},
-		"response_types": []string{"code"},
-		"scopes":         []string{"openid", "profile"},
+		"clientId":      "userinfo_default_claims_client",
+		"clientSecret":  "userinfo_default_claims_secret",
+		"redirectUris":  []string{redirectURI},
+		"grantTypes":    []string{"authorization_code"},
+		"responseTypes": []string{"code"},
+		"scopes":        []string{"openid", "profile"},
 		"token": map[string]interface{}{
-			"id_token": map[string]interface{}{
-				"user_attributes": []string{"email"},
+			"idToken": map[string]interface{}{
+				"userAttributes": []string{"email"},
 			},
 		},
-		"user_info": map[string]interface{}{
-			"user_attributes": []string{"userType", "ouId", "ouHandle", "ouName", "email"},
+		"userInfo": map[string]interface{}{
+			"userAttributes": []string{"userType", "ouId", "ouHandle", "ouName", "email"},
 		},
-		"scope_claims": map[string][]string{
+		"scopeClaims": map[string][]string{
 			"profile": {"given_name", "family_name", "userType", "ouId", "ouHandle", "ouName"},
 		},
 	}
@@ -904,12 +904,12 @@ func (ts *UserInfoTestSuite) TestUserInfo_DefaultClaims() {
 // createApplicationWithConfig creates an OAuth application with the given config
 func (ts *UserInfoTestSuite) createApplicationWithConfig(name string, oauthConfig map[string]interface{}) string {
 	app := map[string]interface{}{
-		"name":                         name,
-		"description":                  "Application for UserInfo integration tests",
-		"auth_flow_id":                 ts.flowID,
-		"is_registration_flow_enabled": false,
-		"allowed_user_types":           []string{"userinfo-person"},
-		"inbound_auth_config": []map[string]interface{}{
+		"name":                      name,
+		"description":               "Application for UserInfo integration tests",
+		"authFlowId":                ts.flowID,
+		"isRegistrationFlowEnabled": false,
+		"allowedUserTypes":          []string{"userinfo-person"},
+		"inboundAuthConfig": []map[string]interface{}{
 			{
 				"type":   "oauth2",
 				"config": oauthConfig,
@@ -1002,22 +1002,22 @@ func (ts *UserInfoTestSuite) getAuthorizationCodeTokenWithClient(scope, cID, cSe
 func (ts *UserInfoTestSuite) TestUserInfo_JWS_Response() {
 
 	config := map[string]interface{}{
-		"client_id":      "userinfo_jws_test_client",
-		"client_secret":  "userinfo_jws_test_secret",
-		"redirect_uris":  []string{redirectURI},
-		"grant_types":    []string{"authorization_code"},
-		"response_types": []string{"code"},
-		"scopes":         []string{"openid", "profile", "email"},
+		"clientId":      "userinfo_jws_test_client",
+		"clientSecret":  "userinfo_jws_test_secret",
+		"redirectUris":  []string{redirectURI},
+		"grantTypes":    []string{"authorization_code"},
+		"responseTypes": []string{"code"},
+		"scopes":        []string{"openid", "profile", "email"},
 		"token": map[string]interface{}{
-			"id_token": map[string]interface{}{
-				"user_attributes": []string{"email", "given_name", "family_name"},
+			"idToken": map[string]interface{}{
+				"userAttributes": []string{"email", "given_name", "family_name"},
 			},
 		},
-		"user_info": map[string]interface{}{
-			"response_type":   "JWS",
-			"user_attributes": []string{"email", "given_name", "family_name"},
+		"userInfo": map[string]interface{}{
+			"responseType":   "JWS",
+			"userAttributes": []string{"email", "given_name", "family_name"},
 		},
-		"scope_claims": map[string][]string{
+		"scopeClaims": map[string][]string{
 			"profile": {"given_name", "family_name"},
 			"email":   {"email"},
 		},

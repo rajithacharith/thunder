@@ -41,8 +41,8 @@
  *   name: 'Engineering Department',
  *   description: 'Software engineering team',
  *   parent: 'root-ou-id',
- *   theme_id: '96c62e6d-9297-4295-8195-d28dfe0c9ff7',
- *   logo_url: 'https://example.com/logo.png'
+ *   themeId: '96c62e6d-9297-4295-8195-d28dfe0c9ff7',
+ *   logoUrl: 'https://example.com/logo.png'
  * };
  * ```
  */
@@ -85,18 +85,18 @@ export interface OrganizationUnit {
    * References a theme that customizes the visual styling
    * @example '96c62e6d-9297-4295-8195-d28dfe0c9ff7'
    */
-  theme_id?: string | null;
+  themeId?: string | null;
 
   /**
    * Layout configuration ID
    * References a layout that customizes the page structure
    * @example 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
    */
-  layout_id?: string | null;
+  layoutId?: string | null;
 
   /**
    * Organization unit logo URL
    * @example 'https://example.com/logo.png'
    */
-  logo_url?: string;
+  logoUrl?: string;
 }

@@ -340,7 +340,7 @@ var (
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{dynamicUserSchema.Name},
 		AssertionConfig: map[string]interface{}{
-			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
+			"userAttributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
 
@@ -353,7 +353,7 @@ var (
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{dynamicUserSchema.Name},
 		AssertionConfig: map[string]interface{}{
-			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
+			"userAttributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
 
@@ -378,7 +378,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{
@@ -603,8 +603,8 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOU() {
 				"ouName":        tc.ouName,
 				"ouHandle":      tc.ouHandle,
 				"ouDescription": tc.ouDescription,
-				"given_name":     "Test",
-				"family_name":      "User",
+				"given_name":    "Test",
+				"family_name":   "User",
 				"email":         username + "@example.com",
 			}
 
@@ -696,8 +696,8 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOUCreationDu
 				"ouName":        tc.newOUName,
 				"ouHandle":      newHandle,
 				"ouDescription": "Should fail due to duplicate",
-				"given_name":     "Test",
-				"family_name":      "User",
+				"given_name":    "Test",
+				"family_name":   "User",
 				"email":         username + "@example.com",
 			}
 
@@ -781,8 +781,8 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 			// Step 5: Submit user details
 			inputs = map[string]string{
 				"mobileNumber": mobileNumber,
-				"given_name":    "Test",
-				"family_name":     "User",
+				"given_name":   "Test",
+				"family_name":  "User",
 				"email":        mobileNumber + "@example.com",
 			}
 

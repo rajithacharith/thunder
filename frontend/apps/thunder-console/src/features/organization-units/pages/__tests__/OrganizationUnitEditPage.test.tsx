@@ -940,7 +940,7 @@ describe('OrganizationUnitEditPage', () => {
   describe('Avatar Image', () => {
     it('should hide avatar image when image fails to load', () => {
       mockUseGetOrganizationUnit.mockReturnValue({
-        data: {...mockOrganizationUnit, logo_url: 'https://example.com/logo.png'},
+        data: {...mockOrganizationUnit, logoUrl: 'https://example.com/logo.png'},
         isLoading: false,
         error: null,
         refetch: mockRefetch,
@@ -956,7 +956,7 @@ describe('OrganizationUnitEditPage', () => {
 
     it('should open logo modal when avatar is clicked', async () => {
       mockUseGetOrganizationUnit.mockReturnValue({
-        data: {...mockOrganizationUnit, logo_url: 'https://example.com/logo.png'},
+        data: {...mockOrganizationUnit, logoUrl: 'https://example.com/logo.png'},
         isLoading: false,
         error: null,
         refetch: mockRefetch,
@@ -973,9 +973,9 @@ describe('OrganizationUnitEditPage', () => {
       });
     });
 
-    it('should display edited logo_url in avatar when editedOU has logo_url', async () => {
+    it('should display edited logoUrl in avatar when editedOU has logoUrl', async () => {
       mockUseGetOrganizationUnit.mockReturnValue({
-        data: {...mockOrganizationUnit, logo_url: 'https://example.com/original.png'},
+        data: {...mockOrganizationUnit, logoUrl: 'https://example.com/original.png'},
         isLoading: false,
         error: null,
         refetch: mockRefetch,
@@ -1004,7 +1004,7 @@ describe('OrganizationUnitEditPage', () => {
       mockUseGetOrganizationUnit.mockReturnValue({
         data: {
           ...mockOrganizationUnit,
-          logo_url: 'emoji:🚀',
+          logoUrl: 'emoji:🚀',
         },
         isLoading: false,
         error: null,
@@ -1026,7 +1026,7 @@ describe('OrganizationUnitEditPage', () => {
       mockUseGetOrganizationUnit.mockReturnValue({
         data: {
           ...mockOrganizationUnit,
-          logo_url: 'emoji:🚀',
+          logoUrl: 'emoji:🚀',
         },
         isLoading: false,
         error: null,
@@ -1055,7 +1055,7 @@ describe('OrganizationUnitEditPage', () => {
       mockUseGetOrganizationUnit.mockReturnValue({
         data: {
           ...mockOrganizationUnit,
-          logo_url: 'emoji:🚀',
+          logoUrl: 'emoji:🚀',
         },
         isLoading: false,
         error: null,
@@ -1268,7 +1268,7 @@ describe('OrganizationUnitEditPage', () => {
   });
 
   describe('Save with edited fields', () => {
-    it('should include description and theme_id in save when edited', async () => {
+    it('should include description and themeId in save when edited', async () => {
       mockMutateAsync.mockResolvedValue({});
 
       renderWithProviders(<OrganizationUnitEditPage />);

@@ -83,19 +83,19 @@ paths:
                   - id: 550e8400-e29b-41d4-a716-446655440000
                     name: My Web Application
                     description: Customer portal application
-                    client_id: myapp_client_id
-                    logo_url: https://myapp.example.com/logo.png
-                    auth_flow_id: edc013d0-e893-4dc0-990c-3e1d203e005b
-                    registration_flow_id: 80024fb3-29ed-4c33-aa48-8aee5e96d522
-                    is_registration_flow_enabled: true
+                    clientId: myapp_client_id
+                    logoUrl: https://myapp.example.com/logo.png
+                    authFlowId: edc013d0-e893-4dc0-990c-3e1d203e005b
+                    registrationFlowId: 80024fb3-29ed-4c33-aa48-8aee5e96d522
+                    isRegistrationFlowEnabled: true
                   - id: 660e8400-e29b-41d4-a716-446655440001
                     name: Mobile App
                     description: Mobile application for customers
-                    client_id: mobile_client_id
-                    logo_url: https://mobileapp.example.com/logo.png
-                    auth_flow_id: edc013d0-e893-4dc0-990c-3e1d203e005b
-                    registration_flow_id: 80024fb3-29ed-4c33-aa48-8aee5e96d522
-                    is_registration_flow_enabled: false
+                    clientId: mobile_client_id
+                    logoUrl: https://mobileapp.example.com/logo.png
+                    authFlowId: edc013d0-e893-4dc0-990c-3e1d203e005b
+                    registrationFlowId: 80024fb3-29ed-4c33-aa48-8aee5e96d522
+                    isRegistrationFlowEnabled: false
         "400":
           description: Bad request
           content:
@@ -133,13 +133,13 @@ paths:
             example:
               name: My Web Application
               description: Customer portal application
-              auth_flow_id: edc013d0-e893-4dc0-990c-3e1d203e005b
-              registration_flow_id: 80024fb3-29ed-4c33-aa48-8aee5e96d522
-              is_registration_flow_enabled: true
+              authFlowId: edc013d0-e893-4dc0-990c-3e1d203e005b
+              registrationFlowId: 80024fb3-29ed-4c33-aa48-8aee5e96d522
+              isRegistrationFlowEnabled: true
               url: https://myapp.example.com
-              logo_url: https://myapp.example.com/logo.png
-              tos_uri: https://myapp.example.com/terms
-              policy_uri: https://myapp.example.com/privacy
+              logoUrl: https://myapp.example.com/logo.png
+              tosUri: https://myapp.example.com/terms
+              policyUri: https://myapp.example.com/privacy
               contacts:
                 - admin@myapp.example.com
                 - support@myapp.example.com
@@ -147,59 +147,59 @@ paths:
                 env: production
                 team: platform
               assertion:
-                validity_period: 3600
-                user_attributes:
+                validityPeriod: 3600
+                userAttributes:
                   - email
                   - username
               certificate:
                 type: JWKS_URI
                 value: https://myapp.example.com/.well-known/jwks
-              allowed_user_types:
+              allowedUserTypes:
                 - employee
                 - customer
-              login_consent:
-                validity_period: 3600
-              inbound_auth_config:
+              loginConsent:
+                validityPeriod: 3600
+              inboundAuthConfig:
                 - type: oauth2
                   config:
-                    client_id: myapp_client_id
-                    client_secret: myapp_client_secret
-                    redirect_uris:
+                    clientId: myapp_client_id
+                    clientSecret: myapp_client_secret
+                    redirectUris:
                       - https://myapp.example.com/callback
                       - https://myapp.example.com/oauth/callback
-                    grant_types:
+                    grantTypes:
                       - authorization_code
                       - refresh_token
-                    response_types:
+                    responseTypes:
                       - code
-                    token_endpoint_auth_method: client_secret_basic
-                    pkce_required: false
-                    public_client: false
+                    tokenEndpointAuthMethod: client_secret_basic
+                    pkceRequired: false
+                    publicClient: false
                     scopes:
                       - openid
                       - profile
                       - email
                     token:
-                      access_token:
-                        validity_period: 3600
-                        user_attributes:
+                      accessToken:
+                        validityPeriod: 3600
+                        userAttributes:
                           - email
                           - username
-                      id_token:
-                        validity_period: 3600
-                        user_attributes:
+                      idToken:
+                        validityPeriod: 3600
+                        userAttributes:
                           - email
                           - name
                           - given_name
                           - family_name
-                    user_info:
-                      user_attributes:
+                    userInfo:
+                      userAttributes:
                         - email
                         - name
                         - given_name
                         - family_name
                         - picture
-                    scope_claims:
+                    scopeClaims:
                       profile:
                         - name
                         - family_name
@@ -219,14 +219,14 @@ paths:
                 id: 550e8400-e29b-41d4-a716-446655440000
                 name: My Web Application
                 description: Customer portal application
-                client_id: myapp_client_id
-                auth_flow_id: edc013d0-e893-4dc0-990c-3e1d203e005b
-                registration_flow_id: 80024fb3-29ed-4c33-aa48-8aee5e96d522
-                is_registration_flow_enabled: true
+                clientId: myapp_client_id
+                authFlowId: edc013d0-e893-4dc0-990c-3e1d203e005b
+                registrationFlowId: 80024fb3-29ed-4c33-aa48-8aee5e96d522
+                isRegistrationFlowEnabled: true
                 url: https://myapp.example.com
-                logo_url: https://myapp.example.com/logo.png
-                tos_uri: https://myapp.example.com/terms
-                policy_uri: https://myapp.example.com/privacy
+                logoUrl: https://myapp.example.com/logo.png
+                tosUri: https://myapp.example.com/terms
+                policyUri: https://myapp.example.com/privacy
                 contacts:
                   - admin@myapp.example.com
                   - support@myapp.example.com
@@ -234,61 +234,61 @@ paths:
                   env: production
                   team: platform
                 assertion:
-                  validity_period: 3600
-                  user_attributes:
+                  validityPeriod: 3600
+                  userAttributes:
                     - email
                     - username
                 certificate:
                   type: JWKS_URI
                   value: https://myapp.example.com/.well-known/jwks
-                allowed_user_types:
+                allowedUserTypes:
                   - employee
                   - customer
-                login_consent:
+                loginConsent:
                   enabled: true
-                  validity_period: 3600
-                inbound_auth_config:
+                  validityPeriod: 3600
+                inboundAuthConfig:
                   - type: oauth2
                     config:
-                      client_id: myapp_client_id
-                      client_secret: myapp_client_secret
-                      redirect_uris:
+                      clientId: myapp_client_id
+                      clientSecret: myapp_client_secret
+                      redirectUris:
                         - https://myapp.example.com/callback
                         - https://myapp.example.com/oauth/callback
-                      grant_types:
+                      grantTypes:
                         - authorization_code
                         - refresh_token
-                      response_types:
+                      responseTypes:
                         - code
-                      token_endpoint_auth_method: client_secret_basic
-                      pkce_required: false
-                      public_client: false
+                      tokenEndpointAuthMethod: client_secret_basic
+                      pkceRequired: false
+                      publicClient: false
                       scopes:
                         - openid
                         - profile
                         - email
                       token:
-                        access_token:
-                          validity_period: 3600
-                          user_attributes:
+                        accessToken:
+                          validityPeriod: 3600
+                          userAttributes:
                             - email
                             - username
-                        id_token:
-                          validity_period: 1800
-                          user_attributes:
+                        idToken:
+                          validityPeriod: 1800
+                          userAttributes:
                             - email
                             - email_verified
                             - name
                             - given_name
                             - family_name
-                      user_info:
-                        user_attributes:
+                      userInfo:
+                        userAttributes:
                           - email
                           - name
                           - given_name
                           - family_name
                           - picture
-                      scope_claims:
+                      scopeClaims:
                         profile:
                           - name
                           - family_name
@@ -358,14 +358,14 @@ paths:
                 id: 550e8400-e29b-41d4-a716-446655440000
                 name: My Web Application
                 description: Customer portal application
-                client_id: myapp_client_id
-                auth_flow_id: edc013d0-e893-4dc0-990c-3e1d203e005b
-                registration_flow_id: 80024fb3-29ed-4c33-aa48-8aee5e96d522
-                is_registration_flow_enabled: true
+                clientId: myapp_client_id
+                authFlowId: edc013d0-e893-4dc0-990c-3e1d203e005b
+                registrationFlowId: 80024fb3-29ed-4c33-aa48-8aee5e96d522
+                isRegistrationFlowEnabled: true
                 url: https://myapp.example.com
-                logo_url: https://myapp.example.com/logo.png
-                tos_uri: https://myapp.example.com/terms
-                policy_uri: https://myapp.example.com/privacy
+                logoUrl: https://myapp.example.com/logo.png
+                tosUri: https://myapp.example.com/terms
+                policyUri: https://myapp.example.com/privacy
                 contacts:
                   - admin@myapp.example.com
                   - support@myapp.example.com
@@ -373,60 +373,60 @@ paths:
                   env: production
                   team: platform
                 assertion:
-                  validity_period: 3600
-                  user_attributes:
+                  validityPeriod: 3600
+                  userAttributes:
                     - email
                     - username
                 certificate:
                   type: JWKS_URI
                   value: https://myapp.example.com/.well-known/jwks
-                allowed_user_types:
+                allowedUserTypes:
                   - employee
                   - customer
-                login_consent:
+                loginConsent:
                   enabled: true
-                  validity_period: 3600
-                inbound_auth_config:
+                  validityPeriod: 3600
+                inboundAuthConfig:
                   - type: oauth2
                     config:
-                      client_id: myapp_client_id
-                      redirect_uris:
+                      clientId: myapp_client_id
+                      redirectUris:
                         - https://myapp.example.com/callback
                         - https://myapp.example.com/oauth/callback
-                      grant_types:
+                      grantTypes:
                         - authorization_code
                         - refresh_token
-                      response_types:
+                      responseTypes:
                         - code
-                      token_endpoint_auth_method: client_secret_basic
-                      pkce_required: false
-                      public_client: false
+                      tokenEndpointAuthMethod: client_secret_basic
+                      pkceRequired: false
+                      publicClient: false
                       scopes:
                         - openid
                         - profile
                         - email
                       token:
-                        access_token:
-                          validity_period: 3600
-                          user_attributes:
+                        accessToken:
+                          validityPeriod: 3600
+                          userAttributes:
                             - email
                             - username
-                        id_token:
-                          validity_period: 1800
-                          user_attributes:
+                        idToken:
+                          validityPeriod: 1800
+                          userAttributes:
                             - email
                             - email_verified
                             - name
                             - given_name
                             - family_name
-                      user_info:
-                        user_attributes:
+                      userInfo:
+                        userAttributes:
                           - email
                           - name
                           - given_name
                           - family_name
                           - picture
-                      scope_claims:
+                      scopeClaims:
                         profile:
                           - name
                           - family_name
@@ -488,13 +488,13 @@ paths:
             example:
               name: Updated Web Application
               description: Updated customer portal application
-              auth_flow_id: edc013d0-e893-4dc0-990c-3e1d203e005b
-              registration_flow_id: 80024fb3-29ed-4c33-aa48-8aee5e96d522
-              is_registration_flow_enabled: true
+              authFlowId: edc013d0-e893-4dc0-990c-3e1d203e005b
+              registrationFlowId: 80024fb3-29ed-4c33-aa48-8aee5e96d522
+              isRegistrationFlowEnabled: true
               url: https://myapp.example.com
-              logo_url: https://myapp.example.com/updated-logo.png
-              tos_uri: https://myapp.example.com/terms
-              policy_uri: https://myapp.example.com/privacy
+              logoUrl: https://myapp.example.com/updated-logo.png
+              tosUri: https://myapp.example.com/terms
+              policyUri: https://myapp.example.com/privacy
               contacts:
                 - admin@myapp.example.com
                 - support@myapp.example.com
@@ -502,62 +502,62 @@ paths:
                 env: production
                 team: platform
               assertion:
-                validity_period: 3600
-                user_attributes:
+                validityPeriod: 3600
+                userAttributes:
                   - email
                   - username
               certificate:
                 type: JWKS_URI
                 value: https://myapp.example.com/.well-known/jwks
-              allowed_user_types:
+              allowedUserTypes:
                 - employee
                 - customer
-              login_consent:
-                validity_period: 3600
-              inbound_auth_config:
+              loginConsent:
+                validityPeriod: 3600
+              inboundAuthConfig:
                 - type: oauth2
                   config:
-                    client_id: myapp_client_id
-                    client_secret: myapp_updated_secret
-                    redirect_uris:
+                    clientId: myapp_client_id
+                    clientSecret: myapp_updated_secret
+                    redirectUris:
                       - https://myapp.example.com/callback
                       - https://myapp.example.com/oauth/callback
                       - https://staging.myapp.example.com/callback
-                    grant_types:
+                    grantTypes:
                       - authorization_code
                       - refresh_token
                       - client_credentials
-                    response_types:
+                    responseTypes:
                       - code
-                    token_endpoint_auth_method: client_secret_basic
-                    pkce_required: false
-                    public_client: false
+                    tokenEndpointAuthMethod: client_secret_basic
+                    pkceRequired: false
+                    publicClient: false
                     scopes:
                       - openid
                       - profile
                       - email
                     token:
-                      access_token:
-                        validity_period: 3600
-                        user_attributes:
+                      accessToken:
+                        validityPeriod: 3600
+                        userAttributes:
                           - email
                           - username
-                      id_token:
-                        validity_period: 1800
-                        user_attributes:
+                      idToken:
+                        validityPeriod: 1800
+                        userAttributes:
                           - email
                           - email_verified
                           - name
                           - given_name
                           - family_name
-                    user_info:
-                      user_attributes:
+                    userInfo:
+                      userAttributes:
                         - email
                         - name
                         - given_name
                         - family_name
                         - picture
-                    scope_claims:
+                    scopeClaims:
                       profile:
                         - name
                         - family_name
@@ -577,14 +577,14 @@ paths:
                 id: 550e8400-e29b-41d4-a716-446655440000
                 name: Updated Web Application
                 description: Updated customer portal application
-                client_id: myapp_client_id
-                auth_flow_id: edc013d0-e893-4dc0-990c-3e1d203e005b
-                registration_flow_id: 80024fb3-29ed-4c33-aa48-8aee5e96d522
-                is_registration_flow_enabled: true
+                clientId: myapp_client_id
+                authFlowId: edc013d0-e893-4dc0-990c-3e1d203e005b
+                registrationFlowId: 80024fb3-29ed-4c33-aa48-8aee5e96d522
+                isRegistrationFlowEnabled: true
                 url: https://myapp.example.com
-                logo_url: https://myapp.example.com/updated-logo.png
-                tos_uri: https://myapp.example.com/terms
-                policy_uri: https://myapp.example.com/privacy
+                logoUrl: https://myapp.example.com/updated-logo.png
+                tosUri: https://myapp.example.com/terms
+                policyUri: https://myapp.example.com/privacy
                 contacts:
                   - admin@myapp.example.com
                   - support@myapp.example.com
@@ -592,63 +592,63 @@ paths:
                   env: production
                   team: platform
                 assertion:
-                  validity_period: 3600
-                  user_attributes:
+                  validityPeriod: 3600
+                  userAttributes:
                     - email
                     - username
                 certificate:
                   type: JWKS_URI
                   value: https://myapp.example.com/.well-known/jwks
-                allowed_user_types:
+                allowedUserTypes:
                   - employee
                   - customer
-                login_consent:
+                loginConsent:
                   enabled: true
-                  validity_period: 3600
-                inbound_auth_config:
+                  validityPeriod: 3600
+                inboundAuthConfig:
                   - type: oauth2
                     config:
-                      client_id: myapp_client_id
-                      client_secret: myapp_updated_secret
-                      redirect_uris:
+                      clientId: myapp_client_id
+                      clientSecret: myapp_updated_secret
+                      redirectUris:
                         - https://myapp.example.com/callback
                         - https://myapp.example.com/oauth/callback
                         - https://staging.myapp.example.com/callback
-                      grant_types:
+                      grantTypes:
                         - authorization_code
                         - refresh_token
                         - client_credentials
-                      response_types:
+                      responseTypes:
                         - code
-                      token_endpoint_auth_method: client_secret_basic
-                      pkce_required: false
-                      public_client: false
+                      tokenEndpointAuthMethod: client_secret_basic
+                      pkceRequired: false
+                      publicClient: false
                       scopes:
                         - openid
                         - profile
                         - email
                       token:
-                        access_token:
-                          validity_period: 3600
-                          user_attributes:
+                        accessToken:
+                          validityPeriod: 3600
+                          userAttributes:
                             - email
                             - username
-                        id_token:
-                          validity_period: 1800
-                          user_attributes:
+                        idToken:
+                          validityPeriod: 1800
+                          userAttributes:
                             - email
                             - email_verified
                             - name
                             - given_name
                             - family_name
-                      user_info:
-                        user_attributes:
+                      userInfo:
+                        userAttributes:
                           - email
                           - name
                           - given_name
                           - family_name
                           - picture
-                      scope_claims:
+                      scopeClaims:
                         profile:
                           - name
                           - family_name
@@ -907,8 +907,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/IDPAuthInitResponse"
               example:
-                redirect_url: https://accounts.google.com/o/oauth2/auth?client_id=your-client-id&response_type=code&scope=openid%20email%20profile&redirect_uri=https://yourapp.com/callback
-                session_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                redirectUrl: https://accounts.google.com/o/oauth2/auth?client_id=your-client-id&response_type=code&scope=openid%20email%20profile&redirect_uri=https://yourapp.com/callback
+                sessionToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         "400":
           description: "Bad Request: The request body is malformed or contains invalid
             data."
@@ -986,8 +986,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/IDPAuthInitResponse"
               example:
-                redirect_url: https://github.com/login/oauth/authorize?client_id=your-client-id&redirect_uri=https://yourapp.com/callback&scope=user
-                session_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                redirectUrl: https://github.com/login/oauth/authorize?client_id=your-client-id&redirect_uri=https://yourapp.com/callback&scope=user
+                sessionToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         "400":
           description: "Bad Request: The request body is malformed or contains invalid
             data."
@@ -1065,8 +1065,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/IDPAuthInitResponse"
               example:
-                redirect_url: https://your-idp.com/oauth2/authorize?client_id=your-client-id&response_type=code&scope=openid%20email%20profile&redirect_uri=https://yourapp.com/callback
-                session_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                redirectUrl: https://your-idp.com/oauth2/authorize?client_id=your-client-id&response_type=code&scope=openid%20email%20profile&redirect_uri=https://yourapp.com/callback
+                sessionToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         "400":
           description: "Bad Request: The request body is malformed or contains invalid
             data."
@@ -2282,22 +2282,22 @@ paths:
                 app-metadata:
                   summary: Application metadata with i18n
                   value:
-                    is_registration_flow_enabled: true
+                    isRegistrationFlowEnabled: true
                     application:
                       id: 60a9b38b-6eba-9f9e-55f9-267067de4680
                       name: My Web Application
-                      logo_url: https://myapp.example.com/logo.png
+                      logoUrl: https://myapp.example.com/logo.png
                       url: https://myapp.example.com
-                      tos_uri: https://myapp.example.com/terms
-                      policy_uri: https://myapp.example.com/privacy
+                      tosUri: https://myapp.example.com/terms
+                      policyUri: https://myapp.example.com/privacy
                     ou:
                       id: fe447a2f-29c5-4e33-ac8f-d77be15fdb32
                       handle: default
                       name: Default Organization Unit
-                      logo_url: https://myapp.example.com/logo.png
-                      tos_uri: https://myapp.example.com/terms
-                      policy_uri: https://myapp.example.com/privacy
-                      cookie_policy_uri: https://myapp.example.com/cookies
+                      logoUrl: https://myapp.example.com/logo.png
+                      tosUri: https://myapp.example.com/terms
+                      policyUri: https://myapp.example.com/privacy
+                      cookiePolicyUri: https://myapp.example.com/cookies
                     design:
                       theme:
                         direction: ltr
@@ -2325,12 +2325,12 @@ paths:
                 ou-metadata:
                   summary: Organization unit metadata
                   value:
-                    is_registration_flow_enabled: false
+                    isRegistrationFlowEnabled: false
                     ou:
                       id: fe447a2f-29c5-4e33-ac8f-d77be15fdb32
                       handle: default
                       name: Default Organization Unit
-                      logo_url: https://myapp.example.com/logo.png
+                      logoUrl: https://myapp.example.com/logo.png
                     design:
                       theme: {}
                       layout: {}
@@ -3112,12 +3112,12 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
               example:
                 status: UP
-                service_status:
-                  - service_name: ConfigDB
+                serviceStatus:
+                  - serviceName: ConfigDB
                     status: UP
-                  - service_name: RuntimeDB
+                  - serviceName: RuntimeDB
                     status: UP
-                  - service_name: UserDB
+                  - serviceName: UserDB
                     status: UP
         "503":
           description: Service is not ready
@@ -3127,12 +3127,12 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
               example:
                 status: DOWN
-                service_status:
-                  - service_name: ConfigDB
+                serviceStatus:
+                  - serviceName: ConfigDB
                     status: DOWN
-                  - service_name: RuntimeDB
+                  - serviceName: RuntimeDB
                     status: UP
-                  - service_name: UserDB
+                  - serviceName: UserDB
                     status: UP
   /i18n/languages:
     get:
@@ -3818,7 +3818,7 @@ paths:
                   type: string
                   description: Recipient's mobile number
                   example: "+1234567890"
-                sender_id:
+                senderId:
                   type: string
                   description: ID of the message notification sender to use
                   example: 550e8400-e29b-41d4-a716-446655440000
@@ -3840,7 +3840,7 @@ paths:
                     type: string
                     description: Status of the OTP send request
                     example: SUCCESS
-                  session_token:
+                  sessionToken:
                     type: string
                     description: JWT token for the OTP session
                     example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
@@ -3878,11 +3878,11 @@ paths:
             schema:
               type: object
               properties:
-                session_token:
+                sessionToken:
                   type: string
                   description: JWT token for the OTP session
                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-                otp_code:
+                otpCode:
                   type: string
                   description: The OTP code received by the user
                   example: "123456"
@@ -8777,25 +8777,25 @@ components:
           type: string
           description: A brief description of the application.
           example: Customer portal application
-        auth_flow_id:
+        authFlowId:
           type: string
           description: The ID of the authentication flow.
           example: edc013d0-e893-4dc0-990c-3e1d203e005b
-        registration_flow_id:
+        registrationFlowId:
           type: string
           description: The ID of the registration flow.
           example: 80024fb3-29ed-4c33-aa48-8aee5e96d522
-        is_registration_flow_enabled:
+        isRegistrationFlowEnabled:
           type: boolean
           description: Indicates if the registration flow is enabled for the application.
           example: true
           default: false
-        theme_id:
+        themeId:
           type: string
           format: uuid
           description: The ID of the theme configuration associated with this application.
           example: 660e8400-e29b-41d4-a716-446655440001
-        layout_id:
+        layoutId:
           type: string
           format: uuid
           description: The ID of the layout configuration associated with this application.
@@ -8809,7 +8809,7 @@ components:
           format: uri
           description: The URL of the application.
           example: https://myapp.example.com
-        logo_url:
+        logoUrl:
           type: string
           format: uri
           description: The URL of the application's logo.
@@ -8818,17 +8818,17 @@ components:
           $ref: "#/components/schemas/AssertionConfig"
         certificate:
           $ref: "#/components/schemas/Certificate"
-        inbound_auth_config:
+        inboundAuthConfig:
           type: array
           items:
             $ref: "#/components/schemas/InboundAuthConfigComplete"
           description: Inbound authentication configuration for the application.
-        tos_uri:
+        tosUri:
           type: string
           format: uri
           description: URL pointing to the Terms of Service for the application.
           example: https://myapp.example.com/terms
-        policy_uri:
+        policyUri:
           type: string
           format: uri
           description: URL pointing to the Privacy Policy for the application.
@@ -8842,7 +8842,7 @@ components:
           example:
             - admin@myapp.example.com
             - support@myapp.example.com
-        allowed_user_types:
+        allowedUserTypes:
           type: array
           items:
             type: string
@@ -8851,10 +8851,10 @@ components:
             - employee
             - customer
             - partner
-        login_consent:
+        loginConsent:
           type: object
           properties:
-            validity_period:
+            validityPeriod:
               type: integer
               description: The validity period of the login consent in seconds. Default is 0
                 (no expiration).
@@ -8883,27 +8883,27 @@ components:
           type: string
           description: A brief description of the application.
           example: Customer portal application
-        client_id:
+        clientId:
           type: string
           description: The client ID for the application.
           example: myapp_client_id
-        auth_flow_id:
+        authFlowId:
           type: string
           description: The ID of the authentication flow.
           example: edc013d0-e893-4dc0-990c-3e1d203e005b
-        registration_flow_id:
+        registrationFlowId:
           type: string
           description: The ID of the registration flow.
           example: 80024fb3-29ed-4c33-aa48-8aee5e96d522
-        is_registration_flow_enabled:
+        isRegistrationFlowEnabled:
           type: boolean
           description: Indicates if the registration flow is enabled for the application.
           example: true
-        theme_id:
+        themeId:
           type: string
           format: uuid
           description: The ID of the theme configuration associated with this application.
-        layout_id:
+        layoutId:
           type: string
           format: uuid
           description: The ID of the layout configuration associated with this application.
@@ -8917,7 +8917,7 @@ components:
           format: uri
           description: The URL of the application.
           example: https://myapp.example.com
-        logo_url:
+        logoUrl:
           type: string
           format: uri
           description: The URL of the application's logo.
@@ -8926,17 +8926,17 @@ components:
           $ref: "#/components/schemas/AssertionConfig"
         certificate:
           $ref: "#/components/schemas/Certificate"
-        inbound_auth_config:
+        inboundAuthConfig:
           type: array
           items:
             $ref: "#/components/schemas/InboundAuthConfigComplete"
           description: Inbound authentication configuration for the application.
-        tos_uri:
+        tosUri:
           type: string
           format: uri
           description: URL pointing to the Terms of Service for the application.
           example: https://myapp.example.com/terms
-        policy_uri:
+        policyUri:
           type: string
           format: uri
           description: URL pointing to the Privacy Policy for the application.
@@ -8950,7 +8950,7 @@ components:
           example:
             - admin@myapp.example.com
             - support@myapp.example.com
-        allowed_user_types:
+        allowedUserTypes:
           type: array
           items:
             type: string
@@ -8959,10 +8959,10 @@ components:
             - employee
             - customer
             - partner
-        login_consent:
+        loginConsent:
           type: object
           properties:
-            validity_period:
+            validityPeriod:
               type: integer
               description: The validity period of the consent in seconds. Default is 0 (no
                 expiration).
@@ -8991,27 +8991,27 @@ components:
           type: string
           description: A brief description of the application.
           example: Customer portal application
-        client_id:
+        clientId:
           type: string
           description: The client ID for the application.
           example: myapp_client_id
-        auth_flow_id:
+        authFlowId:
           type: string
           description: The ID of the authentication flow.
           example: edc013d0-e893-4dc0-990c-3e1d203e005b
-        registration_flow_id:
+        registrationFlowId:
           type: string
           description: The ID of the registration flow.
           example: 80024fb3-29ed-4c33-aa48-8aee5e96d522
-        is_registration_flow_enabled:
+        isRegistrationFlowEnabled:
           type: boolean
           description: Indicates if the registration flow is enabled for the application.
           example: true
-        theme_id:
+        themeId:
           type: string
           format: uuid
           description: The ID of the theme configuration associated with this application.
-        layout_id:
+        layoutId:
           type: string
           format: uuid
           description: The ID of the layout configuration associated with this application.
@@ -9025,7 +9025,7 @@ components:
           format: uri
           description: The URL of the application.
           example: https://myapp.example.com
-        logo_url:
+        logoUrl:
           type: string
           format: uri
           description: The URL of the application's logo.
@@ -9034,17 +9034,17 @@ components:
           $ref: "#/components/schemas/AssertionConfig"
         certificate:
           $ref: "#/components/schemas/Certificate"
-        inbound_auth_config:
+        inboundAuthConfig:
           type: array
           items:
             $ref: "#/components/schemas/InboundAuthConfig"
           description: Inbound authentication configuration for the application.
-        tos_uri:
+        tosUri:
           type: string
           format: uri
           description: URL pointing to the Terms of Service for the application.
           example: https://myapp.example.com/terms
-        policy_uri:
+        policyUri:
           type: string
           format: uri
           description: URL pointing to the Privacy Policy for the application.
@@ -9058,7 +9058,7 @@ components:
           example:
             - admin@myapp.example.com
             - support@myapp.example.com
-        allowed_user_types:
+        allowedUserTypes:
           type: array
           items:
             type: string
@@ -9067,10 +9067,10 @@ components:
             - employee
             - customer
             - partner
-        login_consent:
+        loginConsent:
           type: object
           properties:
-            validity_period:
+            validityPeriod:
               type: integer
               description: The validity period of the consent in seconds. Default is 0 (no
                 expiration).
@@ -9099,32 +9099,32 @@ components:
           type: string
           description: A brief description of the application.
           example: Customer portal application
-        client_id:
+        clientId:
           type: string
           description: The client ID for the application.
           example: myapp_client_id
-        logo_url:
+        logoUrl:
           type: string
           format: uri
           description: The URL of the application's logo.
           example: https://myapp.example.com/logo.png
-        auth_flow_id:
+        authFlowId:
           type: string
           description: The ID of the authentication flow.
           example: edc013d0-e893-4dc0-990c-3e1d203e005b
-        registration_flow_id:
+        registrationFlowId:
           type: string
           description: The ID of the registration flow.
           example: 80024fb3-29ed-4c33-aa48-8aee5e96d522
-        is_registration_flow_enabled:
+        isRegistrationFlowEnabled:
           type: boolean
           description: Indicates if the registration flow is enabled for the application.
           example: true
-        theme_id:
+        themeId:
           type: string
           format: uuid
           description: The ID of the theme configuration associated with this application.
-        layout_id:
+        layoutId:
           type: string
           format: uuid
           description: The ID of the layout configuration associated with this application.
@@ -9153,11 +9153,11 @@ components:
       description: |
         Assertion configuration for application-level (root) assertions.
       properties:
-        validity_period:
+        validityPeriod:
           type: integer
           description: The validity period of the token in seconds.
           example: 3600
-        user_attributes:
+        userAttributes:
           type: array
           items:
             type: string
@@ -9170,12 +9170,12 @@ components:
       description: |
         Access token configuration for OAuth applications.
       properties:
-        validity_period:
+        validityPeriod:
           type: integer
           description: The validity period of the access token in seconds. If not
             specified, falls back to application-level or deployment default.
           example: 3600
-        user_attributes:
+        userAttributes:
           type: array
           items:
             type: string
@@ -9188,12 +9188,12 @@ components:
       description: |
         ID token configuration for OAuth applications.
       properties:
-        validity_period:
+        validityPeriod:
           type: integer
           description: The validity period of the ID token in seconds. If not specified,
             falls back to application-level or deployment default.
           example: 3600
-        user_attributes:
+        userAttributes:
           type: array
           items:
             type: string
@@ -9208,7 +9208,7 @@ components:
       type: object
       description: UserInfo endpoint configuration for the OAuth application
       properties:
-        user_attributes:
+        userAttributes:
           type: array
           items:
             type: string
@@ -9261,11 +9261,11 @@ components:
     OAuthAppConfig:
       type: object
       properties:
-        client_id:
+        clientId:
           type: string
           description: The client ID for the OAuth application.
           example: myapp_client_id
-        redirect_uris:
+        redirectUris:
           type: array
           items:
             type: string
@@ -9274,7 +9274,7 @@ components:
           example:
             - https://myapp.example.com/callback
             - https://myapp.example.com/oauth/callback
-        grant_types:
+        grantTypes:
           type: array
           items:
             type: string
@@ -9290,7 +9290,7 @@ components:
           example:
             - authorization_code
             - refresh_token
-        response_types:
+        responseTypes:
           type: array
           items:
             type: string
@@ -9301,7 +9301,7 @@ components:
             Defaults to ["code"] if not specified.
           example:
             - code
-        token_endpoint_auth_method:
+        tokenEndpointAuthMethod:
           type: string
           enum:
             - client_secret_basic
@@ -9310,13 +9310,13 @@ components:
           description: The token endpoint authentication method for the OAuth application.
             Defaults to "client_secret_basic" if not specified.
           example: client_secret_basic
-        pkce_required:
+        pkceRequired:
           type: boolean
           description: Whether PKCE (Proof Key for Code Exchange) is required for this
             application.
           example: false
           default: false
-        public_client:
+        publicClient:
           type: boolean
           description: Whether the application is a public client (Mobile apps, SPAs,
             etc.), which cannot store secrets securely.
@@ -9334,13 +9334,13 @@ components:
         token:
           type: object
           properties:
-            access_token:
+            accessToken:
               $ref: "#/components/schemas/AccessTokenConfig"
-            id_token:
+            idToken:
               $ref: "#/components/schemas/IDTokenConfig"
-        user_info:
+        userInfo:
           $ref: "#/components/schemas/UserInfoConfig"
-        scope_claims:
+        scopeClaims:
           type: object
           additionalProperties:
             type: array
@@ -9361,16 +9361,16 @@ components:
     OAuthAppConfigComplete:
       type: object
       properties:
-        client_id:
+        clientId:
           type: string
           description: The client ID for the OAuth application.
           example: myapp_client_id
-        client_secret:
+        clientSecret:
           type: string
           description: The client secret for the OAuth application. Omitted for public
             clients.
           example: myapp_client_secret
-        redirect_uris:
+        redirectUris:
           type: array
           items:
             type: string
@@ -9379,7 +9379,7 @@ components:
           example:
             - https://myapp.example.com/callback
             - https://myapp.example.com/oauth/callback
-        grant_types:
+        grantTypes:
           type: array
           items:
             type: string
@@ -9395,7 +9395,7 @@ components:
           example:
             - authorization_code
             - refresh_token
-        response_types:
+        responseTypes:
           type: array
           items:
             type: string
@@ -9406,7 +9406,7 @@ components:
             Defaults to ["code"] if not specified.
           example:
             - code
-        token_endpoint_auth_method:
+        tokenEndpointAuthMethod:
           type: string
           enum:
             - client_secret_basic
@@ -9415,13 +9415,13 @@ components:
           description: The token endpoint authentication method for the OAuth application.
             Defaults to "client_secret_basic" if not specified.
           example: client_secret_basic
-        pkce_required:
+        pkceRequired:
           type: boolean
           description: Whether PKCE (Proof Key for Code Exchange) is required for this
             application.
           example: false
           default: false
-        public_client:
+        publicClient:
           type: boolean
           description: Whether the application is a public client (Mobile apps, SPAs,
             etc.), which cannot store secrets securely.
@@ -9439,13 +9439,13 @@ components:
         token:
           type: object
           properties:
-            access_token:
+            accessToken:
               $ref: "#/components/schemas/AccessTokenConfig"
-            id_token:
+            idToken:
               $ref: "#/components/schemas/IDTokenConfig"
-        user_info:
+        userInfo:
           $ref: "#/components/schemas/UserInfoConfig"
-        scope_claims:
+        scopeClaims:
           type: object
           additionalProperties:
             type: array
@@ -9490,7 +9490,7 @@ components:
           additionalProperties: true
           example:
             password: SecurePassword123!
-        skip_assertion:
+        skipAssertion:
           type: boolean
           description: Skip generating assertion token in the response
           default: false
@@ -9507,7 +9507,7 @@ components:
     SendOtpAuthRequest:
       type: object
       properties:
-        sender_id:
+        senderId:
           type: string
           description: ID of the message notification sender to use
           example: 550e8400-e29b-41d4-a716-446655440000
@@ -9516,7 +9516,7 @@ components:
           description: Recipient's mobile number
           example: "+1234567890"
       required:
-        - sender_id
+        - senderId
         - recipient
     SendOtpAuthResponse:
       type: object
@@ -9525,14 +9525,14 @@ components:
           type: string
           description: Status of the OTP send request
           example: SUCCESS
-        session_token:
+        sessionToken:
           type: string
           description: JWT token for the authentication session
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
     VerifyOtpAuthRequest:
       type: object
       properties:
-        session_token:
+        sessionToken:
           type: string
           description: JWT token for the OTP session
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
@@ -9540,7 +9540,7 @@ components:
           type: string
           description: The OTP code received by the user
           example: "123456"
-        skip_assertion:
+        skipAssertion:
           type: boolean
           description: Skip generating assertion token in the response
           default: false
@@ -9551,7 +9551,7 @@ components:
             authentication
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
       required:
-        - session_token
+        - sessionToken
         - otp
     AuthenticationResponse:
       type: object
@@ -9574,37 +9574,37 @@ components:
     IDPAuthInitRequest:
       type: object
       required:
-        - idp_id
+        - idpId
       properties:
-        idp_id:
+        idpId:
           type: string
           description: Identity provider ID
           example: 550e8400-e29b-41d4-a716-446655440000
     IDPAuthInitResponse:
       type: object
       properties:
-        redirect_url:
+        redirectUrl:
           type: string
           description: URL to redirect the user for authentication
           example: https://accounts.google.com/o/oauth2/auth?client_id=your-client-id&response_type=code&scope=openid%20email%20profile&redirect_uri=https://yourapp.com/callback
-        session_token:
+        sessionToken:
           type: string
           description: JWT token for the authentication session
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
     IDPAuthFinishRequest:
       type: object
       required:
-        - session_token
+        - sessionToken
         - code
       properties:
-        session_token:
+        sessionToken:
           type: string
           description: JWT token for the authentication session
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         code:
           type: string
           description: Authorization code received from the identity provider
-        skip_assertion:
+        skipAssertion:
           type: boolean
           description: Skip generating assertion token in the response
           default: false
@@ -9697,13 +9697,13 @@ components:
                   - internal
                   - hybrid
             userVerification: preferred
-        session_token:
+        sessionToken:
           type: string
           description: JWT token for the WebAuthn authentication session
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
       required:
         - publicKeyCredentialRequestOptions
-        - session_token
+        - sessionToken
     WebAuthnFinishRequest:
       type: object
       properties:
@@ -9769,11 +9769,11 @@ components:
               signature: MEUCIQCHLpP8Z8AsiWEnMLHLmVzzuoMdl2MFAAAAAQ
               userHandle: aWQxMjM0NQ
             authenticatorAttachment: platform
-        session_token:
+        sessionToken:
           type: string
           description: JWT token for the WebAuthn authentication session
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        skip_assertion:
+        skipAssertion:
           type: boolean
           description: Skip generating assertion token in the response
           default: false
@@ -9785,7 +9785,7 @@ components:
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
       required:
         - publicKeyCredential
-        - session_token
+        - sessionToken
     ErrorResponse:
       type: object
       properties:
@@ -11037,11 +11037,11 @@ components:
     FlowMetadataResponse:
       type: object
       required:
-        - is_registration_flow_enabled
+        - isRegistrationFlowEnabled
         - design
         - i18n
       properties:
-        is_registration_flow_enabled:
+        isRegistrationFlowEnabled:
           type: boolean
           description: Indicates if registration flow is enabled for the entity
           example: true
@@ -11066,7 +11066,7 @@ components:
           type: string
           description: Application name
           example: My Web Application
-        logo_url:
+        logoUrl:
           type: string
           format: uri
           description: Application logo URL
@@ -11076,12 +11076,12 @@ components:
           format: uri
           description: Application URL
           example: https://myapp.example.com
-        tos_uri:
+        tosUri:
           type: string
           format: uri
           description: Terms of Service URI
           example: https://myapp.example.com/terms
-        policy_uri:
+        policyUri:
           type: string
           format: uri
           description: Privacy Policy URI
@@ -11110,22 +11110,22 @@ components:
           type: string
           description: Organization unit description
           example: Default organization unit for the deployment
-        logo_url:
+        logoUrl:
           type: string
           format: uri
           description: Organization unit logo URL
           example: https://myapp.example.com/logo.png
-        tos_uri:
+        tosUri:
           type: string
           format: uri
           description: Terms of Service URI
           example: https://myapp.example.com/terms
-        policy_uri:
+        policyUri:
           type: string
           format: uri
           description: Privacy Policy URI
           example: https://myapp.example.com/privacy
-        cookie_policy_uri:
+        cookiePolicyUri:
           type: string
           format: uri
           description: Cookie Policy URI
@@ -11329,12 +11329,12 @@ components:
             - UP
             - DOWN
             - UNKNOWN
-        service_status:
+        serviceStatus:
           type: array
           items:
             type: object
             properties:
-              service_name:
+              serviceName:
                 type: string
                 enum:
                   - ConfigDB
@@ -11493,13 +11493,13 @@ components:
           example:
             - name: client_id
               value: your-client-id
-              is_secret: false
+              isSecret: false
             - name: client_secret
               value: your-client-secret
-              is_secret: true
+              isSecret: true
             - name: scope
               value: openid email profile
-              is_secret: false
+              isSecret: false
     IDPResponse:
       type: object
       properties:
@@ -11532,13 +11532,13 @@ components:
           example:
             - name: client_id
               value: your-client-id
-              is_secret: false
+              isSecret: false
             - name: client_secret
               value: "******"
-              is_secret: true
+              isSecret: true
             - name: scope
               value: openid email profile
-              is_secret: false
+              isSecret: false
     BasicIDPResponse:
       type: object
       properties:
@@ -11587,7 +11587,7 @@ components:
           type: string
           description: Value of the property
           example: your-client-id
-        is_secret:
+        isSecret:
           type: boolean
           description: Whether the property is secret
           example: false
@@ -11633,7 +11633,7 @@ components:
                 type: string
                 description: Property value (masked with ****** for secret properties)
                 example: ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-              is_secret:
+              isSecret:
                 type: boolean
                 description: Indicates if the property is a secret
                 example: true
@@ -11670,7 +11670,7 @@ components:
                 type: string
                 description: Property value
                 example: ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-              is_secret:
+              isSecret:
                 type: boolean
                 description: Indicates if the property is a secret
                 example: true
@@ -11694,7 +11694,7 @@ components:
           type: string
         description:
           type: string
-        logo_url:
+        logoUrl:
           type: string
           format: uri
           description: Logo URL for the organization unit
@@ -11748,27 +11748,27 @@ components:
           type: string
           description: Optional description of the organization unit
           example: Team responsible for frontend development and UI/UX
-        theme_id:
+        themeId:
           type: string
           format: uuid
           description: Theme configuration ID for the organization unit
-        layout_id:
+        layoutId:
           type: string
           format: uuid
           description: Layout configuration ID for the organization unit
-        logo_url:
+        logoUrl:
           type: string
           format: uri
           description: Logo URL for the organization unit
-        tos_uri:
+        tosUri:
           type: string
           format: uri
           description: Terms of Service URI
-        policy_uri:
+        policyUri:
           type: string
           format: uri
           description: Privacy Policy URI
-        cookie_policy_uri:
+        cookiePolicyUri:
           type: string
           format: uri
           description: Cookie Policy URI
@@ -11790,27 +11790,27 @@ components:
           type: string
           description: Optional description of the organization unit
           example: Team responsible for frontend development and UI/UX
-        theme_id:
+        themeId:
           type: string
           format: uuid
           description: Theme configuration ID for the organization unit
-        layout_id:
+        layoutId:
           type: string
           format: uuid
           description: Layout configuration ID for the organization unit
-        logo_url:
+        logoUrl:
           type: string
           format: uri
           description: Logo URL for the organization unit
-        tos_uri:
+        tosUri:
           type: string
           format: uri
           description: Terms of Service URI
-        policy_uri:
+        policyUri:
           type: string
           format: uri
           description: Privacy Policy URI
-        cookie_policy_uri:
+        cookiePolicyUri:
           type: string
           format: uri
           description: Cookie Policy URI

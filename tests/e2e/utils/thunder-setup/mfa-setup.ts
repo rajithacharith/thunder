@@ -512,7 +512,7 @@ export class ThunderMFASetup {
     }
 
     const listData = await listResponse.json();
-    const targetApp = listData.applications?.find((app: any) => app.client_id === "REACT_SDK_SAMPLE");
+    const targetApp = listData.applications?.find((app: any) => app.clientId === "REACT_SDK_SAMPLE");
 
     if (!targetApp) {
       throw new Error(`Application with clientId "REACT_SDK_SAMPLE" not found`);
@@ -537,9 +537,9 @@ export class ThunderMFASetup {
     // Update with new flow IDs
     const updatedApp = {
       ...appData,
-      auth_flow_id: authFlowId,
-      registration_flow_id: registrationFlowId,
-      is_registration_flow_enabled: true,
+      authFlowId: authFlowId,
+      registrationFlowId: registrationFlowId,
+      isRegistrationFlowEnabled: true,
     };
 
     const updateResponse = await this.request.put(`${this.config.thunderUrl}/applications/${actualAppId}`, {

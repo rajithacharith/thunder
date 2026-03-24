@@ -46,33 +46,33 @@ describe('useCreateApplication', () => {
     name: 'Test Application',
     description: 'Test application description',
     url: 'https://test-app.com',
-    logo_url: 'https://test-app.com/logo.png',
-    tos_uri: 'https://test-app.com/terms',
-    policy_uri: 'https://test-app.com/privacy',
+    logoUrl: 'https://test-app.com/logo.png',
+    tosUri: 'https://test-app.com/terms',
+    policyUri: 'https://test-app.com/privacy',
     contacts: ['admin@test-app.com'],
-    auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
-    registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
-    is_registration_flow_enabled: true,
-    inbound_auth_config: [
+    authFlowId: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+    registrationFlowId: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
+    isRegistrationFlowEnabled: true,
+    inboundAuthConfig: [
       {
         type: 'oauth2',
         config: {
-          client_id: 'CONSOLE',
-          redirect_uris: ['https://localhost:5191'],
-          grant_types: ['authorization_code'],
-          response_types: ['code'],
-          pkce_required: false,
-          token_endpoint_auth_method: 'none',
-          public_client: true,
+          clientId: 'CONSOLE',
+          redirectUris: ['https://localhost:5191'],
+          grantTypes: ['authorization_code'],
+          responseTypes: ['code'],
+          pkceRequired: false,
+          tokenEndpointAuthMethod: 'none',
+          publicClient: true,
           token: {
-            access_token: {
-              validity_period: 3600,
-              user_attributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
+            accessToken: {
+              validityPeriod: 3600,
+              userAttributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
             },
-            id_token: {
-              validity_period: 3600,
-              user_attributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
-              scope_claims: {
+            idToken: {
+              validityPeriod: 3600,
+              userAttributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
+              scopeClaims: {
                 profile: ['name', 'given_name', 'family_name', 'picture'],
                 email: ['email', 'email_verified'],
                 phone: ['phone_number', 'phone_number_verified'],
@@ -84,42 +84,42 @@ describe('useCreateApplication', () => {
         },
       },
     ],
-    user_attributes: ['email', 'username'],
-    created_at: '2025-11-13T10:00:00Z',
-    updated_at: '2025-11-13T10:00:00Z',
+    userAttributes: ['email', 'username'],
+    createdAt: '2025-11-13T10:00:00Z',
+    updatedAt: '2025-11-13T10:00:00Z',
   };
 
   const mockRequest: CreateApplicationRequest = {
     name: 'Test Application',
     description: 'Test application description',
     url: 'https://test-app.com',
-    logo_url: 'https://test-app.com/logo.png',
-    tos_uri: 'https://test-app.com/terms',
-    policy_uri: 'https://test-app.com/privacy',
+    logoUrl: 'https://test-app.com/logo.png',
+    tosUri: 'https://test-app.com/terms',
+    policyUri: 'https://test-app.com/privacy',
     contacts: ['admin@test-app.com'],
-    auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
-    registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
-    is_registration_flow_enabled: true,
-    inbound_auth_config: [
+    authFlowId: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+    registrationFlowId: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
+    isRegistrationFlowEnabled: true,
+    inboundAuthConfig: [
       {
         type: 'oauth2',
         config: {
-          client_id: 'CONSOLE',
-          redirect_uris: ['https://localhost:5191'],
-          grant_types: ['authorization_code'],
-          response_types: ['code'],
-          pkce_required: false,
-          token_endpoint_auth_method: 'none',
-          public_client: true,
+          clientId: 'CONSOLE',
+          redirectUris: ['https://localhost:5191'],
+          grantTypes: ['authorization_code'],
+          responseTypes: ['code'],
+          pkceRequired: false,
+          tokenEndpointAuthMethod: 'none',
+          publicClient: true,
           token: {
-            access_token: {
-              validity_period: 3600,
-              user_attributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
+            accessToken: {
+              validityPeriod: 3600,
+              userAttributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
             },
-            id_token: {
-              validity_period: 3600,
-              user_attributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
-              scope_claims: {
+            idToken: {
+              validityPeriod: 3600,
+              userAttributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
+              scopeClaims: {
                 profile: ['name', 'given_name', 'family_name', 'picture'],
                 email: ['email', 'email_verified'],
                 phone: ['phone_number', 'phone_number_verified'],
@@ -131,7 +131,7 @@ describe('useCreateApplication', () => {
         },
       },
     ],
-    user_attributes: ['email', 'username'],
+    userAttributes: ['email', 'username'],
   };
 
   let mockHttpRequest: ReturnType<typeof vi.fn>;

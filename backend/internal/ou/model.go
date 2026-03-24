@@ -30,7 +30,7 @@ type OrganizationUnitBasic struct {
 	Handle      string `json:"handle"`
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
-	LogoURL     string `json:"logo_url,omitempty"`
+	LogoURL     string `json:"logoUrl,omitempty"`
 	IsReadOnly  bool   `json:"isReadOnly,omitempty"`
 }
 
@@ -41,12 +41,12 @@ type OrganizationUnit struct {
 	Name            string  `json:"name" yaml:"name"`
 	Description     string  `json:"description,omitempty" yaml:"description,omitempty"`
 	Parent          *string `json:"parent" yaml:"parent"`
-	ThemeID         string  `json:"theme_id,omitempty" yaml:"theme_id,omitempty"`
-	LayoutID        string  `json:"layout_id,omitempty" yaml:"layout_id,omitempty"`
-	LogoURL         string  `json:"logo_url,omitempty" yaml:"logo_url,omitempty"`
-	TosURI          string  `json:"tos_uri,omitempty" yaml:"tos_uri,omitempty"`
-	PolicyURI       string  `json:"policy_uri,omitempty" yaml:"policy_uri,omitempty"`
-	CookiePolicyURI string  `json:"cookie_policy_uri,omitempty" yaml:"cookie_policy_uri,omitempty"`
+	ThemeID         string  `json:"themeId,omitempty" yaml:"theme_id,omitempty"`
+	LayoutID        string  `json:"layoutId,omitempty" yaml:"layout_id,omitempty"`
+	LogoURL         string  `json:"logoUrl,omitempty" yaml:"logo_url,omitempty"`
+	TosURI          string  `json:"tosUri,omitempty" yaml:"tos_uri,omitempty"`
+	PolicyURI       string  `json:"policyUri,omitempty" yaml:"policy_uri,omitempty"`
+	CookiePolicyURI string  `json:"cookiePolicyUri,omitempty" yaml:"cookie_policy_uri,omitempty"`
 }
 
 // OrganizationUnitRequest represents the request body for creating an organization unit.
@@ -55,12 +55,12 @@ type OrganizationUnitRequest struct {
 	Name            string  `json:"name"`
 	Description     string  `json:"description,omitempty"`
 	Parent          *string `json:"parent"`
-	ThemeID         string  `json:"theme_id,omitempty"`
-	LayoutID        string  `json:"layout_id,omitempty"`
-	LogoURL         string  `json:"logo_url,omitempty"`
-	TosURI          string  `json:"tos_uri,omitempty"`
-	PolicyURI       string  `json:"policy_uri,omitempty"`
-	CookiePolicyURI string  `json:"cookie_policy_uri,omitempty"`
+	ThemeID         string  `json:"themeId,omitempty"`
+	LayoutID        string  `json:"layoutId,omitempty"`
+	LogoURL         string  `json:"logoUrl,omitempty"`
+	TosURI          string  `json:"tosUri,omitempty"`
+	PolicyURI       string  `json:"policyUri,omitempty"`
+	CookiePolicyURI string  `json:"cookiePolicyUri,omitempty"`
 }
 
 // OrganizationUnitListResponse represents the response for listing organization units with pagination.

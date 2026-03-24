@@ -66,20 +66,20 @@ type NotificationSenderResponse struct {
 // SendOTPRequest represents the request structure for sending an OTP.
 type SendOTPRequest struct {
 	Recipient string `json:"recipient"`
-	SenderID  string `json:"sender_id"`
+	SenderID  string `json:"senderId"`
 	Channel   string `json:"channel"`
 }
 
 // SendOTPResponse represents the response structure for OTP send request.
 type SendOTPResponse struct {
-	SessionToken string `json:"session_token"`
+	SessionToken string `json:"sessionToken"`
 	Status       string `json:"status"`
 }
 
 // VerifyOTPRequest represents the request structure for verifying an OTP.
 type VerifyOTPRequest struct {
-	SessionToken string `json:"session_token"`
-	OTPCode      string `json:"otp_code"`
+	SessionToken string `json:"sessionToken"`
+	OTPCode      string `json:"otpCode"`
 }
 
 // VerifyOTPResponse represents the response structure for OTP verification.
@@ -115,7 +115,7 @@ type VerifyOTPResultDTO struct {
 type OTPSessionData struct {
 	Recipient  string `json:"recipient"`
 	Channel    string `json:"channel"`
-	SenderID   string `json:"sender_id"`
+	SenderID   string `json:"senderId"`
 	OTPValue   string `json:"otp_value"`
 	ExpiryTime int64  `json:"expiry_time"`
 }

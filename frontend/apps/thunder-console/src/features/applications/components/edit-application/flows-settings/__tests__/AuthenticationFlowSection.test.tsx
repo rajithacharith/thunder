@@ -45,7 +45,7 @@ describe('AuthenticationFlowSection', () => {
   const mockApplication: Application = {
     id: 'app-123',
     name: 'Test App',
-    auth_flow_id: 'auth-flow-1',
+    authFlowId: 'auth-flow-1',
   } as Application;
 
   const mockAuthFlows = [
@@ -114,7 +114,7 @@ describe('AuthenticationFlowSection', () => {
         isLoading: false,
       } as MockedUseGetFlows);
 
-      const appWithoutFlow = {...mockApplication, auth_flow_id: undefined};
+      const appWithoutFlow = {...mockApplication, authFlowId: undefined};
 
       render(
         <MemoryRouter>
@@ -131,13 +131,13 @@ describe('AuthenticationFlowSection', () => {
         isLoading: false,
       } as MockedUseGetFlows);
 
-      const appWithoutFlow = {...mockApplication, auth_flow_id: undefined};
+      const appWithoutFlow = {...mockApplication, authFlowId: undefined};
 
       render(
         <MemoryRouter>
           <AuthenticationFlowSection
             application={appWithoutFlow}
-            editedApp={{auth_flow_id: 'auth-flow-2'}}
+            editedApp={{authFlowId: 'auth-flow-2'}}
             onFieldChange={mockOnFieldChange}
           />
         </MemoryRouter>,
@@ -206,7 +206,7 @@ describe('AuthenticationFlowSection', () => {
         <MemoryRouter>
           <AuthenticationFlowSection
             application={mockApplication}
-            editedApp={{auth_flow_id: 'auth-flow-2'}}
+            editedApp={{authFlowId: 'auth-flow-2'}}
             onFieldChange={mockOnFieldChange}
           />
         </MemoryRouter>,
@@ -238,7 +238,7 @@ describe('AuthenticationFlowSection', () => {
 
       await user.click(screen.getByText('MFA Auth Flow'));
 
-      expect(mockOnFieldChange).toHaveBeenCalledWith('auth_flow_id', 'auth-flow-3');
+      expect(mockOnFieldChange).toHaveBeenCalledWith('authFlowId', 'auth-flow-3');
     });
 
     it('should handle clearing selection', async () => {
@@ -257,7 +257,7 @@ describe('AuthenticationFlowSection', () => {
       const clearButton = screen.getByTitle('Clear');
       await user.click(clearButton);
 
-      expect(mockOnFieldChange).toHaveBeenCalledWith('auth_flow_id', '');
+      expect(mockOnFieldChange).toHaveBeenCalledWith('authFlowId', '');
     });
   });
 
@@ -368,7 +368,7 @@ describe('AuthenticationFlowSection', () => {
         <MemoryRouter>
           <AuthenticationFlowSection
             application={mockApplication}
-            editedApp={{auth_flow_id: 'auth-flow-2'}}
+            editedApp={{authFlowId: 'auth-flow-2'}}
             onFieldChange={mockOnFieldChange}
           />
         </MemoryRouter>,

@@ -167,7 +167,7 @@ describe('ImageAdapter', () => {
 
   describe('Dynamic Source', () => {
     it('should render dynamic placeholder for meta template src', () => {
-      const resource = createMockElement({src: '{{meta(application.logo_url)}}'});
+      const resource = createMockElement({src: '{{meta(application.logoUrl)}}'});
 
       render(<ImageAdapter resource={resource} />);
 
@@ -185,7 +185,7 @@ describe('ImageAdapter', () => {
     });
 
     it('should render ImageIcon in dynamic placeholder', () => {
-      const resource = createMockElement({src: '{{meta(application.logo_url)}}'});
+      const resource = createMockElement({src: '{{meta(application.logoUrl)}}'});
 
       const {container} = render(<ImageAdapter resource={resource} />);
 

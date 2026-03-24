@@ -107,7 +107,7 @@ func (ts *BasicRegistrationFlowTestSuite) SetupSuite() {
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{testUserSchema.Name},
 		AssertionConfig: map[string]interface{}{
-			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
+			"userAttributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
 
@@ -479,7 +479,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlow_WithEmptyUse
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{testUserSchema.Name},
 		AssertionConfig: map[string]interface{}{
-			"user_attributes": []string{}, // Empty array
+			"userAttributes": []string{}, // Empty array
 		},
 	}
 

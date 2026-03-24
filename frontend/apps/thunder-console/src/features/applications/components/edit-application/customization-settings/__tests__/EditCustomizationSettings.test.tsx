@@ -46,9 +46,9 @@ describe('EditCustomizationSettings', () => {
     name: 'Test Application',
     description: 'Test Description',
     template: 'custom',
-    theme_id: 'theme-1',
-    tos_uri: 'https://example.com/terms',
-    policy_uri: 'https://example.com/privacy',
+    themeId: 'theme-1',
+    tosUri: 'https://example.com/terms',
+    policyUri: 'https://example.com/privacy',
     contacts: ['contact@example.com'],
   } as Application;
 
@@ -138,9 +138,9 @@ describe('EditCustomizationSettings', () => {
 
     it('should propagate editedApp prop to all sections', () => {
       const editedApp = {
-        theme_id: 'theme-2',
-        tos_uri: 'https://edited.com/terms',
-        policy_uri: 'https://edited.com/privacy',
+        themeId: 'theme-2',
+        tosUri: 'https://edited.com/terms',
+        policyUri: 'https://edited.com/privacy',
         contacts: ['edited@example.com'],
       };
 

@@ -163,19 +163,19 @@ export default function useRegenerateClientSecret(): UseMutationResult<
       // Step 3: Prepare the update request with the new client secret
       // Destructure to remove server-generated fields
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const {id, created_at: createdAt, updated_at: updatedAt, ...updateRequest} = currentApplication;
+      const {id, createdAt, updatedAt, inboundAuthConfig, ...applicationUpdate}: Application = currentApplication;
+      const updateRequest = {...applicationUpdate, inboundAuthConfig};
 
       // Update the OAuth2 config with the new client secret
-      const inboundAuthConfig = updateRequest.inbound_auth_config;
-      const oauth2Config = Array.isArray(inboundAuthConfig)
-        ? inboundAuthConfig.find((config: InboundAuthConfig) => config.type === 'oauth2')
-        : undefined;
+      const oauth2Config: InboundAuthConfig | undefined = inboundAuthConfig?.find(
+        (config: InboundAuthConfig) => config.type === 'oauth2',
+      );
 
       if (!oauth2Config) {
         throw new Error('Application does not have an OAuth2 configuration. Cannot regenerate client secret.');
       }
 
-      oauth2Config.config.client_secret = newClientSecret;
+      oauth2Config.config.clientSecret = newClientSecret;
 
       // Step 4: Update the application with the new client secret
       const updateResponse: {data: Application} = await http.request({

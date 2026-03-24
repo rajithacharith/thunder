@@ -132,22 +132,22 @@ describe('OAuth Models', () => {
 
       expect(config).toBeDefined();
       expect(config.token).toBeDefined();
-      expect(config.grant_types).toContain(OAuth2GrantTypes.CLIENT_CREDENTIALS);
-      expect(config.pkce_required).toBe(false);
+      expect(config.grantTypes).toContain(OAuth2GrantTypes.CLIENT_CREDENTIALS);
+      expect(config.pkceRequired).toBe(false);
     });
 
-    it('should not include user_info configuration by default (implying inheritance)', () => {
+    it('should not include userInfo configuration by default (implying inheritance)', () => {
       const config = getDefaultOAuthConfig();
 
-      expect(config.user_info).toBeUndefined();
+      expect(config.userInfo).toBeUndefined();
     });
 
     it('should include default ID token scope claims', () => {
       const config = getDefaultOAuthConfig();
 
-      expect(config.token?.id_token?.scope_claims).toBeDefined();
-      expect(config.token?.id_token?.scope_claims.email).toBeDefined();
-      expect(config.token?.id_token?.scope_claims.profile).toBeDefined();
+      expect(config.token?.idToken?.scopeClaims).toBeDefined();
+      expect(config.token?.idToken?.scopeClaims.email).toBeDefined();
+      expect(config.token?.idToken?.scopeClaims.profile).toBeDefined();
     });
   });
 });

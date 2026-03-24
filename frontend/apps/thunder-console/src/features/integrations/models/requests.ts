@@ -32,10 +32,10 @@ import type {IdentityProvider} from './identity-provider';
  *   description: 'Login with Google',
  *   type: IdentityProviderTypes.GOOGLE,
  *   properties: [
- *     { name: 'client_id', value: 'your-client-id', is_secret: true },
- *     { name: 'client_secret', value: 'your-client-secret', is_secret: true },
- *     { name: 'redirect_uri', value: 'https://localhost:5091/signin', is_secret: false },
- *     { name: 'scopes', value: 'openid,email,profile', is_secret: false }
+ *     { name: 'clientId', value: 'your-client-id', isSecret: true },
+ *     { name: 'clientSecret', value: 'your-client-secret', isSecret: true },
+ *     { name: 'redirect_uri', value: 'https://localhost:5091/signin', isSecret: false },
+ *     { name: 'scopes', value: 'openid,email,profile', isSecret: false }
  *   ]
  * };
  * ```

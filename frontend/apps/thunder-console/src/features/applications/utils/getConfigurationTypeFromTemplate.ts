@@ -28,21 +28,21 @@ import {
  * Returns:
  * - 'deeplink' for Mobile apps (need deep link or universal link)
  * - 'url' for Browser/Server apps (need application URL and callback URL)
- * - 'none' for Backend apps or templates with pre-filled redirect_uris
+ * - 'none' for Backend apps or templates with pre-filled redirectUris
  */
 const getConfigurationTypeFromTemplate = (
   templateConfig: ApplicationTemplate | null,
 ): ApplicationCreateFlowConfiguration => {
   if (!templateConfig) return ApplicationCreateFlowConfiguration.NONE;
 
-  const oauthConfig = templateConfig.inbound_auth_config?.find((config) => config.type === 'oauth2')?.config;
+  const oauthConfig = templateConfig.inboundAuthConfig?.find((config) => config.type === 'oauth2')?.config;
 
-  // If redirect_uris is already populated, no configuration needed
-  if (oauthConfig?.redirect_uris && oauthConfig.redirect_uris.length > 0) {
+  // If redirectUris is already populated, no configuration needed
+  if (oauthConfig?.redirectUris && oauthConfig.redirectUris.length > 0) {
     return ApplicationCreateFlowConfiguration.NONE;
   }
 
-  // If redirect_uris is undefined, null, or empty array, determine what type of configuration is needed
+  // If redirectUris is undefined, null, or empty array, determine what type of configuration is needed
   // TODO: Remove this once https://github.com/asgardeo/thunder/pulls/924 is merged.
   const templateName = templateConfig.name?.toLowerCase() ?? '';
 

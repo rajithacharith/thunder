@@ -22,7 +22,7 @@ import type {OrganizationUnit} from './organization-unit';
  * Request body for creating an organization unit.
  *
  * Derived from {@link OrganizationUnit} by picking only the fields
- * required for creation. Server-generated fields (id, theme_id, layout_id, logo_url)
+ * required for creation. Server-generated fields (id, themeId, layoutId, logoUrl)
  * are excluded.
  *
  * @public
@@ -45,7 +45,7 @@ export type CreateOrganizationUnitRequest = Pick<OrganizationUnit, 'handle' | 'n
  * Request body for updating an organization unit.
  *
  * Derived from {@link OrganizationUnit} by omitting only the server-managed
- * `id` and `layout_id` fields. All other fields can be updated.
+ * `id` and `layoutId` fields. All other fields can be updated.
  *
  * @public
  * @remarks
@@ -58,12 +58,12 @@ export type CreateOrganizationUnitRequest = Pick<OrganizationUnit, 'handle' | 'n
  *   name: 'Engineering Department (Updated)',
  *   description: 'Updated description',
  *   parent: 'root-ou-id',
- *   theme_id: '96c62e6d-9297-4295-8195-d28dfe0c9ff7',
- *   logo_url: 'https://example.com/new-logo.png'
+ *   themeId: '96c62e6d-9297-4295-8195-d28dfe0c9ff7',
+ *   logoUrl: 'https://example.com/new-logo.png'
  * };
  * ```
  */
-export type UpdateOrganizationUnitRequest = Omit<OrganizationUnit, 'id' | 'layout_id'>;
+export type UpdateOrganizationUnitRequest = Omit<OrganizationUnit, 'id' | 'layoutId'>;
 
 /**
  * Query parameters for listing organization units.

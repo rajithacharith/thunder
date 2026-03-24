@@ -210,19 +210,19 @@ func (ts *RefreshTokenTestSuite) createTestApplication() string {
 	app := map[string]interface{}{
 		"name":                         refreshTokenTestAppName,
 		"description":                  "Application for refresh token integration tests",
-		"auth_flow_id":                 ts.authFlowID,
-		"is_registration_flow_enabled": false,
-		"allowed_user_types":           []string{"refresh-token-test-person"},
-		"inbound_auth_config": []map[string]interface{}{
+		"authFlowId":                 ts.authFlowID,
+		"isRegistrationFlowEnabled": false,
+		"allowedUserTypes":           []string{"refresh-token-test-person"},
+		"inboundAuthConfig": []map[string]interface{}{
 			{
 				"type": "oauth2",
 				"config": map[string]interface{}{
-					"client_id":                  refreshTokenTestClientID,
-					"client_secret":              refreshTokenTestClientSecret,
-					"redirect_uris":              []string{refreshTokenTestRedirectURI},
-					"grant_types":                []string{"authorization_code", "refresh_token"},
-					"response_types":             []string{"code"},
-					"token_endpoint_auth_method": "client_secret_basic",
+					"clientId":                  refreshTokenTestClientID,
+					"clientSecret":              refreshTokenTestClientSecret,
+					"redirectUris":              []string{refreshTokenTestRedirectURI},
+					"grantTypes":                []string{"authorization_code", "refresh_token"},
+					"responseTypes":             []string{"code"},
+					"tokenEndpointAuthMethod": "client_secret_basic",
 				},
 			},
 		},

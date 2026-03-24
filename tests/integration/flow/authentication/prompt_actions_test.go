@@ -187,7 +187,7 @@ var (
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"prompt_actions_test_person"},
 		AssertionConfig: map[string]interface{}{
-			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
+			"userAttributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
 

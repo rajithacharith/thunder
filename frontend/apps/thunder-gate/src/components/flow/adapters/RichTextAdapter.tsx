@@ -26,8 +26,7 @@ import type {FlowComponent} from '../../../models/flow';
 /** The meta key used by the server to embed the application's sign-up URL. */
 const SIGN_UP_URL_META_KEY = 'application.sign_up_url';
 
-/** The meta key that controls whether self registration is enabled. */
-const REGISTRATION_ENABLED_META_KEY = 'is_registration_flow_enabled';
+const REGISTRATION_ENABLED_META_KEY = 'isRegistrationFlowEnabled';
 
 interface RichTextAdapterProps {
   component: FlowComponent;

@@ -24,15 +24,15 @@ type ConsentPromptData struct {
 	// Purposes is the list of consent purposes that require user consent, along with their elements
 	Purposes []ConsentPurposePrompt `json:"purposes"`
 	// SessionToken is the signed JWT token that encapsulates the consent session data
-	SessionToken string `json:"session_token,omitempty"`
+	SessionToken string `json:"sessionToken,omitempty"`
 }
 
 // ConsentPurposePrompt holds a single consent purpose's elements that need user consent.
 type ConsentPurposePrompt struct {
 	// PurposeName is the name of the consent purpose (e.g. "app:my_app:attrs")
-	PurposeName string `json:"purpose_name"`
+	PurposeName string `json:"purposeName"`
 	// PurposeID is the unique identifier of the consent purpose
-	PurposeID string `json:"purpose_id"`
+	PurposeID string `json:"purposeId"`
 	// Description is a human-readable description of the consent purpose
 	Description string `json:"description,omitempty"`
 	// Essential is the list of mandatory attribute names that require user consent
@@ -50,7 +50,7 @@ type ConsentDecisions struct {
 // PurposeDecision holds the consent decisions for a single purpose
 type PurposeDecision struct {
 	// PurposeName is the name of the consent purpose
-	PurposeName string `json:"purpose_name"`
+	PurposeName string `json:"purposeName"`
 	// Approved indicates whether the user approved this purpose
 	Approved bool `json:"approved"`
 	// Elements contains the per-element approval decisions
@@ -76,7 +76,7 @@ type consentSessionData struct {
 // consentSessionPurpose represents a single purpose's elements within the consent session.
 type consentSessionPurpose struct {
 	// PurposeName is the unique name of the consent purpose
-	PurposeName string `json:"purpose_name"`
+	PurposeName string `json:"purposeName"`
 	// Essential holds the names of mandatory elements for this purpose
 	Essential []string `json:"essential"`
 	// Optional holds the names of optional elements for this purpose

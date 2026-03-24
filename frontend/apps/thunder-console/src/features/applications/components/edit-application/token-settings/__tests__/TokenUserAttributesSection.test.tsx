@@ -251,8 +251,8 @@ describe('TokenUserAttributesSection', () => {
 
     it('should display no scopes message when scopes array is empty', () => {
       const oauth2Config: OAuth2Config = {
-        grant_types: [],
-        response_types: [],
+        grantTypes: [],
+        responseTypes: [],
         scopes: [],
       };
 

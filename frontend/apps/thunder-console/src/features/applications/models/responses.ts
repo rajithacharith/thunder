@@ -39,8 +39,8 @@ import type { BasicApplication } from "./application";
  *       id: '550e8400-e29b-41d4-a716-446655440000',
  *       name: 'My Web App',
  *       description: 'Customer portal',
- *       client_id: 'my_client_id',
- *       is_registration_flow_enabled: true
+ *       clientId: 'my_client_id',
+ *       isRegistrationFlowEnabled: true
  *     }
  *   ]
  * };

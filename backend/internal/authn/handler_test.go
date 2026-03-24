@@ -136,9 +136,9 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestWit
 		"password": "testpass",
 	}
 	authRequest := map[string]interface{}{
-		"identifiers":    identifiers,
-		"credentials":    credentials,
-		"skip_assertion": true,
+		"identifiers":   identifiers,
+		"credentials":   credentials,
+		"skipAssertion": true,
 	}
 	authResponse := &common.AuthenticationResponse{
 		ID:   "user123",

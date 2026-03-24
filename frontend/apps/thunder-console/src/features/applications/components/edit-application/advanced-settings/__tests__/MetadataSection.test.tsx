@@ -34,8 +34,8 @@ describe('MetadataSection', () => {
         id: 'test-app-id',
         name: 'Test Application',
         template: 'custom',
-        created_at: '2025-01-01T00:00:00Z',
-        updated_at: '2025-01-15T12:30:00Z',
+        createdAt: '2025-01-01T00:00:00Z',
+        updatedAt: '2025-01-15T12:30:00Z',
       } as Application;
 
       render(<MetadataSection application={application} />);
@@ -45,12 +45,12 @@ describe('MetadataSection', () => {
       expect(screen.getByText('applications:edit.advanced.labels.updatedAt')).toBeInTheDocument();
     });
 
-    it('should render only created_at when updated_at is missing', () => {
+    it('should render only createdAt when updatedAt is missing', () => {
       const application: Application = {
         id: 'test-app-id',
         name: 'Test Application',
         template: 'custom',
-        created_at: '2025-01-01T00:00:00Z',
+        createdAt: '2025-01-01T00:00:00Z',
       } as Application;
 
       render(<MetadataSection application={application} />);
@@ -60,12 +60,12 @@ describe('MetadataSection', () => {
       expect(screen.queryByText('applications:edit.advanced.labels.updatedAt')).not.toBeInTheDocument();
     });
 
-    it('should render only updated_at when created_at is missing', () => {
+    it('should render only updatedAt when createdAt is missing', () => {
       const application: Application = {
         id: 'test-app-id',
         name: 'Test Application',
         template: 'custom',
-        updated_at: '2025-01-15T12:30:00Z',
+        updatedAt: '2025-01-15T12:30:00Z',
       } as Application;
 
       render(<MetadataSection application={application} />);
@@ -89,13 +89,13 @@ describe('MetadataSection', () => {
   });
 
   describe('Timestamp Formatting', () => {
-    it('should format created_at timestamp as locale string', () => {
+    it('should format createdAt timestamp as locale string', () => {
       const createdDate = '2025-01-01T10:30:45Z';
       const application: Application = {
         id: 'test-app-id',
         name: 'Test Application',
         template: 'custom',
-        created_at: createdDate,
+        createdAt: createdDate,
       } as Application;
 
       render(<MetadataSection application={application} />);
@@ -104,13 +104,13 @@ describe('MetadataSection', () => {
       expect(screen.getByText(expectedFormattedDate)).toBeInTheDocument();
     });
 
-    it('should format updated_at timestamp as locale string', () => {
+    it('should format updatedAt timestamp as locale string', () => {
       const updatedDate = '2025-01-15T14:20:30Z';
       const application: Application = {
         id: 'test-app-id',
         name: 'Test Application',
         template: 'custom',
-        updated_at: updatedDate,
+        updatedAt: updatedDate,
       } as Application;
 
       render(<MetadataSection application={application} />);
@@ -126,8 +126,8 @@ describe('MetadataSection', () => {
         id: 'test-app-id',
         name: 'Test Application',
         template: 'custom',
-        created_at: createdDate,
-        updated_at: updatedDate,
+        createdAt: createdDate,
+        updatedAt: updatedDate,
       } as Application;
 
       render(<MetadataSection application={application} />);
@@ -146,8 +146,8 @@ describe('MetadataSection', () => {
         id: 'test-app-id',
         name: 'Test Application',
         template: 'custom',
-        created_at: '2025-01-01T00:00:00Z',
-        updated_at: '2025-01-15T00:00:00Z',
+        createdAt: '2025-01-01T00:00:00Z',
+        updatedAt: '2025-01-15T00:00:00Z',
       } as Application;
 
       render(<MetadataSection application={application} />);
@@ -164,8 +164,8 @@ describe('MetadataSection', () => {
         id: 'test-app-id',
         name: 'Test Application',
         template: 'custom',
-        created_at: '2025-01-01T00:00:00Z',
-        updated_at: '2025-01-15T00:00:00Z',
+        createdAt: '2025-01-01T00:00:00Z',
+        updatedAt: '2025-01-15T00:00:00Z',
       } as Application;
 
       const {container} = render(<MetadataSection application={application} />);
@@ -181,7 +181,7 @@ describe('MetadataSection', () => {
         id: 'test-app-id',
         name: 'Test Application',
         template: 'custom',
-        created_at: 'invalid-date',
+        createdAt: 'invalid-date',
       } as Application;
 
       render(<MetadataSection application={application} />);
@@ -195,8 +195,8 @@ describe('MetadataSection', () => {
         id: 'test-app-id',
         name: 'Test Application',
         template: 'custom',
-        created_at: undefined,
-        updated_at: undefined,
+        createdAt: undefined,
+        updatedAt: undefined,
       } as Application;
 
       const {container} = render(<MetadataSection application={application} />);
@@ -209,8 +209,8 @@ describe('MetadataSection', () => {
         id: 'test-app-id',
         name: 'Test Application',
         template: 'custom',
-        created_at: '',
-        updated_at: '',
+        createdAt: '',
+        updatedAt: '',
       } as Application;
 
       const {container} = render(<MetadataSection application={application} />);

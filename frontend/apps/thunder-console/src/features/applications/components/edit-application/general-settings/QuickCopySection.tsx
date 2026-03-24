@@ -106,29 +106,29 @@ export default function QuickCopySection({
           />
         </FormControl>
 
-        {oauth2Config?.client_id && (
+        {oauth2Config?.clientId && (
           <FormControl fullWidth>
             <FormLabel htmlFor="client-id-input">{t('applications:edit.general.labels.clientId')}</FormLabel>
             <TextField
               fullWidth
               id="client-id-input"
-              value={oauth2Config?.client_id ?? ''}
+              value={oauth2Config?.clientId ?? ''}
               InputProps={{
                 readOnly: true,
                 endAdornment: (
                   <InputAdornment position="end">
                     <Tooltip
-                      title={copiedField === 'client_id' ? t('common:actions.copied') : t('common:actions.copy')}
+                      title={copiedField === 'clientId' ? t('common:actions.copied') : t('common:actions.copy')}
                     >
                       <IconButton
                         onClick={() => {
-                          if (oauth2Config?.client_id) {
-                            onCopyToClipboard(oauth2Config.client_id, 'client_id').catch(() => {});
+                          if (oauth2Config?.clientId) {
+                            onCopyToClipboard(oauth2Config.clientId, 'clientId').catch(() => {});
                           }
                         }}
                         edge="end"
                       >
-                        {copiedField === 'client_id' ? <Check size={16} /> : <Copy size={16} />}
+                        {copiedField === 'clientId' ? <Check size={16} /> : <Copy size={16} />}
                       </IconButton>
                     </Tooltip>
                   </InputAdornment>

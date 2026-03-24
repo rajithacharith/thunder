@@ -150,21 +150,21 @@ describe('ApplicationsList', () => {
         id: 'app-1',
         name: 'Test App 1',
         description: 'First test application',
-        logo_url: 'https://example.com/logo1.png',
-        client_id: 'client_id_1',
-        auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
-        registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
-        is_registration_flow_enabled: true,
+        logoUrl: 'https://example.com/logo1.png',
+        clientId: 'client_id_1',
+        authFlowId: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+        registrationFlowId: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
+        isRegistrationFlowEnabled: true,
       },
       {
         id: 'app-2',
         name: 'Test App 2',
         description: 'Second test application',
-        logo_url: '',
-        client_id: 'client_id_2',
-        auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
-        registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
-        is_registration_flow_enabled: false,
+        logoUrl: '',
+        clientId: 'client_id_2',
+        authFlowId: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+        registrationFlowId: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
+        isRegistrationFlowEnabled: false,
       },
     ],
   };
@@ -259,7 +259,7 @@ describe('ApplicationsList', () => {
 
     // Should show AppWindow icon when logo URL is not provided
     const avatars = screen.getAllByRole('img', {hidden: true});
-    // The second app (Test App 2) has no logo_url, so it should have the AppWindow icon
+    // The second app (Test App 2) has no logoUrl, so it should have the AppWindow icon
     expect(avatars.length).toBeGreaterThan(0);
   });
 
@@ -491,13 +491,13 @@ describe('ApplicationsList', () => {
     }
   });
 
-  it('should display "-" for missing client_id', () => {
+  it('should display "-" for missing clientId', () => {
     const dataWithMissingClientId: ApplicationListResponse = {
       ...mockApplicationsData,
       applications: [
         {
           ...mockApplicationsData.applications[0],
-          client_id: undefined,
+          clientId: undefined,
         },
       ],
     };
@@ -510,7 +510,7 @@ describe('ApplicationsList', () => {
 
     renderComponent();
 
-    // Should display "-" for missing client_id
+    // Should display "-" for missing clientId
     const dashes = screen.getAllByText('-');
     expect(dashes.length).toBeGreaterThan(0);
   });

@@ -208,24 +208,29 @@ func CleanupUsers(userIDs []string) error {
 
 // CreateApplication creates an application via API and returns the application ID
 func CreateApplication(app Application) (string, error) {
+	redirectURIs := app.RedirectURIs
+	if len(redirectURIs) == 0 {
+		redirectURIs = []string{"http://localhost:8080/callback"}
+	}
+
 	// Convert Application to the format expected by the application API
 	appData := map[string]interface{}{
-		"name":                         app.Name,
-		"description":                  app.Description,
-		"is_registration_flow_enabled": app.IsRegistrationFlowEnabled,
-		"auth_flow_id":                 app.AuthFlowID,
-		"registration_flow_id":         app.RegistrationFlowID,
+		"name":                      app.Name,
+		"description":               app.Description,
+		"isRegistrationFlowEnabled": app.IsRegistrationFlowEnabled,
+		"authFlowId":                app.AuthFlowID,
+		"registrationFlowId":        app.RegistrationFlowID,
 		"certificate": map[string]interface{}{
 			"type":  "NONE",
 			"value": "",
 		},
-		"inbound_auth_config": []map[string]interface{}{
+		"inboundAuthConfig": []map[string]interface{}{
 			{
 				"type": "oauth2",
-				"oauth_app_config": map[string]interface{}{
-					"client_id":     app.ClientID,
-					"client_secret": app.ClientSecret,
-					"redirect_uris": app.RedirectURIs,
+				"config": map[string]interface{}{
+					"clientId":     app.ClientID,
+					"clientSecret": app.ClientSecret,
+					"redirectUris": redirectURIs,
 				},
 			},
 		},
@@ -233,7 +238,7 @@ func CreateApplication(app Application) (string, error) {
 
 	// Add allowed_user_types if provided
 	if len(app.AllowedUserTypes) > 0 {
-		appData["allowed_user_types"] = app.AllowedUserTypes
+		appData["allowedUserTypes"] = app.AllowedUserTypes
 	}
 
 	// Add assertion config if provided

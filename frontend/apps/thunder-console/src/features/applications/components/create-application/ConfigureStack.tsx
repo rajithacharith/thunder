@@ -177,22 +177,22 @@ export default function ConfigureStack({
   useEffect((): void => {
     setSelectedTemplateConfig(technologyConfig);
 
-    const oauthInboundConfig: OAuth2Config = technologyConfig.inbound_auth_config?.[0]?.config ?? {
-      public_client: false,
-      pkce_required: false,
-      grant_types: [],
-      response_types: [],
-      redirect_uris: [],
-      token_endpoint_auth_method: TokenEndpointAuthMethods.CLIENT_SECRET_BASIC,
+    const oauthInboundConfig: OAuth2Config = technologyConfig.inboundAuthConfig?.[0]?.config ?? {
+      publicClient: false,
+      pkceRequired: false,
+      grantTypes: [],
+      responseTypes: [],
+      redirectUris: [],
+      tokenEndpointAuthMethod: TokenEndpointAuthMethods.CLIENT_SECRET_BASIC,
     };
 
     onOAuthConfigChange({
-      public_client: oauthInboundConfig.public_client,
-      pkce_required: oauthInboundConfig.pkce_required,
-      grant_types: [...oauthInboundConfig.grant_types],
-      response_types: [...(oauthInboundConfig.response_types ?? [])],
-      redirect_uris: oauthInboundConfig.redirect_uris ? [...oauthInboundConfig.redirect_uris] : [], // Use from template or empty if not present
-      token_endpoint_auth_method: oauthInboundConfig.token_endpoint_auth_method,
+      publicClient: oauthInboundConfig.publicClient,
+      pkceRequired: oauthInboundConfig.pkceRequired,
+      grantTypes: [...oauthInboundConfig.grantTypes],
+      responseTypes: [...(oauthInboundConfig.responseTypes ?? [])],
+      redirectUris: oauthInboundConfig.redirectUris ? [...oauthInboundConfig.redirectUris] : [], // Use from template or empty if not present
+      tokenEndpointAuthMethod: oauthInboundConfig.tokenEndpointAuthMethod,
       scopes: ['openid', 'profile', 'email'],
     });
   }, [resolvedTechnology, platformForTemplate, onOAuthConfigChange, technologyConfig, setSelectedTemplateConfig]);

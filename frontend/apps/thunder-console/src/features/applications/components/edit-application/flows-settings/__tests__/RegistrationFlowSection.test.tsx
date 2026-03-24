@@ -62,8 +62,8 @@ describe('RegistrationFlowSection', () => {
   const mockApplication: Application = {
     id: 'app-123',
     name: 'Test App',
-    registration_flow_id: 'reg-flow-1',
-    is_registration_flow_enabled: true,
+    registrationFlowId: 'reg-flow-1',
+    isRegistrationFlowEnabled: true,
   } as Application;
 
   const mockRegFlows = [
@@ -149,7 +149,7 @@ describe('RegistrationFlowSection', () => {
         isLoading: false,
       } as MockedUseGetFlows);
 
-      const appWithoutFlow = {...mockApplication, registration_flow_id: undefined};
+      const appWithoutFlow = {...mockApplication, registrationFlowId: undefined};
 
       render(
         <MemoryRouter>
@@ -166,13 +166,13 @@ describe('RegistrationFlowSection', () => {
         isLoading: false,
       } as MockedUseGetFlows);
 
-      const appWithoutFlow = {...mockApplication, registration_flow_id: undefined};
+      const appWithoutFlow = {...mockApplication, registrationFlowId: undefined};
 
       render(
         <MemoryRouter>
           <RegistrationFlowSection
             application={appWithoutFlow}
-            editedApp={{registration_flow_id: 'reg-flow-2'}}
+            editedApp={{registrationFlowId: 'reg-flow-2'}}
             onFieldChange={mockOnFieldChange}
           />
         </MemoryRouter>,
@@ -240,7 +240,7 @@ describe('RegistrationFlowSection', () => {
         <MemoryRouter>
           <RegistrationFlowSection
             application={mockApplication}
-            editedApp={{is_registration_flow_enabled: false}}
+            editedApp={{isRegistrationFlowEnabled: false}}
             onFieldChange={mockOnFieldChange}
           />
         </MemoryRouter>,
@@ -249,13 +249,13 @@ describe('RegistrationFlowSection', () => {
       expect(screen.getByTestId('toggle-button')).toHaveTextContent('Toggle: OFF');
     });
 
-    it('should default to false when is_registration_flow_enabled is undefined', () => {
+    it('should default to false when isRegistrationFlowEnabled is undefined', () => {
       vi.mocked(useGetFlows).mockReturnValue({
         data: {flows: mockRegFlows},
         isLoading: false,
       } as MockedUseGetFlows);
 
-      const appWithoutEnabled = {...mockApplication, is_registration_flow_enabled: undefined};
+      const appWithoutEnabled = {...mockApplication, isRegistrationFlowEnabled: undefined};
 
       render(
         <MemoryRouter>
@@ -281,7 +281,7 @@ describe('RegistrationFlowSection', () => {
 
       await user.click(screen.getByTestId('toggle-button'));
 
-      expect(mockOnFieldChange).toHaveBeenCalledWith('is_registration_flow_enabled', false);
+      expect(mockOnFieldChange).toHaveBeenCalledWith('isRegistrationFlowEnabled', false);
     });
   });
 
@@ -312,7 +312,7 @@ describe('RegistrationFlowSection', () => {
         <MemoryRouter>
           <RegistrationFlowSection
             application={mockApplication}
-            editedApp={{registration_flow_id: 'reg-flow-2'}}
+            editedApp={{registrationFlowId: 'reg-flow-2'}}
             onFieldChange={mockOnFieldChange}
           />
         </MemoryRouter>,
@@ -344,7 +344,7 @@ describe('RegistrationFlowSection', () => {
 
       await user.click(screen.getByText('SSO Registration Flow'));
 
-      expect(mockOnFieldChange).toHaveBeenCalledWith('registration_flow_id', 'reg-flow-3');
+      expect(mockOnFieldChange).toHaveBeenCalledWith('registrationFlowId', 'reg-flow-3');
     });
 
     it('should handle clearing selection', async () => {
@@ -363,7 +363,7 @@ describe('RegistrationFlowSection', () => {
       const clearButton = screen.getByTitle('Clear');
       await user.click(clearButton);
 
-      expect(mockOnFieldChange).toHaveBeenCalledWith('registration_flow_id', '');
+      expect(mockOnFieldChange).toHaveBeenCalledWith('registrationFlowId', '');
     });
   });
 
@@ -474,7 +474,7 @@ describe('RegistrationFlowSection', () => {
         <MemoryRouter>
           <RegistrationFlowSection
             application={mockApplication}
-            editedApp={{registration_flow_id: 'reg-flow-2'}}
+            editedApp={{registrationFlowId: 'reg-flow-2'}}
             onFieldChange={mockOnFieldChange}
           />
         </MemoryRouter>,

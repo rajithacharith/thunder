@@ -81,9 +81,9 @@ paths:
                 value:
                   applications: ["*"]
                   options:
-                    include_metadata: true
-                    folder_structure:
-                      group_by_type: true
+                    includeMetadata: true
+                    folderStructure:
+                      groupByType: true
       responses:
         "200":
           description: Resources exported successfully as YAML
@@ -254,23 +254,23 @@ paths:
                 $ref: '#/components/schemas/ExportResponse'
               example:
                 files:
-                  - file_name: "My_Web_Application.yaml"
+                  - fileName: "My_Web_Application.yaml"
                     content: "name: My Web Application\ndescription: Customer portal application\n..."
-                    folder_path: "applications"
-                    resource_type: "application"
-                    resource_id: "550e8400-e29b-41d4-a716-446655440000"
+                    folderPath: "applications"
+                    resourceType: "application"
+                    resourceId: "550e8400-e29b-41d4-a716-446655440000"
                     size: 1024
-                  - file_name: "Mobile_App.yaml"
+                  - fileName: "Mobile_App.yaml"
                     content: "name: Mobile App\ndescription: Mobile application\n..."
-                    folder_path: "applications"
-                    resource_type: "application"
-                    resource_id: "660e8400-e29b-41d4-a716-446655440001"
+                    folderPath: "applications"
+                    resourceType: "application"
+                    resourceId: "660e8400-e29b-41d4-a716-446655440001"
                     size: 856
                 summary:
-                  total_files: 2
-                  total_size_bytes: 1880
-                  exported_at: "2025-11-17T10:30:00Z"
-                  resource_types:
+                  totalFiles: 2
+                  totalSizeBytes: 1880
+                  exportedAt: "2025-11-17T10:30:00Z"
+                  resourceTypes:
                     applications: 2
                   errors: []
         "400":
@@ -356,9 +356,9 @@ paths:
                 value:
                   applications: ["*"]
                   options:
-                    folder_structure:
-                      group_by_type: true
-                      file_naming_pattern: "${type}_${name}"
+                    folderStructure:
+                      groupByType: true
+                      fileNamingPattern: "${type}_${name}"
       responses:
         "200":
           description: ZIP archive created successfully
@@ -444,7 +444,7 @@ components:
       type: object
       description: Optional configuration for export behavior
       properties:
-        include_metadata:
+        includeMetadata:
           type: boolean
           description: |
             Include additional metadata in exported files (creation dates, IDs, etc.).
@@ -460,7 +460,7 @@ components:
             Only YAML format is currently supported. JSON support will be added in a future release.
           example: "yaml"
           default: "yaml"
-        folder_structure:
+        folderStructure:
           $ref: '#/components/schemas/FolderStructureOptions'
         pagination:
           $ref: '#/components/schemas/PaginationOptions'
@@ -469,24 +469,24 @@ components:
       type: object
       description: Configuration for how files are organized in exports
       properties:
-        group_by_type:
+        groupByType:
           type: boolean
           description: |
             Create separate folders for each resource type.
             Example: `applications/`, `identity-providers/`
           example: true
           default: false
-        custom_structure:
+        customStructure:
           type: object
           additionalProperties:
             type: string
           description: |
             Define custom folder paths for different resource types.
-            Example: `{"applications": "apps", "identity_providers": "idps"}`
+            Example: `{"applications": "apps", "identityProviders": "idps"}`
           example:
             applications: "apps"
-            identity_providers: "idps"
-        file_naming_pattern:
+            identityProviders: "idps"
+        fileNamingPattern:
           type: string
           description: |
             Pattern for file naming using template variables.
@@ -532,7 +532,7 @@ components:
       type: object
       description: Individual exported configuration file
       properties:
-        file_name:
+        fileName:
           type: string
           description: Name of the file
           example: "My_Web_Application.yaml"
@@ -540,15 +540,15 @@ components:
           type: string
           description: File content (YAML or JSON)
           example: "name: My Web Application\ndescription: Customer portal\n..."
-        folder_path:
+        folderPath:
           type: string
           description: Relative path within the export
           example: "applications"
-        resource_type:
+        resourceType:
           type: string
           description: Type of resource (application, identity_provider, etc.)
           example: "application"
-        resource_id:
+        resourceId:
           type: string
           format: uuid
           description: ID of the exported resource
@@ -563,28 +563,28 @@ components:
       type: object
       description: Summary information about the export operation
       properties:
-        total_files:
+        totalFiles:
           type: integer
           description: Total number of files exported
           example: 3
-        total_size_bytes:
+        totalSizeBytes:
           type: integer
           format: int64
           description: Total size of all exported files in bytes
           example: 3072
-        exported_at:
+        exportedAt:
           type: string
           format: date-time
           description: Timestamp when the export was performed (ISO 8601 format)
           example: "2025-11-17T10:30:00Z"
-        resource_types:
+        resourceTypes:
           type: object
           additionalProperties:
             type: integer
           description: Count of resources by type
           example:
             applications: 3
-            identity_providers: 0
+            identityProviders: 0
         errors:
           type: array
           items:
@@ -597,11 +597,11 @@ components:
       type: object
       description: Error information for a failed resource export
       properties:
-        resource_type:
+        resourceType:
           type: string
           description: Type of resource that failed to export
           example: "application"
-        resource_id:
+        resourceId:
           type: string
           description: ID of the resource that failed
           example: "invalid-uuid"

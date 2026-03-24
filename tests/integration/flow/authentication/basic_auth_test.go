@@ -165,7 +165,7 @@ var (
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"basic_auth_user"},
 		AssertionConfig: map[string]interface{}{
-			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
+			"userAttributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
 
@@ -664,7 +664,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlow_WithEmptyUserAttributes() {
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"basic_auth_user"},
 		AssertionConfig: map[string]interface{}{
-			"user_attributes": []string{}, // Empty array
+			"userAttributes": []string{}, // Empty array
 		},
 	}
 
