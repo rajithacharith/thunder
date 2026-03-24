@@ -130,3 +130,31 @@ Injects DB_CONFIG_PASSWORD, DB_RUNTIME_PASSWORD, and DB_USER_PASSWORD from eithe
       key: {{ $userPasswordRef.key | default "user-db-password" }}
 {{- end }}
 {{- end }}
+
+{{/*
+Generate generic secret-backed environment variable definitions.
+Expected input:
+  - secretEnv: list of objects with fields {name, secretName, secretKey, optional}
+*/}}
+{{- define "thunder.secretEnvVars" -}}
+{{- $secretEnv := default (list) .secretEnv -}}
+{{- range $index, $item := $secretEnv }}
+{{- if not $item.name }}
+{{- fail (printf "Invalid secretEnv entry at index %d: name is required." $index) }}
+{{- end }}
+{{- if not $item.secretName }}
+{{- fail (printf "Invalid secretEnv entry for %s: secretName is required." $item.name) }}
+{{- end }}
+{{- if not $item.secretKey }}
+{{- fail (printf "Invalid secretEnv entry for %s: secretKey is required." $item.name) }}
+{{- end }}
+- name: {{ $item.name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $item.secretName }}
+      key: {{ $item.secretKey }}
+      {{- if hasKey $item "optional" }}
+      optional: {{ $item.optional }}
+      {{- end }}
+{{- end }}
+{{- end }}

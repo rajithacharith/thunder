@@ -134,3 +134,6 @@ consent:
   base_url: {{ .Values.configuration.consent.baseUrl | quote }}
   timeout: {{ .Values.configuration.consent.timeout }}
   max_retries: {{ .Values.configuration.consent.maxRetries }}
+
+declarative_resources:
+  enabled: {{ .Values.declarativeResources.enabled }}

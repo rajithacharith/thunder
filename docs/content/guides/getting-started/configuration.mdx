@@ -181,6 +181,20 @@ Controls declarative configuration support.
 |---------|---------|-------------|
 | `declarative_resources.enabled` | `false` | If `true`, enables declarative resource configuration |
 
+For Helm deployments, this setting is managed through `declarativeResources.enabled` in the Helm values. When enabled, the chart also mounts declarative resource files from either a ConfigMap or Secret into the Thunder `repository/resources` directory.
+
+Example Helm values:
+
+```yaml
+declarativeResources:
+  enabled: true
+  configMap:
+    name: thunder-declarative-resources
+    items:
+      - applications/application1.yaml
+      - organization_units/default.yaml
+```
+
 Templates (email and other templated content) are now supported as a declarative resource. See the templates guide for schema, examples, and the configured directory location: [Template declarative resources](../declarative-configurations/templates.mdx).
 
 ## Resource Configuration
