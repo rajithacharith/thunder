@@ -42,6 +42,7 @@ vi.mock('@thunder/shared-contexts', () => ({
 // Mock the API hooks used by I18nConfigurationCard from @thunder/i18n
 vi.mock('@thunder/i18n', () => ({
   NamespaceConstants: {CUSTOM_NAMESPACE: 'custom'},
+  I18nDefaultConstants: {FALLBACK_LANGUAGE: 'en-US'},
   useUpdateTranslation: () => ({
     mutate: vi.fn(),
     isPending: false,

@@ -49,6 +49,7 @@ vi.mock('@thunder/shared-contexts', () => ({
 const mockMutate = vi.fn();
 vi.mock('@thunder/i18n', () => ({
   NamespaceConstants: {CUSTOM_NAMESPACE: 'custom'},
+  I18nDefaultConstants: {FALLBACK_LANGUAGE: 'en-US'},
   useUpdateTranslation: () => ({
     mutate: mockMutate,
     isPending: false,

@@ -39,7 +39,7 @@ const defaultProps = {
   hasDirtyChanges: false,
   dirtyCount: 0,
   isSaving: false,
-  isEnglish: false,
+  isFallbackLanguage: false,
   hasNamespace: true,
   onBack: vi.fn(),
   onDiscard: vi.fn(),
@@ -67,21 +67,21 @@ describe('TranslationEditorHeader', () => {
     });
 
     it('renders discard, save, and reset-to-default action buttons', () => {
-      render(<TranslationEditorHeader {...defaultProps} isEnglish={false} />);
+      render(<TranslationEditorHeader {...defaultProps} isFallbackLanguage={false} />);
 
       expect(screen.getByText('actions.discardChanges')).toBeInTheDocument();
       expect(screen.getByText('actions.resetToDefault')).toBeInTheDocument();
       expect(screen.getByText('actions.saveChanges')).toBeInTheDocument();
     });
 
-    it('hides Reset to Default button when isEnglish is true', () => {
-      render(<TranslationEditorHeader {...defaultProps} isEnglish />);
+    it('hides Reset to Default button when isFallbackLanguage is true', () => {
+      render(<TranslationEditorHeader {...defaultProps} isFallbackLanguage />);
 
       expect(screen.queryByText('actions.resetToDefault')).not.toBeInTheDocument();
     });
 
-    it('shows Reset to Default button when isEnglish is false', () => {
-      render(<TranslationEditorHeader {...defaultProps} isEnglish={false} />);
+    it('shows Reset to Default button when isFallbackLanguage is false', () => {
+      render(<TranslationEditorHeader {...defaultProps} isFallbackLanguage={false} />);
 
       expect(screen.getByText('actions.resetToDefault')).toBeInTheDocument();
     });
@@ -134,13 +134,13 @@ describe('TranslationEditorHeader', () => {
     });
 
     it('disables Reset to Default when hasNamespace is false', () => {
-      render(<TranslationEditorHeader {...defaultProps} isEnglish={false} hasNamespace={false} />);
+      render(<TranslationEditorHeader {...defaultProps} isFallbackLanguage={false} hasNamespace={false} />);
 
       expect(screen.getByText('actions.resetToDefault').closest('button')).toBeDisabled();
     });
 
     it('enables Reset to Default when hasNamespace is true and not saving', () => {
-      render(<TranslationEditorHeader {...defaultProps} isEnglish={false} hasNamespace isSaving={false} />);
+      render(<TranslationEditorHeader {...defaultProps} isFallbackLanguage={false} hasNamespace isSaving={false} />);
 
       expect(screen.getByText('actions.resetToDefault').closest('button')).not.toBeDisabled();
     });
@@ -188,7 +188,7 @@ describe('TranslationEditorHeader', () => {
       render(
         <TranslationEditorHeader
           {...defaultProps}
-          isEnglish={false}
+          isFallbackLanguage={false}
           hasNamespace
           onResetToDefault={onResetToDefault}
         />,

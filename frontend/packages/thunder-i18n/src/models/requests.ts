@@ -17,6 +17,20 @@
  */
 
 /**
+ * Variables for the bulk create translations mutation.
+ */
+export interface CreateTranslationsVariables {
+  /**
+   * The language code to create translations for (e.g., "fr-FR").
+   */
+  language: string;
+  /**
+   * Translations bundle: { namespace: { key: value } }.
+   */
+  translations: Record<string, Record<string, string>>;
+}
+
+/**
  * Variables for the update translation mutation.
  */
 export interface UpdateTranslationVariables {

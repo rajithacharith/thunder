@@ -17,7 +17,7 @@
  */
 
 import {Alert, PageContent, Snackbar, useColorScheme} from '@wso2/oxygen-ui';
-import {useGetTranslations, useUpdateTranslation, NamespaceConstants} from '@thunder/i18n';
+import {useGetTranslations, useUpdateTranslation, NamespaceConstants, I18nDefaultConstants} from '@thunder/i18n';
 import {useCallback, useEffect, useMemo, useState, type JSX, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate, useParams} from 'react-router';
@@ -87,6 +87,10 @@ export default function TranslationsEditPage(): JSX.Element {
   const updateTranslation = useUpdateTranslation();
 
   const namespaces = useMemo(() => {
+    if (!translationsData?.translations) {
+      return [];
+    }
+
     const ns = Object.keys(translationsData?.translations ?? {});
     return ns.includes(NamespaceConstants.CUSTOM_NAMESPACE) ? ns : [...ns, NamespaceConstants.CUSTOM_NAMESPACE];
   }, [translationsData]);
@@ -217,7 +221,6 @@ export default function TranslationsEditPage(): JSX.Element {
   };
 
   const isLoading = !!selectedLanguage && translationsLoading;
-  const isEnglish = selectedLanguage === 'en' || selectedLanguage === 'en-US';
   const isCustomNamespace = selectedNamespace === NamespaceConstants.CUSTOM_NAMESPACE;
 
   return (
@@ -227,7 +230,7 @@ export default function TranslationsEditPage(): JSX.Element {
         hasDirtyChanges={hasDirtyChanges}
         dirtyCount={dirtyKeys.length}
         isSaving={isSaving}
-        isEnglish={isEnglish}
+        isFallbackLanguage={selectedLanguage === I18nDefaultConstants.FALLBACK_LANGUAGE}
         hasNamespace={!!selectedNamespace}
         onBack={handleBack}
         onDiscard={handleDiscard}

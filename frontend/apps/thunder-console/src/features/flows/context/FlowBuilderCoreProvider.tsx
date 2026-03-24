@@ -33,6 +33,7 @@ import {
 } from 'react';
 import {Stack, Typography} from '@wso2/oxygen-ui';
 import {Settings} from '@wso2/oxygen-ui-icons-react';
+import {I18nDefaultConstants} from '@thunder/i18n';
 import ValidationProvider from './ValidationProvider';
 import FlowBuilderCoreContext from './FlowBuilderCoreContext';
 import type {FlowCompletionConfigsInterface} from '../models/flows';
@@ -115,7 +116,7 @@ function FlowContextWrapper({
   const [lastInteractedElementInternal, setLastInteractedElementInternal] = useState<Resource>();
   const [lastInteractedStepId, setLastInteractedStepId] = useState<string>('');
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, Claim[]>>({});
-  const [language, setLanguage] = useState<string>('en-US');
+  const [language, setLanguage] = useState<string>(I18nDefaultConstants.FALLBACK_LANGUAGE);
   const [flowCompletionConfigs, setFlowCompletionConfigs] = useState<FlowCompletionConfigsInterface>({});
   const [flowNodeTypes, setFlowNodeTypes] = useState<NodeTypes>({});
   const [flowEdgeTypes, setFlowEdgeTypes] = useState<EdgeTypes>({});
@@ -124,7 +125,9 @@ function FlowContextWrapper({
 
   const setResourcePropertiesPanelHeadingRef = useRef(setResourcePropertiesPanelHeading);
   const setLastInteractedElementInternalRef = useRef(setLastInteractedElementInternal);
-  const setIsOpenResourcePropertiesPanelRef = useRef<Dispatch<SetStateAction<boolean>>>(setIsOpenResourcePropertiesPanel);
+  const setIsOpenResourcePropertiesPanelRef = useRef<Dispatch<SetStateAction<boolean>>>(
+    setIsOpenResourcePropertiesPanel,
+  );
   const setLastInteractedStepIdRef = useRef(setLastInteractedStepId);
 
   // Ref to store the callback to close the validation panel (for mutual exclusion)
