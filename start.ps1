@@ -36,6 +36,7 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 $BACKEND_PORT = if ($env:BACKEND_PORT) { [int]$env:BACKEND_PORT } else { 8090 }
 $DEBUG_PORT = if ($env:DEBUG_PORT) { [int]$env:DEBUG_PORT } else { 2345 }
 $DEBUG_MODE = $false
+$WITH_CONSENT = if ($env:WITH_CONSENT -eq 'false') { $false } else { $true }
 
 # Parse command line arguments
 $i = 0
@@ -70,6 +71,11 @@ while ($i -lt $args.Count) {
             }
             break
         }
+        '--without-consent' {
+            $WITH_CONSENT = $false
+            $i++
+            break
+        }
         '--help' {
             Write-Host "Thunder Server Startup Script"
             Write-Host ""
@@ -79,6 +85,7 @@ while ($i -lt $args.Count) {
             Write-Host "  --debug              Enable debug mode with remote debugging"
             Write-Host "  --port PORT          Set application port (default: 8090)"
             Write-Host "  --debug-port PORT    Set debug port (default: 2345)"
+            Write-Host "  --without-consent    Disable the bundled consent server"
             Write-Host "  --help               Show this help message"
             Write-Host ""
             Write-Host "First-Time Setup:"
@@ -176,6 +183,48 @@ if (-not $thunderPath) {
 
 $proc = $null
 try {
+    # Start consent server if enabled
+    $consentProc = $null
+    if ($WITH_CONSENT) {
+        $consentDir = Join-Path $scriptDir "consent"
+        if (-not (Test-Path $consentDir)) {
+            Write-Host "[ERROR] Consent server is enabled but consent directory not found: $consentDir" -ForegroundColor Red
+            exit 1
+        }
+        $consentBinary = @(
+            (Join-Path $consentDir 'consent-server.exe'),
+            (Join-Path $consentDir 'consent-server')
+        ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+        if (-not $consentBinary) {
+            Write-Host "[ERROR] Consent server is enabled but consent-server binary not found in: $consentDir" -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "[INFO] Starting Consent Server..."
+        $consentPort = if ($env:CONSENT_SERVER_PORT) { $env:CONSENT_SERVER_PORT } else { "9090" }
+        $consentProc = Start-Process -FilePath $consentBinary -WorkingDirectory $consentDir -NoNewWindow -PassThru
+        $consentTimeout = 30
+        $consentElapsed = 0
+        while ($consentElapsed -lt $consentTimeout) {
+            if ($consentProc.HasExited) {
+                Write-Host "[ERROR] Consent server process exited unexpectedly (code $($consentProc.ExitCode))" -ForegroundColor Red
+                exit 1
+            }
+            try {
+                $resp = Invoke-WebRequest -Uri "http://localhost:${consentPort}/health/readiness" -UseBasicParsing -ErrorAction Stop
+                if ($resp.StatusCode -eq 200) {
+                    Write-Host "[INFO] Consent server is ready"
+                    break
+                }
+            } catch { }
+            Start-Sleep -Seconds 1
+            $consentElapsed++
+        }
+        if ($consentElapsed -ge $consentTimeout) {
+            Write-Host "[ERROR] Consent server failed to become ready within ${consentTimeout}s" -ForegroundColor Red
+            exit 1
+        }
+    }
+
     if ($DEBUG_MODE) {
         Write-Host "[INFO] Starting Thunder Server in DEBUG mode..."
         Write-Host "[INFO] Application will run on: https://localhost:$BACKEND_PORT"
@@ -222,5 +271,13 @@ finally {
     Write-Host "`n[STOP] Stopping server..."
     if ($proc -and -not $proc.HasExited) {
         try { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue } catch { }
+    }
+    if ($consentProc -and -not $consentProc.HasExited) {
+        try {
+            # Stop child processes first (the consent-server binary started by start.ps1)
+            Get-CimInstance Win32_Process -Filter "ParentProcessId = $($consentProc.Id)" -ErrorAction SilentlyContinue |
+                ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+            Stop-Process -Id $consentProc.Id -Force -ErrorAction SilentlyContinue
+        } catch { }
     }
 }

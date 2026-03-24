@@ -44,6 +44,7 @@ BOOTSTRAP_FAIL_FAST=${BOOTSTRAP_FAIL_FAST:-true}
 BOOTSTRAP_SKIP_PATTERN="${BOOTSTRAP_SKIP_PATTERN:-}"
 BOOTSTRAP_ONLY_PATTERN="${BOOTSTRAP_ONLY_PATTERN:-}"
 BOOTSTRAP_DIR="${BOOTSTRAP_DIR:-./bootstrap}"
+WITH_CONSENT=${WITH_CONSENT:-true}
 
 # Color codes
 RED='\033[0;31m'
@@ -117,6 +118,7 @@ print_help() {
     echo "Options:"
     echo "  --debug                  Enable debug mode with remote debugging"
     echo "  --debug-port PORT        Set debug port (default: 2345)"
+    echo "  --without-consent        Disable the bundled consent server"
     echo "  --help                   Show this help message"
     echo ""
     echo "Description:"
@@ -142,6 +144,10 @@ while [[ $# -gt 0 ]]; do
         --debug-port)
             DEBUG_PORT="$2"
             shift 2
+            ;;
+        --without-consent)
+            WITH_CONSENT=false
+            shift
             ;;
         --help)
             print_help
@@ -274,6 +280,58 @@ if [ "$DEBUG_MODE" = "true" ] && ! command -v dlv &> /dev/null; then
 fi
 
 # ============================================================================
+# Start Consent Server (if enabled)
+# ============================================================================
+
+CONSENT_PID=""
+THUNDER_PID=""
+
+# Cleanup function
+cleanup() {
+    echo ""
+    echo -e "${CYAN}🛑 Stopping temporary server...${NC}"
+    if [ -n "$THUNDER_PID" ]; then
+        kill $THUNDER_PID 2>/dev/null || true
+        wait $THUNDER_PID 2>/dev/null || true
+    fi
+    if [ -n "$CONSENT_PID" ]; then
+        pkill -P $CONSENT_PID 2>/dev/null || true
+        kill $CONSENT_PID 2>/dev/null || true
+    fi
+}
+trap cleanup EXIT INT TERM
+
+CONSENT_SERVER_PORT="${CONSENT_SERVER_PORT:-9090}"
+if [ "$WITH_CONSENT" = "true" ]; then
+    CONSENT_SCRIPT="$(dirname "$0")/consent/start.sh"
+    if [ ! -x "$CONSENT_SCRIPT" ]; then
+        log_error "Consent server is enabled but consent/start.sh is missing or not executable"
+        exit 1
+    fi
+    echo -e "${CYAN}Starting Consent Server...${NC}"
+    (cd "$(dirname "$0")/consent" && ./start.sh) &
+    CONSENT_PID=$!
+    CONSENT_TIMEOUT=30
+    CONSENT_ELAPSED=0
+    while [ $CONSENT_ELAPSED -lt $CONSENT_TIMEOUT ]; do
+        if ! kill -0 "$CONSENT_PID" 2>/dev/null; then
+            log_error "Consent server process exited unexpectedly"
+            exit 1
+        fi
+        if curl -s -f "http://localhost:${CONSENT_SERVER_PORT}/health/readiness" > /dev/null 2>&1; then
+            echo -e "${GREEN}✓ Consent server is ready${NC}"
+            break
+        fi
+        sleep 1
+        CONSENT_ELAPSED=$((CONSENT_ELAPSED + 1))
+    done
+    if [ $CONSENT_ELAPSED -ge $CONSENT_TIMEOUT ]; then
+        log_error "Consent server failed to become ready within ${CONSENT_TIMEOUT}s"
+        exit 1
+    fi
+fi
+
+# ============================================================================
 # Start Thunder Server with Security Disabled
 # ============================================================================
 
@@ -290,19 +348,6 @@ else
     ./thunder &
     THUNDER_PID=$!
 fi
-
-# Cleanup function
-cleanup() {
-    echo ""
-    echo -e "${CYAN}🛑 Stopping temporary server...${NC}"
-    if [ -n "$THUNDER_PID" ]; then
-        kill $THUNDER_PID 2>/dev/null || true
-        wait $THUNDER_PID 2>/dev/null || true
-    fi
-}
-
-# Register cleanup on exit
-trap cleanup EXIT INT TERM
 
 # ============================================================================
 # Wait for Server to be Ready

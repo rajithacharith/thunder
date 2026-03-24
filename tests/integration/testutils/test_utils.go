@@ -216,7 +216,11 @@ func extractFile(f *zip.File, dest string) error {
 	}
 
 	os.MkdirAll(filepath.Dir(path), os.ModePerm)
-	outFile, err := os.Create(path)
+	mode := f.Mode()
+	if mode == 0 {
+		mode = 0666
+	}
+	outFile, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
 	if err != nil {
 		return err
 	}
