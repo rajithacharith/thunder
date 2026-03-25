@@ -18,6 +18,7 @@
 
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useConfig, useToast} from '@thunder/shared-contexts';
+import {getErrorMessage} from '@thunder/utils';
 import {useAsgardeo} from '@asgardeo/react';
 import {useTranslation} from 'react-i18next';
 import type {Application} from '../models/application';
@@ -115,8 +116,8 @@ export default function useUpdateApplication(): UseMutationResult<Application, E
       });
       showToast(t('update.success'), 'success');
     },
-    onError: () => {
-      showToast(t('update.error'), 'error');
+    onError: (error) => {
+      showToast(getErrorMessage(error, t, 'update.error'), 'error');
     },
   });
 }

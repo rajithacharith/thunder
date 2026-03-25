@@ -17,8 +17,8 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {OAuth2GrantTypes, OAuth2ResponseTypes, getDefaultOAuthConfig} from '../oauth';
-import type {OAuth2GrantType, OAuth2ResponseType, TokenEndpointAuthMethod} from '../oauth';
+import {OAuth2GrantTypes, OAuth2ResponseTypes, TokenEndpointAuthMethods} from '../oauth';
+import type {OAuth2GrantType, OAuth2ResponseType, TokenEndpointAuthMethod, ScopeClaims} from '../oauth';
 
 describe('OAuth Models', () => {
   describe('OAuth2GrantTypes', () => {
@@ -126,28 +126,52 @@ describe('OAuth Models', () => {
     });
   });
 
-  describe('getDefaultOAuthConfig', () => {
-    it('should return a valid default configuration', () => {
-      const config = getDefaultOAuthConfig();
-
-      expect(config).toBeDefined();
-      expect(config.token).toBeDefined();
-      expect(config.grantTypes).toContain(OAuth2GrantTypes.CLIENT_CREDENTIALS);
-      expect(config.pkceRequired).toBe(false);
+  describe('TokenEndpointAuthMethods', () => {
+    it('should have CLIENT_SECRET_BASIC auth method', () => {
+      expect(TokenEndpointAuthMethods.CLIENT_SECRET_BASIC).toBe('client_secret_basic');
     });
 
-    it('should not include userInfo configuration by default (implying inheritance)', () => {
-      const config = getDefaultOAuthConfig();
-
-      expect(config.userInfo).toBeUndefined();
+    it('should have CLIENT_SECRET_POST auth method', () => {
+      expect(TokenEndpointAuthMethods.CLIENT_SECRET_POST).toBe('client_secret_post');
     });
 
-    it('should include default ID token scope claims', () => {
-      const config = getDefaultOAuthConfig();
+    it('should have CLIENT_SECRET_JWT auth method', () => {
+      expect(TokenEndpointAuthMethods.CLIENT_SECRET_JWT).toBe('client_secret_jwt');
+    });
 
-      expect(config.token?.idToken?.scopeClaims).toBeDefined();
-      expect(config.token?.idToken?.scopeClaims.email).toBeDefined();
-      expect(config.token?.idToken?.scopeClaims.profile).toBeDefined();
+    it('should have PRIVATE_KEY_JWT auth method', () => {
+      expect(TokenEndpointAuthMethods.PRIVATE_KEY_JWT).toBe('private_key_jwt');
+    });
+
+    it('should have NONE auth method', () => {
+      expect(TokenEndpointAuthMethods.NONE).toBe('none');
+    });
+
+    it('should have all expected auth method keys', () => {
+      const expectedKeys = ['CLIENT_SECRET_BASIC', 'CLIENT_SECRET_POST', 'CLIENT_SECRET_JWT', 'PRIVATE_KEY_JWT', 'NONE'];
+
+      expect(Object.keys(TokenEndpointAuthMethods)).toEqual(expectedKeys);
+    });
+  });
+
+  describe('ScopeClaims', () => {
+    it('should accept standard OIDC scope keys as arrays of strings', () => {
+      const scopeClaims: ScopeClaims = {
+        profile: ['given_name', 'family_name', 'picture'],
+        email: ['email', 'email_verified'],
+        phone: ['phone_number', 'phone_number_verified'],
+        group: ['groups'],
+      };
+
+      expect(Array.isArray(scopeClaims.profile)).toBe(true);
+      expect(Array.isArray(scopeClaims.email)).toBe(true);
+      expect(Array.isArray(scopeClaims.phone)).toBe(true);
+      expect(Array.isArray(scopeClaims.group)).toBe(true);
+
+      scopeClaims.profile?.forEach((claim) => expect(typeof claim).toBe('string'));
+      scopeClaims.email?.forEach((claim) => expect(typeof claim).toBe('string'));
+      scopeClaims.phone?.forEach((claim) => expect(typeof claim).toBe('string'));
+      scopeClaims.group?.forEach((claim) => expect(typeof claim).toBe('string'));
     });
   });
 });

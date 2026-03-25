@@ -35,7 +35,7 @@ import {
 } from '@wso2/oxygen-ui';
 import {ArrowLeft, AppWindow, Edit} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
-import {useLogger} from '@thunder/logger';
+import {useLogger} from '@thunder/logger/react';
 import CopyableId from '../../../components/CopyableId';
 import useGetApplication from '../api/useGetApplication';
 import useUpdateApplication from '../api/useUpdateApplication';
@@ -51,6 +51,7 @@ import EditTokenSettings from '../components/edit-application/token-settings/Edi
 import EditAdvancedSettings from '../components/edit-application/advanced-settings/EditAdvancedSettings';
 import getTemplateMetadata from '../utils/getTemplateMetadata';
 import getIntegrationGuidesForTemplate from '../utils/getIntegrationGuidesForTemplate';
+import getTemplateFieldConstraints from '../utils/getTemplateFieldConstraints';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -113,6 +114,11 @@ export default function ApplicationEditPage() {
   const hasIntegrationGuides = useMemo(
     () => application && getIntegrationGuidesForTemplate(application.template) !== null,
     [application],
+  );
+
+  const oauth2Constraints = useMemo(
+    () => getTemplateFieldConstraints(application?.template)?.oauth2,
+    [application?.template],
   );
 
   const handleFieldChange = useCallback((field: keyof Application, value: unknown) => {
@@ -185,9 +191,9 @@ export default function ApplicationEditPage() {
     );
   }
 
-  const oauth2Config: OAuth2Config | undefined = application.inboundAuthConfig?.find(
-    (config) => config.type === 'oauth2',
-  )?.config;
+  const oauth2Config: OAuth2Config | undefined = (
+    editedApp.inboundAuthConfig ?? application.inboundAuthConfig
+  )?.find((config) => config.type === 'oauth2')?.config;
 
   return (
     <PageContent>
@@ -328,7 +334,10 @@ export default function ApplicationEditPage() {
             })()}
 
           {/* Application ID */}
-          <CopyableId value={application.id} copyLabel={t('applications:edit.page.copyApplicationId', 'Copy Application ID')} />
+          <CopyableId
+            value={application.id}
+            copyLabel={t('applications:edit.page.copyApplicationId', 'Copy Application ID')}
+          />
         </PageTitle.SubHeader>
       </PageTitle>
 
@@ -420,6 +429,7 @@ export default function ApplicationEditPage() {
             application={application}
             editedApp={editedApp}
             oauth2Config={oauth2Config}
+            oauth2Constraints={oauth2Constraints}
             onFieldChange={handleFieldChange}
           />
         </TabPanel>

@@ -18,39 +18,34 @@
 
 import TechnologyBasedApplicationTemplateMetadata from '../config/TechnologyBasedApplicationTemplateMetadata';
 import PlatformBasedApplicationTemplateMetadata from '../config/PlatformBasedApplicationTemplateMetadata';
-import type {IntegrationGuides} from '../models/application-templates';
 import normalizeTemplateId from './normalizeTemplateId';
+import type {ApplicationTemplate} from '../models/application-templates';
 
 /**
- * Gets the integration guides for a given template ID
- * @param templateId - The template ID (e.g., 'react', 'react-embedded', 'nextjs', 'browser')
- * @returns Integration guides object, or null if not found
+ * Gets the field constraints for a given template ID.
+ * Automatically normalizes template IDs by removing the '-embedded' suffix,
+ * so 'react-embedded' will match the 'react' template constraints.
+ *
+ * @param templateId - The template ID (e.g., 'react', 'react-embedded', 'browser')
+ * @returns Template field constraints, or null if not found
  */
-export default function getIntegrationGuidesForTemplate(templateId: string | undefined): IntegrationGuides | null {
-  if (!templateId) {
-    return null;
-  }
+export default function getTemplateFieldConstraints(
+  templateId: string | undefined,
+): ApplicationTemplate['fieldConstraints'] | null {
+  if (!templateId) return null;
 
-  // Normalize the template ID to handle embedded variants (e.g., 'react-embedded' -> 'react')
-  const normalizedTemplateId = normalizeTemplateId(templateId) ?? templateId;
+  const normalizedId = normalizeTemplateId(templateId);
+  if (!normalizedId) return null;
 
-  // Search in technology-based templates
   const techTemplate = TechnologyBasedApplicationTemplateMetadata.find(
-    (metadata) => metadata.template.id === normalizedTemplateId,
+    (metadata) => metadata.template.id === normalizedId,
   );
+  if (techTemplate) return techTemplate.template.fieldConstraints ?? null;
 
-  if (techTemplate?.template.integrationGuides) {
-    return techTemplate.template.integrationGuides;
-  }
-
-  // Search in platform-based templates
   const platformTemplate = PlatformBasedApplicationTemplateMetadata.find(
-    (metadata) => metadata.template.id === normalizedTemplateId,
+    (metadata) => metadata.template.id === normalizedId,
   );
-
-  if (platformTemplate?.template.integrationGuides) {
-    return platformTemplate.template.integrationGuides;
-  }
+  if (platformTemplate) return platformTemplate.template.fieldConstraints ?? null;
 
   return null;
 }

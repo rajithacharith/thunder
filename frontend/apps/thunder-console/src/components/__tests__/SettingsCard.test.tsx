@@ -228,6 +228,90 @@ describe('SettingsCard', () => {
     expect(screen.getByText('Action')).toBeInTheDocument();
   });
 
+  it('should render titleIcon when provided', () => {
+    render(
+      <SettingsCard title="Test Settings" titleIcon={<span data-testid="title-icon">Icon</span>}>
+        <div>Content</div>
+      </SettingsCard>,
+    );
+
+    expect(screen.getByTestId('title-icon')).toBeInTheDocument();
+  });
+
+  it('should not render titleIcon when not provided', () => {
+    render(
+      <SettingsCard title="Test Settings">
+        <div>Content</div>
+      </SettingsCard>,
+    );
+
+    expect(screen.queryByTestId('title-icon')).not.toBeInTheDocument();
+  });
+
+  it('should apply slotProps to child elements', () => {
+    const {container} = render(
+      <SettingsCard
+        title="Test Settings"
+        description="A description"
+        slotProps={{
+          root: {sx: {border: '1px solid red'}},
+          header: {sx: {padding: 2}},
+          title: {sx: {color: 'primary.main'}},
+          description: {sx: {color: 'text.secondary'}},
+          content: {sx: {padding: 4}},
+        }}
+      >
+        <div>Content</div>
+      </SettingsCard>,
+    );
+
+    const papers = container.querySelectorAll('.MuiPaper-root');
+    expect(papers.length).toBe(2);
+    expect(screen.getByText('Test Settings')).toBeInTheDocument();
+    expect(screen.getByText('A description')).toBeInTheDocument();
+    expect(screen.getByText('Content')).toBeInTheDocument();
+  });
+
+  it('should apply slotProps without sx values', () => {
+    const {container} = render(
+      <SettingsCard
+        title="Test Settings"
+        description="A description"
+        slotProps={{
+          root: {'data-testid': 'settings-root'} as object,
+          header: {'data-testid': 'settings-header'} as object,
+          title: {'data-testid': 'settings-title'} as object,
+          description: {'data-testid': 'settings-description'} as object,
+          content: {'data-testid': 'settings-content'} as object,
+        }}
+      >
+        <div>Content</div>
+      </SettingsCard>,
+    );
+
+    const papers = container.querySelectorAll('.MuiPaper-root');
+    expect(papers.length).toBe(2);
+    expect(screen.getByText('Test Settings')).toBeInTheDocument();
+  });
+
+  it('should apply partial slotProps with only some slots defined', () => {
+    const {container} = render(
+      <SettingsCard
+        title="Test Settings"
+        description="A description"
+        slotProps={{
+          root: {sx: {border: '1px solid blue'}},
+        }}
+      >
+        <div>Content</div>
+      </SettingsCard>,
+    );
+
+    const papers = container.querySelectorAll('.MuiPaper-root');
+    expect(papers.length).toBe(2);
+    expect(screen.getByText('Test Settings')).toBeInTheDocument();
+  });
+
   it('should not render content wrapper if valid children are not present', () => {
     const {container} = render(<SettingsCard title="Test Settings">{false && <div>Content</div>}</SettingsCard>);
 

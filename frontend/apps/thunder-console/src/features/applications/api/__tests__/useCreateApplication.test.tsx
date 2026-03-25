@@ -72,13 +72,13 @@ describe('useCreateApplication', () => {
             idToken: {
               validityPeriod: 3600,
               userAttributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
-              scopeClaims: {
-                profile: ['name', 'given_name', 'family_name', 'picture'],
-                email: ['email', 'email_verified'],
-                phone: ['phone_number', 'phone_number_verified'],
-                group: ['groups'],
-              },
             },
+          },
+          scopeClaims: {
+            profile: ['name', 'given_name', 'family_name', 'picture'],
+            email: ['email', 'email_verified'],
+            phone: ['phone_number', 'phone_number_verified'],
+            group: ['groups'],
           },
           scopes: ['openid', 'email', 'profile'],
         },

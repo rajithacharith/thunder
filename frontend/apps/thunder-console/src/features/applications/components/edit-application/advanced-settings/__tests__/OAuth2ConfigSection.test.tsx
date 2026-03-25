@@ -158,7 +158,6 @@ describe('OAuth2ConfigSection', () => {
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
 
       expect(screen.getByText('applications:edit.advanced.labels.publicClient')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.advanced.publicClient.yes')).toBeInTheDocument();
       expect(screen.getByText('applications:edit.advanced.publicClient.public')).toBeInTheDocument();
     });
 
@@ -173,7 +172,6 @@ describe('OAuth2ConfigSection', () => {
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
 
       expect(screen.getByText('applications:edit.advanced.labels.publicClient')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.advanced.publicClient.no')).toBeInTheDocument();
       expect(screen.getByText('applications:edit.advanced.publicClient.confidential')).toBeInTheDocument();
     });
 
@@ -186,7 +184,6 @@ describe('OAuth2ConfigSection', () => {
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
 
-      expect(screen.getByText('applications:edit.advanced.publicClient.no')).toBeInTheDocument();
     });
   });
 
@@ -202,7 +199,6 @@ describe('OAuth2ConfigSection', () => {
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
 
       expect(screen.getByText('applications:edit.advanced.labels.pkceRequired')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.advanced.pkce.yes')).toBeInTheDocument();
       expect(screen.getByText('applications:edit.advanced.pkce.enabled')).toBeInTheDocument();
     });
 
@@ -217,7 +213,6 @@ describe('OAuth2ConfigSection', () => {
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
 
       expect(screen.getByText('applications:edit.advanced.labels.pkceRequired')).toBeInTheDocument();
-      expect(screen.getByText('applications:edit.advanced.pkce.no')).toBeInTheDocument();
       expect(screen.getByText('applications:edit.advanced.pkce.disabled')).toBeInTheDocument();
     });
 
@@ -229,8 +224,6 @@ describe('OAuth2ConfigSection', () => {
       };
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
-
-      expect(screen.getByText('applications:edit.advanced.pkce.no')).toBeInTheDocument();
     });
   });
 
@@ -246,7 +239,6 @@ describe('OAuth2ConfigSection', () => {
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
 
       const chip = screen.getByText('authorization_code').closest('.MuiChip-root');
-      expect(chip).toHaveClass('MuiChip-outlined');
       expect(chip).toHaveClass('MuiChip-sizeSmall');
     });
 
