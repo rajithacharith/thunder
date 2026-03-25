@@ -32,6 +32,7 @@ vi.mock('@thunder/shared-contexts', async (importOriginal) => {
   return {
     ...actual,
     useConfig: vi.fn(),
+    useToast: vi.fn().mockReturnValue({showToast: vi.fn()}),
   };
 });
 

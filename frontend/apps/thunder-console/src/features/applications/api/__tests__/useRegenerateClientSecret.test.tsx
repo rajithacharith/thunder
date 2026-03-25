@@ -72,11 +72,11 @@ describe('useRegenerateClientSecret', () => {
             idToken: {
               validityPeriod: 3600,
               userAttributes: ['email'],
-              scopeClaims: {
-                profile: ['name'],
-                email: ['email'],
-              },
             },
+          },
+          scopeClaims: {
+            profile: ['name'],
+            email: ['email'],
           },
           scopes: ['openid'],
         },
@@ -226,9 +226,7 @@ describe('useRegenerateClientSecret', () => {
     const putCallData = JSON.parse(putCall.data) as {
       inboundAuthConfig: {type: string; config: {clientSecret: string}}[];
     };
-    const oauth2Config = putCallData.inboundAuthConfig.find(
-      (c: {type: string}) => c.type === 'oauth2',
-    );
+    const oauth2Config = putCallData.inboundAuthConfig.find((c: {type: string}) => c.type === 'oauth2');
     expect(oauth2Config?.config.clientSecret).toBe(result.current.data?.clientSecret);
   });
 

@@ -42,7 +42,6 @@ import ConfigureExperience from '../components/create-application/ConfigureExper
 import ConfigureStack from '../components/create-application/ConfigureStack';
 import ConfigureDetails from '../components/create-application/ConfigureDetails';
 import ShowClientSecret from '../components/create-application/ShowClientSecret';
-import {getDefaultOAuthConfig} from '../models/oauth';
 import useCreateApplication from '../api/useCreateApplication';
 import type {CreateApplicationRequest} from '../models/requests';
 import type {OAuth2Config} from '../models/oauth';
@@ -128,7 +127,7 @@ export default function ApplicationCreatePage(): JSX.Element {
     COMPLETE: true,
   });
 
-  const [oauthConfig, setOAuthConfig] = useState<OAuth2Config | null>(getDefaultOAuthConfig());
+  const [oauthConfig, setOAuthConfig] = useState<OAuth2Config | null>(null);
 
   /**
    * Update OAuth config with callback URL from configure step.

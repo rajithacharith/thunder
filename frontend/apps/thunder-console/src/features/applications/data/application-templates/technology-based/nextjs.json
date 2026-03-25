@@ -1,27 +1,29 @@
 {
   "id": "nextjs",
   "displayName": "Next.js",
-  "name": "Next.js Application",
   "description": "Server-side rendered application built with Next.js",
-  "inboundAuthConfig": [
-    {
-      "type": "oauth2",
-      "config": {
-        "grantTypes": [
-          "authorization_code",
-          "refresh_token"
-        ],
-        "responseTypes": [
-          "code"
-        ],
-        "redirectUris": [
-          "http://localhost:3000"
-        ],
-        "pkceRequired": true,
-        "tokenEndpointAuthMethod": "client_secret_basic",
-        "publicClient": false
+  "defaults": {
+    "name": "Next.js Application",
+    "inboundAuthConfig": [
+      {
+        "type": "oauth2",
+        "config": {
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token"
+          ],
+          "responseTypes": [
+            "code"
+          ],
+          "redirectUris": [
+            "http://localhost:3000"
+          ],
+          "pkceRequired": true,
+          "tokenEndpointAuthMethod": "client_secret_basic",
+          "publicClient": false
+        }
       }
-    }
-  ],
-  "allowedUserTypes": []
+    ],
+    "allowedUserTypes": []
+  }
 }

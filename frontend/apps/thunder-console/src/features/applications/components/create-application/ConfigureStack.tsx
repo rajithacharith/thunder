@@ -177,7 +177,7 @@ export default function ConfigureStack({
   useEffect((): void => {
     setSelectedTemplateConfig(technologyConfig);
 
-    const oauthInboundConfig: OAuth2Config = technologyConfig.inboundAuthConfig?.[0]?.config ?? {
+    const oauthInboundConfig: OAuth2Config = technologyConfig.defaults?.inboundAuthConfig?.[0]?.config ?? {
       publicClient: false,
       pkceRequired: false,
       grantTypes: [],

@@ -17,7 +17,8 @@
  */
 
 import type {JSX} from 'react';
-import type {Application} from './application';
+import type {InboundAuthConfig} from './inbound-auth';
+import type {OAuth2Config} from './oauth';
 
 /**
  * Technology-based application template identifiers.
@@ -153,10 +154,7 @@ export type IntegrationGuides = Record<
   }
 >;
 
-export type ApplicationTemplate = Pick<
-  Application,
-  'name' | 'description' | 'inboundAuthConfig' | 'allowedUserTypes'
-> & {
+export interface ApplicationTemplate {
   /**
    * Unique identifier for the template
    * @example 'react', 'nextjs', 'browser'
@@ -168,10 +166,33 @@ export type ApplicationTemplate = Pick<
    */
   displayName?: string;
   /**
+   * Description of the template
+   */
+  description?: string;
+  /**
+   * Default application values applied when creating from this template
+   */
+  defaults?: {
+    name?: string;
+    inboundAuthConfig?: InboundAuthConfig[];
+    allowedUserTypes?: string[];
+  };
+  /**
+   * Template-driven field constraints for the edit UI
+   */
+  fieldConstraints?: {
+    oauth2?: {
+      [K in keyof OAuth2Config]?: {
+        readOnly?: boolean;
+        value?: OAuth2Config[K];
+      };
+    };
+  };
+  /**
    * Optional integration guides for this template
    */
-  integration_guides?: IntegrationGuides;
-};
+  integrationGuides?: IntegrationGuides;
+}
 
 export interface ApplicationTemplateMetadata<T = TechnologyApplicationTemplate | PlatformApplicationTemplate> {
   value: T;

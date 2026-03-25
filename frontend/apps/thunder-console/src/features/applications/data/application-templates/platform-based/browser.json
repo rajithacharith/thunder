@@ -1,25 +1,34 @@
 {
   "id": "browser",
   "displayName": "Browser",
-  "name": "Browser Application",
   "description": "Web application running in browser",
-  "inboundAuthConfig": [
-    {
-      "type": "oauth2",
-      "config": {
-        "grantTypes": [
-          "authorization_code",
-          "refresh_token"
-        ],
-        "responseTypes": [
-          "code"
-        ],
-        "redirectUris": [],
-        "pkceRequired": true,
-        "tokenEndpointAuthMethod": "none",
-        "publicClient": true
+  "defaults": {
+    "name": "Browser Application",
+    "inboundAuthConfig": [
+      {
+        "type": "oauth2",
+        "config": {
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token"
+          ],
+          "responseTypes": [
+            "code"
+          ],
+          "redirectUris": [],
+          "pkceRequired": true,
+          "tokenEndpointAuthMethod": "none",
+          "publicClient": true
+        }
       }
+    ],
+    "allowedUserTypes": []
+  },
+  "fieldConstraints": {
+    "oauth2": {
+      "publicClient":              { "readOnly": true, "value": true },
+      "pkceRequired":              { "readOnly": true, "value": true },
+      "tokenEndpointAuthMethod": { "readOnly": true, "value": "none" }
     }
-  ],
-  "allowedUserTypes": []
+  }
 }

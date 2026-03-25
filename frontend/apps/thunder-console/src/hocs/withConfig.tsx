@@ -31,6 +31,11 @@ export default function withConfig<P extends object>(WrappedComponent: Component
         afterSignInUrl={getClientUrl() ?? (import.meta.env.VITE_ASGARDEO_AFTER_SIGN_IN_URL as string)}
         scopes={getScopes().length > 0 ? getScopes() : undefined}
         platform="AsgardeoV2"
+        discovery={{
+          wellKnown: {
+            enabled: true,
+          },
+        }}
       >
         <WrappedComponent {...props} />
       </AsgardeoProvider>

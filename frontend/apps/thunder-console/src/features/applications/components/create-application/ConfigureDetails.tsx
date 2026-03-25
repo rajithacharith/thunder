@@ -486,9 +486,9 @@ export default function ConfigureDetails({
       {/* User Type Selection - shown when template requires it and user types are available */}
       {userTypes &&
         userTypes.length > 0 &&
-        selectedTemplateConfig?.allowedUserTypes !== undefined &&
-        Array.isArray(selectedTemplateConfig.allowedUserTypes) &&
-        selectedTemplateConfig.allowedUserTypes.length === 0 && (
+        selectedTemplateConfig?.defaults?.allowedUserTypes !== undefined &&
+        Array.isArray(selectedTemplateConfig.defaults?.allowedUserTypes) &&
+        selectedTemplateConfig.defaults?.allowedUserTypes.length === 0 && (
           <FormControl fullWidth>
             <FormLabel htmlFor="user-types-select">
               {t('applications:onboarding.configure.details.userTypes.label')}
@@ -640,7 +640,7 @@ export default function ConfigureDetails({
           </Stack>
         </>
       )}
-      
+
       {/* Passkey Relying Party Configuration */}
       {isPasskeyConfigEnabled && (
         <Stack spacing={2}>

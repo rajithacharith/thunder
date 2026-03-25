@@ -19,6 +19,8 @@
 import {Stack} from '@wso2/oxygen-ui';
 import type {Application} from '../../../models/application';
 import type {OAuth2Config} from '../../../models/oauth';
+import type {InboundAuthConfig} from '../../../models/inbound-auth';
+import type {ApplicationTemplate} from '../../../models/application-templates';
 import OAuth2ConfigSection from './OAuth2ConfigSection';
 import CertificateSection from './CertificateSection';
 import MetadataSection from './MetadataSection';
@@ -39,6 +41,10 @@ interface EditAdvancedSettingsProps {
    * OAuth2 configuration for the application (optional)
    */
   oauth2Config?: OAuth2Config;
+  /**
+   * Template-driven field constraints for OAuth2 fields (optional)
+   */
+  oauth2Constraints?: NonNullable<ApplicationTemplate['fieldConstraints']>['oauth2'];
   /**
    * Callback function to handle field value changes
    * @param field - The application field being updated
@@ -62,11 +68,24 @@ export default function EditAdvancedSettings({
   application,
   editedApp,
   oauth2Config = undefined,
+  oauth2Constraints = undefined,
   onFieldChange,
 }: EditAdvancedSettingsProps) {
+  const handleOAuth2ConfigChange = (updates: Partial<OAuth2Config>) => {
+    const currentInboundAuth: InboundAuthConfig[] = editedApp.inboundAuthConfig ?? application.inboundAuthConfig ?? [];
+    const updatedInboundAuth = currentInboundAuth.map((auth) =>
+      auth.type === 'oauth2' ? {...auth, config: {...auth.config, ...updates}} : auth,
+    );
+    onFieldChange('inboundAuthConfig', updatedInboundAuth);
+  };
+
   return (
     <Stack spacing={3}>
-      <OAuth2ConfigSection oauth2Config={oauth2Config} />
+      <OAuth2ConfigSection
+        oauth2Config={oauth2Config}
+        oauth2Constraints={oauth2Constraints}
+        onOAuth2ConfigChange={handleOAuth2ConfigChange}
+      />
       <CertificateSection application={application} editedApp={editedApp} onFieldChange={onFieldChange} />
       <MetadataSection application={application} />
     </Stack>

@@ -27,7 +27,7 @@ import type {OAuth2Config} from '../../../../models/oauth';
 vi.mock('../TokenUserAttributesSection', () => ({
   default: ({tokenType, headerAction}: {tokenType: string; headerAction?: React.ReactNode}) => (
     <div data-testid={`token-user-attributes-section-${tokenType}`}>
-      Token User Attributes Section - {tokenType}
+      User Attributes Section - {tokenType}
       {headerAction}
     </div>
   ),
@@ -264,7 +264,8 @@ describe('EditTokenSettings', () => {
         />,
       );
 
-      expect(container).toBeTruthy();      expect(screen.getByTestId('token-user-attributes-section-access')).toBeInTheDocument();
+      expect(container).toBeTruthy();
+      expect(screen.getByTestId('token-user-attributes-section-access')).toBeInTheDocument();
       expect(screen.getByTestId('token-validation-section-access')).toBeInTheDocument();
       expect(screen.getByTestId('token-user-attributes-section-id')).toBeInTheDocument();
       expect(screen.getByTestId('token-validation-section-id')).toBeInTheDocument();
@@ -275,7 +276,8 @@ describe('EditTokenSettings', () => {
 
       expect(container).toBeTruthy();
       expect(screen.getByTestId('token-user-attributes-section-shared')).toBeInTheDocument();
-      expect(screen.getByTestId('token-validation-section-shared')).toBeInTheDocument();    });
+      expect(screen.getByTestId('token-validation-section-shared')).toBeInTheDocument();
+    });
   });
 
   describe.skip('User Info Configuration Logic - SKIPPED: Component hangs due to async operations', () => {
