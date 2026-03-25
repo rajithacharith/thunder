@@ -17,12 +17,13 @@
 apiVersion: openchoreo.dev/v1alpha1
 kind: Project
 metadata:
-  name: {{ .Values.organization.name }}
+  name: {{ .Values.project.name }}
   annotations:
-    openchoreo.dev/description: "Identity platform powered by WSO2 Thunder"
-    openchoreo.dev/display-name: "Identity Platform"
+    openchoreo.dev/description: {{ .Values.project.description | quote }}
+    openchoreo.dev/display-name: {{ .Values.project.displayName | quote }}
 spec:
-  deploymentPipelineRef: {{ .Values.pipelineName }}
+  deploymentPipelineRef:
+    name: {{ .Values.pipelineName }}
 
 ---
 
@@ -35,14 +36,14 @@ metadata:
     openchoreo.dev/display-name: "Identity Platform Pipeline"
 spec:
   promotionPaths:
-    - sourceEnvironmentRef: development
+    - sourceEnvironmentRef:
+        name: development
       targetEnvironmentRefs:
         - name: staging
-          requiresApproval: false
-    - sourceEnvironmentRef: staging
+    - sourceEnvironmentRef:
+        name: staging
       targetEnvironmentRefs:
         - name: production
-          requiresApproval: true
 
 ---
 
@@ -54,10 +55,10 @@ metadata:
     openchoreo.dev/description: "Development environment for identity platform"
     openchoreo.dev/display-name: "Development"
 spec:
-  dataPlaneRef: {{ .Values.organization.name }}
+  dataPlaneRef:
+    kind: {{ .Values.dataPlaneRef.kind }}
+    name: {{ .Values.dataPlaneRef.name }}
   isProduction: false
-  gateway:
-    dnsPrefix: "{{ .Values.gateway.dnsPrefixDev }}"
 
 ---
 
@@ -69,10 +70,10 @@ metadata:
     openchoreo.dev/description: "Staging environment for identity platform"
     openchoreo.dev/display-name: "Staging"
 spec:
-  dataPlaneRef: {{ .Values.organization.name }}
+  dataPlaneRef:
+    kind: {{ .Values.dataPlaneRef.kind }}
+    name: {{ .Values.dataPlaneRef.name }}
   isProduction: false
-  gateway:
-    dnsPrefix: "{{ .Values.gateway.dnsPrefixStaging }}"
 
 ---
 
@@ -84,7 +85,7 @@ metadata:
     openchoreo.dev/description: "Production environment for identity platform"
     openchoreo.dev/display-name: "Production"
 spec:
-  dataPlaneRef: {{ .Values.organization.name }}
+  dataPlaneRef:
+    kind: {{ .Values.dataPlaneRef.kind }}
+    name: {{ .Values.dataPlaneRef.name }}
   isProduction: true
-  gateway:
-    dnsPrefix: "{{ .Values.gateway.dnsPrefixProd }}"

@@ -1,3 +1,100 @@
+---
+# Source: thunder/templates/thunder-component.yaml
+# Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+#
+# WSO2 LLC. licenses this file to you under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+---
+# Source: thunder/templates/thunder-component.yaml
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: thunder
+  annotations:
+    openchoreo.dev/description: "WSO2 Thunder Identity Management Service"
+    openchoreo.dev/display-name: "Thunder"
+spec:
+  owner:
+    projectName: identity-platform
+  componentType:
+    kind: ClusterComponentType
+    name: deployment/service
+  autoDeploy: true
+  autoBuild: false
+---
+# Source: thunder/templates/thunder-platform.yaml
+apiVersion: openchoreo.dev/v1alpha1
+kind: DeploymentPipeline
+metadata:
+  name: identity-platform-pipeline
+  annotations:
+    openchoreo.dev/description: "Deployment pipeline for identity platform with dev, staging, and production environments"
+    openchoreo.dev/display-name: "Identity Platform Pipeline"
+spec:
+  promotionPaths:
+    - sourceEnvironmentRef:
+        name: development
+      targetEnvironmentRefs:
+        - name: staging
+    - sourceEnvironmentRef:
+        name: staging
+      targetEnvironmentRefs:
+        - name: production
+---
+# Source: thunder/templates/thunder-platform.yaml
+apiVersion: openchoreo.dev/v1alpha1
+kind: Environment
+metadata:
+  name: development
+  annotations:
+    openchoreo.dev/description: "Development environment for identity platform"
+    openchoreo.dev/display-name: "Development"
+spec:
+  dataPlaneRef:
+    kind: ClusterDataPlane
+    name: default
+  isProduction: false
+---
+# Source: thunder/templates/thunder-platform.yaml
+apiVersion: openchoreo.dev/v1alpha1
+kind: Environment
+metadata:
+  name: staging
+  annotations:
+    openchoreo.dev/description: "Staging environment for identity platform"
+    openchoreo.dev/display-name: "Staging"
+spec:
+  dataPlaneRef:
+    kind: ClusterDataPlane
+    name: default
+  isProduction: false
+---
+# Source: thunder/templates/thunder-platform.yaml
+apiVersion: openchoreo.dev/v1alpha1
+kind: Environment
+metadata:
+  name: production
+  annotations:
+    openchoreo.dev/description: "Production environment for identity platform"
+    openchoreo.dev/display-name: "Production"
+spec:
+  dataPlaneRef:
+    kind: ClusterDataPlane
+    name: default
+  isProduction: true
+---
+# Source: thunder/templates/thunder-platform.yaml
 # Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
 #
 # WSO2 LLC. licenses this file to you under the Apache License,
@@ -14,34 +111,28 @@
 # specific language governing permissions and limitations
 # under the License.
 
----
 apiVersion: openchoreo.dev/v1alpha1
-kind: Component
+kind: Project
 metadata:
-  name: {{ .Values.componentName }}
+  name: identity-platform
   annotations:
-    openchoreo.dev/description: "WSO2 Thunder Identity Management Service"
-    openchoreo.dev/display-name: "Thunder"
+    openchoreo.dev/description: "Project created by Thunder OpenChoreo Helm chart"
+    openchoreo.dev/display-name: "Identity Platform"
 spec:
-  owner:
-    projectName: {{ .Values.project.name }}
-  componentType:
-    kind: {{ .Values.componentType.kind }}
-    name: {{ .Values.componentType.name }}
-  autoDeploy: {{ .Values.component.autoDeploy }}
-  autoBuild: {{ .Values.component.autoBuild }}
-
+  deploymentPipelineRef:
+    name: identity-platform-pipeline
 ---
+# Source: thunder/templates/thunder-component.yaml
 apiVersion: openchoreo.dev/v1alpha1
 kind: Workload
 metadata:
-  name: {{ .Values.componentName }}
+  name: thunder
 spec:
   owner:
-    componentName: {{ .Values.componentName }}
-    projectName: {{ .Values.project.name }}
+    componentName: thunder
+    projectName: identity-platform
   container:
-    image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+    image: ghcr.io/asgardeo/thunder:latest
     command:
       - /bin/sh
       - -c
@@ -110,16 +201,13 @@ spec:
 
         cors:
           allowed_origins:
-          {{- range .Values.cors.allowed_origins }}
-            - "{{ . }}"
-          {{- end }}
+            - "https://thunder-gate.your-domain.com"
+            - "https://localhost:3000"
 
         consent:
           enabled: ${THUNDER_CONSENT_ENABLED}
           base_url: "${THUNDER_CONSENT_BASE_URL}"
         EOF
-
-        {{- if .Values.consent.enabled }}
         # Generate consent server configuration
         cat > /opt/thunder/consent/repository/conf/deployment.yaml << EOF
         server:
@@ -170,15 +258,13 @@ spec:
           exit 1
         fi
         echo "Consent server started successfully (PID: $CONSENT_PID)"
-
-        {{- end }}
         echo "Starting Thunder with PostgreSQL configuration..."
         exec /opt/thunder/thunder
     env:
       - key: THUNDER_SERVER_HOSTNAME
         value: "0.0.0.0"
       - key: THUNDER_SERVER_PORT
-        value: "{{ .Values.thunder.server.port }}"
+        value: "8090"
       - key: THUNDER_GATE_CLIENT_HOSTNAME
         value: "0.0.0.0"
       - key: THUNDER_GATE_CLIENT_PORT
@@ -186,70 +272,66 @@ spec:
       - key: THUNDER_GATE_CLIENT_SCHEME
         value: "https"
       - key: DATABASE_HOST
-        value: "{{ .Values.database.host }}"
+        value: "<DB_HOST>"
       - key: DATABASE_PORT
-        value: "{{ .Values.database.port }}"
+        value: "5432"
       - key: THUNDER_DB_CONFIG_TYPE
-        value: "{{ .Values.database.config.type }}"
+        value: "postgres"
       - key: THUNDER_DB_CONFIG_DATABASE
-        value: "{{ .Values.database.config.database }}"
+        value: "configdb"
       - key: THUNDER_DB_CONFIG_USERNAME
-        value: "{{ .Values.database.config.username }}"
+        value: "<DB_USERNAME>"
       - key: THUNDER_DB_CONFIG_PASSWORD
-        value: "{{ .Values.database.config.password }}"
+        value: "<DB_PASSWORD>"
       - key: THUNDER_DB_CONFIG_SSL_MODE
-        value: "{{ .Values.database.config.sslmode }}"
+        value: "disable"
       - key: THUNDER_DB_RUNTIME_TYPE
-        value: "{{ .Values.database.runtime.type }}"
+        value: "postgres"
       - key: THUNDER_DB_RUNTIME_DATABASE
-        value: "{{ .Values.database.runtime.database }}"
+        value: "runtimedb"
       - key: THUNDER_DB_RUNTIME_USERNAME
-        value: "{{ .Values.database.runtime.username }}"
+        value: "<DB_USERNAME>"
       - key: THUNDER_DB_RUNTIME_PASSWORD
-        value: "{{ .Values.database.runtime.password }}"
+        value: "<DB_PASSWORD>"
       - key: THUNDER_DB_RUNTIME_SSL_MODE
-        value: "{{ .Values.database.runtime.sslmode }}"
+        value: "disable"
       - key: THUNDER_CACHE_TYPE
-        value: "{{ .Values.cache.type }}"
+        value: "memory"
       - key: THUNDER_CACHE_SIZE
-        value: "{{ .Values.cache.size }}"
+        value: "10000"
       - key: THUNDER_CACHE_TTL
-        value: "{{ .Values.cache.ttl }}"
+        value: "3600"
       - key: THUNDER_JWT_ISSUER
-        value: "{{ .Values.jwt.issuer }}"
+        value: ""
       - key: THUNDER_JWT_VALIDITY_PERIOD
-        value: "{{ .Values.jwt.validity }}"
+        value: "3600"
       - key: THUNDER_OAUTH_REFRESH_TOKEN_VALIDITY
-        value: "{{ .Values.oauth.refresh_token_validity }}"
+        value: "86400"
       - key: THUNDER_CRYPTO_ENCRYPTION_KEY
-        value: "{{ .Values.crypto.encryption.key }}"
+        value: "file://repository/resources/security/crypto.key"
       - key: THUNDER_CONSENT_ENABLED
-        value: "{{ .Values.consent.enabled }}"
+        value: "true"
       - key: THUNDER_CONSENT_BASE_URL
-        value: "{{ .Values.consent.baseUrl }}"
-      {{- if .Values.consent.enabled }}
+        value: "http://localhost:9090/api/v1"
       - key: CONSENT_SERVER_HOSTNAME
-        value: "{{ .Values.consent.server.hostname }}"
+        value: "localhost"
       - key: CONSENT_SERVER_PORT
-        value: "{{ .Values.consent.server.port }}"
+        value: "9090"
       - key: CONSENT_DB_TYPE
-        value: "{{ .Values.consent.database.type }}"
+        value: "postgres"
       - key: CONSENT_DB_DATABASE
-        value: "{{ .Values.consent.database.database }}"
+        value: "consentdb"
       - key: CONSENT_DB_USERNAME
-        value: "{{ .Values.consent.database.username }}"
+        value: "<DB_USERNAME>"
       - key: CONSENT_DB_PASSWORD
-        value: "{{ .Values.consent.database.password }}"
+        value: "<DB_PASSWORD>"
       - key: CONSENT_DB_SSL_MODE
-        value: "{{ .Values.consent.database.sslmode }}"
-      {{- end }}
+        value: "disable"
 
   endpoints:
     identity-api:
       type: HTTP
-      port: {{ .Values.thunder.server.port }}
+      port: 8090
       visibility:
-      {{- range .Values.workload.endpointVisibility }}
-        - {{ . | quote }}
-      {{- end }}
-      basePath: {{ .Values.workload.basePath | quote }}
+        - "external"
+      basePath: "/"

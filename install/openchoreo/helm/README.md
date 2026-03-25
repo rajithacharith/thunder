@@ -5,11 +5,24 @@ This Helm chart deploys WSO2 Thunder Identity Management Service on OpenChoreo p
 ## Overview
 
 The chart creates the following OpenChoreo resources:
-- **Component**: Defines the Thunder identity management service
-- **Workload**: Configures the container deployment
-- **Service**: Exposes the Thunder API endpoints
-- **Organization**: Creates or references an organization
-- **ServiceClass/APIClass**: Cluster-scoped resources for service management
+- **Project**: Logical grouping for Thunder resources
+- **DeploymentPipeline**: Promotion path between development, staging, and production
+- **Environment**: Deployment environments mapped to a DataPlane/ClusterDataPlane
+- **Component**: Defines Thunder as an application component
+- **Workload**: Configures runtime container and endpoint exposure
+
+## Replacements for Removed/Deprecated Resources
+
+OpenChoreo v1.0 no longer documents the legacy claim/class resources used by older chart versions. This chart uses the current replacements:
+
+- **Organization** -> **Namespace + Project**
+  - OpenChoreo v1 resource hierarchy is namespace-scoped, with Project as the top application resource.
+- **Service** -> **Workload endpoints**
+  - API exposure is declared via `spec.endpoints` in Workload (for example: HTTP + visibility + basePath).
+- **ServiceClass** -> **ComponentType (+ Traits)**
+  - Deployment behavior and policies should be encoded in ComponentType and optional Trait resources.
+- **APIClass** -> **Traits / endpoint configuration in Workload + ComponentType model**
+  - API-related behavior is handled by endpoint configuration and trait-based composition.
 
 ## Configuration Value Types
 
@@ -55,7 +68,7 @@ Thunder's configuration system supports multiple value formats for **any paramet
 - Proper RBAC permissions for OpenChoreo resources
 
 ### OpenChoreo version
-- 0.3.2
+- 1.0.x
 
 ### Basic Installation
 
@@ -76,7 +89,7 @@ Thunder's configuration system supports multiple value formats for **any paramet
      --set database.config.password="$DB_PASS" \
      --set database.runtime.username="$DB_USER" \
      --set database.runtime.password="$DB_PASS" \
-     --set organization.name="identity-platform"
+    --set project.name="identity-platform"
    ```
 
 ## Chart Location
@@ -91,8 +104,14 @@ Thunder's configuration system supports multiple value formats for **any paramet
 
 | Parameter | Description | Default | Required |
 |-----------|-------------|---------|----------|
-| `componentName` | Base name for Component/Workload/Service resources | `thunder-identity` | No |
+| `componentName` | Base name for Component/Workload resources | `thunder` | No |
 | `pipelineName` | DeploymentPipeline name (used by platform templates) | `identity-platform-pipeline` | No |
+| `project.name` | Project resource name | `identity-platform` | Yes |
+| `project.displayName` | Project display name annotation | `Identity Platform` | No |
+| `dataPlaneRef.kind` | Environment data plane kind (`DataPlane` or `ClusterDataPlane`) | `ClusterDataPlane` | No |
+| `dataPlaneRef.name` | Environment data plane name | `default` | No |
+| `componentType.kind` | ComponentType reference kind | `ClusterComponentType` | No |
+| `componentType.name` | ComponentType reference in `{workloadType}/{name}` format | `deployment/service` | No |
 | `image.repository` | Thunder container image repository | `ghcr.io/asgardeo/thunder` | No |
 | `image.tag` | Container image tag | `latest` | No |
 | `thunder.server.port` | Port on which Thunder server listens | `8090` | No |
@@ -135,52 +154,17 @@ Thunder's configuration system supports multiple value formats for **any paramet
 | `cache.size` | Maximum number of cache entries | `10000` |
 | `cache.ttl` | Cache entry TTL in seconds | `3600` (1 hour) |
 
-### Platform Resources
+### Workload Endpoint
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `serviceClass.name` | ServiceClass resource name to reference | `default` |
-| `serviceClass.create` | Whether to create ServiceClass resource | `true` |
-| `apiClass.name` | APIClass resource name to reference | `default` |
-| `apiClass.create` | Whether to create APIClass resource | `true` |
-| `organization.name` | Organization name (must match project references) | `identity-platform` |
-| `organization.displayName` | Human-readable organization name | `Default Organization` |
-
-### Gateway Configuration
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `gateway.dnsPrefixDev` | DNS prefix for development environment | `dev` |
-| `gateway.dnsPrefixStaging` | DNS prefix for staging environment | `staging` |
-| `gateway.dnsPrefixProd` | DNS prefix for production environment | `prod` |
+| `workload.endpointVisibility` | Workload endpoint visibility list | `['external']` |
+| `workload.basePath` | Workload endpoint base path | `/` |
 
 ## Namespace and Resource Management
 
-### Cluster-Scoped Resources
-
-- **ServiceClass** and **APIClass** are cluster-scoped custom resources
-- By default, these resources are created only when deploying to a **non-default** namespace
-- This prevents conflicts with system-level resources in the default namespace
-
-### Resource Creation Behavior
-
-| Resource | Namespace | Created |
-|----------|-----------|---------|
-| ServiceClass | `default` | ❌ No (regardless of `create` setting) |
-| ServiceClass | `non-default` | ✅ Yes (if `serviceClass.create=true`) |
-| APIClass | `default` | ❌ No (regardless of `create` setting) |
-| APIClass | `non-default` | ✅ Yes (if `apiClass.create=true`) |
-
-### Using Existing Resources
-
-If you already have cluster-scoped resources, reference them instead of creating new ones:
-
-```bash
---set serviceClass.create=false \
---set serviceClass.name=existing-service-class \
---set apiClass.create=false \
---set apiClass.name=existing-api-class
-```
+- Project, Component, Workload, DeploymentPipeline, and Environment are namespace-scoped.
+- This chart does not create namespaces. Use `--namespace` and `--create-namespace` at install time if needed.
 
 ### Template and Validate
 
@@ -193,7 +177,7 @@ helm template thunder install/openchoreo/helm/ \
   --set database.config.password="$DB_PASS" \
   --set database.runtime.username="$DB_USER" \
   --set database.runtime.password="$DB_PASS" \
-  --set organization.name="identity-platform"
+  --set project.name="identity-platform"
 
 # Dry-run installation to check for issues
 helm upgrade --install thunder install/openchoreo/helm/ \
@@ -205,7 +189,7 @@ helm upgrade --install thunder install/openchoreo/helm/ \
   --set database.config.password="$DB_PASS" \
   --set database.runtime.username="$DB_USER" \
   --set database.runtime.password="$DB_PASS" \
-  --set organization.name="identity-platform"
+  --set project.name="identity-platform"
 ```
 
 ### Debugging Commands
@@ -218,8 +202,8 @@ kubectl get pods -n identity-platform
 kubectl logs <pod-name> -n identity-platform
 
 # Check OpenChoreo resources
-kubectl get components,workloads,services -n identity-platform
-kubectl get organizations,serviceclasses,apiclasses
+kubectl get projects,components,workloads -n identity-platform
+kubectl get deploymentpipelines,environments -n identity-platform
 ```
 
 ## Security Considerations
