@@ -23,11 +23,22 @@ import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
 import {describe, it, expect, vi} from 'vitest';
 import GatePreview from '../GatePreview';
 
-// Augment the global @asgardeo/react mock (from setup.ts) to include BaseSignIn,
-// which GatePreview renders inside the canvas.
-vi.mock('@asgardeo/react', () => ({
-  AsgardeoProvider: ({children}: {children: React.ReactNode}) => children,
-  BaseSignIn: () => <div data-testid="base-sign-in" />,
+// Mock shared-design to stub DesignProvider (which internally needs ConfigProvider)
+vi.mock('@thunder/shared-design', () => ({
+  DesignProvider: ({children}: {children: React.ReactNode}) => children,
+  useDesign: () => ({isDesignEnabled: false, theme: undefined}),
+  FlowComponentRenderer: () => <div data-testid="flow-component" />,
+  AuthPageLayout: ({children}: {children: React.ReactNode}) => <div data-testid="auth-page-layout">{children}</div>,
+  AuthCardLayout: ({children}: {children: React.ReactNode}) => <div data-testid="auth-card-layout">{children}</div>,
+  AcrylicOrangeTheme: {},
+}));
+
+vi.mock('@emotion/cache', () => ({
+  default: () => ({key: 'test', nonce: undefined, container: document.head, insert: vi.fn()}),
+}));
+
+vi.mock('@emotion/react', () => ({
+  CacheProvider: ({children}: {children: React.ReactNode}) => children,
 }));
 
 // A minimal valid theme for rendering the preview (cast to avoid full type scaffolding)
@@ -53,15 +64,16 @@ describe('GatePreview', () => {
     it('should not render the preview canvas when theme is null', () => {
       renderWithThemeProvider(<GatePreview theme={null} />);
 
-      expect(screen.queryByTestId('base-sign-in')).not.toBeInTheDocument();
+      // When loading, the iframe/canvas area is not rendered
+      expect(screen.queryByTitle('Gate Preview')).not.toBeInTheDocument();
     });
   });
 
   describe('Rendering with a valid theme', () => {
-    it('should render the preview canvas (BaseSignIn mock) when a theme is provided', () => {
+    it('should render the preview iframe when a theme is provided', () => {
       renderWithThemeProvider(<GatePreview theme={mockTheme} />);
 
-      expect(screen.getByTestId('base-sign-in')).toBeInTheDocument();
+      expect(screen.getByTitle('Gate Preview')).toBeInTheDocument();
     });
 
     it('should not show a progress spinner when theme is provided', () => {
@@ -83,7 +95,6 @@ describe('GatePreview', () => {
     it('should not render toolbar buttons when showToolbar is false', () => {
       renderWithThemeProvider(<GatePreview theme={mockTheme} showToolbar={false} />);
 
-      // Only the base-sign-in mock is rendered; no toolbar icon buttons
       const buttons = screen.queryAllByRole('button');
       expect(buttons).toHaveLength(0);
     });
@@ -107,19 +118,19 @@ describe('GatePreview', () => {
     it('should render without errors when colorScheme is explicitly set to light', () => {
       renderWithThemeProvider(<GatePreview theme={mockTheme} colorScheme="light" />);
 
-      expect(screen.getByTestId('base-sign-in')).toBeInTheDocument();
+      expect(screen.getByTitle('Gate Preview')).toBeInTheDocument();
     });
 
     it('should render without errors when colorScheme is explicitly set to dark', () => {
       renderWithThemeProvider(<GatePreview theme={mockTheme} colorScheme="dark" />);
 
-      expect(screen.getByTestId('base-sign-in')).toBeInTheDocument();
+      expect(screen.getByTitle('Gate Preview')).toBeInTheDocument();
     });
 
     it('should render without errors when syncColorSchemeWithSystem is true', () => {
       renderWithThemeProvider(<GatePreview theme={mockTheme} syncColorSchemeWithSystem />);
 
-      expect(screen.getByTestId('base-sign-in')).toBeInTheDocument();
+      expect(screen.getByTitle('Gate Preview')).toBeInTheDocument();
     });
   });
 
@@ -137,8 +148,8 @@ describe('GatePreview', () => {
         ),
       );
 
-      // Preview is still rendered after interactions
-      expect(screen.getByTestId('base-sign-in')).toBeInTheDocument();
+      // Preview iframe is still rendered after interactions
+      expect(screen.getByTitle('Gate Preview')).toBeInTheDocument();
     });
   });
 });

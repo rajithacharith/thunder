@@ -21,38 +21,14 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 
-import {SignUp, type EmbeddedFlowComponent} from '@asgardeo/react';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
-import {cn} from '@thunder/utils';
-import {
-  Box,
-  Button,
-  Alert,
-  Typography,
-  styled,
-  AlertTitle,
-  Paper,
-  Stack,
-  ColorSchemeImage,
-  CircularProgress,
-} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
-import {Trans, useTranslation} from 'react-i18next';
+import {Box, Button, Alert, Typography, AlertTitle, CircularProgress} from '@wso2/oxygen-ui';
+import {SignUp, type EmbeddedFlowComponent} from '@asgardeo/react';
 import {useNavigate, useSearchParams} from 'react-router';
+import {Trans, useTranslation} from 'react-i18next';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {FlowComponentRenderer, AuthCardLayout} from '@thunder/shared-design';
 import ROUTES from '../../constants/routes';
-import FlowComponentRenderer from '../flow/FlowComponentRenderer';
-
-const StyledPaper = styled(Paper)(({theme}) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  alignSelf: 'center',
-  width: '100%',
-  padding: theme.spacing(4),
-  gap: theme.spacing(2),
-  [theme.breakpoints.up('sm')]: {
-    width: '450px',
-  },
-}));
 
 export default function SignUpBox(): JSX.Element {
   const navigate = useNavigate();
@@ -64,25 +40,17 @@ export default function SignUpBox(): JSX.Element {
   const signInUrl = currentParams ? `${ROUTES.AUTH.SIGN_IN}?${currentParams}` : ROUTES.AUTH.SIGN_IN;
 
   return (
-    <Stack gap={2} className={cn('SignUpBox--root')}>
-      <ColorSchemeImage
-        className={cn('SignUpBox--logo')}
-        src={{
-          light: `${import.meta.env.BASE_URL}/assets/images/logo.svg`,
-          dark: `${import.meta.env.BASE_URL}/assets/images/logo-inverted.svg`,
-        }}
-        alt={{
-          light: 'Logo (Light)',
-          dark: 'Logo (Dark)',
-        }}
-        height={30}
-        width="auto"
-        sx={{
-          display: {xs: 'flex', md: 'none'},
-        }}
-      />
-      <StyledPaper variant="outlined" className={cn('SignUpBox--paper')}>
-        <SignUp afterSignUpUrl={signInUrl}>
+    <AuthCardLayout
+      variant="SignUpBox"
+      logo={{
+        src: {
+          light: `${import.meta.env.BASE_URL}assets/images/logo.svg`,
+          dark: `${import.meta.env.BASE_URL}assets/images/logo-inverted.svg`,
+        },
+        alt: {light: '', dark: ''},
+      }}
+    >
+      <SignUp afterSignUpUrl={signInUrl}>
           {({values, fieldErrors, error, touched, handleInputChange, handleSubmit, isLoading, components}: any) => (
             <>
               {!components ? (
@@ -159,7 +127,6 @@ export default function SignUpBox(): JSX.Element {
             </>
           )}
         </SignUp>
-      </StyledPaper>
-    </Stack>
+    </AuthCardLayout>
   );
 }

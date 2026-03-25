@@ -18,29 +18,16 @@
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
-import {EmbeddedFlowComponentType, SignIn, type EmbeddedFlowComponent} from '@asgardeo/react';
-import {useDesign} from '@thunder/shared-design';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
-import {cn, TemplateLiteralType} from '@thunder/utils';
-import {Box, Alert, styled, Paper, ColorSchemeImage, Stack, CircularProgress} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
+import {Box, Alert, CircularProgress} from '@wso2/oxygen-ui';
 import {useState} from 'react';
-import {useTranslation} from 'react-i18next';
+import {EmbeddedFlowComponentType, SignIn, type EmbeddedFlowComponent} from '@asgardeo/react';
+import {useDesign, FlowComponentRenderer, AuthCardLayout} from '@thunder/shared-design';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {TemplateLiteralType} from '@thunder/utils';
 import {useSearchParams} from 'react-router';
+import {useTranslation} from 'react-i18next';
 import generateFallbackSignUpUrl from '../../utils/generateFallbackSignUpUrl';
-import FlowComponentRenderer from '../flow/FlowComponentRenderer';
-
-const StyledPaper = styled(Paper)(({theme}) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  alignSelf: 'center',
-  width: '100%',
-  padding: theme.spacing(4),
-  gap: theme.spacing(2),
-  [theme.breakpoints.up('sm')]: {
-    width: '450px',
-  },
-}));
 
 export default function SignInBox(): JSX.Element {
   const [searchParams] = useSearchParams();
@@ -88,25 +75,19 @@ export default function SignInBox(): JSX.Element {
   };
 
   return (
-    <Stack gap={2} className={cn('SignInBox--root')}>
-      <ColorSchemeImage
-        className={cn('SignInBox--logo')}
-        src={{
-          light: `${import.meta.env.BASE_URL}/assets/images/logo.svg`,
-          dark: `${import.meta.env.BASE_URL}/assets/images/logo-inverted.svg`,
-        }}
-        alt={{
-          light: 'Logo (Light)',
-          dark: 'Logo (Dark)',
-        }}
-        height={30}
-        width="auto"
-        sx={{
-          display: !isDesignEnabled ? {xs: 'flex', md: 'none'} : 'none',
-        }}
-      />
-      <StyledPaper variant="outlined" className={cn('SignInBox--paper')}>
-        <SignIn>
+    <AuthCardLayout
+      variant="SignInBox"
+      logo={{
+        src: {
+          light: `${import.meta.env.BASE_URL}assets/images/logo.svg`,
+          dark: `${import.meta.env.BASE_URL}assets/images/logo-inverted.svg`,
+        },
+        alt: {light: '', dark: ''},
+      }}
+      showLogo={!isDesignEnabled}
+      logoDisplay={!isDesignEnabled ? {xs: 'flex', md: 'none'} : {display: 'none'}}
+    >
+      <SignIn>
           {({onSubmit, isLoading, components, error, isInitialized, meta: flowMeta, additionalData}) =>
             (isLoading ?? !isInitialized) ? (
               <Box sx={{display: 'flex', justifyContent: 'center', p: 3}}>
@@ -174,7 +155,6 @@ export default function SignInBox(): JSX.Element {
             )
           }
         </SignIn>
-      </StyledPaper>
-    </Stack>
+    </AuthCardLayout>
   );
 }

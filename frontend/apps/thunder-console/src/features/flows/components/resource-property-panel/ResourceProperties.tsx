@@ -23,7 +23,7 @@ import debounce from 'lodash-es/debounce';
 import isEmpty from 'lodash-es/isEmpty';
 import merge from 'lodash-es/merge';
 import set from 'lodash-es/set';
-import {useRef, useMemo, useCallback, memo, type ReactElement} from 'react';
+import {useRef, useEffect, useMemo, useCallback, memo, type ReactElement} from 'react';
 import ResourcePropertyPanelConstants from '../../constants/ResourcePropertyPanelConstants';
 import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
 import type {Properties} from '../../models/base';
@@ -75,7 +75,6 @@ function ResourceProperties(): ReactElement {
 
   // Use a ref to track the current resource ID for debounced functions
   const lastInteractedResourceIdRef = useRef<string>(lastInteractedResource?.id);
-  lastInteractedResourceIdRef.current = lastInteractedResource?.id;
 
   const lastInteractedResourceRef = useRef(lastInteractedResource);
   const lastInteractedStepIdRef = useRef(lastInteractedStepId);
@@ -83,10 +82,13 @@ function ResourceProperties(): ReactElement {
   const updateNodeDataRef = useRef(updateNodeData);
 
   // Keep refs in sync
-  lastInteractedResourceRef.current = lastInteractedResource;
-  lastInteractedStepIdRef.current = lastInteractedStepId;
-  setLastInteractedResourceRef.current = setLastInteractedResource;
-  updateNodeDataRef.current = updateNodeData;
+  useEffect(() => {
+    lastInteractedResourceIdRef.current = lastInteractedResource?.id;
+    lastInteractedResourceRef.current = lastInteractedResource;
+    lastInteractedStepIdRef.current = lastInteractedStepId;
+    setLastInteractedResourceRef.current = setLastInteractedResource;
+    updateNodeDataRef.current = updateNodeData;
+  });
 
   /**
    * Memoize filtered properties to avoid expensive operations on every render.
@@ -211,11 +213,11 @@ function ResourceProperties(): ReactElement {
   }, []);
 
   /**
-   * Create debounced handler using useRef to maintain stable reference.
+   * Create debounced handler using useMemo to maintain stable reference.
    * Uses refs internally to access current values without stale closures.
    */
-  const handlePropertyChangeRef = useRef(
-    debounce(async (propertyKey: string, newValue: string | boolean | object, element: Element): Promise<void> => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const handlePropertyChangeDebounced = useMemo(() => debounce(async (propertyKey: string, newValue: string | boolean | object, element: Element): Promise<void> => {
       const currentStepId = lastInteractedStepIdRef.current;
       const currentResource = lastInteractedResourceRef.current;
 
@@ -316,13 +318,12 @@ function ResourceProperties(): ReactElement {
         }
         setLastInteractedResourceRef.current(updatedResource);
       }
-    }, 300),
-  );
+    }, 300), []);
 
   const handlePropertyChange = useCallback(
     (propertyKey: string, newValue: string | boolean | object, element: Element) => {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      handlePropertyChangeRef.current(propertyKey, newValue, element);
+      handlePropertyChangeDebounced(propertyKey, newValue, element);
     },
     [],
   );

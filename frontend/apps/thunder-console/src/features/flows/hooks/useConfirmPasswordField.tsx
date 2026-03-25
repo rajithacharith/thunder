@@ -67,12 +67,12 @@ const useConfirmPasswordField = (): void => {
    * @param renderProperties - Function to re-render properties after modification.
    * @returns Returns false if the confirm password field is added, true otherwise.
    */
-  const addConfirmPasswordField = useCallback(async (
+  const addConfirmPasswordField = useCallback((
     propertyKey: string,
     newValue: unknown,
     element: Element,
     stepId: string,
-  ): Promise<boolean> => {
+  ): boolean => {
     if (element.type === ElementTypes.PasswordInput) {
       if (propertyKey === 'requireConfirmation' && !newValue) {
         updateNodeData(stepId, (node: Node) => {
@@ -276,12 +276,12 @@ const useConfirmPasswordField = (): void => {
    * @param stepId - The ID of the step where the element is located.
    * @returns Returns false if the confirm password field properties are updated, true otherwise.
    */
-  const updateConfirmPasswordFieldProperties = useCallback(async (
+  const updateConfirmPasswordFieldProperties = useCallback((
     propertyKey: string,
     newValue: unknown,
     element: Element,
     stepId: string,
-  ): Promise<boolean> => {
+  ): boolean => {
     if (element.type === ElementTypes.PasswordInput) {
       if (
         propertyKey === 'confirmHint' ||
@@ -353,7 +353,7 @@ const useConfirmPasswordField = (): void => {
    * @param resource - The resource element to be checked.
    * @returns Returns true.
    */
-  const deleteConfirmPasswordField = useCallback(async (stepId: string, resource: Element): Promise<boolean> => {
+  const deleteConfirmPasswordField = useCallback((stepId: string, resource: Element): boolean => {
     const resourceIdentifier = (resource as Element & {identifier?: string})?.identifier;
     if (
       resource.type === ElementTypes.PasswordInput &&
@@ -407,26 +407,26 @@ const useConfirmPasswordField = (): void => {
   }, [updateNodeData]);
 
   useEffect(() => {
-    (addConfirmPasswordField as AsyncPropertyChangeHandler)[
+    (addConfirmPasswordField as unknown as AsyncPropertyChangeHandler)[
       VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
     ] = 'addConfirmPasswordField';
     (addConfirmPasswordFieldProperties as SyncPropertyPanelHandler)[
       VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
     ] = 'addConfirmPasswordFieldProperties';
-    (updateConfirmPasswordFieldProperties as AsyncPropertyChangeHandler)[
+    (updateConfirmPasswordFieldProperties as unknown as AsyncPropertyChangeHandler)[
       VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
     ] = 'updateConfirmPasswordFieldProperties';
-    (deleteConfirmPasswordField as AsyncNodeDeleteHandler)[
+    (deleteConfirmPasswordField as unknown as AsyncNodeDeleteHandler)[
       VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
     ] = 'deleteConfirmPasswordField';
 
     PluginRegistry.getInstance().registerAsync(
       FlowEventTypes.ON_PROPERTY_CHANGE,
-      addConfirmPasswordField as AsyncPropertyChangeHandler,
+      addConfirmPasswordField as unknown as AsyncPropertyChangeHandler,
     );
     PluginRegistry.getInstance().registerAsync(
       FlowEventTypes.ON_PROPERTY_CHANGE,
-      updateConfirmPasswordFieldProperties as AsyncPropertyChangeHandler,
+      updateConfirmPasswordFieldProperties as unknown as AsyncPropertyChangeHandler,
     );
     PluginRegistry.getInstance().registerSync(
       FlowEventTypes.ON_PROPERTY_PANEL_OPEN,
@@ -437,19 +437,19 @@ const useConfirmPasswordField = (): void => {
     // The confirm password field will render as a normal INPUT element.
     PluginRegistry.getInstance().registerAsync(
       FlowEventTypes.ON_NODE_ELEMENT_DELETE,
-      deleteConfirmPasswordField as AsyncNodeDeleteHandler,
+      deleteConfirmPasswordField as unknown as AsyncNodeDeleteHandler,
     );
 
     return () => {
       PluginRegistry.getInstance().unregister(
         FlowEventTypes.ON_PROPERTY_CHANGE,
-        (addConfirmPasswordField as AsyncPropertyChangeHandler)[
+        (addConfirmPasswordField as unknown as AsyncPropertyChangeHandler)[
           VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
         ],
       );
       PluginRegistry.getInstance().unregister(
         FlowEventTypes.ON_PROPERTY_CHANGE,
-        (updateConfirmPasswordFieldProperties as AsyncPropertyChangeHandler)[
+        (updateConfirmPasswordFieldProperties as unknown as AsyncPropertyChangeHandler)[
           VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
         ],
       );
@@ -463,7 +463,7 @@ const useConfirmPasswordField = (): void => {
       // because they were not registered (see comment above).
       PluginRegistry.getInstance().unregister(
         FlowEventTypes.ON_NODE_ELEMENT_DELETE,
-        (deleteConfirmPasswordField as AsyncNodeDeleteHandler)[
+        (deleteConfirmPasswordField as unknown as AsyncNodeDeleteHandler)[
           VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
         ],
       );

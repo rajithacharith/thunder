@@ -258,21 +258,19 @@ describe('CustomLinkPlugin', () => {
       const inputs = document.querySelectorAll('input');
       const urlInput = inputs[1]; // Second input is the URL field
       expect(urlInput).toBeInTheDocument();
-      if (urlInput) {
-        act(() => {
-          fireEvent.change(urlInput, { target: { value: 'https://test.com' } });
-        });
+      act(() => {
+        fireEvent.change(urlInput, { target: { value: 'https://test.com' } });
+      });
 
-        // Verify the input value was updated before Enter key
-        expect(urlInput).toHaveValue('https://test.com');
+      // Verify the input value was updated before Enter key
+      expect(urlInput).toHaveValue('https://test.com');
 
-         act(() => {
-          fireEvent.keyDown(urlInput, {key: 'Enter'});
-        });
+      act(() => {
+        fireEvent.keyDown(urlInput, {key: 'Enter'});
+      });
 
-        // After Enter, handleApply -> handleClose resets the value
-        expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
-      }
+      // After Enter, handleApply -> handleClose resets the value
+      expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
     });
 
     it('should call handleApply when apply button is clicked', () => {
@@ -378,12 +376,10 @@ describe('CustomLinkPlugin', () => {
       const inputs = document.querySelectorAll('input');
       const urlInput = inputs[1]; // URL input
       expect(urlInput).toBeInTheDocument();
-      if (urlInput) {
-        act(() => {
-          fireEvent.change(urlInput, {target: {value: 'https://new-url.com'}});
-        });
-        expect(urlInput).toHaveValue('https://new-url.com');
-      }
+      act(() => {
+        fireEvent.change(urlInput, {target: {value: 'https://new-url.com'}});
+      });
+      expect(urlInput).toHaveValue('https://new-url.com');
     });
   });
 
@@ -531,12 +527,11 @@ describe('CustomLinkPlugin', () => {
 
       const inputs = document.querySelectorAll('input');
       const urlInput = inputs[1]; // URL input
-      if (urlInput) {
-        act(() => {
-          fireEvent.change(urlInput, {target: {value: 'https://custom-url.com'}});
-        });
-        expect(urlInput).toHaveValue('https://custom-url.com');
-      }
+      expect(urlInput).toBeInTheDocument();
+      act(() => {
+        fireEvent.change(urlInput, {target: {value: 'https://custom-url.com'}});
+      });
+      expect(urlInput).toHaveValue('https://custom-url.com');
     });
   });
 
@@ -684,12 +679,11 @@ describe('CustomLinkPlugin', () => {
 
       // Execute the click callback with metaKey
       const clickCallback = callbacks.CLICK_COMMAND as ((payload: MouseEvent) => boolean) | undefined;
-      if (clickCallback) {
-        const mockEvent = {metaKey: true, ctrlKey: false} as MouseEvent;
-        const result = clickCallback(mockEvent);
-        expect(result).toBe(true);
-        expect(mockOpen).toHaveBeenCalledWith('https://clicked-link.com', '_blank');
-      }
+      expect(clickCallback).toBeDefined();
+      const mockEvent = {metaKey: true, ctrlKey: false} as MouseEvent;
+      const result = clickCallback!(mockEvent);
+      expect(result).toBe(true);
+      expect(mockOpen).toHaveBeenCalledWith('https://clicked-link.com', '_blank');
 
       mockOpen.mockRestore();
     });
@@ -718,12 +712,11 @@ describe('CustomLinkPlugin', () => {
       render(<CustomLinkPlugin />);
 
       const clickCallback = callbacks.CLICK_COMMAND as ((payload: MouseEvent) => boolean) | undefined;
-      if (clickCallback) {
-        const mockEvent = {metaKey: false, ctrlKey: true} as MouseEvent;
-        const result = clickCallback(mockEvent);
-        expect(result).toBe(true);
-        expect(mockOpen).toHaveBeenCalledWith('https://ctrl-clicked-link.com', '_blank');
-      }
+      expect(clickCallback).toBeDefined();
+      const mockEvent = {metaKey: false, ctrlKey: true} as MouseEvent;
+      const result = clickCallback!(mockEvent);
+      expect(result).toBe(true);
+      expect(mockOpen).toHaveBeenCalledWith('https://ctrl-clicked-link.com', '_blank');
 
       mockOpen.mockRestore();
     });
@@ -750,11 +743,10 @@ describe('CustomLinkPlugin', () => {
       render(<CustomLinkPlugin />);
 
       const clickCallback = callbacks.CLICK_COMMAND as ((payload: MouseEvent) => boolean) | undefined;
-      if (clickCallback) {
-        const mockEvent = {metaKey: false, ctrlKey: false} as MouseEvent;
-        const result = clickCallback(mockEvent);
-        expect(result).toBe(false);
-      }
+      expect(clickCallback).toBeDefined();
+      const mockEvent = {metaKey: false, ctrlKey: false} as MouseEvent;
+      const result = clickCallback!(mockEvent);
+      expect(result).toBe(false);
     });
 
     it('should return false from CLICK_COMMAND when not a link node', () => {
@@ -779,11 +771,10 @@ describe('CustomLinkPlugin', () => {
       render(<CustomLinkPlugin />);
 
       const clickCallback = callbacks.CLICK_COMMAND as ((payload: MouseEvent) => boolean) | undefined;
-      if (clickCallback) {
-        const mockEvent = {metaKey: true, ctrlKey: false} as MouseEvent;
-        const result = clickCallback(mockEvent);
-        expect(result).toBe(false);
-      }
+      expect(clickCallback).toBeDefined();
+      const mockEvent = {metaKey: true, ctrlKey: false} as MouseEvent;
+      const result = clickCallback!(mockEvent);
+      expect(result).toBe(false);
     });
 
     it('should return false from CLICK_COMMAND when linkNode is null', () => {
@@ -808,11 +799,10 @@ describe('CustomLinkPlugin', () => {
       render(<CustomLinkPlugin />);
 
       const clickCallback = callbacks.CLICK_COMMAND as ((payload: MouseEvent) => boolean) | undefined;
-      if (clickCallback) {
-        const mockEvent = {metaKey: true, ctrlKey: false} as MouseEvent;
-        const result = clickCallback(mockEvent);
-        expect(result).toBe(false);
-      }
+      expect(clickCallback).toBeDefined();
+      const mockEvent = {metaKey: true, ctrlKey: false} as MouseEvent;
+      const result = clickCallback!(mockEvent);
+      expect(result).toBe(false);
     });
 
     it('should execute TOGGLE_SAFE_LINK_COMMAND with URL', () => {
@@ -838,13 +828,12 @@ describe('CustomLinkPlugin', () => {
       render(<CustomLinkPlugin />);
 
       const toggleSafeLinkCallback = callbacks.TOGGLE_SAFE_LINK_COMMAND as ((url: string) => boolean) | undefined;
-      if (toggleSafeLinkCallback) {
-        const result = toggleSafeLinkCallback('https://new-link.com');
-        expect(result).toBe(true);
-        expect(mockDispatchCommand).toHaveBeenCalledWith('TOGGLE_LINK_COMMAND', 'https://new-link.com');
-        expect(mockSetTarget).toHaveBeenCalledWith('_blank');
-        expect(mockSetRel).toHaveBeenCalledWith('noopener noreferrer');
-      }
+      expect(toggleSafeLinkCallback).toBeDefined();
+      const result = toggleSafeLinkCallback!('https://new-link.com');
+      expect(result).toBe(true);
+      expect(mockDispatchCommand).toHaveBeenCalledWith('TOGGLE_LINK_COMMAND', 'https://new-link.com');
+      expect(mockSetTarget).toHaveBeenCalledWith('_blank');
+      expect(mockSetRel).toHaveBeenCalledWith('noopener noreferrer');
     });
 
     it('should execute TOGGLE_SAFE_LINK_COMMAND with empty URL to remove link', () => {
@@ -859,11 +848,10 @@ describe('CustomLinkPlugin', () => {
       render(<CustomLinkPlugin />);
 
       const toggleSafeLinkCallback = callbacks.TOGGLE_SAFE_LINK_COMMAND as ((url: string) => boolean) | undefined;
-      if (toggleSafeLinkCallback) {
-        const result = toggleSafeLinkCallback('');
-        expect(result).toBe(true);
-        expect(mockDispatchCommand).toHaveBeenCalledWith('TOGGLE_LINK_COMMAND', null);
-      }
+      expect(toggleSafeLinkCallback).toBeDefined();
+      const result = toggleSafeLinkCallback!('');
+      expect(result).toBe(true);
+      expect(mockDispatchCommand).toHaveBeenCalledWith('TOGGLE_LINK_COMMAND', null);
     });
 
     it('should return false from TOGGLE_SAFE_LINK_COMMAND when linkNode is null', () => {
@@ -888,10 +876,9 @@ describe('CustomLinkPlugin', () => {
       render(<CustomLinkPlugin />);
 
       const toggleSafeLinkCallback = callbacks.TOGGLE_SAFE_LINK_COMMAND as ((url: string) => boolean) | undefined;
-      if (toggleSafeLinkCallback) {
-        const result = toggleSafeLinkCallback('https://test.com');
-        expect(result).toBe(false);
-      }
+      expect(toggleSafeLinkCallback).toBeDefined();
+      const result = toggleSafeLinkCallback!('https://test.com');
+      expect(result).toBe(false);
     });
 
     it('should execute KEY_ESCAPE_COMMAND in edit mode', () => {
@@ -918,10 +905,9 @@ describe('CustomLinkPlugin', () => {
 
       // KEY_ESCAPE_COMMAND always returns true in the new design
       const escapeCallback = callbacks.KEY_ESCAPE_COMMAND as (() => boolean) | undefined;
-      if (escapeCallback) {
-        const result = escapeCallback();
-        expect(result).toBe(true);
-      }
+      expect(escapeCallback).toBeDefined();
+      const result = escapeCallback!();
+      expect(result).toBe(true);
     });
 
     it('should execute SELECTION_CHANGE_COMMAND callback', () => {
@@ -934,10 +920,9 @@ describe('CustomLinkPlugin', () => {
       render(<CustomLinkPlugin />);
 
       const selectionChangeCallback = callbacks.SELECTION_CHANGE_COMMAND as (() => boolean) | undefined;
-      if (selectionChangeCallback) {
-        const result = selectionChangeCallback();
-        expect(result).toBe(false);
-      }
+      expect(selectionChangeCallback).toBeDefined();
+      const result = selectionChangeCallback!();
+      expect(result).toBe(false);
     });
   });
 
@@ -1270,13 +1255,12 @@ describe('CustomLinkPlugin', () => {
 
       const inputs = document.querySelectorAll('input');
       const urlInput = inputs[1]; // URL input
-      if (urlInput) {
-        act(() => {
-          fireEvent.change(urlInput, {target: {value: 'https://custom.com'}});
-        });
+      expect(urlInput).toBeInTheDocument();
+      act(() => {
+        fireEvent.change(urlInput, {target: {value: 'https://custom.com'}});
+      });
 
-        expect(urlInput).toHaveValue('https://custom.com');
-      }
+      expect(urlInput).toHaveValue('https://custom.com');
     });
   });
 
@@ -1334,13 +1318,12 @@ describe('CustomLinkPlugin', () => {
       render(<CustomLinkPlugin />);
 
       const updateListenerCallback = capturedCallbacks[0];
-      if (updateListenerCallback) {
-        const mockEditorState = {
-          read: vi.fn((cb: () => void) => cb()),
-        };
-        updateListenerCallback({editorState: mockEditorState});
-        expect(mockEditorState.read).toHaveBeenCalled();
-      }
+      expect(updateListenerCallback).toBeDefined();
+      const mockEditorState = {
+        read: vi.fn((cb: () => void) => cb()),
+      };
+      updateListenerCallback({editorState: mockEditorState});
+      expect(mockEditorState.read).toHaveBeenCalled();
     });
   });
 
@@ -1964,12 +1947,11 @@ describe('CustomLinkPlugin', () => {
       render(<CustomLinkPlugin />);
 
       const toggleSafeLinkCallback = callbacks.TOGGLE_SAFE_LINK_COMMAND as ((url: string) => boolean) | undefined;
-      if (toggleSafeLinkCallback) {
-        const result = toggleSafeLinkCallback('https://new-url.com');
-        expect(result).toBe(true);
-        expect(mockSetTarget).toHaveBeenCalledWith('_blank');
-        expect(mockSetRel).toHaveBeenCalledWith('noopener noreferrer');
-      }
+      expect(toggleSafeLinkCallback).toBeDefined();
+      const result = toggleSafeLinkCallback!('https://new-url.com');
+      expect(result).toBe(true);
+      expect(mockSetTarget).toHaveBeenCalledWith('_blank');
+      expect(mockSetRel).toHaveBeenCalledWith('noopener noreferrer');
     });
   });
 
@@ -2269,12 +2251,11 @@ describe('CustomLinkPlugin', () => {
       render(<CustomLinkPlugin />);
 
       const clickCallback = callbacks.CLICK_COMMAND as ((payload: MouseEvent) => boolean) | undefined;
-      if (clickCallback) {
-        const mockEvent = {metaKey: true, ctrlKey: false} as MouseEvent;
-        const result = clickCallback(mockEvent);
-        expect(result).toBe(true);
-        expect(mockOpen).toHaveBeenCalledWith('https://parent-link-to-open.com', '_blank');
-      }
+      expect(clickCallback).toBeDefined();
+      const mockEvent = {metaKey: true, ctrlKey: false} as MouseEvent;
+      const result = clickCallback!(mockEvent);
+      expect(result).toBe(true);
+      expect(mockOpen).toHaveBeenCalledWith('https://parent-link-to-open.com', '_blank');
 
       mockOpen.mockRestore();
     });

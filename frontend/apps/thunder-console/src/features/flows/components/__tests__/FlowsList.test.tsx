@@ -399,19 +399,17 @@ describe('FlowsList', () => {
       const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
       expect(actionsColumn?.renderCell).toBeDefined();
 
-      if (actionsColumn?.renderCell) {
-        // AUTHENTICATION flow should render buttons
-        const {container: authContainer} = render(
-          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
-        );
-        expect(authContainer.querySelectorAll('button').length).toBeGreaterThan(0);
+      // AUTHENTICATION flow should render buttons
+      const {container: authContainer} = render(
+        actionsColumn!.renderCell!({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+      );
+      expect(authContainer.querySelectorAll('button').length).toBeGreaterThan(0);
 
-        // REGISTRATION flow should render nothing
-        const result = actionsColumn.renderCell({
-          row: mockFlowsData.flows[1],
-        } as DataGrid.GridRenderCellParams<BasicFlowDefinition>);
-        expect(result).toBeNull();
-      }
+      // REGISTRATION flow should render nothing
+      const result = actionsColumn!.renderCell!({
+        row: mockFlowsData.flows[1],
+      } as DataGrid.GridRenderCellParams<BasicFlowDefinition>);
+      expect(result).toBeNull();
     });
   });
 
@@ -544,15 +542,13 @@ describe('FlowsList', () => {
       const updatedAtColumn = capturedColumns.value.find((col) => col.field === 'updatedAt');
       expect(updatedAtColumn?.valueGetter).toBeDefined();
 
-      if (updatedAtColumn?.valueGetter) {
-        const formattedDate = (updatedAtColumn.valueGetter as (value: unknown, row: unknown) => string)(
-          undefined,
-          mockFlowsData.flows[0],
-        );
-        // Check that the formatted date contains expected parts
-        expect(formattedDate).toContain('2025');
-        expect(formattedDate).toContain('Jan');
-      }
+      const formattedDate = (updatedAtColumn!.valueGetter as (value: unknown, row: unknown) => string)(
+        undefined,
+        mockFlowsData.flows[0],
+      );
+      // Check that the formatted date contains expected parts
+      expect(formattedDate).toContain('2025');
+      expect(formattedDate).toContain('Jan');
     });
   });
 
@@ -594,12 +590,10 @@ describe('FlowsList', () => {
       const nameColumn = capturedColumns.value.find((col) => col.field === 'name');
       expect(nameColumn?.renderCell).toBeDefined();
 
-      if (nameColumn?.renderCell) {
-        const {container} = render(
-          nameColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
-        );
-        expect(container.querySelector('[class*="MuiAvatar"]')).toBeInTheDocument();
-      }
+      const {container} = render(
+        nameColumn!.renderCell!({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+      );
+      expect(container.querySelector('[class*="MuiAvatar"]')).toBeInTheDocument();
     });
 
     it('should render actions cell with IconButton', () => {
@@ -612,14 +606,12 @@ describe('FlowsList', () => {
       const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
       expect(actionsColumn?.renderCell).toBeDefined();
 
-      if (actionsColumn?.renderCell) {
-        const {container} = render(
-          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
-        );
-        // Authentication flows should render action buttons (Pencil + Trash2)
-        const buttons = container.querySelectorAll('button');
-        expect(buttons.length).toBeGreaterThan(0);
-      }
+      const {container} = render(
+        actionsColumn!.renderCell!({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+      );
+      // Authentication flows should render action buttons (Pencil + Trash2)
+      const buttons = container.querySelectorAll('button');
+      expect(buttons.length).toBeGreaterThan(0);
     });
 
     it('should not throw when action button is clicked in renderCell', () => {
@@ -630,17 +622,16 @@ describe('FlowsList', () => {
       );
 
       const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
+      expect(actionsColumn?.renderCell).toBeDefined();
 
-      if (actionsColumn?.renderCell) {
-        const {container} = render(
-          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
-        );
-        const buttons = container.querySelectorAll('button');
-        expect(buttons.length).toBeGreaterThan(0);
+      const {container} = render(
+        actionsColumn!.renderCell!({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+      );
+      const buttons = container.querySelectorAll('button');
+      expect(buttons.length).toBeGreaterThan(0);
 
-        // Click should not throw
-        expect(() => fireEvent.click(buttons[0])).not.toThrow();
-      }
+      // Click should not throw
+      expect(() => fireEvent.click(buttons[0])).not.toThrow();
     });
   });
 
@@ -653,21 +644,21 @@ describe('FlowsList', () => {
       );
 
       const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
-      if (actionsColumn?.renderCell) {
-        const {container} = render(
-          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
-        );
+      expect(actionsColumn?.renderCell).toBeDefined();
 
-        // Find the error (delete) button - Trash2
-        const deleteButton = container.querySelector('button.MuiIconButton-colorError');
-        expect(deleteButton).toBeInTheDocument();
-        fireEvent.click(deleteButton!);
+      const {container} = render(
+        actionsColumn!.renderCell!({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+      );
 
-        await waitFor(() => {
-          expect(screen.getByTestId('flow-delete-dialog')).toBeInTheDocument();
-          expect(screen.getByTestId('flow-delete-dialog')).toHaveAttribute('data-flow-id', 'flow-1');
-        });
-      }
+      // Find the error (delete) button - Trash2
+      const deleteButton = container.querySelector('button.MuiIconButton-colorError');
+      expect(deleteButton).toBeInTheDocument();
+      fireEvent.click(deleteButton!);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('flow-delete-dialog')).toBeInTheDocument();
+        expect(screen.getByTestId('flow-delete-dialog')).toHaveAttribute('data-flow-id', 'flow-1');
+      });
     });
 
     it('should close delete dialog and reset selected flow', async () => {
@@ -678,25 +669,25 @@ describe('FlowsList', () => {
       );
 
       const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
-      if (actionsColumn?.renderCell) {
-        const {container} = render(
-          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
-        );
+      expect(actionsColumn?.renderCell).toBeDefined();
 
-        const deleteButton = container.querySelector('button.MuiIconButton-colorError');
-        expect(deleteButton).toBeInTheDocument();
-        fireEvent.click(deleteButton!);
+      const {container} = render(
+        actionsColumn!.renderCell!({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+      );
 
-        await waitFor(() => {
-          expect(screen.getByTestId('flow-delete-dialog')).toBeInTheDocument();
-        });
+      const deleteButton = container.querySelector('button.MuiIconButton-colorError');
+      expect(deleteButton).toBeInTheDocument();
+      fireEvent.click(deleteButton!);
 
-        fireEvent.click(screen.getByText('Close'));
+      await waitFor(() => {
+        expect(screen.getByTestId('flow-delete-dialog')).toBeInTheDocument();
+      });
 
-        await waitFor(() => {
-          expect(screen.queryByTestId('flow-delete-dialog')).not.toBeInTheDocument();
-        });
-      }
+      fireEvent.click(screen.getByText('Close'));
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('flow-delete-dialog')).not.toBeInTheDocument();
+      });
     });
 
     it('should navigate to flow builder when Pencil button is clicked for authentication flow', async () => {
@@ -709,20 +700,20 @@ describe('FlowsList', () => {
       );
 
       const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
-      if (actionsColumn?.renderCell) {
-        const {container} = render(
-          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
-        );
+      expect(actionsColumn?.renderCell).toBeDefined();
 
-        // First button is Pencil (edit)
-        const buttons = container.querySelectorAll('button');
-        expect(buttons.length).toBeGreaterThanOrEqual(1);
-        fireEvent.click(buttons[0]);
+      const {container} = render(
+        actionsColumn!.renderCell!({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+      );
 
-        await waitFor(() => {
-          expect(mockNavigate).toHaveBeenCalledWith('/flows/signin/flow-1');
-        });
-      }
+      // First button is Pencil (edit)
+      const buttons = container.querySelectorAll('button');
+      expect(buttons.length).toBeGreaterThanOrEqual(1);
+      fireEvent.click(buttons[0]);
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/flows/signin/flow-1');
+      });
     });
 
     it('should log error when navigation fails', async () => {
@@ -735,24 +726,24 @@ describe('FlowsList', () => {
       );
 
       const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
-      if (actionsColumn?.renderCell) {
-        const {container} = render(
-          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+      expect(actionsColumn?.renderCell).toBeDefined();
+
+      const {container} = render(
+        actionsColumn!.renderCell!({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+      );
+
+      const buttons = container.querySelectorAll('button');
+      fireEvent.click(buttons[0]);
+
+      await waitFor(() => {
+        expect(mockLoggerError).toHaveBeenCalledWith(
+          'Failed to navigate to flow builder',
+          expect.objectContaining({
+            error: expect.any(Error) as Error,
+            flowId: 'flow-1',
+          }),
         );
-
-        const buttons = container.querySelectorAll('button');
-        fireEvent.click(buttons[0]);
-
-        await waitFor(() => {
-          expect(mockLoggerError).toHaveBeenCalledWith(
-            'Failed to navigate to flow builder',
-            expect.objectContaining({
-              error: expect.any(Error) as Error,
-              flowId: 'flow-1',
-            }),
-          );
-        });
-      }
+      });
     });
   });
 });

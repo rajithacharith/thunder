@@ -71,10 +71,8 @@ describe('useDataGridLocaleText', () => {
     const {result} = renderHook(() => useDataGridLocaleText());
 
     expect(typeof result.current.toolbarFiltersTooltipActive).toBe('function');
-    if (result.current.toolbarFiltersTooltipActive) {
-      expect(result.current.toolbarFiltersTooltipActive(5)).toBe('5 active filters');
-      expect(result.current.toolbarFiltersTooltipActive(1)).toBe('1 active filter');
-    }
+    expect(result.current.toolbarFiltersTooltipActive!(5)).toBe('5 active filters');
+    expect(result.current.toolbarFiltersTooltipActive!(1)).toBe('1 active filter');
   });
 
   it('should return quick filter labels', () => {
@@ -165,10 +163,8 @@ describe('useDataGridLocaleText', () => {
     expect(typeof result.current.columnHeaderFiltersTooltipActive).toBe('function');
     expect(result.current.columnHeaderFiltersLabel).toBe('Show filters');
     expect(result.current.columnHeaderSortIconLabel).toBe('Sort');
-    if (result.current.columnHeaderFiltersTooltipActive) {
-      expect(result.current.columnHeaderFiltersTooltipActive(3)).toBe('3 active filters');
-      expect(result.current.columnHeaderFiltersTooltipActive(1)).toBe('1 active filter');
-    }
+    expect(result.current.columnHeaderFiltersTooltipActive!(3)).toBe('3 active filters');
+    expect(result.current.columnHeaderFiltersTooltipActive!(1)).toBe('1 active filter');
   });
 
   it('should return footer labels as functions', () => {
@@ -177,13 +173,9 @@ describe('useDataGridLocaleText', () => {
     expect(typeof result.current.footerRowSelected).toBe('function');
     expect(result.current.footerTotalRows).toBe('Total Rows:');
     expect(typeof result.current.footerTotalVisibleRows).toBe('function');
-    if (result.current.footerRowSelected) {
-      expect(result.current.footerRowSelected(10)).toBe('10 rows selected');
-      expect(result.current.footerRowSelected(1)).toBe('1 row selected');
-    }
-    if (result.current.footerTotalVisibleRows) {
-      expect(result.current.footerTotalVisibleRows(50, 100)).toBe('50 of 100');
-    }
+    expect(result.current.footerRowSelected!(10)).toBe('10 rows selected');
+    expect(result.current.footerRowSelected!(1)).toBe('1 row selected');
+    expect(result.current.footerTotalVisibleRows!(50, 100)).toBe('50 of 100');
   });
 
   it('should return checkbox selection labels', () => {
@@ -231,12 +223,8 @@ describe('useDataGridLocaleText', () => {
     expect(result.current.groupingColumnHeaderName).toBe('Group');
     expect(typeof result.current.groupColumn).toBe('function');
     expect(typeof result.current.unGroupColumn).toBe('function');
-    if (result.current.groupColumn) {
-      expect(result.current.groupColumn('status')).toBe('Group by status');
-    }
-    if (result.current.unGroupColumn) {
-      expect(result.current.unGroupColumn('status')).toBe('Stop grouping by status');
-    }
+    expect(result.current.groupColumn!('status')).toBe('Group by status');
+    expect(result.current.unGroupColumn!('status')).toBe('Stop grouping by status');
   });
 
   it('should return master/detail labels', () => {
@@ -252,14 +240,12 @@ describe('useDataGridLocaleText', () => {
 
     expect(result.current.paginationRowsPerPage).toBe('Rows per page:');
     expect(typeof result.current.paginationDisplayedRows).toBe('function');
-    if (result.current.paginationDisplayedRows) {
-      expect(result.current.paginationDisplayedRows({from: 1, to: 10, count: 100, estimated: undefined})).toBe(
-        '1–10 of 100',
-      );
-      expect(result.current.paginationDisplayedRows({from: 1, to: 10, count: -1, estimated: undefined})).toBe(
-        '1–10 of more than 10',
-      );
-    }
+    expect(result.current.paginationDisplayedRows!({from: 1, to: 10, count: 100, estimated: undefined})).toBe(
+      '1–10 of 100',
+    );
+    expect(result.current.paginationDisplayedRows!({from: 1, to: 10, count: -1, estimated: undefined})).toBe(
+      '1–10 of more than 10',
+    );
   });
 
   it('should return row reordering label', () => {

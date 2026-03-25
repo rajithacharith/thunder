@@ -409,12 +409,9 @@ describe('ViewUserTypePage', () => {
       const isInitiallyChecked = firstCheckbox.getAttribute('checked') !== null;
       await user.click(firstCheckbox);
 
+      const expectedChecked = !isInitiallyChecked;
       await waitFor(() => {
-        if (isInitiallyChecked) {
-          expect(firstCheckbox).not.toBeChecked();
-        } else {
-          expect(firstCheckbox).toBeChecked();
-        }
+        expect(firstCheckbox).toHaveProperty('checked', expectedChecked);
       });
     });
 

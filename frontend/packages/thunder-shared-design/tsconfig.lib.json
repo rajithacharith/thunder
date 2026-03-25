@@ -4,7 +4,7 @@
     "declaration": true,
     "outDir": "dist",
     "declarationDir": "dist",
-    "types": ["node"]
+    "types": []
   },
   "exclude": [
     "**/*.spec.ts",
@@ -14,7 +14,8 @@
     "**/*.spec.js",
     "**/*.test.js",
     "**/*.spec.jsx",
-    "**/*.test.jsx"
+    "**/*.test.jsx",
+    "src/test/**"
   ],
   "include": ["src/**/*.js", "src/**/*.ts", "src/**/*.jsx", "src/**/*.tsx", "types/**/*.d.ts"]
 }

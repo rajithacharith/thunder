@@ -44,7 +44,7 @@ const useDeleteExecutionResource = (): void => {
    *
    * @param deleted - An array of nodes that have been deleted from the flow.
    */
-  async function deleteExecutionActionNode(deleted: Node[]): Promise<boolean> {
+  function deleteExecutionActionNode(deleted: Node[]): boolean {
     const nodes: Node[] = getNodes();
     const edges: Edge[] = getEdges();
     const actionNodes: Node[] = [];
@@ -104,7 +104,7 @@ const useDeleteExecutionResource = (): void => {
    * @param element - The element being deleted, which is expected to be a execution action.
    * @returns Returns true if the deletion was successful.
    */
-  async function deleteExecutionNode(_stepId: string, element: Element): Promise<boolean> {
+  function deleteExecutionNode(_stepId: string, element: Element): boolean {
     const action = element.action as {type?: string; onSuccess?: string} | undefined;
 
     if (element.category === ElementCategories.Action && action?.type === ActionTypes.Next) {
@@ -122,7 +122,7 @@ const useDeleteExecutionResource = (): void => {
    * @param deleted - The deleted edges from the flow.
    * @returns Returns true if the deletion was successful.
    */
-  async function deleteComponentAndNode(deleted: Edge[]): Promise<boolean> {
+  function deleteComponentAndNode(deleted: Edge[]): boolean {
     const nodes: Node[] = getNodes();
     const executionNodeIds: string[] = [];
     const actionNodeIds: string[] = [];
@@ -176,15 +176,15 @@ const useDeleteExecutionResource = (): void => {
 
     PluginRegistry.getInstance().registerAsync(
       FlowEventTypes.ON_NODE_DELETE,
-      deleteExecutionActionNode as (...args: unknown[]) => Promise<boolean>,
+      deleteExecutionActionNode as unknown as (...args: unknown[]) => Promise<boolean>,
     );
     PluginRegistry.getInstance().registerAsync(
       FlowEventTypes.ON_NODE_ELEMENT_DELETE,
-      deleteExecutionNode as (...args: unknown[]) => Promise<boolean>,
+      deleteExecutionNode as unknown as (...args: unknown[]) => Promise<boolean>,
     );
     PluginRegistry.getInstance().registerAsync(
       FlowEventTypes.ON_EDGE_DELETE,
-      deleteComponentAndNode as (...args: unknown[]) => Promise<boolean>,
+      deleteComponentAndNode as unknown as (...args: unknown[]) => Promise<boolean>,
     );
 
     return () => {

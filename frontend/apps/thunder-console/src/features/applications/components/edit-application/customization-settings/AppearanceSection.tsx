@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useGetThemes} from '@thunder/shared-design';
+import {useGetThemes, useGetLayouts} from '@thunder/shared-design';
 import {Box, Typography, TextField, Autocomplete, CircularProgress} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
 import SettingsCard from '../../../../../components/SettingsCard';
@@ -54,8 +54,10 @@ interface AppearanceSectionProps {
 export default function AppearanceSection({application, editedApp, onFieldChange}: AppearanceSectionProps) {
   const {t} = useTranslation();
   const {data: themesData, isLoading: loadingThemes} = useGetThemes();
+  const {data: layoutsData, isLoading: loadingLayouts} = useGetLayouts();
 
   const themeOptions = themesData?.themes ?? [];
+  const layoutOptions = layoutsData?.layouts ?? [];
 
   return (
     <SettingsCard
@@ -83,6 +85,35 @@ export default function AppearanceSection({application, editedApp, onFieldChange
                 endAdornment: (
                   <>
                     {loadingThemes ? <CircularProgress color="inherit" size={20} /> : null}
+                    {params.InputProps.endAdornment}
+                  </>
+                ),
+              }}
+            />
+          )}
+        />
+      </Box>
+      <Box>
+        <Typography variant="subtitle2" gutterBottom>
+          {t('applications:edit.customization.labels.layout', 'Layout')}
+        </Typography>
+        <Autocomplete
+          fullWidth
+          options={layoutOptions}
+          getOptionLabel={(option) => (typeof option === 'string' ? option : option.displayName)}
+          value={layoutOptions.find((layout) => layout.id === (editedApp.layoutId ?? application.layoutId)) ?? null}
+          onChange={(_event, newValue) => onFieldChange('layoutId', newValue?.id ?? '')}
+          loading={loadingLayouts}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              placeholder={t('applications:edit.customization.layout.placeholder', 'Select a layout')}
+              helperText={t('applications:edit.customization.layout.hint', 'Choose a layout to customize the screen structure of login pages.')}
+              InputProps={{
+                ...params.InputProps,
+                endAdornment: (
+                  <>
+                    {loadingLayouts ? <CircularProgress color="inherit" size={20} /> : null}
                     {params.InputProps.endAdornment}
                   </>
                 ),

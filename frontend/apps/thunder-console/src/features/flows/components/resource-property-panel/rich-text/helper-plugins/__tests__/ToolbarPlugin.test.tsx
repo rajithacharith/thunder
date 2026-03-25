@@ -1423,10 +1423,9 @@ describe('ToolbarPlugin', () => {
       render(<ToolbarPlugin />);
 
       // Execute the SELECTION_CHANGE_COMMAND callback
-      if (selectionChangeCallback !== null) {
-        const result = (selectionChangeCallback as SelectionCallback)();
-        expect(result).toBe(false);
-      }
+      expect(selectionChangeCallback).not.toBeNull();
+      const result = (selectionChangeCallback as unknown as SelectionCallback)();
+      expect(result).toBe(false);
 
       expect(mockRegisterCommand).toHaveBeenCalled();
     });

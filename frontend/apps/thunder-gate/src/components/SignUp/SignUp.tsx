@@ -16,46 +16,14 @@
  * under the License.
  */
 
-import {cn} from '@thunder/utils';
-import {Stack} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
+import {AuthPageLayout} from '@thunder/shared-design';
 import SignUpBox from './SignUpBox';
 
 export default function SignUp(): JSX.Element {
   return (
-    <Stack
-      direction="column"
-      component="main"
-      className={cn('SignUp--root')}
-      sx={[
-        {
-          justifyContent: 'center',
-          height: 'calc((1 - var(--template-frame-height, 0)) * 100%)',
-          minHeight: '100%',
-        },
-      ]}
-    >
-      <Stack
-        direction={{xs: 'row-reverse', md: 'row'}}
-        sx={{
-          justifyContent: 'center',
-          gap: {xs: 6, sm: 12},
-          p: 2,
-          mx: 'auto',
-        }}
-      >
-        <Stack
-          direction={{xs: 'column', md: 'row'}}
-          sx={{
-            justifyContent: 'center',
-            gap: {xs: 4, sm: 16},
-            p: {xs: 2, sm: 4},
-            m: 'auto',
-          }}
-        >
-          <SignUpBox />
-        </Stack>
-      </Stack>
-    </Stack>
+    <AuthPageLayout variant="SignUp">
+      <SignUpBox />
+    </AuthPageLayout>
   );
 }

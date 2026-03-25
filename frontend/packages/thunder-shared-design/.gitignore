@@ -139,3 +139,7 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Vitest browser screenshots and attachments
+.vitest-attachments/
+**/__screenshots__/

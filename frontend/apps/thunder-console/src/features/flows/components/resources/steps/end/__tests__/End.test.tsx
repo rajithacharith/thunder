@@ -143,10 +143,8 @@ describe('End', () => {
 
       const children = container.firstChild?.childNodes;
       expect(children).toBeDefined();
-      if (children) {
-        // Target handle should come before the Fab button
-        expect(children.length).toBeGreaterThanOrEqual(2);
-      }
+      // Target handle should come before the Fab button
+      expect(children?.length).toBeGreaterThanOrEqual(2);
     });
   });
 

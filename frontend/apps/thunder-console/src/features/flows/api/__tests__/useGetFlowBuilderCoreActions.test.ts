@@ -97,12 +97,11 @@ describe('useGetFlowBuilderCoreActions', () => {
       const {result} = renderHook(() => useGetFlowBuilderCoreActions());
 
       const {data} = result.current;
-      if (data.length > 0) {
-        const firstAction = data[0];
-        expect(firstAction).toHaveProperty('resourceType');
-        expect(firstAction).toHaveProperty('category');
-        expect(firstAction).toHaveProperty('display');
-      }
+      expect(data.length).toBeGreaterThan(0);
+      const firstAction = data[0];
+      expect(firstAction).toHaveProperty('resourceType');
+      expect(firstAction).toHaveProperty('category');
+      expect(firstAction).toHaveProperty('display');
     });
 
     it('should contain navigation category actions', () => {

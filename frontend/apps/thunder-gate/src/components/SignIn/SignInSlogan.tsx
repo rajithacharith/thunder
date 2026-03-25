@@ -50,8 +50,8 @@ const items: {
 
 export default function SignInSlogan(): JSX.Element {
   const logoSrc = {
-    light: `${import.meta.env.BASE_URL}/assets/images/logo.svg`,
-    dark: `${import.meta.env.BASE_URL}/assets/images/logo-inverted.svg`,
+    light: `${import.meta.env.BASE_URL}assets/images/logo.svg`,
+    dark: `${import.meta.env.BASE_URL}assets/images/logo-inverted.svg`,
   };
 
   return (

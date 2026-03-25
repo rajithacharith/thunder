@@ -33,6 +33,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@thunder/shared-design', () => ({
   useGetThemes: vi.fn(),
+  useGetLayouts: vi.fn(() => ({data: undefined, isLoading: false})),
 }));
 
 describe('AppearanceSection', () => {
@@ -105,7 +106,7 @@ describe('AppearanceSection', () => {
     it('should display current theme from application', () => {
       render(<AppearanceSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const input = screen.getByRole('combobox');
+      const input = screen.getByPlaceholderText('applications:edit.customization.theme.placeholder');
       expect(input).toHaveValue('Default Theme');
     });
 
@@ -118,7 +119,7 @@ describe('AppearanceSection', () => {
         <AppearanceSection application={mockApplication} editedApp={editedApp} onFieldChange={mockOnFieldChange} />,
       );
 
-      const input = screen.getByRole('combobox');
+      const input = screen.getByPlaceholderText('applications:edit.customization.theme.placeholder');
       expect(input).toHaveValue('Dark Theme');
     });
 
@@ -127,7 +128,7 @@ describe('AppearanceSection', () => {
 
       render(<AppearanceSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const autocomplete = screen.getByRole('combobox');
+      const autocomplete = screen.getByPlaceholderText('applications:edit.customization.theme.placeholder');
       await user.click(autocomplete);
 
       const listbox = screen.getByRole('listbox');
@@ -141,7 +142,7 @@ describe('AppearanceSection', () => {
 
       render(<AppearanceSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const autocomplete = screen.getByRole('combobox');
+      const autocomplete = screen.getByPlaceholderText('applications:edit.customization.theme.placeholder');
       await user.click(autocomplete);
 
       const listbox = screen.getByRole('listbox');
@@ -156,7 +157,7 @@ describe('AppearanceSection', () => {
 
       render(<AppearanceSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const autocomplete = screen.getByRole('combobox');
+      const autocomplete = screen.getByPlaceholderText('applications:edit.customization.theme.placeholder');
       const clearButton = autocomplete.parentElement?.querySelector('[aria-label="Clear"]');
 
       expect(clearButton).not.toBeNull();
@@ -178,7 +179,7 @@ describe('AppearanceSection', () => {
         />,
       );
 
-      const input = screen.getByRole('combobox');
+      const input = screen.getByPlaceholderText('applications:edit.customization.theme.placeholder');
       expect(input).toHaveValue('');
     });
 
@@ -190,7 +191,7 @@ describe('AppearanceSection', () => {
 
       render(<AppearanceSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('applications:edit.customization.theme.placeholder')).toBeInTheDocument();
     });
 
     it('should handle undefined themes data', () => {
@@ -201,7 +202,7 @@ describe('AppearanceSection', () => {
 
       render(<AppearanceSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('applications:edit.customization.theme.placeholder')).toBeInTheDocument();
     });
 
     it('should handle themeId not found in themes list', () => {
@@ -209,7 +210,7 @@ describe('AppearanceSection', () => {
 
       render(<AppearanceSection application={appWithInvalidTheme} editedApp={{}} onFieldChange={mockOnFieldChange} />);
 
-      const input = screen.getByRole('combobox');
+      const input = screen.getByPlaceholderText('applications:edit.customization.theme.placeholder');
       expect(input).toHaveValue('');
     });
   });

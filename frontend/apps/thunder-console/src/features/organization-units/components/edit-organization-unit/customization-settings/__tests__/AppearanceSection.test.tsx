@@ -190,13 +190,12 @@ describe('AppearanceSection', () => {
     const autocomplete = screen.getByPlaceholderText('Select a theme');
     const clearButton = autocomplete.parentElement?.querySelector('[title="Clear"]');
 
-    if (clearButton) {
-      fireEvent.click(clearButton);
+    expect(clearButton).toBeTruthy();
+    fireEvent.click(clearButton!);
 
-      await waitFor(() => {
-        expect(mockOnFieldChange).toHaveBeenCalledWith('themeId', '');
-      });
-    }
+    await waitFor(() => {
+      expect(mockOnFieldChange).toHaveBeenCalledWith('themeId', '');
+    });
   });
 
   it('should handle empty themes list', () => {

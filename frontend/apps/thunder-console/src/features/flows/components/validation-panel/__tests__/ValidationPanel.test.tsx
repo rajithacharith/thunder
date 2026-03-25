@@ -198,10 +198,9 @@ describe('ValidationPanel', () => {
       const closeButtons = screen.getAllByRole('button');
       const closeButton = closeButtons.find((btn) => btn.querySelector('svg'));
 
-      if (closeButton) {
-        fireEvent.click(closeButton);
-        expect(mockSetOpenValidationPanel).toHaveBeenCalledWith(false);
-      }
+      expect(closeButton).toBeDefined();
+      fireEvent.click(closeButton!);
+      expect(mockSetOpenValidationPanel).toHaveBeenCalledWith(false);
     });
   });
 

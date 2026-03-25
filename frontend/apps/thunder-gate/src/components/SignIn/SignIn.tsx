@@ -16,10 +16,8 @@
  * under the License.
  */
 
-import {useDesign} from '@thunder/shared-design';
-import {cn} from '@thunder/utils';
-import {Stack} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
+import {useDesign, AuthPageLayout} from '@thunder/shared-design';
 import SignInBox from './SignInBox';
 import SignInSlogan from './SignInSlogan';
 
@@ -29,40 +27,9 @@ export default function SignIn(): JSX.Element {
   const showSlogan = !isDesignEnabled;
 
   return (
-    <Stack
-      direction="column"
-      component="main"
-      className={cn('SignIn--root')}
-      sx={[
-        {
-          justifyContent: 'center',
-          height: 'calc((1 - var(--template-frame-height, 0)) * 100%)',
-          minHeight: '100%',
-        },
-      ]}
-    >
-      <Stack
-        direction={{xs: 'row-reverse', md: 'row'}}
-        sx={{
-          justifyContent: 'center',
-          gap: {xs: 6, sm: 12},
-          p: 2,
-          mx: 'auto',
-        }}
-      >
-        <Stack
-          direction={{xs: 'column', md: 'row'}}
-          sx={{
-            justifyContent: 'center',
-            gap: {xs: 4, sm: 16},
-            p: {xs: 2, sm: 4},
-            m: 'auto',
-          }}
-        >
-          {showSlogan && <SignInSlogan />}
-          <SignInBox />
-        </Stack>
-      </Stack>
-    </Stack>
+    <AuthPageLayout variant="SignIn">
+      {showSlogan && <SignInSlogan />}
+      <SignInBox />
+    </AuthPageLayout>
   );
 }

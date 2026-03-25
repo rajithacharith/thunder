@@ -578,10 +578,9 @@ describe('CommonElementPropertyFactory', () => {
       fireEvent.mouseDown(select);
 
       const centerOption = screen.getAllByRole('option').find((o) => o.getAttribute('data-value') === 'center');
-      if (centerOption) {
-        fireEvent.click(centerOption);
-        expect(mockOnChange).toHaveBeenCalledWith('align', 'center', textResource);
-      }
+      expect(centerOption).toBeDefined();
+      fireEvent.click(centerOption!);
+      expect(mockOnChange).toHaveBeenCalledWith('align', 'center', textResource);
     });
 
     it('should not render align dropdown for non-Text elements', () => {

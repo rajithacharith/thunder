@@ -16,27 +16,38 @@
  * under the License.
  */
 
-import userEvent from '@testing-library/user-event';
-import {render, screen, fireEvent, waitFor} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render as testRender, screen, fireEvent, waitFor} from '@thunder/test-utils';
+import userEvent from '@testing-library/user-event';
+import {DesignContext, type DesignContextType} from '@thunder/shared-design';
 import SignUpBox from '../SignUpBox';
 
-// Mock useDesign
+// Mock useDesign and FlowComponentRenderer
 const mockUseDesign = vi.fn();
-vi.mock('@thunder/shared-design', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-  useDesign: () => mockUseDesign(),
-  mapEmbeddedFlowTextVariant: (variant: string) => {
-    switch (variant) {
-      case 'H1':
-        return 'h1';
-      case 'H2':
-        return 'h2';
-      default:
-        return 'body1';
-    }
-  },
-}));
+vi.mock('@thunder/shared-design', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-design')>();
+  return {
+    ...actual,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    useDesign: () => mockUseDesign(),
+    mapEmbeddedFlowTextVariant: (variant: string) => {
+      switch (variant) {
+        case 'H1':
+          return 'h1';
+        case 'H2':
+          return 'h2';
+        default:
+          return 'body1';
+      }
+    },
+  };
+});
+
+// Wrap renders with DesignContext so real adapters inside FlowComponentRenderer can access it
+const render = (ui: React.ReactElement) => {
+  const designValue: DesignContextType = {isDesignEnabled: false, isLoading: false, ...(mockUseDesign() as Partial<DesignContextType>)};
+  return testRender(<DesignContext.Provider value={designValue}>{ui}</DesignContext.Provider>);
+};
 
 // Mock useBranding
 const mockUseBranding = vi.fn().mockReturnValue({
@@ -61,15 +72,6 @@ const mockNavigate = vi.fn();
 vi.mock('react-router', () => ({
   useNavigate: () => mockNavigate,
   useSearchParams: () => [new URLSearchParams(), vi.fn()],
-}));
-
-// Mock getIntegrationIcon
-vi.mock('../../../utils/getIntegrationIcon', () => ({
-  default: (label: string) => {
-    if (label.includes('Google')) return <span data-testid="google-icon">G</span>;
-    if (label.includes('GitHub')) return <span data-testid="github-icon">GH</span>;
-    return null;
-  },
 }));
 
 // Mock Asgardeo SignUp component
@@ -453,7 +455,6 @@ describe('SignUpBox', () => {
     });
     render(<SignUpBox />);
     expect(screen.getByText('Continue with Google')).toBeInTheDocument();
-    expect(screen.getByTestId('google-icon')).toBeInTheDocument();
   });
 
   it('renders sign in redirect link', () => {

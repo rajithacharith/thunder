@@ -76,7 +76,7 @@ export function sanitizeCss(css: string): string {
 }
 
 /**
- * Validates that a stylesheet URL uses the https protocol.
+ * Validates that a stylesheet URL uses the https or http protocol.
  *
  * @param href - The URL to validate
  * @returns True if the URL is valid for stylesheet loading
@@ -84,7 +84,22 @@ export function sanitizeCss(css: string): string {
 export function isValidStylesheetUrl(href: string): boolean {
   try {
     const url = new URL(href);
-    return url.protocol === 'https:';
+    return url.protocol === 'https:' || url.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Checks whether a stylesheet URL uses insecure http instead of https.
+ *
+ * @param href - The URL to check
+ * @returns True if the URL uses http://
+ */
+export function isInsecureStylesheetUrl(href: string): boolean {
+  try {
+    const url = new URL(href);
+    return url.protocol === 'http:';
   } catch {
     return false;
   }

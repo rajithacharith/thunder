@@ -385,13 +385,11 @@ describe('UserTypesList', () => {
     render(<UserTypesList />);
 
     const row = screen.getByTestId('row-schema1');
-    if (row) {
-      await user.click(row);
+    await user.click(row);
 
-      await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/user-types/schema1');
-      });
-    }
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/user-types/schema1');
+    });
   });
 
   it('closes snackbar when close button is clicked', async () => {
