@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import TechnologyBasedApplicationTemplateMetadata from '../config/TechnologyBasedApplicationTemplateMetadata';
-import PlatformBasedApplicationTemplateMetadata from '../config/PlatformBasedApplicationTemplateMetadata';
-import type {IntegrationGuides} from '../models/application-templates';
 import normalizeTemplateId from './normalizeTemplateId';
+import PlatformBasedApplicationTemplateMetadata from '../config/PlatformBasedApplicationTemplateMetadata';
+import TechnologyBasedApplicationTemplateMetadata from '../config/TechnologyBasedApplicationTemplateMetadata';
+import type {IntegrationGuides} from '../models/application-templates';
 
 /**
  * Gets the integration guides for a given template ID

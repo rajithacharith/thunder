@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import type {Element as FlowElement} from '@/features/flows/models/elements';
-import type {FieldOption} from '@/features/flows/models/base';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import ChoiceAdapter from '../ChoiceAdapter';
+import type {FieldOption} from '@/features/flows/models/base';
+import type {Element as FlowElement} from '@/features/flows/models/elements';
 
 // Mock the Hint component
 vi.mock('../../hint', () => ({

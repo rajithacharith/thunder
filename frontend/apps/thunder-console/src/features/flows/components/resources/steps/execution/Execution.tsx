@@ -16,17 +16,17 @@
  * under the License.
  */
 
-import {memo, useMemo, type ReactElement} from 'react';
 import {useNodeId} from '@xyflow/react';
-import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
-import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
-import type {Element} from '@/features/flows/models/elements';
-import {ResourceTypes} from '@/features/flows/models/resources';
-import {type StepAction, type Step, StepCategories} from '@/features/flows/models/steps';
+import {memo, useMemo, type ReactElement} from 'react';
+import ExecutionMinimal from './ExecutionMinimal';
 import ValidationErrorBoundary from '../../../validation-panel/ValidationErrorBoundary';
 import type {CommonStepFactoryPropsInterface} from '../CommonStepFactory';
 import View from '../view/View';
-import ExecutionMinimal from './ExecutionMinimal';
+import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
+import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
+import type {Element} from '@/features/flows/models/elements';
+import {ResourceTypes} from '@/features/flows/models/resources';
+import {type StepAction, type Step, StepCategories} from '@/features/flows/models/steps';
 
 /**
  * Props interface of {@link Execution}

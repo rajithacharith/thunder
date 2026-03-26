@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import LogLevel, {LOG_LEVEL_PRIORITY} from '../models/log-level';
 import type LogContext from '../models/log-context';
-import type LoggerConfig from '../models/logger-config';
 import type LogEntry from '../models/log-entry';
+import LogLevel, {LOG_LEVEL_PRIORITY} from '../models/log-level';
+import type LoggerConfig from '../models/logger-config';
 import type Transport from '../models/transport';
-import detectEnvironment from '../utils/detectEnvironment';
-import maskSensitiveData from '../utils/maskSensitiveData';
 import ConsoleTransport from '../transports/ConsoleTransport';
 import StdoutTransport from '../transports/StdoutTransport';
+import detectEnvironment from '../utils/detectEnvironment';
+import maskSensitiveData from '../utils/maskSensitiveData';
 
 /**
  * Logger class for structured, multi-transport logging.

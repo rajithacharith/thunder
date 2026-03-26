@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
+import {describe, it, expect, vi} from 'vitest';
 import NextStepsSection from '../NextStepsSection';
 
 vi.mock('react-i18next', () => ({

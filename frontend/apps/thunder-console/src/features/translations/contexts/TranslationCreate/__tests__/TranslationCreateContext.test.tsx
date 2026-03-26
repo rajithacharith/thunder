@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {useContext, useMemo} from 'react';
+import {describe, expect, it, vi} from 'vitest';
 import TranslationCreateContext, {type TranslationCreateContextType} from '../TranslationCreateContext';
 
 // Test component to consume the context directly
@@ -98,23 +98,23 @@ describe('TranslationCreateContext', () => {
   it('has correct TypeScript interface definition', () => {
     const mockContext: TranslationCreateContextType = {
       currentStep: 'COUNTRY',
-      setCurrentStep: () => {},
+      setCurrentStep: () => null,
       selectedCountry: null,
-      setSelectedCountry: () => {},
+      setSelectedCountry: () => null,
       selectedLocale: null,
-      setSelectedLocale: () => {},
+      setSelectedLocale: () => null,
       localeCodeOverride: '',
-      setLocaleCodeOverride: () => {},
+      setLocaleCodeOverride: () => null,
       localeCode: '',
       populateFromEnglish: true,
-      setPopulateFromEnglish: () => {},
+      setPopulateFromEnglish: () => null,
       isCreating: false,
-      setIsCreating: () => {},
+      setIsCreating: () => null,
       progress: 0,
-      setProgress: () => {},
+      setProgress: () => null,
       error: null,
-      setError: () => {},
-      reset: () => {},
+      setError: () => null,
+      reset: () => null,
     };
 
     expect(mockContext).toBeDefined();
@@ -129,23 +129,23 @@ describe('TranslationCreateContext', () => {
   it('allows null values for nullable properties', () => {
     const mockContext: TranslationCreateContextType = {
       currentStep: 'COUNTRY',
-      setCurrentStep: () => {},
+      setCurrentStep: () => null,
       selectedCountry: null,
-      setSelectedCountry: () => {},
+      setSelectedCountry: () => null,
       selectedLocale: null,
-      setSelectedLocale: () => {},
+      setSelectedLocale: () => null,
       localeCodeOverride: '',
-      setLocaleCodeOverride: () => {},
+      setLocaleCodeOverride: () => null,
       localeCode: '',
       populateFromEnglish: true,
-      setPopulateFromEnglish: () => {},
+      setPopulateFromEnglish: () => null,
       isCreating: false,
-      setIsCreating: () => {},
+      setIsCreating: () => null,
       progress: 0,
-      setProgress: () => {},
+      setProgress: () => null,
       error: null,
-      setError: () => {},
-      reset: () => {},
+      setError: () => null,
+      reset: () => null,
     };
 
     expect(mockContext.selectedCountry).toBeNull();

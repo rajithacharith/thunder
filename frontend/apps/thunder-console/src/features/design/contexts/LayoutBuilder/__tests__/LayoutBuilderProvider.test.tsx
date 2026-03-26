@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
+import {render, screen, waitFor} from '@thunder/test-utils';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import LayoutBuilderProvider from '../LayoutBuilderProvider';
 import useLayoutBuilder from '../useLayoutBuilder';
 

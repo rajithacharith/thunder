@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
+import {describe, it, expect, beforeEach} from 'vitest';
+import type {Resource} from '../../models/resources';
 import {
   updateLastInteractedStore,
   useLastInteractedResourceOnly,
   updatePropertiesPanelStore,
   usePropertiesPanelStateOnly,
 } from '../flowBuilderCoreStore';
-import type {Resource} from '../../models/resources';
 
 describe('flowBuilderCoreStore', () => {
   describe('LastInteractedResource Store', () => {

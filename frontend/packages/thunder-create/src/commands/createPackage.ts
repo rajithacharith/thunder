@@ -16,17 +16,17 @@
  * under the License.
  */
 
-import {text, select, spinner, cancel} from '@clack/prompts';
-import colors from 'picocolors';
-import {join} from 'path';
-import {createLogger} from '@thunder/logger';
 import {existsSync} from 'fs';
+import {join} from 'path';
+import {text, select, spinner, cancel} from '@clack/prompts';
+import {createLogger} from '@thunder/logger';
 import kebabCase from 'lodash-es/kebabCase';
-import ensureDir from '../utils/ensureDir';
+import colors from 'picocolors';
 import createFileFromTemplate from '../utils/createFileFromTemplate';
+import ensureDir from '../utils/ensureDir';
 import getTemplateDir from '../utils/getTemplateDir';
-import registerHandlebarsHelpers from '../utils/registerHandlebarsHelpers';
 import getWorkspaceInfo from '../utils/getWorkspaceInfo';
+import registerHandlebarsHelpers from '../utils/registerHandlebarsHelpers';
 import validateName from '../utils/validateName';
 
 const logger = createLogger();

@@ -16,12 +16,12 @@
  * under the License.
  */
 
+import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
-import CreateUserPage from '../CreateUserPage';
 import UserCreateProvider from '../../contexts/UserCreate/UserCreateProvider';
 import type {UserSchemaListResponse, ApiUserSchema, SchemaInterface} from '../../types/users';
+import CreateUserPage from '../CreateUserPage';
 
 const mockNavigate = vi.fn();
 const mockMutateAsync = vi.fn();
@@ -39,7 +39,7 @@ vi.mock('react-router', async () => {
         href={to}
         onClick={(e) => {
           e.preventDefault();
-          Promise.resolve(mockNavigate(to)).catch(() => {});
+          Promise.resolve(mockNavigate(to)).catch(() => null);
         }}
       >
         {children}

@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, act} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 
 // Mock i18next top-level await before importing withI18n
 vi.mock('i18next', () => ({
@@ -106,7 +106,7 @@ describe('withI18n (gate)', () => {
     }
     const WithI18nComponent = withI18n(MockChild);
 
-    await act(async () => {
+    act(() => {
       render(<WithI18nComponent />);
     });
 
@@ -161,7 +161,7 @@ describe('withI18n (gate)', () => {
     }
     const WithI18nComponent = withI18n(MockChild);
 
-    await act(async () => {
+    act(() => {
       render(<WithI18nComponent />);
     });
 
@@ -196,7 +196,7 @@ describe('withI18n (gate)', () => {
     }
     const WithI18nComponent = withI18n(MockChild);
 
-    await act(async () => {
+    act(() => {
       render(<WithI18nComponent />);
     });
 

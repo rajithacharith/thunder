@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeAll, afterEach} from 'vitest';
 import {existsSync, mkdirSync, writeFileSync, rmSync} from 'fs';
-import {join} from 'path';
 import {tmpdir} from 'os';
-import renderTemplateFile from '../renderTemplateFile';
+import {join} from 'path';
+import {describe, it, expect, beforeAll, afterEach} from 'vitest';
 import registerHandlebarsHelpers from '../registerHandlebarsHelpers';
+import renderTemplateFile from '../renderTemplateFile';
 
 describe('renderTemplateFile', () => {
   const testDir = join(tmpdir(), 'thunder-create-test-render-template-file');

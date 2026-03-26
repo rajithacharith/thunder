@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import {Stack, Typography} from '@wso2/oxygen-ui';
 import type {ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Stack, Typography} from '@wso2/oxygen-ui';
 import './RulesProperties.scss';
 
 /**

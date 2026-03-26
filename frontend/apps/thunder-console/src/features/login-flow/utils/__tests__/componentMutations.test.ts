@@ -17,6 +17,8 @@
  */
 
 import {describe, it, expect} from 'vitest';
+import LoginFlowConstants from '../../constants/LoginFlowConstants';
+import {INPUT_ELEMENT_TYPES, processFormComponents, mutateComponents} from '../componentMutations';
 import {
   BlockTypes,
   ButtonTypes,
@@ -25,8 +27,6 @@ import {
   ElementTypes,
   type Element,
 } from '@/features/flows/models/elements';
-import LoginFlowConstants from '../../constants/LoginFlowConstants';
-import {INPUT_ELEMENT_TYPES, processFormComponents, mutateComponents} from '../componentMutations';
 
 const createMockElement = (overrides: Partial<Element> = {}): Element =>
   ({

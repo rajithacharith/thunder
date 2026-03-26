@@ -18,7 +18,7 @@
  * under the License.
  */
 
-/* eslint-disable @thunder/copyright-header */
+/* eslint-disable @thunder/copyright-header, no-undef */
 
 import {cpSync} from 'node:fs';
 import {dirname, join} from 'node:path';

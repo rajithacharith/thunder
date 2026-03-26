@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import EmojiPicker from '../EmojiPicker';
 
 // The module-level _supportedCategories cache needs to be reset between tests
@@ -136,14 +136,13 @@ describe('EmojiPicker', () => {
       const emojiTiles = document.querySelectorAll('[title]');
       const firstTile = Array.from(emojiTiles).find((el) => el.textContent && el.textContent.trim().length > 0);
 
-      if (firstTile) {
-        fireEvent.click(firstTile);
-        const selectedEmoji = onChange.mock.calls[0]?.[0] as string | undefined;
+      expect(firstTile).toBeDefined();
+      fireEvent.click(firstTile!);
+      const selectedEmoji = onChange.mock.calls[0]?.[0] as string | undefined;
 
-        expect(onChange).toHaveBeenCalledTimes(1);
-        expect(typeof selectedEmoji).toBe('string');
-        expect(selectedEmoji?.length).toBeGreaterThan(0);
-      }
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(typeof selectedEmoji).toBe('string');
+      expect(selectedEmoji?.length).toBeGreaterThan(0);
     });
   });
 
@@ -155,11 +154,8 @@ describe('EmojiPicker', () => {
 
       // The component applies a colored border to the matching tile.
       // Verify the emoji is rendered somewhere in the document.
-      const emojiEl = screen.queryByText(value);
-      // If the emoji is supported and appears in the grid it will be in the DOM
-      if (emojiEl) {
-        expect(emojiEl).toBeInTheDocument();
-      }
+      const emojiEl = screen.getByText(value);
+      expect(emojiEl).toBeInTheDocument();
     });
   });
 
@@ -169,9 +165,8 @@ describe('EmojiPicker', () => {
 
       const buttons = screen.getAllByRole('button');
       // Click the second category button (index 1) to avoid first being active
-      if (buttons.length > 1) {
-        expect(() => fireEvent.click(buttons[1])).not.toThrow();
-      }
+      expect(buttons.length).toBeGreaterThan(1);
+      expect(() => fireEvent.click(buttons[1])).not.toThrow();
     });
 
     it('should clear the search when a category tab is clicked', async () => {

@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
+import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useConfig, useToast} from '@thunder/shared-contexts';
 import {useTranslation} from 'react-i18next';
-import type {ApiUserSchema, UpdateUserSchemaRequest} from '../types/user-types';
 import UserTypeQueryKeys from '../constants/userTypeQueryKeys';
+import type {ApiUserSchema, UpdateUserSchemaRequest} from '../types/user-types';
 
 /**
  * Variables for the {@link useUpdateUserType} mutation.

@@ -18,8 +18,8 @@
 
 /* eslint-disable max-classes-per-file, @typescript-eslint/class-methods-use-this */
 
-import {describe, expect, it, vi} from 'vitest';
 import type {Node, Edge} from '@xyflow/react';
+import {describe, expect, it, vi} from 'vitest';
 import applyAutoLayout, {type AutoLayoutOptions} from '../applyAutoLayout';
 
 // Mock ELK

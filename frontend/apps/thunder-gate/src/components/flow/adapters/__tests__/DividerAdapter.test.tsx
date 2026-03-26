@@ -20,8 +20,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi} from 'vitest';
 import DividerAdapter from '../DividerAdapter';
 
 let capturedDividerProps: Record<string, any>;

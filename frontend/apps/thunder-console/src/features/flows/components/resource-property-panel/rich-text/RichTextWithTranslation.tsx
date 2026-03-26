@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import type {Resource} from '@/features/flows/models/resources';
-import {useMemo, useRef, useState, type ReactElement} from 'react';
-import {useTranslation} from 'react-i18next';
-import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
 import {Box, FormHelperText, IconButton, Tooltip} from '@wso2/oxygen-ui';
 import {SquareFunction} from '@wso2/oxygen-ui-icons-react';
+import {useMemo, useRef, useState, type ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
 import type {ToolbarPluginProps} from './helper-plugins/ToolbarPlugin';
 import RichText from './RichText';
 import DynamicValuePopover from '../DynamicValuePopover';
+import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
+import type {Resource} from '@/features/flows/models/resources';
 
 /**
  * Props interface for the RichTextWithTranslation component.

@@ -20,10 +20,10 @@
 
 import '@testing-library/jest-dom';
 import {cleanup} from '@testing-library/react';
-import {afterEach, beforeAll, vi} from 'vitest';
+import enUS from '@thunder/i18n/locales/en-US';
 import i18n from 'i18next';
 import {initReactI18next} from 'react-i18next';
-import enUS from '@thunder/i18n/locales/en-US';
+import {afterEach, beforeAll, vi} from 'vitest';
 
 // Initialize i18n for tests
 beforeAll(async () => {

@@ -18,12 +18,12 @@
 
 import type {Edge, Node} from '@xyflow/react';
 import {MarkerType} from '@xyflow/react';
-import type {FlowDefinitionResponse, FlowNode, FlowNodeAction, FlowPrompt} from '../models/responses';
+import VisualFlowConstants from '../constants/VisualFlowConstants';
 import type {Element} from '../models/elements';
 import {ElementTypes} from '../models/elements';
+import type {FlowDefinitionResponse, FlowNode, FlowNodeAction, FlowPrompt} from '../models/responses';
 import type {StepData} from '../models/steps';
 import {StepTypes, StaticStepTypes} from '../models/steps';
-import VisualFlowConstants from '../constants/VisualFlowConstants';
 
 /**
  * Set of input element types for quick lookup

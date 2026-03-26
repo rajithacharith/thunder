@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
-import useRegenerateClientSecret from '../useRegenerateClientSecret';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import ApplicationQueryKeys from '../../constants/application-query-keys';
 import type {Application} from '../../models/application';
 import type {InboundAuthConfig} from '../../models/inbound-auth';
-import ApplicationQueryKeys from '../../constants/application-query-keys';
+import useRegenerateClientSecret from '../useRegenerateClientSecret';
 
 vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),

@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {describe, it, expect, vi} from 'vitest';
 import SettingsCard from '../SettingsCard';
 
 describe('SettingsCard', () => {
@@ -313,6 +313,7 @@ describe('SettingsCard', () => {
   });
 
   it('should not render content wrapper if valid children are not present', () => {
+    // eslint-disable-next-line no-constant-binary-expression
     const {container} = render(<SettingsCard title="Test Settings">{false && <div>Content</div>}</SettingsCard>);
 
     // Should only have the outer paper, title box, but NO inner content paper

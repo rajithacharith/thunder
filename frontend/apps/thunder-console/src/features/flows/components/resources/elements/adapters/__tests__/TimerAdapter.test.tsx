@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import type {Resource} from '@/features/flows/models/resources';
+import {describe, it, expect} from 'vitest';
 import TimerAdapter from '../TimerAdapter';
+import type {Resource} from '@/features/flows/models/resources';
 
 describe('TimerAdapter', () => {
   const createResource = (label?: string): Resource =>

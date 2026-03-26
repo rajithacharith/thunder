@@ -18,8 +18,8 @@
 
 import type {Edge, Node} from '@xyflow/react';
 import {MarkerType} from '@xyflow/react';
-import type {Element} from '@/features/flows/models/elements';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
+import type {Element} from '@/features/flows/models/elements';
 
 /**
  * Generates edges for components that have actions with 'onSuccess' references

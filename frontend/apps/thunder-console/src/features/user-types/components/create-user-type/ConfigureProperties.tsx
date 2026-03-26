@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {useResolveDisplayName} from '@thunder/shared-hooks';
 import {
   Alert,
   Box,
@@ -38,10 +39,9 @@ import {Plus, Trash2, Info} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useCallback, useEffect, useMemo, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useResolveDisplayName} from '@thunder/shared-hooks';
 
-import type {SchemaPropertyInput, UIPropertyType} from '../../types/user-types';
 import I18nTextInput from './I18nTextInput';
+import type {SchemaPropertyInput, UIPropertyType} from '../../types/user-types';
 
 /**
  * Props for the {@link ConfigureProperties} component.

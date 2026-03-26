@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {useContext, useMemo} from 'react';
-import {CssVarsThemeOptions, extendTheme} from '@wso2/oxygen-ui';
 import {isEmpty, merge} from '@thunder/utils';
-import type {Theme} from '../../models/theme';
+import {CssVarsThemeOptions, extendTheme} from '@wso2/oxygen-ui';
+import {useContext, useMemo} from 'react';
 import DesignContext, {DesignContextType} from './DesignContext';
+import type {Theme} from '../../models/theme';
 
 /**
  * React hook for accessing Thunder design configuration throughout the application.

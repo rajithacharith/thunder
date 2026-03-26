@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import type {ReactNode} from 'react';
-import type {Element as FlowElement} from '@/features/flows/models/elements';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import ImageAdapter from '../ImageAdapter';
+import type {Element as FlowElement} from '@/features/flows/models/elements';
 
 // Mock dependencies
 vi.mock('@wso2/oxygen-ui-icons-react', async (importOriginal) => {

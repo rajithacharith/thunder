@@ -16,13 +16,13 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useConfig, useToast} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
 import {useTranslation} from 'react-i18next';
+import GroupQueryKeys from '../constants/group-query-keys';
 import type {Group} from '../models/group';
 import type {UpdateGroupRequest} from '../models/requests';
-import GroupQueryKeys from '../constants/group-query-keys';
 
 /**
  * Variables for the update group mutation.

@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {useTranslation} from 'react-i18next';
-import type {ReactElement} from 'react';
 import {Alert, Box, Button, List, ListItem, Typography} from '@wso2/oxygen-ui';
+import type {ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
 import Notification from '../../models/notification';
 
 /**

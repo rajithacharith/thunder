@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {useMemo, type PropsWithChildren} from 'react';
 import {useConfig} from '@thunder/shared-contexts';
 import {isEmpty} from '@thunder/utils';
+import {useMemo, type PropsWithChildren} from 'react';
 import DesignContext, {type DesignContextType} from './DesignContext';
 import useGetDesignResolve from '../../api/useGetDesignResolve';
 import {DesignResolveType} from '../../models/design';

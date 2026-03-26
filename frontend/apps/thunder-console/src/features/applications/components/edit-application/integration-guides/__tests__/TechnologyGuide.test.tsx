@@ -17,10 +17,10 @@
  */
 
 import {render, screen, waitFor, fireEvent} from '@testing-library/react';
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {LoggerProvider, LogLevel} from '@thunder/logger';
-import TechnologyGuide from '../TechnologyGuide';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import type {IntegrationGuides} from '../../../../models/application-templates';
+import TechnologyGuide from '../TechnologyGuide';
 
 const mockIntegrationGuides: IntegrationGuides = {
   INBUILT: {
@@ -402,7 +402,7 @@ describe('TechnologyGuide', () => {
       });
     });
 
-    it('should not call clipboard when prompt has no content', async () => {
+    it('should not call clipboard when prompt has no content', () => {
       const guidesWithEmptyContent: IntegrationGuides = {
         INBUILT: {
           llm_prompt: {
@@ -419,15 +419,9 @@ describe('TechnologyGuide', () => {
 
       renderWithProviders(<TechnologyGuide guides={guidesWithEmptyContent} templateId="react" />);
 
-      // Button should still render when content exists but is empty string
-      const copyButton = screen.queryByTestId('copy-prompt-button');
-      if (copyButton) {
-        fireEvent.click(copyButton);
-        // Wait a bit to ensure the click handler had time to run
-        await waitFor(() => {
-          expect(mockWriteText).not.toHaveBeenCalled();
-        });
-      }
+      // Button should not render when content is empty string
+      expect(screen.queryByTestId('copy-prompt-button')).toBeNull();
+      expect(mockWriteText).not.toHaveBeenCalled();
     });
 
     describe('Clipboard Fallback', () => {
@@ -463,7 +457,7 @@ describe('TechnologyGuide', () => {
         });
       });
 
-      it('should handle fallback failure gracefully for prompt', async () => {
+      it('should handle fallback failure gracefully for prompt', () => {
         mockWriteText.mockRejectedValue(new Error('Clipboard API failed'));
 
         const mockExecCommand = vi.fn().mockImplementation(() => {
@@ -479,7 +473,7 @@ describe('TechnologyGuide', () => {
         expect(() => fireEvent.click(copyButton)).not.toThrow();
       });
 
-      it('should handle fallback failure gracefully for code', async () => {
+      it('should handle fallback failure gracefully for code', () => {
         mockWriteText.mockRejectedValue(new Error('Clipboard API failed'));
 
         const mockExecCommand = vi.fn().mockImplementation(() => {

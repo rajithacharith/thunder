@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
-import {Box} from '@wso2/oxygen-ui';
 import {isEmojiUri, extractEmojiFromUri} from '@asgardeo/react';
+import {Box} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
 import type {FlowComponent} from '../../../models/flow';
 
 interface ImageAdapterProps {

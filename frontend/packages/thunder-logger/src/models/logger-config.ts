@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type LogLevel from './log-level';
 import type LogContext from './log-context';
+import type LogLevel from './log-level';
 import type Transport from './transport';
 
 /**

@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import React, {useMemo, PropsWithChildren} from 'react';
-import {ThunderConfig} from './types';
+import {useMemo, PropsWithChildren} from 'react';
 import ConfigContext, {ConfigContextType} from './ConfigContext';
+import {ThunderConfig} from './types';
 
 /* eslint-disable no-underscore-dangle */
 

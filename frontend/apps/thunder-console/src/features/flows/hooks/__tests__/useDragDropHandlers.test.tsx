@@ -16,21 +16,21 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {renderHook, act, cleanup} from '@testing-library/react';
-import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
 import type {Node, Edge} from '@xyflow/react';
-import useDragDropHandlers, {type UseDragDropHandlersProps} from '../useDragDropHandlers';
+import type {ReactNode} from 'react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import type {DragSourceData, DragTargetData} from '../../models/drag-drop';
-import type {Resource} from '../../models/resources';
-import {ResourceTypes} from '../../models/resources';
 import type {Element} from '../../models/elements';
+import {ResourceTypes} from '../../models/resources';
+import type {Resource} from '../../models/resources';
 import type {Step} from '../../models/steps';
 import type {Widget} from '../../models/widget';
 
 // Import the mocked module
 import autoAssignConnections from '../../utils/autoAssignConnections';
+import useDragDropHandlers, {type UseDragDropHandlersProps} from '../useDragDropHandlers';
 
 // Use vi.hoisted to define mocks that need to be referenced in vi.mock
 const {mockScreenToFlowPosition, mockUpdateNodeData, mockGetNodes, mockGetEdges, mockUpdateNodeInternals} = vi.hoisted(

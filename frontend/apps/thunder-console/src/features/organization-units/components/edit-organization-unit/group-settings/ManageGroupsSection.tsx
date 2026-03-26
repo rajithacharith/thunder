@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {useMemo, type JSX} from 'react';
 import {Box, DataGrid, Avatar} from '@wso2/oxygen-ui';
+import {useMemo, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import getInitials from '@/utils/getInitials';
-import SettingsCard from '@/components/SettingsCard';
 import useDataGridLocaleText from '../../../../../hooks/useDataGridLocaleText';
 import useGetOrganizationUnitGroups from '../../../api/useGetOrganizationUnitGroups';
 import type {Group} from '../../../models/group';
+import SettingsCard from '@/components/SettingsCard';
+import getInitials from '@/utils/getInitials';
 
 /**
  * Props for the {@link ManageGroupsSection} component.

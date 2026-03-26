@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {ExecutionTypes} from '@/features/flows/models/steps';
-import type {Resource} from '@/features/flows/models/resources';
-import {IdentityProviderTypes} from '@/features/integrations/models/identity-provider';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import ExecutionExtendedProperties from '../ExecutionExtendedProperties';
+import type {Resource} from '@/features/flows/models/resources';
+import {ExecutionTypes} from '@/features/flows/models/steps';
+import {IdentityProviderTypes} from '@/features/integrations/models/identity-provider';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -859,7 +859,7 @@ describe('ExecutionExtendedProperties', () => {
       expect(screen.queryByLabelText('Relying Party Name')).not.toBeInTheDocument();
     });
 
-    it('should call onChange for relying party fields', async () => {
+    it('should call onChange for relying party fields', () => {
       const resourceWithChallengeMode = {
         ...passkeyResource,
         data: {
@@ -974,7 +974,7 @@ describe('ExecutionExtendedProperties', () => {
       expect(screen.getByLabelText('Consent Timeout (seconds)')).toHaveValue(0);
     });
 
-    it('should call onChange when timeout changes', async () => {
+    it('should call onChange when timeout changes', () => {
       const consentResourceWithTimeout = {
         ...consentResource,
         data: {

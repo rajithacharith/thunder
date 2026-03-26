@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import getFlowSupportedIntegrations from '../getFlowSupportedIntegrations';
 import {AuthenticatorTypes} from '../../../integrations/models/authenticators';
+import getFlowSupportedIntegrations from '../getFlowSupportedIntegrations';
 
 describe('getFlowSupportedIntegrations', () => {
   describe('Single Integration Detection', () => {

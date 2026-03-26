@@ -17,9 +17,9 @@
  */
 
 import {Stack} from '@wso2/oxygen-ui';
-import type {Application} from '../../../models/application';
 import AuthenticationFlowSection from './AuthenticationFlowSection';
 import RegistrationFlowSection from './RegistrationFlowSection';
+import type {Application} from '../../../models/application';
 
 /**
  * Props for the {@link EditFlowsSettings} component.

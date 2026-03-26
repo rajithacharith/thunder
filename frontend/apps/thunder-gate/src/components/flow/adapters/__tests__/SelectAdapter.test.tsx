@@ -19,10 +19,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import SelectAdapter from '../SelectAdapter';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {FlowFieldProps} from '../../../../models/flow';
+import SelectAdapter from '../SelectAdapter';
 
 vi.mock('@wso2/oxygen-ui', () => ({
   FormControl: ({children}: any) => <div>{children}</div>,

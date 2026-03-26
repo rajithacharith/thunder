@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import {useGetThemes} from '@thunder/shared-design';
 import {Box, Typography, TextField, Autocomplete, CircularProgress} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
-import {useGetThemes} from '@thunder/shared-design';
-import type {Application} from '../../../models/application';
 import SettingsCard from '../../../../../components/SettingsCard';
+import type {Application} from '../../../models/application';
 
 /**
  * Props for the {@link AppearanceSection} component.

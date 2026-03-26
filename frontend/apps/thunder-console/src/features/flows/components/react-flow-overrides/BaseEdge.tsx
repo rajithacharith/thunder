@@ -16,12 +16,12 @@
  * under the License.
  */
 
+import {Box} from '@wso2/oxygen-ui';
+import {XIcon} from '@wso2/oxygen-ui-icons-react';
 import {BaseEdge as XYFlowBaseEdge, EdgeLabelRenderer, useReactFlow, useNodes, type EdgeProps} from '@xyflow/react';
 import {useState, useContext, type ReactElement, type SyntheticEvent} from 'react';
-import {XIcon} from '@wso2/oxygen-ui-icons-react';
-import {Box} from '@wso2/oxygen-ui';
-import {calculateEdgePath, type EdgeStyle} from '../../utils/calculateEdgePath';
 import FlowBuilderCoreContext from '../../context/FlowBuilderCoreContext';
+import {calculateEdgePath, type EdgeStyle} from '../../utils/calculateEdgePath';
 
 /**
  * Props interface of {@link BaseEdge}
@@ -40,8 +40,6 @@ const SMOOTH_STEP_BORDER_RADIUS = 20;
  */
 function BaseEdge({
   id,
-  source,
-  target,
   sourceX,
   sourceY,
   targetX,
@@ -51,7 +49,8 @@ function BaseEdge({
   label,
   style,
   deletable,
-  ...rest
+  markerEnd,
+  markerStart,
 }: BaseEdgePropsInterface): ReactElement {
   const {deleteElements} = useReactFlow();
   const [isHovered, setIsHovered] = useState<boolean>(false);
@@ -77,14 +76,14 @@ function BaseEdge({
 
   const handleDelete = (event: SyntheticEvent) => {
     event.stopPropagation();
-    deleteElements({edges: [{id}]}).catch(() => {});
+    deleteElements({edges: [{id}]}).catch(() => null);
   };
 
   const handleDeleteKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       event.stopPropagation();
-      deleteElements({edges: [{id}]}).catch(() => {});
+      deleteElements({edges: [{id}]}).catch(() => null);
     }
   };
 
@@ -101,8 +100,8 @@ function BaseEdge({
           transition: 'stroke-width 0.2s ease',
         }}
         interactionWidth={20}
-        markerEnd={rest.markerEnd}
-        markerStart={rest.markerStart}
+        markerEnd={markerEnd}
+        markerStart={markerStart}
       />
       <EdgeLabelRenderer>
         {label && (

@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import FieldExtendedProperties from '../FieldExtendedProperties';
 import {ElementTypes} from '@/features/flows/models/elements';
 import type {Resource} from '@/features/flows/models/resources';
-import FieldExtendedProperties from '../FieldExtendedProperties';
 
 // Mock dependencies
 vi.mock('react-i18next', () => ({
@@ -103,7 +103,7 @@ describe('FieldExtendedProperties', () => {
   });
 
   describe('Attribute Selection', () => {
-    it('should have email, username, given_name as options', async () => {
+    it('should have email, username, given_name as options', () => {
       const resource = createMockResource(ElementTypes.TextInput);
 
       render(<FieldExtendedProperties resource={resource} onChange={mockOnChange} />);

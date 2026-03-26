@@ -16,13 +16,13 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
+import {I18nDefaultConstants} from '@thunder/i18n';
+import enUS from '@thunder/i18n/locales/en-US';
+import i18next from 'i18next';
 import type {JSX, ComponentType} from 'react';
 import {useEffect} from 'react';
-import {useAsgardeo} from '@asgardeo/react';
-import i18next from 'i18next';
 import {initReactI18next, useTranslation} from 'react-i18next';
-import enUS from '@thunder/i18n/locales/en-US';
-import {I18nDefaultConstants} from '@thunder/i18n';
 
 interface I18nMeta {
   i18n?: {

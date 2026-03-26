@@ -19,10 +19,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import StandaloneTriggerAdapter from '../StandaloneTriggerAdapter';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {FlowComponent} from '../../../../models/flow';
+import StandaloneTriggerAdapter from '../StandaloneTriggerAdapter';
 
 vi.mock('@wso2/oxygen-ui', () => ({
   Box: ({component: Comp, src, alt, sx}: any) => {

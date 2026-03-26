@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
-import {Box, useColorScheme} from '@wso2/oxygen-ui';
 import type {ThemeListItem} from '@thunder/shared-design';
+import {Box, useColorScheme} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
 
 export interface ThemeThumbnailProps {
   theme: ThemeListItem;

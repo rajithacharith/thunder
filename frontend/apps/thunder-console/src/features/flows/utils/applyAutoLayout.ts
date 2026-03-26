@@ -17,8 +17,8 @@
  */
 
 // eslint-disable-next-line import/no-extraneous-dependencies, import/extensions
-import ELK from 'elkjs/lib/elk.bundled.js';
 import type {Edge, Node} from '@xyflow/react';
+import ELK from 'elkjs/lib/elk.bundled.js';
 
 /**
  * Configuration options for auto-layout.

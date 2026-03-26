@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {useEffect} from 'react';
-import {useForm} from 'react-hook-form';
-import {Box, Stack, Typography} from '@wso2/oxygen-ui';
-import type {JSX} from 'react';
-import {useTranslation} from 'react-i18next';
 import {useResolveDisplayName} from '@thunder/shared-hooks';
+import {Box, Stack, Typography} from '@wso2/oxygen-ui';
+import {useEffect} from 'react';
+import type {JSX} from 'react';
+import {useForm} from 'react-hook-form';
+import {useTranslation} from 'react-i18next';
 import type {ApiUserSchema} from '../../types/users';
 import renderSchemaField from '../../utils/renderSchemaField';
 
@@ -63,6 +63,7 @@ export default function ConfigureUserDetails({
   });
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/incompatible-library
     const subscription = watch((values) => {
       onFormValuesChange(values as Record<string, unknown>);
     });

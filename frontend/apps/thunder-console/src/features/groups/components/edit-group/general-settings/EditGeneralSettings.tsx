@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {useState, useCallback, useRef, useEffect, type JSX} from 'react';
 import {Stack, TextField, Button, IconButton, Typography, InputAdornment, Tooltip} from '@wso2/oxygen-ui';
 import {Copy, Check} from '@wso2/oxygen-ui-icons-react';
+import {useState, useCallback, useRef, useEffect, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import SettingsCard from '@/components/SettingsCard';
 import type {Group} from '../../../models/group';
+import SettingsCard from '@/components/SettingsCard';
 
 interface EditGeneralSettingsProps {
   group: Group;
@@ -75,12 +75,16 @@ export default function EditGeneralSettings({group, onDeleteClick}: EditGeneralS
               endAdornment: (
                 <InputAdornment position="end">
                   <Tooltip
-                    title={copiedField === 'ouId' ? t('common:actions.copied') : t('groups:edit.general.sections.quickCopy.copyOrganizationUnitId')}
+                    title={
+                      copiedField === 'ouId'
+                        ? t('common:actions.copied')
+                        : t('groups:edit.general.sections.quickCopy.copyOrganizationUnitId')
+                    }
                   >
                     <IconButton
                       aria-label={t('groups:edit.general.sections.quickCopy.copyOrganizationUnitId')}
                       onClick={() => {
-                        handleCopyToClipboard(group.ouId, 'ouId').catch(() => {});
+                        handleCopyToClipboard(group.ouId, 'ouId').catch(() => null);
                       }}
                       edge="end"
                     >

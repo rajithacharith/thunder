@@ -16,8 +16,6 @@
  * under the License.
  */
 
-import {useState, useCallback, useMemo, useRef, useEffect, type ComponentType, type JSX} from 'react';
-import {useTranslation} from 'react-i18next';
 import {Box, Typography, TextField, Stack, InputAdornment, Tooltip} from '@wso2/oxygen-ui';
 import {
   Search,
@@ -31,6 +29,8 @@ import {
   Hash,
   Flag,
 } from '@wso2/oxygen-ui-icons-react';
+import {useState, useCallback, useMemo, useRef, useEffect, type ComponentType, type JSX} from 'react';
+import {useTranslation} from 'react-i18next';
 import EMOJI_DATA from './emojis.json';
 
 /**
@@ -156,7 +156,10 @@ export default function EmojiPicker({value = '', onChange}: EmojiPickerProps): J
   const isSearchingRef = useRef<boolean>(false);
 
   const isSearching: boolean = search.trim().length > 0;
-  isSearchingRef.current = isSearching;
+
+  useEffect((): void => {
+    isSearchingRef.current = isSearching;
+  }, [isSearching]);
 
   const searchResults = useMemo((): EmojiCategory[] => {
     const query: string = search.trim().toLowerCase();
@@ -173,10 +176,10 @@ export default function EmojiPicker({value = '', onChange}: EmojiPickerProps): J
 
   const displayedSections: EmojiCategory[] = isSearching ? searchResults : allCategories;
 
-  useEffect((): (() => void) => {
-    if (isSearching) return (): void => {};
+  useEffect((): (() => void) | void => {
+    if (isSearching) return;
     const container = scrollContainerRef.current;
-    if (!container) return (): void => {};
+    if (!container) return;
 
     const observer = new IntersectionObserver(
       (entries) => {

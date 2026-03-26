@@ -16,9 +16,7 @@
  * under the License.
  */
 
-import {useEffect, useMemo, useState, useCallback} from 'react';
-import getInitials from '@/utils/getInitials';
-import {useNavigate} from 'react-router';
+import {useLogger} from '@thunder/logger/react';
 import {
   Avatar,
   IconButton,
@@ -36,12 +34,14 @@ import {
   DataGrid,
 } from '@wso2/oxygen-ui';
 import {Eye, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {useEffect, useMemo, useState, useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useLogger} from '@thunder/logger/react';
+import {useNavigate} from 'react-router';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
-import useGetUsers from '../api/useGetUsers';
 import useDeleteUser from '../api/useDeleteUser';
+import useGetUsers from '../api/useGetUsers';
 import type {UserWithDetails} from '../types/users';
+import getInitials from '@/utils/getInitials';
 
 export default function UsersList() {
   const navigate = useNavigate();

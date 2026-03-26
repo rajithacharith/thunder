@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import {useEffect, useMemo, useRef} from 'react';
 import type {EdgeTypes, NodeProps, NodeTypes} from '@xyflow/react';
-import {StaticStepTypes, type Step} from '@/features/flows/models/steps';
+import {useEffect, useMemo, useRef} from 'react';
+import StaticStepFactory from '../components/resources/steps/StaticStepFactory';
+import StepFactory from '../components/resources/steps/StepFactory';
+import LoginFlowConstants from '../constants/LoginFlowConstants';
+import BaseEdge from '@/features/flows/components/react-flow-overrides/BaseEdge';
 import type {Element} from '@/features/flows/models/elements';
 import type {Resources} from '@/features/flows/models/resources';
-import BaseEdge from '@/features/flows/components/react-flow-overrides/BaseEdge';
-import StepFactory from '../components/resources/steps/StepFactory';
-import StaticStepFactory from '../components/resources/steps/StaticStepFactory';
-import LoginFlowConstants from '../constants/LoginFlowConstants';
+import {StaticStepTypes, type Step} from '@/features/flows/models/steps';
 
 /**
  * Props for the useNodeTypes hook.

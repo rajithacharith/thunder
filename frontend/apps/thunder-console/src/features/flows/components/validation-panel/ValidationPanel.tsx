@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import type {PropsWithChildren, ReactElement} from 'react';
-import {BellIcon, CircleXIcon, InfoIcon, TriangleAlertIcon, X} from '@wso2/oxygen-ui-icons-react';
-import {useTranslation} from 'react-i18next';
 import {Box, IconButton, Stack, Tab, Tabs, Typography} from '@wso2/oxygen-ui';
-import BuilderFloatingPanel from '../../../../components/BuilderLayout/BuilderFloatingPanel';
-import Notification, {NotificationType} from '../../models/notification';
-import useValidationStatus from '../../hooks/useValidationStatus';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import {BellIcon, CircleXIcon, InfoIcon, TriangleAlertIcon, X} from '@wso2/oxygen-ui-icons-react';
+import type {PropsWithChildren, ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
 import ValidationNotificationsList from './ValidationNotificationsList';
+import BuilderFloatingPanel from '../../../../components/BuilderLayout/BuilderFloatingPanel';
+import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import useValidationStatus from '../../hooks/useValidationStatus';
+import Notification, {NotificationType} from '../../models/notification';
 
 /**
  * Props interface for TabPanel component.

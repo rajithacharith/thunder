@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {screen, renderWithProviders} from '@thunder/test-utils';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import EditChildOrganizationUnitSettings from '../EditChildOrganizationUnitSettings';
 
 // Mock child component

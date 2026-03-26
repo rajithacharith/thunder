@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, expect, it, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, act, fireEvent} from '@thunder/test-utils';
+import {describe, expect, it, vi, beforeEach, afterEach} from 'vitest';
 import TranslationJsonEditor from '../TranslationJsonEditor';
 
 vi.mock('react-i18next', async () => {

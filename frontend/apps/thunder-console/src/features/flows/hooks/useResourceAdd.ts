@@ -21,17 +21,17 @@ import {useUpdateNodeInternals} from '@xyflow/react';
 import type {UpdateNodeInternals} from '@xyflow/system';
 import cloneDeep from 'lodash-es/cloneDeep';
 import {useRef} from 'react';
+import type {Base} from '../models/base';
+import {type Element} from '../models/elements';
+import FlowEventTypes from '../models/extension';
+import type {MetadataInterface} from '../models/metadata';
 import {ResourceTypes, type Resource} from '../models/resources';
 import {StepTypes, type Step, type StepData} from '../models/steps';
 import {type Template} from '../models/templates';
 import type {Widget} from '../models/widget';
-import {type Element} from '../models/elements';
-import generateResourceId from '../utils/generateResourceId';
 import PluginRegistry from '../plugins/PluginRegistry';
-import FlowEventTypes from '../models/extension';
 import autoAssignConnections from '../utils/autoAssignConnections';
-import type {MetadataInterface} from '../models/metadata';
-import type {Base} from '../models/base';
+import generateResourceId from '../utils/generateResourceId';
 
 /**
  * Props interface for useResourceAdd hook
@@ -267,7 +267,7 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
   };
 
   // Always return a function, even if handlerRef.current is null (should never happen)
-  return handlerRef.current ?? (() => {});
+  return handlerRef.current ?? (() => null);
 };
 
 export default useResourceAdd;

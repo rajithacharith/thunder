@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import CreateOrganizationUnitPage from '../CreateOrganizationUnitPage';
 
 // Mock navigate and location
@@ -136,7 +136,7 @@ describe('CreateOrganizationUnitPage', () => {
     expect(screen.getByRole('button', {name: 'Suggested Name Three'})).toBeInTheDocument();
   });
 
-  it('should auto-generate handle from name', async () => {
+  it('should auto-generate handle from name', () => {
     renderWithProviders(<CreateOrganizationUnitPage />);
 
     const nameInput = screen.getByLabelText(/Name/i);
@@ -146,7 +146,7 @@ describe('CreateOrganizationUnitPage', () => {
     expect(handleInput).toHaveValue('test-organization');
   });
 
-  it('should fill name when suggestion is clicked', async () => {
+  it('should fill name when suggestion is clicked', () => {
     renderWithProviders(<CreateOrganizationUnitPage />);
 
     fireEvent.click(screen.getByRole('button', {name: 'Suggested Name One'}));
@@ -155,7 +155,7 @@ describe('CreateOrganizationUnitPage', () => {
     expect(nameInput).toHaveValue('Suggested Name One');
   });
 
-  it('should auto-generate handle when suggestion is clicked', async () => {
+  it('should auto-generate handle when suggestion is clicked', () => {
     renderWithProviders(<CreateOrganizationUnitPage />);
 
     fireEvent.click(screen.getByRole('button', {name: 'Suggested Name One'}));
@@ -164,7 +164,7 @@ describe('CreateOrganizationUnitPage', () => {
     expect(handleInput).toHaveValue('suggested-name-one');
   });
 
-  it('should not auto-generate handle after manual edit', async () => {
+  it('should not auto-generate handle after manual edit', () => {
     renderWithProviders(<CreateOrganizationUnitPage />);
 
     const handleInput = screen.getByLabelText(/Handle/i);
@@ -448,7 +448,7 @@ describe('CreateOrganizationUnitPage', () => {
     });
   });
 
-  it('should keep handle unchanged after manual edit when suggestion is clicked', async () => {
+  it('should keep handle unchanged after manual edit when suggestion is clicked', () => {
     renderWithProviders(<CreateOrganizationUnitPage />);
 
     const handleInput = screen.getByLabelText(/Handle/i);

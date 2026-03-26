@@ -18,10 +18,10 @@
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
-import useComponentDelete from '../useComponentDelete';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {Element} from '../../models/elements';
+import useComponentDelete from '../useComponentDelete';
 
 // Mock updateNodeData from @xyflow/react
 const mockUpdateNodeData = vi.fn();

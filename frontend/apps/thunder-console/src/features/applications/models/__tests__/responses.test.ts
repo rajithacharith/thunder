@@ -17,8 +17,8 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import type {ApplicationListResponse} from '../responses';
 import type {BasicApplication} from '../application';
+import type {ApplicationListResponse} from '../responses';
 
 describe('Responses Models', () => {
   describe('ApplicationListResponse', () => {

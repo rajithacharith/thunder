@@ -16,12 +16,11 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
-import {Stack} from '@wso2/oxygen-ui';
 import type {EmbeddedFlowComponent} from '@asgardeo/react';
-// eslint-disable-next-line import/no-cycle
-import FlowComponentRenderer from '../FlowComponentRenderer';
+import {Stack} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
 import type {FlowComponent} from '../../../models/flow';
+import FlowComponentRenderer from '../FlowComponentRenderer';
 
 const STACK_IMAGE_MAX_SIZE = 80;
 
@@ -45,8 +44,8 @@ export default function StackAdapter({
   touched = undefined,
   fieldErrors = undefined,
   isLoading = false,
-  onInputChange = () => {},
-  onSubmit = () => {},
+  onInputChange = () => null,
+  onSubmit = () => null,
   onValidate = undefined,
   signUpFallbackUrl = undefined,
 }: StackAdapterProps): JSX.Element {

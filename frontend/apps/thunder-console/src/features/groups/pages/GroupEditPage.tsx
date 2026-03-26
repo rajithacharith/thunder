@@ -16,9 +16,8 @@
  * under the License.
  */
 
-import {useState, useCallback, useMemo} from 'react';
-import type {ReactNode, SyntheticEvent, JSX} from 'react';
-import {Link, useNavigate, useParams} from 'react-router';
+import {useLogger} from '@thunder/logger/react';
+import {useToast} from '@thunder/shared-contexts';
 import {
   Avatar,
   Box,
@@ -36,16 +35,17 @@ import {
   PageTitle,
 } from '@wso2/oxygen-ui';
 import {ArrowLeft, Edit, Users} from '@wso2/oxygen-ui-icons-react';
+import {useState, useCallback, useMemo} from 'react';
+import type {ReactNode, SyntheticEvent, JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useLogger} from '@thunder/logger/react';
-import {useToast} from '@thunder/shared-contexts';
+import {Link, useNavigate, useParams} from 'react-router';
 import CopyableId from '../../../components/CopyableId';
 import useGetGroup from '../api/useGetGroup';
 import useUpdateGroup from '../api/useUpdateGroup';
-import type {Group} from '../models/group';
-import GroupDeleteDialog from '../components/GroupDeleteDialog';
 import EditGeneralSettings from '../components/edit-group/general-settings/EditGeneralSettings';
 import EditMembersSettings from '../components/edit-group/members-settings/EditMembersSettings';
+import GroupDeleteDialog from '../components/GroupDeleteDialog';
+import type {Group} from '../models/group';
 
 interface TabPanelProps {
   children?: ReactNode;
@@ -198,7 +198,6 @@ export default function GroupEditPage(): JSX.Element {
           <Stack direction="row" alignItems="center" spacing={1} mb={1}>
             {isEditingName ? (
               <TextField
-                autoFocus
                 value={tempName}
                 onChange={(e) => setTempName(e.target.value)}
                 onBlur={() => {
@@ -249,7 +248,6 @@ export default function GroupEditPage(): JSX.Element {
           <Stack direction="row" alignItems="flex-start" spacing={1}>
             {isEditingDescription ? (
               <TextField
-                autoFocus
                 fullWidth
                 multiline
                 rows={2}
@@ -393,7 +391,7 @@ export default function GroupEditPage(): JSX.Element {
             <Button
               variant="contained"
               onClick={() => {
-                handleSave().catch(() => {});
+                handleSave().catch(() => null);
               }}
               disabled={updateGroup.isPending}
             >

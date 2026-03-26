@@ -16,9 +16,8 @@
  * under the License.
  */
 
-import {useState, useCallback, useMemo, type JSX} from 'react';
-import {useTranslation} from 'react-i18next';
-import {useNavigate} from 'react-router';
+import {useCreateTheme, useGetTheme, useGetThemes, type Theme} from '@thunder/shared-design';
+import {kebabCase} from '@thunder/utils';
 import {
   Alert,
   Box,
@@ -31,11 +30,12 @@ import {
   Typography,
 } from '@wso2/oxygen-ui';
 import {ChevronRight, X} from '@wso2/oxygen-ui-icons-react';
-import {useCreateTheme, useGetTheme, useGetThemes, type Theme} from '@thunder/shared-design';
-import {kebabCase} from '@thunder/utils';
-import ConfigureThemeName from '../components/create-theme/ConfigureThemeName';
-import ConfigureThemeColor from '../components/create-theme/ConfigureThemeColor';
+import {useState, useCallback, useMemo, type JSX} from 'react';
+import {useTranslation} from 'react-i18next';
+import {useNavigate} from 'react-router';
 import GatePreview from '../../../components/GatePreview/GatePreview';
+import ConfigureThemeColor from '../components/create-theme/ConfigureThemeColor';
+import ConfigureThemeName from '../components/create-theme/ConfigureThemeName';
 import buildThemeFromPrimaryColor from '../utils/buildThemeFromPrimaryColor';
 
 type ThemeCreateStep = 'NAME' | 'COLOR';
@@ -111,7 +111,7 @@ export default function ThemeCreatePage(): JSX.Element {
   };
 
   const handleClose = (): void => {
-    Promise.resolve(navigate('/design')).catch(() => {});
+    Promise.resolve(navigate('/design')).catch(() => null);
   };
 
   const handleNext = (): void => {
@@ -133,7 +133,7 @@ export default function ThemeCreatePage(): JSX.Element {
       },
       {
         onSuccess: (created) => {
-          Promise.resolve(navigate(`/design/themes/${created.id}`)).catch(() => {});
+          Promise.resolve(navigate(`/design/themes/${created.id}`)).catch(() => null);
         },
         onError: (err: Error) => {
           setError(

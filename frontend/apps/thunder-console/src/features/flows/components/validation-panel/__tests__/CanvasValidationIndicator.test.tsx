@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import CanvasValidationIndicator from '../CanvasValidationIndicator';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import Notification, {NotificationType} from '../../../models/notification';
+import CanvasValidationIndicator from '../CanvasValidationIndicator';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({

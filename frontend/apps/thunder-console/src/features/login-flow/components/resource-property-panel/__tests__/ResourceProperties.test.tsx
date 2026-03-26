@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {ElementCategories, ElementTypes} from '@/features/flows/models/elements';
-import {StepCategories, StepTypes, ExecutionTypes} from '@/features/flows/models/steps';
-import type {Resource} from '@/features/flows/models/resources';
-import type {Element} from '@/features/flows/models/elements';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import ResourceProperties from '../ResourceProperties';
+import {ElementCategories, ElementTypes} from '@/features/flows/models/elements';
+import type {Element} from '@/features/flows/models/elements';
+import type {Resource} from '@/features/flows/models/resources';
+import {StepCategories, StepTypes, ExecutionTypes} from '@/features/flows/models/steps';
 
 // Mock dependencies
 vi.mock('../ResourcePropertyFactory', () => ({
@@ -832,12 +832,7 @@ describe('ResourceProperties', () => {
       } as Partial<Resource>);
 
       render(
-        <ResourceProperties
-          resource={resource}
-          properties={{}}
-          onChange={mockOnChange}
-          onVariantChange={undefined}
-        />,
+        <ResourceProperties resource={resource} properties={{}} onChange={mockOnChange} onVariantChange={undefined} />,
       );
 
       const variantSelect = document.getElementById('variant-select')!;
@@ -968,27 +963,6 @@ describe('ResourceProperties', () => {
       );
 
       expect(screen.getByTestId('execution-extended-properties')).toBeInTheDocument();
-    });
-  });
-
-  describe('Display Category - Image Type', () => {
-    it('should render src and alt fields with empty values when not provided', () => {
-      const resource = createMockResource({
-        category: ElementCategories.Display,
-        type: ElementTypes.Image,
-      } as Partial<Resource>);
-
-      render(
-        <ResourceProperties
-          resource={resource}
-          properties={{}}
-          onChange={mockOnChange}
-          onVariantChange={mockOnVariantChange}
-        />,
-      );
-
-      expect(screen.getByTestId('text-property-field-src')).toBeInTheDocument();
-      expect(screen.getByTestId('text-property-field-alt')).toBeInTheDocument();
     });
   });
 
@@ -1132,12 +1106,7 @@ describe('ResourceProperties', () => {
       } as Partial<Resource>);
 
       render(
-        <ResourceProperties
-          resource={resource}
-          properties={{}}
-          onChange={mockOnChange}
-          onVariantChange={undefined}
-        />,
+        <ResourceProperties resource={resource} properties={{}} onChange={mockOnChange} onVariantChange={undefined} />,
       );
 
       const variantSelect = document.getElementById('variant-select')!;

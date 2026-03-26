@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import withConfig from '../withConfig';
 
 // Track the baseUrl passed to AsgardeoProvider

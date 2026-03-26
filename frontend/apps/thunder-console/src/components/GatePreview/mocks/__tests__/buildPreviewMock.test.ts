@@ -17,9 +17,9 @@
  */
 
 import {describe, it, expect} from 'vitest';
+import buildPreviewMock from '../buildPreviewMock';
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
 import {IdentityProviderTypes} from '@/features/integrations/models/identity-provider';
-import buildPreviewMock from '../buildPreviewMock';
 
 type MockComponent = Record<string, unknown>;
 

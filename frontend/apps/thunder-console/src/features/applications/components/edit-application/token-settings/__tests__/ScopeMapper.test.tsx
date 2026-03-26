@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, expect, it, vi, beforeEach} from 'vitest';
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {describe, expect, it, vi, beforeEach} from 'vitest';
 import ScopeMapper from '../ScopeMapper';
 
 vi.mock('react-i18next', () => ({

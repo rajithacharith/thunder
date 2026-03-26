@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
-import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
-import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
+import {render, screen} from '@thunder/test-utils';
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import ApplicationCreateProvider from '../../../contexts/ApplicationCreate/ApplicationCreateProvider';
 import ConfigureSignInOptions, {
   type ConfigureSignInOptionsProps,
 } from '../configure-signin-options/ConfigureSignInOptions';
-import ApplicationCreateProvider from '../../../contexts/ApplicationCreate/ApplicationCreateProvider';
+import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
+import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({

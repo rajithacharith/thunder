@@ -16,16 +16,16 @@
  * under the License.
  */
 
-import type React from 'react';
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
 import type {Edge, Node} from '@xyflow/react';
-import {StaticStepTypes, StepTypes} from '@/features/flows/models/steps';
-import {TemplateTypes} from '@/features/flows/models/templates';
-import type {Resources} from '@/features/flows/models/resources';
-import type {FlowDefinitionResponse} from '@/features/flows/models/responses';
+import type React from 'react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import useFlowInitialization from '../useFlowInitialization';
 import type {UseFlowInitializationProps} from '../useFlowInitialization';
+import type {Resources} from '@/features/flows/models/resources';
+import type {FlowDefinitionResponse} from '@/features/flows/models/responses';
+import {StaticStepTypes, StepTypes} from '@/features/flows/models/steps';
+import {TemplateTypes} from '@/features/flows/models/templates';
 
 // Mock external dependencies
 vi.mock('lodash-es/cloneDeep', () => ({
@@ -177,8 +177,10 @@ describe('useFlowInitialization', () => {
       }
     }) as unknown as React.Dispatch<React.SetStateAction<Edge[]>> & ReturnType<typeof vi.fn>;
     mockUpdateNodeInternals = vi.fn();
-    mockGenerateEdges = vi.fn().mockReturnValue([]) as unknown as ((flowSteps: unknown[]) => Edge[]) & ReturnType<typeof vi.fn>;
-    mockValidateEdges = vi.fn((edges: Edge[]) => edges) as unknown as ((edges: Edge[], nodes?: Node[]) => Edge[]) & ReturnType<typeof vi.fn>;
+    mockGenerateEdges = vi.fn().mockReturnValue([]) as unknown as ((flowSteps: unknown[]) => Edge[]) &
+      ReturnType<typeof vi.fn>;
+    mockValidateEdges = vi.fn((edges: Edge[]) => edges) as unknown as ((edges: Edge[], nodes?: Node[]) => Edge[]) &
+      ReturnType<typeof vi.fn>;
     mockOnNeedsAutoLayout = vi.fn() as unknown as ((needsLayout: boolean) => void) & ReturnType<typeof vi.fn>;
   });
 
@@ -533,7 +535,7 @@ describe('useFlowInitialization', () => {
       expect(mockSetEdges).not.toHaveBeenCalled();
     });
 
-    it('should load existing flow when flowId and existingFlowData are provided', async () => {
+    it('should load existing flow when flowId and existingFlowData are provided', () => {
       const existingFlowData = createMockExistingFlowData();
 
       renderUseFlowInitialization({
@@ -546,7 +548,7 @@ describe('useFlowInitialization', () => {
       expect(mockSetEdges).toHaveBeenCalled();
     });
 
-    it('should call onNeedsAutoLayout when nodes lack layout data', async () => {
+    it('should call onNeedsAutoLayout when nodes lack layout data', () => {
       const existingFlowData = {
         ...createMockExistingFlowData(),
         nodes: [
@@ -565,7 +567,7 @@ describe('useFlowInitialization', () => {
       expect(mockOnNeedsAutoLayout).toHaveBeenCalledWith(true);
     });
 
-    it('should not need auto layout when all nodes have position data', async () => {
+    it('should not need auto layout when all nodes have position data', () => {
       const existingFlowData = createMockExistingFlowData();
 
       renderUseFlowInitialization({
@@ -577,7 +579,7 @@ describe('useFlowInitialization', () => {
       expect(mockOnNeedsAutoLayout).toHaveBeenCalledWith(false);
     });
 
-    it('should apply edge style to edges when loading existing flow', async () => {
+    it('should apply edge style to edges when loading existing flow', () => {
       const existingFlowData = createMockExistingFlowData();
 
       renderUseFlowInitialization({
@@ -594,7 +596,7 @@ describe('useFlowInitialization', () => {
       });
     });
 
-    it('should load default template when no flowId is provided', async () => {
+    it('should load default template when no flowId is provided', () => {
       renderUseFlowInitialization({
         flowId: undefined,
         existingFlowData: undefined,
@@ -602,14 +604,14 @@ describe('useFlowInitialization', () => {
       });
 
       // Run all microtasks and RAF callbacks
-      await act(async () => {
+      act(() => {
         vi.advanceTimersByTime(100);
       });
 
       expect(mockSetNodes).toHaveBeenCalled();
     });
 
-    it('should schedule updateAllNodeInternals after setting nodes for existing flow', async () => {
+    it('should schedule updateAllNodeInternals after setting nodes for existing flow', () => {
       const existingFlowData = createMockExistingFlowData();
 
       renderUseFlowInitialization({
@@ -619,7 +621,7 @@ describe('useFlowInitialization', () => {
       });
 
       // Wait for queueMicrotask to execute
-      await act(async () => {
+      act(() => {
         vi.advanceTimersByTime(0);
       });
 
@@ -627,7 +629,7 @@ describe('useFlowInitialization', () => {
       expect(mockUpdateNodeInternals).toHaveBeenCalled();
     });
 
-    it('should set deletable to false for END and START nodes in existing flow', async () => {
+    it('should set deletable to false for END and START nodes in existing flow', () => {
       const existingFlowData = createMockExistingFlowData();
 
       renderUseFlowInitialization({
@@ -646,7 +648,7 @@ describe('useFlowInitialization', () => {
       expect(endNode?.deletable).toBe(false);
     });
 
-    it('should map edges with edgeStyle when loading existing flow with edges', async () => {
+    it('should map edges with edgeStyle when loading existing flow with edges', () => {
       // Override the flowToCanvasTransformer mock to return edges
       mockTransformFlowToCanvas.mockReturnValueOnce({
         nodes: [
@@ -682,7 +684,7 @@ describe('useFlowInitialization', () => {
   });
 
   describe('updateFlowWithSequence', () => {
-    it('should prevent concurrent flow updates', async () => {
+    it('should prevent concurrent flow updates', () => {
       renderUseFlowInitialization({
         flowId: undefined,
         isLoadingExistingFlow: false,
@@ -691,7 +693,7 @@ describe('useFlowInitialization', () => {
       // This will be called by useLayoutEffect automatically
       // The initial call happens during hook initialization
 
-      await act(async () => {
+      act(() => {
         vi.advanceTimersByTime(100);
       });
 
@@ -724,7 +726,7 @@ describe('useFlowInitialization', () => {
       expect(mockSetNodes).toHaveBeenCalled();
     });
 
-    it('should apply edge style to generated edges', async () => {
+    it('should apply edge style to generated edges', () => {
       const mockEdges: Edge[] = [{id: 'edge-1', source: 'node-1', target: 'node-2', type: 'default'}];
       mockGenerateEdges.mockReturnValue(mockEdges);
       mockValidateEdges.mockReturnValue(mockEdges);
@@ -735,18 +737,16 @@ describe('useFlowInitialization', () => {
         edgeStyle: 'smoothstep',
       });
 
-      await act(async () => {
+      act(() => {
         vi.advanceTimersByTime(100);
       });
 
       // setEdges should be called with styled edges
-      if (mockSetEdges.mock.calls.length > 0) {
-        const lastEdgesCall = mockSetEdges.mock.calls[mockSetEdges.mock.calls.length - 1] as [unknown];
-        if (typeof lastEdgesCall[0] === 'function') {
-          const edgesResult = (lastEdgesCall[0] as () => Edge[])();
-          expect(edgesResult[0]?.type).toBe('smoothstep');
-        }
-      }
+      expect(mockSetEdges.mock.calls.length).toBeGreaterThan(0);
+      const lastEdgesCall = mockSetEdges.mock.calls[mockSetEdges.mock.calls.length - 1] as [unknown];
+      expect(typeof lastEdgesCall[0]).toBe('function');
+      const edgesResult = (lastEdgesCall[0] as () => Edge[])();
+      expect(edgesResult[0]?.type).toBe('smoothstep');
     });
   });
 
@@ -808,9 +808,7 @@ describe('useFlowInitialization', () => {
 
   describe('updateFlowWithSequence detailed testing', () => {
     it('should complete full RAF update sequence for new flow', async () => {
-      const mockEdges: Edge[] = [
-        {id: 'edge-1', source: 'start', target: 'view-step-1', type: 'default'},
-      ];
+      const mockEdges: Edge[] = [{id: 'edge-1', source: 'start', target: 'view-step-1', type: 'default'}];
       mockGenerateEdges.mockReturnValue(mockEdges);
       mockValidateEdges.mockReturnValue(mockEdges);
 
@@ -856,9 +854,7 @@ describe('useFlowInitialization', () => {
     });
 
     it('should call generateEdges and validateEdges in RAF sequence', async () => {
-      const mockEdges: Edge[] = [
-        {id: 'edge-1', source: 'start', target: 'view-step-1', type: 'default'},
-      ];
+      const mockEdges: Edge[] = [{id: 'edge-1', source: 'start', target: 'view-step-1', type: 'default'}];
       mockGenerateEdges.mockReturnValue(mockEdges);
       mockValidateEdges.mockReturnValue(mockEdges);
 
@@ -925,7 +921,7 @@ describe('useFlowInitialization', () => {
   });
 
   describe('existing flow edge style application', () => {
-    it('should apply custom edge style to existing flow edges', async () => {
+    it('should apply custom edge style to existing flow edges', () => {
       const existingFlowData = {
         ...createMockExistingFlowData(),
       };
@@ -937,9 +933,7 @@ describe('useFlowInitialization', () => {
             {id: 'start', type: StaticStepTypes.Start, position: {x: 0, y: 0}, data: {}},
             {id: 'view-1', type: StepTypes.View, position: {x: 100, y: 100}, data: {}},
           ],
-          edges: [
-            {id: 'edge-1', source: 'start', target: 'view-1', type: 'default'},
-          ],
+          edges: [{id: 'edge-1', source: 'start', target: 'view-1', type: 'default'}],
         }),
       }));
 

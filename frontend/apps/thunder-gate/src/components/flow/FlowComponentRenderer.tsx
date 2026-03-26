@@ -16,19 +16,18 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
 import {EmbeddedFlowComponentType, EmbeddedFlowEventType, type ConsentPurpose} from '@asgardeo/react';
-import TextAdapter from './adapters/TextAdapter';
-import RichTextAdapter from './adapters/RichTextAdapter';
-import ImageAdapter from './adapters/ImageAdapter';
-import IconAdapter from './adapters/IconAdapter';
-// eslint-disable-next-line import/no-cycle
-import StackAdapter from './adapters/StackAdapter';
+import type {JSX} from 'react';
 import BlockAdapter from './adapters/BlockAdapter';
-import StandaloneTriggerAdapter from './adapters/StandaloneTriggerAdapter';
 import ConsentAdapter from './adapters/ConsentAdapter';
-import TimerAdapter from './adapters/TimerAdapter';
 import DividerAdapter from './adapters/DividerAdapter';
+import IconAdapter from './adapters/IconAdapter';
+import ImageAdapter from './adapters/ImageAdapter';
+import RichTextAdapter from './adapters/RichTextAdapter';
+import StackAdapter from './adapters/StackAdapter';
+import StandaloneTriggerAdapter from './adapters/StandaloneTriggerAdapter';
+import TextAdapter from './adapters/TextAdapter';
+import TimerAdapter from './adapters/TimerAdapter';
 import type {FlowComponent, FlowComponentRendererProps} from '../../models/flow';
 
 /**
@@ -123,6 +122,7 @@ export default function FlowComponentRenderer({
   // TIMER (standalone countdown timer component)
   if (comp.type === 'TIMER') {
     const stepTimeout = additionalData?.stepTimeout;
+    // eslint-disable-next-line react-hooks/purity
     const expiresIn = stepTimeout != null ? Math.max(0, Math.floor((Number(stepTimeout) - Date.now()) / 1000)) : 0;
     const textTemplate = resolve(comp.label) ?? 'Time remaining: {time}';
 
@@ -140,6 +140,7 @@ export default function FlowComponentRenderer({
     const hasConsent = additionalData?.consentPrompt != null;
     const hasTimer = additionalData?.stepTimeout != null;
     const stepTimeout = additionalData?.stepTimeout;
+    // eslint-disable-next-line react-hooks/purity
     const expiresIn = stepTimeout != null ? Math.max(0, Math.floor((Number(stepTimeout) - Date.now()) / 1000)) : 0;
     const isExpiredOnMount = hasTimer && expiresIn <= 0;
 

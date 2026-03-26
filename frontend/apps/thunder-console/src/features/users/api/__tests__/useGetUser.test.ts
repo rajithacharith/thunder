@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
-import useGetUser from '../useGetUser';
-import type {ApiUser} from '../../types/users';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import UserQueryKeys from '../../constants/user-query-keys';
+import type {ApiUser} from '../../types/users';
+import useGetUser from '../useGetUser';
 
 // Mock the dependencies
 vi.mock('@asgardeo/react', () => ({
@@ -69,7 +69,7 @@ describe('useGetUser', () => {
   });
 
   it('should initialize with loading state when userId is provided', () => {
-    mockHttpRequest.mockReturnValue(new Promise(() => {})); // Never resolves
+    mockHttpRequest.mockReturnValue(new Promise(() => null)); // Never resolves
 
     const {result} = renderHook(() => useGetUser('user-1'));
 

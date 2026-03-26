@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render} from '@testing-library/react';
-import type {Resource} from '@/features/flows/models/resources';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import HTMLPlugin from '../HTMLPlugin';
+import type {Resource} from '@/features/flows/models/resources';
 
 // Use vi.hoisted for mock functions
 const {

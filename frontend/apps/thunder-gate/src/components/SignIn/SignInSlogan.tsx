@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import {cn} from '@thunder/utils';
 import {ColorSchemeImage, Stack, Typography} from '@wso2/oxygen-ui';
 import {Cloud, ShieldCheck, Zap, TerminalSquare} from '@wso2/oxygen-ui-icons-react';
-import {cn} from '@thunder/utils';
 import type {JSX} from 'react';
 
 const items: {

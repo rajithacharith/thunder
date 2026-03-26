@@ -16,14 +16,14 @@
  * under the License.
  */
 
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {Typography, type TypographyProps} from '@wso2/oxygen-ui';
 import {useMemo, type CSSProperties, type ReactElement, type ReactNode} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
-import {Typography, type TypographyProps} from '@wso2/oxygen-ui';
+import TemplatePlaceholder, {containsTemplateLiteral} from './TemplatePlaceholder';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import {TypographyVariants, type Element} from '@/features/flows/models/elements';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
-import TemplatePlaceholder, {containsTemplateLiteral} from './TemplatePlaceholder';
 
 const TYPOGRAPHY_VALIDATION_FIELD_NAMES = {
   label: 'label',

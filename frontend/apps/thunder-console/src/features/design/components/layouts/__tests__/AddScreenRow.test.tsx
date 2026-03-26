@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
+import {render, screen} from '@thunder/test-utils';
+import {describe, it, expect, vi} from 'vitest';
 import AddScreenRow from '../AddScreenRow';
 
 vi.mock('react-i18next', async () => {
@@ -115,6 +115,7 @@ describe('AddScreenRow', () => {
       render(<AddScreenRow baseScreens={baseScreens} onAdd={vi.fn()} />);
 
       await user.click(screen.getByRole('button'));
+      await user.click(screen.getByRole('textbox'));
       await user.keyboard('{Escape}');
 
       expect(screen.queryByRole('textbox')).not.toBeInTheDocument();

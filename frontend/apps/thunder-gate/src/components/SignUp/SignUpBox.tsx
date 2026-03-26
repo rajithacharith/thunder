@@ -21,7 +21,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 
-import type {JSX} from 'react';
+import {SignUp, type EmbeddedFlowComponent} from '@asgardeo/react';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {cn} from '@thunder/utils';
 import {
   Box,
   Button,
@@ -34,11 +36,9 @@ import {
   ColorSchemeImage,
   CircularProgress,
 } from '@wso2/oxygen-ui';
-import {SignUp, type EmbeddedFlowComponent} from '@asgardeo/react';
-import {useNavigate, useSearchParams} from 'react-router';
+import type {JSX} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
-import {cn} from '@thunder/utils';
+import {useNavigate, useSearchParams} from 'react-router';
 import ROUTES from '../../constants/routes';
 import FlowComponentRenderer from '../flow/FlowComponentRenderer';
 
@@ -117,8 +117,7 @@ export default function SignUpBox(): JSX.Element {
                           resolve={resolve}
                           onInputChange={handleInputChange}
                           onSubmit={(action, inputs) => {
-                            // Tracker: https://github.com/asgardeo/javascript/issues/222
-                            handleSubmit(action, inputs).catch(() => {});
+                            void handleSubmit(action, inputs);
                           }}
                         />
                       ))}

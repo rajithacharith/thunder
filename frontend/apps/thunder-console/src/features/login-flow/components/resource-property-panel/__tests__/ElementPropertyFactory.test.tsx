@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import type {Resource} from '@/features/flows/models/resources';
+import {describe, it, expect, vi} from 'vitest';
 import ElementPropertyFactory from '../ElementPropertyFactory';
+import type {Resource} from '@/features/flows/models/resources';
 
 // Mock CommonElementPropertyFactory
 vi.mock('@/features/flows/components/resource-property-panel/CommonElementPropertyFactory', () => ({

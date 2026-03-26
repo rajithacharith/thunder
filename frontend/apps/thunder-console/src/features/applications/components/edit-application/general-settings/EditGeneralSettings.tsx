@@ -16,15 +16,15 @@
  * under the License.
  */
 
+import {Stack} from '@wso2/oxygen-ui';
 import {useState, useCallback} from 'react';
 import type {JSX} from 'react';
-import {Stack} from '@wso2/oxygen-ui';
+import AccessSection from './AccessSection';
+import DangerZoneSection from './DangerZoneSection';
+import QuickCopySection from './QuickCopySection';
 import type {Application} from '../../../models/application';
 import {TokenEndpointAuthMethods} from '../../../models/oauth';
 import type {OAuth2Config} from '../../../models/oauth';
-import QuickCopySection from './QuickCopySection';
-import AccessSection from './AccessSection';
-import DangerZoneSection from './DangerZoneSection';
 import ClientSecretSuccessDialog from '../../ClientSecretSuccessDialog';
 import RegenerateSecretDialog from '../../RegenerateSecretDialog';
 

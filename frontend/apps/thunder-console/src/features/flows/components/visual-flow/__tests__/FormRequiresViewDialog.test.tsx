@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import FormRequiresViewDialog, {type DropScenario} from '../FormRequiresViewDialog';
 
 // Mock react-i18next

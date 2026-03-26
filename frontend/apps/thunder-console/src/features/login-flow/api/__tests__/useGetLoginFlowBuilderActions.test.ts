@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {renderHook} from '@testing-library/react';
+import {describe, it, expect, vi} from 'vitest';
 import useGetLoginFlowBuilderActions from '../useGetLoginFlowBuilderActions';
 
 // Mock the core actions hook

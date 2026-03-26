@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {type ReactElement} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
+import {type ReactElement} from 'react';
 import DecoratedVisualFlow, {type DecoratedVisualFlowPropsInterface} from './visual-flow/DecoratedVisualFlow';
 
 /**

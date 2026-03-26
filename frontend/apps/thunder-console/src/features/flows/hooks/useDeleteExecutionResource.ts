@@ -18,13 +18,13 @@
 
 import {type Edge, type Node, useReactFlow} from '@xyflow/react';
 import {useEffect} from 'react';
+import useFlowBuilderCore from './useFlowBuilderCore';
+import VisualFlowConstants from '../constants/VisualFlowConstants';
 import {ActionTypes} from '../models/actions';
 import {type Element, ElementCategories} from '../models/elements';
 import FlowEventTypes from '../models/extension';
 import {StepTypes} from '../models/steps';
 import PluginRegistry from '../plugins/PluginRegistry';
-import VisualFlowConstants from '../constants/VisualFlowConstants';
-import useFlowBuilderCore from './useFlowBuilderCore';
 
 /**
  * Custom hook to handle the deletion of execution resources in the flow builder.

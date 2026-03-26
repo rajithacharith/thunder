@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
-import ConfigureUserDetails, {type ConfigureUserDetailsProps} from '../ConfigureUserDetails';
+import {render, screen, waitFor} from '@thunder/test-utils';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {ApiUserSchema} from '../../../types/users';
+import ConfigureUserDetails, {type ConfigureUserDetailsProps} from '../ConfigureUserDetails';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({

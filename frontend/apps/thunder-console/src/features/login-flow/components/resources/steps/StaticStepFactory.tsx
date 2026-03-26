@@ -16,12 +16,12 @@
  * under the License.
  */
 
+import type {Node} from '@xyflow/react';
+import type {ReactElement} from 'react';
 import {
   CommonStaticStepFactory,
   type CommonStaticStepFactoryPropsInterface,
 } from '@/features/flows/components/resources/steps/CommonStaticStepFactory';
-import type {Node} from '@xyflow/react';
-import type {ReactElement} from 'react';
 
 /**
  * Props interface of {@link StaticStepFactory}

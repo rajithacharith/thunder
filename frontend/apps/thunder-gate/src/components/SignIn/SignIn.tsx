@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
-import {Stack} from '@wso2/oxygen-ui';
 import {useDesign} from '@thunder/shared-design';
 import {cn} from '@thunder/utils';
+import {Stack} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
 import SignInBox from './SignInBox';
 import SignInSlogan from './SignInSlogan';
 

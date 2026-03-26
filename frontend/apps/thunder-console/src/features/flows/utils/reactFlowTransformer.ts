@@ -17,13 +17,13 @@
  */
 
 import type {Edge, Node} from '@xyflow/react';
+import generateResourceId from './generateResourceId';
+import VisualFlowConstants from '../constants/VisualFlowConstants';
+import {ActionTypes} from '../models/actions';
 import type {Element} from '../models/elements';
 import {ElementCategories, ElementTypes, ActionEventTypes, ButtonTypes} from '../models/elements';
 import type {StepData} from '../models/steps';
 import {StepTypes, StaticStepTypes} from '../models/steps';
-import {ActionTypes} from '../models/actions';
-import generateResourceId from './generateResourceId';
-import VisualFlowConstants from '../constants/VisualFlowConstants';
 
 /**
  * Suffix used in edge sourceHandle to identify the connection point

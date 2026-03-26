@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
-import useGetApplications from '../useGetApplications';
-import type {ApplicationListResponse} from '../../models/responses';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import ApplicationQueryKeys from '../../constants/application-query-keys';
+import type {ApplicationListResponse} from '../../models/responses';
+import useGetApplications from '../useGetApplications';
 
 // Mock the dependencies
 vi.mock('@asgardeo/react', () => ({
@@ -87,7 +87,7 @@ describe('useGetApplications', () => {
   });
 
   it('should initialize with loading state', () => {
-    mockHttpRequest.mockReturnValue(new Promise(() => {})); // Never resolves
+    mockHttpRequest.mockReturnValue(new Promise(() => null)); // Never resolves
 
     const {result} = renderHook(() => useGetApplications());
 

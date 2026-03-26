@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {type ReactElement} from 'react';
 import {Typography, Box} from '@wso2/oxygen-ui';
+import {type ReactElement} from 'react';
 import type {Resource} from '../../../../models/resources';
 
 /**

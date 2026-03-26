@@ -16,34 +16,25 @@
  * under the License.
  */
 
-import {useEffect, useState, type JSX} from 'react';
-import {useSearchParams} from 'react-router';
-import {ColorSchemeImage, Stack, Typography} from '@wso2/oxygen-ui';
-import {useTranslation} from 'react-i18next';
 import {cn} from '@thunder/utils';
+import {ColorSchemeImage, Stack, Typography} from '@wso2/oxygen-ui';
+import {type JSX} from 'react';
+import {useTranslation} from 'react-i18next';
+import {useSearchParams} from 'react-router';
 
 export default function Error(): JSX.Element {
   const [searchParams] = useSearchParams();
   const {t} = useTranslation();
-  const [errorTitle, setErrorTitle] = useState(t('errors:page.defaultTitle'));
-  const [errorDescription, setErrorDescription] = useState(
-    searchParams.get('errorMessage') ?? t('errors:page.defaultDescription'),
-  );
-  const [errorImagePublicPath, setErrorImagePublicPath] = useState('/assets/images/error-500.svg');
-  const [errorImageInvertedPublicPath, setErrorImageInvertedPublicPath] = useState(
-    '/assets/images/error-500-inverted.svg',
-  );
 
-  const ErrorCode = searchParams.get('errorCode') ?? '';
+  const errorCode = searchParams.get('errorCode') ?? '';
+  const isInvalidRequest = errorCode === 'invalid_request';
 
-  useEffect(() => {
-    if (ErrorCode === 'invalid_request') {
-      setErrorTitle(t('errors:page.invalidRequest.title'));
-      setErrorDescription(t('errors:page.invalidRequest.description'));
-      setErrorImagePublicPath('/assets/images/error-500.svg');
-      setErrorImageInvertedPublicPath('/assets/images/error-500-inverted.svg');
-    }
-  }, [ErrorCode, t]);
+  const errorTitle = isInvalidRequest ? t('errors:page.invalidRequest.title') : t('errors:page.defaultTitle');
+  const errorDescription = isInvalidRequest
+    ? t('errors:page.invalidRequest.description')
+    : (searchParams.get('errorMessage') ?? t('errors:page.defaultDescription'));
+  const errorImagePublicPath = '/assets/images/error-500.svg';
+  const errorImageInvertedPublicPath = '/assets/images/error-500-inverted.svg';
 
   return (
     <Stack

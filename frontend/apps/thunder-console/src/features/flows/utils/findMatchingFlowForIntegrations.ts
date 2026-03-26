@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import getFlowSupportedIntegrations from './getFlowSupportedIntegrations';
 import {AuthenticatorTypes} from '../../integrations/models/authenticators';
 import type {BasicFlowDefinition} from '../models/responses';
-import getFlowSupportedIntegrations from './getFlowSupportedIntegrations';
 
 /**
  * Find the best matching flow for given enabled integrations

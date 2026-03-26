@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
+import {describe, it, expect, vi} from 'vitest';
 import SignUp from '../SignUp';
 
 // Mock child component

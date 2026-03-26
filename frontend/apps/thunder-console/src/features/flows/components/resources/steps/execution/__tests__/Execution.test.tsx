@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import Execution from '../Execution';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {CommonStepFactoryPropsInterface} from '../../CommonStepFactory';
+import Execution from '../Execution';
 
 // Mock @xyflow/react
 const mockUseNodeId = vi.fn<() => string | null>(() => 'execution-node-id');

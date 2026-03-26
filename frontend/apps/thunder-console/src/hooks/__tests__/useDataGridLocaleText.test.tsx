@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import {render, renderHook, screen, userEvent} from '@thunder/test-utils';
 import {useState} from 'react';
 import {describe, it, expect, vi} from 'vitest';
-import {render, renderHook, screen, userEvent} from '@thunder/test-utils';
 import useDataGridLocaleText from '../useDataGridLocaleText';
 
 // Unmock the hook for testing the actual implementation
@@ -327,7 +327,7 @@ describe('useDataGridLocaleText', () => {
     const i18nModule = await import('i18next');
     const originalGetResourceBundle = i18nModule.default.getResourceBundle.bind(i18nModule.default);
 
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => null);
 
     // Ensure DEV mode is enabled so the console.warn path executes
     const originalDev = import.meta.env.DEV;
@@ -427,7 +427,7 @@ describe('useDataGridLocaleText', () => {
     // This covers both the typeof !== 'function' branch AND the DEV warning branch for each key
     const i18nModule = await import('i18next');
 
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => null);
 
     // Return only the non-function overrides — string translations use t(), not getResourceBundle,
     // so there's no need to spread from the original bundle (which would risk re-entrant spy calls).

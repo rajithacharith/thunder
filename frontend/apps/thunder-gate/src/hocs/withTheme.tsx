@@ -16,9 +16,8 @@
  * under the License.
  */
 
-import {useState, type JSX, type ComponentType, type MouseEvent} from 'react';
-import {useDesign, StylesheetInjector, type Theme} from '@thunder/shared-design';
 import {LanguageSwitcher} from '@asgardeo/react';
+import {useDesign, StylesheetInjector, type Theme} from '@thunder/shared-design';
 import {
   OxygenUIThemeProvider,
   ColorSchemeToggle,
@@ -31,6 +30,7 @@ import {
   Typography,
 } from '@wso2/oxygen-ui';
 import {ChevronDown} from '@wso2/oxygen-ui-icons-react';
+import {useState, type JSX, type ComponentType, type MouseEvent} from 'react';
 
 export default function withTheme<P extends object>(WrappedComponent: ComponentType<P>) {
   return function WithTheme(props: P): JSX.Element {

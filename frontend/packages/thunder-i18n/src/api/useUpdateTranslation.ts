@@ -16,12 +16,12 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
-import type {TranslationResponse} from '../models/responses';
-import type {UpdateTranslationVariables} from '../models/requests';
 import I18nQueryKeys from '../constants/i18n-query-keys';
+import type {UpdateTranslationVariables} from '../models/requests';
+import type {TranslationResponse} from '../models/responses';
 
 /**
  * Options for the useUpdateTranslation hook.

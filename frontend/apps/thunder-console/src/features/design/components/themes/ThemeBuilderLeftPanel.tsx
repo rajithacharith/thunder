@@ -16,8 +16,7 @@
  * under the License.
  */
 
-import {type JSX} from 'react';
-import {useTranslation} from 'react-i18next';
+import type {Theme} from '@thunder/shared-design';
 import {
   Box,
   Divider,
@@ -30,10 +29,11 @@ import {
   Typography,
 } from '@wso2/oxygen-ui';
 import {Palette, Sliders, Type} from '@wso2/oxygen-ui-icons-react';
-import type {Theme} from '@thunder/shared-design';
-import ColorSchemeOptions from '../../constants/ColorSchemeOptions';
-import BuilderPanelHeader from '../../../../components/BuilderLayout/BuilderPanelHeader';
+import {type JSX} from 'react';
+import {useTranslation} from 'react-i18next';
 import SectionCard from './SectionCard';
+import BuilderPanelHeader from '../../../../components/BuilderLayout/BuilderPanelHeader';
+import ColorSchemeOptions from '../../constants/ColorSchemeOptions';
 import {type ThemeSection} from '../../models/theme-builder';
 
 interface SectionDef {

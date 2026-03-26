@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {renderHook} from '@thunder/test-utils';
+import {describe, it, expect, vi} from 'vitest';
 import useResolveDisplayName from '../useResolveDisplayName';
 
 describe('useResolveDisplayName', () => {

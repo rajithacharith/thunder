@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {screen, renderWithProviders} from '@thunder/test-utils';
-import EditCustomizationSettings from '../EditCustomizationSettings';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {OrganizationUnit} from '../../../../models/organization-unit';
+import EditCustomizationSettings from '../EditCustomizationSettings';
 
 // Mock child components
 vi.mock('../AppearanceSection', () => ({

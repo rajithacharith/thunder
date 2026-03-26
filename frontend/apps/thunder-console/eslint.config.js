@@ -23,4 +23,18 @@ export default [
     ignores: ['dist/**', 'build/**', 'node_modules/**', 'coverage/**'],
   },
   ...thunderPlugin.configs.react,
+  ...thunderPlugin.configs.vitest,
+  {
+    rules: {
+      /* --- TEMPORARILY TURNED OFF RULES --- */
+      /* TODO: Revisit these rules and enable them after refactoring the codebase. */
+      '@typescript-eslint/require-await': 'off',
+      'vitest/no-conditional-expect': 'off',
+      'react-hooks/refs': 'off',
+      'react-hooks/immutability': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/preserve-manual-memoization': 'off',
+      'typescript-eslint/require-await': 'off',
+    },
+  },
 ];

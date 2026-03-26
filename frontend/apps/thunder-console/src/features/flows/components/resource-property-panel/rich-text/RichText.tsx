@@ -16,25 +16,25 @@
  * under the License.
  */
 
-import {ParagraphNode, TextNode, type EditorThemeClasses} from 'lexical';
-import {type InitialConfigType, LexicalComposer} from '@lexical/react/LexicalComposer';
-import {HeadingNode} from '@lexical/rich-text';
 import {AutoLinkNode, LinkNode} from '@lexical/link';
-import type {Resource} from '@/features/flows/models/resources';
-import {useMemo, type ReactElement} from 'react';
-import {useTranslation} from 'react-i18next';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
-import {Box, FormControl, FormLabel, Paper, TextField} from '@wso2/oxygen-ui';
+import {AutoFocusPlugin} from '@lexical/react/LexicalAutoFocusPlugin';
+import {type InitialConfigType, LexicalComposer} from '@lexical/react/LexicalComposer';
+import {ContentEditable} from '@lexical/react/LexicalContentEditable';
+import {LexicalErrorBoundary} from '@lexical/react/LexicalErrorBoundary';
 import {HistoryPlugin} from '@lexical/react/LexicalHistoryPlugin';
 import {LinkPlugin} from '@lexical/react/LexicalLinkPlugin';
 import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
-import {AutoFocusPlugin} from '@lexical/react/LexicalAutoFocusPlugin';
-import {ContentEditable} from '@lexical/react/LexicalContentEditable';
-import {LexicalErrorBoundary} from '@lexical/react/LexicalErrorBoundary';
-import ToolbarPlugin from './helper-plugins/ToolbarPlugin';
-import type {ToolbarPluginProps} from './helper-plugins/ToolbarPlugin';
+import {HeadingNode} from '@lexical/rich-text';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {Box, FormControl, FormLabel, Paper, TextField} from '@wso2/oxygen-ui';
+import {ParagraphNode, TextNode, type EditorThemeClasses} from 'lexical';
+import {useMemo, type ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
 import CustomLinkPlugin from './helper-plugins/CustomLinkPlugin';
 import HTMLPlugin from './helper-plugins/HTMLPlugin';
+import ToolbarPlugin from './helper-plugins/ToolbarPlugin';
+import type {ToolbarPluginProps} from './helper-plugins/ToolbarPlugin';
+import type {Resource} from '@/features/flows/models/resources';
 
 /**
  * Theme classes for the rich text editor.

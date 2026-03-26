@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
 import {useContext} from 'react';
 import type {ReactNode} from 'react';
-import OrganizationUnitProvider from '../OrganizationUnitProvider';
+import {describe, it, expect} from 'vitest';
 import OrganizationUnitContext from '../OrganizationUnitContext';
+import OrganizationUnitProvider from '../OrganizationUnitProvider';
 
 function useOrganizationUnitContext() {
   const context = useContext(OrganizationUnitContext);

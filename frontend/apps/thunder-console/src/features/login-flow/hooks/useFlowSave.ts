@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {useCallback} from 'react';
 import type {Edge, Node} from '@xyflow/react';
+import {useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import useCreateFlow from '@/features/flows/api/useCreateFlow';

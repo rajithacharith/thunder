@@ -16,16 +16,16 @@
  * under the License.
  */
 
+import {useGetThemes} from '@thunder/shared-design';
+import {Box, Button, Card, Grid, PageContent, PageTitle, Skeleton, Typography} from '@wso2/oxygen-ui';
+import {ArrowUpRight, LayoutTemplate, Palette, Plus} from '@wso2/oxygen-ui-icons-react';
 import {useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import {Box, Button, Card, Grid, PageContent, PageTitle, Skeleton, Typography} from '@wso2/oxygen-ui';
-import {ArrowUpRight, LayoutTemplate, Palette, Plus} from '@wso2/oxygen-ui-icons-react';
-import {useGetThemes} from '@thunder/shared-design';
-import SectionHeader from '../components/common/SectionHeader';
 import ItemCard from '../components/common/ItemCard';
-import ThemeThumbnail from '../components/themes/ThemeThumbnail';
+import SectionHeader from '../components/common/SectionHeader';
 import LayoutPresetThumbnail, {type LayoutPresetVariant} from '../components/layouts/LayoutPresetThumbnail';
+import ThemeThumbnail from '../components/themes/ThemeThumbnail';
 import DesignUIConstants from '../constants/design-ui-constants';
 
 const LAYOUT_PRESET_IDS: LayoutPresetVariant[] = ['centered', 'split', 'fullscreen', 'popup'];

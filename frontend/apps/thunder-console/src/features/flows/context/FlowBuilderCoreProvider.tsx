@@ -16,6 +16,9 @@
  * under the License.
  */
 
+import {I18nDefaultConstants} from '@thunder/i18n';
+import {Stack, Typography} from '@wso2/oxygen-ui';
+import {Settings} from '@wso2/oxygen-ui-icons-react';
 import {type EdgeTypes, type NodeTypes, ReactFlowProvider} from '@xyflow/react';
 import merge from 'lodash-es/merge';
 import startCase from 'lodash-es/startCase';
@@ -31,17 +34,14 @@ import {
   type Dispatch,
   type SetStateAction,
 } from 'react';
-import {Stack, Typography} from '@wso2/oxygen-ui';
-import {Settings} from '@wso2/oxygen-ui-icons-react';
-import {I18nDefaultConstants} from '@thunder/i18n';
-import ValidationProvider from './ValidationProvider';
 import FlowBuilderCoreContext from './FlowBuilderCoreContext';
+import type {ValidationConfig} from './ValidationContext';
+import ValidationProvider from './ValidationProvider';
+import {PreviewScreenType} from '../models/custom-text-preference';
 import type {FlowCompletionConfigsInterface} from '../models/flows';
+import type {Claim} from '../models/metadata';
 import {type Resource, ResourceTypes} from '../models/resources';
 import {StepTypes, EdgeStyleTypes, type EdgeStyleTypes as EdgeStyleTypesType} from '../models/steps';
-import type {Claim} from '../models/metadata';
-import {PreviewScreenType} from '../models/custom-text-preference';
-import type {ValidationConfig} from './ValidationContext';
 
 /**
  * Props interface for ElementFactory component

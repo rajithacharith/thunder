@@ -18,8 +18,8 @@
 
 import {render, screen} from '@testing-library/react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import IntegrationGuide from '../IntegrationGuide';
 import type {IntegrationGuides} from '../../../../models/application-templates';
+import IntegrationGuide from '../IntegrationGuide';
 import TechnologyGuide from '../TechnologyGuide';
 
 // Mock the TechnologyGuide component

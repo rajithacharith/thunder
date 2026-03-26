@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {renderHook, waitFor} from '@thunder/test-utils';
-import useNotificationSenders from '../useNotificationSenders';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import NotificationSenderQueryKeys from '../../constants/query-keys';
 import type {NotificationSenderListResponse} from '../../models/notification-sender';
+import useNotificationSenders from '../useNotificationSenders';
 
 // Mock useConfig
 const mockGetServerUrl = vi.fn(() => 'https://api.example.com');
@@ -186,7 +186,7 @@ describe('useNotificationSenders', () => {
 
   describe('Loading State', () => {
     it('should be loading initially', () => {
-      mockHttpRequest.mockImplementation(() => new Promise(() => {})); // Never resolves
+      mockHttpRequest.mockImplementation(() => new Promise(() => null)); // Never resolves
 
       const {result} = renderHook(() => useNotificationSenders());
 

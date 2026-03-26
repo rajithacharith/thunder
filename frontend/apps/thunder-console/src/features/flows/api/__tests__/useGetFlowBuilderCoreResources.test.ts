@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {renderHook} from '@testing-library/react';
-import useGetFlowBuilderCoreResources from '../useGetFlowBuilderCoreResources';
+import {describe, it, expect} from 'vitest';
 import elements from '../../data/elements.json';
 import steps from '../../data/steps.json';
 import templates from '../../data/templates.json';
 import widgets from '../../data/widgets.json';
+import useGetFlowBuilderCoreResources from '../useGetFlowBuilderCoreResources';
 
 describe('useGetFlowBuilderCoreResources', () => {
   describe('Return Structure', () => {

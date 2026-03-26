@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {render} from '@testing-library/react';
-import getEdgeStyleIcon from '../getEdgeStyleIcon';
+import {describe, it, expect} from 'vitest';
 import {EdgeStyleTypes} from '../../models/steps';
+import getEdgeStyleIcon from '../getEdgeStyleIcon';
 
 describe('getEdgeStyleIcon', () => {
   it('should return BezierEdgeIcon for Bezier style', () => {

@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import {ResourceTypes, type Resource} from '@/features/flows/models/resources';
+import {describe, it, expect, vi} from 'vitest';
 import ResourcePropertyFactory from '../ResourcePropertyFactory';
+import {ResourceTypes, type Resource} from '@/features/flows/models/resources';
 
 // Mock child factories
 vi.mock('../ElementPropertyFactory', () => ({

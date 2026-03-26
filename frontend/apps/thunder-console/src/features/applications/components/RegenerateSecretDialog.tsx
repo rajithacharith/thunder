@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {useState, useEffect, type JSX} from 'react';
-import {Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Alert} from '@wso2/oxygen-ui';
-import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger';
+import {Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Alert} from '@wso2/oxygen-ui';
+import {useState, type JSX} from 'react';
+import {useTranslation} from 'react-i18next';
 import useRegenerateClientSecret from '../api/useRegenerateClientSecret';
 
 /**
@@ -68,13 +68,6 @@ export default function RegenerateSecretDialog({
   const logger = useLogger('RegenerateSecretDialog');
   const [error, setError] = useState<string | null>(null);
   const regenerateClientSecret = useRegenerateClientSecret();
-
-  // Reset error state when dialog is opened
-  useEffect(() => {
-    if (open) {
-      setError(null);
-    }
-  }, [open]);
 
   const handleCancel = (): void => {
     setError(null);

@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {useState, useEffect, type ReactNode, type ChangeEvent} from 'react';
-import {useTranslation} from 'react-i18next';
 import {Divider, FormHelperText, FormLabel, Stack, TextField} from '@wso2/oxygen-ui';
+import {useState, type ReactNode, type ChangeEvent} from 'react';
+import {useTranslation} from 'react-i18next';
 import type {CommonResourcePropertiesPropsInterface} from '@/features/flows/components/resource-property-panel/ResourceProperties';
 import type {Element} from '@/features/flows/models/elements';
 
@@ -49,11 +49,13 @@ function ButtonExtendedProperties({resource, onChange}: ButtonExtendedProperties
   });
 
   // Sync local state when resource changes (e.g., switching to a different button)
-  useEffect(() => {
+  const [prevResource, setPrevResource] = useState(resource);
+  if (resource !== prevResource) {
+    setPrevResource(resource);
     const element = resource as Element & {startIcon?: string; endIcon?: string};
     setStartIconValue(element?.startIcon ?? '');
     setEndIconValue(element?.endIcon ?? '');
-  }, [resource]);
+  }
 
   // Handle startIcon change - update local state immediately, propagate via onChange
   const handleStartIconChange = (value: string): void => {

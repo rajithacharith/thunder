@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import userEvent from '@testing-library/user-event';
 import {render, screen, waitFor} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import userEvent from '@testing-library/user-event';
 import ClientSecretSuccessDialog from '../ClientSecretSuccessDialog';
 
 // Mock translations

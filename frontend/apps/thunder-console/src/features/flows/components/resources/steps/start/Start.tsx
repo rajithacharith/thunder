@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import type {ReactElement} from 'react';
-import {Handle, Position} from '@xyflow/react';
-import {StaticStepTypes} from '@/features/flows/models/steps';
-import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
 import {Fab} from '@wso2/oxygen-ui';
+import {Handle, Position} from '@xyflow/react';
+import type {ReactElement} from 'react';
 import type {CommonStepFactoryPropsInterface} from '../CommonStepFactory';
+import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
+import {StaticStepTypes} from '@/features/flows/models/steps';
 import './Start.scss';
 
 /**

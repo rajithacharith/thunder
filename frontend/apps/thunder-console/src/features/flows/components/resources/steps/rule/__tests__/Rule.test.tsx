@@ -18,10 +18,10 @@
 
 /* eslint-disable react/require-default-props */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import Rule from '../Rule';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {CommonStepFactoryPropsInterface} from '../../CommonStepFactory';
+import Rule from '../Rule';
 
 // Mock i18next
 const translations: Record<string, string> = {

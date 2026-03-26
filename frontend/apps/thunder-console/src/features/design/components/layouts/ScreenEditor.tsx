@@ -16,13 +16,13 @@
  * under the License.
  */
 
+import {Box, Stack, Typography} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Box, Stack, Typography} from '@wso2/oxygen-ui';
+import SlotEditor from './SlotEditor';
 import ConfigCard from '../common/ConfigCard';
 import SelectRow from '../common/SelectRow';
 import SliderRow from '../common/SliderRow';
-import SlotEditor from './SlotEditor';
 
 export interface ScreenEditorProps {
   screenDraft: Record<string, unknown>;

@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
 import {Google, GitHub} from '@wso2/oxygen-ui-icons-react';
+import type {JSX} from 'react';
 
 /**
  * TODO: Move this to a shared place: i.e thunder-shared-integrations

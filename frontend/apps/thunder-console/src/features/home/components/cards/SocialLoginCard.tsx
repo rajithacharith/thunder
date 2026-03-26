@@ -17,8 +17,8 @@
  */
 
 import {Layers} from '@wso2/oxygen-ui-icons-react';
-import {useTranslation} from 'react-i18next';
 import type {JSX} from 'react';
+import {useTranslation} from 'react-i18next';
 import HomeNextStepCard from './HomeNextStepCard';
 
 export default function SocialLoginCard(): JSX.Element {

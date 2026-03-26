@@ -16,14 +16,8 @@
  * under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
-
-import type {JSX} from 'react';
-import {useState} from 'react';
+import {AcceptInvite, useAsgardeo, type EmbeddedFlowComponent} from '@asgardeo/react';
+import {useConfig} from '@thunder/shared-contexts';
 import {
   Box,
   Alert,
@@ -35,10 +29,10 @@ import {
   ColorSchemeImage,
   CircularProgress,
 } from '@wso2/oxygen-ui';
-import {AcceptInvite, useAsgardeo, type EmbeddedFlowComponent} from '@asgardeo/react';
-import {useNavigate} from 'react-router';
+import type {JSX} from 'react';
+import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useConfig} from '@thunder/shared-contexts';
+import {useNavigate} from 'react-router';
 import ROUTES from '../../constants/routes';
 import FlowComponentRenderer from '../flow/FlowComponentRenderer';
 
@@ -65,7 +59,9 @@ export default function AcceptInviteBox(): JSX.Element {
 
   const handleGoToSignIn = () => {
     const result = navigate(ROUTES.AUTH.SIGN_IN);
-    if (result instanceof Promise) result.catch(() => {});
+    if (result instanceof Promise) {
+      result.catch(() => null);
+    }
   };
 
   return (
@@ -107,7 +103,7 @@ export default function AcceptInviteBox(): JSX.Element {
             isComplete,
             isValidatingToken,
             isTokenInvalid,
-          }: any) => {
+          }) => {
             // Validating token
             if (isValidatingToken) {
               return (
@@ -170,7 +166,7 @@ export default function AcceptInviteBox(): JSX.Element {
                         resolve={resolveFlowTemplateLiterals}
                         onInputChange={handleInputChange}
                         onSubmit={(action, inputs) => {
-                          handleSubmit(action, inputs).catch(() => {});
+                          void handleSubmit(action, inputs);
                         }}
                       />
                     ))}

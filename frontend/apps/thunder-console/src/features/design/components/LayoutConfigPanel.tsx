@@ -16,10 +16,10 @@
  * under the License.
  */
 
+import {useGetLayout, useUpdateLayout} from '@thunder/shared-design';
+import {Box, CircularProgress, Typography} from '@wso2/oxygen-ui';
 import {useCallback, useEffect, useMemo, useRef, type JSX, type RefObject} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Box, CircularProgress, Typography} from '@wso2/oxygen-ui';
-import {useGetLayout, useUpdateLayout} from '@thunder/shared-design';
 import ScreenEditor from './layouts/ScreenEditor';
 
 interface LayoutConfigPanelProps {
@@ -51,7 +51,7 @@ export default function LayoutConfigPanel({
   onScreenChange,
   screenDraft,
   onScreenDraftChange,
-  onDirtyChange = () => {},
+  onDirtyChange = () => null,
   saveHandlerRef = undefined,
 }: LayoutConfigPanelProps): JSX.Element {
   const {t} = useTranslation('design');

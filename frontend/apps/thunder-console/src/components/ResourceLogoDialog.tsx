@@ -16,8 +16,6 @@
  * under the License.
  */
 
-import {useState, useCallback, useEffect, type JSX} from 'react';
-import {useTranslation} from 'react-i18next';
 import {
   Dialog,
   DialogTitle,
@@ -33,6 +31,8 @@ import {
   Divider,
 } from '@wso2/oxygen-ui';
 import {X} from '@wso2/oxygen-ui-icons-react';
+import {useState, useCallback, type JSX} from 'react';
+import {useTranslation} from 'react-i18next';
 import EmojiPicker from './EmojiPicker/EmojiPicker';
 
 const EMOJI_SCHEME = 'emoji:';
@@ -80,10 +80,17 @@ export default function ResourceLogoDialog({
   onSelect,
 }: ResourceLogoDialogProps): JSX.Element {
   const {t} = useTranslation('elements');
-  const [pendingEmoji, setPendingEmoji] = useState<string>('');
-  const [pendingUrl, setPendingUrl] = useState<string>('');
+  const [pendingEmoji, setPendingEmoji] = useState<string>(() => {
+    if (!open || isUrl(value)) return '';
+    return value.startsWith(EMOJI_SCHEME) ? value.slice(EMOJI_SCHEME.length) : value;
+  });
+  const [pendingUrl, setPendingUrl] = useState<string>(() => (open && isUrl(value) ? value : ''));
+  const [prevOpen, setPrevOpen] = useState<boolean>(open);
+  const [prevValue, setPrevValue] = useState<string>(value);
 
-  useEffect((): void => {
+  if (prevOpen !== open || (open && prevValue !== value)) {
+    setPrevOpen(open);
+    setPrevValue(value);
     if (open) {
       if (isUrl(value)) {
         setPendingUrl(value);
@@ -94,7 +101,7 @@ export default function ResourceLogoDialog({
         setPendingUrl('');
       }
     }
-  }, [open, value]);
+  }
 
   const handleEmojiChange = useCallback((char: string): void => {
     setPendingEmoji(char);

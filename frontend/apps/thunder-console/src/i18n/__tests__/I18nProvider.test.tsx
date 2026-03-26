@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, cleanup} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import I18nProvider from '../I18nProvider';
 import {invalidateI18nCache} from '../invalidate-i18n-cache';
 
@@ -291,7 +291,7 @@ describe('I18nProvider', () => {
     expect(mockInvalidateQueries).not.toHaveBeenCalled();
   });
 
-  it('should handle invalidateQueries rejection gracefully', async () => {
+  it('should handle invalidateQueries rejection gracefully', () => {
     mockInvalidateQueries.mockRejectedValueOnce(new Error('Query invalidation failed'));
 
     render(

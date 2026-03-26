@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {renderHook} from '@testing-library/react';
-import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
 import type {Node} from '@xyflow/react';
-import useStaticContentField from '../useStaticContentField';
+import type {ReactNode} from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {ElementTypes} from '../../models/elements';
 import FlowEventTypes from '../../models/extension';
 import {StepTypes, ExecutionTypes} from '../../models/steps';
-import {ElementTypes} from '../../models/elements';
+import useStaticContentField from '../useStaticContentField';
 
 // Use vi.hoisted to define mocks that need to be referenced in vi.mock
 const {mockGetNode, mockUpdateNodeData, mockRegisterAsync, mockRegisterSync, mockUnregister} = vi.hoisted(() => ({

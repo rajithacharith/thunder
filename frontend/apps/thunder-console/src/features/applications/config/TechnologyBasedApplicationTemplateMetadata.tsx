@@ -16,10 +16,10 @@
  * under the License.
  */
 
+import NextJSTemplate from '../data/application-templates/technology-based/nextjs.json';
+import ReactTemplate from '../data/application-templates/technology-based/react.json';
 import type {ApplicationTemplate, ApplicationTemplateMetadata} from '../models/application-templates';
 import {TechnologyApplicationTemplate} from '../models/application-templates';
-import ReactTemplate from '../data/application-templates/technology-based/react.json';
-import NextJSTemplate from '../data/application-templates/technology-based/nextjs.json';
 
 const TechnologyBasedApplicationTemplateMetadata: ApplicationTemplateMetadata<TechnologyApplicationTemplate>[] = [
   {

@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
-import type {Group} from '../models/group';
 import GroupQueryKeys from '../constants/group-query-keys';
+import type {Group} from '../models/group';
 
 /**
  * Custom React hook to fetch a single group by ID.

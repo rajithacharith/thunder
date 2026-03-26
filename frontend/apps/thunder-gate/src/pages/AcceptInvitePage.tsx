@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
 import {Stack} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
 import AcceptInviteBox from '../components/AcceptInvite/AcceptInviteBox';
 
 /**

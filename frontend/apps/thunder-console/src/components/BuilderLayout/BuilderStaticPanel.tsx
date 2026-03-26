@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {memo, type ReactElement, type ReactNode} from 'react';
 import {Box, Drawer, Typography} from '@wso2/oxygen-ui';
+import {memo, type ReactElement, type ReactNode} from 'react';
 
 /**
  * Props interface of {@link BuilderStaticPanel}

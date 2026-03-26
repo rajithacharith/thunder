@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {Autocomplete, Box, Chip, FormControl, FormLabel, Stack, TextField, Typography, useTheme} from '@wso2/oxygen-ui';
 import {buildLocaleOptions} from '@thunder/i18n';
 import type {CountryOption, LocaleOption} from '@thunder/i18n';
+import {Autocomplete, Box, Chip, FormControl, FormLabel, Stack, TextField, Typography, useTheme} from '@wso2/oxygen-ui';
+import {Lightbulb} from '@wso2/oxygen-ui-icons-react';
 import {useEffect, useMemo, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Lightbulb} from '@wso2/oxygen-ui-icons-react';
 
 /**
  * Props for the {@link SelectLanguage} component.
@@ -136,9 +136,7 @@ export default function SelectLanguage({
               </Box>
             );
           }}
-          renderInput={(params) => (
-            <TextField {...params} placeholder={t('language.create.language.placeholder')} autoFocus />
-          )}
+          renderInput={(params) => <TextField {...params} placeholder={t('language.create.language.placeholder')} />}
         />
       </FormControl>
 

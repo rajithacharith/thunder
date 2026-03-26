@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import type {ReactNode} from 'react';
-import type {Element as FlowElement} from '@/features/flows/models/elements';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import StackAdapter, {type StackElement} from '../StackAdapter';
+import type {Element as FlowElement} from '@/features/flows/models/elements';
 
 const mockUpdateNodeData = vi.fn();
 

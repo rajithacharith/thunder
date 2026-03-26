@@ -16,16 +16,16 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
+import type {ReactNode} from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
-import {EdgeStyleTypes} from '../../../models/steps';
+import type {Base} from '../../../models/base';
 import {PreviewScreenType} from '../../../models/custom-text-preference';
 import {ElementTypes} from '../../../models/elements';
 import {ResourceTypes} from '../../../models/resources';
-import type {Base} from '../../../models/base';
+import {EdgeStyleTypes} from '../../../models/steps';
 
 // Import after mocks
 import ResourcePropertyPanel from '../ResourcePropertyPanel';
@@ -354,7 +354,7 @@ describe('ResourcePropertyPanel', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle deleteElements rejection gracefully', async () => {
+    it('should handle deleteElements rejection gracefully', () => {
       mockDeleteElements.mockRejectedValueOnce(new Error('Delete failed'));
 
       const stepResource: Base = {

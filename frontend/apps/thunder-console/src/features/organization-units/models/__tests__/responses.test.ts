@@ -17,8 +17,8 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import type {OrganizationUnitListResponse} from '../responses';
 import type {OrganizationUnit} from '../organization-unit';
+import type {OrganizationUnitListResponse} from '../responses';
 
 describe('Response Models', () => {
   describe('OrganizationUnitListResponse', () => {

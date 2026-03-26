@@ -17,9 +17,9 @@
  */
 
 import {Box, Button, Card, Chip, Stack, Typography} from '@wso2/oxygen-ui';
-import {useNavigate} from 'react-router';
-import {useTranslation} from 'react-i18next';
 import type {JSX, ReactNode} from 'react';
+import {useTranslation} from 'react-i18next';
+import {useNavigate} from 'react-router';
 
 export type FeatureStatus = 'new' | 'coming_soon';
 

@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import type {ReactNode} from 'react';
-import ValidationErrorBoundary from '../ValidationErrorBoundary';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {ValidationContext, type ValidationContextProps} from '../../../context/ValidationContext';
-import type {Resource} from '../../../models/resources';
 import Notification, {NotificationType} from '../../../models/notification';
+import type {Resource} from '../../../models/resources';
+import ValidationErrorBoundary from '../ValidationErrorBoundary';
 
 // Mock the SCSS file
 vi.mock('../ValidationErrorBoundary.scss', () => ({}));

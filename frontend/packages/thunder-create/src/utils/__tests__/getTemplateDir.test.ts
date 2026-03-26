@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {existsSync, statSync} from 'fs';
 import {join, dirname} from 'path';
 import {fileURLToPath} from 'url';
+import {describe, it, expect} from 'vitest';
 import getTemplateDir from '../getTemplateDir';
 
 describe('getTemplateDir', () => {
@@ -74,13 +74,10 @@ describe('getTemplateDir', () => {
   it('should return a path that could contain template files', () => {
     const templateDir = getTemplateDir();
 
-    // The directory should either exist or be a plausible template directory path
-    if (existsSync(templateDir)) {
-      // If it exists, verify it's a directory
-      expect(statSync(templateDir).isDirectory()).toBe(true);
-    } else {
-      // If it doesn't exist, it should still be a valid path format
-      expect(templateDir).toMatch(/[/\\]templates$/);
-    }
+    // The directory should either exist as a directory, or be a plausible template directory path
+    const dirExists = existsSync(templateDir);
+    const isValidPath = dirExists ? statSync(templateDir).isDirectory() : /[/\\]templates$/.test(templateDir);
+
+    expect(isValidPath).toBe(true);
   });
 });

@@ -17,8 +17,8 @@
  */
 
 import type {EmbeddedFlowComponent} from '@asgardeo/react';
-import type {IdentityProvider} from '@/features/integrations/models/identity-provider';
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
+import type {IdentityProvider} from '@/features/integrations/models/identity-provider';
 import {IdentityProviderTypes} from '@/features/integrations/models/identity-provider';
 
 interface PreviewMeta {

@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import End from '../End';
+import {describe, it, expect, vi} from 'vitest';
 import type {CommonStepFactoryPropsInterface} from '../../CommonStepFactory';
+import End from '../End';
 
 // Mock @xyflow/react
 vi.mock('@xyflow/react', () => ({

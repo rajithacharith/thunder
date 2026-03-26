@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {type CreateFlowRequest, type FlowNode, type FlowPrompt} from '../models/responses';
 import {FlowType, FlowNodeType} from '../models/flows';
+import {type CreateFlowRequest, type FlowNode, type FlowPrompt} from '../models/responses';
 
 /**
  * Options for generating a flow graph

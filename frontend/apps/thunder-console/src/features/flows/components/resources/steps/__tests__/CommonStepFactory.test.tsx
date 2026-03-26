@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
-import CommonStepFactory from '../CommonStepFactory';
-import {StepTypes, StaticStepTypes, type Step} from '../../../../models/steps';
-import type {Resources} from '../../../../models/resources';
+import type {ReactNode} from 'react';
+import {describe, it, expect, vi} from 'vitest';
 import type {Element} from '../../../../models/elements';
+import type {Resources} from '../../../../models/resources';
+import {StepTypes, StaticStepTypes, type Step} from '../../../../models/steps';
+import CommonStepFactory from '../CommonStepFactory';
 
 // Mock step components
 vi.mock('../view/View', () => ({

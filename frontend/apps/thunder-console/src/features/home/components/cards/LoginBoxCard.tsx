@@ -19,8 +19,8 @@
 import {Box, Stack} from '@wso2/oxygen-ui';
 import {Palette} from '@wso2/oxygen-ui-icons-react';
 import {motion} from 'framer-motion';
-import {useTranslation} from 'react-i18next';
 import type {JSX} from 'react';
+import {useTranslation} from 'react-i18next';
 import HomeNextStepCard from './HomeNextStepCard';
 
 const SWATCH_COLORS = ['#FF6B00', '#6366F1', '#0EA5E9', '#10B981'];

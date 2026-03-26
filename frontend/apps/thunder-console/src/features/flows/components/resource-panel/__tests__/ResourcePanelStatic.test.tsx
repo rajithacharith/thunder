@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import ResourcePanelStatic from '../ResourcePanelStatic';
+import {describe, it, expect, vi} from 'vitest';
 import type {Resource} from '../../../models/resources';
+import ResourcePanelStatic from '../ResourcePanelStatic';
 
 // Mock useColorScheme
 vi.mock('@wso2/oxygen-ui', async () => {

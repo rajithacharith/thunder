@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import TechnologyBasedApplicationTemplateMetadata from '../config/TechnologyBasedApplicationTemplateMetadata';
-import PlatformBasedApplicationTemplateMetadata from '../config/PlatformBasedApplicationTemplateMetadata';
 import normalizeTemplateId from './normalizeTemplateId';
+import PlatformBasedApplicationTemplateMetadata from '../config/PlatformBasedApplicationTemplateMetadata';
+import TechnologyBasedApplicationTemplateMetadata from '../config/TechnologyBasedApplicationTemplateMetadata';
 import type {ApplicationTemplate} from '../models/application-templates';
 
 /**

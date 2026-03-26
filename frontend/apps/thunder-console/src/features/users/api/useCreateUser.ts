@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
+import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useConfig, useToast} from '@thunder/shared-contexts';
 import {useTranslation} from 'react-i18next';
-import type {ApiUser, CreateUserRequest} from '../types/users';
 import UserQueryKeys from '../constants/user-query-keys';
+import type {ApiUser, CreateUserRequest} from '../types/users';
 
 /**
  * Custom hook to create a new user.

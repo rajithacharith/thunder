@@ -17,29 +17,29 @@
  */
 
 import {Alert, Box, Snackbar, Stack} from '@wso2/oxygen-ui';
-import {useParams} from 'react-router';
 import type {Edge, Node} from '@xyflow/react';
 import {useEdgesState, useNodesState, useUpdateNodeInternals} from '@xyflow/react';
 import {useCallback, useEffect, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
+import {useParams} from 'react-router';
 import '@xyflow/react/dist/style.css';
-import FlowBuilder from '@/features/flows/components/FlowBuilder';
-import {StepTypes} from '@/features/flows/models/steps';
-import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
-import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
-import useGetFlowById from '@/features/flows/api/useGetFlowById';
-import GradientBorderButton from '@/features/applications/components/GradientBorderButton';
 import useGetLoginFlowBuilderResources from '../api/useGetLoginFlowBuilderResources';
+import LoginFlowConstants from '../constants/LoginFlowConstants';
 import useEdgeGeneration from '../hooks/useEdgeGeneration';
-import useFlowNaming from '../hooks/useFlowNaming';
-import useSnackbarNotifications from '../hooks/useSnackbarNotifications';
-import useFlowInitialization from '../hooks/useFlowInitialization';
-import useNodeTypes from '../hooks/useNodeTypes';
-import useFlowSave from '../hooks/useFlowSave';
 import useElementAddition from '../hooks/useElementAddition';
+import useFlowInitialization from '../hooks/useFlowInitialization';
+import useFlowNaming from '../hooks/useFlowNaming';
+import useFlowSave from '../hooks/useFlowSave';
+import useNodeTypes from '../hooks/useNodeTypes';
+import useSnackbarNotifications from '../hooks/useSnackbarNotifications';
 import useTemplateAndWidgetLoading from '../hooks/useTemplateAndWidgetLoading';
 import {mutateComponents} from '../utils/componentMutations';
-import LoginFlowConstants from '../constants/LoginFlowConstants';
+import GradientBorderButton from '@/features/applications/components/GradientBorderButton';
+import useGetFlowById from '@/features/flows/api/useGetFlowById';
+import FlowBuilder from '@/features/flows/components/FlowBuilder';
+import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
+import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
+import {StepTypes} from '@/features/flows/models/steps';
 
 function LoginFlowBuilder() {
   const {flowId} = useParams<{flowId: string}>();

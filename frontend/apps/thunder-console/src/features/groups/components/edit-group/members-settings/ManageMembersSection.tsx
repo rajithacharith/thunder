@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import {useState, useMemo, type JSX, type ReactNode} from 'react';
-import getInitials from '@/utils/getInitials';
 import {Box, Avatar, DataGrid, IconButton} from '@wso2/oxygen-ui';
 import {Trash2} from '@wso2/oxygen-ui-icons-react';
+import {useState, useMemo, type JSX, type ReactNode} from 'react';
 import {useTranslation} from 'react-i18next';
-import SettingsCard from '@/components/SettingsCard';
 import useDataGridLocaleText from '../../../../../hooks/useDataGridLocaleText';
 import useGetGroupMembers from '../../../api/useGetGroupMembers';
 import type {Member} from '../../../models/group';
+import SettingsCard from '@/components/SettingsCard';
+import getInitials from '@/utils/getInitials';
 
 interface ManageMembersSectionProps {
   groupId: string;

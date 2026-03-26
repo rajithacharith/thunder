@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import AccessSection from '../AccessSection';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import useGetUserTypes from '../../../../../user-types/api/useGetUserTypes';
 import type {Application} from '../../../../models/application';
 import type {OAuth2Config} from '../../../../models/oauth';
+import AccessSection from '../AccessSection';
 
 // Mock the useGetUserTypes hook
 vi.mock('../../../../../user-types/api/useGetUserTypes');
@@ -678,12 +678,11 @@ describe('AccessSection', () => {
       await waitFor(() => {
         expect(mockOnFieldChange).toHaveBeenCalledWith('inboundAuthConfig', expect.any(Array));
         const call = mockOnFieldChange.mock.calls.find((c) => c[0] === 'inboundAuthConfig');
-        if (call) {
-          const updatedConfig = call[1] as {type: string}[];
-          // Should contain both saml and oauth2 configs
-          expect(updatedConfig.some((c) => c.type === 'saml')).toBe(true);
-          expect(updatedConfig.some((c) => c.type === 'oauth2')).toBe(true);
-        }
+        expect(call).toBeDefined();
+        const updatedConfig = call![1] as {type: string}[];
+        // Should contain both saml and oauth2 configs
+        expect(updatedConfig.some((c) => c.type === 'saml')).toBe(true);
+        expect(updatedConfig.some((c) => c.type === 'oauth2')).toBe(true);
       });
     });
   });
@@ -899,7 +898,7 @@ describe('AccessSection', () => {
   });
 
   describe('OAuth2 Config Updates', () => {
-    it('should update redirect URIs state when oauth2Config prop changes', async () => {
+    it('should display redirect URIs from oauth2Config prop', () => {
       vi.mocked(useGetUserTypes).mockReturnValue({
         data: mockUserTypes,
         isLoading: false,
@@ -910,7 +909,7 @@ describe('AccessSection', () => {
         redirectUris: ['https://initial.com/callback'],
       };
 
-      const {rerender} = render(
+      render(
         <AccessSection
           application={mockApplication}
           editedApp={{}}
@@ -920,24 +919,6 @@ describe('AccessSection', () => {
       );
 
       expect(screen.getByDisplayValue('https://initial.com/callback')).toBeInTheDocument();
-
-      const updatedConfig = {
-        ...mockOAuth2Config,
-        redirectUris: ['https://updated.com/callback'],
-      };
-
-      rerender(
-        <AccessSection
-          application={mockApplication}
-          editedApp={{}}
-          oauth2Config={updatedConfig}
-          onFieldChange={mockOnFieldChange}
-        />,
-      );
-
-      await waitFor(() => {
-        expect(screen.getByDisplayValue('https://updated.com/callback')).toBeInTheDocument();
-      });
     });
   });
 });

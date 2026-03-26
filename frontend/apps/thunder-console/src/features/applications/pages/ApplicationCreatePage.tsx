@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {useLogger} from '@thunder/logger/react';
 import {
   Box,
   Stack,
@@ -29,38 +30,37 @@ import {
 } from '@wso2/oxygen-ui';
 import {X, ChevronRight} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
-import {useNavigate} from 'react-router';
-import {useState, useCallback, useMemo, useEffect} from 'react';
+import {useState, useCallback, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useLogger} from '@thunder/logger/react';
-import GatePreview from '@/components/GatePreview/GatePreview';
-import buildPreviewMock from '@/components/GatePreview/mocks/buildPreviewMock';
+import {useNavigate} from 'react-router';
+import useCreateFlow from '../../flows/api/useCreateFlow';
+import type {BasicFlowDefinition} from '../../flows/models/responses';
+import generateFlowGraph from '../../flows/utils/generateFlowGraph';
+import useIdentityProviders from '../../integrations/api/useIdentityProviders';
+import {AuthenticatorTypes} from '../../integrations/models/authenticators';
+import {IdentityProviderTypes} from '../../integrations/models/identity-provider';
+import useGetUserTypes from '../../user-types/api/useGetUserTypes';
+import useCreateApplication from '../api/useCreateApplication';
 import ConfigureSignInOptions from '../components/create-application/configure-signin-options/ConfigureSignInOptions';
 import ConfigureDesign from '../components/create-application/ConfigureDesign';
-import ConfigureName from '../components/create-application/ConfigureName';
-import ConfigureExperience from '../components/create-application/ConfigureExperience';
-import ConfigureStack from '../components/create-application/ConfigureStack';
 import ConfigureDetails from '../components/create-application/ConfigureDetails';
+import ConfigureExperience from '../components/create-application/ConfigureExperience';
+import ConfigureName from '../components/create-application/ConfigureName';
+import ConfigureStack from '../components/create-application/ConfigureStack';
 import ShowClientSecret from '../components/create-application/ShowClientSecret';
-import useCreateApplication from '../api/useCreateApplication';
-import type {CreateApplicationRequest} from '../models/requests';
-import type {OAuth2Config} from '../models/oauth';
-import type {Application} from '../models/application';
+import TemplateConstants from '../constants/template-constants';
 import useApplicationCreate from '../contexts/ApplicationCreate/useApplicationCreate';
+import type {Application} from '../models/application';
 import {
   ApplicationCreateFlowConfiguration,
   ApplicationCreateFlowSignInApproach,
   ApplicationCreateFlowStep,
 } from '../models/application-create-flow';
-import TemplateConstants from '../constants/template-constants';
+import type {OAuth2Config} from '../models/oauth';
+import type {CreateApplicationRequest} from '../models/requests';
 import getConfigurationTypeFromTemplate from '../utils/getConfigurationTypeFromTemplate';
-import useGetUserTypes from '../../user-types/api/useGetUserTypes';
-import useCreateFlow from '../../flows/api/useCreateFlow';
-import generateFlowGraph from '../../flows/utils/generateFlowGraph';
-import useIdentityProviders from '../../integrations/api/useIdentityProviders';
-import {IdentityProviderTypes} from '../../integrations/models/identity-provider';
-import {AuthenticatorTypes} from '../../integrations/models/authenticators';
-import type {BasicFlowDefinition} from '../../flows/models/responses';
+import GatePreview from '@/components/GatePreview/GatePreview';
+import buildPreviewMock from '@/components/GatePreview/mocks/buildPreviewMock';
 
 export default function ApplicationCreatePage(): JSX.Element {
   const {t} = useTranslation();
@@ -129,21 +129,11 @@ export default function ApplicationCreatePage(): JSX.Element {
 
   const [oauthConfig, setOAuthConfig] = useState<OAuth2Config | null>(null);
 
-  /**
-   * Update OAuth config with callback URL from configure step.
-   */
-  useEffect(() => {
-    if (callbackUrlFromConfig) {
-      setOAuthConfig((prevConfig) =>
-        prevConfig
-          ? {
-              ...prevConfig,
-              redirectUris: [callbackUrlFromConfig],
-            }
-          : null,
-      );
-    }
-  }, [callbackUrlFromConfig]);
+  const effectiveOauthConfig = useMemo(
+    () =>
+      oauthConfig && callbackUrlFromConfig ? {...oauthConfig, redirectUris: [callbackUrlFromConfig]} : oauthConfig,
+    [oauthConfig, callbackUrlFromConfig],
+  );
 
   const handleClose = (): void => {
     (async () => {
@@ -210,7 +200,7 @@ export default function ApplicationCreatePage(): JSX.Element {
         inboundAuthConfig: [
           {
             type: 'oauth2',
-            config: oauthConfig,
+            config: effectiveOauthConfig,
           },
         ],
       }),

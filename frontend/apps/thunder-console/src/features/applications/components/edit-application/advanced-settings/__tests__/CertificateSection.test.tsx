@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import CertificateSection from '../CertificateSection';
-import type {Application} from '../../../../models/application';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import CertificateTypes from '../../../../constants/certificate-types';
+import type {Application} from '../../../../models/application';
+import CertificateSection from '../CertificateSection';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({

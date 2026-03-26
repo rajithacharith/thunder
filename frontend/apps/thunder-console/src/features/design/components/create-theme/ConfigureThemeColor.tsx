@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {type ChangeEvent, type JSX} from 'react';
 import {Box, FormLabel, Stack, Tooltip, Typography} from '@wso2/oxygen-ui';
+import {type ChangeEvent, type JSX} from 'react';
 
 const PRESET_COLORS = [
   {label: 'Indigo', value: '#4f46e5'},

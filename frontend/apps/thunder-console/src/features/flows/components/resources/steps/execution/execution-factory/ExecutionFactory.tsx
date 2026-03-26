@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import type {ReactElement} from 'react';
-import {ExecutionTypes} from '@/features/flows/models/steps';
 import {Box, Typography, useColorScheme} from '@wso2/oxygen-ui';
+import type {ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
-import resolveStaticResourcePath from '@/features/flows/utils/resolveStaticResourcePath';
-import type {ExecutionMinimalPropsInterface} from '../ExecutionMinimal';
-import GoogleExecution from './GoogleExecution';
 import GithubExecution from './GithubExecution';
+import GoogleExecution from './GoogleExecution';
 import SmsOtpExecution from './SmsOtpExecution';
+import type {ExecutionMinimalPropsInterface} from '../ExecutionMinimal';
+import {ExecutionTypes} from '@/features/flows/models/steps';
+import resolveStaticResourcePath from '@/features/flows/utils/resolveStaticResourcePath';
 
 /**
  * Props interface of {@link CommonStepFactory}

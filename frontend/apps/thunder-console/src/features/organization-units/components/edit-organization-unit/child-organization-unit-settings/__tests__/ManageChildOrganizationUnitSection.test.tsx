@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
-import ManageChildOrganizationUnitSection from '../ManageChildOrganizationUnitSection';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {OrganizationUnit} from '../../../../models/organization-unit';
+import ManageChildOrganizationUnitSection from '../ManageChildOrganizationUnitSection';
 
 // Mock the useGetChildOrganizationUnits hook
 const mockUseGetChildOrganizationUnits = vi.fn();

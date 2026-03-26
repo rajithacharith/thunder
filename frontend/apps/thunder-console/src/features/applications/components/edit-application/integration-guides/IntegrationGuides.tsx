@@ -18,9 +18,9 @@
 
 import {Box, Stack, Typography} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
+import IntegrationGuide from './IntegrationGuide';
 import type {Application} from '../../../models/application';
 import type {OAuth2Config} from '../../../models/oauth';
-import IntegrationGuide from './IntegrationGuide';
 import getIntegrationGuidesForTemplate from '../../../utils/getIntegrationGuidesForTemplate';
 
 /**

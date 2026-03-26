@@ -18,10 +18,10 @@
 
 import {Box, Stack, Typography, Divider} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
-import type {ScopeClaims} from '../../../models/oauth';
-import SettingsCard from '../../../../../components/SettingsCard';
-import ScopeSelector from './ScopeSelector';
 import ScopeMapper from './ScopeMapper';
+import ScopeSelector from './ScopeSelector';
+import SettingsCard from '../../../../../components/SettingsCard';
+import type {ScopeClaims} from '../../../models/oauth';
 
 /**
  * Props for the {@link ScopeSection} component.

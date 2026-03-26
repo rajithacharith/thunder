@@ -16,16 +16,16 @@
  * under the License.
  */
 
-import type React from 'react';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
 import type {Edge, Node} from '@xyflow/react';
+import type React from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import useTemplateAndWidgetLoading from '../useTemplateAndWidgetLoading';
 import {BlockTypes, ElementCategories, ElementTypes, type Element} from '@/features/flows/models/elements';
+import {ResourceTypes, type Resource, type Resources} from '@/features/flows/models/resources';
 import {StepTypes, type Step} from '@/features/flows/models/steps';
 import {TemplateTypes, type Template} from '@/features/flows/models/templates';
 import type {Widget} from '@/features/flows/models/widget';
-import {ResourceTypes, type Resource, type Resources} from '@/features/flows/models/resources';
-import useTemplateAndWidgetLoading from '../useTemplateAndWidgetLoading';
 
 // Mock external dependencies
 vi.mock('lodash-es/cloneDeep', () => ({

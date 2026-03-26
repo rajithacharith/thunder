@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import type {ReactElement} from 'react';
 import type {CommonElementPropertyFactoryPropsInterface} from '@/features/flows/components/resource-property-panel/CommonElementPropertyFactory';
 import CommonElementPropertyFactory from '@/features/flows/components/resource-property-panel/CommonElementPropertyFactory';
-import type {ReactElement} from 'react';
 
 /**
  * Props interface of {@link ElementPropertyFactory}

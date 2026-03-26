@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import OrganizationUnitDeleteDialog from '../OrganizationUnitDeleteDialog';
 
 // Mock the delete hook — controllable per test

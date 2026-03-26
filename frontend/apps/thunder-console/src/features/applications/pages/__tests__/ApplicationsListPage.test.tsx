@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import userEvent from '@testing-library/user-event';
 import {fireEvent, render, screen} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import userEvent from '@testing-library/user-event';
 import ApplicationsListPage from '../ApplicationsListPage';
 
 // Mock the ApplicationsList component
@@ -114,7 +114,7 @@ describe('ApplicationsListPage', () => {
 
     it('should handle navigation errors gracefully', async () => {
       const user = userEvent.setup();
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => null);
 
       mockNavigate.mockRejectedValueOnce(new Error('Navigation failed'));
 
@@ -313,7 +313,7 @@ describe('ApplicationsListPage', () => {
       expect(mockNavigate).toHaveBeenCalledTimes(3);
     });
 
-    it('should handle long search queries', async () => {
+    it('should handle long search queries', () => {
       renderWithProviders();
 
       const searchInput = screen.getByPlaceholderText('Search applications...');
@@ -325,7 +325,7 @@ describe('ApplicationsListPage', () => {
       expect(searchInput).toHaveValue(longQuery);
     });
 
-    it('should maintain state after multiple interactions', async () => {
+    it('should maintain state after multiple interactions', () => {
       renderWithProviders();
 
       // Type in search using fireEvent for cross-platform reliability

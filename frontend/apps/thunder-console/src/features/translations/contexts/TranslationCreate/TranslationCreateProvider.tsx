@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import type {CountryOption, LocaleOption} from '@thunder/i18n';
 import type {PropsWithChildren} from 'react';
 import {useState, useMemo, useCallback} from 'react';
-import type {CountryOption, LocaleOption} from '@thunder/i18n';
 import TranslationCreateContext, {type TranslationCreateContextType} from './TranslationCreateContext';
 import {TranslationCreateFlowStep} from '../../models/translation-create-flow';
 

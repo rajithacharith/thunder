@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
-import type {NotificationSenderListResponse} from '../models/notification-sender';
 import NotificationSenderQueryKeys from '../constants/query-keys';
+import type {NotificationSenderListResponse} from '../models/notification-sender';
 
 /**
  * Custom hook to fetch message notification senders from the Thunder server.

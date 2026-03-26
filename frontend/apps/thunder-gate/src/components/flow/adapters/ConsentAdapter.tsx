@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
-import {Box, Divider, FormControlLabel, Switch, Typography} from '@wso2/oxygen-ui';
 import {Consent, ConsentCheckboxList, type ConsentPurpose, type ConsentRenderProps} from '@asgardeo/react';
+import {Box, Divider, FormControlLabel, Switch, Typography} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
 
 /**
  * Props for the ConsentAdapter component.

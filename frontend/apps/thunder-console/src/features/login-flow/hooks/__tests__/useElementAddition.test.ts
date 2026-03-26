@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import type React from 'react';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
 import type {Node} from '@xyflow/react';
 import type {UpdateNodeInternals} from '@xyflow/system';
+import type React from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import useElementAddition from '../useElementAddition';
 import {BlockTypes, ElementCategories, ElementTypes, type Element} from '@/features/flows/models/elements';
 import {StepTypes} from '@/features/flows/models/steps';
-import useElementAddition from '../useElementAddition';
 
 // Mock useGenerateStepElement hook
 const mockGenerateStepElement = vi.fn((element: Element) => ({

@@ -15,14 +15,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import {useMemo, type ReactElement} from 'react';
-import {Trans, useTranslation} from 'react-i18next';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import DOMPurify from 'dompurify';
 import parse from 'html-react-parser';
+import {useMemo, type ReactElement} from 'react';
+import {Trans, useTranslation} from 'react-i18next';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import './RichTextAdapter.scss';
 
 // Register DOMPurify hook once at module level to handle anchor tags.

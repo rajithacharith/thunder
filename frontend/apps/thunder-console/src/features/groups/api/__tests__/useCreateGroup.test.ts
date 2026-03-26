@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor} from '@testing-library/react';
 import {renderHook} from '@thunder/test-utils';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import type {Group} from '../../models/group';
 import type {CreateGroupRequest} from '../../models/requests';
 

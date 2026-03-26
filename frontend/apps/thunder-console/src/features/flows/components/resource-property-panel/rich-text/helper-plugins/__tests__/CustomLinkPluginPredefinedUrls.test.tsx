@@ -23,9 +23,9 @@
  * by mocking scenarios where the URL detection functions are exercised.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import type React from 'react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 
 // Use vi.hoisted for mock functions
 const {
@@ -258,7 +258,7 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
   });
 
   describe('handleUrlTypeChange function behavior', () => {
-    it('should set URL to https:// when switching to CUSTOM type', async () => {
+    it('should set URL to https:// when switching to CUSTOM type', () => {
       // This tests the else branch behavior when newType is CUSTOM
       // Since PREDEFINED_URLS is empty, all URLs are treated as CUSTOM type
       render(<CustomLinkPlugin />);
@@ -274,7 +274,7 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
   });
 
   describe('getCurrentUrl function behavior', () => {
-    it('should return linkUrl when selectedUrlType is CUSTOM', async () => {
+    it('should return linkUrl when selectedUrlType is CUSTOM', () => {
       // This tests the else branch that returns linkUrl
       render(<CustomLinkPlugin />);
 
@@ -285,14 +285,14 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
       const inputs = document.querySelectorAll('input');
       const urlInput = inputs[1];
       if (urlInput) {
-        await act(async () => {
+         act(() => {
           fireEvent.change(urlInput, {target: {value: 'https://test-current-url.com'}});
         });
         expect(urlInput).toHaveValue('https://test-current-url.com');
 
         // Click apply to submit the link (getCurrentUrl returns linkUrl for CUSTOM type)
         const applyButton = screen.getByText('flows:core.elements.richText.linkEditor.apply');
-        await act(async () => {
+        act(() => {
           fireEvent.click(applyButton);
         });
       }
@@ -303,7 +303,7 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
   });
 
   describe('Select component rendering', () => {
-    it('should not render Select when PREDEFINED_URLS is empty', async () => {
+    it('should not render Select when PREDEFINED_URLS is empty', () => {
       // This tests the conditional rendering when PREDEFINED_URLS is empty
       render(<CustomLinkPlugin />);
 
@@ -373,7 +373,7 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
   });
 
   describe('Edge cases for URL type selection', () => {
-    it('should handle rapid URL type changes', async () => {
+    it('should handle rapid URL type changes', () => {
       render(<CustomLinkPlugin />);
 
       // The component renders the editing interface directly
@@ -383,20 +383,20 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
       const inputs = document.querySelectorAll('input');
       const urlInput = inputs[1];
       if (urlInput) {
-        await act(async () => {
-          fireEvent.change(urlInput, {target: {value: 'https://url1.com'}});
+        act(() => {
+          fireEvent.change(urlInput, { target: { value: 'https://url1.com' } });
         });
-        await act(async () => {
-          fireEvent.change(urlInput, {target: {value: 'https://url2.com'}});
+        act(() => {
+          fireEvent.change(urlInput, { target: { value: 'https://url2.com' } });
         });
-        await act(async () => {
-          fireEvent.change(urlInput, {target: {value: 'https://final-url.com'}});
+        act(() => {
+          fireEvent.change(urlInput, { target: { value: 'https://final-url.com' } });
         });
         expect(urlInput).toHaveValue('https://final-url.com');
       }
     });
 
-    it('should handle save with valid URL after initially empty', async () => {
+    it('should handle save with valid URL after initially empty', () => {
       render(<CustomLinkPlugin />);
 
       // The component renders the editing interface directly
@@ -407,18 +407,18 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
       const urlInput = inputs[1];
       if (urlInput) {
         // Clear the field first
-        await act(async () => {
-          fireEvent.change(urlInput, {target: {value: ''}});
+        act(() => {
+          fireEvent.change(urlInput, { target: { value: '' } });
         });
         // Then add a valid URL
-        await act(async () => {
-          fireEvent.change(urlInput, {target: {value: 'https://valid-url.com'}});
+        act(() => {
+          fireEvent.change(urlInput, { target: { value: 'https://valid-url.com' } });
         });
         expect(urlInput).toHaveValue('https://valid-url.com');
 
         // Apply the link
         const applyButton = screen.getByText('flows:core.elements.richText.linkEditor.apply');
-        await act(async () => {
+        act(() => {
           fireEvent.click(applyButton);
         });
       }

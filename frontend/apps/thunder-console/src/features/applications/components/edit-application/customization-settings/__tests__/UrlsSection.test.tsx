@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import UrlsSection from '../UrlsSection';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {Application} from '../../../../models/application';
+import UrlsSection from '../UrlsSection';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({

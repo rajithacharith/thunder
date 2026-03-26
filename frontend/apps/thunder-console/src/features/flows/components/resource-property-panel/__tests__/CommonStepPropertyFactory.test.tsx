@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import CommonStepPropertyFactory from '../CommonStepPropertyFactory';
-import type {Resource} from '../../../models/resources';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {ElementTypes} from '../../../models/elements';
+import type {Resource} from '../../../models/resources';
+import CommonStepPropertyFactory from '../CommonStepPropertyFactory';
 
 // Mock RichTextWithTranslation component
 vi.mock('../rich-text/RichTextWithTranslation', () => ({

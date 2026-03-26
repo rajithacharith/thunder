@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import {render, screen, waitFor, within, userEvent} from '@thunder/test-utils';
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, within, userEvent} from '@thunder/test-utils';
-import ViewUserPage from '../ViewUserPage';
 import type {ApiUser, ApiUserSchema, UserSchemaListResponse} from '../../types/users';
+import ViewUserPage from '../ViewUserPage';
 
 const {mockLoggerError} = vi.hoisted(() => ({
   mockLoggerError: vi.fn(),
@@ -55,7 +55,7 @@ vi.mock('react-router', async () => {
         href={to}
         onClick={(e) => {
           e.preventDefault();
-          Promise.resolve(mockNavigate(to)).catch(() => {});
+          Promise.resolve(mockNavigate(to)).catch(() => null);
         }}
       >
         {children}
@@ -841,7 +841,7 @@ describe('ViewUserPage', () => {
 
     it('disables buttons during submission', async () => {
       const user = userEvent.setup();
-      const neverResolvingUpdate = vi.fn().mockImplementation(() => new Promise(() => {})); // Never resolves
+      const neverResolvingUpdate = vi.fn().mockImplementation(() => new Promise(() => null)); // Never resolves
       mockUseUpdateUser.mockReturnValue({
         ...defaultUpdateReturn,
         mutateAsync: neverResolvingUpdate,

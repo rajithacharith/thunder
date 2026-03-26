@@ -19,10 +19,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import TextInputAdapter from '../TextInputAdapter';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {FlowFieldProps} from '../../../../models/flow';
+import TextInputAdapter from '../TextInputAdapter';
 
 vi.mock('@wso2/oxygen-ui', () => ({
   FormControl: ({children, required}: any) => <div data-required={required}>{children}</div>,

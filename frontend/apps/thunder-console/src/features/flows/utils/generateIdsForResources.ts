@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {JsonValue} from '../models/json';
 import generateResourceId from './generateResourceId';
+import type {JsonValue} from '../models/json';
 
 const replaceIds = (obj: JsonValue, matcher: string): JsonValue => {
   if (Array.isArray(obj)) {

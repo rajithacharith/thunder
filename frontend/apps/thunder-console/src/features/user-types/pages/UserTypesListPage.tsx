@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {useNavigate} from 'react-router';
+import {useLogger} from '@thunder/logger/react';
 import {Button, PageContent, PageTitle} from '@wso2/oxygen-ui';
 import {Plus} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
-import {useLogger} from '@thunder/logger/react';
+import {useNavigate} from 'react-router';
 import UserTypesList from '../components/UserTypesList';
 
 export default function UserTypesListPage() {

@@ -16,13 +16,13 @@
  * under the License.
  */
 
+import {I18N_KEY_PATTERN, META_KEY_PATTERN, isMetaTemplatePattern} from '@thunder/utils';
+import {Box, Card, CardContent, CardHeader, IconButton, Popover, Tab, Tabs} from '@wso2/oxygen-ui';
+import {XIcon} from '@wso2/oxygen-ui-icons-react';
 import lowerCase from 'lodash-es/lowerCase';
 import startCase from 'lodash-es/startCase';
 import {type ReactElement, type SyntheticEvent, useCallback, useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Box, Card, CardContent, CardHeader, IconButton, Popover, Tab, Tabs} from '@wso2/oxygen-ui';
-import {XIcon} from '@wso2/oxygen-ui-icons-react';
-import {I18N_KEY_PATTERN, META_KEY_PATTERN, isMetaTemplatePattern} from '@thunder/utils';
 import {I18nConfigurationCardContent} from './I18nConfigurationCard';
 import {MetaConfigurationCardContent} from './MetaConfigurationCard';
 

@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, expect, it} from 'vitest';
 import type {Node} from '@xyflow/react';
-import autoAssignConnections from '../autoAssignConnections';
+import {describe, expect, it} from 'vitest';
 import type {ExecutorConnectionInterface} from '../../models/metadata';
 import {ExecutionTypes, StepTypes} from '../../models/steps';
+import autoAssignConnections from '../autoAssignConnections';
 
 describe('autoAssignConnections', () => {
   const createNode = (

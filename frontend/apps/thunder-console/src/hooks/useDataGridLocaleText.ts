@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {useMemo} from 'react';
 import type {DataGrid} from '@wso2/oxygen-ui';
+import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 
 /**
@@ -174,10 +174,7 @@ export default function useDataGridLocaleText(): Partial<DataGrid.GridLocaleText
       columnHeaderSortIconLabel: t('common:dataTable.columnHeaderSortIconLabel'),
 
       // Rows selected footer text
-      footerRowSelected: getTranslationFunction<(count: number) => string>(
-        commonBundle,
-        'dataTable.footerRowSelected',
-      ),
+      footerRowSelected: getTranslationFunction<(count: number) => string>(commonBundle, 'dataTable.footerRowSelected'),
 
       // Total row amount footer text
       footerTotalRows: t('common:dataTable.footerTotalRows'),

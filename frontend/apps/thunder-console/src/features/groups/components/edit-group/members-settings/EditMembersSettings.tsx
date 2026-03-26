@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import {useState, useCallback, type JSX} from 'react';
 import {Stack, Button, Alert} from '@wso2/oxygen-ui';
 import {Plus} from '@wso2/oxygen-ui-icons-react';
+import {useState, useCallback, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import type {Group, Member} from '../../../models/group';
+import AddMemberDialog from './AddMemberDialog';
+import ManageMembersSection from './ManageMembersSection';
 import useAddGroupMembers from '../../../api/useAddGroupMembers';
 import useRemoveGroupMembers from '../../../api/useRemoveGroupMembers';
-import ManageMembersSection from './ManageMembersSection';
-import AddMemberDialog from './AddMemberDialog';
+import type {Group, Member} from '../../../models/group';
 
 interface EditMembersSettingsProps {
   group: Group;

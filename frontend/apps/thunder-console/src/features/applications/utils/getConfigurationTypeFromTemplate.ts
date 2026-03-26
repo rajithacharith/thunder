@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import type {ApplicationTemplate} from '../models/application-templates';
 import {
   ApplicationCreateFlowConfiguration,
 } from '../models/application-create-flow';
+import type {ApplicationTemplate} from '../models/application-templates';
 
 /**
  * Detect configuration type from template.

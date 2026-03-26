@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import ResourcePanelDraggable from '../ResourcePanelDraggable';
+import {describe, it, expect, vi} from 'vitest';
 import type {Resource} from '../../../models/resources';
+import ResourcePanelDraggable from '../ResourcePanelDraggable';
 
 // Mock Draggable component
 vi.mock('../../dnd/Draggable', () => ({

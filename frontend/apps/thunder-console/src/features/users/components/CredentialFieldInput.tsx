@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {useState} from 'react';
 import {IconButton, InputAdornment, TextField} from '@wso2/oxygen-ui';
 import {Eye, EyeClosed} from '@wso2/oxygen-ui-icons-react';
+import {useState} from 'react';
 
 interface CredentialFieldInputProps {
   id: string;

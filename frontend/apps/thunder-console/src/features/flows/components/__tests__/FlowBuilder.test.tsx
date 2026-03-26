@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi} from 'vitest';
+import FlowBuilder from '../FlowBuilder';
 import type {Element} from '@/features/flows/models/elements';
 import type {Step} from '@/features/flows/models/steps';
-import FlowBuilder from '../FlowBuilder';
 
 // Mock @xyflow/react
 vi.mock('@xyflow/react', () => ({

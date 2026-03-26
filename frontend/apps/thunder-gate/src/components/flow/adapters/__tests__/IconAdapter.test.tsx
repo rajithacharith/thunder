@@ -21,10 +21,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import IconAdapter from '../IconAdapter';
+import {describe, it, expect, vi} from 'vitest';
 import type {FlowComponent} from '../../../../models/flow';
+import IconAdapter from '../IconAdapter';
 
 vi.mock('@wso2/oxygen-ui', () => ({
   Box: ({children}: any) => <div data-testid="icon-box">{children}</div>,

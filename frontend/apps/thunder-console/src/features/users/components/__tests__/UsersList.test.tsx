@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
-import React from 'react';
 import type * as OxygenUI from '@wso2/oxygen-ui';
 import {DataGrid} from '@wso2/oxygen-ui';
-import UsersList from '../UsersList';
+import React from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {UserListResponse} from '../../types/users';
+import UsersList from '../UsersList';
 
 const {mockLoggerError} = vi.hoisted(() => ({
   mockLoggerError: vi.fn(),

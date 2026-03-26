@@ -17,23 +17,23 @@
  */
 
 import {Box, Menu, MenuItem, type BoxProps} from '@wso2/oxygen-ui';
-import {useRef, useState, useMemo, memo, type MouseEvent, type ReactElement, type ReactNode} from 'react';
-import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
-import FlowEventTypes from '@/features/flows/models/extension';
-import classNames from 'classnames';
 import {GripVertical, PencilLineIcon, PlusIcon, Trash2Icon} from '@wso2/oxygen-ui-icons-react';
-import useComponentDelete from '@/features/flows/hooks/useComponentDelete';
-import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
-import Notification, {NotificationType} from '@/features/flows/models/notification';
 import {useNodeId} from '@xyflow/react';
-import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
-import type {Resource} from '@/features/flows/models/resources';
-import {BlockTypes} from '@/features/flows/models/elements';
-import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
+import classNames from 'classnames';
+import {useRef, useState, useMemo, memo, type MouseEvent, type ReactElement, type ReactNode} from 'react';
 import Handle from '../../../dnd/Handle';
 import Sortable from '../../../dnd/Sortable';
 import type {SortableProps} from '../../../dnd/Sortable';
 import ValidationErrorBoundary from '../../../validation-panel/ValidationErrorBoundary';
+import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
+import useComponentDelete from '@/features/flows/hooks/useComponentDelete';
+import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
+import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
+import {BlockTypes} from '@/features/flows/models/elements';
+import FlowEventTypes from '@/features/flows/models/extension';
+import Notification, {NotificationType} from '@/features/flows/models/notification';
+import type {Resource} from '@/features/flows/models/resources';
+import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
 
 /**
  * Props interface of {@link ReorderableElement}

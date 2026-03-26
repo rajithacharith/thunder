@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
-import OrganizationUnitTreePicker from '../OrganizationUnitTreePicker';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {OrganizationUnit} from '../../models/organization-unit';
 import type {OrganizationUnitListResponse} from '../../models/responses';
+import OrganizationUnitTreePicker from '../OrganizationUnitTreePicker';
 
 // Mock logger — stable reference to avoid useCallback churn
 const stableLogger = {error: vi.fn(), info: vi.fn(), debug: vi.fn()};

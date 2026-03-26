@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
-import TranslationCreatePage from '../TranslationCreatePage';
-import {TranslationCreateFlowStep} from '../../models/translation-create-flow';
+import {render, screen} from '@thunder/test-utils';
+import {describe, expect, it, vi, beforeEach} from 'vitest';
 import type {TranslationCreateContextType} from '../../contexts/TranslationCreate/TranslationCreateContext';
+import {TranslationCreateFlowStep} from '../../models/translation-create-flow';
+import TranslationCreatePage from '../TranslationCreatePage';
 
 vi.mock('react-i18next', async () => {
   const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');

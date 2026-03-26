@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {Alert, PageContent, Snackbar, useColorScheme} from '@wso2/oxygen-ui';
 import {useGetTranslations, useUpdateTranslation, NamespaceConstants, I18nDefaultConstants} from '@thunder/i18n';
+import {useLogger} from '@thunder/logger/react';
+import {Alert, PageContent, Snackbar, useColorScheme} from '@wso2/oxygen-ui';
 import {useCallback, useEffect, useMemo, useState, type JSX, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate, useParams} from 'react-router';
-import {useLogger} from '@thunder/logger/react';
 import NamespaceSelector from '../components/edit-translation/NamespaceSelector';
 import TranslationEditorCard from '../components/edit-translation/TranslationEditorCard';
 import TranslationEditorHeader from '../components/edit-translation/TranslationEditorHeader';

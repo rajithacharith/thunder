@@ -17,9 +17,9 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import resolveStepMetadata from '../resolveStepMetadata';
 import type {Resources} from '../../models/resources';
 import type {Step} from '../../models/steps';
+import resolveStepMetadata from '../resolveStepMetadata';
 
 const createMockStep = (overrides: Partial<Step> = {}): Step =>
   ({

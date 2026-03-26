@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {useEffect, useRef, useState, type JSX} from 'react';
 import {Box, Stack, TextField, Typography} from '@wso2/oxygen-ui';
+import {useRef, useState, type JSX} from 'react';
 
 export interface ColorEditRowProps {
   label: string;
@@ -34,14 +34,12 @@ export interface ColorEditRowProps {
  */
 export default function ColorEditRow({label, value, onChange, compact = false}: ColorEditRowProps): JSX.Element {
   const pickerRef = useRef<HTMLInputElement>(null);
-  const isFocused = useRef(false);
+  const [isFocused, setIsFocused] = useState(false);
   const [editValue, setEditValue] = useState(value);
   const isHex = /^#[0-9a-fA-F]{6}$/i.test(value);
 
-  // Sync when external value changes, but not while the text input is focused
-  useEffect(() => {
-    if (!isFocused.current) setEditValue(value);
-  }, [value]);
+  // While not focused, always reflect the external value
+  const displayValue = isFocused ? editValue : value;
 
   const handleText = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const v = e.target.value;
@@ -131,14 +129,14 @@ export default function ColorEditRow({label, value, onChange, compact = false}: 
         />
 
         <TextField
-          value={editValue}
+          value={displayValue}
           onChange={handleText}
           onFocus={() => {
-            isFocused.current = true;
+            setEditValue(value);
+            setIsFocused(true);
           }}
           onBlur={() => {
-            isFocused.current = false;
-            setEditValue(value);
+            setIsFocused(false);
           }}
           spellCheck={false}
           size="small"

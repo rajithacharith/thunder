@@ -19,10 +19,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import ImageAdapter from '../ImageAdapter';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {FlowComponent} from '../../../../models/flow';
+import ImageAdapter from '../ImageAdapter';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 const mockIsEmojiUri = vi.fn((_uri: string): boolean => false);

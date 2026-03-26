@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
+import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import type {ApiUserSchema} from '../types/users';
 import UserQueryKeys from '../constants/user-query-keys';
+import type {ApiUserSchema} from '../types/users';
 
 /**
  * Custom hook to fetch a single user schema by ID.

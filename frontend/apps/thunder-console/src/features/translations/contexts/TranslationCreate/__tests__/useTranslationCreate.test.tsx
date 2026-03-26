@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, expect, it, vi, beforeEach} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
 import React from 'react';
-import useTranslationCreate from '../useTranslationCreate';
+import {describe, expect, it, vi, beforeEach} from 'vitest';
 import TranslationCreateProvider from '../TranslationCreateProvider';
+import useTranslationCreate from '../useTranslationCreate';
 
 // Test component to consume the hook successfully
 function TestConsumer() {
@@ -58,7 +58,7 @@ describe('useTranslationCreate', () => {
   });
 
   it('throws error when used outside TranslationCreateProvider', () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => null);
 
     expect(() => {
       render(<TestConsumerWithoutProvider />);
@@ -68,7 +68,7 @@ describe('useTranslationCreate', () => {
   });
 
   it('throws descriptive error message when used outside provider', () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => null);
 
     let thrownError: Error | null = null;
 

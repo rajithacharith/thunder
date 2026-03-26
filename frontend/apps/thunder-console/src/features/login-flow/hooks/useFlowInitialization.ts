@@ -16,21 +16,21 @@
  * under the License.
  */
 
-import {useCallback, useLayoutEffect, useMemo, useRef, useEffect} from 'react';
 import type {Edge, Node} from '@xyflow/react';
 import type {UpdateNodeInternals} from '@xyflow/system';
 import cloneDeep from 'lodash-es/cloneDeep';
+import {useCallback, useLayoutEffect, useMemo, useRef, useEffect} from 'react';
+import LoginFlowConstants from '../constants/LoginFlowConstants';
+import type {Element} from '@/features/flows/models/elements';
+import type {Resources} from '@/features/flows/models/resources';
+import type {FlowDefinitionResponse, FlowNode} from '@/features/flows/models/responses';
 import {StaticStepTypes, StepTypes, type Step} from '@/features/flows/models/steps';
 import {type Template, TemplateTypes, type TemplateReplacer} from '@/features/flows/models/templates';
-import type {Element} from '@/features/flows/models/elements';
+import {transformFlowToCanvas} from '@/features/flows/utils/flowToCanvasTransformer';
 import generateIdsForResources from '@/features/flows/utils/generateIdsForResources';
 import resolveComponentMetadata from '@/features/flows/utils/resolveComponentMetadata';
 import resolveStepMetadata from '@/features/flows/utils/resolveStepMetadata';
 import updateTemplatePlaceholderReferences from '@/features/flows/utils/updateTemplatePlaceholderReferences';
-import {transformFlowToCanvas} from '@/features/flows/utils/flowToCanvasTransformer';
-import type {Resources} from '@/features/flows/models/resources';
-import type {FlowDefinitionResponse, FlowNode} from '@/features/flows/models/responses';
-import LoginFlowConstants from '../constants/LoginFlowConstants';
 
 /**
  * Props for the useFlowInitialization hook.
@@ -314,9 +314,9 @@ const useFlowInitialization = (props: UseFlowInitializationProps): UseFlowInitia
       );
 
       // Update all node internals after setting nodes
-      queueMicrotask(() => {
+      setTimeout(() => {
         updateAllNodeInternals(processedNodes);
-      });
+      }, 0);
     } else if (!flowId) {
       // No flowId provided - load the default basic auth flow template
       updateFlowWithSequence(initialNodes);

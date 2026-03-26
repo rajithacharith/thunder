@@ -20,10 +20,10 @@ import type {EdgeTypes, NodeTypes} from '@xyflow/react';
 import type {Context, Dispatch, FunctionComponent, ReactNode, SetStateAction} from 'react';
 import {createContext} from 'react';
 import {type Base} from '../models/base';
+import {PreviewScreenType} from '../models/custom-text-preference';
 import type {FlowCompletionConfigsInterface} from '../models/flows';
 import type {MetadataInterface, Claim} from '../models/metadata';
 import type {Resource} from '../models/resources';
-import {PreviewScreenType} from '../models/custom-text-preference';
 import {type EdgeStyleTypes, EdgeStyleTypes as EdgeStyleTypesEnum} from '../models/steps';
 
 /**
@@ -262,29 +262,29 @@ const FlowBuilderCoreContext: Context<FlowBuilderCoreContextProps> = createConte
   lastInteractedResource: {} as Base,
   lastInteractedStepId: '',
   metadata: undefined,
-  onResourceDropOnCanvas: () => {},
+  onResourceDropOnCanvas: () => null,
   primaryI18nScreen: PreviewScreenType.LOGIN,
   resourcePropertiesPanelHeading: null,
   selectedAttributes: {},
-  setFlowCompletionConfigs: () => {},
-  setFlowEdgeTypes: () => {},
-  setFlowNodeTypes: () => {},
-  setIsOpenResourcePropertiesPanel: () => {},
-  registerCloseValidationPanel: () => {},
-  setIsResourcePanelOpen: () => {},
-  setIsVersionHistoryPanelOpen: () => {},
-  setLanguage: () => {},
-  setLastInteractedResource: () => {},
-  setLastInteractedStepId: () => {},
-  setResourcePropertiesPanelHeading: () => {},
-  setSelectedAttributes: () => {},
+  setFlowCompletionConfigs: () => null,
+  setFlowEdgeTypes: () => null,
+  setFlowNodeTypes: () => null,
+  setIsOpenResourcePropertiesPanel: () => null,
+  registerCloseValidationPanel: () => null,
+  setIsResourcePanelOpen: () => null,
+  setIsVersionHistoryPanelOpen: () => null,
+  setLanguage: () => null,
+  setLastInteractedResource: () => null,
+  setLastInteractedStepId: () => null,
+  setResourcePropertiesPanelHeading: () => null,
+  setSelectedAttributes: () => null,
   supportedLocales: {},
   addResourceToFlow: undefined,
   publishFlow: () => Promise.resolve(false),
   isVerboseMode: false,
-  setIsVerboseMode: () => {},
+  setIsVerboseMode: () => null,
   edgeStyle: EdgeStyleTypesEnum.SmoothStep,
-  setEdgeStyle: () => {},
+  setEdgeStyle: () => null,
 });
 
 FlowBuilderCoreContext.displayName = 'FlowBuilderCoreContext';

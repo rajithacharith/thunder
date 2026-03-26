@@ -99,7 +99,8 @@ describe('toAsgardeoTheme', () => {
 
     it('omits primary.dark when not present in source palette', () => {
       const theme = makeTheme();
-      const {dark: omit, ...primaryWithoutDark} = lightPalette.primary;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const {dark: _, ...primaryWithoutDark} = lightPalette.primary;
       (
         theme as unknown as {colorSchemes: {light: {palette: {primary: typeof primaryWithoutDark}}}}
       ).colorSchemes.light.palette.primary = primaryWithoutDark;

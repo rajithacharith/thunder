@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {StaticStepTypes} from '@/features/flows/models/steps';
 import type {ReactElement} from 'react';
 import Start from './start/Start';
+import {StaticStepTypes} from '@/features/flows/models/steps';
 
 /**
  * Props interface of {@link CommonStaticStepFactory}

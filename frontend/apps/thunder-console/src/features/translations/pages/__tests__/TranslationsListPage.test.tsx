@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
 import {useGetLanguages} from '@thunder/i18n';
+import {render, screen, fireEvent} from '@thunder/test-utils';
+import {describe, expect, it, vi, beforeEach} from 'vitest';
 import TranslationsListPage from '../TranslationsListPage';
 
 vi.mock('react-i18next', async () => {
@@ -197,7 +197,7 @@ describe('TranslationsListPage', () => {
   });
 
   describe('Actions menu', () => {
-    it('opens the actions menu when the menu button for a row is clicked', async () => {
+    it('opens the actions menu when the menu button for a row is clicked', () => {
       render(<TranslationsListPage />);
 
       const editButtons = screen.getAllByRole('button', {name: /common:actions.edit/i});

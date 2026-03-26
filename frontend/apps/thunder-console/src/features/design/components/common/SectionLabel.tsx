@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
 import {Typography} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
 
 export interface SectionLabelProps {
   children: string;

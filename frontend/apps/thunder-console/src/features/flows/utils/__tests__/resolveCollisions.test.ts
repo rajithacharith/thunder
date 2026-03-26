@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, expect, it} from 'vitest';
 import type {Node} from '@xyflow/react';
+import {describe, expect, it} from 'vitest';
 import {resolveCollisions} from '../resolveCollisions';
 
 describe('resolveCollisions', () => {

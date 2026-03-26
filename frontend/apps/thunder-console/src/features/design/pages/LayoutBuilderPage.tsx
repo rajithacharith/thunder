@@ -16,15 +16,15 @@
  * under the License.
  */
 
+import {Box, Button, Drawer, IconButton, Tooltip, Typography, useColorScheme} from '@wso2/oxygen-ui';
+import {ArrowLeft, Layers, Save} from '@wso2/oxygen-ui-icons-react';
 import {useRef, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import {Box, Button, Drawer, IconButton, Tooltip, Typography, useColorScheme} from '@wso2/oxygen-ui';
-import {ArrowLeft, Layers, Save} from '@wso2/oxygen-ui-icons-react';
-import LayoutPreviewPanel from '../components/LayoutPreviewPanel';
 import LayoutConfigPanel from '../components/LayoutConfigPanel';
-import ScreenListItem from '../components/layouts/ScreenListItem';
+import LayoutPreviewPanel from '../components/LayoutPreviewPanel';
 import AddScreenRow from '../components/layouts/AddScreenRow';
+import ScreenListItem from '../components/layouts/ScreenListItem';
 import DesignUIConstants from '../constants/design-ui-constants';
 import useLayoutBuilder from '../contexts/LayoutBuilder/useLayoutBuilder';
 
@@ -47,7 +47,7 @@ export default function LayoutBuilderPage(): JSX.Element {
     setIsDirty,
   } = useLayoutBuilder();
 
-  const saveHandlerRef = useRef<() => void>(() => {});
+  const saveHandlerRef = useRef<() => void>(() => null);
 
   const allScreens = getAllScreens();
   const screenNames = Object.keys(allScreens);

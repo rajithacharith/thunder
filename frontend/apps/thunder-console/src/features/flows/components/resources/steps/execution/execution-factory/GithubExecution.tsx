@@ -16,13 +16,13 @@
  * under the License.
  */
 
+import {Box, Typography} from '@wso2/oxygen-ui';
 import {useMemo, type ReactElement} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
-import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
-import {Box, Typography} from '@wso2/oxygen-ui';
-import resolveStaticResourcePath from '@/features/flows/utils/resolveStaticResourcePath';
-import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import type {ExecutionMinimalPropsInterface} from '../ExecutionMinimal';
+import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
+import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
+import resolveStaticResourcePath from '@/features/flows/utils/resolveStaticResourcePath';
 
 /**
  * Props interface of {@link GithubExecution}.
@@ -34,7 +34,7 @@ function GithubExecution({resource}: GithubExecutionPropsInterface): ReactElemen
 
   const generalMessage: ReactElement = useMemo(
     () => (
-      <Trans i18nKey="flows:core.validation.fields.executor.general" values={{id: resource?.id}} components={[<code />]}>
+      <Trans i18nKey="flows:core.validation.fields.executor.general" values={{id: resource?.id}} components={[<code key="0" />]}>
         {'The executor <0>{{id}}</0> is not properly configured.'}
       </Trans>
     ),

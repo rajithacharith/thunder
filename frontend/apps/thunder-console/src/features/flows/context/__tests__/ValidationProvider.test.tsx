@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, act} from '@testing-library/react';
 import {useContext} from 'react';
-import ValidationProvider from '../ValidationProvider';
-import {ValidationContext} from '../ValidationContext';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import Notification, {NotificationType} from '../../models/notification';
+import {ValidationContext} from '../ValidationContext';
+import ValidationProvider from '../ValidationProvider';
 
 // Mock useFlowBuilderCore
 const mockSetIsOpenResourcePropertiesPanel = vi.fn();

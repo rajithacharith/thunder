@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
-import type {Resource} from '@/features/flows/models/resources';
-import {BlockTypes} from '@/features/flows/models/elements';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {ReorderableElement} from '../ReorderableElement';
+import {BlockTypes} from '@/features/flows/models/elements';
+import type {Resource} from '@/features/flows/models/resources';
 
 // Use vi.hoisted to define mocks that need to be referenced in vi.mock
 const {

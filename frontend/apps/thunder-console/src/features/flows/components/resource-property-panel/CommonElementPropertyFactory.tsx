@@ -16,8 +16,7 @@
  * under the License.
  */
 
-import {type ComponentType, type ReactElement, useState, useCallback} from 'react';
-import {useTranslation} from 'react-i18next';
+import {useLogger} from '@thunder/logger/react';
 import {
   Autocomplete,
   type AutocompleteRenderInputParams,
@@ -29,13 +28,14 @@ import {
   TextField,
 } from '@wso2/oxygen-ui';
 import startCase from 'lodash-es/startCase';
-import {useLogger} from '@thunder/logger/react';
-import type {Resource} from '../../models/resources';
-import {ElementTypes} from '../../models/elements';
-import RichTextWithTranslation from './rich-text/RichTextWithTranslation';
+import {type ComponentType, type ReactElement, useState, useCallback} from 'react';
+import {useTranslation} from 'react-i18next';
 import CheckboxPropertyField from './CheckboxPropertyField';
+import RichTextWithTranslation from './rich-text/RichTextWithTranslation';
 import TextPropertyField from './TextPropertyField';
 import FlowBuilderElementConstants from '../../constants/FlowBuilderElementConstants';
+import {ElementTypes} from '../../models/elements';
+import type {Resource} from '../../models/resources';
 
 const TEXT_ALIGN_VALUES = ['left', 'center', 'right', 'justify', 'inherit'] as const;
 

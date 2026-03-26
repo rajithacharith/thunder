@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {useEffect, useRef, type ReactElement} from 'react';
 import {Handle, useNodeId, useUpdateNodeInternals, type HandleProps} from '@xyflow/react';
+import {useEffect, useRef, type ReactElement} from 'react';
 
 /**
  * Props interface of {@link NodeHandle}

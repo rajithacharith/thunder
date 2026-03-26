@@ -16,17 +16,17 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
-import ResourceProperties from '../ResourceProperties';
+import type {ReactNode} from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
-import {EdgeStyleTypes} from '../../../models/steps';
+import type {Base, BaseConfig} from '../../../models/base';
 import {PreviewScreenType} from '../../../models/custom-text-preference';
 import {ElementTypes} from '../../../models/elements';
-import type {Base, BaseConfig} from '../../../models/base';
 import type {Resource} from '../../../models/resources';
+import {EdgeStyleTypes} from '../../../models/steps';
+import ResourceProperties from '../ResourceProperties';
 
 // Use vi.hoisted for mock functions
 const {mockUpdateNodeData} = vi.hoisted(() => ({
@@ -338,7 +338,7 @@ describe('ResourceProperties', () => {
   });
 
   describe('Property Change Handler', () => {
-    it('should trigger onChange callback when property changes', async () => {
+    it('should trigger onChange callback when property changes', () => {
       render(<ResourceProperties />, {wrapper: createWrapper()});
 
       const changeLabelButton = screen.getByText('Change Label');

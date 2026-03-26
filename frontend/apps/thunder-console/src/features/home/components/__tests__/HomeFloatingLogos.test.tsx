@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render} from '@thunder/test-utils';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import HomeFloatingLogos from '../HomeFloatingLogos';
 
 let mockMode: 'light' | 'dark' | 'system' = 'light';

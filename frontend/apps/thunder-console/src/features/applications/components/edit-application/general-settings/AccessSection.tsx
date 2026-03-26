@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {zodResolver} from '@hookform/resolvers/zod';
 import {
   Box,
   Stack,
@@ -31,15 +32,14 @@ import {
   Tooltip,
 } from '@wso2/oxygen-ui';
 import {Trash, Plus} from '@wso2/oxygen-ui-icons-react';
-import {useTranslation} from 'react-i18next';
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
 import {useForm, Controller} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
+import {useTranslation} from 'react-i18next';
 import {z} from 'zod';
+import SettingsCard from '../../../../../components/SettingsCard';
 import useGetUserTypes from '../../../../user-types/api/useGetUserTypes';
 import type {Application} from '../../../models/application';
 import type {OAuth2Config} from '../../../models/oauth';
-import SettingsCard from '../../../../../components/SettingsCard';
 
 /**
  * Props for the {@link AccessSection} component.
@@ -87,7 +87,7 @@ export default function AccessSection({
   const {t} = useTranslation();
   const {data: userTypesData, isLoading: loadingUserTypes} = useGetUserTypes();
 
-  const [redirectUris, setRedirectUris] = useState<string[]>(oauth2Config?.redirectUris ?? []);
+  const [redirectUris, setRedirectUris] = useState<string[]>(() => oauth2Config?.redirectUris ?? []);
   const [uriErrors, setUriErrors] = useState<Record<number, string>>({});
 
   const userTypeOptions = userTypesData?.schemas.map((schema) => schema.name) ?? [];
@@ -108,12 +108,6 @@ export default function AccessSection({
       url: editedApp.url ?? application.url ?? '',
     },
   });
-
-  useEffect(() => {
-    if (oauth2Config?.redirectUris) {
-      setRedirectUris(oauth2Config.redirectUris);
-    }
-  }, [oauth2Config?.redirectUris]);
 
   const validateUri = (uri: string, index: number): boolean => {
     if (!uri || uri.trim() === '') {

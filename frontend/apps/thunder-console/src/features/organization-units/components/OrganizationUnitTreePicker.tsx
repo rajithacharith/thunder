@@ -16,27 +16,27 @@
  * under the License.
  */
 
-import {useState, useCallback, useEffect, useRef, useMemo, type JSX, type SyntheticEvent} from 'react';
-import {Box, Avatar, Typography, CircularProgress, TreeView, useTheme} from '@wso2/oxygen-ui';
-import {Building} from '@wso2/oxygen-ui-icons-react';
-import {useTranslation} from 'react-i18next';
-import {useConfig} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
 import {useQueryClient} from '@tanstack/react-query';
 import {useLogger} from '@thunder/logger/react';
-import useGetOrganizationUnits from '../api/useGetOrganizationUnits';
-import useGetOrganizationUnit from '../api/useGetOrganizationUnit';
-import useGetChildOrganizationUnits from '../api/useGetChildOrganizationUnits';
+import {useConfig} from '@thunder/shared-contexts';
+import {Box, Avatar, Typography, CircularProgress, TreeView, useTheme} from '@wso2/oxygen-ui';
+import {Building} from '@wso2/oxygen-ui-icons-react';
+import {useState, useCallback, useEffect, useRef, useMemo, type JSX, type SyntheticEvent} from 'react';
+import {useTranslation} from 'react-i18next';
 import fetchChildOrganizationUnits from '../api/fetchChildOrganizationUnits';
 import fetchOrganizationUnits from '../api/fetchOrganizationUnits';
-import type {OrganizationUnitTreeItem} from '../models/organization-unit-tree';
-import type {OrganizationUnitListResponse} from '../models/responses';
+import useGetChildOrganizationUnits from '../api/useGetChildOrganizationUnits';
+import useGetOrganizationUnit from '../api/useGetOrganizationUnit';
+import useGetOrganizationUnits from '../api/useGetOrganizationUnits';
 import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
 import OrganizationUnitTreeConstants from '../constants/organization-unit-tree-constants';
-import buildTreeItems from '../utils/buildTreeItems';
-import buildItemMap from '../utils/buildItemMap';
-import updateTreeItemChildren from '../utils/updateTreeItemChildren';
+import type {OrganizationUnitTreeItem} from '../models/organization-unit-tree';
+import type {OrganizationUnitListResponse} from '../models/responses';
 import appendTreeItemChildren from '../utils/appendTreeItemChildren';
+import buildItemMap from '../utils/buildItemMap';
+import buildTreeItems from '../utils/buildTreeItems';
+import updateTreeItemChildren from '../utils/updateTreeItemChildren';
 
 function PickerLoadingIcon(): JSX.Element {
   return <CircularProgress size={16} />;

@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import AppWithDecorators from '../AppWithDecorators';
 
 // Mock HOCs as pass-through so tests focus on composition

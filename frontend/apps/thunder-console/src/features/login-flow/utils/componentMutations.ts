@@ -17,6 +17,7 @@
  */
 
 import cloneDeep from 'lodash-es/cloneDeep';
+import LoginFlowConstants from '../constants/LoginFlowConstants';
 import {
   BlockTypes,
   ButtonTypes,
@@ -25,7 +26,6 @@ import {
   ElementTypes,
   type Element,
 } from '@/features/flows/models/elements';
-import LoginFlowConstants from '../constants/LoginFlowConstants';
 
 const {ExecutorNames} = LoginFlowConstants;
 

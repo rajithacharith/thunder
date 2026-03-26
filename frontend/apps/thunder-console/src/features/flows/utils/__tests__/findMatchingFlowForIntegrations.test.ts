@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import findMatchingFlowForIntegrations from '../findMatchingFlowForIntegrations';
 import type {BasicFlowDefinition} from '../../models/responses';
+import findMatchingFlowForIntegrations from '../findMatchingFlowForIntegrations';
 
 describe('findMatchingFlowForIntegrations', () => {
   const createFlow = (id: string, handle: string, name: string): BasicFlowDefinition => ({

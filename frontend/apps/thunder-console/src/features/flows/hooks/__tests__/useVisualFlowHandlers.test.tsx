@@ -18,16 +18,16 @@
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
-import type {ReactNode} from 'react';
 import type {Connection, Edge, Node} from '@xyflow/react';
-import useVisualFlowHandlers from '../useVisualFlowHandlers';
+import type {ReactNode} from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../context/FlowBuilderCoreContext';
-import {EdgeStyleTypes} from '../../models/steps';
+import type {Base} from '../../models/base';
 import {PreviewScreenType} from '../../models/custom-text-preference';
 import {ElementTypes} from '../../models/elements';
-import type {Base} from '../../models/base';
+import {EdgeStyleTypes} from '../../models/steps';
+import useVisualFlowHandlers from '../useVisualFlowHandlers';
 
 // Mock @xyflow/react
 const mockGetNodes = vi.fn();

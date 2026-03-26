@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
-import useDeleteUser from '../useDeleteUser';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import UserQueryKeys from '../../constants/user-query-keys';
+import useDeleteUser from '../useDeleteUser';
 
 // Mock the dependencies
 vi.mock('@asgardeo/react', () => ({

@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import type {ReactNode} from 'react';
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {screen, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {renderWithProviders} from '@thunder/test-utils';
+import type {ReactNode} from 'react';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import GroupEditPage from '../GroupEditPage';
 
 const mockNavigate = vi.fn();
@@ -36,7 +36,7 @@ vi.mock('react-router', async () => {
         href={to}
         onClick={(e: {preventDefault: () => void}) => {
           e.preventDefault();
-          Promise.resolve(mockNavigate(to)).catch(() => {});
+          Promise.resolve(mockNavigate(to)).catch(() => null);
         }}
       >
         {children}

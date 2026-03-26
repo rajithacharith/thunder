@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {Theme} from './theme';
 import type {LayoutConfig} from './layout';
+import type {Theme} from './theme';
 
 /**
  * Theme item in list responses (theme data may be null in list view)

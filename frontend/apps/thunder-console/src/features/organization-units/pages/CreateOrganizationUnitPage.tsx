@@ -16,8 +16,9 @@
  * under the License.
  */
 
-import {useState, useMemo, useRef, type JSX} from 'react';
-import {useNavigate, useLocation} from 'react-router';
+import {zodResolver} from '@hookform/resolvers/zod';
+import {useLogger} from '@thunder/logger/react';
+import {generateRandomHumanReadableIdentifiers} from '@thunder/utils';
 import {
   Box,
   Stack,
@@ -33,12 +34,11 @@ import {
   useTheme,
 } from '@wso2/oxygen-ui';
 import {X, Lightbulb} from '@wso2/oxygen-ui-icons-react';
-import {useTranslation} from 'react-i18next';
+import {useState, useMemo, useRef, type JSX} from 'react';
 import {useForm, Controller} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
+import {useTranslation} from 'react-i18next';
+import {useNavigate, useLocation} from 'react-router';
 import {z} from 'zod';
-import {useLogger} from '@thunder/logger/react';
-import {generateRandomHumanReadableIdentifiers} from '@thunder/utils';
 import useCreateOrganizationUnit from '../api/useCreateOrganizationUnit';
 import useOrganizationUnit from '../contexts/useOrganizationUnit';
 import type {CreateOrganizationUnitRequest} from '../models/requests';

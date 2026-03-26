@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import {useState, type JSX} from 'react';
 import {
   Box,
   Stack,
@@ -40,6 +39,7 @@ import {
   DialogActions,
 } from '@wso2/oxygen-ui';
 import {Trash2, Plus, Info} from '@wso2/oxygen-ui-icons-react';
+import {useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {SchemaPropertyInput, PropertyType} from '../../../types/user-types';
 import I18nTextInput from '../../create-user-type/I18nTextInput';

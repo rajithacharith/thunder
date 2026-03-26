@@ -16,6 +16,9 @@
  * under the License.
  */
 
+import {RestrictToVerticalAxis} from '@dnd-kit/abstract/modifiers';
+import {useDragDropManager, useDragOperation} from '@dnd-kit/react';
+import {type UseSortableInput, useSortable} from '@dnd-kit/react/sortable';
 import {Box, type CSSProperties} from '@wso2/oxygen-ui';
 import {
   memo,
@@ -26,9 +29,6 @@ import {
   useMemo,
   useSyncExternalStore,
 } from 'react';
-import {type UseSortableInput, useSortable} from '@dnd-kit/react/sortable';
-import {RestrictToVerticalAxis} from '@dnd-kit/abstract/modifiers';
-import {useDragDropManager, useDragOperation} from '@dnd-kit/react';
 
 /**
  * Keyframe animation for drop indicator pulse effect.

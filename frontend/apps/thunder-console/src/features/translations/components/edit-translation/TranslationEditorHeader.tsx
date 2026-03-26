@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import {getDisplayNameForCode, toFlagEmoji} from '@thunder/i18n';
 import {Box, Button, CircularProgress, IconButton, PageTitle, Typography} from '@wso2/oxygen-ui';
 import {ArrowLeft} from '@wso2/oxygen-ui-icons-react';
-import {getDisplayNameForCode, toFlagEmoji} from '@thunder/i18n';
 import {type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 

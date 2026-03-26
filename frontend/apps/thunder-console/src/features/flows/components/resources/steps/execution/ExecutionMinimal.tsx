@@ -16,16 +16,16 @@
  * under the License.
  */
 
-import type {Step, StepData} from '@/features/flows/models/steps';
-import type {ReactElement} from 'react';
-import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
-import {Handle, Position, useNodeId} from '@xyflow/react';
-import {useTranslation} from 'react-i18next';
 import {Box, Card, IconButton, Tooltip, Typography} from '@wso2/oxygen-ui';
 import {CogIcon} from '@wso2/oxygen-ui-icons-react';
+import {Handle, Position, useNodeId} from '@xyflow/react';
 import classNames from 'classnames';
-import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
+import type {ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
 import ExecutionFactory from './execution-factory/ExecutionFactory';
+import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
+import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
+import type {Step, StepData} from '@/features/flows/models/steps';
 import './ExecutionMinimal.scss';
 
 /**
