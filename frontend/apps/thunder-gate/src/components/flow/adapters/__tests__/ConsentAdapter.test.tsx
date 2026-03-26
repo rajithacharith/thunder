@@ -56,12 +56,12 @@ vi.mock('@asgardeo/react', () => ({
 
     const isChecked = (attrName: string): boolean => {
       if (variant === 'ESSENTIAL') return true;
-      const key = `__consent_opt__${purpose.purpose_id}__${attrName}`;
+      const key = `__consent_opt__${purpose.purposeId}__${attrName}`;
       return formValues[key] !== 'false';
     };
 
     const handleChange = (attrName: string, checked: boolean): void => {
-      const key = `__consent_opt__${purpose.purpose_id}__${attrName}`;
+      const key = `__consent_opt__${purpose.purposeId}__${attrName}`;
       onInputChange(key, String(checked));
     };
 
@@ -77,15 +77,15 @@ const consentData = {
       description: 'Profile attributes for personalization',
       essential: ['email', 'mobileNumber'],
       optional: ['givenName', 'lastName'],
-      purpose_id: 'purpose-1',
-      purpose_name: 'Profile',
+      purposeId: 'purpose-1',
+      purposeName: 'Profile',
     },
     {
       description: 'Address details',
       essential: ['country'],
       optional: ['city'],
-      purpose_id: 'purpose-2',
-      purpose_name: 'Address',
+      purposeId: 'purpose-2',
+      purposeName: 'Address',
     },
   ],
 };
