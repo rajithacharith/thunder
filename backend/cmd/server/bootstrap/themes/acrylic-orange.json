@@ -3,7 +3,7 @@
   "displayName": "Acrylic Orange",
   "description": "A vibrant theme with warm orange accents and translucent acrylic surfaces.",
   "theme": {
-    "defaultColorScheme": "light",
+    "defaultColorScheme": "dark",
     "direction": "ltr",
     "shape": {
       "borderRadius": 12

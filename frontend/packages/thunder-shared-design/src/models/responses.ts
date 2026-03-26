@@ -20,14 +20,18 @@ import type {LayoutConfig} from './layout';
 import type {Theme} from './theme';
 
 /**
- * Theme item in list responses (theme data may be null in list view)
+ * Theme item in list responses.
+ * The full theme configuration is not included; only the metadata needed for display.
  */
 export interface ThemeListItem {
   id: string;
   handle: string;
   displayName: string;
   description?: string;
-  theme: Theme | null;
+  defaultColorScheme?: string;
+  primaryColor?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**

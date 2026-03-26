@@ -109,6 +109,84 @@ func (suite *ThemeHandlerTestSuite) TestHandleThemeListRequest_Success() {
 	assert.Len(suite.T(), response.Themes, 2)
 }
 
+// Test HandleThemeListRequest - color fields are populated from theme JSON
+func (suite *ThemeHandlerTestSuite) TestHandleThemeListRequest_ColorFieldsPopulated() {
+	themeList := &ThemeList{
+		TotalResults: 1,
+		StartIndex:   1,
+		Count:        1,
+		Themes: []Theme{
+			{
+				ID:          "theme-1",
+				DisplayName: "Theme 1",
+				Description: "Desc 1",
+				Theme: json.RawMessage(`{
+					"defaultColorScheme": "light",
+					"colorSchemes": {
+						"light": {"palette": {"primary": {"main": "#ff7300"}}}
+					}
+				}`),
+			},
+		},
+		Links: []Link{},
+	}
+
+	mockSvc := &mockThemeService{
+		getThemeListFunc: func(limit, offset int) (*ThemeList, *serviceerror.ServiceError) {
+			return themeList, nil
+		},
+	}
+
+	handler := newThemeMgtHandler(mockSvc)
+	req := httptest.NewRequest(http.MethodGet, "/design/themes", nil)
+	w := httptest.NewRecorder()
+
+	handler.HandleThemeListRequest(w, req)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var response ThemeListResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), response.Themes, 1)
+	assert.Equal(suite.T(), "light", response.Themes[0].DefaultColorScheme)
+	assert.Equal(suite.T(), "#ff7300", response.Themes[0].PrimaryColor)
+}
+
+// Test HandleThemeListRequest - color fields are empty when theme JSON is absent
+func (suite *ThemeHandlerTestSuite) TestHandleThemeListRequest_EmptyColorFieldsWhenNoThemeJSON() {
+	themeList := &ThemeList{
+		TotalResults: 1,
+		StartIndex:   1,
+		Count:        1,
+		Themes: []Theme{
+			{ID: "theme-1", DisplayName: "Theme 1", Description: "Desc 1"},
+		},
+		Links: []Link{},
+	}
+
+	mockSvc := &mockThemeService{
+		getThemeListFunc: func(limit, offset int) (*ThemeList, *serviceerror.ServiceError) {
+			return themeList, nil
+		},
+	}
+
+	handler := newThemeMgtHandler(mockSvc)
+	req := httptest.NewRequest(http.MethodGet, "/design/themes", nil)
+	w := httptest.NewRecorder()
+
+	handler.HandleThemeListRequest(w, req)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var response ThemeListResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), response.Themes, 1)
+	assert.Equal(suite.T(), "", response.Themes[0].DefaultColorScheme)
+	assert.Equal(suite.T(), "", response.Themes[0].PrimaryColor)
+}
+
 // Test HandleThemeListRequest - Invalid pagination
 func (suite *ThemeHandlerTestSuite) TestHandleThemeListRequest_InvalidLimit() {
 	handler := newThemeMgtHandler(&mockThemeService{})

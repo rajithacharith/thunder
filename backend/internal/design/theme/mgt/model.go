@@ -33,12 +33,47 @@ type Theme struct {
 
 // ThemeListItem represents a theme item in the list response.
 type ThemeListItem struct {
-	ID          string `json:"id"`
-	Handle      string `json:"handle"`
-	DisplayName string `json:"displayName"`
-	Description string `json:"description"`
-	CreatedAt   string `json:"createdAt"`
-	UpdatedAt   string `json:"updatedAt"`
+	ID                 string `json:"id"`
+	Handle             string `json:"handle"`
+	DisplayName        string `json:"displayName"`
+	Description        string `json:"description"`
+	DefaultColorScheme string `json:"defaultColorScheme"`
+	PrimaryColor       string `json:"primaryColor"`
+	CreatedAt          string `json:"createdAt"`
+	UpdatedAt          string `json:"updatedAt"`
+}
+
+// themeColorSchemeInfo is a minimal struct for extracting color info from theme JSON.
+type themeColorSchemeInfo struct {
+	DefaultColorScheme string `json:"defaultColorScheme"`
+	ColorSchemes       map[string]struct {
+		Palette struct {
+			Primary struct {
+				Main string `json:"main"`
+			} `json:"primary"`
+		} `json:"palette"`
+	} `json:"colorSchemes"`
+}
+
+// extractThemeColorInfo extracts the defaultColorScheme and primaryColor from a raw theme JSON blob.
+// Returns empty strings on any parse or navigation failure so the list response degrades gracefully.
+func extractThemeColorInfo(themeJSON json.RawMessage) (defaultColorScheme, primaryColor string) {
+	if len(themeJSON) == 0 {
+		return "", ""
+	}
+	var info themeColorSchemeInfo
+	if err := json.Unmarshal(themeJSON, &info); err != nil {
+		return "", ""
+	}
+	defaultColorScheme = info.DefaultColorScheme
+	if defaultColorScheme == "" {
+		return "", ""
+	}
+	scheme, ok := info.ColorSchemes[defaultColorScheme]
+	if !ok {
+		return defaultColorScheme, ""
+	}
+	return defaultColorScheme, scheme.Palette.Primary.Main
 }
 
 // CreateThemeRequest represents the request body for creating a theme configuration.

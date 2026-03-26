@@ -95,16 +95,20 @@ func (suite *ThemeStoreTestSuite) TestGetThemeList_Success() {
 			"handle":       "theme-one",
 			"display_name": "Theme 1",
 			"description":  "Description 1",
-			"created_at":   "2024-01-15T10:30:00Z",
-			"updated_at":   "2024-01-15T10:30:00Z",
+			"theme": `{"defaultColorScheme":"light",` +
+				`"colorSchemes":{"light":{"palette":{"primary":{"main":"#ff7300"}}}}}`,
+			"created_at": "2024-01-15T10:30:00Z",
+			"updated_at": "2024-01-15T10:30:00Z",
 		},
 		{
 			"id":           "theme-2",
 			"handle":       "theme-two",
 			"display_name": "Theme 2",
 			"description":  "Description 2",
-			"created_at":   "2024-01-15T10:30:00Z",
-			"updated_at":   "2024-01-15T10:30:00Z",
+			"theme": `{"defaultColorScheme":"dark",` +
+				`"colorSchemes":{"dark":{"palette":{"primary":{"main":"#bb86fc"}}}}}`,
+			"created_at": "2024-01-15T10:30:00Z",
+			"updated_at": "2024-01-15T10:30:00Z",
 		},
 	}
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
@@ -116,6 +120,7 @@ func (suite *ThemeStoreTestSuite) TestGetThemeList_Success() {
 	assert.Len(suite.T(), themes, 2)
 	assert.Equal(suite.T(), "theme-1", themes[0].ID)
 	assert.Equal(suite.T(), "Theme 1", themes[0].DisplayName)
+	assert.NotNil(suite.T(), themes[0].Theme)
 }
 
 // Test GetThemeList - DB client error
@@ -352,6 +357,74 @@ func (suite *ThemeStoreTestSuite) TestBuildThemeListItemFromResultRow_MissingDes
 
 	_, err := suite.store.buildThemeListItemFromResultRow(row)
 	assert.Error(suite.T(), err)
+}
+
+func (suite *ThemeStoreTestSuite) TestBuildThemeListItemFromResultRow_WithThemeString() {
+	row := map[string]interface{}{
+		"id":           "theme-1",
+		"handle":       "classic",
+		"display_name": "Test Theme",
+		"description":  "A description",
+		"theme": `{"defaultColorScheme":"light",` +
+			`"colorSchemes":{"light":{"palette":{"primary":{"main":"#ff7300"}}}}}`,
+		"created_at": "2024-01-15T10:30:00Z",
+		"updated_at": "2024-01-15T10:30:00Z",
+	}
+
+	theme, err := suite.store.buildThemeListItemFromResultRow(row)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), theme.Theme)
+}
+
+func (suite *ThemeStoreTestSuite) TestBuildThemeListItemFromResultRow_WithThemeBytes() {
+	row := map[string]interface{}{
+		"id":           "theme-1",
+		"handle":       "classic",
+		"display_name": "Test Theme",
+		"description":  "A description",
+		"theme":        []byte(`{"defaultColorScheme":"light"}`),
+		"created_at":   "2024-01-15T10:30:00Z",
+		"updated_at":   "2024-01-15T10:30:00Z",
+	}
+
+	theme, err := suite.store.buildThemeListItemFromResultRow(row)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), theme.Theme)
+}
+
+func (suite *ThemeStoreTestSuite) TestBuildThemeListItemFromResultRow_WithoutThemeColumn() {
+	row := map[string]interface{}{
+		"id":           "theme-1",
+		"handle":       "classic",
+		"display_name": "Test Theme",
+		"description":  "A description",
+		"created_at":   "2024-01-15T10:30:00Z",
+		"updated_at":   "2024-01-15T10:30:00Z",
+	}
+
+	theme, err := suite.store.buildThemeListItemFromResultRow(row)
+
+	assert.NoError(suite.T(), err)
+	assert.Nil(suite.T(), theme.Theme)
+}
+
+func (suite *ThemeStoreTestSuite) TestBuildThemeListItemFromResultRow_NullThemeColumn() {
+	row := map[string]interface{}{
+		"id":           "theme-1",
+		"handle":       "classic",
+		"display_name": "Test Theme",
+		"description":  "A description",
+		"theme":        nil,
+		"created_at":   "2024-01-15T10:30:00Z",
+		"updated_at":   "2024-01-15T10:30:00Z",
+	}
+
+	theme, err := suite.store.buildThemeListItemFromResultRow(row)
+
+	assert.NoError(suite.T(), err)
+	assert.Nil(suite.T(), theme.Theme)
 }
 
 // Test buildThemeFromResultRow helper
