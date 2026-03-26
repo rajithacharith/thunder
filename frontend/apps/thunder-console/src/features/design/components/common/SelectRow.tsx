@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
 import {MenuItem, Select, Stack, Typography} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
 
 export interface SelectRowProps {
   label: string;

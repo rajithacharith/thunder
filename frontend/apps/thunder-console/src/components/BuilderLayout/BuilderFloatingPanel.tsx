@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {memo, type ReactElement, type ReactNode} from 'react';
 import {Drawer, type DrawerProps} from '@wso2/oxygen-ui';
+import {memo, type ReactElement, type ReactNode} from 'react';
 
 /**
  * Props interface of {@link BuilderFloatingPanel}

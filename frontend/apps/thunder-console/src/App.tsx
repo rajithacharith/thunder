@@ -16,46 +16,46 @@
  * under the License.
  */
 
-import {BrowserRouter, Route, Routes} from 'react-router';
-import type {JSX} from 'react';
 import {ProtectedRoute} from '@asgardeo/react-router';
 import {ToastProvider} from '@thunder/shared-contexts';
-import UsersListPage from './features/users/pages/UsersListPage';
-import CreateUserPage from './features/users/pages/CreateUserPage';
-import ViewUserPage from './features/users/pages/ViewUserPage';
-import UserTypesListPage from './features/user-types/pages/UserTypesListPage';
-import CreateUserTypePage from './features/user-types/pages/CreateUserTypePage';
-import ViewUserTypePage from './features/user-types/pages/ViewUserTypePage';
-import IntegrationsPage from './features/integrations/pages/IntegrationsPage';
-import ApplicationsListPage from './features/applications/pages/ApplicationsListPage';
+import type {JSX} from 'react';
+import {BrowserRouter, Route, Routes} from 'react-router';
+import ApplicationCreateProvider from './features/applications/contexts/ApplicationCreate/ApplicationCreateProvider';
 import ApplicationCreatePage from './features/applications/pages/ApplicationCreatePage';
 import ApplicationEditPage from './features/applications/pages/ApplicationEditPage';
-import DashboardLayout from './layouts/DashboardLayout';
-import FullScreenLayout from './layouts/FullScreenLayout';
-import ApplicationCreateProvider from './features/applications/contexts/ApplicationCreate/ApplicationCreateProvider';
-import UserTypeCreateProvider from './features/user-types/contexts/UserTypeCreate/UserTypeCreateProvider';
-import UserCreateProvider from './features/users/contexts/UserCreate/UserCreateProvider';
+import ApplicationsListPage from './features/applications/pages/ApplicationsListPage';
+import LayoutBuilderProvider from './features/design/contexts/LayoutBuilder/LayoutBuilderProvider';
+import ThemeBuilderProvider from './features/design/contexts/ThemeBuilder/ThemeBuilderProvider';
+import DesignPage from './features/design/pages/DesignPage';
+import LayoutBuilderPage from './features/design/pages/LayoutBuilderPage';
+import ThemeBuilderPage from './features/design/pages/ThemeBuilderPage';
+import ThemeCreatePage from './features/design/pages/ThemeCreatePage';
 import FlowsListPage from './features/flows/pages/FlowsListPage';
+import GroupCreateProvider from './features/groups/contexts/GroupCreate/GroupCreateProvider';
+import CreateGroupPage from './features/groups/pages/CreateGroupPage';
+import GroupEditPage from './features/groups/pages/GroupEditPage';
+import GroupsListPage from './features/groups/pages/GroupsListPage';
+import HomePage from './features/home/pages/HomePage';
+import IntegrationsPage from './features/integrations/pages/IntegrationsPage';
 import LoginFlowBuilderPage from './features/login-flow/pages/LoginFlowPage';
-import OrganizationUnitsListPage from './features/organization-units/pages/OrganizationUnitsListPage';
+import OrganizationUnitProvider from './features/organization-units/contexts/OrganizationUnitProvider';
 import CreateOrganizationUnitPage from './features/organization-units/pages/CreateOrganizationUnitPage';
 import OrganizationUnitEditPage from './features/organization-units/pages/OrganizationUnitEditPage';
-import OrganizationUnitProvider from './features/organization-units/contexts/OrganizationUnitProvider';
-import DesignPage from './features/design/pages/DesignPage';
-import ThemeBuilderPage from './features/design/pages/ThemeBuilderPage';
-import LayoutBuilderPage from './features/design/pages/LayoutBuilderPage';
-import ThemeBuilderProvider from './features/design/contexts/ThemeBuilder/ThemeBuilderProvider';
-import LayoutBuilderProvider from './features/design/contexts/LayoutBuilder/LayoutBuilderProvider';
-import ThemeCreatePage from './features/design/pages/ThemeCreatePage';
-import TranslationsListPage from './features/translations/pages/TranslationsListPage';
-import TranslationsEditPage from './features/translations/pages/TranslationsEditPage';
-import TranslationCreatePage from './features/translations/pages/TranslationCreatePage';
+import OrganizationUnitsListPage from './features/organization-units/pages/OrganizationUnitsListPage';
 import TranslationCreateProvider from './features/translations/contexts/TranslationCreate/TranslationCreateProvider';
-import GroupsListPage from './features/groups/pages/GroupsListPage';
-import GroupEditPage from './features/groups/pages/GroupEditPage';
-import CreateGroupPage from './features/groups/pages/CreateGroupPage';
-import GroupCreateProvider from './features/groups/contexts/GroupCreate/GroupCreateProvider';
-import HomePage from './features/home/pages/HomePage';
+import TranslationCreatePage from './features/translations/pages/TranslationCreatePage';
+import TranslationsEditPage from './features/translations/pages/TranslationsEditPage';
+import TranslationsListPage from './features/translations/pages/TranslationsListPage';
+import UserTypeCreateProvider from './features/user-types/contexts/UserTypeCreate/UserTypeCreateProvider';
+import CreateUserTypePage from './features/user-types/pages/CreateUserTypePage';
+import UserTypesListPage from './features/user-types/pages/UserTypesListPage';
+import ViewUserTypePage from './features/user-types/pages/ViewUserTypePage';
+import UserCreateProvider from './features/users/contexts/UserCreate/UserCreateProvider';
+import CreateUserPage from './features/users/pages/CreateUserPage';
+import UsersListPage from './features/users/pages/UsersListPage';
+import ViewUserPage from './features/users/pages/ViewUserPage';
+import DashboardLayout from './layouts/DashboardLayout';
+import FullScreenLayout from './layouts/FullScreenLayout';
 
 export default function App(): JSX.Element {
   return (

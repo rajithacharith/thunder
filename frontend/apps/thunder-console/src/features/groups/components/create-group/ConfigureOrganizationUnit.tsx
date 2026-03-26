@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {useEffect} from 'react';
 import {Stack, Typography, FormControl, FormLabel} from '@wso2/oxygen-ui';
+import {useEffect} from 'react';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import OrganizationUnitTreePicker from '../../../organization-units/components/OrganizationUnitTreePicker';

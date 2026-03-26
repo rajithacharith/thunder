@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import type {JSX, ComponentType} from 'react';
-import i18next from 'i18next';
-import {initReactI18next} from 'react-i18next';
-import enUS from '@thunder/i18n/locales/en-US';
 import {I18nDefaultConstants} from '@thunder/i18n';
+import enUS from '@thunder/i18n/locales/en-US';
+import i18next from 'i18next';
+import type {JSX, ComponentType} from 'react';
+import {initReactI18next} from 'react-i18next';
 import I18nProvider from '../i18n/I18nProvider';
 
 await i18next.use(initReactI18next).init({

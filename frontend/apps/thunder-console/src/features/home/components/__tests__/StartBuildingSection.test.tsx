@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@thunder/test-utils';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import StartBuildingSection from '../StartBuildingSection';
 
 vi.mock('react-i18next', () => ({

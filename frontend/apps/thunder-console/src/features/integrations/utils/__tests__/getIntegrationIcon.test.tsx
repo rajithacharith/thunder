@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import getIntegrationIcon from '../getIntegrationIcon';
+import {describe, it, expect} from 'vitest';
 import {IdentityProviderTypes} from '../../models/identity-provider';
+import getIntegrationIcon from '../getIntegrationIcon';
 
 describe('getIntegrationIcon', () => {
   describe('Supported Provider Types', () => {

@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
 import {FormControl, FormLabel, TextField} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {FlowFieldProps} from '../../../models/flow';
 
@@ -76,6 +76,7 @@ export default function TextInputAdapter({
         type={htmlType}
         placeholder={t(resolve(component.placeholder) ?? component.placeholder ?? '')}
         autoComplete={autoComplete}
+        // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus={autoFocus}
         required={component.required}
         variant="outlined"

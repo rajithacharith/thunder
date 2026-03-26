@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
 import {Palette} from '@wso2/oxygen-ui-icons-react';
+import {describe, it, expect, vi} from 'vitest';
 import SectionHeader from '../SectionHeader';
 
 vi.mock('react-i18next', async () => {

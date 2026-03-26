@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {screen, fireEvent, waitFor, renderWithProviders, act} from '@thunder/test-utils';
-import EditGeneralSettings from '../EditGeneralSettings';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {OrganizationUnit} from '../../../../models/organization-unit';
+import EditGeneralSettings from '../EditGeneralSettings';
 
 // Mock child components
 vi.mock('../QuickCopySection', () => ({

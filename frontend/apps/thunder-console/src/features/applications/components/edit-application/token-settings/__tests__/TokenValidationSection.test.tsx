@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useForm, type Control, type FieldErrors} from 'react-hook-form';
+import {describe, it, expect, vi} from 'vitest';
 import TokenValidationSection from '../TokenValidationSection';
 
 interface FormValues {

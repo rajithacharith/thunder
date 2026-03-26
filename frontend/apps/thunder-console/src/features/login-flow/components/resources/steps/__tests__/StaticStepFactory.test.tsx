@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import {StaticStepTypes} from '@/features/flows/models/steps';
+import {describe, it, expect, vi} from 'vitest';
 import StaticStepFactory from '../StaticStepFactory';
+import {StaticStepTypes} from '@/features/flows/models/steps';
 
 // Mock CommonStaticStepFactory
 vi.mock('@/features/flows/components/resources/steps/CommonStaticStepFactory', () => ({

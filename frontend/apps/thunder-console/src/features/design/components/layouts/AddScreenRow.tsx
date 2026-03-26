@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {useState, type JSX} from 'react';
-import {useTranslation} from 'react-i18next';
 import {Box, Button, Stack, TextField} from '@wso2/oxygen-ui';
 import {Plus} from '@wso2/oxygen-ui-icons-react';
+import {useState, type JSX} from 'react';
+import {useTranslation} from 'react-i18next';
 
 export interface AddScreenRowProps {
   baseScreens: string[];
@@ -66,7 +66,6 @@ export default function AddScreenRow({baseScreens, onAdd}: AddScreenRowProps): J
   return (
     <Box sx={{px: 0.5, py: 0.5, display: 'flex', flexDirection: 'column', gap: 0.75}}>
       <TextField
-        autoFocus
         value={name}
         onChange={(e) => setName(e.target.value)}
         onKeyDown={(e) => {

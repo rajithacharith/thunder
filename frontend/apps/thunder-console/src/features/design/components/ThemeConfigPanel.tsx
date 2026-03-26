@@ -16,16 +16,16 @@
  * under the License.
  */
 
-import {useCallback, useEffect, useRef, useState, type JSX, type RefObject} from 'react';
-import {useTranslation} from 'react-i18next';
-import {Box, CircularProgress, ToggleButton, ToggleButtonGroup, Typography, type CssVarsPalette} from '@wso2/oxygen-ui';
 import {useGetTheme, useUpdateTheme, type Theme} from '@thunder/shared-design';
+import {Box, CircularProgress, ToggleButton, ToggleButtonGroup, Typography, type CssVarsPalette} from '@wso2/oxygen-ui';
+import {useCallback, useEffect, useImperativeHandle, useRef, useState, type JSX, type RefObject} from 'react';
+import {useTranslation} from 'react-i18next';
 import ColorBuilderContent from './themes/ColorBuilderContent';
-import useThemeBuilder from '../contexts/ThemeBuilder/useThemeBuilder';
 import ShapeBuilderContent from './themes/ShapeBuilderContent';
 import TypographyBuilderContent from './themes/TypographyBuilderContent';
-import type {ThemeSection} from '../models/theme-builder';
 import ColorSchemeOptions from '../constants/ColorSchemeOptions';
+import useThemeBuilder from '../contexts/ThemeBuilder/useThemeBuilder';
+import type {ThemeSection} from '../models/theme-builder';
 
 interface ThemeConfigPanelProps {
   themeId: string | null;
@@ -86,16 +86,12 @@ export default function ThemeConfigPanel({
   }, [draftTheme, theme, mutateAsync, setIsDirty]);
 
   const handleSaveLatest = useRef(handleSave);
-  handleSaveLatest.current = handleSave;
 
   useEffect(() => {
-    if (saveHandlerRef) {
-      // eslint-disable-next-line no-param-reassign
-      saveHandlerRef.current = () => handleSaveLatest.current();
-    }
-  }, [saveHandlerRef]);
+    handleSaveLatest.current = handleSave;
+  }, [handleSave]);
 
-  // ── Early returns ────────────────────────────────────────────────────────
+  useImperativeHandle(saveHandlerRef, () => () => handleSaveLatest.current(), []);
 
   if (!themeId) {
     return (

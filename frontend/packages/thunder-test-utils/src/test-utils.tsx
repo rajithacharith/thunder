@@ -17,7 +17,8 @@
  */
 
 /* eslint-disable react-refresh/only-export-components */
-import {useMemo, type ReactElement, type ReactNode} from 'react';
+
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {
   render,
   renderHook as rtlRenderHook,
@@ -25,11 +26,11 @@ import {
   type RenderHookOptions,
   type RenderResult,
 } from '@testing-library/react';
-import {MemoryRouter} from 'react-router';
-import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
-import {ConfigProvider, ToastProvider} from '@thunder/shared-contexts';
 import {LoggerProvider, LogLevel} from '@thunder/logger';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {ConfigProvider, ToastProvider} from '@thunder/shared-contexts';
+import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
+import {useMemo, type ReactElement, type ReactNode} from 'react';
+import {MemoryRouter} from 'react-router';
 
 /**
  * Configuration options for Thunder test utilities
@@ -94,9 +95,8 @@ function Providers({children, queryClient = undefined, config = undefined}: Prov
   const testConfig = config ?? currentConfig;
 
   // Setup window.__THUNDER_RUNTIME_CONFIG__ for tests
-  // eslint-disable-next-line no-underscore-dangle
   if (typeof window !== 'undefined' && !window.__THUNDER_RUNTIME_CONFIG__) {
-    // eslint-disable-next-line no-underscore-dangle
+    // eslint-disable-next-line react-hooks/immutability
     window.__THUNDER_RUNTIME_CONFIG__ = {
       brand: {
         product_name: 'Thunder',

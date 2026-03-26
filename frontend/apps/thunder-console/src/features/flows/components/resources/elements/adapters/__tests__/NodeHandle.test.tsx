@@ -18,10 +18,10 @@
 
 /* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, act} from '@testing-library/react';
-import type {ReactNode} from 'react';
 import {ReactFlowProvider, Position} from '@xyflow/react';
+import type {ReactNode} from 'react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import NodeHandle from '../NodeHandle';
 
 // Use a variable to store the RAF spy - will be set up in beforeEach
@@ -109,7 +109,7 @@ describe('NodeHandle', () => {
       expect(mockUpdateNodeInternals).not.toHaveBeenCalled();
     });
 
-    it('should update node internals when positionKey changes', async () => {
+    it('should update node internals when positionKey changes', () => {
       // Use a wrapper that's consistent across rerenders
       const Wrapper = createWrapper();
       const {rerender} = render(
@@ -122,7 +122,7 @@ describe('NodeHandle', () => {
       mockUpdateNodeInternals.mockClear();
       mockRequestAnimationFrame.mockClear();
 
-      await act(async () => {
+      act(() => {
         rerender(
           <Wrapper>
             <NodeHandle id="handle-1" type="source" position={Position.Right} positionKey={1} />
@@ -149,7 +149,7 @@ describe('NodeHandle', () => {
       expect(mockUpdateNodeInternals).not.toHaveBeenCalled();
     });
 
-    it('should handle string positionKey', async () => {
+    it('should handle string positionKey', () => {
       const Wrapper = createWrapper();
       const {rerender} = render(
         <Wrapper>
@@ -160,7 +160,7 @@ describe('NodeHandle', () => {
       // Clear mocks after initial render to isolate the rerender behavior
       mockUpdateNodeInternals.mockClear();
 
-      await act(async () => {
+      act(() => {
         rerender(
           <Wrapper>
             <NodeHandle id="handle-1" type="source" position={Position.Right} positionKey="key-2" />

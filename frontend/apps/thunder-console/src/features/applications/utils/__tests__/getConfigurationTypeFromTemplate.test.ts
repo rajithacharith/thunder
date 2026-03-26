@@ -17,8 +17,8 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import getConfigurationTypeFromTemplate from '../getConfigurationTypeFromTemplate';
 import {ApplicationCreateFlowConfiguration} from '../../models/application-create-flow';
+import getConfigurationTypeFromTemplate from '../getConfigurationTypeFromTemplate';
 
 const makeTemplate = (name: string, redirectUris?: string[]) => ({
   defaults: {

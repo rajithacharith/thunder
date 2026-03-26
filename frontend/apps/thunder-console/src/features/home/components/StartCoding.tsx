@@ -18,10 +18,10 @@
 
 import {Box, Stack, Tooltip, Typography, IconButton, useColorScheme} from '@wso2/oxygen-ui';
 import {ChevronLeft, ChevronRight} from '@wso2/oxygen-ui-icons-react';
-import {useNavigate} from 'react-router';
-import {useTranslation} from 'react-i18next';
 import type {JSX} from 'react';
 import {useRef, useState, useEffect} from 'react';
+import {useTranslation} from 'react-i18next';
+import {useNavigate} from 'react-router';
 import TechnologyBasedApplicationTemplateMetadata from '../../applications/config/TechnologyBasedApplicationTemplateMetadata';
 
 export default function StartCoding(): JSX.Element {

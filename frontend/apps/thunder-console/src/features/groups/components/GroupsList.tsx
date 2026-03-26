@@ -16,16 +16,16 @@
  * under the License.
  */
 
-import {useMemo, useCallback, useState, type JSX} from 'react';
-import {useNavigate} from 'react-router';
 import {useLogger} from '@thunder/logger/react';
 import {Box, Avatar, IconButton, Typography, Tooltip, DataGrid, ListingTable, useTheme} from '@wso2/oxygen-ui';
 import {Users, Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
+import {useNavigate} from 'react-router';
+import GroupDeleteDialog from './GroupDeleteDialog';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import useGetGroups from '../api/useGetGroups';
 import type {GroupBasic} from '../models/group';
-import GroupDeleteDialog from './GroupDeleteDialog';
 
 /**
  * DataGrid component for displaying the list of groups.

@@ -16,8 +16,7 @@
  * under the License.
  */
 
-import {useState, useCallback, useMemo} from 'react';
-import {useNavigate} from 'react-router';
+import {useLogger} from '@thunder/logger/react';
 import {
   Box,
   Stack,
@@ -30,15 +29,16 @@ import {
   Snackbar,
 } from '@wso2/oxygen-ui';
 import {X, ChevronRight} from '@wso2/oxygen-ui-icons-react';
+import {useState, useCallback, useMemo} from 'react';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useLogger} from '@thunder/logger/react';
-import useCreateGroup from '../api/useCreateGroup';
+import {useNavigate} from 'react-router';
 import useGetOrganizationUnits from '../../organization-units/api/useGetOrganizationUnits';
-import useGroupCreate from '../contexts/GroupCreate/useGroupCreate';
-import {GroupCreateFlowStep} from '../models/group-create-flow';
+import useCreateGroup from '../api/useCreateGroup';
 import ConfigureName from '../components/create-group/ConfigureName';
 import ConfigureOrganizationUnit from '../components/create-group/ConfigureOrganizationUnit';
+import useGroupCreate from '../contexts/GroupCreate/useGroupCreate';
+import {GroupCreateFlowStep} from '../models/group-create-flow';
 import type {CreateGroupRequest} from '../models/requests';
 
 export default function CreateGroupPage(): JSX.Element {

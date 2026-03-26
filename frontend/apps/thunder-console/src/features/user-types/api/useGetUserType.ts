@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
+import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import type {ApiUserSchema} from '../types/user-types';
 import UserTypeQueryKeys from '../constants/userTypeQueryKeys';
+import type {ApiUserSchema} from '../types/user-types';
 
 /**
  * Custom React hook to fetch a single user schema (user type) by ID from the Thunder server.

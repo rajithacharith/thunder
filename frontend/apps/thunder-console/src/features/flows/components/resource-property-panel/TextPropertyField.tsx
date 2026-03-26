@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactElement} from 'react';
-import {useTranslation} from 'react-i18next';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {isI18nTemplatePattern, isMetaTemplatePattern} from '@thunder/utils';
 import {
   Box,
   FormControl,
@@ -31,11 +31,11 @@ import {
 } from '@wso2/oxygen-ui';
 import {SquareFunction} from '@wso2/oxygen-ui-icons-react';
 import startCase from 'lodash-es/startCase';
-import {isI18nTemplatePattern, isMetaTemplatePattern} from '@thunder/utils';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
+import DynamicValuePopover from './DynamicValuePopover';
 import useValidationStatus from '../../hooks/useValidationStatus';
 import type {Resource} from '../../models/resources';
-import DynamicValuePopover from './DynamicValuePopover';
 
 /**
  * Props interface of {@link TextPropertyField}

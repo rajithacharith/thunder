@@ -17,11 +17,11 @@
  */
 
 import {describe, expect, it} from 'vitest';
+import {ExecutionTypes} from '../../models/steps';
+import computeExecutorConnections from '../computeExecutorConnections';
 import {IdentityProviderTypes} from '@/features/integrations/models/identity-provider';
 import type {BasicIdentityProvider} from '@/features/integrations/models/identity-provider';
 import type {NotificationSender} from '@/features/notification-senders/models/notification-sender';
-import computeExecutorConnections from '../computeExecutorConnections';
-import {ExecutionTypes} from '../../models/steps';
 
 describe('computeExecutorConnections', () => {
   const createIdp = (id: string, type: BasicIdentityProvider['type'], name = 'Test IDP'): BasicIdentityProvider => ({

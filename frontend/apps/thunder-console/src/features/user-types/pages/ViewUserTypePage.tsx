@@ -16,10 +16,6 @@
  * under the License.
  */
 
-import {useState, useEffect, useMemo, useCallback} from 'react';
-import type {ReactNode, SyntheticEvent, JSX} from 'react';
-import {Link, useNavigate, useParams} from 'react-router';
-import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
 import {useToast} from '@thunder/shared-contexts';
 import {
@@ -37,14 +33,18 @@ import {
   PageTitle,
 } from '@wso2/oxygen-ui';
 import {ArrowLeft, Edit} from '@wso2/oxygen-ui-icons-react';
+import type {ReactNode, SyntheticEvent, JSX} from 'react';
+import {useState, useEffect, useMemo, useCallback} from 'react';
+import {useTranslation} from 'react-i18next';
+import {Link, useNavigate, useParams} from 'react-router';
 import CopyableId from '../../../components/CopyableId';
 import UnsavedChangesBar from '../../../components/UnsavedChangesBar';
 import useGetUserType from '../api/useGetUserType';
 import useUpdateUserType from '../api/useUpdateUserType';
-import type {PropertyDefinition, UserSchemaDefinition, PropertyType, SchemaPropertyInput} from '../types/user-types';
-import UserTypeDeleteDialog from '../components/edit-user-type/UserTypeDeleteDialog';
 import EditGeneralSettings from '../components/edit-user-type/general-settings/EditGeneralSettings';
 import EditSchemaSettings from '../components/edit-user-type/schema-settings/EditSchemaSettings';
+import UserTypeDeleteDialog from '../components/edit-user-type/UserTypeDeleteDialog';
+import type {PropertyDefinition, UserSchemaDefinition, PropertyType, SchemaPropertyInput} from '../types/user-types';
 
 interface TabPanelProps {
   children?: ReactNode;
@@ -290,7 +290,7 @@ export default function ViewUserTypePage(): JSX.Element {
         </Alert>
         <Button
           onClick={() => {
-            handleBack().catch(() => {});
+            handleBack().catch(() => null);
           }}
           startIcon={<ArrowLeft size={16} />}
         >
@@ -309,7 +309,7 @@ export default function ViewUserTypePage(): JSX.Element {
         </Alert>
         <Button
           onClick={() => {
-            handleBack().catch(() => {});
+            handleBack().catch(() => null);
           }}
           startIcon={<ArrowLeft size={16} />}
         >
@@ -328,7 +328,6 @@ export default function ViewUserTypePage(): JSX.Element {
           <Stack direction="row" alignItems="center" spacing={1} mb={1}>
             {isEditingName ? (
               <TextField
-                autoFocus
                 value={tempName}
                 onChange={(e) => setTempName(e.target.value)}
                 onBlur={() => {
@@ -435,7 +434,7 @@ export default function ViewUserTypePage(): JSX.Element {
           isSaving={updateUserTypeMutation.isPending}
           onReset={handleReset}
           onSave={() => {
-            handleSave().catch(() => {});
+            handleSave().catch(() => null);
           }}
         />
       )}

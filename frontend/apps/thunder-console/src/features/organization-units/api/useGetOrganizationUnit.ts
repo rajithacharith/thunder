@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
-import type {OrganizationUnit} from '../models/organization-unit';
 import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
+import type {OrganizationUnit} from '../models/organization-unit';
 
 /**
  * Custom React hook to fetch a single organization unit by its ID from the Thunder server.

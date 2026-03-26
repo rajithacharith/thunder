@@ -16,20 +16,20 @@
  * under the License.
  */
 
-import {useMemo, useCallback, type ReactElement} from 'react';
-import classNames from 'classnames';
+import {CollisionPriority} from '@dnd-kit/abstract';
 import {Box, Typography, type SxProps, type Theme} from '@wso2/oxygen-ui';
 import {ChevronDown, ChevronLeft, ChevronRight, ChevronUp} from '@wso2/oxygen-ui-icons-react';
-import {CollisionPriority} from '@dnd-kit/abstract';
 import {useReactFlow, type Node} from '@xyflow/react';
+import classNames from 'classnames';
+import {useMemo, useCallback, type ReactElement} from 'react';
+import Droppable from '../../../dnd/Droppable';
+import Handle from '../../../dnd/Handle';
+import ReorderableFlowElement from '../../steps/view/ReorderableElement';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
 import {type Element as FlowElement} from '@/features/flows/models/elements';
 import FlowEventTypes from '@/features/flows/models/extension';
 import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
 import generateResourceId from '@/features/flows/utils/generateResourceId';
-import ReorderableFlowElement from '../../steps/view/ReorderableElement';
-import Droppable from '../../../dnd/Droppable';
-import Handle from '../../../dnd/Handle';
 
 /**
  * Stack element type with layout configuration at top level.

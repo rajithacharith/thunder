@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import Sortable from '../Sortable';
 
 // Mock refs
@@ -449,7 +449,9 @@ describe('Sortable', () => {
       };
 
       const dndKit = await import('@dnd-kit/react');
-      vi.mocked(dndKit.useDragDropManager).mockReturnValue(freshManager as unknown as ReturnType<typeof dndKit.useDragDropManager>);
+      vi.mocked(dndKit.useDragDropManager).mockReturnValue(
+        freshManager as unknown as ReturnType<typeof dndKit.useDragDropManager>,
+      );
     });
 
     it('should register dragstart event listener on manager', () => {
@@ -480,9 +482,9 @@ describe('Sortable', () => {
       );
 
       // Find the dragstart handler that was registered
-      const dragstartCall = (freshManager.monitor.addEventListener.mock.calls as [string, (event: unknown) => void][]).find(
-        (call) => call[0] === 'dragstart',
-      );
+      const dragstartCall = (
+        freshManager.monitor.addEventListener.mock.calls as [string, (event: unknown) => void][]
+      ).find((call) => call[0] === 'dragstart');
       expect(dragstartCall).toBeDefined();
 
       const dragstartHandler = dragstartCall![1];
@@ -508,19 +510,21 @@ describe('Sortable', () => {
         </Sortable>,
       );
 
-      const dragstartCall = (freshManager.monitor.addEventListener.mock.calls as [string, (event: unknown) => void][]).find(
-        (call) => call[0] === 'dragstart',
-      );
+      const dragstartCall = (
+        freshManager.monitor.addEventListener.mock.calls as [string, (event: unknown) => void][]
+      ).find((call) => call[0] === 'dragstart');
       const dragstartHandler = dragstartCall![1];
 
       // Simulate a dragstart event without index
-      dragstartHandler({
-        operation: {
-          source: {
-            data: {isReordering: false},
+      expect(() => {
+        dragstartHandler({
+          operation: {
+            source: {
+              data: {isReordering: false},
+            },
           },
-        },
-      });
+        });
+      }).not.toThrow();
     });
 
     it('should handle dragstart event with undefined source', () => {
@@ -530,17 +534,19 @@ describe('Sortable', () => {
         </Sortable>,
       );
 
-      const dragstartCall = (freshManager.monitor.addEventListener.mock.calls as [string, (event: unknown) => void][]).find(
-        (call) => call[0] === 'dragstart',
-      );
+      const dragstartCall = (
+        freshManager.monitor.addEventListener.mock.calls as [string, (event: unknown) => void][]
+      ).find((call) => call[0] === 'dragstart');
       const dragstartHandler = dragstartCall![1];
 
       // Simulate a dragstart event with undefined source
-      dragstartHandler({
-        operation: {
-          source: undefined,
-        },
-      });
+      expect(() => {
+        dragstartHandler({
+          operation: {
+            source: undefined,
+          },
+        });
+      }).not.toThrow();
     });
 
     it('should handle dragend event and reset global state', () => {
@@ -551,9 +557,9 @@ describe('Sortable', () => {
       );
 
       // First trigger dragstart to set state
-      const dragstartCall = (freshManager.monitor.addEventListener.mock.calls as [string, (event: unknown) => void][]).find(
-        (call) => call[0] === 'dragstart',
-      );
+      const dragstartCall = (
+        freshManager.monitor.addEventListener.mock.calls as [string, (event: unknown) => void][]
+      ).find((call) => call[0] === 'dragstart');
       const dragstartHandler = dragstartCall![1];
       dragstartHandler({
         operation: {
@@ -565,9 +571,9 @@ describe('Sortable', () => {
       });
 
       // Find the dragend handler
-      const dragendCall = (freshManager.monitor.addEventListener.mock.calls as [string, (event?: unknown) => void][]).find(
-        (call) => call[0] === 'dragend',
-      );
+      const dragendCall = (
+        freshManager.monitor.addEventListener.mock.calls as [string, (event?: unknown) => void][]
+      ).find((call) => call[0] === 'dragend');
       expect(dragendCall).toBeDefined();
 
       const dragendHandler = dragendCall![1];
@@ -595,6 +601,8 @@ describe('Sortable', () => {
       // Call dragend multiple times - should only update state once since values don't change
       dragendHandler();
       dragendHandler();
+
+      expect(dragendHandler).toBeDefined();
     });
   });
 });

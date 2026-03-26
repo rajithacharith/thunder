@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
-import OrganizationUnitEditPage from '../OrganizationUnitEditPage';
 import type {OrganizationUnit} from '../../models/organization-unit';
+import OrganizationUnitEditPage from '../OrganizationUnitEditPage';
 
 // Mock navigate, useParams, and useLocation
 const mockNavigate = vi.fn();
@@ -38,7 +38,7 @@ vi.mock('react-router', async () => {
         href={to}
         onClick={(e) => {
           e.preventDefault();
-          Promise.resolve(mockNavigate(to)).catch(() => {});
+          Promise.resolve(mockNavigate(to)).catch(() => null);
         }}
       >
         {children}

@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import type {JSX, ReactNode} from 'react';
-import {useTranslation} from 'react-i18next';
 import {Box, Card, Typography} from '@wso2/oxygen-ui';
 import {ArrowUpRight} from '@wso2/oxygen-ui-icons-react';
+import type {JSX, ReactNode} from 'react';
+import {useTranslation} from 'react-i18next';
 
 export interface ItemCardProps {
   thumbnail: ReactNode;

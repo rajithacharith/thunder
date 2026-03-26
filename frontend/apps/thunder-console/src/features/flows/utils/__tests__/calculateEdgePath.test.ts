@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, expect, it} from 'vitest';
 import {Position, type Node} from '@xyflow/react';
+import {describe, expect, it} from 'vitest';
 import {calculateEdgePath, calculateAllEdgePaths, type EdgeInput} from '../calculateEdgePath';
 
 describe('calculateEdgePath', () => {

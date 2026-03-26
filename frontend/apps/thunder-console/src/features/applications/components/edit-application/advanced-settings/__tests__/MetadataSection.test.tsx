@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import MetadataSection from '../MetadataSection';
+import {describe, it, expect, vi} from 'vitest';
 import type {Application} from '../../../../models/application';
+import MetadataSection from '../MetadataSection';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({

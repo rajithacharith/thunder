@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import type {Step} from '@/features/flows/models/steps';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import SmsOtpExecution from '../SmsOtpExecution';
+import type {Step} from '@/features/flows/models/steps';
 
 // Use vi.hoisted to define mock functions before vi.mock hoisting
 const {mockUseColorScheme, mockUseRequiredFields} = vi.hoisted(() => ({

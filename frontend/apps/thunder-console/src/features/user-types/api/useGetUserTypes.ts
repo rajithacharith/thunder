@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
+import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import type {UserSchemaListParams, UserSchemaListResponse} from '../types/user-types';
 import UserTypeQueryKeys from '../constants/userTypeQueryKeys';
+import type {UserSchemaListParams, UserSchemaListResponse} from '../types/user-types';
 
 /**
  * Custom React hook to fetch a paginated list of user schemas (user types) from the Thunder server.

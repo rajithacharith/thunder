@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
 import type {Theme} from '@thunder/shared-design';
+import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
+import {describe, it, expect, vi} from 'vitest';
 import GatePreview from '../GatePreview';
 
 // Augment the global @asgardeo/react mock (from setup.ts) to include BaseSignIn,

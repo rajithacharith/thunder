@@ -18,8 +18,8 @@
 
 /* eslint-disable react/require-default-props */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
+import {describe, it, expect, vi} from 'vitest';
 import FullScreenLayout from '../FullScreenLayout';
 
 // Mock Outlet
@@ -54,9 +54,7 @@ vi.mock('@wso2/oxygen-ui', async () => {
         </div>
       ),
       {
-        Content: ({children}: {children: React.ReactNode}) => (
-          <div data-testid="layout-content">{children}</div>
-        ),
+        Content: ({children}: {children: React.ReactNode}) => <div data-testid="layout-content">{children}</div>,
       },
     ),
   };

@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {FlowTypes} from './metadata';
 import type {BaseConfig} from './base';
+import type {FlowTypes} from './metadata';
 
 /**
  * Enumeration of available flow types in the Thunder identity management system.

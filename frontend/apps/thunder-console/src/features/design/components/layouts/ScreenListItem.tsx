@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import {Box, Card, CardContent, Typography} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Box, Card, CardContent, Typography} from '@wso2/oxygen-ui';
 
 export interface ScreenListItemProps {
   name: string;

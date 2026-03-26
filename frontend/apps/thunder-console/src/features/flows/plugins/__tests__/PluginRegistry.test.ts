@@ -17,8 +17,8 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import PluginRegistry from '../PluginRegistry';
 import VisualFlowConstants from '../../constants/VisualFlowConstants';
+import PluginRegistry from '../PluginRegistry';
 
 // Helper to create a handler with the required uniqueName property
 const createHandler = <T extends (...args: unknown[]) => unknown>(
@@ -292,7 +292,7 @@ describe('PluginRegistry', () => {
       );
 
       const handler2 = createHandler(
-        vi.fn().mockImplementation(async () => {
+        vi.fn().mockImplementation(() => {
           executionOrder.push('handler2');
           return true;
         }),

@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import OAuth2ConfigSection from '../OAuth2ConfigSection';
+import {describe, it, expect, vi} from 'vitest';
 import type {OAuth2Config} from '../../../../models/oauth';
+import OAuth2ConfigSection from '../OAuth2ConfigSection';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -184,6 +184,7 @@ describe('OAuth2ConfigSection', () => {
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
 
+      expect(screen.getByText('applications:edit.advanced.labels.publicClient')).toBeInTheDocument();
     });
   });
 
@@ -224,6 +225,8 @@ describe('OAuth2ConfigSection', () => {
       };
 
       render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
+
+      expect(screen.getByText('applications:edit.advanced.labels.pkceRequired')).toBeInTheDocument();
     });
   });
 

@@ -16,10 +16,6 @@
  * under the License.
  */
 
-import lowerCase from 'lodash-es/lowerCase';
-import startCase from 'lodash-es/startCase';
-import React, {type ReactElement, type SyntheticEvent, useCallback, useState} from 'react';
-import {useTranslation} from 'react-i18next';
 import {
   Autocomplete,
   type AutocompleteRenderInputParams,
@@ -35,6 +31,10 @@ import {
   Typography,
 } from '@wso2/oxygen-ui';
 import {XIcon} from '@wso2/oxygen-ui-icons-react';
+import lowerCase from 'lodash-es/lowerCase';
+import startCase from 'lodash-es/startCase';
+import React, {type ReactElement, type SyntheticEvent, useCallback, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import DynamicValueSyntax from './DynamicValueSyntax';
 
 /**

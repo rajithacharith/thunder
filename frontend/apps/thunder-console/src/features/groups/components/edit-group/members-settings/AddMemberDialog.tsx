@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import {useState, useMemo, useCallback, type JSX} from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -32,10 +31,11 @@ import {
   useTheme,
 } from '@wso2/oxygen-ui';
 import {User} from '@wso2/oxygen-ui-icons-react';
+import {useState, useMemo, useCallback, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
+import useDataGridLocaleText from '../../../../../hooks/useDataGridLocaleText';
 import useGetUsers from '../../../../users/api/useGetUsers';
 import type {ApiUser} from '../../../../users/types/users';
-import useDataGridLocaleText from '../../../../../hooks/useDataGridLocaleText';
 import type {Member} from '../../../models/group';
 
 interface AddMemberDialogProps {

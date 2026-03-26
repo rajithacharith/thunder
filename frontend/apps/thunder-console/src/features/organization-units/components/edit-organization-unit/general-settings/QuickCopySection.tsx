@@ -19,8 +19,8 @@
 import {Stack, TextField, InputAdornment, Tooltip, IconButton, FormControl, FormLabel} from '@wso2/oxygen-ui';
 import {Copy, Check} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
-import SettingsCard from '@/components/SettingsCard';
 import type {OrganizationUnit} from '../../../models/organization-unit';
+import SettingsCard from '@/components/SettingsCard';
 
 /**
  * Props for the {@link QuickCopySection} component.
@@ -77,7 +77,7 @@ export default function QuickCopySection({organizationUnit, copiedField, onCopyT
                     <IconButton
                       aria-label={copiedField === 'handle' ? t('common:actions.copied') : t('common:actions.copy')}
                       onClick={() => {
-                        onCopyToClipboard(organizationUnit.handle, 'handle').catch(() => {});
+                        onCopyToClipboard(organizationUnit.handle, 'handle').catch(() => null);
                       }}
                       edge="end"
                     >
@@ -110,7 +110,7 @@ export default function QuickCopySection({organizationUnit, copiedField, onCopyT
                     <IconButton
                       aria-label={copiedField === 'ou_id' ? t('common:actions.copied') : t('common:actions.copy')}
                       onClick={() => {
-                        onCopyToClipboard(organizationUnit.id, 'ou_id').catch(() => {});
+                        onCopyToClipboard(organizationUnit.id, 'ou_id').catch(() => null);
                       }}
                       edge="end"
                     >

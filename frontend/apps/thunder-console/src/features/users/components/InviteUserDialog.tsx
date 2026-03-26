@@ -19,7 +19,17 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import {useState, useEffect, useMemo, type JSX} from 'react';
+import {
+  EmbeddedFlowComponentType,
+  EmbeddedFlowEventType,
+  InviteUser,
+  type EmbeddedFlowComponent,
+  type InviteUserRenderProps,
+} from '@asgardeo/react';
+import {zodResolver} from '@hookform/resolvers/zod';
+import {useLogger} from '@thunder/logger/react';
+import {mapEmbeddedFlowTextVariant} from '@thunder/shared-design';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import {
   Dialog,
   DialogTitle,
@@ -42,20 +52,10 @@ import {
   StepLabel,
 } from '@wso2/oxygen-ui';
 import {X, Copy, Check} from '@wso2/oxygen-ui-icons-react';
-import {useTranslation} from 'react-i18next';
+import {useState, useEffect, useMemo, type JSX} from 'react';
 import {useForm, Controller} from 'react-hook-form';
+import {useTranslation} from 'react-i18next';
 import {z} from 'zod';
-import {zodResolver} from '@hookform/resolvers/zod';
-import {
-  EmbeddedFlowComponentType,
-  EmbeddedFlowEventType,
-  InviteUser,
-  type EmbeddedFlowComponent,
-  type InviteUserRenderProps,
-} from '@asgardeo/react';
-import {mapEmbeddedFlowTextVariant} from '@thunder/shared-design';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
-import {useLogger} from '@thunder/logger/react';
 
 /** Typed shape for flow sub-components */
 type FlowSubComponent = EmbeddedFlowComponent & {
@@ -516,7 +516,7 @@ function InviteUserContent({
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (!isButtonDisabled) {
-                    handleSubmit(submitAction, values).catch(() => {});
+                    handleSubmit(submitAction, values).catch(() => null);
                   }
                 }}
                 noValidate

@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
-import type React from 'react';
 import {Box} from '@wso2/oxygen-ui';
 import * as OxygenIcons from '@wso2/oxygen-ui-icons-react';
+import type {JSX} from 'react';
+import type React from 'react';
 import type {FlowComponent} from '../../../models/flow';
 
 interface IconAdapterProps {

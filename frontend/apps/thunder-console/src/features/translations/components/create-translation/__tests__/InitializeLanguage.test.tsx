@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
+import {render, screen, fireEvent} from '@thunder/test-utils';
+import {describe, expect, it, vi, beforeEach} from 'vitest';
 import InitializeLanguage from '../InitializeLanguage';
 
 vi.mock('react-i18next', async () => {

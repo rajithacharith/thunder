@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import type {ReactNode} from 'react';
-import I18nConfigurationCard from '../I18nConfigurationCard';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
-import {EdgeStyleTypes} from '../../../models/steps';
+import type {Base} from '../../../models/base';
 import {PreviewScreenType} from '../../../models/custom-text-preference';
 import {ElementTypes} from '../../../models/elements';
-import type {Base} from '../../../models/base';
+import {EdgeStyleTypes} from '../../../models/steps';
+import I18nConfigurationCard from '../I18nConfigurationCard';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -346,7 +346,7 @@ describe('I18nConfigurationCard', () => {
       expect(mockOnChange).toHaveBeenCalledWith('custom:login.title');
     });
 
-    it('should call onChange with empty string when selection is cleared', async () => {
+    it('should call onChange with empty string when selection is cleared', () => {
       render(
         <I18nConfigurationCard
           open

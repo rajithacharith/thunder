@@ -17,6 +17,8 @@
  */
 
 import {BaseSignIn, ThemeProvider} from '@asgardeo/react';
+import {type Theme} from '@thunder/shared-design';
+import type {RecursivePartial} from '@thunder/types';
 import {
   Box,
   Typography,
@@ -35,12 +37,10 @@ import {
 import {AppWindowMac, KeyRound} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
+import useIdentityProviders from '../../../integrations/api/useIdentityProviders';
+import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
 import {type IdentityProvider} from '@/features/integrations/models/identity-provider';
 import getIntegrationIcon from '@/features/integrations/utils/getIntegrationIcon';
-import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
-import {type Theme} from '@thunder/shared-design';
-import type {RecursivePartial} from '@thunder/types';
-import useIdentityProviders from '../../../integrations/api/useIdentityProviders';
 
 /**
  * Props for the {@link Preview} component that displays a live preview of the application sign-in page.
@@ -228,7 +228,7 @@ export default function Preview({appLogo, selectedTheme, integrations}: PreviewP
           <OxygenUIThemeProvider theme={selectedTheme as any}>
             <ThemeProvider mode={colorMode}>
               <Box>
-                <BaseSignIn onError={() => {}} onSuccess={() => {}}>
+                <BaseSignIn onError={() => null} onSuccess={() => null}>
                   {() => (
                     <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, p: 4}}>
                       <Stack alignItems="center" spacing={1} sx={{mb: 2}}>

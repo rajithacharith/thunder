@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {useCallback} from 'react';
 import {MarkerType, type Edge, type Node} from '@xyflow/react';
+import {useCallback} from 'react';
+import LoginFlowConstants from '../constants/LoginFlowConstants';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
 import {ElementTypes, type Element} from '@/features/flows/models/elements';
 import {StepTypes, type Step} from '@/features/flows/models/steps';
-import LoginFlowConstants from '../constants/LoginFlowConstants';
 
 // Use centralized constants
 const {

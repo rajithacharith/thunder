@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
-import {Stack} from '@wso2/oxygen-ui';
 import {cn} from '@thunder/utils';
+import {Stack} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
 import SignUpBox from './SignUpBox';
 
 export default function SignUp(): JSX.Element {

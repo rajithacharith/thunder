@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import type LogEntry from '../models/log-entry';
 import LogLevel, {LOG_LEVEL_PRIORITY} from '../models/log-level';
 import type Transport from '../models/transport';
-import type LogEntry from '../models/log-entry';
 
 /**
  * Abstract base class for transport implementations.

@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
-import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import IndividualMethodsToggleView, {type IndividualMethodsToggleViewProps} from '../IndividualMethodsToggleView';
+import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
+import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -280,10 +280,9 @@ describe('IndividualMethodsToggleView', () => {
       const oauthItem = screen.getByText('OAuth Provider').closest('li');
       const oauthSwitch = oauthItem?.querySelector('input[type="checkbox"]');
 
-      if (oauthSwitch) {
-        await user.click(oauthSwitch);
-        expect(mockOnIntegrationToggle).toHaveBeenCalledWith('oauth-idp-1');
-      }
+      expect(oauthSwitch).not.toBeNull();
+      await user.click(oauthSwitch!);
+      expect(mockOnIntegrationToggle).toHaveBeenCalledWith('oauth-idp-1');
     });
 
     it('should show other provider as enabled when its ID is in integrations', () => {

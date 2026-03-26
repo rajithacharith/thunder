@@ -20,10 +20,10 @@
 
 /* eslint-disable @thunder/copyright-header */
 
-import {Command} from 'commander';
 import {intro, outro, cancel} from '@clack/prompts';
-import colors from 'picocolors';
 import {createLogger} from '@thunder/logger';
+import {Command} from 'commander';
+import colors from 'picocolors';
 import createFeature from './commands/createFeature';
 import createPackage from './commands/createPackage';
 import getWorkspaceInfo from './utils/getWorkspaceInfo';

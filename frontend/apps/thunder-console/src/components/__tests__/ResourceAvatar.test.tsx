@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {AppWindow} from '@wso2/oxygen-ui-icons-react';
+import {describe, it, expect, vi} from 'vitest';
 import ResourceAvatar from '../ResourceAvatar';
 
 describe('ResourceAvatar', () => {

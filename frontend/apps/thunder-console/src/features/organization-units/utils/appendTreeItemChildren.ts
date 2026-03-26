@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {OrganizationUnitTreeItem} from '../models/organization-unit-tree';
 import OrganizationUnitTreeConstants from '../constants/organization-unit-tree-constants';
+import type {OrganizationUnitTreeItem} from '../models/organization-unit-tree';
 
 export default function appendTreeItemChildren(
   items: OrganizationUnitTreeItem[],

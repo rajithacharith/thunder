@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, screen, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {describe, it, expect, vi, afterEach} from 'vitest';
 import CopyableId from '../CopyableId';
 
 // Mock i18next

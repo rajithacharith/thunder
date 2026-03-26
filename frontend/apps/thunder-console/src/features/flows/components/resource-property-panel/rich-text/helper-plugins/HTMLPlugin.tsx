@@ -20,8 +20,8 @@ import {$generateHtmlFromNodes, $generateNodesFromDOM} from '@lexical/html';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import {$getRoot, $insertNodes, type EditorState, type LexicalNode, RootNode} from 'lexical';
 import {type ReactElement, useCallback, useEffect, useRef} from 'react';
-import {UPDATE_TYPES, type UpdateType} from '@/features/flows/models/rich-text';
 import type {Resource} from '../../../../models/resources';
+import {UPDATE_TYPES, type UpdateType} from '@/features/flows/models/rich-text';
 
 /**
  * Props interface for the HTML plugin.

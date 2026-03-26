@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {renderHook} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import useGetLoginFlowBuilderResources from '../useGetLoginFlowBuilderResources';
 
 // Mock the core resources hook
@@ -125,7 +125,7 @@ describe('useGetLoginFlowBuilderResources', () => {
   });
 
   describe('when coreResources is undefined', () => {
-    beforeEach(async () => {
+    beforeEach(() => {
       vi.resetModules();
       vi.doMock('@/features/flows/api/useGetFlowBuilderCoreResources', () => ({
         default: vi.fn(() => ({
@@ -152,7 +152,7 @@ describe('useGetLoginFlowBuilderResources', () => {
   });
 
   describe('when coreResources has null/undefined arrays', () => {
-    beforeEach(async () => {
+    beforeEach(() => {
       vi.resetModules();
       vi.doMock('@/features/flows/api/useGetFlowBuilderCoreResources', () => ({
         default: vi.fn(() => ({
@@ -188,7 +188,7 @@ describe('useGetLoginFlowBuilderResources', () => {
   });
 
   describe('coreResources property access', () => {
-    it('should handle null coreResources with fallback', () => {
+    it('should handle null coreResources with fallback', async () => {
       vi.resetModules();
       vi.doMock('@/features/flows/api/useGetFlowBuilderCoreResources', () => ({
         default: vi.fn(() => ({
@@ -199,6 +199,12 @@ describe('useGetLoginFlowBuilderResources', () => {
           mutate: () => null,
         })),
       }));
+
+      const {default: useGetLoginFlowBuilderResourcesModule} = await import('../useGetLoginFlowBuilderResources');
+      const {result} = renderHook(() => useGetLoginFlowBuilderResourcesModule());
+
+      expect(result.current.data).toBeDefined();
+      expect(result.current.data.executors).toBeDefined();
     });
 
     it('should spread coreResources even when partially undefined', () => {

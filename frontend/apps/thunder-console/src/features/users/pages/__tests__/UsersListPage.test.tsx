@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import type {InviteUserRenderProps} from '@asgardeo/react';
 import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import type {JSX} from 'react';
-import type {InviteUserRenderProps} from '@asgardeo/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import UsersListPage from '../UsersListPage';
 
 const mockNavigate = vi.fn();

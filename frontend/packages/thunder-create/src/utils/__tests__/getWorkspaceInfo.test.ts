@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, afterEach, beforeEach} from 'vitest';
 import {existsSync, mkdirSync, writeFileSync, rmSync, realpathSync} from 'fs';
-import {join} from 'path';
 import {tmpdir} from 'os';
+import {join} from 'path';
+import {describe, it, expect, afterEach, beforeEach} from 'vitest';
 import getWorkspaceInfo from '../getWorkspaceInfo';
 
 describe('getWorkspaceInfo', () => {

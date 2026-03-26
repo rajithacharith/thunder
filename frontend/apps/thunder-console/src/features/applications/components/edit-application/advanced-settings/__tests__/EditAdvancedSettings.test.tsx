@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import EditAdvancedSettings from '../EditAdvancedSettings';
+import {describe, it, expect, vi} from 'vitest';
+import CertificateTypes from '../../../../constants/certificate-types';
 import type {Application} from '../../../../models/application';
 import type {OAuth2Config} from '../../../../models/oauth';
-import CertificateTypes from '../../../../constants/certificate-types';
+import EditAdvancedSettings from '../EditAdvancedSettings';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({

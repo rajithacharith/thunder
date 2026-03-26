@@ -18,21 +18,21 @@
 
 import {Stack, Typography} from '@wso2/oxygen-ui';
 import {useReactFlow, type Node as FlowNode} from '@xyflow/react';
-import {useRef, useMemo, useCallback, memo, type ReactElement} from 'react';
 import cloneDeep from 'lodash-es/cloneDeep';
-import merge from 'lodash-es/merge';
 import debounce from 'lodash-es/debounce';
-import set from 'lodash-es/set';
 import isEmpty from 'lodash-es/isEmpty';
-import type {Properties} from '../../models/base';
-import type {Resource} from '../../models/resources';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import merge from 'lodash-es/merge';
+import set from 'lodash-es/set';
+import {useRef, useMemo, useCallback, memo, type ReactElement} from 'react';
 import ResourcePropertyPanelConstants from '../../constants/ResourcePropertyPanelConstants';
-import PluginRegistry from '../../plugins/PluginRegistry';
-import FlowEventTypes from '../../models/extension';
-import type {StepData} from '../../models/steps';
+import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import type {Properties} from '../../models/base';
 import type {Element} from '../../models/elements';
 import {ElementTypes} from '../../models/elements';
+import FlowEventTypes from '../../models/extension';
+import type {Resource} from '../../models/resources';
+import type {StepData} from '../../models/steps';
+import PluginRegistry from '../../plugins/PluginRegistry';
 
 /**
  * Props interface of {@link ResourceProperties}

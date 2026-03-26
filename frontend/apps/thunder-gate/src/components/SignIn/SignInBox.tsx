@@ -18,17 +18,17 @@
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
-import type {JSX} from 'react';
-import {Box, Alert, styled, Paper, ColorSchemeImage, Stack, CircularProgress} from '@wso2/oxygen-ui';
-import {useState} from 'react';
 import {EmbeddedFlowComponentType, SignIn, type EmbeddedFlowComponent} from '@asgardeo/react';
+import {useDesign} from '@thunder/shared-design';
 import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import {cn, TemplateLiteralType} from '@thunder/utils';
-import {useSearchParams} from 'react-router';
+import {Box, Alert, styled, Paper, ColorSchemeImage, Stack, CircularProgress} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
+import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useDesign} from '@thunder/shared-design';
-import FlowComponentRenderer from '../flow/FlowComponentRenderer';
+import {useSearchParams} from 'react-router';
 import generateFallbackSignUpUrl from '../../utils/generateFallbackSignUpUrl';
+import FlowComponentRenderer from '../flow/FlowComponentRenderer';
 
 const StyledPaper = styled(Paper)(({theme}) => ({
   display: 'flex',
@@ -153,13 +153,10 @@ export default function SignInBox(): JSX.Element {
                             onInputChange={updateInput}
                             onValidate={validateForm}
                             onSubmit={(action, inputs) => {
-                              // Tracker: https://github.com/asgardeo/javascript/issues/222
-                              onSubmit({inputs, action: action.id})
-                                .finally(() => {
-                                  setFormInputs({});
-                                  setFieldErrors({});
-                                })
-                                .catch(() => {});
+                              void onSubmit({inputs, action: action.id}).finally(() => {
+                                setFormInputs({});
+                                setFieldErrors({});
+                              });
                             }}
                           />
                         ))}

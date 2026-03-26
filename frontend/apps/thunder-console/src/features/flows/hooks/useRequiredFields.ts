@@ -19,10 +19,10 @@
 import cloneDeep from 'lodash-es/cloneDeep';
 import get from 'lodash-es/get';
 import {type ReactElement, useCallback, useEffect} from 'react';
-import Notification, {NotificationType} from '../models/notification';
-import type {Resource} from '../models/resources';
 import useValidationStatus from './useValidationStatus';
 import ValidationConstants from '../constants/ValidationConstants';
+import Notification, {NotificationType} from '../models/notification';
+import type {Resource} from '../models/resources';
 
 const IDP_NAME_PLACEHOLDER = '{{IDP_NAME}}';
 const IDP_ID_PLACEHOLDER = '{{IDP_ID}}';

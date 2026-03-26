@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import {TechnologyApplicationTemplate} from '../models/application-templates';
 import type {OAuth2Config} from '../models/oauth';
 import {OAuth2GrantTypes} from '../models/oauth';
-import {TechnologyApplicationTemplate} from '../models/application-templates';
 
 /**
  * Infers the application template technology type from an OAuth2 configuration.

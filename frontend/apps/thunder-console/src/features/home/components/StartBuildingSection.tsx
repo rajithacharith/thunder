@@ -16,14 +16,14 @@
  * under the License.
  */
 
+import {useConfig} from '@thunder/shared-contexts';
 import {Box, Button, Card, Chip, Stack, Typography} from '@wso2/oxygen-ui';
 import {motion} from 'framer-motion';
-import {useNavigate} from 'react-router';
-import {useTranslation} from 'react-i18next';
 import type {JSX} from 'react';
-import {useConfig} from '@thunder/shared-contexts';
-import useGetApplications from '../../applications/api/useGetApplications';
+import {useTranslation} from 'react-i18next';
+import {useNavigate} from 'react-router';
 import HomeFloatingLogos from './HomeFloatingLogos';
+import useGetApplications from '../../applications/api/useGetApplications';
 
 export default function StartBuildingSection(): JSX.Element {
   const navigate = useNavigate();

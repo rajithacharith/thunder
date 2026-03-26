@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import type {ReactNode} from 'react';
-import CheckboxPropertyField from '../CheckboxPropertyField';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {ValidationContext, type ValidationContextProps} from '../../../context/ValidationContext';
-import type {Resource} from '../../../models/resources';
 import Notification from '../../../models/notification';
+import type {Resource} from '../../../models/resources';
+import CheckboxPropertyField from '../CheckboxPropertyField';
 
 describe('CheckboxPropertyField', () => {
   const mockOnChange = vi.fn();

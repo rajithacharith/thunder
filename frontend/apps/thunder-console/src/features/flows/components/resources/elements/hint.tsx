@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {Stack} from '@wso2/oxygen-ui';
+import {InfoIcon} from '@wso2/oxygen-ui-icons-react';
 import type {ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
-import {InfoIcon} from '@wso2/oxygen-ui-icons-react';
-import {Stack} from '@wso2/oxygen-ui';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 
 /**
  * Props interface of {@link Hint}

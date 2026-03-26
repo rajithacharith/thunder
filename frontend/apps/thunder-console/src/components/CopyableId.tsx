@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {useState, useCallback, useRef, useEffect, type JSX} from 'react';
+import {useLogger} from '@thunder/logger/react';
 import {Stack, Typography, Tooltip} from '@wso2/oxygen-ui';
 import {Copy, Check} from '@wso2/oxygen-ui-icons-react';
+import {useState, useCallback, useRef, useEffect, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useLogger} from '@thunder/logger/react';
 
 interface CopyableIdProps {
   /** The ID value to display and copy */

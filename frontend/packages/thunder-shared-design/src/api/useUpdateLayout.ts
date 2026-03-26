@@ -16,12 +16,12 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
-import type {LayoutResponse} from '../models/responses';
-import type {UpdateLayoutRequest} from '../models/requests';
 import DesignQueryKeys from '../constants/design-query-keys';
+import type {UpdateLayoutRequest} from '../models/requests';
+import type {LayoutResponse} from '../models/responses';
 
 interface UpdateLayoutParams {
   layoutId: string;

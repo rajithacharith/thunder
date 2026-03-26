@@ -17,12 +17,12 @@
  */
 
 import {Box, Typography, TextField, Autocomplete, CircularProgress, Alert} from '@wso2/oxygen-ui';
-import {Link} from 'react-router';
 import {useTranslation, Trans} from 'react-i18next';
+import {Link} from 'react-router';
+import SettingsCard from '../../../../../components/SettingsCard';
 import useGetFlows from '../../../../flows/api/useGetFlows';
 import {FlowType} from '../../../../flows/models/flows';
 import type {Application} from '../../../models/application';
-import SettingsCard from '../../../../../components/SettingsCard';
 
 /**
  * Props for the {@link AuthenticationFlowSection} component.

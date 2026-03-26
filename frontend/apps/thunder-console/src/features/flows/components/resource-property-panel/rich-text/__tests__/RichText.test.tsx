@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import type {Resource} from '@/features/flows/models/resources';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import RichText from '../RichText';
+import type {Resource} from '@/features/flows/models/resources';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({

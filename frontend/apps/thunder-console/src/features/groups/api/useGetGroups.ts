@@ -16,12 +16,12 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
+import GroupQueryKeys from '../constants/group-query-keys';
 import type {GroupListResponse} from '../models/group';
 import type {GroupListParams} from '../models/requests';
-import GroupQueryKeys from '../constants/group-query-keys';
 
 /**
  * Custom React hook to fetch a paginated list of groups.

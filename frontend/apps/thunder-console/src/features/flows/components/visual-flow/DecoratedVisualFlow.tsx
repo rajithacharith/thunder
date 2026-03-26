@@ -19,6 +19,7 @@
 import {CollisionPriority} from '@dnd-kit/abstract';
 import {move} from '@dnd-kit/helpers';
 import {DragDropProvider, type DragDropEventHandlers} from '@dnd-kit/react';
+import {Box} from '@wso2/oxygen-ui';
 import {
   type Connection,
   type Edge,
@@ -29,6 +30,7 @@ import {
   useUpdateNodeInternals,
 } from '@xyflow/react';
 import type {UpdateNodeInternals} from '@xyflow/system';
+import classNames from 'classnames';
 import {
   type Dispatch,
   useCallback,
@@ -39,38 +41,36 @@ import {
   type ReactElement,
   type SetStateAction,
 } from 'react';
-import {Box} from '@wso2/oxygen-ui';
-import classNames from 'classnames';
-import useIdentityProviders from '@/features/integrations/api/useIdentityProviders';
-import useNotificationSenders from '@/features/notification-senders/api/useNotificationSenders';
-import VisualFlow, {type VisualFlowPropsInterface} from './VisualFlow';
-import Droppable from '../dnd/Droppable';
-import VisualFlowConstants from '../../constants/VisualFlowConstants';
-import generateResourceId from '../../utils/generateResourceId';
-import {BlockTypes, ElementTypes, type Element} from '../../models/elements';
-import type {DragSourceData, DragTargetData, DragEventWithNative} from '../../models/drag-drop';
-import {ResourceTypes, type Resource, type Resources} from '../../models/resources';
 import FormRequiresViewDialog from './FormRequiresViewDialog';
+import VisualFlow, {type VisualFlowPropsInterface} from './VisualFlow';
+import VisualFlowConstants from '../../constants/VisualFlowConstants';
+import useComponentDelete from '../../hooks/useComponentDelete';
+import useConfirmPasswordField from '../../hooks/useConfirmPasswordField';
+import useContainerDialogConfirm from '../../hooks/useContainerDialogConfirm';
+import useDeleteExecutionResource from '../../hooks/useDeleteExecutionResource';
+import useDragDropHandlers from '../../hooks/useDragDropHandlers';
+import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import useGenerateStepElement from '../../hooks/useGenerateStepElement';
+import useResourceAdd from '../../hooks/useResourceAdd';
+import useStaticContentField from '../../hooks/useStaticContentField';
+import useVisualFlowHandlers from '../../hooks/useVisualFlowHandlers';
+import type {DragSourceData, DragTargetData, DragEventWithNative} from '../../models/drag-drop';
+import {BlockTypes, ElementTypes, type Element} from '../../models/elements';
+import type {MetadataInterface} from '../../models/metadata';
+import {ResourceTypes, type Resource, type Resources} from '../../models/resources';
 import {type Step, type StepData} from '../../models/steps';
 import {type Template} from '../../models/templates';
 import type {Widget} from '../../models/widget';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
-import useComponentDelete from '../../hooks/useComponentDelete';
-import useResourceAdd from '../../hooks/useResourceAdd';
-import useGenerateStepElement from '../../hooks/useGenerateStepElement';
-import useDeleteExecutionResource from '../../hooks/useDeleteExecutionResource';
-import useStaticContentField from '../../hooks/useStaticContentField';
-import useConfirmPasswordField from '../../hooks/useConfirmPasswordField';
-import useVisualFlowHandlers from '../../hooks/useVisualFlowHandlers';
-import useContainerDialogConfirm from '../../hooks/useContainerDialogConfirm';
-import useDragDropHandlers from '../../hooks/useDragDropHandlers';
 import applyAutoLayout from '../../utils/applyAutoLayout';
+import computeExecutorConnections from '../../utils/computeExecutorConnections';
+import generateResourceId from '../../utils/generateResourceId';
 import {resolveCollisions} from '../../utils/resolveCollisions';
+import Droppable from '../dnd/Droppable';
 import ResourcePanel from '../resource-panel/ResourcePanel';
 import ResourcePropertyPanel from '../resource-property-panel/ResourcePropertyPanel';
 import ValidationPanel from '../validation-panel/ValidationPanel';
-import computeExecutorConnections from '../../utils/computeExecutorConnections';
-import type {MetadataInterface} from '../../models/metadata';
+import useIdentityProviders from '@/features/integrations/api/useIdentityProviders';
+import useNotificationSenders from '@/features/notification-senders/api/useNotificationSenders';
 
 /**
  * Props interface of {@link DecoratedVisualFlow}

@@ -154,7 +154,6 @@ export default function TranslationFieldsView({
                   error={isDuplicateKey}
                   helperText={isDuplicateKey ? t('editor.addKey.duplicateKey') : undefined}
                   sx={{'& .MuiInputBase-input': {fontFamily: 'monospace', fontSize: '0.8rem'}}}
-                  autoFocus
                 />
               </FormControl>
               <FormControl fullWidth>

@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import ResourcePanel from '../ResourcePanel';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {Resources} from '../../../models/resources';
+import ResourcePanel from '../ResourcePanel';
 
 // Mock react-router
 const mockNavigate = vi.fn();

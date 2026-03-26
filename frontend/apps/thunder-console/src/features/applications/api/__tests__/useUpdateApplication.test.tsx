@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
-import useUpdateApplication from '../useUpdateApplication';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import ApplicationQueryKeys from '../../constants/application-query-keys';
 import type {Application} from '../../models/application';
 import type {CreateApplicationRequest} from '../../models/requests';
-import ApplicationQueryKeys from '../../constants/application-query-keys';
+import useUpdateApplication from '../useUpdateApplication';
 
 // Mock the dependencies
 vi.mock('@asgardeo/react', () => ({

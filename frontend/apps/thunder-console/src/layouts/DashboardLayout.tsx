@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {Link as NavigateLink, Outlet} from 'react-router';
-import {useMemo, type ReactNode} from 'react';
+import {SignOutButton, User, useAsgardeo} from '@asgardeo/react';
+import {useLogger} from '@thunder/logger/react';
 import {
   AppShell,
   ColorSchemeImage,
@@ -39,9 +39,9 @@ import {
   UsersRound,
   Workflow,
 } from '@wso2/oxygen-ui-icons-react';
-import {SignOutButton, User, useAsgardeo} from '@asgardeo/react';
+import {useMemo, type ReactNode} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useLogger} from '@thunder/logger/react';
+import {Link as NavigateLink, Outlet} from 'react-router';
 
 export default function DashboardLayout(): ReactNode {
   const {signIn} = useAsgardeo();

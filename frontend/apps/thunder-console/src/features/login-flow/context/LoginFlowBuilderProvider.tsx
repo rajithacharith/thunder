@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import FlowBuilderCoreProvider from '@/features/flows/context/FlowBuilderCoreProvider';
-import {PreviewScreenType} from '@/features/flows/models/custom-text-preference';
 import {useMemo, type PropsWithChildren, type ReactElement} from 'react';
 import FlowContextWrapper from './FlowContextWrapper';
 import ResourceProperties from '../components/resource-property-panel/ResourceProperties';
 import ElementFactory from '../components/resources/elements/ElementFactory';
+import FlowBuilderCoreProvider from '@/features/flows/context/FlowBuilderCoreProvider';
+import {PreviewScreenType} from '@/features/flows/models/custom-text-preference';
 /**
  * This component provides login flow builder related context to its children.
  *

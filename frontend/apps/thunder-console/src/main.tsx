@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import * as ReactDOM from 'react-dom/client';
-import {StrictMode} from 'react';
-import {ConfigProvider} from '@thunder/shared-contexts';
-import {LoggerProvider, LogLevel} from '@thunder/logger/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
+import {LoggerProvider, LogLevel} from '@thunder/logger/react';
+import {ConfigProvider} from '@thunder/shared-contexts';
+import {StrictMode} from 'react';
+import * as ReactDOM from 'react-dom/client';
 import AppWithDecorators from './AppWithDecorators';
 
 const queryClient: QueryClient = new QueryClient({

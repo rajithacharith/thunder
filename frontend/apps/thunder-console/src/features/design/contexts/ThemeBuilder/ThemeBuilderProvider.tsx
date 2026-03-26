@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {useState, useMemo, useCallback, useEffect, type PropsWithChildren} from 'react';
-import {useParams} from 'react-router';
 import {useGetTheme, type Theme} from '@thunder/shared-design';
+import {useState, useMemo, useCallback, type PropsWithChildren} from 'react';
+import {useParams} from 'react-router';
 import ThemeBuilderContext, {type ThemeBuilderContextType} from './ThemeBuilderContext';
 import type {ThemeSection, Viewport} from '../../models/theme-builder';
 
@@ -62,29 +62,30 @@ export default function ThemeBuilderProvider({children}: ThemeBuilderProviderPro
   const {themeId = ''} = useParams<{themeId: string}>();
   const {data: themeData, isLoading} = useGetTheme(themeId);
 
-  const [draftTheme, setDraftTheme] = useState<Theme | null>(null);
+  const [draftTheme, setDraftTheme] = useState<Theme | null>(() => themeData?.theme ?? null);
   const [isDirty, setIsDirty] = useState<boolean>(false);
   const [activeSection, setActiveSection] = useState<ThemeSection>('colors');
-  const [previewColorScheme, setPreviewColorScheme] = useState<'light' | 'dark' | 'system'>('light');
+  const [previewColorScheme, setPreviewColorScheme] = useState<'light' | 'dark' | 'system'>(
+    () => (themeData?.theme?.defaultColorScheme === 'dark' ? 'dark' : 'light'),
+  );
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   const handle = themeData?.handle ?? null;
   const displayName = themeData?.displayName ?? null;
 
-  // When theme data loads, sync previewColorScheme with the draft's defaultColorScheme
-  useEffect(() => {
+  const [prevThemeData, setPrevThemeData] = useState(themeData);
+
+  // When theme data loads, sync previewColorScheme and initialize draft
+  if (prevThemeData !== themeData) {
+    setPrevThemeData(themeData);
     if (themeData?.theme?.defaultColorScheme === 'dark') {
       setPreviewColorScheme('dark');
     }
-  }, [themeData]);
-
-  // Initialize draft when theme data loads
-  useEffect(() => {
     if (themeData?.theme && !draftTheme) {
       setDraftTheme(themeData.theme);
     }
-  }, [themeData, draftTheme]);
+  }
 
   /**
    * Resets the draft to match the original theme

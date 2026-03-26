@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, act} from '@testing-library/react';
 import {useContext} from 'react';
-import FlowBuilderCoreProvider from '../FlowBuilderCoreProvider';
-import FlowBuilderCoreContext from '../FlowBuilderCoreContext';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {PreviewScreenType} from '../../models/custom-text-preference';
-import {EdgeStyleTypes} from '../../models/steps';
 import type {Resource} from '../../models/resources';
+import {EdgeStyleTypes} from '../../models/steps';
+import FlowBuilderCoreContext from '../FlowBuilderCoreContext';
+import FlowBuilderCoreProvider from '../FlowBuilderCoreProvider';
 
 // Mock @xyflow/react
 vi.mock('@xyflow/react', () => ({

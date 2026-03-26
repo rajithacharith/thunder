@@ -17,20 +17,20 @@
  */
 
 import {Typography, Stack, CircularProgress, Alert, Box, useTheme} from '@wso2/oxygen-ui';
+import {Lightbulb} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useEffect, useMemo, useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
-import {type IdentityProvider, IdentityProviderTypes} from '@/features/integrations/models/identity-provider';
-import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
-import {Lightbulb} from '@wso2/oxygen-ui-icons-react';
-import useIdentityProviders from '../../../../integrations/api/useIdentityProviders';
+import FlowsListView from './FlowsListView';
+import IndividualMethodsToggleView from './IndividualMethodsToggleView';
 import useGetFlows from '../../../../flows/api/useGetFlows';
 import {FlowType} from '../../../../flows/models/flows';
 import {type BasicFlowDefinition} from '../../../../flows/models/responses';
-import useApplicationCreateContext from '../../../hooks/useApplicationCreateContext';
 import findMatchingFlowForIntegrations from '../../../../flows/utils/findMatchingFlowForIntegrations';
-import FlowsListView from './FlowsListView';
-import IndividualMethodsToggleView from './IndividualMethodsToggleView';
+import useIdentityProviders from '../../../../integrations/api/useIdentityProviders';
+import useApplicationCreateContext from '../../../hooks/useApplicationCreateContext';
+import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
+import {type IdentityProvider, IdentityProviderTypes} from '@/features/integrations/models/identity-provider';
 
 /**
  * Props for the {@link ConfigureSignInOptions} component.

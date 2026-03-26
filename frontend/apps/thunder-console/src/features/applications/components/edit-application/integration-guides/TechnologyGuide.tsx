@@ -16,18 +16,18 @@
  * under the License.
  */
 
+import {useLogger} from '@thunder/logger';
 import {Box, Typography, Stack, Card, CardContent, Divider, Paper, IconButton, Tooltip} from '@wso2/oxygen-ui';
 import {Sparkles, Copy} from '@wso2/oxygen-ui-icons-react';
 import type {JSX, MouseEvent} from 'react';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useLogger} from '@thunder/logger';
 import {Prism as SyntaxHighlighter} from 'react-syntax-highlighter';
 import {vscDarkPlus} from 'react-syntax-highlighter/dist/esm/styles/prism';
-import type {IntegrationGuides, IntegrationStep} from '../../../models/application-templates';
-import {ApplicationCreateFlowSignInApproach} from '../../../models/application-create-flow';
-import GradientBorderButton from '../../GradientBorderButton';
 import TemplateConstants from '../../../constants/template-constants';
+import {ApplicationCreateFlowSignInApproach} from '../../../models/application-create-flow';
+import type {IntegrationGuides, IntegrationStep} from '../../../models/application-templates';
+import GradientBorderButton from '../../GradientBorderButton';
 
 /**
  * Props for the {@link TechnologyGuide} component.

@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {useNavigate} from 'react-router';
-import {useState, useCallback, useMemo} from 'react';
+import {useAsgardeo} from '@asgardeo/react';
+import {useLogger} from '@thunder/logger/react';
 import {
   Box,
   Stack,
@@ -31,18 +31,18 @@ import {
 } from '@wso2/oxygen-ui';
 import {X, ChevronRight} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
+import {useState, useCallback, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useAsgardeo} from '@asgardeo/react';
-import {useLogger} from '@thunder/logger/react';
-import useGetUserSchemas from '../api/useGetUserSchemas';
-import useGetUserSchema from '../api/useGetUserSchema';
-import useCreateUser from '../api/useCreateUser';
+import {useNavigate} from 'react-router';
 import useGetChildOrganizationUnits from '../../organization-units/api/useGetChildOrganizationUnits';
-import useUserCreate from '../contexts/UserCreate/useUserCreate';
-import {UserCreateFlowStep} from '../models/user-create-flow';
-import ConfigureUserType from '../components/create-user/ConfigureUserType';
+import useCreateUser from '../api/useCreateUser';
+import useGetUserSchema from '../api/useGetUserSchema';
+import useGetUserSchemas from '../api/useGetUserSchemas';
 import ConfigureOrganizationUnit from '../components/create-user/ConfigureOrganizationUnit';
 import ConfigureUserDetails from '../components/create-user/ConfigureUserDetails';
+import ConfigureUserType from '../components/create-user/ConfigureUserType';
+import useUserCreate from '../contexts/UserCreate/useUserCreate';
+import {UserCreateFlowStep} from '../models/user-create-flow';
 
 export default function CreateUserPage(): JSX.Element {
   const {t} = useTranslation();

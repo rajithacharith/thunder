@@ -20,10 +20,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
-import {afterEach, beforeEach, describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import FlowComponentRenderer from '../FlowComponentRenderer';
+import {afterEach, beforeEach, describe, it, expect, vi} from 'vitest';
 import type {FlowComponentRendererProps} from '../../../models/flow';
+import FlowComponentRenderer from '../FlowComponentRenderer';
 
 const {blockPropsSpy, consentPropsSpy, timerPropsSpy} = vi.hoisted(() => ({
   blockPropsSpy: vi.fn(),

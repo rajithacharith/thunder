@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {useState, type JSX} from 'react';
 import {AsgardeoProvider, BaseSignIn, type EmbeddedFlowComponent} from '@asgardeo/react';
-import {Box, CircularProgress, Typography, useColorScheme} from '@wso2/oxygen-ui';
 import type {Theme, ColorSchemeOption} from '@thunder/shared-design';
-import toAsgardeoTheme from '../../features/design/utils/asgardeoThemeTransformer';
+import {Box, CircularProgress, Typography, useColorScheme} from '@wso2/oxygen-ui';
+import {useState, type JSX} from 'react';
+import buildPreviewMock from './mocks/buildPreviewMock';
 import PreviewToolbar from '../../features/design/components/PreviewToolbar';
 import {VIEWPORT_WIDTHS, VIEWPORT_HEIGHTS} from '../../features/design/components/viewportConstants';
-import buildPreviewMock from './mocks/buildPreviewMock';
+import toAsgardeoTheme from '../../features/design/utils/asgardeoThemeTransformer';
 
 export type Viewport = 'desktop' | 'tablet' | 'mobile';
 
@@ -179,8 +179,8 @@ export default function GatePreview({
                 <BaseSignIn
                   components={mock}
                   isLoading={false}
-                  onSubmit={async () => {}}
-                  onError={() => {}}
+                  onSubmit={async () => Promise.resolve()}
+                  onError={() => null}
                   error={null}
                   size="medium"
                   showTitle

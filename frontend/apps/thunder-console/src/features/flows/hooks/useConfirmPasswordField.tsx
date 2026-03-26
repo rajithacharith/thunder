@@ -20,13 +20,13 @@ import {type Node, useReactFlow} from '@xyflow/react';
 import cloneDeep from 'lodash-es/cloneDeep';
 import set from 'lodash-es/set';
 import {useCallback, useEffect} from 'react';
-import PluginRegistry from '../plugins/PluginRegistry';
-import FlowEventTypes from '../models/extension';
-import VisualFlowConstants from '../constants/VisualFlowConstants';
-import {BlockTypes, ElementTypes} from '../models/elements';
 import FlowBuilderElementConstants from '../constants/FlowBuilderElementConstants';
-import type {Element} from '../models/elements';
+import VisualFlowConstants from '../constants/VisualFlowConstants';
 import type {Properties} from '../models/base';
+import {BlockTypes, ElementTypes} from '../models/elements';
+import type {Element} from '../models/elements';
+import FlowEventTypes from '../models/extension';
+import PluginRegistry from '../plugins/PluginRegistry';
 import generateResourceId from '../utils/generateResourceId';
 
 /**

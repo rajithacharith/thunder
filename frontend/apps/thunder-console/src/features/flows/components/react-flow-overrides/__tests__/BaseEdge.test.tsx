@@ -18,14 +18,14 @@
 
 /* eslint-disable react/require-default-props, jsx-a11y/no-static-element-interactions */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import React, {type ReactNode} from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
-import {EdgeStyleTypes} from '../../../models/steps';
+import type {Base} from '../../../models/base';
 import {PreviewScreenType} from '../../../models/custom-text-preference';
 import {ElementTypes} from '../../../models/elements';
-import type {Base} from '../../../models/base';
+import {EdgeStyleTypes} from '../../../models/steps';
 
 // Import after mocks are set up
 import BaseEdge from '../BaseEdge';
@@ -518,7 +518,7 @@ describe('BaseEdge', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle deleteElements rejection gracefully', async () => {
+    it('should handle deleteElements rejection gracefully', () => {
       mockDeleteElements.mockRejectedValueOnce(new Error('Delete failed'));
 
       const {container} = render(<BaseEdge {...defaultProps} />, {

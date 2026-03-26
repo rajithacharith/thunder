@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {Alert, Box} from '@wso2/oxygen-ui';
 import Editor from '@monaco-editor/react';
+import {Alert, Box} from '@wso2/oxygen-ui';
 import {useEffect, useRef, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 

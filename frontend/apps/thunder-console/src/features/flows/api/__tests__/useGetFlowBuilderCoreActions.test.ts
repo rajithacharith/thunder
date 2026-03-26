@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {renderHook} from '@testing-library/react';
-import useGetFlowBuilderCoreActions from '../useGetFlowBuilderCoreActions';
+import {describe, it, expect} from 'vitest';
 import actions from '../../data/actions.json';
+import useGetFlowBuilderCoreActions from '../useGetFlowBuilderCoreActions';
 
 describe('useGetFlowBuilderCoreActions', () => {
   describe('Return Structure', () => {

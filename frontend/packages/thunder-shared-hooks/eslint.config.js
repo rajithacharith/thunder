@@ -23,4 +23,5 @@ export default [
     ignores: ['dist/**', 'build/**', 'node_modules/**', 'coverage/**'],
   },
   ...thunderPlugin.configs.react,
+  ...thunderPlugin.configs.vitest,
 ];

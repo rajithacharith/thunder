@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import appRoutes, {type AppRoute} from '../appRoutes';
 import ROUTES from '../../constants/routes';
+import appRoutes, {type AppRoute} from '../appRoutes';
 
 describe('appRoutes', () => {
   it('exports an array of routes', () => {

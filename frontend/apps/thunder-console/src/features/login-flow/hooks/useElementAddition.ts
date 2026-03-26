@@ -16,16 +16,16 @@
  * under the License.
  */
 
-import {useCallback} from 'react';
 import type {Node} from '@xyflow/react';
 import type {UpdateNodeInternals} from '@xyflow/system';
 import cloneDeep from 'lodash-es/cloneDeep';
+import {useCallback} from 'react';
+import {INPUT_ELEMENT_TYPES, mutateComponents} from '../utils/componentMutations';
+import useGenerateStepElement from '@/features/flows/hooks/useGenerateStepElement';
 import {BlockTypes, ElementCategories, type Element} from '@/features/flows/models/elements';
 import {ResourceTypes} from '@/features/flows/models/resources';
 import {StepTypes} from '@/features/flows/models/steps';
 import generateIdsForResources from '@/features/flows/utils/generateIdsForResources';
-import useGenerateStepElement from '@/features/flows/hooks/useGenerateStepElement';
-import {INPUT_ELEMENT_TYPES, mutateComponents} from '../utils/componentMutations';
 
 /**
  * Props for the useElementAddition hook.

@@ -19,17 +19,20 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 /* eslint-disable no-underscore-dangle */
 
-import type {ESLint} from 'eslint';
 import {readFileSync} from 'fs';
-import {fileURLToPath} from 'url';
 import {dirname, join} from 'path';
-import copyrightHeaderRule from './rules/copyright-header.js';
-import baseConfig from './configs/base.js';
-import reactConfig from './configs/react.js';
-import javascriptConfig from './configs/javascript.js';
-import prettierConfig from './configs/prettier.js';
-import typescriptConfig from './configs/typescript.js';
-import createParserOptions from './utils/tsconfig-resolver.js';
+import {fileURLToPath} from 'url';
+import type {ESLint} from 'eslint';
+import baseConfig from './configs/base';
+import javascriptConfig from './configs/javascript';
+import playwrightConfig from './configs/playwright';
+import prettierConfig from './configs/prettier';
+import reactConfig from './configs/react';
+import typescriptConfig from './configs/typescript';
+import vitestConfig from './configs/vitest';
+import vueConfig from './configs/vue';
+import copyrightHeaderRule from './rules/copyright-header';
+import createParserOptions from './utils/tsconfig-resolver';
 
 interface PackageJson {
   name: string;
@@ -79,7 +82,26 @@ const plugin: ESLint.Plugin = {
 // @ts-expect-error TODO: Update to the latest ESLint and remove `@types/eslint`.
 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 Object.assign(plugin.configs, {
-  base: [
+  javascript: [
+    {
+      name: 'thunder/plugin-setup',
+      plugins: {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        '@thunder': plugin,
+      },
+    },
+    ...baseConfig,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    ...javascriptConfig,
+    ...prettierConfig,
+    {
+      files: DEV_DEPENDENCIES_ALLOWED_FILES,
+      rules: {
+        'import/no-extraneous-dependencies': ['error', {devDependencies: true}],
+      },
+    },
+  ],
+  typescript: [
     {
       name: 'thunder/plugin-setup',
       plugins: {
@@ -115,6 +137,52 @@ Object.assign(plugin.configs, {
     ...typescriptConfig,
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     ...reactConfig,
+    ...prettierConfig,
+    {
+      files: DEV_DEPENDENCIES_ALLOWED_FILES,
+      rules: {
+        'import/no-extraneous-dependencies': ['error', {devDependencies: true}],
+      },
+    },
+  ],
+  // Overlay config for Playwright e2e test files — spread alongside base/react.
+  playwright: [
+    {
+      name: 'thunder/plugin-setup',
+      plugins: {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        '@thunder': plugin,
+      },
+    },
+    ...playwrightConfig,
+  ],
+  // Overlay config for Vitest unit/integration test files — spread alongside base/react.
+  vitest: [
+    {
+      name: 'thunder/plugin-setup',
+      plugins: {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        '@thunder': plugin,
+      },
+    },
+    ...vitestConfig,
+  ],
+  // Full project config for Vue applications.
+  vue: [
+    {
+      name: 'thunder/plugin-setup',
+      plugins: {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        '@thunder': plugin,
+      },
+    },
+    ...baseConfig,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    ...javascriptConfig,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    ...typescriptConfig,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    ...vueConfig,
     ...prettierConfig,
     {
       files: DEV_DEPENDENCIES_ALLOWED_FILES,

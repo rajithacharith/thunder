@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {
   Box,
   Stack,
@@ -34,10 +35,9 @@ import {
 } from '@wso2/oxygen-ui';
 import {Lock} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
-import {useAsgardeo} from '@asgardeo/react';
-import type {OAuth2Config} from '../../../models/oauth';
-import type {ApplicationTemplate} from '../../../models/application-templates';
 import SettingsCard from '../../../../../components/SettingsCard';
+import type {ApplicationTemplate} from '../../../models/application-templates';
+import type {OAuth2Config} from '../../../models/oauth';
 
 interface OidcDiscovery {
   grant_types_supported?: string[];

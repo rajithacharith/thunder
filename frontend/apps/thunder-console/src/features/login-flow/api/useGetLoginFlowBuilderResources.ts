@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import type {Resources} from '@/features/flows/models/resources';
-import useGetFlowBuilderCoreResources from '@/features/flows/api/useGetFlowBuilderCoreResources';
 import executors from '../data/executors.json';
 import steps from '../data/steps.json';
 import templates from '../data/templates.json';
 import widgets from '../data/widgets.json';
+import useGetFlowBuilderCoreResources from '@/features/flows/api/useGetFlowBuilderCoreResources';
+import type {Resources} from '@/features/flows/models/resources';
 
 /**
  * Hook to get the resources supported by the password recovery flow builder.

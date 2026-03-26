@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import type {ReactNode} from 'react';
-import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
-import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
 import type {Theme} from '@thunder/shared-design';
 import {type RecursivePartial} from '@thunder/types';
+import type {ReactNode} from 'react';
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import Preview, {type PreviewProps} from '../Preview';
+import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
+import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
 
 // Mock the @asgardeo/react module
 vi.mock('@asgardeo/react', () => ({
@@ -674,6 +674,8 @@ describe('Preview', () => {
           'sms-otp': true,
         },
       });
+
+      expect(screen.getByText('or')).toBeInTheDocument();
     });
   });
 

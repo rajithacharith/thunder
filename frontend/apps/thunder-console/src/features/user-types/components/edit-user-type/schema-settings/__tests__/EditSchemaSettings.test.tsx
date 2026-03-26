@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, within, userEvent} from '@thunder/test-utils';
-import EditSchemaSettings from '../EditSchemaSettings';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {SchemaPropertyInput} from '../../../../types/user-types';
+import EditSchemaSettings from '../EditSchemaSettings';
 
 describe('EditSchemaSettings', () => {
   const mockOnPropertiesChange = vi.fn();

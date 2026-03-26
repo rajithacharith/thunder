@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {createElement} from 'react';
+import {describe, it, expect} from 'vitest';
 import Notification, {NotificationType} from '../notification';
 import type {Resource} from '../resources';
 

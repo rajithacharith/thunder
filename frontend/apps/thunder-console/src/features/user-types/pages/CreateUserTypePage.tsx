@@ -16,8 +16,7 @@
  * under the License.
  */
 
-import {useNavigate} from 'react-router';
-import {useState, useCallback, useMemo} from 'react';
+import {useLogger} from '@thunder/logger/react';
 import {
   Box,
   Stack,
@@ -30,15 +29,16 @@ import {
   Snackbar,
 } from '@wso2/oxygen-ui';
 import {X, ChevronRight} from '@wso2/oxygen-ui-icons-react';
+import {useState, useCallback, useMemo} from 'react';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useLogger} from '@thunder/logger/react';
+import {useNavigate} from 'react-router';
 import useCreateUserType from '../api/useCreateUserType';
+import ConfigureGeneral from '../components/create-user-type/ConfigureGeneral';
+import ConfigureName from '../components/create-user-type/ConfigureName';
+import ConfigureProperties from '../components/create-user-type/ConfigureProperties';
 import useUserTypeCreate from '../contexts/UserTypeCreate/useUserTypeCreate';
 import {UserTypeCreateFlowStep} from '../models/user-type-create-flow';
-import ConfigureName from '../components/create-user-type/ConfigureName';
-import ConfigureGeneral from '../components/create-user-type/ConfigureGeneral';
-import ConfigureProperties from '../components/create-user-type/ConfigureProperties';
 import type {PropertyDefinition, UserSchemaDefinition, CreateUserSchemaRequest} from '../types/user-types';
 
 export default function CreateUserTypePage(): JSX.Element {

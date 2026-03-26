@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type {BasicFlowDefinition} from '@/features/flows/models/responses';
-import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
-import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
-import findMatchingFlowForIntegrations from '@/features/flows/utils/findMatchingFlowForIntegrations';
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import ConfigureSignInOptions, {type ConfigureSignInOptionsProps} from '../ConfigureSignInOptions';
+import type {BasicFlowDefinition} from '@/features/flows/models/responses';
+import findMatchingFlowForIntegrations from '@/features/flows/utils/findMatchingFlowForIntegrations';
+import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
+import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({

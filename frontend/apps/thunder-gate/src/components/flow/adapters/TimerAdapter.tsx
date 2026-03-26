@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
-import {Alert, Typography} from '@wso2/oxygen-ui';
 import {FlowTimer, type FlowTimerRenderProps} from '@asgardeo/react';
+import {Alert, Typography} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
 
 /**
  * Props for the TimerAdapter component.

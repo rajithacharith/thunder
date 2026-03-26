@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type LogLevel from './log-level';
 import type LogEntry from './log-entry';
+import type LogLevel from './log-level';
 
 /**
  * Interface that all transport implementations must satisfy.

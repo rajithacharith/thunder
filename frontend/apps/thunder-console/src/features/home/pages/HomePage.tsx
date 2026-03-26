@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {Box, PageContent, Stack, Typography} from '@wso2/oxygen-ui';
 import {User} from '@asgardeo/react';
-import {useTranslation} from 'react-i18next';
+import {Box, PageContent, Stack, Typography} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
-import StartBuildingSection from '../components/StartBuildingSection';
+import {useTranslation} from 'react-i18next';
 import NextStepsSection from '../components/NextStepsSection';
+import StartBuildingSection from '../components/StartBuildingSection';
 
 export default function HomePage(): JSX.Element {
   const {t} = useTranslation('home');

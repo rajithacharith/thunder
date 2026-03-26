@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {useGetThemes, useGetTheme, type ThemeListItem, type Theme} from '@thunder/shared-design';
 import {
   Typography,
   Stack,
@@ -32,10 +33,9 @@ import {Palette, Shuffle, Plus} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useState, useMemo, useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useGetThemes, useGetTheme, type ThemeListItem, type Theme} from '@thunder/shared-design';
-import ThemeThumbnail from '../../../design/components/themes/ThemeThumbnail';
-import generateIconSuggestions from '../../../../utils/generateIconSuggestions';
 import ResourceAvatar from '../../../../components/ResourceAvatar';
+import generateIconSuggestions from '../../../../utils/generateIconSuggestions';
+import ThemeThumbnail from '../../../design/components/themes/ThemeThumbnail';
 
 /**
  * Props for the {@link ConfigureDesign} component.

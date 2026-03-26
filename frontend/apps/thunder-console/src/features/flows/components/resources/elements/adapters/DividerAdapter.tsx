@@ -16,13 +16,13 @@
  * under the License.
  */
 
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {Divider, type DividerProps} from '@wso2/oxygen-ui';
 import {useMemo, type ReactElement} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
-import {Divider, type DividerProps} from '@wso2/oxygen-ui';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import {DividerVariants, type Element as FlowElement} from '@/features/flows/models/elements';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 
 const DIVIDER_VALIDATION_FIELD_NAMES = {
   variant: 'variant',

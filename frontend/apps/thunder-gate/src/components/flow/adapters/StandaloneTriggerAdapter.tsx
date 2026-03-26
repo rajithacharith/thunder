@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
-import {Box, Button} from '@wso2/oxygen-ui';
 import {type EmbeddedFlowComponent} from '@asgardeo/react';
+import {Box, Button} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import getIntegrationIcon from '../../../utils/getIntegrationIcon';
 import type {FlowComponent} from '../../../models/flow';
+import getIntegrationIcon from '../../../utils/getIntegrationIcon';
 
 interface StandaloneTriggerAdapterProps {
   component: FlowComponent;

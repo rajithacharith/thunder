@@ -17,13 +17,13 @@
  */
 
 import {Stack} from '@wso2/oxygen-ui';
-import type {Application} from '../../../models/application';
-import type {OAuth2Config} from '../../../models/oauth';
-import type {InboundAuthConfig} from '../../../models/inbound-auth';
-import type {ApplicationTemplate} from '../../../models/application-templates';
-import OAuth2ConfigSection from './OAuth2ConfigSection';
 import CertificateSection from './CertificateSection';
 import MetadataSection from './MetadataSection';
+import OAuth2ConfigSection from './OAuth2ConfigSection';
+import type {Application} from '../../../models/application';
+import type {ApplicationTemplate} from '../../../models/application-templates';
+import type {InboundAuthConfig} from '../../../models/inbound-auth';
+import type {OAuth2Config} from '../../../models/oauth';
 
 /**
  * Props for the {@link EditAdvancedSettings} component.

@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
 import {FormControl, FormLabel, IconButton, InputAdornment, TextField} from '@wso2/oxygen-ui';
 import {Eye, EyeClosed} from '@wso2/oxygen-ui-icons-react';
+import type {JSX} from 'react';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {FlowFieldProps} from '../../../models/flow';

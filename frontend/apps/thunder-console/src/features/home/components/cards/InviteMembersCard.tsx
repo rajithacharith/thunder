@@ -19,11 +19,11 @@
 import {Avatar, Box, Skeleton, Stack, Typography} from '@wso2/oxygen-ui';
 import {UsersRound} from '@wso2/oxygen-ui-icons-react';
 import {motion} from 'framer-motion';
-import {useTranslation} from 'react-i18next';
 import type {JSX} from 'react';
-import getInitials from '@/utils/getInitials';
-import useGetUsers from '../../../users/api/useGetUsers';
+import {useTranslation} from 'react-i18next';
 import HomeNextStepCard from './HomeNextStepCard';
+import useGetUsers from '../../../users/api/useGetUsers';
+import getInitials from '@/utils/getInitials';
 
 const AVATAR_LIMIT = 5;
 

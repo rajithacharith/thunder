@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {renderHook} from '@testing-library/react';
 import {MarkerType, type Edge, type Node} from '@xyflow/react';
-import {StepTypes, type Step} from '@/features/flows/models/steps';
-import {ElementTypes} from '@/features/flows/models/elements';
+import {describe, it, expect} from 'vitest';
 
-import type {Element} from '@/features/flows/models/elements';
 import useEdgeGeneration from '../useEdgeGeneration';
+import type {Element} from '@/features/flows/models/elements';
+import {ElementTypes} from '@/features/flows/models/elements';
+import {StepTypes, type Step} from '@/features/flows/models/steps';
 
 const createMockElement = (overrides: Partial<Element> = {}): Element =>
   ({

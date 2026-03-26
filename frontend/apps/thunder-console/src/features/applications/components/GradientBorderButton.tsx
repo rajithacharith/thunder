@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {forwardRef} from 'react';
 import {styled, keyframes, Button, type ButtonProps} from '@wso2/oxygen-ui';
+import {forwardRef} from 'react';
 
 const spin = keyframes`
   0% {

@@ -20,10 +20,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import PasswordInputAdapter from '../PasswordInputAdapter';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {FlowFieldProps} from '../../../../models/flow';
+import PasswordInputAdapter from '../PasswordInputAdapter';
 
 vi.mock('@wso2/oxygen-ui', () => ({
   FormControl: ({children, required}: any) => <div data-required={required}>{children}</div>,

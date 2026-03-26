@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {type ReactNode} from 'react';
 import {Box} from '@wso2/oxygen-ui';
+import {type ReactNode} from 'react';
 
 type Segment = {kind: 'text'; content: string} | {kind: 'template'; typeName: string; key: string};
 

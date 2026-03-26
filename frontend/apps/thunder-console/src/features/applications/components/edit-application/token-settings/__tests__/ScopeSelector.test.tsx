@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, expect, it, vi} from 'vitest';
 import {render, screen, within, act, fireEvent} from '@testing-library/react';
+import {describe, expect, it, vi} from 'vitest';
 import ScopeSelector from '../ScopeSelector';
 
 vi.mock('react-i18next', () => ({

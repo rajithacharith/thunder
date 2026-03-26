@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import DynamicValuePopover from '../DynamicValuePopover';
 
 vi.mock('react-i18next', () => ({

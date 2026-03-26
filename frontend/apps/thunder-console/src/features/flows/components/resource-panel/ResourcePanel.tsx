@@ -16,22 +16,22 @@
  * under the License.
  */
 
+import {Accordion, AccordionDetails, AccordionSummary, Box, Stack, Typography} from '@wso2/oxygen-ui';
+import {BoxesIcon, BoxIcon, ChevronDownIcon, CogIcon, LayoutTemplate, ZapIcon} from '@wso2/oxygen-ui-icons-react';
 import kebabCase from 'lodash-es/kebabCase';
 import {memo, useCallback, useMemo, type HTMLAttributes, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Accordion, AccordionDetails, AccordionSummary, Box, Stack, Typography} from '@wso2/oxygen-ui';
-import {BoxesIcon, BoxIcon, ChevronDownIcon, CogIcon, LayoutTemplate, ZapIcon} from '@wso2/oxygen-ui-icons-react';
 import {useNavigate} from 'react-router';
-import BuilderPanelHeader from '../../../../components/BuilderLayout/BuilderPanelHeader';
-import BuilderLayout from '../../../../components/BuilderLayout/BuilderLayout';
-import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import ResourcePanelDraggable from './ResourcePanelDraggable';
 import ResourcePanelStatic from './ResourcePanelStatic';
+import BuilderLayout from '../../../../components/BuilderLayout/BuilderLayout';
+import BuilderPanelHeader from '../../../../components/BuilderLayout/BuilderPanelHeader';
+import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
 import type {Element} from '../../models/elements';
 import type {Resource, Resources} from '../../models/resources';
 import type {Step} from '../../models/steps';
 import type {Template} from '../../models/templates';
 import type {Widget} from '../../models/widget';
-import ResourcePanelDraggable from './ResourcePanelDraggable';
 
 /**
  * Props interface of {@link ResourcePanel}

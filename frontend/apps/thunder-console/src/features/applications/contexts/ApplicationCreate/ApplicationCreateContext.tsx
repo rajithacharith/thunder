@@ -16,9 +16,10 @@
  * under the License.
  */
 
+import type {Theme} from '@thunder/shared-design';
 import type {Context} from 'react';
 import {createContext} from 'react';
-import type {Theme} from '@thunder/shared-design';
+import type {BasicFlowDefinition} from '../../../flows/models/responses';
 import type {
   ApplicationCreateFlowSignInApproach,
   ApplicationCreateFlowStep,
@@ -28,7 +29,6 @@ import type {
   PlatformApplicationTemplate,
   ApplicationTemplate,
 } from '../../models/application-templates';
-import type {BasicFlowDefinition} from '../../../flows/models/responses';
 
 /**
  * Application creation context state interface

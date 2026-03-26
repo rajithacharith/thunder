@@ -20,10 +20,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import OtpInputAdapter from '../OtpInputAdapter';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {FlowFieldProps} from '../../../../models/flow';
+import OtpInputAdapter from '../OtpInputAdapter';
 
 vi.mock('@wso2/oxygen-ui', () => ({
   Box: ({children, sx}: any) => <div style={sx}>{children}</div>,

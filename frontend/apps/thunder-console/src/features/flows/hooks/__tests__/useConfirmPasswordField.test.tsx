@@ -16,16 +16,16 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {renderHook} from '@testing-library/react';
-import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
 import type {Node} from '@xyflow/react';
-import useConfirmPasswordField from '../useConfirmPasswordField';
-import FlowEventTypes from '../../models/extension';
-import {ElementTypes, BlockTypes} from '../../models/elements';
+import type {ReactNode} from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import FlowBuilderElementConstants from '../../constants/FlowBuilderElementConstants';
+import {ElementTypes, BlockTypes} from '../../models/elements';
 import type {Element} from '../../models/elements';
+import FlowEventTypes from '../../models/extension';
+import useConfirmPasswordField from '../useConfirmPasswordField';
 
 // Use vi.hoisted to define mocks
 const {mockGetNode, mockUpdateNodeData, mockRegisterAsync, mockRegisterSync, mockUnregister} = vi.hoisted(() => ({

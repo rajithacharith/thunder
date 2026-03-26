@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
-import type {JSX} from 'react';
 import {EmbeddedFlowComponentType, EmbeddedFlowEventType} from '@asgardeo/react';
 import type {InviteUserRenderProps, EmbeddedFlowComponent} from '@asgardeo/react';
+import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
+import type {JSX} from 'react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import InviteUserDialog from '../InviteUserDialog';
 
 const {mockLoggerError} = vi.hoisted(() => ({
@@ -1437,7 +1437,7 @@ describe('InviteUserDialog', () => {
 
 
 
-  it('renders SELECT with selected value showing label', async () => {
+  it('renders SELECT with selected value showing label', () => {
     const selectComponent: EmbeddedFlowComponent = {
       id: 'preselected_select',
       ref: 'preselectedOption',

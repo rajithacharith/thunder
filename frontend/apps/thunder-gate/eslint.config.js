@@ -21,6 +21,7 @@ import thunderPlugin from '@thunder/eslint-plugin-thunder';
 export default [
   {ignores: ['dist/**', 'build/**', 'node_modules/**', 'coverage/**']},
   ...thunderPlugin.configs.react,
+  ...thunderPlugin.configs.vitest,
   {
     rules: {
       'import/no-extraneous-dependencies': [

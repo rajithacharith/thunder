@@ -18,7 +18,7 @@
  * under the License.
  */
 
-/* eslint-disable @thunder/copyright-header, import/extensions, no-console */
+/* eslint-disable @thunder/copyright-header, import/extensions, no-console, no-undef */
 
 import('../dist/cli.js')
   .then((module) => {

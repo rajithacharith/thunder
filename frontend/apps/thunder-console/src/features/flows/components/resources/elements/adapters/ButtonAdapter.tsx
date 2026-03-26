@@ -16,18 +16,18 @@
  * under the License.
  */
 
-import {useMemo, type ReactElement, type ReactNode} from 'react';
-import {Trans, useTranslation} from 'react-i18next';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import {Button, type ButtonProps, type SxProps, type Theme} from '@wso2/oxygen-ui';
 import {Position} from '@xyflow/react';
+import {useMemo, type ReactElement, type ReactNode} from 'react';
+import {Trans, useTranslation} from 'react-i18next';
+import NodeHandle from './NodeHandle';
+import TemplatePlaceholder, {containsTemplateLiteral} from './TemplatePlaceholder';
+import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import {ButtonVariants, type Element as FlowElement} from '@/features/flows/models/elements';
-import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
 import resolveStaticResourcePath from '@/features/flows/utils/resolveStaticResourcePath';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
-import NodeHandle from './NodeHandle';
-import TemplatePlaceholder, {containsTemplateLiteral} from './TemplatePlaceholder';
 
 const BUTTON_VALIDATION_FIELD_NAMES = {
   label: 'label',

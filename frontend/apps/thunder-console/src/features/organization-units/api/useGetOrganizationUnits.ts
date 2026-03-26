@@ -16,13 +16,13 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
+import fetchOrganizationUnits from './fetchOrganizationUnits';
+import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
 import type {OrganizationUnitListParams} from '../models/requests';
 import type {OrganizationUnitListResponse} from '../models/responses';
-import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
-import fetchOrganizationUnits from './fetchOrganizationUnits';
 
 /**
  * Custom React hook to fetch a paginated list of organization units from the Thunder server.

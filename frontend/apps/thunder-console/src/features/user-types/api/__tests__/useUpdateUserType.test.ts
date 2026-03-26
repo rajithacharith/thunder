@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, act, renderHook} from '@thunder/test-utils';
-import useUpdateUserType from '../useUpdateUserType';
-import type {ApiUserSchema, UpdateUserSchemaRequest} from '../../types/user-types';
-import type {UpdateUserTypeVariables} from '../useUpdateUserType';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import UserTypeQueryKeys from '../../constants/userTypeQueryKeys';
+import type {ApiUserSchema, UpdateUserSchemaRequest} from '../../types/user-types';
+import useUpdateUserType from '../useUpdateUserType';
+import type {UpdateUserTypeVariables} from '../useUpdateUserType';
 
 vi.mock('@asgardeo/react', () => ({useAsgardeo: vi.fn()}));
 vi.mock('@thunder/shared-contexts', async (importOriginal) => {
@@ -143,7 +143,7 @@ describe('useUpdateUserType', () => {
 
     const {result} = renderHook(() => useUpdateUserType());
 
-    await act(async () => {
+    act(() => {
       result.current.mutate(mockVariables);
     });
 

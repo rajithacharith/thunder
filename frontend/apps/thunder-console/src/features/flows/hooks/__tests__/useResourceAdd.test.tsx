@@ -16,18 +16,18 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {renderHook, act, cleanup} from '@testing-library/react';
-import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
 import type {Node, Edge} from '@xyflow/react';
-import useResourceAdd, {type UseResourceAddProps} from '../useResourceAdd';
+import type {ReactNode} from 'react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import type {Element} from '../../models/elements';
 import {ResourceTypes} from '../../models/resources';
 import {StepTypes} from '../../models/steps';
+import type {Step} from '../../models/steps';
 import type {Template} from '../../models/templates';
 import type {Widget} from '../../models/widget';
-import type {Step} from '../../models/steps';
-import type {Element} from '../../models/elements';
+import useResourceAdd, {type UseResourceAddProps} from '../useResourceAdd';
 
 // Use vi.hoisted to define mocks
 const {
@@ -164,12 +164,8 @@ describe('useResourceAdd', () => {
 
   describe('Template Handling', () => {
     it('should handle template resource type', () => {
-      const newNodes: Node[] = [
-        {id: 'node-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
-      ];
-      const newEdges: Edge[] = [
-        {id: 'edge-1', source: 'node-1', target: 'node-2'},
-      ];
+      const newNodes: Node[] = [{id: 'node-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}}];
+      const newEdges: Edge[] = [{id: 'edge-1', source: 'node-1', target: 'node-2'}];
 
       mockOnTemplateLoad.mockReturnValue([newNodes, newEdges]);
 
@@ -194,9 +190,7 @@ describe('useResourceAdd', () => {
     });
 
     it('should apply auto-assign connections when metadata has executorConnections', () => {
-      const newNodes: Node[] = [
-        {id: 'node-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
-      ];
+      const newNodes: Node[] = [{id: 'node-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}}];
 
       mockOnTemplateLoad.mockReturnValue([newNodes, []]);
 
@@ -224,7 +218,7 @@ describe('useResourceAdd', () => {
       expect(mockOnTemplateLoad).toHaveBeenCalled();
     });
 
-    it('should update node internals for nodes with components', async () => {
+    it('should update node internals for nodes with components', () => {
       const newNodes: Node[] = [
         {
           id: 'node-1',
@@ -235,9 +229,7 @@ describe('useResourceAdd', () => {
               {
                 id: 'component-1',
                 type: 'FORM',
-                components: [
-                  {id: 'nested-1', type: 'INPUT'},
-                ],
+                components: [{id: 'nested-1', type: 'INPUT'}],
               },
             ],
           },
@@ -263,7 +255,7 @@ describe('useResourceAdd', () => {
       expect(mockSetNodes).toHaveBeenCalledWith(newNodes);
     });
 
-    it('should call updateNodeInternals for nodes, components and nested components via requestAnimationFrame', async () => {
+    it('should call updateNodeInternals for nodes, components and nested components via requestAnimationFrame', () => {
       vi.useFakeTimers();
 
       const newNodes: Node[] = [
@@ -276,9 +268,7 @@ describe('useResourceAdd', () => {
               {
                 id: 'component-1',
                 type: 'FORM',
-                components: [
-                  {id: 'nested-1', type: 'INPUT'},
-                ],
+                components: [{id: 'nested-1', type: 'INPUT'}],
               },
             ],
           },
@@ -302,7 +292,7 @@ describe('useResourceAdd', () => {
       });
 
       // Trigger the first requestAnimationFrame callback (updateAllNodeInternals)
-      await act(async () => {
+      act(() => {
         vi.runAllTimers();
       });
 
@@ -314,12 +304,10 @@ describe('useResourceAdd', () => {
       vi.useRealTimers();
     });
 
-    it('should call fitView after updating node internals', async () => {
+    it('should call fitView after updating node internals', () => {
       vi.useFakeTimers();
 
-      const newNodes: Node[] = [
-        {id: 'node-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
-      ];
+      const newNodes: Node[] = [{id: 'node-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}}];
 
       mockOnTemplateLoad.mockReturnValue([newNodes, []]);
 
@@ -338,7 +326,7 @@ describe('useResourceAdd', () => {
       });
 
       // Trigger both requestAnimationFrame callbacks
-      await act(async () => {
+      act(() => {
         vi.runAllTimers();
       });
 
@@ -347,14 +335,12 @@ describe('useResourceAdd', () => {
       vi.useRealTimers();
     });
 
-    it('should handle fitView rejection gracefully', async () => {
+    it('should handle fitView rejection gracefully', () => {
       vi.useFakeTimers();
 
       mockFitView.mockRejectedValueOnce(new Error('fitView failed'));
 
-      const newNodes: Node[] = [
-        {id: 'node-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}},
-      ];
+      const newNodes: Node[] = [{id: 'node-1', type: 'VIEW', position: {x: 0, y: 0}, data: {}}];
 
       mockOnTemplateLoad.mockReturnValue([newNodes, []]);
 
@@ -373,7 +359,7 @@ describe('useResourceAdd', () => {
         result.current(template);
       });
 
-      await act(async () => {
+      act(() => {
         vi.runAllTimers();
       });
 
@@ -382,7 +368,7 @@ describe('useResourceAdd', () => {
       vi.useRealTimers();
     });
 
-    it('should handle nodes without components in updateAllNodeInternals', async () => {
+    it('should handle nodes without components in updateAllNodeInternals', () => {
       vi.useFakeTimers();
 
       const newNodes: Node[] = [
@@ -406,7 +392,7 @@ describe('useResourceAdd', () => {
         result.current(template);
       });
 
-      await act(async () => {
+      act(() => {
         vi.runAllTimers();
       });
 
@@ -417,7 +403,7 @@ describe('useResourceAdd', () => {
       vi.useRealTimers();
     });
 
-    it('should handle components without nested components', async () => {
+    it('should handle components without nested components', () => {
       vi.useFakeTimers();
 
       const newNodes: Node[] = [
@@ -449,7 +435,7 @@ describe('useResourceAdd', () => {
         result.current(template);
       });
 
-      await act(async () => {
+      act(() => {
         vi.runAllTimers();
       });
 
@@ -552,7 +538,7 @@ describe('useResourceAdd', () => {
       expect(mockOnWidgetLoad).toHaveBeenCalled();
     });
 
-    it('should call updateNodeInternals for widgets with nested components via requestAnimationFrame', async () => {
+    it('should call updateNodeInternals for widgets with nested components via requestAnimationFrame', () => {
       vi.useFakeTimers();
 
       const newNodes: Node[] = [
@@ -565,9 +551,7 @@ describe('useResourceAdd', () => {
               {
                 id: 'form-1',
                 type: 'FORM',
-                components: [
-                  {id: 'input-1', type: 'INPUT'},
-                ],
+                components: [{id: 'input-1', type: 'INPUT'}],
               },
             ],
           },
@@ -591,7 +575,7 @@ describe('useResourceAdd', () => {
         result.current(widget);
       });
 
-      await act(async () => {
+      act(() => {
         vi.runAllTimers();
       });
 
@@ -603,12 +587,10 @@ describe('useResourceAdd', () => {
       vi.useRealTimers();
     });
 
-    it('should call fitView after updating widget node internals', async () => {
+    it('should call fitView after updating widget node internals', () => {
       vi.useFakeTimers();
 
-      const newNodes: Node[] = [
-        {id: 'view-1', type: StepTypes.View, position: {x: 0, y: 0}, data: {}},
-      ];
+      const newNodes: Node[] = [{id: 'view-1', type: StepTypes.View, position: {x: 0, y: 0}, data: {}}];
 
       mockGetNodes.mockReturnValue([]);
       mockOnWidgetLoad.mockReturnValue([newNodes, [], null, null]);
@@ -627,7 +609,7 @@ describe('useResourceAdd', () => {
         result.current(widget);
       });
 
-      await act(async () => {
+      act(() => {
         vi.runAllTimers();
       });
 
@@ -747,11 +729,9 @@ describe('useResourceAdd', () => {
       mockGetNodes.mockReturnValue([existingViewStep]);
 
       let capturedCallback: ((node: Node) => {components: Element[]}) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_id: string, callback: (node: Node) => {components: Element[]}) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_id: string, callback: (node: Node) => {components: Element[]}) => {
+        capturedCallback = callback;
+      });
 
       const {result} = renderHook(() => useResourceAdd(defaultProps), {
         wrapper: createWrapper(),
@@ -806,13 +786,10 @@ describe('useResourceAdd', () => {
 
   describe('Ref Updates', () => {
     it('should use latest props values when handler is called', () => {
-      const {result, rerender} = renderHook(
-        ({props}: {props: UseResourceAddProps}) => useResourceAdd(props),
-        {
-          wrapper: createWrapper(),
-          initialProps: {props: defaultProps},
-        },
-      );
+      const {result, rerender} = renderHook(({props}: {props: UseResourceAddProps}) => useResourceAdd(props), {
+        wrapper: createWrapper(),
+        initialProps: {props: defaultProps},
+      });
 
       const newOnTemplateLoad = vi.fn().mockReturnValue([[], []]);
       const newProps: UseResourceAddProps = {

@@ -18,8 +18,8 @@
 
 import {Box, Stack, Typography} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
-import type {Application} from '../../../models/application';
 import SettingsCard from '../../../../../components/SettingsCard';
+import type {Application} from '../../../models/application';
 
 /**
  * Props for the {@link MetadataSection} component.

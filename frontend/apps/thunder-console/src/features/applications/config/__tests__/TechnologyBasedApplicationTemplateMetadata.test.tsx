@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {render} from '@testing-library/react';
-import TechnologyBasedApplicationTemplateMetadata from '../TechnologyBasedApplicationTemplateMetadata';
+import {describe, it, expect} from 'vitest';
 import {TechnologyApplicationTemplate} from '../../models/application-templates';
+import TechnologyBasedApplicationTemplateMetadata from '../TechnologyBasedApplicationTemplateMetadata';
 
 describe('TechnologyBasedApplicationTemplateMetadata', () => {
   describe('Structure', () => {

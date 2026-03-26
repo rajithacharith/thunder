@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
-import {Typography} from '@wso2/oxygen-ui';
-import {useTranslation} from 'react-i18next';
 import {mapEmbeddedFlowTextVariant, useDesign} from '@thunder/shared-design';
+import {Typography} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
+import {useTranslation} from 'react-i18next';
 import type {FlowComponent} from '../../../models/flow';
 
 interface TextAdapterProps {

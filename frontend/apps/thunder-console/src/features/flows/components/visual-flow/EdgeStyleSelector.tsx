@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {type ReactElement, useCallback} from 'react';
 import {Menu, MenuItem, ListItemIcon, ListItemText} from '@wso2/oxygen-ui';
+import {type ReactElement, useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
+import {BezierEdgeIcon, SmoothStepEdgeIcon, StepEdgeIcon} from './EdgeStyleIcons';
 import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
 import {EdgeStyleTypes, type EdgeStyleTypes as EdgeStyleTypesType} from '../../models/steps';
-import {BezierEdgeIcon, SmoothStepEdgeIcon, StepEdgeIcon} from './EdgeStyleIcons';
 
 /**
  * Props interface of {@link EdgeStyleMenu}

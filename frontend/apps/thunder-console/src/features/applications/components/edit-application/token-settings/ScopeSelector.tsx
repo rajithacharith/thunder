@@ -17,8 +17,8 @@
  */
 
 import {Box, Stack, Typography, Chip, Tooltip, TextField, Button} from '@wso2/oxygen-ui';
-import {useTranslation} from 'react-i18next';
 import {useState, useEffect, useRef} from 'react';
+import {useTranslation} from 'react-i18next';
 
 /**
  * Well-known OIDC scopes offered as quick-add chips when not yet active.
@@ -56,28 +56,19 @@ export default function ScopeSelector({scopes, onScopesChange}: ScopeSelectorPro
   const removalTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const additionTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const scopesRef = useRef(scopes);
-  scopesRef.current = scopes;
+
+  useEffect(() => {
+    scopesRef.current = scopes;
+  }, [scopes]);
+
+  // Derive filtered pending sets during render to avoid stale entries without needing effects
+  const activePendingRemovals = new Set([...pendingRemovals].filter((s) => scopes.includes(s)));
+  const activePendingAdditions = new Set([...pendingAdditions].filter((s) => !scopes.includes(s)));
 
   // Known scopes not yet active — shown as quick-add chips (exclude pending additions too)
   const inactiveKnownScopes = (KNOWN_SCOPES as readonly string[]).filter(
-    (s) => !scopes.includes(s) && !pendingAdditions.has(s),
+    (s) => !scopes.includes(s) && !activePendingAdditions.has(s),
   );
-
-  // Clean up pendingRemovals once the scope is confirmed gone from the prop
-  useEffect(() => {
-    setPendingRemovals((prev) => {
-      const next = new Set([...prev].filter((s) => scopes.includes(s)));
-      return next.size !== prev.size ? next : prev;
-    });
-  }, [scopes]);
-
-  // Clean up pendingAdditions once the scope is confirmed present in the prop
-  useEffect(() => {
-    setPendingAdditions((prev) => {
-      const next = new Set([...prev].filter((s) => !scopes.includes(s)));
-      return next.size !== prev.size ? next : prev;
-    });
-  }, [scopes]);
 
   // Cancel all timers on unmount
   useEffect(() => {
@@ -159,7 +150,7 @@ export default function ScopeSelector({scopes, onScopesChange}: ScopeSelectorPro
 
       <Stack spacing={2}>
         {/* Active scopes + pending custom additions */}
-        {(scopes.length > 0 || pendingAdditions.size > 0) && (
+        {(scopes.length > 0 || activePendingAdditions.size > 0) && (
           <Box>
             <Typography
               variant="caption"
@@ -170,7 +161,7 @@ export default function ScopeSelector({scopes, onScopesChange}: ScopeSelectorPro
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               {scopes.map((scope) => {
-                const isPendingRemoval = pendingRemovals.has(scope);
+                const isPendingRemoval = activePendingRemovals.has(scope);
                 return (
                   <Chip
                     key={scope}
@@ -183,7 +174,7 @@ export default function ScopeSelector({scopes, onScopesChange}: ScopeSelectorPro
                   />
                 );
               })}
-              {[...pendingAdditions].map((scope) => (
+              {[...activePendingAdditions].map((scope) => (
                 <Chip
                   key={scope}
                   label={scope}

@@ -18,12 +18,12 @@
 
 /* eslint-disable react/require-default-props */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
-import {MemoryRouter} from 'react-router';
 import {DataGrid} from '@wso2/oxygen-ui';
-import FlowsList from '../FlowsList';
+import {MemoryRouter} from 'react-router';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {BasicFlowDefinition} from '../../models/responses';
+import FlowsList from '../FlowsList';
 
 // Mock @thunder/logger/react with accessible mock functions
 const mockLoggerError = vi.fn();

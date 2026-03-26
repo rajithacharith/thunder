@@ -16,8 +16,15 @@
  * under the License.
  */
 
-import {type ChangeEvent, type ReactElement, type SyntheticEvent, useCallback, useMemo, useRef, useState} from 'react';
-import {useTranslation} from 'react-i18next';
+import {
+  useGetLanguages,
+  useGetTranslations,
+  useUpdateTranslation,
+  NamespaceConstants,
+  I18nDefaultConstants,
+} from '@thunder/i18n';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {isI18nTemplatePattern, I18N_KEY_PATTERN} from '@thunder/utils';
 import {
   Alert,
   Autocomplete,
@@ -39,15 +46,8 @@ import {
   Typography,
 } from '@wso2/oxygen-ui';
 import {PlusIcon, SquareFunction, XIcon} from '@wso2/oxygen-ui-icons-react';
-import {
-  useGetLanguages,
-  useGetTranslations,
-  useUpdateTranslation,
-  NamespaceConstants,
-  I18nDefaultConstants,
-} from '@thunder/i18n';
-import {isI18nTemplatePattern, I18N_KEY_PATTERN} from '@thunder/utils';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {type ChangeEvent, type ReactElement, type SyntheticEvent, useCallback, useMemo, useRef, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {invalidateI18nCache} from '../../../../i18n/invalidate-i18n-cache';
 
 /**

@@ -16,18 +16,18 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
-import {Box, Button} from '@wso2/oxygen-ui';
 import {EmbeddedFlowComponentType, EmbeddedFlowEventType, type EmbeddedFlowComponent} from '@asgardeo/react';
+import {Box, Button} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import getIntegrationIcon from '../../../utils/getIntegrationIcon';
 import DividerAdapter from './DividerAdapter';
-import RichTextAdapter from './RichTextAdapter';
-import TextInputAdapter from './TextInputAdapter';
-import PasswordInputAdapter from './PasswordInputAdapter';
 import OtpInputAdapter from './OtpInputAdapter';
+import PasswordInputAdapter from './PasswordInputAdapter';
+import RichTextAdapter from './RichTextAdapter';
 import SelectAdapter from './SelectAdapter';
+import TextInputAdapter from './TextInputAdapter';
 import type {FlowComponent, FlowFieldProps} from '../../../models/flow';
+import getIntegrationIcon from '../../../utils/getIntegrationIcon';
 
 interface BlockContext {
   values: Record<string, string>;

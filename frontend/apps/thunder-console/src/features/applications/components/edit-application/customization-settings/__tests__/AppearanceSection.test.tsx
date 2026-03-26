@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import type {UseQueryResult} from '@tanstack/react-query';
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useGetThemes} from '@thunder/shared-design';
-import type {UseQueryResult} from '@tanstack/react-query';
 import type {ThemeListResponse} from '@thunder/shared-design';
-import AppearanceSection from '../AppearanceSection';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {Application} from '../../../../models/application';
+import AppearanceSection from '../AppearanceSection';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -159,10 +159,9 @@ describe('AppearanceSection', () => {
       const autocomplete = screen.getByRole('combobox');
       const clearButton = autocomplete.parentElement?.querySelector('[aria-label="Clear"]');
 
-      if (clearButton) {
-        await user.click(clearButton);
-        expect(mockOnFieldChange).toHaveBeenCalledWith('themeId', '');
-      }
+      expect(clearButton).not.toBeNull();
+      await user.click(clearButton!);
+      expect(mockOnFieldChange).toHaveBeenCalledWith('themeId', '');
     });
   });
 

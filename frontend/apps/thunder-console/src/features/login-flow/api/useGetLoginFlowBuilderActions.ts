@@ -16,9 +16,9 @@
  * under the License.
  */
 
+import actions from '../data/actions.json';
 import useGetFlowBuilderCoreActions from '@/features/flows/api/useGetFlowBuilderCoreActions';
 import type {Actions} from '@/features/flows/models/actions';
-import actions from '../data/actions.json';
 
 /**
  * Hook to get the actions supported by the flow builder.

@@ -16,9 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import type {Node, Edge} from '@xyflow/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import LoginFlowConstants from '../../constants/LoginFlowConstants';
+import LoginFlowBuilder from '../LoginFlowBuilder';
 import {
   ElementTypes,
   ButtonVariants,
@@ -27,8 +29,6 @@ import {
   BlockTypes,
 } from '@/features/flows/models/elements';
 import type {Element} from '@/features/flows/models/elements';
-import LoginFlowBuilder from '../LoginFlowBuilder';
-import LoginFlowConstants from '../../constants/LoginFlowConstants';
 
 // Use vi.hoisted for mock functions that need to be available during vi.mock hoisting
 const {
@@ -596,7 +596,7 @@ describe('LoginFlowBuilder', () => {
       });
     });
 
-    it('should show validation error when flow is invalid', async () => {
+    it('should show validation error when flow is invalid', () => {
       // This test verifies the validation check happens before save
       // The actual save functionality is tested through the mock verification above
       render(<LoginFlowBuilder />);
@@ -791,7 +791,7 @@ describe('handleAddElementToForm', () => {
     mockUseUpdateNodeInternals.mockReturnValue(vi.fn());
   });
 
-  it('should add element to form when form exists in view', async () => {
+  it('should add element to form when form exists in view', () => {
     const mockNodes: Node[] = [
       {
         id: 'view-1',
@@ -818,7 +818,7 @@ describe('handleAddElementToForm', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should not modify nodes when form is not found', async () => {
+  it('should not modify nodes when form is not found', () => {
     const mockNodes: Node[] = [
       {
         id: 'view-1',
@@ -1152,7 +1152,7 @@ describe('Resource Add Functionality', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should add resource to existing view', async () => {
+  it('should add resource to existing view', () => {
     const mockNodes: Node[] = [
       {
         id: 'view-1',
@@ -1175,7 +1175,7 @@ describe('Resource Add Functionality', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should replace existing form when adding new form', async () => {
+  it('should replace existing form when adding new form', () => {
     const mockNodes: Node[] = [
       {
         id: 'view-1',
@@ -1215,7 +1215,7 @@ describe('Template and Widget Loading', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should load template with steps', async () => {
+  it('should load template with steps', () => {
     render(<LoginFlowBuilder />);
 
     const loadTemplateBtn = screen.getByTestId('load-template-btn');
@@ -1224,7 +1224,7 @@ describe('Template and Widget Loading', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should load widget into target resource', async () => {
+  it('should load widget into target resource', () => {
     const mockNodes: Node[] = [
       {
         id: 'target-1',
@@ -1244,7 +1244,7 @@ describe('Template and Widget Loading', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should load step and handle VIEW type', async () => {
+  it('should load step and handle VIEW type', () => {
     render(<LoginFlowBuilder />);
 
     const loadStepBtn = screen.getByTestId('load-step-btn');
@@ -1290,7 +1290,7 @@ describe('Existing Flow Data Loading', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should transform and load existing flow data', async () => {
+  it('should transform and load existing flow data', () => {
     mockUseParams.mockReturnValue({flowId: 'test-flow-id'});
 
     render(<LoginFlowBuilder />);
@@ -1298,7 +1298,7 @@ describe('Existing Flow Data Loading', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should set needsAutoLayout when nodes lack layout data', async () => {
+  it('should set needsAutoLayout when nodes lack layout data', () => {
     mockUseParams.mockReturnValue({flowId: 'test-flow-id'});
 
     render(<LoginFlowBuilder />);
@@ -1307,7 +1307,7 @@ describe('Existing Flow Data Loading', () => {
     expect(screen.getByTestId('auto-layout')).toBeInTheDocument();
   });
 
-  it('should sync flow name from existing flow data', async () => {
+  it('should sync flow name from existing flow data', () => {
     mockUseParams.mockReturnValue({flowId: 'test-flow-id'});
 
     render(<LoginFlowBuilder />);
@@ -1328,7 +1328,7 @@ describe('History Restoration', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should handle restore from history event', async () => {
+  it('should handle restore from history event', () => {
     render(<LoginFlowBuilder />);
 
     // Dispatch a custom event for history restoration
@@ -1344,7 +1344,7 @@ describe('History Restoration', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should not restore when nodes or edges are missing', async () => {
+  it('should not restore when nodes or edges are missing', () => {
     render(<LoginFlowBuilder />);
 
     // Dispatch event without nodes and edges
@@ -1655,7 +1655,7 @@ describe('handleTemplateLoad Callback', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should return empty arrays when template has no steps', async () => {
+  it('should return empty arrays when template has no steps', () => {
     render(<LoginFlowBuilder />);
 
     const loadTemplateBtn = screen.getByTestId('load-template-btn');
@@ -1664,14 +1664,14 @@ describe('handleTemplateLoad Callback', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should handle template with END step and set flow completion configs', async () => {
+  it('should handle template with END step and set flow completion configs', () => {
     // This tests the template loading path with END step
     render(<LoginFlowBuilder />);
 
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should handle BASIC_FEDERATED template type', async () => {
+  it('should handle BASIC_FEDERATED template type', () => {
     render(<LoginFlowBuilder />);
 
     // The template loading is handled by the mock
@@ -1690,7 +1690,7 @@ describe('handleWidgetLoad Callback', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should return current nodes and edges when widget has no steps', async () => {
+  it('should return current nodes and edges when widget has no steps', () => {
     render(<LoginFlowBuilder />);
 
     const loadWidgetBtn = screen.getByTestId('load-widget-btn');
@@ -1699,7 +1699,7 @@ describe('handleWidgetLoad Callback', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should merge widget steps with MERGE_WITH_DROP_POINT strategy', async () => {
+  it('should merge widget steps with MERGE_WITH_DROP_POINT strategy', () => {
     const mockNodes: Node[] = [
       {
         id: 'target-1',
@@ -1721,7 +1721,7 @@ describe('handleWidgetLoad Callback', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should add widget steps without merge strategy', async () => {
+  it('should add widget steps without merge strategy', () => {
     render(<LoginFlowBuilder />);
 
     const loadWidgetBtn = screen.getByTestId('load-widget-btn');
@@ -1742,7 +1742,7 @@ describe('handleStepLoad Callback', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should load VIEW step with empty components and set default components', async () => {
+  it('should load VIEW step with empty components and set default components', () => {
     render(<LoginFlowBuilder />);
 
     const loadStepBtn = screen.getByTestId('load-step-btn');
@@ -1751,13 +1751,13 @@ describe('handleStepLoad Callback', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should load VIEW step with existing components', async () => {
+  it('should load VIEW step with existing components', () => {
     render(<LoginFlowBuilder />);
 
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should resolve step metadata for non-VIEW steps', async () => {
+  it('should resolve step metadata for non-VIEW steps', () => {
     render(<LoginFlowBuilder />);
 
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
@@ -2164,7 +2164,7 @@ describe('MutateComponents Button Handler', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should call mutateComponents when button is clicked', async () => {
+  it('should call mutateComponents when button is clicked', () => {
     render(<LoginFlowBuilder />);
 
     const mutateBtn = screen.getByTestId('mutate-components-btn');
@@ -2258,7 +2258,7 @@ describe('Extended Callback Tests', () => {
     mockValidateFlowGraph.mockReturnValue([]);
   });
 
-  it('should ignore non-element resources in handleResourceAdd', async () => {
+  it('should ignore non-element resources in handleResourceAdd', () => {
     const mockNodes: Node[] = [
       {
         id: 'view-1',
@@ -2289,7 +2289,7 @@ describe('Extended Callback Tests', () => {
     });
   });
 
-  it('should load BASIC_FEDERATED template and return execution step', async () => {
+  it('should load BASIC_FEDERATED template and return execution step', () => {
     render(<LoginFlowBuilder />);
 
     const loadTemplateBtn = screen.getByTestId('load-basic-federated-template-btn');
@@ -2298,7 +2298,7 @@ describe('Extended Callback Tests', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should load widget with MERGE_WITH_DROP_POINT strategy', async () => {
+  it('should load widget with MERGE_WITH_DROP_POINT strategy', () => {
     const mockNodes: Node[] = [
       {
         id: 'target-1',
@@ -2317,7 +2317,7 @@ describe('Extended Callback Tests', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should load step with existing components', async () => {
+  it('should load step with existing components', () => {
     render(<LoginFlowBuilder />);
 
     const loadStepBtn = screen.getByTestId('load-step-with-components-btn');
@@ -2326,7 +2326,7 @@ describe('Extended Callback Tests', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should load non-VIEW step', async () => {
+  it('should load non-VIEW step', () => {
     render(<LoginFlowBuilder />);
 
     const loadStepBtn = screen.getByTestId('load-non-view-step-btn');
@@ -2335,7 +2335,7 @@ describe('Extended Callback Tests', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should mutate components with form containing password field', async () => {
+  it('should mutate components with form containing password field', () => {
     render(<LoginFlowBuilder />);
 
     const mutateBtn = screen.getByTestId('mutate-components-with-form-btn');
@@ -2471,29 +2471,6 @@ describe('Verbose Mode Edge Filtering - Non-Verbose Mode', () => {
     const filteredNodes = isVerboseMode ? nodes : nodes.filter((node) => node.type !== 'EXECUTION');
 
     expect(filteredNodes.length).toBe(2);
-  });
-});
-
-describe('Edge Style Update Effect', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockUseParams.mockReturnValue({});
-    mockUseNodesState.mockReturnValue([[], mockSetNodes, vi.fn()]);
-    mockUseEdgesState.mockReturnValue([
-      [{id: 'edge-1', source: 'a', target: 'b', type: 'old-style'}],
-      mockSetEdges,
-      vi.fn(),
-    ]);
-    mockUseUpdateNodeInternals.mockReturnValue(vi.fn());
-    mockIsFlowValid.value = true;
-    mockExistingFlowData.value = null;
-  });
-
-  it('should update edge types when component mounts with edges', () => {
-    render(<LoginFlowBuilder />);
-
-    // The edge style effect should be triggered on mount
-    expect(mockSetEdges).toHaveBeenCalled();
   });
 });
 
@@ -3241,13 +3218,12 @@ describe('processFormComponents - Executor Assignment Logic', () => {
     const hasOtpField = false;
     const submitButtonCount = 1;
 
-    if (submitButtonCount === 1 && (hasPasswordField || hasOtpField)) {
-      const executorName = hasPasswordField
-        ? LoginFlowConstants.ExecutorNames.PASSWORD_PROVISIONING
-        : LoginFlowConstants.ExecutorNames.EMAIL_OTP;
+    const executorName = hasPasswordField
+      ? LoginFlowConstants.ExecutorNames.PASSWORD_PROVISIONING
+      : LoginFlowConstants.ExecutorNames.EMAIL_OTP;
 
-      expect(executorName).toBe(LoginFlowConstants.ExecutorNames.PASSWORD_PROVISIONING);
-    }
+    expect(submitButtonCount === 1 && (hasPasswordField || hasOtpField)).toBe(true);
+    expect(executorName).toBe(LoginFlowConstants.ExecutorNames.PASSWORD_PROVISIONING);
   });
 
   it('should assign EMAIL_OTP executor when OTP field exists with single submit', () => {
@@ -3255,13 +3231,12 @@ describe('processFormComponents - Executor Assignment Logic', () => {
     const hasOtpField = true;
     const submitButtonCount = 1;
 
-    if (submitButtonCount === 1 && (hasPasswordField || hasOtpField)) {
-      const executorName = hasPasswordField
-        ? LoginFlowConstants.ExecutorNames.PASSWORD_PROVISIONING
-        : LoginFlowConstants.ExecutorNames.EMAIL_OTP;
+    const executorName = hasPasswordField
+      ? LoginFlowConstants.ExecutorNames.PASSWORD_PROVISIONING
+      : LoginFlowConstants.ExecutorNames.EMAIL_OTP;
 
-      expect(executorName).toBe(LoginFlowConstants.ExecutorNames.EMAIL_OTP);
-    }
+    expect(submitButtonCount === 1 && (hasPasswordField || hasOtpField)).toBe(true);
+    expect(executorName).toBe(LoginFlowConstants.ExecutorNames.EMAIL_OTP);
   });
 
   it('should not assign executor when multiple submit buttons exist', () => {
@@ -3786,10 +3761,9 @@ describe('handleResourceAdd setNodes Callback Execution', () => {
     });
 
     // Execute the callback to test the internal logic
-    if (callbackHolder.fn) {
-      const result = callbackHolder.fn(mockNodes);
-      expect(Array.isArray(result)).toBe(true);
-    }
+    expect(callbackHolder.fn).not.toBeNull();
+    const result = callbackHolder.fn!(mockNodes);
+    expect(Array.isArray(result)).toBe(true);
   });
 
   it('should execute setNodes callback to replace existing form when adding new form', async () => {
@@ -3830,13 +3804,12 @@ describe('handleResourceAdd setNodes Callback Execution', () => {
     });
 
     // Execute callback to test form replacement logic
-    if (callbackHolder.fn) {
-      const result = callbackHolder.fn(mockNodes);
-      expect(Array.isArray(result)).toBe(true);
-      // The form should have been replaced in the view
-      const viewNode = result.find((n: Node) => n.id === 'view-1');
-      expect(viewNode).toBeDefined();
-    }
+    expect(callbackHolder.fn).not.toBeNull();
+    const result = callbackHolder.fn!(mockNodes);
+    expect(Array.isArray(result)).toBe(true);
+    // The form should have been replaced in the view
+    const viewNode = result.find((n: Node) => n.id === 'view-1');
+    expect(viewNode).toBeDefined();
   });
 
   it('should add non-form element to view components', async () => {
@@ -3871,10 +3844,9 @@ describe('handleResourceAdd setNodes Callback Execution', () => {
     });
 
     // Execute callback to test non-form addition
-    if (callbackHolder.fn) {
-      const result = callbackHolder.fn(mockNodes);
-      expect(Array.isArray(result)).toBe(true);
-    }
+    expect(callbackHolder.fn).not.toBeNull();
+    const result = callbackHolder.fn!(mockNodes);
+    expect(Array.isArray(result)).toBe(true);
   });
 });
 
@@ -3921,7 +3893,7 @@ describe('handleAddElementToView Callback Execution', () => {
     expect(mockNodes[0].data.components).toHaveLength(1);
   });
 
-  it('should render component with view node setup', async () => {
+  it('should render component with view node setup', () => {
     const mockNodes: Node[] = [
       {
         id: 'other-view',
@@ -3950,7 +3922,7 @@ describe('handleAddElementToForm Callback Execution', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should render with form structure in view node', async () => {
+  it('should render with form structure in view node', () => {
     const mockNodes: Node[] = [
       {
         id: 'view-1',
@@ -4241,15 +4213,14 @@ describe('handleResourceAdd - setNodes Callback Internal Logic', () => {
     });
 
     // Now execute the captured callback to test the internal logic
-    if (callbackHolder.fn) {
-      const result = callbackHolder.fn(mockNodes);
-      // The callback should return nodes with the view containing a new form
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBeGreaterThanOrEqual(1);
-    }
+    expect(callbackHolder.fn).not.toBeNull();
+    const result = callbackHolder.fn!(mockNodes);
+    // The callback should return nodes with the view containing a new form
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('should not modify nodes when no VIEW step exists', async () => {
+  it('should not modify nodes when no VIEW step exists', () => {
     const mockNodes: Node[] = [
       {
         id: 'execution-1',
@@ -4315,18 +4286,14 @@ describe('handleResourceAdd - setNodes Callback Internal Logic', () => {
     });
 
     // Execute callback to verify form replacement logic
-    if (callbackHolder.fn) {
-      const result = callbackHolder.fn(mockNodes);
-      expect(Array.isArray(result)).toBe(true);
+    expect(callbackHolder.fn).not.toBeNull();
+    const result = callbackHolder.fn!(mockNodes);
+    expect(Array.isArray(result)).toBe(true);
 
-      // Check that the view node still has components
-      const viewNode = result.find((n: Node) => n.id === 'view-1');
-      expect(viewNode).toBeDefined();
-      if (viewNode) {
-        const nodeData = viewNode.data as {components?: Element[]};
-        expect(nodeData.components).toBeDefined();
-      }
-    }
+    // Check that the view node still has components
+    const viewNode = result.find((n: Node) => n.id === 'view-1');
+    expect(viewNode).toBeDefined();
+    expect((viewNode?.data as {components?: Element[]}).components).toBeDefined();
   });
 });
 
@@ -4341,7 +4308,7 @@ describe('handleStepLoad - Step Processing', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should process VIEW step with empty data and add default components', async () => {
+  it('should process VIEW step with empty data and add default components', () => {
     render(<LoginFlowBuilder />);
 
     // Click the load step button which calls onStepLoad with VIEW step
@@ -4352,7 +4319,7 @@ describe('handleStepLoad - Step Processing', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should process VIEW step with existing components and resolve metadata', async () => {
+  it('should process VIEW step with existing components and resolve metadata', () => {
     render(<LoginFlowBuilder />);
 
     // Click the load step with components button
@@ -4362,7 +4329,7 @@ describe('handleStepLoad - Step Processing', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should process non-VIEW step and resolve metadata', async () => {
+  it('should process non-VIEW step and resolve metadata', () => {
     render(<LoginFlowBuilder />);
 
     // Click the load non-view step button
@@ -4384,7 +4351,7 @@ describe('handleWidgetLoad - Widget Processing with Default Property Selectors',
     mockExistingFlowData.value = null;
   });
 
-  it('should return early when widget has no steps', async () => {
+  it('should return early when widget has no steps', () => {
     render(<LoginFlowBuilder />);
 
     const loadWidgetBtn = screen.getByTestId('load-widget-btn');
@@ -4394,7 +4361,7 @@ describe('handleWidgetLoad - Widget Processing with Default Property Selectors',
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should merge widget with MERGE_WITH_DROP_POINT strategy when target exists', async () => {
+  it('should merge widget with MERGE_WITH_DROP_POINT strategy when target exists', () => {
     const mockNodes: Node[] = [
       {
         id: 'target-1',
@@ -4438,7 +4405,7 @@ describe('handleTemplateLoad - Template Processing', () => {
     });
   });
 
-  it('should return execution step resource for BASIC_FEDERATED template', async () => {
+  it('should return execution step resource for BASIC_FEDERATED template', () => {
     render(<LoginFlowBuilder />);
 
     const loadTemplateBtn = screen.getByTestId('load-basic-federated-template-btn');
@@ -4448,7 +4415,7 @@ describe('handleTemplateLoad - Template Processing', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should return empty arrays for template without steps', async () => {
+  it('should return empty arrays for template without steps', () => {
     render(<LoginFlowBuilder />);
 
     // The basic template button returns a template that may have empty steps
@@ -4496,11 +4463,10 @@ describe('Edge Style Effect - setEdges Callback Execution', () => {
     expect(mockSetEdges).toHaveBeenCalled();
 
     // Execute the callback to test the internal logic
-    if (callbackHolder.fn) {
-      const result = callbackHolder.fn(existingEdges);
-      // Each edge should have its type updated to the new edgeStyle
-      expect(result.every((e: Edge) => e.type === 'smoothstep')).toBe(true);
-    }
+    expect(callbackHolder.fn).not.toBeNull();
+    const result = callbackHolder.fn!(existingEdges);
+    // Each edge should have its type updated to the new edgeStyle
+    expect(result.every((e: Edge) => e.type === 'smoothstep')).toBe(true);
   });
 });
 
@@ -4934,27 +4900,6 @@ describe('handleWidgetLoad - Custom Merge and Placeholder Resolution', () => {
   });
 });
 
-describe('INPUT_ELEMENT_TYPES Set', () => {
-  it('should contain all expected input element types', () => {
-    const INPUT_ELEMENT_TYPES = new Set<string>([
-      ElementTypes.TextInput,
-      ElementTypes.PasswordInput,
-      ElementTypes.EmailInput,
-      ElementTypes.PhoneInput,
-      ElementTypes.NumberInput,
-      ElementTypes.DateInput,
-      ElementTypes.OtpInput,
-      ElementTypes.Checkbox,
-      ElementTypes.Dropdown,
-    ]);
-
-    expect(INPUT_ELEMENT_TYPES.has(ElementTypes.TextInput)).toBe(true);
-    expect(INPUT_ELEMENT_TYPES.has(ElementTypes.PasswordInput)).toBe(true);
-    expect(INPUT_ELEMENT_TYPES.has(ElementTypes.OtpInput)).toBe(true);
-    expect(INPUT_ELEMENT_TYPES.has(ElementTypes.Action)).toBe(false);
-  });
-});
-
 describe('handleAddElementToView - INPUT Element Handling', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -5192,7 +5137,7 @@ describe('handleResourceAdd - Edge Cases', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should not add resource when no view exists', async () => {
+  it('should not add resource when no view exists', () => {
     // Empty nodes array - no VIEW step exists
     const mockNodes: Node[] = [];
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
@@ -5207,7 +5152,7 @@ describe('handleResourceAdd - Edge Cases', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should skip non-element resources', async () => {
+  it('should skip non-element resources', () => {
     const mockNodes: Node[] = [
       {
         id: 'view-1',
@@ -5228,7 +5173,7 @@ describe('handleResourceAdd - Edge Cases', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should add non-form element to existing view components', async () => {
+  it('should add non-form element to existing view components', () => {
     const mockNodes: Node[] = [
       {
         id: 'view-1',
@@ -5261,7 +5206,7 @@ describe('handleWidgetLoad - Complex Scenarios', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should handle widget with default property selector', async () => {
+  it('should handle widget with default property selector', () => {
     const mockNodes: Node[] = [
       {
         id: 'target-1',
@@ -5280,7 +5225,7 @@ describe('handleWidgetLoad - Complex Scenarios', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should handle widget merge with target resource', async () => {
+  it('should handle widget merge with target resource', () => {
     const mockNodes: Node[] = [
       {
         id: 'target-1',
@@ -5301,7 +5246,7 @@ describe('handleWidgetLoad - Complex Scenarios', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should return unchanged data when widget has no steps', async () => {
+  it('should return unchanged data when widget has no steps', () => {
     const mockNodes: Node[] = [];
     mockUseNodesState.mockReturnValue([mockNodes, mockSetNodes, vi.fn()]);
 
@@ -5325,7 +5270,7 @@ describe('handleTemplateLoad - Edge Cases', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should return empty arrays when template config is null', async () => {
+  it('should return empty arrays when template config is null', () => {
     render(<LoginFlowBuilder />);
 
     const loadTemplateBtn = screen.getByTestId('load-template-null-config-btn');
@@ -5334,7 +5279,7 @@ describe('handleTemplateLoad - Edge Cases', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should handle BASIC_FEDERATED template and return execution step', async () => {
+  it('should handle BASIC_FEDERATED template and return execution step', () => {
     render(<LoginFlowBuilder />);
 
     const loadTemplateBtn = screen.getByTestId('load-basic-federated-template-btn');
@@ -5344,7 +5289,7 @@ describe('handleTemplateLoad - Edge Cases', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should set flow completion configs when END step has config', async () => {
+  it('should set flow completion configs when END step has config', () => {
     render(<LoginFlowBuilder />);
 
     const loadTemplateBtn = screen.getByTestId('load-template-with-end-step-btn');
@@ -5534,7 +5479,7 @@ describe('mutateComponents - Form Processing', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should call mutateComponents and process form with password field', async () => {
+  it('should call mutateComponents and process form with password field', () => {
     render(<LoginFlowBuilder />);
 
     const mutateBtn = screen.getByTestId('mutate-components-with-form-btn');
@@ -5579,7 +5524,7 @@ describe('handleStepLoad - Non-VIEW Steps', () => {
     mockExistingFlowData.value = null;
   });
 
-  it('should process non-VIEW step without adding default components', async () => {
+  it('should process non-VIEW step without adding default components', () => {
     render(<LoginFlowBuilder />);
 
     const loadStepBtn = screen.getByTestId('load-non-view-step-btn');
@@ -5589,7 +5534,7 @@ describe('handleStepLoad - Non-VIEW Steps', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should process VIEW step with existing components', async () => {
+  it('should process VIEW step with existing components', () => {
     render(<LoginFlowBuilder />);
 
     const loadStepBtn = screen.getByTestId('load-step-with-components-btn');
@@ -5599,7 +5544,7 @@ describe('handleStepLoad - Non-VIEW Steps', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should add default components to VIEW step with empty components', async () => {
+  it('should add default components to VIEW step with empty components', () => {
     render(<LoginFlowBuilder />);
 
     const loadStepBtn = screen.getByTestId('load-step-btn');
@@ -5698,7 +5643,7 @@ describe('History Restoration - Edge Cases', () => {
     });
   });
 
-  it('should not restore when only nodes are provided without edges', async () => {
+  it('should not restore when only nodes are provided without edges', () => {
     render(<LoginFlowBuilder />);
 
     const event = new CustomEvent('restoreFromHistory', {
@@ -5711,7 +5656,7 @@ describe('History Restoration - Edge Cases', () => {
     expect(screen.getByTestId('flow-builder')).toBeInTheDocument();
   });
 
-  it('should not restore when only edges are provided without nodes', async () => {
+  it('should not restore when only edges are provided without nodes', () => {
     render(<LoginFlowBuilder />);
 
     const event = new CustomEvent('restoreFromHistory', {
@@ -6143,7 +6088,7 @@ describe('Snackbar Display and Close - Branch Coverage', () => {
   });
 });
 
-describe('Verbose Mode Filtering - Component Integration', () => {
+describe('Verbose Mode Filtering - Component Integration with Execution Nodes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseParams.mockReturnValue({});
@@ -6284,7 +6229,7 @@ describe('RestoreFromHistory Event - All Branches', () => {
     });
   });
 
-  it('should NOT restore when only nodes are provided (edges missing)', async () => {
+  it('should NOT restore when only nodes are provided (edges missing)', () => {
     render(<LoginFlowBuilder />);
 
     const event = new CustomEvent('restoreFromHistory', {
@@ -6302,7 +6247,7 @@ describe('RestoreFromHistory Event - All Branches', () => {
     );
   });
 
-  it('should NOT restore when only edges are provided (nodes missing)', async () => {
+  it('should NOT restore when only edges are provided (nodes missing)', () => {
     render(<LoginFlowBuilder />);
 
     const event = new CustomEvent('restoreFromHistory', {
@@ -6357,7 +6302,7 @@ describe('RestoreFromHistory Event - All Branches', () => {
     });
   });
 
-  it('should NOT restore when nodes is undefined', async () => {
+  it('should NOT restore when nodes is undefined', () => {
     render(<LoginFlowBuilder />);
 
     const event = new CustomEvent('restoreFromHistory', {
@@ -6375,7 +6320,7 @@ describe('RestoreFromHistory Event - All Branches', () => {
     );
   });
 
-  it('should NOT restore when edges is undefined', async () => {
+  it('should NOT restore when edges is undefined', () => {
     render(<LoginFlowBuilder />);
 
     const event = new CustomEvent('restoreFromHistory', {
@@ -6393,7 +6338,7 @@ describe('RestoreFromHistory Event - All Branches', () => {
     );
   });
 
-  it('should NOT restore when detail is empty object', async () => {
+  it('should NOT restore when detail is empty object', () => {
     render(<LoginFlowBuilder />);
 
     const event = new CustomEvent('restoreFromHistory', {

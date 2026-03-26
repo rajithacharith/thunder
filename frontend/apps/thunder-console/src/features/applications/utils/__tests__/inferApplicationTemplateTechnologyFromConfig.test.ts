@@ -17,10 +17,10 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import inferApplicationTemplateTechnologyFromConfig from '../inferApplicationTemplateTechnologyFromConfig';
 import {TechnologyApplicationTemplate} from '../../models/application-templates';
 import {OAuth2GrantTypes} from '../../models/oauth';
 import type {OAuth2Config} from '../../models/oauth';
+import inferApplicationTemplateTechnologyFromConfig from '../inferApplicationTemplateTechnologyFromConfig';
 
 describe('inferApplicationTemplateTechnologyFromConfig', () => {
   it('returns OTHER for null config', () => {

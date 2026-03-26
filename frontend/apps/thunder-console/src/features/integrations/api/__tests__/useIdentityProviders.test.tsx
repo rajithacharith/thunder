@@ -18,15 +18,15 @@
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, act, renderHook} from '@thunder/test-utils';
-import {QueryClient} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
+import {QueryClient} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import useIdentityProviders from '../useIdentityProviders';
-import type {IdentityProviderListResponse} from '../../models/responses';
-import {IdentityProviderTypes} from '../../models/identity-provider';
+import {waitFor, act, renderHook} from '@thunder/test-utils';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import IntegrationQueryKeys from '../../constants/query-keys';
+import {IdentityProviderTypes} from '../../models/identity-provider';
+import type {IdentityProviderListResponse} from '../../models/responses';
+import useIdentityProviders from '../useIdentityProviders';
 
 // Mock the dependencies
 vi.mock('@asgardeo/react', () => ({

@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import {useForm} from 'react-hook-form';
-import renderSchemaField from '../renderSchemaField';
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import type {PropertyDefinition} from '../../types/users';
+import renderSchemaField from '../renderSchemaField';
 
 type TestFormData = Record<string, unknown>;
 
@@ -52,7 +52,7 @@ function TestForm({
   return (
     <form
       onSubmit={(e): void => {
-        handleSubmit(handleFormSubmit)(e).catch(() => {});
+        handleSubmit(handleFormSubmit)(e).catch(() => null);
       }}
     >
       {renderSchemaField(fieldName, fieldDef, control, errors)}

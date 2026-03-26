@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import type {Step} from '@/features/flows/models/steps';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import GoogleExecution from '../GoogleExecution';
+import type {Step} from '@/features/flows/models/steps';
 
 // Use vi.hoisted to define mock function before vi.mock hoisting
 const mockUseRequiredFields = vi.hoisted(() => vi.fn());

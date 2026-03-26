@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import type {ReactElement} from 'react';
-import './ValidationStatusLabels.scss';
-import {useTranslation} from 'react-i18next';
 import {Badge, Box, IconButton, Tooltip} from '@wso2/oxygen-ui';
 import {BellIcon} from '@wso2/oxygen-ui-icons-react';
-import useValidationStatus from '../../hooks/useValidationStatus';
+import type {ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
 import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
+import useValidationStatus from '../../hooks/useValidationStatus';
 import Notification, {NotificationType} from '../../models/notification';
+import './ValidationStatusLabels.scss';
 
 /**
  * Component to render a list of validation status labels.

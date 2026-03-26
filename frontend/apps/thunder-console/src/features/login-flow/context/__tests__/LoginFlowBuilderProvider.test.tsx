@@ -18,10 +18,10 @@
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/no-unsafe-member-access */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import LoginFlowBuilderProvider from '../LoginFlowBuilderProvider';
+import {describe, it, expect, vi} from 'vitest';
 import {PreviewScreenType} from '../../../flows/models/custom-text-preference';
+import LoginFlowBuilderProvider from '../LoginFlowBuilderProvider';
 
 // Mock FlowBuilderCoreProvider
 vi.mock('@/features/flows/context/FlowBuilderCoreProvider', () => ({

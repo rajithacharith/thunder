@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {JSX, ComponentType} from 'react';
 import {AcrylicOrangeTheme, OxygenUIThemeProvider} from '@wso2/oxygen-ui';
+import type {JSX, ComponentType} from 'react';
 
 export default function withTheme<P extends object>(WrappedComponent: ComponentType<P>) {
   return function WithTheme(props: P): JSX.Element {

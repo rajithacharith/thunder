@@ -19,13 +19,13 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 /* eslint-disable no-underscore-dangle */
 
-import {describe, it, expect, beforeEach, afterEach} from 'vitest';
-import {mkdir, rm, writeFile} from 'fs/promises';
-import {join} from 'path';
-import {tmpdir} from 'os';
 import {exec} from 'child_process';
+import {mkdir, rm, writeFile} from 'fs/promises';
+import {tmpdir} from 'os';
+import {join} from 'path';
 import {promisify} from 'util';
 import kebabCase from 'lodash-es/kebabCase';
+import {describe, it, expect, beforeEach, afterEach} from 'vitest';
 import validateName from '../utils/validateName';
 
 const execAsync = promisify(exec);

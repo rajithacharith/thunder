@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import type {Edge, Node} from '@xyflow/react';
 import {MarkerType} from '@xyflow/react';
-import {StepTypes} from '@/features/flows/models/steps';
-import {ElementTypes, type Element} from '@/features/flows/models/elements';
+import {describe, it, expect} from 'vitest';
 import generateUnconnectedEdges from '../edgeUtils';
+import {ElementTypes, type Element} from '@/features/flows/models/elements';
+import {StepTypes} from '@/features/flows/models/steps';
 
 const createMockNode = (overrides: Partial<Node> = {}): Node => ({
   id: 'node-1',

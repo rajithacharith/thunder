@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import type {Resource} from '@/features/flows/models/resources';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import ButtonExtendedProperties from '../ButtonExtendedProperties';
+import type {Resource} from '@/features/flows/models/resources';
 
 // Mock dependencies
 vi.mock('react-i18next', () => ({

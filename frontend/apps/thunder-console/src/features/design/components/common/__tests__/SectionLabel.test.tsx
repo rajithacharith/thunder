@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
+import {describe, it, expect} from 'vitest';
 import SectionLabel from '../SectionLabel';
 
 describe('SectionLabel', () => {

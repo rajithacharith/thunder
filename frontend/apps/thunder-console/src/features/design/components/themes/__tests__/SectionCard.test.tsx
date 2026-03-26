@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
+import {render, screen} from '@thunder/test-utils';
 import {Palette} from '@wso2/oxygen-ui-icons-react';
+import {describe, it, expect, vi} from 'vitest';
 import SectionCard from '../SectionCard';
 
 describe('SectionCard', () => {

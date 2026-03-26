@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import {describe, it, expect} from 'vitest';
 import DynamicValueSyntax from '../DynamicValueSyntax';
 
 describe('DynamicValueSyntax', () => {

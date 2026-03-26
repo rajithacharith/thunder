@@ -22,5 +22,5 @@ export default [
   {
     ignores: ['dist/**', 'build/**', 'node_modules/**', 'coverage/**'],
   },
-  ...thunderPlugin.configs.base,
+  ...thunderPlugin.configs.typescript,
 ];

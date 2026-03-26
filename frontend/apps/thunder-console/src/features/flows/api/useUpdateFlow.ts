@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
-import type {UpdateFlowRequest, FlowDefinitionResponse} from '../models/responses';
 import FlowQueryKeys from '../constants/flow-query-keys';
+import type {UpdateFlowRequest, FlowDefinitionResponse} from '../models/responses';
 
 /**
  * Variables for the update flow mutation

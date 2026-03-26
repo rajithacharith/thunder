@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {screen, renderWithProviders} from '@thunder/test-utils';
-import ManageGroupsSection from '../ManageGroupsSection';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {Group} from '../../../../models/group';
+import ManageGroupsSection from '../ManageGroupsSection';
 
 // Mock the useGetOrganizationUnitGroups hook
 const mockUseGetOrganizationUnitGroups = vi.fn();

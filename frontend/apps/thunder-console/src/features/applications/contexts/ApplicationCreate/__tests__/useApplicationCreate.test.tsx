@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
 import React from 'react';
-import useApplicationCreate from '../useApplicationCreate';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import ApplicationCreateProvider from '../ApplicationCreateProvider';
+import useApplicationCreate from '../useApplicationCreate';
 
 // Mock useGetApplications
 const mockUseGetApplications = vi.fn().mockReturnValue({
@@ -98,7 +98,7 @@ describe('useApplicationCreate', () => {
 
   it('throws error when used outside ApplicationCreateProvider', () => {
     // Suppress error output in tests
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => null);
 
     expect(() => {
       render(<TestConsumerWithoutProvider />);
@@ -261,7 +261,7 @@ describe('useApplicationCreate', () => {
 
   it('throws descriptive error message when used outside provider', () => {
     // Suppress error output in tests
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => null);
 
     let thrownError: Error | null = null;
 

@@ -16,32 +16,19 @@
  * under the License.
  */
 
-/* eslint-disable @typescript-eslint/naming-convention */
-/* eslint-disable no-underscore-dangle */
-
-import path from 'path';
-import {fileURLToPath} from 'url';
-import {FlatCompat} from '@eslint/eslintrc';
 import type {Linter} from 'eslint';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
+import reactPlugin from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
-import createParserOptions from '../utils/tsconfig-resolver.js';
-
-const __filename: string = fileURLToPath(import.meta.url);
-const __dirname: string = path.dirname(__filename);
-
-const compat: FlatCompat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+import createParserOptions from '../utils/tsconfig-resolver';
 
 const reactConfig: Linter.Config[] = [
-  // React-specific configs for all files
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  ...compat.extends('airbnb'),
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  ...compat.extends('airbnb/hooks'),
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  ...compat.extends('@kesills/airbnb-typescript'),
+  reactPlugin.configs.flat['recommended'],
+  reactPlugin.configs.flat['jsx-runtime'],
+  reactHooks.configs.flat.recommended,
+  jsxA11y.flatConfigs.recommended as Linter.Config,
   reactRefresh.configs.recommended,
   {
     languageOptions: {
@@ -53,6 +40,9 @@ const reactConfig: Linter.Config[] = [
   {
     name: 'thunder/react-settings',
     settings: {
+      react: {
+        version: 'detect',
+      },
       'import/resolver': {
         typescript: {
           alwaysTryTypes: true,

@@ -20,10 +20,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import StackAdapter from '../StackAdapter';
+import {describe, it, expect, vi} from 'vitest';
 import type {FlowComponent} from '../../../../models/flow';
+import StackAdapter from '../StackAdapter';
 
 vi.mock('@wso2/oxygen-ui', () => ({
   Stack: ({children, direction, spacing, alignItems, justifyContent}: any) => (

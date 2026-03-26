@@ -16,10 +16,10 @@
  * under the License.
  */
 
+import {useGetLayout} from '@thunder/shared-design';
+import {Box, CircularProgress, Stack, Typography} from '@wso2/oxygen-ui';
 import {type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Box, CircularProgress, Stack, Typography} from '@wso2/oxygen-ui';
-import {useGetLayout} from '@thunder/shared-design';
 
 interface LayoutPreviewPanelProps {
   layoutId: string | null;

@@ -19,10 +19,10 @@
 import {CircleAlertIcon} from '@wso2/oxygen-ui-icons-react';
 import classNames from 'classnames';
 import {useMemo, useState, type PropsWithChildren, type ReactElement} from 'react';
-import type {Resource} from '../../models/resources';
-import './ValidationErrorBoundary.scss';
 import useValidationStatus from '../../hooks/useValidationStatus';
 import Notification, {NotificationType} from '../../models/notification';
+import type {Resource} from '../../models/resources';
+import './ValidationErrorBoundary.scss';
 
 /**
  * Props interface of {@link ValidationErrorBoundary}

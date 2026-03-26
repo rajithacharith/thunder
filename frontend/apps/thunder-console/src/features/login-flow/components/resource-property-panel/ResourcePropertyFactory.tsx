@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {ResourceTypes, type Resource} from '@/features/flows/models/resources';
 import type {ReactElement} from 'react';
 import ElementPropertyFactory from './ElementPropertyFactory';
 import StepPropertyFactory from './StepPropertyFactory';
 import WidgetPropertyFactory from './WidgetPropertyFactory';
+import {ResourceTypes, type Resource} from '@/features/flows/models/resources';
 
 /**
  * Props interface of {@link ResourcePropertyFactory}

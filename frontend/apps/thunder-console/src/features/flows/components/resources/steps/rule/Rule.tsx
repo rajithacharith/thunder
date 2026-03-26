@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {memo, useCallback, useMemo, useRef, type DragEvent, type ReactElement} from 'react';
-import {useTranslation} from 'react-i18next';
-import {Handle, Position, useNodeId, useReactFlow} from '@xyflow/react';
 import {Box, IconButton, Tooltip, Typography} from '@wso2/oxygen-ui';
 import {CrossIcon} from '@wso2/oxygen-ui-icons-react';
+import {Handle, Position, useNodeId, useReactFlow} from '@xyflow/react';
+import {memo, useCallback, useMemo, useRef, type DragEvent, type ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
+import type {CommonStepFactoryPropsInterface} from '../CommonStepFactory';
 import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
 import type {Resource} from '@/features/flows/models/resources';
-import type {CommonStepFactoryPropsInterface} from '../CommonStepFactory';
 import './Rule.scss';
 
 /**

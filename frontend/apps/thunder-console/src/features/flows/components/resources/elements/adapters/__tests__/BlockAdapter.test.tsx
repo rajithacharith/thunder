@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
-import type {Element as FlowElement} from '@/features/flows/models/elements';
+import type {ReactNode} from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import BlockAdapter from '../BlockAdapter';
+import type {Element as FlowElement} from '@/features/flows/models/elements';
 
 // Mock dependencies
 vi.mock('../BlockAdapter.scss', () => ({}));

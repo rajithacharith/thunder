@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
-import {Stack, Typography, Button, Select, MenuItem} from '@wso2/oxygen-ui';
-import {useTranslation} from 'react-i18next';
 import {useResolveDisplayName} from '@thunder/shared-hooks';
-import SettingsCard from '@/components/SettingsCard';
+import {Stack, Typography, Button, Select, MenuItem} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
+import {useTranslation} from 'react-i18next';
 import OrganizationUnitTreePicker from '../../../../organization-units/components/OrganizationUnitTreePicker';
 import type {ApiUserSchema, SchemaPropertyInput} from '../../../types/user-types';
+import SettingsCard from '@/components/SettingsCard';
 
 export interface EditGeneralSettingsProps {
   userType: ApiUserSchema;

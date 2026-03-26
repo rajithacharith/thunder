@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import type {ReactNode} from 'react';
-import EdgeStyleMenu from '../EdgeStyleSelector';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
-import {EdgeStyleTypes} from '../../../models/steps';
+import type {Base} from '../../../models/base';
 import {PreviewScreenType} from '../../../models/custom-text-preference';
 import {ElementTypes} from '../../../models/elements';
-import type {Base} from '../../../models/base';
+import {EdgeStyleTypes} from '../../../models/steps';
+import EdgeStyleMenu from '../EdgeStyleSelector';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({

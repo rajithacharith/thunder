@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {type ReactElement} from 'react';
 import {Box, Typography} from '@wso2/oxygen-ui';
+import {type ReactElement} from 'react';
 
 /**
  * Props interface of {@link DynamicValueSyntax}

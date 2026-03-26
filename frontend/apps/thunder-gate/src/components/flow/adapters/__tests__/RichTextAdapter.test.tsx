@@ -21,10 +21,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render} from '@testing-library/react';
-import RichTextAdapter from '../RichTextAdapter';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {FlowComponent} from '../../../../models/flow';
+import RichTextAdapter from '../RichTextAdapter';
 
 const mockUseDesign = vi.fn();
 

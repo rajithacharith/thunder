@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
+import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useConfig, useToast} from '@thunder/shared-contexts';
 import {useTranslation} from 'react-i18next';
-import type {ApiUserSchema, CreateUserSchemaRequest} from '../types/user-types';
 import UserTypeQueryKeys from '../constants/userTypeQueryKeys';
+import type {ApiUserSchema, CreateUserSchemaRequest} from '../types/user-types';
 
 /**
  * Custom React hook to create a new user schema (user type) in the Thunder server.

@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
+import {render, screen, fireEvent, waitFor} from '@thunder/test-utils';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import AcceptInviteBox from '../AcceptInviteBox';
 
 // Mock useDesign
@@ -551,7 +551,7 @@ describe('AcceptInviteBox', () => {
     expect(mockHandleInputChange).toHaveBeenCalled();
   });
 
-  it('handles navigation to sign in via onGoToSignIn', async () => {
+  it('handles navigation to sign in via onGoToSignIn', () => {
     mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
       isComplete: true,
     });
@@ -599,7 +599,7 @@ describe('AcceptInviteBox', () => {
     expect(await screen.findByText('Manager')).toBeInTheDocument();
   });
 
-  it('renders SELECT component with object options that have string value/label', async () => {
+  it('renders SELECT component with object options that have string value/label', () => {
     mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
       components: [
         {
@@ -634,7 +634,7 @@ describe('AcceptInviteBox', () => {
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
-  it('renders SELECT component with complex object value/label', async () => {
+  it('renders SELECT component with complex object value/label', () => {
     mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
       components: [
         {
@@ -742,7 +742,7 @@ describe('AcceptInviteBox', () => {
   });
 
   it('handles onError callback', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => null);
     mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
       error: {message: 'Test error'},
       components: [{id: 'block', type: 'BLOCK', components: []}],
@@ -1098,7 +1098,7 @@ describe('AcceptInviteBox', () => {
     expect(screen.queryByText('Unknown')).not.toBeInTheDocument();
   });
 
-  it('handles SELECT option with null value in object', async () => {
+  it('handles SELECT option with null value in object', () => {
     mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
       components: [
         {
@@ -1111,9 +1111,7 @@ describe('AcceptInviteBox', () => {
               ref: 'nullField',
               label: 'Null Value Field',
               placeholder: 'Select option',
-              options: [
-                {value: null, label: null},
-              ],
+              options: [{value: null, label: null}],
               required: true,
             },
             {
@@ -1132,7 +1130,7 @@ describe('AcceptInviteBox', () => {
     expect(screen.getByText('Null Value Field')).toBeInTheDocument();
   });
 
-  it('handles non-string and non-object options', async () => {
+  it('handles non-string and non-object options', () => {
     mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
       components: [
         {
@@ -1165,7 +1163,7 @@ describe('AcceptInviteBox', () => {
   });
 
   it('triggers onError callback when component has error', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => null);
 
     mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
       error: {message: 'Invite acceptance failed'},
@@ -1204,7 +1202,7 @@ describe('AcceptInviteBox', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/signin');
   });
 
-  it('handles onGoToSignIn when navigate returns a rejected Promise', async () => {
+  it('handles onGoToSignIn when navigate returns a rejected Promise', () => {
     // Mock navigate to return a rejected Promise
     mockNavigate.mockReturnValue(Promise.reject(new Error('Navigation failed')));
 
@@ -1221,7 +1219,7 @@ describe('AcceptInviteBox', () => {
   });
 
   it('calls onError callback with error object', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => null);
 
     render(<AcceptInviteBox />);
 

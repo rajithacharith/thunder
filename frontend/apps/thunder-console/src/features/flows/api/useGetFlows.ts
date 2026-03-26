@@ -16,12 +16,12 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
-import type {FlowListResponse} from '../models/responses';
-import type {FlowType} from '../models/flows';
 import FlowQueryKeys from '../constants/flow-query-keys';
+import type {FlowType} from '../models/flows';
+import type {FlowListResponse} from '../models/responses';
 
 /**
  * Parameters for the {@link useGetFlows} hook.

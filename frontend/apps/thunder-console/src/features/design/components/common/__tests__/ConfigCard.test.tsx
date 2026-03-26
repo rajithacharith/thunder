@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
+import {render, screen} from '@thunder/test-utils';
+import {describe, it, expect} from 'vitest';
 import ConfigCard from '../ConfigCard';
 
 describe('ConfigCard', () => {

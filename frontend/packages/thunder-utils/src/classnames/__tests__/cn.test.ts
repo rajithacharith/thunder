@@ -29,12 +29,11 @@ describe('cn', () => {
   });
 
   it('should join multiple class names with the prefix', () => {
-    expect(cn('SignInBox--root', 'SignInBox--paper')).toBe(
-      'ThunderSignInBox--root ThunderSignInBox--paper',
-    );
+    expect(cn('SignInBox--root', 'SignInBox--paper')).toBe('ThunderSignInBox--root ThunderSignInBox--paper');
   });
 
   it('should filter out falsy values', () => {
+    // eslint-disable-next-line no-constant-binary-expression
     expect(cn('SignIn--root', false && 'SignIn--primary')).toBe('ThunderSignIn--root');
     expect(cn('SignIn--root', null)).toBe('ThunderSignIn--root');
     expect(cn('SignIn--root', undefined)).toBe('ThunderSignIn--root');
@@ -42,9 +41,8 @@ describe('cn', () => {
   });
 
   it('should include truthy conditional classes', () => {
-    expect(cn('SignIn--root', true && 'SignIn--primary')).toBe(
-      'ThunderSignIn--root ThunderSignIn--primary',
-    );
+    // eslint-disable-next-line no-constant-binary-expression
+    expect(cn('SignIn--root', true && 'SignIn--primary')).toBe('ThunderSignIn--root ThunderSignIn--primary');
   });
 
   it('should return an empty string when no truthy classes are provided', () => {

@@ -16,55 +16,22 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
+import {zodResolver} from '@hookform/resolvers/zod';
+import {useLogger} from '@thunder/logger';
+import {useConfig} from '@thunder/shared-contexts';
 import {Stack} from '@wso2/oxygen-ui';
-import {useTranslation} from 'react-i18next';
 import {useState, useEffect, useMemo, useRef} from 'react';
 import {useForm} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
+import {useTranslation} from 'react-i18next';
 import {z} from 'zod';
-import {useQuery} from '@tanstack/react-query';
-import {useAsgardeo} from '@asgardeo/react';
-import {useConfig} from '@thunder/shared-contexts';
-import {useLogger} from '@thunder/logger';
-import type {OAuth2Config, ScopeClaims} from '../../../models/oauth';
-import type {Application} from '../../../models/application';
-import type {PropertyDefinition, ApiUserSchema} from '../../../../user-types/types/user-types';
+import ScopeSection from './ScopeSection';
 import TokenUserAttributesSection from './TokenUserAttributesSection';
 import TokenValidationSection from './TokenValidationSection';
-import ScopeSection from './ScopeSection';
-
-interface UserSchemaListResponse {
-  totalResults: number;
-  startIndex: number;
-  count: number;
-  schemas: {
-    id: string;
-    name: string;
-  }[];
-}
-
-/**
- * Temporary local hook to fetch user types list.
- * TODO: Remove this once the parent hooks are fixed.
- * Tracker: https://github.com/asgardeo/thunder/issues/1159
- */
-function useGetUserTypes() {
-  const {http} = useAsgardeo();
-  const {getServerUrl} = useConfig();
-
-  return useQuery<UserSchemaListResponse>({
-    queryKey: ['user-types-list'],
-    queryFn: async (): Promise<UserSchemaListResponse> => {
-      const serverUrl = getServerUrl();
-      const response = await http.request({
-        url: `${serverUrl}/user-schemas?limit=100`,
-        method: 'GET',
-      } as unknown as Parameters<typeof http.request>[0]);
-
-      return response.data as UserSchemaListResponse;
-    },
-  });
-}
+import type {PropertyDefinition, ApiUserSchema} from '../../../../user-types/types/user-types';
+import type {Application} from '../../../models/application';
+import type {OAuth2Config, ScopeClaims} from '../../../models/oauth';
+import useGetUserTypes from '@/features/user-types/api/useGetUserTypes';
 
 /**
  * Props for the {@link EditTokenSettings} component.
@@ -201,6 +168,7 @@ export default function EditTokenSettings({
     },
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const validityPeriod = watch('validityPeriod');
   const accessTokenValidity = watch('accessTokenValidity');
   const idTokenValidity = watch('idTokenValidity');
@@ -432,8 +400,8 @@ export default function EditTokenSettings({
       }
     } else if (oauth2Config) {
       // When disabling, remove userInfo from config to use fallback
-      const {userInfo, ...restConfig} = oauth2Config;
-      const updatedConfig = restConfig;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const {userInfo: _, ...updatedConfig} = oauth2Config;
 
       const updatedInboundAuth = application.inboundAuthConfig?.map((config) => {
         if (config.type === 'oauth2') {

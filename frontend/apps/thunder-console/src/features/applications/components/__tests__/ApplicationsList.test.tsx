@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, screen, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
+import {render, screen, waitFor} from '@thunder/test-utils';
 import type {NavigateFunction} from 'react-router';
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import type {ApplicationListResponse} from '../../models/responses';
 import ApplicationsList from '../ApplicationsList';
 
@@ -484,11 +484,10 @@ describe('ApplicationsList', () => {
 
     const avatars = screen.getAllByRole('img');
     // Trigger onError on the first avatar
-    if (avatars[0]) {
-      avatars[0].dispatchEvent(new Event('error'));
-      // The onError handler should set src to empty string
-      expect(avatars[0]).toBeInTheDocument();
-    }
+    expect(avatars[0]).toBeDefined();
+    avatars[0].dispatchEvent(new Event('error'));
+    // The onError handler should set src to empty string
+    expect(avatars[0]).toBeInTheDocument();
   });
 
   it('should display "-" for missing clientId', () => {

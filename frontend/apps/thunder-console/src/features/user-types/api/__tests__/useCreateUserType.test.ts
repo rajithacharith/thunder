@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, act, renderHook} from '@thunder/test-utils';
-import useCreateUserType from '../useCreateUserType';
-import type {ApiUserSchema, CreateUserSchemaRequest} from '../../types/user-types';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import UserTypeQueryKeys from '../../constants/userTypeQueryKeys';
+import type {ApiUserSchema, CreateUserSchemaRequest} from '../../types/user-types';
+import useCreateUserType from '../useCreateUserType';
 
 vi.mock('@asgardeo/react', () => ({useAsgardeo: vi.fn()}));
 vi.mock('@thunder/shared-contexts', async (importOriginal) => {
@@ -135,8 +135,8 @@ describe('useCreateUserType', () => {
       expect(result.current.isPending).toBe(true);
     });
 
-    await act(async () => {
-      resolveMutation({data: mockUserSchema});
+    act(() => {
+      resolveMutation({ data: mockUserSchema });
     });
 
     await waitFor(() => {

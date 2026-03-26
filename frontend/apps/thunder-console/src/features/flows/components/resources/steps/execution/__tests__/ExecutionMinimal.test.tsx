@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import type {Step} from '@/features/flows/models/steps';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import ExecutionMinimal from '../ExecutionMinimal';
+import type {Step} from '@/features/flows/models/steps';
 
 // Mock @xyflow/react
 const mockUseNodeId = vi.fn((): string | null => 'execution-node-id');

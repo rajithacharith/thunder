@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import CommonElementFactory from '../CommonElementFactory';
+import {describe, it, expect, vi} from 'vitest';
 import {BlockTypes, ElementCategories, ElementTypes, type Element} from '../../../../models/elements';
+import CommonElementFactory from '../CommonElementFactory';
 
 // Mock all adapter components
 vi.mock('../adapters/FormAdapter', () => ({

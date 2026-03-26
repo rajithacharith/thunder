@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
-import type {TranslationsResponse} from '../models/responses';
 import I18nQueryKeys from '../constants/i18n-query-keys';
+import type {TranslationsResponse} from '../models/responses';
 
 /**
  * Options for the useGetTranslations hook.

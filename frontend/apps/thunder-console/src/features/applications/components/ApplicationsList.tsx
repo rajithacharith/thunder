@@ -16,17 +16,17 @@
  * under the License.
  */
 
-import {useMemo, useCallback, useState, type JSX} from 'react';
-import {useNavigate} from 'react-router';
 import {useLogger} from '@thunder/logger/react';
 import {Box, Chip, IconButton, Tooltip, Typography, ListingTable, DataGrid, useTheme} from '@wso2/oxygen-ui';
 import {AppWindow, Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
+import {useNavigate} from 'react-router';
+import ApplicationDeleteDialog from './ApplicationDeleteDialog';
 import ResourceAvatar from '../../../components/ResourceAvatar';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import useGetApplications from '../api/useGetApplications';
 import type {BasicApplication} from '../models/application';
-import ApplicationDeleteDialog from './ApplicationDeleteDialog';
 import getTemplateMetadata from '../utils/getTemplateMetadata';
 
 export default function ApplicationsList(): JSX.Element {

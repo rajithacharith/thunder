@@ -16,14 +16,14 @@
  * under the License.
  */
 
-import {useNavigate, useSearchParams} from 'react-router';
-import {Stack, TextField, Button, InputAdornment, PageContent, PageTitle} from '@wso2/oxygen-ui';
-import {useState, useEffect} from 'react';
-import {Plus, Search, Mail} from '@wso2/oxygen-ui-icons-react';
-import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
-import UsersList from '../components/UsersList';
+import {Stack, TextField, Button, InputAdornment, PageContent, PageTitle} from '@wso2/oxygen-ui';
+import {Plus, Search, Mail} from '@wso2/oxygen-ui-icons-react';
+import {useState, useEffect} from 'react';
+import {useTranslation} from 'react-i18next';
+import {useNavigate, useSearchParams} from 'react-router';
 import InviteUserDialog from '../components/InviteUserDialog';
+import UsersList from '../components/UsersList';
 
 export default function UsersListPage() {
   const navigate = useNavigate();

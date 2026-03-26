@@ -18,10 +18,10 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import ValidationPanel from '../ValidationPanel';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import Notification, {NotificationType} from '../../../models/notification';
+import ValidationPanel from '../ValidationPanel';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({

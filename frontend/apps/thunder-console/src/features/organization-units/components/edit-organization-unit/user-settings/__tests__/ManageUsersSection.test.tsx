@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {screen, renderWithProviders} from '@thunder/test-utils';
-import ManageUsersSection from '../ManageUsersSection';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {ApiUser} from '../../../../../users/types/users';
+import ManageUsersSection from '../ManageUsersSection';
 
 // Mock the useGetOrganizationUnitUsers hook
 const mockUseGetOrganizationUnitUsers = vi.fn();

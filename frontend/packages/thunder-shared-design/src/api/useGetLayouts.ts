@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
-import type {LayoutListResponse} from '../models/responses';
 import DesignQueryKeys from '../constants/design-query-keys';
+import type {LayoutListResponse} from '../models/responses';
 
 interface UseGetLayoutsParams {
   limit?: number;

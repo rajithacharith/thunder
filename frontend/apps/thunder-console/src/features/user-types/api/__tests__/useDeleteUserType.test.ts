@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, act, renderHook} from '@thunder/test-utils';
-import useDeleteUserType from '../useDeleteUserType';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import UserTypeQueryKeys from '../../constants/userTypeQueryKeys';
+import useDeleteUserType from '../useDeleteUserType';
 
 vi.mock('@asgardeo/react', () => ({useAsgardeo: vi.fn()}));
 vi.mock('@thunder/shared-contexts', async (importOriginal) => {

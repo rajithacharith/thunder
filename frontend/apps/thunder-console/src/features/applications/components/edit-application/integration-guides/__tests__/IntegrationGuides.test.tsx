@@ -18,11 +18,11 @@
 
 import {render, screen} from '@testing-library/react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import IntegrationGuides from '../IntegrationGuides';
 import type {Application} from '../../../../models/application';
 import type {OAuth2Config} from '../../../../models/oauth';
 import getIntegrationGuidesForTemplate from '../../../../utils/getIntegrationGuidesForTemplate';
 import IntegrationGuide from '../IntegrationGuide';
+import IntegrationGuides from '../IntegrationGuides';
 
 // Mock the integration guide utility
 vi.mock('../../../../utils/getIntegrationGuidesForTemplate', () => ({

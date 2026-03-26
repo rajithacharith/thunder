@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {type ChangeEvent, type JSX, useEffect, useMemo} from 'react';
+import {generateRandomHumanReadableIdentifiers} from '@thunder/utils';
 import {Box, Chip, FormControl, FormLabel, Stack, TextField, Typography, useTheme} from '@wso2/oxygen-ui';
 import {Lightbulb} from '@wso2/oxygen-ui-icons-react';
-import {generateRandomHumanReadableIdentifiers} from '@thunder/utils';
+import {type ChangeEvent, type JSX, useEffect, useMemo} from 'react';
 
 export interface ConfigureThemeNameProps {
   themeName: string;
@@ -30,7 +30,7 @@ export interface ConfigureThemeNameProps {
 export default function ConfigureThemeName({
   themeName,
   onThemeNameChange,
-  onReadyChange = () => {},
+  onReadyChange = () => null,
 }: ConfigureThemeNameProps): JSX.Element {
   const theme = useTheme();
   const suggestions = useMemo(() => generateRandomHumanReadableIdentifiers(), []);
@@ -51,7 +51,6 @@ export default function ConfigureThemeName({
           value={themeName}
           onChange={(e: ChangeEvent<HTMLInputElement>) => onThemeNameChange(e.target.value)}
           placeholder="e.g. Solarized Light"
-          autoFocus
         />
       </FormControl>
 

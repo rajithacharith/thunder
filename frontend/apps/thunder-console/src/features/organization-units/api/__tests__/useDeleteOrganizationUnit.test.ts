@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import useDeleteOrganizationUnit from '../useDeleteOrganizationUnit';
 
 // Mock useAsgardeo

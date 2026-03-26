@@ -17,8 +17,8 @@
  */
 
 import type {JSX} from 'react';
-import useThemeBuilder from '../contexts/ThemeBuilder/useThemeBuilder';
 import GatePreview from '../../../components/GatePreview/GatePreview';
+import useThemeBuilder from '../contexts/ThemeBuilder/useThemeBuilder';
 
 // Re-export so existing imports of Viewport from this file keep working.
 export type {Viewport} from '../../../components/GatePreview/GatePreview';

@@ -16,8 +16,13 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import type {Node, Edge} from '@xyflow/react';
+import {describe, it, expect, vi} from 'vitest';
+import VisualFlowConstants from '../../constants/VisualFlowConstants';
+import {ElementTypes, ElementCategories, ActionEventTypes, ButtonTypes} from '../../models/elements';
+import type {Element} from '../../models/elements';
+import type {StepData} from '../../models/steps';
+import {StepTypes, StaticStepTypes} from '../../models/steps';
 import {
   transformReactFlow,
   validateFlowGraph,
@@ -25,11 +30,6 @@ import {
   type ReactFlowCanvasData,
   type FlowGraph,
 } from '../reactFlowTransformer';
-import type {StepData} from '../../models/steps';
-import {StepTypes, StaticStepTypes} from '../../models/steps';
-import {ElementTypes, ElementCategories, ActionEventTypes, ButtonTypes} from '../../models/elements';
-import type {Element} from '../../models/elements';
-import VisualFlowConstants from '../../constants/VisualFlowConstants';
 
 // Mock generateResourceId
 vi.mock('../generateResourceId', () => ({

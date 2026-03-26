@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {screen, fireEvent, waitFor, renderWithProviders} from '@thunder/test-utils';
-import AppearanceSection from '../AppearanceSection';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {OrganizationUnit} from '../../../../models/organization-unit';
+import AppearanceSection from '../AppearanceSection';
 
 // Mock useGetThemes hook
 const mockUseGetThemes = vi.fn();

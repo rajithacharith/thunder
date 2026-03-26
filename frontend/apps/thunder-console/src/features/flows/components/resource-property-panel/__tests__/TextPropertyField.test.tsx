@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import type {ReactNode} from 'react';
-import TextPropertyField from '../TextPropertyField';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {ValidationContext, type ValidationContextProps} from '../../../context/ValidationContext';
-import type {Resource} from '../../../models/resources';
 import Notification from '../../../models/notification';
+import type {Resource} from '../../../models/resources';
+import TextPropertyField from '../TextPropertyField';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -637,7 +637,7 @@ describe('TextPropertyField', () => {
       expect(mockOnChange).toHaveBeenCalledWith('label', '{{t(custom:common.submit)}}', mockResource);
     });
 
-    it('should call onChange with empty string when i18n key is cleared', async () => {
+    it('should call onChange with empty string when i18n key is cleared', () => {
       render(
         <TextPropertyField
           resource={mockResource}

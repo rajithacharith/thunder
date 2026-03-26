@@ -16,12 +16,12 @@
  * under the License.
  */
 
+import {AUTH_FLOW_GRAPHS} from '../models/auth-flow-graphs';
 import {
   IdentityProviderTypes,
   type IdentityProvider,
   type IdentityProviderType,
 } from '@/features/integrations/models/identity-provider';
-import {AUTH_FLOW_GRAPHS} from '../models/auth-flow-graphs';
 
 /**
  * Options for resolving authentication flow configuration.

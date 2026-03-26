@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {type JSX} from 'react';
-import {useTranslation} from 'react-i18next';
+import type {ColorSchemeOption} from '@thunder/shared-design';
 import {Box, IconButton, Tooltip, Typography} from '@wso2/oxygen-ui';
 import {Minus, Monitor, Plus, Smartphone, Tablet} from '@wso2/oxygen-ui-icons-react';
-import type {ColorSchemeOption} from '@thunder/shared-design';
+import {type JSX} from 'react';
+import {useTranslation} from 'react-i18next';
 import type {Viewport} from './ThemePreviewPanel';
 import {VIEWPORT_WIDTHS, VIEWPORT_HEIGHTS} from './viewportConstants';
 import ColorSchemeOptions from '../constants/ColorSchemeOptions';

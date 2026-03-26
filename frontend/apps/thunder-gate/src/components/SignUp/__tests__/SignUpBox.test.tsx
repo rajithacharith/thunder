@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
+import {render, screen, fireEvent, waitFor} from '@thunder/test-utils';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import SignUpBox from '../SignUpBox';
 
 // Mock useDesign
@@ -888,7 +888,7 @@ describe('SignUpBox', () => {
     expect(mockHandleInputChange).toHaveBeenCalled();
   });
 
-  it('handles OTP_INPUT digit entry', async () => {
+  it('handles OTP_INPUT digit entry', () => {
     mockSignUpRenderProps = createMockSignUpRenderProps({
       values: {},
       components: [
@@ -924,7 +924,7 @@ describe('SignUpBox', () => {
     expect(mockHandleInputChange).toHaveBeenCalled();
   });
 
-  it('handles OTP_INPUT backspace navigation', async () => {
+  it('handles OTP_INPUT backspace navigation', () => {
     mockSignUpRenderProps = createMockSignUpRenderProps({
       values: {},
       components: [
@@ -962,7 +962,7 @@ describe('SignUpBox', () => {
     expect(otpInputs).toHaveLength(6);
   });
 
-  it('handles OTP_INPUT paste', async () => {
+  it('handles OTP_INPUT paste', () => {
     mockSignUpRenderProps = createMockSignUpRenderProps({
       values: {},
       components: [
@@ -1003,7 +1003,7 @@ describe('SignUpBox', () => {
     expect(otpInputs).toHaveLength(6);
   });
 
-  it('rejects non-digit input in OTP field', async () => {
+  it('rejects non-digit input in OTP field', () => {
     mockSignUpRenderProps = createMockSignUpRenderProps({
       values: {},
       components: [
@@ -1040,7 +1040,7 @@ describe('SignUpBox', () => {
     expect(mockHandleInputChange).not.toHaveBeenCalled();
   });
 
-  it('handles SELECT with object option having complex value', async () => {
+  it('handles SELECT with object option having complex value', () => {
     mockSignUpRenderProps = createMockSignUpRenderProps({
       values: {},
       components: [
@@ -1525,7 +1525,7 @@ describe('SignUpBox', () => {
     expect(screen.queryByLabelText(/No Ref Field/)).not.toBeInTheDocument();
   });
 
-  it('returns null for non-TRIGGER action in social login block', async () => {
+  it('returns null for non-TRIGGER action in social login block', () => {
     mockSignUpRenderProps = createMockSignUpRenderProps({
       components: [
         {

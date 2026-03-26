@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import ResourceLogoDialog from '../ResourceLogoDialog';
 
 const defaultProps = {
@@ -206,10 +206,9 @@ describe('ResourceLogoDialog', () => {
       const emojiTiles = document.querySelectorAll('[title]');
       const firstTile = Array.from(emojiTiles).find((el) => el.textContent && el.textContent.trim().length > 0);
 
-      if (firstTile) {
-        fireEvent.click(firstTile);
-        expect(screen.getByRole('button', {name: /^select$/i})).not.toBeDisabled();
-      }
+      expect(firstTile).toBeDefined();
+      fireEvent.click(firstTile!);
+      expect(screen.getByRole('button', {name: /^select$/i})).not.toBeDisabled();
     });
 
     it('should clear the URL input when an emoji is clicked after a URL is typed', async () => {
@@ -224,12 +223,11 @@ describe('ResourceLogoDialog', () => {
       const emojiTiles = document.querySelectorAll('[title]');
       const firstTile = Array.from(emojiTiles).find((el) => el.textContent && el.textContent.trim().length > 0);
 
-      if (firstTile) {
-        fireEvent.click(firstTile);
+      expect(firstTile).toBeDefined();
+      fireEvent.click(firstTile!);
 
-        // URL input should be cleared
-        expect(urlInput).toHaveValue('');
-      }
+      // URL input should be cleared
+      expect(urlInput).toHaveValue('');
     });
   });
 

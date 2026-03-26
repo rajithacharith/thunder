@@ -16,25 +16,13 @@
  * under the License.
  */
 
-/* eslint-disable @typescript-eslint/naming-convention */
-/* eslint-disable no-underscore-dangle */
-
-import {FlatCompat} from '@eslint/eslintrc';
+import eslint from '@eslint/js';
 import type {Linter} from 'eslint';
-import path from 'path';
-import {fileURLToPath} from 'url';
-
-const __filename: string = fileURLToPath(import.meta.url);
-const __dirname: string = path.dirname(__filename);
-
-const compat: FlatCompat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+import importPlugin from 'eslint-plugin-import';
 
 const javascriptConfig: Linter.Config[] = [
-  // FlatCompat.extends() returns Config[] but @eslint/eslintrc doesn't provide proper types
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  ...compat.extends('airbnb-base'),
+  eslint.configs.recommended,
+  importPlugin.flatConfigs.recommended,
   {
     name: 'thunder/javascript-overrides',
     rules: {

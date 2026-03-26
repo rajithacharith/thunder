@@ -16,13 +16,13 @@
  * under the License.
  */
 
+import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import {useAsgardeo} from '@asgardeo/react';
+import fetchChildOrganizationUnits from './fetchChildOrganizationUnits';
+import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
 import type {OrganizationUnitListParams} from '../models/requests';
 import type {OrganizationUnitListResponse} from '../models/responses';
-import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
-import fetchChildOrganizationUnits from './fetchChildOrganizationUnits';
 
 /**
  * Custom React hook to fetch child organization units of a specific organization unit.

@@ -16,17 +16,17 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {renderHook} from '@testing-library/react';
-import type {ReactNode} from 'react';
 import {ReactFlowProvider} from '@xyflow/react';
 import type {Node} from '@xyflow/react';
+import type {ReactNode} from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../context/FlowBuilderCoreContext';
-import {EdgeStyleTypes} from '../../models/steps';
+import type {Base} from '../../models/base';
 import {PreviewScreenType} from '../../models/custom-text-preference';
 import {ElementTypes} from '../../models/elements';
-import type {Base} from '../../models/base';
 import FlowEventTypes from '../../models/extension';
+import {EdgeStyleTypes} from '../../models/steps';
 
 // Import after mocks
 import useDeleteExecutionResource from '../useDeleteExecutionResource';

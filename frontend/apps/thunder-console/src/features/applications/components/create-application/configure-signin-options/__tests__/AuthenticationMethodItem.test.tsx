@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {UserRound} from '@wso2/oxygen-ui-icons-react';
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import AuthenticationMethodItem, {type AuthenticationMethodItemProps} from '../AuthenticationMethodItem';
 
 // Mock react-i18next
@@ -168,7 +168,7 @@ describe('AuthenticationMethodItem', () => {
       expect(screen.queryByRole('switch')).not.toBeInTheDocument();
     });
 
-    it('should not call onToggle when disabled button is clicked', async () => {
+    it('should not call onToggle when disabled button is clicked', () => {
       renderComponent({
         isAvailable: false,
       });

@@ -21,8 +21,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {fireEvent, render, screen} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import ConsentAdapter from '../ConsentAdapter';
 
 vi.mock('@wso2/oxygen-ui', () => ({

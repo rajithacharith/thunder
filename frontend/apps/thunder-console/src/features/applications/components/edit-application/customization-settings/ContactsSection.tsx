@@ -17,12 +17,12 @@
  */
 
 import {Autocomplete, Chip, TextField} from '@wso2/oxygen-ui';
-import {useTranslation, Trans} from 'react-i18next';
 import {useState} from 'react';
+import {useTranslation, Trans} from 'react-i18next';
 import {z} from 'zod';
-import type {Application} from '../../../models/application';
 import Kbd from '../../../../../components/Kbd';
 import SettingsCard from '../../../../../components/SettingsCard';
+import type {Application} from '../../../models/application';
 
 /**
  * Props for the {@link ContactsSection} component.
@@ -101,7 +101,7 @@ export default function ContactsSection({application, editedApp, onFieldChange}:
             placeholder={t('applications:edit.general.contacts.placeholder')}
             error={!!inputError}
             helperText={
-              inputError || <Trans i18nKey="applications:edit.general.contacts.hint" components={[<Kbd />]} />
+              inputError || <Trans i18nKey="applications:edit.general.contacts.hint" components={[<Kbd key="kbd" />]} />
             }
           />
         )}

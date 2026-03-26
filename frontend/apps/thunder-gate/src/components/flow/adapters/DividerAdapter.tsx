@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
 import {Divider} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {FlowComponent} from '../../../models/flow';
 

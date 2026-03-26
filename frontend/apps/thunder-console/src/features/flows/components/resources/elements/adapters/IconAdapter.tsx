@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {type ReactElement, type ComponentType} from 'react';
 import {Box} from '@wso2/oxygen-ui';
 import * as Icons from '@wso2/oxygen-ui-icons-react';
+import {type ReactElement, type ComponentType} from 'react';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 
 /**

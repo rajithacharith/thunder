@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import CaptchaAdapter from '../CaptchaAdapter';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 import {ElementTypes} from '@/features/flows/models/elements';
-import CaptchaAdapter from '../CaptchaAdapter';
 
 describe('CaptchaAdapter', () => {
   const createMockElement = (overrides: Record<string, unknown> = {}): FlowElement =>

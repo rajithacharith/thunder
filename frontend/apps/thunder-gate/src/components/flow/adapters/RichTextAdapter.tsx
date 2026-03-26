@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import type {JSX} from 'react';
-import {Box} from '@wso2/oxygen-ui';
 import {useDesign} from '@thunder/shared-design';
 import {containsMetaTemplate, replaceMetaTemplate} from '@thunder/utils';
+import {Box} from '@wso2/oxygen-ui';
 import DOMPurify from 'dompurify';
+import type {JSX} from 'react';
 import type {FlowComponent} from '../../../models/flow';
 
 /** The meta key used by the server to embed the application's sign-up URL. */

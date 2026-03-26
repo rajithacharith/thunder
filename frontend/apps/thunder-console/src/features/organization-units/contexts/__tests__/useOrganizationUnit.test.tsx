@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {describe, it, expect} from 'vitest';
 import {renderHook} from '@testing-library/react';
 import type {ReactNode} from 'react';
-import useOrganizationUnit from '../useOrganizationUnit';
+import {describe, it, expect} from 'vitest';
 import OrganizationUnitProvider from '../OrganizationUnitProvider';
+import useOrganizationUnit from '../useOrganizationUnit';
 
 describe('useOrganizationUnit', () => {
   it('should throw when used outside of OrganizationUnitProvider', () => {

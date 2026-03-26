@@ -16,11 +16,11 @@
  * under the License.
  */
 
+import userEvent from '@testing-library/user-event';
 import {render, screen, waitFor} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import userEvent from '@testing-library/user-event';
-import ApplicationDeleteDialog from '../ApplicationDeleteDialog';
 import * as useDeleteApplicationModule from '../../api/useDeleteApplication';
+import ApplicationDeleteDialog from '../ApplicationDeleteDialog';
 
 // Mock the useDeleteApplication hook
 vi.mock('../../api/useDeleteApplication');
@@ -353,7 +353,7 @@ describe('ApplicationDeleteDialog', () => {
       expect(screen.queryByRole('button', {name: 'Delete'})).not.toBeInTheDocument();
     });
 
-    it('should not trigger another delete when already pending', async () => {
+    it('should not trigger another delete when already pending', () => {
       vi.mocked(useDeleteApplicationModule.default).mockReturnValue({
         mutate: mockMutate,
         isPending: true,

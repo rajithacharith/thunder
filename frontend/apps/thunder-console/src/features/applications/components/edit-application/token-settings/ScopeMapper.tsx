@@ -17,10 +17,10 @@
  */
 
 import {Box, Stack, Typography, Chip, Alert, Divider} from '@wso2/oxygen-ui';
+import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useState, useEffect} from 'react';
-import type {ScopeClaims} from '../../../models/oauth';
 import TokenConstants from '../../../constants/token-constants';
+import type {ScopeClaims} from '../../../models/oauth';
 
 /**
  * Props for the {@link ScopeMapper} component.
@@ -67,34 +67,24 @@ export default function ScopeMapper({
 }: ScopeMapperProps) {
   const {t} = useTranslation();
   const [selectedScope, setSelectedScope] = useState<string | null>(null);
-
-  // Keep selectedScope in sync when scopes list changes
-  useEffect(() => {
-    if (scopes.length === 0) {
-      setSelectedScope(null);
-      return;
-    }
-    if (!selectedScope || !scopes.includes(selectedScope)) {
-      setSelectedScope(scopes[0]);
-    }
-  }, [scopes, selectedScope]);
+  const effectiveScope = selectedScope && scopes.includes(selectedScope) ? selectedScope : (scopes[0] ?? null);
 
   const availableAttributes = Array.from(new Set([...userAttributes, ...TokenConstants.ADDITIONAL_USER_ATTRIBUTES]))
     .filter((attr) => !(TokenConstants.DEFAULT_TOKEN_ATTRIBUTES as readonly string[]).includes(attr))
     .sort();
 
   const handleAdd = (attr: string) => {
-    if (!selectedScope) return;
-    const current = scopeClaims[selectedScope] ?? [];
+    if (!effectiveScope) return;
+    const current = scopeClaims[effectiveScope] ?? [];
     if (!current.includes(attr)) {
-      onScopeClaimsChange({...scopeClaims, [selectedScope]: [...current, attr]});
+      onScopeClaimsChange({...scopeClaims, [effectiveScope]: [...current, attr]});
     }
   };
 
   const handleRemove = (attr: string) => {
-    if (!selectedScope) return;
-    const current = scopeClaims[selectedScope] ?? [];
-    onScopeClaimsChange({...scopeClaims, [selectedScope]: current.filter((a) => a !== attr)});
+    if (!effectiveScope) return;
+    const current = scopeClaims[effectiveScope] ?? [];
+    onScopeClaimsChange({...scopeClaims, [effectiveScope]: current.filter((a) => a !== attr)});
   };
 
   if (scopes.length === 0) {
@@ -108,7 +98,7 @@ export default function ScopeMapper({
     );
   }
 
-  const mappedAttributes = selectedScope ? (scopeClaims[selectedScope] ?? []) : [];
+  const mappedAttributes = effectiveScope ? (scopeClaims[effectiveScope] ?? []) : [];
   const unmappedAttributes = availableAttributes.filter((attr) => !mappedAttributes.includes(attr));
 
   return (
@@ -135,7 +125,7 @@ export default function ScopeMapper({
       >
         {scopes.map((scope) => {
           const count = (scopeClaims[scope] ?? []).length;
-          const isSelected = selectedScope === scope;
+          const isSelected = effectiveScope === scope;
 
           return (
             <Box
@@ -187,7 +177,7 @@ export default function ScopeMapper({
 
       {/* ── Right: Attribute mapping panel ─────────────────────────── */}
       <Box sx={{flex: 1, p: 2, overflow: 'auto', bgcolor: 'background.paper'}}>
-        {selectedScope ? (
+        {effectiveScope ? (
           <Stack spacing={2}>
             {/* Mapped attributes */}
             <Box>

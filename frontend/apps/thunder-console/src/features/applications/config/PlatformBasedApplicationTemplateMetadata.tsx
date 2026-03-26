@@ -17,12 +17,12 @@
  */
 
 import {Monitor, Server, Smartphone, Code} from '@wso2/oxygen-ui-icons-react';
+import BackendPlatformTemplate from '../data/application-templates/platform-based/backend.json';
+import BrowserPlatformTemplate from '../data/application-templates/platform-based/browser.json';
+import MobilePlatformTemplate from '../data/application-templates/platform-based/mobile.json';
+import ServerPlatformTemplate from '../data/application-templates/platform-based/server.json';
 import type {ApplicationTemplate, ApplicationTemplateMetadata} from '../models/application-templates';
 import {PlatformApplicationTemplate} from '../models/application-templates';
-import BrowserPlatformTemplate from '../data/application-templates/platform-based/browser.json';
-import ServerPlatformTemplate from '../data/application-templates/platform-based/server.json';
-import MobilePlatformTemplate from '../data/application-templates/platform-based/mobile.json';
-import BackendPlatformTemplate from '../data/application-templates/platform-based/backend.json';
 
 const PlatformBasedApplicationTemplateMetadata: ApplicationTemplateMetadata<PlatformApplicationTemplate>[] = [
   {

@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {renderWithProviders} from '@thunder/test-utils';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import GroupCreateProvider from '../../contexts/GroupCreate/GroupCreateProvider';
 import CreateGroupPage from '../CreateGroupPage';
 

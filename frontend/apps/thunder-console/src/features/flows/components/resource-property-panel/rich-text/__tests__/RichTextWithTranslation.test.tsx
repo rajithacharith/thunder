@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import type {ReactNode, ChangeEvent} from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import RichTextWithTranslation from '../RichTextWithTranslation';
 import {ValidationContext, type ValidationContextProps} from '@/features/flows/context/ValidationContext';
 import Notification from '@/features/flows/models/notification';
 import type {Resource} from '@/features/flows/models/resources';
-import RichTextWithTranslation from '../RichTextWithTranslation';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({

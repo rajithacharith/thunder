@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi} from 'vitest';
 
 // Mock i18next top-level await before importing withI18n
 vi.mock('i18next', () => ({
