@@ -97,6 +97,9 @@ spec:
               value: {{ .Values.deployment.skipSecurity | quote }}
             {{- include "thunder.databasePasswordEnvVars" . | nindent 12 }}
             {{- include "thunder.secretEnvVars" (dict "secretEnv" .Values.deployment.secretEnv) | nindent 12 }}
+            {{- if .Values.deployment.env }}
+            {{- toYaml .Values.deployment.env | nindent 12 }}
+            {{- end }}
           startupProbe:
             exec:
               command:

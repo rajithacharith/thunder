@@ -64,6 +64,14 @@ deployment:
   # Controls the THUNDER_SKIP_SECURITY environment variable. Set this to true only
   # in non-production environments for testing purposes to bypass REST API security checks.
   skipSecurity: false
+  # Additional environment variables with plain values.
+  # Example:
+  # env:
+  #   - name: LOG_LEVEL
+  #     value: debug
+  #   - name: EXTERNAL_API_BASE_URL
+  #     value: https://api.example.com
+  env: []
   # Additional environment variables sourced from existing Kubernetes Secrets.
   # Example:
   # secretEnv:

@@ -189,6 +189,7 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `deployment.securityContext.fsGroup`    | Group ID for mounted volumes (fixes SQLite permission issues on cloud platforms)        | `10001`                        |
 | `deployment.securityContext.seccompProfile.enabled` | Enable seccomp profile                                                      | `false`                        |
 | `deployment.securityContext.seccompProfile.type` | Seccomp profile type                                                           | `RuntimeDefault`               |
+| `deployment.env`                        | Additional environment variables with plain values                                     | `[]`                           |
 | `deployment.secretEnv`                  | Additional environment variables sourced from Kubernetes Secrets                         | `[]`                           |
 
 ### HPA Parameters
@@ -638,7 +639,23 @@ The setup job runs `setup.sh` as a one-time Helm pre-install hook to initialize 
 | `setup.extraVolumeMounts`              | Additional volume mounts for setup job                          | `[]`                         |
 | `setup.extraVolumes`                   | Additional volumes for setup job                                | `[]`                         |
 
-Environment variable item structure for `deployment.secretEnv` and `setup.secretEnv`:
+Environment variable item structure for plain value env vars in `deployment.env` and `setup.env`:
+
+- `name`: Environment variable name in the container.
+- `value`: Plain value from Helm values.
+
+Example:
+
+```yaml
+deployment:
+  env:
+    - name: LOG_LEVEL
+      value: debug
+    - name: EXTERNAL_API_BASE_URL
+      value: https://api.example.com
+```
+
+Environment variable item structure for secret-backed env vars in `deployment.secretEnv` and `setup.secretEnv`:
 
 - `name`: Environment variable name in the container.
 - `secretName`: Kubernetes Secret resource name.
