@@ -18,7 +18,7 @@
 
 import Editor from '@monaco-editor/react';
 import {Alert, Box} from '@wso2/oxygen-ui';
-import {useEffect, useRef, useState, type JSX} from 'react';
+import {useRef, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 
 /**
@@ -92,14 +92,12 @@ export default function TranslationJsonEditor({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Keep editor in sync when values change from the outside (e.g. namespace switch)
-  const prevValuesRef = useRef(values);
-  useEffect(() => {
-    if (prevValuesRef.current !== values) {
-      prevValuesRef.current = values;
-      setJsonText(JSON.stringify(values, null, 2));
-      setJsonError(false);
-    }
-  }, [values]);
+  const [prevValues, setPrevValues] = useState(values);
+  if (prevValues !== values) {
+    setPrevValues(values);
+    setJsonText(JSON.stringify(values, null, 2));
+    setJsonError(false);
+  }
 
   const handleEditorChange = (raw: string | undefined) => {
     const text = raw ?? '';

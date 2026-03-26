@@ -28,8 +28,6 @@ export default [
     rules: {
       /* --- TEMPORARILY TURNED OFF RULES --- */
       /* TODO: Revisit these rules and enable them after refactoring the codebase. */
-      'react-hooks/immutability': 'off',
-      'react-hooks/set-state-in-effect': 'off',
       'react-hooks/preserve-manual-memoization': 'off',
       'typescript-eslint/require-await': 'off',
     },

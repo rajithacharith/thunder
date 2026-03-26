@@ -325,7 +325,7 @@ function ResourceProperties(): ReactElement {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       handlePropertyChangeDebounced(propertyKey, newValue, element);
     },
-    [],
+    [handlePropertyChangeDebounced],
   );
 
   if (!lastInteractedResource) {

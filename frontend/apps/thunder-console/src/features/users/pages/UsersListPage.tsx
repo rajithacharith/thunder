@@ -19,7 +19,7 @@
 import {useLogger} from '@thunder/logger/react';
 import {Stack, TextField, Button, InputAdornment, PageContent, PageTitle} from '@wso2/oxygen-ui';
 import {Plus, Search, Mail} from '@wso2/oxygen-ui-icons-react';
-import {useState, useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate, useSearchParams} from 'react-router';
 import InviteUserDialog from '../components/InviteUserDialog';
@@ -31,11 +31,11 @@ export default function UsersListPage() {
   const logger = useLogger('UsersListPage');
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(() => searchParams.get('invite') === 'true');
 
+  // Clear the invite param from URL (external side-effect)
   useEffect(() => {
     if (searchParams.get('invite') === 'true') {
-      setIsInviteDialogOpen(true);
       setSearchParams({}, {replace: true});
     }
   }, [searchParams, setSearchParams]);

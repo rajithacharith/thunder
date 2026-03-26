@@ -28,7 +28,6 @@ import {
   type ReactElement,
   type ReactNode,
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -133,14 +132,6 @@ function FlowContextWrapper({
 
   // Ref to store the callback to close the validation panel (for mutual exclusion)
   const closeValidationPanelRef = useRef<(() => void) | null>(null);
-
-  // Keep refs in sync (this is cheap - just pointer assignment)
-  useEffect(() => {
-    setResourcePropertiesPanelHeadingRef.current = setResourcePropertiesPanelHeading;
-    setLastInteractedElementInternalRef.current = setLastInteractedElementInternal;
-    setIsOpenResourcePropertiesPanelRef.current = setIsOpenResourcePropertiesPanel;
-    setLastInteractedStepIdRef.current = setLastInteractedStepId;
-  });
 
   // Temp variables for data fetching and error handling.
   const flowMetadata = undefined;

@@ -100,13 +100,11 @@ function InlineCSSField({id, content, colorMode, onChange, registerFlush}: Inlin
     onChangeRef.current = onChange;
   });
 
-  const prevContentRef = useRef(content);
-  useEffect(() => {
-    if (prevContentRef.current !== content) {
-      prevContentRef.current = content;
-      setLocalContent(content);
-    }
-  }, [content]);
+  const [prevContent, setPrevContent] = useState(content);
+  if (prevContent !== content) {
+    setPrevContent(content);
+    setLocalContent(content);
+  }
 
   // Register a flush callback so the parent can synchronously commit pending edits.
   const flush = useCallback(() => {
@@ -524,23 +522,25 @@ const CustomCSSEditor = forwardRef<CustomCSSEditorHandle, CustomCSSEditorProps>(
     }));
 
     // Stable React keys — not tied to the editable `id` field.
-    const keyCounterRef = useRef(stylesheets.length);
+    const [keyCounter, setKeyCounter] = useState(stylesheets.length);
+    const nextKeyRef = useRef(keyCounter);
     const nextKey = (): number => {
-      keyCounterRef.current += 1;
-      return keyCounterRef.current;
+      nextKeyRef.current += 1;
+      setKeyCounter(nextKeyRef.current);
+      return nextKeyRef.current;
     };
     const [stableKeys, setStableKeys] = useState<number[]>(() =>
       Array.from({length: stylesheets.length}, (_, i) => i + 1),
     );
 
     // Sync stable keys when stylesheets are replaced externally (e.g. server load).
-    const prevLengthRef = useRef(stylesheets.length);
-    useEffect(() => {
-      if (stylesheets.length !== prevLengthRef.current && stableKeys.length !== stylesheets.length) {
-        setStableKeys(stylesheets.map(() => nextKey()));
-      }
-      prevLengthRef.current = stylesheets.length;
-    }, [stylesheets, stableKeys.length]);
+    const [prevLength, setPrevLength] = useState(stylesheets.length);
+    if (stylesheets.length !== prevLength && stableKeys.length !== stylesheets.length) {
+      setPrevLength(stylesheets.length);
+      const newKeys = Array.from({length: stylesheets.length}, (_, i) => keyCounter + i + 1);
+      setStableKeys(newKeys);
+      setKeyCounter(keyCounter + stylesheets.length);
+    }
 
     const handleAdd = (type: 'inline' | 'url'): void => {
       const id = nextId(stylesheets);

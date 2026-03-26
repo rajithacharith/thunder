@@ -48,10 +48,7 @@ function getThunderClasses(el: HTMLElement): string[] {
  * Prefers classes with `--` (BEM modifier pattern).
  */
 function pickBestClass(classes: string[]): string | undefined {
-  return (
-    classes.find((c) => c.startsWith('Thunder') && c.includes('--')) ??
-    classes[0]
-  );
+  return classes.find((c) => c.startsWith('Thunder') && c.includes('--')) ?? classes[0];
 }
 
 /**
@@ -101,12 +98,7 @@ export default function ElementInspector({
       const containerRect = container.getBoundingClientRect();
 
       setHighlight({
-        rect: new DOMRect(
-          rect.x - containerRect.x,
-          rect.y - containerRect.y,
-          rect.width,
-          rect.height,
-        ),
+        rect: new DOMRect(rect.x - containerRect.x, rect.y - containerRect.y, rect.width, rect.height),
         classes,
         tag: target.tagName.toLowerCase(),
       });
@@ -159,15 +151,9 @@ export default function ElementInspector({
       container.removeEventListener('mouseover', handleMouseOver);
       container.removeEventListener('mouseout', handleMouseOut);
       container.removeEventListener('click', handleClick, true);
-    };
-  }, [enabled]);
-
-  // Clear highlight when inspector is disabled
-  useEffect(() => {
-    if (!enabled) {
       setHighlight(null);
       setCopiedText(null);
-    }
+    };
   }, [enabled]);
 
   return (
@@ -218,19 +204,12 @@ export default function ElementInspector({
               textOverflow: 'ellipsis',
             }}
           >
-            <Typography
-              component="span"
-              sx={{fontSize: '0.68rem', fontFamily: 'monospace', fontWeight: 500}}
-            >
+            <Typography component="span" sx={{fontSize: '0.68rem', fontFamily: 'monospace', fontWeight: 500}}>
               <span style={{color: '#94a3b8'}}>{`<${highlight.tag}>`}</span>
               {highlight.classes.length > 0 ? (
-                <span style={{color: '#7dd3fc', marginLeft: 6}}>
-                  .{highlight.classes.join(' .')}
-                </span>
+                <span style={{color: '#7dd3fc', marginLeft: 6}}>.{highlight.classes.join(' .')}</span>
               ) : (
-                <span style={{color: '#94a3b8', marginLeft: 6, fontStyle: 'italic'}}>
-                  no classes
-                </span>
+                <span style={{color: '#94a3b8', marginLeft: 6, fontStyle: 'italic'}}>no classes</span>
               )}
             </Typography>
           </Box>

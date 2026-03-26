@@ -231,16 +231,9 @@ describe('ResourcePanel', () => {
         />,
       );
 
-      // Find and click the edit button (the small icon button near the title)
-      const buttons = screen.getAllByRole('button');
-      const editButton = buttons.find(
-        (btn) =>
-          // Look for small buttons that might be the edit button
-          btn.className.includes('small') || btn.getAttribute('size') === 'small',
-      );
-
-      expect(editButton).toBeDefined();
-      fireEvent.click(editButton!);
+      // Find and click the edit button by its aria-label
+      const editButton = screen.getByRole('button', {name: /edit title/i});
+      fireEvent.click(editButton);
       expect(screen.getByRole('textbox')).toBeInTheDocument();
     });
 

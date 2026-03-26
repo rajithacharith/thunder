@@ -322,6 +322,7 @@ const translations = {
     'pages.applications': 'Applications',
     'pages.dashboard': 'Dashboard',
     'pages.flows': 'Flows',
+    'pages.design': 'Design',
     'pages.translations': 'Translations',
     'breadcrumb.console': 'Console',
   },
