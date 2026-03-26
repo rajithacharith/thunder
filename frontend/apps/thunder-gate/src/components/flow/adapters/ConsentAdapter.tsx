@@ -52,7 +52,7 @@ export default function ConsentAdapter({
       {({purposes}: ConsentRenderProps) => (
         <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, mt: 1}}>
           {purposes.map((purpose, idx) => (
-            <Box key={purpose.purpose_id ?? idx}>
+            <Box key={purpose.purposeId ?? idx}>
               {purpose.essential && purpose.essential.length > 0 && (
                 <Box sx={{mt: 1}}>
                   <Typography variant="subtitle2" fontWeight="bold" sx={{mb: 0.5}}>
