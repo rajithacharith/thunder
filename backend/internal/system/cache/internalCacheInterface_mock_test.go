@@ -5,6 +5,8 @@
 package cache
 
 import (
+	"context"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -35,50 +37,17 @@ func (_m *internalCacheInterfaceMock[T]) EXPECT() *internalCacheInterfaceMock_Ex
 	return &internalCacheInterfaceMock_Expecter[T]{mock: &_m.Mock}
 }
 
-// CleanupExpired provides a mock function for the type internalCacheInterfaceMock
-func (_mock *internalCacheInterfaceMock[T]) CleanupExpired() {
-	_mock.Called()
-	return
-}
-
-// internalCacheInterfaceMock_CleanupExpired_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CleanupExpired'
-type internalCacheInterfaceMock_CleanupExpired_Call[T any] struct {
-	*mock.Call
-}
-
-// CleanupExpired is a helper method to define mock.On call
-func (_e *internalCacheInterfaceMock_Expecter[T]) CleanupExpired() *internalCacheInterfaceMock_CleanupExpired_Call[T] {
-	return &internalCacheInterfaceMock_CleanupExpired_Call[T]{Call: _e.mock.On("CleanupExpired")}
-}
-
-func (_c *internalCacheInterfaceMock_CleanupExpired_Call[T]) Run(run func()) *internalCacheInterfaceMock_CleanupExpired_Call[T] {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *internalCacheInterfaceMock_CleanupExpired_Call[T]) Return() *internalCacheInterfaceMock_CleanupExpired_Call[T] {
-	_c.Call.Return()
-	return _c
-}
-
-func (_c *internalCacheInterfaceMock_CleanupExpired_Call[T]) RunAndReturn(run func()) *internalCacheInterfaceMock_CleanupExpired_Call[T] {
-	_c.Run(run)
-	return _c
-}
-
 // Clear provides a mock function for the type internalCacheInterfaceMock
-func (_mock *internalCacheInterfaceMock[T]) Clear() error {
-	ret := _mock.Called()
+func (_mock *internalCacheInterfaceMock[T]) Clear(ctx context.Context) error {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Clear")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func() error); ok {
-		r0 = returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -91,13 +60,20 @@ type internalCacheInterfaceMock_Clear_Call[T any] struct {
 }
 
 // Clear is a helper method to define mock.On call
-func (_e *internalCacheInterfaceMock_Expecter[T]) Clear() *internalCacheInterfaceMock_Clear_Call[T] {
-	return &internalCacheInterfaceMock_Clear_Call[T]{Call: _e.mock.On("Clear")}
+//   - ctx context.Context
+func (_e *internalCacheInterfaceMock_Expecter[T]) Clear(ctx interface{}) *internalCacheInterfaceMock_Clear_Call[T] {
+	return &internalCacheInterfaceMock_Clear_Call[T]{Call: _e.mock.On("Clear", ctx)}
 }
 
-func (_c *internalCacheInterfaceMock_Clear_Call[T]) Run(run func()) *internalCacheInterfaceMock_Clear_Call[T] {
+func (_c *internalCacheInterfaceMock_Clear_Call[T]) Run(run func(ctx context.Context)) *internalCacheInterfaceMock_Clear_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
@@ -107,22 +83,22 @@ func (_c *internalCacheInterfaceMock_Clear_Call[T]) Return(err error) *internalC
 	return _c
 }
 
-func (_c *internalCacheInterfaceMock_Clear_Call[T]) RunAndReturn(run func() error) *internalCacheInterfaceMock_Clear_Call[T] {
+func (_c *internalCacheInterfaceMock_Clear_Call[T]) RunAndReturn(run func(ctx context.Context) error) *internalCacheInterfaceMock_Clear_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Delete provides a mock function for the type internalCacheInterfaceMock
-func (_mock *internalCacheInterfaceMock[T]) Delete(key CacheKey) error {
-	ret := _mock.Called(key)
+func (_mock *internalCacheInterfaceMock[T]) Delete(ctx context.Context, key CacheKey) error {
+	ret := _mock.Called(ctx, key)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Delete")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(CacheKey) error); ok {
-		r0 = returnFunc(key)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CacheKey) error); ok {
+		r0 = returnFunc(ctx, key)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -135,19 +111,25 @@ type internalCacheInterfaceMock_Delete_Call[T any] struct {
 }
 
 // Delete is a helper method to define mock.On call
+//   - ctx context.Context
 //   - key CacheKey
-func (_e *internalCacheInterfaceMock_Expecter[T]) Delete(key interface{}) *internalCacheInterfaceMock_Delete_Call[T] {
-	return &internalCacheInterfaceMock_Delete_Call[T]{Call: _e.mock.On("Delete", key)}
+func (_e *internalCacheInterfaceMock_Expecter[T]) Delete(ctx interface{}, key interface{}) *internalCacheInterfaceMock_Delete_Call[T] {
+	return &internalCacheInterfaceMock_Delete_Call[T]{Call: _e.mock.On("Delete", ctx, key)}
 }
 
-func (_c *internalCacheInterfaceMock_Delete_Call[T]) Run(run func(key CacheKey)) *internalCacheInterfaceMock_Delete_Call[T] {
+func (_c *internalCacheInterfaceMock_Delete_Call[T]) Run(run func(ctx context.Context, key CacheKey)) *internalCacheInterfaceMock_Delete_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 CacheKey
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(CacheKey)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 CacheKey
+		if args[1] != nil {
+			arg1 = args[1].(CacheKey)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -158,14 +140,14 @@ func (_c *internalCacheInterfaceMock_Delete_Call[T]) Return(err error) *internal
 	return _c
 }
 
-func (_c *internalCacheInterfaceMock_Delete_Call[T]) RunAndReturn(run func(key CacheKey) error) *internalCacheInterfaceMock_Delete_Call[T] {
+func (_c *internalCacheInterfaceMock_Delete_Call[T]) RunAndReturn(run func(ctx context.Context, key CacheKey) error) *internalCacheInterfaceMock_Delete_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Get provides a mock function for the type internalCacheInterfaceMock
-func (_mock *internalCacheInterfaceMock[T]) Get(key CacheKey) (T, bool) {
-	ret := _mock.Called(key)
+func (_mock *internalCacheInterfaceMock[T]) Get(ctx context.Context, key CacheKey) (T, bool) {
+	ret := _mock.Called(ctx, key)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Get")
@@ -173,18 +155,18 @@ func (_mock *internalCacheInterfaceMock[T]) Get(key CacheKey) (T, bool) {
 
 	var r0 T
 	var r1 bool
-	if returnFunc, ok := ret.Get(0).(func(CacheKey) (T, bool)); ok {
-		return returnFunc(key)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CacheKey) (T, bool)); ok {
+		return returnFunc(ctx, key)
 	}
-	if returnFunc, ok := ret.Get(0).(func(CacheKey) T); ok {
-		r0 = returnFunc(key)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CacheKey) T); ok {
+		r0 = returnFunc(ctx, key)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(T)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(CacheKey) bool); ok {
-		r1 = returnFunc(key)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CacheKey) bool); ok {
+		r1 = returnFunc(ctx, key)
 	} else {
 		r1 = ret.Get(1).(bool)
 	}
@@ -197,19 +179,25 @@ type internalCacheInterfaceMock_Get_Call[T any] struct {
 }
 
 // Get is a helper method to define mock.On call
+//   - ctx context.Context
 //   - key CacheKey
-func (_e *internalCacheInterfaceMock_Expecter[T]) Get(key interface{}) *internalCacheInterfaceMock_Get_Call[T] {
-	return &internalCacheInterfaceMock_Get_Call[T]{Call: _e.mock.On("Get", key)}
+func (_e *internalCacheInterfaceMock_Expecter[T]) Get(ctx interface{}, key interface{}) *internalCacheInterfaceMock_Get_Call[T] {
+	return &internalCacheInterfaceMock_Get_Call[T]{Call: _e.mock.On("Get", ctx, key)}
 }
 
-func (_c *internalCacheInterfaceMock_Get_Call[T]) Run(run func(key CacheKey)) *internalCacheInterfaceMock_Get_Call[T] {
+func (_c *internalCacheInterfaceMock_Get_Call[T]) Run(run func(ctx context.Context, key CacheKey)) *internalCacheInterfaceMock_Get_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 CacheKey
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(CacheKey)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 CacheKey
+		if args[1] != nil {
+			arg1 = args[1].(CacheKey)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -220,7 +208,7 @@ func (_c *internalCacheInterfaceMock_Get_Call[T]) Return(v T, b bool) *internalC
 	return _c
 }
 
-func (_c *internalCacheInterfaceMock_Get_Call[T]) RunAndReturn(run func(key CacheKey) (T, bool)) *internalCacheInterfaceMock_Get_Call[T] {
+func (_c *internalCacheInterfaceMock_Get_Call[T]) RunAndReturn(run func(ctx context.Context, key CacheKey) (T, bool)) *internalCacheInterfaceMock_Get_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
@@ -358,16 +346,16 @@ func (_c *internalCacheInterfaceMock_IsEnabled_Call[T]) RunAndReturn(run func() 
 }
 
 // Set provides a mock function for the type internalCacheInterfaceMock
-func (_mock *internalCacheInterfaceMock[T]) Set(key CacheKey, value T) error {
-	ret := _mock.Called(key, value)
+func (_mock *internalCacheInterfaceMock[T]) Set(ctx context.Context, key CacheKey, value T) error {
+	ret := _mock.Called(ctx, key, value)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Set")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(CacheKey, T) error); ok {
-		r0 = returnFunc(key, value)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CacheKey, T) error); ok {
+		r0 = returnFunc(ctx, key, value)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -380,25 +368,31 @@ type internalCacheInterfaceMock_Set_Call[T any] struct {
 }
 
 // Set is a helper method to define mock.On call
+//   - ctx context.Context
 //   - key CacheKey
 //   - value T
-func (_e *internalCacheInterfaceMock_Expecter[T]) Set(key interface{}, value interface{}) *internalCacheInterfaceMock_Set_Call[T] {
-	return &internalCacheInterfaceMock_Set_Call[T]{Call: _e.mock.On("Set", key, value)}
+func (_e *internalCacheInterfaceMock_Expecter[T]) Set(ctx interface{}, key interface{}, value interface{}) *internalCacheInterfaceMock_Set_Call[T] {
+	return &internalCacheInterfaceMock_Set_Call[T]{Call: _e.mock.On("Set", ctx, key, value)}
 }
 
-func (_c *internalCacheInterfaceMock_Set_Call[T]) Run(run func(key CacheKey, value T)) *internalCacheInterfaceMock_Set_Call[T] {
+func (_c *internalCacheInterfaceMock_Set_Call[T]) Run(run func(ctx context.Context, key CacheKey, value T)) *internalCacheInterfaceMock_Set_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 CacheKey
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(CacheKey)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 T
+		var arg1 CacheKey
 		if args[1] != nil {
-			arg1 = args[1].(T)
+			arg1 = args[1].(CacheKey)
+		}
+		var arg2 T
+		if args[2] != nil {
+			arg2 = args[2].(T)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -409,7 +403,7 @@ func (_c *internalCacheInterfaceMock_Set_Call[T]) Return(err error) *internalCac
 	return _c
 }
 
-func (_c *internalCacheInterfaceMock_Set_Call[T]) RunAndReturn(run func(key CacheKey, value T) error) *internalCacheInterfaceMock_Set_Call[T] {
+func (_c *internalCacheInterfaceMock_Set_Call[T]) RunAndReturn(run func(ctx context.Context, key CacheKey, value T) error) *internalCacheInterfaceMock_Set_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }

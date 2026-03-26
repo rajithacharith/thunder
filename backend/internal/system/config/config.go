@@ -101,6 +101,15 @@ type CacheConfig struct {
 	EvictionPolicy  string          `yaml:"eviction_policy" json:"eviction_policy"`
 	CleanupInterval int             `yaml:"cleanup_interval" json:"cleanup_interval"`
 	Properties      []CacheProperty `yaml:"properties,omitempty" json:"properties,omitempty"`
+	Redis           RedisConfig     `yaml:"redis" json:"redis"`
+}
+
+// RedisConfig holds the Redis connection configuration.
+type RedisConfig struct {
+	Address   string `yaml:"address" json:"address"`
+	Password  string `yaml:"password" json:"password"`
+	DB        int    `yaml:"db" json:"db"`
+	KeyPrefix string `yaml:"key_prefix" json:"key_prefix"`
 }
 
 // JWTConfig holds the JWT configuration details.

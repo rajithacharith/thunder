@@ -235,6 +235,11 @@ configuration:
     ttl: 3600
     evictionPolicy: "LRU"
     cleanupInterval: 300
+    redis:
+      address: "localhost:6379"
+      password: ""
+      db: 0
+      keyPrefix: "thunder"
 
   # Token Configuration
   jwt:

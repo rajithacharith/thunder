@@ -7,6 +7,7 @@ package cachemock
 import (
 	"sync"
 
+	"github.com/redis/go-redis/v9"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -35,6 +36,39 @@ type CacheManagerInterfaceMock_Expecter struct {
 
 func (_m *CacheManagerInterfaceMock) EXPECT() *CacheManagerInterfaceMock_Expecter {
 	return &CacheManagerInterfaceMock_Expecter{mock: &_m.Mock}
+}
+
+// Close provides a mock function for the type CacheManagerInterfaceMock
+func (_mock *CacheManagerInterfaceMock) Close() {
+	_mock.Called()
+	return
+}
+
+// CacheManagerInterfaceMock_Close_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Close'
+type CacheManagerInterfaceMock_Close_Call struct {
+	*mock.Call
+}
+
+// Close is a helper method to define mock.On call
+func (_e *CacheManagerInterfaceMock_Expecter) Close() *CacheManagerInterfaceMock_Close_Call {
+	return &CacheManagerInterfaceMock_Close_Call{Call: _e.mock.On("Close")}
+}
+
+func (_c *CacheManagerInterfaceMock_Close_Call) Run(run func()) *CacheManagerInterfaceMock_Close_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *CacheManagerInterfaceMock_Close_Call) Return() *CacheManagerInterfaceMock_Close_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *CacheManagerInterfaceMock_Close_Call) RunAndReturn(run func()) *CacheManagerInterfaceMock_Close_Call {
+	_c.Run(run)
+	return _c
 }
 
 // Init provides a mock function for the type CacheManagerInterfaceMock
@@ -297,6 +331,52 @@ func (_c *CacheManagerInterfaceMock_getMutex_Call) Return(rWMutex *sync.RWMutex)
 }
 
 func (_c *CacheManagerInterfaceMock_getMutex_Call) RunAndReturn(run func() *sync.RWMutex) *CacheManagerInterfaceMock_getMutex_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// getRedisClient provides a mock function for the type CacheManagerInterfaceMock
+func (_mock *CacheManagerInterfaceMock) getRedisClient() *redis.Client {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for getRedisClient")
+	}
+
+	var r0 *redis.Client
+	if returnFunc, ok := ret.Get(0).(func() *redis.Client); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*redis.Client)
+		}
+	}
+	return r0
+}
+
+// CacheManagerInterfaceMock_getRedisClient_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'getRedisClient'
+type CacheManagerInterfaceMock_getRedisClient_Call struct {
+	*mock.Call
+}
+
+// getRedisClient is a helper method to define mock.On call
+func (_e *CacheManagerInterfaceMock_Expecter) getRedisClient() *CacheManagerInterfaceMock_getRedisClient_Call {
+	return &CacheManagerInterfaceMock_getRedisClient_Call{Call: _e.mock.On("getRedisClient")}
+}
+
+func (_c *CacheManagerInterfaceMock_getRedisClient_Call) Run(run func()) *CacheManagerInterfaceMock_getRedisClient_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *CacheManagerInterfaceMock_getRedisClient_Call) Return(client *redis.Client) *CacheManagerInterfaceMock_getRedisClient_Call {
+	_c.Call.Return(client)
+	return _c
+}
+
+func (_c *CacheManagerInterfaceMock_getRedisClient_Call) RunAndReturn(run func() *redis.Client) *CacheManagerInterfaceMock_getRedisClient_Call {
 	_c.Call.Return(run)
 	return _c
 }

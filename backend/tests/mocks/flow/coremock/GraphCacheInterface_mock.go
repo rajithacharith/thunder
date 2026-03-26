@@ -5,6 +5,8 @@
 package coremock
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/flow/core"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -37,8 +39,8 @@ func (_m *GraphCacheInterfaceMock) EXPECT() *GraphCacheInterfaceMock_Expecter {
 }
 
 // Get provides a mock function for the type GraphCacheInterfaceMock
-func (_mock *GraphCacheInterfaceMock) Get(flowID string) (core.GraphInterface, bool) {
-	ret := _mock.Called(flowID)
+func (_mock *GraphCacheInterfaceMock) Get(ctx context.Context, flowID string) (core.GraphInterface, bool) {
+	ret := _mock.Called(ctx, flowID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Get")
@@ -46,18 +48,18 @@ func (_mock *GraphCacheInterfaceMock) Get(flowID string) (core.GraphInterface, b
 
 	var r0 core.GraphInterface
 	var r1 bool
-	if returnFunc, ok := ret.Get(0).(func(string) (core.GraphInterface, bool)); ok {
-		return returnFunc(flowID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (core.GraphInterface, bool)); ok {
+		return returnFunc(ctx, flowID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) core.GraphInterface); ok {
-		r0 = returnFunc(flowID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) core.GraphInterface); ok {
+		r0 = returnFunc(ctx, flowID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(core.GraphInterface)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) bool); ok {
-		r1 = returnFunc(flowID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) bool); ok {
+		r1 = returnFunc(ctx, flowID)
 	} else {
 		r1 = ret.Get(1).(bool)
 	}
@@ -70,19 +72,25 @@ type GraphCacheInterfaceMock_Get_Call struct {
 }
 
 // Get is a helper method to define mock.On call
+//   - ctx context.Context
 //   - flowID string
-func (_e *GraphCacheInterfaceMock_Expecter) Get(flowID interface{}) *GraphCacheInterfaceMock_Get_Call {
-	return &GraphCacheInterfaceMock_Get_Call{Call: _e.mock.On("Get", flowID)}
+func (_e *GraphCacheInterfaceMock_Expecter) Get(ctx interface{}, flowID interface{}) *GraphCacheInterfaceMock_Get_Call {
+	return &GraphCacheInterfaceMock_Get_Call{Call: _e.mock.On("Get", ctx, flowID)}
 }
 
-func (_c *GraphCacheInterfaceMock_Get_Call) Run(run func(flowID string)) *GraphCacheInterfaceMock_Get_Call {
+func (_c *GraphCacheInterfaceMock_Get_Call) Run(run func(ctx context.Context, flowID string)) *GraphCacheInterfaceMock_Get_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -93,22 +101,22 @@ func (_c *GraphCacheInterfaceMock_Get_Call) Return(graphInterface core.GraphInte
 	return _c
 }
 
-func (_c *GraphCacheInterfaceMock_Get_Call) RunAndReturn(run func(flowID string) (core.GraphInterface, bool)) *GraphCacheInterfaceMock_Get_Call {
+func (_c *GraphCacheInterfaceMock_Get_Call) RunAndReturn(run func(ctx context.Context, flowID string) (core.GraphInterface, bool)) *GraphCacheInterfaceMock_Get_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Invalidate provides a mock function for the type GraphCacheInterfaceMock
-func (_mock *GraphCacheInterfaceMock) Invalidate(flowID string) error {
-	ret := _mock.Called(flowID)
+func (_mock *GraphCacheInterfaceMock) Invalidate(ctx context.Context, flowID string) error {
+	ret := _mock.Called(ctx, flowID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Invalidate")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string) error); ok {
-		r0 = returnFunc(flowID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, flowID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -121,19 +129,25 @@ type GraphCacheInterfaceMock_Invalidate_Call struct {
 }
 
 // Invalidate is a helper method to define mock.On call
+//   - ctx context.Context
 //   - flowID string
-func (_e *GraphCacheInterfaceMock_Expecter) Invalidate(flowID interface{}) *GraphCacheInterfaceMock_Invalidate_Call {
-	return &GraphCacheInterfaceMock_Invalidate_Call{Call: _e.mock.On("Invalidate", flowID)}
+func (_e *GraphCacheInterfaceMock_Expecter) Invalidate(ctx interface{}, flowID interface{}) *GraphCacheInterfaceMock_Invalidate_Call {
+	return &GraphCacheInterfaceMock_Invalidate_Call{Call: _e.mock.On("Invalidate", ctx, flowID)}
 }
 
-func (_c *GraphCacheInterfaceMock_Invalidate_Call) Run(run func(flowID string)) *GraphCacheInterfaceMock_Invalidate_Call {
+func (_c *GraphCacheInterfaceMock_Invalidate_Call) Run(run func(ctx context.Context, flowID string)) *GraphCacheInterfaceMock_Invalidate_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -144,22 +158,22 @@ func (_c *GraphCacheInterfaceMock_Invalidate_Call) Return(err error) *GraphCache
 	return _c
 }
 
-func (_c *GraphCacheInterfaceMock_Invalidate_Call) RunAndReturn(run func(flowID string) error) *GraphCacheInterfaceMock_Invalidate_Call {
+func (_c *GraphCacheInterfaceMock_Invalidate_Call) RunAndReturn(run func(ctx context.Context, flowID string) error) *GraphCacheInterfaceMock_Invalidate_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Set provides a mock function for the type GraphCacheInterfaceMock
-func (_mock *GraphCacheInterfaceMock) Set(flowID string, graph core.GraphInterface) error {
-	ret := _mock.Called(flowID, graph)
+func (_mock *GraphCacheInterfaceMock) Set(ctx context.Context, flowID string, graph core.GraphInterface) error {
+	ret := _mock.Called(ctx, flowID, graph)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Set")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string, core.GraphInterface) error); ok {
-		r0 = returnFunc(flowID, graph)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, core.GraphInterface) error); ok {
+		r0 = returnFunc(ctx, flowID, graph)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -172,25 +186,31 @@ type GraphCacheInterfaceMock_Set_Call struct {
 }
 
 // Set is a helper method to define mock.On call
+//   - ctx context.Context
 //   - flowID string
 //   - graph core.GraphInterface
-func (_e *GraphCacheInterfaceMock_Expecter) Set(flowID interface{}, graph interface{}) *GraphCacheInterfaceMock_Set_Call {
-	return &GraphCacheInterfaceMock_Set_Call{Call: _e.mock.On("Set", flowID, graph)}
+func (_e *GraphCacheInterfaceMock_Expecter) Set(ctx interface{}, flowID interface{}, graph interface{}) *GraphCacheInterfaceMock_Set_Call {
+	return &GraphCacheInterfaceMock_Set_Call{Call: _e.mock.On("Set", ctx, flowID, graph)}
 }
 
-func (_c *GraphCacheInterfaceMock_Set_Call) Run(run func(flowID string, graph core.GraphInterface)) *GraphCacheInterfaceMock_Set_Call {
+func (_c *GraphCacheInterfaceMock_Set_Call) Run(run func(ctx context.Context, flowID string, graph core.GraphInterface)) *GraphCacheInterfaceMock_Set_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 core.GraphInterface
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(core.GraphInterface)
+			arg1 = args[1].(string)
+		}
+		var arg2 core.GraphInterface
+		if args[2] != nil {
+			arg2 = args[2].(core.GraphInterface)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -201,7 +221,7 @@ func (_c *GraphCacheInterfaceMock_Set_Call) Return(err error) *GraphCacheInterfa
 	return _c
 }
 
-func (_c *GraphCacheInterfaceMock_Set_Call) RunAndReturn(run func(flowID string, graph core.GraphInterface) error) *GraphCacheInterfaceMock_Set_Call {
+func (_c *GraphCacheInterfaceMock_Set_Call) RunAndReturn(run func(ctx context.Context, flowID string, graph core.GraphInterface) error) *GraphCacheInterfaceMock_Set_Call {
 	_c.Call.Return(run)
 	return _c
 }

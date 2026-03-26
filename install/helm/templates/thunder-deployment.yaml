@@ -97,6 +97,7 @@ spec:
               value: "false"
             {{- end }}
             {{- include "thunder.databasePasswordEnvVars" . | nindent 12 }}
+            {{- include "thunder.cacheRedisPasswordEnvVars" . | nindent 12 }}
           startupProbe:
             exec:
               command:

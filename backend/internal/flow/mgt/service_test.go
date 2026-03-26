@@ -651,7 +651,7 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_Success() {
 	}
 	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(existingFlow, nil)
 	s.mockStore.EXPECT().UpdateFlow(mock.Anything, testFlowIDService, flowDef).Return(updatedFlow, nil)
-	s.mockGraphBuilder.EXPECT().InvalidateCache(testFlowIDService)
+	s.mockGraphBuilder.EXPECT().InvalidateCache(mock.Anything, testFlowIDService)
 
 	result, err := s.service.UpdateFlow(context.Background(), testFlowIDService, flowDef)
 
@@ -759,7 +759,7 @@ func (s *FlowMgtServiceTestSuite) TestDeleteFlow_Success() {
 	existingFlow := &CompleteFlowDefinition{ID: testFlowIDService, Handle: "test-handle"}
 	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(existingFlow, nil)
 	s.mockStore.EXPECT().DeleteFlow(mock.Anything, testFlowIDService).Return(nil)
-	s.mockGraphBuilder.EXPECT().InvalidateCache(testFlowIDService)
+	s.mockGraphBuilder.EXPECT().InvalidateCache(mock.Anything, testFlowIDService)
 
 	err := s.service.DeleteFlow(context.Background(), testFlowIDService)
 
@@ -901,7 +901,7 @@ func (s *FlowMgtServiceTestSuite) TestRestoreFlowVersion_Success() {
 	restoredFlow := &CompleteFlowDefinition{ActiveVersion: 2}
 	s.mockStore.EXPECT().GetFlowVersion(mock.Anything, testFlowIDService, 1).Return(version, nil)
 	s.mockStore.EXPECT().RestoreFlowVersion(mock.Anything, testFlowIDService, 1).Return(restoredFlow, nil)
-	s.mockGraphBuilder.EXPECT().InvalidateCache(testFlowIDService)
+	s.mockGraphBuilder.EXPECT().InvalidateCache(mock.Anything, testFlowIDService)
 
 	result, err := s.service.RestoreFlowVersion(context.Background(), testFlowIDService, 1)
 
@@ -957,7 +957,7 @@ func (s *FlowMgtServiceTestSuite) TestRestoreFlowVersion_StoreError() {
 func (s *FlowMgtServiceTestSuite) TestGetGraph_Success() {
 	flow := &CompleteFlowDefinition{ID: testFlowIDService}
 	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(flow, nil)
-	s.mockGraphBuilder.EXPECT().GetGraph(flow).Return(nil, nil)
+	s.mockGraphBuilder.EXPECT().GetGraph(mock.Anything, flow).Return(nil, nil)
 
 	result, err := s.service.GetGraph(context.Background(), testFlowIDService)
 
@@ -1321,7 +1321,7 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_CompositeDisabled_AllowsUpdate(
 	// Mock the store to return the existing flow
 	s.mockStore.EXPECT().GetFlowByID(mock.Anything, flowID).Return(existingFlow, nil).Once()
 	s.mockStore.EXPECT().UpdateFlow(mock.Anything, flowID, mock.Anything).Return(existingFlow, nil).Once()
-	s.mockGraphBuilder.EXPECT().InvalidateCache(flowID).Once()
+	s.mockGraphBuilder.EXPECT().InvalidateCache(mock.Anything, flowID).Once()
 
 	// Since compositeStore is nil in this test setup, isFlowDeclarative returns false
 	// and the flow is treated as mutable, allowing the update
@@ -1351,7 +1351,7 @@ func (s *FlowMgtServiceTestSuite) TestDeleteFlow_CompositeDisabled_AllowsDelete(
 	// Mock the store to return the existing flow
 	s.mockStore.EXPECT().GetFlowByID(mock.Anything, flowID).Return(existingFlow, nil).Once()
 	s.mockStore.EXPECT().DeleteFlow(mock.Anything, flowID).Return(nil).Once()
-	s.mockGraphBuilder.EXPECT().InvalidateCache(flowID).Once()
+	s.mockGraphBuilder.EXPECT().InvalidateCache(mock.Anything, flowID).Once()
 
 	// Since compositeStore is nil in this test setup, isFlowDeclarative returns false
 	// and the flow is treated as mutable, allowing the delete
@@ -1397,7 +1397,7 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_MutableFlowAllowed() {
 	s.mockStore.EXPECT().UpdateFlow(mock.Anything, flowID, mock.MatchedBy(func(fd *FlowDefinition) bool {
 		return fd.Name == "Updated Flow"
 	})).Return(updatedFlow, nil).Once()
-	s.mockGraphBuilder.EXPECT().InvalidateCache(flowID).Once()
+	s.mockGraphBuilder.EXPECT().InvalidateCache(mock.Anything, flowID).Once()
 
 	result, err := s.service.UpdateFlow(context.Background(), flowID, flowDef)
 
@@ -1424,7 +1424,7 @@ func (s *FlowMgtServiceTestSuite) TestDeleteFlow_MutableFlowAllowed() {
 
 	s.mockStore.EXPECT().GetFlowByID(mock.Anything, flowID).Return(existingFlow, nil).Once()
 	s.mockStore.EXPECT().DeleteFlow(mock.Anything, flowID).Return(nil).Once()
-	s.mockGraphBuilder.EXPECT().InvalidateCache(flowID).Return().Once()
+	s.mockGraphBuilder.EXPECT().InvalidateCache(mock.Anything, flowID).Return().Once()
 
 	err := s.service.DeleteFlow(context.Background(), flowID)
 

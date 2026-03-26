@@ -19,6 +19,7 @@
 package core
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -52,12 +53,13 @@ func (s *GraphCacheTestSuite) SetupTest() {
 
 func (s *GraphCacheTestSuite) TestGetSuccess() {
 	flowID := testFlowID
+	ctx := context.Background()
 	g := s.factory.CreateGraph(flowID, common.FlowTypeAuthentication)
 	concreteGraph := g.(*graph)
 
-	s.mockCache.EXPECT().Get(cache.CacheKey{Key: flowID}).Return(concreteGraph, true)
+	s.mockCache.EXPECT().Get(ctx, cache.CacheKey{Key: flowID}).Return(concreteGraph, true)
 
-	result, ok := s.cache.Get(flowID)
+	result, ok := s.cache.Get(ctx, flowID)
 
 	s.True(ok)
 	s.NotNil(result)
@@ -66,17 +68,18 @@ func (s *GraphCacheTestSuite) TestGetSuccess() {
 
 func (s *GraphCacheTestSuite) TestGetNotFound() {
 	flowID := testFlowID
+	ctx := context.Background()
 
-	s.mockCache.EXPECT().Get(cache.CacheKey{Key: flowID}).Return(nil, false)
+	s.mockCache.EXPECT().Get(ctx, cache.CacheKey{Key: flowID}).Return(nil, false)
 
-	result, ok := s.cache.Get(flowID)
+	result, ok := s.cache.Get(ctx, flowID)
 
 	s.False(ok)
 	s.Nil(result)
 }
 
 func (s *GraphCacheTestSuite) TestGetEmptyFlowID() {
-	result, ok := s.cache.Get("")
+	result, ok := s.cache.Get(context.Background(), "")
 
 	s.False(ok)
 	s.Nil(result)
@@ -84,10 +87,11 @@ func (s *GraphCacheTestSuite) TestGetEmptyFlowID() {
 
 func (s *GraphCacheTestSuite) TestGetNilGraph() {
 	flowID := testFlowID
+	ctx := context.Background()
 
-	s.mockCache.EXPECT().Get(cache.CacheKey{Key: flowID}).Return(nil, true)
+	s.mockCache.EXPECT().Get(ctx, cache.CacheKey{Key: flowID}).Return(nil, true)
 
-	result, ok := s.cache.Get(flowID)
+	result, ok := s.cache.Get(ctx, flowID)
 
 	s.False(ok)
 	s.Nil(result)
@@ -95,23 +99,25 @@ func (s *GraphCacheTestSuite) TestGetNilGraph() {
 
 func (s *GraphCacheTestSuite) TestSetSuccess() {
 	flowID := testFlowID
+	ctx := context.Background()
 	g := s.factory.CreateGraph(flowID, common.FlowTypeAuthentication)
 
-	s.mockCache.EXPECT().Set(cache.CacheKey{Key: flowID}, g.(*graph)).Return(nil)
+	s.mockCache.EXPECT().Set(ctx, cache.CacheKey{Key: flowID}, g.(*graph)).Return(nil)
 
-	err := s.cache.Set(flowID, g)
+	err := s.cache.Set(ctx, flowID, g)
 
 	s.NoError(err)
 }
 
 func (s *GraphCacheTestSuite) TestSetCacheError() {
 	flowID := testFlowID
+	ctx := context.Background()
 	g := s.factory.CreateGraph(flowID, common.FlowTypeAuthentication)
 	cacheErr := errors.New("cache error")
 
-	s.mockCache.EXPECT().Set(cache.CacheKey{Key: flowID}, g.(*graph)).Return(cacheErr)
+	s.mockCache.EXPECT().Set(ctx, cache.CacheKey{Key: flowID}, g.(*graph)).Return(cacheErr)
 
-	err := s.cache.Set(flowID, g)
+	err := s.cache.Set(ctx, flowID, g)
 
 	s.Error(err)
 	s.Equal(cacheErr, err)
@@ -120,21 +126,21 @@ func (s *GraphCacheTestSuite) TestSetCacheError() {
 func (s *GraphCacheTestSuite) TestSetEmptyFlowID() {
 	g := s.factory.CreateGraph(testFlowID, common.FlowTypeAuthentication)
 
-	err := s.cache.Set("", g)
+	err := s.cache.Set(context.Background(), "", g)
 
 	s.Error(err)
 	s.Contains(err.Error(), "flowID and graph cannot be empty")
 }
 
 func (s *GraphCacheTestSuite) TestSetNilGraph() {
-	err := s.cache.Set(testFlowID, nil)
+	err := s.cache.Set(context.Background(), testFlowID, nil)
 
 	s.Error(err)
 	s.Contains(err.Error(), "flowID and graph cannot be empty")
 }
 
 func (s *GraphCacheTestSuite) TestSetEmptyFlowIDAndNilGraph() {
-	err := s.cache.Set("", nil)
+	err := s.cache.Set(context.Background(), "", nil)
 
 	s.Error(err)
 	s.Contains(err.Error(), "flowID and graph cannot be empty")
@@ -144,7 +150,7 @@ func (s *GraphCacheTestSuite) TestSetInvalidGraphType() {
 	flowID := testFlowID
 	mockGraph := NewGraphInterfaceMock(s.T())
 
-	err := s.cache.Set(flowID, mockGraph)
+	err := s.cache.Set(context.Background(), flowID, mockGraph)
 
 	s.Error(err)
 	s.Contains(err.Error(), "graph must be of concrete type *graph")
@@ -152,28 +158,30 @@ func (s *GraphCacheTestSuite) TestSetInvalidGraphType() {
 
 func (s *GraphCacheTestSuite) TestInvalidateSuccess() {
 	flowID := testFlowID
+	ctx := context.Background()
 
-	s.mockCache.EXPECT().Delete(cache.CacheKey{Key: flowID}).Return(nil)
+	s.mockCache.EXPECT().Delete(ctx, cache.CacheKey{Key: flowID}).Return(nil)
 
-	err := s.cache.Invalidate(flowID)
+	err := s.cache.Invalidate(ctx, flowID)
 
 	s.NoError(err)
 }
 
 func (s *GraphCacheTestSuite) TestInvalidateCacheError() {
 	flowID := testFlowID
+	ctx := context.Background()
 	cacheErr := errors.New("cache error")
 
-	s.mockCache.EXPECT().Delete(cache.CacheKey{Key: flowID}).Return(cacheErr)
+	s.mockCache.EXPECT().Delete(ctx, cache.CacheKey{Key: flowID}).Return(cacheErr)
 
-	err := s.cache.Invalidate(flowID)
+	err := s.cache.Invalidate(ctx, flowID)
 
 	s.Error(err)
 	s.Equal(cacheErr, err)
 }
 
 func (s *GraphCacheTestSuite) TestInvalidateEmptyFlowID() {
-	err := s.cache.Invalidate("")
+	err := s.cache.Invalidate(context.Background(), "")
 
 	s.NoError(err)
 }

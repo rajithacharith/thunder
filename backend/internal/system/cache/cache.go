@@ -20,105 +20,30 @@
 package cache
 
 import (
+	"context"
 	"sync"
-	"time"
 
-	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
-
-// internalCacheInterface defines the common interface for internal cache implementations.
-type internalCacheInterface[T any] interface {
-	Set(key CacheKey, value T) error
-	Get(key CacheKey) (T, bool)
-	Delete(key CacheKey) error
-	Clear() error
-	IsEnabled() bool
-	GetStats() CacheStat
-	CleanupExpired()
-	GetName() string
-}
 
 // CacheInterface defines the common interface for cache operations.
 type CacheInterface[T any] interface {
 	GetName() string
-	Set(key CacheKey, value T) error
-	Get(key CacheKey) (T, bool)
-	Delete(key CacheKey) error
-	Clear() error
+	Set(ctx context.Context, key CacheKey, value T) error
+	Get(ctx context.Context, key CacheKey) (T, bool)
+	Delete(ctx context.Context, key CacheKey) error
+	Clear(ctx context.Context) error
 	IsEnabled() bool
+	GetStats() CacheStat
 	CleanupExpired()
 }
 
 // Cache implements the CacheInterface for individual caches.
 type Cache[T any] struct {
-	enabled       bool
-	cacheName     string
-	InternalCache internalCacheInterface[T]
-	mu            sync.RWMutex
-}
-
-// newCache creates a new cache instance.
-func newCache[T any](cacheName string) CacheInterface[T] {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "Cache"),
-		log.String("cacheName", cacheName))
-
-	cacheConfig := config.GetThunderRuntime().Config.Cache
-	if cacheConfig.Disabled {
-		logger.Debug("Caching is disabled, returning empty")
-		return &Cache[T]{
-			enabled:       false,
-			cacheName:     cacheName,
-			InternalCache: nil,
-		}
-	}
-
-	cacheProperty := getCacheProperty(cacheConfig, cacheName)
-
-	if cacheProperty.Disabled {
-		logger.Debug("Individual cache is disabled, returning empty")
-		return &Cache[T]{
-			enabled:       false,
-			cacheName:     cacheName,
-			InternalCache: nil,
-		}
-	}
-
-	logger.Debug("Initializing the cache")
-
-	cacheType := getCacheType(cacheConfig)
-	evictionPolicy := getEvictionPolicy(cacheConfig, cacheProperty)
-	size := getCacheSize(cacheConfig, cacheProperty)
-	ttl := getCacheTTL(cacheConfig, cacheProperty)
-
-	var internalCache internalCacheInterface[T]
-	switch cacheType {
-	case cacheTypeInMemory:
-		internalCache = newInMemoryCache[T](
-			cacheName,
-			!cacheProperty.Disabled,
-			size,
-			time.Duration(ttl)*time.Second,
-			evictionPolicy,
-		)
-	default:
-		logger.Warn("Unknown cache type, defaulting to in-memory cache")
-		internalCache = newInMemoryCache[T](
-			cacheName,
-			!cacheProperty.Disabled,
-			size,
-			time.Duration(ttl)*time.Second,
-			evictionPolicyLRU,
-		)
-	}
-
-	cache := &Cache[T]{
-		enabled:       true,
-		cacheName:     cacheName,
-		InternalCache: internalCache,
-	}
-
-	return cache
+	enabled   bool
+	cacheName string
+	cacheImpl CacheInterface[T]
+	mu        sync.RWMutex
 }
 
 // GetName returns the name of the cache.
@@ -127,15 +52,15 @@ func (c *Cache[T]) GetName() string {
 }
 
 // Set stores a value in the cache.
-func (c *Cache[T]) Set(key CacheKey, value T) error {
+func (c *Cache[T]) Set(ctx context.Context, key CacheKey, value T) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "Cache"),
 		log.String("cacheName", c.cacheName))
 
-	if c.IsEnabled() && c.InternalCache.IsEnabled() {
+	if c.IsEnabled() && c.cacheImpl.IsEnabled() {
 		c.mu.Lock()
 		defer c.mu.Unlock()
 
-		if err := c.InternalCache.Set(key, value); err != nil {
+		if err := c.cacheImpl.Set(ctx, key, value); err != nil {
 			logger.Warn("Failed to set value in the cache", log.String("key", key.ToString()), log.Error(err))
 		}
 	}
@@ -144,12 +69,12 @@ func (c *Cache[T]) Set(key CacheKey, value T) error {
 }
 
 // Get retrieves a value from the cache.
-func (c *Cache[T]) Get(key CacheKey) (T, bool) {
-	if c.IsEnabled() && c.InternalCache.IsEnabled() {
+func (c *Cache[T]) Get(ctx context.Context, key CacheKey) (T, bool) {
+	if c.IsEnabled() && c.cacheImpl.IsEnabled() {
 		c.mu.RLock()
 		defer c.mu.RUnlock()
 
-		if value, found := c.InternalCache.Get(key); found {
+		if value, found := c.cacheImpl.Get(ctx, key); found {
 			return value, true
 		}
 	}
@@ -159,15 +84,15 @@ func (c *Cache[T]) Get(key CacheKey) (T, bool) {
 }
 
 // Delete removes a value from the cache.
-func (c *Cache[T]) Delete(key CacheKey) error {
+func (c *Cache[T]) Delete(ctx context.Context, key CacheKey) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "Cache"),
 		log.String("cacheName", c.cacheName))
 
-	if c.IsEnabled() && c.InternalCache.IsEnabled() {
+	if c.IsEnabled() && c.cacheImpl.IsEnabled() {
 		c.mu.Lock()
 		defer c.mu.Unlock()
 
-		if err := c.InternalCache.Delete(key); err != nil {
+		if err := c.cacheImpl.Delete(ctx, key); err != nil {
 			logger.Warn("Failed to delete value from the cache", log.String("key", key.ToString()), log.Error(err))
 		}
 	}
@@ -176,17 +101,17 @@ func (c *Cache[T]) Delete(key CacheKey) error {
 }
 
 // Clear removes all entries in the cache.
-func (c *Cache[T]) Clear() error {
+func (c *Cache[T]) Clear(ctx context.Context) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "Cache"),
 		log.String("cacheName", c.cacheName))
 
-	if c.IsEnabled() && c.InternalCache.IsEnabled() {
+	if c.IsEnabled() && c.cacheImpl.IsEnabled() {
 		logger.Debug("Clearing all entries in the cache")
 
 		c.mu.Lock()
 		defer c.mu.Unlock()
 
-		if err := c.InternalCache.Clear(); err != nil {
+		if err := c.cacheImpl.Clear(ctx); err != nil {
 			logger.Warn("Failed to clear the cache", log.Error(err))
 		}
 	}
@@ -199,76 +124,19 @@ func (c *Cache[T]) IsEnabled() bool {
 	return c.enabled
 }
 
+// GetStats returns cache statistics.
+func (c *Cache[T]) GetStats() CacheStat {
+	if c.IsEnabled() && c.cacheImpl != nil {
+		return c.cacheImpl.GetStats()
+	}
+	return CacheStat{Enabled: false}
+}
+
 // CleanupExpired cleans up expired entries in the cache.
 func (c *Cache[T]) CleanupExpired() {
-	if c.IsEnabled() && c.InternalCache.IsEnabled() {
+	if c.IsEnabled() && c.cacheImpl.IsEnabled() {
 		c.mu.Lock()
 		defer c.mu.Unlock()
-		c.InternalCache.CleanupExpired()
+		c.cacheImpl.CleanupExpired()
 	}
-}
-
-// getCacheType retrieves the cache type from the configuration.
-//
-//nolint:unparam // TODO: Ignoring linter check as we only support in-memory cache for now.
-func getCacheType(cacheConfig config.CacheConfig) cacheType {
-	if cacheConfig.Type == "" {
-		return cacheTypeInMemory
-	}
-	switch cacheConfig.Type {
-	case string(cacheTypeInMemory):
-		return cacheTypeInMemory
-	default:
-		log.GetLogger().Warn("Unknown cache type, defaulting to in-memory cache")
-		return cacheTypeInMemory
-	}
-}
-
-// getCacheProperty retrieves the cache property for the specified cache name.
-func getCacheProperty(cacheConfig config.CacheConfig, cacheName string) config.CacheProperty {
-	for _, property := range cacheConfig.Properties {
-		if property.Name == cacheName {
-			return property
-		}
-	}
-	return config.CacheProperty{}
-}
-
-// getEvictionPolicy retrieves the eviction policy from the cache configuration.
-func getEvictionPolicy(cacheConfig config.CacheConfig, cacheProperty config.CacheProperty) evictionPolicy {
-	evictionPolicy := cacheProperty.EvictionPolicy
-	if evictionPolicy == "" {
-		evictionPolicy = cacheConfig.EvictionPolicy
-	}
-	if evictionPolicy == "" {
-		return evictionPolicyLRU
-	}
-
-	switch evictionPolicy {
-	case string(evictionPolicyLRU):
-		return evictionPolicyLRU
-	case string(evictionPolicyLFU):
-		return evictionPolicyLFU
-	default:
-		log.GetLogger().Warn("Unknown eviction policy, defaulting to LRU")
-		return evictionPolicyLRU
-	}
-}
-
-// getCacheSize retrieves the cache size from the cache configuration.
-func getCacheSize(cacheConfig config.CacheConfig, cacheProperty config.CacheProperty) int {
-	size := cacheProperty.Size
-	if size <= 0 {
-		size = cacheConfig.Size
-	}
-	return size
-}
-
-// getCacheTTL retrieves the cache TTL from the cache configuration.
-func getCacheTTL(cacheConfig config.CacheConfig, cacheProperty config.CacheProperty) int {
-	ttl := cacheProperty.TTL
-	if ttl <= 0 {
-		ttl = cacheConfig.TTL
-	}
-	return ttl
 }
