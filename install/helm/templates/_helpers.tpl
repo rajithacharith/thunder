@@ -93,7 +93,9 @@ This is used to trigger pod restarts when auto-generated Secrets change.
 {{- $user := default dict $database.user -}}
 {{- $consent := default dict $configuration.consent -}}
 {{- $consentDb := default dict $consent.database -}}
-{{- if or (and $config.password (not (default dict $config.passwordRef).key)) (and $runtime.password (not (default dict $runtime.passwordRef).key)) (and $user.password (not (default dict $user.passwordRef).key)) (and $consent.enabled $consentDb.password (not (default dict $consentDb.passwordRef).key)) }}true{{- end }}
+{{- $cache := default dict $configuration.cache -}}
+{{- $redis := default dict $cache.redis -}}
+{{- if or (and $config.password (not (default dict $config.passwordRef).key)) (and $runtime.password (not (default dict $runtime.passwordRef).key)) (and $user.password (not (default dict $user.passwordRef).key)) (and $consent.enabled $consentDb.password (not (default dict $consentDb.passwordRef).key)) (and $redis.password (eq $cache.type "redis") (not (default dict $redis.passwordRef).key)) }}true{{- end }}
 {{- end }}
 
 {{/*
@@ -140,5 +142,23 @@ Injects DB_CONFIG_PASSWORD, DB_RUNTIME_PASSWORD, and DB_USER_PASSWORD from eithe
     secretKeyRef:
       name: {{ if $consentPasswordRef.key }}{{ $consentPasswordRef.name | default $defaultDbSecretName }}{{ else }}{{ $defaultDbSecretName }}{{ end }}
       key: {{ $consentPasswordRef.key | default "consent-db-password" }}
+{{- end }}
+{{- end }}
+
+{{/*
+Generate Redis password environment variable definitions for both deployment and setup job.
+Injects CACHE_REDIS_PASSWORD from auto-generated database credentials Secret when Redis cache is enabled.
+*/}}
+{{- define "thunder.cacheRedisPasswordEnvVars" -}}
+{{- $defaultDbSecretName := printf "%s-db-credentials" (include "thunder.fullname" .) -}}
+{{- $configuration := default dict .Values.configuration -}}
+{{- $cache := default dict $configuration.cache -}}
+{{- $redis := default dict $cache.redis -}}
+{{- if and (eq $cache.type "redis") $redis.password }}
+- name: CACHE_REDIS_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ $defaultDbSecretName }}
+      key: cache-redis-password
 {{- end }}
 {{- end }}

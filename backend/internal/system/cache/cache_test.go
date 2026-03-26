@@ -11,7 +11,7 @@
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
+ * KIND, either express or cacheImplied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
  */
@@ -19,8 +19,10 @@
 package cache
 
 import (
+	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -61,17 +63,17 @@ func (suite *CacheTestSuite) TestIsEnabled() {
 	t := suite.T()
 
 	// Test enabled cache
-	mockCache := newInternalCacheInterfaceMock[string](t)
+	mockCache := NewCacheInterfaceMock[string](t)
 	enabledCache := &Cache[string]{
-		enabled:       true,
-		InternalCache: mockCache,
+		enabled:   true,
+		cacheImpl: mockCache,
 	}
 	assert.True(t, enabledCache.IsEnabled())
 
 	// Test disabled cache
 	disabledCache := &Cache[string]{
-		enabled:       false,
-		InternalCache: nil,
+		enabled:   false,
+		cacheImpl: nil,
 	}
 	assert.False(t, disabledCache.IsEnabled())
 }
@@ -80,52 +82,52 @@ func (suite *CacheTestSuite) TestSet() {
 	t := suite.T()
 
 	// Test with enabled cache
-	mockCache := newInternalCacheInterfaceMock[string](t)
+	mockCache := NewCacheInterfaceMock[string](t)
 	mockCache.EXPECT().IsEnabled().Return(true)
 
 	cache := &Cache[string]{
-		enabled:       true,
-		InternalCache: mockCache,
+		enabled:   true,
+		cacheImpl: mockCache,
 	}
 
 	key := CacheKey{Key: "testKey"}
 
 	// Set up expectation for Set
-	mockCache.EXPECT().Set(key, testValue).Return(nil)
+	mockCache.EXPECT().Set(context.Background(), key, testValue).Return(nil)
 
 	// Call Set and verify
-	err := cache.Set(key, testValue)
+	err := cache.Set(context.Background(), key, testValue)
 	assert.NoError(t, err)
 
 	// Test with disabled cache
 	disabledCache := &Cache[string]{
-		enabled:       false,
-		InternalCache: nil,
+		enabled:   false,
+		cacheImpl: nil,
 	}
 
 	// Should be a no-op with disabled cache
-	err = disabledCache.Set(key, testValue)
+	err = disabledCache.Set(context.Background(), key, testValue)
 	assert.NoError(t, err)
 }
 
 func (suite *CacheTestSuite) TestSetWithError() {
 	t := suite.T()
 
-	mockCache := newInternalCacheInterfaceMock[string](t)
+	mockCache := NewCacheInterfaceMock[string](t)
 	mockCache.EXPECT().IsEnabled().Return(true)
 
 	cache := &Cache[string]{
-		enabled:       true,
-		InternalCache: mockCache,
+		enabled:   true,
+		cacheImpl: mockCache,
 	}
 
 	key := CacheKey{Key: "testKey"}
 
 	// Set up expectation for Set to return error
-	mockCache.EXPECT().Set(key, testValue).Return(fmt.Errorf("set error"))
+	mockCache.EXPECT().Set(context.Background(), key, testValue).Return(fmt.Errorf("set error"))
 
 	// Even with error, Set should not return error (logged instead)
-	err := cache.Set(key, testValue)
+	err := cache.Set(context.Background(), key, testValue)
 	assert.NoError(t, err)
 }
 
@@ -133,43 +135,43 @@ func (suite *CacheTestSuite) TestGet() {
 	t := suite.T()
 
 	// Test 1: Test with enabled cache and value found
-	mockCache1 := newInternalCacheInterfaceMock[string](t)
+	mockCache1 := NewCacheInterfaceMock[string](t)
 	mockCache1.EXPECT().IsEnabled().Return(true)
 
 	cache1 := &Cache[string]{
-		enabled:       true,
-		InternalCache: mockCache1,
+		enabled:   true,
+		cacheImpl: mockCache1,
 	}
 
 	key := CacheKey{Key: "testKey"}
 
-	mockCache1.EXPECT().Get(key).Return(testValue, true)
-	value, found := cache1.Get(key)
+	mockCache1.EXPECT().Get(context.Background(), key).Return(testValue, true)
+	value, found := cache1.Get(context.Background(), key)
 	assert.True(t, found)
 	assert.Equal(t, testValue, value)
 
 	// Test 2: Test with enabled cache and value not found
-	mockCache2 := newInternalCacheInterfaceMock[string](t)
+	mockCache2 := NewCacheInterfaceMock[string](t)
 	mockCache2.EXPECT().IsEnabled().Return(true)
 
 	cache2 := &Cache[string]{
-		enabled:       true,
-		InternalCache: mockCache2,
+		enabled:   true,
+		cacheImpl: mockCache2,
 	}
 
-	mockCache2.EXPECT().Get(key).Return("", false)
-	value2, found2 := cache2.Get(key)
+	mockCache2.EXPECT().Get(context.Background(), key).Return("", false)
+	value2, found2 := cache2.Get(context.Background(), key)
 	assert.False(t, found2)
 	assert.Equal(t, "", value2)
 
 	// Test 3: Test with disabled cache
 	disabledCache := &Cache[string]{
-		enabled:       false,
-		InternalCache: nil,
+		enabled:   false,
+		cacheImpl: nil,
 	}
 
 	// Should return not found with disabled cache
-	value3, found3 := disabledCache.Get(key)
+	value3, found3 := disabledCache.Get(context.Background(), key)
 	assert.False(t, found3)
 	assert.Equal(t, "", value3)
 }
@@ -178,52 +180,52 @@ func (suite *CacheTestSuite) TestDelete() {
 	t := suite.T()
 
 	// Test with enabled cache
-	mockCache := newInternalCacheInterfaceMock[string](t)
+	mockCache := NewCacheInterfaceMock[string](t)
 	mockCache.EXPECT().IsEnabled().Return(true)
 
 	cache := &Cache[string]{
-		enabled:       true,
-		InternalCache: mockCache,
+		enabled:   true,
+		cacheImpl: mockCache,
 	}
 
 	key := CacheKey{Key: "testKey"}
 
 	// Set up expectation for Delete
-	mockCache.EXPECT().Delete(key).Return(nil)
+	mockCache.EXPECT().Delete(context.Background(), key).Return(nil)
 
 	// Call Delete and verify
-	err := cache.Delete(key)
+	err := cache.Delete(context.Background(), key)
 	assert.NoError(t, err)
 
 	// Test with disabled cache
 	disabledCache := &Cache[string]{
-		enabled:       false,
-		InternalCache: nil,
+		enabled:   false,
+		cacheImpl: nil,
 	}
 
 	// Should be a no-op with disabled cache
-	err = disabledCache.Delete(key)
+	err = disabledCache.Delete(context.Background(), key)
 	assert.NoError(t, err)
 }
 
 func (suite *CacheTestSuite) TestDeleteWithError() {
 	t := suite.T()
 
-	mockCache := newInternalCacheInterfaceMock[string](t)
+	mockCache := NewCacheInterfaceMock[string](t)
 	mockCache.EXPECT().IsEnabled().Return(true)
 
 	cache := &Cache[string]{
-		enabled:       true,
-		InternalCache: mockCache,
+		enabled:   true,
+		cacheImpl: mockCache,
 	}
 
 	key := CacheKey{Key: "testKey"}
 
 	// Set up expectation for Delete to return error
-	mockCache.EXPECT().Delete(key).Return(fmt.Errorf("delete error"))
+	mockCache.EXPECT().Delete(context.Background(), key).Return(fmt.Errorf("delete error"))
 
 	// Even with error, Delete should not return error (logged instead)
-	err := cache.Delete(key)
+	err := cache.Delete(context.Background(), key)
 	assert.NoError(t, err)
 }
 
@@ -231,48 +233,48 @@ func (suite *CacheTestSuite) TestClear() {
 	t := suite.T()
 
 	// Test with enabled cache
-	mockCache := newInternalCacheInterfaceMock[string](t)
+	mockCache := NewCacheInterfaceMock[string](t)
 	mockCache.EXPECT().IsEnabled().Return(true)
 
 	cache := &Cache[string]{
-		enabled:       true,
-		InternalCache: mockCache,
+		enabled:   true,
+		cacheImpl: mockCache,
 	}
 
 	// Set up expectation for Clear
-	mockCache.EXPECT().Clear().Return(nil)
+	mockCache.EXPECT().Clear(context.Background()).Return(nil)
 
 	// Call Clear and verify
-	err := cache.Clear()
+	err := cache.Clear(context.Background())
 	assert.NoError(t, err)
 
 	// Test with disabled cache
 	disabledCache := &Cache[string]{
-		enabled:       false,
-		InternalCache: nil,
+		enabled:   false,
+		cacheImpl: nil,
 	}
 
 	// Should be a no-op with disabled cache
-	err = disabledCache.Clear()
+	err = disabledCache.Clear(context.Background())
 	assert.NoError(t, err)
 }
 
 func (suite *CacheTestSuite) TestClearWithError() {
 	t := suite.T()
 
-	mockCache := newInternalCacheInterfaceMock[string](t)
+	mockCache := NewCacheInterfaceMock[string](t)
 	mockCache.EXPECT().IsEnabled().Return(true)
 
 	cache := &Cache[string]{
-		enabled:       true,
-		InternalCache: mockCache,
+		enabled:   true,
+		cacheImpl: mockCache,
 	}
 
 	// Set up expectation for Clear to return error
-	mockCache.EXPECT().Clear().Return(fmt.Errorf("clear error"))
+	mockCache.EXPECT().Clear(context.Background()).Return(fmt.Errorf("clear error"))
 
 	// Even with error, Clear should not return error (logged instead)
-	err := cache.Clear()
+	err := cache.Clear(context.Background())
 	assert.NoError(t, err)
 }
 
@@ -482,7 +484,7 @@ func (suite *CacheTestSuite) TestGetCacheTTL() {
 		name             string
 		cacheConfig      config.CacheConfig
 		cacheProperty    config.CacheProperty
-		expectedCacheTTL int
+		expectedCacheTTL time.Duration
 	}{
 		{
 			name: "PropertyTTL",
@@ -492,7 +494,7 @@ func (suite *CacheTestSuite) TestGetCacheTTL() {
 			cacheProperty: config.CacheProperty{
 				TTL: 900,
 			},
-			expectedCacheTTL: 900,
+			expectedCacheTTL: 900 * time.Second,
 		},
 		{
 			name: "ConfigTTL",
@@ -500,7 +502,7 @@ func (suite *CacheTestSuite) TestGetCacheTTL() {
 				TTL: 1800,
 			},
 			cacheProperty:    config.CacheProperty{},
-			expectedCacheTTL: 1800,
+			expectedCacheTTL: 1800 * time.Second,
 		},
 		{
 			name: "ZeroPropertyTTL",
@@ -510,7 +512,7 @@ func (suite *CacheTestSuite) TestGetCacheTTL() {
 			cacheProperty: config.CacheProperty{
 				TTL: 0,
 			},
-			expectedCacheTTL: 1800,
+			expectedCacheTTL: 1800 * time.Second,
 		},
 		{
 			name: "NegativePropertyTTL",
@@ -520,7 +522,7 @@ func (suite *CacheTestSuite) TestGetCacheTTL() {
 			cacheProperty: config.CacheProperty{
 				TTL: -1,
 			},
-			expectedCacheTTL: 1800,
+			expectedCacheTTL: 1800 * time.Second,
 		},
 		{
 			name: "ZeroConfigTTL",
@@ -544,7 +546,7 @@ func (suite *CacheTestSuite) TestCacheWithFailingOperations() {
 	t := suite.T()
 
 	// Create a mock cache for testing error scenarios
-	mockCache := newInternalCacheInterfaceMock[string](t)
+	mockCache := NewCacheInterfaceMock[string](t)
 
 	// Configure the mock
 	mockCache.EXPECT().IsEnabled().Return(true).Maybe()
@@ -552,34 +554,34 @@ func (suite *CacheTestSuite) TestCacheWithFailingOperations() {
 
 	// Create a cache with the mock
 	cache := &Cache[string]{
-		enabled:       true,
-		InternalCache: mockCache,
+		enabled:   true,
+		cacheImpl: mockCache,
 	}
 
 	// Test Set with error
 	key := CacheKey{Key: "testKey"}
 
 	// Configure mock to return error on Set
-	mockCache.EXPECT().Set(key, testValue).Return(fmt.Errorf("set error"))
+	mockCache.EXPECT().Set(context.Background(), key, testValue).Return(fmt.Errorf("set error"))
 
 	// Set should not return the error but log it
-	err := cache.Set(key, testValue)
+	err := cache.Set(context.Background(), key, testValue)
 	assert.NoError(t, err)
 
 	// Test Delete with error
 	// Configure mock to return error on Delete
-	mockCache.EXPECT().Delete(key).Return(fmt.Errorf("delete error"))
+	mockCache.EXPECT().Delete(context.Background(), key).Return(fmt.Errorf("delete error"))
 
 	// Delete should not return the error but log it
-	err = cache.Delete(key)
+	err = cache.Delete(context.Background(), key)
 	assert.NoError(t, err)
 
 	// Test Clear with error
 	// Configure mock to return error on Clear
-	mockCache.EXPECT().Clear().Return(fmt.Errorf("clear error"))
+	mockCache.EXPECT().Clear(context.Background()).Return(fmt.Errorf("clear error"))
 
 	// Clear should not return the error but log it
-	err = cache.Clear()
+	err = cache.Clear(context.Background())
 	assert.NoError(t, err)
 }
 
@@ -587,7 +589,7 @@ func (suite *CacheTestSuite) TestDisabledInnerCacheScenario() {
 	t := suite.T()
 
 	// Create a mock cache for testing
-	mockCache := newInternalCacheInterfaceMock[string](t)
+	mockCache := NewCacheInterfaceMock[string](t)
 
 	// Configure the mock to indicate it's disabled
 	mockCache.EXPECT().IsEnabled().Return(false)
@@ -595,36 +597,36 @@ func (suite *CacheTestSuite) TestDisabledInnerCacheScenario() {
 
 	// Create a cache with the mock
 	cache := &Cache[string]{
-		enabled:       true,
-		InternalCache: mockCache,
+		enabled:   true,
+		cacheImpl: mockCache,
 	}
 
 	// Test operations with disabled inner cache
 	key := CacheKey{Key: "testKey"}
 
 	// Set should be a no-op with disabled inner cache
-	err := cache.Set(key, testValue)
+	err := cache.Set(context.Background(), key, testValue)
 	assert.NoError(t, err)
 
 	// Get should return not found with disabled inner cache
-	retrievedValue, found := cache.Get(key)
+	retrievedValue, found := cache.Get(context.Background(), key)
 	assert.False(t, found)
 	var zero string
 	assert.Equal(t, zero, retrievedValue)
 
 	// Delete should be a no-op with disabled inner cache
-	err = cache.Delete(key)
+	err = cache.Delete(context.Background(), key)
 	assert.NoError(t, err)
 
 	// Clear should be a no-op with disabled inner cache
-	err = cache.Clear()
+	err = cache.Clear(context.Background())
 	assert.NoError(t, err)
 }
 
 func (suite *CacheTestSuite) TestDisabledInnerCacheOnly() {
 	t := suite.T()
 
-	mockCache := newInternalCacheInterfaceMock[string](t)
+	mockCache := NewCacheInterfaceMock[string](t)
 	mockCache.EXPECT().IsEnabled().Return(false)
 	// Since it's disabled, check IsEnabled multiple times for each operation
 	mockCache.EXPECT().IsEnabled().Return(false)
@@ -632,32 +634,32 @@ func (suite *CacheTestSuite) TestDisabledInnerCacheOnly() {
 	mockCache.EXPECT().IsEnabled().Return(false)
 
 	cache := &Cache[string]{
-		enabled:       true,
-		InternalCache: mockCache,
+		enabled:   true,
+		cacheImpl: mockCache,
 	}
 
 	// Test operations with disabled inner cache
 	key := CacheKey{Key: "testKey"}
 
 	// All operations should be no-ops when inner cache is disabled
-	err := cache.Set(key, testValue)
+	err := cache.Set(context.Background(), key, testValue)
 	assert.NoError(t, err)
 
-	val, found := cache.Get(key)
+	val, found := cache.Get(context.Background(), key)
 	assert.False(t, found)
 	assert.Equal(t, "", val)
 
-	err = cache.Delete(key)
+	err = cache.Delete(context.Background(), key)
 	assert.NoError(t, err)
 
-	err = cache.Clear()
+	err = cache.Clear(context.Background())
 	assert.NoError(t, err)
 }
 
 func (suite *CacheTestSuite) TestGetStats() {
 	t := suite.T()
 
-	mockCache := newInternalCacheInterfaceMock[string](t)
+	mockCache := NewCacheInterfaceMock[string](t)
 
 	expectedStats := CacheStat{
 		Enabled:    true,
@@ -671,37 +673,34 @@ func (suite *CacheTestSuite) TestGetStats() {
 	mockCache.EXPECT().GetStats().Return(expectedStats)
 
 	cache := &Cache[string]{
-		InternalCache: mockCache,
+		enabled:   true,
+		cacheImpl: mockCache,
 	}
 
-	stats := cache.InternalCache.GetStats()
+	stats := cache.GetStats()
 	assert.Equal(t, expectedStats, stats)
 
-	// Test with disabled cache
+	// Test with disabled cache (nil cacheImpl)
 	disabledCache := &Cache[string]{
-		InternalCache: nil,
+		enabled:   false,
+		cacheImpl: nil,
 	}
-
-	// Should not panic with nil cache
-	var emptyStats CacheStat
-	if disabledCache.InternalCache != nil {
-		emptyStats = disabledCache.InternalCache.GetStats()
-	}
-	assert.Equal(t, CacheStat{}, emptyStats)
+	stats = disabledCache.GetStats()
+	assert.Equal(t, CacheStat{Enabled: false}, stats)
 }
 
 func (suite *CacheTestSuite) TestMultipleValues() {
 	t := suite.T()
 
-	mockCache := newInternalCacheInterfaceMock[string](t)
+	mockCache := NewCacheInterfaceMock[string](t)
 	// Need to set multiple expectations for multiple IsEnabled calls
 	mockCache.EXPECT().IsEnabled().Return(true)
 	mockCache.EXPECT().IsEnabled().Return(true)
 	mockCache.EXPECT().IsEnabled().Return(true)
 
 	cache := &Cache[string]{
-		enabled:       true,
-		InternalCache: mockCache,
+		enabled:   true,
+		cacheImpl: mockCache,
 	}
 
 	// Define test data
@@ -714,25 +713,25 @@ func (suite *CacheTestSuite) TestMultipleValues() {
 
 	// Test Set operations
 	for i := range keys {
-		mockCache.EXPECT().Set(keys[i], values[i]).Return(nil)
-		err := cache.Set(keys[i], values[i])
+		mockCache.EXPECT().Set(context.Background(), keys[i], values[i]).Return(nil)
+		err := cache.Set(context.Background(), keys[i], values[i])
 		assert.NoError(t, err)
 	}
 
 	// Test Get operations with different outcomes
-	mockCache.EXPECT().Get(keys[0]).Return(values[0], true)
-	mockCache.EXPECT().Get(keys[1]).Return("", false)
-	mockCache.EXPECT().Get(keys[2]).Return(values[2], true)
+	mockCache.EXPECT().Get(context.Background(), keys[0]).Return(values[0], true)
+	mockCache.EXPECT().Get(context.Background(), keys[1]).Return("", false)
+	mockCache.EXPECT().Get(context.Background(), keys[2]).Return(values[2], true)
 
-	val1, found1 := cache.Get(keys[0])
+	val1, found1 := cache.Get(context.Background(), keys[0])
 	assert.True(t, found1)
 	assert.Equal(t, values[0], val1)
 
-	val2, found2 := cache.Get(keys[1])
+	val2, found2 := cache.Get(context.Background(), keys[1])
 	assert.False(t, found2)
 	assert.Equal(t, "", val2)
 
-	val3, found3 := cache.Get(keys[2])
+	val3, found3 := cache.Get(context.Background(), keys[2])
 	assert.True(t, found3)
 	assert.Equal(t, values[2], val3)
 }
@@ -740,23 +739,24 @@ func (suite *CacheTestSuite) TestMultipleValues() {
 func (suite *CacheTestSuite) TestCleanupExpired() {
 	t := suite.T()
 
-	// Create a mock cache for testing
-	mockCache := newInternalCacheInterfaceMock[string](t)
-
-	// Configure the mock
-	mockCache.EXPECT().IsEnabled().Return(true)
-	mockCache.EXPECT().CleanupExpired().Once()
-
-	// Create a cache with the mock
+	// Use a real inMemoryCache to verify CleanupExpired is delegated to the inner cache.
+	internalCache := newInMemoryCache[string]("testCleanup", true,
+		config.CacheConfig{Size: 100, TTL: 1, EvictionPolicy: "LRU"}, config.CacheProperty{})
 	cache := &Cache[string]{
-		enabled:       true,
-		InternalCache: mockCache,
+		enabled:   true,
+		cacheImpl: internalCache,
 	}
 
-	// Call the CleanupExpired method
+	key := CacheKey{Key: "expiredKey"}
+	_ = internalCache.Set(context.Background(), key, "value")
+
+	// Wait for TTL to expire
+	time.Sleep(1100 * time.Millisecond)
+
 	cache.CleanupExpired()
 
-	// No additional assertions needed - the mock will verify that CleanupExpired was called once
+	_, found := internalCache.Get(context.Background(), key)
+	assert.False(t, found, "entry should have been removed by CleanupExpired")
 }
 
 func (suite *CacheTestSuite) TestGetName() {
@@ -783,32 +783,32 @@ func (suite *CacheTestSuite) TestCacheKeyToString() {
 	assert.Equal(t, "", emptyKey.ToString(), "ToString should return empty string for empty Key")
 }
 
-func (suite *CacheTestSuite) TestCacheWithNilInternalCache() {
+func (suite *CacheTestSuite) TestCacheWithNilcacheImpl() {
 	t := suite.T()
 
 	// Create a cache with nil internal cache but enabled flag set to false
-	// This is important because cache.Set checks both enabled and InternalCache.IsEnabled()
+	// This is important because cache.Set checks both enabled and cacheImpl.IsEnabled()
 	cache := &Cache[string]{
-		enabled:       false, // Set to false since InternalCache is nil
-		InternalCache: nil,
-		cacheName:     "nilInternalCache",
+		enabled:   false, // Set to false since cacheImpl is nil
+		cacheImpl: nil,
+		cacheName: "nilcacheImpl",
 	}
 
 	// Test operations with nil internal cache
 	key := CacheKey{Key: "testKey"}
 
 	// All operations should be no-ops and not panic
-	err := cache.Set(key, testValue)
+	err := cache.Set(context.Background(), key, testValue)
 	assert.NoError(t, err)
 
-	val, found := cache.Get(key)
+	val, found := cache.Get(context.Background(), key)
 	assert.False(t, found)
 	assert.Equal(t, "", val)
 
-	err = cache.Delete(key)
+	err = cache.Delete(context.Background(), key)
 	assert.NoError(t, err)
 
-	err = cache.Clear()
+	err = cache.Clear(context.Background())
 	assert.NoError(t, err)
 
 	// Should not panic
@@ -819,31 +819,31 @@ func (suite *CacheTestSuite) TestCacheWithEmptyKeyOperations() {
 	t := suite.T()
 
 	// Create a mock cache for testing
-	mockCache := newInternalCacheInterfaceMock[string](t)
+	mockCache := NewCacheInterfaceMock[string](t)
 	mockCache.EXPECT().IsEnabled().Return(true).Times(3)
 
 	// Create a cache with the mock
 	cache := &Cache[string]{
-		enabled:       true,
-		InternalCache: mockCache,
+		enabled:   true,
+		cacheImpl: mockCache,
 	}
 
 	// Test operations with empty key
 	emptyKey := CacheKey{Key: ""}
 
 	// Set should work with empty key
-	mockCache.EXPECT().Set(emptyKey, testValue).Return(nil)
-	err := cache.Set(emptyKey, testValue)
+	mockCache.EXPECT().Set(context.Background(), emptyKey, testValue).Return(nil)
+	err := cache.Set(context.Background(), emptyKey, testValue)
 	assert.NoError(t, err)
 
 	// Get should work with empty key
-	mockCache.EXPECT().Get(emptyKey).Return(testValue, true)
-	val, found := cache.Get(emptyKey)
+	mockCache.EXPECT().Get(context.Background(), emptyKey).Return(testValue, true)
+	val, found := cache.Get(context.Background(), emptyKey)
 	assert.True(t, found)
 	assert.Equal(t, testValue, val)
 
 	// Delete should work with empty key
-	mockCache.EXPECT().Delete(emptyKey).Return(nil)
-	err = cache.Delete(emptyKey)
+	mockCache.EXPECT().Delete(context.Background(), emptyKey).Return(nil)
+	err = cache.Delete(context.Background(), emptyKey)
 	assert.NoError(t, err)
 }

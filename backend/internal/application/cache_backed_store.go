@@ -52,7 +52,7 @@ func (as *cachedBackedApplicationStore) CreateApplication(
 	if err := as.Store.CreateApplication(ctx, app); err != nil {
 		return err
 	}
-	as.cacheApplication(&app)
+	as.cacheApplication(ctx, &app)
 	return nil
 }
 
@@ -72,7 +72,7 @@ func (as *cachedBackedApplicationStore) GetOAuthApplication(ctx context.Context,
 	cacheKey := cache.CacheKey{
 		Key: clientID,
 	}
-	cachedApp, ok := as.OAuthAppCache.Get(cacheKey)
+	cachedApp, ok := as.OAuthAppCache.Get(ctx, cacheKey)
 	if ok {
 		return cachedApp, nil
 	}
@@ -81,7 +81,7 @@ func (as *cachedBackedApplicationStore) GetOAuthApplication(ctx context.Context,
 	if err != nil || oauthApp == nil {
 		return oauthApp, err
 	}
-	as.cacheOAuthApplication(oauthApp)
+	as.cacheOAuthApplication(ctx, oauthApp)
 
 	return oauthApp, nil
 }
@@ -92,7 +92,7 @@ func (as *cachedBackedApplicationStore) GetApplicationByID(
 	cacheKey := cache.CacheKey{
 		Key: id,
 	}
-	cachedApp, ok := as.AppByIDCache.Get(cacheKey)
+	cachedApp, ok := as.AppByIDCache.Get(ctx, cacheKey)
 	if ok {
 		return cachedApp, nil
 	}
@@ -101,7 +101,7 @@ func (as *cachedBackedApplicationStore) GetApplicationByID(
 	if err != nil || app == nil {
 		return app, err
 	}
-	as.cacheApplication(app)
+	as.cacheApplication(ctx, app)
 
 	return app, nil
 }
@@ -112,7 +112,7 @@ func (as *cachedBackedApplicationStore) GetApplicationByName(
 	cacheKey := cache.CacheKey{
 		Key: name,
 	}
-	cachedApp, ok := as.AppByNameCache.Get(cacheKey)
+	cachedApp, ok := as.AppByNameCache.Get(ctx, cacheKey)
 	if ok {
 		return cachedApp, nil
 	}
@@ -121,7 +121,7 @@ func (as *cachedBackedApplicationStore) GetApplicationByName(
 	if err != nil || app == nil {
 		return app, err
 	}
-	as.cacheApplication(app)
+	as.cacheApplication(ctx, app)
 
 	return app, nil
 }
@@ -137,12 +137,12 @@ func (as *cachedBackedApplicationStore) UpdateApplication(ctx context.Context, e
 	if len(existingApp.InboundAuthConfig) > 0 && existingApp.InboundAuthConfig[0].OAuthAppConfig != nil {
 		existingAppClientID = existingApp.InboundAuthConfig[0].OAuthAppConfig.ClientID
 	}
-	as.invalidateApplicationCache(existingApp.ID, existingApp.Name, existingAppClientID)
+	as.invalidateApplicationCache(ctx, existingApp.ID, existingApp.Name, existingAppClientID)
 
-	as.cacheApplication(updatedApp)
+	as.cacheApplication(ctx, updatedApp)
 
 	if len(updatedApp.InboundAuthConfig) > 0 && updatedApp.InboundAuthConfig[0].OAuthAppConfig != nil {
-		as.cacheOAuthApplication(updatedApp.InboundAuthConfig[0].OAuthAppConfig)
+		as.cacheOAuthApplication(ctx, updatedApp.InboundAuthConfig[0].OAuthAppConfig)
 	}
 
 	return nil
@@ -153,7 +153,7 @@ func (as *cachedBackedApplicationStore) DeleteApplication(ctx context.Context, i
 	cacheKey := cache.CacheKey{
 		Key: id,
 	}
-	existingApp, ok := as.AppByIDCache.Get(cacheKey)
+	existingApp, ok := as.AppByIDCache.Get(ctx, cacheKey)
 	if !ok {
 		var err error
 		existingApp, err = as.Store.GetApplicationByID(ctx, id)
@@ -176,7 +176,7 @@ func (as *cachedBackedApplicationStore) DeleteApplication(ctx context.Context, i
 	if len(existingApp.InboundAuthConfig) > 0 && existingApp.InboundAuthConfig[0].OAuthAppConfig != nil {
 		existingAppClientID = existingApp.InboundAuthConfig[0].OAuthAppConfig.ClientID
 	}
-	as.invalidateApplicationCache(id, existingApp.Name, existingAppClientID)
+	as.invalidateApplicationCache(ctx, existingApp.ID, existingApp.Name, existingAppClientID)
 
 	return nil
 }
@@ -197,7 +197,7 @@ func (as *cachedBackedApplicationStore) IsApplicationDeclarative(ctx context.Con
 }
 
 // cacheApplication caches the application and OAuth application configuration if it exists.
-func (as *cachedBackedApplicationStore) cacheApplication(app *model.ApplicationProcessedDTO) {
+func (as *cachedBackedApplicationStore) cacheApplication(ctx context.Context, app *model.ApplicationProcessedDTO) {
 	if app == nil {
 		return
 	}
@@ -207,7 +207,7 @@ func (as *cachedBackedApplicationStore) cacheApplication(app *model.ApplicationP
 		appByIDCacheKey := cache.CacheKey{
 			Key: app.ID,
 		}
-		if err := as.AppByIDCache.Set(appByIDCacheKey, app); err != nil {
+		if err := as.AppByIDCache.Set(ctx, appByIDCacheKey, app); err != nil {
 			logger.Error("Failed to cache application by ID", log.String("appID", app.ID), log.Error(err))
 		}
 	}
@@ -215,7 +215,7 @@ func (as *cachedBackedApplicationStore) cacheApplication(app *model.ApplicationP
 		appByNameCacheKey := cache.CacheKey{
 			Key: app.Name,
 		}
-		if err := as.AppByNameCache.Set(appByNameCacheKey, app); err != nil {
+		if err := as.AppByNameCache.Set(ctx, appByNameCacheKey, app); err != nil {
 			logger.Error("Failed to cache application by name", log.String("appName", app.Name),
 				log.Error(err))
 		}
@@ -223,12 +223,13 @@ func (as *cachedBackedApplicationStore) cacheApplication(app *model.ApplicationP
 
 	// Cache the OAuth application configuration if it exists.
 	if len(app.InboundAuthConfig) > 0 && app.InboundAuthConfig[0].OAuthAppConfig != nil {
-		as.cacheOAuthApplication(app.InboundAuthConfig[0].OAuthAppConfig)
+		as.cacheOAuthApplication(ctx, app.InboundAuthConfig[0].OAuthAppConfig)
 	}
 }
 
 // cacheOAuthApplication caches the OAuth application configuration if it exists.
-func (as *cachedBackedApplicationStore) cacheOAuthApplication(oAuthAppConfig *model.OAuthAppConfigProcessedDTO) {
+func (as *cachedBackedApplicationStore) cacheOAuthApplication(
+	ctx context.Context, oAuthAppConfig *model.OAuthAppConfigProcessedDTO) {
 	if oAuthAppConfig == nil || oAuthAppConfig.ClientID == "" {
 		return
 	}
@@ -237,21 +238,22 @@ func (as *cachedBackedApplicationStore) cacheOAuthApplication(oAuthAppConfig *mo
 	oauthCacheKey := cache.CacheKey{
 		Key: oAuthAppConfig.ClientID,
 	}
-	if err := as.OAuthAppCache.Set(oauthCacheKey, oAuthAppConfig); err != nil {
+	if err := as.OAuthAppCache.Set(ctx, oauthCacheKey, oAuthAppConfig); err != nil {
 		logger.Error("Failed to cache OAuth application", log.String("clientID", oAuthAppConfig.ClientID),
 			log.Error(err))
 	}
 }
 
 // InvalidateApplicationCache invalidates all application caches.
-func (as *cachedBackedApplicationStore) invalidateApplicationCache(appID, appName, clientID string) {
+func (as *cachedBackedApplicationStore) invalidateApplicationCache(
+	ctx context.Context, appID, appName, clientID string) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "CachedBackedApplicationStore"))
 
 	if appID != "" {
 		cacheKey := cache.CacheKey{
 			Key: appID,
 		}
-		err := as.AppByIDCache.Delete(cacheKey)
+		err := as.AppByIDCache.Delete(ctx, cacheKey)
 		if err != nil {
 			logger.Error("Failed to delete application cache by ID", log.String("appID", appID), log.Error(err))
 		}
@@ -260,7 +262,7 @@ func (as *cachedBackedApplicationStore) invalidateApplicationCache(appID, appNam
 		cacheKey := cache.CacheKey{
 			Key: appName,
 		}
-		err := as.AppByNameCache.Delete(cacheKey)
+		err := as.AppByNameCache.Delete(ctx, cacheKey)
 		if err != nil {
 			logger.Error("Failed to delete application cache by name", log.String("appName", appName), log.Error(err))
 		}
@@ -269,7 +271,7 @@ func (as *cachedBackedApplicationStore) invalidateApplicationCache(appID, appNam
 		oauthCacheKey := cache.CacheKey{
 			Key: clientID,
 		}
-		err := as.OAuthAppCache.Delete(oauthCacheKey)
+		err := as.OAuthAppCache.Delete(ctx, oauthCacheKey)
 		if err != nil {
 			logger.Error("Failed to delete OAuth application cache", log.String("clientID", clientID), log.Error(err))
 		}

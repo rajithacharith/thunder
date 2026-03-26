@@ -143,6 +143,7 @@ spec:
               value: "false"
             {{- end }}
             {{- include "thunder.databasePasswordEnvVars" . | nindent 12 }}
+            {{- include "thunder.cacheRedisPasswordEnvVars" . | nindent 12 }}
             {{- if .Values.setup.env }}
             {{- toYaml .Values.setup.env | nindent 12 }}
             {{- end }}

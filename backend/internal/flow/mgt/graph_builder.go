@@ -19,6 +19,7 @@
 package flowmgt
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -31,8 +32,8 @@ import (
 
 // graphBuilderInterface defines the interface for building flow graphs.
 type graphBuilderInterface interface {
-	GetGraph(flow *CompleteFlowDefinition) (core.GraphInterface, *serviceerror.ServiceError)
-	InvalidateCache(flowID string)
+	GetGraph(ctx context.Context, flow *CompleteFlowDefinition) (core.GraphInterface, *serviceerror.ServiceError)
+	InvalidateCache(ctx context.Context, flowID string)
 }
 
 // graphBuilder is the implementation of graphBuilderInterface.
@@ -58,7 +59,7 @@ func newGraphBuilder(
 }
 
 // GetGraph retrieves a cached graph or builds a new one from the flow definition.
-func (b *graphBuilder) GetGraph(flow *CompleteFlowDefinition) (
+func (b *graphBuilder) GetGraph(ctx context.Context, flow *CompleteFlowDefinition) (
 	core.GraphInterface, *serviceerror.ServiceError) {
 	if flow == nil || len(flow.Nodes) == 0 {
 		return nil, serviceerror.CustomServiceError(ErrorInvalidFlowData,
@@ -66,9 +67,8 @@ func (b *graphBuilder) GetGraph(flow *CompleteFlowDefinition) (
 	}
 
 	logger := b.logger.With(log.String("flowID", flow.ID))
-
 	// Check cache first
-	if cachedGraph, ok := b.graphCache.Get(flow.ID); ok {
+	if cachedGraph, ok := b.graphCache.Get(ctx, flow.ID); ok {
 		logger.Debug("Graph retrieved from cache")
 		return cachedGraph, nil
 	}
@@ -80,7 +80,7 @@ func (b *graphBuilder) GetGraph(flow *CompleteFlowDefinition) (
 	}
 
 	// Cache the built graph
-	if cacheErr := b.graphCache.Set(flow.ID, graph); cacheErr != nil {
+	if cacheErr := b.graphCache.Set(ctx, flow.ID, graph); cacheErr != nil {
 		logger.Error("Failed to cache graph", log.Error(cacheErr))
 	}
 	logger.Debug("Graph built and cached successfully")
@@ -89,12 +89,12 @@ func (b *graphBuilder) GetGraph(flow *CompleteFlowDefinition) (
 }
 
 // InvalidateCache invalidates the cached graph for the given flow ID.
-func (b *graphBuilder) InvalidateCache(flowID string) {
+func (b *graphBuilder) InvalidateCache(ctx context.Context, flowID string) {
 	if flowID == "" {
 		return
 	}
 
-	if err := b.graphCache.Invalidate(flowID); err != nil {
+	if err := b.graphCache.Invalidate(ctx, flowID); err != nil {
 		b.logger.Error("Failed to delete graph from cache", log.String("flowID", flowID), log.Error(err))
 	}
 	b.logger.Debug("Graph cache invalidated", log.String("flowID", flowID))

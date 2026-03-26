@@ -67,7 +67,13 @@
     "ttl": 3600,
     "eviction_policy": "LRU",
     "cleanup_interval": 300,
-    "properties": []
+    "properties": [],
+    "redis": {
+      "address": "",
+      "password": "",
+      "db": 0,
+      "key_prefix": "thunder"
+    }
   },
   "jwt": {
     "validity_period": 3600,

@@ -49,7 +49,7 @@ func newCachedBackedUserSchemaStore(store userSchemaStoreInterface) userSchemaSt
 // GetUserSchemaByID retrieves a user schema by ID, checking cache first.
 func (s *cachedBackedUserSchemaStore) GetUserSchemaByID(ctx context.Context, schemaID string) (UserSchema, error) {
 	cacheKey := cache.CacheKey{Key: schemaID}
-	if cached, ok := s.schemaByIDCache.Get(cacheKey); ok {
+	if cached, ok := s.schemaByIDCache.Get(ctx, cacheKey); ok {
 		return *cached, nil
 	}
 
@@ -58,7 +58,7 @@ func (s *cachedBackedUserSchemaStore) GetUserSchemaByID(ctx context.Context, sch
 		return schema, err
 	}
 
-	s.cacheUserSchema(&schema)
+	s.cacheUserSchema(ctx, &schema)
 
 	return schema, nil
 }
@@ -66,7 +66,7 @@ func (s *cachedBackedUserSchemaStore) GetUserSchemaByID(ctx context.Context, sch
 // GetUserSchemaByName retrieves a user schema by name, checking cache first.
 func (s *cachedBackedUserSchemaStore) GetUserSchemaByName(ctx context.Context, name string) (UserSchema, error) {
 	cacheKey := cache.CacheKey{Key: name}
-	if cached, ok := s.schemaByNameCache.Get(cacheKey); ok {
+	if cached, ok := s.schemaByNameCache.Get(ctx, cacheKey); ok {
 		return *cached, nil
 	}
 
@@ -75,7 +75,7 @@ func (s *cachedBackedUserSchemaStore) GetUserSchemaByName(ctx context.Context, n
 		return schema, err
 	}
 
-	s.cacheUserSchema(&schema)
+	s.cacheUserSchema(ctx, &schema)
 
 	return schema, nil
 }
@@ -86,7 +86,7 @@ func (s *cachedBackedUserSchemaStore) CreateUserSchema(ctx context.Context, user
 		return err
 	}
 
-	s.cacheUserSchema(&userSchema)
+	s.cacheUserSchema(ctx, &userSchema)
 
 	return nil
 }
@@ -97,7 +97,7 @@ func (s *cachedBackedUserSchemaStore) UpdateUserSchemaByID(
 ) error {
 	// Fetch existing schema for cache invalidation (check cache first, then store).
 	existingCacheKey := cache.CacheKey{Key: schemaID}
-	existing, ok := s.schemaByIDCache.Get(existingCacheKey)
+	existing, ok := s.schemaByIDCache.Get(ctx, existingCacheKey)
 	if !ok {
 		existingSchema, err := s.store.GetUserSchemaByID(ctx, schemaID)
 		if err == nil {
@@ -111,11 +111,11 @@ func (s *cachedBackedUserSchemaStore) UpdateUserSchemaByID(
 
 	// Invalidate old cache entries.
 	if existing != nil {
-		s.invalidateUserSchemaCache(existing.ID, existing.Name)
+		s.invalidateUserSchemaCache(ctx, existing.ID, existing.Name)
 	}
 
 	// Cache the updated schema.
-	s.cacheUserSchema(&userSchema)
+	s.cacheUserSchema(ctx, &userSchema)
 
 	return nil
 }
@@ -123,7 +123,7 @@ func (s *cachedBackedUserSchemaStore) UpdateUserSchemaByID(
 // DeleteUserSchemaByID deletes a user schema and invalidates its cache entries.
 func (s *cachedBackedUserSchemaStore) DeleteUserSchemaByID(ctx context.Context, schemaID string) error {
 	cacheKey := cache.CacheKey{Key: schemaID}
-	existing, ok := s.schemaByIDCache.Get(cacheKey)
+	existing, ok := s.schemaByIDCache.Get(ctx, cacheKey)
 	if !ok {
 		existingSchema, err := s.store.GetUserSchemaByID(ctx, schemaID)
 		if err != nil {
@@ -140,7 +140,7 @@ func (s *cachedBackedUserSchemaStore) DeleteUserSchemaByID(ctx context.Context, 
 	}
 
 	if existing != nil {
-		s.invalidateUserSchemaCache(existing.ID, existing.Name)
+		s.invalidateUserSchemaCache(ctx, existing.ID, existing.Name)
 	}
 
 	return nil
@@ -187,14 +187,14 @@ func (s *cachedBackedUserSchemaStore) GetDisplayAttributesByNames(
 }
 
 // cacheUserSchema populates both ID and Name caches for the given schema.
-func (s *cachedBackedUserSchemaStore) cacheUserSchema(schema *UserSchema) {
+func (s *cachedBackedUserSchemaStore) cacheUserSchema(ctx context.Context, schema *UserSchema) {
 	if schema == nil {
 		return
 	}
 
 	if schema.ID != "" {
 		key := cache.CacheKey{Key: schema.ID}
-		if err := s.schemaByIDCache.Set(key, schema); err != nil {
+		if err := s.schemaByIDCache.Set(ctx, key, schema); err != nil {
 			s.logger.Error("Failed to cache user schema by ID",
 				log.String("schemaID", schema.ID), log.Error(err))
 		}
@@ -202,7 +202,7 @@ func (s *cachedBackedUserSchemaStore) cacheUserSchema(schema *UserSchema) {
 
 	if schema.Name != "" {
 		key := cache.CacheKey{Key: schema.Name}
-		if err := s.schemaByNameCache.Set(key, schema); err != nil {
+		if err := s.schemaByNameCache.Set(ctx, key, schema); err != nil {
 			s.logger.Error("Failed to cache user schema by name",
 				log.String("schemaName", schema.Name), log.Error(err))
 		}
@@ -210,10 +210,10 @@ func (s *cachedBackedUserSchemaStore) cacheUserSchema(schema *UserSchema) {
 }
 
 // invalidateUserSchemaCache removes entries from both ID and Name caches.
-func (s *cachedBackedUserSchemaStore) invalidateUserSchemaCache(schemaID, schemaName string) {
+func (s *cachedBackedUserSchemaStore) invalidateUserSchemaCache(ctx context.Context, schemaID, schemaName string) {
 	if schemaID != "" {
 		key := cache.CacheKey{Key: schemaID}
-		if err := s.schemaByIDCache.Delete(key); err != nil {
+		if err := s.schemaByIDCache.Delete(ctx, key); err != nil {
 			s.logger.Error("Failed to invalidate user schema cache by ID",
 				log.String("schemaID", schemaID), log.Error(err))
 		}
@@ -221,7 +221,7 @@ func (s *cachedBackedUserSchemaStore) invalidateUserSchemaCache(schemaID, schema
 
 	if schemaName != "" {
 		key := cache.CacheKey{Key: schemaName}
-		if err := s.schemaByNameCache.Delete(key); err != nil {
+		if err := s.schemaByNameCache.Delete(ctx, key); err != nil {
 			s.logger.Error("Failed to invalidate user schema cache by name",
 				log.String("schemaName", schemaName), log.Error(err))
 		}

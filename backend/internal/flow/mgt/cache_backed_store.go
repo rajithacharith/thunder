@@ -67,7 +67,7 @@ func (s *cacheBackedFlowStore) CreateFlow(ctx context.Context, flowID string, fl
 	if err != nil {
 		return nil, err
 	}
-	s.cacheFlow(createdFlow)
+	s.cacheFlow(ctx, createdFlow)
 
 	return createdFlow, nil
 }
@@ -77,7 +77,7 @@ func (s *cacheBackedFlowStore) GetFlowByID(ctx context.Context, flowID string) (
 	cacheKey := cache.CacheKey{
 		Key: flowID,
 	}
-	cachedFlow, ok := s.flowByIDCache.Get(cacheKey)
+	cachedFlow, ok := s.flowByIDCache.Get(ctx, cacheKey)
 	if ok {
 		return cachedFlow, nil
 	}
@@ -86,7 +86,7 @@ func (s *cacheBackedFlowStore) GetFlowByID(ctx context.Context, flowID string) (
 	if err != nil || flow == nil {
 		return flow, err
 	}
-	s.cacheFlow(flow)
+	s.cacheFlow(ctx, flow)
 
 	return flow, nil
 }
@@ -95,7 +95,7 @@ func (s *cacheBackedFlowStore) GetFlowByID(ctx context.Context, flowID string) (
 func (s *cacheBackedFlowStore) GetFlowByHandle(ctx context.Context, handle string, flowType common.FlowType) (
 	*CompleteFlowDefinition, error) {
 	cacheKey := getFlowByHandleCacheKey(handle, flowType)
-	cachedFlow, ok := s.flowByHandleCache.Get(cacheKey)
+	cachedFlow, ok := s.flowByHandleCache.Get(ctx, cacheKey)
 	if ok {
 		return cachedFlow, nil
 	}
@@ -105,7 +105,7 @@ func (s *cacheBackedFlowStore) GetFlowByHandle(ctx context.Context, handle strin
 		return flow, err
 	}
 
-	s.cacheFlow(flow)
+	s.cacheFlow(ctx, flow)
 
 	return flow, nil
 }
@@ -117,7 +117,7 @@ func (s *cacheBackedFlowStore) UpdateFlow(ctx context.Context, flowID string, fl
 	if err != nil {
 		return nil, err
 	}
-	s.cacheFlow(updatedFlow)
+	s.cacheFlow(ctx, updatedFlow)
 
 	return updatedFlow, nil
 }
@@ -127,7 +127,7 @@ func (s *cacheBackedFlowStore) DeleteFlow(ctx context.Context, flowID string) er
 	cacheKey := cache.CacheKey{
 		Key: flowID,
 	}
-	existingFlow, ok := s.flowByIDCache.Get(cacheKey)
+	existingFlow, ok := s.flowByIDCache.Get(ctx, cacheKey)
 	if !ok {
 		var err error
 		existingFlow, err = s.store.GetFlowByID(ctx, flowID)
@@ -145,8 +145,8 @@ func (s *cacheBackedFlowStore) DeleteFlow(ctx context.Context, flowID string) er
 	if err := s.store.DeleteFlow(ctx, flowID); err != nil {
 		return err
 	}
-	s.invalidateFlowCache(flowID)
-	s.invalidateFlowCacheByHandle(existingFlow.Handle, existingFlow.FlowType)
+	s.invalidateFlowCache(ctx, flowID)
+	s.invalidateFlowCacheByHandle(ctx, existingFlow.Handle, existingFlow.FlowType)
 
 	return nil
 }
@@ -155,7 +155,7 @@ func (s *cacheBackedFlowStore) DeleteFlow(ctx context.Context, flowID string) er
 func (s *cacheBackedFlowStore) IsFlowExistsByHandle(ctx context.Context, handle string,
 	flowType common.FlowType) (bool, error) {
 	cacheKey := getFlowByHandleCacheKey(handle, flowType)
-	cachedFlow, ok := s.flowByHandleCache.Get(cacheKey)
+	cachedFlow, ok := s.flowByHandleCache.Get(ctx, cacheKey)
 	if ok && cachedFlow != nil {
 		return true, nil
 	}
@@ -183,13 +183,13 @@ func (s *cacheBackedFlowStore) RestoreFlowVersion(ctx context.Context, flowID st
 		return nil, err
 	}
 
-	s.cacheFlow(restoredFlow)
+	s.cacheFlow(ctx, restoredFlow)
 
 	return restoredFlow, nil
 }
 
 // cacheFlow caches the flow definition by ID and by handle.
-func (s *cacheBackedFlowStore) cacheFlow(flow *CompleteFlowDefinition) {
+func (s *cacheBackedFlowStore) cacheFlow(ctx context.Context, flow *CompleteFlowDefinition) {
 	if flow == nil {
 		return
 	}
@@ -201,7 +201,7 @@ func (s *cacheBackedFlowStore) cacheFlow(flow *CompleteFlowDefinition) {
 		cacheKey := cache.CacheKey{
 			Key: flow.ID,
 		}
-		if err := s.flowByIDCache.Set(cacheKey, flow); err != nil {
+		if err := s.flowByIDCache.Set(ctx, cacheKey, flow); err != nil {
 			logger.Error("Failed to cache flow by ID", log.Error(err))
 		} else {
 			logger.Debug("Flow cached by ID")
@@ -211,9 +211,9 @@ func (s *cacheBackedFlowStore) cacheFlow(flow *CompleteFlowDefinition) {
 	// Cache by handle and flowType
 	if flow.Handle != "" && flow.FlowType != "" {
 		handleCacheKey := getFlowByHandleCacheKey(flow.Handle, flow.FlowType)
-		if err := s.flowByHandleCache.Set(handleCacheKey, flow); err != nil {
-			logger.Error("Failed to cache flow by handle",
-				log.String("handle", flow.Handle), log.String("flowType", string(flow.FlowType)), log.Error(err))
+		if err := s.flowByHandleCache.Set(ctx, handleCacheKey, flow); err != nil {
+			logger.Error("Failed to cache flow by handle", log.String("handle", flow.Handle),
+				log.String("flowType", string(flow.FlowType)), log.Error(err))
 		} else {
 			logger.Debug("Flow cached by handle",
 				log.String("handle", flow.Handle), log.String("flowType", string(flow.FlowType)))
@@ -222,14 +222,14 @@ func (s *cacheBackedFlowStore) cacheFlow(flow *CompleteFlowDefinition) {
 }
 
 // invalidateFlowCache invalidates the flow cache for the given ID.
-func (s *cacheBackedFlowStore) invalidateFlowCache(flowID string) {
+func (s *cacheBackedFlowStore) invalidateFlowCache(ctx context.Context, flowID string) {
 	logger := s.logger.With(log.String("flowID", flowID))
 
 	if flowID != "" {
 		cacheKey := cache.CacheKey{
 			Key: flowID,
 		}
-		if err := s.flowByIDCache.Delete(cacheKey); err != nil {
+		if err := s.flowByIDCache.Delete(ctx, cacheKey); err != nil {
 			logger.Error("Failed to invalidate flow cache by ID", log.Error(err))
 		} else {
 			logger.Debug("Flow cache invalidated by ID")
@@ -238,13 +238,14 @@ func (s *cacheBackedFlowStore) invalidateFlowCache(flowID string) {
 }
 
 // invalidateFlowCacheByHandle invalidates the flow cache for the given handle and type.
-func (s *cacheBackedFlowStore) invalidateFlowCacheByHandle(handle string, flowType common.FlowType) {
+func (s *cacheBackedFlowStore) invalidateFlowCacheByHandle(
+	ctx context.Context, handle string, flowType common.FlowType) {
 	if handle == "" || flowType == "" {
 		return
 	}
 
 	cacheKey := getFlowByHandleCacheKey(handle, flowType)
-	if err := s.flowByHandleCache.Delete(cacheKey); err != nil {
+	if err := s.flowByHandleCache.Delete(ctx, cacheKey); err != nil {
 		s.logger.Error("Failed to invalidate flow cache by handle",
 			log.String("handle", handle), log.String("flowType", string(flowType)), log.Error(err))
 	}

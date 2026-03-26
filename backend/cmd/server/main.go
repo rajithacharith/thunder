@@ -254,6 +254,12 @@ func gracefulShutdown(
 		logger.Debug("Database connections closed successfully")
 	}
 
+	cacheManager := cache.GetCacheManager()
+	if cacheManager != nil {
+		cacheManager.Close()
+		logger.Debug("Cache manager closed successfully")
+	}
+
 	logger.Info("Server shutdown completed")
 }
 

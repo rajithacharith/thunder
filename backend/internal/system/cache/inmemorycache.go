@@ -21,9 +21,11 @@ package cache
 import (
 	"container/heap"
 	"container/list"
+	"context"
 	"sync"
 	"time"
 
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -97,9 +99,48 @@ type inMemoryCache[T any] struct {
 	evictCount     int64
 }
 
+// getEvictionPolicy retrieves the eviction policy from the cache configuration.
+func getEvictionPolicy(cacheConfig config.CacheConfig, cacheProperty config.CacheProperty) evictionPolicy {
+	evictionPolicy := cacheProperty.EvictionPolicy
+	if evictionPolicy == "" {
+		evictionPolicy = cacheConfig.EvictionPolicy
+	}
+	if evictionPolicy == "" {
+		return evictionPolicyLRU
+	}
+
+	switch evictionPolicy {
+	case string(evictionPolicyLRU):
+		return evictionPolicyLRU
+	case string(evictionPolicyLFU):
+		return evictionPolicyLFU
+	default:
+		log.GetLogger().Warn("Unknown eviction policy, defaulting to LRU")
+		return evictionPolicyLRU
+	}
+}
+
+// getCacheTTL retrieves the cache TTL as a Duration from the cache configuration.
+func getCacheTTL(cacheConfig config.CacheConfig, cacheProperty config.CacheProperty) time.Duration {
+	ttl := cacheProperty.TTL
+	if ttl <= 0 {
+		ttl = cacheConfig.TTL
+	}
+	return time.Duration(ttl) * time.Second
+}
+
+// getCacheSize retrieves the cache size from the cache configuration.
+func getCacheSize(cacheConfig config.CacheConfig, cacheProperty config.CacheProperty) int {
+	size := cacheProperty.Size
+	if size <= 0 {
+		size = cacheConfig.Size
+	}
+	return size
+}
+
 // newInMemoryCache creates a new instance of InMemoryCache.
-func newInMemoryCache[T any](name string, enabled bool, size int, ttl time.Duration,
-	evictionPolicy evictionPolicy) internalCacheInterface[T] {
+func newInMemoryCache[T any](name string, enabled bool,
+	cacheConfig config.CacheConfig, cacheProperty config.CacheProperty) CacheInterface[T] {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "InMemoryCache"),
 		log.String("name", name))
 
@@ -110,6 +151,10 @@ func newInMemoryCache[T any](name string, enabled bool, size int, ttl time.Durat
 			enabled: false,
 		}
 	}
+
+	ttl := getCacheTTL(cacheConfig, cacheProperty)
+	size := getCacheSize(cacheConfig, cacheProperty)
+	evictionPolicy := getEvictionPolicy(cacheConfig, cacheProperty)
 
 	logger.Debug("Initializing In-memory cache", log.String("evictionPolicy", string(evictionPolicy)),
 		log.Int("size", size), log.Any("ttl", ttl))
@@ -130,7 +175,7 @@ func newInMemoryCache[T any](name string, enabled bool, size int, ttl time.Durat
 }
 
 // Set adds or updates an entry in the cache.
-func (c *inMemoryCache[T]) Set(key CacheKey, value T) error {
+func (c *inMemoryCache[T]) Set(_ context.Context, key CacheKey, value T) error {
 	if !c.enabled {
 		return nil
 	}
@@ -189,18 +234,19 @@ func (c *inMemoryCache[T]) Set(key CacheKey, value T) error {
 	}
 	c.cache[key] = inMemoryCacheEntry
 
+	logger.Debug("Cache entry set", log.String("key", key.ToString()))
+
 	// Check if there's a requirement to evict an entry
 	if len(c.cache) > c.size {
 		logger.Debug("Cache size exceeded, evicting an entry")
 		c.evict()
 	}
 
-	logger.Debug("Cache entry set", log.String("key", key.ToString()))
 	return nil
 }
 
 // Get retrieves a value from the cache.
-func (c *inMemoryCache[T]) Get(key CacheKey) (T, bool) {
+func (c *inMemoryCache[T]) Get(_ context.Context, key CacheKey) (T, bool) {
 	if !c.enabled {
 		var zero T
 		return zero, false
@@ -245,7 +291,7 @@ func (c *inMemoryCache[T]) Get(key CacheKey) (T, bool) {
 }
 
 // Delete removes an entry from the cache.
-func (c *inMemoryCache[T]) Delete(key CacheKey) error {
+func (c *inMemoryCache[T]) Delete(_ context.Context, key CacheKey) error {
 	if !c.enabled {
 		return nil
 	}
@@ -261,7 +307,7 @@ func (c *inMemoryCache[T]) Delete(key CacheKey) error {
 }
 
 // Clear removes all entries from the cache.
-func (c *inMemoryCache[T]) Clear() error {
+func (c *inMemoryCache[T]) Clear(_ context.Context) error {
 	if !c.enabled {
 		return nil
 	}

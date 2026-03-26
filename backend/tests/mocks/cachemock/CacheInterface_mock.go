@@ -5,6 +5,8 @@
 package cachemock
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/system/cache"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -70,16 +72,16 @@ func (_c *CacheInterfaceMock_CleanupExpired_Call[T]) RunAndReturn(run func()) *C
 }
 
 // Clear provides a mock function for the type CacheInterfaceMock
-func (_mock *CacheInterfaceMock[T]) Clear() error {
-	ret := _mock.Called()
+func (_mock *CacheInterfaceMock[T]) Clear(ctx context.Context) error {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Clear")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func() error); ok {
-		r0 = returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -92,13 +94,20 @@ type CacheInterfaceMock_Clear_Call[T any] struct {
 }
 
 // Clear is a helper method to define mock.On call
-func (_e *CacheInterfaceMock_Expecter[T]) Clear() *CacheInterfaceMock_Clear_Call[T] {
-	return &CacheInterfaceMock_Clear_Call[T]{Call: _e.mock.On("Clear")}
+//   - ctx context.Context
+func (_e *CacheInterfaceMock_Expecter[T]) Clear(ctx interface{}) *CacheInterfaceMock_Clear_Call[T] {
+	return &CacheInterfaceMock_Clear_Call[T]{Call: _e.mock.On("Clear", ctx)}
 }
 
-func (_c *CacheInterfaceMock_Clear_Call[T]) Run(run func()) *CacheInterfaceMock_Clear_Call[T] {
+func (_c *CacheInterfaceMock_Clear_Call[T]) Run(run func(ctx context.Context)) *CacheInterfaceMock_Clear_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
@@ -108,22 +117,22 @@ func (_c *CacheInterfaceMock_Clear_Call[T]) Return(err error) *CacheInterfaceMoc
 	return _c
 }
 
-func (_c *CacheInterfaceMock_Clear_Call[T]) RunAndReturn(run func() error) *CacheInterfaceMock_Clear_Call[T] {
+func (_c *CacheInterfaceMock_Clear_Call[T]) RunAndReturn(run func(ctx context.Context) error) *CacheInterfaceMock_Clear_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Delete provides a mock function for the type CacheInterfaceMock
-func (_mock *CacheInterfaceMock[T]) Delete(key cache.CacheKey) error {
-	ret := _mock.Called(key)
+func (_mock *CacheInterfaceMock[T]) Delete(ctx context.Context, key cache.CacheKey) error {
+	ret := _mock.Called(ctx, key)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Delete")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(cache.CacheKey) error); ok {
-		r0 = returnFunc(key)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, cache.CacheKey) error); ok {
+		r0 = returnFunc(ctx, key)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -136,19 +145,25 @@ type CacheInterfaceMock_Delete_Call[T any] struct {
 }
 
 // Delete is a helper method to define mock.On call
+//   - ctx context.Context
 //   - key cache.CacheKey
-func (_e *CacheInterfaceMock_Expecter[T]) Delete(key interface{}) *CacheInterfaceMock_Delete_Call[T] {
-	return &CacheInterfaceMock_Delete_Call[T]{Call: _e.mock.On("Delete", key)}
+func (_e *CacheInterfaceMock_Expecter[T]) Delete(ctx interface{}, key interface{}) *CacheInterfaceMock_Delete_Call[T] {
+	return &CacheInterfaceMock_Delete_Call[T]{Call: _e.mock.On("Delete", ctx, key)}
 }
 
-func (_c *CacheInterfaceMock_Delete_Call[T]) Run(run func(key cache.CacheKey)) *CacheInterfaceMock_Delete_Call[T] {
+func (_c *CacheInterfaceMock_Delete_Call[T]) Run(run func(ctx context.Context, key cache.CacheKey)) *CacheInterfaceMock_Delete_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 cache.CacheKey
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(cache.CacheKey)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 cache.CacheKey
+		if args[1] != nil {
+			arg1 = args[1].(cache.CacheKey)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -159,14 +174,14 @@ func (_c *CacheInterfaceMock_Delete_Call[T]) Return(err error) *CacheInterfaceMo
 	return _c
 }
 
-func (_c *CacheInterfaceMock_Delete_Call[T]) RunAndReturn(run func(key cache.CacheKey) error) *CacheInterfaceMock_Delete_Call[T] {
+func (_c *CacheInterfaceMock_Delete_Call[T]) RunAndReturn(run func(ctx context.Context, key cache.CacheKey) error) *CacheInterfaceMock_Delete_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Get provides a mock function for the type CacheInterfaceMock
-func (_mock *CacheInterfaceMock[T]) Get(key cache.CacheKey) (T, bool) {
-	ret := _mock.Called(key)
+func (_mock *CacheInterfaceMock[T]) Get(ctx context.Context, key cache.CacheKey) (T, bool) {
+	ret := _mock.Called(ctx, key)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Get")
@@ -174,18 +189,18 @@ func (_mock *CacheInterfaceMock[T]) Get(key cache.CacheKey) (T, bool) {
 
 	var r0 T
 	var r1 bool
-	if returnFunc, ok := ret.Get(0).(func(cache.CacheKey) (T, bool)); ok {
-		return returnFunc(key)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, cache.CacheKey) (T, bool)); ok {
+		return returnFunc(ctx, key)
 	}
-	if returnFunc, ok := ret.Get(0).(func(cache.CacheKey) T); ok {
-		r0 = returnFunc(key)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, cache.CacheKey) T); ok {
+		r0 = returnFunc(ctx, key)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(T)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(cache.CacheKey) bool); ok {
-		r1 = returnFunc(key)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, cache.CacheKey) bool); ok {
+		r1 = returnFunc(ctx, key)
 	} else {
 		r1 = ret.Get(1).(bool)
 	}
@@ -198,19 +213,25 @@ type CacheInterfaceMock_Get_Call[T any] struct {
 }
 
 // Get is a helper method to define mock.On call
+//   - ctx context.Context
 //   - key cache.CacheKey
-func (_e *CacheInterfaceMock_Expecter[T]) Get(key interface{}) *CacheInterfaceMock_Get_Call[T] {
-	return &CacheInterfaceMock_Get_Call[T]{Call: _e.mock.On("Get", key)}
+func (_e *CacheInterfaceMock_Expecter[T]) Get(ctx interface{}, key interface{}) *CacheInterfaceMock_Get_Call[T] {
+	return &CacheInterfaceMock_Get_Call[T]{Call: _e.mock.On("Get", ctx, key)}
 }
 
-func (_c *CacheInterfaceMock_Get_Call[T]) Run(run func(key cache.CacheKey)) *CacheInterfaceMock_Get_Call[T] {
+func (_c *CacheInterfaceMock_Get_Call[T]) Run(run func(ctx context.Context, key cache.CacheKey)) *CacheInterfaceMock_Get_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 cache.CacheKey
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(cache.CacheKey)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 cache.CacheKey
+		if args[1] != nil {
+			arg1 = args[1].(cache.CacheKey)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -221,7 +242,7 @@ func (_c *CacheInterfaceMock_Get_Call[T]) Return(v T, b bool) *CacheInterfaceMoc
 	return _c
 }
 
-func (_c *CacheInterfaceMock_Get_Call[T]) RunAndReturn(run func(key cache.CacheKey) (T, bool)) *CacheInterfaceMock_Get_Call[T] {
+func (_c *CacheInterfaceMock_Get_Call[T]) RunAndReturn(run func(ctx context.Context, key cache.CacheKey) (T, bool)) *CacheInterfaceMock_Get_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
@@ -266,6 +287,50 @@ func (_c *CacheInterfaceMock_GetName_Call[T]) Return(s string) *CacheInterfaceMo
 }
 
 func (_c *CacheInterfaceMock_GetName_Call[T]) RunAndReturn(run func() string) *CacheInterfaceMock_GetName_Call[T] {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetStats provides a mock function for the type CacheInterfaceMock
+func (_mock *CacheInterfaceMock[T]) GetStats() cache.CacheStat {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetStats")
+	}
+
+	var r0 cache.CacheStat
+	if returnFunc, ok := ret.Get(0).(func() cache.CacheStat); ok {
+		r0 = returnFunc()
+	} else {
+		r0 = ret.Get(0).(cache.CacheStat)
+	}
+	return r0
+}
+
+// CacheInterfaceMock_GetStats_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetStats'
+type CacheInterfaceMock_GetStats_Call[T any] struct {
+	*mock.Call
+}
+
+// GetStats is a helper method to define mock.On call
+func (_e *CacheInterfaceMock_Expecter[T]) GetStats() *CacheInterfaceMock_GetStats_Call[T] {
+	return &CacheInterfaceMock_GetStats_Call[T]{Call: _e.mock.On("GetStats")}
+}
+
+func (_c *CacheInterfaceMock_GetStats_Call[T]) Run(run func()) *CacheInterfaceMock_GetStats_Call[T] {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *CacheInterfaceMock_GetStats_Call[T]) Return(cacheStat cache.CacheStat) *CacheInterfaceMock_GetStats_Call[T] {
+	_c.Call.Return(cacheStat)
+	return _c
+}
+
+func (_c *CacheInterfaceMock_GetStats_Call[T]) RunAndReturn(run func() cache.CacheStat) *CacheInterfaceMock_GetStats_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
@@ -315,16 +380,16 @@ func (_c *CacheInterfaceMock_IsEnabled_Call[T]) RunAndReturn(run func() bool) *C
 }
 
 // Set provides a mock function for the type CacheInterfaceMock
-func (_mock *CacheInterfaceMock[T]) Set(key cache.CacheKey, value T) error {
-	ret := _mock.Called(key, value)
+func (_mock *CacheInterfaceMock[T]) Set(ctx context.Context, key cache.CacheKey, value T) error {
+	ret := _mock.Called(ctx, key, value)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Set")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(cache.CacheKey, T) error); ok {
-		r0 = returnFunc(key, value)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, cache.CacheKey, T) error); ok {
+		r0 = returnFunc(ctx, key, value)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -337,25 +402,31 @@ type CacheInterfaceMock_Set_Call[T any] struct {
 }
 
 // Set is a helper method to define mock.On call
+//   - ctx context.Context
 //   - key cache.CacheKey
 //   - value T
-func (_e *CacheInterfaceMock_Expecter[T]) Set(key interface{}, value interface{}) *CacheInterfaceMock_Set_Call[T] {
-	return &CacheInterfaceMock_Set_Call[T]{Call: _e.mock.On("Set", key, value)}
+func (_e *CacheInterfaceMock_Expecter[T]) Set(ctx interface{}, key interface{}, value interface{}) *CacheInterfaceMock_Set_Call[T] {
+	return &CacheInterfaceMock_Set_Call[T]{Call: _e.mock.On("Set", ctx, key, value)}
 }
 
-func (_c *CacheInterfaceMock_Set_Call[T]) Run(run func(key cache.CacheKey, value T)) *CacheInterfaceMock_Set_Call[T] {
+func (_c *CacheInterfaceMock_Set_Call[T]) Run(run func(ctx context.Context, key cache.CacheKey, value T)) *CacheInterfaceMock_Set_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 cache.CacheKey
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(cache.CacheKey)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 T
+		var arg1 cache.CacheKey
 		if args[1] != nil {
-			arg1 = args[1].(T)
+			arg1 = args[1].(cache.CacheKey)
+		}
+		var arg2 T
+		if args[2] != nil {
+			arg2 = args[2].(T)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -366,7 +437,7 @@ func (_c *CacheInterfaceMock_Set_Call[T]) Return(err error) *CacheInterfaceMock_
 	return _c
 }
 
-func (_c *CacheInterfaceMock_Set_Call[T]) RunAndReturn(run func(key cache.CacheKey, value T) error) *CacheInterfaceMock_Set_Call[T] {
+func (_c *CacheInterfaceMock_Set_Call[T]) RunAndReturn(run func(ctx context.Context, key cache.CacheKey, value T) error) *CacheInterfaceMock_Set_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }

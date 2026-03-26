@@ -282,7 +282,7 @@ func (s *flowMgtService) UpdateFlow(ctx context.Context, flowID string, flowDef 
 	logger.Debug("Flow updated successfully")
 
 	// Invalidate the cached graph since the flow has been updated
-	s.graphBuilder.InvalidateCache(flowID)
+	s.graphBuilder.InvalidateCache(ctx, flowID)
 
 	return updatedFlow, nil
 }
@@ -323,7 +323,7 @@ func (s *flowMgtService) DeleteFlow(ctx context.Context, flowID string) *service
 	logger.Debug("Flow deleted successfully")
 
 	// Invalidate the cached graph since the flow has been deleted
-	s.graphBuilder.InvalidateCache(flowID)
+	s.graphBuilder.InvalidateCache(ctx, flowID)
 
 	return nil
 }
@@ -429,7 +429,7 @@ func (s *flowMgtService) RestoreFlowVersion(ctx context.Context, flowID string, 
 	logger.Debug("Flow version restored successfully")
 
 	// Invalidate the cached graph since a version has been restored
-	s.graphBuilder.InvalidateCache(flowID)
+	s.graphBuilder.InvalidateCache(ctx, flowID)
 
 	return restoredFlow, nil
 }
@@ -454,7 +454,7 @@ func (s *flowMgtService) GetGraph(ctx context.Context, flowID string) (
 		return nil, &serviceerror.InternalServerError
 	}
 
-	return s.graphBuilder.GetGraph(flow)
+	return s.graphBuilder.GetGraph(ctx, flow)
 }
 
 // IsValidFlow checks if a flow exists for the given flow ID and matches the expected type.

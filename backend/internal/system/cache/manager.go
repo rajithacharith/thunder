@@ -19,9 +19,12 @@
 package cache
 
 import (
+	"context"
 	"reflect"
 	"sync"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -30,10 +33,12 @@ import (
 // CacheManagerInterface defines the interface for managing caches.
 type CacheManagerInterface interface {
 	Init()
+	Close()
 	IsEnabled() bool
 	getMutex() *sync.RWMutex
 	getCache(cacheKey string) (interface{}, bool)
 	addCache(cacheKey string, cacheInstance interface{})
+	getRedisClient() *redis.Client
 	startCleanupRoutine()
 	cleanupAllCaches()
 	reset()
@@ -45,6 +50,7 @@ type CacheManager struct {
 	mu              sync.RWMutex
 	enabled         bool
 	cleanupInterval time.Duration
+	redisClient     *redis.Client
 }
 
 var (
@@ -75,11 +81,50 @@ func (cm *CacheManager) Init() {
 	}
 
 	cm.enabled = true
-	cm.cleanupInterval = getCleanupInterval(cacheConfig)
-	cm.startCleanupRoutine()
+
+	if getCacheType(cacheConfig) == cacheTypeRedis {
+		cm.redisClient = redis.NewClient(&redis.Options{
+			Addr:     cacheConfig.Redis.Address,
+			Password: cacheConfig.Redis.Password,
+			DB:       cacheConfig.Redis.DB,
+		})
+		if err := cm.redisClient.Ping(context.Background()).Err(); err != nil {
+			logger.Error("Failed to connect to Redis. Cache initialization aborted.", log.Error(err))
+			if closeErr := cm.redisClient.Close(); closeErr != nil {
+				logger.Warn("Failed to close Redis client after ping failure", log.Error(closeErr))
+			}
+			cm.redisClient = nil
+			cm.enabled = false
+			return
+		}
+		logger.Info("Connected to Redis successfully", log.String("address", cacheConfig.Redis.Address))
+	} else {
+		cm.cleanupInterval = getCleanupInterval(cacheConfig)
+		cm.startCleanupRoutine()
+	}
 
 	logger.Debug("Cache Manager initialized", log.Bool("enabled", cm.enabled),
 		log.Any("cleanupInterval", cm.cleanupInterval))
+}
+
+// Close shuts down the CacheManager and releases resources.
+func (cm *CacheManager) Close() {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "CacheManager"))
+
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
+	if cm.redisClient != nil {
+		if err := cm.redisClient.Close(); err != nil {
+			logger.Warn("Failed to close Redis client", log.Error(err))
+		} else {
+			logger.Debug("Redis client closed")
+		}
+		cm.redisClient = nil
+	}
+
+	cm.caches = nil
+	cm.enabled = false
 }
 
 // IsEnabled checks if the CacheManager is enabled.
@@ -104,6 +149,11 @@ func (cm *CacheManager) addCache(cacheKey string, cacheInstance interface{}) {
 		cm.caches[cacheKey] = cacheInstance
 		log.GetLogger().Debug("Cache added", log.String("cacheKey", cacheKey))
 	}
+}
+
+// getRedisClient returns the shared Redis client, or nil if Redis is not configured.
+func (cm *CacheManager) getRedisClient() *redis.Client {
+	return cm.redisClient
 }
 
 // startCleanupRoutine starts a background routine to clean up expired caches at regular intervals.
@@ -146,11 +196,89 @@ func (cm *CacheManager) cleanupAllCaches() {
 	}
 }
 
-// reset resets the CacheManager, clearing all caches.
+// reset resets the CacheManager and clears all state.
 func (cm *CacheManager) reset() {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
+
 	cm.caches = make(map[string]interface{})
+	cm.enabled = false
+}
+
+// newCache creates a new cache instance.
+func newCache[T any](cacheName string) CacheInterface[T] {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "CacheManager"),
+		log.String("cacheName", cacheName))
+
+	cacheConfig := config.GetThunderRuntime().Config.Cache
+	if cacheConfig.Disabled {
+		logger.Debug("Caching is disabled, returning empty")
+		return &Cache[T]{
+			enabled:   false,
+			cacheName: cacheName,
+			cacheImpl: nil,
+		}
+	}
+
+	cacheProperty := getCacheProperty(cacheConfig, cacheName)
+
+	if cacheProperty.Disabled {
+		logger.Debug("Individual cache is disabled, returning empty")
+		return &Cache[T]{
+			enabled:   false,
+			cacheName: cacheName,
+			cacheImpl: nil,
+		}
+	}
+
+	logger.Debug("Initializing the cache")
+
+	var internalCache CacheInterface[T]
+	switch getCacheType(cacheConfig) {
+	case cacheTypeInMemory:
+		internalCache = newInMemoryCache[T](
+			cacheName,
+			!cacheProperty.Disabled,
+			cacheConfig,
+			cacheProperty,
+		)
+	case cacheTypeRedis:
+		redisClient := GetCacheManager().getRedisClient()
+		if redisClient == nil {
+			logger.Warn("Redis client not available, disabling cache")
+			return &Cache[T]{
+				enabled:   false,
+				cacheName: cacheName,
+				cacheImpl: nil,
+			}
+		} else {
+			keyPrefix := cacheConfig.Redis.KeyPrefix
+			internalCache = newRedisCache[T](
+				cacheName,
+				!cacheProperty.Disabled,
+				redisClient,
+				keyPrefix,
+				cacheConfig,
+				cacheProperty,
+			)
+		}
+	default:
+		logger.Warn("Unknown cache type, defaulting to in-memory cache")
+		internalCache = newInMemoryCache[T](
+			cacheName,
+			!cacheProperty.Disabled,
+			cacheConfig,
+			cacheProperty,
+		)
+	}
+
+	cache := &Cache[T]{
+		enabled:   true,
+		cacheName: cacheName,
+		cacheImpl: internalCache,
+	}
+
+	return cache
 }
 
 // GetCache returns a singleton cache instance for the given type and cache name.
@@ -198,6 +326,32 @@ func GetCache[T any](cacheName string) CacheInterface[T] {
 	cm.addCache(cacheKey, newCache)
 
 	return newCache
+}
+
+// getCacheType retrieves the cache type from the configuration.
+func getCacheType(cacheConfig config.CacheConfig) cacheType {
+	if cacheConfig.Type == "" {
+		return cacheTypeInMemory
+	}
+	switch cacheConfig.Type {
+	case string(cacheTypeInMemory):
+		return cacheTypeInMemory
+	case string(cacheTypeRedis):
+		return cacheTypeRedis
+	default:
+		log.GetLogger().Warn("Unknown cache type, defaulting to in-memory cache")
+		return cacheTypeInMemory
+	}
+}
+
+// getCacheProperty retrieves the cache property for the specified cache name.
+func getCacheProperty(cacheConfig config.CacheConfig, cacheName string) config.CacheProperty {
+	for _, property := range cacheConfig.Properties {
+		if property.Name == cacheName {
+			return property
+		}
+	}
+	return config.CacheProperty{}
 }
 
 // getCleanupInterval retrieves the cleanup interval from the cache configuration.

@@ -19,6 +19,7 @@
 package flowmgt
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -65,7 +66,7 @@ func (s *GraphBuilderTestSuite) SetupTest() {
 // Test GetGraph method
 
 func (s *GraphBuilderTestSuite) TestGetGraph_NilFlow() {
-	graph, err := s.builder.GetGraph(nil)
+	graph, err := s.builder.GetGraph(context.Background(), nil)
 
 	s.Nil(graph)
 	s.NotNil(err)
@@ -82,7 +83,7 @@ func (s *GraphBuilderTestSuite) TestGetGraph_EmptyNodes() {
 		Nodes:    []NodeDefinition{},
 	}
 
-	graph, err := s.builder.GetGraph(flow)
+	graph, err := s.builder.GetGraph(context.Background(), flow)
 
 	s.Nil(graph)
 	s.NotNil(err)
@@ -102,9 +103,9 @@ func (s *GraphBuilderTestSuite) TestGetGraph_CacheHit() {
 	}
 
 	mockGraph := coremock.NewGraphInterfaceMock(s.T())
-	s.mockGraphCache.EXPECT().Get("flow-1").Return(mockGraph, true)
+	s.mockGraphCache.EXPECT().Get(mock.Anything, "flow-1").Return(mockGraph, true)
 
-	graph, err := s.builder.GetGraph(flow)
+	graph, err := s.builder.GetGraph(context.Background(), flow)
 
 	s.NotNil(graph)
 	s.Nil(err)
@@ -127,7 +128,7 @@ func (s *GraphBuilderTestSuite) TestGetGraph_BuildAndCache() {
 	mockStartNode := coremock.NewRepresentationNodeInterfaceMock(s.T())
 	mockEndNode := coremock.NewRepresentationNodeInterfaceMock(s.T())
 
-	s.mockGraphCache.EXPECT().Get("flow-1").Return(nil, false)
+	s.mockGraphCache.EXPECT().Get(mock.Anything, "flow-1").Return(nil, false)
 	s.mockFlowFactory.EXPECT().CreateGraph(
 		"flow-1", common.FlowTypeAuthentication).Return(mockGraph)
 	s.mockFlowFactory.EXPECT().CreateNode(
@@ -150,9 +151,9 @@ func (s *GraphBuilderTestSuite) TestGetGraph_BuildAndCache() {
 	mockStartNode.EXPECT().GetID().Return("start")
 	mockGraph.EXPECT().SetStartNode("start").Return(nil)
 
-	s.mockGraphCache.EXPECT().Set("flow-1", mockGraph).Return(nil)
+	s.mockGraphCache.EXPECT().Set(mock.Anything, "flow-1", mockGraph).Return(nil)
 
-	graph, err := s.builder.GetGraph(flow)
+	graph, err := s.builder.GetGraph(context.Background(), flow)
 
 	s.NotNil(graph)
 	s.Nil(err)
@@ -171,14 +172,14 @@ func (s *GraphBuilderTestSuite) TestGetGraph_BuildFailure() {
 	}
 
 	mockGraph := coremock.NewGraphInterfaceMock(s.T())
-	s.mockGraphCache.EXPECT().Get("flow-1").Return(nil, false)
+	s.mockGraphCache.EXPECT().Get(mock.Anything, "flow-1").Return(nil, false)
 	s.mockFlowFactory.EXPECT().CreateGraph("flow-1", common.FlowTypeAuthentication).Return(
 		mockGraph)
 	s.mockFlowFactory.EXPECT().CreateNode(
 		"start", "START", map[string]interface{}(nil), false, true).Return(
 		nil, errors.New("node creation error"))
 
-	graph, err := s.builder.GetGraph(flow)
+	graph, err := s.builder.GetGraph(context.Background(), flow)
 
 	s.Nil(graph)
 	s.NotNil(err)
@@ -200,7 +201,7 @@ func (s *GraphBuilderTestSuite) TestGetGraph_CacheSetError() {
 	mockGraph := coremock.NewGraphInterfaceMock(s.T())
 	mockStartNode := coremock.NewNodeInterfaceMock(s.T())
 
-	s.mockGraphCache.EXPECT().Get("flow-1").Return(nil, false)
+	s.mockGraphCache.EXPECT().Get(mock.Anything, "flow-1").Return(nil, false)
 	s.mockFlowFactory.EXPECT().CreateGraph(
 		"flow-1", common.FlowTypeAuthentication).Return(
 		mockGraph)
@@ -214,9 +215,9 @@ func (s *GraphBuilderTestSuite) TestGetGraph_CacheSetError() {
 	mockStartNode.EXPECT().GetID().Return("start")
 	mockGraph.EXPECT().SetStartNode("start").Return(nil)
 
-	s.mockGraphCache.EXPECT().Set("flow-1", mockGraph).Return(errors.New("cache error"))
+	s.mockGraphCache.EXPECT().Set(mock.Anything, "flow-1", mockGraph).Return(errors.New("cache error"))
 
-	graph, err := s.builder.GetGraph(flow)
+	graph, err := s.builder.GetGraph(context.Background(), flow)
 
 	// Should still return graph even if caching fails
 	s.NotNil(graph)
@@ -228,20 +229,20 @@ func (s *GraphBuilderTestSuite) TestGetGraph_CacheSetError() {
 
 func (s *GraphBuilderTestSuite) TestInvalidateCache_EmptyFlowID() {
 	// Should not panic or error
-	s.builder.InvalidateCache("")
+	s.builder.InvalidateCache(context.Background(), "")
 }
 
 func (s *GraphBuilderTestSuite) TestInvalidateCache_Success() {
-	s.mockGraphCache.EXPECT().Invalidate("flow-1").Return(nil)
+	s.mockGraphCache.EXPECT().Invalidate(mock.Anything, "flow-1").Return(nil)
 
-	s.builder.InvalidateCache("flow-1")
+	s.builder.InvalidateCache(context.Background(), "flow-1")
 }
 
 func (s *GraphBuilderTestSuite) TestInvalidateCache_Error() {
-	s.mockGraphCache.EXPECT().Invalidate("flow-1").Return(errors.New("cache error"))
+	s.mockGraphCache.EXPECT().Invalidate(mock.Anything, "flow-1").Return(errors.New("cache error"))
 
 	// Should log error but not panic
-	s.builder.InvalidateCache("flow-1")
+	s.builder.InvalidateCache(context.Background(), "flow-1")
 }
 
 // Test buildGraph method
