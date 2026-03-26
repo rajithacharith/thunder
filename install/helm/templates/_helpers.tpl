@@ -183,3 +183,35 @@ Supports both formats:
 {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+Render file-level volumeMount entries for declarative resources.
+When items are provided, mounting file-by-file with subPath preserves existing
+files already present in repository/resources.
+*/}}
+{{- define "thunder.declarativeResourceVolumeMounts" -}}
+{{- $items := default (list) .items -}}
+{{- $field := default "declarativeResources.*.items" .field -}}
+{{- $mountPath := .mountPath -}}
+{{- $readOnly := .readOnly -}}
+{{- $volumeName := default "declarative-resources" .volumeName -}}
+{{- range $index, $item := $items }}
+{{- if kindIs "string" $item }}
+- name: {{ $volumeName }}
+  mountPath: {{ printf "%s/%s" $mountPath $item }}
+  subPath: {{ $item }}
+  readOnly: {{ $readOnly }}
+{{- else if kindIs "map" $item }}
+{{- if not $item.key }}
+{{- fail (printf "Invalid %s entry at index %d: key is required for object items." $field $index) }}
+{{- end }}
+{{- $path := default $item.key $item.path }}
+- name: {{ $volumeName }}
+  mountPath: {{ printf "%s/%s" $mountPath $path }}
+  subPath: {{ $path }}
+  readOnly: {{ $readOnly }}
+{{- else }}
+{{- fail (printf "Invalid %s entry at index %d: expected string or object with key/path." $field $index) }}
+{{- end }}
+{{- end }}
+{{- end }}

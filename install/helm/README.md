@@ -512,6 +512,8 @@ Each entry in `declarativeResources.configMap.items` (or `declarativeResources.s
 
 Use object format when you need to mount a source key to a different directory/file path under `declarativeResources.mountPath`.
 
+When `items` are provided, the chart mounts declarative resources file-by-file using `subPath`. This preserves existing files already present in Thunder's `repository/resources` directory.
+
 Resulting file path example:
 - With `path: applications/application1.yaml`, file is mounted at `/opt/thunder/repository/resources/applications/application1.yaml`
 
@@ -588,6 +590,8 @@ declarativeResources:
     name: thunder-declarative-resources
     items: []
 ```
+
+  Note: With empty `items`, Kubernetes mounts the source at the directory level. This can hide existing files in `repository/resources` during pod runtime. To preserve bundled files and add only selected declarative resources, configure explicit `items`.
 
 #### Runtime configuration sync
 
