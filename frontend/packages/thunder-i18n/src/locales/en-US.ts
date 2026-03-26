@@ -1388,6 +1388,7 @@ const translations = {
   // Sign Up - Sign Up page translations
   // ============================================================================
   signup: {
+    'create_account.loading': 'Creating account...',
     'errors.signup.failed.message': 'Error',
     'errors.signup.failed.description': 'We are sorry, but we were unable to create your account. Please try again.',
     'redirect.to.signin': 'Already have an account? <1>Sign in</1>',
@@ -1398,21 +1399,6 @@ const translations = {
     'passkey.button.create': 'Create Passkey',
     'passkey.registering': 'Creating passkey...',
     'errors.passkey.failed': 'Failed to create passkey. Please try again.',
-  },
-
-  // ============================================================================
-  // Invite namespace - Invite acceptance feature translations (for Thunder Gate)
-  // ============================================================================
-  invite: {
-    validating: 'Validating your invite link...',
-    'complete.title': 'Welcome Aboard!',
-    'complete.description': 'Your account has been successfully set up.',
-    'errors.invalid.title': 'Unable to verify invite',
-    'errors.invalid.description': 'This invite link is invalid or has expired.',
-    'errors.failed.title': 'Error',
-    'errors.failed.description': 'An error occurred. Please try again.',
-    goToSignIn: 'Go to Sign In',
-    signIn: 'Sign In',
   },
 
   // ============================================================================
