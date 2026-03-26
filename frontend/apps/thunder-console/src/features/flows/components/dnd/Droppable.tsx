@@ -108,46 +108,46 @@ function BottomZone({
   });
 
   const {source} = useDragOperation();
-  const show = useMemo(
-    () => source && isDropTarget && sortable.accepts(source),
-    [source, isDropTarget, sortable],
-  );
+  const show = useMemo(() => source && isDropTarget && sortable.accepts(source), [source, isDropTarget, sortable]);
 
-  const dropIndicatorStyles = useMemo(() => ({
-    minHeight: `${minHeight}px`,
-    width: '100%',
-    position: 'relative' as const,
-    marginTop: '4px',
-    marginBottom: '4px',
-    ...(show && {
-      '&::before': {
-        content: '""',
-        position: 'absolute' as const,
-        left: 0,
-        right: 0,
-        top: '-8px',
-        height: '3px',
-        backgroundColor: 'primary.main',
-        borderRadius: '2px',
-        zIndex: 100,
-        pointerEvents: 'none' as const,
-        animation: 'dropIndicatorPulse 1s ease-in-out infinite',
-      },
-      '&::after': {
-        content: '""',
-        position: 'absolute' as const,
-        left: '-4px',
-        right: '-4px',
-        top: '-16px',
-        height: 'calc(8px * 2)',
-        backgroundColor: 'rgba(var(--mui-palette-primary-mainChannel) / 0.1)',
-        borderRadius: '4px',
-        zIndex: 99,
-        pointerEvents: 'none' as const,
-      },
+  const dropIndicatorStyles = useMemo(
+    () => ({
+      minHeight: `${minHeight}px`,
+      width: '100%',
+      position: 'relative' as const,
+      marginTop: '4px',
+      marginBottom: '4px',
+      ...(show && {
+        '&::before': {
+          content: '""',
+          position: 'absolute' as const,
+          left: 0,
+          right: 0,
+          top: '-8px',
+          height: '3px',
+          backgroundColor: 'primary.main',
+          borderRadius: '2px',
+          zIndex: 100,
+          pointerEvents: 'none' as const,
+          animation: 'dropIndicatorPulse 1s ease-in-out infinite',
+        },
+        '&::after': {
+          content: '""',
+          position: 'absolute' as const,
+          left: '-4px',
+          right: '-4px',
+          top: '-16px',
+          height: 'calc(8px * 2)',
+          backgroundColor: 'rgba(var(--mui-palette-primary-mainChannel) / 0.1)',
+          borderRadius: '4px',
+          zIndex: 99,
+          pointerEvents: 'none' as const,
+        },
+      }),
+      ...DROP_INDICATOR_KEYFRAMES,
     }),
-    ...DROP_INDICATOR_KEYFRAMES,
-  }), [show, minHeight]);
+    [show, minHeight],
+  );
 
   return <Box ref={ref} sx={dropIndicatorStyles} />;
 }

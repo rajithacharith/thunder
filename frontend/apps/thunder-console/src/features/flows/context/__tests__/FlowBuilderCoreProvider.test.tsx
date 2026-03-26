@@ -49,10 +49,10 @@ vi.mock('@wso2/oxygen-ui-icons-react', () => ({
 
 // Test components
 function MockElementFactory() {
-  return <div data-testid="element-factory">Element Factory</div>
+  return <div data-testid="element-factory">Element Factory</div>;
 }
 function MockResourceProperties() {
-  return <div data-testid="resource-properties">Resource Properties</div>
+  return <div data-testid="resource-properties">Resource Properties</div>;
 }
 
 // Test consumer component
@@ -87,18 +87,10 @@ function TestConsumer() {
       >
         Open Version History
       </button>
-      <button
-        type="button"
-        data-testid="set-verbose-mode"
-        onClick={() => context.setIsVerboseMode?.(false)}
-      >
+      <button type="button" data-testid="set-verbose-mode" onClick={() => context.setIsVerboseMode?.(false)}>
         Toggle Verbose Mode
       </button>
-      <button
-        type="button"
-        data-testid="set-edge-style"
-        onClick={() => context.setEdgeStyle?.(EdgeStyleTypes.Bezier)}
-      >
+      <button type="button" data-testid="set-edge-style" onClick={() => context.setEdgeStyle?.(EdgeStyleTypes.Bezier)}>
         Change Edge Style
       </button>
       <button
@@ -379,7 +371,11 @@ describe('FlowBuilderCoreProvider', () => {
   describe('Default Screen Types', () => {
     it('should use COMMON screen type when no screen types provided', () => {
       render(
-        <FlowBuilderCoreProvider ElementFactory={MockElementFactory} ResourceProperties={MockResourceProperties} screenTypes={[]}>
+        <FlowBuilderCoreProvider
+          ElementFactory={MockElementFactory}
+          ResourceProperties={MockResourceProperties}
+          screenTypes={[]}
+        >
           <TestConsumer />
         </FlowBuilderCoreProvider>,
       );

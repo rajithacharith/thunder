@@ -166,26 +166,21 @@ vi.mock('@asgardeo/react', () => ({
 
 // Mock MUI transition components to prevent RAF-based animation hangs in tests.
 vi.mock('@mui/material/Fade', () => ({
-  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) =>
-    inProp !== false ? children : null,
+  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) => (inProp !== false ? children : null),
 }));
 
 vi.mock('@mui/material/Grow', () => ({
-  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) =>
-    inProp !== false ? children : null,
+  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) => (inProp !== false ? children : null),
 }));
 
 vi.mock('@mui/material/Collapse', () => ({
-  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) =>
-    inProp !== false ? children : null,
+  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) => (inProp !== false ? children : null),
 }));
 
 vi.mock('@mui/material/Slide', () => ({
-  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) =>
-    inProp !== false ? children : null,
+  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) => (inProp !== false ? children : null),
 }));
 
 vi.mock('@mui/material/Zoom', () => ({
-  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) =>
-    inProp !== false ? children : null,
+  default: ({children, in: inProp}: {children: React.ReactNode; in?: boolean}) => (inProp !== false ? children : null),
 }));

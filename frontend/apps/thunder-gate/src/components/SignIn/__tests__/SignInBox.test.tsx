@@ -45,7 +45,11 @@ vi.mock('@thunder/shared-design', async (importOriginal) => {
 // Wrap renders with DesignContext derived from the same mock that backs useDesign(),
 // so adapters reading from context directly stay in sync with the hook.
 const render = (ui: React.ReactElement) => {
-  const designValue: DesignContextType = {isDesignEnabled: false, isLoading: false, ...(mockUseDesign() as Partial<DesignContextType>)};
+  const designValue: DesignContextType = {
+    isDesignEnabled: false,
+    isLoading: false,
+    ...(mockUseDesign() as Partial<DesignContextType>),
+  };
   return testRender(<DesignContext.Provider value={designValue}>{ui}</DesignContext.Provider>);
 };
 

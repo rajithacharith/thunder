@@ -61,7 +61,9 @@ export default function LayoutBuilderProvider({children}: LayoutBuilderProviderP
   const {layoutId = ''} = useParams<{layoutId: string}>();
   const {data: layoutData, isLoading} = useGetLayout(layoutId);
 
-  const [draftLayout, setDraftLayout] = useState<LayoutConfig | null>(() => (layoutData?.layout as LayoutConfig) ?? null);
+  const [draftLayout, setDraftLayout] = useState<LayoutConfig | null>(
+    () => (layoutData?.layout as LayoutConfig) ?? null,
+  );
   const [isDirty, setIsDirty] = useState<boolean>(false);
   const [selectedScreen, setSelectedScreen] = useState<string | null>(null);
   const [screenDraft, setScreenDraft] = useState<Record<string, unknown> | null>(null);

@@ -381,13 +381,13 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
       const inputs = document.querySelectorAll('input');
       const urlInput = inputs[1];
       act(() => {
-        fireEvent.change(urlInput, { target: { value: 'https://url1.com' } });
+        fireEvent.change(urlInput, {target: {value: 'https://url1.com'}});
       });
       act(() => {
-        fireEvent.change(urlInput, { target: { value: 'https://url2.com' } });
+        fireEvent.change(urlInput, {target: {value: 'https://url2.com'}});
       });
       act(() => {
-        fireEvent.change(urlInput, { target: { value: 'https://final-url.com' } });
+        fireEvent.change(urlInput, {target: {value: 'https://final-url.com'}});
       });
       expect(urlInput).toHaveValue('https://final-url.com');
     });
@@ -403,11 +403,11 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
       const urlInput = inputs[1];
       // Clear the field first
       act(() => {
-        fireEvent.change(urlInput, { target: { value: '' } });
+        fireEvent.change(urlInput, {target: {value: ''}});
       });
       // Then add a valid URL
       act(() => {
-        fireEvent.change(urlInput, { target: { value: 'https://valid-url.com' } });
+        fireEvent.change(urlInput, {target: {value: 'https://valid-url.com'}});
       });
       expect(urlInput).toHaveValue('https://valid-url.com');
 

@@ -194,7 +194,12 @@ function InlineCSSField({id, content, colorMode, onChange, registerFlush}: Inlin
             theme={colorMode === 'dark' ? 'vs-dark' : 'vs'}
             value={localContent}
             onChange={handleEditorChange}
-            options={{...EDITOR_OPTIONS, lineNumbers: 'on', fixedOverflowWidgets: false, overflowWidgetsDomNode: undefined}}
+            options={{
+              ...EDITOR_OPTIONS,
+              lineNumbers: 'on',
+              fixedOverflowWidgets: false,
+              overflowWidgetsDomNode: undefined,
+            }}
           />
         </DialogContent>
       </Dialog>
@@ -286,7 +291,9 @@ function EditableTitle({value, onChange}: EditableTitleProps): JSX.Element {
         }}
         onClick={(e) => e.stopPropagation()}
         variant="standard"
-        slotProps={{input: {sx: {fontSize: '0.8rem', fontWeight: 600, fontFamily: 'monospace', py: 0}, disableUnderline: false}}}
+        slotProps={{
+          input: {sx: {fontSize: '0.8rem', fontWeight: 600, fontFamily: 'monospace', py: 0}, disableUnderline: false},
+        }}
         sx={{maxWidth: 140}}
       />
     );
@@ -391,18 +398,27 @@ function StylesheetItem({
         }}
       >
         {/* Reorder arrows */}
-        <Stack
-          component="span"
-          onClick={(e) => e.stopPropagation()}
-          sx={{flexShrink: 0, mr: 0.25}}
-        >
+        <Stack component="span" onClick={(e) => e.stopPropagation()} sx={{flexShrink: 0, mr: 0.25}}>
           <Box
             component="span"
             role="button"
             tabIndex={0}
-            onClick={() => { if (idx > 0) onMove(-1); }}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (idx > 0) onMove(-1); } }}
-            sx={{display: 'flex', cursor: idx === 0 ? 'default' : 'pointer', opacity: idx === 0 ? 0.25 : 0.5, '&:hover': {opacity: idx === 0 ? 0.25 : 1}, lineHeight: 0}}
+            onClick={() => {
+              if (idx > 0) onMove(-1);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (idx > 0) onMove(-1);
+              }
+            }}
+            sx={{
+              display: 'flex',
+              cursor: idx === 0 ? 'default' : 'pointer',
+              opacity: idx === 0 ? 0.25 : 0.5,
+              '&:hover': {opacity: idx === 0 ? 0.25 : 1},
+              lineHeight: 0,
+            }}
           >
             <ChevronUp size={12} />
           </Box>
@@ -410,9 +426,22 @@ function StylesheetItem({
             component="span"
             role="button"
             tabIndex={0}
-            onClick={() => { if (idx < total - 1) onMove(1); }}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (idx < total - 1) onMove(1); } }}
-            sx={{display: 'flex', cursor: idx === total - 1 ? 'default' : 'pointer', opacity: idx === total - 1 ? 0.25 : 0.5, '&:hover': {opacity: idx === total - 1 ? 0.25 : 1}, lineHeight: 0}}
+            onClick={() => {
+              if (idx < total - 1) onMove(1);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (idx < total - 1) onMove(1);
+              }
+            }}
+            sx={{
+              display: 'flex',
+              cursor: idx === total - 1 ? 'default' : 'pointer',
+              opacity: idx === total - 1 ? 0.25 : 0.5,
+              '&:hover': {opacity: idx === total - 1 ? 0.25 : 1},
+              lineHeight: 0,
+            }}
           >
             <ChevronDown size={12} />
           </Box>

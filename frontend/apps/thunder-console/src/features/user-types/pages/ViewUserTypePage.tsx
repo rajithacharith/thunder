@@ -74,7 +74,10 @@ function convertSchemaToProperties(schema: UserSchemaDefinition): SchemaProperty
     id: `${index}`,
     name: key,
     displayName: 'displayName' in value ? (value.displayName ?? '') : '',
-    type: value.type === 'string' && 'enum' in value && Array.isArray(value.enum) && value.enum.length > 0 ? 'enum' : value.type,
+    type:
+      value.type === 'string' && 'enum' in value && Array.isArray(value.enum) && value.enum.length > 0
+        ? 'enum'
+        : value.type,
     required: value.required ?? false,
     unique: 'unique' in value ? (value.unique ?? false) : false,
     credential: 'credential' in value ? (value.credential ?? false) : false,
@@ -150,7 +153,9 @@ export default function ViewUserTypePage(): JSX.Element {
   const [tempName, setTempName] = useState('');
 
   // Edited fields (partial — only fields the user has changed)
-  const [editedUserType, setEditedUserType] = useState<Partial<{name: string; ouId: string; allowSelfRegistration: boolean; displayAttribute: string}>>({});
+  const [editedUserType, setEditedUserType] = useState<
+    Partial<{name: string; ouId: string; allowSelfRegistration: boolean; displayAttribute: string}>
+  >({});
 
   // Edited schema properties (null = no changes, non-null = user edited)
   const [editedProperties, setEditedProperties] = useState<SchemaPropertyInput[] | null>(null);
@@ -159,10 +164,7 @@ export default function ViewUserTypePage(): JSX.Element {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Base properties from server data (useMemo so they're available synchronously)
-  const baseProperties = useMemo(
-    () => (userType ? convertSchemaToProperties(userType.schema) : []),
-    [userType],
-  );
+  const baseProperties = useMemo(() => (userType ? convertSchemaToProperties(userType.schema) : []), [userType]);
 
   // Effective properties (edited or from server)
   const effectiveProperties = editedProperties ?? baseProperties;
@@ -240,7 +242,10 @@ export default function ViewUserTypePage(): JSX.Element {
     const trimmedNames = effectiveProperties.filter((p) => p.name.trim()).map((p) => p.name.trim());
     const duplicates = trimmedNames.filter((n, i) => trimmedNames.indexOf(n) !== i);
     if (duplicates.length > 0) {
-      showToast(t('userTypes:validationErrors.duplicateProperties', {duplicates: [...new Set(duplicates)].join(', ')}), 'error');
+      showToast(
+        t('userTypes:validationErrors.duplicateProperties', {duplicates: [...new Set(duplicates)].join(', ')}),
+        'error',
+      );
       return;
     }
 
@@ -325,7 +330,9 @@ export default function ViewUserTypePage(): JSX.Element {
     <PageContent>
       {/* Header */}
       <PageTitle>
-        <PageTitle.BackButton component={<Link to={listUrl} />}>{t('userTypes:edit.back', 'Back to User Types')}</PageTitle.BackButton>
+        <PageTitle.BackButton component={<Link to={listUrl} />}>
+          {t('userTypes:edit.back', 'Back to User Types')}
+        </PageTitle.BackButton>
         <PageTitle.Header>
           <Stack direction="row" alignItems="center" spacing={1} mb={1}>
             {isEditingName ? (

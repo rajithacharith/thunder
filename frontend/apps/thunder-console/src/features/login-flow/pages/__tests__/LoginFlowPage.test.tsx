@@ -34,9 +34,7 @@ vi.mock('../../components/LoginFlowBuilder', () => ({
 
 // Mock LoginFlowBuilderProvider
 vi.mock('../../context/LoginFlowBuilderProvider', () => ({
-  default: ({children}: {children: React.ReactNode}) => (
-    <div data-testid="login-flow-builder-provider">{children}</div>
-  ),
+  default: ({children}: {children: React.ReactNode}) => <div data-testid="login-flow-builder-provider">{children}</div>,
 }));
 
 describe('LoginFlowBuilderPage', () => {

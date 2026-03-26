@@ -34,7 +34,11 @@ export interface AuthPageLayoutProps {
  * Provides the full-page centering structure used by the Gate app. Both the Gate and
  * Console preview render this component so they are visually identical.
  */
-export default function AuthPageLayout({variant = undefined, background = undefined, children}: AuthPageLayoutProps): JSX.Element {
+export default function AuthPageLayout({
+  variant = undefined,
+  background = undefined,
+  children,
+}: AuthPageLayoutProps): JSX.Element {
   return (
     <Stack
       direction="column"

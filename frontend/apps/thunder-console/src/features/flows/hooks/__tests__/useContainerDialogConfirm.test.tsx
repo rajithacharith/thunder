@@ -345,11 +345,9 @@ describe('useContainerDialogConfirm', () => {
 
       // Capture the callback passed to updateNodeData
       let capturedCallback: ((node: Node) => {components: Element[]}) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_id: string, callback: (node: Node) => {components: Element[]}) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_id: string, callback: (node: Node) => {components: Element[]}) => {
+        capturedCallback = callback;
+      });
 
       const {result} = renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),
@@ -388,11 +386,9 @@ describe('useContainerDialogConfirm', () => {
       const props = createDefaultProps('input-on-view', pendingDropRef);
 
       let capturedCallback: ((node: Node) => {components: Element[]}) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_id: string, callback: (node: Node) => {components: Element[]}) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_id: string, callback: (node: Node) => {components: Element[]}) => {
+        capturedCallback = callback;
+      });
 
       const {result} = renderHook(() => useContainerDialogConfirm(props), {
         wrapper: createWrapper(),

@@ -65,17 +65,18 @@ vi.mock('../../../utils/resolveStaticResourcePath', () => ({
   default: (path: string) => `/static/${path}`,
 }));
 
-const createMockResource = (overrides: Partial<Resource> = {}): Resource => ({
-  type: 'DRAGGABLE_STEP',
-  resourceType: 'STEP',
-  display: {
-    label: 'Draggable Step',
-    description: 'A draggable step description',
-    image: 'step-icon.svg',
-    showOnResourcePanel: true,
-  },
-  ...overrides,
-} as Resource);
+const createMockResource = (overrides: Partial<Resource> = {}): Resource =>
+  ({
+    type: 'DRAGGABLE_STEP',
+    resourceType: 'STEP',
+    display: {
+      label: 'Draggable Step',
+      description: 'A draggable step description',
+      image: 'step-icon.svg',
+      showOnResourcePanel: true,
+    },
+    ...overrides,
+  }) as Resource;
 
 describe('ResourcePanelDraggable', () => {
   describe('Draggable Wrapper', () => {

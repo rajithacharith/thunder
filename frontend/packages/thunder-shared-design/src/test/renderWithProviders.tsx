@@ -24,13 +24,18 @@ import DesignContext, {type DesignContextType} from '../contexts/Design/DesignCo
 
 // Minimal i18n instance — passthrough translation
 const i18nInstance = i18n.createInstance();
-i18nInstance.use(initReactI18next).init({
-  lng: 'en',
-  resources: {en: {translation: {}}},
-  interpolation: {escapeValue: false},
-  fallbackLng: false,
-  parseMissingKeyHandler: (key: string) => key,
-}).catch(() => { /* no-op */ });
+i18nInstance
+  .use(initReactI18next)
+  .init({
+    lng: 'en',
+    resources: {en: {translation: {}}},
+    interpolation: {escapeValue: false},
+    fallbackLng: false,
+    parseMissingKeyHandler: (key: string) => key,
+  })
+  .catch(() => {
+    /* no-op */
+  });
 
 const DEFAULT_DESIGN_CONTEXT: DesignContextType = {
   isDesignEnabled: false,

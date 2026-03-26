@@ -1,11 +1,13 @@
 # @thunder/test-utils
 
-Shared testing utilities for ⚡️ Thunder applications. Provides common test setup, render helpers, and mocks for consistent testing across all Thunder apps.
+Shared testing utilities for ⚡️ Thunder applications. Provides common test setup, render helpers, and mocks for
+consistent testing across all Thunder apps.
 
 ## Features
 
 - **Unified Test Setup** - Common test configuration for Vitest, jsdom, and React Testing Library
-- **Custom Render Functions** - Pre-configured render with all necessary providers (QueryClient, Router, Config, Logger, Theme)
+- **Custom Render Functions** - Pre-configured render with all necessary providers (QueryClient, Router, Config, Logger,
+  Theme)
 - **App Configuration** - Configurable settings for different Thunder apps (console, gate)
 - **Ready-to-Use Mocks** - Common mocks for i18n, IntersectionObserver, ResizeObserver, and more
 - **Re-exported Utilities** - Convenient re-exports from @testing-library/react and user-event
@@ -35,7 +37,7 @@ pnpm install
 In your app's `vitest.config.ts`:
 
 ```typescript
-import { defineConfig } from 'vitest/config';
+import {defineConfig} from 'vitest/config';
 
 export default defineConfig({
   test: {
@@ -53,7 +55,7 @@ Create `src/test/setup.ts` in your app:
 ```typescript
 // Import shared test setup from @thunder/test-utils
 import '@thunder/test-utils/setup';
-import { configureTestUtils } from '@thunder/test-utils';
+import {configureTestUtils} from '@thunder/test-utils';
 
 // Configure for your app (example for gate)
 configureTestUtils({
@@ -72,9 +74,9 @@ import '@thunder/test-utils/setup';
 ### 3. Write Tests
 
 ```tsx
-import { describe, it, expect } from 'vitest';
-import { renderWithProviders, screen } from '@thunder/test-utils';
-import { MyComponent } from './MyComponent';
+import {describe, it, expect} from 'vitest';
+import {renderWithProviders, screen} from '@thunder/test-utils';
+import {MyComponent} from './MyComponent';
 
 describe('MyComponent', () => {
   it('renders correctly', () => {
@@ -101,9 +103,9 @@ The package exposes three entry points:
 Default custom render function that wraps components with all providers.
 
 ```tsx
-import { render } from '@thunder/test-utils';
+import {render} from '@thunder/test-utils';
 
-const { container } = render(<MyComponent />);
+const {container} = render(<MyComponent />);
 ```
 
 #### `renderWithProviders`
@@ -111,7 +113,7 @@ const { container } = render(<MyComponent />);
 Alias for `render` with explicit naming.
 
 ```tsx
-import { renderWithProviders } from '@thunder/test-utils';
+import {renderWithProviders} from '@thunder/test-utils';
 
 renderWithProviders(<MyComponent />);
 ```
@@ -121,9 +123,9 @@ renderWithProviders(<MyComponent />);
 Custom renderHook function with providers. Returns the QueryClient instance for direct cache manipulation.
 
 ```tsx
-import { renderHook } from '@thunder/test-utils';
+import {renderHook} from '@thunder/test-utils';
 
-const { result, queryClient } = renderHook(() => useMyHook());
+const {result, queryClient} = renderHook(() => useMyHook());
 
 // Access the queryClient for cache manipulation
 queryClient.setQueryData(['key'], mockData);
@@ -134,14 +136,14 @@ queryClient.setQueryData(['key'], mockData);
 Configure test utilities with app-specific settings. Call this in your test setup file.
 
 ```typescript
-import { configureTestUtils } from '@thunder/test-utils';
+import {configureTestUtils} from '@thunder/test-utils';
 
 configureTestUtils({
-  base: '/gate',        // Base path for the app
-  clientId: 'GATE',     // Client ID for the app
+  base: '/gate', // Base path for the app
+  clientId: 'GATE', // Client ID for the app
   hostname: 'localhost', // Optional: server hostname (default: 'localhost')
-  port: 8090,           // Optional: server port (default: 8090)
-  httpOnly: false,      // Optional: use HTTP only (default: false)
+  port: 8090, // Optional: server port (default: 8090)
+  httpOnly: false, // Optional: use HTTP only (default: false)
 });
 ```
 
@@ -150,7 +152,7 @@ configureTestUtils({
 Helper to find elements by translation key when using mocked translations.
 
 ```tsx
-import { getByTranslationKey } from '@thunder/test-utils';
+import {getByTranslationKey} from '@thunder/test-utils';
 
 const element = getByTranslationKey(container, 'users.title');
 ```
@@ -160,13 +162,13 @@ const element = getByTranslationKey(container, 'users.title');
 All exports from `@testing-library/react` are re-exported for convenience:
 
 ```tsx
-import { screen, waitFor, within, fireEvent } from '@thunder/test-utils';
+import {screen, waitFor, within, fireEvent} from '@thunder/test-utils';
 ```
 
 Additionally, `userEvent` from `@testing-library/user-event`:
 
 ```tsx
-import { userEvent } from '@thunder/test-utils';
+import {userEvent} from '@thunder/test-utils';
 
 const user = userEvent.setup();
 await user.click(button);
@@ -198,8 +200,8 @@ import '@thunder/test-utils/setup';
 Mock implementation of `useTranslation` hook that returns translation keys.
 
 ```typescript
-import { vi } from 'vitest';
-import { mockUseTranslation } from '@thunder/test-utils/mocks';
+import {vi} from 'vitest';
+import {mockUseTranslation} from '@thunder/test-utils/mocks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: mockUseTranslation,
@@ -211,7 +213,7 @@ vi.mock('react-i18next', () => ({
 Mock implementation of `useLanguage` hook.
 
 ```typescript
-import { mockUseLanguage } from '@thunder/test-utils/mocks';
+import {mockUseLanguage} from '@thunder/test-utils/mocks';
 ```
 
 #### `mockUseDataGridLocaleText`
@@ -219,29 +221,29 @@ import { mockUseLanguage } from '@thunder/test-utils/mocks';
 Mock implementation of `useDataGridLocaleText` hook for DataGrid components.
 
 ```typescript
-import { mockUseDataGridLocaleText } from '@thunder/test-utils/mocks';
+import {mockUseDataGridLocaleText} from '@thunder/test-utils/mocks';
 ```
 
 ## Configuration Options
 
 ### ThunderTestConfig
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `base` | `string` | `/console` | Base path for the application |
-| `clientId` | `string` | `CONSOLE` | Client ID for the application |
-| `hostname` | `string` | `localhost` | Server hostname |
-| `port` | `number` | `8090` | Server port |
-| `httpOnly` | `boolean` | `false` | Whether to use HTTP only |
+| Property   | Type      | Default     | Description                   |
+| ---------- | --------- | ----------- | ----------------------------- |
+| `base`     | `string`  | `/console`  | Base path for the application |
+| `clientId` | `string`  | `CONSOLE`   | Client ID for the application |
+| `hostname` | `string`  | `localhost` | Server hostname               |
+| `port`     | `number`  | `8090`      | Server port                   |
+| `httpOnly` | `boolean` | `false`     | Whether to use HTTP only      |
 
 ## Usage Examples
 
 ### Testing Components with React Query
 
 ```tsx
-import { describe, it, expect } from 'vitest';
-import { renderWithProviders, screen, waitFor } from '@thunder/test-utils';
-import { UserList } from './UserList';
+import {describe, it, expect} from 'vitest';
+import {renderWithProviders, screen, waitFor} from '@thunder/test-utils';
+import {UserList} from './UserList';
 
 describe('UserList', () => {
   it('displays users after loading', async () => {
@@ -257,16 +259,16 @@ describe('UserList', () => {
 ### Testing Hooks with QueryClient Access
 
 ```tsx
-import { describe, it, expect } from 'vitest';
-import { renderHook, waitFor } from '@thunder/test-utils';
-import { useUsers } from './useUsers';
+import {describe, it, expect} from 'vitest';
+import {renderHook, waitFor} from '@thunder/test-utils';
+import {useUsers} from './useUsers';
 
 describe('useUsers', () => {
   it('fetches users', async () => {
-    const { result, queryClient } = renderHook(() => useUsers());
+    const {result, queryClient} = renderHook(() => useUsers());
 
     // Pre-populate cache if needed
-    queryClient.setQueryData(['users'], [{ id: 1, name: 'John' }]);
+    queryClient.setQueryData(['users'], [{id: 1, name: 'John'}]);
 
     await waitFor(() => {
       expect(result.current.data).toHaveLength(1);
@@ -278,9 +280,9 @@ describe('useUsers', () => {
 ### Testing with User Interactions
 
 ```tsx
-import { describe, it, expect, vi } from 'vitest';
-import { renderWithProviders, screen, userEvent } from '@thunder/test-utils';
-import { LoginForm } from './LoginForm';
+import {describe, it, expect, vi} from 'vitest';
+import {renderWithProviders, screen, userEvent} from '@thunder/test-utils';
+import {LoginForm} from './LoginForm';
 
 describe('LoginForm', () => {
   it('submits the form', async () => {
@@ -291,7 +293,7 @@ describe('LoginForm', () => {
 
     await user.type(screen.getByLabelText('Email'), 'test@example.com');
     await user.type(screen.getByLabelText('Password'), 'password123');
-    await user.click(screen.getByRole('button', { name: 'Sign In' }));
+    await user.click(screen.getByRole('button', {name: 'Sign In'}));
 
     expect(onSubmit).toHaveBeenCalled();
   });
@@ -300,11 +302,12 @@ describe('LoginForm', () => {
 
 ### Testing Components that Include Their Own Router
 
-For components like `App` that include their own router, import the raw `render` directly from `@testing-library/react` to avoid router nesting:
+For components like `App` that include their own router, import the raw `render` directly from `@testing-library/react`
+to avoid router nesting:
 
 ```tsx
-import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react'; // Use raw render, not @thunder/test-utils
+import {describe, it, expect, vi} from 'vitest';
+import {render} from '@testing-library/react'; // Use raw render, not @thunder/test-utils
 import App from './App';
 
 // Mock app routes
@@ -316,13 +319,15 @@ describe('App', () => {
   it('renders without crashing', () => {
     // App includes its own BrowserRouter, so we use the raw render
     // from @testing-library/react instead of @thunder/test-utils
-    const { container } = render(<App />);
+    const {container} = render(<App />);
     expect(container).toBeInTheDocument();
   });
 });
 ```
 
-> **Note:** The `render` export from `@thunder/test-utils` wraps components with `MemoryRouter`. For components that include their own router (like the main `App` component), you must import `render` directly from `@testing-library/react`.
+> **Note:** The `render` export from `@thunder/test-utils` wraps components with `MemoryRouter`. For components that
+> include their own router (like the main `App` component), you must import `render` directly from
+> `@testing-library/react`.
 
 ## Providers Included
 
@@ -349,7 +354,7 @@ import '@thunder/test-utils/setup';
 ```typescript
 // src/test/setup.ts
 import '@thunder/test-utils/setup';
-import { configureTestUtils } from '@thunder/test-utils';
+import {configureTestUtils} from '@thunder/test-utils';
 
 configureTestUtils({
   base: '/gate',
@@ -361,14 +366,15 @@ configureTestUtils({
 
 ### Tests Failing with Provider Errors
 
-Make sure you're using `renderWithProviders` or the default `render` from `@thunder/test-utils`, not the raw render from `@testing-library/react`:
+Make sure you're using `renderWithProviders` or the default `render` from `@thunder/test-utils`, not the raw render from
+`@testing-library/react`:
 
 ```tsx
 // ✅ Good
-import { render } from '@thunder/test-utils';
+import {render} from '@thunder/test-utils';
 
 // ❌ Avoid (unless you have a specific reason)
-import { render } from '@testing-library/react';
+import {render} from '@testing-library/react';
 ```
 
 ### i18n Not Initialized
@@ -381,16 +387,18 @@ import '@thunder/test-utils/setup';
 
 ### QueryClient State Leaking Between Tests
 
-Each test gets a fresh QueryClient by default. If you need to pre-populate the cache, use the returned `queryClient` from `renderHook`:
+Each test gets a fresh QueryClient by default. If you need to pre-populate the cache, use the returned `queryClient`
+from `renderHook`:
 
 ```tsx
-const { result, queryClient } = renderHook(() => useMyHook());
+const {result, queryClient} = renderHook(() => useMyHook());
 queryClient.setQueryData(['key'], mockData);
 ```
 
 ### CSS Variable Errors in Tests
 
-The setup file includes a patch for CSS variable handling in jsdom. If you see CSS-related errors, make sure you're importing the setup file.
+The setup file includes a patch for CSS variable handling in jsdom. If you see CSS-related errors, make sure you're
+importing the setup file.
 
 ## Contributing
 

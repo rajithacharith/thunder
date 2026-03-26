@@ -68,14 +68,17 @@
     gap: 2px;
     padding: 6px;
     border-radius: 8px;
-    background-color: var(--xy-controls-button-background-color, var(--xy-controls-button-background-color-default, #fff));
+    background-color: var(
+      --xy-controls-button-background-color,
+      var(--xy-controls-button-background-color-default, #fff)
+    );
     border: 2px solid transparent;
 
     &--error {
       border-color: var(--mui-palette-error-main);
       animation: error-pulse 1s infinite;
 
-      [data-color-scheme="light"] & {
+      [data-color-scheme='light'] & {
         border-color: rgba(var(--mui-palette-error-mainChannel) / 0.7);
       }
     }
@@ -84,7 +87,7 @@
       border-color: var(--mui-palette-warning-main);
       animation: warning-pulse 1s infinite;
 
-      [data-color-scheme="light"] & {
+      [data-color-scheme='light'] & {
         border-color: rgba(var(--mui-palette-warning-mainChannel) / 0.7);
       }
     }
@@ -93,7 +96,7 @@
       border-color: var(--mui-palette-info-main);
       animation: info-pulse 1s infinite;
 
-      [data-color-scheme="light"] & {
+      [data-color-scheme='light'] & {
         border-color: rgba(var(--mui-palette-info-mainChannel) / 0.7);
       }
     }
@@ -111,13 +114,15 @@
     padding: 8px 12px;
     border-radius: 6px;
     cursor: pointer;
-    transition: background-color 0.15s ease, transform 0.15s ease;
+    transition:
+      background-color 0.15s ease,
+      transform 0.15s ease;
 
     &--error {
       color: var(--mui-palette-error-main);
       background-color: rgba(var(--mui-palette-error-mainChannel) / 0.08);
 
-      [data-color-scheme="light"] & {
+      [data-color-scheme='light'] & {
         color: rgba(var(--mui-palette-error-mainChannel) / 0.8);
       }
 
@@ -131,7 +136,7 @@
       color: var(--mui-palette-warning-main);
       background-color: rgba(var(--mui-palette-warning-mainChannel) / 0.08);
 
-      [data-color-scheme="light"] & {
+      [data-color-scheme='light'] & {
         color: rgba(var(--mui-palette-warning-mainChannel) / 0.8);
       }
 
@@ -145,7 +150,7 @@
       color: var(--mui-palette-info-main);
       background-color: rgba(var(--mui-palette-info-mainChannel) / 0.08);
 
-      [data-color-scheme="light"] & {
+      [data-color-scheme='light'] & {
         color: rgba(var(--mui-palette-info-mainChannel) / 0.8);
       }
 

@@ -40,18 +40,10 @@ describe('SignInSlogan', () => {
 
   it('renders item descriptions', () => {
     render(<SignInSlogan />);
-    expect(
-      screen.getByText(/Centralizes identity management/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Leverage adaptive authentication/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Configure auth flows and manage organizations/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Built for scale/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Centralizes identity management/)).toBeInTheDocument();
+    expect(screen.getByText(/Leverage adaptive authentication/)).toBeInTheDocument();
+    expect(screen.getByText(/Configure auth flows and manage organizations/)).toBeInTheDocument();
+    expect(screen.getByText(/Built for scale/)).toBeInTheDocument();
   });
 
   it('renders with default logos', () => {

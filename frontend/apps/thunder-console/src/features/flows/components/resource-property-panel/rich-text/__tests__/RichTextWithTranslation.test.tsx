@@ -33,7 +33,13 @@ vi.mock('react-i18next', () => ({
 
 // Mock the RichText component
 vi.mock('../RichText', () => ({
-  default: ({onChange, resource, disabled, ToolbarProps, className}: {
+  default: ({
+    onChange,
+    resource,
+    disabled,
+    ToolbarProps,
+    className,
+  }: {
     onChange: (value: string) => void;
     resource: Resource;
     disabled?: boolean;
@@ -56,54 +62,65 @@ vi.mock('../RichText', () => ({
 
 // Mock DynamicValuePopover
 vi.mock('../../DynamicValuePopover', () => ({
-  default: ({open, onClose, onChange, value}: {
+  default: ({
+    open,
+    onClose,
+    onChange,
+    value,
+  }: {
     open: boolean;
     onClose: () => void;
     onChange: (value: string) => void;
     value: string;
     anchorEl: HTMLElement | null;
     propertyKey: string;
-  }) => (open ? (
-    <div data-testid="dynamic-value-popover" data-value={value}>
-      <button type="button" onClick={onClose} data-testid="close-popover">Close</button>
-      <button type="button" onClick={() => onChange('new-test-value')} data-testid="change-value">Change Value</button>
-      <button type="button" onClick={() => onChange('')} data-testid="clear-value">Clear Value</button>
-    </div>
-  ) : null),
+  }) =>
+    open ? (
+      <div data-testid="dynamic-value-popover" data-value={value}>
+        <button type="button" onClick={onClose} data-testid="close-popover">
+          Close
+        </button>
+        <button type="button" onClick={() => onChange('new-test-value')} data-testid="change-value">
+          Change Value
+        </button>
+        <button type="button" onClick={() => onChange('')} data-testid="clear-value">
+          Clear Value
+        </button>
+      </div>
+    ) : null,
 }));
 
 describe('RichTextWithTranslation', () => {
   const mockOnChange = vi.fn();
 
-  const createMockResource = (overrides: Partial<Resource & {label?: string}> = {}): Resource => ({
-    id: 'resource-1',
-    resourceType: 'ELEMENT',
-    type: 'RICH_TEXT',
-    category: 'DISPLAY',
-    version: '1.0.0',
-    deprecated: false,
-    deletable: true,
-    display: {
-      label: 'Test Rich Text',
-      image: '',
-      showOnResourcePanel: true,
-    },
-    config: {
-      field: {name: 'richText', type: 'RICH_TEXT'},
-      styles: {},
-    },
-    ...overrides,
-  } as unknown as Resource);
+  const createMockResource = (overrides: Partial<Resource & {label?: string}> = {}): Resource =>
+    ({
+      id: 'resource-1',
+      resourceType: 'ELEMENT',
+      type: 'RICH_TEXT',
+      category: 'DISPLAY',
+      version: '1.0.0',
+      deprecated: false,
+      deletable: true,
+      display: {
+        label: 'Test Rich Text',
+        image: '',
+        showOnResourcePanel: true,
+      },
+      config: {
+        field: {name: 'richText', type: 'RICH_TEXT'},
+        styles: {},
+      },
+      ...overrides,
+    }) as unknown as Resource;
 
-  const createMockNotification = (overrides: Partial<{
-    hasResourceFieldNotification: (key: string) => boolean;
-    getResourceFieldNotification: (key: string) => string;
-  }> = {}): Notification => {
-    const notification = new Notification(
-      'notification-1',
-      'Test notification',
-      'error',
-    );
+  const createMockNotification = (
+    overrides: Partial<{
+      hasResourceFieldNotification: (key: string) => boolean;
+      getResourceFieldNotification: (key: string) => string;
+    }> = {},
+  ): Notification => {
+    const notification = new Notification('notification-1', 'Test notification', 'error');
 
     if (overrides.hasResourceFieldNotification) {
       notification.hasResourceFieldNotification = overrides.hasResourceFieldNotification;
@@ -115,9 +132,7 @@ describe('RichTextWithTranslation', () => {
     return notification;
   };
 
-  const createValidationContext = (
-    selectedNotification: Notification | null = null,
-  ): ValidationContextProps => ({
+  const createValidationContext = (selectedNotification: Notification | null = null): ValidationContextProps => ({
     isValid: true,
     notifications: [],
     selectedNotification,
@@ -127,11 +142,7 @@ describe('RichTextWithTranslation', () => {
 
   const createWrapper = (validationContext: ValidationContextProps = createValidationContext()) => {
     function Wrapper({children}: {children: ReactNode}) {
-      return (
-        <ValidationContext.Provider value={validationContext}>
-          {children}
-        </ValidationContext.Provider>
-      );
+      return <ValidationContext.Provider value={validationContext}>{children}</ValidationContext.Provider>;
     }
     return Wrapper;
   };
@@ -142,20 +153,16 @@ describe('RichTextWithTranslation', () => {
 
   describe('Rendering', () => {
     it('should render the RichText component', () => {
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
     });
 
     it('should pass resource to RichText component', () => {
       const resource = createMockResource({id: 'test-resource-id'});
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={resource} />, {wrapper: createWrapper()});
 
       expect(screen.getByTestId('rich-text-component')).toHaveAttribute('data-resource-id', 'test-resource-id');
     });
@@ -172,11 +179,7 @@ describe('RichTextWithTranslation', () => {
     it('should pass ToolbarProps to RichText component', () => {
       const toolbarProps = {bold: false, italic: true};
       render(
-        <RichTextWithTranslation
-          onChange={mockOnChange}
-          resource={createMockResource()}
-          ToolbarProps={toolbarProps}
-        />,
+        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} ToolbarProps={toolbarProps} />,
         {wrapper: createWrapper()},
       );
 
@@ -187,10 +190,9 @@ describe('RichTextWithTranslation', () => {
 
   describe('Error Handling', () => {
     it('should not show error message when there is no validation notification', () => {
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
     });
@@ -201,10 +203,9 @@ describe('RichTextWithTranslation', () => {
         getResourceFieldNotification: () => 'This field has an error',
       });
 
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper(createValidationContext(notification))},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(createValidationContext(notification)),
+      });
 
       expect(screen.getByText('This field has an error')).toBeInTheDocument();
     });
@@ -215,10 +216,9 @@ describe('RichTextWithTranslation', () => {
         getResourceFieldNotification: () => 'Other error',
       });
 
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper(createValidationContext(notification))},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(createValidationContext(notification)),
+      });
 
       expect(screen.queryByText('Other error')).not.toBeInTheDocument();
     });
@@ -230,13 +230,9 @@ describe('RichTextWithTranslation', () => {
         getResourceFieldNotification: () => '',
       });
 
-      render(
-        <RichTextWithTranslation
-          onChange={mockOnChange}
-          resource={createMockResource({id: 'my-resource'})}
-        />,
-        {wrapper: createWrapper(createValidationContext(notification))},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource({id: 'my-resource'})} />, {
+        wrapper: createWrapper(createValidationContext(notification)),
+      });
 
       expect(hasResourceFieldNotification).toHaveBeenCalledWith('my-resource_text');
     });
@@ -244,19 +240,17 @@ describe('RichTextWithTranslation', () => {
 
   describe('Default Props', () => {
     it('should default className to empty string', () => {
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByTestId('rich-text-component')).toHaveAttribute('data-classname', '');
     });
 
     it('should default ToolbarProps to empty object', () => {
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByTestId('rich-text-component')).toHaveAttribute('data-toolbar-props', '{}');
     });
@@ -265,19 +259,15 @@ describe('RichTextWithTranslation', () => {
   describe('Edge Cases', () => {
     it('should handle resource without id gracefully', () => {
       const resource = createMockResource({id: undefined as unknown as string});
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={resource} />, {wrapper: createWrapper()});
 
       expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
     });
 
     it('should handle null selectedNotification', () => {
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper(createValidationContext(null))},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(createValidationContext(null)),
+      });
 
       expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
     });
@@ -285,10 +275,9 @@ describe('RichTextWithTranslation', () => {
 
   describe('onChange Callback', () => {
     it('should call onChange when RichText content changes', () => {
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(),
+      });
 
       const richText = screen.getByTestId('rich-text-component');
       richText.click();
@@ -302,24 +291,15 @@ describe('RichTextWithTranslation', () => {
       const resource = createMockResource();
       (resource as Resource & {label?: string}).label = 'Test Label Content';
 
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={resource} />, {wrapper: createWrapper()});
 
-      expect(screen.getByTestId('rich-text-component')).toHaveAttribute(
-        'data-resource-label',
-        'Test Label Content',
-      );
+      expect(screen.getByTestId('rich-text-component')).toHaveAttribute('data-resource-label', 'Test Label Content');
     });
 
     it('should handle resource without label', () => {
       const resource = createMockResource();
 
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={resource} />, {wrapper: createWrapper()});
 
       expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
     });
@@ -328,10 +308,7 @@ describe('RichTextWithTranslation', () => {
       const resource = createMockResource();
       (resource as Resource & {label?: string}).label = '{{t(common.greeting)}}';
 
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={resource} />, {wrapper: createWrapper()});
 
       expect(screen.getByTestId('rich-text-component')).toHaveAttribute(
         'data-resource-label',
@@ -347,10 +324,9 @@ describe('RichTextWithTranslation', () => {
         getResourceFieldNotification: () => 'Validation error message',
       });
 
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper(createValidationContext(notification))},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(createValidationContext(notification)),
+      });
 
       const errorMessage = screen.getByText('Validation error message');
       expect(errorMessage).toBeInTheDocument();
@@ -362,10 +338,9 @@ describe('RichTextWithTranslation', () => {
         getResourceFieldNotification: () => '',
       });
 
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper(createValidationContext(notification))},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(createValidationContext(notification)),
+      });
 
       // Should only have the rich text component, no error helper text
       expect(screen.queryByRole('paragraph')).not.toBeInTheDocument();
@@ -381,25 +356,26 @@ describe('RichTextWithTranslation', () => {
 describe('TranslationRichText Component', () => {
   const mockOnChange = vi.fn();
 
-  const createMockResource = (overrides: Partial<Resource & {label?: string}> = {}): Resource => ({
-    id: 'resource-1',
-    resourceType: 'ELEMENT',
-    type: 'RICH_TEXT',
-    category: 'DISPLAY',
-    version: '1.0.0',
-    deprecated: false,
-    deletable: true,
-    display: {
-      label: 'Test Rich Text',
-      image: '',
-      showOnResourcePanel: true,
-    },
-    config: {
-      field: {name: 'richText', type: 'RICH_TEXT'},
-      styles: {},
-    },
-    ...overrides,
-  } as unknown as Resource);
+  const createMockResource = (overrides: Partial<Resource & {label?: string}> = {}): Resource =>
+    ({
+      id: 'resource-1',
+      resourceType: 'ELEMENT',
+      type: 'RICH_TEXT',
+      category: 'DISPLAY',
+      version: '1.0.0',
+      deprecated: false,
+      deletable: true,
+      display: {
+        label: 'Test Rich Text',
+        image: '',
+        showOnResourcePanel: true,
+      },
+      config: {
+        field: {name: 'richText', type: 'RICH_TEXT'},
+        styles: {},
+      },
+      ...overrides,
+    }) as unknown as Resource;
 
   const createValidationContext = (): ValidationContextProps => ({
     isValid: true,
@@ -411,11 +387,7 @@ describe('TranslationRichText Component', () => {
 
   const createWrapper = (validationContext: ValidationContextProps = createValidationContext()) => {
     function Wrapper({children}: {children: ReactNode}) {
-      return (
-        <ValidationContext.Provider value={validationContext}>
-          {children}
-        </ValidationContext.Provider>
-      );
+      return <ValidationContext.Provider value={validationContext}>{children}</ValidationContext.Provider>;
     }
     return Wrapper;
   };
@@ -425,10 +397,9 @@ describe('TranslationRichText Component', () => {
   });
 
   it('should capture LanguageTextField when component renders', () => {
-    render(
-      <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-      {wrapper: createWrapper()},
-    );
+    render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+      wrapper: createWrapper(),
+    });
 
     // The I18nConfigurationCard is not open by default, but the component should still be defined
     // We need to verify the component structure is correct
@@ -439,10 +410,9 @@ describe('TranslationRichText Component', () => {
     it('should create a resource object with label from value prop', () => {
       // Test the TranslationRichText logic by examining what gets passed to RichText
       // The RichText mock captures the resource-label attribute
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(),
+      });
 
       // The main RichText component receives the resource directly
       expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
@@ -451,30 +421,27 @@ describe('TranslationRichText Component', () => {
     it('should handle value prop being null or undefined', () => {
       // TranslationRichText should handle null/undefined value gracefully
       // by defaulting to empty string in the resource label
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
     });
 
     it('should pass disabled prop to RichText component', () => {
       // Verify disabled handling in TranslationRichText
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
     });
 
     it('should call onChange with ChangeEvent format when RichText changes', () => {
       // TranslationRichText wraps the onChange to convert string to ChangeEvent
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(),
+      });
 
       // Click to trigger onChange
       const richText = screen.getByTestId('rich-text-component');
@@ -490,10 +457,7 @@ describe('TranslationRichText Component', () => {
       const resource = createMockResource();
       (resource as Resource & {label?: string}).label = '{{t(common.greeting)}}';
 
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={resource} />, {wrapper: createWrapper()});
 
       expect(screen.getByTestId('rich-text-component')).toHaveAttribute(
         'data-resource-label',
@@ -505,10 +469,7 @@ describe('TranslationRichText Component', () => {
       const resource = createMockResource();
       (resource as Resource & {label?: string}).label = 'Plain text without i18n';
 
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={resource} />, {wrapper: createWrapper()});
 
       expect(screen.getByTestId('rich-text-component')).toHaveAttribute(
         'data-resource-label',
@@ -520,10 +481,7 @@ describe('TranslationRichText Component', () => {
       const resource = createMockResource();
       // No label property set
 
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={resource} />, {wrapper: createWrapper()});
 
       expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
     });
@@ -532,10 +490,7 @@ describe('TranslationRichText Component', () => {
       const resource = createMockResource();
       (resource as Resource & {label?: string}).label = '{{t(namespace.key.with.dots)}}';
 
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={resource} />, {wrapper: createWrapper()});
 
       expect(screen.getByTestId('rich-text-component')).toHaveAttribute(
         'data-resource-label',
@@ -547,10 +502,9 @@ describe('TranslationRichText Component', () => {
   describe('I18nConfigurationCard onChange callback', () => {
     it('should format i18n key with t() wrapper when key is provided', () => {
       // Test the onChange handler: (i18nKey: string) => onChange(i18nKey ? `{{t(${i18nKey})}}` : '')
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(),
+      });
 
       // Click the main rich text to verify it's working
       const richText = screen.getByTestId('rich-text-component');
@@ -560,10 +514,9 @@ describe('TranslationRichText Component', () => {
     });
 
     it('should pass empty string when i18n key is cleared', () => {
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByTestId('rich-text-component')).toBeInTheDocument();
     });
@@ -571,10 +524,9 @@ describe('TranslationRichText Component', () => {
 
   describe('Dynamic Value Popover Toggle', () => {
     it('should open dynamic value popover when configure button is clicked', () => {
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(),
+      });
 
       const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
       fireEvent.click(configureButton);
@@ -583,10 +535,9 @@ describe('TranslationRichText Component', () => {
     });
 
     it('should close dynamic value popover when close button is clicked', () => {
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(),
+      });
 
       const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
       fireEvent.click(configureButton);
@@ -600,10 +551,9 @@ describe('TranslationRichText Component', () => {
     });
 
     it('should toggle dynamic value popover on repeated button clicks', () => {
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(),
+      });
 
       const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
 
@@ -619,10 +569,9 @@ describe('TranslationRichText Component', () => {
     });
 
     it('should call onChange when DynamicValuePopover onChange is triggered', () => {
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(),
+      });
 
       const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
       fireEvent.click(configureButton);
@@ -634,10 +583,9 @@ describe('TranslationRichText Component', () => {
     });
 
     it('should call onChange with empty string when value is cleared from popover', () => {
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={createMockResource()} />, {
+        wrapper: createWrapper(),
+      });
 
       const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
       fireEvent.click(configureButton);
@@ -652,10 +600,7 @@ describe('TranslationRichText Component', () => {
       const resource = createMockResource();
       (resource as Resource & {label?: string}).label = '{{t(flows.greeting.title)}}';
 
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={resource} />, {wrapper: createWrapper()});
 
       const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
       fireEvent.click(configureButton);
@@ -668,10 +613,7 @@ describe('TranslationRichText Component', () => {
       const resource = createMockResource();
       (resource as Resource & {label?: string}).label = 'Plain text content';
 
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={resource} />, {wrapper: createWrapper()});
 
       const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
       fireEvent.click(configureButton);
@@ -683,10 +625,7 @@ describe('TranslationRichText Component', () => {
     it('should handle resource without label property', () => {
       const resource = createMockResource();
 
-      render(
-        <RichTextWithTranslation onChange={mockOnChange} resource={resource} />,
-        {wrapper: createWrapper()},
-      );
+      render(<RichTextWithTranslation onChange={mockOnChange} resource={resource} />, {wrapper: createWrapper()});
 
       const configureButton = screen.getByRole('button', {name: /configureDynamicValue/i});
       fireEvent.click(configureButton);

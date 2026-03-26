@@ -21,13 +21,7 @@ import {describe, expect, it} from 'vitest';
 import {calculateEdgePath, calculateAllEdgePaths, type EdgeInput} from '../calculateEdgePath';
 
 describe('calculateEdgePath', () => {
-  const createNode = (
-    id: string,
-    x: number,
-    y: number,
-    width = 150,
-    height = 50,
-  ): Node => ({
+  const createNode = (id: string, x: number, y: number, width = 150, height = 50): Node => ({
     id,
     position: {x, y},
     data: {},
@@ -489,10 +483,7 @@ describe('calculateAllEdgePaths', () => {
     });
 
     it('should handle edges with different paths (no overlap)', () => {
-      const edges: EdgeInput[] = [
-        createEdgeInput('e1', 0, 0, 200, 0),
-        createEdgeInput('e2', 0, 200, 200, 200),
-      ];
+      const edges: EdgeInput[] = [createEdgeInput('e1', 0, 0, 200, 0), createEdgeInput('e2', 0, 200, 200, 200)];
       const nodes: Node[] = [];
 
       const result = calculateAllEdgePaths(edges, nodes);
@@ -512,10 +503,7 @@ describe('calculateAllEdgePaths', () => {
     });
 
     it('should route multiple edges around multiple nodes', () => {
-      const edges: EdgeInput[] = [
-        createEdgeInput('e1', 0, 100, 500, 100),
-        createEdgeInput('e2', 0, 150, 500, 150),
-      ];
+      const edges: EdgeInput[] = [createEdgeInput('e1', 0, 100, 500, 100), createEdgeInput('e2', 0, 150, 500, 150)];
       const nodes: Node[] = [createNode('obs1', 150, 75, 100, 100), createNode('obs2', 300, 75, 100, 100)];
 
       const result = calculateAllEdgePaths(edges, nodes);
@@ -636,10 +624,7 @@ describe('calculateAllEdgePaths', () => {
 
     it('should handle complex obstacle avoidance requiring multi-segment path', () => {
       // Create an L-shaped obstacle that requires going around
-      const nodes: Node[] = [
-        createNode('L1', 75, 50, 100, 50),
-        createNode('L2', 75, 100, 50, 50),
-      ];
+      const nodes: Node[] = [createNode('L1', 75, 50, 100, 50), createNode('L2', 75, 100, 50, 50)];
       const edges: EdgeInput[] = [createEdgeInput('e1', 50, 125, 200, 75)];
 
       const result = calculateAllEdgePaths(edges, nodes);

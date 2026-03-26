@@ -37,10 +37,7 @@ function TestConsumer() {
       <button type="button" onClick={() => context.setCurrentStep(UserCreateFlowStep.USER_DETAILS)}>
         Set Details Step
       </button>
-      <button
-        type="button"
-        onClick={() => context.setSelectedSchema({id: 'schema-1', name: 'Employee', ouId: 'ou-1'})}
-      >
+      <button type="button" onClick={() => context.setSelectedSchema({id: 'schema-1', name: 'Employee', ouId: 'ou-1'})}>
         Set Schema
       </button>
       <button type="button" onClick={() => context.setFormValues({username: 'john'})}>

@@ -153,7 +153,7 @@ describe('useUpdateUser', () => {
 
     // Now resolve the request
     act(() => {
-      resolveRequest({ data: mockUser });
+      resolveRequest({data: mockUser});
     });
 
     await waitFor(() => {

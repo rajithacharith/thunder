@@ -74,9 +74,7 @@ describe('generateUnconnectedEdges', () => {
     });
 
     it('should skip nodes without data', () => {
-      const nodes: Node[] = [
-        createMockNode({id: 'node-1', data: undefined as unknown as Record<string, unknown>}),
-      ];
+      const nodes: Node[] = [createMockNode({id: 'node-1', data: undefined as unknown as Record<string, unknown>})];
 
       const result = generateUnconnectedEdges([], nodes, 'default');
       expect(result).toEqual([]);
@@ -346,9 +344,7 @@ describe('generateUnconnectedEdges', () => {
         createMockNode({
           id: 'step-2',
           data: {
-            components: [
-              createMockElement({id: 'button-3', action: {onSuccess: 'step-3'}}),
-            ],
+            components: [createMockElement({id: 'button-3', action: {onSuccess: 'step-3'}})],
           },
         }),
         createMockNode({id: 'step-3'}),
@@ -365,9 +361,7 @@ describe('generateUnconnectedEdges', () => {
         createMockNode({
           id: 'step-1',
           data: {
-            components: [
-              createMockElement({id: 'button-1', action: {onSuccess: 'step-2'}}),
-            ],
+            components: [createMockElement({id: 'button-1', action: {onSuccess: 'step-2'}})],
           },
         }),
         createMockNode({id: 'step-2'}),
@@ -524,9 +518,7 @@ describe('generateUnconnectedEdges', () => {
         createMockNode({
           id: 'step-1',
           data: {
-            components: [
-              createMockElement({id: 'button-1', action: 'string-action' as unknown as Element['action']}),
-            ],
+            components: [createMockElement({id: 'button-1', action: 'string-action' as unknown as Element['action']})],
           },
         }),
       ];
@@ -540,9 +532,7 @@ describe('generateUnconnectedEdges', () => {
         createMockNode({
           id: 'step-1',
           data: {
-            components: [
-              createMockElement({id: 'text-1', type: 'TEXT', action: undefined}),
-            ],
+            components: [createMockElement({id: 'text-1', type: 'TEXT', action: undefined})],
           },
         }),
       ];

@@ -221,9 +221,7 @@ describe('OrganizationUnitTreePicker', () => {
   });
 
   it('should display helper text with error styling when error is true', async () => {
-    renderWithProviders(
-      <OrganizationUnitTreePicker {...defaultProps} helperText="This field is required" error />,
-    );
+    renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} helperText="This field is required" error />);
 
     await waitFor(() => {
       const helperText = screen.getByText('This field is required');
@@ -410,9 +408,7 @@ describe('OrganizationUnitTreePicker', () => {
         totalResults: 50,
         startIndex: 3,
         count: 2,
-        organizationUnits: [
-          {id: 'ou-3', handle: 'sales', name: 'Sales', description: null, parent: null},
-        ],
+        organizationUnits: [{id: 'ou-3', handle: 'sales', name: 'Sales', description: null, parent: null}],
       },
     });
 
@@ -452,9 +448,7 @@ describe('OrganizationUnitTreePicker', () => {
         totalResults: 50,
         startIndex: 3,
         count: 2,
-        organizationUnits: [
-          {id: 'ou-3', handle: 'sales', name: 'Sales', description: null, parent: null},
-        ],
+        organizationUnits: [{id: 'ou-3', handle: 'sales', name: 'Sales', description: null, parent: null}],
       },
     });
 
@@ -750,7 +744,11 @@ describe('OrganizationUnitTreePicker', () => {
       };
 
       mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
-      mockUseGetChildOrganizationUnits.mockReturnValue({data: paginatedChildrenResponse, isLoading: false, error: null});
+      mockUseGetChildOrganizationUnits.mockReturnValue({
+        data: paginatedChildrenResponse,
+        isLoading: false,
+        error: null,
+      });
 
       renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" />);
 
@@ -764,9 +762,7 @@ describe('OrganizationUnitTreePicker', () => {
       mockUseGetOrganizationUnit.mockReturnValue({data: rootOu, isLoading: false, error: null});
       mockUseGetChildOrganizationUnits.mockReturnValue({data: childOUsResponse, isLoading: false, error: null});
 
-      renderWithProviders(
-        <OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" maxHeight={500} />,
-      );
+      renderWithProviders(<OrganizationUnitTreePicker {...defaultProps} rootOuId="root-ou-1" maxHeight={500} />);
 
       await waitFor(() => {
         expect(screen.getByText('Root OU')).toBeInTheDocument();

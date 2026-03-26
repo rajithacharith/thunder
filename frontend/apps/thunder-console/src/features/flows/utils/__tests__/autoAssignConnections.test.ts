@@ -121,9 +121,7 @@ describe('autoAssignConnections', () => {
     });
 
     it('should auto-assign senderId when properties.senderId is placeholder', () => {
-      const nodes = [
-        createNode('node-1', StepTypes.Execution, ExecutionTypes.SMSOTPAuth, {senderId: '{{SENDER_ID}}'}),
-      ];
+      const nodes = [createNode('node-1', StepTypes.Execution, ExecutionTypes.SMSOTPAuth, {senderId: '{{SENDER_ID}}'})];
       const connections: ExecutorConnectionInterface[] = [
         {executorName: ExecutionTypes.SMSOTPAuth, connections: ['sms-sender-1']},
       ];

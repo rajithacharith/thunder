@@ -75,7 +75,10 @@ export default function CopyableId({value, copyLabel = undefined}: CopyableIdPro
   };
 
   return (
-    <Tooltip title={copied ? t('common:actions.copied') : (copyLabel ?? t('common:actions.copyId', 'Copy ID'))} placement="right">
+    <Tooltip
+      title={copied ? t('common:actions.copied') : (copyLabel ?? t('common:actions.copyId', 'Copy ID'))}
+      placement="right"
+    >
       <Stack
         direction="row"
         alignItems="center"

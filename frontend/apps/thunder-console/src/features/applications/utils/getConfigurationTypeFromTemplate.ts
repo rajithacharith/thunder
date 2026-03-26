@@ -16,9 +16,7 @@
  * under the License.
  */
 
-import {
-  ApplicationCreateFlowConfiguration,
-} from '../models/application-create-flow';
+import {ApplicationCreateFlowConfiguration} from '../models/application-create-flow';
 import type {ApplicationTemplate} from '../models/application-templates';
 
 /**

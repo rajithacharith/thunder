@@ -16,6 +16,6 @@
  * under the License.
  */
 
-import config from "@thunder/prettier-config";
+import config from '@thunder/prettier-config';
 
 export default config;

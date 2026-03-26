@@ -8,16 +8,9 @@
       {
         "type": "oauth2",
         "config": {
-          "grantTypes": [
-            "authorization_code",
-            "refresh_token"
-          ],
-          "responseTypes": [
-            "code"
-          ],
-          "redirectUris": [
-            "http://localhost:3000"
-          ],
+          "grantTypes": ["authorization_code", "refresh_token"],
+          "responseTypes": ["code"],
+          "redirectUris": ["http://localhost:3000"],
           "pkceRequired": true,
           "tokenEndpointAuthMethod": "client_secret_basic",
           "publicClient": false

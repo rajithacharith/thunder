@@ -151,11 +151,7 @@ interface SortablePresentationProps {
  * @returns SortablePresentation component.
  */
 function SortablePresentation({children, elementStyle}: SortablePresentationProps): ReactElement {
-  return (
-    <Box sx={{height: '100%', width: '100%', ...elementStyle}}>
-      {children}
-    </Box>
-  );
+  return <Box sx={{height: '100%', width: '100%', ...elementStyle}}>{children}</Box>;
 }
 
 const MemoizedSortablePresentation = memo(SortablePresentation);
@@ -238,72 +234,74 @@ function Sortable({
     [isDragging],
   );
 
-  const dropIndicatorStyles = useMemo(() => ({
-    position: 'relative' as const,
-    marginTop: '4px',
-    marginBottom: '4px',
-    ...(showIndicatorBefore && {
-      '&::before': {
-        content: '""',
-        position: 'absolute' as const,
-        left: 0,
-        right: 0,
-        top: '-8px',
-        height: '3px',
-        backgroundColor: 'primary.main',
-        borderRadius: '2px',
-        zIndex: 100,
-        pointerEvents: 'none' as const,
-        animation: 'dropIndicatorPulse 1s ease-in-out infinite',
-      },
-      '&::after': {
-        content: '""',
-        position: 'absolute' as const,
-        left: '-4px',
-        right: '-4px',
-        top: '-16px',
-        height: 'calc(8px * 2)',
-        backgroundColor: 'rgba(var(--mui-palette-primary-mainChannel) / 0.1)',
-        borderRadius: '4px',
-        zIndex: 99,
-        pointerEvents: 'none' as const,
-      },
+  const dropIndicatorStyles = useMemo(
+    () => ({
+      position: 'relative' as const,
+      marginTop: '4px',
+      marginBottom: '4px',
+      ...(showIndicatorBefore && {
+        '&::before': {
+          content: '""',
+          position: 'absolute' as const,
+          left: 0,
+          right: 0,
+          top: '-8px',
+          height: '3px',
+          backgroundColor: 'primary.main',
+          borderRadius: '2px',
+          zIndex: 100,
+          pointerEvents: 'none' as const,
+          animation: 'dropIndicatorPulse 1s ease-in-out infinite',
+        },
+        '&::after': {
+          content: '""',
+          position: 'absolute' as const,
+          left: '-4px',
+          right: '-4px',
+          top: '-16px',
+          height: 'calc(8px * 2)',
+          backgroundColor: 'rgba(var(--mui-palette-primary-mainChannel) / 0.1)',
+          borderRadius: '4px',
+          zIndex: 99,
+          pointerEvents: 'none' as const,
+        },
+      }),
+      ...(showIndicatorAfter &&
+        !showIndicatorBefore && {
+          '&::before': {
+            content: '""',
+            position: 'absolute' as const,
+            left: 0,
+            right: 0,
+            bottom: '-8px',
+            height: '3px',
+            backgroundColor: 'primary.main',
+            borderRadius: '2px',
+            zIndex: 100,
+            pointerEvents: 'none' as const,
+            animation: 'dropIndicatorPulse 1s ease-in-out infinite',
+          },
+          '&::after': {
+            content: '""',
+            position: 'absolute' as const,
+            left: '-4px',
+            right: '-4px',
+            bottom: '-16px',
+            height: 'calc(8px * 2)',
+            backgroundColor: 'rgba(var(--mui-palette-primary-mainChannel) / 0.1)',
+            borderRadius: '4px',
+            zIndex: 99,
+            pointerEvents: 'none' as const,
+          },
+        }),
+      ...DROP_INDICATOR_KEYFRAMES,
     }),
-    ...(showIndicatorAfter && !showIndicatorBefore && {
-      '&::before': {
-        content: '""',
-        position: 'absolute' as const,
-        left: 0,
-        right: 0,
-        bottom: '-8px',
-        height: '3px',
-        backgroundColor: 'primary.main',
-        borderRadius: '2px',
-        zIndex: 100,
-        pointerEvents: 'none' as const,
-        animation: 'dropIndicatorPulse 1s ease-in-out infinite',
-      },
-      '&::after': {
-        content: '""',
-        position: 'absolute' as const,
-        left: '-4px',
-        right: '-4px',
-        bottom: '-16px',
-        height: 'calc(8px * 2)',
-        backgroundColor: 'rgba(var(--mui-palette-primary-mainChannel) / 0.1)',
-        borderRadius: '4px',
-        zIndex: 99,
-        pointerEvents: 'none' as const,
-      },
-    }),
-    ...DROP_INDICATOR_KEYFRAMES,
-  }), [showIndicatorBefore, showIndicatorAfter]);
+    [showIndicatorBefore, showIndicatorAfter],
+  );
 
   return (
     <Box ref={ref} sx={dropIndicatorStyles}>
-      <MemoizedSortablePresentation elementStyle={elementStyle}>
-        {children}
-      </MemoizedSortablePresentation>
+      <MemoizedSortablePresentation elementStyle={elementStyle}>{children}</MemoizedSortablePresentation>
     </Box>
   );
 }

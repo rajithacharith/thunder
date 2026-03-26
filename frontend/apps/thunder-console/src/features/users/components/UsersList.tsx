@@ -142,10 +142,7 @@ export default function UsersList() {
         flex: 1,
         minWidth: 200,
         renderCell: (params: DataGrid.GridRenderCellParams<UserWithDetails>) => (
-          <Typography
-            variant="body2"
-            sx={{fontFamily: 'monospace', fontSize: '0.875rem'}}
-          >
+          <Typography variant="body2" sx={{fontFamily: 'monospace', fontSize: '0.875rem'}}>
             {params.row.id}
           </Typography>
         ),

@@ -35,7 +35,11 @@ interface ManageMembersSectionProps {
 /**
  * Section component for displaying and managing group members.
  */
-export default function ManageMembersSection({groupId, onRemoveMember, headerAction = undefined}: ManageMembersSectionProps): JSX.Element {
+export default function ManageMembersSection({
+  groupId,
+  onRemoveMember,
+  headerAction = undefined,
+}: ManageMembersSectionProps): JSX.Element {
   const {t} = useTranslation();
   const dataGridLocaleText = useDataGridLocaleText();
   const [paginationModel, setPaginationModel] = useState<DataGrid.GridPaginationModel>({pageSize: 10, page: 0});

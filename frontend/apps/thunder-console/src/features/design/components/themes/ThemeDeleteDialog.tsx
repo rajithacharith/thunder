@@ -62,9 +62,7 @@ export default function ThemeDeleteDialog({
     });
   };
 
-  const message = themeName
-    ? t('themes.delete.message', {name: themeName})
-    : t('themes.delete.messageUnnamed');
+  const message = themeName ? t('themes.delete.message', {name: themeName}) : t('themes.delete.messageUnnamed');
 
   return (
     <Dialog open={open} onClose={handleCancel} maxWidth="sm" fullWidth>

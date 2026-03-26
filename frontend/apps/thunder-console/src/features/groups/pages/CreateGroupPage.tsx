@@ -47,16 +47,7 @@ export default function CreateGroupPage(): JSX.Element {
   const logger = useLogger('CreateGroupPage');
   const createGroup = useCreateGroup();
 
-  const {
-    currentStep,
-    setCurrentStep,
-    name,
-    setName,
-    ouId,
-    setOuId,
-    error,
-    setError,
-  } = useGroupCreate();
+  const {currentStep, setCurrentStep, name, setName, ouId, setOuId, error, setError} = useGroupCreate();
 
   // Fetch OUs to determine if we need the OU step
   const {data: ouData, isLoading: isOuLoading} = useGetOrganizationUnits({limit: 2, offset: 0});
@@ -228,125 +219,125 @@ export default function CreateGroupPage(): JSX.Element {
             flexDirection: 'column',
           }}
         >
-        {/* Header with close button and breadcrumb */}
-        <Box sx={{p: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <IconButton
-              onClick={handleClose}
-              aria-label={t('common:actions.close')}
-              sx={{
-                bgcolor: 'background.paper',
-                '&:hover': {bgcolor: 'action.hover'},
-                boxShadow: 1,
-              }}
-            >
-              <X size={24} />
-            </IconButton>
-            <Breadcrumbs separator={<ChevronRight size={16} />} aria-label="breadcrumb">
-              {getBreadcrumbSteps().map((step, index, array) => {
-                const isLast = index === array.length - 1;
-
-                return isLast ? (
-                  <Typography key={step} variant="h5" color="text.primary">
-                    {steps[step]?.label}
-                  </Typography>
-                ) : (
-                  <Typography
-                    key={step}
-                    variant="h5"
-                    color="inherit"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setCurrentStep(step)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setCurrentStep(step);
-                      }
-                    }}
-                    sx={{cursor: 'pointer', '&:hover': {textDecoration: 'underline'}}}
-                  >
-                    {steps[step]?.label}
-                  </Typography>
-                );
-              })}
-            </Breadcrumbs>
-          </Stack>
-        </Box>
-
-        {/* Main content */}
-        <Box sx={{flex: 1, display: 'flex', minHeight: 0}}>
-          <Box
-            sx={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              py: 8,
-              px: 20,
-              mx: currentStep === GroupCreateFlowStep.NAME ? 'auto' : 0,
-              alignItems: 'flex-start',
-            }}
-          >
-            <Box
-              sx={{
-                width: '100%',
-                maxWidth: 800,
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              {/* Error Alerts */}
-              {error && (
-                <Alert severity="error" sx={{my: 3}} onClose={() => setError(null)}>
-                  {error}
-                </Alert>
-              )}
-
-              {createGroup.error && (
-                <Alert severity="error" sx={{mb: 3}}>
-                  <Typography variant="body2" sx={{fontWeight: 'bold', mb: 0.5}}>
-                    {createGroup.error.message}
-                  </Typography>
-                </Alert>
-              )}
-
-              {renderStepContent()}
-
-              {/* Navigation buttons */}
-              <Box
+          {/* Header with close button and breadcrumb */}
+          <Box sx={{p: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <IconButton
+                onClick={handleClose}
+                aria-label={t('common:actions.close')}
                 sx={{
-                  mt: 4,
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  gap: 2,
+                  bgcolor: 'background.paper',
+                  '&:hover': {bgcolor: 'action.hover'},
+                  boxShadow: 1,
                 }}
               >
-                {currentStep !== GroupCreateFlowStep.NAME && (
-                  <Button
-                    variant="outlined"
-                    onClick={handlePrevStep}
-                    sx={{minWidth: 100}}
-                    disabled={createGroup.isPending}
-                  >
-                    {t('common:actions.back')}
-                  </Button>
+                <X size={24} />
+              </IconButton>
+              <Breadcrumbs separator={<ChevronRight size={16} />} aria-label="breadcrumb">
+                {getBreadcrumbSteps().map((step, index, array) => {
+                  const isLast = index === array.length - 1;
+
+                  return isLast ? (
+                    <Typography key={step} variant="h5" color="text.primary">
+                      {steps[step]?.label}
+                    </Typography>
+                  ) : (
+                    <Typography
+                      key={step}
+                      variant="h5"
+                      color="inherit"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setCurrentStep(step)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setCurrentStep(step);
+                        }
+                      }}
+                      sx={{cursor: 'pointer', '&:hover': {textDecoration: 'underline'}}}
+                    >
+                      {steps[step]?.label}
+                    </Typography>
+                  );
+                })}
+              </Breadcrumbs>
+            </Stack>
+          </Box>
+
+          {/* Main content */}
+          <Box sx={{flex: 1, display: 'flex', minHeight: 0}}>
+            <Box
+              sx={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                py: 8,
+                px: 20,
+                mx: currentStep === GroupCreateFlowStep.NAME ? 'auto' : 0,
+                alignItems: 'flex-start',
+              }}
+            >
+              <Box
+                sx={{
+                  width: '100%',
+                  maxWidth: 800,
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                {/* Error Alerts */}
+                {error && (
+                  <Alert severity="error" sx={{my: 3}} onClose={() => setError(null)}>
+                    {error}
+                  </Alert>
                 )}
 
-                <Button
-                  variant="contained"
-                  disabled={!stepReady[currentStep] || createGroup.isPending || isOuLoading}
-                  sx={{minWidth: 100}}
-                  onClick={handleNextStep}
+                {createGroup.error && (
+                  <Alert severity="error" sx={{mb: 3}}>
+                    <Typography variant="body2" sx={{fontWeight: 'bold', mb: 0.5}}>
+                      {createGroup.error.message}
+                    </Typography>
+                  </Alert>
+                )}
+
+                {renderStepContent()}
+
+                {/* Navigation buttons */}
+                <Box
+                  sx={{
+                    mt: 4,
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: 2,
+                  }}
                 >
-                  {(() => {
-                    if (createGroup.isPending) return t('common:status.saving');
-                    return t('common:actions.continue');
-                  })()}
-                </Button>
+                  {currentStep !== GroupCreateFlowStep.NAME && (
+                    <Button
+                      variant="outlined"
+                      onClick={handlePrevStep}
+                      sx={{minWidth: 100}}
+                      disabled={createGroup.isPending}
+                    >
+                      {t('common:actions.back')}
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="contained"
+                    disabled={!stepReady[currentStep] || createGroup.isPending || isOuLoading}
+                    sx={{minWidth: 100}}
+                    onClick={handleNextStep}
+                  >
+                    {(() => {
+                      if (createGroup.isPending) return t('common:status.saving');
+                      return t('common:actions.continue');
+                    })()}
+                  </Button>
+                </Box>
               </Box>
             </Box>
           </Box>
-        </Box>
         </Box>
       </Box>
 

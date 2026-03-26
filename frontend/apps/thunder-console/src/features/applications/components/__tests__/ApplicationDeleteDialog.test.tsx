@@ -58,7 +58,6 @@ describe('ApplicationDeleteDialog', () => {
   const renderWithProviders = (props = defaultProps) => render(<ApplicationDeleteDialog {...props} />);
 
   beforeEach(() => {
-
     // Default mock implementation
     vi.mocked(useDeleteApplicationModule.default).mockReturnValue({
       mutate: mockMutate,

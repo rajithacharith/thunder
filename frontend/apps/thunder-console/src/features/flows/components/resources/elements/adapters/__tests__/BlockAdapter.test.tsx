@@ -147,10 +147,7 @@ describe('BlockAdapter', () => {
 
   describe('Filtering', () => {
     it('should filter components through PluginRegistry', () => {
-      const components = [
-        createMockElement({id: 'comp-1'}),
-        createMockElement({id: 'comp-2'}),
-      ];
+      const components = [createMockElement({id: 'comp-1'}), createMockElement({id: 'comp-2'})];
       const resource = createMockElement({components});
 
       render(<BlockAdapter resource={resource} />, {wrapper: createWrapper()});

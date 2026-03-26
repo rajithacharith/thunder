@@ -55,7 +55,11 @@ export default function StandaloneTriggerAdapter({
     <Button
       key={component.id ?? index}
       fullWidth
-      className={cn('Flow--standaloneTrigger', 'Button--root', component.variant === 'OUTLINED' ? 'Button--outlined' : 'Button--secondary')}
+      className={cn(
+        'Flow--standaloneTrigger',
+        'Button--root',
+        component.variant === 'OUTLINED' ? 'Button--outlined' : 'Button--secondary',
+      )}
       variant={component.variant === 'OUTLINED' ? 'outlined' : 'contained'}
       disabled={isLoading}
       startIcon={iconElement}

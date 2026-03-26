@@ -108,7 +108,10 @@ export default function AppearanceSection({application, editedApp, onFieldChange
             <TextField
               {...params}
               placeholder={t('applications:edit.customization.layout.placeholder', 'Select a layout')}
-              helperText={t('applications:edit.customization.layout.hint', 'Choose a layout to customize the screen structure of login pages.')}
+              helperText={t(
+                'applications:edit.customization.layout.hint',
+                'Choose a layout to customize the screen structure of login pages.',
+              )}
               InputProps={{
                 ...params.InputProps,
                 endAdornment: (

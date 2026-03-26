@@ -85,9 +85,11 @@ function PhoneNumberInputAdapter({resource}: PhoneNumberInputAdapterPropsInterfa
   const phoneElement = resource as PhoneNumberInputElement;
 
   const rawLabel = phoneElement?.label ?? '';
-  const labelNode: ReactNode = containsTemplateLiteral(rawLabel)
-    ? <TemplatePlaceholder value={rawLabel} t={t} />
-    : (resolve(rawLabel, {t}) ?? rawLabel);
+  const labelNode: ReactNode = containsTemplateLiteral(rawLabel) ? (
+    <TemplatePlaceholder value={rawLabel} t={t} />
+  ) : (
+    (resolve(rawLabel, {t}) ?? rawLabel)
+  );
 
   return (
     <>

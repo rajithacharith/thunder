@@ -207,9 +207,7 @@ describe('ConfigureName', () => {
       expect(mockOnReadyChange).toHaveBeenCalledWith(false);
       mockOnReadyChange.mockClear();
 
-      rerender(
-        <ConfigureName name="New Group" onNameChange={mockOnNameChange} onReadyChange={mockOnReadyChange} />,
-      );
+      rerender(<ConfigureName name="New Group" onNameChange={mockOnNameChange} onReadyChange={mockOnReadyChange} />);
 
       expect(mockOnReadyChange).toHaveBeenCalledWith(true);
     });

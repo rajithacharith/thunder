@@ -25,10 +25,7 @@ import LoginFlowBuilderContext from '../LoginFlowBuilderContext';
 function TestConsumer() {
   const context = useContext(LoginFlowBuilderContext);
   return (
-    <div
-      data-testid="context-consumer"
-      data-is-null={context === null ? 'true' : 'false'}
-    >
+    <div data-testid="context-consumer" data-is-null={context === null ? 'true' : 'false'}>
       Context Value: {context === null ? 'null' : 'object'}
     </div>
   );

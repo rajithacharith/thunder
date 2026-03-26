@@ -136,7 +136,7 @@ describe('useCreateUserType', () => {
     });
 
     act(() => {
-      resolveMutation({ data: mockUserSchema });
+      resolveMutation({data: mockUserSchema});
     });
 
     await waitFor(() => {

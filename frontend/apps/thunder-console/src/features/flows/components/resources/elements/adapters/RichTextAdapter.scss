@@ -16,54 +16,54 @@
  * under the License.
  */
 
-@use "../../../../styles/variables";
+@use '../../../../styles/variables';
 
 .rich-text-content {
-    .rich-text-pre-wrap {
-        white-space: pre-wrap;
-    }
+  .rich-text-pre-wrap {
+    white-space: pre-wrap;
+  }
 
-    .rich-text-align-left {
-        text-align: left;
-    }
+  .rich-text-align-left {
+    text-align: left;
+  }
 
-    .rich-text-align-center {
-        text-align: center;
-    }
+  .rich-text-align-center {
+    text-align: center;
+  }
 
-    .rich-text-align-right {
-        text-align: right;
-    }
+  .rich-text-align-right {
+    text-align: right;
+  }
 
-    .rich-text-align-justify {
-        text-align: justify;
-    }
+  .rich-text-align-justify {
+    text-align: justify;
+  }
 
-    .rich-text-bold {
-        font-weight: bold;
-    }
+  .rich-text-bold {
+    font-weight: bold;
+  }
 
-    .rich-text-italic {
-        font-style: italic;
-    }
+  .rich-text-italic {
+    font-style: italic;
+  }
 
-    .rich-text-underline {
-        text-decoration: underline;
-    }
+  .rich-text-underline {
+    text-decoration: underline;
+  }
 
-    .rich-text-paragraph {
-        margin: 0.5em 0;
-    }
+  .rich-text-paragraph {
+    margin: 0.5em 0;
+  }
 
-    .rich-text-i18n-placeholder {
-        .rich-text-i18n-placeholder-key {
-            background-color: rgb(from var(--mui-palette-primary-main) r g b / 0.1);
-            color: var(--mui-palette-primary-main);
-            font-family: monospace;
-            font-size: 13px;
-            padding: 2px 4px;
-            border-radius: var(--flow-builder-border-radius);
-            display: inline-block;
-        }
+  .rich-text-i18n-placeholder {
+    .rich-text-i18n-placeholder-key {
+      background-color: rgb(from var(--mui-palette-primary-main) r g b / 0.1);
+      color: var(--mui-palette-primary-main);
+      font-family: monospace;
+      font-size: 13px;
+      padding: 2px 4px;
+      border-radius: var(--flow-builder-border-radius);
+      display: inline-block;
     }
+  }
 }

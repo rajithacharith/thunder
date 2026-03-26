@@ -85,7 +85,6 @@ vi.mock('@xyflow/react', () => ({
   },
 }));
 
-
 interface MockBoxProps {
   children?: React.ReactNode;
   onClick?: () => void;
@@ -537,9 +536,12 @@ describe('BaseEdge', () => {
 
   describe('Label Hover Effects', () => {
     it('should maintain hover state when mouse enters label', () => {
-      const {container} = render(<BaseEdge {...defaultProps} label={<span data-testid="edge-label">Test Label</span>} />, {
-        wrapper: createWrapper(),
-      });
+      const {container} = render(
+        <BaseEdge {...defaultProps} label={<span data-testid="edge-label">Test Label</span>} />,
+        {
+          wrapper: createWrapper(),
+        },
+      );
 
       // First hover over the edge group
       const group = container.querySelector('g');
@@ -556,9 +558,12 @@ describe('BaseEdge', () => {
     });
 
     it('should update hover state when mouse leaves label', () => {
-      const {container} = render(<BaseEdge {...defaultProps} label={<span data-testid="edge-label">Test Label</span>} />, {
-        wrapper: createWrapper(),
-      });
+      const {container} = render(
+        <BaseEdge {...defaultProps} label={<span data-testid="edge-label">Test Label</span>} />,
+        {
+          wrapper: createWrapper(),
+        },
+      );
 
       // Hover over the edge group
       const group = container.querySelector('g');

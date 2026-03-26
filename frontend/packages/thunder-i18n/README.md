@@ -37,7 +37,7 @@ In your app's entry point (e.g., `main.tsx`):
 
 ```tsx
 import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
+import {initReactI18next} from 'react-i18next';
 import enUS from '@thunder/i18n/locales/en-US';
 
 // Initialize i18n before rendering your app
@@ -61,10 +61,10 @@ root.render(<App />);
 ### 3. Use Translations in Components
 
 ```tsx
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
 function MyComponent() {
-  const { t } = useTranslation();
+  const {t} = useTranslation();
 
   return (
     <div>
@@ -82,28 +82,28 @@ The translations are organized by namespace for better modularity:
 
 ```tsx
 // Common translations (shared across all apps)
-const { t } = useTranslation('common');
-t('actions.save')
-t('status.loading')
-t('form.email')
+const {t} = useTranslation('common');
+t('actions.save');
+t('status.loading');
+t('form.email');
 
 // Navigation translations
-const { t } = useTranslation('navigation');
-t('home')
-t('users')
-t('applications')
+const {t} = useTranslation('navigation');
+t('home');
+t('users');
+t('applications');
 
 // Users translations
-const { t } = useTranslation('users');
-t('title')
-t('addUser')
-t('given_name')
+const {t} = useTranslation('users');
+t('title');
+t('addUser');
+t('given_name');
 
 // Or use the default namespace and specify the full path
-const { t } = useTranslation();
-t('common.actions.save')
-t('navigation.home')
-t('users.title')
+const {t} = useTranslation();
+t('common.actions.save');
+t('navigation.home');
+t('users.title');
 ```
 
 ## Translation Structure
@@ -121,18 +121,42 @@ The `en-US.ts` file contains all namespaces organized by feature:
 
 ```typescript
 const translations = {
-  common: { /* Common shared translations */ },
-  navigation: { /* Navigation items */ },
-  users: { /* User management */ },
-  userTypes: { /* User type management */ },
-  integrations: { /* Integration management */ },
-  applications: { /* Application management */ },
-  dashboard: { /* Dashboard content */ },
-  auth: { /* Authentication flows */ },
-  mfa: { /* Multi-factor authentication */ },
-  social: { /* Social login */ },
-  consent: { /* Consent management */ },
-  errors: { /* Error messages */ },
+  common: {
+    /* Common shared translations */
+  },
+  navigation: {
+    /* Navigation items */
+  },
+  users: {
+    /* User management */
+  },
+  userTypes: {
+    /* User type management */
+  },
+  integrations: {
+    /* Integration management */
+  },
+  applications: {
+    /* Application management */
+  },
+  dashboard: {
+    /* Dashboard content */
+  },
+  auth: {
+    /* Authentication flows */
+  },
+  mfa: {
+    /* Multi-factor authentication */
+  },
+  social: {
+    /* Social login */
+  },
+  consent: {
+    /* Consent management */
+  },
+  errors: {
+    /* Error messages */
+  },
 };
 ```
 
@@ -180,18 +204,19 @@ const translations = {
 
 - **English (en-US)** - Default language
 
-> **Note**: Additional language support (such as Sinhala, Spanish, etc.) can be added in the future by creating new locale files following the same namespace structure.
+> **Note**: Additional language support (such as Sinhala, Spanish, etc.) can be added in the future by creating new
+> locale files following the same namespace structure.
 
 ## Usage Examples
 
 ### Example: Thunder Console - Users Page
 
 ```tsx
-import { useTranslation } from 'react-i18next';
-import { Button, Typography } from '@wso2/oxygen-ui';
+import {useTranslation} from 'react-i18next';
+import {Button, Typography} from '@wso2/oxygen-ui';
 
 export function UsersPage() {
-  const { t } = useTranslation('users');
+  const {t} = useTranslation('users');
 
   return (
     <div>
@@ -219,28 +244,19 @@ export function UsersPage() {
 ### Example: Thunder Gate - Sign In Page
 
 ```tsx
-import { useTranslation } from 'react-i18next';
-import { Button, TextField, Typography } from '@wso2/oxygen-ui';
+import {useTranslation} from 'react-i18next';
+import {Button, TextField, Typography} from '@wso2/oxygen-ui';
 
 export function SignInPage() {
-  const { t } = useTranslation('auth');
+  const {t} = useTranslation('auth');
 
   return (
     <div>
       <Typography variant="h4">{t('welcomeBack')}</Typography>
       <Typography variant="h5">{t('signIn')}</Typography>
 
-      <TextField
-        label={t('common:form.email')}
-        placeholder={t('enterEmail')}
-        required
-      />
-      <TextField
-        type="password"
-        label={t('common:form.password')}
-        placeholder={t('enterPassword')}
-        required
-      />
+      <TextField label={t('common:form.email')} placeholder={t('enterEmail')} required />
+      <TextField type="password" label={t('common:form.password')} placeholder={t('enterPassword')} required />
 
       <Button variant="contained">{t('signIn')}</Button>
       <Button variant="text">{t('forgotPassword')}</Button>
@@ -252,15 +268,15 @@ export function SignInPage() {
 ### Example: Form Validation
 
 ```tsx
-import { useTranslation } from 'react-i18next';
-import { useForm } from 'react-hook-form';
+import {useTranslation} from 'react-i18next';
+import {useForm} from 'react-hook-form';
 
 export function UserForm() {
-  const { t } = useTranslation('common');
+  const {t} = useTranslation('common');
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: {errors},
   } = useForm();
 
   return (
@@ -288,12 +304,12 @@ This package is fully typed. You'll get autocomplete for all translation keys:
 
 ```tsx
 // ✅ TypeScript will autocomplete these
-t('common.actions.save')
-t('users.title')
-t('auth.signIn')
+t('common.actions.save');
+t('users.title');
+t('auth.signIn');
 
 // ❌ TypeScript will error on invalid keys
-t('common.invalid.key')  // Error: Key does not exist
+t('common.invalid.key'); // Error: Key does not exist
 ```
 
 ## Adding New Translations
@@ -329,8 +345,8 @@ TypeScript will automatically pick up the new keys and provide autocomplete!
 ### 3. Use the new translation
 
 ```tsx
-const { t } = useTranslation('common');
-<h1>{t('newFeature.title')}</h1>
+const {t} = useTranslation('common');
+<h1>{t('newFeature.title')}</h1>;
 ```
 
 ## Adding New Languages (Future)
@@ -413,10 +429,10 @@ Complete integration example for `apps/thunder-console/src/main.tsx`:
 
 ```tsx
 import * as ReactDOM from 'react-dom/client';
-import { StrictMode } from 'react';
-import { ConfigProvider } from '@thunder/shared-contexts';
+import {StrictMode} from 'react';
+import {ConfigProvider} from '@thunder/shared-contexts';
 import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
+import {initReactI18next} from 'react-i18next';
 import enUS from '@thunder/i18n/locales/en-US';
 import AppWithConfig from './AppWithConfig';
 
@@ -448,10 +464,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 Similar integration for `apps/thunder-gate/src/main.tsx`:
 
 ```tsx
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+import {StrictMode} from 'react';
+import {createRoot} from 'react-dom/client';
 import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
+import {initReactI18next} from 'react-i18next';
 import enUS from '@thunder/i18n/locales/en-US';
 import App from './App';
 import './index.css';
@@ -473,7 +489,7 @@ await i18n.use(initReactI18next).init({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
-  </StrictMode>
+  </StrictMode>,
 );
 ```
 
@@ -482,12 +498,12 @@ createRoot(document.getElementById('root')!).render(
 ### Using Trans Component for Complex Translations
 
 ```tsx
-import { Trans } from 'react-i18next';
+import {Trans} from 'react-i18next';
 
 function Component() {
   return (
     <Trans i18nKey="common.messages.welcome">
-      Welcome <strong>{{ name: user.name }}</strong>!
+      Welcome <strong>{{name: user.name}}</strong>!
     </Trans>
   );
 }
@@ -537,11 +553,11 @@ const { t } = useTranslation('users');
 
 ```tsx
 // ✅ Good - Specific namespace
-const { t } = useTranslation('users');
+const {t} = useTranslation('users');
 t('title');
 
 // ❌ Avoid - Always using full paths
-const { t } = useTranslation();
+const {t} = useTranslation();
 t('users.title');
 ```
 

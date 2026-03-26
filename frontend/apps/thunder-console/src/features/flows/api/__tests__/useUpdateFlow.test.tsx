@@ -129,7 +129,7 @@ describe('useUpdateFlow', () => {
     });
 
     act(() => {
-      resolveRequest({ data: mockFlowResponse });
+      resolveRequest({data: mockFlowResponse});
     });
 
     await waitFor(() => {

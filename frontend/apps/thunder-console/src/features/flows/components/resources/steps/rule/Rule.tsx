@@ -46,26 +46,27 @@ function Rule({data, id}: RulePropsInterface): ReactElement {
 
   const ref = useRef<HTMLDivElement>(null);
 
-  const handleDragOver: (event: DragEvent<HTMLDivElement>) => void = useCallback(
-    (event: DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      const {dataTransfer} = event;
-      if (dataTransfer) {
-        dataTransfer.dropEffect = 'move';
-      }
-    },
-    [],
-  );
+  const handleDragOver: (event: DragEvent<HTMLDivElement>) => void = useCallback((event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const {dataTransfer} = event;
+    if (dataTransfer) {
+      dataTransfer.dropEffect = 'move';
+    }
+  }, []);
 
   const handleDrop: (e: DragEvent<HTMLDivElement>) => void = useCallback((event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
   }, []);
 
   // Memoize ruleStep to prevent recreation on each render
-  const ruleStep: Resource = useMemo(() => ({
-    ...(typeof data === 'object' && data !== null ? data : {}),
-    id: id ?? nodeId ?? '',
-  } as Resource), [data, id, nodeId]);
+  const ruleStep: Resource = useMemo(
+    () =>
+      ({
+        ...(typeof data === 'object' && data !== null ? data : {}),
+        id: id ?? nodeId ?? '',
+      }) as Resource,
+    [data, id, nodeId],
+  );
 
   return (
     <div ref={ref} className="flow-builder-rule" onDrop={handleDrop} onDrag={handleDragOver}>

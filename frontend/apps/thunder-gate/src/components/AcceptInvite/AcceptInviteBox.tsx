@@ -58,102 +58,102 @@ export default function AcceptInviteBox(): JSX.Element {
         alt: {light: '', dark: ''},
       }}
     >
-        <AcceptInvite
-          baseUrl={baseUrl}
-          onGoToSignIn={handleGoToSignIn}
-          onError={(error: Error) => {
-            // eslint-disable-next-line no-console
-            console.error('Invite acceptance error:', error);
-          }}
-          onFlowChange={(response: {failureReason?: string}) => {
-            setFlowError(response?.failureReason ?? null);
-          }}
-        >
-          {({
-            fieldErrors,
-            error,
-            touched,
-            isLoading,
-            components,
-            values,
-            handleInputChange,
-            handleSubmit,
-            isComplete,
-            isValidatingToken,
-            isTokenInvalid,
-          }) => {
-            // Validating token
-            if (isValidatingToken) {
-              return (
-                <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center', p: 3, gap: 2}}>
-                  <CircularProgress />
-                  <Typography>{t('invite:validating', 'Validating your invite link...')}</Typography>
-                </Box>
-              );
-            }
-
-            // Invalid token
-            if (isTokenInvalid) {
-              return (
-                <Alert severity="error">
-                  <AlertTitle>{t('invite:errors.invalid.title', 'Unable to verify invite')}</AlertTitle>
-                  {t('invite:errors.invalid.description', 'This invite link is invalid or has expired.')}
-                </Alert>
-              );
-            }
-
-            // Completed
-            if (isComplete) {
-              return (
-                <Box sx={{textAlign: 'center', py: 2}}>
-                  <Alert severity="success">
-                    {t('invite:complete.description', 'Your account has been successfully set up.')}
-                  </Alert>
-                </Box>
-              );
-            }
-
-            // Loading
-            if (isLoading && !components?.length) {
-              return (
-                <Box sx={{display: 'flex', justifyContent: 'center', p: 3}}>
-                  <CircularProgress />
-                </Box>
-              );
-            }
-
+      <AcceptInvite
+        baseUrl={baseUrl}
+        onGoToSignIn={handleGoToSignIn}
+        onError={(error: Error) => {
+          // eslint-disable-next-line no-console
+          console.error('Invite acceptance error:', error);
+        }}
+        onFlowChange={(response: {failureReason?: string}) => {
+          setFlowError(response?.failureReason ?? null);
+        }}
+      >
+        {({
+          fieldErrors,
+          error,
+          touched,
+          isLoading,
+          components,
+          values,
+          handleInputChange,
+          handleSubmit,
+          isComplete,
+          isValidatingToken,
+          isTokenInvalid,
+        }) => {
+          // Validating token
+          if (isValidatingToken) {
             return (
-              <>
-                {(flowError ?? error) && (
-                  <Alert severity="error" sx={{mb: 2}}>
-                    <AlertTitle>{t('invite:errors.failed.title', 'Error')}</AlertTitle>
-                    {flowError ?? error?.message ?? t('invite:errors.failed.description', 'An error occurred.')}
-                  </Alert>
-                )}
-                {components?.length > 0 && (
-                  <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                    {(components as EmbeddedFlowComponent[]).map((component, index) => (
-                      <FlowComponentRenderer
-                        key={component.id ?? index}
-                        component={component}
-                        index={index}
-                        values={values ?? {}}
-                        touched={touched}
-                        fieldErrors={fieldErrors}
-                        isLoading={isLoading}
-                        resolve={resolveFlowTemplateLiterals}
-                        onInputChange={handleInputChange}
-                        onSubmit={(action, inputs) => {
-                          void handleSubmit(action, inputs);
-                        }}
-                      />
-                    ))}
-                  </Box>
-                )}
-              </>
+              <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center', p: 3, gap: 2}}>
+                <CircularProgress />
+                <Typography>{t('invite:validating', 'Validating your invite link...')}</Typography>
+              </Box>
             );
-          }}
-        </AcceptInvite>
+          }
+
+          // Invalid token
+          if (isTokenInvalid) {
+            return (
+              <Alert severity="error">
+                <AlertTitle>{t('invite:errors.invalid.title', 'Unable to verify invite')}</AlertTitle>
+                {t('invite:errors.invalid.description', 'This invite link is invalid or has expired.')}
+              </Alert>
+            );
+          }
+
+          // Completed
+          if (isComplete) {
+            return (
+              <Box sx={{textAlign: 'center', py: 2}}>
+                <Alert severity="success">
+                  {t('invite:complete.description', 'Your account has been successfully set up.')}
+                </Alert>
+              </Box>
+            );
+          }
+
+          // Loading
+          if (isLoading && !components?.length) {
+            return (
+              <Box sx={{display: 'flex', justifyContent: 'center', p: 3}}>
+                <CircularProgress />
+              </Box>
+            );
+          }
+
+          return (
+            <>
+              {(flowError ?? error) && (
+                <Alert severity="error" sx={{mb: 2}}>
+                  <AlertTitle>{t('invite:errors.failed.title', 'Error')}</AlertTitle>
+                  {flowError ?? error?.message ?? t('invite:errors.failed.description', 'An error occurred.')}
+                </Alert>
+              )}
+              {components?.length > 0 && (
+                <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+                  {(components as EmbeddedFlowComponent[]).map((component, index) => (
+                    <FlowComponentRenderer
+                      key={component.id ?? index}
+                      component={component}
+                      index={index}
+                      values={values ?? {}}
+                      touched={touched}
+                      fieldErrors={fieldErrors}
+                      isLoading={isLoading}
+                      resolve={resolveFlowTemplateLiterals}
+                      onInputChange={handleInputChange}
+                      onSubmit={(action, inputs) => {
+                        void handleSubmit(action, inputs);
+                      }}
+                    />
+                  ))}
+                </Box>
+              )}
+            </>
+          );
+        }}
+      </AcceptInvite>
     </AuthCardLayout>
   );
 }

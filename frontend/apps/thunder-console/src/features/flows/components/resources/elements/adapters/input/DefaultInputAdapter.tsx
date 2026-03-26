@@ -96,9 +96,11 @@ function DefaultInputAdapter({resource}: DefaultInputAdapterPropsInterface): Rea
   const inputElement = resource as InputElement;
 
   const rawLabel = inputElement?.label ?? '';
-  const labelNode: ReactNode = containsTemplateLiteral(rawLabel)
-    ? <TemplatePlaceholder value={rawLabel} t={t} />
-    : (resolve(rawLabel, {t}) ?? rawLabel);
+  const labelNode: ReactNode = containsTemplateLiteral(rawLabel) ? (
+    <TemplatePlaceholder value={rawLabel} t={t} />
+  ) : (
+    (resolve(rawLabel, {t}) ?? rawLabel)
+  );
 
   return (
     <TextField

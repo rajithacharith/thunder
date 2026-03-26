@@ -86,7 +86,12 @@ function FieldExtendedProperties({resource, onChange}: FieldExtendedPropertiesPr
         renderInput={(params: AutocompleteRenderInputParams) => (
           <>
             <FormLabel htmlFor="attribute-select">{t('flows:core.fieldExtendedProperties.attribute')}</FormLabel>
-            <TextField {...params} id="attribute-select" placeholder={t('flows:core.fieldExtendedProperties.selectAttribute')} error={!!errorMessage} />
+            <TextField
+              {...params}
+              id="attribute-select"
+              placeholder={t('flows:core.fieldExtendedProperties.selectAttribute')}
+              error={!!errorMessage}
+            />
           </>
         )}
         value={localSelectedValue}

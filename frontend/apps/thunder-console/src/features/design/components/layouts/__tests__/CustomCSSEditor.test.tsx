@@ -105,9 +105,7 @@ describe('CustomCSSEditor', () => {
         await userEvent.click(screen.getByRole('button', {name: /Inline/}));
       });
 
-      expect(onChange).toHaveBeenCalledWith([
-        expect.objectContaining({type: 'inline', content: ''}),
-      ]);
+      expect(onChange).toHaveBeenCalledWith([expect.objectContaining({type: 'inline', content: ''})]);
     });
 
     it('adds a URL stylesheet when External URL button is clicked', async () => {
@@ -118,9 +116,7 @@ describe('CustomCSSEditor', () => {
         await userEvent.click(screen.getByText('External URL'));
       });
 
-      expect(onChange).toHaveBeenCalledWith([
-        expect.objectContaining({type: 'url', href: ''}),
-      ]);
+      expect(onChange).toHaveBeenCalledWith([expect.objectContaining({type: 'url', href: ''})]);
     });
 
     it('generates unique IDs that avoid collisions', async () => {
@@ -135,10 +131,7 @@ describe('CustomCSSEditor', () => {
         await userEvent.click(addButton);
       });
 
-      expect(onChange).toHaveBeenCalledWith([
-        existing[0],
-        expect.objectContaining({id: 'custom-2'}),
-      ]);
+      expect(onChange).toHaveBeenCalledWith([existing[0], expect.objectContaining({id: 'custom-2'})]);
     });
   });
 
@@ -166,7 +159,11 @@ describe('CustomCSSEditor', () => {
 
       // Re-render with the new sheet to simulate parent updating
       const newSheets = onChange.mock.calls[0][0] as Stylesheet[];
-      rerender(<OxygenUIThemeProvider><CustomCSSEditor stylesheets={newSheets} onChange={onChange} /></OxygenUIThemeProvider>);
+      rerender(
+        <OxygenUIThemeProvider>
+          <CustomCSSEditor stylesheets={newSheets} onChange={onChange} />
+        </OxygenUIThemeProvider>,
+      );
 
       // The new sheet should be expanded (editor visible)
       expect(screen.getByTestId('monaco-editor')).toBeTruthy();
@@ -276,9 +273,7 @@ describe('CustomCSSEditor', () => {
         vi.advanceTimersByTime(500);
       });
 
-      expect(onChange).toHaveBeenCalledWith([
-        expect.objectContaining({content: '.bar { color: blue; }'}),
-      ]);
+      expect(onChange).toHaveBeenCalledWith([expect.objectContaining({content: '.bar { color: blue; }'})]);
     });
 
     it('updates the ID via inline editing (edit icon click)', async () => {
@@ -297,9 +292,7 @@ describe('CustomCSSEditor', () => {
       fireEvent.change(input, {target: {value: 'my-styles'}});
       fireEvent.blur(input);
 
-      expect(onChange).toHaveBeenCalledWith([
-        expect.objectContaining({id: 'my-styles'}),
-      ]);
+      expect(onChange).toHaveBeenCalledWith([expect.objectContaining({id: 'my-styles'})]);
     });
 
     it('updates URL href for url-type stylesheets', async () => {
@@ -314,9 +307,7 @@ describe('CustomCSSEditor', () => {
       const urlField = screen.getByDisplayValue('https://example.com/style.css');
       fireEvent.change(urlField, {target: {value: 'https://cdn.example.com/new.css'}});
 
-      expect(onChange).toHaveBeenCalledWith([
-        expect.objectContaining({href: 'https://cdn.example.com/new.css'}),
-      ]);
+      expect(onChange).toHaveBeenCalledWith([expect.objectContaining({href: 'https://cdn.example.com/new.css'})]);
     });
 
     it('shows warning for http URLs', async () => {
@@ -377,9 +368,7 @@ describe('CustomCSSEditor', () => {
         fireEvent.click(toggle);
       });
 
-      expect(onChange).toHaveBeenCalledWith([
-        expect.objectContaining({disabled: true}),
-      ]);
+      expect(onChange).toHaveBeenCalledWith([expect.objectContaining({disabled: true})]);
     });
 
     it('renders with unchecked switch when disabled', () => {
@@ -452,15 +441,21 @@ describe('CustomCSSEditor', () => {
 
       // Type quickly — only the last value should propagate
       fireEvent.change(editor, {target: {value: 'a'}});
-      act(() => { vi.advanceTimersByTime(100); });
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
       fireEvent.change(editor, {target: {value: 'ab'}});
-      act(() => { vi.advanceTimersByTime(100); });
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
       fireEvent.change(editor, {target: {value: 'abc'}});
 
       // Not yet called because debounce hasn't elapsed
       expect(onChange).not.toHaveBeenCalled();
 
-      act(() => { vi.advanceTimersByTime(400); });
+      act(() => {
+        vi.advanceTimersByTime(400);
+      });
       expect(onChange).toHaveBeenCalledTimes(1);
       expect(onChange).toHaveBeenCalledWith([expect.objectContaining({content: 'abc'})]);
     });
@@ -495,9 +490,7 @@ describe('CustomCSSEditor', () => {
   describe('stable keys sync on external replacement', () => {
     it('regenerates stable keys when stylesheets are replaced externally with different length', () => {
       const onChange = vi.fn();
-      const {rerender} = renderWithTheme(
-        <CustomCSSEditor stylesheets={[inlineSheet]} onChange={onChange} />,
-      );
+      const {rerender} = renderWithTheme(<CustomCSSEditor stylesheets={[inlineSheet]} onChange={onChange} />);
 
       expect(screen.getByText('custom-1')).toBeTruthy();
 

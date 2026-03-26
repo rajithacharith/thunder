@@ -57,11 +57,7 @@ export default function UserTypesList() {
   const logger = useLogger('UserTypesList');
   const dataGridLocaleText = useDataGridLocaleText();
 
-  const {
-    data: userTypesData,
-    isLoading: isUserTypesRequestLoading,
-    error: userTypesRequestError,
-  } = useGetUserTypes();
+  const {data: userTypesData, isLoading: isUserTypesRequestLoading, error: userTypesRequestError} = useGetUserTypes();
   const deleteUserTypeMutation = useDeleteUserType();
   const {
     data: organizationUnitsResponse,

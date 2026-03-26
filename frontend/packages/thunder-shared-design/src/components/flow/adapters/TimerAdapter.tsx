@@ -46,7 +46,9 @@ export default function TimerAdapter({
       {({isExpired, formattedTime}: FlowTimerRenderProps) =>
         isExpired ? (
           <Alert className={cn('Flow--timer', 'Alert--root')} severity="warning" sx={{mt: 1}}>
-            <Typography className={cn('Text--body2')} variant="body2">{formattedTime}</Typography>
+            <Typography className={cn('Text--body2')} variant="body2">
+              {formattedTime}
+            </Typography>
           </Alert>
         ) : (
           <Typography className={cn('Flow--timer', 'Text--body2')} variant="body2" color="warning.main" sx={{mt: 1}}>

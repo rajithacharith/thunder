@@ -45,13 +45,15 @@ const {
 
 // Mock the lexical composer context
 vi.mock('@lexical/react/LexicalComposerContext', () => ({
-  useLexicalComposerContext: () => [{
-    registerUpdateListener: mockRegisterUpdateListener,
-    update: mockUpdate,
-    setEditable: mockSetEditable,
-    isEditable: mockIsEditable,
-    getEditorState: mockGetEditorState,
-  }],
+  useLexicalComposerContext: () => [
+    {
+      registerUpdateListener: mockRegisterUpdateListener,
+      update: mockUpdate,
+      setEditable: mockSetEditable,
+      isEditable: mockIsEditable,
+      getEditorState: mockGetEditorState,
+    },
+  ],
 }));
 
 // Mock lexical html
@@ -81,25 +83,26 @@ vi.mock('@/features/flows/models/rich-text', () => ({
 describe('HTMLPlugin', () => {
   const mockOnChange = vi.fn();
 
-  const createMockResource = (overrides: Partial<Resource & {label?: string}> = {}): Resource => ({
-    id: 'resource-1',
-    resourceType: 'ELEMENT',
-    type: 'RICH_TEXT',
-    category: 'DISPLAY',
-    version: '1.0.0',
-    deprecated: false,
-    deletable: true,
-    display: {
-      label: 'Test Rich Text',
-      image: '',
-      showOnResourcePanel: true,
-    },
-    config: {
-      field: {name: 'richText', type: 'RICH_TEXT'},
-      styles: {},
-    },
-    ...overrides,
-  } as unknown as Resource);
+  const createMockResource = (overrides: Partial<Resource & {label?: string}> = {}): Resource =>
+    ({
+      id: 'resource-1',
+      resourceType: 'ELEMENT',
+      type: 'RICH_TEXT',
+      category: 'DISPLAY',
+      version: '1.0.0',
+      deprecated: false,
+      deletable: true,
+      display: {
+        label: 'Test Rich Text',
+        image: '',
+        showOnResourcePanel: true,
+      },
+      config: {
+        field: {name: 'richText', type: 'RICH_TEXT'},
+        styles: {},
+      },
+      ...overrides,
+    }) as unknown as Resource;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -111,9 +114,7 @@ describe('HTMLPlugin', () => {
 
   describe('Rendering', () => {
     it('should return null (no visible UI)', () => {
-      const {container} = render(
-        <HTMLPlugin onChange={mockOnChange} resource={createMockResource()} />,
-      );
+      const {container} = render(<HTMLPlugin onChange={mockOnChange} resource={createMockResource()} />);
 
       expect(container.firstChild).toBeNull();
     });
@@ -318,9 +319,7 @@ describe('HTMLPlugin', () => {
       const mockCleanup = vi.fn();
       mockRegisterUpdateListener.mockReturnValue(mockCleanup);
 
-      const {unmount} = render(
-        <HTMLPlugin onChange={mockOnChange} resource={createMockResource()} />,
-      );
+      const {unmount} = render(<HTMLPlugin onChange={mockOnChange} resource={createMockResource()} />);
 
       unmount();
 
@@ -484,9 +483,7 @@ describe('HTMLPlugin', () => {
       const alignTypes = ['left', 'right', 'center', 'justify'];
 
       alignTypes.forEach((align) => {
-        mockGenerateHtmlFromNodes.mockReturnValue(
-          `<p style="text-align: ${align};">Test ${align}</p>`,
-        );
+        mockGenerateHtmlFromNodes.mockReturnValue(`<p style="text-align: ${align};">Test ${align}</p>`);
 
         render(<HTMLPlugin onChange={mockOnChange} resource={createMockResource()} />);
 
@@ -500,9 +497,7 @@ describe('HTMLPlugin', () => {
       const alignTypes = ['left', 'right', 'center', 'justify'];
 
       alignTypes.forEach((align) => {
-        mockGenerateHtmlFromNodes.mockReturnValue(
-          `<p class="existing" style="text-align: ${align};">Test</p>`,
-        );
+        mockGenerateHtmlFromNodes.mockReturnValue(`<p class="existing" style="text-align: ${align};">Test</p>`);
 
         render(<HTMLPlugin onChange={mockOnChange} resource={createMockResource()} />);
 
@@ -528,9 +523,7 @@ describe('HTMLPlugin', () => {
     });
 
     it('should convert pre-wrap style with class to rich-text-pre-wrap', () => {
-      mockGenerateHtmlFromNodes.mockReturnValue(
-        '<p class="existing" style="white-space: pre-wrap;">Content</p>',
-      );
+      mockGenerateHtmlFromNodes.mockReturnValue('<p class="existing" style="white-space: pre-wrap;">Content</p>');
 
       render(<HTMLPlugin onChange={mockOnChange} resource={createMockResource()} />);
 
@@ -538,9 +531,7 @@ describe('HTMLPlugin', () => {
     });
 
     it('should convert standalone pre-wrap style to rich-text-pre-wrap class', () => {
-      mockGenerateHtmlFromNodes.mockReturnValue(
-        '<p style="white-space: pre-wrap;">Content</p>',
-      );
+      mockGenerateHtmlFromNodes.mockReturnValue('<p style="white-space: pre-wrap;">Content</p>');
 
       render(<HTMLPlugin onChange={mockOnChange} resource={createMockResource()} />);
 
@@ -551,9 +542,7 @@ describe('HTMLPlugin', () => {
   describe('Update Type INTERNAL Branch Coverage', () => {
     it('should return early and reset updateType when current is INTERNAL', () => {
       const resource1 = createMockResource({label: '<p>First</p>'});
-      const {rerender} = render(
-        <HTMLPlugin onChange={mockOnChange} resource={resource1} />,
-      );
+      const {rerender} = render(<HTMLPlugin onChange={mockOnChange} resource={resource1} />);
 
       // First update should happen
       expect(mockUpdate).toHaveBeenCalled();
@@ -693,9 +682,7 @@ describe('HTMLPlugin', () => {
 
     it('should transition from non-editable to editable', () => {
       mockIsEditable.mockReturnValue(false);
-      const {rerender} = render(
-        <HTMLPlugin onChange={mockOnChange} resource={createMockResource()} disabled />,
-      );
+      const {rerender} = render(<HTMLPlugin onChange={mockOnChange} resource={createMockResource()} disabled />);
 
       mockIsEditable.mockReturnValue(false);
       rerender(<HTMLPlugin onChange={mockOnChange} resource={createMockResource()} disabled={false} />);
@@ -762,9 +749,7 @@ describe('HTMLPlugin', () => {
         vi.clearAllMocks();
         mockRegisterUpdateListener.mockImplementation(() => vi.fn());
 
-        mockGenerateHtmlFromNodes.mockReturnValue(
-          `<p style="text-align: ${align};">Standalone ${align}</p>`,
-        );
+        mockGenerateHtmlFromNodes.mockReturnValue(`<p style="text-align: ${align};">Standalone ${align}</p>`);
 
         render(<HTMLPlugin onChange={mockOnChange} resource={createMockResource()} />);
 
@@ -776,9 +761,7 @@ describe('HTMLPlugin', () => {
   describe('Update Type INTERNAL Early Return', () => {
     it('should return early when updateType is INTERNAL and reset to NONE', () => {
       const resource1 = createMockResource({label: '<p>First content</p>'});
-      const {rerender} = render(
-        <HTMLPlugin onChange={mockOnChange} resource={resource1} />,
-      );
+      const {rerender} = render(<HTMLPlugin onChange={mockOnChange} resource={resource1} />);
 
       expect(mockUpdate).toHaveBeenCalled();
 

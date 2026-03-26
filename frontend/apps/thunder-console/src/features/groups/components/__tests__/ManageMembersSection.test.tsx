@@ -113,9 +113,7 @@ describe('ManageMembersSection', () => {
   });
 
   it('should render header action when provided', () => {
-    renderWithProviders(
-      <ManageMembersSection {...defaultProps} headerAction={<button type="button">Add</button>} />,
-    );
+    renderWithProviders(<ManageMembersSection {...defaultProps} headerAction={<button type="button">Add</button>} />);
 
     expect(screen.getByText('Add')).toBeInTheDocument();
   });

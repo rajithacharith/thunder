@@ -45,7 +45,10 @@ describe('TextInputAdapter', () => {
   });
 
   it('renders email type for EMAIL_INPUT', () => {
-    const emailProps = {...baseProps, component: {...baseProps.component, type: 'EMAIL_INPUT', ref: 'email', label: 'Email'}};
+    const emailProps = {
+      ...baseProps,
+      component: {...baseProps.component, type: 'EMAIL_INPUT', ref: 'email', label: 'Email'},
+    };
     renderWithProviders(<TextInputAdapter {...emailProps} />);
     const input = document.querySelector('input[name="email"]');
     expect(input?.getAttribute('type')).toBe('email');

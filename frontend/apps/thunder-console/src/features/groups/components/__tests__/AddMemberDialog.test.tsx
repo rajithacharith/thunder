@@ -36,7 +36,12 @@ vi.mock('@wso2/oxygen-ui', async () => {
     ...actual,
     DataGrid: {
       ...(actual.DataGrid ?? {}),
-      DataGrid: ({rows = [], loading = false, checkboxSelection = false, onRowSelectionModelChange = undefined}: MockDataGridProps) => (
+      DataGrid: ({
+        rows = [],
+        loading = false,
+        checkboxSelection = false,
+        onRowSelectionModelChange = undefined,
+      }: MockDataGridProps) => (
         <div data-testid="users-grid" data-loading={loading}>
           {rows.map((row) => (
             <div key={row.id} data-testid={`user-${row.id}`}>

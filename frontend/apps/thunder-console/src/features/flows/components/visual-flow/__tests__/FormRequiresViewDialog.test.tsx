@@ -41,8 +41,7 @@ vi.mock('react-i18next', () => ({
         // Input on view
         'flows:core.dialogs.formRequiresView.inputOnView.title': 'Input requires a Form',
         'flows:core.dialogs.formRequiresView.inputOnView.description': 'An Input component must be inside a Form.',
-        'flows:core.dialogs.formRequiresView.inputOnView.alertMessage':
-          'A Form will be created to contain this Input.',
+        'flows:core.dialogs.formRequiresView.inputOnView.alertMessage': 'A Form will be created to contain this Input.',
         'flows:core.dialogs.formRequiresView.inputOnView.confirmButton': 'Create Form',
         // Widget on canvas
         'flows:core.dialogs.formRequiresView.widgetOnCanvas.title': 'Widget requires a View',
@@ -69,9 +68,7 @@ describe('FormRequiresViewDialog', () => {
 
   describe('Dialog Visibility', () => {
     it('should render dialog when open is true', () => {
-      render(
-        <FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
-      );
+      render(<FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />);
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
@@ -92,33 +89,25 @@ describe('FormRequiresViewDialog', () => {
 
   describe('Form on Canvas Scenario', () => {
     it('should display correct title for form-on-canvas', () => {
-      render(
-        <FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
-      );
+      render(<FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />);
 
       expect(screen.getByText('Form requires a View')).toBeInTheDocument();
     });
 
     it('should display correct description for form-on-canvas', () => {
-      render(
-        <FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
-      );
+      render(<FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />);
 
       expect(screen.getByText('A Form component must be inside a View step.')).toBeInTheDocument();
     });
 
     it('should display correct alert message for form-on-canvas', () => {
-      render(
-        <FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
-      );
+      render(<FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />);
 
       expect(screen.getByText('A View step will be created to contain this Form.')).toBeInTheDocument();
     });
 
     it('should display correct confirm button text for form-on-canvas', () => {
-      render(
-        <FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
-      );
+      render(<FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />);
 
       expect(screen.getByRole('button', {name: 'Create View'})).toBeInTheDocument();
     });
@@ -127,12 +116,7 @@ describe('FormRequiresViewDialog', () => {
   describe('Input on Canvas Scenario', () => {
     it('should display correct title for input-on-canvas', () => {
       render(
-        <FormRequiresViewDialog
-          open
-          scenario="input-on-canvas"
-          onClose={mockOnClose}
-          onConfirm={mockOnConfirm}
-        />,
+        <FormRequiresViewDialog open scenario="input-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
       );
 
       expect(screen.getByText('Input requires a View and Form')).toBeInTheDocument();
@@ -140,12 +124,7 @@ describe('FormRequiresViewDialog', () => {
 
     it('should display correct description for input-on-canvas', () => {
       render(
-        <FormRequiresViewDialog
-          open
-          scenario="input-on-canvas"
-          onClose={mockOnClose}
-          onConfirm={mockOnConfirm}
-        />,
+        <FormRequiresViewDialog open scenario="input-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
       );
 
       expect(
@@ -155,12 +134,7 @@ describe('FormRequiresViewDialog', () => {
 
     it('should display correct confirm button text for input-on-canvas', () => {
       render(
-        <FormRequiresViewDialog
-          open
-          scenario="input-on-canvas"
-          onClose={mockOnClose}
-          onConfirm={mockOnConfirm}
-        />,
+        <FormRequiresViewDialog open scenario="input-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
       );
 
       expect(screen.getByRole('button', {name: 'Create View and Form'})).toBeInTheDocument();
@@ -169,25 +143,19 @@ describe('FormRequiresViewDialog', () => {
 
   describe('Input on View Scenario', () => {
     it('should display correct title for input-on-view', () => {
-      render(
-        <FormRequiresViewDialog open scenario="input-on-view" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
-      );
+      render(<FormRequiresViewDialog open scenario="input-on-view" onClose={mockOnClose} onConfirm={mockOnConfirm} />);
 
       expect(screen.getByText('Input requires a Form')).toBeInTheDocument();
     });
 
     it('should display correct description for input-on-view', () => {
-      render(
-        <FormRequiresViewDialog open scenario="input-on-view" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
-      );
+      render(<FormRequiresViewDialog open scenario="input-on-view" onClose={mockOnClose} onConfirm={mockOnConfirm} />);
 
       expect(screen.getByText('An Input component must be inside a Form.')).toBeInTheDocument();
     });
 
     it('should display correct confirm button text for input-on-view', () => {
-      render(
-        <FormRequiresViewDialog open scenario="input-on-view" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
-      );
+      render(<FormRequiresViewDialog open scenario="input-on-view" onClose={mockOnClose} onConfirm={mockOnConfirm} />);
 
       expect(screen.getByRole('button', {name: 'Create Form'})).toBeInTheDocument();
     });
@@ -196,12 +164,7 @@ describe('FormRequiresViewDialog', () => {
   describe('Widget on Canvas Scenario', () => {
     it('should display correct title for widget-on-canvas', () => {
       render(
-        <FormRequiresViewDialog
-          open
-          scenario="widget-on-canvas"
-          onClose={mockOnClose}
-          onConfirm={mockOnConfirm}
-        />,
+        <FormRequiresViewDialog open scenario="widget-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
       );
 
       expect(screen.getByText('Widget requires a View')).toBeInTheDocument();
@@ -209,12 +172,7 @@ describe('FormRequiresViewDialog', () => {
 
     it('should display correct description for widget-on-canvas', () => {
       render(
-        <FormRequiresViewDialog
-          open
-          scenario="widget-on-canvas"
-          onClose={mockOnClose}
-          onConfirm={mockOnConfirm}
-        />,
+        <FormRequiresViewDialog open scenario="widget-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
       );
 
       expect(screen.getByText('A Widget component must be inside a View step.')).toBeInTheDocument();
@@ -222,12 +180,7 @@ describe('FormRequiresViewDialog', () => {
 
     it('should display correct confirm button text for widget-on-canvas', () => {
       render(
-        <FormRequiresViewDialog
-          open
-          scenario="widget-on-canvas"
-          onClose={mockOnClose}
-          onConfirm={mockOnConfirm}
-        />,
+        <FormRequiresViewDialog open scenario="widget-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
       );
 
       expect(screen.getByRole('button', {name: 'Create View'})).toBeInTheDocument();
@@ -236,9 +189,7 @@ describe('FormRequiresViewDialog', () => {
 
   describe('Button Actions', () => {
     it('should call onClose when Cancel button is clicked', () => {
-      render(
-        <FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
-      );
+      render(<FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />);
 
       const cancelButton = screen.getByRole('button', {name: 'Cancel'});
       fireEvent.click(cancelButton);
@@ -247,9 +198,7 @@ describe('FormRequiresViewDialog', () => {
     });
 
     it('should call onConfirm when confirm button is clicked', () => {
-      render(
-        <FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
-      );
+      render(<FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />);
 
       const confirmButton = screen.getByRole('button', {name: 'Create View'});
       fireEvent.click(confirmButton);
@@ -273,9 +222,7 @@ describe('FormRequiresViewDialog', () => {
 
   describe('Alert Component', () => {
     it('should render an info alert for all scenarios', () => {
-      render(
-        <FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
-      );
+      render(<FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />);
 
       const alert = screen.getByRole('alert');
       expect(alert).toBeInTheDocument();
@@ -293,26 +240,20 @@ describe('FormRequiresViewDialog', () => {
 
   describe('Dialog Structure', () => {
     it('should render dialog title', () => {
-      render(
-        <FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
-      );
+      render(<FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />);
 
       expect(screen.getByRole('heading')).toBeInTheDocument();
     });
 
     it('should render two buttons (Cancel and Confirm)', () => {
-      render(
-        <FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
-      );
+      render(<FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />);
 
       const buttons = screen.getAllByRole('button');
       expect(buttons).toHaveLength(2);
     });
 
     it('should render confirm button with contained variant', () => {
-      render(
-        <FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />,
-      );
+      render(<FormRequiresViewDialog open scenario="form-on-canvas" onClose={mockOnClose} onConfirm={mockOnConfirm} />);
 
       const confirmButton = screen.getByRole('button', {name: 'Create View'});
       expect(confirmButton).toHaveClass('MuiButton-contained');

@@ -183,9 +183,17 @@ describe('RegenerateSecretDialog', () => {
     it('should call onSuccess with new client secret after successful regeneration', async () => {
       // Mock mutate to immediately call onSuccess
       mockMutate.mockImplementation(
-        (vars: RegenerateSecretVariables, options?: MutateOptions<RegenerateSecretResult, Error, RegenerateSecretVariables>) => {
+        (
+          vars: RegenerateSecretVariables,
+          options?: MutateOptions<RegenerateSecretResult, Error, RegenerateSecretVariables>,
+        ) => {
           const mockContext = {} as MutationFunctionContext;
-          options?.onSuccess?.({clientSecret: 'new-test-secret-123'} as RegenerateSecretResult, vars, undefined, mockContext);
+          options?.onSuccess?.(
+            {clientSecret: 'new-test-secret-123'} as RegenerateSecretResult,
+            vars,
+            undefined,
+            mockContext,
+          );
         },
       );
 
@@ -206,9 +214,17 @@ describe('RegenerateSecretDialog', () => {
     it('should display error message when regeneration fails', async () => {
       // Mock mutate to immediately call onError
       mockMutate.mockImplementation(
-        (vars: RegenerateSecretVariables, options?: MutateOptions<RegenerateSecretResult, Error, RegenerateSecretVariables>) => {
+        (
+          vars: RegenerateSecretVariables,
+          options?: MutateOptions<RegenerateSecretResult, Error, RegenerateSecretVariables>,
+        ) => {
           const mockContext = {} as MutationFunctionContext;
-          options?.onError?.(new Error('Failed to regenerate client secret. Please try again.'), vars, undefined, mockContext);
+          options?.onError?.(
+            new Error('Failed to regenerate client secret. Please try again.'),
+            vars,
+            undefined,
+            mockContext,
+          );
         },
       );
 
@@ -226,9 +242,17 @@ describe('RegenerateSecretDialog', () => {
     it('should call onError callback when regeneration fails', async () => {
       // Mock mutate to immediately call onError
       mockMutate.mockImplementation(
-        (vars: RegenerateSecretVariables, options?: MutateOptions<RegenerateSecretResult, Error, RegenerateSecretVariables>) => {
+        (
+          vars: RegenerateSecretVariables,
+          options?: MutateOptions<RegenerateSecretResult, Error, RegenerateSecretVariables>,
+        ) => {
           const mockContext = {} as MutationFunctionContext;
-          options?.onError?.(new Error('Failed to regenerate client secret. Please try again.'), vars, undefined, mockContext);
+          options?.onError?.(
+            new Error('Failed to regenerate client secret. Please try again.'),
+            vars,
+            undefined,
+            mockContext,
+          );
         },
       );
 

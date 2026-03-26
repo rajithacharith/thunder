@@ -53,9 +53,7 @@ export default function DesignPage(): JSX.Element {
   const [showAllThemes, setShowAllThemes] = useState(false);
 
   // Build a map of handle → layoutId for API layouts
-  const layoutIdByHandle = new Map(
-    (layoutsData?.layouts ?? []).map((l) => [l.handle, l.id]),
-  );
+  const layoutIdByHandle = new Map((layoutsData?.layouts ?? []).map((l) => [l.handle, l.id]));
 
   const allThemes = themesData?.themes ?? [];
   const visibleThemes = showAllThemes ? allThemes : allThemes.slice(0, DesignUIConstants.INITIAL_LIMIT);
@@ -190,12 +188,16 @@ export default function DesignPage(): JSX.Element {
                         role: 'button',
                         tabIndex: 0,
                         onClick: () => {
-                          (async () => navigate(`/design/layouts/${apiLayoutId}`))().catch(() => { /* no-op */ });
+                          (async () => navigate(`/design/layouts/${apiLayoutId}`))().catch(() => {
+                            /* no-op */
+                          });
                         },
                         onKeyDown: (e: React.KeyboardEvent) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            (async () => navigate(`/design/layouts/${apiLayoutId}`))().catch(() => { /* no-op */ });
+                            (async () => navigate(`/design/layouts/${apiLayoutId}`))().catch(() => {
+                              /* no-op */
+                            });
                           }
                         },
                       }

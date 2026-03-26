@@ -23,8 +23,21 @@ import type {Resource} from '@/features/flows/models/resources';
 
 // Mock CommonElementPropertyFactory
 vi.mock('@/features/flows/components/resource-property-panel/CommonElementPropertyFactory', () => ({
-  default: ({resource, propertyKey, propertyValue}: {resource: Resource; propertyKey: string; propertyValue: unknown}) => (
-    <div data-testid="common-element-property-factory" data-resource-id={resource.id} data-property-key={propertyKey} data-property-value={String(propertyValue)}>
+  default: ({
+    resource,
+    propertyKey,
+    propertyValue,
+  }: {
+    resource: Resource;
+    propertyKey: string;
+    propertyValue: unknown;
+  }) => (
+    <div
+      data-testid="common-element-property-factory"
+      data-resource-id={resource.id}
+      data-property-key={propertyKey}
+      data-property-value={String(propertyValue)}
+    >
       Common Element Property Factory
     </div>
   ),
@@ -70,7 +83,10 @@ describe('ElementPropertyFactory', () => {
         />,
       );
 
-      expect(screen.getByTestId('common-element-property-factory')).toHaveAttribute('data-resource-id', 'custom-element');
+      expect(screen.getByTestId('common-element-property-factory')).toHaveAttribute(
+        'data-resource-id',
+        'custom-element',
+      );
     });
 
     it('should pass propertyKey to CommonElementPropertyFactory', () => {

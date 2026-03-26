@@ -128,9 +128,10 @@ const useDragDropHandlers = (props: UseDragDropHandlersProps): UseDragDropHandle
         y: clientY,
       });
 
-      const existingData = 'data' in sourceResource && typeof sourceResource.data === 'object' && sourceResource.data !== null
-        ? sourceResource.data
-        : {};
+      const existingData =
+        'data' in sourceResource && typeof sourceResource.data === 'object' && sourceResource.data !== null
+          ? sourceResource.data
+          : {};
 
       let generatedStep: Step = {
         ...sourceResource,

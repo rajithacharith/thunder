@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type { BasicApplication } from "./application";
+import type {BasicApplication} from './application';
 
 /**
  * Application List Response

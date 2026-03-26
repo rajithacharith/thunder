@@ -34,7 +34,19 @@ interface CredentialFieldInputProps {
   name: string;
 }
 
-function CredentialFieldInput({id, value, placeholder, required, error, helperText = undefined, color, onChange, onBlur, inputRef, name}: CredentialFieldInputProps) {
+function CredentialFieldInput({
+  id,
+  value,
+  placeholder,
+  required,
+  error,
+  helperText = undefined,
+  color,
+  onChange,
+  onBlur,
+  inputRef,
+  name,
+}: CredentialFieldInputProps) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (

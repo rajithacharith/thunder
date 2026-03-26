@@ -83,9 +83,11 @@ function OTPInputAdapter({resource}: OTPInputAdapterPropsInterface): ReactElemen
   const otpElement = resource as OTPInputElement;
 
   const rawLabel = otpElement?.label ?? '';
-  const labelNode: ReactNode = containsTemplateLiteral(rawLabel)
-    ? <TemplatePlaceholder value={rawLabel} t={t} />
-    : (resolve(rawLabel, {t}) ?? rawLabel);
+  const labelNode: ReactNode = containsTemplateLiteral(rawLabel) ? (
+    <TemplatePlaceholder value={rawLabel} t={t} />
+  ) : (
+    (resolve(rawLabel, {t}) ?? rawLabel)
+  );
 
   return (
     <div className={otpElement?.className}>

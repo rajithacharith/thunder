@@ -75,11 +75,13 @@ function StepFactory({
 }
 
 // Memoize to prevent re-renders during drag operations
-export default memo(StepFactory, (prevProps, nextProps) =>
-  prevProps.id === nextProps.id &&
-  prevProps.data === nextProps.data &&
-  prevProps.resources === nextProps.resources &&
-  prevProps.allResources === nextProps.allResources &&
-  prevProps.onAddElement === nextProps.onAddElement &&
-  prevProps.onAddElementToForm === nextProps.onAddElementToForm
+export default memo(
+  StepFactory,
+  (prevProps, nextProps) =>
+    prevProps.id === nextProps.id &&
+    prevProps.data === nextProps.data &&
+    prevProps.resources === nextProps.resources &&
+    prevProps.allResources === nextProps.allResources &&
+    prevProps.onAddElement === nextProps.onAddElement &&
+    prevProps.onAddElementToForm === nextProps.onAddElementToForm,
 );

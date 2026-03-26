@@ -145,8 +145,9 @@ describe('useConfirmPasswordField', () => {
       const handlers = registeredHandlers.async[FlowEventTypes.ON_PROPERTY_CHANGE];
       const addConfirmPasswordFieldHandler = handlers?.find(
         // eslint-disable-next-line no-underscore-dangle
-        (h) => (h as unknown as Record<string, string>).__FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER === 'addConfirmPasswordField' ||
-               handlers.indexOf(h) === 0,
+        (h) =>
+          (h as unknown as Record<string, string>).__FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER ===
+            'addConfirmPasswordField' || handlers.indexOf(h) === 0,
       );
 
       const element = {
@@ -185,9 +186,7 @@ describe('useConfirmPasswordField', () => {
             {
               id: 'form-1',
               type: BlockTypes.Form,
-              components: [
-                {id: 'password-1', type: ElementTypes.PasswordInput},
-              ],
+              components: [{id: 'password-1', type: ElementTypes.PasswordInput}],
             },
           ],
         },
@@ -256,11 +255,9 @@ describe('useConfirmPasswordField', () => {
 
     it('should execute updateNodeData callback correctly when adding confirm field', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
@@ -299,11 +296,9 @@ describe('useConfirmPasswordField', () => {
 
     it('should return empty object when node has no components', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
@@ -332,11 +327,9 @@ describe('useConfirmPasswordField', () => {
 
     it('should execute callback to add confirm password field after password field', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
@@ -384,11 +377,9 @@ describe('useConfirmPasswordField', () => {
 
     it('should not add confirm field when password is not in a form', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
@@ -425,11 +416,9 @@ describe('useConfirmPasswordField', () => {
 
     it('should execute callback to remove confirm password field when unchecking', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
@@ -478,11 +467,9 @@ describe('useConfirmPasswordField', () => {
 
     it('should not remove confirm field if not found', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
@@ -808,11 +795,9 @@ describe('useConfirmPasswordField', () => {
 
     it('should execute updateNodeData callback to update confirmHint on confirm field', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
@@ -858,18 +843,17 @@ describe('useConfirmPasswordField', () => {
       const components = result.components as Element[];
       const form = components[0] as Element & {components?: Element[]};
       const confirmField = form.components?.find(
-        (c: Element) => (c as Element & {identifier?: string}).identifier === FlowBuilderElementConstants.CONFIRM_PASSWORD_IDENTIFIER,
+        (c: Element) =>
+          (c as Element & {identifier?: string}).identifier === FlowBuilderElementConstants.CONFIRM_PASSWORD_IDENTIFIER,
       ) as Element & {hint?: string};
       expect(confirmField?.hint).toBe('New hint value');
     });
 
     it('should execute updateNodeData callback to update confirmLabel on confirm field', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
@@ -912,18 +896,17 @@ describe('useConfirmPasswordField', () => {
       const components = result.components as Element[];
       const form = components[0] as Element & {components?: Element[]};
       const confirmField = form.components?.find(
-        (c: Element) => (c as Element & {identifier?: string}).identifier === FlowBuilderElementConstants.CONFIRM_PASSWORD_IDENTIFIER,
+        (c: Element) =>
+          (c as Element & {identifier?: string}).identifier === FlowBuilderElementConstants.CONFIRM_PASSWORD_IDENTIFIER,
       ) as Element & {label?: string};
       expect(confirmField?.label).toBe('New Label');
     });
 
     it('should execute updateNodeData callback to update confirmPlaceholder on confirm field', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
@@ -966,18 +949,17 @@ describe('useConfirmPasswordField', () => {
       const components = result.components as Element[];
       const form = components[0] as Element & {components?: Element[]};
       const confirmField = form.components?.find(
-        (c: Element) => (c as Element & {identifier?: string}).identifier === FlowBuilderElementConstants.CONFIRM_PASSWORD_IDENTIFIER,
+        (c: Element) =>
+          (c as Element & {identifier?: string}).identifier === FlowBuilderElementConstants.CONFIRM_PASSWORD_IDENTIFIER,
       ) as Element & {placeholder?: string};
       expect(confirmField?.placeholder).toBe('New Placeholder');
     });
 
     it('should execute updateNodeData callback to update required on confirm field', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
@@ -1020,18 +1002,17 @@ describe('useConfirmPasswordField', () => {
       const components = result.components as Element[];
       const form = components[0] as Element & {components?: Element[]};
       const confirmField = form.components?.find(
-        (c: Element) => (c as Element & {identifier?: string}).identifier === FlowBuilderElementConstants.CONFIRM_PASSWORD_IDENTIFIER,
+        (c: Element) =>
+          (c as Element & {identifier?: string}).identifier === FlowBuilderElementConstants.CONFIRM_PASSWORD_IDENTIFIER,
       ) as Element & {required?: boolean};
       expect(confirmField?.required).toBe(true);
     });
 
     it('should return empty object when node has no components during update', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
@@ -1060,11 +1041,9 @@ describe('useConfirmPasswordField', () => {
 
     it('should not update non-form components during property update', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
@@ -1152,11 +1131,9 @@ describe('useConfirmPasswordField', () => {
 
     it('should execute updateNodeData callback correctly when deleting', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
@@ -1202,11 +1179,9 @@ describe('useConfirmPasswordField', () => {
 
     it('should return empty object when node has no components', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
@@ -1235,11 +1210,9 @@ describe('useConfirmPasswordField', () => {
 
     it('should execute callback to properly remove confirm password field from form', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
@@ -1285,18 +1258,20 @@ describe('useConfirmPasswordField', () => {
       const form = components[0] as Element & {components?: Element[]};
       // Confirm password should be removed
       expect(form.components?.length).toBe(3);
-      expect(form.components?.find((c: Element) =>
-        (c as Element & {identifier?: string}).identifier === FlowBuilderElementConstants.CONFIRM_PASSWORD_IDENTIFIER,
-      )).toBeUndefined();
+      expect(
+        form.components?.find(
+          (c: Element) =>
+            (c as Element & {identifier?: string}).identifier ===
+            FlowBuilderElementConstants.CONFIRM_PASSWORD_IDENTIFIER,
+        ),
+      ).toBeUndefined();
     });
 
     it('should not modify form if no confirm password field exists during delete', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),
@@ -1339,11 +1314,9 @@ describe('useConfirmPasswordField', () => {
 
     it('should not modify non-form components during delete', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useConfirmPasswordField(), {
         wrapper: createWrapper(),

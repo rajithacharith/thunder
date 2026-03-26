@@ -635,9 +635,7 @@ describe('CreateUserPage', () => {
     await user.click(snackbarCloseButton[snackbarCloseButton.length - 1]);
 
     await waitFor(() => {
-      expect(
-        screen.queryByText('Organization unit ID is missing for the selected user type.'),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Organization unit ID is missing for the selected user type.')).not.toBeInTheDocument();
     });
   });
 
@@ -685,9 +683,7 @@ describe('CreateUserPage', () => {
     await user.click(screen.getByRole('button', {name: /create user/i}));
 
     await waitFor(() => {
-      expect(
-        screen.getByText('Organization unit ID is missing for the selected user type.'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Organization unit ID is missing for the selected user type.')).toBeInTheDocument();
     });
 
     expect(mockMutateAsync).not.toHaveBeenCalled();
@@ -916,10 +912,7 @@ describe('CreateUserPage', () => {
       await user.click(screen.getByTestId('select-ou'));
 
       await waitFor(() => {
-        expect(screen.getByTestId('configure-organization-unit')).toHaveAttribute(
-          'data-selected-ou-id',
-          'child-ou-1',
-        );
+        expect(screen.getByTestId('configure-organization-unit')).toHaveAttribute('data-selected-ou-id', 'child-ou-1');
       });
 
       // Go back to user type

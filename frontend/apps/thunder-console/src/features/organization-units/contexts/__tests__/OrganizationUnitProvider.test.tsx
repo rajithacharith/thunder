@@ -34,9 +34,7 @@ function useOrganizationUnitContext() {
 describe('OrganizationUnitProvider', () => {
   it('should provide default context values', () => {
     const {result} = renderHook(() => useOrganizationUnitContext(), {
-      wrapper: ({children}: {children: ReactNode}) => (
-        <OrganizationUnitProvider>{children}</OrganizationUnitProvider>
-      ),
+      wrapper: ({children}: {children: ReactNode}) => <OrganizationUnitProvider>{children}</OrganizationUnitProvider>,
     });
 
     expect(result.current.treeItems).toEqual([]);
@@ -50,9 +48,7 @@ describe('OrganizationUnitProvider', () => {
 
   it('should allow setting treeItems', () => {
     const {result} = renderHook(() => useOrganizationUnitContext(), {
-      wrapper: ({children}: {children: ReactNode}) => (
-        <OrganizationUnitProvider>{children}</OrganizationUnitProvider>
-      ),
+      wrapper: ({children}: {children: ReactNode}) => <OrganizationUnitProvider>{children}</OrganizationUnitProvider>,
     });
 
     const items = [{id: 'ou-1', label: 'Test OU', handle: 'test'}];
@@ -66,9 +62,7 @@ describe('OrganizationUnitProvider', () => {
 
   it('should allow setting expandedItems', () => {
     const {result} = renderHook(() => useOrganizationUnitContext(), {
-      wrapper: ({children}: {children: ReactNode}) => (
-        <OrganizationUnitProvider>{children}</OrganizationUnitProvider>
-      ),
+      wrapper: ({children}: {children: ReactNode}) => <OrganizationUnitProvider>{children}</OrganizationUnitProvider>,
     });
 
     act(() => {
@@ -80,9 +74,7 @@ describe('OrganizationUnitProvider', () => {
 
   it('should allow setting loadedItems', () => {
     const {result} = renderHook(() => useOrganizationUnitContext(), {
-      wrapper: ({children}: {children: ReactNode}) => (
-        <OrganizationUnitProvider>{children}</OrganizationUnitProvider>
-      ),
+      wrapper: ({children}: {children: ReactNode}) => <OrganizationUnitProvider>{children}</OrganizationUnitProvider>,
     });
 
     act(() => {
@@ -94,9 +86,7 @@ describe('OrganizationUnitProvider', () => {
 
   it('should reset treeItems and loadedItems but preserve expandedItems on resetTreeState', () => {
     const {result} = renderHook(() => useOrganizationUnitContext(), {
-      wrapper: ({children}: {children: ReactNode}) => (
-        <OrganizationUnitProvider>{children}</OrganizationUnitProvider>
-      ),
+      wrapper: ({children}: {children: ReactNode}) => <OrganizationUnitProvider>{children}</OrganizationUnitProvider>,
     });
 
     // Set some state first

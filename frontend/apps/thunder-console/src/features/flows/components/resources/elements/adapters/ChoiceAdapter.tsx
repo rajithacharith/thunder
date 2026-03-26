@@ -57,9 +57,7 @@ function ChoiceAdapter({resource}: ChoiceAdapterPropsInterface): ReactElement {
 
   return (
     <FormControl sx={{my: 2}}>
-      <FormLabel id={choiceElement?.id}>
-        {resolve(choiceElement?.label, {t}) ?? choiceElement?.label ?? ''}
-      </FormLabel>
+      <FormLabel id={choiceElement?.id}>{resolve(choiceElement?.label, {t}) ?? choiceElement?.label ?? ''}</FormLabel>
       <RadioGroup defaultValue={choiceElement?.defaultValue}>
         {choiceElement?.options?.map((option: FieldOption) => (
           <FormControlLabel
