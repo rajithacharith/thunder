@@ -34,10 +34,6 @@
     "typecheck": "nx run-many --target=typecheck --all --parallel"
   },
   "devDependencies": {
-    "@nx/js": "22.5.1",
-    "@swc-node/register": "1.11.1",
-    "@swc/core": "1.15.8",
-    "@swc/helpers": "0.5.18",
     "@thunder/eslint-plugin-thunder": "workspace:^",
     "@thunder/logger": "workspace:^",
     "@thunder/prettier-config": "workspace:^",
@@ -53,6 +49,7 @@
     "overrides": {
       "flatted@3.3.3": ">=3.4.0",
       "minimatch@10.1.1": ">=10.2.1",
+      "picomatch": ">=4.0.4",
       "vite": "catalog:",
       "nx>axios": ">=1.13.5",
       "rollup": ">=4.59.0"
