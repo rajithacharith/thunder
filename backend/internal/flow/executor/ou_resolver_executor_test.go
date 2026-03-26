@@ -23,32 +23,52 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
+	"github.com/asgardeo/thunder/tests/mocks/oumock"
 )
+
+const testParentOUID = "parent-ou-123"
+const testChildOUID = "child-ou-456"
 
 type OUResolverExecutorTestSuite struct {
 	suite.Suite
 	mockFlowFactory *coremock.FlowFactoryInterfaceMock
+	mockOUService   *oumock.OrganizationUnitServiceInterfaceMock
 	executor        *ouResolverExecutor
 }
 
 func (suite *OUResolverExecutorTestSuite) SetupTest() {
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
-	mockBaseExecutor := coremock.NewExecutorInterfaceMock(suite.T())
+	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+
+	defaultInputs := []common.Input{
+		{
+			Ref:        "ou_selection_input",
+			Identifier: ouIDKey,
+			Type:       "OU_SELECT",
+			Required:   true,
+		},
+	}
 
 	suite.mockFlowFactory.On("CreateExecutor",
 		ExecutorNameOUResolver,
 		common.ExecutorTypeUtility,
-		[]common.Input{},
-		[]common.Input{}).Return(mockBaseExecutor)
+		defaultInputs,
+		[]common.Input{}).Return(
+		newMockExecutor("OUResolverExecutor", common.ExecutorTypeUtility, defaultInputs, []common.Input{}))
 
-	suite.executor = newOUResolverExecutor(suite.mockFlowFactory)
+	suite.executor = newOUResolverExecutor(suite.mockFlowFactory, suite.mockOUService)
 }
+
+// --- Caller strategy tests ---
 
 func (suite *OUResolverExecutorTestSuite) TestExecute_ResolveFromCaller_Success() {
 	callerOUID := "caller-ou-123"
@@ -218,6 +238,232 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_NilContext() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
 	assert.Equal(suite.T(), "Unable to determine caller organization unit", resp.FailureReason)
+}
+
+// --- Prompt strategy tests ---
+
+func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_NoDefaultOUID_ReturnsError() {
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		NodeProperties: map[string]interface{}{
+			common.NodePropertyOUResolveFrom: ouResolveFromPrompt,
+		},
+		RuntimeData: map[string]string{},
+		UserInputs:  map[string]string{},
+	}
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "no defaultOUID in runtime data")
+	suite.mockOUService.AssertNotCalled(
+		suite.T(), "GetOrganizationUnitChildren", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+	)
+}
+
+func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_Valid() {
+	parentOUID := testParentOUID
+	selectedOUID := testChildOUID
+
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		NodeProperties: map[string]interface{}{
+			common.NodePropertyOUResolveFrom: ouResolveFromPrompt,
+		},
+		RuntimeData: map[string]string{
+			defaultOUIDKey: parentOUID,
+		},
+		UserInputs: map[string]string{
+			ouIDKey: selectedOUID,
+		},
+	}
+
+	suite.mockOUService.On("IsParent", mock.Anything, parentOUID, selectedOUID).
+		Return(true, (*serviceerror.ServiceError)(nil))
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecComplete, result.Status)
+	assert.Equal(suite.T(), selectedOUID, result.RuntimeData[ouIDKey])
+	suite.mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_NotInSubtree() {
+	parentOUID := testParentOUID
+	selectedOUID := "unrelated-ou-789"
+
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		NodeProperties: map[string]interface{}{
+			common.NodePropertyOUResolveFrom: ouResolveFromPrompt,
+		},
+		RuntimeData: map[string]string{
+			defaultOUIDKey: parentOUID,
+		},
+		UserInputs: map[string]string{
+			ouIDKey: selectedOUID,
+		},
+	}
+
+	suite.mockOUService.On("IsParent", mock.Anything, parentOUID, selectedOUID).
+		Return(false, (*serviceerror.ServiceError)(nil))
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecFailure, result.Status)
+	assert.Contains(suite.T(), result.FailureReason, "not valid for the chosen user type")
+	suite.mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_ServerError() {
+	parentOUID := testParentOUID
+	selectedOUID := testChildOUID
+
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		NodeProperties: map[string]interface{}{
+			common.NodePropertyOUResolveFrom: ouResolveFromPrompt,
+		},
+		RuntimeData: map[string]string{
+			defaultOUIDKey: parentOUID,
+		},
+		UserInputs: map[string]string{
+			ouIDKey: selectedOUID,
+		},
+	}
+
+	svcErr := &serviceerror.ServiceError{
+		Type:  serviceerror.ServerErrorType,
+		Code:  "OU-50001",
+		Error: "internal error",
+	}
+	suite.mockOUService.On("IsParent", mock.Anything, parentOUID, selectedOUID).
+		Return(false, svcErr)
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "failed to validate selected organization unit")
+	suite.mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_ClientError() {
+	parentOUID := testParentOUID
+	selectedOUID := testChildOUID
+
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		NodeProperties: map[string]interface{}{
+			common.NodePropertyOUResolveFrom: ouResolveFromPrompt,
+		},
+		RuntimeData: map[string]string{
+			defaultOUIDKey: parentOUID,
+		},
+		UserInputs: map[string]string{
+			ouIDKey: selectedOUID,
+		},
+	}
+
+	svcErr := &serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "OU-40001",
+		Error: "not found",
+	}
+	suite.mockOUService.On("IsParent", mock.Anything, parentOUID, selectedOUID).
+		Return(false, svcErr)
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecFailure, result.Status)
+	assert.Contains(suite.T(), result.FailureReason, "not valid")
+	suite.mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_NoChildOUs_Skips() {
+	parentOUID := testParentOUID
+
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		NodeProperties: map[string]interface{}{
+			common.NodePropertyOUResolveFrom: ouResolveFromPrompt,
+		},
+		RuntimeData: map[string]string{
+			defaultOUIDKey: parentOUID,
+		},
+		UserInputs: map[string]string{},
+	}
+
+	suite.mockOUService.On("GetOrganizationUnitChildren", mock.Anything, parentOUID, 1, 0).
+		Return(&ou.OrganizationUnitListResponse{TotalResults: 0}, (*serviceerror.ServiceError)(nil))
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecComplete, result.Status)
+	suite.mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_HasChildOUs_RequestsInput() {
+	parentOUID := testParentOUID
+
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		NodeProperties: map[string]interface{}{
+			common.NodePropertyOUResolveFrom: ouResolveFromPrompt,
+		},
+		RuntimeData: map[string]string{
+			defaultOUIDKey: parentOUID,
+		},
+		UserInputs: map[string]string{},
+	}
+
+	suite.mockOUService.On("GetOrganizationUnitChildren", mock.Anything, parentOUID, 1, 0).
+		Return(&ou.OrganizationUnitListResponse{TotalResults: 3}, (*serviceerror.ServiceError)(nil))
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
+	assert.Equal(suite.T(), parentOUID, result.AdditionalData[common.DataRootOUID])
+	assert.NotEmpty(suite.T(), result.Inputs)
+	assert.Equal(suite.T(), ouIDKey, result.Inputs[0].Identifier)
+	assert.Equal(suite.T(), "OU_SELECT", result.Inputs[0].Type)
+	suite.mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_GetChildrenError_ReturnsError() {
+	parentOUID := testParentOUID
+
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		NodeProperties: map[string]interface{}{
+			common.NodePropertyOUResolveFrom: ouResolveFromPrompt,
+		},
+		RuntimeData: map[string]string{
+			defaultOUIDKey: parentOUID,
+		},
+		UserInputs: map[string]string{},
+	}
+
+	svcErr := &serviceerror.ServiceError{
+		Type:  serviceerror.ServerErrorType,
+		Code:  "OU-50001",
+		Error: "internal error",
+	}
+	suite.mockOUService.On("GetOrganizationUnitChildren", mock.Anything, parentOUID, 1, 0).
+		Return((*ou.OrganizationUnitListResponse)(nil), svcErr)
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "failed to check child organization units")
+	suite.mockOUService.AssertExpectations(suite.T())
 }
 
 func TestOUResolverExecutorSuite(t *testing.T) {
