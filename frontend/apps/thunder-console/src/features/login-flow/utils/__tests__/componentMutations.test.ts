@@ -94,7 +94,9 @@ describe('componentMutations', () => {
       expect(result).toBeDefined();
       // Should assign PASSWORD_PROVISIONING executor
       const button = result?.find((c) => c.id === 'button-1');
-      expect((button?.action?.executor as {name: string})?.name).toBe(LoginFlowConstants.ExecutorNames.PASSWORD_PROVISIONING);
+      expect((button?.action?.executor as {name: string})?.name).toBe(
+        LoginFlowConstants.ExecutorNames.PASSWORD_PROVISIONING,
+      );
     });
 
     it('should detect OTP field and set hasOtpField', () => {
@@ -147,7 +149,9 @@ describe('componentMutations', () => {
       expect(result).toBeDefined();
       // With one submit button and password field, executor should be assigned
       const button = result?.find((c) => c.id === 'button-1');
-      expect((button?.action?.executor as {name: string})?.name).toBe(LoginFlowConstants.ExecutorNames.PASSWORD_PROVISIONING);
+      expect((button?.action?.executor as {name: string})?.name).toBe(
+        LoginFlowConstants.ExecutorNames.PASSWORD_PROVISIONING,
+      );
     });
 
     it('should not assign executor when multiple submit buttons exist', () => {
@@ -209,7 +213,9 @@ describe('componentMutations', () => {
       const button = result?.find((c) => c.id === 'button-1');
       expect(button?.action?.onSuccess).toBe('next-step');
       expect(button?.action?.customProp).toBe('value');
-      expect((button?.action?.executor as {name: string})?.name).toBe(LoginFlowConstants.ExecutorNames.PASSWORD_PROVISIONING);
+      expect((button?.action?.executor as {name: string})?.name).toBe(
+        LoginFlowConstants.ExecutorNames.PASSWORD_PROVISIONING,
+      );
     });
 
     it('should prefer password executor over OTP when both fields exist', () => {
@@ -228,7 +234,9 @@ describe('componentMutations', () => {
       expect(result).toBeDefined();
       const button = result?.find((c) => c.id === 'button-1');
       // Password takes precedence
-      expect((button?.action?.executor as {name: string})?.name).toBe(LoginFlowConstants.ExecutorNames.PASSWORD_PROVISIONING);
+      expect((button?.action?.executor as {name: string})?.name).toBe(
+        LoginFlowConstants.ExecutorNames.PASSWORD_PROVISIONING,
+      );
     });
 
     it('should return components unchanged when no special processing needed', () => {
@@ -335,7 +343,9 @@ describe('componentMutations', () => {
       const form = result[0];
       expect(form.components).toBeDefined();
       const button = form.components?.find((c) => c.id === 'button-1');
-      expect((button?.action?.executor as {name: string})?.name).toBe(LoginFlowConstants.ExecutorNames.PASSWORD_PROVISIONING);
+      expect((button?.action?.executor as {name: string})?.name).toBe(
+        LoginFlowConstants.ExecutorNames.PASSWORD_PROVISIONING,
+      );
     });
 
     it('should not modify non-form components', () => {
@@ -352,9 +362,7 @@ describe('componentMutations', () => {
     });
 
     it('should clone components to avoid mutation', () => {
-      const originalComponents: Element[] = [
-        createMockElement({id: 'element-1'}),
-      ];
+      const originalComponents: Element[] = [createMockElement({id: 'element-1'})];
 
       const result = mutateComponents(originalComponents);
 

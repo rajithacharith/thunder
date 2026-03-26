@@ -111,12 +111,7 @@ describe('CommonStepPropertyFactory', () => {
       } as Resource;
 
       render(
-        <CommonStepPropertyFactory
-          resource={resource}
-          propertyKey="isEnabled"
-          propertyValue
-          onChange={mockOnChange}
-        />,
+        <CommonStepPropertyFactory resource={resource} propertyKey="isEnabled" propertyValue onChange={mockOnChange} />,
       );
 
       const checkbox = screen.getByRole('checkbox');

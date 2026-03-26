@@ -110,7 +110,7 @@ function TextPropertyField({
    * Resolve the i18n value if the pattern is detected.
    */
   const resolvedI18nValue: string = useMemo(
-    () => (isI18nPattern ? resolve(propertyValue, {t}) ?? '' : ''),
+    () => (isI18nPattern ? (resolve(propertyValue, {t}) ?? '') : ''),
     [propertyValue, isI18nPattern, t, resolve],
   );
 

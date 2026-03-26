@@ -148,7 +148,13 @@ describe('OAuth Models', () => {
     });
 
     it('should have all expected auth method keys', () => {
-      const expectedKeys = ['CLIENT_SECRET_BASIC', 'CLIENT_SECRET_POST', 'CLIENT_SECRET_JWT', 'PRIVATE_KEY_JWT', 'NONE'];
+      const expectedKeys = [
+        'CLIENT_SECRET_BASIC',
+        'CLIENT_SECRET_POST',
+        'CLIENT_SECRET_JWT',
+        'PRIVATE_KEY_JWT',
+        'NONE',
+      ];
 
       expect(Object.keys(TokenEndpointAuthMethods)).toEqual(expectedKeys);
     });

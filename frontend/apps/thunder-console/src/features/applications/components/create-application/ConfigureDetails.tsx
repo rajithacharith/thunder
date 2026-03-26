@@ -300,8 +300,7 @@ export default function ConfigureDetails({
     },
   });
 
-  const isPasskeyConfigEnabled: boolean =
-    !selectedAuthFlow && (integrations[AuthenticatorTypes.PASSKEY] ?? false);
+  const isPasskeyConfigEnabled: boolean = !selectedAuthFlow && (integrations[AuthenticatorTypes.PASSKEY] ?? false);
 
   const configurationType: ApplicationCreateFlowConfiguration =
     getConfigurationTypeFromTemplate(selectedTemplateConfig);
@@ -449,10 +448,7 @@ export default function ConfigureDetails({
   ]);
 
   // For platforms that don't require configuration AND no passkey configuration needed
-  if (
-    configurationType === ApplicationCreateFlowConfiguration.NONE &&
-    !isPasskeyConfigEnabled
-  ) {
+  if (configurationType === ApplicationCreateFlowConfiguration.NONE && !isPasskeyConfigEnabled) {
     return (
       <Stack spacing={3}>
         <Box sx={{textAlign: 'center', py: 4}}>

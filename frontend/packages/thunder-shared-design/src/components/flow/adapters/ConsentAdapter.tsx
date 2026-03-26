@@ -71,7 +71,14 @@ export default function ConsentAdapter({
                           <Box key={attr} sx={{px: 1}}>
                             <FormControlLabel
                               className={cn('FormControlLabel--root')}
-                              control={<Switch className={cn('Switch--root')} checked={isChecked(attr)} disabled size="small" />}
+                              control={
+                                <Switch
+                                  className={cn('Switch--root')}
+                                  checked={isChecked(attr)}
+                                  disabled
+                                  size="small"
+                                />
+                              }
                               label={
                                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
                                   <Box

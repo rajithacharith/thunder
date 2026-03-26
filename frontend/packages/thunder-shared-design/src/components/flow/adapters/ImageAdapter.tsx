@@ -31,7 +31,12 @@ interface ImageAdapterProps {
 
 const DEFAULT_EMOJI_CONTAINER_HEIGHT = '4em';
 
-export default function ImageAdapter({component, resolve, maxWidth = '100%', maxHeight = '100%'}: ImageAdapterProps): JSX.Element | null {
+export default function ImageAdapter({
+  component,
+  resolve,
+  maxWidth = '100%',
+  maxHeight = '100%',
+}: ImageAdapterProps): JSX.Element | null {
   const resolvedSrc = resolve(component.src ?? '') ?? component.src ?? '';
 
   if (!resolvedSrc) return null;
@@ -51,7 +56,16 @@ export default function ImageAdapter({component, resolve, maxWidth = '100%', max
     }
 
     return (
-      <span className={cn('Flow--image')} style={{containerType: 'size', display: 'inline-grid', height: containerHeight, placeItems: 'center', width: cssWidth}}>
+      <span
+        className={cn('Flow--image')}
+        style={{
+          containerType: 'size',
+          display: 'inline-grid',
+          height: containerHeight,
+          placeItems: 'center',
+          width: cssWidth,
+        }}
+      >
         <span aria-label={component.alt ?? ''} role="img" style={{fontSize: '100cqmin', lineHeight: 1}}>
           {extractEmojiFromUri(resolvedSrc)}
         </span>

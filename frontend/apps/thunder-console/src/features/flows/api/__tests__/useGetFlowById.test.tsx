@@ -56,7 +56,7 @@ describe('useGetFlowById', () => {
         meta: {
           components: [],
         },
-        prompts: []
+        prompts: [],
       },
       {
         id: 'node-end',

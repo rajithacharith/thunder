@@ -164,15 +164,15 @@ const useDeleteExecutionResource = (): void => {
 
   useEffect(() => {
     // Attach unique identifiers to the functions for plugin registration
-    (
-      deleteComponentAndNode as typeof deleteComponentAndNode & Record<string, string>
-    )[VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER] = 'deleteComponentAndNode';
-    (
-      deleteExecutionNode as typeof deleteExecutionNode & Record<string, string>
-    )[VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER] = 'deleteExecutionNode';
-    (
-      deleteExecutionActionNode as typeof deleteExecutionActionNode & Record<string, string>
-    )[VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER] = 'deleteExecutionActionNode';
+    (deleteComponentAndNode as typeof deleteComponentAndNode & Record<string, string>)[
+      VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
+    ] = 'deleteComponentAndNode';
+    (deleteExecutionNode as typeof deleteExecutionNode & Record<string, string>)[
+      VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
+    ] = 'deleteExecutionNode';
+    (deleteExecutionActionNode as typeof deleteExecutionActionNode & Record<string, string>)[
+      VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER
+    ] = 'deleteExecutionActionNode';
 
     PluginRegistry.getInstance().registerAsync(
       FlowEventTypes.ON_NODE_DELETE,

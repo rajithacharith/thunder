@@ -78,19 +78,12 @@ export default function ConfigureGeneral({
 
       <FormControl fullWidth required>
         <FormLabel>{t('userTypes:organizationUnit')}</FormLabel>
-        <OrganizationUnitTreePicker
-          id="user-type-ou-picker"
-          value={ouId}
-          onChange={onOuIdChange}
-        />
+        <OrganizationUnitTreePicker id="user-type-ou-picker" value={ouId} onChange={onOuIdChange} />
       </FormControl>
 
       <FormControlLabel
         control={
-          <Checkbox
-            checked={allowSelfRegistration}
-            onChange={(e) => onAllowSelfRegistrationChange(e.target.checked)}
-          />
+          <Checkbox checked={allowSelfRegistration} onChange={(e) => onAllowSelfRegistrationChange(e.target.checked)} />
         }
         label={t('userTypes:allowSelfRegistration')}
       />

@@ -41,7 +41,11 @@ function SmsOtpExecution({resource}: SmsOtpExecutionPropsInterface): ReactElemen
 
   const generalMessage: ReactElement = useMemo(
     () => (
-      <Trans i18nKey="flows:core.validation.fields.executor.general" values={{id: resource?.id}} components={[<code key="executor-id" />]}>
+      <Trans
+        i18nKey="flows:core.validation.fields.executor.general"
+        values={{id: resource?.id}}
+        components={[<code key="executor-id" />]}
+      >
         {'The executor <0>{{id}}</0> is not properly configured.'}
       </Trans>
     ),

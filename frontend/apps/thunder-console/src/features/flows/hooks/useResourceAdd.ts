@@ -177,12 +177,7 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
         nodesToPass = [...currentNodes, targetViewStep];
       }
 
-      const [newNodes, newEdges] = onWidgetLoad(
-        clonedResource as Widget,
-        targetViewStep,
-        nodesToPass,
-        currentEdges,
-      );
+      const [newNodes, newEdges] = onWidgetLoad(clonedResource as Widget, targetViewStep, nodesToPass, currentEdges);
 
       if (metadata?.executorConnections) {
         autoAssignConnections(newNodes, metadata.executorConnections);

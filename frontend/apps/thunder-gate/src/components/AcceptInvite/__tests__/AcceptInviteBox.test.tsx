@@ -45,7 +45,11 @@ vi.mock('@thunder/shared-design', async (importOriginal) => {
 
 // Wrap renders with DesignContext so real adapters inside FlowComponentRenderer can access it
 const render = (ui: React.ReactElement) => {
-  const designValue: DesignContextType = {isDesignEnabled: false, isLoading: false, ...(mockUseDesign() as Partial<DesignContextType>)};
+  const designValue: DesignContextType = {
+    isDesignEnabled: false,
+    isLoading: false,
+    ...(mockUseDesign() as Partial<DesignContextType>),
+  };
   return testRender(<DesignContext.Provider value={designValue}>{ui}</DesignContext.Provider>);
 };
 

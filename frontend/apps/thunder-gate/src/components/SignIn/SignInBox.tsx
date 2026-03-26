@@ -88,73 +88,73 @@ export default function SignInBox(): JSX.Element {
       logoDisplay={!isDesignEnabled ? {xs: 'flex', md: 'none'} : {display: 'none'}}
     >
       <SignIn>
-          {({onSubmit, isLoading, components, error, isInitialized, meta: flowMeta, additionalData}) =>
-            (isLoading ?? !isInitialized) ? (
-              <Box sx={{display: 'flex', justifyContent: 'center', p: 3}}>
-                <CircularProgress />
-              </Box>
-            ) : (
-              <>
-                {error && (
-                  <Alert severity="error" sx={{mb: 2}}>
-                    {error.message ?? t('signin:errors.signin.failed.description')}
-                  </Alert>
-                )}
-                {(() => {
-                  const renderComponents = components && components.length > 0 ? components : [];
+        {({onSubmit, isLoading, components, error, isInitialized, meta: flowMeta, additionalData}) =>
+          (isLoading ?? !isInitialized) ? (
+            <Box sx={{display: 'flex', justifyContent: 'center', p: 3}}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <>
+              {error && (
+                <Alert severity="error" sx={{mb: 2}}>
+                  {error.message ?? t('signin:errors.signin.failed.description')}
+                </Alert>
+              )}
+              {(() => {
+                const renderComponents = components && components.length > 0 ? components : [];
 
-                  if (renderComponents.length > 0) {
-                    return (
-                      <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                        {renderComponents.map((component: EmbeddedFlowComponent, index: number) => (
-                          <FlowComponentRenderer
-                            key={component.id ?? index}
-                            component={component}
-                            index={index}
-                            values={formInputs}
-                            fieldErrors={fieldErrors}
-                            isLoading={isLoading}
-                            additionalData={additionalData}
-                            signUpFallbackUrl={signUpFallbackUrl}
-                            resolve={(template) =>
-                              resolveAll(template, {
-                                [TemplateLiteralType.TRANSLATION]: t,
-                                [TemplateLiteralType.META]: (path: string) => {
-                                  const keys = path.split('.');
-                                  const value: unknown = keys.reduce<unknown>((acc: unknown, key: string): unknown => {
-                                    if (acc == null || typeof acc !== 'object') return acc;
-                                    const record = acc as Record<string, unknown>;
-                                    return record[key] ?? record[key.replace(/([A-Z])/g, '_$1').toLowerCase()];
-                                  }, flowMeta as unknown);
-
-                                  return (value as string | undefined) ?? `{{meta(${path})}}`;
-                                },
-                              })
-                            }
-                            onInputChange={updateInput}
-                            onValidate={validateForm}
-                            onSubmit={(action, inputs) => {
-                              void onSubmit({inputs, action: action.id}).finally(() => {
-                                setFormInputs({});
-                                setFieldErrors({});
-                              });
-                            }}
-                          />
-                        ))}
-                      </Box>
-                    );
-                  }
-
+                if (renderComponents.length > 0) {
                   return (
-                    <Box sx={{display: 'flex', justifyContent: 'center', p: 3}}>
-                      <CircularProgress />
+                    <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+                      {renderComponents.map((component: EmbeddedFlowComponent, index: number) => (
+                        <FlowComponentRenderer
+                          key={component.id ?? index}
+                          component={component}
+                          index={index}
+                          values={formInputs}
+                          fieldErrors={fieldErrors}
+                          isLoading={isLoading}
+                          additionalData={additionalData}
+                          signUpFallbackUrl={signUpFallbackUrl}
+                          resolve={(template) =>
+                            resolveAll(template, {
+                              [TemplateLiteralType.TRANSLATION]: t,
+                              [TemplateLiteralType.META]: (path: string) => {
+                                const keys = path.split('.');
+                                const value: unknown = keys.reduce<unknown>((acc: unknown, key: string): unknown => {
+                                  if (acc == null || typeof acc !== 'object') return acc;
+                                  const record = acc as Record<string, unknown>;
+                                  return record[key] ?? record[key.replace(/([A-Z])/g, '_$1').toLowerCase()];
+                                }, flowMeta as unknown);
+
+                                return (value as string | undefined) ?? `{{meta(${path})}}`;
+                              },
+                            })
+                          }
+                          onInputChange={updateInput}
+                          onValidate={validateForm}
+                          onSubmit={(action, inputs) => {
+                            void onSubmit({inputs, action: action.id}).finally(() => {
+                              setFormInputs({});
+                              setFieldErrors({});
+                            });
+                          }}
+                        />
+                      ))}
                     </Box>
                   );
-                })()}
-              </>
-            )
-          }
-        </SignIn>
+                }
+
+                return (
+                  <Box sx={{display: 'flex', justifyContent: 'center', p: 3}}>
+                    <CircularProgress />
+                  </Box>
+                );
+              })()}
+            </>
+          )
+        }
+      </SignIn>
     </AuthCardLayout>
   );
 }

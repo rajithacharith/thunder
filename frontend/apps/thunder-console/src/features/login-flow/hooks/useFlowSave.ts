@@ -76,8 +76,16 @@ export interface UseFlowSaveReturn {
  * @returns Save handler and save state.
  */
 const useFlowSave = (props: UseFlowSaveProps): UseFlowSaveReturn => {
-  const {flowId, isEditingExistingFlow, isFlowValid, flowName, flowHandle, showError, showSuccess, setOpenValidationPanel} =
-    props;
+  const {
+    flowId,
+    isEditingExistingFlow,
+    isFlowValid,
+    flowName,
+    flowHandle,
+    showError,
+    showSuccess,
+    setOpenValidationPanel,
+  } = props;
 
   const {t} = useTranslation();
   const navigate = useNavigate();

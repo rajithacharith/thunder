@@ -196,7 +196,12 @@ const useEdgeGeneration = (props?: UseEdgeGenerationProps): UseEdgeGenerationRet
 
             if (stepIds.has(step.data.action.onSuccess)) {
               generatedEdges.push(
-                createEdge(`${step.id}-to-${step.data.action.onSuccess}`, step.id, sourceHandle, step.data.action.onSuccess),
+                createEdge(
+                  `${step.id}-to-${step.data.action.onSuccess}`,
+                  step.id,
+                  sourceHandle,
+                  step.data.action.onSuccess,
+                ),
               );
               if (step.data.action.onSuccess === userOnboardStepId) {
                 userOnboardEdgeCreated = true;
@@ -212,7 +217,12 @@ const useEdgeGeneration = (props?: UseEdgeGenerationProps): UseEdgeGenerationRet
           // Process step-level onFailure actions
           if (step.data?.action?.onFailure && stepIds.has(step.data.action.onFailure)) {
             generatedEdges.push(
-              createEdge(`${step.id}-failure-to-${step.data.action.onFailure}`, step.id, 'failure', step.data.action.onFailure),
+              createEdge(
+                `${step.id}-failure-to-${step.data.action.onFailure}`,
+                step.id,
+                'failure',
+                step.data.action.onFailure,
+              ),
             );
           }
         });

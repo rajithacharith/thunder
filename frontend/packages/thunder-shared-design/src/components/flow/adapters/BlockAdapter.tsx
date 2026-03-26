@@ -69,7 +69,11 @@ function SubmitButtonAdapter({
     <Button
       type={onClick ? 'button' : 'submit'}
       fullWidth
-      className={cn('Flow--submitButton', 'Button--root', component.variant === 'PRIMARY' ? 'Button--primary' : 'Button--outlined')}
+      className={cn(
+        'Flow--submitButton',
+        'Button--root',
+        component.variant === 'PRIMARY' ? 'Button--primary' : 'Button--outlined',
+      )}
       variant={component.variant === 'PRIMARY' ? 'contained' : 'outlined'}
       disabled={isLoading}
       onClick={onClick}
@@ -90,7 +94,14 @@ function ResendButtonAdapter({component, isLoading, resolve}: ResendButtonAdapte
   const {t} = useTranslation();
 
   return (
-    <Button type="submit" fullWidth className={cn('Flow--resendButton', 'Button--root')} variant="text" disabled={isLoading} sx={{mt: 1}}>
+    <Button
+      type="submit"
+      fullWidth
+      className={cn('Flow--resendButton', 'Button--root')}
+      variant="text"
+      disabled={isLoading}
+      sx={{mt: 1}}
+    >
       {t(resolve(component.label)!)}
     </Button>
   );
@@ -128,7 +139,11 @@ function TriggerButtonAdapter({
   return (
     <Button
       fullWidth
-      className={cn('Flow--triggerButton', 'Button--root', component.variant === 'PRIMARY' ? 'Button--primary' : 'Button--secondary')}
+      className={cn(
+        'Flow--triggerButton',
+        'Button--root',
+        component.variant === 'PRIMARY' ? 'Button--primary' : 'Button--secondary',
+      )}
       variant={component.variant === 'PRIMARY' ? 'contained' : 'outlined'}
       disabled={isLoading}
       startIcon={iconElement}
@@ -307,7 +322,11 @@ function TriggerBlockAdapter({component, index, ...ctx}: TriggerBlockAdapterProp
   const blockComponents: EmbeddedFlowComponent[] = component.components ?? [];
 
   return (
-    <Box key={component.id ?? index} className={cn('Flow--triggerBlock')} sx={{display: 'flex', flexDirection: 'column', width: '100%', gap: 2, mt: 2}}>
+    <Box
+      key={component.id ?? index}
+      className={cn('Flow--triggerBlock')}
+      sx={{display: 'flex', flexDirection: 'column', width: '100%', gap: 2, mt: 2}}
+    >
       {blockComponents.map((actionComponent, actionIndex) => {
         const sub = actionComponent as FlowComponent;
         if (

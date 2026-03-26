@@ -104,7 +104,10 @@ describe('ConfigureUserDetails', () => {
 
     await waitFor(() => {
       expect(mockOnFormValuesChange).toHaveBeenCalled();
-      const lastCall = mockOnFormValuesChange.mock.calls[mockOnFormValuesChange.mock.calls.length - 1][0] as Record<string, unknown>;
+      const lastCall = mockOnFormValuesChange.mock.calls[mockOnFormValuesChange.mock.calls.length - 1][0] as Record<
+        string,
+        unknown
+      >;
       expect(lastCall).toHaveProperty('username', 'john');
     });
   });

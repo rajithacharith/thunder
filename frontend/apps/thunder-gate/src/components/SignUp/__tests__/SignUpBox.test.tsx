@@ -45,7 +45,11 @@ vi.mock('@thunder/shared-design', async (importOriginal) => {
 
 // Wrap renders with DesignContext so real adapters inside FlowComponentRenderer can access it
 const render = (ui: React.ReactElement) => {
-  const designValue: DesignContextType = {isDesignEnabled: false, isLoading: false, ...(mockUseDesign() as Partial<DesignContextType>)};
+  const designValue: DesignContextType = {
+    isDesignEnabled: false,
+    isLoading: false,
+    ...(mockUseDesign() as Partial<DesignContextType>),
+  };
   return testRender(<DesignContext.Provider value={designValue}>{ui}</DesignContext.Provider>);
 };
 
@@ -90,9 +94,7 @@ interface MockSignUpRenderProps {
 }
 
 // Factory function to create fresh mock props for each test
-const createMockSignUpRenderProps = (
-  overrides: Partial<MockSignUpRenderProps> = {},
-): MockSignUpRenderProps => ({
+const createMockSignUpRenderProps = (overrides: Partial<MockSignUpRenderProps> = {}): MockSignUpRenderProps => ({
   values: {},
   fieldErrors: {},
   error: null,
@@ -110,8 +112,9 @@ vi.mock('@asgardeo/react', async () => {
   const actual = await vi.importActual('@asgardeo/react');
   return {
     ...actual,
-    SignUp: ({children}: {children: (props: typeof mockSignUpRenderProps) => React.ReactNode}) =>
-      <div data-testid="asgardeo-signup">{children(mockSignUpRenderProps)}</div>,
+    SignUp: ({children}: {children: (props: typeof mockSignUpRenderProps) => React.ReactNode}) => (
+      <div data-testid="asgardeo-signup">{children(mockSignUpRenderProps)}</div>
+    ),
     EmbeddedFlowComponentType: {
       Text: 'TEXT',
       Block: 'BLOCK',
@@ -1055,9 +1058,7 @@ describe('SignUpBox', () => {
               ref: 'complexField',
               label: 'Complex Field',
               placeholder: 'Select option',
-              options: [
-                {value: {nested: 'value'}, label: {text: 'Label'}},
-              ],
+              options: [{value: {nested: 'value'}, label: {text: 'Label'}}],
               required: true,
             },
             {

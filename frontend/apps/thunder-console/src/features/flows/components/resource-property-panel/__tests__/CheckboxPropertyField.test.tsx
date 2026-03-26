@@ -58,12 +58,7 @@ describe('CheckboxPropertyField', () => {
   describe('Rendering', () => {
     it('should render checkbox with label', () => {
       render(
-        <CheckboxPropertyField
-          resource={mockResource}
-          propertyKey="isEnabled"
-          propertyValue
-          onChange={mockOnChange}
-        />,
+        <CheckboxPropertyField resource={mockResource} propertyKey="isEnabled" propertyValue onChange={mockOnChange} />,
         {wrapper: createWrapper()},
       );
 
@@ -86,12 +81,7 @@ describe('CheckboxPropertyField', () => {
 
     it('should render checkbox as checked when propertyValue is true', () => {
       render(
-        <CheckboxPropertyField
-          resource={mockResource}
-          propertyKey="enabled"
-          propertyValue
-          onChange={mockOnChange}
-        />,
+        <CheckboxPropertyField resource={mockResource} propertyKey="enabled" propertyValue onChange={mockOnChange} />,
         {wrapper: createWrapper()},
       );
 
@@ -135,12 +125,7 @@ describe('CheckboxPropertyField', () => {
 
     it('should call onChange with checked=false when checkbox is unchecked', () => {
       render(
-        <CheckboxPropertyField
-          resource={mockResource}
-          propertyKey="enabled"
-          propertyValue
-          onChange={mockOnChange}
-        />,
+        <CheckboxPropertyField resource={mockResource} propertyKey="enabled" propertyValue onChange={mockOnChange} />,
         {wrapper: createWrapper()},
       );
 
@@ -232,12 +217,7 @@ describe('CheckboxPropertyField', () => {
   describe('Accessibility', () => {
     it('should have accessible checkbox element', () => {
       render(
-        <CheckboxPropertyField
-          resource={mockResource}
-          propertyKey="enabled"
-          propertyValue
-          onChange={mockOnChange}
-        />,
+        <CheckboxPropertyField resource={mockResource} propertyKey="enabled" propertyValue onChange={mockOnChange} />,
         {wrapper: createWrapper()},
       );
 
@@ -272,12 +252,7 @@ describe('CheckboxPropertyField', () => {
 
     it('should render checkbox with primary color when no error', () => {
       render(
-        <CheckboxPropertyField
-          resource={mockResource}
-          propertyKey="noError"
-          propertyValue
-          onChange={mockOnChange}
-        />,
+        <CheckboxPropertyField resource={mockResource} propertyKey="noError" propertyValue onChange={mockOnChange} />,
         {wrapper: createWrapper()},
       );
 
@@ -298,12 +273,7 @@ describe('CheckboxPropertyField', () => {
       };
 
       render(
-        <CheckboxPropertyField
-          resource={mockResource}
-          propertyKey="enabled"
-          propertyValue
-          onChange={mockOnChange}
-        />,
+        <CheckboxPropertyField resource={mockResource} propertyKey="enabled" propertyValue onChange={mockOnChange} />,
         {wrapper: createWrapper(contextWithNotification)},
       );
 

@@ -103,9 +103,7 @@ const useNodeTypes = (props: UseNodeTypesProps): UseNodeTypesReturn => {
           resources={stepsByTypeRef.current[stepType] ?? []}
           allResources={resourcesRef.current}
           onAddElement={(element: Element) => onAddElementToViewRef.current?.(element, nodeProps.id)}
-          onAddElementToForm={(element: Element, formId: string) =>
-            onAddElementToFormRef.current?.(element, formId)
-          }
+          onAddElementToForm={(element: Element, formId: string) => onAddElementToFormRef.current?.(element, formId)}
           {...nodeProps}
         />
       );

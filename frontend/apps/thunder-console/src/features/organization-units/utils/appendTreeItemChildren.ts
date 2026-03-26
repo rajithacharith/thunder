@@ -26,7 +26,9 @@ export default function appendTreeItemChildren(
 ): OrganizationUnitTreeItem[] {
   return items.map((item) => {
     if (item.id === parentId) {
-      const existing = (item.children ?? []).filter((c) => !c.id.endsWith(OrganizationUnitTreeConstants.LOAD_MORE_SUFFIX));
+      const existing = (item.children ?? []).filter(
+        (c) => !c.id.endsWith(OrganizationUnitTreeConstants.LOAD_MORE_SUFFIX),
+      );
 
       return {...item, children: [...existing, ...newChildren]};
     }

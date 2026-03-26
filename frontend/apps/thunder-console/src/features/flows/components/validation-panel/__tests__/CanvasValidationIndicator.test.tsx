@@ -71,7 +71,8 @@ vi.mock('../../../hooks/useFlowBuilderCore', () => ({
 }));
 
 describe('CanvasValidationIndicator', () => {
-  const createNotification = (id: string, message: string, type: NotificationType): Notification => new Notification(id, message, type);
+  const createNotification = (id: string, message: string, type: NotificationType): Notification =>
+    new Notification(id, message, type);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -301,9 +302,7 @@ describe('CanvasValidationIndicator', () => {
     });
 
     it('should use info status when there are only info notifications', () => {
-      mockNotifications = [
-        createNotification('1', 'Info', NotificationType.INFO),
-      ];
+      mockNotifications = [createNotification('1', 'Info', NotificationType.INFO)];
 
       render(<CanvasValidationIndicator />);
 

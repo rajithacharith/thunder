@@ -16,52 +16,52 @@
  * under the License.
  */
 
-@use "../../../../styles/variables";
+@use '../../../../styles/variables';
 
 :root {
-    --flow-builder-rule-background-color: #002e58;
-    --flow-builder-rule-remove-button-color: var(--flow-builder-grey-500);
-    --flow-builder-rule-remove-button-hover-color: var(--mui-palette-primary-contrastText);
-    --flow-builder-rule-content-box-width: 150px;
+  --flow-builder-rule-background-color: #002e58;
+  --flow-builder-rule-remove-button-color: var(--flow-builder-grey-500);
+  --flow-builder-rule-remove-button-hover-color: var(--mui-palette-primary-contrastText);
+  --flow-builder-rule-content-box-width: 150px;
 }
 
 .flow-builder-rule {
-    background-color: var(--flow-builder-rule-background-color);
-    border-radius: var(--flow-builder-border-radius);
+  background-color: var(--flow-builder-rule-background-color);
+  border-radius: var(--flow-builder-border-radius);
 
-    .flow-builder-rule-content {
-        display: flex;
-        flex-flow: column nowrap;
-        align-content: center;
-        justify-content: center;
-        align-items: center;
-        text-align: left;
+  .flow-builder-rule-content {
+    display: flex;
+    flex-flow: column nowrap;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+    text-align: left;
 
-        .flow-builder-rule-content-box {
-            padding: 32px;
-            width: var(--flow-builder-rule-content-box-width);
-            cursor: auto;
-        }
+    .flow-builder-rule-content-box {
+      padding: 32px;
+      width: var(--flow-builder-rule-content-box-width);
+      cursor: auto;
+    }
+  }
+
+  .flow-builder-rule-action-panel {
+    padding: 20px 20px;
+    height: auto;
+
+    .flow-builder-rule-id {
+      color: var(--mui-palette-primary-contrastText);
     }
 
-    .flow-builder-rule-action-panel {
-        padding: 20px 20px;
-        height: auto;
+    .flow-builder-rule-remove-button {
+      border: 2px solid var(--flow-builder-rule-remove-button-color);
+      padding: 2px;
+      margin-left: 20px;
+      color: var(--flow-builder-rule-remove-button-color);
 
-        .flow-builder-rule-id {
-            color: var(--mui-palette-primary-contrastText);
-        }
-
-        .flow-builder-rule-remove-button {
-            border: 2px solid var(--flow-builder-rule-remove-button-color);
-            padding: 2px;
-            margin-left: 20px;
-            color: var(--flow-builder-rule-remove-button-color);
-
-            &:hover {
-                border-color: var(--flow-builder-rule-remove-button-hover-color);
-                color: var(--flow-builder-rule-remove-button-hover-color);
-            }
-        }
+      &:hover {
+        border-color: var(--flow-builder-rule-remove-button-hover-color);
+        color: var(--flow-builder-rule-remove-button-hover-color);
+      }
     }
+  }
 }

@@ -91,9 +91,7 @@ describe('EditGeneralSettings', () => {
   it('should render copy button for organization unit ID', () => {
     renderWithProviders(<EditGeneralSettings {...defaultProps} />);
 
-    expect(
-      screen.getByLabelText('Copy organization unit ID'),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Copy organization unit ID')).toBeInTheDocument();
   });
 
   it('should copy organization unit ID to clipboard when copy button is clicked', async () => {

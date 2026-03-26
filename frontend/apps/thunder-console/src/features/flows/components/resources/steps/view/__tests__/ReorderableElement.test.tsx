@@ -498,12 +498,7 @@ describe('ReorderableElement', () => {
 
       // Rerender with different availableElements but same element
       rerender(
-        <ReorderableElement
-          id="sortable-1"
-          index={0}
-          element={mockElement}
-          availableElements={newAvailableElements}
-        />,
+        <ReorderableElement id="sortable-1" index={0} element={mockElement} availableElements={newAvailableElements} />,
       );
 
       // Component should still render correctly

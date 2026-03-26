@@ -56,9 +56,7 @@ describe('ScopeMapper', () => {
       />,
     );
 
-    expect(
-      screen.getByText('Add at least one scope above to start mapping attributes.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Add at least one scope above to start mapping attributes.')).toBeInTheDocument();
   });
 
   it('renders scope names in the left panel when scopes exist', () => {
@@ -92,12 +90,7 @@ describe('ScopeMapper', () => {
     const user = userEvent.setup();
 
     render(
-      <ScopeMapper
-        {...defaultProps}
-        scopes={['openid']}
-        scopeClaims={{}}
-        onScopeClaimsChange={onScopeClaimsChange}
-      />,
+      <ScopeMapper {...defaultProps} scopes={['openid']} scopeClaims={{}} onScopeClaimsChange={onScopeClaimsChange} />,
     );
 
     // email is an available attribute (not in DEFAULT_TOKEN_ATTRIBUTES mock)
@@ -152,8 +145,6 @@ describe('ScopeMapper', () => {
       />,
     );
 
-    expect(
-      screen.getByText('All available attributes are already mapped to this scope'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('All available attributes are already mapped to this scope')).toBeInTheDocument();
   });
 });

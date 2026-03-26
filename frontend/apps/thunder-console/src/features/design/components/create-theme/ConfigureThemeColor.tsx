@@ -50,8 +50,8 @@ export default function ConfigureThemeColor({
       <Stack direction="column" spacing={1}>
         <Typography variant="h1">Pick a primary color</Typography>
         <Typography variant="body1" color="text.secondary">
-          This sets the primary accent color for <strong>{themeName}</strong>. You can fine-tune everything in the theme builder
-          after creating.
+          This sets the primary accent color for <strong>{themeName}</strong>. You can fine-tune everything in the theme
+          builder after creating.
         </Typography>
       </Stack>
 

@@ -88,10 +88,26 @@ describe('ElementInspector', () => {
       // Mock getBoundingClientRect for the target and container
       const containerEl = container.firstElementChild as HTMLElement;
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
       vi.spyOn(target, 'getBoundingClientRect').mockReturnValue({
-        x: 10, y: 20, width: 200, height: 50, top: 20, left: 10, right: 210, bottom: 70, toJSON: vi.fn(),
+        x: 10,
+        y: 20,
+        width: 200,
+        height: 50,
+        top: 20,
+        left: 10,
+        right: 210,
+        bottom: 70,
+        toJSON: vi.fn(),
       });
 
       act(() => {
@@ -116,10 +132,26 @@ describe('ElementInspector', () => {
       const containerEl = container.firstElementChild as HTMLElement;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
       vi.spyOn(thunderEl, 'getBoundingClientRect').mockReturnValue({
-        x: 10, y: 20, width: 200, height: 50, top: 20, left: 10, right: 210, bottom: 70, toJSON: vi.fn(),
+        x: 10,
+        y: 20,
+        width: 200,
+        height: 50,
+        top: 20,
+        left: 10,
+        right: 210,
+        bottom: 70,
+        toJSON: vi.fn(),
       });
 
       act(() => {
@@ -140,10 +172,26 @@ describe('ElementInspector', () => {
       const containerEl = container.firstElementChild as HTMLElement;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
       vi.spyOn(target, 'getBoundingClientRect').mockReturnValue({
-        x: 10, y: 20, width: 200, height: 50, top: 20, left: 10, right: 210, bottom: 70, toJSON: vi.fn(),
+        x: 10,
+        y: 20,
+        width: 200,
+        height: 50,
+        top: 20,
+        left: 10,
+        right: 210,
+        bottom: 70,
+        toJSON: vi.fn(),
       });
 
       act(() => {
@@ -163,7 +211,9 @@ describe('ElementInspector', () => {
         <ElementInspector enabled>
           <div className="ThunderSignInBox--root">
             <span data-testid="a">A</span>
-            <span className="ThunderFlow--text" data-testid="b">B</span>
+            <span className="ThunderFlow--text" data-testid="b">
+              B
+            </span>
           </div>
         </ElementInspector>,
       );
@@ -174,13 +224,37 @@ describe('ElementInspector', () => {
       const thunderRoot = elA.parentElement!;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
       vi.spyOn(thunderRoot, 'getBoundingClientRect').mockReturnValue({
-        x: 10, y: 20, width: 200, height: 50, top: 20, left: 10, right: 210, bottom: 70, toJSON: vi.fn(),
+        x: 10,
+        y: 20,
+        width: 200,
+        height: 50,
+        top: 20,
+        left: 10,
+        right: 210,
+        bottom: 70,
+        toJSON: vi.fn(),
       });
       vi.spyOn(elB, 'getBoundingClientRect').mockReturnValue({
-        x: 50, y: 20, width: 100, height: 50, top: 20, left: 50, right: 150, bottom: 70, toJSON: vi.fn(),
+        x: 50,
+        y: 20,
+        width: 100,
+        height: 50,
+        top: 20,
+        left: 50,
+        right: 150,
+        bottom: 70,
+        toJSON: vi.fn(),
       });
 
       act(() => {
@@ -211,10 +285,26 @@ describe('ElementInspector', () => {
       const containerEl = container.firstElementChild as HTMLElement;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
       vi.spyOn(target, 'getBoundingClientRect').mockReturnValue({
-        x: 10, y: 20, width: 200, height: 50, top: 20, left: 10, right: 210, bottom: 70, toJSON: vi.fn(),
+        x: 10,
+        y: 20,
+        width: 200,
+        height: 50,
+        top: 20,
+        left: 10,
+        right: 210,
+        bottom: 70,
+        toJSON: vi.fn(),
       });
 
       // First hover over a Thunder element to show highlight
@@ -241,7 +331,15 @@ describe('ElementInspector', () => {
       const containerEl = container.firstElementChild as HTMLElement;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
 
       act(() => {
@@ -266,7 +364,15 @@ describe('ElementInspector', () => {
       const containerEl = container.firstElementChild as HTMLElement;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
 
       act(() => {
@@ -288,7 +394,15 @@ describe('ElementInspector', () => {
       const containerEl = container.firstElementChild as HTMLElement;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
 
       act(() => {
@@ -309,7 +423,15 @@ describe('ElementInspector', () => {
       const containerEl = container.firstElementChild as HTMLElement;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
 
       act(() => {
@@ -330,7 +452,15 @@ describe('ElementInspector', () => {
       const containerEl = container.firstElementChild as HTMLElement;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
 
       await act(async () => {
@@ -355,7 +485,15 @@ describe('ElementInspector', () => {
       const containerEl = container.firstElementChild as HTMLElement;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
 
       await act(async () => {
@@ -388,7 +526,15 @@ describe('ElementInspector', () => {
       const containerEl = container.firstElementChild as HTMLElement;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
 
       await act(async () => {
@@ -413,7 +559,15 @@ describe('ElementInspector', () => {
       const containerEl = container.firstElementChild as HTMLElement;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
 
       act(() => {
@@ -437,7 +591,15 @@ describe('ElementInspector', () => {
       const containerEl = container.firstElementChild as HTMLElement;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
 
       act(() => {
@@ -476,10 +638,26 @@ describe('ElementInspector', () => {
       const containerEl = container.firstElementChild as HTMLElement;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
       vi.spyOn(target, 'getBoundingClientRect').mockReturnValue({
-        x: 10, y: 20, width: 200, height: 50, top: 20, left: 10, right: 210, bottom: 70, toJSON: vi.fn(),
+        x: 10,
+        y: 20,
+        width: 200,
+        height: 50,
+        top: 20,
+        left: 10,
+        right: 210,
+        bottom: 70,
+        toJSON: vi.fn(),
       });
 
       act(() => {
@@ -510,10 +688,26 @@ describe('ElementInspector', () => {
       const containerEl = container.firstElementChild as HTMLElement;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
       vi.spyOn(target, 'getBoundingClientRect').mockReturnValue({
-        x: 10, y: 20, width: 200, height: 50, top: 20, left: 10, right: 210, bottom: 70, toJSON: vi.fn(),
+        x: 10,
+        y: 20,
+        width: 200,
+        height: 50,
+        top: 20,
+        left: 10,
+        right: 210,
+        bottom: 70,
+        toJSON: vi.fn(),
       });
 
       act(() => {
@@ -537,10 +731,26 @@ describe('ElementInspector', () => {
       const containerEl = container.firstElementChild as HTMLElement;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
       vi.spyOn(target, 'getBoundingClientRect').mockReturnValue({
-        x: 10, y: 20, width: 200, height: 50, top: 20, left: 10, right: 210, bottom: 70, toJSON: vi.fn(),
+        x: 10,
+        y: 20,
+        width: 200,
+        height: 50,
+        top: 20,
+        left: 10,
+        right: 210,
+        bottom: 70,
+        toJSON: vi.fn(),
       });
 
       act(() => {
@@ -565,10 +775,26 @@ describe('ElementInspector', () => {
       const containerEl = container.firstElementChild as HTMLElement;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
       vi.spyOn(target, 'getBoundingClientRect').mockReturnValue({
-        x: 10, y: 20, width: 200, height: 50, top: 20, left: 10, right: 210, bottom: 70, toJSON: vi.fn(),
+        x: 10,
+        y: 20,
+        width: 200,
+        height: 50,
+        top: 20,
+        left: 10,
+        right: 210,
+        bottom: 70,
+        toJSON: vi.fn(),
       });
 
       act(() => {
@@ -660,7 +886,15 @@ describe('ElementInspector', () => {
       const containerEl = container.firstElementChild as HTMLElement;
 
       vi.spyOn(containerEl, 'getBoundingClientRect').mockReturnValue({
-        x: 0, y: 0, width: 800, height: 600, top: 0, left: 0, right: 800, bottom: 600, toJSON: vi.fn(),
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 600,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: vi.fn(),
       });
 
       act(() => {

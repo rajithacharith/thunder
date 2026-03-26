@@ -259,7 +259,7 @@ describe('CustomLinkPlugin', () => {
       const urlInput = inputs[1]; // Second input is the URL field
       expect(urlInput).toBeInTheDocument();
       act(() => {
-        fireEvent.change(urlInput, { target: { value: 'https://test.com' } });
+        fireEvent.change(urlInput, {target: {value: 'https://test.com'}});
       });
 
       // Verify the input value was updated before Enter key

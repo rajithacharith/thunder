@@ -216,7 +216,7 @@ describe('useCreateApplication', () => {
     });
 
     act(() => {
-      resolveRequest({ data: mockApplication });
+      resolveRequest({data: mockApplication});
     });
 
     await waitFor(() => {

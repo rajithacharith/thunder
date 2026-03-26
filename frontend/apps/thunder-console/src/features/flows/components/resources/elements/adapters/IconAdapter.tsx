@@ -53,9 +53,9 @@ function IconAdapter({resource}: IconAdapterPropsInterface): ReactElement {
   const size = iconElement?.size ?? 24;
   const color = iconElement?.color ?? 'currentColor';
 
-  const IconComponent = (name in Icons
-    ? Icons[name as keyof typeof Icons]
-    : undefined) as ComponentType<{size?: number; color?: string}> | undefined;
+  const IconComponent = (name in Icons ? Icons[name as keyof typeof Icons] : undefined) as
+    | ComponentType<{size?: number; color?: string}>
+    | undefined;
 
   if (!IconComponent) {
     return (

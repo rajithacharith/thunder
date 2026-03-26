@@ -50,18 +50,14 @@ describe('MetaConfigurationCardContent', () => {
   it('should render the variable path label', () => {
     render(<MetaConfigurationCardContent metaKey="" onChange={mockOnChange} />);
 
-    expect(
-      screen.getByText('flows:core.elements.textPropertyField.metaCard.variablePath'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('flows:core.elements.textPropertyField.metaCard.variablePath')).toBeInTheDocument();
   });
 
   it('should render autocomplete with placeholder', () => {
     render(<MetaConfigurationCardContent metaKey="" onChange={mockOnChange} />);
 
     expect(
-      screen.getByPlaceholderText(
-        'flows:core.elements.textPropertyField.metaCard.variablePathPlaceholder',
-      ),
+      screen.getByPlaceholderText('flows:core.elements.textPropertyField.metaCard.variablePathPlaceholder'),
     ).toBeInTheDocument();
   });
 
@@ -156,9 +152,7 @@ describe('MetaConfigurationCard', () => {
       />,
     );
 
-    expect(
-      screen.getByText(/flows:core.elements.textPropertyField.metaCard.title/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/flows:core.elements.textPropertyField.metaCard.title/)).toBeInTheDocument();
   });
 
   it('should render close button', () => {
@@ -204,9 +198,7 @@ describe('MetaConfigurationCard', () => {
       />,
     );
 
-    expect(
-      screen.queryByText('flows:core.elements.textPropertyField.metaCard.variablePath'),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText('flows:core.elements.textPropertyField.metaCard.variablePath')).not.toBeInTheDocument();
   });
 
   it('should render MetaConfigurationCardContent with correct props', () => {

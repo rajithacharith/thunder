@@ -81,8 +81,15 @@ export interface UseTemplateAndWidgetLoadingReturn {
  * @returns Loading handlers.
  */
 const useTemplateAndWidgetLoading = (props: UseTemplateAndWidgetLoadingProps): UseTemplateAndWidgetLoadingReturn => {
-  const {resources, generateSteps, generateEdges, validateEdges, getBlankTemplateComponents, setNodes, updateNodeInternals} =
-    props;
+  const {
+    resources,
+    generateSteps,
+    generateEdges,
+    validateEdges,
+    getBlankTemplateComponents,
+    setNodes,
+    updateNodeInternals,
+  } = props;
 
   const {setFlowCompletionConfigs, edgeStyle} = useFlowBuilderCore();
   const {generateStepElement} = useGenerateStepElement();

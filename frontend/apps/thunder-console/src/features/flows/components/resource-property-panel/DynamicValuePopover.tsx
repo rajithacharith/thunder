@@ -63,7 +63,9 @@ function DynamicValuePopover({
   onChange,
 }: DynamicValuePopoverPropsInterface): ReactElement {
   const {t} = useTranslation();
-  const [activeTab, setActiveTab] = useState<number>(() => (isMetaTemplatePattern(value) ? TAB_VARIABLES : TAB_TRANSLATION));
+  const [activeTab, setActiveTab] = useState<number>(() =>
+    isMetaTemplatePattern(value) ? TAB_VARIABLES : TAB_TRANSLATION,
+  );
 
   /**
    * Reset active tab based on current value when popover opens.
@@ -109,11 +111,7 @@ function DynamicValuePopover({
           }
           sx={{pb: 0}}
         />
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          sx={{px: 2, borderBottom: 1, borderColor: 'divider'}}
-        >
+        <Tabs value={activeTab} onChange={handleTabChange} sx={{px: 2, borderBottom: 1, borderColor: 'divider'}}>
           <Tab label={t('flows:core.elements.textPropertyField.dynamicValuePopover.tabs.translation')} />
           <Tab label={t('flows:core.elements.textPropertyField.dynamicValuePopover.tabs.variables')} />
         </Tabs>

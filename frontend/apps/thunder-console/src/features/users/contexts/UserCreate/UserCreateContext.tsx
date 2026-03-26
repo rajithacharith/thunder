@@ -47,8 +47,8 @@ export interface UserCreateContextType {
   reset: () => void;
 }
 
-const UserCreateContext: Context<UserCreateContextType | undefined> = createContext<
-  UserCreateContextType | undefined
->(undefined);
+const UserCreateContext: Context<UserCreateContextType | undefined> = createContext<UserCreateContextType | undefined>(
+  undefined,
+);
 
 export default UserCreateContext;

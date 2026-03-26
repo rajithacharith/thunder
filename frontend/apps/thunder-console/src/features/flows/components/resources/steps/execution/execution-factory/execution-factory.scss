@@ -18,38 +18,36 @@
 
 // In dark mode, invert icons to make them visible on dark background
 html[data-color-scheme='dark'] .flow-builder-execution {
-
-    &.apple,
-    &.github,
-    &.confirmation-code,
-    &.magic-link {
-        img {
-            filter: invert(100%);
-        }
+  &.apple,
+  &.github,
+  &.confirmation-code,
+  &.magic-link {
+    img {
+      filter: invert(100%);
     }
+  }
 
-    &.apple {
-        img {
-            color: white;
-        }
+  &.apple {
+    img {
+      color: white;
     }
+  }
 }
 
 // In light mode, icons should remain as-is (no inversion needed)
 html[data-color-scheme='light'] .flow-builder-execution {
-
-    &.apple,
-    &.github,
-    &.confirmation-code,
-    &.magic-link {
-        img {
-            filter: none;
-        }
+  &.apple,
+  &.github,
+  &.confirmation-code,
+  &.magic-link {
+    img {
+      filter: none;
     }
+  }
 
-    &.apple {
-        img {
-            color: black;
-        }
+  &.apple {
+    img {
+      color: black;
     }
+  }
 }

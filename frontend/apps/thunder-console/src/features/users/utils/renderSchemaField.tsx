@@ -16,7 +16,17 @@
  * under the License.
  */
 
-import {Box, Typography, TextField, FormLabel, FormControl, Select, MenuItem, Checkbox, FormControlLabel} from '@wso2/oxygen-ui';
+import {
+  Box,
+  Typography,
+  TextField,
+  FormLabel,
+  FormControl,
+  Select,
+  MenuItem,
+  Checkbox,
+  FormControlLabel,
+} from '@wso2/oxygen-ui';
 import {Controller} from 'react-hook-form';
 import type {Control, FieldErrors, Path} from 'react-hook-form';
 import ArrayFieldInput from '../components/ArrayFieldInput';

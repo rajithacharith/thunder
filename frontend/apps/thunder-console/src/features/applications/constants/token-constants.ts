@@ -23,18 +23,7 @@ const TokenConstants = {
   /**
    * Default JWT token attributes that are always included in tokens
    */
-  DEFAULT_TOKEN_ATTRIBUTES: [
-    'aud',
-    'client_id',
-    'exp',
-    'grant_type',
-    'iat',
-    'iss',
-    'jti',
-    'nbf',
-    'scope',
-    'sub',
-  ],
+  DEFAULT_TOKEN_ATTRIBUTES: ['aud', 'client_id', 'exp', 'grant_type', 'iat', 'iss', 'jti', 'nbf', 'scope', 'sub'],
 
   /**
    * Default attributes for User Info response

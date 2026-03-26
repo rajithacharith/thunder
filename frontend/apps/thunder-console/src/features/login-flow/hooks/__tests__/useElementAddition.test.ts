@@ -455,7 +455,9 @@ describe('useElementAddition', () => {
       });
 
       expect(capturedNodes.length).toBe(1);
-      const form = (capturedNodes[0].data as {components: Element[]}).components.find((c: Element) => c.id === 'form-1') as Element & {components: Element[]};
+      const form = (capturedNodes[0].data as {components: Element[]}).components.find(
+        (c: Element) => c.id === 'form-1',
+      ) as Element & {components: Element[]};
       expect(form).toBeDefined();
       expect(form.components).toHaveLength(1);
       expect(form.components[0].id).toBe('generated-text-input-1');
@@ -499,7 +501,9 @@ describe('useElementAddition', () => {
       });
 
       expect(capturedNodes.length).toBe(1);
-      const form = (capturedNodes[0].data as {components: Element[]}).components.find((c: Element) => c.id === 'form-1') as Element & {components: Element[]};
+      const form = (capturedNodes[0].data as {components: Element[]}).components.find(
+        (c: Element) => c.id === 'form-1',
+      ) as Element & {components: Element[]};
       expect(form.components).toHaveLength(2);
       expect(form.components[0].id).toBe('existing-input');
       expect(form.components[1].id).toBe('generated-new-input');
@@ -557,10 +561,7 @@ describe('useElementAddition', () => {
       let capturedNodes: Node[] = [];
       mockSetNodes = vi.fn((updater: React.SetStateAction<Node[]>) => {
         if (typeof updater === 'function') {
-          const nodes: Node[] = [
-            createMockViewNode({id: 'view-1', data: {components: [existingForm]}}),
-            otherNode,
-          ];
+          const nodes: Node[] = [createMockViewNode({id: 'view-1', data: {components: [existingForm]}}), otherNode];
           capturedNodes = updater(nodes);
         }
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
@@ -624,7 +625,9 @@ describe('useElementAddition', () => {
       // The element should be added to the form in the View node, not the execution node
       expect(capturedNodes.length).toBe(2);
       const viewNode = capturedNodes.find((n) => n.id === 'view-1');
-      const form = (viewNode?.data as {components: Element[]}).components.find((c: Element) => c.id === 'form-1') as Element & {components: Element[]};
+      const form = (viewNode?.data as {components: Element[]}).components.find(
+        (c: Element) => c.id === 'form-1',
+      ) as Element & {components: Element[]};
       expect(form?.components).toHaveLength(1);
     });
 
@@ -659,7 +662,9 @@ describe('useElementAddition', () => {
       });
 
       expect(capturedNodes.length).toBe(1);
-      const form = (capturedNodes[0].data as {components: Element[]}).components.find((c: Element) => c.id === 'form-1') as Element & {components: Element[]};
+      const form = (capturedNodes[0].data as {components: Element[]}).components.find(
+        (c: Element) => c.id === 'form-1',
+      ) as Element & {components: Element[]};
       expect(form).toBeDefined();
       expect(form.components).toHaveLength(1);
     });
@@ -714,7 +719,11 @@ describe('useElementAddition', () => {
       );
 
       // Use a Resend element type to ensure non-input path is covered
-      const resendElement = createMockElement({id: 'resend-1', type: ElementTypes.Resend, category: ElementCategories.Action});
+      const resendElement = createMockElement({
+        id: 'resend-1',
+        type: ElementTypes.Resend,
+        category: ElementCategories.Action,
+      });
 
       act(() => {
         result.current.handleAddElementToView(resendElement, 'view-1');

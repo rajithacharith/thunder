@@ -34,9 +34,7 @@ vi.mock('@/features/flows/context/FlowBuilderCoreProvider', () => ({
 
 // Mock FlowContextWrapper
 vi.mock('../FlowContextWrapper', () => ({
-  default: ({children}: {children: React.ReactNode}) => (
-    <div data-testid="flow-context-wrapper">{children}</div>
-  ),
+  default: ({children}: {children: React.ReactNode}) => <div data-testid="flow-context-wrapper">{children}</div>,
 }));
 
 // Mock ResourceProperties

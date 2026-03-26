@@ -51,82 +51,80 @@ export default function SignUpBox(): JSX.Element {
       }}
     >
       <SignUp afterSignUpUrl={signInUrl}>
-          {({values, fieldErrors, error, touched, handleInputChange, handleSubmit, isLoading, components}: any) => (
-            <>
-              {!components ? (
-                <Box sx={{display: 'flex', justifyContent: 'center', p: 3}}>
-                  <CircularProgress />
-                </Box>
-              ) : (
-                <>
-                  {error && (
-                    <Alert severity="error" sx={{mb: 2}}>
-                      <AlertTitle>{t('signup:errors.signup.failed.message')}</AlertTitle>
-                      {error.message ?? t('signup:errors.signup.failed.description')}
-                    </Alert>
-                  )}
+        {({values, fieldErrors, error, touched, handleInputChange, handleSubmit, isLoading, components}: any) => (
+          <>
+            {!components ? (
+              <Box sx={{display: 'flex', justifyContent: 'center', p: 3}}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <>
+                {error && (
+                  <Alert severity="error" sx={{mb: 2}}>
+                    <AlertTitle>{t('signup:errors.signup.failed.message')}</AlertTitle>
+                    {error.message ?? t('signup:errors.signup.failed.description')}
+                  </Alert>
+                )}
 
-                  {components && components.length > 0 ? (
-                    <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                      {isLoading && (
-                        <Typography sx={{textAlign: 'center'}}>
-                          {t('signup:creating', 'Creating account...')}
-                        </Typography>
-                      )}
-                      {(components as EmbeddedFlowComponent[]).map((component, index) => (
-                        <FlowComponentRenderer
-                          key={component.id ?? index}
-                          component={component}
-                          index={index}
-                          values={values ?? {}}
-                          touched={touched}
-                          fieldErrors={fieldErrors}
-                          isLoading={isLoading}
-                          resolve={resolve}
-                          onInputChange={handleInputChange}
-                          onSubmit={(action, inputs) => {
-                            void handleSubmit(action, inputs);
-                          }}
-                        />
-                      ))}
-                    </Box>
-                  ) : (
-                    <Alert severity="error" sx={{mb: 2}}>
-                      <AlertTitle>{t("Oops, that didn't work")}</AlertTitle>
-                      {t("We're sorry, we ran into a problem. Please try again!")}
-                    </Alert>
-                  )}
-                </>
-              )}
+                {components && components.length > 0 ? (
+                  <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+                    {isLoading && (
+                      <Typography sx={{textAlign: 'center'}}>{t('signup:creating', 'Creating account...')}</Typography>
+                    )}
+                    {(components as EmbeddedFlowComponent[]).map((component, index) => (
+                      <FlowComponentRenderer
+                        key={component.id ?? index}
+                        component={component}
+                        index={index}
+                        values={values ?? {}}
+                        touched={touched}
+                        fieldErrors={fieldErrors}
+                        isLoading={isLoading}
+                        resolve={resolve}
+                        onInputChange={handleInputChange}
+                        onSubmit={(action, inputs) => {
+                          void handleSubmit(action, inputs);
+                        }}
+                      />
+                    ))}
+                  </Box>
+                ) : (
+                  <Alert severity="error" sx={{mb: 2}}>
+                    <AlertTitle>{t("Oops, that didn't work")}</AlertTitle>
+                    {t("We're sorry, we ran into a problem. Please try again!")}
+                  </Alert>
+                )}
+              </>
+            )}
 
-              <Typography sx={{textAlign: 'center', mt: 3}}>
-                <Trans i18nKey="signup:redirect.to.signin">
-                  Already have an account?
-                  <Button
-                    variant="text"
-                    onClick={() => {
-                      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                      navigate(signInUrl);
-                    }}
-                    sx={{
-                      p: 0,
-                      minWidth: 'auto',
-                      textTransform: 'none',
-                      color: 'primary.main',
+            <Typography sx={{textAlign: 'center', mt: 3}}>
+              <Trans i18nKey="signup:redirect.to.signin">
+                Already have an account?
+                <Button
+                  variant="text"
+                  onClick={() => {
+                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                    navigate(signInUrl);
+                  }}
+                  sx={{
+                    p: 0,
+                    minWidth: 'auto',
+                    textTransform: 'none',
+                    color: 'primary.main',
+                    textDecoration: 'underline',
+                    '&:hover': {
                       textDecoration: 'underline',
-                      '&:hover': {
-                        textDecoration: 'underline',
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
-                    Sign in
-                  </Button>
-                </Trans>
-              </Typography>
-            </>
-          )}
-        </SignUp>
+                      backgroundColor: 'transparent',
+                    },
+                  }}
+                >
+                  Sign in
+                </Button>
+              </Trans>
+            </Typography>
+          </>
+        )}
+      </SignUp>
     </AuthCardLayout>
   );
 }

@@ -1263,7 +1263,8 @@ const translations = {
     'edit.token.validity.hint': 'Token validity period in seconds (e.g., 3600 for 1 hour)',
     'edit.token.validity.error': 'Validity period must be at least 1 second',
     'edit.token.user_attributes_card.title': 'User Attributes',
-    'edit.token.user_attributes_card.description': 'Configure the user attributes to include in your tokens & user info response',
+    'edit.token.user_attributes_card.description':
+      'Configure the user attributes to include in your tokens & user info response',
     'edit.token.tabs.access_token': 'Access Token',
     'edit.token.tabs.id_token': 'ID Token',
     'edit.token.tabs.user_info_endpoint': 'User Info Endpoint',

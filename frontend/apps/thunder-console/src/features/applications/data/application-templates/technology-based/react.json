@@ -8,16 +8,9 @@
       {
         "type": "oauth2",
         "config": {
-          "grantTypes": [
-            "authorization_code",
-            "refresh_token"
-          ],
-          "responseTypes": [
-            "code"
-          ],
-          "redirectUris": [
-            "http://localhost:5173"
-          ],
+          "grantTypes": ["authorization_code", "refresh_token"],
+          "responseTypes": ["code"],
+          "redirectUris": ["http://localhost:5173"],
           "pkceRequired": true,
           "tokenEndpointAuthMethod": "none",
           "publicClient": true
@@ -28,9 +21,9 @@
   },
   "fieldConstraints": {
     "oauth2": {
-      "publicClient":              { "readOnly": true, "value": true },
-      "pkceRequired":              { "readOnly": true, "value": true },
-      "tokenEndpointAuthMethod": { "readOnly": true, "value": "none" }
+      "publicClient": {"readOnly": true, "value": true},
+      "pkceRequired": {"readOnly": true, "value": true},
+      "tokenEndpointAuthMethod": {"readOnly": true, "value": "none"}
     }
   },
   "integrationGuides": {

@@ -34,7 +34,11 @@ function GoogleExecution({resource}: GoogleExecutionPropsInterface): ReactElemen
 
   const generalMessage: ReactElement = useMemo(
     () => (
-      <Trans i18nKey="flows:core.validation.fields.executor.general" values={{id: resource?.id}} components={[<code key="0" />]}>
+      <Trans
+        i18nKey="flows:core.validation.fields.executor.general"
+        values={{id: resource?.id}}
+        components={[<code key="0" />]}
+      >
         {'The executor <0>{{id}}</0> is not properly configured.'}
       </Trans>
     ),

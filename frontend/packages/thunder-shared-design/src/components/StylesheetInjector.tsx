@@ -80,9 +80,7 @@ export default function StylesheetInjector({stylesheets = undefined}: Stylesheet
           document.head.appendChild(link);
           injectedIds.push(elementId);
         } else {
-          logger.warn(
-            `[StylesheetInjector] Skipping stylesheet "${stylesheet.id}": URL must use https protocol`,
-          );
+          logger.warn(`[StylesheetInjector] Skipping stylesheet "${stylesheet.id}": URL must use https protocol`);
         }
       }
     });

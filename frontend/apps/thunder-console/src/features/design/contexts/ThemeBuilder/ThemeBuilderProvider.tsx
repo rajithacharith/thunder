@@ -65,8 +65,8 @@ export default function ThemeBuilderProvider({children}: ThemeBuilderProviderPro
   const [draftTheme, setDraftTheme] = useState<Theme | null>(() => themeData?.theme ?? null);
   const [isDirty, setIsDirty] = useState<boolean>(false);
   const [activeSection, setActiveSection] = useState<ThemeSection>('colors');
-  const [previewColorScheme, setPreviewColorScheme] = useState<'light' | 'dark' | 'system'>(
-    () => (themeData?.theme?.defaultColorScheme === 'dark' ? 'dark' : 'light'),
+  const [previewColorScheme, setPreviewColorScheme] = useState<'light' | 'dark' | 'system'>(() =>
+    themeData?.theme?.defaultColorScheme === 'dark' ? 'dark' : 'light',
   );
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [isSaving, setIsSaving] = useState<boolean>(false);

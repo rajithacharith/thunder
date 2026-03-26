@@ -68,7 +68,9 @@ function PickerTreeItem(allProps: PickerTreeItemProps): JSX.Element {
   const isLoadMoreItem = itemId.endsWith(OrganizationUnitTreeConstants.LOAD_MORE_SUFFIX);
   const isEmptyPlaceholder = itemId.endsWith(OrganizationUnitTreeConstants.EMPTY_SUFFIX);
   const isLoadingPlaceholder =
-    !isEmptyPlaceholder && !isLoadMoreItem && (itemData?.isPlaceholder ?? itemId.endsWith(OrganizationUnitTreeConstants.PLACEHOLDER_SUFFIX));
+    !isEmptyPlaceholder &&
+    !isLoadMoreItem &&
+    (itemData?.isPlaceholder ?? itemId.endsWith(OrganizationUnitTreeConstants.PLACEHOLDER_SUFFIX));
   const isItemLoading = loadingItemsProp?.has(itemId);
 
   if (isLoadMoreItem) {
@@ -172,9 +174,7 @@ function PickerTreeItem(allProps: PickerTreeItemProps): JSX.Element {
   return (
     <TreeView.TreeItem
       {...treeItemProps}
-      {...(isItemLoading
-        ? {slots: {collapseIcon: PickerLoadingIcon, expandIcon: PickerLoadingIcon}}
-        : {})}
+      {...(isItemLoading ? {slots: {collapseIcon: PickerLoadingIcon, expandIcon: PickerLoadingIcon}} : {})}
       label={
         <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
           <Avatar
@@ -334,9 +334,16 @@ export default function OrganizationUnitTreePicker({
   const fetchChildPage = useCallback(
     async (parentId: string, offset: number): Promise<OrganizationUnitListResponse> =>
       queryClient.fetchQuery<OrganizationUnitListResponse>({
-        queryKey: [OrganizationUnitQueryKeys.CHILD_ORGANIZATION_UNITS, parentId, {limit: OrganizationUnitTreeConstants.PAGE_SIZE, offset}],
+        queryKey: [
+          OrganizationUnitQueryKeys.CHILD_ORGANIZATION_UNITS,
+          parentId,
+          {limit: OrganizationUnitTreeConstants.PAGE_SIZE, offset},
+        ],
         queryFn: async (): Promise<OrganizationUnitListResponse> =>
-          fetchChildOrganizationUnits(http, getServerUrl(), parentId, {limit: OrganizationUnitTreeConstants.PAGE_SIZE, offset}),
+          fetchChildOrganizationUnits(http, getServerUrl(), parentId, {
+            limit: OrganizationUnitTreeConstants.PAGE_SIZE,
+            offset,
+          }),
         staleTime: 0,
       }),
     [getServerUrl, queryClient, http],
@@ -402,46 +409,49 @@ export default function OrganizationUnitTreePicker({
     [fetchChildPage, buildChildItems, logger],
   );
 
-  const handleRootLoadMore = useCallback(
-    async (): Promise<void> => {
-      if (rootLoadMoreLoadingRef.current) return;
+  const handleRootLoadMore = useCallback(async (): Promise<void> => {
+    if (rootLoadMoreLoadingRef.current) return;
 
-      setRootLoadMoreLoading(true);
+    setRootLoadMoreLoading(true);
 
-      try {
-        const result = await queryClient.fetchQuery<OrganizationUnitListResponse>({
-          queryKey: [OrganizationUnitQueryKeys.ORGANIZATION_UNITS, {limit: OrganizationUnitTreeConstants.PAGE_SIZE, offset: rootOffset}],
-          queryFn: async (): Promise<OrganizationUnitListResponse> =>
-            fetchOrganizationUnits(http, getServerUrl(), {limit: OrganizationUnitTreeConstants.PAGE_SIZE, offset: rootOffset}),
-          staleTime: 0,
+    try {
+      const result = await queryClient.fetchQuery<OrganizationUnitListResponse>({
+        queryKey: [
+          OrganizationUnitQueryKeys.ORGANIZATION_UNITS,
+          {limit: OrganizationUnitTreeConstants.PAGE_SIZE, offset: rootOffset},
+        ],
+        queryFn: async (): Promise<OrganizationUnitListResponse> =>
+          fetchOrganizationUnits(http, getServerUrl(), {
+            limit: OrganizationUnitTreeConstants.PAGE_SIZE,
+            offset: rootOffset,
+          }),
+        staleTime: 0,
+      });
+
+      const newItems = buildTreeItems(result.organizationUnits);
+      const loadedSoFar = rootOffset + result.organizationUnits.length;
+
+      if (loadedSoFar < result.totalResults) {
+        newItems.push({
+          id: OrganizationUnitTreeConstants.ROOT_LOAD_MORE_ID,
+          label: '',
+          handle: '',
+          isPlaceholder: true,
         });
-
-        const newItems = buildTreeItems(result.organizationUnits);
-        const loadedSoFar = rootOffset + result.organizationUnits.length;
-
-        if (loadedSoFar < result.totalResults) {
-          newItems.push({
-            id: OrganizationUnitTreeConstants.ROOT_LOAD_MORE_ID,
-            label: '',
-            handle: '',
-            isPlaceholder: true,
-          });
-        }
-
-        setRootOffset(loadedSoFar);
-        setTreeItems((prev) => {
-          const withoutLoadMore = prev.filter((item) => item.id !== OrganizationUnitTreeConstants.ROOT_LOAD_MORE_ID);
-
-          return [...withoutLoadMore, ...newItems];
-        });
-      } catch (_error: unknown) {
-        logger.error('Failed to load more root organization units', {error: _error});
-      } finally {
-        setRootLoadMoreLoading(false);
       }
-    },
-    [rootOffset, getServerUrl, queryClient, http, logger],
-  );
+
+      setRootOffset(loadedSoFar);
+      setTreeItems((prev) => {
+        const withoutLoadMore = prev.filter((item) => item.id !== OrganizationUnitTreeConstants.ROOT_LOAD_MORE_ID);
+
+        return [...withoutLoadMore, ...newItems];
+      });
+    } catch (_error: unknown) {
+      logger.error('Failed to load more root organization units', {error: _error});
+    } finally {
+      setRootLoadMoreLoading(false);
+    }
+  }, [rootOffset, getServerUrl, queryClient, http, logger]);
 
   const handleLoadMore = useCallback(
     async (parentId: string): Promise<void> => {
@@ -528,7 +538,7 @@ export default function OrganizationUnitTreePicker({
   );
 
   const isTreeLoading = rootOuId ? isRootOuLoading || isRootOuChildrenLoading : isLoading;
-  const rootedModeError = rootOuId ? rootOuError ?? rootOuChildrenError : null;
+  const rootedModeError = rootOuId ? (rootOuError ?? rootOuChildrenError) : null;
 
   if (isTreeLoading) {
     return (

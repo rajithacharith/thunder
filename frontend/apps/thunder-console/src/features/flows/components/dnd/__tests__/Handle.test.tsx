@@ -52,11 +52,7 @@ describe('Handle', () => {
     });
 
     it('should accept ReactNode as label', () => {
-      render(
-        <Handle label={<strong>Bold Label</strong>}>
-          Handle
-        </Handle>,
-      );
+      render(<Handle label={<strong>Bold Label</strong>}>Handle</Handle>);
 
       expect(screen.getByRole('button')).toBeInTheDocument();
     });

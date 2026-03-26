@@ -95,7 +95,8 @@ vi.mock('../../../hooks/useFlowBuilderCore', () => ({
 }));
 
 describe('ValidationPanel', () => {
-  const createNotification = (id: string, message: string, type: NotificationType): Notification => new Notification(id, message, type);
+  const createNotification = (id: string, message: string, type: NotificationType): Notification =>
+    new Notification(id, message, type);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -292,9 +293,7 @@ describe('ValidationPanel', () => {
   describe('Tab Content Display', () => {
     it('should display info notifications in info tab', () => {
       mockCurrentActiveTab = 2;
-      mockNotifications = [
-        createNotification('1', 'Info message', NotificationType.INFO),
-      ];
+      mockNotifications = [createNotification('1', 'Info message', NotificationType.INFO)];
 
       render(<ValidationPanel />);
 

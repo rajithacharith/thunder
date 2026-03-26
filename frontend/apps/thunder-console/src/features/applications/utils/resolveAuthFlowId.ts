@@ -82,10 +82,7 @@ interface ResolveAuthFlowOptions {
  * // Returns: 'auth_flow_config_basic_google_github'
  * ```
  */
-export default function resolveAuthFlowId({
-  hasUsernamePassword,
-  identityProviders,
-}: ResolveAuthFlowOptions): string {
+export default function resolveAuthFlowId({hasUsernamePassword, identityProviders}: ResolveAuthFlowOptions): string {
   const providerTypes: IdentityProviderType[] = identityProviders.map((idp: IdentityProvider) => idp.type);
   const hasGoogle: boolean = providerTypes.includes(IdentityProviderTypes.GOOGLE);
   const hasGitHub: boolean = providerTypes.includes(IdentityProviderTypes.GITHUB);

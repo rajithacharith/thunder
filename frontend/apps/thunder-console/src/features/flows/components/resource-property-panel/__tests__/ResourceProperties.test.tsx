@@ -403,7 +403,10 @@ describe('ResourceProperties', () => {
             config: {...mockBaseResource.config, variant: 'filled'},
           },
         ],
-      } as Base & {label: string; variants: {id: string; variant: string; type: string; config: Record<string, unknown>}[]};
+      } as Base & {
+        label: string;
+        variants: {id: string; variant: string; type: string; config: Record<string, unknown>}[];
+      };
 
       const contextWithVariantsAndLabel = createContextValue({
         lastInteractedResource: resourceWithVariantsAndLabel,
@@ -593,7 +596,10 @@ describe('ResourceProperties', () => {
             config: {...mockBaseResource.config, variant: 'outlined'},
           },
         ],
-      } as Base & {label: string; variants: {id: string; variant: string; type: string; label: string; config: Record<string, unknown>}[]};
+      } as Base & {
+        label: string;
+        variants: {id: string; variant: string; type: string; label: string; config: Record<string, unknown>}[];
+      };
 
       const contextWithLabelAndVariants = createContextValue({
         lastInteractedResource: resourceWithLabelAndVariants,
@@ -709,7 +715,6 @@ describe('ResourceProperties', () => {
     });
   });
 
-
   describe('handlePropertyChange with data Property', () => {
     it('should handle propertyKey === data to replace entire data object', async () => {
       const MockComponentWithDataChange = vi.fn(
@@ -743,7 +748,7 @@ describe('ResourceProperties', () => {
       changeDataButton.click();
 
       // Wait for debounced function to execute
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(resolve, 400);
       });
 
@@ -784,7 +789,7 @@ describe('ResourceProperties', () => {
       changeButton.click();
 
       // Wait for debounced function to execute
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(resolve, 400);
       });
 
@@ -823,7 +828,7 @@ describe('ResourceProperties', () => {
       changeButton.click();
 
       // Wait for debounced function to execute
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(resolve, 400);
       });
 
@@ -864,7 +869,7 @@ describe('ResourceProperties', () => {
       changeButton.click();
 
       // Wait for debounced function to execute
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(resolve, 400);
       });
 
@@ -907,7 +912,7 @@ describe('ResourceProperties', () => {
       changeButton.click();
 
       // Wait for debounced function to execute
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(resolve, 400);
       });
 
@@ -944,7 +949,10 @@ describe('ResourceProperties', () => {
           <div data-testid="mock-resource-properties">
             <div data-testid="resource-id">{resource?.id}</div>
             <div data-testid="properties">{JSON.stringify(properties)}</div>
-            <button type="button" onClick={() => onVariantChange?.('variant-1', {label: 'Override Label'} as Partial<Resource>)}>
+            <button
+              type="button"
+              onClick={() => onVariantChange?.('variant-1', {label: 'Override Label'} as Partial<Resource>)}
+            >
               Change Variant with Override
             </button>
           </div>
@@ -968,9 +976,11 @@ describe('ResourceProperties', () => {
   describe('Empty Node Components', () => {
     it('should handle empty node components gracefully', async () => {
       // Setup updateNodeData to simulate empty components
-      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
-        callback({data: {components: []}});
-      });
+      mockUpdateNodeData.mockImplementation(
+        (_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
+          callback({data: {components: []}});
+        },
+      );
 
       const MockComponentWithPropertyChange = vi.fn(
         ({
@@ -1003,7 +1013,7 @@ describe('ResourceProperties', () => {
       changeLabelButton.click();
 
       // Wait for debounced function to execute
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(resolve, 400);
       });
 
@@ -1049,7 +1059,7 @@ describe('ResourceProperties', () => {
       changeButton.click();
 
       // Wait for debounced function to execute
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(resolve, 400);
       });
 
@@ -1059,9 +1069,11 @@ describe('ResourceProperties', () => {
 
   describe('Strip data. prefix', () => {
     it('should strip data. prefix when setting property on data object', async () => {
-      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
-        callback({data: {}});
-      });
+      mockUpdateNodeData.mockImplementation(
+        (_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
+          callback({data: {}});
+        },
+      );
 
       const MockComponentWithDataPrefix = vi.fn(
         ({
@@ -1094,7 +1106,7 @@ describe('ResourceProperties', () => {
       changeButton.click();
 
       // Wait for debounced function to execute
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(resolve, 400);
       });
 
@@ -1159,21 +1171,21 @@ describe('ResourceProperties', () => {
       } as unknown as Base;
 
       // Create a mock that returns a more realistic node structure
-      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
-        const node = {
-          data: {
-            components: [
-              {
-                id: 'child-component',
-                components: [
-                  {id: 'resource-1'},
-                ],
-              },
-            ],
-          },
-        };
-        callback(node);
-      });
+      mockUpdateNodeData.mockImplementation(
+        (_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
+          const node = {
+            data: {
+              components: [
+                {
+                  id: 'child-component',
+                  components: [{id: 'resource-1'}],
+                },
+              ],
+            },
+          };
+          callback(node);
+        },
+      );
 
       const contextWithNestedComponents = createContextValue({
         lastInteractedResource: resourceWithNestedComponents,
@@ -1202,16 +1214,16 @@ describe('ResourceProperties', () => {
         ],
       } as Base & {variants: {id: string; variant: string; type: string; config: Record<string, unknown>}[]};
 
-      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
-        const node = {
-          data: {
-            components: [
-              {id: 'other-component'},
-            ],
-          },
-        };
-        callback(node);
-      });
+      mockUpdateNodeData.mockImplementation(
+        (_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
+          const node = {
+            data: {
+              components: [{id: 'other-component'}],
+            },
+          };
+          callback(node);
+        },
+      );
 
       const contextWithNoMatch = createContextValue({
         lastInteractedResource: resourceWithNoMatch,
@@ -1241,14 +1253,16 @@ describe('ResourceProperties', () => {
         ],
       } as Base & {variants: {id: string; variant: string; type: string; config: Record<string, unknown>}[]};
 
-      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
-        const node = {
-          data: {
-            components: [{id: 'resource-1'}],
-          },
-        };
-        callback(node);
-      });
+      mockUpdateNodeData.mockImplementation(
+        (_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
+          const node = {
+            data: {
+              components: [{id: 'resource-1'}],
+            },
+          };
+          callback(node);
+        },
+      );
 
       const contextWithVariants = createContextValue({
         lastInteractedResource: resourceWithVariants,
@@ -1595,7 +1609,7 @@ describe('ResourceProperties', () => {
       changeButton.click();
 
       // Wait for debounced function to execute
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(resolve, 400);
       });
 
@@ -1641,7 +1655,7 @@ describe('ResourceProperties', () => {
       const changeButton = screen.getByText('Change Different Element');
       changeButton.click();
 
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(resolve, 400);
       });
 
@@ -1655,18 +1669,20 @@ describe('ResourceProperties', () => {
       mockExecuteAsync.mockResolvedValue(true);
 
       // Mock updateNodeData to capture the callback and execute it
-      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
-        const node = {
-          data: {
-            components: [
-              {id: 'resource-1', label: 'Old Label'},
-              {id: 'other-component', label: 'Other Label'},
-            ],
-          },
-        };
-        const result = callback(node);
-        return result;
-      });
+      mockUpdateNodeData.mockImplementation(
+        (_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
+          const node = {
+            data: {
+              components: [
+                {id: 'resource-1', label: 'Old Label'},
+                {id: 'other-component', label: 'Other Label'},
+              ],
+            },
+          };
+          const result = callback(node);
+          return result;
+        },
+      );
 
       const MockComponentWithLabelChange = vi.fn(
         ({
@@ -1696,7 +1712,7 @@ describe('ResourceProperties', () => {
       const changeButton = screen.getByText('Update Component Label');
       changeButton.click();
 
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(resolve, 400);
       });
 
@@ -1706,23 +1722,23 @@ describe('ResourceProperties', () => {
     it('should recursively update nested components when component has nested components (lines 227-231)', async () => {
       mockExecuteAsync.mockResolvedValue(true);
 
-      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
-        const node = {
-          data: {
-            components: [
-              {
-                id: 'parent-component',
-                label: 'Parent',
-                components: [
-                  {id: 'resource-1', label: 'Nested Child'},
-                ],
-              },
-            ],
-          },
-        };
-        const result = callback(node);
-        return result;
-      });
+      mockUpdateNodeData.mockImplementation(
+        (_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
+          const node = {
+            data: {
+              components: [
+                {
+                  id: 'parent-component',
+                  label: 'Parent',
+                  components: [{id: 'resource-1', label: 'Nested Child'}],
+                },
+              ],
+            },
+          };
+          const result = callback(node);
+          return result;
+        },
+      );
 
       const MockComponentWithNestedUpdate = vi.fn(
         ({
@@ -1752,7 +1768,7 @@ describe('ResourceProperties', () => {
       const changeButton = screen.getByText('Update Nested Component');
       changeButton.click();
 
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(resolve, 400);
       });
 
@@ -1762,17 +1778,17 @@ describe('ResourceProperties', () => {
     it('should return component unchanged when id does not match and no nested components (line 234)', async () => {
       mockExecuteAsync.mockResolvedValue(true);
 
-      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
-        const node = {
-          data: {
-            components: [
-              {id: 'unrelated-component', label: 'Unrelated'},
-            ],
-          },
-        };
-        const result = callback(node);
-        return result;
-      });
+      mockUpdateNodeData.mockImplementation(
+        (_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
+          const node = {
+            data: {
+              components: [{id: 'unrelated-component', label: 'Unrelated'}],
+            },
+          };
+          const result = callback(node);
+          return result;
+        },
+      );
 
       const MockComponentNoMatch = vi.fn(
         ({
@@ -1802,7 +1818,7 @@ describe('ResourceProperties', () => {
       const changeButton = screen.getByText('Update No Match');
       changeButton.click();
 
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(resolve, 400);
       });
 
@@ -1851,14 +1867,16 @@ describe('ResourceProperties', () => {
       mockExecuteAsync.mockResolvedValue(true);
 
       let capturedResult: unknown;
-      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
-        // Simulate node with no components (empty)
-        const node = {
-          data: {},
-        };
-        capturedResult = callback(node);
-        return capturedResult;
-      });
+      mockUpdateNodeData.mockImplementation(
+        (_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
+          // Simulate node with no components (empty)
+          const node = {
+            data: {},
+          };
+          capturedResult = callback(node);
+          return capturedResult;
+        },
+      );
 
       const MockComponentWithDataReplace = vi.fn(
         ({
@@ -1872,7 +1890,10 @@ describe('ResourceProperties', () => {
         }) => (
           <div data-testid="mock-resource-properties">
             <div data-testid="resource-id">{resource?.id}</div>
-            <button type="button" onClick={() => onChange('data', {entireNewData: 'value', anotherField: 123}, resource)}>
+            <button
+              type="button"
+              onClick={() => onChange('data', {entireNewData: 'value', anotherField: 123}, resource)}
+            >
               Replace Entire Data
             </button>
           </div>
@@ -1888,7 +1909,7 @@ describe('ResourceProperties', () => {
       const changeButton = screen.getByText('Replace Entire Data');
       changeButton.click();
 
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(resolve, 400);
       });
 
@@ -1901,13 +1922,15 @@ describe('ResourceProperties', () => {
       mockExecuteAsync.mockResolvedValue(true);
 
       let capturedResult: unknown;
-      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]; existingField?: string}}) => unknown) => {
-        const node = {
-          data: {existingField: 'existingValue'},
-        };
-        capturedResult = callback(node);
-        return capturedResult;
-      });
+      mockUpdateNodeData.mockImplementation(
+        (_stepId: string, callback: (node: {data: {components?: unknown[]; existingField?: string}}) => unknown) => {
+          const node = {
+            data: {existingField: 'existingValue'},
+          };
+          capturedResult = callback(node);
+          return capturedResult;
+        },
+      );
 
       const MockComponentWithDataPrefix = vi.fn(
         ({
@@ -1937,7 +1960,7 @@ describe('ResourceProperties', () => {
       const changeButton = screen.getByText('Set Data Prefixed Property');
       changeButton.click();
 
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(resolve, 400);
       });
 
@@ -1950,13 +1973,15 @@ describe('ResourceProperties', () => {
       mockExecuteAsync.mockResolvedValue(true);
 
       let capturedResult: unknown;
-      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]; existingField?: string}}) => unknown) => {
-        const node = {
-          data: {existingField: 'existingValue'},
-        };
-        capturedResult = callback(node);
-        return capturedResult;
-      });
+      mockUpdateNodeData.mockImplementation(
+        (_stepId: string, callback: (node: {data: {components?: unknown[]; existingField?: string}}) => unknown) => {
+          const node = {
+            data: {existingField: 'existingValue'},
+          };
+          capturedResult = callback(node);
+          return capturedResult;
+        },
+      );
 
       const MockComponentWithDirectProperty = vi.fn(
         ({
@@ -1986,7 +2011,7 @@ describe('ResourceProperties', () => {
       const changeButton = screen.getByText('Set Direct Property');
       changeButton.click();
 
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(resolve, 400);
       });
 
@@ -1998,17 +2023,17 @@ describe('ResourceProperties', () => {
       mockExecuteAsync.mockResolvedValue(true);
 
       let capturedResult: unknown;
-      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
-        const node = {
-          data: {
-            components: [
-              {id: 'resource-1', label: 'Component Label'},
-            ],
-          },
-        };
-        capturedResult = callback(node);
-        return capturedResult;
-      });
+      mockUpdateNodeData.mockImplementation(
+        (_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
+          const node = {
+            data: {
+              components: [{id: 'resource-1', label: 'Component Label'}],
+            },
+          };
+          capturedResult = callback(node);
+          return capturedResult;
+        },
+      );
 
       const MockComponentWithComponents = vi.fn(
         ({
@@ -2038,7 +2063,7 @@ describe('ResourceProperties', () => {
       const changeButton = screen.getByText('Update With Components');
       changeButton.click();
 
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(resolve, 400);
       });
 
@@ -2051,13 +2076,15 @@ describe('ResourceProperties', () => {
       mockExecuteAsync.mockResolvedValue(true);
 
       let capturedResult: unknown;
-      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data?: {components?: unknown[]}}) => unknown) => {
-        const node = {
-          data: undefined,
-        };
-        capturedResult = callback(node as unknown as {data: {components?: unknown[]}});
-        return capturedResult;
-      });
+      mockUpdateNodeData.mockImplementation(
+        (_stepId: string, callback: (node: {data?: {components?: unknown[]}}) => unknown) => {
+          const node = {
+            data: undefined,
+          };
+          capturedResult = callback(node as unknown as {data: {components?: unknown[]}});
+          return capturedResult;
+        },
+      );
 
       const MockComponentWithUndefinedData = vi.fn(
         ({
@@ -2087,12 +2114,11 @@ describe('ResourceProperties', () => {
       const changeButton = screen.getByText('Update With Undefined Data');
       changeButton.click();
 
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         setTimeout(resolve, 400);
       });
 
       expect(mockUpdateNodeData).toHaveBeenCalled();
     });
   });
-
 });

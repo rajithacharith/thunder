@@ -31,9 +31,7 @@ describe('useOrganizationUnit', () => {
 
   it('should return context when used within OrganizationUnitProvider', () => {
     const {result} = renderHook(() => useOrganizationUnit(), {
-      wrapper: ({children}: {children: ReactNode}) => (
-        <OrganizationUnitProvider>{children}</OrganizationUnitProvider>
-      ),
+      wrapper: ({children}: {children: ReactNode}) => <OrganizationUnitProvider>{children}</OrganizationUnitProvider>,
     });
 
     expect(result.current.treeItems).toEqual([]);

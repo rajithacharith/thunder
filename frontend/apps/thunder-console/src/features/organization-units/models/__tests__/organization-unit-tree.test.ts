@@ -74,9 +74,7 @@ describe('Organization Unit Tree Models', () => {
             id: 'level-1',
             label: 'Level 1',
             handle: 'level-1',
-            children: [
-              {id: 'level-2', label: 'Level 2', handle: 'level-2'},
-            ],
+            children: [{id: 'level-2', label: 'Level 2', handle: 'level-2'}],
           },
         ],
       };

@@ -247,7 +247,11 @@ describe('useRequiredFields', () => {
     });
 
     it('should update notification when one of multiple fields becomes valid', () => {
-      const existingNotification = new Notification('resource-1_REQUIRED_FIELD_ERROR', 'Required field missing', 'error');
+      const existingNotification = new Notification(
+        'resource-1_REQUIRED_FIELD_ERROR',
+        'Required field missing',
+        'error',
+      );
       existingNotification.addResourceFieldNotification('resource-1_label', 'Label is required');
       existingNotification.addResourceFieldNotification('resource-1_value', 'Value is required');
       mockGetNotification.mockReturnValue(existingNotification);

@@ -43,9 +43,12 @@ const MIN_CONTENT_WIDTH = 520;
 const MIN_CONTENT_HEIGHT = 700;
 
 /** No-op handlers for preview mode — the form is purely visual. */
-const noopSubmit = (): void => { /* no-op */ };
-const noopInputChange = (): void => { /* no-op */ };
-
+const noopSubmit = (): void => {
+  /* no-op */
+};
+const noopInputChange = (): void => {
+  /* no-op */
+};
 
 /**
  * Initial HTML written into the preview iframe. Sets up the full height chain
@@ -56,7 +59,7 @@ const IFRAME_INITIAL_HTML = [
   '<link rel="preconnect" href="https://fonts.googleapis.com">',
   '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
   '<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">',
-  '<style>body{margin:0;height:100%;font-family:\'Inter\',sans-serif}#root,#root>*{height:100%}</style>',
+  "<style>body{margin:0;height:100%;font-family:'Inter',sans-serif}#root,#root>*{height:100%}</style>",
   '</head><body><div id="root"></div></body></html>',
 ].join('');
 
@@ -102,11 +105,7 @@ function PreviewThemeProvider({
   } as Record<string, unknown>;
 
   return (
-    <ThemeProvider
-      theme={theme ?? AcrylicOrangeTheme}
-      defaultMode={colorScheme}
-      {...cssVarsProps}
-    >
+    <ThemeProvider theme={theme ?? AcrylicOrangeTheme} defaultMode={colorScheme} {...cssVarsProps}>
       <ColorSchemeSync mode={colorScheme} />
       {children}
     </ThemeProvider>
@@ -140,8 +139,9 @@ function IframeContent({
   const {t} = useTranslation();
   const {resolveAll} = useTemplateLiteralResolver();
   const previewResolve = useMemo(
-    () => (template: string | undefined): string | undefined =>
-      resolveAll(template, {[TemplateLiteralType.TRANSLATION]: t}),
+    () =>
+      (template: string | undefined): string | undefined =>
+        resolveAll(template, {[TemplateLiteralType.TRANSLATION]: t}),
     [resolveAll, t],
   );
 
@@ -439,7 +439,11 @@ export default function GatePreview({
                 pointerEvents: 'none',
               }}
             />
-            <iframe ref={iframeCallbackRef} title="Gate Preview" style={{border: 'none', transformOrigin: 'top left', position: 'absolute', top: 0, left: 0}} />
+            <iframe
+              ref={iframeCallbackRef}
+              title="Gate Preview"
+              style={{border: 'none', transformOrigin: 'top left', position: 'absolute', top: 0, left: 0}}
+            />
             {iframeDoc?.getElementById('root') &&
               createPortal(
                 <IframeContent

@@ -94,9 +94,8 @@ export default function RegistrationFlowSection({application, editedApp, onField
         options={regFlowOptions}
         getOptionLabel={(option) => (typeof option === 'string' ? option : option.name)}
         value={
-          regFlowOptions.find(
-            (flow) => flow.id === (editedApp.registrationFlowId ?? application.registrationFlowId),
-          ) ?? null
+          regFlowOptions.find((flow) => flow.id === (editedApp.registrationFlowId ?? application.registrationFlowId)) ??
+          null
         }
         onChange={(_event, newValue) => onFieldChange('registrationFlowId', newValue?.id ?? '')}
         loading={loadingRegFlows}

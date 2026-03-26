@@ -55,18 +55,7 @@ describe('TokenConstants', () => {
     });
 
     it('should contain all expected attributes in correct order', () => {
-      const expectedAttributes = [
-        'aud',
-        'client_id',
-        'exp',
-        'grant_type',
-        'iat',
-        'iss',
-        'jti',
-        'nbf',
-        'scope',
-        'sub',
-      ];
+      const expectedAttributes = ['aud', 'client_id', 'exp', 'grant_type', 'iat', 'iss', 'jti', 'nbf', 'scope', 'sub'];
 
       expect(TokenConstants.DEFAULT_TOKEN_ATTRIBUTES).toEqual(expectedAttributes);
     });

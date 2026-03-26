@@ -172,9 +172,7 @@ describe('SelectLanguage', () => {
       const onLocaleChange = vi.fn();
       const user = userEvent.setup();
 
-      render(
-        <SelectLanguage {...defaultProps} selectedLocale={mockLocales[0]} onLocaleChange={onLocaleChange} />,
-      );
+      render(<SelectLanguage {...defaultProps} selectedLocale={mockLocales[0]} onLocaleChange={onLocaleChange} />);
 
       await user.clear(screen.getByRole('combobox'));
 

@@ -53,7 +53,6 @@ type SyncPropertyPanelHandler = ((...args: unknown[]) => boolean) & {
   [VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER]: string;
 };
 
-
 const useConfirmPasswordField = (): void => {
   const {getNode, updateNodeData} = useReactFlow();
 
@@ -67,120 +66,123 @@ const useConfirmPasswordField = (): void => {
    * @param renderProperties - Function to re-render properties after modification.
    * @returns Returns false if the confirm password field is added, true otherwise.
    */
-  const addConfirmPasswordField = useCallback((
-    propertyKey: string,
-    newValue: unknown,
-    element: Element,
-    stepId: string,
-  ): boolean => {
-    if (element.type === ElementTypes.PasswordInput) {
-      if (propertyKey === 'requireConfirmation' && !newValue) {
-        updateNodeData(stepId, (node: Node) => {
-          if (!node.data.components) {
-            return {};
-          }
+  const addConfirmPasswordField = useCallback(
+    (propertyKey: string, newValue: unknown, element: Element, stepId: string): boolean => {
+      if (element.type === ElementTypes.PasswordInput) {
+        if (propertyKey === 'requireConfirmation' && !newValue) {
+          updateNodeData(stepId, (node: Node) => {
+            if (!node.data.components) {
+              return {};
+            }
 
-          const components: Element[] = cloneDeep(node.data.components) as Element[];
-          let formFound = false;
-          let passwordConfirmFieldIndex: number | undefined;
+            const components: Element[] = cloneDeep(node.data.components) as Element[];
+            let formFound = false;
+            let passwordConfirmFieldIndex: number | undefined;
 
-          components.every((component: Element) => {
-            if (component.type === BlockTypes.Form) {
-              component?.components?.every((c: Element) => {
-                if (c.id === element.id) {
-                  formFound = true;
-
-                  return false;
-                }
-
-                return true;
-              });
-
-              if (formFound) {
-                component?.components?.every((c: Element, index: number) => {
-                  const cWithIdentifier = c as Element & {identifier?: string};
-                  if (cWithIdentifier?.identifier === FlowBuilderElementConstants.CONFIRM_PASSWORD_IDENTIFIER && formFound) {
-                    passwordConfirmFieldIndex = index;
+            components.every((component: Element) => {
+              if (component.type === BlockTypes.Form) {
+                component?.components?.every((c: Element) => {
+                  if (c.id === element.id) {
+                    formFound = true;
 
                     return false;
                   }
 
                   return true;
                 });
-              }
 
-              if (passwordConfirmFieldIndex === undefined) {
-                return true;
-              }
+                if (formFound) {
+                  component?.components?.every((c: Element, index: number) => {
+                    const cWithIdentifier = c as Element & {identifier?: string};
+                    if (
+                      cWithIdentifier?.identifier === FlowBuilderElementConstants.CONFIRM_PASSWORD_IDENTIFIER &&
+                      formFound
+                    ) {
+                      passwordConfirmFieldIndex = index;
 
-              component?.components?.splice(passwordConfirmFieldIndex, 1);
+                      return false;
+                    }
 
-              return false;
-            }
-
-            return true;
-          });
-
-          return {
-            components,
-          };
-        });
-
-        return false;
-      }
-
-      if (propertyKey === 'requireConfirmation' && newValue) {
-        updateNodeData(stepId, (node: Node) => {
-          if (!node.data.components) {
-            return {};
-          }
-
-          const components: Element[] = cloneDeep(node.data.components) as Element[];
-          let passwordFieldIndex: number;
-
-          components.every((component: Element) => {
-            if (component.type === BlockTypes.Form) {
-              component?.components?.every((c: Element, index: number) => {
-                if (c.id === element.id) {
-                  passwordFieldIndex = index;
-
-                  return false;
+                    return true;
+                  });
                 }
 
-                return true;
-              });
+                if (passwordConfirmFieldIndex === undefined) {
+                  return true;
+                }
 
-              if (passwordFieldIndex === undefined) {
-                return true;
+                component?.components?.splice(passwordConfirmFieldIndex, 1);
+
+                return false;
               }
 
-              const confirmPasswordField: Element = cloneDeep(element);
+              return true;
+            });
 
-              // Set properties at top level (new format)
-              (confirmPasswordField as Element & {identifier?: string}).identifier = FlowBuilderElementConstants.CONFIRM_PASSWORD_IDENTIFIER;
-              (confirmPasswordField as Element & {label?: string}).label = 'Confirm Password';
-              (confirmPasswordField as Element & {placeholder?: string}).placeholder = 'Enter your password confirmation';
-              confirmPasswordField.id = generateResourceId('field');
-
-              component?.components?.splice(passwordFieldIndex + 1, 0, confirmPasswordField);
-
-              return false;
-            }
-
-            return true;
+            return {
+              components,
+            };
           });
 
-          return {
-            components,
-          };
-        });
+          return false;
+        }
 
-        return false;
+        if (propertyKey === 'requireConfirmation' && newValue) {
+          updateNodeData(stepId, (node: Node) => {
+            if (!node.data.components) {
+              return {};
+            }
+
+            const components: Element[] = cloneDeep(node.data.components) as Element[];
+            let passwordFieldIndex: number;
+
+            components.every((component: Element) => {
+              if (component.type === BlockTypes.Form) {
+                component?.components?.every((c: Element, index: number) => {
+                  if (c.id === element.id) {
+                    passwordFieldIndex = index;
+
+                    return false;
+                  }
+
+                  return true;
+                });
+
+                if (passwordFieldIndex === undefined) {
+                  return true;
+                }
+
+                const confirmPasswordField: Element = cloneDeep(element);
+
+                // Set properties at top level (new format)
+                (confirmPasswordField as Element & {identifier?: string}).identifier =
+                  FlowBuilderElementConstants.CONFIRM_PASSWORD_IDENTIFIER;
+                (confirmPasswordField as Element & {label?: string}).label = 'Confirm Password';
+                (confirmPasswordField as Element & {placeholder?: string}).placeholder =
+                  'Enter your password confirmation';
+                confirmPasswordField.id = generateResourceId('field');
+
+                component?.components?.splice(passwordFieldIndex + 1, 0, confirmPasswordField);
+
+                return false;
+              }
+
+              return true;
+            });
+
+            return {
+              components,
+            };
+          });
+
+          return false;
+        }
       }
-    }
 
-    return true;
-  }, [updateNodeData]);
+      return true;
+    },
+    [updateNodeData],
+  );
 
   /**
    * Adds properties to the confirm password field when confirmation is enabled for a password field.
@@ -190,18 +192,186 @@ const useConfirmPasswordField = (): void => {
    * @param stepId - The ID of the step where the resource is located.
    * @returns return true.
    */
-  const addConfirmPasswordFieldProperties = useCallback((resource: Element, properties: Properties, stepId: string): boolean => {
-    if (resource.type === ElementTypes.PasswordInput) {
+  const addConfirmPasswordFieldProperties = useCallback(
+    (resource: Element, properties: Properties, stepId: string): boolean => {
+      if (resource.type === ElementTypes.PasswordInput) {
+        const resourceIdentifier = (resource as Element & {identifier?: string})?.identifier;
+        if (resourceIdentifier === FlowBuilderElementConstants.PASSWORD_IDENTIFIER) {
+          let passwordConfirmationField: Element | undefined;
+          let formFound = false;
+          const node = getNode(stepId);
+
+          if (node?.data?.components) {
+            const components: Element[] = cloneDeep(node.data.components) as Element[];
+
+            components.every((component: Element) => {
+              if (component.type === BlockTypes.Form) {
+                component?.components?.every((c: Element) => {
+                  if (c.id === resource.id) {
+                    formFound = true;
+
+                    return false;
+                  }
+
+                  return true;
+                });
+
+                if (formFound) {
+                  component?.components?.every((c: Element) => {
+                    const cIdentifier = (c as Element & {identifier?: string})?.identifier;
+                    if (cIdentifier === FlowBuilderElementConstants.CONFIRM_PASSWORD_IDENTIFIER && formFound) {
+                      passwordConfirmationField = c;
+
+                      return false;
+                    }
+
+                    return true;
+                  });
+                }
+
+                if (formFound) {
+                  return false;
+                }
+              }
+
+              return true;
+            });
+          }
+
+          // Check both the node data (for existing confirm fields) and the resource property
+          // The resource property is updated immediately when the checkbox is clicked,
+          // while the node data update may be asynchronous
+          const resourceWithConfirm = resource as Element & {requireConfirmation?: boolean};
+
+          // If the resource has an explicit requireConfirmation value, use it (handles immediate UI updates)
+          // Otherwise, fall back to checking if the confirm field exists in the node data
+          let hasConfirmation: boolean;
+          if (resourceWithConfirm.requireConfirmation !== undefined) {
+            hasConfirmation = resourceWithConfirm.requireConfirmation;
+          } else {
+            hasConfirmation = !!passwordConfirmationField;
+          }
+
+          type FieldWithProps = Element & {hint?: string; label?: string; placeholder?: string};
+          const fieldWithProps = passwordConfirmationField as FieldWithProps | undefined;
+
+          Object.assign(properties, {
+            requireConfirmation: hasConfirmation,
+            // Show confirm field properties if confirmation is enabled
+            ...(hasConfirmation && {
+              confirmHint: fieldWithProps?.hint ?? '',
+              confirmLabel: fieldWithProps?.label ?? 'Confirm Password',
+              confirmPlaceholder: fieldWithProps?.placeholder ?? 'Enter your password confirmation',
+            }),
+          });
+        }
+      }
+
+      return true;
+    },
+    [getNode],
+  );
+
+  /**
+   * Updates the properties of the confirm password field when the password field's properties are changed.
+   *
+   * @param propertyKey - The key of the property being changed.
+   * @param newValue - The new value of the property.
+   * @param element - The element being modified.
+   * @param stepId - The ID of the step where the element is located.
+   * @returns Returns false if the confirm password field properties are updated, true otherwise.
+   */
+  const updateConfirmPasswordFieldProperties = useCallback(
+    (propertyKey: string, newValue: unknown, element: Element, stepId: string): boolean => {
+      if (element.type === ElementTypes.PasswordInput) {
+        if (
+          propertyKey === 'confirmHint' ||
+          propertyKey === 'confirmLabel' ||
+          propertyKey === 'confirmPlaceholder' ||
+          propertyKey === 'required'
+        ) {
+          updateNodeData(stepId, (node: Node) => {
+            if (!node.data.components) {
+              return {};
+            }
+
+            const components: Element[] = cloneDeep(node.data.components) as Element[];
+            let passwordFieldIndex: number;
+
+            components.every((component: Element) => {
+              if (component.type === BlockTypes.Form) {
+                component?.components?.every((c: Element, index: number) => {
+                  if (c.id === element.id) {
+                    passwordFieldIndex = index;
+
+                    return false;
+                  }
+
+                  return true;
+                });
+
+                if (passwordFieldIndex === undefined) {
+                  return true;
+                }
+
+                // Extract the property name (e.g., 'confirmHint' -> 'hint', 'confirmLabel' -> 'label')
+                let propertyName: string = propertyKey;
+
+                if (propertyName.startsWith('confirm')) {
+                  // Remove 'confirm' prefix and lowercase the first letter (e.g., 'confirmHint' -> 'hint')
+                  propertyName = propertyName.substring(7);
+                  propertyName = propertyName.charAt(0).toLowerCase() + propertyName.slice(1);
+                }
+
+                if (component.components) {
+                  set(component.components[passwordFieldIndex + 1], propertyName, newValue);
+                }
+
+                return false;
+              }
+
+              return true;
+            });
+
+            return {
+              components,
+            };
+          });
+
+          if (propertyKey !== 'required') {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    },
+    [updateNodeData],
+  );
+
+  /**
+   * Deletes the confirm password field from the form when the password field is removed.
+   *
+   * @param stepId - The ID of the step where the resource is located.
+   * @param resource - The resource element to be checked.
+   * @returns Returns true.
+   */
+  const deleteConfirmPasswordField = useCallback(
+    (stepId: string, resource: Element): boolean => {
       const resourceIdentifier = (resource as Element & {identifier?: string})?.identifier;
-      if (resourceIdentifier === FlowBuilderElementConstants.PASSWORD_IDENTIFIER) {
-        let passwordConfirmationField: Element | undefined;
-        let formFound = false;
-        const node = getNode(stepId);
+      if (
+        resource.type === ElementTypes.PasswordInput &&
+        resourceIdentifier === FlowBuilderElementConstants.PASSWORD_IDENTIFIER
+      ) {
+        updateNodeData(stepId, (node: Node) => {
+          if (!node.data.components) {
+            return {};
+          }
 
-        if (node?.data?.components) {
           const components: Element[] = cloneDeep(node.data.components) as Element[];
+          let formFound = false;
 
-          components.every((component: Element) => {
+          components.every((component: Element, componentIndex: number) => {
             if (component.type === BlockTypes.Form) {
               component?.components?.every((c: Element) => {
                 if (c.id === resource.id) {
@@ -213,120 +383,17 @@ const useConfirmPasswordField = (): void => {
                 return true;
               });
 
-              if (formFound) {
-                component?.components?.every((c: Element) => {
-                  const cIdentifier = (c as Element & {identifier?: string})?.identifier;
-                  if (cIdentifier === FlowBuilderElementConstants.CONFIRM_PASSWORD_IDENTIFIER && formFound) {
-                    passwordConfirmationField = c;
+              if (formFound && component.components) {
+                components[componentIndex] = {
+                  ...component,
+                  components: component.components.filter((c: Element) => {
+                    const cIdentifier = (c as Element & {identifier?: string})?.identifier;
+                    return cIdentifier !== FlowBuilderElementConstants.CONFIRM_PASSWORD_IDENTIFIER;
+                  }),
+                };
 
-                    return false;
-                  }
-
-                  return true;
-                });
-              }
-
-              if (formFound) {
                 return false;
               }
-            }
-
-            return true;
-          });
-        }
-
-        // Check both the node data (for existing confirm fields) and the resource property
-        // The resource property is updated immediately when the checkbox is clicked,
-        // while the node data update may be asynchronous
-        const resourceWithConfirm = resource as Element & {requireConfirmation?: boolean};
-
-        // If the resource has an explicit requireConfirmation value, use it (handles immediate UI updates)
-        // Otherwise, fall back to checking if the confirm field exists in the node data
-        let hasConfirmation: boolean;
-        if (resourceWithConfirm.requireConfirmation !== undefined) {
-          hasConfirmation = resourceWithConfirm.requireConfirmation;
-        } else {
-          hasConfirmation = !!passwordConfirmationField;
-        }
-
-        type FieldWithProps = Element & {hint?: string; label?: string; placeholder?: string};
-        const fieldWithProps = passwordConfirmationField as FieldWithProps | undefined;
-
-        Object.assign(properties, {
-          requireConfirmation: hasConfirmation,
-          // Show confirm field properties if confirmation is enabled
-          ...(hasConfirmation && {
-            confirmHint: fieldWithProps?.hint ?? '',
-            confirmLabel: fieldWithProps?.label ?? 'Confirm Password',
-            confirmPlaceholder: fieldWithProps?.placeholder ?? 'Enter your password confirmation',
-          }),
-        });
-      }
-    }
-
-    return true;
-  }, [getNode]);
-
-  /**
-   * Updates the properties of the confirm password field when the password field's properties are changed.
-   *
-   * @param propertyKey - The key of the property being changed.
-   * @param newValue - The new value of the property.
-   * @param element - The element being modified.
-   * @param stepId - The ID of the step where the element is located.
-   * @returns Returns false if the confirm password field properties are updated, true otherwise.
-   */
-  const updateConfirmPasswordFieldProperties = useCallback((
-    propertyKey: string,
-    newValue: unknown,
-    element: Element,
-    stepId: string,
-  ): boolean => {
-    if (element.type === ElementTypes.PasswordInput) {
-      if (
-        propertyKey === 'confirmHint' ||
-        propertyKey === 'confirmLabel' ||
-        propertyKey === 'confirmPlaceholder' ||
-        propertyKey === 'required'
-      ) {
-        updateNodeData(stepId, (node: Node) => {
-          if (!node.data.components) {
-            return {};
-          }
-
-          const components: Element[] = cloneDeep(node.data.components) as Element[];
-          let passwordFieldIndex: number;
-
-          components.every((component: Element) => {
-            if (component.type === BlockTypes.Form) {
-              component?.components?.every((c: Element, index: number) => {
-                if (c.id === element.id) {
-                  passwordFieldIndex = index;
-
-                  return false;
-                }
-
-                return true;
-              });
-
-              if (passwordFieldIndex === undefined) {
-                return true;
-              }
-
-              // Extract the property name (e.g., 'confirmHint' -> 'hint', 'confirmLabel' -> 'label')
-              let propertyName: string = propertyKey;
-
-              if (propertyName.startsWith('confirm')) {
-                // Remove 'confirm' prefix and lowercase the first letter (e.g., 'confirmHint' -> 'hint')
-                propertyName = propertyName.substring(7);
-                propertyName = propertyName.charAt(0).toLowerCase() + propertyName.slice(1);
-              }
-
-              if (component.components) {
-                set(component.components[passwordFieldIndex + 1], propertyName, newValue);
-              }
-
-              return false;
             }
 
             return true;
@@ -336,121 +403,55 @@ const useConfirmPasswordField = (): void => {
             components,
           };
         });
-
-        if (propertyKey !== 'required') {
-          return false;
-        }
       }
-    }
 
-    return true;
-  }, [updateNodeData]);
-
-  /**
-   * Deletes the confirm password field from the form when the password field is removed.
-   *
-   * @param stepId - The ID of the step where the resource is located.
-   * @param resource - The resource element to be checked.
-   * @returns Returns true.
-   */
-  const deleteConfirmPasswordField = useCallback((stepId: string, resource: Element): boolean => {
-    const resourceIdentifier = (resource as Element & {identifier?: string})?.identifier;
-    if (
-      resource.type === ElementTypes.PasswordInput &&
-      resourceIdentifier === FlowBuilderElementConstants.PASSWORD_IDENTIFIER
-    ) {
-      updateNodeData(stepId, (node: Node) => {
-        if (!node.data.components) {
-          return {};
-        }
-
-        const components: Element[] = cloneDeep(node.data.components) as Element[];
-        let formFound = false;
-
-        components.every((component: Element, componentIndex: number) => {
-          if (component.type === BlockTypes.Form) {
-            component?.components?.every((c: Element) => {
-              if (c.id === resource.id) {
-                formFound = true;
-
-                return false;
-              }
-
-              return true;
-            });
-
-            if (formFound && component.components) {
-              components[componentIndex] = {
-                ...component,
-                components: component.components.filter(
-                  (c: Element) => {
-                    const cIdentifier = (c as Element & {identifier?: string})?.identifier;
-                    return cIdentifier !== FlowBuilderElementConstants.CONFIRM_PASSWORD_IDENTIFIER;
-                  },
-                ),
-              };
-
-              return false;
-            }
-          }
-
-          return true;
-        });
-
-        return {
-          components,
-        };
-      });
-    }
-
-    return true;
-  }, [updateNodeData]);
+      return true;
+    },
+    [updateNodeData],
+  );
 
   useEffect(() => {
     // Create new handler objects with the identifier property set,
     // rather than mutating the useCallback return values.
     const identifiedAddField = Object.assign(
-      ((...args: unknown[]) => addConfirmPasswordField(...(args as Parameters<typeof addConfirmPasswordField>))) as unknown as AsyncPropertyChangeHandler,
+      ((...args: unknown[]) =>
+        addConfirmPasswordField(
+          ...(args as Parameters<typeof addConfirmPasswordField>),
+        )) as unknown as AsyncPropertyChangeHandler,
       {[VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER]: 'addConfirmPasswordField'},
     );
     const identifiedAddFieldProperties = Object.assign(
-      ((...args: unknown[]) => addConfirmPasswordFieldProperties(...(args as Parameters<typeof addConfirmPasswordFieldProperties>))) as SyncPropertyPanelHandler,
+      ((...args: unknown[]) =>
+        addConfirmPasswordFieldProperties(
+          ...(args as Parameters<typeof addConfirmPasswordFieldProperties>),
+        )) as SyncPropertyPanelHandler,
       {[VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER]: 'addConfirmPasswordFieldProperties'},
     );
     const identifiedUpdateFieldProperties = Object.assign(
-      ((...args: unknown[]) => updateConfirmPasswordFieldProperties(...(args as Parameters<typeof updateConfirmPasswordFieldProperties>))) as unknown as AsyncPropertyChangeHandler,
+      ((...args: unknown[]) =>
+        updateConfirmPasswordFieldProperties(
+          ...(args as Parameters<typeof updateConfirmPasswordFieldProperties>),
+        )) as unknown as AsyncPropertyChangeHandler,
       {[VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER]: 'updateConfirmPasswordFieldProperties'},
     );
     const identifiedDeleteField = Object.assign(
-      ((...args: unknown[]) => deleteConfirmPasswordField(...(args as Parameters<typeof deleteConfirmPasswordField>))) as unknown as AsyncNodeDeleteHandler,
+      ((...args: unknown[]) =>
+        deleteConfirmPasswordField(
+          ...(args as Parameters<typeof deleteConfirmPasswordField>),
+        )) as unknown as AsyncNodeDeleteHandler,
       {[VisualFlowConstants.FLOW_BUILDER_PLUGIN_FUNCTION_IDENTIFIER]: 'deleteConfirmPasswordField'},
     );
 
-    PluginRegistry.getInstance().registerAsync(
-      FlowEventTypes.ON_PROPERTY_CHANGE,
-      identifiedAddField,
-    );
-    PluginRegistry.getInstance().registerAsync(
-      FlowEventTypes.ON_PROPERTY_CHANGE,
-      identifiedUpdateFieldProperties,
-    );
-    PluginRegistry.getInstance().registerSync(
-      FlowEventTypes.ON_PROPERTY_PANEL_OPEN,
-      identifiedAddFieldProperties,
-    );
+    PluginRegistry.getInstance().registerAsync(FlowEventTypes.ON_PROPERTY_CHANGE, identifiedAddField);
+    PluginRegistry.getInstance().registerAsync(FlowEventTypes.ON_PROPERTY_CHANGE, identifiedUpdateFieldProperties);
+    PluginRegistry.getInstance().registerSync(FlowEventTypes.ON_PROPERTY_PANEL_OPEN, identifiedAddFieldProperties);
     // NOTE: renderConfirmPasswordField and skipConfirmPasswordField are not registered
     // because the custom rendering is not fully implemented (TODO in renderConfirmPasswordField).
     // The confirm password field will render as a normal INPUT element.
-    PluginRegistry.getInstance().registerAsync(
-      FlowEventTypes.ON_NODE_ELEMENT_DELETE,
-      identifiedDeleteField,
-    );
+    PluginRegistry.getInstance().registerAsync(FlowEventTypes.ON_NODE_ELEMENT_DELETE, identifiedDeleteField);
 
     return () => {
-      PluginRegistry.getInstance().unregister(
-        FlowEventTypes.ON_PROPERTY_CHANGE,
-        'addConfirmPasswordField',
-      );
+      PluginRegistry.getInstance().unregister(FlowEventTypes.ON_PROPERTY_CHANGE, 'addConfirmPasswordField');
       PluginRegistry.getInstance().unregister(
         FlowEventTypes.ON_PROPERTY_CHANGE,
         'updateConfirmPasswordFieldProperties',
@@ -461,10 +462,7 @@ const useConfirmPasswordField = (): void => {
       );
       // NOTE: renderConfirmPasswordField and skipConfirmPasswordField are not unregistered
       // because they were not registered (see comment above).
-      PluginRegistry.getInstance().unregister(
-        FlowEventTypes.ON_NODE_ELEMENT_DELETE,
-        'deleteConfirmPasswordField',
-      );
+      PluginRegistry.getInstance().unregister(FlowEventTypes.ON_NODE_ELEMENT_DELETE, 'deleteConfirmPasswordField');
     };
   }, [
     addConfirmPasswordField,

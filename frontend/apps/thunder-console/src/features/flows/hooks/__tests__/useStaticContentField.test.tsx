@@ -234,11 +234,9 @@ describe('useStaticContentField', () => {
 
     it('should call updateNodeData callback correctly when adding content', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useStaticContentField(), {
         wrapper: createWrapper(),
@@ -268,11 +266,9 @@ describe('useStaticContentField', () => {
 
     it('should call updateNodeData callback correctly when removing content', async () => {
       let capturedCallback: ((node: Node) => Record<string, unknown>) | null = null;
-      mockUpdateNodeData.mockImplementation(
-        (_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
-          capturedCallback = callback;
-        },
-      );
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: Node) => Record<string, unknown>) => {
+        capturedCallback = callback;
+      });
 
       renderHook(() => useStaticContentField(), {
         wrapper: createWrapper(),

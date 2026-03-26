@@ -8,13 +8,8 @@
       {
         "type": "oauth2",
         "config": {
-          "grantTypes": [
-            "authorization_code",
-            "refresh_token"
-          ],
-          "responseTypes": [
-            "code"
-          ],
+          "grantTypes": ["authorization_code", "refresh_token"],
+          "responseTypes": ["code"],
           "pkceRequired": true,
           "tokenEndpointAuthMethod": "none",
           "publicClient": true

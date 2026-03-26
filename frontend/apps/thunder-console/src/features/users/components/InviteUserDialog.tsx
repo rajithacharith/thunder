@@ -393,10 +393,7 @@ function InviteUserContent({
       <Box>
         <Alert severity="success" sx={{mb: 3}}>
           <AlertTitle>{t('users:inviteLinkGenerated', 'Invite Link Generated!')}</AlertTitle>
-          {t(
-            'users:inviteLinkDescription',
-            'Share this link with the user to complete their registration.',
-          )}
+          {t('users:inviteLinkDescription', 'Share this link with the user to complete their registration.')}
         </Alert>
         <Box sx={{mb: 3}}>
           <Typography variant="body2" sx={{mb: 1}}>

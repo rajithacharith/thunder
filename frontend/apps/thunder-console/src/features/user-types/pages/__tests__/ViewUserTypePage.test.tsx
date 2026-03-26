@@ -1578,10 +1578,7 @@ describe('ViewUserTypePage', () => {
       await user.click(saveButton);
 
       await waitFor(() => {
-        expect(mockShowToast).toHaveBeenCalledWith(
-          expect.stringContaining('email'),
-          'error',
-        );
+        expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('email'), 'error');
       });
 
       expect(mockUpdateMutateAsync).not.toHaveBeenCalled();
@@ -1601,10 +1598,7 @@ describe('ViewUserTypePage', () => {
       await user.click(saveButton);
 
       await waitFor(() => {
-        expect(mockShowToast).toHaveBeenCalledWith(
-          expect.stringContaining('Failed to save user type'),
-          'error',
-        );
+        expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('Failed to save user type'), 'error');
       });
     });
   });

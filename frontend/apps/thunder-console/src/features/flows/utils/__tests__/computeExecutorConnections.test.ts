@@ -88,10 +88,7 @@ describe('computeExecutorConnections', () => {
     });
 
     it('should ignore unsupported IDP types', () => {
-      const idps = [
-        createIdp('oauth-1', IdentityProviderTypes.OAUTH),
-        createIdp('oidc-1', IdentityProviderTypes.OIDC),
-      ];
+      const idps = [createIdp('oauth-1', IdentityProviderTypes.OAUTH), createIdp('oidc-1', IdentityProviderTypes.OIDC)];
 
       const result = computeExecutorConnections({identityProviders: idps});
 

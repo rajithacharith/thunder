@@ -109,11 +109,24 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
         flex: 1,
         minWidth: 200,
         renderCell: (params: DataGrid.GridRenderCellParams<ApiUser>): JSX.Element => (
-          <Box sx={{display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', overflow: 'hidden'}}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              height: '100%',
+              overflow: 'hidden',
+            }}
+          >
             <Typography variant="body2" noWrap>
               {params.row.display ?? params.row.id}
             </Typography>
-            <Typography variant="caption" color="text.secondary" noWrap sx={{fontFamily: 'monospace', fontSize: '0.7rem'}}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              noWrap
+              sx={{fontFamily: 'monospace', fontSize: '0.7rem'}}
+            >
               {params.row.id}
             </Typography>
           </Box>

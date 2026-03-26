@@ -412,8 +412,6 @@ describe('InviteUserDialog', () => {
     });
   });
 
-
-
   it('resets flow when "Invite Another User" is clicked', async () => {
     const user = userEvent.setup();
     const inviteLink = 'https://example.com/invite?token=abc123';
@@ -881,8 +879,6 @@ describe('InviteUserDialog', () => {
       expect(mockHandleInputChange).toHaveBeenCalledWith('role', 'admin');
     });
   });
-
-
 
   it('closes dialog from invite generated screen', async () => {
     const user = userEvent.setup();
@@ -1434,8 +1430,6 @@ describe('InviteUserDialog', () => {
     const option = await screen.findByRole('option', {name: /option1/i});
     expect(option).toBeInTheDocument();
   });
-
-
 
   it('renders SELECT with selected value showing label', () => {
     const selectComponent: EmbeddedFlowComponent = {

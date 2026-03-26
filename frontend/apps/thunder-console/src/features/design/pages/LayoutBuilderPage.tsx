@@ -17,7 +17,17 @@
  */
 
 import {useGetThemes, useGetTheme, type Stylesheet} from '@thunder/shared-design';
-import {Autocomplete, Box, Button, Drawer, IconButton, TextField, Tooltip, Typography, useColorScheme} from '@wso2/oxygen-ui';
+import {
+  Autocomplete,
+  Box,
+  Button,
+  Drawer,
+  IconButton,
+  TextField,
+  Tooltip,
+  Typography,
+  useColorScheme,
+} from '@wso2/oxygen-ui';
 import {ArrowLeft, Crosshair, Layers, Save} from '@wso2/oxygen-ui-icons-react';
 import {useCallback, useMemo, useRef, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -54,7 +64,9 @@ export default function LayoutBuilderPage(): JSX.Element {
     setIsDirty,
   } = useLayoutBuilder();
 
-  const saveHandlerRef = useRef<() => void>(() => { /* no-op */ });
+  const saveHandlerRef = useRef<() => void>(() => {
+    /* no-op */
+  });
   const cssEditorRef = useRef<CustomCSSEditorHandle>(null);
   const [inspectorEnabled, setInspectorEnabled] = useState(false);
 
@@ -67,9 +79,7 @@ export default function LayoutBuilderPage(): JSX.Element {
   const previewTheme = themeData?.theme ?? undefined;
 
   // Extract page background from the selected screen draft
-  const currentScreenDef = selectedScreen
-    ? (screenDraft ?? draftLayout?.screens?.[selectedScreen])
-    : undefined;
+  const currentScreenDef = selectedScreen ? (screenDraft ?? draftLayout?.screens?.[selectedScreen]) : undefined;
   const pageBackground = (currentScreenDef?.background as Record<string, unknown> | undefined)?.value as
     | string
     | undefined;
@@ -185,7 +195,6 @@ export default function LayoutBuilderPage(): JSX.Element {
             />
           )}
         </Box>
-
       </Box>
 
       {/* ── Main area ─────────────────────────────────────────────────────── */}

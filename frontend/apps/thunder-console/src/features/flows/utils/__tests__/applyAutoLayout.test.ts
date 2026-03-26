@@ -24,26 +24,26 @@ import applyAutoLayout, {type AutoLayoutOptions} from '../applyAutoLayout';
 
 // Mock ELK
 vi.mock('elkjs/lib/elk.bundled.js', () => ({
-    default: class MockELK {
-      layout(graph: {
-        id: string;
-        children: {id: string; width: number; height: number}[];
-        edges: {id: string; sources: string[]; targets: string[]}[];
-      }) {
-        // Return nodes with calculated positions based on their index
-        const layoutedChildren = graph.children.map((child, index) => ({
-          ...child,
-          x: index * 200,
-          y: 100,
-        }));
+  default: class MockELK {
+    layout(graph: {
+      id: string;
+      children: {id: string; width: number; height: number}[];
+      edges: {id: string; sources: string[]; targets: string[]}[];
+    }) {
+      // Return nodes with calculated positions based on their index
+      const layoutedChildren = graph.children.map((child, index) => ({
+        ...child,
+        x: index * 200,
+        y: 100,
+      }));
 
-        return Promise.resolve({
-          ...graph,
-          children: layoutedChildren,
-        });
-      }
-    },
-  }));
+      return Promise.resolve({
+        ...graph,
+        children: layoutedChildren,
+      });
+    }
+  },
+}));
 
 describe('applyAutoLayout', () => {
   const createNode = (

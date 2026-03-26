@@ -74,9 +74,7 @@ function ButtonExtendedProperties({resource, onChange}: ButtonExtendedProperties
       <Divider sx={{marginY: 2}} />
 
       <div>
-        <FormLabel htmlFor="start-icon-input">
-          {t('flows:core.buttonExtendedProperties.startIcon.label')}
-        </FormLabel>
+        <FormLabel htmlFor="start-icon-input">{t('flows:core.buttonExtendedProperties.startIcon.label')}</FormLabel>
         <TextField
           id="start-icon-input"
           value={startIconValue}
@@ -85,15 +83,11 @@ function ButtonExtendedProperties({resource, onChange}: ButtonExtendedProperties
           fullWidth
           size="small"
         />
-        <FormHelperText>
-          {t('flows:core.buttonExtendedProperties.startIcon.hint')}
-        </FormHelperText>
+        <FormHelperText>{t('flows:core.buttonExtendedProperties.startIcon.hint')}</FormHelperText>
       </div>
 
       <div>
-        <FormLabel htmlFor="end-icon-input">
-          {t('flows:core.buttonExtendedProperties.endIcon.label')}
-        </FormLabel>
+        <FormLabel htmlFor="end-icon-input">{t('flows:core.buttonExtendedProperties.endIcon.label')}</FormLabel>
         <TextField
           id="end-icon-input"
           value={endIconValue}
@@ -102,9 +96,7 @@ function ButtonExtendedProperties({resource, onChange}: ButtonExtendedProperties
           fullWidth
           size="small"
         />
-        <FormHelperText>
-          {t('flows:core.buttonExtendedProperties.endIcon.hint')}
-        </FormHelperText>
+        <FormHelperText>{t('flows:core.buttonExtendedProperties.endIcon.hint')}</FormHelperText>
       </div>
 
       <Divider sx={{marginY: 2}} />

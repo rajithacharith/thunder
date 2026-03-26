@@ -282,11 +282,7 @@ describe('ResourcePropertyPanel', () => {
   describe('Props', () => {
     it('should apply custom className', () => {
       render(
-        <ResourcePropertyPanel
-          open
-          onComponentDelete={mockOnComponentDelete}
-          className="custom-class"
-        >
+        <ResourcePropertyPanel open onComponentDelete={mockOnComponentDelete} className="custom-class">
           <div>Content</div>
         </ResourcePropertyPanel>,
         {wrapper: createWrapper()},
@@ -312,11 +308,7 @@ describe('ResourcePropertyPanel', () => {
 
     it('should pass additional props to Box container', () => {
       render(
-        <ResourcePropertyPanel
-          open
-          onComponentDelete={mockOnComponentDelete}
-          data-testid="custom-container"
-        >
+        <ResourcePropertyPanel open onComponentDelete={mockOnComponentDelete} data-testid="custom-container">
           <div>Content</div>
         </ResourcePropertyPanel>,
         {wrapper: createWrapper()},
