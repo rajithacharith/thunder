@@ -178,14 +178,10 @@ describe('ResourcePanel', () => {
       );
       /* eslint-enable @typescript-eslint/prefer-nullish-coalescing */
 
-      if (collapseButton) {
-        fireEvent.click(collapseButton);
-        expect(mockSetIsResourcePanelOpen).toHaveBeenCalled();
-      } else {
-        // If no specific collapse button found, the panel may use different mechanism
-        // Just verify the component renders without error
-        expect(buttons.length).toBeGreaterThan(0);
-      }
+      expect(buttons.length).toBeGreaterThan(0);
+      expect(collapseButton).toBeDefined();
+      fireEvent.click(collapseButton!);
+      expect(mockSetIsResourcePanelOpen).toHaveBeenCalled();
     });
   });
 
@@ -235,18 +231,10 @@ describe('ResourcePanel', () => {
         />,
       );
 
-      // Find and click the edit button (the small icon button near the title)
-      const buttons = screen.getAllByRole('button');
-      const editButton = buttons.find(
-        (btn) =>
-          // Look for small buttons that might be the edit button
-          btn.className.includes('small') || btn.getAttribute('size') === 'small',
-      );
-
-      if (editButton) {
-        fireEvent.click(editButton);
-        expect(screen.getByRole('textbox')).toBeInTheDocument();
-      }
+      // Find and click the edit button by its aria-label
+      const editButton = screen.getByRole('button', {name: /edit title/i});
+      fireEvent.click(editButton);
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
     });
 
     it('should call onFlowTitleChange when title is saved', () => {
@@ -271,11 +259,10 @@ describe('ResourcePanel', () => {
       });
 
       const textField = screen.queryByRole('textbox');
-      if (textField) {
-        fireEvent.change(textField, {target: {value: 'New Title'}});
-        fireEvent.keyDown(textField, {key: 'Enter'});
-        expect(onFlowTitleChange).toHaveBeenCalledWith('New Title');
-      }
+      expect(textField).toBeTruthy();
+      fireEvent.change(textField!, {target: {value: 'New Title'}});
+      fireEvent.keyDown(textField!, {key: 'Enter'});
+      expect(onFlowTitleChange).toHaveBeenCalledWith('New Title');
     });
 
     it('should cancel editing when Escape is pressed', () => {
@@ -299,12 +286,11 @@ describe('ResourcePanel', () => {
       });
 
       const textField = screen.queryByRole('textbox');
-      if (textField) {
-        fireEvent.change(textField, {target: {value: 'Changed Title'}});
-        fireEvent.keyDown(textField, {key: 'Escape'});
-        // Title should not be changed
-        expect(onFlowTitleChange).not.toHaveBeenCalled();
-      }
+      expect(textField).toBeTruthy();
+      fireEvent.change(textField!, {target: {value: 'Changed Title'}});
+      fireEvent.keyDown(textField!, {key: 'Escape'});
+      // Title should not be changed
+      expect(onFlowTitleChange).not.toHaveBeenCalled();
     });
   });
 
@@ -478,14 +464,12 @@ describe('ResourcePanel', () => {
         fireEvent.click(btn);
       });
 
-      if (mockSetIsResourcePanelOpen.mock.calls.length > 0) {
-        // Verify it was called with a function that toggles the value
-        const toggleFn = mockSetIsResourcePanelOpen.mock.calls[0][0] as ((prev: boolean) => boolean) | undefined;
-        if (typeof toggleFn === 'function') {
-          expect(toggleFn(true)).toBe(false);
-          expect(toggleFn(false)).toBe(true);
-        }
-      }
+      expect(mockSetIsResourcePanelOpen.mock.calls.length).toBeGreaterThan(0);
+      // Verify it was called with a function that toggles the value
+      const toggleFn = mockSetIsResourcePanelOpen.mock.calls[0][0] as ((prev: boolean) => boolean) | undefined;
+      expect(typeof toggleFn).toBe('function');
+      expect((toggleFn as (prev: boolean) => boolean)(true)).toBe(false);
+      expect((toggleFn as (prev: boolean) => boolean)(false)).toBe(true);
     });
   });
 });

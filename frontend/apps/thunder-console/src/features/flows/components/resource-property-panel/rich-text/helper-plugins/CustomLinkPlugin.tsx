@@ -152,7 +152,7 @@ function LinkEditor(): ReactElement {
   const [linkText, setLinkText] = useState('');
   const [lastSelection, setLastSelection] = useState<BaseSelection | null>(null);
   const [isDynamicValuePopoverOpen, setIsDynamicValuePopoverOpen] = useState<boolean>(false);
-  const dynamicValueBtnRef = useRef<HTMLButtonElement>(null);
+  const [dynamicValueBtnEl, setDynamicValueBtnEl] = useState<HTMLButtonElement | null>(null);
 
   const {t} = useTranslation();
 
@@ -435,7 +435,7 @@ function LinkEditor(): ReactElement {
               <InputAdornment position="end">
                 <Tooltip title={t('flows:core.elements.textPropertyField.tooltip.configureDynamicValue')}>
                   <IconButton
-                    ref={dynamicValueBtnRef}
+                    ref={setDynamicValueBtnEl}
                     onClick={() => setIsDynamicValuePopoverOpen((prev) => !prev)}
                     size="small"
                     edge="end"
@@ -453,7 +453,7 @@ function LinkEditor(): ReactElement {
       </Box>
       <DynamicValuePopover
         open={isDynamicValuePopoverOpen}
-        anchorEl={dynamicValueBtnRef.current}
+        anchorEl={dynamicValueBtnEl}
         propertyKey="linkUrl"
         onClose={() => setIsDynamicValuePopoverOpen(false)}
         value={linkUrl}

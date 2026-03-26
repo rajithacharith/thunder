@@ -284,18 +284,16 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
       // Type a custom URL into the URL input field (second input)
       const inputs = document.querySelectorAll('input');
       const urlInput = inputs[1];
-      if (urlInput) {
-         act(() => {
-          fireEvent.change(urlInput, {target: {value: 'https://test-current-url.com'}});
-        });
-        expect(urlInput).toHaveValue('https://test-current-url.com');
+      act(() => {
+        fireEvent.change(urlInput, {target: {value: 'https://test-current-url.com'}});
+      });
+      expect(urlInput).toHaveValue('https://test-current-url.com');
 
-        // Click apply to submit the link (getCurrentUrl returns linkUrl for CUSTOM type)
-        const applyButton = screen.getByText('flows:core.elements.richText.linkEditor.apply');
-        act(() => {
-          fireEvent.click(applyButton);
-        });
-      }
+      // Click apply to submit the link (getCurrentUrl returns linkUrl for CUSTOM type)
+      const applyButton = screen.getByText('flows:core.elements.richText.linkEditor.apply');
+      act(() => {
+        fireEvent.click(applyButton);
+      });
 
       // Card should still be present in the DOM
       expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();
@@ -382,18 +380,16 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
       // Type multiple URLs rapidly into the URL input field (second input)
       const inputs = document.querySelectorAll('input');
       const urlInput = inputs[1];
-      if (urlInput) {
-        act(() => {
-          fireEvent.change(urlInput, { target: { value: 'https://url1.com' } });
-        });
-        act(() => {
-          fireEvent.change(urlInput, { target: { value: 'https://url2.com' } });
-        });
-        act(() => {
-          fireEvent.change(urlInput, { target: { value: 'https://final-url.com' } });
-        });
-        expect(urlInput).toHaveValue('https://final-url.com');
-      }
+      act(() => {
+        fireEvent.change(urlInput, { target: { value: 'https://url1.com' } });
+      });
+      act(() => {
+        fireEvent.change(urlInput, { target: { value: 'https://url2.com' } });
+      });
+      act(() => {
+        fireEvent.change(urlInput, { target: { value: 'https://final-url.com' } });
+      });
+      expect(urlInput).toHaveValue('https://final-url.com');
     });
 
     it('should handle save with valid URL after initially empty', () => {
@@ -405,23 +401,21 @@ describe('CustomLinkPlugin - URL Type Detection Functions', () => {
       // Use the URL input field (second input)
       const inputs = document.querySelectorAll('input');
       const urlInput = inputs[1];
-      if (urlInput) {
-        // Clear the field first
-        act(() => {
-          fireEvent.change(urlInput, { target: { value: '' } });
-        });
-        // Then add a valid URL
-        act(() => {
-          fireEvent.change(urlInput, { target: { value: 'https://valid-url.com' } });
-        });
-        expect(urlInput).toHaveValue('https://valid-url.com');
+      // Clear the field first
+      act(() => {
+        fireEvent.change(urlInput, { target: { value: '' } });
+      });
+      // Then add a valid URL
+      act(() => {
+        fireEvent.change(urlInput, { target: { value: 'https://valid-url.com' } });
+      });
+      expect(urlInput).toHaveValue('https://valid-url.com');
 
-        // Apply the link
-        const applyButton = screen.getByText('flows:core.elements.richText.linkEditor.apply');
-        act(() => {
-          fireEvent.click(applyButton);
-        });
-      }
+      // Apply the link
+      const applyButton = screen.getByText('flows:core.elements.richText.linkEditor.apply');
+      act(() => {
+        fireEvent.click(applyButton);
+      });
 
       // Card should still be present in the DOM
       expect(document.querySelector('.MuiCard-root')).toBeInTheDocument();

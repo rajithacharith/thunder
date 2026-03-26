@@ -34,7 +34,7 @@ import {
   DataGrid,
 } from '@wso2/oxygen-ui';
 import {Eye, Trash2} from '@wso2/oxygen-ui-icons-react';
-import {useEffect, useMemo, useState, useCallback} from 'react';
+import {useMemo, useState, useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
@@ -59,11 +59,13 @@ export default function UsersList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Show snackbar when error occurs
-  useEffect(() => {
+  const [prevError, setPrevError] = useState<typeof error>(null);
+  if (prevError !== error) {
+    setPrevError(error);
     if (error) {
       setSnackbarOpen(true);
     }
-  }, [error]);
+  }
 
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false);

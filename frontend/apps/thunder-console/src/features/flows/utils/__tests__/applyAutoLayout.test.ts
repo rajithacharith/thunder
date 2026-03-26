@@ -341,14 +341,13 @@ describe('applyAutoLayout', () => {
 
       // VIEW nodes should be aligned (have similar Y positions considering their heights)
       const viewNodes = result.filter((n) => n.type?.toUpperCase() === 'VIEW');
-      if (viewNodes.length >= 2) {
-        // Views should be centered at the same Y
-        const heights = viewNodes.map((n) => n.measured?.height ?? 100);
-        const centers = viewNodes.map((n, i) => n.position.y + heights[i] / 2);
-        // Allow some tolerance for rounding
-        const tolerance = 5;
-        expect(Math.abs(centers[0] - centers[1])).toBeLessThan(tolerance);
-      }
+      expect(viewNodes.length).toBeGreaterThanOrEqual(2);
+      // Views should be centered at the same Y
+      const heights = viewNodes.map((n) => n.measured?.height ?? 100);
+      const centers = viewNodes.map((n, i) => n.position.y + heights[i] / 2);
+      // Allow some tolerance for rounding
+      const tolerance = 5;
+      expect(Math.abs(centers[0] - centers[1])).toBeLessThan(tolerance);
     });
 
     it('should handle nodes without type', async () => {

@@ -17,7 +17,7 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {sanitizeCss, isValidStylesheetUrl} from '../cssSanitizer';
+import {sanitizeCss, isValidStylesheetUrl, isInsecureStylesheetUrl} from '../cssSanitizer';
 
 describe('sanitizeCss', () => {
   it('should pass through safe CSS unchanged', () => {
@@ -96,8 +96,8 @@ describe('isValidStylesheetUrl', () => {
     expect(isValidStylesheetUrl('https://cdn.example.com/styles.css')).toBe(true);
   });
 
-  it('should reject http URLs', () => {
-    expect(isValidStylesheetUrl('http://cdn.example.com/styles.css')).toBe(false);
+  it('should accept http URLs', () => {
+    expect(isValidStylesheetUrl('http://cdn.example.com/styles.css')).toBe(true);
   });
 
   it('should reject javascript: URLs', () => {
@@ -115,5 +115,19 @@ describe('isValidStylesheetUrl', () => {
 
   it('should reject empty strings', () => {
     expect(isValidStylesheetUrl('')).toBe(false);
+  });
+});
+
+describe('isInsecureStylesheetUrl', () => {
+  it('should return true for http URLs', () => {
+    expect(isInsecureStylesheetUrl('http://cdn.example.com/styles.css')).toBe(true);
+  });
+
+  it('should return false for https URLs', () => {
+    expect(isInsecureStylesheetUrl('https://cdn.example.com/styles.css')).toBe(false);
+  });
+
+  it('should return false for invalid URLs', () => {
+    expect(isInsecureStylesheetUrl('not a url')).toBe(false);
   });
 });

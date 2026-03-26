@@ -338,10 +338,9 @@ describe('View', () => {
       render(<View onActionPanelDoubleClick={onDoubleClick} />);
 
       const actionPanel = screen.getByText('View').closest('.flow-builder-step-action-panel');
-      if (actionPanel) {
-        fireEvent.doubleClick(actionPanel);
-        expect(onDoubleClick).toHaveBeenCalled();
-      }
+      expect(actionPanel).not.toBeNull();
+      fireEvent.doubleClick(actionPanel!);
+      expect(onDoubleClick).toHaveBeenCalled();
     });
   });
 

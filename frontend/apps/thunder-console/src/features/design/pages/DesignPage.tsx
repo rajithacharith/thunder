@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useGetThemes} from '@thunder/shared-design';
+import {useGetThemes, useGetLayouts} from '@thunder/shared-design';
 import {Box, Button, Card, Grid, PageContent, PageTitle, Skeleton, Typography} from '@wso2/oxygen-ui';
 import {ArrowUpRight, LayoutTemplate, Palette, Plus} from '@wso2/oxygen-ui-icons-react';
 import {useState, type JSX} from 'react';
@@ -48,8 +48,14 @@ export default function DesignPage(): JSX.Element {
   const {t} = useTranslation('design');
   const navigate = useNavigate();
   const {data: themesData, isLoading: themesLoading} = useGetThemes();
+  const {data: layoutsData} = useGetLayouts();
 
   const [showAllThemes, setShowAllThemes] = useState(false);
+
+  // Build a map of handle → layoutId for API layouts
+  const layoutIdByHandle = new Map(
+    (layoutsData?.layouts ?? []).map((l) => [l.handle, l.id]),
+  );
 
   const allThemes = themesData?.themes ?? [];
   const visibleThemes = showAllThemes ? allThemes : allThemes.slice(0, DesignUIConstants.INITIAL_LIMIT);
@@ -165,49 +171,78 @@ export default function DesignPage(): JSX.Element {
         />
 
         <Grid container spacing={2}>
-          {LAYOUT_PRESET_IDS.map((id) => (
-            <Grid key={id} size={{xs: 6, sm: 4, md: 3, lg: 2}}>
-              <Card sx={{cursor: 'default', opacity: 0.72, pointerEvents: 'none'}}>
-                <Box sx={{aspectRatio: '4/3', overflow: 'hidden', position: 'relative'}}>
-                  <Box sx={{width: '100%', height: '100%', filter: 'grayscale(1)'}}>
-                    <LayoutPresetThumbnail variant={id} />
+          {LAYOUT_PRESET_IDS.map((id) => {
+            const apiLayoutId = layoutIdByHandle.get(id);
+            const isEnabled = id === 'centered' && !!apiLayoutId;
+
+            return (
+              <Grid key={id} size={{xs: 6, sm: 4, md: 3, lg: 2}}>
+                <Card
+                  sx={{
+                    cursor: isEnabled ? 'pointer' : 'default',
+                    opacity: isEnabled ? 1 : 0.72,
+                    pointerEvents: isEnabled ? 'auto' : 'none',
+                    transition: 'box-shadow 0.15s ease',
+                    '&:hover': isEnabled ? {boxShadow: 4} : undefined,
+                  }}
+                  {...(isEnabled
+                    ? {
+                        role: 'button',
+                        tabIndex: 0,
+                        onClick: () => {
+                          (async () => navigate(`/design/layouts/${apiLayoutId}`))().catch(() => { /* no-op */ });
+                        },
+                        onKeyDown: (e: React.KeyboardEvent) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            (async () => navigate(`/design/layouts/${apiLayoutId}`))().catch(() => { /* no-op */ });
+                          }
+                        },
+                      }
+                    : {})}
+                >
+                  <Box sx={{aspectRatio: '4/3', overflow: 'hidden', position: 'relative'}}>
+                    <Box sx={{width: '100%', height: '100%', filter: isEnabled ? 'none' : 'grayscale(1)'}}>
+                      <LayoutPresetThumbnail variant={id} />
+                    </Box>
+                    {!isEnabled && (
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          bgcolor: 'warning.main',
+                          color: 'warning.contrastText',
+                          px: 1,
+                          py: 0.4,
+                          borderRadius: 1,
+                          fontSize: '0.68rem',
+                          fontWeight: 700,
+                          letterSpacing: '0.03em',
+                        }}
+                      >
+                        {t('layouts.badges.coming_soon.label', 'Coming Soon')}
+                      </Box>
+                    )}
                   </Box>
-                  {/* Coming Soon badge */}
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      bgcolor: 'warning.main',
-                      color: 'warning.contrastText',
-                      px: 1,
-                      py: 0.4,
-                      borderRadius: 1,
-                      fontSize: '0.68rem',
-                      fontWeight: 700,
-                      letterSpacing: '0.03em',
-                    }}
-                  >
-                    {t('layouts.badges.coming_soon.label', 'Coming Soon')}
+                  <Box sx={{px: 1.5, py: 1, borderTop: '1px solid', borderColor: 'divider'}}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 500,
+                        fontSize: '0.8125rem',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {t(LAYOUT_PRESET_KEY[id], LAYOUT_PRESET_DEFAULT[id])}
+                    </Typography>
                   </Box>
-                </Box>
-                <Box sx={{px: 1.5, py: 1, borderTop: '1px solid', borderColor: 'divider'}}>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontWeight: 500,
-                      fontSize: '0.8125rem',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {t(LAYOUT_PRESET_KEY[id], LAYOUT_PRESET_DEFAULT[id])}
-                  </Typography>
-                </Box>
-              </Card>
-            </Grid>
-          ))}
+                </Card>
+              </Grid>
+            );
+          })}
         </Grid>
       </Box>
     </PageContent>

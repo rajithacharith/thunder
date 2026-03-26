@@ -16,27 +16,38 @@
  * under the License.
  */
 
-import userEvent from '@testing-library/user-event';
-import {render, screen, fireEvent, waitFor} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render as testRender, screen, fireEvent, waitFor} from '@thunder/test-utils';
+import userEvent from '@testing-library/user-event';
+import {DesignContext, type DesignContextType} from '@thunder/shared-design';
 import AcceptInviteBox from '../AcceptInviteBox';
 
 // Mock useDesign
 const mockUseDesign = vi.fn();
-vi.mock('@thunder/shared-design', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-  useDesign: () => mockUseDesign(),
-  mapEmbeddedFlowTextVariant: (variant: string) => {
-    switch (variant) {
-      case 'H1':
-        return 'h1';
-      case 'H2':
-        return 'h2';
-      default:
-        return 'body1';
-    }
-  },
-}));
+vi.mock('@thunder/shared-design', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-design')>();
+  return {
+    ...actual,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    useDesign: () => mockUseDesign(),
+    mapEmbeddedFlowTextVariant: (variant: string) => {
+      switch (variant) {
+        case 'H1':
+          return 'h1';
+        case 'H2':
+          return 'h2';
+        default:
+          return 'body1';
+      }
+    },
+  };
+});
+
+// Wrap renders with DesignContext so real adapters inside FlowComponentRenderer can access it
+const render = (ui: React.ReactElement) => {
+  const designValue: DesignContextType = {isDesignEnabled: false, isLoading: false, ...(mockUseDesign() as Partial<DesignContextType>)};
+  return testRender(<DesignContext.Provider value={designValue}>{ui}</DesignContext.Provider>);
+};
 
 // Mock useBranding
 const mockUseBranding = vi.fn().mockReturnValue({

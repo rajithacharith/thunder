@@ -24,6 +24,8 @@ export interface BaseStylesheet {
   id: string;
   /** The type of stylesheet */
   type: StylesheetType;
+  /** When true the stylesheet is skipped during injection (preview-only toggle). */
+  disabled?: boolean;
 }
 
 /**

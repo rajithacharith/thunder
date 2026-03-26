@@ -37,7 +37,7 @@ import {
   useTheme,
 } from '@wso2/oxygen-ui';
 import {Pencil, Trash2, UserRoundCog} from '@wso2/oxygen-ui-icons-react';
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
@@ -88,11 +88,13 @@ export default function UserTypesList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Show snackbar when error occurs
-  useEffect(() => {
+  const [prevError, setPrevError] = useState<typeof error>(null);
+  if (prevError !== error) {
+    setPrevError(error);
     if (error) {
       setSnackbarOpen(true);
     }
-  }, [error]);
+  }
 
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false);

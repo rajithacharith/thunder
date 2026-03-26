@@ -34,7 +34,7 @@ import {
 } from '@wso2/oxygen-ui';
 import {ArrowLeft, Edit} from '@wso2/oxygen-ui-icons-react';
 import type {ReactNode, SyntheticEvent, JSX} from 'react';
-import {useState, useEffect, useMemo, useCallback} from 'react';
+import {useState, useMemo, useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Link, useNavigate, useParams} from 'react-router';
 import CopyableId from '../../../components/CopyableId';
@@ -184,14 +184,16 @@ export default function ViewUserTypePage(): JSX.Element {
 
   // Clear display attribute if selected property becomes ineligible
   const effectiveDisplayAttribute = editedUserType.displayAttribute ?? userType?.systemAttributes?.display ?? '';
-  useEffect(() => {
+  const [prevEligible, setPrevEligible] = useState(eligibleDisplayProperties);
+  if (prevEligible !== eligibleDisplayProperties) {
+    setPrevEligible(eligibleDisplayProperties);
     if (effectiveDisplayAttribute) {
       const eligibleNames = eligibleDisplayProperties.map((p) => p.name.trim());
       if (!eligibleNames.includes(effectiveDisplayAttribute)) {
         setEditedUserType((prev) => ({...prev, displayAttribute: ''}));
       }
     }
-  }, [eligibleDisplayProperties, effectiveDisplayAttribute]);
+  }
 
   // Change detection
   const hasChanges = useMemo(

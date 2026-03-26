@@ -19,7 +19,7 @@
 import {useGetTranslations, useUpdateTranslation, NamespaceConstants, I18nDefaultConstants} from '@thunder/i18n';
 import {useLogger} from '@thunder/logger/react';
 import {Alert, PageContent, Snackbar, useColorScheme} from '@wso2/oxygen-ui';
-import {useCallback, useEffect, useMemo, useState, type JSX, type SyntheticEvent} from 'react';
+import {useCallback, useMemo, useState, type JSX, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate, useParams} from 'react-router';
 import NamespaceSelector from '../components/edit-translation/NamespaceSelector';
@@ -96,24 +96,26 @@ export default function TranslationsEditPage(): JSX.Element {
   }, [translationsData]);
 
   // Reset namespace when language changes
-  useEffect(() => {
+  const [prevLanguage, setPrevLanguage] = useState(selectedLanguage);
+  if (prevLanguage !== selectedLanguage) {
+    setPrevLanguage(selectedLanguage);
     setSelectedNamespace(null);
     setLocalChanges({});
     setSearch('');
-  }, [selectedLanguage]);
+  }
 
   // Initialize namespace once API data arrives
-  useEffect(() => {
-    if (namespaces.length > 0 && !selectedNamespace) {
-      setSelectedNamespace(namespaces[0]);
-    }
-  }, [namespaces, selectedNamespace]);
+  if (namespaces.length > 0 && !selectedNamespace) {
+    setSelectedNamespace(namespaces[0]);
+  }
 
   // Reset local changes when namespace switches
-  useEffect(() => {
+  const [prevNamespace, setPrevNamespace] = useState(selectedNamespace);
+  if (prevNamespace !== selectedNamespace) {
+    setPrevNamespace(selectedNamespace);
     setLocalChanges({});
     setSearch('');
-  }, [selectedNamespace]);
+  }
 
   const serverValues: Record<string, string> = useMemo(
     () => translationsData?.translations?.[selectedNamespace ?? ''] ?? {},

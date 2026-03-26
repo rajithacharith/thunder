@@ -168,10 +168,9 @@ describe('Rule', () => {
       render(<Rule {...createMockProps({id: 'rule-1', data: {someData: 'value'}})} />);
 
       const actionPanel = screen.getByText('Conditional Rule').closest('.flow-builder-rule-action-panel');
-      if (actionPanel) {
-        fireEvent.click(actionPanel);
-        expect(mockSetLastInteractedResource).toHaveBeenCalled();
-      }
+      expect(actionPanel).not.toBeNull();
+      fireEvent.click(actionPanel!);
+      expect(mockSetLastInteractedResource).toHaveBeenCalled();
     });
 
     it('should pass correct resource object to setLastInteractedResource', () => {
@@ -179,17 +178,16 @@ describe('Rule', () => {
       render(<Rule {...createMockProps({id: 'custom-rule-id', data: testData})} />);
 
       const actionPanel = screen.getByText('Conditional Rule').closest('.flow-builder-rule-action-panel');
-      if (actionPanel) {
-        fireEvent.click(actionPanel);
+      expect(actionPanel).not.toBeNull();
+      fireEvent.click(actionPanel!);
 
-        expect(mockSetLastInteractedResource).toHaveBeenCalledWith(
-          expect.objectContaining({
-            id: 'custom-rule-id',
-            name: 'Test Rule',
-            condition: 'true',
-          }),
-        );
-      }
+      expect(mockSetLastInteractedResource).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'custom-rule-id',
+          name: 'Test Rule',
+          condition: 'true',
+        }),
+      );
     });
   });
 
@@ -231,30 +229,28 @@ describe('Rule', () => {
       render(<Rule {...createMockProps({id: 'props-id', data: {}})} />);
 
       const actionPanel = screen.getByText('Conditional Rule').closest('.flow-builder-rule-action-panel');
-      if (actionPanel) {
-        fireEvent.click(actionPanel);
+      expect(actionPanel).not.toBeNull();
+      fireEvent.click(actionPanel!);
 
-        expect(mockSetLastInteractedResource).toHaveBeenCalledWith(
-          expect.objectContaining({
-            id: 'props-id',
-          }),
-        );
-      }
+      expect(mockSetLastInteractedResource).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'props-id',
+        }),
+      );
     });
 
     it('should fall back to nodeId when id prop is not provided', () => {
       render(<Rule {...createMockProps({data: {}})} />);
 
       const actionPanel = screen.getByText('Conditional Rule').closest('.flow-builder-rule-action-panel');
-      if (actionPanel) {
-        fireEvent.click(actionPanel);
+      expect(actionPanel).not.toBeNull();
+      fireEvent.click(actionPanel!);
 
-        expect(mockSetLastInteractedResource).toHaveBeenCalledWith(
-          expect.objectContaining({
-            id: 'rule-1',
-          }),
-        );
-      }
+      expect(mockSetLastInteractedResource).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'rule-1',
+        }),
+      );
     });
   });
 

@@ -38,6 +38,7 @@ vi.mock('@thunder/shared-design', () => ({
     },
     isLoading: false,
   })),
+  useGetLayouts: vi.fn(() => ({data: undefined, isLoading: false})),
 }));
 
 describe('EditCustomizationSettings', () => {

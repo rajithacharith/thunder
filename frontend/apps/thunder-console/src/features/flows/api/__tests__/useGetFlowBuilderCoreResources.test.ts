@@ -186,20 +186,18 @@ describe('useGetFlowBuilderCoreResources', () => {
       const {result} = renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
-      if (data.elements.length > 0) {
-        const firstElement = data.elements[0];
-        expect(firstElement).toHaveProperty('resourceType', 'ELEMENT');
-      }
+      expect(data.elements.length).toBeGreaterThan(0);
+      const firstElement = data.elements[0];
+      expect(firstElement).toHaveProperty('resourceType', 'ELEMENT');
     });
 
     it('should contain elements with display property', () => {
       const {result} = renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
-      if (data.elements.length > 0) {
-        const firstElement = data.elements[0];
-        expect(firstElement).toHaveProperty('display');
-      }
+      expect(data.elements.length).toBeGreaterThan(0);
+      const firstElement = data.elements[0];
+      expect(firstElement).toHaveProperty('display');
     });
   });
 
@@ -208,20 +206,18 @@ describe('useGetFlowBuilderCoreResources', () => {
       const {result} = renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
-      if (data.steps.length > 0) {
-        const firstStep = data.steps[0];
-        expect(firstStep).toHaveProperty('resourceType', 'STEP');
-      }
+      expect(data.steps.length).toBeGreaterThan(0);
+      const firstStep = data.steps[0];
+      expect(firstStep).toHaveProperty('resourceType', 'STEP');
     });
 
     it('should contain steps with type property', () => {
       const {result} = renderHook(() => useGetFlowBuilderCoreResources());
 
       const {data} = result.current;
-      if (data.steps.length > 0) {
-        const firstStep = data.steps[0];
-        expect(firstStep).toHaveProperty('type');
-      }
+      expect(data.steps.length).toBeGreaterThan(0);
+      const firstStep = data.steps[0];
+      expect(firstStep).toHaveProperty('type');
     });
   });
 

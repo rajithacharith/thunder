@@ -217,7 +217,7 @@ function BuilderPanelHeader({
               </Typography>
               {onTitleChange && (
                 <Tooltip title={editTitleTooltip}>
-                  <IconButton size="small" onClick={handleEditClick} sx={{p: 0.25}}>
+                  <IconButton size="small" aria-label={editTitleTooltip} onClick={handleEditClick} sx={{p: 0.25}}>
                     <Edit size={14} />
                   </IconButton>
                 </Tooltip>

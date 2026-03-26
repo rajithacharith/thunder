@@ -52,8 +52,8 @@ export default function Error(): JSX.Element {
       <Stack gap={5}>
         <ColorSchemeImage
           src={{
-            light: `${import.meta.env.BASE_URL}/assets/images/logo.svg`,
-            dark: `${import.meta.env.BASE_URL}/assets/images/logo-inverted.svg`,
+            light: `${import.meta.env.BASE_URL}assets/images/logo.svg`,
+            dark: `${import.meta.env.BASE_URL}assets/images/logo-inverted.svg`,
           }}
           alt={{light: 'Logo (Light)', dark: 'Logo (Dark)'}}
           height={30}
