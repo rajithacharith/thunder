@@ -19,8 +19,12 @@
 package executor
 
 import (
+	"errors"
+
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
 )
@@ -29,32 +33,51 @@ import (
 const (
 	// ouResolveFromCaller indicates that the caller's OU should be used when creating the user.
 	ouResolveFromCaller = "caller"
+	// ouResolveFromPrompt indicates that the user should be prompted to select an OU.
+	ouResolveFromPrompt = "prompt"
 )
 
 // ouResolverExecutor resolves the organization unit for a user being onboarded.
 type ouResolverExecutor struct {
 	core.ExecutorInterface
-	logger *log.Logger
+	ouService ou.OrganizationUnitServiceInterface
+	logger    *log.Logger
 }
 
 // newOUResolverExecutor creates a new OU resolver executor.
-func newOUResolverExecutor(flowFactory core.FlowFactoryInterface) *ouResolverExecutor {
+func newOUResolverExecutor(
+	flowFactory core.FlowFactoryInterface,
+	ouService ou.OrganizationUnitServiceInterface,
+) *ouResolverExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "OUResolverExecutor"))
+
+	defaultInputs := []common.Input{
+		{
+			Ref:        "ou_selection_input",
+			Identifier: ouIDKey,
+			Type:       "OU_SELECT",
+			Required:   true,
+		},
+	}
+
 	base := flowFactory.CreateExecutor(
 		ExecutorNameOUResolver,
 		common.ExecutorTypeUtility,
-		[]common.Input{},
+		defaultInputs,
 		[]common.Input{},
 	)
 	return &ouResolverExecutor{
 		ExecutorInterface: base,
+		ouService:         ouService,
 		logger:            logger,
 	}
 }
 
 // Execute resolves the organization unit for the user being onboarded.
 // It reads the "resolveFrom" node property to determine the OU resolution strategy.
-// When set to "caller", it overrides the default OU with the caller's OU from the security context.
+// Supported strategies:
+//   - "caller": overrides the default OU with the caller's OU from the security context.
+//   - "prompt": checks for child OUs and prompts the user to select one if applicable.
 func (e *ouResolverExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
@@ -72,6 +95,8 @@ func (e *ouResolverExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRes
 	switch resolveFrom {
 	case ouResolveFromCaller:
 		return e.resolveFromCaller(ctx, execResp, logger)
+	case ouResolveFromPrompt:
+		return e.resolveFromPrompt(ctx, logger)
 	default:
 		logger.Error("Unsupported resolveFrom value", log.String("resolveFrom", resolveFrom))
 		execResp.Status = common.ExecFailure
@@ -93,6 +118,84 @@ func (e *ouResolverExecutor) resolveFromCaller(ctx *core.NodeContext,
 
 	logger.Debug("Overriding user OU with caller's OU", log.String("callerOUID", callerOUID))
 	execResp.RuntimeData[ouIDKey] = callerOUID
+
+	return execResp, nil
+}
+
+// resolveFromPrompt checks whether the user type's OU has child OUs and,
+// if so, prompts the admin to select one during the onboarding flow.
+func (e *ouResolverExecutor) resolveFromPrompt(ctx *core.NodeContext,
+	logger *log.Logger) (*common.ExecutorResponse, error) {
+	execResp := &common.ExecutorResponse{
+		RuntimeData:    make(map[string]string),
+		AdditionalData: make(map[string]string),
+		ForwardedData:  make(map[string]interface{}),
+	}
+
+	// Read the default OU set by UserTypeResolver.
+	// The "prompt" strategy requires UserTypeResolver to have run first and set the defaultOUID.
+	parentOUID := ctx.RuntimeData[defaultOUIDKey]
+	if parentOUID == "" {
+		return nil, errors.New(
+			"no defaultOUID in runtime data; UserTypeResolver must run before OUResolver with prompt strategy",
+		)
+	}
+
+	// If the user already provided an OU selection, validate and accept it.
+	if selectedOUID, ok := ctx.UserInputs[ouIDKey]; ok && selectedOUID != "" {
+		// Validate that the selected OU belongs to the parent OU's subtree.
+		isDescendant, svcErr := e.ouService.IsParent(ctx.Context, parentOUID, selectedOUID)
+		if svcErr != nil {
+			if svcErr.Type == serviceerror.ClientErrorType {
+				execResp.Status = common.ExecFailure
+				execResp.FailureReason = "The selected organization unit is not valid."
+				return execResp, nil
+			}
+
+			return nil, errors.New("failed to validate selected organization unit: " + svcErr.Error)
+		}
+		if !isDescendant {
+			logger.Debug("Selected OU is not a descendant of the parent OU",
+				log.String(ouIDKey, selectedOUID),
+				log.String("parentOUID", parentOUID))
+			execResp.Status = common.ExecFailure
+			execResp.FailureReason = "The selected organization unit is not valid for the chosen user type."
+			return execResp, nil
+		}
+
+		logger.Debug("OU selected by user", log.String(ouIDKey, selectedOUID))
+		execResp.RuntimeData[ouIDKey] = selectedOUID
+		execResp.Status = common.ExecComplete
+		return execResp, nil
+	}
+
+	// Check if the parent OU has child OUs.
+	children, svcErr := e.ouService.GetOrganizationUnitChildren(ctx.Context, parentOUID, 1, 0)
+	if svcErr != nil {
+		return nil, errors.New("failed to check child organization units: " + svcErr.Error)
+	}
+
+	if children.TotalResults == 0 {
+		logger.Debug("No child OUs found, skipping OU selection")
+		execResp.Status = common.ExecComplete
+		return execResp, nil
+	}
+
+	// Child OUs exist — prompt the user to select one.
+	logger.Debug("Child OUs found, requesting OU selection",
+		log.String("parentOUID", parentOUID),
+		log.Int("totalChildren", children.TotalResults))
+
+	execResp.Status = common.ExecUserInputRequired
+
+	inputs := e.GetDefaultInputs()
+	if len(inputs) > 0 {
+		input := inputs[0]
+		execResp.Inputs = []common.Input{input}
+		// Forward the root OU ID so the frontend knows where to start the tree picker.
+		execResp.AdditionalData[common.DataRootOUID] = parentOUID
+		execResp.ForwardedData[common.ForwardedDataKeyInputs] = execResp.Inputs
+	}
 
 	return execResp, nil
 }

@@ -18,7 +18,16 @@
       "forms.credential.title": "Set Password",
       "forms.credential.fields.password.label": "Password",
       "forms.credential.fields.password.placeholder": "Enter password",
-      "forms.credential.actions.submit.label": "Set Password"
+      "forms.credential.actions.submit.label": "Set Password",
+      "forms.user_type.title": "Select a user type",
+      "forms.user_type.subtitle": "Choose a user type (schema) for the new user.",
+      "forms.user_type.fields.user_type.label": "User Type",
+      "forms.user_type.fields.user_type.placeholder": "Select a user type",
+      "forms.user_type.actions.continue.label": "Continue",
+      "forms.ou_selection.title": "Select an organization unit",
+      "forms.ou_selection.subtitle": "Choose which organization unit this user should belong to.",
+      "forms.ou_selection.fields.ou.label": "Organization Unit",
+      "forms.ou_selection.actions.continue.label": "Continue"
     },
     "signin": {
       "images.app_logo.alt": "Application logo",

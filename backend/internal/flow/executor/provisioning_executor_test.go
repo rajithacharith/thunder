@@ -864,25 +864,29 @@ func (suite *ProvisioningExecutorTestSuite) TestGetOUID() {
 	tests := []struct {
 		name        string
 		runtimeData map[string]string
+		userInputs  map[string]string
 		expected    string
 	}{
 		{
-			name: "FromOUIDKey",
+			name: "RuntimeOUIDTakesPriority",
 			runtimeData: map[string]string{
-				ouIDKey:        "ou-from-ouIDKey",
-				defaultOUIDKey: "ou-from-defaultOUIDKey",
+				ouIDKey:        "ou-from-resolver",
+				defaultOUIDKey: "ou-from-usertype",
 			},
-			expected: "ou-from-ouIDKey",
+			userInputs: map[string]string{
+				ouIDKey: "ou-from-userinput",
+			},
+			expected: "ou-from-resolver",
 		},
 		{
-			name: "FromDefaultOUIDKey",
+			name: "DefaultOUIDWhenNoExplicitOUID",
 			runtimeData: map[string]string{
-				defaultOUIDKey: "ou-from-defaultOUIDKey",
+				defaultOUIDKey: "ou-from-usertype",
 			},
-			expected: "ou-from-defaultOUIDKey",
+			expected: "ou-from-usertype",
 		},
 		{
-			name:        "NotFound",
+			name:        "ReturnsEmptyWhenNotFound",
 			runtimeData: map[string]string{},
 			expected:    "",
 		},
@@ -892,6 +896,7 @@ func (suite *ProvisioningExecutorTestSuite) TestGetOUID() {
 		suite.Run(tt.name, func() {
 			ctx := &core.NodeContext{
 				RuntimeData: tt.runtimeData,
+				UserInputs:  tt.userInputs,
 			}
 
 			ouID := suite.executor.getOUID(ctx)
