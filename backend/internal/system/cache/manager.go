@@ -97,7 +97,7 @@ func (cm *CacheManager) Init() {
 			cm.enabled = false
 			return
 		}
-		logger.Info("Connected to Redis successfully", log.String("address", cacheConfig.Redis.Address))
+		logger.Debug("Connected to Redis successfully", log.String("address", cacheConfig.Redis.Address))
 	} else {
 		cm.cleanupInterval = getCleanupInterval(cacheConfig)
 		cm.startCleanupRoutine()
@@ -279,6 +279,56 @@ func newCache[T any](cacheName string) CacheInterface[T] {
 	}
 
 	return cache
+}
+
+// GetInMemoryCache returns a singleton in-memory cache instance for the given type and cache name,
+func GetInMemoryCache[T any](cacheName string) CacheInterface[T] {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "CacheManager"))
+
+	cm := GetCacheManager()
+
+	var t T
+	typeName := reflect.TypeOf(t).String()
+	cacheKey := cacheName + ":" + typeName
+
+	cm.getMutex().RLock()
+	if cache, exists := cm.getCache(cacheKey); exists {
+		cm.getMutex().RUnlock()
+		if retCache, ok := cache.(CacheInterface[T]); ok {
+			return retCache
+		}
+	} else {
+		cm.getMutex().RUnlock()
+	}
+
+	cm.getMutex().Lock()
+	defer cm.getMutex().Unlock()
+
+	if cache, exists := cm.getCache(cacheKey); exists {
+		if retCache, ok := cache.(CacheInterface[T]); ok {
+			return retCache
+		}
+	}
+
+	logger.Debug("Creating new in-memory cache", log.String("cacheName", cacheName), log.String("type", typeName))
+
+	cacheConfig := config.GetThunderRuntime().Config.Cache
+	cacheProperty := getCacheProperty(cacheConfig, cacheName)
+
+	var internalCache CacheInterface[T]
+	if cacheConfig.Disabled || cacheProperty.Disabled {
+		internalCache = &inMemoryCache[T]{name: cacheName, enabled: false}
+	} else {
+		internalCache = newInMemoryCache[T](cacheName, true, cacheConfig, cacheProperty)
+	}
+
+	newCache := &Cache[T]{
+		enabled:   !cacheConfig.Disabled && !cacheProperty.Disabled,
+		cacheName: cacheName,
+		cacheImpl: internalCache,
+	}
+	cm.addCache(cacheKey, newCache)
+	return newCache
 }
 
 // GetCache returns a singleton cache instance for the given type and cache name.

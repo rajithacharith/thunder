@@ -37,10 +37,10 @@ type graphCache struct {
 	cache cache.CacheInterface[*graph]
 }
 
-// newGraphCache creates a new instance of graphCache.
+// newGraphCache creates a new in-memory cache instance of graphCache.
 func newGraphCache() GraphCacheInterface {
 	return &graphCache{
-		cache: cache.GetCache[*graph]("FlowGraphCache"),
+		cache: cache.GetInMemoryCache[*graph]("FlowGraphCache"),
 	}
 }
 
