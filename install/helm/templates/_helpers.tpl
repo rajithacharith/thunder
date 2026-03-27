@@ -162,3 +162,90 @@ Injects CACHE_REDIS_PASSWORD from auto-generated database credentials Secret whe
       key: cache-redis-password
 {{- end }}
 {{- end }}
+
+{{/*
+Generate generic secret-backed environment variable definitions.
+Expected input:
+  - secretEnv: list of objects with fields {name, secretName, secretKey, optional}
+*/}}
+{{- define "thunder.secretEnvVars" -}}
+{{- $secretEnv := default (list) .secretEnv -}}
+{{- range $index, $item := $secretEnv }}
+{{- if not $item.name }}
+{{- fail (printf "Invalid secretEnv entry at index %d: name is required." $index) }}
+{{- end }}
+{{- if not $item.secretName }}
+{{- fail (printf "Invalid secretEnv entry for %s: secretName is required." $item.name) }}
+{{- end }}
+{{- if not $item.secretKey }}
+{{- fail (printf "Invalid secretEnv entry for %s: secretKey is required." $item.name) }}
+{{- end }}
+- name: {{ $item.name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $item.secretName }}
+      key: {{ $item.secretKey }}
+      {{- if hasKey $item "optional" }}
+      optional: {{ $item.optional }}
+      {{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+Render ConfigMap/Secret volume items for declarative resources.
+Supports both formats:
+  - string item: "path/to/file.yaml" (used as key and path)
+  - object item: { key: "source-key", path: "target/path.yaml" }
+*/}}
+{{- define "thunder.declarativeResourceItems" -}}
+{{- $items := default (list) .items -}}
+{{- $field := default "declarativeResources.*.items" .field -}}
+{{- range $index, $item := $items }}
+{{- if kindIs "string" $item }}
+- key: {{ $item }}
+  path: {{ $item }}
+{{- else if kindIs "map" $item }}
+{{- if not $item.key }}
+{{- fail (printf "Invalid %s entry at index %d: key is required for object items." $field $index) }}
+{{- end }}
+- key: {{ $item.key }}
+  path: {{ default $item.key $item.path }}
+{{- else }}
+{{- fail (printf "Invalid %s entry at index %d: expected string or object with key/path." $field $index) }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+Render file-level volumeMount entries for declarative resources.
+When items are provided, mounting file-by-file with subPath preserves existing
+files already present in repository/resources.
+Each item may optionally specify a mountPath to override the global base path.
+*/}}
+{{- define "thunder.declarativeResourceVolumeMounts" -}}
+{{- $items := default (list) .items -}}
+{{- $field := default "declarativeResources.*.items" .field -}}
+{{- $globalMountPath := .mountPath -}}
+{{- $readOnly := .readOnly -}}
+{{- $volumeName := default "declarative-resources" .volumeName -}}
+{{- range $index, $item := $items }}
+{{- if kindIs "string" $item }}
+- name: {{ $volumeName }}
+  mountPath: {{ printf "%s/%s" $globalMountPath $item }}
+  subPath: {{ $item }}
+  readOnly: {{ $readOnly }}
+{{- else if kindIs "map" $item }}
+{{- if not $item.key }}
+{{- fail (printf "Invalid %s entry at index %d: key is required for object items." $field $index) }}
+{{- end }}
+{{- $path := default $item.key $item.path }}
+{{- $effectiveMountPath := $item.mountPath | default (printf "%s/%s" $globalMountPath $path) }}
+- name: {{ $volumeName }}
+  mountPath: {{ $effectiveMountPath }}
+  subPath: {{ $path }}
+  readOnly: {{ $readOnly }}
+{{- else }}
+{{- fail (printf "Invalid %s entry at index %d: expected string or object with key/path." $field $index) }}
+{{- end }}
+{{- end }}
+{{- end }}
