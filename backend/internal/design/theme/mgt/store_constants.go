@@ -38,7 +38,7 @@ var (
 	// queryGetThemeList retrieves a list of theme configurations with pagination.
 	queryGetThemeList = dbmodel.DBQuery{
 		ID: "THQ-THEME_MGT-03",
-		Query: "SELECT ID, HANDLE, DISPLAY_NAME, DESCRIPTION, CREATED_AT, UPDATED_AT FROM THEME " +
+		Query: "SELECT ID, HANDLE, DISPLAY_NAME, DESCRIPTION, THEME, CREATED_AT, UPDATED_AT FROM THEME " +
 			"WHERE DEPLOYMENT_ID = $3 ORDER BY CREATED_AT DESC LIMIT $1 OFFSET $2",
 	}
 
