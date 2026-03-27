@@ -48,7 +48,7 @@ function primaryFromName(name: string): string {
 
 export default function ThemeThumbnail({theme}: ThemeThumbnailProps): JSX.Element {
   const isDark = theme.defaultColorScheme === 'dark';
-  const primary = theme.primaryColor ?? primaryFromName(theme.displayName ?? '');
+  const primary = String(theme.primaryColor ?? primaryFromName(theme.displayName ?? ''));
 
   const bg = isDark ? '#1e1e1e' : '#f0ede8';
   const surface = isDark ? '#2a2a2a' : '#ffffff';

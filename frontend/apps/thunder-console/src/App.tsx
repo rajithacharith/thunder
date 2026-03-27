@@ -52,6 +52,7 @@ import UserTypesListPage from './features/user-types/pages/UserTypesListPage';
 import ViewUserTypePage from './features/user-types/pages/ViewUserTypePage';
 import UserCreateProvider from './features/users/contexts/UserCreate/UserCreateProvider';
 import CreateUserPage from './features/users/pages/CreateUserPage';
+import InviteUserPage from './features/users/pages/InviteUserPage';
 import UsersListPage from './features/users/pages/UsersListPage';
 import ViewUserPage from './features/users/pages/ViewUserPage';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -123,6 +124,16 @@ export default function App(): JSX.Element {
             }
           >
             <Route index element={<CreateUserPage />} />
+          </Route>
+          <Route
+            path="/users/invite"
+            element={
+              <ProtectedRoute>
+                <FullScreenLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<InviteUserPage />} />
           </Route>
           <Route
             path="/user-types/create"
