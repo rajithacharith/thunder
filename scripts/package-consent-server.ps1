@@ -121,7 +121,8 @@ try {
         exit 1
     }
 
-    & sqlite3 $dbPath ".read `"$sqlScriptPath`""
+    $sqlScriptPathForSqlite = $sqlScriptPath.Replace('\', '/')
+    & sqlite3 $dbPath ".read `"$sqlScriptPathForSqlite`""
     if ($LASTEXITCODE -ne 0) { throw "Failed to initialize consent DB with exit code $LASTEXITCODE" }
 
     & sqlite3 $dbPath "PRAGMA journal_mode=WAL;"
