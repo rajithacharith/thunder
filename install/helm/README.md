@@ -189,6 +189,8 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `deployment.securityContext.fsGroup`    | Group ID for mounted volumes (fixes SQLite permission issues on cloud platforms)        | `10001`                        |
 | `deployment.securityContext.seccompProfile.enabled` | Enable seccomp profile                                                      | `false`                        |
 | `deployment.securityContext.seccompProfile.type` | Seccomp profile type                                                           | `RuntimeDefault`               |
+| `deployment.env`                        | Additional environment variables with plain values                                     | `[]`                           |
+| `deployment.secretEnv`                  | Additional environment variables sourced from Kubernetes Secrets                         | `[]`                           |
 
 ### HPA Parameters
 
@@ -463,6 +465,173 @@ Persistence is **automatically enabled** when using SQLite as the database type 
 - The PVC is mounted by the setup job's init container (if `setup.enabled` is true) to initialize the database, and by the main Thunder deployment for ongoing operation.
 - You can customize the storage size and storage class for the PVC using the `persistence.size` and `persistence.storageClass` values.
 
+### Declarative Resources Parameters
+
+Declarative resources can be mounted into Thunder's `repository/resources` directory from either a ConfigMap or Secret.
+
+| Name                                   | Description                                                     | Default                      |
+| -------------------------------------- | --------------------------------------------------------------- | ---------------------------- |
+| `declarativeResources.enabled`         | Enable declarative resources mount                              | `false`                      |
+| `declarativeResources.mountPath`       | Mount path inside container                                     | `/opt/thunder/repository/resources` |
+| `declarativeResources.readOnly`        | Mount declarative resources as read-only                        | `true`                       |
+| `declarativeResources.configMap.name`  | Existing ConfigMap name containing declarative resources        | `""`                        |
+| `declarativeResources.configMap.items` | ConfigMap items to mount (string or `{key,path}`; empty = all keys) | `[]`                    |
+| `declarativeResources.secret.name`     | Existing Secret name containing declarative resources           | `""`                        |
+| `declarativeResources.secret.items`    | Secret items to mount (string or `{key,path}`; empty = all keys) | `[]`                      |
+
+**Validation rules:**
+- When `declarativeResources.enabled=true`, set exactly one source: `declarativeResources.configMap.name` or `declarativeResources.secret.name`.
+- Setting both sources at once fails template rendering.
+
+When `declarativeResources.enabled` is set to `true`, the generated Thunder `deployment.yaml` also sets:
+
+```yaml
+declarative_resources:
+  enabled: true
+```
+
+Example using a ConfigMap:
+
+```yaml
+declarativeResources:
+  enabled: true
+  mountPath: /opt/thunder/repository/resources
+  configMap:
+    name: thunder-declarative-resources
+    items:
+      - organizations/default/organization.yaml
+      - identity-providers/google.yaml
+```
+
+### Declarative Resources Mounting Guide
+
+When declarative resources are enabled, the chart mounts the same volume into both:
+- Thunder deployment container
+- Setup job container
+
+This ensures resources are available during initialization and at runtime.
+
+#### How directory mapping works
+
+Each entry in `declarativeResources.configMap.items` (or `declarativeResources.secret.items`) supports two formats:
+
+- String format: uses the same value for both `key` and `path`
+  - Example: `applications/application1.yaml`
+- Object format: explicit `key -> path` mapping
+  - Example: `{ key: app1, path: applications/application1.yaml }`
+
+Use object format when you need to mount a source key to a different directory/file path under `declarativeResources.mountPath`.
+
+When `items` are provided, the chart mounts declarative resources file-by-file using `subPath`. This preserves existing files already present in Thunder's `repository/resources` directory.
+
+Resulting file path example:
+- With `path: applications/application1.yaml`, file is mounted at `/opt/thunder/repository/resources/applications/application1.yaml`
+
+#### End-to-end example with ConfigMap
+
+Create a ConfigMap where keys represent the target directory structure:
+
+```bash
+kubectl create configmap thunder-declarative-resources \
+  --from-file=applications/application1.yaml=./declarative-resources/applications/application1.yaml \
+  --from-file=organizations/default/organization.yaml=./declarative-resources/organizations/default/organization.yaml \
+  --from-file=identity-providers/google.yaml=./declarative-resources/identity-providers/google.yaml
+```
+
+Configure Helm values:
+
+```yaml
+declarativeResources:
+  enabled: true
+  mountPath: /opt/thunder/repository/resources
+  readOnly: true
+  configMap:
+    name: thunder-declarative-resources
+    items:
+      - key: applications/application1.yaml
+        path: applications/application1.yaml
+      - key: organizations/default/organization.yaml
+        path: organizations/default/organization.yaml
+      - key: identity-providers/google.yaml
+        path: identity-providers/google.yaml
+
+# Example with explicit key/path remapping
+declarativeResources:
+  enabled: true
+  configMap:
+    name: thunder-declarative-resources
+    items:
+      - key: app1
+        path: applications/application1.yaml
+      - key: idp-google
+        path: identity-providers/google.yaml
+```
+
+Install or upgrade:
+
+```bash
+helm upgrade --install my-thunder oci://ghcr.io/asgardeo/helm-charts/thunder -f custom-values.yaml
+```
+
+#### Example with Secret Source
+
+Use this when resource files contain sensitive values.
+
+```yaml
+declarativeResources:
+  enabled: true
+  secret:
+    name: thunder-declarative-resources-secret
+    items:
+      - key: app1
+        path: applications/application1.yaml
+      - key: idp-google
+        path: identity-providers/google.yaml
+```
+
+#### Mount All Keys From Source
+
+If `items` is empty, all keys from the ConfigMap/Secret are mounted:
+
+```yaml
+declarativeResources:
+  enabled: true
+  configMap:
+    name: thunder-declarative-resources
+    items: []
+```
+
+  Note: With empty `items`, Kubernetes mounts the source at the directory level. This can hide existing files in `repository/resources` during pod runtime. To preserve bundled files and add only selected declarative resources, configure explicit `items`.
+
+#### Runtime Configuration Sync
+
+Setting `declarativeResources.enabled: true` also updates generated Thunder config:
+
+```yaml
+declarative_resources:
+  enabled: true
+```
+
+#### Verify Mounted Files and Config
+
+```bash
+# Check mounted files inside Thunder pod
+kubectl exec -it deploy/my-thunder -- ls -R /opt/thunder/repository/resources
+
+# Confirm declarative_resources.enabled in generated deployment config
+kubectl exec -it deploy/my-thunder -- grep -n "declarative_resources\|enabled" /opt/thunder/conf/deployment.yaml
+```
+
+#### Common configuration errors
+
+- Error: `Invalid declarativeResources configuration: set only one source, declarativeResources.configMap.name or declarativeResources.secret.name.`
+  - Cause: Both `configMap.name` and `secret.name` are set.
+  - Fix: Keep only one source.
+
+- Error: `Invalid declarativeResources configuration: set declarativeResources.configMap.name or declarativeResources.secret.name when declarativeResources.enabled=true.`
+  - Cause: Declarative resources enabled without a source.
+  - Fix: Set either `declarativeResources.configMap.name` or `declarativeResources.secret.name`.
+
 ### Setup Job Parameters
 
 The setup job runs `setup.sh` as a one-time Helm pre-install hook to initialize Thunder with default resources (admin user, organization, etc.).
@@ -476,12 +645,36 @@ The setup job runs `setup.sh` as a one-time Helm pre-install hook to initialize 
 | `setup.debug`                          | Enable debug mode for setup                                     | `false`                      |
 | `setup.args`                           | Additional command-line arguments for setup.sh                  | `[]`                         |
 | `setup.env`                            | Additional environment variables for setup job                  | `[]`                         |
+| `setup.secretEnv`                      | Additional environment variables sourced from Kubernetes Secrets | `[]`                         |
 | `setup.resources.requests.cpu`         | CPU request for setup job                                       | `100m`                       |
 | `setup.resources.requests.memory`      | Memory request for setup job                                    | `50Mi`                       |
 | `setup.resources.limits.cpu`           | CPU limit for setup job                                         | `200m`                       |
 | `setup.resources.limits.memory`        | Memory limit for setup job                                      | `100Mi`                      |
 | `setup.extraVolumeMounts`              | Additional volume mounts for setup job                          | `[]`                         |
 | `setup.extraVolumes`                   | Additional volumes for setup job                                | `[]`                         |
+
+Environment variable item structure for plain value environment variables in `deployment.env` and `setup.env`:
+
+- `name`: Environment variable name in the container.
+- `value`: Plain value from Helm values.
+
+Example:
+
+```yaml
+deployment:
+  env:
+    - name: LOG_LEVEL
+      value: debug
+    - name: EXTERNAL_API_BASE_URL
+      value: https://api.example.com
+```
+
+Environment variable item structure for secret-backed environment variables in `deployment.secretEnv` and `setup.secretEnv`:
+
+- `name`: Environment variable name in the container.
+- `secretName`: Kubernetes Secret resource name.
+- `secretKey`: Key in the Secret data map.
+- `optional`: Optional boolean passed to `secretKeyRef.optional`.
 
 **Job Retention Behavior:**
 - When `preserveJob=false` (default): Successful jobs are deleted immediately. Failed jobs are kept for `ttlSecondsAfterFinished` (24 hours) to allow debugging.
