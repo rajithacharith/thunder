@@ -70,6 +70,7 @@ func (lh *layoutMgtHandler) HandleLayoutListRequest(w http.ResponseWriter, r *ht
 			Description: layout.Description,
 			CreatedAt:   layout.CreatedAt,
 			UpdatedAt:   layout.UpdatedAt,
+			IsReadOnly:  layout.IsReadOnly,
 		})
 	}
 
@@ -111,6 +112,7 @@ func (lh *layoutMgtHandler) HandleLayoutPostRequest(w http.ResponseWriter, r *ht
 		Layout:      createdLayout.Layout,
 		CreatedAt:   createdLayout.CreatedAt,
 		UpdatedAt:   createdLayout.UpdatedAt,
+		IsReadOnly:  createdLayout.IsReadOnly,
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusCreated, layoutResponse)
@@ -135,6 +137,7 @@ func (lh *layoutMgtHandler) HandleLayoutGetRequest(w http.ResponseWriter, r *htt
 		Layout:      layout.Layout,
 		CreatedAt:   layout.CreatedAt,
 		UpdatedAt:   layout.UpdatedAt,
+		IsReadOnly:  layout.IsReadOnly,
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, layoutResponse)
@@ -165,6 +168,7 @@ func (lh *layoutMgtHandler) HandleLayoutPutRequest(w http.ResponseWriter, r *htt
 		Layout:      updatedLayout.Layout,
 		CreatedAt:   updatedLayout.CreatedAt,
 		UpdatedAt:   updatedLayout.UpdatedAt,
+		IsReadOnly:  updatedLayout.IsReadOnly,
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, layoutResponse)

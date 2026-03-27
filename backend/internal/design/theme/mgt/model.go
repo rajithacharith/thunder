@@ -29,6 +29,7 @@ type Theme struct {
 	Theme       json.RawMessage `json:"theme" yaml:"theme"`
 	CreatedAt   string          `json:"createdAt" yaml:"createdAt,omitempty"`
 	UpdatedAt   string          `json:"updatedAt" yaml:"updatedAt,omitempty"`
+	IsReadOnly  bool            `json:"isReadOnly" yaml:"isReadOnly"`
 }
 
 // ThemeListItem represents a theme item in the list response.
@@ -41,6 +42,7 @@ type ThemeListItem struct {
 	PrimaryColor       string `json:"primaryColor"`
 	CreatedAt          string `json:"createdAt"`
 	UpdatedAt          string `json:"updatedAt"`
+	IsReadOnly         bool   `json:"isReadOnly"`
 }
 
 // themeColorSchemeInfo is a minimal struct for extracting color info from theme JSON.

@@ -10015,6 +10015,10 @@ components:
           format: date-time
           description: Timestamp when the layout was last updated (ISO 8601 format)
           example: 2024-01-20T14:45:00Z
+        isReadOnly:
+          type: boolean
+          description: Indicates whether the layout is read-only (declarative)
+          example: false
     LayoutListItem:
       type: object
       properties:
@@ -10041,6 +10045,10 @@ components:
           format: date-time
           description: Timestamp when the layout was last updated (ISO 8601 format)
           example: 2024-01-20T14:45:00Z
+        isReadOnly:
+          type: boolean
+          description: Indicates whether the layout is read-only (declarative)
+          example: false
     LayoutListResponse:
       type: object
       properties:

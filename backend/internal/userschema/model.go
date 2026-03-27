@@ -49,7 +49,7 @@ type UserSchemaListItem struct {
 	OUID                  string            `json:"ouId"`
 	AllowSelfRegistration bool              `json:"allowSelfRegistration"`
 	SystemAttributes      *SystemAttributes `json:"systemAttributes,omitempty"`
-	IsReadOnly            bool              `json:"isReadOnly,omitempty"`
+	IsReadOnly            bool              `json:"isReadOnly"`
 }
 
 // Link represents a hypermedia link in the API response.

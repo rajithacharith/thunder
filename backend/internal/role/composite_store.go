@@ -281,17 +281,19 @@ func mergeRoles(dbRoles, fileRoles []Role) []Role {
 	seen := make(map[string]bool)
 	result := make([]Role, 0, len(dbRoles)+len(fileRoles))
 
-	// Add database roles first (they take precedence)
-	for _, role := range dbRoles {
-		result = append(result, role)
-		seen[role.ID] = true
+	// Add database roles first (they take precedence) - mark as mutable (IsReadOnly=false)
+	for i := range dbRoles {
+		dbRoles[i].IsReadOnly = false
+		result = append(result, dbRoles[i])
+		seen[dbRoles[i].ID] = true
 	}
 
-	// Add file-based roles only if not already seen
-	for _, role := range fileRoles {
-		if !seen[role.ID] {
-			result = append(result, role)
-			seen[role.ID] = true
+	// Add file-based roles only if not already seen - mark as immutable (IsReadOnly=true)
+	for i := range fileRoles {
+		if !seen[fileRoles[i].ID] {
+			fileRoles[i].IsReadOnly = true
+			result = append(result, fileRoles[i])
+			seen[fileRoles[i].ID] = true
 		}
 	}
 

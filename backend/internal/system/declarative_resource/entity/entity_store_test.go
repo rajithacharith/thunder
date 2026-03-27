@@ -125,6 +125,42 @@ func TestStoreStringConvenienceMethods(t *testing.T) {
 	}
 }
 
+func TestListByType_SortsByEntityID(t *testing.T) {
+	store := NewStore()
+
+	err := store.Set(NewCompositeKey("id-2", KeyTypeNotification), TestNotification{Sender: "s2"})
+	if err != nil {
+		t.Fatalf("Failed to set id-2 entity: %v", err)
+	}
+
+	err = store.Set(NewCompositeKey("id-1", KeyTypeNotification), TestNotification{Sender: "s1"})
+	if err != nil {
+		t.Fatalf("Failed to set id-1 entity: %v", err)
+	}
+
+	err = store.Set(NewCompositeKey("id-3", KeyTypeApplication), map[string]string{"name": "app"})
+	if err != nil {
+		t.Fatalf("Failed to set non-notification entity: %v", err)
+	}
+
+	entities, err := store.ListByType(KeyTypeNotification)
+	if err != nil {
+		t.Fatalf("Failed to list by type: %v", err)
+	}
+
+	if len(entities) != 2 {
+		t.Fatalf("Expected 2 entities, got %d", len(entities))
+	}
+
+	if entities[0].ID.ID != "id-1" {
+		t.Fatalf("Expected first entity ID id-1, got %s", entities[0].ID.ID)
+	}
+
+	if entities[1].ID.ID != "id-2" {
+		t.Fatalf("Expected second entity ID id-2, got %s", entities[1].ID.ID)
+	}
+}
+
 func TestKeyTypeValidation(t *testing.T) {
 	// Test valid KeyTypes
 	validTypes := []KeyType{

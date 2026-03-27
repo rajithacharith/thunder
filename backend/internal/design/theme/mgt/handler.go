@@ -73,6 +73,7 @@ func (th *themeMgtHandler) HandleThemeListRequest(w http.ResponseWriter, r *http
 			PrimaryColor:       primaryColor,
 			CreatedAt:          theme.CreatedAt,
 			UpdatedAt:          theme.UpdatedAt,
+			IsReadOnly:         theme.IsReadOnly,
 		})
 	}
 

@@ -21,6 +21,7 @@ package entity
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 )
 
@@ -238,6 +239,10 @@ func (s *Store) ListByType(keyType KeyType) ([]*Entity, error) {
 			entities = append(entities, entity)
 		}
 	}
+
+	sort.Slice(entities, func(i, j int) bool {
+		return entities[i].ID.ID < entities[j].ID.ID
+	})
 
 	return entities, nil
 }

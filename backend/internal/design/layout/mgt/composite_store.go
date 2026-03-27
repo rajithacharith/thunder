@@ -83,8 +83,22 @@ func (c *compositeLayoutStore) CreateLayout(id string, layout CreateLayoutReques
 // Checks database store first, then falls back to file store (declarative).
 func (c *compositeLayoutStore) GetLayout(id string) (Layout, error) {
 	layout, err := declarativeresource.CompositeGetHelper(
-		func() (Layout, error) { return c.dbStore.GetLayout(id) },
-		func() (Layout, error) { return c.fileStore.GetLayout(id) },
+		func() (Layout, error) {
+			layout, err := c.dbStore.GetLayout(id)
+			if err != nil {
+				return Layout{}, err
+			}
+			layout.IsReadOnly = false
+			return layout, nil
+		},
+		func() (Layout, error) {
+			layout, err := c.fileStore.GetLayout(id)
+			if err != nil {
+				return Layout{}, err
+			}
+			layout.IsReadOnly = true
+			return layout, nil
+		},
 		errLayoutNotFound,
 	)
 	return layout, err
@@ -162,18 +176,20 @@ func mergeAndDeduplicateLayouts(dbLayouts, fileLayouts []Layout) []Layout {
 	merged := make([]Layout, 0, len(dbLayouts)+len(fileLayouts))
 
 	// Add file-based (declarative) layouts first (they take precedence)
-	for _, layout := range fileLayouts {
-		if !seen[layout.ID] {
-			merged = append(merged, layout)
-			seen[layout.ID] = true
+	for i := range fileLayouts {
+		if !seen[fileLayouts[i].ID] {
+			fileLayouts[i].IsReadOnly = true
+			merged = append(merged, fileLayouts[i])
+			seen[fileLayouts[i].ID] = true
 		}
 	}
 
 	// Add database layouts (skip if already added from file store)
-	for _, layout := range dbLayouts {
-		if !seen[layout.ID] {
-			merged = append(merged, layout)
-			seen[layout.ID] = true
+	for i := range dbLayouts {
+		if !seen[dbLayouts[i].ID] {
+			dbLayouts[i].IsReadOnly = false
+			merged = append(merged, dbLayouts[i])
+			seen[dbLayouts[i].ID] = true
 		}
 	}
 
