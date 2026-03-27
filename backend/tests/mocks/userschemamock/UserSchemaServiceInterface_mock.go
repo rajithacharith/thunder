@@ -672,8 +672,8 @@ func (_c *UserSchemaServiceInterfaceMock_UpdateUserSchema_Call) RunAndReturn(run
 }
 
 // ValidateUser provides a mock function for the type UserSchemaServiceInterfaceMock
-func (_mock *UserSchemaServiceInterfaceMock) ValidateUser(ctx context.Context, userType string, userAttributes json.RawMessage) (bool, *serviceerror.ServiceError) {
-	ret := _mock.Called(ctx, userType, userAttributes)
+func (_mock *UserSchemaServiceInterfaceMock) ValidateUser(ctx context.Context, userType string, userAttributes json.RawMessage, skipCredentialRequired bool) (bool, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, userType, userAttributes, skipCredentialRequired)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ValidateUser")
@@ -681,16 +681,16 @@ func (_mock *UserSchemaServiceInterfaceMock) ValidateUser(ctx context.Context, u
 
 	var r0 bool
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, json.RawMessage) (bool, *serviceerror.ServiceError)); ok {
-		return returnFunc(ctx, userType, userAttributes)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, json.RawMessage, bool) (bool, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, userType, userAttributes, skipCredentialRequired)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, json.RawMessage) bool); ok {
-		r0 = returnFunc(ctx, userType, userAttributes)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, json.RawMessage, bool) bool); ok {
+		r0 = returnFunc(ctx, userType, userAttributes, skipCredentialRequired)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, json.RawMessage) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(ctx, userType, userAttributes)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, json.RawMessage, bool) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, userType, userAttributes, skipCredentialRequired)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -708,11 +708,12 @@ type UserSchemaServiceInterfaceMock_ValidateUser_Call struct {
 //   - ctx context.Context
 //   - userType string
 //   - userAttributes json.RawMessage
-func (_e *UserSchemaServiceInterfaceMock_Expecter) ValidateUser(ctx interface{}, userType interface{}, userAttributes interface{}) *UserSchemaServiceInterfaceMock_ValidateUser_Call {
-	return &UserSchemaServiceInterfaceMock_ValidateUser_Call{Call: _e.mock.On("ValidateUser", ctx, userType, userAttributes)}
+//   - skipCredentialRequired bool
+func (_e *UserSchemaServiceInterfaceMock_Expecter) ValidateUser(ctx interface{}, userType interface{}, userAttributes interface{}, skipCredentialRequired interface{}) *UserSchemaServiceInterfaceMock_ValidateUser_Call {
+	return &UserSchemaServiceInterfaceMock_ValidateUser_Call{Call: _e.mock.On("ValidateUser", ctx, userType, userAttributes, skipCredentialRequired)}
 }
 
-func (_c *UserSchemaServiceInterfaceMock_ValidateUser_Call) Run(run func(ctx context.Context, userType string, userAttributes json.RawMessage)) *UserSchemaServiceInterfaceMock_ValidateUser_Call {
+func (_c *UserSchemaServiceInterfaceMock_ValidateUser_Call) Run(run func(ctx context.Context, userType string, userAttributes json.RawMessage, skipCredentialRequired bool)) *UserSchemaServiceInterfaceMock_ValidateUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -726,10 +727,15 @@ func (_c *UserSchemaServiceInterfaceMock_ValidateUser_Call) Run(run func(ctx con
 		if args[2] != nil {
 			arg2 = args[2].(json.RawMessage)
 		}
+		var arg3 bool
+		if args[3] != nil {
+			arg3 = args[3].(bool)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -740,7 +746,7 @@ func (_c *UserSchemaServiceInterfaceMock_ValidateUser_Call) Return(b bool, servi
 	return _c
 }
 
-func (_c *UserSchemaServiceInterfaceMock_ValidateUser_Call) RunAndReturn(run func(ctx context.Context, userType string, userAttributes json.RawMessage) (bool, *serviceerror.ServiceError)) *UserSchemaServiceInterfaceMock_ValidateUser_Call {
+func (_c *UserSchemaServiceInterfaceMock_ValidateUser_Call) RunAndReturn(run func(ctx context.Context, userType string, userAttributes json.RawMessage, skipCredentialRequired bool) (bool, *serviceerror.ServiceError)) *UserSchemaServiceInterfaceMock_ValidateUser_Call {
 	_c.Call.Return(run)
 	return _c
 }

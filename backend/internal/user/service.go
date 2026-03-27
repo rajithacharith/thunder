@@ -324,7 +324,7 @@ func (us *userService) CreateUser(ctx context.Context, user *User) (*User, *serv
 		return nil, svcErr
 	}
 
-	if svcErr := us.validateUserAndUniqueness(ctx, user.Type, user.Attributes, logger, ""); svcErr != nil {
+	if svcErr := us.validateUserAndUniqueness(ctx, user.Type, user.Attributes, logger, "", false); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -626,11 +626,6 @@ func (us *userService) UpdateUser(ctx context.Context, userID string, user *User
 			fmt.Errorf("schema service error: %s", svcErr.ErrorDescription), log.String("id", userID))
 	}
 
-	credentials, err := us.extractCredentials(user, schemaCredentialAttributes)
-	if err != nil {
-		return nil, logErrorAndReturnServerError(logger, "Failed to extract credentials", err, log.String("id", userID))
-	}
-
 	var capturedSvcErr *serviceerror.ServiceError
 
 	err = us.transactioner.Transact(ctx, func(txCtx context.Context) error {
@@ -641,12 +636,22 @@ func (us *userService) UpdateUser(ctx context.Context, userID string, user *User
 			return errors.New("rollback for validation error")
 		}
 
-		if svcErr := us.validateUserAndUniqueness(txCtx, user.Type, user.Attributes, logger, user.ID); svcErr != nil {
+		// Validate before extracting credentials so that credential values (e.g. regex)
+		// are still checked when present. skipCredentialRequired is true because
+		// credentials are optional during updates.
+		if svcErr := us.validateUserAndUniqueness(
+			txCtx, user.Type, user.Attributes, logger, user.ID, true,
+		); svcErr != nil {
 			capturedSvcErr = svcErr
 			return errors.New("rollback for validation error")
 		}
 
-		err := us.userStore.UpdateUser(txCtx, user)
+		credentials, err := us.extractCredentials(user, schemaCredentialAttributes)
+		if err != nil {
+			return fmt.Errorf("failed to extract credentials: %w", err)
+		}
+
+		err = us.userStore.UpdateUser(txCtx, user)
 		if err != nil {
 			return err
 		}
@@ -747,7 +752,7 @@ func (us *userService) UpdateUserAttributes(
 		existingUser.Attributes = attributes
 
 		if svcErr := us.validateUserAndUniqueness(txCtx, existingUser.Type,
-			existingUser.Attributes, logger, userID); svcErr != nil {
+			existingUser.Attributes, logger, userID, true); svcErr != nil {
 			capturedSvcErr = svcErr
 			return errors.New("rollback for validation error")
 		}
@@ -1528,8 +1533,9 @@ func (us *userService) validateOrganizationUnitForUserType(
 // validateUserAndUniqueness validates the user schema and checks for uniqueness.
 func (us *userService) validateUserAndUniqueness(
 	ctx context.Context, userType string, attributes []byte, logger *log.Logger, excludeUserID string,
+	skipCredentialRequired bool,
 ) *serviceerror.ServiceError {
-	isValid, svcErr := us.userSchemaService.ValidateUser(ctx, userType, attributes)
+	isValid, svcErr := us.userSchemaService.ValidateUser(ctx, userType, attributes, skipCredentialRequired)
 	if svcErr != nil {
 		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
 			return &ErrorUserSchemaNotFound
