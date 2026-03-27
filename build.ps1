@@ -1793,6 +1793,13 @@ switch ($Command) {
     'clean' {
         Clean
     }
+    'build' {
+        Build-Backend
+        Build-Frontend
+        Package
+        Build-Sample-App
+        Package-Sample-App
+    }
     'build_backend' {
         Build-Backend
         Package
@@ -1835,7 +1842,7 @@ switch ($Command) {
         Test-Integration
     }
     default {
-        Write-Host "Usage: $($MyInvocation.MyCommand.Name) {clean|build_backend|build_frontend|build_docs|build_samples|package_samples|test_unit|test_integration|merge_coverage|run|run_backend|run_frontend|run_docs|test}"
+        Write-Host "Usage: $($MyInvocation.MyCommand.Name) {clean|build|build_backend|build_frontend|build_docs|build_samples|package_samples|test_unit|test_integration|merge_coverage|run|run_backend|run_frontend|run_docs|test}"
         exit 1
     }
 }
