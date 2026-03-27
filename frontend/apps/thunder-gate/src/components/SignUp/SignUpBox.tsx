@@ -44,8 +44,8 @@ export default function SignUpBox(): JSX.Element {
       variant="SignUpBox"
       logo={{
         src: {
-          light: `${import.meta.env.BASE_URL}assets/images/logo.svg`,
-          dark: `${import.meta.env.BASE_URL}assets/images/logo-inverted.svg`,
+          light: `${import.meta.env.BASE_URL}/assets/images/logo.svg`,
+          dark: `${import.meta.env.BASE_URL}/assets/images/logo-inverted.svg`,
         },
         alt: {light: '', dark: ''},
       }}

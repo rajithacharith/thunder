@@ -79,8 +79,8 @@ export default function SignInBox(): JSX.Element {
       variant="SignInBox"
       logo={{
         src: {
-          light: `${import.meta.env.BASE_URL}assets/images/logo.svg`,
-          dark: `${import.meta.env.BASE_URL}assets/images/logo-inverted.svg`,
+          light: `${import.meta.env.BASE_URL}/assets/images/logo.svg`,
+          dark: `${import.meta.env.BASE_URL}/assets/images/logo-inverted.svg`,
         },
         alt: {light: '', dark: ''},
       }}

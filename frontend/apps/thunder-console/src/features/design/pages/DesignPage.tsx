@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {useGetThemes, useGetLayouts} from '@thunder/shared-design';
+import {useGetThemes, useGetLayouts, useCreateLayout} from '@thunder/shared-design';
 import {Box, Button, Card, Grid, PageContent, PageTitle, Skeleton, Typography} from '@wso2/oxygen-ui';
 import {ArrowUpRight, LayoutTemplate, Palette, Plus} from '@wso2/oxygen-ui-icons-react';
-import {useState, type JSX} from 'react';
+import {useState, useCallback, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import ItemCard from '../components/common/ItemCard';
@@ -49,11 +49,30 @@ export default function DesignPage(): JSX.Element {
   const navigate = useNavigate();
   const {data: themesData, isLoading: themesLoading} = useGetThemes();
   const {data: layoutsData} = useGetLayouts();
+  const {mutateAsync: createLayout} = useCreateLayout();
 
   const [showAllThemes, setShowAllThemes] = useState(false);
 
   // Build a map of handle → layoutId for API layouts
   const layoutIdByHandle = new Map((layoutsData?.layouts ?? []).map((l) => [l.handle, l.id]));
+
+  const handleLayoutClick = useCallback(
+    async (presetId: LayoutPresetVariant, existingLayoutId?: string) => {
+      if (existingLayoutId) {
+        await navigate(`/design/layouts/${existingLayoutId}`);
+        return;
+      }
+
+      // Create a new layout with default config when none exists yet
+      const created = await createLayout({
+        handle: presetId,
+        displayName: LAYOUT_PRESET_DEFAULT[presetId],
+        layout: {},
+      });
+      await navigate(`/design/layouts/${created.id}`);
+    },
+    [navigate, createLayout],
+  );
 
   const allThemes = themesData?.themes ?? [];
   const visibleThemes = showAllThemes ? allThemes : allThemes.slice(0, DesignUIConstants.INITIAL_LIMIT);
@@ -171,7 +190,7 @@ export default function DesignPage(): JSX.Element {
         <Grid container spacing={2}>
           {LAYOUT_PRESET_IDS.map((id) => {
             const apiLayoutId = layoutIdByHandle.get(id);
-            const isEnabled = id === 'centered' && !!apiLayoutId;
+            const isEnabled = id === 'centered';
 
             return (
               <Grid key={id} size={{xs: 6, sm: 4, md: 3, lg: 2}}>
@@ -188,14 +207,14 @@ export default function DesignPage(): JSX.Element {
                         role: 'button',
                         tabIndex: 0,
                         onClick: () => {
-                          (async () => navigate(`/design/layouts/${apiLayoutId}`))().catch(() => {
+                          handleLayoutClick(id, apiLayoutId).catch(() => {
                             /* no-op */
                           });
                         },
                         onKeyDown: (e: React.KeyboardEvent) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            (async () => navigate(`/design/layouts/${apiLayoutId}`))().catch(() => {
+                            handleLayoutClick(id, apiLayoutId).catch(() => {
                               /* no-op */
                             });
                           }
