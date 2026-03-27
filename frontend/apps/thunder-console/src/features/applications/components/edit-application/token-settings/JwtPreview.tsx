@@ -18,7 +18,7 @@
 
 import Editor, {type OnMount} from '@monaco-editor/react';
 import {Box, Stack, Typography} from '@wso2/oxygen-ui';
-import type {editor as MonacoEditor, IDisposable} from 'monaco-editor';
+import type {editor as MonacoEditor, IDisposable, IRange} from 'monaco-editor';
 import {useRef, useEffect} from 'react';
 
 /**
@@ -36,6 +36,10 @@ const JWT_CLAIM_DESCRIPTIONS: Record<string, string> = {
   scope: 'OAuth 2.0 scopes granted to the token',
   sub: 'Subject — the principal (user) this token represents',
 };
+
+interface MonacoLike {
+  Range: new (startLineNumber: number, startColumn: number, endLineNumber: number, endColumn: number) => IRange;
+}
 
 /**
  * Props for the {@link JwtPreview} component.
@@ -153,7 +157,7 @@ function JwtLogo() {
  */
 export default function JwtPreview({title, payload, defaultClaims = []}: JwtPreviewProps) {
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
-  const monacoRef = useRef<typeof import('monaco-editor') | null>(null);
+  const monacoRef = useRef<MonacoLike | null>(null);
   const decorationIdsRef = useRef<string[]>([]);
   const defaultClaimsRef = useRef<readonly string[]>(defaultClaims);
   const contentListenerRef = useRef<IDisposable | null>(null);
@@ -207,8 +211,7 @@ export default function JwtPreview({title, payload, defaultClaims = []}: JwtPrev
 
   const handleMount: OnMount = (editorInstance, monacoInstance) => {
     editorRef.current = editorInstance;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    monacoRef.current = monacoInstance;
+    monacoRef.current = monacoInstance as MonacoLike;
 
     // Apply decorations on initial mount
     applyDecorations();

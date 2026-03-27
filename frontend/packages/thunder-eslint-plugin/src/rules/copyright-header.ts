@@ -96,7 +96,7 @@ const copyrightHeaderRule: Rule.RuleModule = {
         // Check if first comment is the copyright header
         const firstComment: Comment | undefined = comments[0];
 
-        if (!firstComment || firstComment.type !== 'Block') {
+        if (firstComment?.type !== 'Block') {
           context.report({
             // @ts-expect-error TODO: Update to the latest ESLint and remove `@types/eslint`.
             node,

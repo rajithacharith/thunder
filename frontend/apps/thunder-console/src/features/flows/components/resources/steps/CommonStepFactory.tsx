@@ -71,7 +71,7 @@ function CommonStepFactory({
   onAddElementToForm = undefined,
   ...rest
 }: CommonStepFactoryPropsInterface): ReactElement | null {
-  if (resources && resources[0].type === StepTypes.View) {
+  if (resources?.[0].type === StepTypes.View) {
     return (
       <View
         resources={resources}
@@ -92,7 +92,7 @@ function CommonStepFactory({
     return <Execution resources={resources} data={data} {...rest} />;
   }
 
-  if (resources && resources[0].type === StepTypes.End) {
+  if (resources?.[0].type === StepTypes.End) {
     return <End resources={resources} data={data} {...rest} />;
   }
 

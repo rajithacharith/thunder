@@ -178,7 +178,7 @@ export default async function applyAutoLayout(
     let layoutedNodes = nodes.map((node) => {
       const elkNode = layoutedGraph.children?.find((n) => n.id === node.id);
 
-      if (!elkNode || elkNode.x === undefined || elkNode.y === undefined) {
+      if (elkNode?.x === undefined || elkNode.y === undefined) {
         return node;
       }
 
