@@ -125,7 +125,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestResolvePlaceholderUserIDSpecialHa
 	ctx := &core.NodeContext{
 		FlowID: "test-flow",
 		UserInputs: map[string]string{
-			"userID": "input-user-id", // This should NOT be used for userID
+			"userId": "input-user-id", // This should NOT be used for userId
 		},
 		RuntimeData: map[string]string{},
 		AuthenticatedUser: authncm.AuthenticatedUser{
@@ -135,7 +135,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestResolvePlaceholderUserIDSpecialHa
 			"url":    suite.mockServer.URL + "/api/user",
 			"method": "POST",
 			"body": map[string]interface{}{
-				"userId": "{{ context.userID }}",
+				"userId": "{{ context.userId }}",
 			},
 		},
 	}
@@ -145,7 +145,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestResolvePlaceholderUserIDSpecialHa
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
 
-	// userID should be resolved from AuthenticatedUser, not from UserInputs
+	// userId should be resolved from AuthenticatedUser, not from UserInputs
 	assert.Equal(suite.T(), "auth-user-456", receivedBody["userId"])
 }
 

@@ -42,12 +42,12 @@ func ResolvePlaceholder(ctx *NodeContext, value string) string {
 
 		key := submatches[1]
 
-		// Special handling for userID - only resolve from runtime data or authenticated user
-		if key == "userID" {
+		// Special handling for userId - only resolve from runtime data or authenticated user
+		if key == "userId" {
 			if ctx.AuthenticatedUser.UserID != "" {
 				return ctx.AuthenticatedUser.UserID
 			}
-			if runtimeValue, ok := ctx.RuntimeData["userID"]; ok && runtimeValue != "" {
+			if runtimeValue, ok := ctx.RuntimeData["userId"]; ok && runtimeValue != "" {
 				return runtimeValue
 			}
 			return match // Keep placeholder if not found

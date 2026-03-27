@@ -246,6 +246,7 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 
 	// Initiate flow with OAuth context.
 	runtimeData := map[string]string{
+		flowcm.RuntimeKeyClientID:                      clientID,
 		flowcm.RuntimeKeyRequestedPermissions:          utils.StringifyStringArray(nonOidcScopes, " "),
 		flowcm.RuntimeKeyRequiredEssentialAttributes:   essentialAttributes,
 		flowcm.RuntimeKeyRequiredOptionalAttributes:    optionalAttributes,
