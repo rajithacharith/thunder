@@ -154,11 +154,11 @@ var (
 						"Authorization": "Bearer test-token",
 					},
 					"body": map[string]interface{}{
-						"externalId":   "{{ context.userID }}",
+						"externalId":   "{{ context.userId }}",
 						"username":     "{{ context.username }}",
 						"email":        "{{ context.email }}",
-						"given_name":    "{{ context.given_name }}",
-						"family_name":     "{{ context.family_name }}",
+						"given_name":   "{{ context.given_name }}",
+						"family_name":  "{{ context.family_name }}",
 						"unknownField": "{{ context.unknownPlaceholder }}",
 					},
 					"responseMapping": map[string]interface{}{
@@ -200,7 +200,7 @@ var (
 				"type": "string",
 			},
 			"password": map[string]interface{}{
-				"type": "string",
+				"type":       "string",
 				"credential": true,
 			},
 			"email": map[string]interface{}{
@@ -339,11 +339,11 @@ func (ts *HTTPRequestRegistrationFlowTestSuite) SetupTest() {
 
 func (ts *HTTPRequestRegistrationFlowTestSuite) TestHTTPRequestRegistrationFlow_Success() {
 	step1, err := common.InitiateRegistrationFlow(httpRequestRegTestAppID, false, map[string]string{
-		"username":  "newuser123",
-		"password":  "NewUserPass123!",
-		"email":     "newuser@test.com",
-		"given_name": "New",
-		"family_name":  "User",
+		"username":    "newuser123",
+		"password":    "NewUserPass123!",
+		"email":       "newuser@test.com",
+		"given_name":  "New",
+		"family_name": "User",
 	}, "")
 
 	ts.NoError(err, "Registration flow should complete without error")
