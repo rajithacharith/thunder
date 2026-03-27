@@ -1,4 +1,4 @@
-# Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+# Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
 #
 # WSO2 LLC. licenses this file to you under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
@@ -14,13 +14,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
+---
 apiVersion: openchoreo.dev/v1alpha1
-kind: Organization
+kind: ComponentType
 metadata:
-  name: {{ .Values.organization.name }}
+  name: thunder-idp
   annotations:
-    openchoreo.dev/display-name: {{ .Values.organization.displayName | quote }}
-    openchoreo.dev/description: {{ .Values.organization.description | quote }}
-  labels:
-    openchoreo.dev/name: {{ .Values.organization.name | quote }}
-spec: {}
+    openchoreo.dev/description: "Thunder Identity Provider ComponentType"
+    openchoreo.dev/display-name: "Thunder IDP"
+spec:
+  {{- include "thunder.componentTypeSpec" . | nindent 2 }}

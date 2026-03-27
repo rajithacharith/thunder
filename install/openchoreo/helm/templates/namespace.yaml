@@ -1,4 +1,4 @@
-# Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+# Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
 #
 # WSO2 LLC. licenses this file to you under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
@@ -14,13 +14,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
-{{- if and (default true .Values.apiClass.create) (ne .Release.Namespace "default") }}
-apiVersion: openchoreo.dev/v1alpha1
-kind: APIClass
+apiVersion: v1
+kind: Namespace
 metadata:
-  name: {{ .Values.apiClass.name }}
-  annotations:
-    openchoreo.dev/description: "API class created by Helm chart"
-spec:
-  {}
-{{- end }}
+  name: {{ .Release.Namespace }}
+  labels:
+    openchoreo.dev/control-plane: "true"
