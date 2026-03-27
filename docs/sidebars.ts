@@ -201,6 +201,11 @@ const sidebars: SidebarsConfig = {
           id: 'guides/guides/flows',
           label: 'Flows',
         },
+        {
+          type: 'doc',
+          id: 'guides/guides/consent',
+          label: 'Consent',
+        },
       ],
     },
 
