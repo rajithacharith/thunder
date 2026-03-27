@@ -852,7 +852,7 @@ export default function OrganizationUnitsTreeView(): JSX.Element {
 
   if (!treeItems.length) {
     // Data loaded but no organization units exist — show empty state
-    if (data && data.organizationUnits.length === 0) {
+    if (data?.organizationUnits.length === 0) {
       return (
         <Box sx={{textAlign: 'center', py: 8}}>
           <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>

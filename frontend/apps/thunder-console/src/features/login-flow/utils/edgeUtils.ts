@@ -50,7 +50,7 @@ const generateUnconnectedEdges = (currentEdges: Edge[], currentNodes: Node[], ed
           );
 
           // If no edge exists or it's pointing to the wrong node, add a missing edge
-          if (!existingEdge || existingEdge.target !== expectedTarget) {
+          if (existingEdge?.target !== expectedTarget) {
             missingEdges.push({
               animated: false,
               id: `${buttonId}_MISSING_EDGE`,
@@ -77,7 +77,7 @@ const generateUnconnectedEdges = (currentEdges: Edge[], currentNodes: Node[], ed
           );
 
           // If no edge exists or it's pointing to the wrong node, add a missing edge
-          if (!existingFailureEdge || existingFailureEdge.target !== expectedFailureTarget) {
+          if (existingFailureEdge?.target !== expectedFailureTarget) {
             missingEdges.push({
               animated: false,
               id: `${stepId}_FAILURE_MISSING_EDGE`,

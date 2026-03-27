@@ -397,7 +397,7 @@ describe('CustomLinkPlugin', () => {
       // Mock to return a link node parent
       const {$isLinkNode} = await vi.importMock<typeof import('@lexical/link')>('@lexical/link');
       ($isLinkNode as ReturnType<typeof vi.fn>).mockImplementation(
-        (node: {type?: string} | null) => node && node.type === 'link',
+        (node: {type?: string} | null) => node?.type === 'link',
       );
 
       render(<CustomLinkPlugin />);
@@ -408,7 +408,7 @@ describe('CustomLinkPlugin', () => {
     it('should detect when node itself is a link node', async () => {
       const {$isLinkNode} = await vi.importMock<typeof import('@lexical/link')>('@lexical/link');
       ($isLinkNode as ReturnType<typeof vi.fn>).mockImplementation(
-        (node: {type?: string} | null) => node && node.type === 'link',
+        (node: {type?: string} | null) => node?.type === 'link',
       );
 
       render(<CustomLinkPlugin />);

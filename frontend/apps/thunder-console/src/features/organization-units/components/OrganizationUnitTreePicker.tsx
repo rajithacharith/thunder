@@ -556,7 +556,7 @@ export default function OrganizationUnitTreePicker({
     );
   }
 
-  if (!rootOuId && data && data.organizationUnits.length === 0) {
+  if (!rootOuId && data?.organizationUnits.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary">
         {t('organizationUnits:treePicker.empty')}

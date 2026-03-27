@@ -104,7 +104,7 @@
     "jsdom": "catalog:",
     "monaco-editor": "^0.55.1",
     "rollup-plugin-visualizer": "catalog:",
-    "sass-embedded": "1.93.3",
+    "sass-embedded": "1.98.0",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"

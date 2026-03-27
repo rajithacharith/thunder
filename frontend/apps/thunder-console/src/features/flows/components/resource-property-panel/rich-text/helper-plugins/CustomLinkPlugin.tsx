@@ -229,7 +229,7 @@ function LinkEditor(): ReactElement {
 
       positionEditorElement(editorElem, rect);
       setLastSelection(selection);
-    } else if (!activeElement || activeElement.className !== 'link-input') {
+    } else if (activeElement?.className !== 'link-input') {
       if (rootElement !== null) {
         positionEditorElement(editorElem, null);
       }

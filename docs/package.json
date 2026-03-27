@@ -47,7 +47,7 @@
     "@thunder/prettier-config": "workspace:^",
     "@wso2/oxygen-ui": "^0.3.0",
     "@wso2/oxygen-ui-icons-react": "^0.3.0",
-    "@scalar/api-reference-react": "^0.8.40",
+    "@scalar/api-reference-react": "^0.9.15",
     "clsx": "^2.0.0",
     "eslint": "catalog:",
     "prettier": "catalog:",
