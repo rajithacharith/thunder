@@ -138,6 +138,27 @@ func (u *userTypeResolver) handleRegistrationFlows(ctx *core.NodeContext, execRe
 		return execResp, nil
 	}
 
+	// If allowedUserTypes is configured in node properties, filter the application-level allowed list
+	nodeAllowedUserTypes := u.getAllowedUserTypesFromProperties(ctx)
+	if len(nodeAllowedUserTypes) > 0 {
+		filtered := make([]string, 0, len(allowed))
+		for _, userType := range allowed {
+			if slices.Contains(nodeAllowedUserTypes, userType) {
+				filtered = append(filtered, userType)
+			}
+		}
+
+		if len(filtered) == 0 {
+			logger.Debug("No valid user types after filtering with node allowedUserTypes",
+				log.Any("applicationAllowed", allowed), log.Any("nodeAllowed", nodeAllowedUserTypes))
+			execResp.Status = common.ExecFailure
+			execResp.FailureReason = "No valid user types available for this flow"
+			return execResp, nil
+		}
+
+		allowed = filtered
+	}
+
 	// Check if userType is provided in inputs
 	if u.HasRequiredInputs(ctx, execResp) {
 		err := u.resolveUserTypeFromInput(reqCtx, execResp, ctx.UserInputs[userTypeKey], allowed)
@@ -161,8 +182,20 @@ func (u *userTypeResolver) handleUserOnboardingFlows(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
 	logger := u.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
+	// Read optional allowedUserTypes from node properties
+	allowedUserTypes := u.getAllowedUserTypesFromProperties(ctx)
+
 	// If userType already provided, validate and set runtime data
 	if userType, ok := ctx.UserInputs[userTypeKey]; ok && userType != "" {
+		// If allowedUserTypes is configured, validate the input against it
+		if len(allowedUserTypes) > 0 && !slices.Contains(allowedUserTypes, userType) {
+			logger.Debug("User type not in allowed list", log.String(userTypeKey, userType),
+				log.Any("allowedUserTypes", allowedUserTypes))
+			execResp.Status = common.ExecFailure
+			execResp.FailureReason = "User type not allowed for this flow"
+			return execResp, nil
+		}
+
 		userSchema, ouID, err := u.getUserSchemaAndOU(ctx.Context, userType)
 		if err != nil {
 			execResp.Status = common.ExecFailure
@@ -194,13 +227,87 @@ func (u *userTypeResolver) handleUserOnboardingFlows(ctx *core.NodeContext,
 		return execResp, nil
 	}
 
-	options := make([]string, 0, len(schemas.Schemas))
-	for _, schema := range schemas.Schemas {
+	// Build the list of available schema names, filtering by allowedUserTypes if configured
+	availableSchemas := u.filterSchemasByAllowedTypes(schemas.Schemas, allowedUserTypes)
+
+	if len(availableSchemas) == 0 {
+		logger.Debug("No valid user types found after filtering with allowedUserTypes",
+			log.Any("allowedUserTypes", allowedUserTypes))
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = "No valid user types available for this flow"
+		return execResp, nil
+	}
+
+	// If only one user schema is available, select it automatically
+	if len(availableSchemas) == 1 {
+		schema := availableSchemas[0]
+		logger.Debug("User type auto-selected for user onboarding", log.String(userTypeKey, schema.Name),
+			log.String(ouIDKey, schema.OUID))
+
+		execResp.RuntimeData[userTypeKey] = schema.Name
+		execResp.RuntimeData[defaultOUIDKey] = schema.OUID
+		execResp.Status = common.ExecComplete
+		return execResp, nil
+	}
+
+	options := make([]string, 0, len(availableSchemas))
+	for _, schema := range availableSchemas {
 		options = append(options, schema.Name)
 	}
 
 	u.promptUserSelection(execResp, options)
 	return execResp, nil
+}
+
+// getAllowedUserTypesFromProperties reads the optional allowedUserTypes property from node properties.
+func (u *userTypeResolver) getAllowedUserTypesFromProperties(ctx *core.NodeContext) []string {
+	if ctx.NodeProperties == nil {
+		return nil
+	}
+
+	val, exists := ctx.NodeProperties[propertyKeyAllowedUserTypes]
+	if !exists {
+		return nil
+	}
+
+	items, ok := val.([]interface{})
+	if !ok {
+		u.logger.Debug("allowedUserTypes property is not a valid array")
+		return nil
+	}
+
+	userTypes := make([]string, 0, len(items))
+	for _, item := range items {
+		if s, ok := item.(string); ok && s != "" {
+			userTypes = append(userTypes, s)
+		}
+	}
+
+	if len(userTypes) > 0 {
+		u.logger.Debug("Allowed user types configured from node properties",
+			log.Any("allowedUserTypes", userTypes))
+	}
+
+	return userTypes
+}
+
+// filterSchemasByAllowedTypes filters schemas by the allowedUserTypes list.
+// If allowedUserTypes is empty, all schemas are returned.
+func (u *userTypeResolver) filterSchemasByAllowedTypes(
+	schemas []userschema.UserSchemaListItem, allowedUserTypes []string,
+) []userschema.UserSchemaListItem {
+	if len(allowedUserTypes) == 0 {
+		return schemas
+	}
+
+	filtered := make([]userschema.UserSchemaListItem, 0, len(schemas))
+	for _, schema := range schemas {
+		if slices.Contains(allowedUserTypes, schema.Name) {
+			filtered = append(filtered, schema)
+		}
+	}
+
+	return filtered
 }
 
 // resolveUserTypeFromInput resolves the user type from input and updates the executor response.

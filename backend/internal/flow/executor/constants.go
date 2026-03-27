@@ -82,10 +82,11 @@ const (
 
 // Executor property keys
 const (
-	propertyKeyAssignGroup    = "assignGroup"
-	propertyKeyAssignRole     = "assignRole"
-	propertyKeyRequiredScopes = "requiredScopes"
-	propertyKeyEmailTemplate  = "emailTemplate"
+	propertyKeyAssignGroup      = "assignGroup"
+	propertyKeyAssignRole       = "assignRole"
+	propertyKeyRequiredScopes   = "requiredScopes"
+	propertyKeyEmailTemplate    = "emailTemplate"
+	propertyKeyAllowedUserTypes = "allowedUserTypes"
 )
 
 // nonSearchableInputs contains the list of user inputs/ attributes that are non-searchable.
