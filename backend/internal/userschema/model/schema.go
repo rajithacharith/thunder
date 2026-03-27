@@ -137,7 +137,10 @@ func (cs *Schema) GetUniqueAttributes() []string {
 }
 
 // Validate validates the user attributes against the schema.
-func (cs *Schema) Validate(attributes json.RawMessage, logger *log.Logger) (bool, error) {
+// When skipCredentialRequired is true, missing credential properties do not fail
+// the required check. This is used during updates where credentials are not
+// included in the payload.
+func (cs *Schema) Validate(attributes json.RawMessage, logger *log.Logger, skipCredentialRequired bool) (bool, error) {
 	if len(attributes) == 0 {
 		logger.Debug("User has no attributes to validate")
 		return true, nil
@@ -155,7 +158,7 @@ func (cs *Schema) Validate(attributes json.RawMessage, logger *log.Logger) (bool
 	for propName, prop := range cs.properties {
 		value, exists := userAttrs[propName]
 		if !exists {
-			if prop.isRequired() {
+			if prop.isRequired() && !(skipCredentialRequired && prop.isCredential()) {
 				return false, nil
 			}
 			continue

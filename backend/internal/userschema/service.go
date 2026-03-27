@@ -54,6 +54,7 @@ type UserSchemaServiceInterface interface {
 	DeleteUserSchema(ctx context.Context, schemaID string) *serviceerror.ServiceError
 	ValidateUser(
 		ctx context.Context, userType string, userAttributes json.RawMessage,
+		skipCredentialRequired bool,
 	) (bool, *serviceerror.ServiceError)
 	ValidateUserUniqueness(
 		ctx context.Context,
@@ -484,6 +485,7 @@ func (us *userSchemaService) DeleteUserSchema(ctx context.Context, schemaID stri
 func (us *userSchemaService) ValidateUser(
 	ctx context.Context,
 	userType string, userAttributes json.RawMessage,
+	skipCredentialRequired bool,
 ) (bool, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
 
@@ -495,7 +497,7 @@ func (us *userSchemaService) ValidateUser(
 		return false, logAndReturnServerError(logger, "Failed to load user schema", err)
 	}
 
-	isValid, err := compiledSchema.Validate(userAttributes, logger)
+	isValid, err := compiledSchema.Validate(userAttributes, logger, skipCredentialRequired)
 	if err != nil {
 		return false, logAndReturnServerError(logger, "Failed to validate user attributes against schema", err)
 	}
