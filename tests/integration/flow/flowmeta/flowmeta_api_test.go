@@ -119,6 +119,7 @@ func (suite *FlowMetaAPITestSuite) TestGetFlowMetadataWithAppType() {
 	suite.NotNil(metadata.Application)
 	suite.Equal(suite.appID, metadata.Application.ID)
 	suite.Equal(testApp.Name, metadata.Application.Name)
+	suite.Equal(testApp.Description, metadata.Application.Description)
 	suite.True(metadata.IsRegistrationFlowEnabled)
 
 	// Verify design metadata is present (even if empty)
