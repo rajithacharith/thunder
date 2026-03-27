@@ -160,7 +160,7 @@ $REACT_API_SAMPLE_APP_VERSION = $reactApiPackageJson.version
 $REACT_API_SAMPLE_APP_FOLDER = "sample-app-react-api-based-${REACT_API_SAMPLE_APP_VERSION}-${SAMPLE_PACKAGE_OS}-${SAMPLE_PACKAGE_ARCH}"
 
 # Directories
-$TARGET_DIR = "target"
+$TARGET_DIR = Join-Path $SCRIPT_DIR "target"
 $OUTPUT_DIR = Join-Path $TARGET_DIR "out"
 $DIST_DIR = Join-Path $TARGET_DIR "dist"
 $BUILD_DIR = Join-Path $OUTPUT_DIR ".build"
@@ -391,7 +391,7 @@ function Build-Backend {
 
     # Construct ldflags safely and pass as an argument array to avoid PowerShell splitting
     $ldflags = "-X main.version=$VERSION -X main.buildDate=$buildDate"
-    $outputPath = "../$BUILD_DIR/$output_binary"
+    $outputPath = Join-Path $BUILD_DIR $output_binary
     $buildArgs += @('-ldflags', $ldflags, '-o', $outputPath, './cmd/server')
 
     Write-Host "Executing: go $($buildArgs -join ' ')"
@@ -1793,6 +1793,13 @@ switch ($Command) {
     'clean' {
         Clean
     }
+    'build' {
+        Build-Backend
+        Build-Frontend
+        Package
+        Build-Sample-App
+        Package-Sample-App
+    }
     'build_backend' {
         Build-Backend
         Package
@@ -1835,7 +1842,7 @@ switch ($Command) {
         Test-Integration
     }
     default {
-        Write-Host "Usage: $($MyInvocation.MyCommand.Name) {clean|build_backend|build_frontend|build_docs|build_samples|package_samples|test_unit|test_integration|merge_coverage|run|run_backend|run_frontend|run_docs|test}"
+        Write-Host "Usage: $($MyInvocation.MyCommand.Name) {clean|build|build_backend|build_frontend|build_docs|build_samples|package_samples|test_unit|test_integration|merge_coverage|run|run_backend|run_frontend|run_docs|test}"
         exit 1
     }
 }
