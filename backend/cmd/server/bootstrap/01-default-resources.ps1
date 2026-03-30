@@ -59,7 +59,8 @@ Log-Info "Creating default organization unit..."
 $response = Invoke-ThunderApi -Method POST -Endpoint "/organization-units" -Data '{
   "handle": "default",
   "name": "Default",
-  "description": "Default organization unit"
+  "description": "Default organization unit",
+  "logoUrl": "emoji:🏛️"
 }'
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {

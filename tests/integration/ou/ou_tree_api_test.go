@@ -298,6 +298,7 @@ func (suite *OUPathAPITestSuite) TestGetOrganizationUnitChildrenByPath() {
 		Handle:      "child-engineering",
 		Description: "Child of Engineering Unit",
 		Parent:      &pathTestOUID,
+		LogoURL:     "https://example.com/child-engineering-logo.png",
 	}
 
 	childID, err := createOUForPath(suite, childOU)
@@ -345,6 +346,7 @@ func (suite *OUPathAPITestSuite) TestGetOrganizationUnitChildrenByPath() {
 			suite.Equal(childOU.Name, ou.Name)
 			suite.Equal(childOU.Handle, ou.Handle)
 			suite.Equal(childOU.Description, ou.Description)
+			suite.Equal(childOU.LogoURL, ou.LogoURL)
 			break
 		}
 	}
