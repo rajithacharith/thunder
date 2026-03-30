@@ -74,7 +74,7 @@ const sidebars: SidebarsConfig = {
       type: 'html',
       value:
         '<div class="sidebar-section-label sidebar-section-label--ai"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg><span>Working with AI</span></div>',
-      className: 'sidebar-html-section-header',
+      className: 'sidebar-html-section-header sidebar-persona-iam',
     },
     {
       type: 'category',
@@ -96,7 +96,7 @@ const sidebars: SidebarsConfig = {
       type: 'html',
       value:
         '<div class="sidebar-section-label"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg><span>Quick Start</span></div>',
-      className: 'sidebar-html-section-header',
+      className: 'sidebar-html-section-header sidebar-persona-app',
     },
     {
       type: 'category',
@@ -136,7 +136,7 @@ const sidebars: SidebarsConfig = {
       type: 'html',
       value:
         '<div class="sidebar-section-label"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg><span>Guides</span></div>',
-      className: 'sidebar-html-section-header',
+      className: 'sidebar-html-section-header sidebar-persona-iam',
     },
     {
       type: 'category',
@@ -197,9 +197,42 @@ const sidebars: SidebarsConfig = {
           label: 'Organization Units',
         },
         {
-          type: 'doc',
-          id: 'guides/guides/flows',
+          type: 'category',
           label: 'Flows',
+          collapsed: true,
+          collapsible: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'guides/guides/flows/what-is-flows',
+              label: 'What are Flows?',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/flows/flow-concepts',
+              label: 'Flow Concepts',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/flows/build-a-flow',
+              label: 'Build a Flow',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/flows/authentication-flow',
+              label: 'Authentication Flows',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/flows/registration-flow',
+              label: 'Registration Flows',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/flows/flow-reference',
+              label: 'Flow Reference',
+            },
+          ],
         },
       ],
     },
@@ -269,7 +302,7 @@ const sidebars: SidebarsConfig = {
       type: 'html',
       value:
         '<div class="sidebar-section-label"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg><span>Deployment Patterns</span></div>',
-      className: 'sidebar-html-section-header',
+      className: 'sidebar-html-section-header sidebar-persona-iam',
     },
     {
       type: 'category',
@@ -278,6 +311,11 @@ const sidebars: SidebarsConfig = {
       collapsible: false,
       className: 'sidebar-section',
       items: [
+        {
+          type: 'doc',
+          id: 'guides/deployment-patterns/index',
+          label: 'Choose Your Deployment',
+        },
         {
           type: 'doc',
           id: 'guides/deployment-patterns/docker',

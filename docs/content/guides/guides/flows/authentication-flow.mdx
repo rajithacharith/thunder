@@ -1,0 +1,176 @@
+---
+title: Authentication Flows
+sidebar_position: 3
+persona: iam
+description: Build authentication flows in the Thunder Console — from simple username and password login to multi-factor and social login scenarios.
+---
+
+# Authentication Flows
+
+An authentication flow defines the steps a user must complete to sign in to an application. Using the Flow Builder in the Thunder Console, you can design any login experience — from a simple username and password form to a multi-step flow that combines social login, passkeys, and one-time passwords (OTPs).
+
+## Before You Begin
+
+- Ensure you have at least one application created in the Thunder Console.
+- Familiarize yourself with [Flow Concepts](./flow-concepts) to understand node types and the left panel.
+
+## Starter Templates for Authentication
+
+The Flow Builder includes several Starter Templates designed for common authentication scenarios. To apply one, expand **Starter Templates** in the left panel and click **+** next to the template you want.
+
+| Template | When to Use |
+|----------|------------|
+| **Password Login** | Simple username and password login. The default starting point for most applications. |
+| **Password Login or Google** | Username and password login with Google as an alternative option. |
+| **Password + SMS OTP** | Two-factor authentication requiring both a password and an SMS OTP. |
+| **SMS OTP** | Passwordless login where the user receives an OTP on their registered phone number. |
+| **Passkey Login** | Passwordless login using a passkey (biometric or device PIN), with a registration fallback. |
+
+If none of the templates fit your use case, select **Blank** and build from scratch.
+
+---
+
+## Example — Password Login
+
+The **Password Login** template creates the simplest authentication flow: the user enters a username and password, and Thunder verifies the credentials in a single step.
+
+### Canvas Structure
+
+```
+START → Sign In (View) → Identifier + Password (Executor) → Auth Assertion Generator (Executor) → END
+```
+
+The Identifier + Password executor has a failure path that loops back to the Sign In view, giving the user a chance to retry.
+
+### How to Set It Up
+
+1. On the Flows page, click **+ Create New Flow**.
+2. Enter a name and set the type to **Authentication**, then click **Create**.
+3. In the left panel, expand **Starter Templates** and click **+** next to **Password Login**.
+4. The canvas shows the complete flow.
+5. Click **Save**.
+6. Assign the flow to your application.
+
+---
+
+## Example — Password Login or Google
+
+This flow gives users two options: sign in with a username and password, or sign in with their Google account.
+
+### Canvas Structure
+
+```
+START → Sign In (View) → Identifier + Password (Executor) → Auth Assertion Generator → END
+                       → Google (Executor) ─────────────→ Auth Assertion Generator → END
+```
+
+### How to Set It Up
+
+1. Create a new **Authentication** flow.
+2. Apply the **Password Login or Google** Starter Template.
+3. Click the settings icon on the **Google** executor node and enter your Google OAuth2 client ID and client secret.
+4. Click **Save**.
+5. Assign the flow to your application.
+
+:::tip
+Before configuring the Google executor, create a Google OAuth2 application in the Google Cloud Console and add your Thunder callback URL as an authorized redirect URI.
+:::
+
+---
+
+## Example — Multi-Factor Authentication with SMS OTP
+
+This flow requires users to complete two verification steps: a password check and an OTP sent to their registered mobile number.
+
+### Canvas Structure
+
+```
+START → Sign In (View) → Send SMS OTP (Executor)
+          → OTP Input (View) → Identifier + Password (Executor)
+            → Verify SMS OTP (Executor) → Auth Assertion Generator (Executor) → END
+```
+
+### How to Set It Up
+
+1. Create a new **Authentication** flow.
+2. Apply the **Password + SMS OTP** Starter Template.
+3. Click the settings icon on the **Send SMS OTP** executor and configure your SMS provider settings.
+4. Click **Save**.
+5. Assign the flow to your application.
+
+---
+
+## Example — SMS OTP (Passwordless)
+
+This flow authenticates the user using only an OTP sent to their phone — no password required.
+
+### Canvas Structure
+
+```
+START → Identifier Input (View) → Send SMS OTP (Executor)
+          → OTP Input (View) → Verify SMS OTP (Executor) → Auth Assertion Generator → END
+```
+
+### How to Set It Up
+
+1. Create a new **Authentication** flow.
+2. Apply the **SMS OTP** Starter Template.
+3. Configure the **Send SMS OTP** executor with your SMS provider settings.
+4. Click **Save**.
+5. Assign the flow to your application.
+
+---
+
+## Example — Passkey Login
+
+This flow authenticates the user using a passkey — a biometric credential or device PIN stored on their device.
+
+### Canvas Structure
+
+```
+START → Passkey View → Request Passkey (Executor) → Verify Passkey (Executor) → Auth Assertion Generator → END
+```
+
+The template also includes a registration fallback path for users who do not yet have a registered passkey.
+
+### How to Set It Up
+
+1. Create a new **Authentication** flow.
+2. Apply the **Passkey Login** Starter Template.
+3. Review the canvas to confirm both the authentication path and the passkey registration fallback path are present.
+4. Click **Save**.
+5. Assign the flow to your application.
+
+---
+
+## Build a Custom Authentication Flow
+
+If the Starter Templates do not match your requirements, you can build a flow node by node.
+
+1. Create a new **Authentication** flow and select **Blank** from Starter Templates.
+2. In the left panel, expand **Widgets** and add **Username + Password** to place a login form and its executor on the canvas.
+3. The widget places a View node and an **Identifier + Password** Executor already connected. Verify the connections on the canvas.
+4. In **Executors**, add an **Auth Assertion Generator** executor and connect the Identifier + Password success path to it.
+5. Connect the Auth Assertion Generator success path to an **END** node (add one from the canvas toolbar if not present).
+6. Connect any failure paths to appropriate error View nodes.
+7. Click **Save**.
+
+:::tip
+Every authentication flow must end with an **Auth Assertion Generator** executor followed by an **END** node. The Auth Assertion Generator issues the token that confirms a successful login.
+:::
+
+## Assign the Flow to an Application
+
+After saving:
+
+1. Go to **Resources** > **Applications**.
+2. Open the application you want to configure.
+3. Navigate to the **Login Flow** tab.
+4. Select the flow from the dropdown.
+5. Click **Save**.
+
+## Related Guides
+
+- [Flow Concepts](./flow-concepts) — Reference for all node types, steps, components, and executors.
+- [Build a Flow](./build-a-flow) — Full walkthrough of the Flow Builder.
+- [Registration Flows](./registration-flow) — Set up self-registration flows for new users.

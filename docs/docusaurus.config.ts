@@ -20,6 +20,7 @@ import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 import webpackPlugin from './plugins/webpackPlugin';
+import personaPlugin from './plugins/personaPlugin';
 import thunderConfig from './docusaurus.thunder.config';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
@@ -77,7 +78,7 @@ const config: Config = {
     },
   },
 
-  plugins: [webpackPlugin],
+  plugins: [webpackPlugin, personaPlugin],
 
   presets: [
     [
@@ -138,6 +139,10 @@ const config: Config = {
         width: '101px',
       },
       items: [
+        {
+          type: 'custom-PersonaDropdown',
+          position: 'left',
+        },
         {
           type: 'docSidebar',
           sidebarId: 'docsSidebar',
