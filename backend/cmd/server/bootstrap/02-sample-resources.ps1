@@ -56,6 +56,7 @@ $customerOuData = @{
     handle = $customerOuHandle
     name = "Customers"
     description = "Organization unit for customer accounts"
+    logoUrl = "emoji:🏛️"
 } | ConvertTo-Json -Depth 5
 
 $response = Invoke-ThunderApi -Method POST -Endpoint "/organization-units" -Data $customerOuData

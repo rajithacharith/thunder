@@ -175,6 +175,7 @@ func (suite *OUAPITestSuite) TestListOrganizationUnits() {
 			foundParent = true
 			suite.Equal(ouToCreate.Name, ou.Name)
 			suite.Equal(ouToCreate.Description, ou.Description)
+			suite.Equal(ouToCreate.LogoURL, ou.LogoURL)
 		}
 	}
 	suite.True(foundParent, "Created parent OU should be in the list")
@@ -756,6 +757,7 @@ func (suite *OUAPITestSuite) TestGetOrganizationUnitChildren() {
 			foundChild = true
 			suite.Equal(childOUToCreate.Name, ou.Name)
 			suite.Equal(childOUToCreate.Description, ou.Description)
+			suite.Equal(childOUToCreate.LogoURL, ou.LogoURL)
 		}
 	}
 	suite.True(foundChild, "Created child OU should be in the children list")

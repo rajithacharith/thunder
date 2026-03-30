@@ -52,6 +52,8 @@ type organizationUnitStoreInterface interface {
 	GetOrganizationUnitChildrenList(ctx context.Context, id string, limit, offset int) ([]OrganizationUnitBasic, error)
 }
 
+var getDBProvider = provider.GetDBProvider
+
 // organizationUnitStore is the default implementation of organizationUnitStoreInterface.
 type organizationUnitStore struct {
 	dbProvider   provider.DBProviderInterface
@@ -60,7 +62,7 @@ type organizationUnitStore struct {
 
 // newOrganizationUnitStore creates a new instance of organizationUnitStore.
 func newOrganizationUnitStore() (organizationUnitStoreInterface, transaction.Transactioner, error) {
-	dbProvider := provider.GetDBProvider()
+	dbProvider := getDBProvider()
 	transactioner, err := dbProvider.GetUserDBTransactioner()
 	if err != nil {
 		return nil, nil, err
@@ -495,11 +497,14 @@ func buildOrganizationUnitBasicFromResultRow(
 		}
 	}
 
-	logoURL := ""
-	if v, ok := row["logo_url"]; ok && v != nil {
-		if s, ok := v.(string); ok {
-			logoURL = s
-		}
+	ouMetadataData, err := parseOUMetadata(row)
+	if err != nil {
+		return OrganizationUnitBasic{}, fmt.Errorf("failed to parse OU Metadata: %w", err)
+	}
+
+	logoURL, err := extractStringFromOUMetadata(ouMetadataData, "logo_url")
+	if err != nil {
+		return OrganizationUnitBasic{}, err
 	}
 
 	return OrganizationUnitBasic{

@@ -41,7 +41,8 @@ read -r -d '' CUSTOMERS_OU_PAYLOAD <<JSON || true
 {
   "handle": "${CUSTOMER_OU_HANDLE}",
   "name": "Customers",
-  "description": "Organization unit for customer accounts"
+  "description": "Organization unit for customer accounts",
+  "logoUrl": "emoji:🏛️"
 }
 JSON
 

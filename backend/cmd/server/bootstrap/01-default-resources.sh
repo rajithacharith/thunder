@@ -52,7 +52,8 @@ log_info "Creating default organization unit..."
 RESPONSE=$(thunder_api_call POST "/organization-units" '{
   "handle": "default",
   "name": "Default",
-  "description": "Default organization unit"
+  "description": "Default organization unit",
+  "logoUrl": "emoji:🏛️"
 }')
 
 HTTP_CODE="${RESPONSE: -3}"
