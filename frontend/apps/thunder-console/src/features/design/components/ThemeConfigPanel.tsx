@@ -30,6 +30,8 @@ import type {ThemeSection} from '../models/theme-builder';
 interface ThemeConfigPanelProps {
   themeId: string | null;
   saveHandlerRef?: RefObject<() => void>;
+  /** Callback invoked when the save pending state changes. */
+  onSavingChange?: (saving: boolean) => void;
   /** When set, renders only that section's content (builder mode, no accordions) */
   activeSection?: ThemeSection;
 }
@@ -39,13 +41,19 @@ interface ThemeConfigPanelProps {
 export default function ThemeConfigPanel({
   themeId,
   saveHandlerRef = undefined,
+  onSavingChange = undefined,
   activeSection = undefined,
 }: ThemeConfigPanelProps): JSX.Element {
   const {t} = useTranslation('design');
   // useGetTheme is kept here only to obtain save metadata (displayName, description, id).
   // React Query deduplicates the request — the provider already issues the same call.
   const {data: theme, isLoading} = useGetTheme(themeId ?? '');
-  const {mutateAsync} = useUpdateTheme();
+  const {mutateAsync, isPending} = useUpdateTheme();
+
+  // Notify the parent when the save pending state changes.
+  useEffect(() => {
+    onSavingChange?.(isPending);
+  }, [isPending, onSavingChange]);
 
   // Draft state lives in the context so ThemePreviewPanel always sees the latest changes.
   const {draftTheme, setDraftTheme, setIsDirty, setPreviewColorScheme} = useThemeBuilder();
@@ -125,7 +133,7 @@ export default function ThemeConfigPanel({
   const darkColors = draftTheme.colorSchemes?.dark?.palette as CssVarsPalette;
 
   return (
-    <Box sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
+    <Box sx={{flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column'}}>
       {/* Light / Dark toggle — only for Colors section */}
       {activeSection === 'colors' && (
         <ToggleButtonGroup
@@ -152,7 +160,7 @@ export default function ThemeConfigPanel({
         </ToggleButtonGroup>
       )}
 
-      <Box sx={{flex: 1, overflowY: 'auto', mt: 2}}>
+      <Box sx={{flex: 1, minHeight: 0, overflowY: 'auto', mt: 2}}>
         {activeSection === 'colors' && colorSchemeTab === 'light' && lightColors && (
           <ColorBuilderContent colors={lightColors} onUpdate={(up) => updateColorScheme('light', up)} />
         )}
