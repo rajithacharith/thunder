@@ -19,7 +19,7 @@
 import {waitFor, act, renderHook} from '@thunder/test-utils';
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import UserQueryKeys from '../../constants/user-query-keys';
-import type {ApiUser} from '../../types/users';
+import type {ApiUser} from '../../models/users';
 import useUpdateUser, {type UpdateUserVariables} from '../useUpdateUser';
 
 // Mock the dependencies

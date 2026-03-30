@@ -30,12 +30,12 @@ vi.mock('../features/users/pages/UsersListPage', () => ({
   default: () => <div data-testid="users-list-page">Users List Page</div>,
 }));
 
-vi.mock('../features/users/pages/CreateUserPage', () => ({
+vi.mock('../features/users/pages/UserCreatePage', () => ({
   default: () => <div data-testid="create-user-page">Create User Page</div>,
 }));
 
-vi.mock('../features/users/pages/ViewUserPage', () => ({
-  default: () => <div data-testid="view-user-page">View User Page</div>,
+vi.mock('../features/users/pages/UserEditPage', () => ({
+  default: () => <div data-testid="user-edit-page">User Edit Page</div>,
 }));
 
 vi.mock('../features/user-types/pages/UserTypesListPage', () => ({

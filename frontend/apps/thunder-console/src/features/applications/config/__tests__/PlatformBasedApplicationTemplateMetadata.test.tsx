@@ -80,7 +80,7 @@ describe('PlatformBasedApplicationTemplateMetadata', () => {
 
   describe('Server Platform', () => {
     const serverMetadata = PlatformBasedApplicationTemplateMetadata.find(
-      (m) => m.value === PlatformApplicationTemplate.SERVER,
+      (m) => m.value === PlatformApplicationTemplate.FULL_STACK,
     );
 
     it('should exist', () => {
@@ -88,7 +88,7 @@ describe('PlatformBasedApplicationTemplateMetadata', () => {
     });
 
     it('should have correct value', () => {
-      expect(serverMetadata?.value).toBe(PlatformApplicationTemplate.SERVER);
+      expect(serverMetadata?.value).toBe(PlatformApplicationTemplate.FULL_STACK);
     });
 
     it('should have icon component', () => {
@@ -98,9 +98,9 @@ describe('PlatformBasedApplicationTemplateMetadata', () => {
     });
 
     it('should have correct i18n keys', () => {
-      expect(serverMetadata?.titleKey).toBe('applications:onboarding.configure.stack.platform.server.title');
+      expect(serverMetadata?.titleKey).toBe('applications:onboarding.configure.stack.platform.full_stack.title');
       expect(serverMetadata?.descriptionKey).toBe(
-        'applications:onboarding.configure.stack.platform.server.description',
+        'applications:onboarding.configure.stack.platform.full_stack.description',
       );
     });
 

@@ -35,7 +35,7 @@ import {
   useTheme,
   Avatar,
 } from '@wso2/oxygen-ui';
-import {Building, EllipsisVertical, Pencil, Plus, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {EllipsisVertical, Pencil, Plus, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useState, useCallback, useEffect, useRef, useMemo} from 'react';
 import type {ReactNode, MouseEvent, KeyboardEvent, SyntheticEvent, JSX} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -307,12 +307,14 @@ function CustomTreeItem(allProps: CustomTreeItemProps): JSX.Element {
           >
             <ResourceAvatar
               value={itemData?.logoUrl}
-              size={32}
-              fallbackIcon={<Building size={14} />}
+              size={30}
+              fallback="emoji:🏛️"
               sx={{
-                p: 0.5,
-                backgroundColor: theme?.vars?.palette.primary.main,
+                backgroundColor: theme.vars?.palette.grey[500],
                 fontSize: '1rem',
+                ...theme.applyStyles('dark', {
+                  backgroundColor: theme.vars?.palette.grey[900],
+                }),
               }}
             />
             <Box sx={{flexGrow: 1, minWidth: 0}}>

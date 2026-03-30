@@ -32,7 +32,7 @@ import {
   PageContent,
   PageTitle,
 } from '@wso2/oxygen-ui';
-import {ArrowLeft, AppWindow, Edit} from '@wso2/oxygen-ui-icons-react';
+import {ArrowLeft, Edit} from '@wso2/oxygen-ui-icons-react';
 import {useState, useCallback, useMemo, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Link, useNavigate, useParams} from 'react-router';
@@ -204,10 +204,12 @@ export default function ApplicationEditPage() {
         </PageTitle.BackButton>
         <PageTitle.Avatar sx={{overflow: 'visible'}}>
           <ResourceAvatar
+            editable
             value={editedApp.logoUrl ?? application.logoUrl}
-            fallbackIcon={<AppWindow />}
+            fallback="emoji:🖥️"
             editAriaLabel={t('applications:edit.page.logoUpdate.label')}
             onSelect={(newLogoUrl: string) => setEditedApp((prev) => ({...prev, logoUrl: newLogoUrl}))}
+            size={55}
           />
         </PageTitle.Avatar>
         <PageTitle.Header>

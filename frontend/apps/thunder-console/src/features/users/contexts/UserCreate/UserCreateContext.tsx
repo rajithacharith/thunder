@@ -19,7 +19,7 @@
 import type {Context} from 'react';
 import {createContext} from 'react';
 import type {UserCreateFlowStep} from '../../models/user-create-flow';
-import type {SchemaInterface} from '../../types/users';
+import type {SchemaInterface} from '../../models/users';
 
 /**
  * User creation context state interface.

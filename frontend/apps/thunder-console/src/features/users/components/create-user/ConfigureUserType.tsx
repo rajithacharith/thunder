@@ -20,7 +20,7 @@ import {Stack, Typography, FormControl, FormLabel, Select, MenuItem} from '@wso2
 import {useEffect} from 'react';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
-import type {SchemaInterface} from '../../types/users';
+import type {SchemaInterface} from '../../models/users';
 
 /**
  * Props for the {@link ConfigureUserType} component.

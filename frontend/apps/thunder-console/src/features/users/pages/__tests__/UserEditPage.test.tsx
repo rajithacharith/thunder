@@ -19,8 +19,8 @@
 import {render, screen, waitFor, within, userEvent} from '@thunder/test-utils';
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import type {ApiUser, ApiUserSchema, UserSchemaListResponse} from '../../types/users';
-import ViewUserPage from '../ViewUserPage';
+import type {ApiUser, ApiUserSchema, UserSchemaListResponse} from '../../models/users';
+import UserEditPage from '../UserEditPage';
 
 const {mockLoggerError} = vi.hoisted(() => ({
   mockLoggerError: vi.fn(),
@@ -133,7 +133,7 @@ vi.mock('../../api/useDeleteUser', () => ({
   default: () => mockUseDeleteUser(),
 }));
 
-describe('ViewUserPage', () => {
+describe('UserEditPage', () => {
   const mockUserData: ApiUser = {
     id: 'user123',
     ouId: 'test-ou',
@@ -234,7 +234,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
@@ -246,7 +246,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
@@ -258,7 +258,7 @@ describe('ViewUserPage', () => {
         error: new Error('User not found'),
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       expect(screen.getByRole('alert')).toHaveTextContent('User not found');
       expect(screen.getByRole('button', {name: /back to users/i})).toBeInTheDocument();
@@ -276,7 +276,7 @@ describe('ViewUserPage', () => {
 
       mockNavigate.mockRejectedValueOnce(new Error('Navigation failed'));
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       const backButton = screen.getByRole('button', {name: /back to users/i});
       await user.click(backButton);
@@ -295,7 +295,7 @@ describe('ViewUserPage', () => {
         error: new Error('Schema not found'),
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       expect(screen.getByRole('alert')).toHaveTextContent('Schema not found');
     });
@@ -307,7 +307,7 @@ describe('ViewUserPage', () => {
         error: new Error(''),
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       // Should display the fallback message since error.message is empty
       expect(screen.getByRole('alert')).toHaveTextContent('');
@@ -320,7 +320,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       expect(screen.getByRole('alert')).toHaveTextContent('User not found');
     });
@@ -337,7 +337,7 @@ describe('ViewUserPage', () => {
 
       mockNavigate.mockRejectedValueOnce(new Error('Navigation failed'));
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       const backButton = screen.getByRole('button', {name: /back to users/i});
       await user.click(backButton);
@@ -352,14 +352,14 @@ describe('ViewUserPage', () => {
 
   describe('View Mode', () => {
     it('renders user profile page with header', () => {
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       const headings = screen.getAllByRole('heading', {name: 'user123'});
       expect(headings.length).toBeGreaterThanOrEqual(1);
     });
 
     it('displays basic user information', () => {
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       // User ID shown in heading and CopyableId
       expect(screen.getAllByText('user123').length).toBeGreaterThanOrEqual(1);
@@ -368,7 +368,7 @@ describe('ViewUserPage', () => {
     });
 
     it('displays user attributes in view mode', () => {
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       expect(screen.getByText('username')).toBeInTheDocument();
       expect(screen.getByText('john_doe')).toBeInTheDocument();
@@ -390,7 +390,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       expect(screen.getByText('No')).toBeInTheDocument();
     });
@@ -402,7 +402,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       expect(screen.getByText('admin, developer, manager')).toBeInTheDocument();
     });
@@ -414,13 +414,13 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       expect(screen.getByText('No attributes available')).toBeInTheDocument();
     });
 
     it('renders Edit and Delete buttons in view mode', () => {
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       expect(screen.getByRole('button', {name: /edit/i})).toBeInTheDocument();
       expect(screen.getByRole('button', {name: /delete/i})).toBeInTheDocument();
@@ -428,7 +428,7 @@ describe('ViewUserPage', () => {
 
     it('navigates back when Back button is clicked', async () => {
       const user = userEvent.setup();
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       const backButton = screen.getByRole('button', {name: /back to users/i});
       await user.click(backButton);
@@ -443,7 +443,7 @@ describe('ViewUserPage', () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       mockNavigate.mockRejectedValueOnce(new Error('Navigation failed'));
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       const backButton = screen.getByRole('button', {name: /back to users/i});
       await user.click(backButton);
@@ -459,7 +459,7 @@ describe('ViewUserPage', () => {
   describe('Edit Mode', () => {
     it('enters edit mode when Edit button is clicked', async () => {
       const user = userEvent.setup();
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       const editButton = screen.getByRole('button', {name: /edit/i});
       await user.click(editButton);
@@ -483,7 +483,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
       await user.click(screen.getByRole('button', {name: /^save$/i}));
@@ -510,7 +510,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
       await user.click(screen.getByRole('button', {name: /^save$/i}));
@@ -528,7 +528,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
       await user.click(screen.getByRole('button', {name: /^save$/i}));
@@ -540,7 +540,7 @@ describe('ViewUserPage', () => {
 
     it('displays form fields in edit mode', async () => {
       const user = userEvent.setup();
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
 
@@ -580,7 +580,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
 
@@ -624,7 +624,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
 
@@ -660,7 +660,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
 
@@ -673,7 +673,7 @@ describe('ViewUserPage', () => {
 
     it('populates form fields with current user data', async () => {
       const user = userEvent.setup();
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
 
@@ -687,7 +687,7 @@ describe('ViewUserPage', () => {
 
     it('allows editing form fields', async () => {
       const user = userEvent.setup();
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
 
@@ -706,7 +706,7 @@ describe('ViewUserPage', () => {
       };
       mockUpdateMutateAsync.mockResolvedValue(updatedUser);
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
 
@@ -750,7 +750,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
       await user.click(screen.getByRole('button', {name: /^save$/i}));
@@ -773,7 +773,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
       await user.click(screen.getByRole('button', {name: /^save$/i}));
@@ -789,7 +789,7 @@ describe('ViewUserPage', () => {
       const user = userEvent.setup();
       mockUpdateMutateAsync.mockResolvedValue(mockUserData);
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
       await user.click(screen.getByRole('button', {name: /^save$/i}));
@@ -810,7 +810,7 @@ describe('ViewUserPage', () => {
         isIdle: false,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
       await user.click(screen.getByRole('button', {name: /^save$/i}));
@@ -822,7 +822,7 @@ describe('ViewUserPage', () => {
 
     it('cancels edit mode and resets form', async () => {
       const user = userEvent.setup();
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
 
@@ -847,7 +847,7 @@ describe('ViewUserPage', () => {
         mutateAsync: neverResolvingUpdate,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
 
@@ -870,7 +870,7 @@ describe('ViewUserPage', () => {
         mutateAsync: failingUpdateMutateAsync,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
       await user.click(screen.getByRole('button', {name: /^save$/i}));
@@ -884,7 +884,7 @@ describe('ViewUserPage', () => {
   describe('Delete Functionality', () => {
     it('opens delete confirmation dialog when Delete button is clicked', async () => {
       const user = userEvent.setup();
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       const deleteButton = screen.getByRole('button', {name: /^delete$/i});
       await user.click(deleteButton);
@@ -900,7 +900,7 @@ describe('ViewUserPage', () => {
     it('calls mutateAsync with correct userId when delete is confirmed', async () => {
       const user = userEvent.setup();
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
@@ -916,7 +916,7 @@ describe('ViewUserPage', () => {
 
     it('closes delete dialog when Cancel is clicked', async () => {
       const user = userEvent.setup();
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
@@ -932,7 +932,7 @@ describe('ViewUserPage', () => {
     it('successfully deletes user and navigates to users list', async () => {
       const user = userEvent.setup();
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
@@ -953,7 +953,7 @@ describe('ViewUserPage', () => {
         options?.onError?.(deleteError);
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
@@ -974,7 +974,7 @@ describe('ViewUserPage', () => {
         isIdle: false,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
@@ -991,7 +991,7 @@ describe('ViewUserPage', () => {
         options?.onError?.(error);
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
@@ -1010,7 +1010,7 @@ describe('ViewUserPage', () => {
         options?.onError?.(new Error('Delete failed'));
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
@@ -1043,7 +1043,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       const middleNameSection = screen.getByText('middleName').parentElement;
       expect(middleNameSection).toHaveTextContent('-');
@@ -1066,7 +1066,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       const nicknameSection = screen.getByText('nickname').parentElement;
       expect(nicknameSection).toHaveTextContent('-');
@@ -1089,7 +1089,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       expect(screen.getByText('tags')).toBeInTheDocument();
       expect(screen.getByText('developer, senior, fullstack')).toBeInTheDocument();
@@ -1112,7 +1112,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       expect(screen.getByText('address')).toBeInTheDocument();
       expect(screen.getByText('{"city":"New York","country":"USA"}')).toBeInTheDocument();
@@ -1136,7 +1136,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       const unknownTypeSection = screen.getByText('unknownType').parentElement;
       expect(unknownTypeSection).toHaveTextContent('-');
@@ -1157,7 +1157,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       const alert = screen.getByRole('alert');
       expect(alert).toBeInTheDocument();
@@ -1175,7 +1175,7 @@ describe('ViewUserPage', () => {
         error: null,
       });
 
-      render(<ViewUserPage />);
+      render(<UserEditPage />);
 
       await user.click(screen.getByRole('button', {name: /edit/i}));
 

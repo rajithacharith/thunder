@@ -18,7 +18,6 @@
 
 import {useLogger} from '@thunder/logger/react';
 import {
-  Avatar,
   Box,
   Chip,
   IconButton,
@@ -36,7 +35,7 @@ import {
   DataGrid,
   useTheme,
 } from '@wso2/oxygen-ui';
-import {Pencil, Trash2, UserRoundCog} from '@wso2/oxygen-ui-icons-react';
+import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useCallback, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
@@ -134,40 +133,23 @@ export default function UserTypesList() {
     () => [
       {
         field: 'name',
-        headerName: t('common:edit.general.name.label'),
+        headerName: t('userTypes:listing.columns.name', 'Name'),
         flex: 1.5,
         minWidth: 220,
-        renderCell: (params: GridRenderCellParams<UserSchemaListItem>) => (
-          <ListingTable.CellIcon
-            sx={{width: '100%'}}
-            icon={
-              <Avatar
-                sx={{
-                  backgroundColor: theme.vars?.palette.grey[500],
-                  width: 30,
-                  height: 30,
-                  fontSize: '0.875rem',
-                  ...theme.applyStyles('dark', {
-                    backgroundColor: theme.vars?.palette.grey[900],
-                  }),
-                }}
-              >
-                <UserRoundCog size={14} />
-              </Avatar>
-            }
-            primary={params.row.name ?? '-'}
-          />
-        ),
       },
       {
         field: 'id',
-        headerName: 'ID',
+        headerName: t('userTypes:listing.columns.id', 'User Type ID'),
         width: 350,
-        valueGetter: (_value, row) => row.id ?? null,
+        renderCell: (params: DataGrid.GridRenderCellParams<UserSchemaListItem>) => (
+          <Typography variant="body2" sx={{fontFamily: 'monospace', fontSize: '0.875rem'}}>
+            {params.row.id}
+          </Typography>
+        ),
       },
       {
         field: 'ou',
-        headerName: t('userTypes:organizationUnit'),
+        headerName: t('userTypes:listing.columns.organizationUnit', 'Organization Unit'),
         flex: 1,
         minWidth: 220,
         renderCell: (params: GridRenderCellParams<UserSchemaListItem>) => {
@@ -200,7 +182,7 @@ export default function UserTypesList() {
       },
       {
         field: 'allowSelfRegistration',
-        headerName: t('userTypes:allowSelfRegistration'),
+        headerName: t('userTypes:listing.columns.allowSelfRegistration', 'Self Registration'),
         width: 200,
         renderCell: (params: GridRenderCellParams<UserSchemaListItem>) => (
           <Chip
@@ -212,7 +194,7 @@ export default function UserTypesList() {
       },
       {
         field: 'actions',
-        headerName: t('users:actions'),
+        headerName: t('userTypes:listing.columns.actions', 'Actions'),
         width: 150,
         align: 'center',
         headerAlign: 'center',

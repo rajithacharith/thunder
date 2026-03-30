@@ -21,7 +21,7 @@ import type * as OxygenUI from '@wso2/oxygen-ui';
 import {DataGrid} from '@wso2/oxygen-ui';
 import React from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import type {UserListResponse} from '../../types/users';
+import type {UserListResponse} from '../../models/users';
 import UsersList from '../UsersList';
 
 const {mockLoggerError} = vi.hoisted(() => ({
@@ -487,7 +487,7 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
     });
 
-    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    const viewButtons = screen.getAllByRole('button', {name: /^edit$/i});
     expect(viewButtons.length).toBeGreaterThan(0);
     await user.click(viewButtons[0]);
 
@@ -505,7 +505,7 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user2')).toHaveTextContent('Jane Smith');
     });
 
-    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    const viewButtons = screen.getAllByRole('button', {name: /^edit$/i});
     expect(viewButtons.length).toBeGreaterThan(1);
     await user.click(viewButtons[1]);
 
@@ -525,7 +525,7 @@ describe('UsersList', () => {
       expect(screen.getByTestId('row-user1')).toHaveTextContent('John Doe');
     });
 
-    const viewButtons = screen.getAllByRole('button', {name: /^view$/i});
+    const viewButtons = screen.getAllByRole('button', {name: /^edit$/i});
     await user.click(viewButtons[0]);
 
     await waitFor(() => {

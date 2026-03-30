@@ -18,7 +18,7 @@
 
 import {screen, renderWithProviders} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import type {ApiUser} from '../../../../../users/types/users';
+import type {ApiUser} from '../../../../../users/models/users';
 import ManageUsersSection from '../ManageUsersSection';
 
 // Mock the useGetOrganizationUnitUsers hook

@@ -54,7 +54,7 @@ vi.mock('react-i18next', () => ({
         'flows:listing.columns.actions': 'Actions',
         'flows:listing.error.title': 'Error loading flows',
         'flows:listing.error.unknown': 'Unknown error occurred',
-        'common:actions.view': 'View',
+        'common:actions.edit': 'Edit',
         'common:actions.delete': 'Delete',
       };
       return translations[key] || key;
@@ -521,12 +521,10 @@ describe('FlowsList', () => {
         </MemoryRouter>,
       );
 
-      const nameColumn = capturedColumns.value.find((col) => col.field === 'name');
       const flowTypeColumn = capturedColumns.value.find((col) => col.field === 'flowType');
       const versionColumn = capturedColumns.value.find((col) => col.field === 'activeVersion');
       const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
 
-      expect(nameColumn?.renderCell).toBeDefined();
       expect(flowTypeColumn?.renderCell).toBeDefined();
       expect(versionColumn?.renderCell).toBeDefined();
       expect(actionsColumn?.renderCell).toBeDefined();
@@ -580,7 +578,7 @@ describe('FlowsList', () => {
   });
 
   describe('Column RenderCell Execution', () => {
-    it('should render name cell with GitBranch icon', () => {
+    it('should have name column without renderCell (plain text)', () => {
       render(
         <MemoryRouter>
           <FlowsList />
@@ -588,12 +586,8 @@ describe('FlowsList', () => {
       );
 
       const nameColumn = capturedColumns.value.find((col) => col.field === 'name');
-      expect(nameColumn?.renderCell).toBeDefined();
-
-      const {container} = render(
-        nameColumn!.renderCell!({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
-      );
-      expect(container.querySelector('[class*="MuiAvatar"]')).toBeInTheDocument();
+      expect(nameColumn).toBeDefined();
+      expect(nameColumn?.renderCell).toBeUndefined();
     });
 
     it('should render actions cell with IconButton', () => {

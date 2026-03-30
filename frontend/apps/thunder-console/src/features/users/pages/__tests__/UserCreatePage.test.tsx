@@ -20,8 +20,8 @@ import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import UserCreateProvider from '../../contexts/UserCreate/UserCreateProvider';
-import type {UserSchemaListResponse, ApiUserSchema, SchemaInterface} from '../../types/users';
-import CreateUserPage from '../CreateUserPage';
+import type {UserSchemaListResponse, ApiUserSchema, SchemaInterface} from '../../models/users';
+import UserCreatePage from '../UserCreatePage';
 
 const mockNavigate = vi.fn();
 const mockMutateAsync = vi.fn();
@@ -272,7 +272,7 @@ const mockSchemaData: ApiUserSchema = {
 function renderPage() {
   return render(
     <UserCreateProvider>
-      <CreateUserPage />
+      <UserCreatePage />
     </UserCreateProvider>,
   );
 }
@@ -289,7 +289,7 @@ async function goToDetailsStep(user: ReturnType<typeof userEvent.setup>, schemaN
   });
 }
 
-describe('CreateUserPage', () => {
+describe('UserCreatePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockNavigate.mockResolvedValue(undefined);

@@ -76,7 +76,7 @@ export default function TranslationsList(): JSX.Element {
               <ResourceAvatar
                 value={toFlagEmoji(params.row.code)}
                 size={30}
-                fallbackIcon="emoji:globe"
+                fallback="emoji:🌍"
                 sx={{
                   backgroundColor: theme.vars?.palette.grey[500],
                   fontSize: '1rem',

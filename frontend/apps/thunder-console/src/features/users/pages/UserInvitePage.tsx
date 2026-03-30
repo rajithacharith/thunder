@@ -741,10 +741,10 @@ function InviteUserFlowBridge({
   );
 }
 
-export default function InviteUserPage(): JSX.Element {
+export default function UserInvitePage(): JSX.Element {
   const {t} = useTranslation();
   const navigate = useNavigate();
-  const logger = useLogger('InviteUserPage');
+  const logger = useLogger('UserInvitePage');
   const [copied, setCopied] = useState(false);
   const [flowError, setFlowError] = useState<string | null>(null);
 

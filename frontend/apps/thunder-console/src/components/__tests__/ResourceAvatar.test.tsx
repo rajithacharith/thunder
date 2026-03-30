@@ -24,7 +24,7 @@ import ResourceAvatar from '../ResourceAvatar';
 describe('ResourceAvatar', () => {
   describe('Read-only mode (no onSelect)', () => {
     it('should render the fallback icon when no value is provided', () => {
-      render(<ResourceAvatar fallbackIcon={<AppWindow data-testid="fallback-icon" />} />);
+      render(<ResourceAvatar fallback={<AppWindow data-testid="fallback-icon" />} />);
 
       expect(screen.getByTestId('fallback-icon')).toBeInTheDocument();
     });
@@ -48,7 +48,7 @@ describe('ResourceAvatar', () => {
       expect(img).toHaveAttribute('src', 'https://example.com/logo.png');
     });
 
-    it('should not render an edit button when onSelect is not provided', () => {
+    it('should not render an edit button when editable and onSelect are not provided', () => {
       render(<ResourceAvatar value="emoji:🎉" />);
 
       expect(screen.queryByRole('button')).not.toBeInTheDocument();
@@ -72,26 +72,26 @@ describe('ResourceAvatar', () => {
   });
 
   describe('Edit mode (onSelect provided)', () => {
-    it('should render an edit (pencil) button when onSelect is provided', () => {
-      render(<ResourceAvatar value="emoji:🎉" onSelect={vi.fn()} />);
+    it('should render an edit (pencil) button when onSelect and editable are provided', () => {
+      render(<ResourceAvatar editable value="emoji:🎉" onSelect={vi.fn()} />);
 
       expect(screen.getByRole('button', {name: 'Change logo'})).toBeInTheDocument();
     });
 
     it('should have the default aria-label "Change logo" on the edit button', () => {
-      render(<ResourceAvatar value="emoji:🎉" onSelect={vi.fn()} />);
+      render(<ResourceAvatar editable value="emoji:🎉" onSelect={vi.fn()} />);
 
       expect(screen.getByRole('button', {name: 'Change logo'})).toBeInTheDocument();
     });
 
     it('should accept a custom editAriaLabel', () => {
-      render(<ResourceAvatar value="emoji:🎉" onSelect={vi.fn()} editAriaLabel="Update icon" />);
+      render(<ResourceAvatar editable value="emoji:🎉" onSelect={vi.fn()} editAriaLabel="Update icon" />);
 
       expect(screen.getByRole('button', {name: 'Update icon'})).toBeInTheDocument();
     });
 
     it('should open the ResourceLogoDialog when the edit button is clicked', () => {
-      render(<ResourceAvatar value="emoji:🎉" onSelect={vi.fn()} />);
+      render(<ResourceAvatar editable value="emoji:🎉" onSelect={vi.fn()} />);
 
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
@@ -109,7 +109,7 @@ describe('ResourceAvatar', () => {
     });
 
     it('should close the dialog when the cancel button is clicked', async () => {
-      render(<ResourceAvatar value="emoji:🎉" onSelect={vi.fn()} />);
+      render(<ResourceAvatar editable value="emoji:🎉" onSelect={vi.fn()} />);
 
       fireEvent.click(screen.getByRole('button', {name: 'Change logo'}));
       expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -120,7 +120,7 @@ describe('ResourceAvatar', () => {
 
     it('should call onSelect with the confirmed value and close the dialog', async () => {
       const handleSelect = vi.fn();
-      render(<ResourceAvatar value="emoji:🎉" onSelect={handleSelect} />);
+      render(<ResourceAvatar editable value="emoji:🎉" onSelect={handleSelect} />);
 
       // Open the dialog
       fireEvent.click(screen.getByRole('button', {name: 'Change logo'}));
@@ -134,7 +134,7 @@ describe('ResourceAvatar', () => {
     });
 
     it('should show fallback icon inside avatar when no value provided in edit mode', () => {
-      render(<ResourceAvatar fallbackIcon={<AppWindow data-testid="fallback-icon" />} onSelect={vi.fn()} />);
+      render(<ResourceAvatar editable fallback={<AppWindow data-testid="fallback-icon" />} onSelect={vi.fn()} />);
 
       expect(screen.getByTestId('fallback-icon')).toBeInTheDocument();
     });

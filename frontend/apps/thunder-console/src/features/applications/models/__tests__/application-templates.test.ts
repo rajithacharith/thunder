@@ -54,12 +54,12 @@ describe('Application Templates Models', () => {
       expect(PlatformApplicationTemplate.MOBILE).toBe('MOBILE');
     });
 
-    it('should have SERVER platform', () => {
-      expect(PlatformApplicationTemplate.SERVER).toBe('SERVER');
+    it('should have FULL_STACK platform', () => {
+      expect(PlatformApplicationTemplate.FULL_STACK).toBe('FULL_STACK');
     });
 
     it('should have all expected properties', () => {
-      const expectedKeys = ['BACKEND', 'BROWSER', 'MOBILE', 'SERVER'];
+      const expectedKeys = ['BACKEND', 'BROWSER', 'MOBILE', 'FULL_STACK'];
 
       expect(Object.keys(PlatformApplicationTemplate)).toEqual(expectedKeys);
     });

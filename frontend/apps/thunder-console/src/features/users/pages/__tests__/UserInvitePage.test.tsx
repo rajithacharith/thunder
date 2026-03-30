@@ -20,7 +20,7 @@ import type {InviteUserRenderProps, EmbeddedFlowComponent} from '@asgardeo/react
 import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import type {JSX} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import InviteUserPage from '../InviteUserPage';
+import UserInvitePage from '../UserInvitePage';
 
 /* ------------------------------------------------------------------ */
 /*  Top-level mock state                                              */
@@ -231,7 +231,7 @@ const block = (children: EmbeddedFlowComponent[], id?: string): EmbeddedFlowComp
 /*  Tests                                                             */
 /* ------------------------------------------------------------------ */
 
-describe('InviteUserPage', () => {
+describe('UserInvitePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     simulateInviteUserError = false;
@@ -246,7 +246,7 @@ describe('InviteUserPage', () => {
       mockInviteUserRenderProps.isLoading = true;
       mockInviteUserRenderProps.components = [];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       // LinearProgress (determinate) + CircularProgress (indeterminate) = 2 progressbars
       const progressBars = screen.getAllByRole('progressbar');
@@ -257,7 +257,7 @@ describe('InviteUserPage', () => {
       mockInviteUserRenderProps.isLoading = false;
       mockInviteUserRenderProps.components = [];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       // Falls through to the "no components" branch which also shows CircularProgress
       const progressBars = screen.getAllByRole('progressbar');
@@ -272,7 +272,7 @@ describe('InviteUserPage', () => {
       mockInviteUserRenderProps.isLoading = true;
       mockInviteUserRenderProps.components = [];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       expect(screen.getByText('Invite User')).toBeInTheDocument();
     });
@@ -281,7 +281,7 @@ describe('InviteUserPage', () => {
       mockInviteUserRenderProps.isLoading = true;
       mockInviteUserRenderProps.components = [];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       const closeButton = screen.getByRole('button', {name: /close/i});
       await userEvent.click(closeButton);
@@ -299,7 +299,7 @@ describe('InviteUserPage', () => {
         block([textInput('firstName', 'First Name', {required: true}), submitAction('Next')]),
       ];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
     });
@@ -310,7 +310,7 @@ describe('InviteUserPage', () => {
         block([emailInput('email', 'Email Address', {required: true}), submitAction('Next')]),
       ];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
     });
@@ -325,7 +325,7 @@ describe('InviteUserPage', () => {
         block([selectInput('role', 'Role', options, {required: true}), submitAction('Next')]),
       ];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       // MUI Select renders a <div> so getByLabelText won't work; check the FormLabel text instead
       expect(screen.getByText('Role')).toBeInTheDocument();
@@ -340,7 +340,7 @@ describe('InviteUserPage', () => {
       ];
       mockInviteUserRenderProps.additionalData = {rootOuId: 'root-123'};
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       const picker = screen.getByTestId('ou-tree-picker');
       expect(picker).toBeInTheDocument();
@@ -353,7 +353,7 @@ describe('InviteUserPage', () => {
         block([textInput('name', 'Name'), submitAction('Submit')]),
       ];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       // Heading appears in the form (h1) and in the breadcrumb (h5)
       const headings = screen.getAllByText('User Details');
@@ -370,7 +370,7 @@ describe('InviteUserPage', () => {
         block([textInput('name', 'Name'), submitAction('Submit')]),
       ];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       expect(screen.getByText('Please fill in the details')).toBeInTheDocument();
     });
@@ -378,7 +378,7 @@ describe('InviteUserPage', () => {
     it('should not render a block without a submit action', () => {
       mockInviteUserRenderProps.components = [heading('Step Title'), block([textInput('name', 'Name')])];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       // The heading should render (appears in form h1 and breadcrumb h5)
       const headings = screen.getAllByText('Step Title');
@@ -395,7 +395,7 @@ describe('InviteUserPage', () => {
       mockInviteUserRenderProps.isInviteGenerated = true;
       mockInviteUserRenderProps.isEmailSent = true;
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       expect(screen.getByText('Invite Email Sent!')).toBeInTheDocument();
       expect(
@@ -407,7 +407,7 @@ describe('InviteUserPage', () => {
       mockInviteUserRenderProps.isInviteGenerated = true;
       mockInviteUserRenderProps.isEmailSent = true;
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       // There are multiple close buttons: header X + inner Close button
       const closeButtons = screen.getAllByRole('button', {name: /close/i});
@@ -419,7 +419,7 @@ describe('InviteUserPage', () => {
       mockInviteUserRenderProps.isInviteGenerated = true;
       mockInviteUserRenderProps.isEmailSent = true;
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       await userEvent.click(screen.getByRole('button', {name: /invite another user/i}));
 
@@ -434,7 +434,7 @@ describe('InviteUserPage', () => {
       mockInviteUserRenderProps.isInviteGenerated = true;
       mockInviteUserRenderProps.inviteLink = 'https://example.com/invite/abc123';
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       expect(screen.getByText('Invite Link Generated!')).toBeInTheDocument();
       expect(screen.getByText('https://example.com/invite/abc123')).toBeInTheDocument();
@@ -444,7 +444,7 @@ describe('InviteUserPage', () => {
       mockInviteUserRenderProps.isInviteGenerated = true;
       mockInviteUserRenderProps.inviteLink = 'https://example.com/invite/abc123';
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       const copyButton = screen.getByRole('button', {name: /copy invite link/i});
       await userEvent.click(copyButton);
@@ -456,7 +456,7 @@ describe('InviteUserPage', () => {
       mockInviteUserRenderProps.isInviteGenerated = true;
       mockInviteUserRenderProps.inviteLink = 'https://example.com/invite/abc123';
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       await waitFor(() => {
         expect(mockLoggerInfo).toHaveBeenCalledWith('Invite link generated');
@@ -467,7 +467,7 @@ describe('InviteUserPage', () => {
       mockInviteUserRenderProps.isInviteGenerated = true;
       mockInviteUserRenderProps.inviteLink = 'https://example.com/invite/abc123';
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       // There are multiple close buttons: header X + inner Close button
       const closeButtons = screen.getAllByRole('button', {name: /close/i});
@@ -479,7 +479,7 @@ describe('InviteUserPage', () => {
       mockInviteUserRenderProps.isInviteGenerated = true;
       mockInviteUserRenderProps.inviteLink = 'https://example.com/invite/abc123';
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       await userEvent.click(screen.getByRole('button', {name: /invite another user/i}));
 
@@ -490,7 +490,7 @@ describe('InviteUserPage', () => {
       mockInviteUserRenderProps.isInviteGenerated = true;
       mockInviteUserRenderProps.inviteLink = 'https://example.com/invite/abc123';
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       // The inner close button (not the header X)
       const closeButtons = screen.getAllByRole('button', {name: /close/i});
@@ -508,7 +508,7 @@ describe('InviteUserPage', () => {
       mockInviteUserRenderProps.error = new Error('Something went wrong');
       mockInviteUserRenderProps.components = [];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       expect(screen.getByText('Error')).toBeInTheDocument();
       expect(screen.getByText('Something went wrong')).toBeInTheDocument();
@@ -518,7 +518,7 @@ describe('InviteUserPage', () => {
       mockInviteUserRenderProps.error = new Error('Something went wrong');
       mockInviteUserRenderProps.components = [];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       // The inner close button inside the error content
       const closeButtons = screen.getAllByRole('button', {name: /close/i});
@@ -532,7 +532,7 @@ describe('InviteUserPage', () => {
         block([textInput('name', 'Name'), submitAction('Next')]),
       ];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       expect(screen.getByText('Error')).toBeInTheDocument();
       expect(screen.getByText('Validation failed')).toBeInTheDocument();
@@ -546,7 +546,7 @@ describe('InviteUserPage', () => {
         block([textInput('name', 'Name'), submitAction('Next')]),
       ];
 
-      const {rerender} = render(<InviteUserPage />);
+      const {rerender} = render(<UserInvitePage />);
 
       // Trigger onFlowChange with a failure reason
       if (capturedOnFlowChange) {
@@ -554,7 +554,7 @@ describe('InviteUserPage', () => {
       }
 
       // Re-render to reflect state change
-      rerender(<InviteUserPage />);
+      rerender(<UserInvitePage />);
 
       await waitFor(() => {
         expect(screen.getByText('User already exists')).toBeInTheDocument();
@@ -564,7 +564,7 @@ describe('InviteUserPage', () => {
     it('should call onError callback when simulateInviteUserError is true', async () => {
       simulateInviteUserError = true;
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       await waitFor(() => {
         expect(mockLoggerError).toHaveBeenCalledWith('User onboarding error', {error: mockInviteUserError});
@@ -581,7 +581,7 @@ describe('InviteUserPage', () => {
         block([textInput('type', 'Type'), submitAction('Next')]),
       ];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       await waitFor(() => {
         // Heading appears in form (h1) and breadcrumb (h5)
@@ -599,7 +599,7 @@ describe('InviteUserPage', () => {
         block([textInput('name', 'Name'), submitAction('Next')]),
       ];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       // LinearProgress is rendered at the top
       const progressBars = screen.getAllByRole('progressbar');
@@ -616,7 +616,7 @@ describe('InviteUserPage', () => {
         block([textInput('firstName', 'First Name'), submitAction('Next')]),
       ];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       const input = screen.getByLabelText(/first name/i);
       await userEvent.type(input, 'John');
@@ -630,7 +630,7 @@ describe('InviteUserPage', () => {
         block([emailInput('email', 'Email', {required: true}), submitAction('Next')]),
       ];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       const input = screen.getByLabelText(/email/i);
       await userEvent.type(input, 'test@example.com');
@@ -644,7 +644,7 @@ describe('InviteUserPage', () => {
         block([ouSelect('ou', 'Organization Unit'), submitAction('Next')]),
       ];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       const selectButton = screen.getByText('Select OU');
       await userEvent.click(selectButton);
@@ -659,7 +659,7 @@ describe('InviteUserPage', () => {
         block([textInput('name', 'Name', {required: true}), submitAction('Submit', {variant: 'PRIMARY'})]),
       ];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       const submitButton = screen.getByRole('button', {name: /submit/i});
       expect(submitButton).toBeDisabled();
@@ -672,7 +672,7 @@ describe('InviteUserPage', () => {
         block([textInput('name', 'Name'), submitAction('Submit', {variant: 'PRIMARY'})]),
       ];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       // Wait for react-hook-form to complete initial validation cycle
       await waitFor(() => {
@@ -689,7 +689,7 @@ describe('InviteUserPage', () => {
         block([textInput('name', 'Name'), submitAction('Submit')]),
       ];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       // The submit button should contain a CircularProgress
       const submitButton = screen.getByRole('button', {name: ''});
@@ -708,7 +708,7 @@ describe('InviteUserPage', () => {
         block([textInput('name', 'Name'), submitAction('Submit', {variant: 'PRIMARY'})]),
       ];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       const submitButton = screen.getByRole('button', {name: /submit/i});
       await userEvent.click(submitButton);
@@ -726,7 +726,7 @@ describe('InviteUserPage', () => {
         block([ouSelect('ou', 'Organization Unit'), submitAction('Next')]),
       ];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       // The OU step detection triggers hasOuStep=true, changing totalSteps to 4
       // With 1 breadcrumb and 4 total steps, progress = 25%
@@ -742,7 +742,7 @@ describe('InviteUserPage', () => {
         block([textInput('type', 'Type'), submitAction('Next')]),
       ];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       // With 1 breadcrumb and 3 total steps, progress = 33.33...%
       await waitFor(() => {
@@ -762,7 +762,7 @@ describe('InviteUserPage', () => {
         block([ouSelect('orgUnit', 'Unit'), submitAction('Next')]),
       ];
 
-      render(<InviteUserPage />);
+      render(<UserInvitePage />);
 
       await waitFor(() => {
         const progressBar = screen.getAllByRole('progressbar')[0];
@@ -781,13 +781,13 @@ describe('InviteUserPage', () => {
         block([textInput('name', 'Name'), submitAction('Next')]),
       ];
 
-      const {rerender} = render(<InviteUserPage />);
+      const {rerender} = render(<UserInvitePage />);
 
       // First set an error
       if (capturedOnFlowChange) {
         capturedOnFlowChange({failureReason: 'Some error'});
       }
-      rerender(<InviteUserPage />);
+      rerender(<UserInvitePage />);
 
       await waitFor(() => {
         expect(screen.getByText('Some error')).toBeInTheDocument();
@@ -797,7 +797,7 @@ describe('InviteUserPage', () => {
       if (capturedOnFlowChange) {
         capturedOnFlowChange({failureReason: null});
       }
-      rerender(<InviteUserPage />);
+      rerender(<UserInvitePage />);
 
       await waitFor(() => {
         expect(screen.queryByText('Some error')).not.toBeInTheDocument();

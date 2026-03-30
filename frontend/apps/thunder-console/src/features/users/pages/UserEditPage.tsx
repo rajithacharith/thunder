@@ -25,7 +25,6 @@ import {
   Button,
   CircularProgress,
   Alert,
-  Avatar,
   Chip,
   Tabs,
   Tab,
@@ -37,13 +36,14 @@ import {useState, useEffect, useMemo, type SyntheticEvent, type ReactNode, type 
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
 import {Link, useNavigate, useParams} from 'react-router';
-import UserDeleteDialog from './UserDeleteDialog';
 import CopyableId from '../../../components/CopyableId';
 import useGetUser from '../api/useGetUser';
 import useGetUserSchema from '../api/useGetUserSchema';
 import useGetUserSchemas from '../api/useGetUserSchemas';
 import useUpdateUser from '../api/useUpdateUser';
+import UserDeleteDialog from '../components/UserDeleteDialog';
 import renderSchemaField from '../utils/renderSchemaField';
+import ResourceAvatar from '@/components/ResourceAvatar';
 import SettingsCard from '@/components/SettingsCard';
 import getInitials from '@/utils/getInitials';
 
@@ -69,10 +69,10 @@ function TabPanel({children = null, value, index, ...other}: TabPanelProps): JSX
   );
 }
 
-export default function ViewUserPage() {
+export default function UserEditPage() {
   const navigate = useNavigate();
   const {t} = useTranslation();
-  const logger = useLogger('ViewUserPage');
+  const logger = useLogger('UserEditPage');
   const {resolveDisplayName} = useResolveDisplayName({handlers: {t}});
   const {userId} = useParams<{userId: string}>();
 
@@ -219,6 +219,8 @@ export default function ViewUserPage() {
     );
   }
 
+  const picture = user.attributes?.picture as string | undefined;
+
   return (
     <PageContent>
       {/* Header */}
@@ -227,14 +229,7 @@ export default function ViewUserPage() {
           {t('users:manageUser.back', 'Back to Users')}
         </PageTitle.BackButton>
         <PageTitle.Avatar>
-          <Avatar
-            sx={{
-              bgcolor: 'primary.main',
-              fontSize: '1rem',
-            }}
-          >
-            {getInitials(displayName)}
-          </Avatar>
+          <ResourceAvatar value={picture} fallback={getInitials(displayName)} size={55} />
         </PageTitle.Avatar>
         <PageTitle.Header>
           <Typography variant="h3">{displayName}</Typography>
