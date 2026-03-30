@@ -91,7 +91,7 @@ const CATEGORIES: CategoryDef[] = [
     ],
     flows: [
       {
-        signinTitle: 'Sign in to Thunder',
+        signinTitle: 'Sign in to ACME',
         socialProvider: 'facebook',
         verifyType: 'otp',
         verifyTitle: 'Verify your mobile',
@@ -99,7 +99,7 @@ const CATEGORIES: CategoryDef[] = [
         caption: 'Social Login with Facebook',
       },
       {
-        signinTitle: 'Sign in to Thunder',
+        signinTitle: 'Sign in to ACME',
         socialProvider: 'github',
         verifyType: 'otp',
         verifyTitle: 'Verify your mobile',
@@ -107,7 +107,7 @@ const CATEGORIES: CategoryDef[] = [
         caption: 'Social Login with GitHub',
       },
       {
-        signinTitle: 'Sign in to Thunder',
+        signinTitle: 'Sign in to ACME',
         socialProvider: 'google',
         verifyType: 'otp',
         verifyTitle: 'Verify your mobile',
@@ -126,19 +126,19 @@ const CATEGORIES: CategoryDef[] = [
     ],
     flows: [
       {
-        signinTitle: 'Sign in to Thunder',
+        signinTitle: 'Sign in to ACME',
         verifyType: 'passkey',
         verifyTitle: 'Authenticate with Passkey',
         caption: 'Passkey Authentication',
       },
       {
-        signinTitle: 'Sign in to Thunder',
+        signinTitle: 'Sign in to ACME',
         verifyType: 'biometric',
         verifyTitle: 'Biometric Verification',
         caption: 'Biometric Login',
       },
       {
-        signinTitle: 'Sign in to Thunder',
+        signinTitle: 'Sign in to ACME',
         verifyType: 'magic-link',
         verifyTitle: 'Check your email',
         caption: 'Magic Link Login',
@@ -156,7 +156,7 @@ const CATEGORIES: CategoryDef[] = [
     ],
     flows: [
       {
-        signinTitle: 'Sign in to Thunder',
+        signinTitle: 'Sign in to ACME',
         showPassword: true,
         verifyType: 'otp',
         verifyTitle: 'Verify your mobile',
@@ -164,14 +164,14 @@ const CATEGORIES: CategoryDef[] = [
         caption: 'MFA with SMS OTP',
       },
       {
-        signinTitle: 'Sign in to Thunder',
+        signinTitle: 'Sign in to ACME',
         showPassword: true,
         verifyType: 'security-key',
         verifyTitle: 'Security Key Verification',
         caption: 'MFA with Security Key',
       },
       {
-        signinTitle: 'Sign in to Thunder',
+        signinTitle: 'Sign in to ACME',
         showPassword: true,
         verifyType: 'email-otp',
         verifyTitle: 'Verify your email',
@@ -179,7 +179,7 @@ const CATEGORIES: CategoryDef[] = [
         caption: 'MFA with Email OTP',
       },
       {
-        signinTitle: 'Sign in to Thunder',
+        signinTitle: 'Sign in to ACME',
         showPassword: true,
         verifyType: 'totp',
         verifyTitle: 'Enter authenticator code',

@@ -18,7 +18,7 @@
 
 import {waitFor, renderHook} from '@thunder/test-utils';
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import type {UserListResponse} from '../../../users/types/users';
+import type {UserListResponse} from '../../../users/models/users';
 import useGetOrganizationUnitUsers from '../useGetOrganizationUnitUsers';
 
 // Mock useAsgardeo

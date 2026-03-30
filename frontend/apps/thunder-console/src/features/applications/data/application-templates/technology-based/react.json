@@ -21,16 +21,25 @@
   },
   "fieldConstraints": {
     "oauth2": {
-      "publicClient": {"readOnly": true, "value": true},
-      "pkceRequired": {"readOnly": true, "value": true},
-      "tokenEndpointAuthMethod": {"readOnly": true, "value": "none"}
+      "publicClient": {
+        "readOnly": true,
+        "value": true
+      },
+      "pkceRequired": {
+        "readOnly": true,
+        "value": true
+      },
+      "tokenEndpointAuthMethod": {
+        "readOnly": true,
+        "value": "none"
+      }
     }
   },
   "integrationGuides": {
     "INBUILT": {
       "llm_prompt": {
         "id": "llm-prompt",
-        "title": "Integrate with an LLM Prompt",
+        "title": "Integrate with a Coding Agent Prompt",
         "description": "Use AI to generate integration code for your React application",
         "type": "llm",
         "icon": "sparkles",
@@ -100,7 +109,7 @@
     "EMBEDDED": {
       "llm_prompt": {
         "id": "llm-prompt",
-        "title": "Integrate with an LLM Prompt",
+        "title": "Integrate with a Coding Agent Prompt",
         "description": "Use AI to generate integration code for your React application",
         "type": "llm",
         "icon": "sparkles",

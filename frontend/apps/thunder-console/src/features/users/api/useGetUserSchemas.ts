@@ -20,7 +20,7 @@ import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
 import UserQueryKeys from '../constants/user-query-keys';
-import type {SchemaListParams, UserSchemaListResponse} from '../types/users';
+import type {SchemaListParams, UserSchemaListResponse} from '../models/users';
 
 /**
  * Custom hook to fetch a list of user schemas.

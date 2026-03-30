@@ -19,7 +19,7 @@
 import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';
-import type {UserListResponse, UserListParams} from '../../users/types/users';
+import type {UserListResponse, UserListParams} from '../../users/models/users';
 import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
 
 /**

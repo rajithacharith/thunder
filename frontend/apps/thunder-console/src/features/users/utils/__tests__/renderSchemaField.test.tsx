@@ -19,7 +19,7 @@
 import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import {useForm} from 'react-hook-form';
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import type {PropertyDefinition} from '../../types/users';
+import type {PropertyDefinition} from '../../models/users';
 import renderSchemaField from '../renderSchemaField';
 
 type TestFormData = Record<string, unknown>;

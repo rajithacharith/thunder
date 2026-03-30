@@ -17,8 +17,8 @@
  */
 
 import {useLogger} from '@thunder/logger/react';
-import {Box, Avatar, IconButton, Typography, Tooltip, DataGrid, ListingTable, useTheme} from '@wso2/oxygen-ui';
-import {Users, Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {IconButton, Typography, Tooltip, DataGrid, ListingTable, useTheme, Box} from '@wso2/oxygen-ui';
+import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
@@ -74,59 +74,32 @@ export default function GroupsList(): JSX.Element {
   const columns: DataGrid.GridColDef<GroupBasic>[] = useMemo(
     () => [
       {
-        field: 'avatar',
-        headerName: '',
-        width: 70,
-        sortable: false,
-        filterable: false,
-        renderCell: (): JSX.Element => (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-            }}
-          >
-            <Avatar
-              sx={{
-                p: 0.5,
-                backgroundColor: theme.vars?.palette.grey[500],
-                width: 30,
-                height: 30,
-                fontSize: '0.875rem',
-                ...theme.applyStyles('dark', {
-                  backgroundColor: theme.vars?.palette.grey[900],
-                }),
-              }}
-            >
-              <Users size={14} />
-            </Avatar>
-          </Box>
-        ),
-      },
-      {
         field: 'name',
-        headerName: t('groups:listing.columns.name'),
+        headerName: t('groups:listing.columns.name', 'Name'),
         flex: 1,
         minWidth: 200,
       },
       {
         field: 'description',
-        headerName: t('groups:listing.columns.description'),
+        headerName: t('groups:listing.columns.description', 'Description'),
         flex: 1.5,
         minWidth: 250,
         valueGetter: (_value, row): string => row.description ?? '-',
       },
       {
         field: 'ouId',
-        headerName: t('groups:listing.columns.organizationUnit'),
+        headerName: t('groups:listing.columns.organizationUnit', 'Organization Unit ID'),
         flex: 1,
         minWidth: 200,
+        renderCell: (params: DataGrid.GridRenderCellParams<GroupBasic>) => (
+          <Typography variant="body2" sx={{fontFamily: 'monospace', fontSize: '0.875rem'}}>
+            {params.row.ouId ?? '-'}
+          </Typography>
+        ),
       },
       {
         field: 'actions',
-        headerName: t('groups:listing.columns.actions'),
+        headerName: t('groups:listing.columns.actions', 'Actions'),
         width: 150,
         align: 'center',
         headerAlign: 'center',

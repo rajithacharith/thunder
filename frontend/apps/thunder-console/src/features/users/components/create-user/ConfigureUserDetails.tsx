@@ -22,7 +22,7 @@ import {useEffect} from 'react';
 import type {JSX} from 'react';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
-import type {ApiUserSchema} from '../../types/users';
+import type {ApiUserSchema} from '../../models/users';
 import renderSchemaField from '../../utils/renderSchemaField';
 
 /**

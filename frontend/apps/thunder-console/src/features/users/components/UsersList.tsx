@@ -18,7 +18,6 @@
 
 import {useLogger} from '@thunder/logger/react';
 import {
-  Avatar,
   IconButton,
   Tooltip,
   Typography,
@@ -32,18 +31,21 @@ import {
   DialogActions,
   Button,
   DataGrid,
+  useTheme,
 } from '@wso2/oxygen-ui';
-import {Eye, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useMemo, useState, useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import useDeleteUser from '../api/useDeleteUser';
 import useGetUsers from '../api/useGetUsers';
-import type {UserWithDetails} from '../types/users';
+import type {UserWithDetails} from '../models/users';
+import ResourceAvatar from '@/components/ResourceAvatar';
 import getInitials from '@/utils/getInitials';
 
 export default function UsersList() {
+  const theme = useTheme();
   const navigate = useNavigate();
   const {t} = useTranslation();
   const logger = useLogger('UsersList');
@@ -76,7 +78,7 @@ export default function UsersList() {
     setDeleteDialogOpen(true);
   }, []);
 
-  const handleViewClick = useCallback(
+  const handleEditClick = useCallback(
     (userId: string): void => {
       (async (): Promise<void> => {
         await navigate(`/users/${userId}`);
@@ -109,27 +111,31 @@ export default function UsersList() {
   const columns: DataGrid.GridColDef<UserWithDetails>[] = useMemo(
     () => [
       {
-        field: 'display',
-        headerName: t('users:displayName', 'Display Name'),
+        field: 'name',
+        headerName: t('users:listing.columns.name', 'Name'),
         flex: 1,
         minWidth: 200,
         renderCell: (params: DataGrid.GridRenderCellParams<UserWithDetails>) => {
           const displayVal = params.row.display ?? params.row.id;
+          const rawPicture = params.row.attributes?.picture;
+          const picture = typeof rawPicture === 'string' ? rawPicture : undefined;
 
           return (
             <ListingTable.CellIcon
               sx={{width: '100%'}}
               icon={
-                <Avatar
+                <ResourceAvatar
+                  value={picture}
+                  size={30}
+                  fallback={getInitials(displayVal)}
                   sx={{
-                    width: 30,
-                    height: 30,
-                    bgcolor: 'primary.main',
-                    fontSize: '0.875rem',
+                    backgroundColor: theme.vars?.palette.grey[500],
+                    fontSize: '1rem',
+                    ...theme.applyStyles('dark', {
+                      backgroundColor: theme.vars?.palette.grey[900],
+                    }),
                   }}
-                >
-                  {getInitials(displayVal)}
-                </Avatar>
+                />
               }
               primary={displayVal}
             />
@@ -138,7 +144,7 @@ export default function UsersList() {
       },
       {
         field: 'id',
-        headerName: t('users:userId', 'User ID'),
+        headerName: t('users:listing.columns.userId', 'User ID'),
         flex: 1,
         minWidth: 200,
         renderCell: (params: DataGrid.GridRenderCellParams<UserWithDetails>) => (
@@ -149,7 +155,7 @@ export default function UsersList() {
       },
       {
         field: 'actions',
-        headerName: t('users:actions'),
+        headerName: t('users:listing.columns.actions', 'Actions'),
         width: 150,
         align: 'center',
         headerAlign: 'center',
@@ -158,15 +164,15 @@ export default function UsersList() {
         hideable: false,
         renderCell: (params: DataGrid.GridRenderCellParams<UserWithDetails>) => (
           <ListingTable.RowActions visibility="hover">
-            <Tooltip title={t('common:actions.view')}>
+            <Tooltip title={t('common:actions.edit')}>
               <IconButton
                 size="small"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleViewClick(params.row.id);
+                  handleEditClick(params.row.id);
                 }}
               >
-                <Eye size={16} />
+                <Pencil size={16} />
               </IconButton>
             </Tooltip>
             <Tooltip title={t('common:actions.delete')}>
@@ -185,7 +191,7 @@ export default function UsersList() {
         ),
       },
     ],
-    [handleDeleteClick, handleViewClick, t],
+    [handleDeleteClick, handleEditClick, t, theme],
   );
 
   return (
@@ -197,7 +203,7 @@ export default function UsersList() {
             columns={columns}
             getRowId={(row) => (row as UserWithDetails).id}
             onRowClick={(params) => {
-              handleViewClick((params.row as UserWithDetails).id);
+              handleEditClick((params.row as UserWithDetails).id);
             }}
             initialState={{
               pagination: {

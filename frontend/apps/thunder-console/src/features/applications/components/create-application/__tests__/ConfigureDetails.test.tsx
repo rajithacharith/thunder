@@ -499,7 +499,7 @@ describe('ConfigureDetails', () => {
     renderWithContext(
       {
         technology: TechnologyApplicationTemplate.NEXTJS,
-        platform: PlatformApplicationTemplate.SERVER,
+        platform: PlatformApplicationTemplate.FULL_STACK,
         onHostingUrlChange: vi.fn(),
         onCallbackUrlChange: vi.fn(),
         onReadyChange: vi.fn(),

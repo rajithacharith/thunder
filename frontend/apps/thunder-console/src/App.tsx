@@ -51,10 +51,10 @@ import CreateUserTypePage from './features/user-types/pages/CreateUserTypePage';
 import UserTypesListPage from './features/user-types/pages/UserTypesListPage';
 import ViewUserTypePage from './features/user-types/pages/ViewUserTypePage';
 import UserCreateProvider from './features/users/contexts/UserCreate/UserCreateProvider';
-import CreateUserPage from './features/users/pages/CreateUserPage';
-import InviteUserPage from './features/users/pages/InviteUserPage';
+import UserCreatePage from './features/users/pages/UserCreatePage';
+import UserEditPage from './features/users/pages/UserEditPage';
+import UserInvitePage from './features/users/pages/UserInvitePage';
 import UsersListPage from './features/users/pages/UsersListPage';
-import ViewUserPage from './features/users/pages/ViewUserPage';
 import DashboardLayout from './layouts/DashboardLayout';
 import FullScreenLayout from './layouts/FullScreenLayout';
 
@@ -74,7 +74,7 @@ export default function App(): JSX.Element {
             <Route index element={<HomePage />} />
             <Route path="home" element={<HomePage />} />
             <Route path="users" element={<UsersListPage />} />
-            <Route path="users/:userId" element={<ViewUserPage />} />
+            <Route path="users/:userId" element={<UserEditPage />} />
             <Route path="user-types" element={<UserTypesListPage />} />
             <Route path="user-types/:id" element={<ViewUserTypePage />} />
             <Route path="integrations" element={<IntegrationsPage />} />
@@ -123,7 +123,7 @@ export default function App(): JSX.Element {
               </ProtectedRoute>
             }
           >
-            <Route index element={<CreateUserPage />} />
+            <Route index element={<UserCreatePage />} />
           </Route>
           <Route
             path="/users/invite"
@@ -133,7 +133,7 @@ export default function App(): JSX.Element {
               </ProtectedRoute>
             }
           >
-            <Route index element={<InviteUserPage />} />
+            <Route index element={<UserInvitePage />} />
           </Route>
           <Route
             path="/user-types/create"

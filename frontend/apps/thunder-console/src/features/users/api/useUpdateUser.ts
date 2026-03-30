@@ -21,7 +21,7 @@ import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/rea
 import {useConfig, useToast} from '@thunder/shared-contexts';
 import {useTranslation} from 'react-i18next';
 import UserQueryKeys from '../constants/user-query-keys';
-import type {ApiUser, UpdateUserRequest} from '../types/users';
+import type {ApiUser, UpdateUserRequest} from '../models/users';
 
 /**
  * Variables for the update user mutation.

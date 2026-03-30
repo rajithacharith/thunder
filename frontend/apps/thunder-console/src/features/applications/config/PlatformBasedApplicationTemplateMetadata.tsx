@@ -19,8 +19,8 @@
 import {Monitor, Server, Smartphone, Code} from '@wso2/oxygen-ui-icons-react';
 import BackendPlatformTemplate from '../data/application-templates/platform-based/backend.json';
 import BrowserPlatformTemplate from '../data/application-templates/platform-based/browser.json';
+import FullStackPlatformTemplate from '../data/application-templates/platform-based/full-stack.json';
 import MobilePlatformTemplate from '../data/application-templates/platform-based/mobile.json';
-import ServerPlatformTemplate from '../data/application-templates/platform-based/server.json';
 import type {ApplicationTemplate, ApplicationTemplateMetadata} from '../models/application-templates';
 import {PlatformApplicationTemplate} from '../models/application-templates';
 
@@ -33,11 +33,11 @@ const PlatformBasedApplicationTemplateMetadata: ApplicationTemplateMetadata<Plat
     template: BrowserPlatformTemplate as ApplicationTemplate,
   },
   {
-    value: PlatformApplicationTemplate.SERVER,
+    value: PlatformApplicationTemplate.FULL_STACK,
     icon: <Server size={32} />,
-    titleKey: 'applications:onboarding.configure.stack.platform.server.title',
-    descriptionKey: 'applications:onboarding.configure.stack.platform.server.description',
-    template: ServerPlatformTemplate as ApplicationTemplate,
+    titleKey: 'applications:onboarding.configure.stack.platform.full_stack.title',
+    descriptionKey: 'applications:onboarding.configure.stack.platform.full_stack.description',
+    template: FullStackPlatformTemplate as ApplicationTemplate,
   },
   {
     value: PlatformApplicationTemplate.MOBILE,

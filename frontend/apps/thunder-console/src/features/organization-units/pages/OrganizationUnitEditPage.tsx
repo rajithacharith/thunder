@@ -32,7 +32,7 @@ import {
   PageContent,
   PageTitle,
 } from '@wso2/oxygen-ui';
-import {ArrowLeft, Edit, Building} from '@wso2/oxygen-ui-icons-react';
+import {ArrowLeft, Edit} from '@wso2/oxygen-ui-icons-react';
 import {useState, useCallback, useMemo} from 'react';
 import type {ReactNode, SyntheticEvent, JSX} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -214,8 +214,9 @@ export default function OrganizationUnitEditPage(): JSX.Element {
         </PageTitle.BackButton>
         <PageTitle.Avatar sx={{overflow: 'visible'}}>
           <ResourceAvatar
+            editable
             value={editedOU.logoUrl ?? organizationUnit.logoUrl ?? undefined}
-            fallbackIcon={<Building size={32} />}
+            fallback="emoji:🏛️"
             editAriaLabel={t('organizationUnits:edit.page.logoUpdate.label')}
             onSelect={(newLogoUrl: string) => setEditedOU((prev) => ({...prev, logoUrl: newLogoUrl}))}
           />

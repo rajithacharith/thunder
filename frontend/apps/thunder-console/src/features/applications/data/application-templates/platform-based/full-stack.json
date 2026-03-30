@@ -1,9 +1,9 @@
 {
   "id": "server",
-  "displayName": "Server",
-  "description": "Server-side application with confidential client",
+  "displayName": "Full-Stack",
+  "description": "Apps with both server and client code",
   "defaults": {
-    "name": "Server Application",
+    "name": "Full-Stack Application",
     "inboundAuthConfig": [
       {
         "type": "oauth2",

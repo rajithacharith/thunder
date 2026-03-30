@@ -44,10 +44,10 @@ import ConfigureUserType from '../components/create-user/ConfigureUserType';
 import useUserCreate from '../contexts/UserCreate/useUserCreate';
 import {UserCreateFlowStep} from '../models/user-create-flow';
 
-export default function CreateUserPage(): JSX.Element {
+export default function UserCreatePage(): JSX.Element {
   const {t} = useTranslation();
   const navigate = useNavigate();
-  const logger = useLogger('CreateUserPage');
+  const logger = useLogger('UserCreatePage');
   const createUserMutation = useCreateUser();
 
   const {

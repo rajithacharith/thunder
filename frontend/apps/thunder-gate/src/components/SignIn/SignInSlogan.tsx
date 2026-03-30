@@ -29,7 +29,7 @@ const items: {
   {
     icon: <Cloud className="text-muted-foreground" />,
     title: 'Flexible Identity Platform',
-    description: 'Centralizes identity management for both on-prem and cloud environments—no protocol lock-in.',
+    description: 'Centralizes identity management for both on-prem and cloud environments with no protocol lock-in.',
   },
   {
     icon: <ShieldCheck className="text-muted-foreground" />,

@@ -20,7 +20,7 @@ import type {PropsWithChildren} from 'react';
 import {useState, useMemo, useCallback} from 'react';
 import UserCreateContext, {type UserCreateContextType} from './UserCreateContext';
 import {UserCreateFlowStep} from '../../models/user-create-flow';
-import type {SchemaInterface} from '../../types/users';
+import type {SchemaInterface} from '../../models/users';
 
 /**
  * Initial state values for user creation.
