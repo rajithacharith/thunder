@@ -19,7 +19,7 @@
                         "height": "60",
                         "id": "image",
                         "resourceType": "ELEMENT",
-                        "src": "{{ meta(application.logo_url) }}",
+                        "src": "{{ meta(application.logoUrl) }}",
                         "type": "IMAGE",
                         "width": ""
                     },
@@ -118,7 +118,7 @@
                         "height": "60",
                         "id": "image",
                         "resourceType": "ELEMENT",
-                        "src": "{{ meta(application.logo_url) }}",
+                        "src": "{{ meta(application.logoUrl) }}",
                         "type": "IMAGE",
                         "width": ""
                     },
@@ -211,7 +211,7 @@
                         "height": "60",
                         "id": "image",
                         "resourceType": "ELEMENT",
-                        "src": "{{ meta(application.logo_url) }}",
+                        "src": "{{ meta(application.logoUrl) }}",
                         "type": "IMAGE",
                         "width": ""
                     },
