@@ -716,9 +716,9 @@ function Build-Sample-App {
     Push-Location $VANILLA_SAMPLE_APP_DIR
     try {
         Write-Host "Installing React Vanilla sample dependencies..."
-        & npm install
+        & npm ci
         if ($LASTEXITCODE -ne 0) {
-            throw "npm install failed with exit code $LASTEXITCODE"
+            throw "npm ci failed with exit code $LASTEXITCODE"
         }
 
         Write-Host "Building React Vanilla sample app (TypeScript + Vite)..."
@@ -758,9 +758,9 @@ function Build-Sample-App {
         Push-Location $serverDir
         try {
             Write-Host " - Installing server dependencies..."
-            & npm install
+            & npm ci
             if ($LASTEXITCODE -ne 0) {
-                throw "npm install (server) failed with exit code $LASTEXITCODE"
+                throw "npm ci (server) failed with exit code $LASTEXITCODE"
             }
         }
         finally {

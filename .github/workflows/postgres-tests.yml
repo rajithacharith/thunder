@@ -29,10 +29,17 @@ env:
   GOFLAGS: "-mod=readonly"
 
 jobs:
+  dependency-guard:
+    name: 🛡️ Dependency Guard
+    uses: ./.github/workflows/dependency-guard.yml
+    with:
+      detection-mode: commit
+
   build-if-needed:
     name: 🔨 Build Distribution (if needed)
+    needs: dependency-guard
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.distribution-url == '' || github.event.inputs.distribution-url == null }}
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event.inputs.distribution-url == '' || github.event.inputs.distribution-url == null) }}
     outputs:
       distribution-path: ${{ steps.build.outputs.distribution-path }}
     steps:
@@ -118,8 +125,8 @@ jobs:
   test-postgres:
     name: 🧪 PostgreSQL Integration Tests
     runs-on: ubuntu-latest
-    needs: [build-if-needed, download-distribution]
-    if: always() && (needs.build-if-needed.result == 'success' || needs.download-distribution.result == 'success')
+    needs: [dependency-guard, build-if-needed, download-distribution]
+    if: always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (needs.build-if-needed.result == 'success' || needs.download-distribution.result == 'success')
     services:
       postgres:
         image: postgres:latest

@@ -1,0 +1,115 @@
+# Reusable supply chain protection workflow.
+# Blocks package installs when dependency files are modified.
+#
+# Controlled via repository variables:
+#   vars.JS_DEPENDENCY_GUARD  - set to 'false' to disable JS guard
+#   vars.GO_DEPENDENCY_GUARD  - set to 'false' to disable Go guard
+# Both guards are enabled by default when the variable is unset.
+
+name: 🛡️ Dependency Guard
+
+on:
+  workflow_call:
+    inputs:
+      # Detection mode:
+      #   "pr"     - use dorny/paths-filter to compare PR head vs base (for pull_request / merge_group triggers)
+      #   "commit" - use git diff HEAD~1 to compare against the parent commit (for schedule / workflow_dispatch triggers)
+      detection-mode:
+        required: true
+        type: string
+
+jobs:
+  js:
+    name: 🛡️ JS Dependency Guard
+    if: ${{ vars.JS_DEPENDENCY_GUARD != 'false' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: ${{ inputs.detection-mode == 'commit' && 2 || 0 }}
+
+      - name: 🔍 Detect JS dependency file changes (PR)
+        if: inputs.detection-mode == 'pr'
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
+        id: pr-deps
+        with:
+          base: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
+          ref: ${{ github.event_name == 'merge_group' && github.sha || github.event.pull_request.head.sha }}
+          filters: |
+            changed:
+              - '**/package.json'
+              - '**/pnpm-lock.yaml'
+              - '**/package-lock.json'
+              - '**/.npmrc'
+              - '**/pnpm-workspace.yaml'
+
+      - name: 🔍 Detect JS dependency file changes (commit)
+        if: inputs.detection-mode == 'commit'
+        id: commit-deps
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD -- '**/package.json' '**/pnpm-lock.yaml' '**/package-lock.json' '**/.npmrc' '**/pnpm-workspace.yaml' || true)
+          if [ -n "$CHANGED" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Changed files:"
+            echo "$CHANGED"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🚨 Block JS dependency installs
+        if: steps.pr-deps.outputs.changed == 'true' || steps.commit-deps.outputs.changed == 'true'
+        run: |
+          echo "::error::🚨 SUPPLY CHAIN PROTECTION: JS dependency files were modified."
+          echo "::error::Changes detected in package.json / pnpm-lock.yaml / package-lock.json / .npmrc / pnpm-workspace.yaml."
+          echo "::error::To prevent supply chain attacks, this workflow will not run JS package installs."
+          echo ""
+          echo "If these changes are intentional and trusted, a maintainer must review and approve"
+          echo "the dependency changes before re-running this workflow."
+          exit 1
+
+  go:
+    name: 🛡️ Go Dependency Guard
+    if: ${{ vars.GO_DEPENDENCY_GUARD != 'false' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: ${{ inputs.detection-mode == 'commit' && 2 || 0 }}
+
+      - name: 🔍 Detect Go dependency file changes (PR)
+        if: inputs.detection-mode == 'pr'
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
+        id: pr-deps
+        with:
+          base: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
+          ref: ${{ github.event_name == 'merge_group' && github.sha || github.event.pull_request.head.sha }}
+          filters: |
+            changed:
+              - '**/go.mod'
+              - '**/go.sum'
+
+      - name: 🔍 Detect Go dependency file changes (commit)
+        if: inputs.detection-mode == 'commit'
+        id: commit-deps
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD -- '**/go.mod' '**/go.sum' || true)
+          if [ -n "$CHANGED" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Changed files:"
+            echo "$CHANGED"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🚨 Block Go dependency installs
+        if: steps.pr-deps.outputs.changed == 'true' || steps.commit-deps.outputs.changed == 'true'
+        run: |
+          echo "::error::🚨 SUPPLY CHAIN PROTECTION: Go dependency files were modified."
+          echo "::error::Changes detected in go.mod / go.sum."
+          echo "::error::To prevent supply chain attacks, this workflow will not run Go module downloads."
+          echo ""
+          echo "If these changes are intentional and trusted, a maintainer must review and approve"
+          echo "the dependency changes before re-running this workflow."
+          exit 1

@@ -19,6 +19,13 @@ env:
   GOFLAGS: "-mod=readonly"
 
 jobs:
+  dependency-guard:
+    name: 🛡️ Dependency Guard
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
+    uses: ./.github/workflows/dependency-guard.yml
+    with:
+      detection-mode: pr
+
   security-audit:
     name: 🔒 Security Audit
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
@@ -159,7 +166,8 @@ jobs:
 
   lint:
     name: 🧹 Lint Code
-    if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
+    needs: dependency-guard
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -216,7 +224,8 @@ jobs:
 
   build:
     name: 🛠️ Build Product
-    if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group'}}
+    needs: dependency-guard
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -306,7 +315,8 @@ jobs:
 
   test-frontend:
     name: 🧪 Frontend Tests (shard ${{ matrix.shard }}/4)
-    if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group'}}
+    needs: dependency-guard
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -424,7 +434,8 @@ jobs:
 
   build_samples:
     name: 🛠️ Build Sample Apps
-    if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group'}}
+    needs: dependency-guard
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
