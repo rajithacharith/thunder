@@ -85,6 +85,7 @@ func (cm *CacheManager) Init() {
 	if getCacheType(cacheConfig) == cacheTypeRedis {
 		cm.redisClient = redis.NewClient(&redis.Options{
 			Addr:     cacheConfig.Redis.Address,
+			Username: cacheConfig.Redis.Username,
 			Password: cacheConfig.Redis.Password,
 			DB:       cacheConfig.Redis.DB,
 		})

@@ -261,6 +261,7 @@ configuration:
     cleanupInterval: 300
     redis:
       address: "localhost:6379"
+      username: ""
       password: ""
       db: 0
       keyPrefix: "thunder"

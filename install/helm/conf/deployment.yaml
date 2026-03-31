@@ -107,6 +107,7 @@ cache:
   {{- if eq .Values.configuration.cache.type "redis" }}
   redis:
     address: {{ .Values.configuration.cache.redis.address | quote }}
+    username: {{ .Values.configuration.cache.redis.username | quote }}
     password: {{ "{{.CACHE_REDIS_PASSWORD}}" | quote }}
     db: {{ .Values.configuration.cache.redis.db }}
     key_prefix: {{ .Values.configuration.cache.redis.keyPrefix | quote }}

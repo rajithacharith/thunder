@@ -107,6 +107,7 @@ type CacheConfig struct {
 // RedisConfig holds the Redis connection configuration.
 type RedisConfig struct {
 	Address   string `yaml:"address" json:"address"`
+	Username  string `yaml:"username" json:"username"`
 	Password  string `yaml:"password" json:"password"`
 	DB        int    `yaml:"db" json:"db"`
 	KeyPrefix string `yaml:"key_prefix" json:"key_prefix"`
