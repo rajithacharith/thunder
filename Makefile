@@ -129,7 +129,7 @@ lint_backend: check_i18n golangci-lint
 	cd backend && $(GOLANGCI_LINT) run ./...
 
 lint_frontend:
-	cd frontend && pnpm install && pnpm build && pnpm lint
+	cd frontend && pnpm install --frozen-lockfile && pnpm build && pnpm lint
 
 generate_i18n: install-i18n-extractor
 	@echo "Extracting i18n messages from backend source code..."
