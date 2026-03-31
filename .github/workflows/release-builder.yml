@@ -36,8 +36,16 @@ env:
   RELEASE_MAJOR_VERSION: 0
 
 jobs:
+  dependency-guard:
+    name: 🛡️ Dependency Guard
+    uses: ./.github/workflows/dependency-guard.yml
+    with:
+      detection-mode: commit
+
   build-thunder:
     name: ⚡ Build Thunder
+    needs: dependency-guard
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') }}
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.get_version.outputs.version }}
