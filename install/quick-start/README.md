@@ -189,6 +189,37 @@ Then replace `<your-host>` with `thunder.local` and `<your-port>` with `8090` (o
 
 ---
 
+## Running with Redis Cache
+
+By default, Thunder cache is disabled. To use Redis, start a Redis instance and configure Thunder to point to it.
+
+### Step 1: Start Redis
+
+From the repository root, use the Redis Docker Compose file provided under `install/local-development/redis`:
+
+```bash
+docker compose -f ./install/local-development/redis/docker-compose.yml up -d
+```
+
+This starts Redis with a persistent volume.
+
+### Step 2: Configure Thunder to Use Redis
+
+Add the following cache section to your `deployment.yaml` override file (see [Custom Host and Port](#custom-host-and-port) for how to create and mount it), then start Thunder with `docker compose up`.
+
+```yaml
+cache:
+  type: "redis"
+  redis:
+    address: "<your-redis-host>:<your-redis-port>"
+    username: "<your-redis-username>"
+    password: "<your-redis-password>"
+    db: <your-redis-db>
+    key_prefix: "thunder:"
+```
+
+---
+
 ## Troubleshooting
 
 **`yaml: unmarshal errors` on startup**
