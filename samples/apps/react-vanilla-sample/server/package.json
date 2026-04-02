@@ -20,6 +20,9 @@
   "dependencies": {
     "express": "4.22.1"
   },
+  "overrides": {
+    "path-to-regexp": "0.1.13"
+  },
   "devDependencies": {
     "pkg": "5.8.1"
   }
