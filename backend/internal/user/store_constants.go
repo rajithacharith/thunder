@@ -93,6 +93,25 @@ var (
 			`WHERE GMR.MEMBER_ID = $1 AND GMR.MEMBER_TYPE = 'user' AND GMR.DEPLOYMENT_ID = $4 ` +
 			`ORDER BY G.NAME LIMIT $2 OFFSET $3`,
 	}
+	// QueryGetTransitiveGroupsForUser retrieves all groups a user belongs to, including groups
+	// inherited through nested group membership, using a recursive CTE.
+	QueryGetTransitiveGroupsForUser = model.DBQuery{
+		ID: "ASQ-USER_MGT-23",
+		Query: `WITH RECURSIVE transitive_groups AS (
+			SELECT GMR.GROUP_ID
+			FROM GROUP_MEMBER_REFERENCE GMR
+			WHERE GMR.MEMBER_ID = $1 AND GMR.MEMBER_TYPE = 'user' AND GMR.DEPLOYMENT_ID = $2
+			UNION
+			SELECT GMR.GROUP_ID
+			FROM GROUP_MEMBER_REFERENCE GMR
+			INNER JOIN transitive_groups tg ON GMR.MEMBER_ID = tg.GROUP_ID
+			WHERE GMR.MEMBER_TYPE = 'group' AND GMR.DEPLOYMENT_ID = $2
+		)
+		SELECT G.ID, G.OU_ID, G.NAME
+		FROM transitive_groups tg
+		INNER JOIN "GROUP" G ON tg.GROUP_ID = G.ID AND G.DEPLOYMENT_ID = $2
+		ORDER BY G.NAME`,
+	}
 	// QueryBatchInsertIndexedAttributes is the base query for batch inserting indexed attributes.
 	// The complete query is built dynamically by appending VALUES placeholders based on the number of attributes.
 	QueryBatchInsertIndexedAttributes = model.DBQuery{

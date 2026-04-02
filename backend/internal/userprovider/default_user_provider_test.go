@@ -143,6 +143,35 @@ func (suite *DefaultUserProviderTestSuite) TestGetUserGroups() {
 	suite.Equal(ErrorCodeUserNotFound, err.Code)
 }
 
+func (suite *DefaultUserProviderTestSuite) TestGetTransitiveUserGroups() {
+	userID := testUserID
+
+	storeGroups := []user.UserGroup{
+		{ID: "g1", Name: "Group 1", OUID: "ou1"},
+		{ID: "g2", Name: "Group 2", OUID: "ou1"},
+	}
+
+	// Test Success
+	suite.mockService.On("GetTransitiveUserGroups", mock.Anything, userID).
+		Return(storeGroups, (*serviceerror.ServiceError)(nil)).Once()
+
+	groups, err := suite.provider.GetTransitiveUserGroups(userID)
+	suite.Nil(err)
+	suite.Len(groups, 2)
+	suite.Equal("g1", groups[0].ID)
+	suite.Equal("Group 1", groups[0].Name)
+	suite.Equal("g2", groups[1].ID)
+
+	// Test User Not Found
+	suite.mockService.On("GetTransitiveUserGroups", mock.Anything, userID).
+		Return(nil, &user.ErrorUserNotFound).Once()
+
+	groups, err = suite.provider.GetTransitiveUserGroups(userID)
+	suite.Nil(groups)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeUserNotFound, err.Code)
+}
+
 func (suite *DefaultUserProviderTestSuite) TestUpdateUser() {
 	userID := testUserID
 	updateUser := &User{

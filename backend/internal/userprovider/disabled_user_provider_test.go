@@ -56,6 +56,12 @@ func (suite *DisabledUserProviderTestSuite) TestGetUserGroups() {
 	suite.Equal(errNotImplemented, err)
 }
 
+func (suite *DisabledUserProviderTestSuite) TestGetTransitiveUserGroups() {
+	groups, err := suite.provider.GetTransitiveUserGroups("user-id")
+	suite.Nil(groups)
+	suite.Equal(errNotImplemented, err)
+}
+
 func (suite *DisabledUserProviderTestSuite) TestUpdateUser() {
 	user, err := suite.provider.UpdateUser("user-id", &User{})
 	suite.Nil(user)

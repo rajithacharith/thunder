@@ -321,6 +321,76 @@ func (_c *UserServiceInterfaceMock_DeleteUser_Call) RunAndReturn(run func(ctx co
 	return _c
 }
 
+// GetTransitiveUserGroups provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) GetTransitiveUserGroups(ctx context.Context, userID string) ([]user.UserGroup, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTransitiveUserGroups")
+	}
+
+	var r0 []user.UserGroup
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]user.UserGroup, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, userID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []user.UserGroup); ok {
+		r0 = returnFunc(ctx, userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]user.UserGroup)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, userID)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// UserServiceInterfaceMock_GetTransitiveUserGroups_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTransitiveUserGroups'
+type UserServiceInterfaceMock_GetTransitiveUserGroups_Call struct {
+	*mock.Call
+}
+
+// GetTransitiveUserGroups is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID string
+func (_e *UserServiceInterfaceMock_Expecter) GetTransitiveUserGroups(ctx interface{}, userID interface{}) *UserServiceInterfaceMock_GetTransitiveUserGroups_Call {
+	return &UserServiceInterfaceMock_GetTransitiveUserGroups_Call{Call: _e.mock.On("GetTransitiveUserGroups", ctx, userID)}
+}
+
+func (_c *UserServiceInterfaceMock_GetTransitiveUserGroups_Call) Run(run func(ctx context.Context, userID string)) *UserServiceInterfaceMock_GetTransitiveUserGroups_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_GetTransitiveUserGroups_Call) Return(userGroups []user.UserGroup, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_GetTransitiveUserGroups_Call {
+	_c.Call.Return(userGroups, serviceError)
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_GetTransitiveUserGroups_Call) RunAndReturn(run func(ctx context.Context, userID string) ([]user.UserGroup, *serviceerror.ServiceError)) *UserServiceInterfaceMock_GetTransitiveUserGroups_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetUser provides a mock function for the type UserServiceInterfaceMock
 func (_mock *UserServiceInterfaceMock) GetUser(ctx context.Context, userID string, includeDisplay bool) (*user.User, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, userID, includeDisplay)

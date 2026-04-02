@@ -43,6 +43,7 @@ type userStoreInterface interface {
 	GetUser(ctx context.Context, id string) (User, error)
 	GetGroupCountForUser(ctx context.Context, userID string) (int, error)
 	GetUserGroups(ctx context.Context, userID string, limit, offset int) ([]UserGroup, error)
+	GetTransitiveUserGroups(ctx context.Context, userID string) ([]UserGroup, error)
 	UpdateUser(ctx context.Context, user *User) error
 	UpdateUserCredentials(ctx context.Context, userID string, credentials Credentials) error
 	DeleteUser(ctx context.Context, id string) error
@@ -670,6 +671,32 @@ func (us *userStore) GetUserGroups(ctx context.Context, userID string, limit, of
 	results, err := dbClient.QueryContext(ctx, QueryGetGroupsForUser, userID, limit, offset, us.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get groups for user: %w", err)
+	}
+
+	groups := make([]UserGroup, 0, len(results))
+	for _, row := range results {
+		group, err := buildGroupFromResultRow(row)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build group from result row: %w", err)
+		}
+
+		groups = append(groups, group)
+	}
+
+	return groups, nil
+}
+
+// GetTransitiveUserGroups retrieves all groups a user belongs to, including groups inherited
+// through nested group membership.
+func (us *userStore) GetTransitiveUserGroups(ctx context.Context, userID string) ([]UserGroup, error) {
+	dbClient, err := us.dbProvider.GetUserDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	results, err := dbClient.QueryContext(ctx, QueryGetTransitiveGroupsForUser, userID, us.deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get transitive groups for user: %w", err)
 	}
 
 	groups := make([]UserGroup, 0, len(results))

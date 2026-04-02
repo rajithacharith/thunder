@@ -388,17 +388,24 @@ func (a *authAssertExecutor) resolveUserAttributes(ctx *core.NodeContext, reques
 // appendComputedAttributes appends computed/derived attributes (groups, roles, userType, OU details) to the claims.
 func (a *authAssertExecutor) appendComputedAttributes(
 	ctx *core.NodeContext, requestedAttributes []string, attributes map[string]interface{}) error {
-	// Handle groups if configured in user attributes
-	if slices.Contains(requestedAttributes, oauth2const.UserAttributeGroups) && ctx.AuthenticatedUser.UserID != "" {
-		if err := a.appendGroupsToClaims(ctx.AuthenticatedUser.UserID, attributes); err != nil {
+	groupsRequested := slices.Contains(requestedAttributes, oauth2const.UserAttributeGroups)
+	rolesRequested := slices.Contains(requestedAttributes, oauth2const.UserAttributeRoles)
+
+	// Fetch all user groups once if either groups or roles are requested.
+	if (groupsRequested || rolesRequested) && ctx.AuthenticatedUser.UserID != "" {
+		allGroups, err := a.fetchAllUserGroups(ctx.AuthenticatedUser.UserID)
+		if err != nil {
 			return err
 		}
-	}
 
-	// Handle roles if configured in user attributes
-	if slices.Contains(requestedAttributes, oauth2const.UserAttributeRoles) && ctx.AuthenticatedUser.UserID != "" {
-		if err := a.appendRolesToClaims(ctx, attributes); err != nil {
-			return err
+		if groupsRequested {
+			a.appendGroupsToClaims(allGroups, attributes)
+		}
+
+		if rolesRequested {
+			if err := a.appendRolesToClaims(ctx, allGroups, attributes); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -513,40 +520,44 @@ func (a *authAssertExecutor) appendOUDetailsToClaims(
 	return nil
 }
 
-// appendGroupsToClaims appends user groups to the JWT claims.
-func (a *authAssertExecutor) appendGroupsToClaims(
-	userID string, jwtClaims map[string]interface{}) error {
-	logger := a.logger.With(log.String("userID", userID))
-
-	groups, err := a.userProvider.GetUserGroups(userID, oauth2const.DefaultGroupListLimit, 0)
-	if err != nil {
-		logger.Error("Failed to fetch user groups",
-			log.String("userID", userID), log.Any("error", err))
-		return errors.New("something went wrong while fetching user groups: " + err.Description)
+// fetchAllUserGroups retrieves all groups a user belongs to, including groups inherited through
+// nested group membership.
+func (a *authAssertExecutor) fetchAllUserGroups(userID string) ([]userprovider.UserGroup, error) {
+	if a.userProvider == nil || userID == "" {
+		return nil, nil
 	}
 
-	userGroups := make([]string, 0, len(groups.Groups))
-	for _, group := range groups.Groups {
+	groups, err := a.userProvider.GetTransitiveUserGroups(userID)
+	if err != nil {
+		a.logger.Error("Failed to fetch transitive user groups",
+			log.String("userID", userID), log.Any("error", err))
+		return nil, errors.New("something went wrong while fetching user groups: " + err.Description)
+	}
+
+	return groups, nil
+}
+
+// appendGroupsToClaims appends pre-fetched user groups to the JWT claims.
+func (a *authAssertExecutor) appendGroupsToClaims(
+	groups []userprovider.UserGroup, jwtClaims map[string]interface{}) {
+	userGroups := make([]string, 0, len(groups))
+	for _, group := range groups {
 		userGroups = append(userGroups, group.Name)
 	}
 
 	if len(userGroups) > 0 {
 		jwtClaims[oauth2const.UserAttributeGroups] = userGroups
 	}
-
-	return nil
 }
 
-// appendRolesToClaims appends user roles to the JWT claims.
+// appendRolesToClaims appends user roles to the JWT claims using pre-fetched groups for role resolution.
 func (a *authAssertExecutor) appendRolesToClaims(
-	ctx *core.NodeContext, jwtClaims map[string]interface{}) error {
+	ctx *core.NodeContext, groups []userprovider.UserGroup, jwtClaims map[string]interface{}) error {
 	logger := a.logger.With(log.String("userID", ctx.AuthenticatedUser.UserID))
 
-	// Fetch user's group IDs for role resolution (roles can be inherited through groups)
-	groupIDs, err := a.getGroupIDsForRoleResolution(ctx.AuthenticatedUser.UserID)
-	if err != nil {
-		logger.Error("Failed to fetch group IDs for role resolution", log.Any("error", err))
-		return errors.New("something went wrong while fetching groups for role resolution")
+	groupIDs := make([]string, 0, len(groups))
+	for _, g := range groups {
+		groupIDs = append(groupIDs, g.ID)
 	}
 
 	roles, svcErr := a.roleService.GetUserRoles(ctx.Context, ctx.AuthenticatedUser.UserID, groupIDs)
@@ -562,28 +573,6 @@ func (a *authAssertExecutor) appendRolesToClaims(
 	}
 
 	return nil
-}
-
-// getGroupIDsForRoleResolution fetches group IDs for a user to resolve group-inherited roles.
-func (a *authAssertExecutor) getGroupIDsForRoleResolution(userID string) ([]string, error) {
-	if a.userProvider == nil || userID == "" {
-		return []string{}, nil
-	}
-
-	groupsResp, err := a.userProvider.GetUserGroups(userID, oauth2const.DefaultGroupListLimit, 0)
-	if err != nil {
-		return nil, errors.New("failed to fetch user groups: " + err.Description)
-	}
-
-	if groupsResp == nil {
-		return []string{}, nil
-	}
-
-	groupIDs := make([]string, 0, len(groupsResp.Groups))
-	for _, g := range groupsResp.Groups {
-		groupIDs = append(groupIDs, g.ID)
-	}
-	return groupIDs, nil
 }
 
 // buildGetAttributesMetadata constructs the metadata for fetching user attributes.

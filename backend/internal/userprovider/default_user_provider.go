@@ -107,6 +107,29 @@ func (p *defaultUserProvider) GetUserGroups(userID string, limit, offset int) (*
 	}, nil
 }
 
+// GetTransitiveUserGroups retrieves all groups a user belongs to, including nested group membership.
+func (p *defaultUserProvider) GetTransitiveUserGroups(userID string) ([]UserGroup, *UserProviderError) {
+	groups, err := p.userSvc.GetTransitiveUserGroups(
+		security.WithRuntimeContext(context.Background()), userID)
+	if err != nil {
+		if err.Code == user.ErrorUserNotFound.Code || err.Code == user.ErrorMissingUserID.Code {
+			return nil, NewUserProviderError(ErrorCodeUserNotFound, err.Error, err.ErrorDescription)
+		}
+		return nil, NewUserProviderError(ErrorCodeSystemError, err.Error, err.ErrorDescription)
+	}
+
+	result := make([]UserGroup, len(groups))
+	for i, g := range groups {
+		result[i] = UserGroup{
+			ID:   g.ID,
+			Name: g.Name,
+			OUID: g.OUID,
+		}
+	}
+
+	return result, nil
+}
+
 // UpdateUser updates a user based on the given user ID and user update configuration.
 func (p *defaultUserProvider) UpdateUser(userID string, userUpdateConfig *User) (*User, *UserProviderError) {
 	if userUpdateConfig == nil {

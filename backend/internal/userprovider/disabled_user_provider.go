@@ -51,6 +51,11 @@ func (p *disabledUserProvider) GetUserGroups(userID string, limit, offset int) (
 	return nil, errNotImplemented
 }
 
+// GetTransitiveUserGroups returns a not implemented error.
+func (p *disabledUserProvider) GetTransitiveUserGroups(userID string) ([]UserGroup, *UserProviderError) {
+	return nil, errNotImplemented
+}
+
 // UpdateUser returns a not implemented error.
 func (p *disabledUserProvider) UpdateUser(userID string, user *User) (*User, *UserProviderError) {
 	return nil, errNotImplemented

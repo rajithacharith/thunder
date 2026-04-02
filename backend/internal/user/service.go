@@ -53,6 +53,7 @@ type UserServiceInterface interface {
 	GetUser(ctx context.Context, userID string, includeDisplay bool) (*User, *serviceerror.ServiceError)
 	GetUserGroups(ctx context.Context, userID string,
 		limit, offset int) (*UserGroupListResponse, *serviceerror.ServiceError)
+	GetTransitiveUserGroups(ctx context.Context, userID string) ([]UserGroup, *serviceerror.ServiceError)
 	UpdateUser(ctx context.Context, userID string, user *User) (*User, *serviceerror.ServiceError)
 	UpdateUserAttributes(ctx context.Context, userID string,
 		attributes json.RawMessage) (*User, *serviceerror.ServiceError)
@@ -565,6 +566,26 @@ func (as *userService) GetUserGroups(ctx context.Context, userID string, limit, 
 	}
 
 	return response, nil
+}
+
+// GetTransitiveUserGroups retrieves all groups a user belongs to, including groups inherited
+// through nested group membership. This is used internally for auth flows (token claims,
+// authorization checks) and does not support pagination.
+func (as *userService) GetTransitiveUserGroups(ctx context.Context, userID string) (
+	[]UserGroup, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if userID == "" {
+		return nil, &ErrorMissingUserID
+	}
+
+	groups, err := as.userStore.GetTransitiveUserGroups(ctx, userID)
+	if err != nil {
+		logger.Error("Failed to get transitive user groups", log.String("userID", userID), log.Error(err))
+		return nil, &ErrorInternalServerError
+	}
+
+	return groups, nil
 }
 
 // UpdateUser update the user for given user id.
