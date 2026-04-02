@@ -470,6 +470,7 @@ jobs:
   test-integration:
     name: 🧪 Integration Tests (${{ matrix.database }})
     needs: build
+    if: ${{ always() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -559,6 +560,7 @@ jobs:
   test-e2e:
     name: 🎭 Playwright E2E Tests
     needs: [build, build_samples]
+    if: ${{ always() && needs.build.result == 'success' && needs.build_samples.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
