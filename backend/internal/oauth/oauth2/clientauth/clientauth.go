@@ -156,7 +156,7 @@ func authenticate(
 			nil, nil, authnprovidermgr.AuthUser{})
 		if authnErr != nil {
 			logger.Debug("Client secret authentication failed",
-				log.String("clientID", log.MaskString(clientID)))
+				log.MaskedString("clientID", clientID))
 			return nil, errInvalidClientCredentials
 		}
 	}

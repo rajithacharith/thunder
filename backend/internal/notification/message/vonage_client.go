@@ -98,7 +98,7 @@ func (v *VonageClient) Send(channel common.ChannelType, data common.Notification
 // sendSMS sends an SMS via the Vonage API.
 func (v *VonageClient) sendSMS(data common.NotificationData) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, vonageLoggerComponentName))
-	logger.Debug("Sending SMS via Vonage", log.String("to", log.MaskString(data.Recipient)))
+	logger.Debug("Sending SMS via Vonage", log.MaskedString("to", data.Recipient))
 
 	formattedPhoneNumber := v.formatPhoneNumber(data.Recipient)
 

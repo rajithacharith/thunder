@@ -351,10 +351,10 @@ func (s *smsOTPAuthExecutor) satisfyPrerequisites(ctx *core.NodeContext,
 	//  prompt the user to enter their mobile number.
 	//  We should verify whether this is the expected behavior.
 
-	logger.Debug("Retrieving mobile number from user ID", log.String("userID", userID))
+	logger.Debug("Retrieving mobile number from user ID", log.MaskedString(log.LoggerKeyUserID, userID))
 	mobileNumber, err := s.getUserMobileNumber(userID, ctx, execResp)
 	if err != nil {
-		logger.Error("Failed to retrieve mobile number", log.String("userID", userID), log.Error(err))
+		logger.Error("Failed to retrieve mobile number", log.MaskedString(log.LoggerKeyUserID, userID), log.Error(err))
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Failed to retrieve mobile number"
 		return
@@ -363,7 +363,7 @@ func (s *smsOTPAuthExecutor) satisfyPrerequisites(ctx *core.NodeContext,
 		return
 	}
 
-	logger.Debug("Mobile number retrieved successfully", log.String("userID", userID))
+	logger.Debug("Mobile number retrieved successfully", log.MaskedString(log.LoggerKeyUserID, userID))
 	ctx.RuntimeData[s.resolvePhoneInput(ctx, mobileNumberInput).Identifier] = mobileNumber
 
 	// Reset the executor response status and failure reason.
@@ -379,7 +379,7 @@ func (s *smsOTPAuthExecutor) resolveUserID(ctx *core.NodeContext) (bool, error) 
 	// First, check if the user ID is already available in the context.
 	userID := s.GetUserIDFromContext(ctx)
 	if userID != "" {
-		logger.Debug("User ID found in context data", log.String("userID", userID))
+		logger.Debug("User ID found in context data", log.MaskedString(log.LoggerKeyUserID, userID))
 		if ctx.RuntimeData == nil {
 			ctx.RuntimeData = make(map[string]string)
 		}
@@ -438,7 +438,7 @@ func (s *smsOTPAuthExecutor) resolveUserIDFromAttribute(ctx *core.NodeContext,
 		}
 		if userID != nil && *userID != "" {
 			logger.Debug("User ID resolved from attribute", log.String("attributeName", attributeName),
-				log.String("userID", *userID))
+				log.MaskedString(log.LoggerKeyUserID, *userID))
 			if ctx.RuntimeData == nil {
 				ctx.RuntimeData = make(map[string]string)
 			}
@@ -454,7 +454,7 @@ func (s *smsOTPAuthExecutor) resolveUserIDFromAttribute(ctx *core.NodeContext,
 func (s *smsOTPAuthExecutor) getUserMobileNumber(userID string, ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (string, error) {
 	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID),
-		log.String("userID", userID))
+		log.MaskedString(log.LoggerKeyUserID, userID))
 	logger.Debug("Retrieving user mobile number")
 
 	// Try to get mobile number from context
@@ -555,7 +555,7 @@ func (s *smsOTPAuthExecutor) validateAttempts(ctx *core.NodeContext, execResp *c
 	}
 
 	if attemptCount >= s.getOTPMaxAttempts() {
-		logger.Debug("Maximum OTP attempts reached", log.String("userID", userID),
+		logger.Debug("Maximum OTP attempts reached", log.MaskedString(log.LoggerKeyUserID, userID),
 			log.Int("attemptCount", attemptCount))
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = fmt.Sprintf("maximum OTP attempts reached: %d", attemptCount)
@@ -587,11 +587,11 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 
 	userID := ctx.RuntimeData[userAttributeUserID]
 
-	logger.Debug("Validating OTP", log.String("userID", userID))
+	logger.Debug("Validating OTP", log.MaskedString(log.LoggerKeyUserID, userID))
 
 	providedOTP := ctx.UserInputs[userInputOTP]
 	if providedOTP == "" {
-		logger.Debug("Provided OTP is empty", log.String("userID", userID))
+		logger.Debug("Provided OTP is empty", log.MaskedString(log.LoggerKeyUserID, userID))
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = failureReasonInvalidOTP
 		return nil, nil
@@ -599,7 +599,7 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 
 	sessionToken := ctx.RuntimeData["otpSessionToken"]
 	if sessionToken == "" {
-		logger.Error("No session token found for OTP validation", log.String("userID", userID))
+		logger.Error("No session token found for OTP validation", log.MaskedString(log.LoggerKeyUserID, userID))
 		return nil, fmt.Errorf("no session token found for OTP validation")
 	}
 
@@ -610,12 +610,13 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 		svcErr := s.otpService.VerifyOTP(ctx.Context, sessionToken, providedOTP)
 		if svcErr != nil {
 			if svcErr.Code == otp.ErrorIncorrectOTP.Code {
-				logger.Debug("OTP verification failed", log.String("userID", userID))
+				logger.Debug("OTP verification failed", log.MaskedString(log.LoggerKeyUserID, userID))
 				execResp.Status = common.ExecFailure
 				execResp.FailureReason = failureReasonInvalidOTP
 				return nil, nil
 			}
-			logger.Error("Failed to verify OTP", log.String("userID", userID), log.Any("serviceError", svcErr))
+			logger.Error("Failed to verify OTP",
+				log.MaskedString(log.LoggerKeyUserID, userID), log.Any("serviceError", svcErr))
 			return nil, fmt.Errorf("failed to verify OTP: %s", svcErr.ErrorDescription.DefaultValue)
 		}
 
@@ -639,18 +640,19 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 		ctx.Context, nil, creds, nil, nil, ctx.AuthUser)
 	if svcErr != nil {
 		if svcErr.Code == authnprovidermgr.ErrorAuthenticationFailed.Code {
-			logger.Debug("OTP verification failed", log.String("userID", userID))
+			logger.Debug("OTP verification failed", log.MaskedString(log.LoggerKeyUserID, userID))
 			execResp.Status = common.ExecFailure
 			execResp.FailureReason = failureReasonInvalidOTP
 			return nil, nil
 		}
-		logger.Error("Failed to verify OTP", log.String("userID", userID), log.Any("serviceError", svcErr))
+		logger.Error("Failed to verify OTP",
+			log.MaskedString(log.LoggerKeyUserID, userID), log.Any("serviceError", svcErr))
 		return nil, fmt.Errorf("failed to verify OTP: %s", svcErr.ErrorDescription.DefaultValue)
 	}
 	execResp.AuthUser = newAuthUser
 
 	execResp.RuntimeData["otpSessionToken"] = ""
-	logger.Debug("OTP validated successfully", log.String("userID", userID))
+	logger.Debug("OTP validated successfully", log.MaskedString(log.LoggerKeyUserID, userID))
 
 	// Check if user is already authenticated
 	if ctx.AuthenticatedUser.IsAuthenticated && ctx.AuthenticatedUser.UserID != "" {
@@ -664,7 +666,7 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	// User not available in context, try to retrieve the user and get the attributes
 	userID = authnResult.UserID
 
-	logger.Debug("Fetching user details from user store", log.String("userID", userID))
+	logger.Debug("Fetching user details from user store", log.MaskedString(log.LoggerKeyUserID, userID))
 
 	attrs := map[string]interface{}{}
 	user, err := s.entityProvider.GetEntity(userID)

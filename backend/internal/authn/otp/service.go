@@ -69,7 +69,7 @@ func newOTPAuthnService(otpSvc notification.OTPServiceInterface,
 func (s *otpAuthnService) SendOTP(ctx context.Context, senderID string, channel notifcommon.ChannelType,
 	recipient string) (string, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Sending OTP for authentication", log.String("recipient", log.MaskString(recipient)),
+	logger.Debug("Sending OTP for authentication", log.MaskedString("recipient", recipient),
 		log.String("channel", string(channel)))
 
 	if svcErr := s.validateOTPSendRequest(senderID, channel, recipient); svcErr != nil {
@@ -210,7 +210,7 @@ func (s *otpAuthnService) handleVerifyOTPResponse(result *notifcommon.VerifyOTPR
 // resolveUser retrieves a user by their recipient identifier (e.g., mobile number).
 func (s *otpAuthnService) resolveUser(recipient string, channel notifcommon.ChannelType,
 	logger *log.Logger) (*entityprovider.Entity, *serviceerror.ServiceError) {
-	logger.Debug("Resolving user from recipient", log.String("recipient", log.MaskString(recipient)),
+	logger.Debug("Resolving user from recipient", log.MaskedString("recipient", recipient),
 		log.String("channel", string(channel)))
 
 	// Build filter based on channel type
@@ -227,7 +227,7 @@ func (s *otpAuthnService) resolveUser(recipient string, channel notifcommon.Chan
 		return nil, s.handleUserProviderError(upErr, logger)
 	}
 	if userID == nil || *userID == "" {
-		logger.Debug("No user found for recipient", log.String("recipient", log.MaskString(recipient)))
+		logger.Debug("No user found for recipient", log.MaskedString("recipient", recipient))
 		return nil, &common.ErrorUserNotFound
 	}
 
@@ -236,7 +236,7 @@ func (s *otpAuthnService) resolveUser(recipient string, channel notifcommon.Chan
 		return nil, s.handleUserProviderError(upErr, logger)
 	}
 
-	logger.Debug("User resolved from recipient", log.String("userId", user.ID))
+	logger.Debug("User resolved from recipient", log.MaskedString(log.LoggerKeyUserID, user.ID))
 	return user, nil
 }
 

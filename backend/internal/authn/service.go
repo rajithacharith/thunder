@@ -370,7 +370,7 @@ func (as *authenticationService) FinishIDPAuthentication(ctx context.Context, re
 func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *common.AuthenticationResponse,
 	user *entityprovider.Entity, authenticator string, existingAssertion string,
 	logger *log.Logger) *serviceerror.ServiceError {
-	logger.Debug("Generating auth assertion", log.String("userId", user.ID))
+	logger.Debug("Generating auth assertion", log.MaskedString(log.LoggerKeyUserID, user.ID))
 
 	authenticatorRef := &common.AuthenticatorReference{
 		Authenticator: authenticator,
@@ -389,8 +389,8 @@ func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *co
 
 		// Validate that the assertion subject matches the current user
 		if assertionSub != user.ID {
-			logger.Debug("Assertion subject mismatch", log.String("assertionSub", assertionSub),
-				log.String("userId", user.ID))
+			logger.Debug("Assertion subject mismatch", log.MaskedString("assertionSub", assertionSub),
+				log.MaskedString(log.LoggerKeyUserID, user.ID))
 			return &common.ErrorAssertionSubjectMismatch
 		}
 

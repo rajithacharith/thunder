@@ -994,7 +994,7 @@ func (gs *groupService) validateEntityMembers(
 	}
 
 	if len(outOfScopeIDs) > 0 {
-		logger.Debug("User IDs outside accessible OUs", log.Any("outOfScopeIDs", outOfScopeIDs))
+		logger.Debug("User IDs outside accessible OUs", log.MaskedStrings("outOfScopeIDs", outOfScopeIDs))
 		return &serviceerror.ErrorUnauthorized
 	}
 

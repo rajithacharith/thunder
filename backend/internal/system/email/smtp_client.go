@@ -100,7 +100,7 @@ func (c *smtpClient) Send(emailData EmailData) error {
 	}
 
 	logger.Debug("Sending email via SMTP",
-		log.String("from", log.MaskString(c.config.from)),
+		log.MaskedString("from", c.config.from),
 		log.Int("recipientCount", len(emailData.To)))
 
 	serverAddress := fmt.Sprintf("%s:%d", c.config.host, c.config.port)

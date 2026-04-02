@@ -153,8 +153,8 @@ func convertFields(fields []Field) []any {
 	return attrs
 }
 
-// MaskString masks characters in a string except for the first and last characters.
-func MaskString(s string) string {
+// maskString masks characters in a string except for the first and last characters.
+func maskString(s string) string {
 	if len(s) <= 3 {
 		return strings.Repeat("*", len(s))
 	}

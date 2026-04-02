@@ -122,7 +122,7 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 		return execResp, nil
 	}
 	if userID != nil && *userID != "" {
-		logger.Debug("User already exists", log.String("userID", *userID))
+		logger.Debug("User already exists", log.MaskedString(log.LoggerKeyUserID, *userID))
 
 		// If it's a registration flow, check if proceeding with an existing user
 		if ctx.FlowType == common.FlowTypeRegistration {
@@ -189,12 +189,12 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 		return execResp, nil
 	}
 
-	logger.Debug("User created successfully", log.String("userID", createdEntity.ID))
+	logger.Debug("User created successfully", log.MaskedString(log.LoggerKeyUserID, createdEntity.ID))
 
 	// Assign user to groups and roles
 	if err := p.assignGroupsAndRoles(ctx, createdEntity.ID); err != nil {
 		logger.Error("Failed to assign groups and roles to provisioned user",
-			log.String("userID", createdEntity.ID),
+			log.MaskedString(log.LoggerKeyUserID, createdEntity.ID),
 			log.Error(err))
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Failed to assign groups and roles"
@@ -370,7 +370,7 @@ func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
 		return nil, fmt.Errorf("failed to create user in the store: %s", svcErr.Message)
 	}
 	if retEntity != nil && retEntity.ID != "" {
-		logger.Debug("User account created successfully", log.String("userID", retEntity.ID))
+		logger.Debug("User account created successfully", log.MaskedString(log.LoggerKeyUserID, retEntity.ID))
 	}
 
 	return retEntity, nil
@@ -420,7 +420,7 @@ func (p *provisioningExecutor) assignGroupsAndRoles(
 	}
 
 	logger.Debug("Assigning group and role to provisioned user",
-		log.String("userID", userID),
+		log.MaskedString(log.LoggerKeyUserID, userID),
 		log.String("groupID", groupID),
 		log.String("roleID", roleID))
 
@@ -447,7 +447,7 @@ func (p *provisioningExecutor) assignGroupsAndRoles(
 		return roleErr
 	}
 
-	logger.Debug("Successfully assigned group and role", log.String("userID", userID))
+	logger.Debug("Successfully assigned group and role", log.MaskedString(log.LoggerKeyUserID, userID))
 	return nil
 }
 
@@ -497,7 +497,7 @@ func (p *provisioningExecutor) assignToGroup(
 	logger *log.Logger,
 ) error {
 	logger.Debug("Adding user to group",
-		log.String("userID", userID),
+		log.MaskedString(log.LoggerKeyUserID, userID),
 		log.String("groupID", groupID))
 
 	members := []group.Member{
@@ -511,13 +511,13 @@ func (p *provisioningExecutor) assignToGroup(
 	if svcErr != nil {
 		logger.Error("Failed to add user to group",
 			log.String("groupID", groupID),
-			log.String("userID", userID),
+			log.MaskedString(log.LoggerKeyUserID, userID),
 			log.String("error", svcErr.Error.DefaultValue))
 		return fmt.Errorf("failed to add user to group: %s", svcErr.Error.DefaultValue)
 	}
 
 	logger.Debug("Successfully added user to group",
-		log.String("userID", userID),
+		log.MaskedString(log.LoggerKeyUserID, userID),
 		log.String("groupID", groupID))
 	return nil
 }
@@ -526,7 +526,7 @@ func (p *provisioningExecutor) assignToGroup(
 func (p *provisioningExecutor) assignToRole(
 	ctx context.Context, userID string, roleID string, logger *log.Logger) error {
 	logger.Debug("Adding user to role",
-		log.String("userID", userID),
+		log.MaskedString(log.LoggerKeyUserID, userID),
 		log.String("roleID", roleID))
 
 	// AddAssignments appends to existing assignments (doesn't replace)
@@ -541,13 +541,13 @@ func (p *provisioningExecutor) assignToRole(
 	if svcErr != nil {
 		logger.Error("Failed to add role assignment",
 			log.String("roleID", roleID),
-			log.String("userID", userID),
+			log.MaskedString(log.LoggerKeyUserID, userID),
 			log.String("error", svcErr.Error.DefaultValue))
 		return fmt.Errorf("failed to assign role: %s", svcErr.Error.DefaultValue)
 	}
 
 	logger.Debug("Successfully assigned role",
-		log.String("userID", userID),
+		log.MaskedString(log.LoggerKeyUserID, userID),
 		log.String("roleID", roleID))
 	return nil
 }

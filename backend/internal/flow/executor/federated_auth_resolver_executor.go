@@ -166,7 +166,7 @@ func (f *federatedAuthResolverExecutor) Execute(ctx *core.NodeContext) (*common.
 	}
 
 	logger.Debug("Federated auth resolver completed successfully",
-		log.String("userID", log.MaskString(resolvedUser.ID)))
+		log.MaskedString("userID", resolvedUser.ID))
 
 	return execResp, nil
 }

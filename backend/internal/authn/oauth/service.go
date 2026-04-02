@@ -265,7 +265,7 @@ func (s *oAuthAuthnService) FetchUserInfoWithClientConfig(oAuthClientConfig *OAu
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
 func (s *oAuthAuthnService) GetInternalUser(sub string) (*entityprovider.Entity, *serviceerror.ServiceError) {
-	logger := s.logger.With(log.String("sub", log.MaskString(sub)))
+	logger := s.logger.With(log.MaskedString("sub", sub))
 	logger.Debug("Retrieving internal user for the given sub claim")
 
 	if strings.TrimSpace(sub) == "" {

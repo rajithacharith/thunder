@@ -867,22 +867,6 @@ func (s *StoreHelpersTestSuite) TestParseJSONColumn_UnknownType() {
 	s.Nil(v)
 }
 
-func (s *StoreHelpersTestSuite) TestMaskMapValues_StringValues() {
-	input := map[string]interface{}{"email": "user@example.com", "name": "John"}
-	masked := maskMapValues(input)
-	for k := range input {
-		s.NotEqual(input[k], masked[k])
-	}
-}
-
-func (s *StoreHelpersTestSuite) TestMaskMapValues_NonStringValues() {
-	input := map[string]interface{}{"count": 42, "flag": true}
-	masked := maskMapValues(input)
-	for _, v := range masked {
-		s.Equal("***", v)
-	}
-}
-
 func (s *StoreHelpersTestSuite) TestPrepareIdentifierQuery_NoIndexedAttrs() {
 	attrs := json.RawMessage(`{"email":"a@b.com"}`)
 	query, args, err := prepareIdentifierQuery("e1", attrs, nil, map[string]bool{}, "dep1")

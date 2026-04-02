@@ -431,7 +431,7 @@ func (h *httpRequestExecutor) executeRequest(ctx *core.NodeContext, config *http
 	}
 
 	logger.Debug("Sending HTTP request", log.String("method", config.Method),
-		log.String("url", log.MaskString(config.URL)))
+		log.MaskedString("url", config.URL))
 
 	response, err := httpClient.Do(req)
 	if err != nil {

@@ -295,8 +295,8 @@ func (h *userSchemaHandler) sanitizeUpdateUserSchemaRequest(
 
 	if originalName != sanitizedName {
 		logger.Debug("Sanitized user schema name in update request",
-			log.String("original", log.MaskString(originalName)),
-			log.String("sanitized", log.MaskString(sanitizedName)))
+			log.MaskedString("original", originalName),
+			log.MaskedString("sanitized", sanitizedName))
 	}
 
 	return UpdateUserSchemaRequest{

@@ -61,7 +61,7 @@ func (dh *dcrHandler) HandleDCRRegistration(w http.ResponseWriter, r *http.Reque
 		if svcErr.Type == serviceerror.ServerErrorType {
 			logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DCRHandler"))
 			logger.Error("Internal server error processing DCR registration request",
-				log.String("client_name", log.MaskString(dcrRequest.ClientName)),
+				log.MaskedString("client_name", dcrRequest.ClientName),
 				log.String("error_code", svcErr.Code),
 				log.String("error", svcErr.Error.DefaultValue),
 			)

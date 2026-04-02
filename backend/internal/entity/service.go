@@ -133,7 +133,7 @@ func (s *entityService) CreateEntity(ctx context.Context, entity *Entity,
 		}
 		entity.ID = id
 	}
-	s.logger.Debug("Creating entity", log.String("id", entity.ID))
+	s.logger.Debug("Creating entity", log.MaskedString("id", entity.ID))
 
 	// Validate entity attributes and uniqueness via schema.
 	if err := s.validateEntitySchema(ctx, entity.Category, entity.Type, entity.Attributes, "", false); err != nil {
@@ -218,7 +218,7 @@ func (s *entityService) UpdateEntity(ctx context.Context, entityID string, entit
 	if entity == nil {
 		return nil, ErrEntityNotFound
 	}
-	s.logger.Debug("Updating entity", log.String("id", entityID))
+	s.logger.Debug("Updating entity", log.MaskedString("id", entityID))
 
 	// Validate entity attributes and uniqueness via schema (excludes self for uniqueness).
 	if err := s.validateEntitySchema(ctx, entity.Category, entity.Type, entity.Attributes, entityID, true); err != nil {
@@ -269,7 +269,7 @@ func (s *entityService) UpdateEntity(ctx context.Context, entityID string, entit
 // DeleteEntity deletes an entity.
 // Uses a transaction to ensure the entity row and its indexed identifiers are deleted atomically.
 func (s *entityService) DeleteEntity(ctx context.Context, entityID string) error {
-	s.logger.Debug("Deleting entity", log.String("id", entityID))
+	s.logger.Debug("Deleting entity", log.MaskedString("id", entityID))
 	err := s.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		return s.store.DeleteEntity(txCtx, entityID)
 	})
@@ -280,7 +280,7 @@ func (s *entityService) DeleteEntity(ctx context.Context, entityID string) error
 // Any credential fields present in the attributes are extracted, hashed, and merged
 // with the existing credentials atomically.
 func (s *entityService) UpdateAttributes(ctx context.Context, entityID string, attributes json.RawMessage) error {
-	s.logger.Debug("Updating entity attributes", log.String("id", entityID))
+	s.logger.Debug("Updating entity attributes", log.MaskedString("id", entityID))
 
 	// Load entity to get its category and type for schema validation and credential extraction.
 	existing, err := s.store.GetEntity(ctx, entityID)
@@ -328,7 +328,7 @@ func (s *entityService) UpdateAttributes(ctx context.Context, entityID string, a
 // UpdateSystemAttributes updates the system-managed attributes of an entity.
 func (s *entityService) UpdateSystemAttributes(ctx context.Context, entityID string,
 	attrs json.RawMessage) error {
-	s.logger.Debug("Updating entity system attributes", log.String("id", entityID))
+	s.logger.Debug("Updating entity system attributes", log.MaskedString("id", entityID))
 	return s.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		return s.store.UpdateSystemAttributes(txCtx, entityID, attrs)
 	})

@@ -127,7 +127,7 @@ func (s *systemAuthorizationService) IsActionAllowed(ctx context.Context, action
 		if logger.IsDebugEnabled() {
 			logger.Debug("Authorization granted: resource owner",
 				log.String("action", string(action)),
-				log.String("subject", log.MaskString(subject)))
+				log.MaskedString("subject", subject))
 		}
 		return true, nil
 	}
@@ -138,7 +138,7 @@ func (s *systemAuthorizationService) IsActionAllowed(ctx context.Context, action
 		if logger.IsDebugEnabled() {
 			logger.Debug("Authorization denied: insufficient permissions",
 				log.String("action", string(action)),
-				log.String("subject", log.MaskString(subject)))
+				log.MaskedString("subject", subject))
 		}
 		return false, nil
 	}
@@ -152,7 +152,7 @@ func (s *systemAuthorizationService) IsActionAllowed(ctx context.Context, action
 		if logger.IsDebugEnabled() {
 			logger.Debug("Authorization denied: policy evaluation failed",
 				log.String("action", string(action)),
-				log.String("subject", log.MaskString(subject)))
+				log.MaskedString("subject", subject))
 		}
 		return false, nil
 	}
@@ -160,7 +160,7 @@ func (s *systemAuthorizationService) IsActionAllowed(ctx context.Context, action
 	if logger.IsDebugEnabled() {
 		logger.Debug("Authorization granted",
 			log.String("action", string(action)),
-			log.String("subject", log.MaskString(subject)))
+			log.MaskedString("subject", subject))
 	}
 
 	return true, nil
@@ -232,7 +232,7 @@ func (s *systemAuthorizationService) GetAccessibleResources(ctx context.Context,
 			logger.Debug("GetAccessibleResources denied: insufficient permissions",
 				log.String("action", string(action)),
 				log.String("resourceType", string(resourceType)),
-				log.String("subject", log.MaskString(subject)))
+				log.MaskedString("subject", subject))
 		}
 		return &AccessibleResources{AllAllowed: false, IDs: []string{}}, nil
 	}
@@ -246,7 +246,7 @@ func (s *systemAuthorizationService) GetAccessibleResources(ctx context.Context,
 		logger.Debug("GetAccessibleResources: restricted by policy",
 			log.String("action", string(action)),
 			log.String("resourceType", string(resourceType)),
-			log.String("subject", log.MaskString(subject)),
+			log.MaskedString("subject", subject),
 			log.Int("accessibleCount", len(result.IDs)))
 	}
 	return result, nil
