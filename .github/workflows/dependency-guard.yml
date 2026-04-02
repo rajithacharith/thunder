@@ -3,7 +3,7 @@
 #
 # For PRs: the guard is active by default. A maintainer can add the
 #   'dependencies-approved' label to bypass it after reviewing the changes.
-# For non-PR contexts (schedule, workflow_dispatch): controlled via repository variables:
+# For merge queue and non-PR contexts: controlled via repository variables:
 #   vars.JS_DEPENDENCY_GUARD  - set to 'false' to disable JS guard
 #   vars.GO_DEPENDENCY_GUARD  - set to 'false' to disable Go guard
 
@@ -24,7 +24,12 @@ jobs:
     name: 🛡️ JS Dependency Guard
     if: >-
       ${{
-        (inputs.detection-mode == 'pr' && !contains(github.event.pull_request.labels.*.name, 'dependencies-approved'))
+        (inputs.detection-mode == 'pr'
+          && github.event_name == 'pull_request'
+          && !contains(github.event.pull_request.labels.*.name, 'dependencies-approved'))
+        || (inputs.detection-mode == 'pr'
+          && github.event_name == 'merge_group'
+          && vars.JS_DEPENDENCY_GUARD != 'false')
         || (inputs.detection-mode == 'commit' && vars.JS_DEPENDENCY_GUARD != 'false')
       }}
     runs-on: ubuntu-latest
@@ -77,7 +82,12 @@ jobs:
     name: 🛡️ Go Dependency Guard
     if: >-
       ${{
-        (inputs.detection-mode == 'pr' && !contains(github.event.pull_request.labels.*.name, 'dependencies-approved'))
+        (inputs.detection-mode == 'pr'
+          && github.event_name == 'pull_request'
+          && !contains(github.event.pull_request.labels.*.name, 'dependencies-approved'))
+        || (inputs.detection-mode == 'pr'
+          && github.event_name == 'merge_group'
+          && vars.GO_DEPENDENCY_GUARD != 'false')
         || (inputs.detection-mode == 'commit' && vars.GO_DEPENDENCY_GUARD != 'false')
       }}
     runs-on: ubuntu-latest
