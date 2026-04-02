@@ -16,20 +16,15 @@
  * under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
-
-import type {JSX} from 'react';
-import {useState} from 'react';
-import {Box, Alert, Typography, AlertTitle, CircularProgress, Link} from '@wso2/oxygen-ui';
 import {AcceptInvite, useAsgardeo, type EmbeddedFlowComponent} from '@asgardeo/react';
-import {useNavigate} from 'react-router';
-import {useTranslation} from 'react-i18next';
+import {useLogger} from '@thunder/logger/react';
 import {useConfig} from '@thunder/shared-contexts';
 import {useDesign, FlowComponentRenderer, AuthCardLayout} from '@thunder/shared-design';
+import {Box, Alert, Typography, AlertTitle, CircularProgress, Link} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
+import {useState} from 'react';
+import {useTranslation} from 'react-i18next';
+import {useNavigate} from 'react-router';
 import ROUTES from '../../constants/routes';
 
 export default function AcceptInviteBox(): JSX.Element {
@@ -37,6 +32,8 @@ export default function AcceptInviteBox(): JSX.Element {
   const {resolveFlowTemplateLiterals, meta} = useAsgardeo();
   const {t} = useTranslation();
   const {getServerUrl} = useConfig();
+  const logger = useLogger('AcceptInviteBox');
+
   const {isDesignEnabled} = useDesign();
   const [flowError, setFlowError] = useState<string | null>(null);
 
@@ -68,8 +65,7 @@ export default function AcceptInviteBox(): JSX.Element {
         baseUrl={baseUrl}
         onGoToSignIn={handleGoToSignIn}
         onError={(error: Error) => {
-          // eslint-disable-next-line no-console
-          console.error('Invite acceptance error:', error);
+          logger.error('Invite acceptance error:', error);
         }}
         onFlowChange={(response: {failureReason?: string}) => {
           setFlowError(response?.failureReason ?? null);

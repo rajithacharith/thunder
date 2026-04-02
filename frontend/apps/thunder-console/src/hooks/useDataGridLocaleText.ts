@@ -16,9 +16,12 @@
  * under the License.
  */
 
+import {createLogger} from '@thunder/logger';
 import type {DataGrid} from '@wso2/oxygen-ui';
 import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
+
+const logger = createLogger({level: 'warn'});
 
 /**
  * Helper function to safely extract and cast function values from translation resources
@@ -56,8 +59,7 @@ function getTranslationFunction<T>(commonBundle: Record<string, unknown>, key: s
 
   // Log a warning in development if the key exists but is not a function
   if (import.meta.env.DEV && value !== undefined) {
-    // eslint-disable-next-line no-console
-    console.warn(`Translation key '${key}' exists but is not a function. Expected a function, got ${typeof value}.`);
+    logger.warn(`Translation key '${key}' exists but is not a function. Expected a function, got ${typeof value}.`);
   }
 
   return undefined;

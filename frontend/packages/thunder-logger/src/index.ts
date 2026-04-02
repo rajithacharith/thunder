@@ -16,8 +16,6 @@
  * under the License.
  */
 
-/* eslint-disable import/extensions */
-
 // Core logger exports
 export {default as Logger, createLogger} from './core/Logger';
 export {default as BaseTransport} from './core/BaseTransport';

@@ -21,6 +21,24 @@ import {useState} from 'react';
 import {describe, it, expect, vi} from 'vitest';
 import useDataGridLocaleText from '../useDataGridLocaleText';
 
+const {mockLogger} = vi.hoisted(() => ({
+  mockLogger: {
+    warn: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
+vi.mock('@thunder/logger', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/logger')>();
+
+  return {
+    ...actual,
+    createLogger: () => mockLogger,
+  };
+});
+
 // Unmock the hook for testing the actual implementation
 vi.unmock('@/hooks/useDataGridLocaleText');
 
@@ -313,8 +331,6 @@ describe('useDataGridLocaleText', () => {
     const i18nModule = await import('i18next');
     const originalGetResourceBundle = i18nModule.default.getResourceBundle.bind(i18nModule.default);
 
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => null);
-
     // Ensure DEV mode is enabled so the console.warn path executes
     const originalDev = import.meta.env.DEV;
     import.meta.env.DEV = true;
@@ -334,10 +350,9 @@ describe('useDataGridLocaleText', () => {
     expect(result.current.toolbarFiltersTooltipActive).toBeUndefined();
 
     // Should have logged a warning in DEV mode
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.toolbarFiltersTooltipActive'));
+    expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('dataTable.toolbarFiltersTooltipActive'));
 
     import.meta.env.DEV = originalDev;
-    consoleSpy.mockRestore();
     vi.restoreAllMocks();
   });
 
@@ -413,8 +428,6 @@ describe('useDataGridLocaleText', () => {
     // This covers both the typeof !== 'function' branch AND the DEV warning branch for each key
     const i18nModule = await import('i18next');
 
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => null);
-
     // Return only the non-function overrides — string translations use t(), not getResourceBundle,
     // so there's no need to spread from the original bundle (which would risk re-entrant spy calls).
     vi.spyOn(i18nModule.default, 'getResourceBundle').mockReturnValue({
@@ -439,12 +452,12 @@ describe('useDataGridLocaleText', () => {
     expect(result.current.paginationDisplayedRows).toBeUndefined();
 
     // Should have logged warnings for non-function, non-undefined values (DEV is true in test env)
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.toolbarFiltersTooltipActive'));
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.columnHeaderFiltersTooltipActive'));
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.footerRowSelected'));
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.footerTotalVisibleRows'));
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.groupColumn'));
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.unGroupColumn'));
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.paginationDisplayedRows'));
+    expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('dataTable.toolbarFiltersTooltipActive'));
+    expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('dataTable.columnHeaderFiltersTooltipActive'));
+    expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('dataTable.footerRowSelected'));
+    expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('dataTable.footerTotalVisibleRows'));
+    expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('dataTable.groupColumn'));
+    expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('dataTable.unGroupColumn'));
+    expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('dataTable.paginationDisplayedRows'));
   });
 });

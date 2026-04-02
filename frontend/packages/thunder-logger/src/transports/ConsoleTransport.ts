@@ -152,7 +152,6 @@ export default class ConsoleTransport extends BaseTransport {
     return Promise.resolve();
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   private getConsoleMethod(level: string): (...args: unknown[]) => void {
     switch (level) {
       case 'debug':

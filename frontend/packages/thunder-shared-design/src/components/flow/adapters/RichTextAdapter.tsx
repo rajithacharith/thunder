@@ -70,6 +70,7 @@ export default function RichTextAdapter({
       <Box
         className={cn('Flow--richText')}
         sx={{mb: 1, textAlign: isDesignEnabled ? 'center' : 'left'}}
+        // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(resolvedLabel)}}
       />
     );
@@ -81,6 +82,7 @@ export default function RichTextAdapter({
     <Box
       className={cn('Flow--richText')}
       sx={{mb: 1, textAlign: isDesignEnabled ? 'center' : 'left'}}
+      // eslint-disable-next-line react/no-danger
       dangerouslySetInnerHTML={{
         __html: DOMPurify.sanitize(resolvedLabel ?? rawLabel ?? ''),
       }}

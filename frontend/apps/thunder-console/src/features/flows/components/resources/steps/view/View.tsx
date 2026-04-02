@@ -40,7 +40,6 @@ export interface ViewPropsInterface extends Omit<HTMLAttributes<HTMLDivElement>,
    * Resources for the view (required by parent components but not used here).
    * @internal
    */
-  // eslint-disable-next-line react/no-unused-prop-types
   resources?: unknown;
   /**
    * Data for the view component.

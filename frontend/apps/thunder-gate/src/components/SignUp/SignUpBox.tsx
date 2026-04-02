@@ -21,13 +21,13 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 
+import {SignUp, useAsgardeo, type EmbeddedFlowComponent} from '@asgardeo/react';
+import {FlowComponentRenderer, AuthCardLayout, useDesign} from '@thunder/shared-design';
+import {Box, Button, Alert, Typography, AlertTitle, CircularProgress} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useState} from 'react';
-import {Box, Button, Alert, Typography, AlertTitle, CircularProgress} from '@wso2/oxygen-ui';
-import {SignUp, useAsgardeo, type EmbeddedFlowComponent} from '@asgardeo/react';
-import {useNavigate, useSearchParams} from 'react-router';
 import {Trans, useTranslation} from 'react-i18next';
-import {useDesign, FlowComponentRenderer, AuthCardLayout} from '@thunder/shared-design';
+import {useNavigate, useSearchParams} from 'react-router';
 import ROUTES from '../../constants/routes';
 
 export default function SignUpBox(): JSX.Element {

@@ -17,7 +17,6 @@
  */
 
 import {useMemo} from 'react';
-// eslint-disable-next-line import/extensions
 import useLogger from './useLogger';
 import type Logger from '../../../core/Logger';
 
