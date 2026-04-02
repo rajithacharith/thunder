@@ -125,7 +125,7 @@ export default function RolesList(): JSX.Element {
         filterable: false,
         hideable: false,
         renderCell: (params: DataGrid.GridRenderCellParams<RoleSummary>): JSX.Element => (
-          <ListingTable.RowActions visibility="hover">
+          <ListingTable.RowActions>
             <Tooltip title={t('common:actions.edit')}>
               <IconButton
                 size="small"
