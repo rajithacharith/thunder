@@ -154,12 +154,13 @@ Injects CACHE_REDIS_PASSWORD from auto-generated database credentials Secret whe
 {{- $configuration := default dict .Values.configuration -}}
 {{- $cache := default dict $configuration.cache -}}
 {{- $redis := default dict $cache.redis -}}
-{{- if and (eq $cache.type "redis") $redis.password }}
+{{- $redisPasswordRef := default dict $redis.passwordRef -}}
+{{- if and (eq $cache.type "redis") (or $redis.password $redisPasswordRef.key) }}
 - name: CACHE_REDIS_PASSWORD
   valueFrom:
     secretKeyRef:
-      name: {{ $defaultDbSecretName }}
-      key: cache-redis-password
+      name: {{ if $redisPasswordRef.key }}{{ $redisPasswordRef.name | default $defaultDbSecretName }}{{ else }}{{ $defaultDbSecretName }}{{ end }}
+      key: {{ $redisPasswordRef.key | default "cache-redis-password" }}
 {{- end }}
 {{- end }}
 
