@@ -1,10 +1,11 @@
 # Reusable supply chain protection workflow.
 # Blocks package installs when dependency files are modified.
 #
-# Controlled via repository variables:
+# For PRs: the guard is active by default. A maintainer can add the
+#   'dependencies-approved' label to bypass it after reviewing the changes.
+# For non-PR contexts (schedule, workflow_dispatch): controlled via repository variables:
 #   vars.JS_DEPENDENCY_GUARD  - set to 'false' to disable JS guard
 #   vars.GO_DEPENDENCY_GUARD  - set to 'false' to disable Go guard
-# Both guards are enabled by default when the variable is unset.
 
 name: 🛡️ Dependency Guard
 
@@ -21,7 +22,11 @@ on:
 jobs:
   js:
     name: 🛡️ JS Dependency Guard
-    if: ${{ vars.JS_DEPENDENCY_GUARD != 'false' }}
+    if: >-
+      ${{
+        (inputs.detection-mode == 'pr' && !contains(github.event.pull_request.labels.*.name, 'dependencies-approved'))
+        || (inputs.detection-mode == 'commit' && vars.JS_DEPENDENCY_GUARD != 'false')
+      }}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -64,13 +69,17 @@ jobs:
           echo "::error::Changes detected in package.json / pnpm-lock.yaml / package-lock.json / .npmrc / pnpm-workspace.yaml."
           echo "::error::To prevent supply chain attacks, this workflow will not run JS package installs."
           echo ""
-          echo "If these changes are intentional and trusted, a maintainer must review and approve"
-          echo "the dependency changes before re-running this workflow."
+          echo "If these changes are intentional and trusted, a maintainer must add the"
+          echo "'dependencies-approved' label to the PR and re-run this workflow."
           exit 1
 
   go:
     name: 🛡️ Go Dependency Guard
-    if: ${{ vars.GO_DEPENDENCY_GUARD != 'false' }}
+    if: >-
+      ${{
+        (inputs.detection-mode == 'pr' && !contains(github.event.pull_request.labels.*.name, 'dependencies-approved'))
+        || (inputs.detection-mode == 'commit' && vars.GO_DEPENDENCY_GUARD != 'false')
+      }}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -110,6 +119,6 @@ jobs:
           echo "::error::Changes detected in go.mod / go.sum."
           echo "::error::To prevent supply chain attacks, this workflow will not run Go module downloads."
           echo ""
-          echo "If these changes are intentional and trusted, a maintainer must review and approve"
-          echo "the dependency changes before re-running this workflow."
+          echo "If these changes are intentional and trusted, a maintainer must add the"
+          echo "'dependencies-approved' label to the PR and re-run this workflow."
           exit 1
