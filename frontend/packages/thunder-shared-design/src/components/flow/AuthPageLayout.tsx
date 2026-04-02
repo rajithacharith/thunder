@@ -49,7 +49,7 @@ export default function AuthPageLayout({
           justifyContent: 'center',
           height: 'calc((1 - var(--template-frame-height, 0)) * 100%)',
           minHeight: '100%',
-          backgroundColor: background ?? 'background.default',
+          ...(background ? {backgroundColor: background} : {}),
         },
       ]}
     >
