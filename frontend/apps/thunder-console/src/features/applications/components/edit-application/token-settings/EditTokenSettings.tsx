@@ -298,6 +298,10 @@ export default function EditTokenSettings({
       Object.entries(schema).forEach(([key, value]) => {
         const fullKey = `${prefix}${key}`;
 
+        if ('credential' in value && value.credential) {
+          return;
+        }
+
         if (value.type === 'object' && 'properties' in value) {
           // Recursively flatten nested objects
           attributes.push(...flattenAttributes(value.properties, `${fullKey}.`));
