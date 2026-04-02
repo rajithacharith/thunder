@@ -375,6 +375,42 @@ func (f *fileBasedStore) GetAuthorizedPermissions(
 	return result, nil
 }
 
+// GetUserRoles retrieves the names of roles assigned to a user directly and/or through group membership.
+func (f *fileBasedStore) GetUserRoles(
+	ctx context.Context, userID string, groupIDs []string,
+) ([]string, error) {
+	if userID == "" && len(groupIDs) == 0 {
+		return []string{}, nil
+	}
+
+	list, err := f.GenericFileBasedStore.List()
+	if err != nil {
+		return nil, err
+	}
+
+	groupSet := make(map[string]bool, len(groupIDs))
+	for _, groupID := range groupIDs {
+		groupSet[groupID] = true
+	}
+
+	roleNames := make([]string, 0)
+	for _, item := range list {
+		roleData, err := roleFromDeclarativeData(item.ID.ID, item.Data)
+		if err != nil {
+			log.GetLogger().Warn("Skipping malformed role in GetUserRoles",
+				log.String("roleID", item.ID.ID),
+				log.Error(err))
+			continue
+		}
+		if !matchesAssignee(roleData.Assignments, userID, groupSet) {
+			continue
+		}
+		roleNames = append(roleNames, roleData.Name)
+	}
+
+	return roleNames, nil
+}
+
 // IsRoleDeclarative returns true for roles in the file-based store because they are declarative.
 func (f *fileBasedStore) IsRoleDeclarative(ctx context.Context, roleID string) (bool, error) {
 	exists, err := f.IsRoleExist(ctx, roleID)

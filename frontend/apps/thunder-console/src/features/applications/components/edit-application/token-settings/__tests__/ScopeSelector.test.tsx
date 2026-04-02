@@ -24,7 +24,7 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({t: (key: string, fallback?: string) => fallback ?? key}),
 }));
 
-const KNOWN_SCOPES = ['openid', 'profile', 'email', 'phone', 'address', 'groups'];
+const KNOWN_SCOPES = ['openid', 'profile', 'email', 'phone', 'address', 'groups', 'roles'];
 
 describe('ScopeSelector', () => {
   it('renders active scopes as chips', () => {

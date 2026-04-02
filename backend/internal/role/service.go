@@ -57,6 +57,7 @@ type RoleServiceInterface interface {
 	GetAuthorizedPermissions(
 		ctx context.Context, userID string, groups []string, requestedPermissions []string,
 	) ([]string, *serviceerror.ServiceError)
+	GetUserRoles(ctx context.Context, userID string, groupIDs []string) ([]string, *serviceerror.ServiceError)
 }
 
 // roleService is the default implementation of the RoleServiceInterface.
@@ -578,6 +579,31 @@ func (rs *roleService) GetAuthorizedPermissions(
 		log.Int("authorizedCount", len(authorizedPermissions)))
 
 	return authorizedPermissions, nil
+}
+
+// GetUserRoles retrieves the names of roles assigned to a user directly and/or through group membership.
+func (rs *roleService) GetUserRoles(
+	ctx context.Context, userID string, groupIDs []string,
+) ([]string, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger.Debug("Getting user roles", log.String("userID", userID), log.Int("groupCount", len(groupIDs)))
+
+	if groupIDs == nil {
+		groupIDs = []string{}
+	}
+
+	if userID == "" && len(groupIDs) == 0 {
+		return []string{}, nil
+	}
+
+	roles, err := rs.roleStore.GetUserRoles(ctx, userID, groupIDs)
+	if err != nil {
+		logger.Error("Failed to get user roles",
+			log.String("userID", userID), log.Error(err))
+		return nil, &ErrorInternalServerError
+	}
+
+	return roles, nil
 }
 
 // IsRoleDeclarative returns true if the role is declarative.

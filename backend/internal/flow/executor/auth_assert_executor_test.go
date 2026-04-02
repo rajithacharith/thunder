@@ -45,6 +45,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
+	"github.com/asgardeo/thunder/tests/mocks/rolemock"
 	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
@@ -64,6 +65,7 @@ type AuthAssertExecutorTestSuite struct {
 	mockUserProvider      *userprovidermock.UserProviderInterfaceMock
 	mockFlowFactory       *coremock.FlowFactoryInterfaceMock
 	mockAttributeCacheSvc *attributecachemock.AttributeCacheServiceInterfaceMock
+	mockRoleService       *rolemock.RoleServiceInterfaceMock
 	executor              *authAssertExecutor
 }
 
@@ -82,6 +84,7 @@ func (suite *AuthAssertExecutorTestSuite) SetupTest() {
 	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 	suite.mockAttributeCacheSvc = attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
+	suite.mockRoleService = rolemock.NewRoleServiceInterfaceMock(suite.T())
 
 	mockExec := createMockExecutorSimple(suite.T(), ExecutorNameAuthAssert, common.ExecutorTypeUtility)
 	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameAuthAssert, common.ExecutorTypeUtility,
@@ -89,7 +92,7 @@ func (suite *AuthAssertExecutorTestSuite) SetupTest() {
 
 	suite.executor = newAuthAssertExecutor(suite.mockFlowFactory, suite.mockJWTService,
 		suite.mockOUService, suite.mockAssertGenerator, suite.mockCredsAuthSvc, suite.mockUserProvider,
-		suite.mockAttributeCacheSvc)
+		suite.mockAttributeCacheSvc, suite.mockRoleService)
 }
 
 func createMockExecutorSimple(t *testing.T, name string,

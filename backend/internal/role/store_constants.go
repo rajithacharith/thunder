@@ -234,3 +234,75 @@ func buildAuthorizedPermissionsQuery(
 
 	return query, args
 }
+
+// buildUserRolesQuery constructs a database-specific query to retrieve role names
+// assigned to a user directly and/or through group membership.
+func buildUserRolesQuery(
+	userID string,
+	groupIDs []string,
+	deploymentID string,
+) (dbmodel.DBQuery, []interface{}) {
+	baseQuery := `SELECT DISTINCT r.NAME
+		FROM "ROLE" r
+		INNER JOIN ROLE_ASSIGNMENT ra ON r.ID = ra.ROLE_ID AND r.DEPLOYMENT_ID = $1 AND ra.DEPLOYMENT_ID = $1
+		WHERE r.DEPLOYMENT_ID = $1 AND `
+
+	var postgresWhere []string
+	var sqliteWhere []string
+
+	argsCapacity := 1 + len(groupIDs) // +1 for DEPLOYMENT_ID
+	if userID != "" {
+		argsCapacity++
+	}
+	args := make([]interface{}, 0, argsCapacity)
+	args = append(args, deploymentID)
+	paramIndex := 2 // Start from $2 since $1 is DEPLOYMENT_ID
+
+	// Build user condition if userID is provided
+	if userID != "" {
+		postgresWhere = append(postgresWhere,
+			fmt.Sprintf("(ra.ASSIGNEE_TYPE = 'user' AND ra.ASSIGNEE_ID = $%d)", paramIndex))
+		sqliteWhere = append(sqliteWhere,
+			"(ra.ASSIGNEE_TYPE = 'user' AND ra.ASSIGNEE_ID = ?)")
+		args = append(args, userID)
+		paramIndex++
+	}
+
+	// Build group condition if groupIDs are provided
+	if len(groupIDs) > 0 {
+		groupPlaceholdersPostgres := make([]string, len(groupIDs))
+		groupPlaceholdersSqlite := make([]string, len(groupIDs))
+
+		for i, groupID := range groupIDs {
+			groupPlaceholdersPostgres[i] = fmt.Sprintf("$%d", paramIndex+i)
+			groupPlaceholdersSqlite[i] = "?"
+			args = append(args, groupID)
+		}
+
+		postgresWhere = append(postgresWhere,
+			fmt.Sprintf("(ra.ASSIGNEE_TYPE = 'group' AND ra.ASSIGNEE_ID IN (%s))",
+				strings.Join(groupPlaceholdersPostgres, ",")))
+		sqliteWhere = append(sqliteWhere,
+			fmt.Sprintf("(ra.ASSIGNEE_TYPE = 'group' AND ra.ASSIGNEE_ID IN (%s))",
+				strings.Join(groupPlaceholdersSqlite, ",")))
+	}
+
+	// Construct PostgreSQL query
+	postgresQuery := baseQuery +
+		"(" + strings.Join(postgresWhere, " OR ") + ")" +
+		" ORDER BY r.NAME"
+
+	// Construct SQLite query
+	sqliteQuery := baseQuery +
+		"(" + strings.Join(sqliteWhere, " OR ") + ")" +
+		" ORDER BY r.NAME"
+
+	query := dbmodel.DBQuery{
+		ID:            "RLQ-ROLE_MGT-21",
+		Query:         postgresQuery,
+		PostgresQuery: postgresQuery,
+		SQLiteQuery:   sqliteQuery,
+	}
+
+	return query, args
+}

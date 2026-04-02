@@ -33,7 +33,7 @@ const TokenConstants = {
   /**
    * Additional system attributes that can be configured as user attributes
    */
-  ADDITIONAL_USER_ATTRIBUTES: ['ouHandle', 'ouId', 'ouName', 'userType'],
+  ADDITIONAL_USER_ATTRIBUTES: ['groups', 'ouHandle', 'ouId', 'ouName', 'roles', 'userType'],
 } as const;
 
 export default TokenConstants;

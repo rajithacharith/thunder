@@ -23,7 +23,7 @@ import {useTranslation} from 'react-i18next';
 /**
  * Well-known OIDC scopes offered as quick-add chips when not yet active.
  */
-const KNOWN_SCOPES = ['openid', 'profile', 'email', 'phone', 'address', 'groups'] as const;
+const KNOWN_SCOPES = ['openid', 'profile', 'email', 'phone', 'address', 'groups', 'roles'] as const;
 
 /**
  * Props for the {@link ScopeSelector} component.

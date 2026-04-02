@@ -338,6 +338,23 @@ func (c *compositeRoleStore) GetAuthorizedPermissions(
 	return mergePermissions(dbPerms, filePerms), nil
 }
 
+// GetUserRoles retrieves role names assigned to a user from both stores.
+func (c *compositeRoleStore) GetUserRoles(
+	ctx context.Context, userID string, groupIDs []string,
+) ([]string, error) {
+	dbRoleNames, err := c.dbStore.GetUserRoles(ctx, userID, groupIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	fileRoleNames, err := c.fileStore.GetUserRoles(ctx, userID, groupIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return mergePermissions(dbRoleNames, fileRoleNames), nil
+}
+
 // IsRoleDeclarative checks if a role is immutable (exists in file store).
 func (c *compositeRoleStore) IsRoleDeclarative(ctx context.Context, roleID string) (bool, error) {
 	fileExists, err := c.fileStore.IsRoleExist(ctx, roleID)
