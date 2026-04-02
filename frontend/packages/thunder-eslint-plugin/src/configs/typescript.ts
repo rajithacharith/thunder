@@ -17,6 +17,7 @@
  */
 
 import type {Linter} from 'eslint';
+import {createTypeScriptImportResolver} from 'eslint-import-resolver-typescript';
 import tseslint from 'typescript-eslint';
 import createParserOptions from '../utils/tsconfig-resolver';
 
@@ -36,18 +37,19 @@ const typescriptConfig: Linter.Config[] = [
   {
     name: 'thunder/typescript-resolver',
     settings: {
-      'import/resolver': {
-        typescript: {alwaysTryTypes: true},
-      },
+      'import-x/resolver-next': [createTypeScriptImportResolver({alwaysTryTypes: true})],
     },
   },
   {
     name: 'thunder/typescript-overrides',
     rules: {
+      // Disallow the use of the `any` type to encourage more precise typings.
+      // https://typescript-eslint.io/rules/no-explicit-any/
+      '@typescript-eslint/no-explicit-any': 'error',
       'object-curly-spacing': ['error', 'never'],
       // Allow imports without file extensions for TypeScript files
       // This is especially useful for path aliases and modern module resolution
-      'import/extensions': [
+      'import-x/extensions': [
         'error',
         'ignorePackages',
         {

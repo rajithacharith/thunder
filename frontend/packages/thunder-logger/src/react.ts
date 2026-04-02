@@ -16,8 +16,6 @@
  * under the License.
  */
 
-/* eslint-disable import/extensions */
-
 // React-specific exports
 export {default as LoggerContext} from './react/contexts/Logger/LoggerContext';
 export type {LoggerContextType} from './react/contexts/Logger/LoggerContext';

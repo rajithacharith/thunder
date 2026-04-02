@@ -16,8 +16,6 @@
  * under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 import {useAsgardeo} from '@asgardeo/react';
 import {QueryClient} from '@tanstack/react-query';
 import {useConfig} from '@thunder/shared-contexts';

@@ -16,9 +16,6 @@
  * under the License.
  */
 
-/* eslint-disable @typescript-eslint/naming-convention */
-/* eslint-disable no-underscore-dangle */
-
 import {readFileSync} from 'fs';
 import {dirname, join} from 'path';
 import {fileURLToPath} from 'url';
@@ -67,12 +64,10 @@ const plugin: ESLint.Plugin = {
   meta: {
     name: pkg.name,
     version: pkg.version,
-    // @ts-expect-error TODO: Update to the latest ESLint and remove `@types/eslint`.
     namespace,
   },
   configs: {},
   rules: {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     'copyright-header': copyrightHeaderRule,
   },
   processors: {},
@@ -80,24 +75,23 @@ const plugin: ESLint.Plugin = {
 
 // Assign configs here so we can reference `plugin`
 // @ts-expect-error TODO: Update to the latest ESLint and remove `@types/eslint`.
-// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
 Object.assign(plugin.configs, {
   javascript: [
     {
       name: 'thunder/plugin-setup',
       plugins: {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         '@thunder': plugin,
       },
     },
     ...baseConfig,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
     ...javascriptConfig,
     ...prettierConfig,
     {
       files: DEV_DEPENDENCIES_ALLOWED_FILES,
       rules: {
-        'import/no-extraneous-dependencies': ['error', {devDependencies: true}],
+        'import-x/no-extraneous-dependencies': ['error', {devDependencies: true}],
       },
     },
   ],
@@ -105,20 +99,19 @@ Object.assign(plugin.configs, {
     {
       name: 'thunder/plugin-setup',
       plugins: {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         '@thunder': plugin,
       },
     },
     ...baseConfig,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
     ...javascriptConfig,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
     ...typescriptConfig,
     ...prettierConfig,
     {
       files: DEV_DEPENDENCIES_ALLOWED_FILES,
       rules: {
-        'import/no-extraneous-dependencies': ['error', {devDependencies: true}],
+        'import-x/no-extraneous-dependencies': ['error', {devDependencies: true}],
       },
     },
   ],
@@ -126,22 +119,21 @@ Object.assign(plugin.configs, {
     {
       name: 'thunder/plugin-setup',
       plugins: {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         '@thunder': plugin,
       },
     },
     ...baseConfig,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
     ...javascriptConfig,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
     ...typescriptConfig,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
     ...reactConfig,
     ...prettierConfig,
     {
       files: DEV_DEPENDENCIES_ALLOWED_FILES,
       rules: {
-        'import/no-extraneous-dependencies': ['error', {devDependencies: true}],
+        'import-x/no-extraneous-dependencies': ['error', {devDependencies: true}],
       },
     },
   ],
@@ -150,7 +142,6 @@ Object.assign(plugin.configs, {
     {
       name: 'thunder/plugin-setup',
       plugins: {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         '@thunder': plugin,
       },
     },
@@ -161,7 +152,6 @@ Object.assign(plugin.configs, {
     {
       name: 'thunder/plugin-setup',
       plugins: {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         '@thunder': plugin,
       },
     },
@@ -172,22 +162,21 @@ Object.assign(plugin.configs, {
     {
       name: 'thunder/plugin-setup',
       plugins: {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         '@thunder': plugin,
       },
     },
     ...baseConfig,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
     ...javascriptConfig,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
     ...typescriptConfig,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
     ...vueConfig,
     ...prettierConfig,
     {
       files: DEV_DEPENDENCIES_ALLOWED_FILES,
       rules: {
-        'import/no-extraneous-dependencies': ['error', {devDependencies: true}],
+        'import-x/no-extraneous-dependencies': ['error', {devDependencies: true}],
       },
     },
   ],

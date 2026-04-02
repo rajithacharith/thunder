@@ -16,11 +16,29 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render as testRender, screen, fireEvent, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
 import {DesignContext, type DesignContextType} from '@thunder/shared-design';
+import {render as testRender, screen, fireEvent, waitFor} from '@thunder/test-utils';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import AcceptInviteBox from '../AcceptInviteBox';
+
+const {mockLogger} = vi.hoisted(() => ({
+  mockLogger: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
+vi.mock('@thunder/logger/react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/logger/react')>();
+
+  return {
+    ...actual,
+    useLogger: () => mockLogger,
+  };
+});
 
 // Mock useDesign
 const mockUseDesign = vi.fn();
@@ -145,7 +163,6 @@ vi.mock('@asgardeo/react', async () => {
       children: (props: typeof mockAcceptInviteRenderProps) => React.ReactNode;
       onGoToSignIn?: () => void;
       onError?: (error: Error) => void;
-      onFlowChange?: (response: {failureReason?: string}) => void;
     }) => {
       capturedOnGoToSignIn = onGoToSignIn;
       capturedOnError = onError;
@@ -1321,8 +1338,6 @@ describe('AcceptInviteBox', () => {
   });
 
   it('calls onError callback with error object', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => null);
-
     render(<AcceptInviteBox />);
 
     // Verify the callback was captured
@@ -1332,10 +1347,8 @@ describe('AcceptInviteBox', () => {
     const testError = new Error('Test error message');
     capturedOnError?.(testError);
 
-    // Verify console.error was called with the error
-    expect(consoleSpy).toHaveBeenCalledWith('Invite acceptance error:', testError);
-
-    consoleSpy.mockRestore();
+    // Verify logger.error was called with the error
+    expect(mockLogger.error).toHaveBeenCalledWith('Invite acceptance error:', testError);
   });
 
   it('uses fallback index keys when components have undefined id', () => {

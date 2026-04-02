@@ -21,7 +21,7 @@ import {cn} from '@thunder/utils';
 import {Stack} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import type {FlowComponent} from '../../../models/flow';
-// eslint-disable-next-line import/no-cycle
+// eslint-disable-next-line import-x/no-cycle
 import FlowComponentRenderer from '../FlowComponentRenderer';
 
 const STACK_IMAGE_MAX_SIZE = 80;

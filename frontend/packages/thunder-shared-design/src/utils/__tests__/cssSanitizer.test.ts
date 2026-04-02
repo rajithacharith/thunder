@@ -101,7 +101,6 @@ describe('isValidStylesheetUrl', () => {
   });
 
   it('should reject javascript: URLs', () => {
-    // eslint-disable-next-line no-script-url
     expect(isValidStylesheetUrl('javascript:alert(1)')).toBe(false);
   });
 

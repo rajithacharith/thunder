@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import {act} from 'react';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render as testRender, screen, fireEvent, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
 import {DesignContext, type DesignContextType} from '@thunder/shared-design';
+import {screen, fireEvent, waitFor, render as testRender} from '@thunder/test-utils';
+import {act} from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import SignUpBox from '../SignUpBox';
 
 // Mock useDesign and FlowComponentRenderer

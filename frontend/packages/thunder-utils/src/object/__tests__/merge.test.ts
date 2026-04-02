@@ -62,8 +62,6 @@ describe('merge', () => {
   });
 
   it('should skip null and undefined sources', () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(merge({a: 1}, null as unknown as object, undefined as unknown as object)).toEqual({a: 1});
   });
 

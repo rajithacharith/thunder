@@ -27,13 +27,13 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 function mergeValue(tgtVal: unknown, srcVal: unknown): unknown {
   if (Array.isArray(srcVal)) {
     const tgtArr = Array.isArray(tgtVal) ? tgtVal : [];
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+
     return mergeArrays(tgtArr, srcVal);
   }
 
   if (isPlainObject(srcVal)) {
     const tgtObj = isPlainObject(tgtVal) ? tgtVal : {};
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+
     mergeTwo(tgtObj, srcVal);
     return tgtObj;
   }

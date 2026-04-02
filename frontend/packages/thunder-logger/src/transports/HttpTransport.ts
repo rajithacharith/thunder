@@ -235,7 +235,6 @@ export default class HttpTransport extends BaseTransport {
     await this.flush();
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   private serializeEntry(entry: LogEntry): SerializedLogEntry {
     return {
       level: entry.level,
@@ -292,7 +291,7 @@ export default class HttpTransport extends BaseTransport {
       // Mark error as retries exhausted if applicable
       const err = error as Error;
       if (this.options.retry && retryCount >= this.options.maxRetries) {
-        throw new Error(`Failed after ${this.options.maxRetries} retries exhausted: ${err.message}`);
+        throw new Error(`Failed after ${this.options.maxRetries} retries exhausted: ${err.message}`, {cause: error});
       }
 
       throw error;
