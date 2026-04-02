@@ -33,6 +33,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/offsetQueryParam'
+        - $ref: '#/components/parameters/includeGroupQueryParam'
       responses:
         "200":
           description: List of groups
@@ -177,6 +178,7 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: '#/components/parameters/includeGroupQueryParam'
       responses:
         "200":
           description: Group details
@@ -586,6 +588,7 @@ paths:
           example: "engineering/frontend"
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/offsetQueryParam'
+        - $ref: '#/components/parameters/includeGroupQueryParam'
       responses:
         "200":
           description: List of groups in the organization unit
@@ -806,6 +809,17 @@ components:
       description: |
         Optional parameter to include additional information.
         - `display` - Include display names for members. For users, the display value is resolved from the schema-configured display attribute (`systemAttributes.display`). Falls back to the user ID if no display attribute is configured, the configured attribute path does not exist in the user's data, or the attribute value is empty. For groups, the group name is used.
+    includeGroupQueryParam:
+      in: query
+      name: include
+      required: false
+      schema:
+        type: string
+        enum:
+          - display
+      description: |
+        Optional parameter to include additional display information.
+        - `display` - Include `ouHandle`, the human-readable handle of the organization unit, alongside the `ouId`.
 
   schemas:
     Member:
@@ -840,6 +854,10 @@ components:
         ouId:
           type: string
           format: uuid
+        ouHandle:
+          type: string
+          readOnly: true
+          description: "Human-readable handle of the organization unit (only included when include=display query parameter is used)."
         members:
           type: array
           items:

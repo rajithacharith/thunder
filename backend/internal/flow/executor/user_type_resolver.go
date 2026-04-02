@@ -212,7 +212,7 @@ func (u *userTypeResolver) handleUserOnboardingFlows(ctx *core.NodeContext,
 	}
 
 	// List all available user schemas
-	schemas, svcErr := u.userSchemaService.GetUserSchemaList(ctx.Context, 100, 0)
+	schemas, svcErr := u.userSchemaService.GetUserSchemaList(ctx.Context, 100, 0, false)
 	if svcErr != nil {
 		logger.Debug("Failed to list user schemas", log.String("error", svcErr.Error))
 		execResp.Status = common.ExecFailure

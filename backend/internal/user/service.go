@@ -146,6 +146,7 @@ func (us *userService) listAllUsers(
 
 	if includeDisplay {
 		us.populateUserDisplayNames(ctx, users, logger)
+		us.populateOUHandles(ctx, users, logger)
 	}
 
 	return buildUserListResponse(users, totalCount, limit, offset, utils.DisplayQueryParam(includeDisplay)), nil
@@ -174,6 +175,7 @@ func (us *userService) listUsersByOUIDs(
 
 	if includeDisplay {
 		us.populateUserDisplayNames(ctx, users, logger)
+		us.populateOUHandles(ctx, users, logger)
 	}
 
 	return buildUserListResponse(users, totalCount, limit, offset, displayQuery), nil
@@ -260,7 +262,7 @@ func (us *userService) GetUsersByPath(
 			// Fall back to bare IDs without display — partial display is worse than none.
 			users = make([]User, len(ouResponse.Users))
 			for i, ouUser := range ouResponse.Users {
-				users[i] = User{ID: ouUser.ID}
+				users[i] = User{ID: ouUser.ID, OUHandle: ou.Handle}
 			}
 		} else {
 			// Build an ID-keyed map for display resolution, but only expose ID + Display.
@@ -280,11 +282,12 @@ func (us *userService) GetUsersByPath(
 			for i, ouUser := range ouResponse.Users {
 				if u, ok := userMap[ouUser.ID]; ok {
 					users[i] = User{
-						ID:      u.ID,
-						Display: utils.ResolveDisplay(u.ID, u.Type, u.Attributes, displayAttrPaths),
+						ID:       u.ID,
+						OUHandle: ou.Handle,
+						Display:  utils.ResolveDisplay(u.ID, u.Type, u.Attributes, displayAttrPaths),
 					}
 				} else {
-					users[i] = User{ID: ouUser.ID}
+					users[i] = User{ID: ouUser.ID, OUHandle: ou.Handle}
 				}
 			}
 		}
@@ -507,6 +510,14 @@ func (us *userService) GetUser(
 			ctx, []string{user.Type}, us.userSchemaService, logger)
 		user.Display = utils.ResolveDisplay(
 			user.ID, user.Type, user.Attributes, displayAttrPaths)
+
+		handleMap, svcErr := us.ouService.GetOrganizationUnitHandlesByIDs(ctx, []string{user.OUID})
+		if svcErr != nil {
+			logger.Warn("Failed to resolve OU handle for user, skipping",
+				log.Any("error", svcErr))
+		} else if handle, ok := handleMap[user.OUID]; ok {
+			user.OUHandle = handle
+		}
 	}
 
 	logger.Debug("Successfully retrieved user", log.String("id", userID))
@@ -1346,6 +1357,30 @@ func (us *userService) populateUserDisplayNames(ctx context.Context, users []Use
 	for i := range users {
 		users[i].Display = utils.ResolveDisplay(
 			users[i].ID, users[i].Type, users[i].Attributes, displayAttrPaths)
+	}
+}
+
+// populateOUHandles resolves OU handles for a slice of users in-place.
+func (us *userService) populateOUHandles(ctx context.Context, users []User, logger *log.Logger) {
+	ouIDs := make([]string, 0, len(users))
+	seen := make(map[string]bool, len(users))
+	for _, u := range users {
+		if u.OUID != "" && !seen[u.OUID] {
+			ouIDs = append(ouIDs, u.OUID)
+			seen[u.OUID] = true
+		}
+	}
+
+	handleMap, svcErr := us.ouService.GetOrganizationUnitHandlesByIDs(ctx, ouIDs)
+	if svcErr != nil {
+		logger.Warn("Failed to resolve OU handles, skipping", log.Any("error", svcErr))
+		return
+	}
+
+	for i := range users {
+		if handle, ok := handleMap[users[i].OUID]; ok {
+			users[i].OUHandle = handle
+		}
 	}
 }
 

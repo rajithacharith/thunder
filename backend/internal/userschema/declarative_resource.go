@@ -68,7 +68,7 @@ func (e *userSchemaExporter) GetParameterizerType() string {
 // GetAllResourceIDs retrieves all user schema IDs.
 // In composite mode, this excludes declarative (YAML-based) user schemas.
 func (e *userSchemaExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
-	response, err := e.service.GetUserSchemaList(ctx, serverconst.MaxPageSize, 0)
+	response, err := e.service.GetUserSchemaList(ctx, serverconst.MaxPageSize, 0, false)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (e *userSchemaExporter) GetAllResourceIDs(ctx context.Context) ([]string, *
 func (e *userSchemaExporter) GetResourceByID(ctx context.Context, id string) (
 	interface{}, string, *serviceerror.ServiceError,
 ) {
-	schema, err := e.service.GetUserSchema(ctx, id)
+	schema, err := e.service.GetUserSchema(ctx, id, false)
 	if err != nil {
 		return nil, "", err
 	}

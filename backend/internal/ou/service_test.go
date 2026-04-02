@@ -2586,3 +2586,45 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_IsOrganizationUnitD
 	suite.Require().True(res)
 	store.AssertExpectations(suite.T())
 }
+
+func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnitHandlesByIDs() {
+	suite.Run("empty ids returns empty map", func() {
+		service := &organizationUnitService{}
+		result, svcErr := service.GetOrganizationUnitHandlesByIDs(
+			context.Background(), []string{})
+		suite.Require().Nil(svcErr)
+		suite.Require().Empty(result)
+	})
+
+	suite.Run("success", func() {
+		store := newOrganizationUnitStoreInterfaceMock(suite.T())
+		store.On("GetOrganizationUnitsByIDs", mock.Anything, []string{"ou-1", "ou-2"}).
+			Return([]OrganizationUnitBasic{
+				{ID: "ou-1", Handle: "handle-1"},
+				{ID: "ou-2", Handle: "handle-2"},
+			}, nil).Once()
+
+		service := &organizationUnitService{ouStore: store}
+		result, svcErr := service.GetOrganizationUnitHandlesByIDs(
+			context.Background(), []string{"ou-1", "ou-2"})
+		suite.Require().Nil(svcErr)
+		suite.Require().Len(result, 2)
+		suite.Equal("handle-1", result["ou-1"])
+		suite.Equal("handle-2", result["ou-2"])
+		store.AssertExpectations(suite.T())
+	})
+
+	suite.Run("store error returns internal server error", func() {
+		store := newOrganizationUnitStoreInterfaceMock(suite.T())
+		store.On("GetOrganizationUnitsByIDs", mock.Anything, []string{"ou-1"}).
+			Return(nil, errors.New("db error")).Once()
+
+		service := &organizationUnitService{ouStore: store}
+		result, svcErr := service.GetOrganizationUnitHandlesByIDs(
+			context.Background(), []string{"ou-1"})
+		suite.Require().Nil(result)
+		suite.Require().NotNil(svcErr)
+		suite.Equal(ErrorInternalServerError.Code, svcErr.Code)
+		store.AssertExpectations(suite.T())
+	})
+}

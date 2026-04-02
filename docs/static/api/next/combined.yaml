@@ -2355,6 +2355,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
+        - $ref: "#/components/parameters/includeGroupQueryParam"
       responses:
         "200":
           description: List of groups
@@ -2497,6 +2498,7 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: "#/components/parameters/includeGroupQueryParam"
       responses:
         "200":
           description: Group details
@@ -2904,6 +2906,7 @@ paths:
           example: engineering/frontend
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
+        - $ref: "#/components/parameters/includeGroupQueryParam"
       responses:
         "200":
           description: List of groups in the organization unit
@@ -4353,6 +4356,7 @@ paths:
             format: uuid
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
+        - $ref: "#/components/parameters/includeGroupQueryParam"
       responses:
         "200":
           description: List of groups in the organization unit
@@ -4966,6 +4970,7 @@ paths:
           example: engineering/frontend
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
+        - $ref: "#/components/parameters/includeGroupQueryParam"
       responses:
         "200":
           description: List of groups in the organization unit
@@ -7629,6 +7634,7 @@ paths:
             type: string
             format: uuid
           example: 9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3
+        - $ref: "#/components/parameters/includeQueryParam"
       responses:
         "200":
           description: User details
@@ -8322,11 +8328,12 @@ paths:
         - user-schemas
       summary: List user type schemas
       description: |
-        Retrieves a list of all user type schemas that define the structure 
+        Retrieves a list of all user type schemas that define the structure
         and attributes for different user types.
       parameters:
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
+        - $ref: "#/components/parameters/includeQueryParam"
       responses:
         "200":
           description: List of user type schemas
@@ -8509,6 +8516,7 @@ paths:
             type: string
             format: uuid
           example: 550e8400-e29b-41d4-a716-446655440000
+        - $ref: "#/components/parameters/includeQueryParam"
       responses:
         "200":
           description: User schema details
@@ -11252,6 +11260,14 @@ components:
           format: uuid
         name:
           type: string
+        ouId:
+          type: string
+          format: uuid
+        ouHandle:
+          type: string
+          readOnly: true
+          description: Human-readable handle of the organization unit (only included when
+            include=display query parameter is used).
     CreateGroupRequest:
       type: object
       required:
@@ -11756,6 +11772,11 @@ components:
         ouId:
           type: string
           format: uuid
+        ouHandle:
+          type: string
+          readOnly: true
+          description: Human-readable handle of the organization unit (only included when
+            include=display query parameter is used).
         type:
           type: string
         attributes:
@@ -12836,6 +12857,11 @@ components:
           type: string
           format: uuid
           description: The root organization unit ID associated with this user type schema
+        ouHandle:
+          type: string
+          readOnly: true
+          description: Human-readable handle of the organization unit (only included when
+            include=display query parameter is used).
         allowSelfRegistration:
           type: boolean
           description: Indicates whether users of this type can perform self-registration
@@ -13061,6 +13087,11 @@ components:
                 type: string
                 format: uuid
                 description: The root organization unit ID associated with this user type schema
+              ouHandle:
+                type: string
+                readOnly: true
+                description: Human-readable handle of the organization unit (only included when
+                  include=display query parameter is used).
               allowSelfRegistration:
                 type: boolean
                 description: Indicates whether users of this type can perform self-registration
@@ -13287,13 +13318,22 @@ components:
         enum:
           - display
       description: >
-        Optional parameter to include additional information.
+        Optional parameter to include additional display information in the
+        response. The exact fields included depend on the endpoint. See each
+        endpoint's response schema for details on which fields are enriched.
+    includeGroupQueryParam:
+      in: query
+      name: include
+      required: false
+      description: >
+        Optional parameter to include additional display information.
 
-        - `display` - Include display names for users. The display value is
-        resolved from the schema-configured display attribute
-        (`systemAttributes.display`). Falls back to the user ID if no display
-        attribute is configured, the configured attribute path does not exist in
-        the user's data, or the attribute value is empty.
+        - `display` - Include `ouHandle`, the human-readable handle of the
+        organization unit, alongside the `ouId`.
+      schema:
+        type: string
+        enum:
+          - display
     languagePathParam:
       name: language
       in: path
