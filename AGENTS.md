@@ -23,6 +23,7 @@ Clone the SDK repository only if you are developing or debugging the SDK itself,
 - Write tests for new features and bug fixes (target 80%+ coverage).
 - Ensure proper error handling and logging at appropriate layers — not everywhere, just where failures are expected and actionable.
 - Ensure all identity-related code aligns with relevant RFC specifications.
+- Use `make lint` and `make test` to verify code quality and correctness before committing.
 
 ## Git and PR Conventions
 
