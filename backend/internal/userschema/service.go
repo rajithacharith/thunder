@@ -116,7 +116,7 @@ func (us *userSchemaService) GetUserSchemaList(ctx context.Context, limit, offse
 
 	// Unfiltered path: the caller can see all user schemas.
 	if accessible.AllAllowed {
-		logger.Info("Caller has access to all user schemas, retrieving without OU filtering")
+		logger.Debug("Caller has access to all user schemas, retrieving without OU filtering")
 		return us.listAllUserSchemas(ctx, limit, offset, logger)
 	}
 
