@@ -984,7 +984,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 	emptyList := &userschema.UserSchemaListResponse{
 		Schemas: []userschema.UserSchemaListItem{},
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0).
+	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0, false).
 		Return(emptyList, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -1009,7 +1009,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 		Type:  serviceerror.ServerErrorType,
 		Error: "Simulated Error",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0).
+	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0, false).
 		Return(nil, svcErr)
 
 	result, err := suite.executor.Execute(ctx)
@@ -1036,7 +1036,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 			{Name: "employee", OUID: "ou-123"},
 		},
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0).
+	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0, false).
 		Return(schemaList, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -1065,7 +1065,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 			{Name: "customer"},
 		},
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0).
+	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0, false).
 		Return(schemaList, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -1102,7 +1102,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_AllowedUs
 			{Name: "partner", OUID: "ou-789"},
 		},
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0).
+	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0, false).
 		Return(schemaList, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -1135,7 +1135,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_AllowedUs
 			{Name: "partner", OUID: "ou-789"},
 		},
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0).
+	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0, false).
 		Return(schemaList, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -1169,7 +1169,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_AllowedUs
 			{Name: "customer", OUID: "ou-456"},
 		},
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0).
+	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0, false).
 		Return(schemaList, nil)
 
 	result, err := suite.executor.Execute(ctx)

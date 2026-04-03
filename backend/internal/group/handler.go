@@ -56,7 +56,9 @@ func (gh *groupHandler) HandleGroupListRequest(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	groupListResponse, svcErr := gh.groupService.GetGroupList(ctx, limit, offset)
+	includeDisplay := r.URL.Query().Get(sysutils.QueryParamInclude) == sysutils.IncludeValueDisplay
+
+	groupListResponse, svcErr := gh.groupService.GetGroupList(ctx, limit, offset, includeDisplay)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
@@ -87,7 +89,9 @@ func (gh *groupHandler) HandleGroupListByPathRequest(w http.ResponseWriter, r *h
 		return
 	}
 
-	groupListResponse, svcErr := gh.groupService.GetGroupsByPath(ctx, path, limit, offset)
+	includeDisplay := r.URL.Query().Get(sysutils.QueryParamInclude) == sysutils.IncludeValueDisplay
+
+	groupListResponse, svcErr := gh.groupService.GetGroupsByPath(ctx, path, limit, offset, includeDisplay)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return
@@ -180,7 +184,9 @@ func (gh *groupHandler) HandleGroupGetRequest(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	group, svcErr := gh.groupService.GetGroup(ctx, id)
+	includeDisplay := r.URL.Query().Get(sysutils.QueryParamInclude) == sysutils.IncludeValueDisplay
+
+	group, svcErr := gh.groupService.GetGroup(ctx, id, includeDisplay)
 	if svcErr != nil {
 		gh.handleError(w, logger, svcErr)
 		return

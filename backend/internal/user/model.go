@@ -29,6 +29,7 @@ import (
 type User struct {
 	ID         string          `json:"id,omitempty"`
 	OUID       string          `json:"ouId,omitempty"`
+	OUHandle   string          `json:"ouHandle,omitempty"`
 	Type       string          `json:"type,omitempty"`
 	Attributes json.RawMessage `json:"attributes,omitempty"`
 	Display    string          `json:"display,omitempty"`

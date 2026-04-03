@@ -37,8 +37,7 @@ export class SampleAppLoginPage extends BasePage {
    * @param url - Sample app URL (default: https://localhost:3000)
    */
   async goto(url: string = "https://localhost:3000") {
-    await this.page.goto(url, { waitUntil: "networkidle" });
-    await this.page.waitForLoadState("domcontentloaded");
+    await this.page.goto(url, { waitUntil: "domcontentloaded" });
   }
 
   /**

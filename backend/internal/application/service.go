@@ -711,7 +711,7 @@ func (as *applicationService) validateAllowedUserTypes(
 	for {
 		// Runtime context is used to avoid authorization checks when fetching user schemas.
 		userSchemaList, svcErr := as.userSchemaService.GetUserSchemaList(
-			security.WithRuntimeContext(ctx), limit, offset)
+			security.WithRuntimeContext(ctx), limit, offset, false)
 		if svcErr != nil {
 			as.logger.Error("Failed to retrieve user schema list for validation",
 				log.String("error", svcErr.Error), log.String("code", svcErr.Code))

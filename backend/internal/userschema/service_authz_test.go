@@ -95,7 +95,7 @@ func (s *AuthzTestSuite) TestGetUserSchemaList_AllAllowed() {
 		authzService:    newAllowAllAuthz(s.T()),
 	}
 
-	resp, svcErr := svc.GetUserSchemaList(context.Background(), 10, 0)
+	resp, svcErr := svc.GetUserSchemaList(context.Background(), 10, 0, false)
 	s.Require().Nil(svcErr)
 	s.Require().NotNil(resp)
 	s.Equal(2, resp.TotalResults)
@@ -121,7 +121,7 @@ func (s *AuthzTestSuite) TestGetUserSchemaList_FilteredByOUIDs() {
 		authzService:    authzMock,
 	}
 
-	resp, svcErr := svc.GetUserSchemaList(context.Background(), 10, 0)
+	resp, svcErr := svc.GetUserSchemaList(context.Background(), 10, 0, false)
 	s.Require().Nil(svcErr)
 	s.Require().NotNil(resp)
 	s.Equal(1, resp.TotalResults)
@@ -141,7 +141,7 @@ func (s *AuthzTestSuite) TestGetUserSchemaList_EmptyAccessibleOUIDs() {
 		authzService:    authzMock,
 	}
 
-	resp, svcErr := svc.GetUserSchemaList(context.Background(), 10, 0)
+	resp, svcErr := svc.GetUserSchemaList(context.Background(), 10, 0, false)
 	s.Require().Nil(svcErr)
 	s.Require().NotNil(resp)
 	s.Equal(0, resp.TotalResults)
@@ -155,7 +155,7 @@ func (s *AuthzTestSuite) TestGetUserSchemaList_AuthzServiceError() {
 		authzService:    newAuthzError(s.T()),
 	}
 
-	resp, svcErr := svc.GetUserSchemaList(context.Background(), 10, 0)
+	resp, svcErr := svc.GetUserSchemaList(context.Background(), 10, 0, false)
 	s.Nil(resp)
 	s.Require().NotNil(svcErr)
 	s.Equal(ErrorInternalServerError.Code, svcErr.Code)
@@ -174,7 +174,7 @@ func (s *AuthzTestSuite) TestGetUserSchemaList_NilAuthzService() {
 		authzService:    nil,
 	}
 
-	resp, svcErr := svc.GetUserSchemaList(context.Background(), 10, 0)
+	resp, svcErr := svc.GetUserSchemaList(context.Background(), 10, 0, false)
 	s.Require().Nil(svcErr)
 	s.Require().NotNil(resp)
 	s.Equal(1, resp.TotalResults)
@@ -255,7 +255,7 @@ func (s *AuthzTestSuite) TestGetUserSchema_Denied() {
 		authzService:    authzMock,
 	}
 
-	result, svcErr := svc.GetUserSchema(context.Background(), "schema-1")
+	result, svcErr := svc.GetUserSchema(context.Background(), "schema-1", false)
 	s.Nil(result)
 	s.Require().NotNil(svcErr)
 	s.Equal(serviceerror.ErrorUnauthorized.Code, svcErr.Code)
@@ -272,7 +272,7 @@ func (s *AuthzTestSuite) TestGetUserSchema_AuthzError() {
 		authzService:    newAuthzError(s.T()),
 	}
 
-	result, svcErr := svc.GetUserSchema(context.Background(), "schema-1")
+	result, svcErr := svc.GetUserSchema(context.Background(), "schema-1", false)
 	s.Nil(result)
 	s.Require().NotNil(svcErr)
 	s.Equal(ErrorInternalServerError.Code, svcErr.Code)
@@ -507,10 +507,127 @@ func (s *AuthzTestSuite) TestGetUserSchema_NilAuthz_NoError() {
 		authzService:    nil,
 	}
 
-	result, svcErr := svc.GetUserSchema(context.Background(), "schema-1")
+	result, svcErr := svc.GetUserSchema(context.Background(), "schema-1", false)
 	s.Require().Nil(svcErr)
 	s.Require().NotNil(result)
 	s.Equal("schema-1", result.ID)
+}
+
+func (s *AuthzTestSuite) TestGetUserSchema_WithIncludeDisplay() {
+	s.Run("populates OUHandle when includeDisplay is true", func() {
+		storeMock := newUserSchemaStoreInterfaceMock(s.T())
+		storeMock.On("GetUserSchemaByID", mock.Anything, "schema-1").
+			Return(UserSchema{ID: "schema-1", Name: "test", OUID: testOUID1}, nil)
+
+		ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(s.T())
+		ouServiceMock.On(
+			"GetOrganizationUnitHandlesByIDs",
+			mock.Anything, []string{testOUID1},
+		).Return(map[string]string{testOUID1: "root"}, nil).Once()
+
+		svc := &userSchemaService{
+			userSchemaStore: storeMock,
+			transactioner:   &mockTransactioner{},
+			authzService:    nil,
+			ouService:       ouServiceMock,
+		}
+
+		result, svcErr := svc.GetUserSchema(
+			context.Background(), "schema-1", true)
+		s.Require().Nil(svcErr)
+		s.Require().NotNil(result)
+		s.Equal("root", result.OUHandle)
+		ouServiceMock.AssertExpectations(s.T())
+	})
+
+	s.Run("does not populate OUHandle when includeDisplay is false", func() {
+		storeMock := newUserSchemaStoreInterfaceMock(s.T())
+		storeMock.On("GetUserSchemaByID", mock.Anything, "schema-1").
+			Return(UserSchema{ID: "schema-1", Name: "test", OUID: testOUID1}, nil)
+
+		svc := &userSchemaService{
+			userSchemaStore: storeMock,
+			transactioner:   &mockTransactioner{},
+			authzService:    nil,
+		}
+
+		result, svcErr := svc.GetUserSchema(
+			context.Background(), "schema-1", false)
+		s.Require().Nil(svcErr)
+		s.Require().NotNil(result)
+		s.Equal("", result.OUHandle)
+	})
+
+	s.Run("returns schema with empty ouHandle when OU handle resolution fails", func() {
+		storeMock := newUserSchemaStoreInterfaceMock(s.T())
+		storeMock.On("GetUserSchemaByID", mock.Anything, "schema-1").
+			Return(UserSchema{ID: "schema-1", Name: "test", OUID: testOUID1}, nil)
+
+		ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(s.T())
+		ouServiceMock.On(
+			"GetOrganizationUnitHandlesByIDs",
+			mock.Anything, []string{testOUID1},
+		).Return(
+			(map[string]string)(nil),
+			&serviceerror.ServiceError{Code: "OU-5000"},
+		).Once()
+
+		svc := &userSchemaService{
+			userSchemaStore: storeMock,
+			transactioner:   &mockTransactioner{},
+			authzService:    nil,
+			ouService:       ouServiceMock,
+		}
+
+		result, svcErr := svc.GetUserSchema(
+			context.Background(), "schema-1", true)
+		s.Require().Nil(svcErr)
+		s.Require().NotNil(result)
+		s.Equal("schema-1", result.ID)
+		s.Empty(result.OUHandle)
+	})
+}
+
+func (s *AuthzTestSuite) TestGetUserSchemaList_WithIncludeDisplay() {
+	storeMock := newUserSchemaStoreInterfaceMock(s.T())
+	storeMock.On("GetUserSchemaListCount", mock.Anything).Return(2, nil)
+	storeMock.On("GetUserSchemaList", mock.Anything, 10, 0).Return(
+		[]UserSchemaListItem{
+			{ID: "s1", Name: "schema1", OUID: testOUID1},
+			{ID: "s2", Name: "schema2", OUID: testOUID2},
+		}, nil)
+
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(s.T())
+	ouServiceMock.On(
+		"GetOrganizationUnitHandlesByIDs",
+		mock.Anything,
+		mock.MatchedBy(func(ids []string) bool {
+			if len(ids) != 2 {
+				return false
+			}
+			expected := map[string]bool{testOUID1: true, testOUID2: true}
+			return expected[ids[0]] && expected[ids[1]]
+		}),
+	).Return(map[string]string{
+		testOUID1: "handle-1",
+		testOUID2: "handle-2",
+	}, nil).Once()
+
+	svc := &userSchemaService{
+		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
+		authzService:    newAllowAllAuthz(s.T()),
+		ouService:       ouServiceMock,
+	}
+
+	resp, svcErr := svc.GetUserSchemaList(
+		context.Background(), 10, 0, true)
+	s.Require().Nil(svcErr)
+	s.Require().NotNil(resp)
+	s.Require().Len(resp.Schemas, 2)
+	s.Equal("handle-1", resp.Schemas[0].OUHandle)
+	s.Equal("handle-2", resp.Schemas[1].OUHandle)
+	ouServiceMock.AssertExpectations(s.T())
 }
 
 func (s *AuthzTestSuite) TestGetUserSchemaByName_NilAuthz_NoError() {

@@ -41,11 +41,13 @@ const userSchemaLoggerComponentName = "UserSchemaService"
 
 // UserSchemaServiceInterface defines the interface for the user schema service.
 type UserSchemaServiceInterface interface {
-	GetUserSchemaList(ctx context.Context, limit, offset int) (*UserSchemaListResponse, *serviceerror.ServiceError)
+	GetUserSchemaList(ctx context.Context, limit, offset int,
+		includeDisplay bool) (*UserSchemaListResponse, *serviceerror.ServiceError)
 	CreateUserSchema(
 		ctx context.Context, request CreateUserSchemaRequest,
 	) (*UserSchema, *serviceerror.ServiceError)
-	GetUserSchema(ctx context.Context, schemaID string) (*UserSchema, *serviceerror.ServiceError)
+	GetUserSchema(ctx context.Context, schemaID string,
+		includeDisplay bool) (*UserSchema, *serviceerror.ServiceError)
 	GetUserSchemaByName(
 		ctx context.Context, schemaName string,
 	) (*UserSchema, *serviceerror.ServiceError)
@@ -100,7 +102,7 @@ func newUserSchemaService(
 }
 
 // GetUserSchemaList lists the user schemas with pagination.
-func (us *userSchemaService) GetUserSchemaList(ctx context.Context, limit, offset int) (
+func (us *userSchemaService) GetUserSchemaList(ctx context.Context, limit, offset int, includeDisplay bool) (
 	*UserSchemaListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
 
@@ -117,16 +119,16 @@ func (us *userSchemaService) GetUserSchemaList(ctx context.Context, limit, offse
 	// Unfiltered path: the caller can see all user schemas.
 	if accessible.AllAllowed {
 		logger.Debug("Caller has access to all user schemas, retrieving without OU filtering")
-		return us.listAllUserSchemas(ctx, limit, offset, logger)
+		return us.listAllUserSchemas(ctx, limit, offset, includeDisplay, logger)
 	}
 
 	// Filtered path: the caller has a restricted set of accessible OUs.
-	return us.listAccessibleUserSchemas(ctx, accessible.IDs, limit, offset, logger)
+	return us.listAccessibleUserSchemas(ctx, accessible.IDs, limit, offset, includeDisplay, logger)
 }
 
 // listAllUserSchemas retrieves user schemas without authorization filtering.
 func (us *userSchemaService) listAllUserSchemas(
-	ctx context.Context, limit, offset int, logger *log.Logger,
+	ctx context.Context, limit, offset int, includeDisplay bool, logger *log.Logger,
 ) (*UserSchemaListResponse, *serviceerror.ServiceError) {
 	totalCount, err := us.userSchemaStore.GetUserSchemaListCount(ctx)
 	if err != nil {
@@ -138,26 +140,32 @@ func (us *userSchemaService) listAllUserSchemas(
 		return nil, logAndReturnServerError(logger, "Failed to get user schema list", err)
 	}
 
+	if includeDisplay {
+		us.populateSchemaOUHandles(ctx, userSchemas, logger)
+	}
+
 	return &UserSchemaListResponse{
 		TotalResults: totalCount,
 		StartIndex:   offset + 1,
 		Count:        len(userSchemas),
 		Schemas:      userSchemas,
-		Links:        buildPaginationLinks(limit, offset, totalCount),
+		Links:        buildPaginationLinks(limit, offset, totalCount, utils.DisplayQueryParam(includeDisplay)),
 	}, nil
 }
 
 // listAccessibleUserSchemas retrieves only the user schemas belonging to the caller's accessible OUs.
 func (us *userSchemaService) listAccessibleUserSchemas(
-	ctx context.Context, ouIDs []string, limit, offset int, logger *log.Logger,
+	ctx context.Context, ouIDs []string, limit, offset int, includeDisplay bool, logger *log.Logger,
 ) (*UserSchemaListResponse, *serviceerror.ServiceError) {
+	displayQuery := utils.DisplayQueryParam(includeDisplay)
+
 	if len(ouIDs) == 0 {
 		return &UserSchemaListResponse{
 			TotalResults: 0,
 			StartIndex:   offset + 1,
 			Count:        0,
 			Schemas:      []UserSchemaListItem{},
-			Links:        buildPaginationLinks(limit, offset, 0),
+			Links:        buildPaginationLinks(limit, offset, 0, displayQuery),
 		}, nil
 	}
 
@@ -171,12 +179,16 @@ func (us *userSchemaService) listAccessibleUserSchemas(
 		return nil, logAndReturnServerError(logger, "Failed to get accessible user schema list", err)
 	}
 
+	if includeDisplay {
+		us.populateSchemaOUHandles(ctx, userSchemas, logger)
+	}
+
 	return &UserSchemaListResponse{
 		TotalResults: totalCount,
 		StartIndex:   offset + 1,
 		Count:        len(userSchemas),
 		Schemas:      userSchemas,
-		Links:        buildPaginationLinks(limit, offset, totalCount),
+		Links:        buildPaginationLinks(limit, offset, totalCount, displayQuery),
 	}, nil
 }
 
@@ -263,7 +275,7 @@ func (us *userSchemaService) CreateUserSchema(
 
 // GetUserSchema retrieves a user schema by its ID.
 func (us *userSchemaService) GetUserSchema(
-	ctx context.Context, schemaID string,
+	ctx context.Context, schemaID string, includeDisplay bool,
 ) (*UserSchema, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
 
@@ -283,6 +295,17 @@ func (us *userSchemaService) GetUserSchema(
 	if svcErr := us.checkUserSchemaAccess(
 		ctx, security.ActionReadUserSchema, userSchema.OUID); svcErr != nil {
 		return nil, svcErr
+	}
+
+	if includeDisplay {
+		handleMap, svcErr := us.ouService.GetOrganizationUnitHandlesByIDs(
+			ctx, []string{userSchema.OUID})
+		if svcErr != nil {
+			logger.Warn("Failed to resolve OU handle for user schema, skipping",
+				log.String("id", schemaID), log.Any("error", svcErr))
+		} else if handle, ok := handleMap[userSchema.OUID]; ok {
+			userSchema.OUHandle = handle
+		}
 	}
 
 	return &userSchema, nil
@@ -695,13 +718,39 @@ func validatePaginationParams(limit, offset int) *serviceerror.ServiceError {
 	return nil
 }
 
+// populateSchemaOUHandles resolves OU handles for a slice of user schemas in-place.
+func (us *userSchemaService) populateSchemaOUHandles(
+	ctx context.Context, schemas []UserSchemaListItem, logger *log.Logger,
+) {
+	ouIDs := make([]string, 0, len(schemas))
+	seen := make(map[string]bool, len(schemas))
+	for _, s := range schemas {
+		if s.OUID != "" && !seen[s.OUID] {
+			ouIDs = append(ouIDs, s.OUID)
+			seen[s.OUID] = true
+		}
+	}
+
+	handleMap, svcErr := us.ouService.GetOrganizationUnitHandlesByIDs(ctx, ouIDs)
+	if svcErr != nil {
+		logger.Warn("Failed to resolve OU handles for user schemas, skipping", log.Any("error", svcErr))
+		return
+	}
+
+	for i := range schemas {
+		if handle, ok := handleMap[schemas[i].OUID]; ok {
+			schemas[i].OUHandle = handle
+		}
+	}
+}
+
 // buildPaginationLinks builds pagination links for the response.
-func buildPaginationLinks(limit, offset, totalCount int) []Link {
+func buildPaginationLinks(limit, offset, totalCount int, displayQuery string) []Link {
 	links := make([]Link, 0)
 
 	if offset > 0 {
 		links = append(links, Link{
-			Href: fmt.Sprintf("/user-schemas?offset=0&limit=%d", limit),
+			Href: fmt.Sprintf("/user-schemas?offset=0&limit=%d%s", limit, displayQuery),
 			Rel:  "first",
 		})
 
@@ -710,7 +759,7 @@ func buildPaginationLinks(limit, offset, totalCount int) []Link {
 			prevOffset = 0
 		}
 		links = append(links, Link{
-			Href: fmt.Sprintf("/user-schemas?offset=%d&limit=%d", prevOffset, limit),
+			Href: fmt.Sprintf("/user-schemas?offset=%d&limit=%d%s", prevOffset, limit, displayQuery),
 			Rel:  "prev",
 		})
 	}
@@ -718,7 +767,7 @@ func buildPaginationLinks(limit, offset, totalCount int) []Link {
 	if offset+limit < totalCount {
 		nextOffset := offset + limit
 		links = append(links, Link{
-			Href: fmt.Sprintf("/user-schemas?offset=%d&limit=%d", nextOffset, limit),
+			Href: fmt.Sprintf("/user-schemas?offset=%d&limit=%d%s", nextOffset, limit, displayQuery),
 			Rel:  "next",
 		})
 	}
@@ -726,7 +775,7 @@ func buildPaginationLinks(limit, offset, totalCount int) []Link {
 	lastPageOffset := ((totalCount - 1) / limit) * limit
 	if offset < lastPageOffset {
 		links = append(links, Link{
-			Href: fmt.Sprintf("/user-schemas?offset=%d&limit=%d", lastPageOffset, limit),
+			Href: fmt.Sprintf("/user-schemas?offset=%d&limit=%d%s", lastPageOffset, limit, displayQuery),
 			Rel:  "last",
 		})
 	}

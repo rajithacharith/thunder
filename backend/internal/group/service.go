@@ -41,13 +41,14 @@ const loggerComponentName = "GroupMgtService"
 
 // GroupServiceInterface defines the interface for the group service.
 type GroupServiceInterface interface {
-	GetGroupList(ctx context.Context, limit, offset int) (*GroupListResponse, *serviceerror.ServiceError)
-	GetGroupsByPath(ctx context.Context, handlePath string, limit, offset int) (
+	GetGroupList(ctx context.Context, limit, offset int,
+		includeDisplay bool) (*GroupListResponse, *serviceerror.ServiceError)
+	GetGroupsByPath(ctx context.Context, handlePath string, limit, offset int, includeDisplay bool) (
 		*GroupListResponse, *serviceerror.ServiceError)
 	CreateGroup(ctx context.Context, request CreateGroupRequest) (*Group, *serviceerror.ServiceError)
 	CreateGroupByPath(ctx context.Context, handlePath string, request CreateGroupByPathRequest) (
 		*Group, *serviceerror.ServiceError)
-	GetGroup(ctx context.Context, groupID string) (*Group, *serviceerror.ServiceError)
+	GetGroup(ctx context.Context, groupID string, includeDisplay bool) (*Group, *serviceerror.ServiceError)
 	UpdateGroup(ctx context.Context, groupID string, request UpdateGroupRequest) (*Group, *serviceerror.ServiceError)
 	DeleteGroup(ctx context.Context, groupID string) *serviceerror.ServiceError
 	GetGroupMembers(ctx context.Context, groupID string, limit, offset int, includeDisplay bool) (
@@ -89,7 +90,7 @@ func newGroupServiceWithStore(
 
 // GetGroupList retrieves a list of groups. limit should be a positive integer & offset should be non-negative
 // integer
-func (gs *groupService) GetGroupList(ctx context.Context, limit, offset int) (
+func (gs *groupService) GetGroupList(ctx context.Context, limit, offset int, includeDisplay bool) (
 	*GroupListResponse, *serviceerror.ServiceError) {
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
@@ -101,13 +102,13 @@ func (gs *groupService) GetGroupList(ctx context.Context, limit, offset int) (
 	}
 
 	if accessibleOUs.AllAllowed {
-		return gs.listAllGroups(ctx, limit, offset)
+		return gs.listAllGroups(ctx, limit, offset, includeDisplay)
 	}
 
-	return gs.listGroupsByOUIDs(ctx, accessibleOUs.IDs, limit, offset)
+	return gs.listGroupsByOUIDs(ctx, accessibleOUs.IDs, limit, offset, includeDisplay)
 }
 
-func (gs *groupService) listAllGroups(ctx context.Context, limit, offset int) (
+func (gs *groupService) listAllGroups(ctx context.Context, limit, offset int, includeDisplay bool) (
 	*GroupListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	totalCount, err := gs.groupStore.GetGroupListCount(ctx)
@@ -127,20 +128,27 @@ func (gs *groupService) listAllGroups(ctx context.Context, limit, offset int) (
 		groupBasics = append(groupBasics, buildGroupBasic(groupDAO))
 	}
 
+	if includeDisplay {
+		gs.populateGroupOUHandles(ctx, groupBasics, logger)
+	}
+
+	displayQuery := utils.DisplayQueryParam(includeDisplay)
 	response := &GroupListResponse{
 		TotalResults: totalCount,
 		Groups:       groupBasics,
 		StartIndex:   offset + 1,
 		Count:        len(groupBasics),
-		Links:        utils.BuildPaginationLinks("/groups", limit, offset, totalCount, ""),
+		Links:        utils.BuildPaginationLinks("/groups", limit, offset, totalCount, displayQuery),
 	}
 
 	return response, nil
 }
 
-func (gs *groupService) listGroupsByOUIDs(ctx context.Context, ouIDs []string, limit, offset int) (
-	*GroupListResponse, *serviceerror.ServiceError) {
+func (gs *groupService) listGroupsByOUIDs(ctx context.Context, ouIDs []string, limit, offset int,
+	includeDisplay bool) (*GroupListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	displayQuery := utils.DisplayQueryParam(includeDisplay)
 
 	if len(ouIDs) == 0 {
 		return &GroupListResponse{
@@ -179,12 +187,16 @@ func (gs *groupService) listGroupsByOUIDs(ctx context.Context, ouIDs []string, l
 		groupBasics = append(groupBasics, buildGroupBasic(groupDAO))
 	}
 
+	if includeDisplay {
+		gs.populateGroupOUHandles(ctx, groupBasics, logger)
+	}
+
 	response := &GroupListResponse{
 		TotalResults: totalCount,
 		Groups:       groupBasics,
 		StartIndex:   offset + 1,
 		Count:        len(groupBasics),
-		Links:        utils.BuildPaginationLinks("/groups", limit, offset, totalCount, ""),
+		Links:        utils.BuildPaginationLinks("/groups", limit, offset, totalCount, displayQuery),
 	}
 
 	return response, nil
@@ -192,7 +204,7 @@ func (gs *groupService) listGroupsByOUIDs(ctx context.Context, ouIDs []string, l
 
 // GetGroupsByPath retrieves a list of groups by hierarchical handle path.
 func (gs *groupService) GetGroupsByPath(
-	ctx context.Context, handlePath string, limit, offset int,
+	ctx context.Context, handlePath string, limit, offset int, includeDisplay bool,
 ) (*GroupListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Getting groups by path", log.String("path", handlePath))
@@ -233,15 +245,20 @@ func (gs *groupService) GetGroupsByPath(
 
 	groupBasics := make([]GroupBasic, 0, len(groups))
 	for _, groupDAO := range groups {
-		groupBasics = append(groupBasics, buildGroupBasic(groupDAO))
+		g := buildGroupBasic(groupDAO)
+		if includeDisplay {
+			g.OUHandle = ou.Handle
+		}
+		groupBasics = append(groupBasics, g)
 	}
 
+	displayQuery := utils.DisplayQueryParam(includeDisplay)
 	response := &GroupListResponse{
 		TotalResults: totalCount,
 		Groups:       groupBasics,
 		StartIndex:   offset + 1,
 		Count:        len(groupBasics),
-		Links:        utils.BuildPaginationLinks("/groups", limit, offset, totalCount, ""),
+		Links:        utils.BuildPaginationLinks("/groups/tree/"+handlePath, limit, offset, totalCount, displayQuery),
 	}
 
 	return response, nil
@@ -365,7 +382,9 @@ func (gs *groupService) CreateGroupByPath(
 }
 
 // GetGroup retrieves a specific group by its id.
-func (gs *groupService) GetGroup(ctx context.Context, groupID string) (*Group, *serviceerror.ServiceError) {
+func (gs *groupService) GetGroup(
+	ctx context.Context, groupID string, includeDisplay bool,
+) (*Group, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Retrieving group", log.String("id", groupID))
 
@@ -388,6 +407,18 @@ func (gs *groupService) GetGroup(ctx context.Context, groupID string) (*Group, *
 	}
 
 	group := convertGroupDAOToGroup(groupDAO)
+
+	if includeDisplay {
+		handleMap, svcErr := gs.ouService.GetOrganizationUnitHandlesByIDs(
+			ctx, []string{group.OUID})
+		if svcErr != nil {
+			logger.Warn("Failed to resolve OU handle for group, skipping",
+				log.String("id", groupID), log.Any("error", svcErr))
+		} else if handle, ok := handleMap[group.OUID]; ok {
+			group.OUHandle = handle
+		}
+	}
+
 	logger.Debug("Successfully retrieved group", log.String("id", group.ID), log.String("name", group.Name))
 	return &group, nil
 }
@@ -1026,12 +1057,47 @@ func (gs *groupService) GetGroupsByIDs(
 
 // convertGroupDAOToGroup constructs a Group from a GroupDAO.
 func convertGroupDAOToGroup(groupDAO GroupDAO) Group {
-	return Group(groupDAO)
+	return Group{
+		ID:          groupDAO.ID,
+		Name:        groupDAO.Name,
+		Description: groupDAO.Description,
+		OUID:        groupDAO.OUID,
+		Members:     groupDAO.Members,
+	}
 }
 
 // buildGroupBasic constructs a GroupBasic from a GroupBasicDAO.
 func buildGroupBasic(groupDAO GroupBasicDAO) GroupBasic {
-	return GroupBasic(groupDAO)
+	return GroupBasic{
+		ID:          groupDAO.ID,
+		Name:        groupDAO.Name,
+		Description: groupDAO.Description,
+		OUID:        groupDAO.OUID,
+	}
+}
+
+// populateGroupOUHandles resolves OU handles for a slice of groups in-place.
+func (gs *groupService) populateGroupOUHandles(ctx context.Context, groups []GroupBasic, logger *log.Logger) {
+	ouIDs := make([]string, 0, len(groups))
+	seen := make(map[string]bool, len(groups))
+	for _, g := range groups {
+		if g.OUID != "" && !seen[g.OUID] {
+			ouIDs = append(ouIDs, g.OUID)
+			seen[g.OUID] = true
+		}
+	}
+
+	handleMap, svcErr := gs.ouService.GetOrganizationUnitHandlesByIDs(ctx, ouIDs)
+	if svcErr != nil {
+		logger.Warn("Failed to resolve OU handles for groups, skipping", log.Any("error", svcErr))
+		return
+	}
+
+	for i := range groups {
+		if handle, ok := handleMap[groups[i].OUID]; ok {
+			groups[i].OUHandle = handle
+		}
+	}
 }
 
 // validatePaginationParams validates pagination parameters.

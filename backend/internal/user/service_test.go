@@ -1727,15 +1727,21 @@ func TestUserService_GetUser_WithIncludeDisplay(t *testing.T) {
 	mockSchema.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
 		Return(map[string]string{"employee": "email"}, nil).Once()
 
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.On("GetOrganizationUnitHandlesByIDs", mock.Anything, []string{testOrgID}).
+		Return(map[string]string{testOrgID: "test-ou"}, nil).Once()
+
 	service := &userService{
 		userStore:         storeMock,
 		authzService:      newAllowAllAuthz(t),
 		userSchemaService: mockSchema,
+		ouService:         ouServiceMock,
 	}
 
 	user, err := service.GetUser(context.Background(), userID, true)
 	require.Nil(t, err)
 	require.Equal(t, "alice@example.com", user.Display)
+	require.Equal(t, "test-ou", user.OUHandle)
 }
 
 func TestUserService_DeleteUser(t *testing.T) {
@@ -5149,17 +5155,29 @@ func TestUserService_GetUserList_WithIncludeDisplay(t *testing.T) {
 	storeMock.On("GetUserListCount", mock.Anything, filters).Return(2, nil).Once()
 	storeMock.On("GetUserList", mock.Anything, limit, offset, filters).
 		Return([]User{
-			{ID: "user-1", Type: "employee", Attributes: json.RawMessage(`{"name":"Alice"}`)},
-			{ID: "user-2", Type: "employee", Attributes: json.RawMessage(`{"name":"Bob"}`)},
+			{ID: "user-1", OUID: "ou-1", Type: "employee", Attributes: json.RawMessage(`{"name":"Alice"}`)},
+			{ID: "user-2", OUID: "ou-2", Type: "employee", Attributes: json.RawMessage(`{"name":"Bob"}`)},
 		}, nil).Once()
 
 	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, []string{"employee"}).
 		Return(map[string]string{"employee": "name"}, (*serviceerror.ServiceError)(nil)).Once()
 
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.On("GetOrganizationUnitHandlesByIDs", mock.Anything,
+		mock.MatchedBy(func(ids []string) bool {
+			if len(ids) != 2 {
+				return false
+			}
+			expected := map[string]bool{"ou-1": true, "ou-2": true}
+			return expected[ids[0]] && expected[ids[1]]
+		}),
+	).Return(map[string]string{"ou-1": "engineering", "ou-2": "sales"}, nil).Once()
+
 	service := &userService{
 		userStore:         storeMock,
 		userSchemaService: schemaMock,
+		ouService:         ouServiceMock,
 		authzService:      newAllowAllAuthz(t),
 	}
 
@@ -5168,5 +5186,7 @@ func TestUserService_GetUserList_WithIncludeDisplay(t *testing.T) {
 	require.NotNil(t, resp)
 	require.Len(t, resp.Users, 2)
 	require.Equal(t, "Alice", resp.Users[0].Display)
+	require.Equal(t, "engineering", resp.Users[0].OUHandle)
 	require.Equal(t, "Bob", resp.Users[1].Display)
+	require.Equal(t, "sales", resp.Users[1].OUHandle)
 }

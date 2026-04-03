@@ -288,7 +288,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupList() {
 				groupStore:   storeMock,
 			}
 
-			response, err := service.GetGroupList(context.Background(), tc.limit, tc.offset)
+			response, err := service.GetGroupList(context.Background(), tc.limit, tc.offset, false)
 
 			if tc.wantErr != nil {
 				suite.Require().Nil(response)
@@ -353,7 +353,10 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 				startIndex:   1,
 				groupNames:   []string{"group-1", "group-2"},
 				linkRels:     []string{"next", "last"},
-				linkHrefs:    []string{"/groups?offset=2&limit=2", "/groups?offset=2&limit=2"},
+				linkHrefs: []string{
+					"/groups/tree/root/child?offset=2&limit=2",
+					"/groups/tree/root/child?offset=2&limit=2",
+				},
 			},
 		},
 		{
@@ -521,7 +524,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 				ouService:    ouServiceMock,
 			}
 
-			response, err := service.GetGroupsByPath(context.Background(), tc.path, tc.limit, tc.offset)
+			response, err := service.GetGroupsByPath(context.Background(), tc.path, tc.limit, tc.offset, false)
 
 			if tc.wantErr != nil || tc.wantErrFromSetup {
 				suite.Require().Nil(response)
@@ -969,7 +972,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroup() {
 				groupStore:   storeMock,
 			}
 
-			group, err := service.GetGroup(context.Background(), tc.id)
+			group, err := service.GetGroup(context.Background(), tc.id, false)
 
 			if tc.wantErr != nil {
 				suite.Require().Nil(group)
@@ -985,6 +988,119 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroup() {
 			}
 		})
 	}
+}
+
+func (suite *GroupServiceTestSuite) TestGroupService_GetGroup_WithIncludeDisplay() {
+	suite.Run("populates OUHandle when includeDisplay is true", func() {
+		storeMock := newGroupStoreInterfaceMock(suite.T())
+		storeMock.On("GetGroup", mock.Anything, "grp-001").
+			Return(GroupDAO{ID: "grp-001", Name: "test", OUID: testOUID1}, nil).
+			Once()
+
+		ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+		ouServiceMock.On(
+			"GetOrganizationUnitHandlesByIDs", mock.Anything, []string{testOUID1},
+		).Return(map[string]string{testOUID1: "root"}, nil).Once()
+
+		service := &groupService{
+			authzService: newAllowAllAuthz(suite.T()),
+			groupStore:   storeMock,
+			ouService:    ouServiceMock,
+		}
+
+		group, err := service.GetGroup(context.Background(), "grp-001", true)
+		suite.Require().Nil(err)
+		suite.Require().NotNil(group)
+		suite.Equal("root", group.OUHandle)
+		storeMock.AssertExpectations(suite.T())
+		ouServiceMock.AssertExpectations(suite.T())
+	})
+
+	suite.Run("does not populate OUHandle when includeDisplay is false", func() {
+		storeMock := newGroupStoreInterfaceMock(suite.T())
+		storeMock.On("GetGroup", mock.Anything, "grp-001").
+			Return(GroupDAO{ID: "grp-001", Name: "test", OUID: testOUID1}, nil).
+			Once()
+
+		service := &groupService{
+			authzService: newAllowAllAuthz(suite.T()),
+			groupStore:   storeMock,
+		}
+
+		group, err := service.GetGroup(context.Background(), "grp-001", false)
+		suite.Require().Nil(err)
+		suite.Require().NotNil(group)
+		suite.Equal("", group.OUHandle)
+		storeMock.AssertExpectations(suite.T())
+	})
+
+	suite.Run("returns group with empty ouHandle when OU handle resolution fails", func() {
+		storeMock := newGroupStoreInterfaceMock(suite.T())
+		storeMock.On("GetGroup", mock.Anything, "grp-001").
+			Return(GroupDAO{ID: "grp-001", Name: "test", OUID: testOUID1}, nil).
+			Once()
+
+		ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+		ouServiceMock.On(
+			"GetOrganizationUnitHandlesByIDs", mock.Anything, []string{testOUID1},
+		).Return(
+			(map[string]string)(nil), &serviceerror.ServiceError{Code: "OU-5000"},
+		).Once()
+
+		service := &groupService{
+			authzService: newAllowAllAuthz(suite.T()),
+			groupStore:   storeMock,
+			ouService:    ouServiceMock,
+		}
+
+		group, err := service.GetGroup(context.Background(), "grp-001", true)
+		suite.Require().Nil(err)
+		suite.Require().NotNil(group)
+		suite.Equal("grp-001", group.ID)
+		suite.Empty(group.OUHandle)
+	})
+}
+
+func (suite *GroupServiceTestSuite) TestGroupService_GetGroupList_WithIncludeDisplay() {
+	storeMock := newGroupStoreInterfaceMock(suite.T())
+	storeMock.On("GetGroupListCount", mock.Anything).Return(2, nil).Once()
+	storeMock.On("GetGroupList", mock.Anything, 10, 0).
+		Return([]GroupBasicDAO{
+			{ID: "g1", Name: "group-1", OUID: testOUID1},
+			{ID: "g2", Name: "group-2", OUID: testOUID2},
+		}, nil).Once()
+
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+	ouServiceMock.On(
+		"GetOrganizationUnitHandlesByIDs",
+		mock.Anything,
+		mock.MatchedBy(func(ids []string) bool {
+			if len(ids) != 2 {
+				return false
+			}
+			expected := map[string]bool{testOUID1: true, testOUID2: true}
+			return expected[ids[0]] && expected[ids[1]]
+		}),
+	).Return(map[string]string{
+		testOUID1: "handle-1",
+		testOUID2: "handle-2",
+	}, nil).Once()
+
+	service := &groupService{
+		authzService: newAllowAllAuthz(suite.T()),
+		groupStore:   storeMock,
+		ouService:    ouServiceMock,
+	}
+
+	response, err := service.GetGroupList(
+		context.Background(), 10, 0, true)
+	suite.Require().Nil(err)
+	suite.Require().NotNil(response)
+	suite.Require().Len(response.Groups, 2)
+	suite.Equal("handle-1", response.Groups[0].OUHandle)
+	suite.Equal("handle-2", response.Groups[1].OUHandle)
+	storeMock.AssertExpectations(suite.T())
+	ouServiceMock.AssertExpectations(suite.T())
 }
 
 func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {

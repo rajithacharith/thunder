@@ -688,6 +688,76 @@ func (_c *OrganizationUnitServiceInterfaceMock_GetOrganizationUnitGroupsByPath_C
 	return _c
 }
 
+// GetOrganizationUnitHandlesByIDs provides a mock function for the type OrganizationUnitServiceInterfaceMock
+func (_mock *OrganizationUnitServiceInterfaceMock) GetOrganizationUnitHandlesByIDs(ctx context.Context, ids []string) (map[string]string, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, ids)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetOrganizationUnitHandlesByIDs")
+	}
+
+	var r0 map[string]string
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) (map[string]string, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, ids)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) map[string]string); ok {
+		r0 = returnFunc(ctx, ids)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, ids)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// OrganizationUnitServiceInterfaceMock_GetOrganizationUnitHandlesByIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetOrganizationUnitHandlesByIDs'
+type OrganizationUnitServiceInterfaceMock_GetOrganizationUnitHandlesByIDs_Call struct {
+	*mock.Call
+}
+
+// GetOrganizationUnitHandlesByIDs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - ids []string
+func (_e *OrganizationUnitServiceInterfaceMock_Expecter) GetOrganizationUnitHandlesByIDs(ctx interface{}, ids interface{}) *OrganizationUnitServiceInterfaceMock_GetOrganizationUnitHandlesByIDs_Call {
+	return &OrganizationUnitServiceInterfaceMock_GetOrganizationUnitHandlesByIDs_Call{Call: _e.mock.On("GetOrganizationUnitHandlesByIDs", ctx, ids)}
+}
+
+func (_c *OrganizationUnitServiceInterfaceMock_GetOrganizationUnitHandlesByIDs_Call) Run(run func(ctx context.Context, ids []string)) *OrganizationUnitServiceInterfaceMock_GetOrganizationUnitHandlesByIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []string
+		if args[1] != nil {
+			arg1 = args[1].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *OrganizationUnitServiceInterfaceMock_GetOrganizationUnitHandlesByIDs_Call) Return(stringToString map[string]string, serviceError *serviceerror.ServiceError) *OrganizationUnitServiceInterfaceMock_GetOrganizationUnitHandlesByIDs_Call {
+	_c.Call.Return(stringToString, serviceError)
+	return _c
+}
+
+func (_c *OrganizationUnitServiceInterfaceMock_GetOrganizationUnitHandlesByIDs_Call) RunAndReturn(run func(ctx context.Context, ids []string) (map[string]string, *serviceerror.ServiceError)) *OrganizationUnitServiceInterfaceMock_GetOrganizationUnitHandlesByIDs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetOrganizationUnitList provides a mock function for the type OrganizationUnitServiceInterfaceMock
 func (_mock *OrganizationUnitServiceInterfaceMock) GetOrganizationUnitList(ctx context.Context, limit int, offset int) (*OrganizationUnitListResponse, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, limit, offset)

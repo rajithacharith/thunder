@@ -469,6 +469,7 @@ paths:
             format: uuid
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/offsetQueryParam'
+        - $ref: '#/components/parameters/includeGroupQueryParam'
       responses:
         "200":
           description: List of groups in the organization unit
@@ -1044,6 +1045,7 @@ paths:
           example: "engineering/frontend"
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/offsetQueryParam'
+        - $ref: '#/components/parameters/includeGroupQueryParam'
       responses:
         "200":
           description: List of groups in the organization unit
@@ -1149,6 +1151,17 @@ components:
         type: string
         enum:
           - display
+    includeGroupQueryParam:
+      in: query
+      name: include
+      required: false
+      description: |
+        Optional parameter to include additional display information.
+        - `display` - Include `ouHandle`, the human-readable handle of the organization unit, alongside the `ouId`.
+      schema:
+        type: string
+        enum:
+          - display
 
   schemas:
     OrganizationUnitBasic:
@@ -1202,6 +1215,13 @@ components:
           format: uuid
         name:
           type: string
+        ouId:
+          type: string
+          format: uuid
+        ouHandle:
+          type: string
+          readOnly: true
+          description: "Human-readable handle of the organization unit (only included when include=display query parameter is used)."
 
     Link:
       type: object

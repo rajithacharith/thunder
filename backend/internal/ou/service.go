@@ -75,6 +75,9 @@ type OrganizationUnitServiceInterface interface {
 	GetOrganizationUnitGroupsByPath(
 		ctx context.Context, handlePath string, limit, offset int,
 	) (*GroupListResponse, *serviceerror.ServiceError)
+	GetOrganizationUnitHandlesByIDs(
+		ctx context.Context, ids []string,
+	) (map[string]string, *serviceerror.ServiceError)
 }
 
 // ConfigurableOUService extends OrganizationUnitServiceInterface with methods for
@@ -1122,6 +1125,31 @@ func buildOrganizationUnitListResponse(
 		Count:             len(children),
 		Links:             utils.BuildPaginationLinks(base, limit, offset, totalCount, ""),
 	}, nil
+}
+
+// GetOrganizationUnitHandlesByIDs retrieves a map of organization unit ID to handle
+// for the given IDs. This is useful for enriching responses with OU handles.
+func (ous *organizationUnitService) GetOrganizationUnitHandlesByIDs(
+	ctx context.Context, ids []string,
+) (map[string]string, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
+
+	if len(ids) == 0 {
+		return map[string]string{}, nil
+	}
+
+	ouBasics, err := ous.ouStore.GetOrganizationUnitsByIDs(ctx, ids)
+	if err != nil {
+		logger.Error("Failed to get organization units by IDs", log.Error(err))
+		return nil, &ErrorInternalServerError
+	}
+
+	handleMap := make(map[string]string, len(ouBasics))
+	for _, ou := range ouBasics {
+		handleMap[ou.ID] = ou.Handle
+	}
+
+	return handleMap, nil
 }
 
 // stringPtrEqual compares two string pointers by their values.
