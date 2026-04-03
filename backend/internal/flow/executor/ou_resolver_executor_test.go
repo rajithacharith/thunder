@@ -466,6 +466,130 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_GetChildrenError_Re
 	suite.mockOUService.AssertExpectations(suite.T())
 }
 
+// --- PromptAll strategy tests ---
+
+func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_FirstInvocation_RequestsInput() {
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		NodeProperties: map[string]interface{}{
+			common.NodePropertyOUResolveFrom: ouResolveFromPromptAll,
+		},
+		RuntimeData: map[string]string{},
+		UserInputs:  map[string]string{},
+	}
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
+	assert.NotEmpty(suite.T(), result.Inputs)
+	assert.Equal(suite.T(), ouIDKey, result.Inputs[0].Identifier)
+	assert.Equal(suite.T(), "OU_SELECT", result.Inputs[0].Type)
+	// PromptAll should NOT set DataRootOUID (frontend shows full tree)
+	assert.Empty(suite.T(), result.AdditionalData[common.DataRootOUID])
+	suite.mockOUService.AssertNotCalled(suite.T(), "IsOrganizationUnitExists", mock.Anything, mock.Anything)
+}
+
+func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_ValidOUSelection() {
+	selectedOUID := "valid-ou-123"
+
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		NodeProperties: map[string]interface{}{
+			common.NodePropertyOUResolveFrom: ouResolveFromPromptAll,
+		},
+		RuntimeData: map[string]string{},
+		UserInputs: map[string]string{
+			ouIDKey: selectedOUID,
+		},
+	}
+
+	suite.mockOUService.On("IsOrganizationUnitExists", mock.Anything, selectedOUID).
+		Return(true, (*serviceerror.ServiceError)(nil))
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecComplete, result.Status)
+	assert.Equal(suite.T(), selectedOUID, result.RuntimeData[ouIDKey])
+	suite.mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_NonExistentOU() {
+	selectedOUID := "nonexistent-ou-999"
+
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		NodeProperties: map[string]interface{}{
+			common.NodePropertyOUResolveFrom: ouResolveFromPromptAll,
+		},
+		RuntimeData: map[string]string{},
+		UserInputs: map[string]string{
+			ouIDKey: selectedOUID,
+		},
+	}
+
+	suite.mockOUService.On("IsOrganizationUnitExists", mock.Anything, selectedOUID).
+		Return(false, (*serviceerror.ServiceError)(nil))
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecFailure, result.Status)
+	assert.Equal(suite.T(), "The selected organization unit does not exist.", result.FailureReason)
+	suite.mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_ServiceError() {
+	selectedOUID := "some-ou-123"
+
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		NodeProperties: map[string]interface{}{
+			common.NodePropertyOUResolveFrom: ouResolveFromPromptAll,
+		},
+		RuntimeData: map[string]string{},
+		UserInputs: map[string]string{
+			ouIDKey: selectedOUID,
+		},
+	}
+
+	svcErr := &serviceerror.ServiceError{
+		Type:  serviceerror.ServerErrorType,
+		Code:  "OU-50001",
+		Error: "internal error",
+	}
+	suite.mockOUService.On("IsOrganizationUnitExists", mock.Anything, selectedOUID).
+		Return(false, svcErr)
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "failed to validate selected organization unit")
+	suite.mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_EmptyOUInput_RequestsInput() {
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		NodeProperties: map[string]interface{}{
+			common.NodePropertyOUResolveFrom: ouResolveFromPromptAll,
+		},
+		RuntimeData: map[string]string{},
+		UserInputs: map[string]string{
+			ouIDKey: "",
+		},
+	}
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
+	assert.NotEmpty(suite.T(), result.Inputs)
+	suite.mockOUService.AssertNotCalled(suite.T(), "IsOrganizationUnitExists", mock.Anything, mock.Anything)
+}
+
 func TestOUResolverExecutorSuite(t *testing.T) {
 	suite.Run(t, new(OUResolverExecutorTestSuite))
 }

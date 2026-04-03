@@ -32,6 +32,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/userschema"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
+	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
 
@@ -39,6 +40,7 @@ type UserTypeResolverTestSuite struct {
 	suite.Suite
 	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
 	mockFlowFactory       *coremock.FlowFactoryInterfaceMock
+	mockOUService         *oumock.OrganizationUnitServiceInterfaceMock
 	executor              *userTypeResolver
 }
 
@@ -64,7 +66,8 @@ func (suite *UserTypeResolverTestSuite) SetupTest() {
 		defaultInputs, []common.Input{}).
 		Return(createMockUserTypeResolverExecutor(suite.T()))
 
-	suite.executor = newUserTypeResolver(suite.mockFlowFactory, suite.mockUserSchemaService)
+	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+	suite.executor = newUserTypeResolver(suite.mockFlowFactory, suite.mockUserSchemaService, suite.mockOUService)
 }
 
 func createMockUserTypeResolverExecutor(t *testing.T) core.ExecutorInterface {
@@ -112,7 +115,8 @@ func (suite *UserTypeResolverTestSuite) TestNewUserTypeResolver() {
 		defaultInputs, []common.Input{}).
 		Return(createMockUserTypeResolverExecutor(suite.T()))
 
-	executor := newUserTypeResolver(mockFlowFactory, mockUserSchemaService)
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+	executor := newUserTypeResolver(mockFlowFactory, mockUserSchemaService, mockOUService)
 
 	assert.NotNil(suite.T(), executor)
 	assert.Equal(suite.T(), ExecutorNameUserTypeResolver, executor.GetName())
@@ -1301,4 +1305,258 @@ func (suite *UserTypeResolverTestSuite) TestPromptUserSelection_PreservesExistin
 	forwardedInputs, ok := execResp.ForwardedData[common.ForwardedDataKeyInputs]
 	assert.True(suite.T(), ok)
 	assert.NotNil(suite.T(), forwardedInputs)
+}
+
+// --- OU-first flow tests (UserOnboarding with ouId in RuntimeData) ---
+
+func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_UserTypeValidForOU() {
+	suite.SetupTest()
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeUserOnboarding,
+		UserInputs: map[string]string{
+			userTypeKey: "employee",
+		},
+		RuntimeData: map[string]string{
+			ouIDKey: "child-ou-456",
+		},
+	}
+
+	userSchema := &userschema.UserSchema{
+		ID:   "schema-123",
+		Name: "employee",
+		OUID: "parent-ou-123",
+	}
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
+		Return(userSchema, nil)
+	suite.mockOUService.On("IsParent", mock.Anything, "parent-ou-123", "child-ou-456").
+		Return(true, (*serviceerror.ServiceError)(nil))
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), common.ExecComplete, result.Status)
+	assert.Equal(suite.T(), "employee", result.RuntimeData[userTypeKey])
+	assert.Equal(suite.T(), "parent-ou-123", result.RuntimeData[defaultOUIDKey])
+	suite.mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_UserTypeNotValidForOU() {
+	suite.SetupTest()
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeUserOnboarding,
+		UserInputs: map[string]string{
+			userTypeKey: "employee",
+		},
+		RuntimeData: map[string]string{
+			ouIDKey: "unrelated-ou-789",
+		},
+	}
+
+	userSchema := &userschema.UserSchema{
+		ID:   "schema-123",
+		Name: "employee",
+		OUID: "parent-ou-123",
+	}
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
+		Return(userSchema, nil)
+	suite.mockOUService.On("IsParent", mock.Anything, "parent-ou-123", "unrelated-ou-789").
+		Return(false, (*serviceerror.ServiceError)(nil))
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), common.ExecFailure, result.Status)
+	assert.Equal(suite.T(), "User type is not valid for the selected organization unit", result.FailureReason)
+	suite.mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_IsParentServiceError() {
+	suite.SetupTest()
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeUserOnboarding,
+		UserInputs: map[string]string{
+			userTypeKey: "employee",
+		},
+		RuntimeData: map[string]string{
+			ouIDKey: "child-ou-456",
+		},
+	}
+
+	userSchema := &userschema.UserSchema{
+		ID:   "schema-123",
+		Name: "employee",
+		OUID: "parent-ou-123",
+	}
+	suite.mockUserSchemaService.On("GetUserSchemaByName", ctx.Context, "employee").
+		Return(userSchema, nil)
+	svcErr := &serviceerror.ServiceError{
+		Type:  serviceerror.ServerErrorType,
+		Error: "internal error",
+	}
+	suite.mockOUService.On("IsParent", mock.Anything, "parent-ou-123", "child-ou-456").
+		Return(false, svcErr)
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "failed to validate user type against selected OU")
+	suite.mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_FiltersSchemasByOU() {
+	suite.SetupTest()
+
+	ctx := &core.NodeContext{
+		FlowID:     "flow-123",
+		FlowType:   common.FlowTypeUserOnboarding,
+		UserInputs: map[string]string{},
+		RuntimeData: map[string]string{
+			ouIDKey: "child-ou-456",
+		},
+	}
+
+	schemaList := &userschema.UserSchemaListResponse{
+		Schemas: []userschema.UserSchemaListItem{
+			{Name: "employee", OUID: "parent-ou-123"},
+			{Name: "customer", OUID: "other-ou-789"},
+			{Name: "partner", OUID: "parent-ou-123"},
+		},
+	}
+	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0, false).
+		Return(schemaList, nil)
+
+	// employee's OU is ancestor of selected OU
+	suite.mockOUService.On("IsParent", mock.Anything, "parent-ou-123", "child-ou-456").
+		Return(true, (*serviceerror.ServiceError)(nil))
+	// customer's OU is NOT ancestor of selected OU
+	suite.mockOUService.On("IsParent", mock.Anything, "other-ou-789", "child-ou-456").
+		Return(false, (*serviceerror.ServiceError)(nil))
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
+	assert.Len(suite.T(), result.Inputs, 1)
+	// Only employee and partner should remain (both have parent-ou-123)
+	assert.ElementsMatch(suite.T(), []string{"employee", "partner"}, result.Inputs[0].Options)
+	suite.mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_FiltersSchemasToSingle_AutoSelect() {
+	suite.SetupTest()
+
+	ctx := &core.NodeContext{
+		FlowID:     "flow-123",
+		FlowType:   common.FlowTypeUserOnboarding,
+		UserInputs: map[string]string{},
+		RuntimeData: map[string]string{
+			ouIDKey: "child-ou-456",
+		},
+	}
+
+	schemaList := &userschema.UserSchemaListResponse{
+		Schemas: []userschema.UserSchemaListItem{
+			{Name: "employee", OUID: "parent-ou-123"},
+			{Name: "customer", OUID: "other-ou-789"},
+		},
+	}
+	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0, false).
+		Return(schemaList, nil)
+
+	suite.mockOUService.On("IsParent", mock.Anything, "parent-ou-123", "child-ou-456").
+		Return(true, (*serviceerror.ServiceError)(nil))
+	suite.mockOUService.On("IsParent", mock.Anything, "other-ou-789", "child-ou-456").
+		Return(false, (*serviceerror.ServiceError)(nil))
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), common.ExecComplete, result.Status)
+	assert.Equal(suite.T(), "employee", result.RuntimeData[userTypeKey])
+	assert.Equal(suite.T(), "parent-ou-123", result.RuntimeData[defaultOUIDKey])
+	suite.mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_AllSchemasFilteredOut() {
+	suite.SetupTest()
+
+	ctx := &core.NodeContext{
+		FlowID:     "flow-123",
+		FlowType:   common.FlowTypeUserOnboarding,
+		UserInputs: map[string]string{},
+		RuntimeData: map[string]string{
+			ouIDKey: "unrelated-ou-999",
+		},
+	}
+
+	schemaList := &userschema.UserSchemaListResponse{
+		Schemas: []userschema.UserSchemaListItem{
+			{Name: "employee", OUID: "ou-123"},
+			{Name: "customer", OUID: "ou-456"},
+		},
+	}
+	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0, false).
+		Return(schemaList, nil)
+
+	suite.mockOUService.On("IsParent", mock.Anything, "ou-123", "unrelated-ou-999").
+		Return(false, (*serviceerror.ServiceError)(nil))
+	suite.mockOUService.On("IsParent", mock.Anything, "ou-456", "unrelated-ou-999").
+		Return(false, (*serviceerror.ServiceError)(nil))
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), common.ExecFailure, result.Status)
+	assert.Equal(suite.T(), "No valid user types available for this flow", result.FailureReason)
+	suite.mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_IsParentErrorAbortsFiltering() {
+	suite.SetupTest()
+
+	ctx := &core.NodeContext{
+		FlowID:     "flow-123",
+		FlowType:   common.FlowTypeUserOnboarding,
+		UserInputs: map[string]string{},
+		RuntimeData: map[string]string{
+			ouIDKey: "child-ou-456",
+		},
+	}
+
+	schemaList := &userschema.UserSchemaListResponse{
+		Schemas: []userschema.UserSchemaListItem{
+			{Name: "employee", OUID: "parent-ou-123"},
+			{Name: "customer", OUID: "error-ou"},
+		},
+	}
+	suite.mockUserSchemaService.On("GetUserSchemaList", ctx.Context, 100, 0, false).
+		Return(schemaList, nil)
+
+	suite.mockOUService.On("IsParent", mock.Anything, "parent-ou-123", "child-ou-456").
+		Return(true, (*serviceerror.ServiceError)(nil))
+	svcErr := &serviceerror.ServiceError{
+		Type:  serviceerror.ServerErrorType,
+		Error: "internal error",
+	}
+	suite.mockOUService.On("IsParent", mock.Anything, "error-ou", "child-ou-456").
+		Return(false, svcErr)
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "failed to check OU ancestry for schema customer")
+	suite.mockOUService.AssertExpectations(suite.T())
 }
