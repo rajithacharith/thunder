@@ -551,6 +551,47 @@ func (suite *UserStoreTestSuite) TestGetUserGroups() {
 	suite.Equal("admin", groups[0].Name)
 }
 
+func (suite *UserStoreTestSuite) TestGetTransitiveUserGroups() {
+	userID := svcTestUserID1
+
+	rows := []map[string]interface{}{
+		{"id": "group-1", "name": "admin", "ou_id": "ou-1"},
+		{"id": "group-2", "name": "engineering", "ou_id": "ou-1"},
+	}
+
+	suite.mockDB.On("QueryContext", mock.Anything, QueryGetTransitiveGroupsForUser, userID, testDeploymentID).
+		Return(rows, nil)
+
+	groups, err := suite.store.GetTransitiveUserGroups(context.Background(), userID)
+	suite.NoError(err)
+	suite.Len(groups, 2)
+	suite.Equal("admin", groups[0].Name)
+	suite.Equal("engineering", groups[1].Name)
+}
+
+func (suite *UserStoreTestSuite) TestGetTransitiveUserGroups_Empty() {
+	userID := svcTestUserID1
+
+	suite.mockDB.On("QueryContext", mock.Anything, QueryGetTransitiveGroupsForUser, userID, testDeploymentID).
+		Return([]map[string]interface{}{}, nil)
+
+	groups, err := suite.store.GetTransitiveUserGroups(context.Background(), userID)
+	suite.NoError(err)
+	suite.Empty(groups)
+}
+
+func (suite *UserStoreTestSuite) TestGetTransitiveUserGroups_DBError() {
+	userID := svcTestUserID1
+
+	suite.mockDB.On("QueryContext", mock.Anything, QueryGetTransitiveGroupsForUser, userID, testDeploymentID).
+		Return(nil, errors.New("database error"))
+
+	groups, err := suite.store.GetTransitiveUserGroups(context.Background(), userID)
+	suite.Error(err)
+	suite.Nil(groups)
+	suite.Contains(err.Error(), "failed to get transitive groups for user")
+}
+
 func (suite *UserStoreTestSuite) TestValidateUserIDs() {
 	userIDs := []string{svcTestUserID1, "user-2"}
 

@@ -196,6 +196,11 @@ func (c *compositeUserStore) GetUserGroups(
 	return c.dbStore.GetUserGroups(ctx, userID, limit, offset)
 }
 
+// GetTransitiveUserGroups retrieves all groups a user belongs to, including nested group membership.
+func (c *compositeUserStore) GetTransitiveUserGroups(ctx context.Context, userID string) ([]UserGroup, error) {
+	return c.dbStore.GetTransitiveUserGroups(ctx, userID)
+}
+
 // UpdateUser updates a user in the database store only.
 // Cannot update declarative users.
 func (c *compositeUserStore) UpdateUser(ctx context.Context, user *User) error {

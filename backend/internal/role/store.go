@@ -53,6 +53,7 @@ type roleStoreInterface interface {
 	CheckRoleNameExistsExcludingID(ctx context.Context, ouID, name, excludeRoleID string) (bool, error)
 	GetAuthorizedPermissions(
 		ctx context.Context, userID string, groupIDs []string, requestedPermissions []string) ([]string, error)
+	GetUserRoles(ctx context.Context, userID string, groupIDs []string) ([]string, error)
 	IsRoleDeclarative(ctx context.Context, roleID string) (bool, error)
 }
 
@@ -550,6 +551,36 @@ func (s *roleStore) GetAuthorizedPermissions(
 	}
 
 	return permissions, nil
+}
+
+// GetUserRoles retrieves the names of roles assigned to a user directly and/or through group membership.
+func (s *roleStore) GetUserRoles(
+	ctx context.Context, userID string, groupIDs []string,
+) ([]string, error) {
+	dbClient, err := s.getConfigDBClient()
+	if err != nil {
+		return nil, err
+	}
+
+	if groupIDs == nil {
+		groupIDs = []string{}
+	}
+
+	query, args := buildUserRolesQuery(userID, groupIDs, s.deploymentID)
+
+	results, err := dbClient.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user roles: %w", err)
+	}
+
+	roles := make([]string, 0)
+	for _, row := range results {
+		if name, ok := row["name"].(string); ok {
+			roles = append(roles, name)
+		}
+	}
+
+	return roles, nil
 }
 
 // IsRoleDeclarative checks if a role is defined in declarative configuration.

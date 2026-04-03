@@ -25,6 +25,7 @@ type UserProviderInterface interface {
 	IdentifyUser(filters map[string]interface{}) (*string, *UserProviderError)
 	GetUser(userID string) (*User, *UserProviderError)
 	GetUserGroups(userID string, limit, offset int) (*UserGroupListResponse, *UserProviderError)
+	GetTransitiveUserGroups(userID string) ([]UserGroup, *UserProviderError)
 	UpdateUser(userID string, user *User) (*User, *UserProviderError)
 	CreateUser(user *User) (*User, *UserProviderError)
 	UpdateUserCredentials(userID string, credentials json.RawMessage) *UserProviderError

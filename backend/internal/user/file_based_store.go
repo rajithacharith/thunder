@@ -180,6 +180,12 @@ func (f *userFileBasedStore) GetUserGroups(
 	return []UserGroup{}, nil
 }
 
+// GetTransitiveUserGroups returns an empty list for file-based store since group membership
+// is only managed in the database.
+func (f *userFileBasedStore) GetTransitiveUserGroups(ctx context.Context, userID string) ([]UserGroup, error) {
+	return []UserGroup{}, nil
+}
+
 // UpdateUser updates a user in the file store (unsupported).
 func (f *userFileBasedStore) UpdateUser(ctx context.Context, user *User) error {
 	return errors.New("UpdateUser is not supported in file-based store")

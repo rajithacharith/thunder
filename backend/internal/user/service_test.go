@@ -5190,3 +5190,56 @@ func TestUserService_GetUserList_WithIncludeDisplay(t *testing.T) {
 	require.Equal(t, "Bob", resp.Users[1].Display)
 	require.Equal(t, "sales", resp.Users[1].OUHandle)
 }
+
+// ServiceGetTransitiveUserGroupsTestSuite tests the GetTransitiveUserGroups method.
+type ServiceGetTransitiveUserGroupsTestSuite struct {
+	suite.Suite
+	service   *userService
+	storeMock *userStoreInterfaceMock
+}
+
+func (suite *ServiceGetTransitiveUserGroupsTestSuite) SetupTest() {
+	suite.storeMock = newUserStoreInterfaceMock(suite.T())
+	suite.service = &userService{
+		userStore: suite.storeMock,
+	}
+}
+
+func (suite *ServiceGetTransitiveUserGroupsTestSuite) TestSuccess() {
+	ctx := context.Background()
+	expected := []UserGroup{
+		{ID: "g1", Name: "admin", OUID: "ou-1"},
+		{ID: "g2", Name: "dev", OUID: "ou-1"},
+	}
+
+	suite.storeMock.On("GetTransitiveUserGroups", ctx, "user-1").Return(expected, nil).Once()
+
+	groups, err := suite.service.GetTransitiveUserGroups(ctx, "user-1")
+	suite.Nil(err)
+	suite.Equal(expected, groups)
+}
+
+func (suite *ServiceGetTransitiveUserGroupsTestSuite) TestEmptyUserID() {
+	ctx := context.Background()
+
+	groups, err := suite.service.GetTransitiveUserGroups(ctx, "")
+	suite.NotNil(err)
+	suite.Nil(groups)
+	suite.Equal(ErrorMissingUserID.Code, err.Code)
+}
+
+func (suite *ServiceGetTransitiveUserGroupsTestSuite) TestStoreError() {
+	ctx := context.Background()
+
+	suite.storeMock.On("GetTransitiveUserGroups", ctx, "user-1").
+		Return(nil, errors.New("db error")).Once()
+
+	groups, err := suite.service.GetTransitiveUserGroups(ctx, "user-1")
+	suite.NotNil(err)
+	suite.Nil(groups)
+	suite.Equal(ErrorInternalServerError.Code, err.Code)
+}
+
+func TestServiceGetTransitiveUserGroupsTestSuite(t *testing.T) {
+	suite.Run(t, new(ServiceGetTransitiveUserGroupsTestSuite))
+}

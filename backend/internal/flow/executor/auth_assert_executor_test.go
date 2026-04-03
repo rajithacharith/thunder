@@ -45,6 +45,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
+	"github.com/asgardeo/thunder/tests/mocks/rolemock"
 	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
@@ -64,6 +65,7 @@ type AuthAssertExecutorTestSuite struct {
 	mockUserProvider      *userprovidermock.UserProviderInterfaceMock
 	mockFlowFactory       *coremock.FlowFactoryInterfaceMock
 	mockAttributeCacheSvc *attributecachemock.AttributeCacheServiceInterfaceMock
+	mockRoleService       *rolemock.RoleServiceInterfaceMock
 	executor              *authAssertExecutor
 }
 
@@ -82,6 +84,7 @@ func (suite *AuthAssertExecutorTestSuite) SetupTest() {
 	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 	suite.mockAttributeCacheSvc = attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
+	suite.mockRoleService = rolemock.NewRoleServiceInterfaceMock(suite.T())
 
 	mockExec := createMockExecutorSimple(suite.T(), ExecutorNameAuthAssert, common.ExecutorTypeUtility)
 	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameAuthAssert, common.ExecutorTypeUtility,
@@ -89,7 +92,7 @@ func (suite *AuthAssertExecutorTestSuite) SetupTest() {
 
 	suite.executor = newAuthAssertExecutor(suite.mockFlowFactory, suite.mockJWTService,
 		suite.mockOUService, suite.mockAssertGenerator, suite.mockCredsAuthSvc, suite.mockUserProvider,
-		suite.mockAttributeCacheSvc)
+		suite.mockAttributeCacheSvc, suite.mockRoleService)
 }
 
 func createMockExecutorSimple(t *testing.T, name string,
@@ -839,15 +842,13 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups() {
 		},
 	}
 
-	userGroups := &userprovider.UserGroupListResponse{
-		Groups: []userprovider.UserGroup{
-			{Name: "admin"},
-			{Name: "developer"},
-			{Name: "viewer"},
-		},
+	userGroups := []userprovider.UserGroup{
+		{Name: "admin"},
+		{Name: "developer"},
+		{Name: "viewer"},
 	}
 
-	suite.mockUserProvider.On("GetUserGroups", "user-123", oauth2const.DefaultGroupListLimit, 0).
+	suite.mockUserProvider.On("GetTransitiveUserGroups", "user-123").
 		Return(userGroups, nil)
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
@@ -885,12 +886,8 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_EmptyGroups() {
 		},
 	}
 
-	userGroups := &userprovider.UserGroupListResponse{
-		Groups: []userprovider.UserGroup{},
-	}
-
-	suite.mockUserProvider.On("GetUserGroups", "user-123", oauth2const.DefaultGroupListLimit, 0).
-		Return(userGroups, nil)
+	suite.mockUserProvider.On("GetTransitiveUserGroups", "user-123").
+		Return([]userprovider.UserGroup{}, nil)
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			// Should NOT contain groups claim when groups list is empty
@@ -924,7 +921,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_GetUserGroupsFa
 		},
 	}
 
-	suite.mockUserProvider.On("GetUserGroups", "user-123", oauth2const.DefaultGroupListLimit, 0).
+	suite.mockUserProvider.On("GetTransitiveUserGroups", "user-123").
 		Return(nil, &userprovider.UserProviderError{Message: "failed to fetch groups", Description: "database error"})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -1519,14 +1516,12 @@ func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithGroups()
 		RuntimeData: map[string]string{},
 	}
 
-	userGroups := &userprovider.UserGroupListResponse{
-		Groups: []userprovider.UserGroup{
-			{Name: "admin"},
-			{Name: "developer"},
-		},
+	userGroups := []userprovider.UserGroup{
+		{Name: "admin"},
+		{Name: "developer"},
 	}
 
-	suite.mockUserProvider.On("GetUserGroups", "user-123", oauth2const.DefaultGroupListLimit, 0).
+	suite.mockUserProvider.On("GetTransitiveUserGroups", "user-123").
 		Return(userGroups, nil)
 
 	attrs, err := suite.executor.resolveUserAttributes(ctx, []string{oauth2const.UserAttributeGroups})
@@ -1549,7 +1544,7 @@ func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithGroups_F
 		RuntimeData: map[string]string{},
 	}
 
-	suite.mockUserProvider.On("GetUserGroups", "user-123", oauth2const.DefaultGroupListLimit, 0).
+	suite.mockUserProvider.On("GetTransitiveUserGroups", "user-123").
 		Return(nil, &userprovider.UserProviderError{Message: "groups_fetch_failed", Description: "database error"})
 
 	attrs, err := suite.executor.resolveUserAttributes(ctx, []string{oauth2const.UserAttributeGroups})
@@ -1576,7 +1571,7 @@ func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithGroups_E
 	// Groups attribute should not be present when UserID is empty
 	_, hasGroups := attrs[oauth2const.UserAttributeGroups]
 	assert.False(suite.T(), hasGroups)
-	suite.mockUserProvider.AssertNotCalled(suite.T(), "GetUserGroups")
+	suite.mockUserProvider.AssertNotCalled(suite.T(), "GetTransitiveUserGroups")
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithUserType() {
@@ -1706,14 +1701,12 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_GroupsI
 		},
 	}
 
-	userGroups := &userprovider.UserGroupListResponse{
-		Groups: []userprovider.UserGroup{
-			{Name: "admin"},
-			{Name: "developer"},
-		},
+	userGroups := []userprovider.UserGroup{
+		{Name: "admin"},
+		{Name: "developer"},
 	}
 
-	suite.mockUserProvider.On("GetUserGroups", "user-123", oauth2const.DefaultGroupListLimit, 0).
+	suite.mockUserProvider.On("GetTransitiveUserGroups", "user-123").
 		Return(userGroups, nil)
 	suite.mockAttributeCacheSvc.On("CreateAttributeCache", mock.Anything,
 		mock.MatchedBy(func(cache *attributecache.AttributeCache) bool {
