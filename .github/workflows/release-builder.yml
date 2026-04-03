@@ -332,13 +332,6 @@ jobs:
           if-no-files-found: error
           overwrite: true
 
-      - name: 📦 Upload Documentation Artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: thunder-docs
-          path: docs/build
-          if-no-files-found: error
-
       - name: 🏷️ Create Git Tag
         run: |
           git config --local user.email "action@github.com"
@@ -921,42 +914,10 @@ jobs:
           release-tag: ${{ steps.release_info.outputs.release_tag }}
           release-url: ${{ steps.release_info.outputs.release_url }}
 
-  deploy-docs:
-    name: 📚 Deploy Documentation
-    runs-on: ubuntu-latest
-    needs: [build-thunder, build-and-package, release]
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: 📥 Checkout Code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-
-      - name: 📚 Deploy Documentation
-        id: deployment
-        uses: ./.github/actions/deploy-docs
-        with:
-          docs-artifact-name: 'thunder-docs'
-          build-docs: 'true'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: '📚 Deploy documentation for ${{ needs.build-thunder.outputs.version }}'
-
-      - name: 📝 Add Docs Deployment Summary
-        run: |
-          echo "# 📚 Documentation Deployment" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Documentation for **${{ needs.build-thunder.outputs.version }}** has been deployed to GitHub Pages!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 View at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> $GITHUB_STEP_SUMMARY
-
   trigger-performance-test:
     name: 🧪 Trigger Performance Test
     runs-on: ubuntu-latest
-    needs: [build-thunder, release, deploy-docs]
+    needs: [build-thunder, release]
     if: ${{ needs.build-thunder.outputs.run_performance_test == 'true' }}
     steps:
       - name: 📥 Checkout Code
