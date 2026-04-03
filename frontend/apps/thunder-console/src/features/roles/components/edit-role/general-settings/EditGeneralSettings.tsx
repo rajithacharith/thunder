@@ -60,47 +60,6 @@ export default function EditGeneralSettings({role, onDeleteClick}: EditGeneralSe
       >
         <Stack spacing={2}>
           <TextField
-            label={t('roles:edit.general.sections.organizationUnit.handleLabel', 'Handle')}
-            value={role.ouHandle ?? '-'}
-            fullWidth
-            size="small"
-            slotProps={{
-              input: {
-                readOnly: true,
-                endAdornment: role.ouHandle ? (
-                  <InputAdornment position="end">
-                    <Tooltip
-                      title={
-                        copiedField === 'ouHandle'
-                          ? t('common:actions.copied')
-                          : t(
-                              'roles:edit.general.sections.organizationUnit.copyHandle',
-                              'Copy Organization Unit Handle',
-                            )
-                      }
-                    >
-                      <IconButton
-                        aria-label={t(
-                          'roles:edit.general.sections.organizationUnit.copyHandle',
-                          'Copy Organization Unit Handle',
-                        )}
-                        onClick={() => {
-                          handleCopyToClipboard(role.ouHandle!, 'ouHandle').catch(() => {
-                            /* noop */
-                          });
-                        }}
-                        edge="end"
-                      >
-                        {copiedField === 'ouHandle' ? <Check size={16} /> : <Copy size={16} />}
-                      </IconButton>
-                    </Tooltip>
-                  </InputAdornment>
-                ) : undefined,
-              },
-            }}
-            sx={{'& input': {fontFamily: 'monospace', fontSize: '0.875rem'}}}
-          />
-          <TextField
             label={t('roles:edit.general.sections.organizationUnit.idLabel', 'ID')}
             value={role.ouId}
             fullWidth

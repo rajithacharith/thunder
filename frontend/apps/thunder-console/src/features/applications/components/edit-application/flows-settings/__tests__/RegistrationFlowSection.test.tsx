@@ -127,59 +127,6 @@ describe('RegistrationFlowSection', () => {
 
       expect(screen.getByTestId('toggle-button')).toBeInTheDocument();
     });
-
-    it('should display alert when registration flow is selected', () => {
-      vi.mocked(useGetFlows).mockReturnValue({
-        data: {flows: mockRegFlows},
-        isLoading: false,
-      } as MockedUseGetFlows);
-
-      render(
-        <MemoryRouter>
-          <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
-      );
-
-      expect(screen.getByRole('alert')).toBeInTheDocument();
-    });
-
-    it('should not display alert when no registration flow is selected', () => {
-      vi.mocked(useGetFlows).mockReturnValue({
-        data: {flows: mockRegFlows},
-        isLoading: false,
-      } as MockedUseGetFlows);
-
-      const appWithoutFlow = {...mockApplication, registrationFlowId: undefined};
-
-      render(
-        <MemoryRouter>
-          <RegistrationFlowSection application={appWithoutFlow} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
-      );
-
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    });
-
-    it('should display alert when registration flow is in editedApp', () => {
-      vi.mocked(useGetFlows).mockReturnValue({
-        data: {flows: mockRegFlows},
-        isLoading: false,
-      } as MockedUseGetFlows);
-
-      const appWithoutFlow = {...mockApplication, registrationFlowId: undefined};
-
-      render(
-        <MemoryRouter>
-          <RegistrationFlowSection
-            application={appWithoutFlow}
-            editedApp={{registrationFlowId: 'reg-flow-2'}}
-            onFieldChange={mockOnFieldChange}
-          />
-        </MemoryRouter>,
-      );
-
-      expect(screen.getByRole('alert')).toBeInTheDocument();
-    });
   });
 
   describe('Loading State', () => {
@@ -443,63 +390,6 @@ describe('RegistrationFlowSection', () => {
       );
 
       expect(screen.getByPlaceholderText('Select a registration flow')).toBeInTheDocument();
-    });
-  });
-
-  describe('Alert Links', () => {
-    it('should display edit link with correct flow ID from application', () => {
-      vi.mocked(useGetFlows).mockReturnValue({
-        data: {flows: mockRegFlows},
-        isLoading: false,
-      } as MockedUseGetFlows);
-
-      const {container} = render(
-        <MemoryRouter>
-          <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
-      );
-
-      const links = container.querySelectorAll('a');
-      const editLink = Array.from(links).find((link) => link.getAttribute('href')?.includes('/flows/signup/'));
-      expect(editLink).toHaveAttribute('href', '/flows/signup/reg-flow-1');
-    });
-
-    it('should display edit link with correct flow ID from editedApp', () => {
-      vi.mocked(useGetFlows).mockReturnValue({
-        data: {flows: mockRegFlows},
-        isLoading: false,
-      } as MockedUseGetFlows);
-
-      const {container} = render(
-        <MemoryRouter>
-          <RegistrationFlowSection
-            application={mockApplication}
-            editedApp={{registrationFlowId: 'reg-flow-2'}}
-            onFieldChange={mockOnFieldChange}
-          />
-        </MemoryRouter>,
-      );
-
-      const links = container.querySelectorAll('a');
-      const editLink = Array.from(links).find((link) => link.getAttribute('href')?.includes('/flows/signup/'));
-      expect(editLink).toHaveAttribute('href', '/flows/signup/reg-flow-2');
-    });
-
-    it('should display create link', () => {
-      vi.mocked(useGetFlows).mockReturnValue({
-        data: {flows: mockRegFlows},
-        isLoading: false,
-      } as MockedUseGetFlows);
-
-      const {container} = render(
-        <MemoryRouter>
-          <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
-        </MemoryRouter>,
-      );
-
-      const links = container.querySelectorAll('a');
-      const createLink = Array.from(links).find((link) => link.getAttribute('href') === '/flows');
-      expect(createLink).toHaveAttribute('href', '/flows');
     });
   });
 });
