@@ -133,7 +133,7 @@ export default function FlowsList(): JSX.Element {
         renderCell: (params: DataGrid.GridRenderCellParams<BasicFlowDefinition>): JSX.Element | null => {
           if (params.row.flowType !== 'AUTHENTICATION') return null;
           return (
-            <ListingTable.RowActions visibility="hover">
+            <ListingTable.RowActions>
               <Tooltip title={t('common:actions.edit')}>
                 <IconButton
                   size="small"

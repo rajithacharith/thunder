@@ -108,7 +108,7 @@ export default function TranslationsList(): JSX.Element {
         filterable: false,
         hideable: false,
         renderCell: (params: DataGrid.GridRenderCellParams<{id: string; code: string}>): JSX.Element => (
-          <ListingTable.RowActions visibility="hover">
+          <ListingTable.RowActions>
             <Tooltip title={t('common:actions.edit')}>
               <IconButton
                 size="small"

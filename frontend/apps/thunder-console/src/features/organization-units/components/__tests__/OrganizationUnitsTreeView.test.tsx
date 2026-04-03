@@ -228,49 +228,38 @@ describe('OrganizationUnitsTreeView', () => {
     expect(avatars.length).toBeGreaterThan(0);
   });
 
-  it('should render action button for each tree item', async () => {
+  it('should render action buttons for each tree item', async () => {
     renderWithProviders(<OrganizationUnitsTreeView />);
 
     await waitFor(() => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    const actionButtons = screen.getAllByLabelText('Actions');
-    expect(actionButtons.length).toBe(2);
+    expect(screen.getAllByLabelText('Add child organization unit')).toHaveLength(2);
+    expect(screen.getAllByLabelText('Edit')).toHaveLength(2);
+    expect(screen.getAllByLabelText('Delete')).toHaveLength(2);
   });
 
-  it('should open menu with actions when action button is clicked', async () => {
+  it('should render direct row actions for each tree item', async () => {
     renderWithProviders(<OrganizationUnitsTreeView />);
 
     await waitFor(() => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    const actionButtons = screen.getAllByLabelText('Actions');
-    fireEvent.click(actionButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Add child organization unit')).toBeInTheDocument();
-      expect(screen.getByText('Edit')).toBeInTheDocument();
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
+    expect(screen.getAllByLabelText('Add child organization unit')).toHaveLength(2);
+    expect(screen.getAllByLabelText('Edit')).toHaveLength(2);
+    expect(screen.getAllByLabelText('Delete')).toHaveLength(2);
   });
 
-  it('should navigate to create page with parentId when add child menu item is clicked', async () => {
+  it('should navigate to create page with parentId when add child action is clicked', async () => {
     renderWithProviders(<OrganizationUnitsTreeView />);
 
     await waitFor(() => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    const actionButtons = screen.getAllByLabelText('Actions');
-    fireEvent.click(actionButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Add child organization unit')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('Add child organization unit'));
+    fireEvent.click(screen.getAllByLabelText('Add child organization unit')[0]);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/organization-units/create', {
@@ -279,42 +268,28 @@ describe('OrganizationUnitsTreeView', () => {
     });
   });
 
-  it('should navigate when edit menu item is clicked', async () => {
+  it('should navigate when edit action is clicked', async () => {
     renderWithProviders(<OrganizationUnitsTreeView />);
 
     await waitFor(() => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    const actionButtons = screen.getAllByLabelText('Actions');
-    fireEvent.click(actionButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Edit')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('Edit'));
+    fireEvent.click(screen.getAllByLabelText('Edit')[0]);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/organization-units/ou-1');
     });
   });
 
-  it('should open delete dialog when delete menu item is clicked', async () => {
+  it('should open delete dialog when delete action is clicked', async () => {
     renderWithProviders(<OrganizationUnitsTreeView />);
 
     await waitFor(() => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    const actionButtons = screen.getAllByLabelText('Actions');
-    fireEvent.click(actionButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('Delete'));
+    fireEvent.click(screen.getAllByLabelText('Delete')[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
@@ -344,15 +319,8 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    // Open actions menu and click delete
-    const actionButtons = screen.getAllByLabelText('Actions');
-    fireEvent.click(actionButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('Delete'));
+    // Click row delete action
+    fireEvent.click(screen.getAllByLabelText('Delete')[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
@@ -377,15 +345,8 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    // Open actions menu and click delete to open dialog, then confirm
-    const actionButtons1 = screen.getAllByLabelText('Actions');
-    fireEvent.click(actionButtons1[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('Delete'));
+    // Click row delete action to open dialog, then confirm
+    fireEvent.click(screen.getAllByLabelText('Delete')[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
@@ -415,15 +376,8 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    // Open actions menu and click delete to open dialog, then confirm
-    const actionButtons2 = screen.getAllByLabelText('Actions');
-    fireEvent.click(actionButtons2[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('Delete'));
+    // Click row delete action to open dialog, then confirm
+    fireEvent.click(screen.getAllByLabelText('Delete')[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
@@ -447,14 +401,7 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    const actionButtons3 = screen.getAllByLabelText('Actions');
-    fireEvent.click(actionButtons3[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Edit')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('Edit'));
+    fireEvent.click(screen.getAllByLabelText('Edit')[0]);
 
     await waitFor(() => {
       expect(stableLogger.error).toHaveBeenCalledWith(
@@ -473,14 +420,7 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    const actionButtons4 = screen.getAllByLabelText('Actions');
-    fireEvent.click(actionButtons4[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Add child organization unit')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('Add child organization unit'));
+    fireEvent.click(screen.getAllByLabelText('Add child organization unit')[0]);
 
     await waitFor(() => {
       expect(stableLogger.error).toHaveBeenCalledWith(
@@ -599,15 +539,8 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    // Open actions menu and click delete to trigger snackbar
-    const actionButtons5 = screen.getAllByLabelText('Actions');
-    fireEvent.click(actionButtons5[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('Delete'));
+    // Click row delete action to trigger snackbar
+    fireEvent.click(screen.getAllByLabelText('Delete')[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
@@ -1138,14 +1071,7 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    const actionButtons = screen.getAllByLabelText('Actions');
-    fireEvent.click(actionButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('Delete'));
+    fireEvent.click(screen.getAllByLabelText('Delete')[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
@@ -1177,14 +1103,7 @@ describe('OrganizationUnitsTreeView', () => {
       expect(screen.getByText('Root Organization')).toBeInTheDocument();
     });
 
-    const actionButtons = screen.getAllByLabelText('Actions');
-    fireEvent.click(actionButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('Delete'));
+    fireEvent.click(screen.getAllByLabelText('Delete')[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();

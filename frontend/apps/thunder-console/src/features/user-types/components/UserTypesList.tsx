@@ -200,7 +200,7 @@ export default function UserTypesList() {
         filterable: false,
         hideable: false,
         renderCell: (params: GridRenderCellParams<UserSchemaListItem>) => (
-          <ListingTable.RowActions visibility="hover">
+          <ListingTable.RowActions>
             <Tooltip title={t('common:actions.edit')}>
               <IconButton
                 size="small"
