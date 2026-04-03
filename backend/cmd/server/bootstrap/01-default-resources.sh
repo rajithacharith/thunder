@@ -166,7 +166,7 @@ RESPONSE=$(thunder_api_call POST "/user-schemas" '{
     "password": {
       "type": "string",
       "displayName": "Password",
-      "required": true,
+      "required": false,
       "credential": true
     }
   },

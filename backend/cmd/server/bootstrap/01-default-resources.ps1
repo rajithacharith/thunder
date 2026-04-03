@@ -175,7 +175,7 @@ $userSchemaData = ([ordered]@{
         password = @{
             type = "string"
             displayName = "Password"
-            required = $true
+            required = $false
             credential = $true
         }
     }
