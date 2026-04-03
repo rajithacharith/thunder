@@ -108,30 +108,36 @@ $customerUserTypeData = ([ordered]@{
     schema = [ordered]@{
         username = @{
             type = "string"
+            displayName = "Username"
             required = $true
             unique = $true
         }
         password = @{
             type = "string"
+            displayName = "Password"
             required = $true
             credential = $true
         }
         email = @{
             type = "string"
+            displayName = "Email"
             required = $true
             unique = $true
             regex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         }
         given_name = @{
             type = "string"
+            displayName = "First Name"
             required = $false
         }
         family_name = @{
             type = "string"
+            displayName = "Last Name"
             required = $false
         }
         mobileNumber = @{
             type = "string"
+            displayName = "Mobile Number"
             required = $false
         }
     }

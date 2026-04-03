@@ -107,53 +107,65 @@ RESPONSE=$(thunder_api_call POST "/user-schemas" '{
   "schema": {
     "username": {
       "type": "string",
+      "displayName": "Username",
       "required": true,
       "unique": true
     },
     "email": {
       "type": "string",
+      "displayName": "Email",
       "required": true,
       "unique": true,
       "regex": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
     },
     "email_verified": {
       "type": "boolean",
+      "displayName": "Email Verified",
       "required": false
     },
     "given_name": {
       "type": "string",
+      "displayName": "First Name",
       "required": false
     },
     "family_name": {
       "type": "string",
+      "displayName": "Last Name",
       "required": false
     },
     "mobileNumber": {
       "type": "string",
+      "displayName": "Mobile Number",
       "required": false
     },
     "phone_number": {
       "type": "string",
+      "displayName": "Phone Number",
       "required": false
     },
     "phone_number_verified": {
       "type": "boolean",
+      "displayName": "Phone Number Verified",
       "required": false
     },
     "sub": {
       "type": "string",
+      "displayName": "Subject",
       "required": false
     },
     "name": {
       "type": "string",
+      "displayName": "Full Name",
       "required": false
     },
     "picture": {
       "type": "string",
+      "displayName": "Picture",
       "required": false
     },
     "password": {
       "type": "string",
+      "displayName": "Password",
       "required": true,
       "credential": true
     }
