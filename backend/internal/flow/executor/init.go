@@ -85,7 +85,7 @@ func Initialize(
 		attributeCacheSvc))
 	reg.RegisterExecutor(ExecutorNameAuthorization, newAuthorizationExecutor(flowFactory, authZService, userProvider))
 	reg.RegisterExecutor(ExecutorNameHTTPRequest, newHTTPRequestExecutor(flowFactory))
-	reg.RegisterExecutor(ExecutorNameUserTypeResolver, newUserTypeResolver(flowFactory, userSchemaService))
+	reg.RegisterExecutor(ExecutorNameUserTypeResolver, newUserTypeResolver(flowFactory, userSchemaService, ouService))
 	reg.RegisterExecutor(ExecutorNameInviteExecutor, newInviteExecutor(flowFactory))
 	reg.RegisterExecutor(ExecutorNameEmailExecutor, newEmailExecutor(flowFactory, emailClient, templateService))
 	reg.RegisterExecutor(ExecutorNameCredentialSetter, newCredentialSetter(flowFactory, userProvider))

@@ -196,7 +196,8 @@ Executors perform backend logic in TASK_EXECUTION nodes.
 
 | Executor | Description | Properties | Required | Flow Types |
 |----------|-------------|------------|----------|------------|
-| UserTypeResolver | Resolves user type and OU for registration. **Must be placed after START node** in registration flows. | None | Yes | Registration |
+| UserTypeResolver | Resolves user type and OU for registration/onboarding. In OU-first flows (when `ouId` is already in runtime data), filters available user types to those valid for the selected OU. | `allowedUserTypes` (optional array) | Yes | Registration, UserOnboarding |
+| OUResolverExecutor | Resolves the organization unit for a user during onboarding. Supports multiple strategies via the `resolveFrom` property. | `resolveFrom` | No | UserOnboarding |
 | BasicAuthExecutor | Attribute + credential authentication. Use any identifying attribute (username, email, phone) plus a credential. | None | No | Authentication, Registration |
 | GoogleOIDCAuthExecutor | Google social login via OIDC. | `idpId` | No | Authentication, Registration |
 | GithubOAuthExecutor | GitHub social login via OAuth. | `idpId` | No | Authentication, Registration |
@@ -208,6 +209,30 @@ Executors perform backend logic in TASK_EXECUTION nodes.
 | AttributeCollector | Collects additional attributes and updates user profile after authentication. | None | No | Authentication |
 | ProvisioningExecutor | Creates new user account in the system. Required at the end of registration flows. | None | Yes | Registration |
 | OUExecutor | Optionally create organization units during registration flows. | None | No | Registration |
+
+### OUResolverExecutor Strategies
+
+The `OUResolverExecutor` uses the `resolveFrom` property to determine how the organization unit is resolved:
+
+| Strategy | Description | Depends on UserTypeResolver? |
+|----------|-------------|------------------------------|
+| `caller` | Uses the OU of the caller from the JWT security context. Useful for admin-initiated flows where the new user inherits the OU of the caller. | No |
+| `prompt` | Checks if the user type's OU has child OUs. If so, prompts the admin to select one within that OU hierarchy. Requires `defaultOUID` to be set in runtime data by UserTypeResolver. | Yes (must run before) |
+| `promptAll` | Shows the full OU tree from root, allowing selection of any OU. Does not depend on UserTypeResolver having run first. Used in **OU-first** flows where the OU is selected before the user type. | No |
+
+### Flow Ordering: UserType-First vs OU-First
+
+User onboarding flows support two ordering strategies for resolving user type and organization unit:
+
+**UserType-First (default):**
+`START → UserTypeResolver → OUResolver (prompt) → ... → END`
+
+The user selects a user type first. The `UserTypeResolver` sets `defaultOUID` from the schema, then `OUResolver` with `prompt` strategy uses that OU as the root of the hierarchy for optional child-OU selection.
+
+**OU-First:**
+`START → OUResolver (promptAll) → UserTypeResolver → ... → END`
+
+The user selects an OU first from the full tree. The `OUResolver` with `promptAll` sets `ouId` in runtime data, then `UserTypeResolver` filters available user types to only those whose schema OU is an ancestor of (or equal to) the selected OU.
 
 ### Executor Modes
 

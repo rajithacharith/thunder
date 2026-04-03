@@ -35,6 +35,8 @@ const (
 	ouResolveFromCaller = "caller"
 	// ouResolveFromPrompt indicates that the user should be prompted to select an OU.
 	ouResolveFromPrompt = "prompt"
+	// ouResolveFromPromptAll shows the full OU tree without depending on UserTypeResolver.
+	ouResolveFromPromptAll = "promptAll"
 )
 
 // ouResolverExecutor resolves the organization unit for a user being onboarded.
@@ -78,6 +80,7 @@ func newOUResolverExecutor(
 // Supported strategies:
 //   - "caller": overrides the default OU with the caller's OU from the security context.
 //   - "prompt": checks for child OUs and prompts the user to select one if applicable.
+//   - "promptAll": shows the full OU tree from root, independent of UserTypeResolver.
 func (e *ouResolverExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
@@ -97,6 +100,8 @@ func (e *ouResolverExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRes
 		return e.resolveFromCaller(ctx, execResp, logger)
 	case ouResolveFromPrompt:
 		return e.resolveFromPrompt(ctx, logger)
+	case ouResolveFromPromptAll:
+		return e.resolveFromPromptAll(ctx, logger)
 	default:
 		logger.Error("Unsupported resolveFrom value", log.String("resolveFrom", resolveFrom))
 		execResp.Status = common.ExecFailure
@@ -194,6 +199,48 @@ func (e *ouResolverExecutor) resolveFromPrompt(ctx *core.NodeContext,
 		execResp.Inputs = []common.Input{input}
 		// Forward the root OU ID so the frontend knows where to start the tree picker.
 		execResp.AdditionalData[common.DataRootOUID] = parentOUID
+		execResp.ForwardedData[common.ForwardedDataKeyInputs] = execResp.Inputs
+	}
+
+	return execResp, nil
+}
+
+// resolveFromPromptAll shows the full OU tree from root, allowing selection of any OU.
+// Unlike "prompt", this strategy does not depend on UserTypeResolver having run first.
+func (e *ouResolverExecutor) resolveFromPromptAll(ctx *core.NodeContext,
+	logger *log.Logger) (*common.ExecutorResponse, error) {
+	execResp := &common.ExecutorResponse{
+		RuntimeData:    make(map[string]string),
+		AdditionalData: make(map[string]string),
+		ForwardedData:  make(map[string]interface{}),
+	}
+
+	// If the user already provided an OU selection, validate and accept it.
+	if selectedOUID, ok := ctx.UserInputs[ouIDKey]; ok && selectedOUID != "" {
+		exists, svcErr := e.ouService.IsOrganizationUnitExists(ctx.Context, selectedOUID)
+		if svcErr != nil {
+			return nil, errors.New("failed to validate selected organization unit: " + svcErr.Error)
+		}
+		if !exists {
+			execResp.Status = common.ExecFailure
+			execResp.FailureReason = "The selected organization unit does not exist."
+			return execResp, nil
+		}
+
+		logger.Debug("OU selected by user", log.String(ouIDKey, selectedOUID))
+		execResp.RuntimeData[ouIDKey] = selectedOUID
+		execResp.Status = common.ExecComplete
+		return execResp, nil
+	}
+
+	// No selection yet — prompt the user with the full OU tree.
+	logger.Debug("Requesting OU selection from full tree")
+	execResp.Status = common.ExecUserInputRequired
+
+	inputs := e.GetDefaultInputs()
+	if len(inputs) > 0 {
+		input := inputs[0]
+		execResp.Inputs = []common.Input{input}
 		execResp.ForwardedData[common.ForwardedDataKeyInputs] = execResp.Inputs
 	}
 
