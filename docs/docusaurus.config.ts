@@ -50,7 +50,7 @@ const config: Config = {
   organizationName: thunderConfig.project.source.github.owner.name, // Usually your GitHub org/user name.
   projectName: thunderConfig.project.source.github.name, // Usually your repo name.
 
-  onBrokenLinks: 'log',
+  onBrokenLinks: 'throw',
 
   // Internationalization (i18n) configuration.
   // See: https://docusaurus.io/docs/i18n/introduction

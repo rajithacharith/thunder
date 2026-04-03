@@ -669,3 +669,8 @@ html[data-page='home'][data-theme='dark'] .dropdown>.navbar__link:after {
 [data-persona='app'] .sidebar-persona-iam {
   display: none;
 }
+
+/* When DevOps persona is active, hide non-deployment sections */
+[data-persona='devops'] .sidebar-persona-not-devops {
+  display: none;
+}

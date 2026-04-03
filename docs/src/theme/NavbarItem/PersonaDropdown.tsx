@@ -17,8 +17,9 @@
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {useActiveDocContext} from '@docusaurus/plugin-content-docs/client';
 
-export type Persona = 'all' | 'app' | 'iam';
+export type Persona = 'all' | 'app' | 'iam' | 'devops';
 
 const STORAGE_KEY = 'thunder-docs-persona';
 
@@ -32,6 +33,7 @@ const PERSONAS: PersonaOption[] = [
   {value: 'all', label: 'All Roles', description: 'Browse all documentation'},
   {value: 'app', label: 'Application Developer', description: 'Integrate Thunder into your app'},
   {value: 'iam', label: 'IAM Developer', description: 'Configure and manage Thunder'},
+  {value: 'devops', label: 'DevOps Engineer', description: 'Deploy and operate Thunder'},
 ];
 
 export function applyPersona(persona: Persona): void {
@@ -43,10 +45,13 @@ export function applyPersona(persona: Persona): void {
   }
 }
 
-export default function PersonaDropdown(): React.ReactElement {
+export default function PersonaDropdown(): React.ReactElement | null {
   const [persona, setPersona] = useState<Persona>('all');
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const activeDocContext = useActiveDocContext('default');
+  const isDocsSidebar = activeDocContext?.activeDoc?.sidebar === 'docsSidebar';
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY) as Persona | null;
@@ -76,6 +81,10 @@ export default function PersonaDropdown(): React.ReactElement {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen]);
+
+  if (!isDocsSidebar) {
+    return null;
+  }
 
   const current = PERSONAS.find(p => p.value === persona) ?? PERSONAS[0];
 

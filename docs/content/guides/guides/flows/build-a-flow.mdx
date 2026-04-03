@@ -42,7 +42,7 @@ Add nodes from the left panel and wire them together.
 - **Widgets** - expand **Widgets** and click **+** to drop a pre-wired View + Executor pair onto the canvas.
 - **Steps** - expand **Steps** and click **+** to add a View node on its own, then wire it manually.
 - **Components** - select a View node on the canvas, and click **+** to add components (inputs, buttons, OTP fields) inside it.
-- **Executors** - expand **Executors** and click **+** to add a backend operation node. Refer to the [Flow Reference](./flow-reference#view-and-executor-pairings) for details on what each executor does and its required inputs.
+- **Executors** - expand **Executors** and click **+** to add a backend operation node.
 
 ### Connect Nodes
 
@@ -61,9 +61,13 @@ Every Executor should have both a success and a failure connection. An unconnect
 
 Click the settings icon on any node:
 
-- **View nodes** — field labels, placeholder text, and input validation.
-- **Executor nodes** — executor-specific options such as OTP length, social login credentials, or attribute mappings.
-- **END nodes** — for registration flows, post-registration behavior such as account activation and auto-login.
+- **View nodes** - field labels, placeholder text, and input validation.
+- **Executor nodes** - executor-specific options such as OTP length, social login credentials, or attribute mappings.
+- **END nodes** - for registration flows, post-registration behavior such as account activation and auto-login.
+
+:::tip
+ Refer to the [Flow Reference](./flow-reference#view-and-executor-pairings) for details on what each executor does and its required inputs.
+:::
 
 ## Save and Manage Versions
 
@@ -73,9 +77,10 @@ To restore a previous version, open the version history from the flow settings m
 
 ## Assign to an Application
 
-1. Go to **Resources** → **Applications** and open the application you want to configure.
-2. Select the **Login Flow** or **Registration Flow** tab.
-3. Choose your flow from the dropdown and click **Save**.
+1. From the Thunder Console, go to **Applications** and open the application you want to configure.
+2. Select the **Flows** tab.
+3. Under **Authentication Flow** or **Registration Flow**, choose the flow you created from the dropdown.
+4. Click **Save**.
 
 Thunder executes the assigned flow whenever a user starts a session for that application.
 
@@ -83,6 +88,4 @@ Thunder executes the assigned flow whenever a user starts a session for that app
 
 ## Related Guides
 
-- [Flow Concepts](./flow-concepts) — Reference for node types, left panel sections, and canvas connections.
-- [Authentication Flows](./authentication-flow) — Common authentication flow patterns.
-- [Registration Flows](./registration-flow) — Self-registration flow patterns.
+- [Flow Concepts](./flow-concepts) - Reference for node types, left panel sections, and canvas connections.
