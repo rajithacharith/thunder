@@ -127,7 +127,7 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		"appName":    ctx.Application.Name,
 	}
 
-	rendered, svcErr := e.templateService.Render(ctx.Context, scenario, templateData)
+	rendered, svcErr := e.templateService.Render(ctx.Context, scenario, template.TemplateTypeEmail, templateData)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to render email template: %s", svcErr.Code)
 	}

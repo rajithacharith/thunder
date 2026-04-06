@@ -28,22 +28,28 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/core"
 	notifcm "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/template"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/notification/notificationmock"
+	"github.com/asgardeo/thunder/tests/mocks/templatemock"
 )
+
+const testRenderedSMSBody = "Your notification from the system."
 
 type SMSExecutorTestSuite struct {
 	suite.Suite
-	mockFlowFactory  *coremock.FlowFactoryInterfaceMock
-	mockBaseExecutor *coremock.ExecutorInterfaceMock
-	mockSMSSenderSvc *notificationmock.NotificationSenderServiceInterfaceMock
-	executor         *smsExecutor
+	mockFlowFactory     *coremock.FlowFactoryInterfaceMock
+	mockBaseExecutor    *coremock.ExecutorInterfaceMock
+	mockSMSSenderSvc    *notificationmock.NotificationSenderServiceInterfaceMock
+	mockTemplateService *templatemock.TemplateServiceInterfaceMock
+	executor            *smsExecutor
 }
 
 func (suite *SMSExecutorTestSuite) SetupTest() {
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 	suite.mockBaseExecutor = coremock.NewExecutorInterfaceMock(suite.T())
 	suite.mockSMSSenderSvc = notificationmock.NewNotificationSenderServiceInterfaceMock(suite.T())
+	suite.mockTemplateService = templatemock.NewTemplateServiceInterfaceMock(suite.T())
 
 	suite.mockFlowFactory.On("CreateExecutor",
 		ExecutorNameSMSExecutor,
@@ -54,7 +60,7 @@ func (suite *SMSExecutorTestSuite) SetupTest() {
 		[]common.Input{},
 	).Return(suite.mockBaseExecutor)
 
-	suite.executor = newSMSExecutor(suite.mockFlowFactory, suite.mockSMSSenderSvc)
+	suite.executor = newSMSExecutor(suite.mockFlowFactory, suite.mockSMSSenderSvc, suite.mockTemplateService)
 }
 
 func (suite *SMSExecutorTestSuite) TestExecute_SendMode_Success() {
@@ -67,15 +73,19 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_Success() {
 		RuntimeData: make(map[string]string),
 		NodeProperties: map[string]interface{}{
 			propertyKeyNotificationSenderID: "sender-uuid-001",
+			propertyKeySMSTemplate:          string(template.ScenarioSelfRegistration),
 		},
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
 		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
 	})
+	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
+		template.TemplateTypeSMS, mock.Anything).
+		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
 	suite.mockSMSSenderSvc.On("Send",
 		mock.Anything, mock.Anything, "sender-uuid-001",
-		notifcm.NotificationData{Recipient: "+94714627887", Body: smsDefaultMessage},
+		notifcm.NotificationData{Recipient: "+94714627887", Body: testRenderedSMSBody},
 	).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -95,15 +105,19 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_RecipientFromRuntimeData
 		},
 		NodeProperties: map[string]interface{}{
 			propertyKeyNotificationSenderID: "sender-uuid-001",
+			propertyKeySMSTemplate:          string(template.ScenarioSelfRegistration),
 		},
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
 		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
 	})
+	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
+		template.TemplateTypeSMS, mock.Anything).
+		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
 	suite.mockSMSSenderSvc.On("Send",
 		mock.Anything, mock.Anything, "sender-uuid-001",
-		notifcm.NotificationData{Recipient: "+94714627887", Body: smsDefaultMessage},
+		notifcm.NotificationData{Recipient: "+94714627887", Body: testRenderedSMSBody},
 	).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -125,15 +139,19 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_UserInputOverridesRuntim
 		},
 		NodeProperties: map[string]interface{}{
 			propertyKeyNotificationSenderID: "sender-uuid-001",
+			propertyKeySMSTemplate:          string(template.ScenarioSelfRegistration),
 		},
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
 		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
 	})
+	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
+		template.TemplateTypeSMS, mock.Anything).
+		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
 	suite.mockSMSSenderSvc.On("Send",
 		mock.Anything, mock.Anything, "sender-uuid-001",
-		notifcm.NotificationData{Recipient: "+94714627887", Body: smsDefaultMessage},
+		notifcm.NotificationData{Recipient: "+94714627887", Body: testRenderedSMSBody},
 	).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -156,15 +174,19 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_CustomPhoneAttribute() {
 		},
 		NodeProperties: map[string]interface{}{
 			propertyKeyNotificationSenderID: "sender-uuid-001",
+			propertyKeySMSTemplate:          string(template.ScenarioSelfRegistration),
 		},
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
 		{Identifier: "phoneNumber", Type: common.InputTypePhone, Required: true},
 	})
+	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
+		template.TemplateTypeSMS, mock.Anything).
+		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
 	suite.mockSMSSenderSvc.On("Send",
 		mock.Anything, mock.Anything, "sender-uuid-001",
-		notifcm.NotificationData{Recipient: "+94714627887", Body: smsDefaultMessage},
+		notifcm.NotificationData{Recipient: "+94714627887", Body: testRenderedSMSBody},
 	).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -284,7 +306,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_NilSMSSenderService_Retu
 		[]common.Input{},
 	).Return(mockBaseExecutor)
 
-	noServiceExecutor := newSMSExecutor(mockFactory, nil)
+	noServiceExecutor := newSMSExecutor(mockFactory, nil, suite.mockTemplateService)
 
 	ctx := &core.NodeContext{
 		FlowID:       "test-flow-id",
@@ -315,12 +337,16 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_ClientError() {
 		RuntimeData: make(map[string]string),
 		NodeProperties: map[string]interface{}{
 			propertyKeyNotificationSenderID: "sender-uuid-001",
+			propertyKeySMSTemplate:          string(template.ScenarioSelfRegistration),
 		},
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
 		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
 	})
+	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
+		template.TemplateTypeSMS, mock.Anything).
+		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
 	clientErr := &serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "MNS-1001",
@@ -347,12 +373,16 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_ServerError() {
 		RuntimeData: make(map[string]string),
 		NodeProperties: map[string]interface{}{
 			propertyKeyNotificationSenderID: "sender-uuid-001",
+			propertyKeySMSTemplate:          string(template.ScenarioSelfRegistration),
 		},
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
 		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
 	})
+	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
+		template.TemplateTypeSMS, mock.Anything).
+		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
 	serverErr := &serviceerror.ServiceError{
 		Type:             serviceerror.ServerErrorType,
 		Code:             "MNS-5000",
@@ -366,6 +396,125 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_ServerError() {
 	suite.Error(err)
 	suite.Nil(resp)
 	suite.Contains(err.Error(), "SMS send failed")
+}
+
+func (suite *SMSExecutorTestSuite) TestExecute_NoSMSTemplateProperty_ReturnsFlowError() {
+	ctx := &core.NodeContext{
+		FlowID:       "test-flow-id",
+		ExecutorMode: ExecutorModeSend,
+		UserInputs: map[string]string{
+			userAttributeMobileNumber: "+94714627887",
+		},
+		RuntimeData: make(map[string]string),
+		NodeProperties: map[string]interface{}{
+			propertyKeyNotificationSenderID: "sender-uuid-001",
+		},
+	}
+
+	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+	})
+
+	resp, err := suite.executor.Execute(ctx)
+
+	suite.NoError(err)
+	suite.Equal(common.ExecFailure, resp.Status)
+	suite.Equal("SMS template is required", resp.FailureReason)
+	suite.mockTemplateService.AssertNotCalled(suite.T(), "Render", mock.Anything, mock.Anything, mock.Anything)
+	suite.mockSMSSenderSvc.AssertNotCalled(suite.T(), "Send",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+}
+
+func (suite *SMSExecutorTestSuite) TestExecute_EmptySMSTemplateProperty_ReturnsFlowError() {
+	ctx := &core.NodeContext{
+		FlowID:       "test-flow-id",
+		ExecutorMode: ExecutorModeSend,
+		UserInputs: map[string]string{
+			userAttributeMobileNumber: "+94714627887",
+		},
+		RuntimeData: make(map[string]string),
+		NodeProperties: map[string]interface{}{
+			propertyKeyNotificationSenderID: "sender-uuid-001",
+			propertyKeySMSTemplate:          "",
+		},
+	}
+
+	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+	})
+
+	resp, err := suite.executor.Execute(ctx)
+
+	suite.NoError(err)
+	suite.Equal(common.ExecFailure, resp.Status)
+	suite.Equal("SMS template is required", resp.FailureReason)
+	suite.mockTemplateService.AssertNotCalled(suite.T(), "Render", mock.Anything, mock.Anything, mock.Anything)
+	suite.mockSMSSenderSvc.AssertNotCalled(suite.T(), "Send",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+}
+
+func (suite *SMSExecutorTestSuite) TestExecute_SMSTemplatePropertySet_UsesCustomScenario() {
+	ctx := &core.NodeContext{
+		FlowID:       "test-flow-id",
+		ExecutorMode: ExecutorModeSend,
+		UserInputs: map[string]string{
+			userAttributeMobileNumber: "+94714627887",
+		},
+		RuntimeData: make(map[string]string),
+		NodeProperties: map[string]interface{}{
+			propertyKeyNotificationSenderID: "sender-uuid-001",
+			propertyKeySMSTemplate:          string(template.ScenarioSelfRegistration),
+		},
+	}
+
+	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+	})
+	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
+		template.TemplateTypeSMS, mock.Anything).
+		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
+	suite.mockSMSSenderSvc.On("Send",
+		mock.Anything, mock.Anything, "sender-uuid-001",
+		notifcm.NotificationData{Recipient: "+94714627887", Body: testRenderedSMSBody},
+	).Return(nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	suite.NoError(err)
+	suite.Equal(common.ExecComplete, resp.Status)
+	suite.mockTemplateService.AssertCalled(suite.T(), "Render",
+		mock.Anything, template.ScenarioSelfRegistration, template.TemplateTypeSMS, mock.Anything)
+}
+
+func (suite *SMSExecutorTestSuite) TestExecute_SendMode_TemplateRenderFailure_ReturnsError() {
+	ctx := &core.NodeContext{
+		FlowID:       "test-flow-id",
+		ExecutorMode: ExecutorModeSend,
+		UserInputs: map[string]string{
+			userAttributeMobileNumber: "+94714627887",
+		},
+		RuntimeData: make(map[string]string),
+		NodeProperties: map[string]interface{}{
+			propertyKeyNotificationSenderID: "sender-uuid-001",
+			propertyKeySMSTemplate:          string(template.ScenarioSelfRegistration),
+		},
+	}
+
+	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+	})
+	renderErr := &serviceerror.I18nServiceError{Code: "TPL-5000"}
+	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
+		template.TemplateTypeSMS, mock.Anything).
+		Return(nil, renderErr)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	suite.Error(err)
+	suite.Nil(resp)
+	suite.Contains(err.Error(), "failed to render SMS template")
+	suite.mockSMSSenderSvc.AssertNotCalled(suite.T(), "Send",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 }
 
 func TestSMSExecutorSuite(t *testing.T) {
