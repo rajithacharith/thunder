@@ -36,6 +36,10 @@ Clone the SDK repository only if you are developing or debugging the SDK itself,
 ### One Commit Per Pull Request
 - PRs are squash-merged, so the final commit history stays clean automatically.
 
+## Agent Skills
+
+- [Thunder Console Navigator](.agent/skills/thunder-console/SKILL.md) — Browse and interact with the Thunder Console UI using `playwright-cli`. Use when asked to navigate the console, test UI changes, or create/edit resources through the browser.
+
 ## Contributing Guidelines
 
 - [`docs/contributing/backend-guidelines.md`](docs/contributing/backend-guidelines.md) — Go backend: package structure, database patterns, error handling, service initialization, transactions, testing
