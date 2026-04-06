@@ -707,45 +707,31 @@ func (_c *entityStoreInterfaceMock_GetEntityListCountByOUIDs_Call) RunAndReturn(
 }
 
 // GetEntityWithCredentials provides a mock function for the type entityStoreInterfaceMock
-func (_mock *entityStoreInterfaceMock) GetEntityWithCredentials(ctx context.Context, id string) (Entity, json.RawMessage, json.RawMessage, error) {
+func (_mock *entityStoreInterfaceMock) GetEntityWithCredentials(ctx context.Context, id string) (*EntityWithCredentials, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetEntityWithCredentials")
 	}
 
-	var r0 Entity
-	var r1 json.RawMessage
-	var r2 json.RawMessage
-	var r3 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (Entity, json.RawMessage, json.RawMessage, error)); ok {
+	var r0 *EntityWithCredentials
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*EntityWithCredentials, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) Entity); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *EntityWithCredentials); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
-		r0 = ret.Get(0).(Entity)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*EntityWithCredentials)
+		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) json.RawMessage); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
 		r1 = returnFunc(ctx, id)
 	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(json.RawMessage)
-		}
+		r1 = ret.Error(1)
 	}
-	if returnFunc, ok := ret.Get(2).(func(context.Context, string) json.RawMessage); ok {
-		r2 = returnFunc(ctx, id)
-	} else {
-		if ret.Get(2) != nil {
-			r2 = ret.Get(2).(json.RawMessage)
-		}
-	}
-	if returnFunc, ok := ret.Get(3).(func(context.Context, string) error); ok {
-		r3 = returnFunc(ctx, id)
-	} else {
-		r3 = ret.Error(3)
-	}
-	return r0, r1, r2, r3
+	return r0, r1
 }
 
 // entityStoreInterfaceMock_GetEntityWithCredentials_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetEntityWithCredentials'
@@ -778,12 +764,12 @@ func (_c *entityStoreInterfaceMock_GetEntityWithCredentials_Call) Run(run func(c
 	return _c
 }
 
-func (_c *entityStoreInterfaceMock_GetEntityWithCredentials_Call) Return(entity Entity, rawMessage json.RawMessage, rawMessage1 json.RawMessage, err error) *entityStoreInterfaceMock_GetEntityWithCredentials_Call {
-	_c.Call.Return(entity, rawMessage, rawMessage1, err)
+func (_c *entityStoreInterfaceMock_GetEntityWithCredentials_Call) Return(entityWithCredentials *EntityWithCredentials, err error) *entityStoreInterfaceMock_GetEntityWithCredentials_Call {
+	_c.Call.Return(entityWithCredentials, err)
 	return _c
 }
 
-func (_c *entityStoreInterfaceMock_GetEntityWithCredentials_Call) RunAndReturn(run func(ctx context.Context, id string) (Entity, json.RawMessage, json.RawMessage, error)) *entityStoreInterfaceMock_GetEntityWithCredentials_Call {
+func (_c *entityStoreInterfaceMock_GetEntityWithCredentials_Call) RunAndReturn(run func(ctx context.Context, id string) (*EntityWithCredentials, error)) *entityStoreInterfaceMock_GetEntityWithCredentials_Call {
 	_c.Call.Return(run)
 	return _c
 }

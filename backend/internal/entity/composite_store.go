@@ -66,21 +66,21 @@ func (c *entityCompositeStore) GetEntity(ctx context.Context, id string) (Entity
 
 // GetEntityWithCredentials retrieves an entity with credentials from either store.
 func (c *entityCompositeStore) GetEntityWithCredentials(ctx context.Context, id string) (
-	Entity, json.RawMessage, json.RawMessage, error) {
-	entity, creds, sysCreds, err := c.dbStore.GetEntityWithCredentials(ctx, id)
+	*EntityWithCredentials, error) {
+	result, err := c.dbStore.GetEntityWithCredentials(ctx, id)
 	if err == nil {
-		return entity, creds, sysCreds, nil
+		return result, nil
 	}
 	if !errors.Is(err, ErrEntityNotFound) {
-		return Entity{}, nil, nil, err
+		return nil, err
 	}
 
-	entity, creds, sysCreds, err = c.fileStore.GetEntityWithCredentials(ctx, id)
+	result, err = c.fileStore.GetEntityWithCredentials(ctx, id)
 	if err != nil {
-		return Entity{}, nil, nil, err
+		return nil, err
 	}
-	entity.IsReadOnly = true
-	return entity, creds, sysCreds, nil
+	result.Entity.IsReadOnly = true
+	return result, nil
 }
 
 // UpdateEntity fully updates an entity in the database store only.

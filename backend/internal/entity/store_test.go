@@ -143,14 +143,14 @@ func (s *DBStoreTestSuite) TestGetEntity_Success() {
 
 func (s *DBStoreTestSuite) TestGetEntityWithCredentials_ProviderError() {
 	s.expectClientError()
-	_, _, _, err := s.store.GetEntityWithCredentials(s.ctx, "e1")
+	_, err := s.store.GetEntityWithCredentials(s.ctx, "e1")
 	s.Error(err)
 }
 
 func (s *DBStoreTestSuite) TestGetEntityWithCredentials_NotFound() {
 	s.expectClient()
 	s.onQueryAny([]map[string]interface{}{}, nil)
-	_, _, _, err := s.store.GetEntityWithCredentials(s.ctx, "e1")
+	_, err := s.store.GetEntityWithCredentials(s.ctx, "e1")
 	s.ErrorIs(err, ErrEntityNotFound)
 }
 
@@ -158,7 +158,7 @@ func (s *DBStoreTestSuite) TestGetEntityWithCredentials_MultipleResults() {
 	s.expectClient()
 	rows := []map[string]interface{}{dbEntityRowWithCreds(), dbEntityRowWithCreds()}
 	s.onQueryAny(rows, nil)
-	_, _, _, err := s.store.GetEntityWithCredentials(s.ctx, "e1")
+	_, err := s.store.GetEntityWithCredentials(s.ctx, "e1")
 	s.Error(err)
 }
 
@@ -166,18 +166,18 @@ func (s *DBStoreTestSuite) TestGetEntityWithCredentials_BadRow() {
 	s.expectClient()
 	bad := map[string]interface{}{"id": 123} // wrong type for id
 	s.onQueryAny([]map[string]interface{}{bad}, nil)
-	_, _, _, err := s.store.GetEntityWithCredentials(s.ctx, "e1")
+	_, err := s.store.GetEntityWithCredentials(s.ctx, "e1")
 	s.Error(err)
 }
 
 func (s *DBStoreTestSuite) TestGetEntityWithCredentials_Success() {
 	s.expectClient()
 	s.onQueryAny([]map[string]interface{}{dbEntityRowWithCreds()}, nil)
-	e, creds, sysCreds, err := s.store.GetEntityWithCredentials(s.ctx, "e1")
+	result, err := s.store.GetEntityWithCredentials(s.ctx, "e1")
 	s.NoError(err)
-	s.Equal("e1", e.ID)
-	s.NotNil(creds)
-	s.NotNil(sysCreds)
+	s.Equal("e1", result.Entity.ID)
+	s.NotNil(result.SchemaCredentials)
+	s.NotNil(result.SystemCredentials)
 }
 
 func (s *DBStoreTestSuite) TestCreateEntity_ProviderError() {

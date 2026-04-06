@@ -96,37 +96,38 @@ func (s *CompositeStoreTestSuite) TestGetEntity_BothNotFound() {
 func (s *CompositeStoreTestSuite) TestGetEntityWithCredentials_DBFound() {
 	e := compEntity("c1", "ou1")
 	creds := json.RawMessage(`{"p":"h"}`)
-	s.dbStore.On("GetEntityWithCredentials", mock.Anything, "c1").Return(e, creds, json.RawMessage(nil), nil)
-	got, gotC, _, err := s.store.GetEntityWithCredentials(s.ctx, "c1")
+	s.dbStore.On("GetEntityWithCredentials", mock.Anything, "c1").
+		Return(&EntityWithCredentials{Entity: &e, SchemaCredentials: creds, SystemCredentials: nil}, nil)
+	result, err := s.store.GetEntityWithCredentials(s.ctx, "c1")
 	s.NoError(err)
-	s.Equal("c1", got.ID)
-	s.Equal(string(creds), string(gotC))
+	s.Equal("c1", result.Entity.ID)
+	s.Equal(string(creds), string(result.SchemaCredentials))
 }
 
 func (s *CompositeStoreTestSuite) TestGetEntityWithCredentials_DBNotFound_FileFound() {
 	e := compEntity("c2", "ou1")
 	s.dbStore.On("GetEntityWithCredentials", mock.Anything, "c2").
-		Return(Entity{}, json.RawMessage(nil), json.RawMessage(nil), ErrEntityNotFound)
+		Return(nil, ErrEntityNotFound)
 	s.fileStore.On("GetEntityWithCredentials", mock.Anything, "c2").
-		Return(e, json.RawMessage(nil), json.RawMessage(nil), nil)
-	got, _, _, err := s.store.GetEntityWithCredentials(s.ctx, "c2")
+		Return(&EntityWithCredentials{Entity: &e, SchemaCredentials: nil, SystemCredentials: nil}, nil)
+	result, err := s.store.GetEntityWithCredentials(s.ctx, "c2")
 	s.NoError(err)
-	s.True(got.IsReadOnly)
+	s.True(result.Entity.IsReadOnly)
 }
 
 func (s *CompositeStoreTestSuite) TestGetEntityWithCredentials_DBError() {
 	s.dbStore.On("GetEntityWithCredentials", mock.Anything, "c3").
-		Return(Entity{}, json.RawMessage(nil), json.RawMessage(nil), s.testErr)
-	_, _, _, err := s.store.GetEntityWithCredentials(s.ctx, "c3")
+		Return(nil, s.testErr)
+	_, err := s.store.GetEntityWithCredentials(s.ctx, "c3")
 	s.Error(err)
 }
 
 func (s *CompositeStoreTestSuite) TestGetEntityWithCredentials_BothNotFound() {
 	s.dbStore.On("GetEntityWithCredentials", mock.Anything, "c4").
-		Return(Entity{}, json.RawMessage(nil), json.RawMessage(nil), ErrEntityNotFound)
+		Return(nil, ErrEntityNotFound)
 	s.fileStore.On("GetEntityWithCredentials", mock.Anything, "c4").
-		Return(Entity{}, json.RawMessage(nil), json.RawMessage(nil), ErrEntityNotFound)
-	_, _, _, err := s.store.GetEntityWithCredentials(s.ctx, "c4")
+		Return(nil, ErrEntityNotFound)
+	_, err := s.store.GetEntityWithCredentials(s.ctx, "c4")
 	s.ErrorIs(err, ErrEntityNotFound)
 }
 

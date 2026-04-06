@@ -79,17 +79,21 @@ func (f *entityFileBasedStore) GetEntity(ctx context.Context, id string) (Entity
 
 // GetEntityWithCredentials retrieves an entity with credentials from the file store.
 func (f *entityFileBasedStore) GetEntityWithCredentials(ctx context.Context, id string) (
-	Entity, json.RawMessage, json.RawMessage, error) {
+	*EntityWithCredentials, error) {
 	data, err := f.GenericFileBasedStore.Get(id)
 	if err != nil {
-		return Entity{}, nil, nil, ErrEntityNotFound
+		return nil, ErrEntityNotFound
 	}
 	resource, ok := data.(*entityStoreEntry)
 	if !ok {
 		declarativeresource.LogTypeAssertionError("entity", id)
-		return Entity{}, nil, nil, errors.New("entity data corrupted")
+		return nil, errors.New("entity data corrupted")
 	}
-	return resource.Entity, resource.Credentials, resource.SystemCredentials, nil
+	return &EntityWithCredentials{
+		Entity:            &resource.Entity,
+		SchemaCredentials: resource.Credentials,
+		SystemCredentials: resource.SystemCredentials,
+	}, nil
 }
 
 // UpdateEntity is not supported in file-based store.

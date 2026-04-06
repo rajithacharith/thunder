@@ -37,8 +37,7 @@ type entityStoreInterface interface {
 	CreateEntity(ctx context.Context, entity Entity,
 		credentials json.RawMessage, systemCredentials json.RawMessage) error
 	GetEntity(ctx context.Context, id string) (Entity, error)
-	GetEntityWithCredentials(ctx context.Context, id string) (
-		Entity, json.RawMessage, json.RawMessage, error)
+	GetEntityWithCredentials(ctx context.Context, id string) (*EntityWithCredentials, error)
 	UpdateEntity(ctx context.Context, entity *Entity) error
 	UpdateAttributes(ctx context.Context, entityID string, attributes json.RawMessage) error
 	UpdateSystemAttributes(ctx context.Context, entityID string,
@@ -209,35 +208,36 @@ func (es *entityDBStore) GetEntity(ctx context.Context, id string) (Entity, erro
 
 // GetEntityWithCredentials retrieves an entity with all credential columns.
 func (es *entityDBStore) GetEntityWithCredentials(ctx context.Context, id string) (
-	Entity, json.RawMessage, json.RawMessage, error) {
+	*EntityWithCredentials, error) {
 	dbClient, err := es.dbProvider.GetUserDBClient()
 	if err != nil {
-		return Entity{}, nil, nil, fmt.Errorf("failed to get database client: %w", err)
+		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
 	results, err := dbClient.QueryContext(ctx, QueryGetEntityWithCredentials, id, es.deploymentID)
 	if err != nil {
-		return Entity{}, nil, nil, fmt.Errorf("failed to execute query: %w", err)
+		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
 
 	if len(results) == 0 {
-		return Entity{}, nil, nil, ErrEntityNotFound
+		return nil, ErrEntityNotFound
 	}
 
 	if len(results) != 1 {
-		return Entity{}, nil, nil, fmt.Errorf("unexpected number of results: %d", len(results))
+		return nil, fmt.Errorf("unexpected number of results: %d", len(results))
 	}
 
 	row := results[0]
 	entity, err := buildEntityFromResultRow(row)
 	if err != nil {
-		return Entity{}, nil, nil, err
+		return nil, err
 	}
 
-	credentials := parseJSONColumn(row, "credentials")
-	systemCredentials := parseJSONColumn(row, "system_credentials")
-
-	return entity, credentials, systemCredentials, nil
+	return &EntityWithCredentials{
+		Entity:            &entity,
+		SchemaCredentials: parseJSONColumn(row, "credentials"),
+		SystemCredentials: parseJSONColumn(row, "system_credentials"),
+	}, nil
 }
 
 // UpdateEntity fully updates an entity including system attributes, and re-syncs all identifiers.

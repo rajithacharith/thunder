@@ -101,21 +101,21 @@ func (s *FileBasedStoreTestSuite) TestGetEntityWithCredentials_Found() {
 	sysCreds := json.RawMessage(`{"token":"abc"}`)
 	s.Require().NoError(s.store.CreateEntity(s.ctx, e, creds, sysCreds))
 
-	gotEntity, gotCreds, gotSysCreds, err := s.store.GetEntityWithCredentials(s.ctx, "e3")
+	result, err := s.store.GetEntityWithCredentials(s.ctx, "e3")
 	s.NoError(err)
-	s.Equal(e.ID, gotEntity.ID)
-	s.Equal(string(creds), string(gotCreds))
-	s.Equal(string(sysCreds), string(gotSysCreds))
+	s.Equal(e.ID, result.Entity.ID)
+	s.Equal(string(creds), string(result.SchemaCredentials))
+	s.Equal(string(sysCreds), string(result.SystemCredentials))
 }
 
 func (s *FileBasedStoreTestSuite) TestGetEntityWithCredentials_NotFound() {
-	_, _, _, err := s.store.GetEntityWithCredentials(s.ctx, "missing")
+	_, err := s.store.GetEntityWithCredentials(s.ctx, "missing")
 	s.ErrorIs(err, ErrEntityNotFound)
 }
 
 func (s *FileBasedStoreTestSuite) TestGetEntityWithCredentials_Corrupted() {
 	s.Require().NoError(s.store.GenericFileBasedStore.Create("bad2", "corrupted"))
-	_, _, _, err := s.store.GetEntityWithCredentials(s.ctx, "bad2")
+	_, err := s.store.GetEntityWithCredentials(s.ctx, "bad2")
 	s.Error(err)
 }
 
