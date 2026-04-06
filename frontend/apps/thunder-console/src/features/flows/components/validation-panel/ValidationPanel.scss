@@ -21,7 +21,7 @@
 
 .validation-panel-tabs-container {
   padding: 0 16px;
-  background: var(--mui-palette-common-white);
+  background: var(--flow-builder-right-panel-header-bg);
   border-bottom: 1px solid var(--flow-builder-right-panel-border, #e0e0e0);
 
   .validation-tabs {
@@ -49,6 +49,24 @@
     width: 100%;
     border-radius: 8px;
 
+    &.MuiAlert-standardError {
+      background-color: rgba(var(--oxygen-palette-error-mainChannel) / 0.12);
+      border: 1px solid rgba(var(--oxygen-palette-error-mainChannel) / 0.3);
+      color: var(--oxygen-palette-error-light);
+    }
+
+    &.MuiAlert-standardWarning {
+      background-color: rgba(var(--oxygen-palette-warning-mainChannel) / 0.12);
+      border: 1px solid rgba(var(--oxygen-palette-warning-mainChannel) / 0.3);
+      color: var(--oxygen-palette-warning-light);
+    }
+
+    &.MuiAlert-standardInfo {
+      background-color: rgba(var(--oxygen-palette-info-mainChannel) / 0.12);
+      border: 1px solid rgba(var(--oxygen-palette-info-mainChannel) / 0.3);
+      color: var(--oxygen-palette-info-light);
+    }
+
     .notification-action-button {
       padding: 0;
       width: auto;
@@ -61,7 +79,7 @@
       &:hover {
         background-color: transparent;
         text-decoration: underline;
-        color: var(--mui-palette-primary-dark);
+        color: var(--oxygen-palette-primary-main);
       }
 
       &.MuiButtonBase-root {

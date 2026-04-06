@@ -1751,6 +1751,10 @@ const translations = {
     'core.validation.fields.phoneNumberInput.label': 'Phone number label is required',
     'core.validation.fields.phoneNumberInput.ref': 'Phone number attribute is required',
 
+    // Validation messages - form
+    'core.validation.fields.form.noSubmitButton':
+      'Form <code>{{id}}</code> has input fields but no submit button. Add a button with type "Submit" so that users can submit the form.',
+
     // Elements - rich text
     'core.elements.richText.placeholder': 'Enter text here...',
     'core.elements.richText.resolvedI18nValue': 'Resolved i18n value',
@@ -1882,7 +1886,9 @@ const translations = {
     'core.fieldExtendedProperties.selectAttribute': 'Select an attribute',
 
     // Button extended properties
-    'core.buttonExtendedProperties.type': 'Type',
+    'core.buttonExtendedProperties.type.label': 'Type',
+    'core.buttonExtendedProperties.type.submit': 'Submit',
+    'core.buttonExtendedProperties.type.trigger': 'Trigger',
     'core.buttonExtendedProperties.startIcon.label': 'Start Icon',
     'core.buttonExtendedProperties.startIcon.placeholder': 'Enter icon path (e.g., assets/images/icons/icon.svg)',
     'core.buttonExtendedProperties.startIcon.hint': 'Optional icon displayed before the button label',

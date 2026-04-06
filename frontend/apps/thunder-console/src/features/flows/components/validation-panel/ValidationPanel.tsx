@@ -159,7 +159,7 @@ function ValidationPanel(): ReactElement {
       <Box
         sx={{
           px: 2,
-          bgcolor: 'common.white',
+          bgcolor: 'background.paper',
           borderBottom: '1px solid',
           borderColor: 'divider',
           mt: 2,
