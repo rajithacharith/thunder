@@ -45,6 +45,7 @@ const (
 	ExecutorNameConsent                      = "ConsentExecutor"
 	ExecutorNameOUResolver                   = "OUResolverExecutor"
 	ExecutorNameAttributeUniquenessValidator = "AttributeUniquenessValidator"
+	ExecutorNameSMSExecutor                  = "SMSExecutor"
 )
 
 // Executor mode constants
@@ -83,12 +84,17 @@ const (
 
 // Executor property keys
 const (
-	propertyKeyAssignGroup      = "assignGroup"
-	propertyKeyAssignRole       = "assignRole"
-	propertyKeyRequiredScopes   = "requiredScopes"
-	propertyKeyEmailTemplate    = "emailTemplate"
-	propertyKeyAllowedUserTypes = "allowedUserTypes"
+	propertyKeyAssignGroup          = "assignGroup"
+	propertyKeyAssignRole           = "assignRole"
+	propertyKeyRequiredScopes       = "requiredScopes"
+	propertyKeyEmailTemplate        = "emailTemplate"
+	propertyKeyAllowedUserTypes     = "allowedUserTypes"
+	propertyKeyNotificationSenderID = "senderId"
 )
+
+// smsDefaultMessage is a temporary hardcoded SMS body used until template-based message support is implemented.
+// TODO: Replace with a proper message template engine in a future PR.
+const smsDefaultMessage = "You have a pending notification from the system."
 
 // nonSearchableInputs contains the list of user inputs/ attributes that are non-searchable.
 var nonSearchableInputs = []string{"password", "code", "nonce", "otp"}
