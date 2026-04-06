@@ -226,6 +226,34 @@
   {
     "resourceType": "STEP",
     "category": "INTERFACE",
+    "type": "VIEW",
+    "display": {
+      "label": "Status Screen",
+      "image": "assets/images/icons/display-rich-text.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "components": [
+        {
+          "id": "{{ID}}",
+          "category": "DISPLAY",
+          "type": "TEXT",
+          "variant": "HEADING_3",
+          "label": "You're All Set"
+        },
+        {
+          "id": "{{ID}}",
+          "category": "DISPLAY",
+          "type": "TEXT",
+          "variant": "BODY_1",
+          "label": "You have successfully completed the process."
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "INTERFACE",
     "type": "END",
     "version": "0.1.0",
     "deprecated": false,

@@ -1012,6 +1012,25 @@ components:
           type: string
           description: Next node ID on failed execution (TASK_EXECUTION nodes)
           example: node_007
+        onIncomplete:
+          type: string
+          description: |
+            For TASK_EXECUTION nodes: ID of the PROMPT node to transition to when user input
+            is required to complete the task.
+          example: node_003
+        next:
+          type: string
+          description: |
+            For display-only PROMPT nodes: ID of the next node to automatically transition to
+            after the display content is rendered. Mutually exclusive with `prompts`.
+          example: node_005
+        message:
+          type: string
+          description: |
+            For display-only PROMPT nodes: a plain-text message returned in non-verbose mode
+            alongside the flow status, intended for lightweight clients that do not process
+            the full meta/components payload.
+          example: "Registration complete. You may now sign in."
 
     NodeLayout:
       type: object
@@ -1104,6 +1123,13 @@ components:
           type: string
           description: Reference to the action component ID in meta.components
           example: action_001
+        type:
+          type: string
+          description: |
+            Optional action type forwarded to the next executor so it can determine which
+            processing path to take. Predefined values are `SUBMIT` (approve/confirm) and
+            `REJECT` (deny/cancel). If omitted, no action-type hint is forwarded.
+          example: SUBMIT
         nextNode:
           type: string
           description: ID of the next node to navigate to when this action is triggered

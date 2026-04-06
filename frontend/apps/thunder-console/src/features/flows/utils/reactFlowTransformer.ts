@@ -72,6 +72,7 @@ interface FlowNode {
   onSuccess?: string;
   onFailure?: string;
   onIncomplete?: string;
+  next?: string;
 }
 
 /**
@@ -483,6 +484,12 @@ function transformNode(canvasNode: Node<StepData>, edges: Edge[]): FlowNode {
     const prompts = extractPrompts(stepData.components, canvasNode.id, edges);
     if (prompts.length > 0) {
       flowNode.prompts = prompts;
+    } else if (stepData.components.length > 0) {
+      // Display-only node: has display components but no action buttons — use 'next' for the connection
+      const nextNodeId = findNextNode(canvasNode, edges);
+      if (nextNodeId) {
+        flowNode.next = nextNodeId;
+      }
     }
   }
 
@@ -828,6 +835,21 @@ export function validateFlowGraph(flowGraph: FlowGraph): string[] {
           );
         }
       });
+    }
+
+    // Validate next field for display-only PROMPT nodes
+    if (node.next !== undefined) {
+      if (!node.next) {
+        errors.push(`Node ${node.id}: next must be a non-empty string`);
+      } else if (!nodeIds.has(node.next)) {
+        errors.push(`Node ${node.id}: next references non-existent node ${node.next}`);
+      } else if (node.next === node.id) {
+        errors.push(`Node ${node.id}: next must not reference itself`);
+      }
+
+      if (node.prompts && node.prompts.length > 0) {
+        errors.push(`Node ${node.id}: next and prompts are mutually exclusive`);
+      }
     }
   });
 

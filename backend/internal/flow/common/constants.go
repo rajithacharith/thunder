@@ -139,6 +139,8 @@ const (
 	DataSMSSent = "smsSent"
 	// DataRootOUID is the key used to pass the root OU ID to the frontend for the OU tree picker.
 	DataRootOUID = "rootOuId"
+	// DataPromptMessage is the key used to pass a message to be displayed in the prompt node.
+	DataPromptMessage = "message"
 )
 
 // DefaultHTTPTimeout defines the default timeout duration for HTTP requests.
@@ -215,10 +217,22 @@ var sensitiveInputTypes = []string{
 	InputTypeOTP,
 }
 
+// ActionType represents the type of action in a prompt.
+type ActionType string
+
+const (
+	// ActionTypeSubmit represents a primary/approve action
+	ActionTypeSubmit ActionType = "SUBMIT"
+	// ActionTypeReject represents a reject/deny action
+	ActionTypeReject ActionType = "REJECT"
+)
+
 // ForwardedData key constants define keys used in the ForwardedData map.
 const (
-	// ForwardedDataKeyInputs is the key used to store input data in ForwardedData.
+	// ForwardedDataKeyInputs is the key used to store input data in ForwardedData
 	ForwardedDataKeyInputs = "inputs"
-	// ForwardedDataKeyConsentPrompt is the key used to forward consent prompt data to the prompt node.
+	// ForwardedDataKeyConsentPrompt is the key used to forward consent prompt data to the prompt node
 	ForwardedDataKeyConsentPrompt = "consent_prompt"
+	// ForwardedDataKeyActionType holds the action type selected by the user for the immediate next node
+	ForwardedDataKeyActionType = "actionType"
 )

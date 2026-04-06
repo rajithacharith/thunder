@@ -23,6 +23,7 @@ import Execution from './execution/Execution';
 import Rule from './rule/Rule';
 import View from './view/View';
 import type {Element} from '../../../models/elements';
+import {ElementCategories, ElementTypes} from '../../../models/elements';
 import type {Resources} from '../../../models/resources';
 import {StepTypes, type Step} from '@/features/flows/models/steps';
 
@@ -58,6 +59,24 @@ export interface CommonStepFactoryPropsInterface extends NodeProps {
 }
 
 /**
+ * Recursively checks whether a component tree contains any ACTION or RESEND elements.
+ */
+function hasActionElements(components: Element[] | undefined): boolean {
+  if (!components) return false;
+  return components.some((comp) => {
+    if (
+      comp.category === ElementCategories.Action ||
+      comp.type === ElementTypes.Action ||
+      comp.type === ElementTypes.Resend
+    ) {
+      return true;
+    }
+    const nested = comp.components;
+    return hasActionElements(nested);
+  });
+}
+
+/**
  * Factory for creating common steps.
  *
  * @param props - Props injected to the component.
@@ -72,11 +91,13 @@ function CommonStepFactory({
   ...rest
 }: CommonStepFactoryPropsInterface): ReactElement | null {
   if (resources?.[0].type === StepTypes.View) {
+    const isDisplayOnly = !hasActionElements(data?.components as Element[] | undefined);
     return (
       <View
         resources={resources}
         data={data}
         availableElements={allResources?.elements}
+        enableSourceHandle={isDisplayOnly}
         onAddElement={onAddElement}
         onAddElementToForm={onAddElementToForm}
         {...rest}
