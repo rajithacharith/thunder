@@ -23,6 +23,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
+	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 )
 
@@ -46,9 +47,10 @@ func newGrantHandlerProvider(
 	tokenBuilder tokenservice.TokenBuilderInterface,
 	tokenValidator tokenservice.TokenValidatorInterface,
 	attrCacheService attributecache.AttributeCacheServiceInterface,
+	ouService ou.OrganizationUnitServiceInterface,
 ) GrantHandlerProviderInterface {
 	return &GrantHandlerProvider{
-		clientCredentialsGrantHandler: newClientCredentialsGrantHandler(tokenBuilder),
+		clientCredentialsGrantHandler: newClientCredentialsGrantHandler(tokenBuilder, ouService),
 		authorizationCodeGrantHandler: newAuthorizationCodeGrantHandler(
 			authzService, tokenBuilder, attrCacheService),
 		refreshTokenGrantHandler: newRefreshTokenGrantHandler(

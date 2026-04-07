@@ -287,6 +287,36 @@ func (ts *TokenTestSuite) TestClientCredentialsGrantWithHeaderCredentials() {
 			ts.runClientCredentialsTestCase(request, tc.expectedStatus, tc.expectedScopes, "")
 		})
 	}
+
+	// Verify that client OU claims are included in the access token.
+	ts.Run("WithClientOUClaims", func() {
+		reqBody := strings.NewReader("grant_type=client_credentials")
+		request, err := http.NewRequest("POST", testServerURL+"/oauth2/token", reqBody)
+		ts.Require().NoError(err)
+		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		request.SetBasicAuth(clientId+"_client_secret_basic", clientSecret)
+
+		resp, err := ts.client.Do(request)
+		ts.Require().NoError(err)
+		defer resp.Body.Close()
+		ts.Require().Equal(http.StatusOK, resp.StatusCode)
+
+		var respBody map[string]interface{}
+		ts.Require().NoError(json.NewDecoder(resp.Body).Decode(&respBody))
+
+		accessToken, ok := respBody["access_token"].(string)
+		ts.Require().True(ok, "access_token not found in response")
+
+		claims, err := testutils.DecodeJWT(accessToken)
+		ts.Require().NoError(err)
+
+		ou, err := testutils.GetOrganizationUnit(ts.ouID)
+		ts.Require().NoError(err)
+
+		ts.Assert().Equal(ou.ID, claims.Additional["clientOuId"])
+		ts.Assert().Equal(ou.Name, claims.Additional["clientOuName"])
+		ts.Assert().Equal(ou.Handle, claims.Additional["clientOuHandle"])
+	})
 }
 
 func (ts *TokenTestSuite) TestClientCredentialsGrantWithBodyCredentials() {

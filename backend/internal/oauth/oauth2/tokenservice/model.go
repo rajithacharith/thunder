@@ -55,6 +55,7 @@ type AccessTokenBuildContext struct {
 	ActorClaims      *SubjectTokenClaims
 	ClaimsRequest    *oauth2model.ClaimsRequest
 	ClaimsLocales    string
+	ClientAttributes map[string]interface{}
 }
 
 // RefreshTokenBuildContext contains all the information needed to build a refresh token.

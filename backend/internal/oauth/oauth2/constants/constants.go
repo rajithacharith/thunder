@@ -308,12 +308,15 @@ const (
 
 // Custom JWT claim names.
 const (
-	ClaimUserType      string = "userType"
-	ClaimOUID          string = "ouId"
-	ClaimOUName        string = "ouName"
-	ClaimOUHandle      string = "ouHandle"
-	ClaimClaimsRequest string = "claims_req"
-	ClaimClaimsLocales string = "claims_locales"
+	ClaimUserType       string = "userType"
+	ClaimOUID           string = "ouId"
+	ClaimOUName         string = "ouName"
+	ClaimOUHandle       string = "ouHandle"
+	ClaimClientOUID     string = "clientOuId"
+	ClaimClientOUName   string = "clientOuName"
+	ClaimClientOUHandle string = "clientOuHandle"
+	ClaimClaimsRequest  string = "claims_req"
+	ClaimClaimsLocales  string = "claims_locales"
 )
 
 // JWT signing algorithms.

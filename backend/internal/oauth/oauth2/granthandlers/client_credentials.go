@@ -25,19 +25,23 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
+	"github.com/asgardeo/thunder/internal/ou"
 )
 
 // clientCredentialsGrantHandler handles the client credentials grant type.
 type clientCredentialsGrantHandler struct {
 	tokenBuilder tokenservice.TokenBuilderInterface
+	ouService    ou.OrganizationUnitServiceInterface
 }
 
 // newClientCredentialsGrantHandler creates a new instance of ClientCredentialsGrantHandler.
 func newClientCredentialsGrantHandler(
 	tokenBuilder tokenservice.TokenBuilderInterface,
+	ouService ou.OrganizationUnitServiceInterface,
 ) GrantHandlerInterface {
 	return &clientCredentialsGrantHandler{
 		tokenBuilder: tokenBuilder,
+		ouService:    ouService,
 	}
 }
 
@@ -62,14 +66,23 @@ func (h *clientCredentialsGrantHandler) HandleGrant(ctx context.Context, tokenRe
 
 	finalAudience := tokenservice.DetermineAudience("", tokenRequest.Resource, "", tokenRequest.ClientID)
 
+	clientAttributes, clientAttrErr := tokenservice.BuildClientAttributes(ctx, oauthApp, h.ouService)
+	if clientAttrErr != nil {
+		return nil, &model.ErrorResponse{
+			Error:            constants.ErrorServerError,
+			ErrorDescription: "Failed to generate token",
+		}
+	}
+
 	accessToken, err := h.tokenBuilder.BuildAccessToken(&tokenservice.AccessTokenBuildContext{
-		Subject:        tokenRequest.ClientID,
-		Audience:       finalAudience,
-		ClientID:       tokenRequest.ClientID,
-		Scopes:         scopes,
-		UserAttributes: make(map[string]interface{}),
-		GrantType:      string(constants.GrantTypeClientCredentials),
-		OAuthApp:       oauthApp,
+		Subject:          tokenRequest.ClientID,
+		Audience:         finalAudience,
+		ClientID:         tokenRequest.ClientID,
+		Scopes:           scopes,
+		UserAttributes:   make(map[string]interface{}),
+		GrantType:        string(constants.GrantTypeClientCredentials),
+		OAuthApp:         oauthApp,
+		ClientAttributes: clientAttributes,
 	})
 	if err != nil {
 		return nil, &model.ErrorResponse{
