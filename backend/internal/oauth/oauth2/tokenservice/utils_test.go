@@ -1111,9 +1111,9 @@ func (suite *UtilsTestSuite) TestBuildClientAttributes_HappyPath() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), claims)
-	assert.Equal(suite.T(), testBCCOUID, claims[constants.ClaimClientOUID])
-	assert.Equal(suite.T(), "Engineering", claims[constants.ClaimClientOUName])
-	assert.Equal(suite.T(), "eng", claims[constants.ClaimClientOUHandle])
+	assert.Equal(suite.T(), testBCCOUID, claims[constants.ClaimOUID])
+	assert.Equal(suite.T(), "Engineering", claims[constants.ClaimOUName])
+	assert.Equal(suite.T(), "eng", claims[constants.ClaimOUHandle])
 }
 
 func (suite *UtilsTestSuite) TestBuildClientAttributes_OULookupError_ReturnsError() {
