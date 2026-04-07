@@ -17,16 +17,11 @@
  */
 
 import {renderHook, act} from '@testing-library/react';
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {CanvasData} from '../useFlowSave';
 import useFlowSave from '../useFlowSave';
 
 // Mock dependencies
-const mockNavigate = vi.fn();
-vi.mock('react-router', () => ({
-  useNavigate: () => mockNavigate,
-}));
-
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
@@ -80,14 +75,9 @@ describe('useFlowSave', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
     mockShowError = vi.fn() as (message: string) => void;
     mockShowSuccess = vi.fn() as (message: string) => void;
     mockSetOpenValidationPanel = vi.fn() as (open: boolean) => void;
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   const renderUseFlowSave = (overrides = {}) => {
@@ -178,7 +168,7 @@ describe('useFlowSave', () => {
       expect(mockUpdateFlowMutate).not.toHaveBeenCalled();
     });
 
-    it('should show success message and navigate on create success', () => {
+    it('should show success message on create success', () => {
       mockCreateFlowMutate.mockImplementation((_, options: {onSuccess: () => void}) => {
         options.onSuccess();
       });
@@ -193,13 +183,6 @@ describe('useFlowSave', () => {
       });
 
       expect(mockShowSuccess).toHaveBeenCalledWith('flows:core.loginFlowBuilder.success.flowCreated');
-
-      // Advance timers to trigger navigation
-      act(() => {
-        vi.advanceTimersByTime(1500);
-      });
-
-      expect(mockNavigate).toHaveBeenCalledWith('/flows');
     });
 
     it('should show error message on create failure', () => {
@@ -255,7 +238,7 @@ describe('useFlowSave', () => {
       );
     });
 
-    it('should show success message and navigate on update success', () => {
+    it('should show success message on update success', () => {
       mockUpdateFlowMutate.mockImplementation((_, options: {onSuccess: () => void}) => {
         options.onSuccess();
       });
@@ -271,13 +254,6 @@ describe('useFlowSave', () => {
       });
 
       expect(mockShowSuccess).toHaveBeenCalledWith('flows:core.loginFlowBuilder.success.flowUpdated');
-
-      // Advance timers to trigger navigation
-      act(() => {
-        vi.advanceTimersByTime(1500);
-      });
-
-      expect(mockNavigate).toHaveBeenCalledWith('/flows');
     });
 
     it('should show error message on update failure', () => {

@@ -16,11 +16,12 @@
  * under the License.
  */
 
-import {Divider, FormHelperText, FormLabel, Stack, TextField} from '@wso2/oxygen-ui';
+import {Divider, FormHelperText, FormLabel, MenuItem, Select, Stack, TextField} from '@wso2/oxygen-ui';
 import {useState, type ReactNode, type ChangeEvent} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {CommonResourcePropertiesPropsInterface} from '@/features/flows/components/resource-property-panel/ResourceProperties';
 import type {Element} from '@/features/flows/models/elements';
+import {ActionEventTypes} from '@/features/flows/models/elements';
 
 /**
  * Props interface of {@link ButtonExtendedProperties}
@@ -38,6 +39,11 @@ function ButtonExtendedProperties({resource, onChange}: ButtonExtendedProperties
   const {t} = useTranslation();
 
   // Use local state for immediate input feedback
+  const [eventTypeValue, setEventTypeValue] = useState(() => {
+    const element = resource as Element & {eventType?: string};
+    return element?.eventType ?? ActionEventTypes.Trigger;
+  });
+
   const [startIconValue, setStartIconValue] = useState(() => {
     const element = resource as Element & {startIcon?: string};
     return element?.startIcon ?? '';
@@ -52,10 +58,17 @@ function ButtonExtendedProperties({resource, onChange}: ButtonExtendedProperties
   const [prevResource, setPrevResource] = useState(resource);
   if (resource !== prevResource) {
     setPrevResource(resource);
-    const element = resource as Element & {startIcon?: string; endIcon?: string};
+    const element = resource as Element & {eventType?: string; startIcon?: string; endIcon?: string};
+    setEventTypeValue(element?.eventType ?? ActionEventTypes.Trigger);
     setStartIconValue(element?.startIcon ?? '');
     setEndIconValue(element?.endIcon ?? '');
   }
+
+  // Handle eventType change
+  const handleEventTypeChange = (value: string): void => {
+    setEventTypeValue(value);
+    onChange('eventType', value, resource);
+  };
 
   // Handle startIcon change - update local state immediately, propagate via onChange
   const handleStartIconChange = (value: string): void => {
@@ -72,6 +85,20 @@ function ButtonExtendedProperties({resource, onChange}: ButtonExtendedProperties
   return (
     <Stack gap={2}>
       <Divider sx={{marginY: 2}} />
+
+      <div>
+        <FormLabel htmlFor="event-type-select">{t('flows:core.buttonExtendedProperties.type.label')}</FormLabel>
+        <Select
+          id="event-type-select"
+          value={eventTypeValue}
+          onChange={(e) => handleEventTypeChange(e.target.value)}
+          fullWidth
+          size="small"
+        >
+          <MenuItem value={ActionEventTypes.Submit}>{t('flows:core.buttonExtendedProperties.type.submit')}</MenuItem>
+          <MenuItem value={ActionEventTypes.Trigger}>{t('flows:core.buttonExtendedProperties.type.trigger')}</MenuItem>
+        </Select>
+      </div>
 
       <div>
         <FormLabel htmlFor="start-icon-input">{t('flows:core.buttonExtendedProperties.startIcon.label')}</FormLabel>

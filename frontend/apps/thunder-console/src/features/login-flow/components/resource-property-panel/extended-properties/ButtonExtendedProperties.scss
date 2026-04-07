@@ -18,11 +18,11 @@
     }
 
     &.selected {
-      border: 1px solid var(--flow-builder-primary-main);
+      border: 1px solid var(--oxygen-palette-primary-main);
     }
 
     &.error {
-      border: 1px solid var(--flow-builder-error-main);
+      border: 1px solid var(--oxygen-palette-error-main);
     }
   }
 

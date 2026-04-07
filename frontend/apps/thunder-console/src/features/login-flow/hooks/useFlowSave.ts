@@ -19,7 +19,6 @@
 import type {Edge, Node} from '@xyflow/react';
 import {useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useNavigate} from 'react-router';
 import useCreateFlow from '@/features/flows/api/useCreateFlow';
 import useUpdateFlow from '@/features/flows/api/useUpdateFlow';
 import type {CreateFlowRequest, UpdateFlowRequest} from '@/features/flows/models/responses';
@@ -88,7 +87,6 @@ const useFlowSave = (props: UseFlowSaveProps): UseFlowSaveReturn => {
   } = props;
 
   const {t} = useTranslation();
-  const navigate = useNavigate();
   const createFlow = useCreateFlow();
   const updateFlow = useUpdateFlow();
 
@@ -123,11 +121,6 @@ const useFlowSave = (props: UseFlowSaveProps): UseFlowSaveReturn => {
           {
             onSuccess: () => {
               showSuccess(t('flows:core.loginFlowBuilder.success.flowUpdated'));
-              // Redirect to flows list after a short delay to show the success message
-              setTimeout(() => {
-                // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                navigate('/flows');
-              }, 1500);
             },
             onError: () => {
               showError(t('flows:core.loginFlowBuilder.errors.saveFailed'));
@@ -139,11 +132,6 @@ const useFlowSave = (props: UseFlowSaveProps): UseFlowSaveReturn => {
         createFlow.mutate(flowConfig as CreateFlowRequest, {
           onSuccess: () => {
             showSuccess(t('flows:core.loginFlowBuilder.success.flowCreated'));
-            // Redirect to flows list after a short delay to show the success message
-            setTimeout(() => {
-              // eslint-disable-next-line @typescript-eslint/no-floating-promises
-              navigate('/flows');
-            }, 1500);
           },
           onError: () => {
             showError(t('flows:core.loginFlowBuilder.errors.saveFailed'));
@@ -161,7 +149,6 @@ const useFlowSave = (props: UseFlowSaveProps): UseFlowSaveReturn => {
       showSuccess,
       setOpenValidationPanel,
       t,
-      navigate,
       createFlow,
       updateFlow,
     ],

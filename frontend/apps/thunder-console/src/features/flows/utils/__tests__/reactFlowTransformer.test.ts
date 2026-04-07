@@ -1045,6 +1045,132 @@ describe('reactFlowTransformer', () => {
 
         expect(result.nodes[0].meta?.components?.[0].eventType).toBe(ActionEventTypes.Trigger);
       });
+
+      it('should set SUBMIT eventType for buttons inside a block with input fields', () => {
+        const components: Element[] = [
+          {
+            id: 'block-1',
+            type: 'BLOCK',
+            category: ElementCategories.Block,
+            components: [
+              {
+                id: 'field-phone',
+                type: ElementTypes.PhoneInput,
+                category: ElementCategories.Field,
+                inputType: 'tel',
+                label: 'Mobile Number',
+              },
+              {
+                id: 'action-1',
+                type: ElementTypes.Action,
+                category: ElementCategories.Action,
+                eventType: ActionEventTypes.Trigger,
+                label: 'Continue',
+                variant: 'PRIMARY',
+              },
+            ],
+          } as unknown as Element,
+        ];
+
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [createNode('view-1', StepTypes.View, {x: 0, y: 0}, {components})],
+          edges: [],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const block = result.nodes[0].meta?.components?.[0] ?? {};
+        const blockChildren = block.components as Record<string, unknown>[];
+        const actionButton = blockChildren.find((c) => c.type === ElementTypes.Action);
+        expect(actionButton?.eventType).toBe(ActionEventTypes.Submit);
+      });
+
+      it('should keep TRIGGER eventType for buttons inside a block without input fields', () => {
+        const components: Element[] = [
+          {
+            id: 'block-1',
+            type: 'BLOCK',
+            category: ElementCategories.Block,
+            components: [
+              {
+                id: 'text-1',
+                type: ElementTypes.Text,
+                category: ElementCategories.Display,
+                label: 'Hello',
+              },
+              {
+                id: 'action-1',
+                type: ElementTypes.Action,
+                category: ElementCategories.Action,
+                eventType: ActionEventTypes.Trigger,
+                label: 'Click me',
+                variant: 'PRIMARY',
+              },
+            ],
+          } as unknown as Element,
+        ];
+
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [createNode('view-1', StepTypes.View, {x: 0, y: 0}, {components})],
+          edges: [],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const block = result.nodes[0].meta?.components?.[0] ?? {};
+        const blockChildren = block.components as Record<string, unknown>[];
+        const actionButton = blockChildren.find((c) => c.type === ElementTypes.Action);
+        expect(actionButton?.eventType).toBe(ActionEventTypes.Trigger);
+      });
+
+      it('should not promote eventType when a block has inputs and multiple buttons', () => {
+        const components: Element[] = [
+          {
+            id: 'block-1',
+            type: 'BLOCK',
+            category: ElementCategories.Block,
+            components: [
+              {
+                id: 'field-phone',
+                type: ElementTypes.PhoneInput,
+                category: ElementCategories.Field,
+                inputType: 'tel',
+                label: 'Mobile Number',
+              },
+              {
+                id: 'action-submit',
+                type: ElementTypes.Action,
+                category: ElementCategories.Action,
+                eventType: ActionEventTypes.Trigger,
+                label: 'Submit',
+                variant: 'PRIMARY',
+              },
+              {
+                id: 'action-cancel',
+                type: ElementTypes.Action,
+                category: ElementCategories.Action,
+                eventType: ActionEventTypes.Trigger,
+                label: 'Cancel',
+                variant: 'SECONDARY',
+              },
+            ],
+          } as unknown as Element,
+        ];
+
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [createNode('view-1', StepTypes.View, {x: 0, y: 0}, {components})],
+          edges: [],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const block = result.nodes[0].meta?.components?.[0] ?? {};
+        const blockChildren = block.components as Record<string, unknown>[];
+        const actionButtons = blockChildren.filter((c) => c.type === ElementTypes.Action);
+        expect(actionButtons).toHaveLength(2);
+        expect(actionButtons[0].eventType).toBe(ActionEventTypes.Trigger);
+        expect(actionButtons[1].eventType).toBe(ActionEventTypes.Trigger);
+      });
     });
 
     describe('Input Field Processing', () => {

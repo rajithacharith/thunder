@@ -16,11 +16,9 @@
  * under the License.
  */
 
-@use '../../../../styles/variables';
-
 :root {
   --flow-builder-rule-background-color: #002e58;
-  --flow-builder-rule-remove-button-color: var(--flow-builder-grey-500);
+  --flow-builder-rule-remove-button-color: var(--oxygen-palette-grey-500);
   --flow-builder-rule-remove-button-hover-color: var(--mui-palette-primary-contrastText);
   --flow-builder-rule-content-box-width: 150px;
 }

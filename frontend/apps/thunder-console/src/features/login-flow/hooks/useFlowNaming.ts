@@ -105,10 +105,17 @@ const useFlowNaming = (props?: UseFlowNamingProps): UseFlowNamingReturn => {
    * Handler for flow name changes.
    * Updates both the name and generates a new handle.
    */
-  const handleFlowNameChange = useCallback((newName: string) => {
-    setFlowName(newName);
-    setFlowHandle(generateHandleFromName(newName));
-  }, []);
+  const isExistingFlow = Boolean(existingFlowData?.handle);
+
+  const handleFlowNameChange = useCallback(
+    (newName: string) => {
+      setFlowName(newName);
+      if (!isExistingFlow) {
+        setFlowHandle(generateHandleFromName(newName));
+      }
+    },
+    [isExistingFlow],
+  );
 
   return {
     flowName,

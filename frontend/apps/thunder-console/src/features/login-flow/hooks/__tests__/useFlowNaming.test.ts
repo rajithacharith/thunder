@@ -350,6 +350,37 @@ describe('useFlowNaming', () => {
     });
   });
 
+  describe('handle immutability for existing flows', () => {
+    it('should not change handle when renaming an existing flow', () => {
+      const existingFlowData = {
+        name: 'Original Name',
+        handle: 'original-handle',
+      };
+
+      const {result} = renderHook(() => useFlowNaming({existingFlowData}));
+
+      expect(result.current.flowHandle).toBe('original-handle');
+
+      act(() => {
+        result.current.handleFlowNameChange('Renamed Flow');
+      });
+
+      expect(result.current.flowName).toBe('Renamed Flow');
+      expect(result.current.flowHandle).toBe('original-handle');
+    });
+
+    it('should still update handle for new flows', () => {
+      const {result} = renderHook(() => useFlowNaming());
+
+      act(() => {
+        result.current.handleFlowNameChange('Brand New Flow');
+      });
+
+      expect(result.current.flowName).toBe('Brand New Flow');
+      expect(result.current.flowHandle).toBe('brand-new-flow');
+    });
+  });
+
   describe('undefined props handling', () => {
     it('should handle undefined props gracefully', () => {
       const {result} = renderHook(() => useFlowNaming(undefined));
