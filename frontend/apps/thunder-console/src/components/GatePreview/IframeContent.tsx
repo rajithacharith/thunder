@@ -27,7 +27,7 @@ import {
   GoogleFontLoader,
 } from '@thunder/shared-design';
 import type {Theme, DesignResolveResponse, Stylesheet} from '@thunder/shared-design';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {useTemplateLiteralResolver} from '@thunder/hooks';
 import {TemplateLiteralType} from '@thunder/utils';
 import {Box} from '@wso2/oxygen-ui';
 import {useEffect, useMemo, type JSX} from 'react';

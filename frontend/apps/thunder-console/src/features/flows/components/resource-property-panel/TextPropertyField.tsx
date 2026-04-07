@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {useTemplateLiteralResolver} from '@thunder/hooks';
 import {isI18nTemplatePattern, isMetaTemplatePattern} from '@thunder/utils';
 import {
   Box,

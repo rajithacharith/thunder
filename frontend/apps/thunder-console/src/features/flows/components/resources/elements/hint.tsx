@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {useTemplateLiteralResolver} from '@thunder/hooks';
 import {Stack} from '@wso2/oxygen-ui';
 import {InfoIcon} from '@wso2/oxygen-ui-icons-react';
 import type {ReactElement} from 'react';

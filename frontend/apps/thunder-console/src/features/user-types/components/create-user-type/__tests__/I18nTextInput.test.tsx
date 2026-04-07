@@ -48,7 +48,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('@thunder/shared-hooks', () => ({
+vi.mock('@thunder/hooks', () => ({
   useTemplateLiteralResolver: () => ({
     resolve: mockResolve,
   }),

@@ -22,11 +22,11 @@ import {describe, it, expect, beforeEach, vi} from 'vitest';
 import ShowClientSecret, {type ShowClientSecretProps} from '../ShowClientSecret';
 
 // Mock the useCopyToClipboard hook
-vi.mock('@thunder/shared-hooks', () => ({
+vi.mock('@thunder/hooks', () => ({
   useCopyToClipboard: vi.fn(),
 }));
 
-const {useCopyToClipboard} = await import('@thunder/shared-hooks');
+const {useCopyToClipboard} = await import('@thunder/hooks');
 
 describe('ShowClientSecret', () => {
   const mockOnCopySecret = vi.fn();

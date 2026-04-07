@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useResolveDisplayName} from '@thunder/shared-hooks';
+import {useResolveDisplayName} from '@thunder/hooks';
 import {Box, Stack, Typography} from '@wso2/oxygen-ui';
 import {useEffect} from 'react';
 import type {JSX} from 'react';

@@ -57,7 +57,7 @@
     "@thunder/logger": "workspace:^",
     "@thunder/shared-contexts": "workspace:^",
     "@thunder/shared-design": "workspace:^",
-    "@thunder/shared-hooks": "workspace:^",
+    "@thunder/hooks": "workspace:^",
     "@thunder/utils": "workspace:^",
     "@wso2/oxygen-ui": "catalog:",
     "@wso2/oxygen-ui-icons-react": "catalog:",

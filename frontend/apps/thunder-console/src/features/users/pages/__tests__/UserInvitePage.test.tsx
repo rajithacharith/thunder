@@ -123,7 +123,7 @@ vi.mock('@asgardeo/react', async () => {
   };
 });
 
-vi.mock('@thunder/shared-hooks', () => ({
+vi.mock('@thunder/hooks', () => ({
   useTemplateLiteralResolver: () => ({
     resolve: (key: string) => key,
   }),

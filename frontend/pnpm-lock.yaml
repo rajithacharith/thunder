@@ -139,7 +139,7 @@ overrides:
   yaml: '>=1.10.3'
   path-to-regexp: '>=0.1.13'
   svgo: '>=3.3.3'
-  ajv: '>=6.14.0'
+  ajv: 6.14.0
   brace-expansion@>=4.0.0 <5.0.5: '>=5.0.5'
   lodash: '>=4.18.1'
 
@@ -309,6 +309,9 @@ importers:
       '@tanstack/react-query-devtools':
         specifier: 'catalog:'
         version: 5.90.2(@tanstack/react-query@5.90.5(react@19.2.3))(react@19.2.3)
+      '@thunder/hooks':
+        specifier: workspace:^
+        version: link:../../packages/thunder-hooks
       '@thunder/i18n':
         specifier: workspace:^
         version: link:../../packages/thunder-i18n
@@ -321,9 +324,6 @@ importers:
       '@thunder/shared-design':
         specifier: workspace:^
         version: link:../../packages/thunder-shared-design
-      '@thunder/shared-hooks':
-        specifier: workspace:^
-        version: link:../../packages/thunder-shared-hooks
       '@thunder/utils':
         specifier: workspace:^
         version: link:../../packages/thunder-utils
@@ -487,6 +487,9 @@ importers:
       '@tanstack/react-query-devtools':
         specifier: 'catalog:'
         version: 5.90.2(@tanstack/react-query@5.90.5(react@19.2.3))(react@19.2.3)
+      '@thunder/hooks':
+        specifier: workspace:^
+        version: link:../../packages/thunder-hooks
       '@thunder/i18n':
         specifier: workspace:^
         version: link:../../packages/thunder-i18n
@@ -499,9 +502,6 @@ importers:
       '@thunder/shared-design':
         specifier: workspace:^
         version: link:../../packages/thunder-shared-design
-      '@thunder/shared-hooks':
-        specifier: workspace:^
-        version: link:../../packages/thunder-shared-hooks
       '@thunder/utils':
         specifier: workspace:^
         version: link:../../packages/thunder-utils
@@ -709,6 +709,64 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
+      rimraf:
+        specifier: 'catalog:'
+        version: 6.1.3
+      rolldown:
+        specifier: 'catalog:'
+        version: 1.0.0-beta.45
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.0(@opentelemetry/api@1.9.0)(@types/node@24.7.2)(@vitest/browser-playwright@4.1.0)(jsdom@27.0.1(postcss@8.5.8))(vite@8.0.0(@types/node@24.7.2)(jiti@2.6.1)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.46.0)(yaml@2.8.3))
+
+  packages/thunder-hooks:
+    dependencies:
+      '@thunder/utils':
+        specifier: workspace:^
+        version: link:../thunder-utils
+      lucide-react:
+        specifier: 'catalog:'
+        version: 0.545.0(react@19.2.3)
+      tslib:
+        specifier: 'catalog:'
+        version: 2.8.1
+    devDependencies:
+      '@thunder/eslint-plugin-thunder':
+        specifier: workspace:^
+        version: link:../thunder-eslint-plugin
+      '@thunder/prettier-config':
+        specifier: workspace:^
+        version: link:../thunder-prettier-config
+      '@thunder/test-utils':
+        specifier: workspace:^
+        version: link:../thunder-test-utils
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.7.2
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.7
+      '@vitest/browser-playwright':
+        specifier: 'catalog:'
+        version: 4.1.0(playwright@1.58.1)(vite@8.0.0(@types/node@24.7.2)(jiti@2.6.1)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.46.0)(yaml@2.8.3))(vitest@4.1.0)
+      eslint:
+        specifier: 'catalog:'
+        version: 9.39.4(jiti@2.6.1)
+      playwright:
+        specifier: 'catalog:'
+        version: 1.58.1
+      prettier:
+        specifier: 'catalog:'
+        version: 3.6.2
+      react:
+        specifier: 'catalog:'
+        version: 19.2.3
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.3(react@19.2.3)
       rimraf:
         specifier: 'catalog:'
         version: 6.1.3
@@ -972,64 +1030,6 @@ importers:
       i18next:
         specifier: 'catalog:'
         version: 25.6.0(typescript@5.9.3)
-      playwright:
-        specifier: 'catalog:'
-        version: 1.58.1
-      prettier:
-        specifier: 'catalog:'
-        version: 3.6.2
-      react:
-        specifier: 'catalog:'
-        version: 19.2.3
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.2.3(react@19.2.3)
-      rimraf:
-        specifier: 'catalog:'
-        version: 6.1.3
-      rolldown:
-        specifier: 'catalog:'
-        version: 1.0.0-beta.45
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.0(@opentelemetry/api@1.9.0)(@types/node@24.7.2)(@vitest/browser-playwright@4.1.0)(jsdom@27.0.1(postcss@8.5.8))(vite@8.0.0(@types/node@24.7.2)(jiti@2.6.1)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.46.0)(yaml@2.8.3))
-
-  packages/thunder-shared-hooks:
-    dependencies:
-      '@thunder/utils':
-        specifier: workspace:^
-        version: link:../thunder-utils
-      lucide-react:
-        specifier: 'catalog:'
-        version: 0.545.0(react@19.2.3)
-      tslib:
-        specifier: 'catalog:'
-        version: 2.8.1
-    devDependencies:
-      '@thunder/eslint-plugin-thunder':
-        specifier: workspace:^
-        version: link:../thunder-eslint-plugin
-      '@thunder/prettier-config':
-        specifier: workspace:^
-        version: link:../thunder-prettier-config
-      '@thunder/test-utils':
-        specifier: workspace:^
-        version: link:../thunder-test-utils
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.7.2
-      '@types/react':
-        specifier: 'catalog:'
-        version: 19.2.7
-      '@vitest/browser-playwright':
-        specifier: 'catalog:'
-        version: 4.1.0(playwright@1.58.1)(vite@8.0.0(@types/node@24.7.2)(jiti@2.6.1)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.46.0)(yaml@2.8.3))(vitest@4.1.0)
-      eslint:
-        specifier: 'catalog:'
-        version: 9.39.4(jiti@2.6.1)
       playwright:
         specifier: 'catalog:'
         version: 1.58.1
@@ -3818,8 +3818,8 @@ packages:
   '@posthog/types@1.363.2':
     resolution: {integrity: sha512-UcUwHEd2LXxWq4bW/I4TbwYcA+BHO/cSuHcNpGXjRCp76eJk1eOuQnm/a3MrfHtbt2X11CQu+eWpqiSgcv+X6A==}
 
-  '@preact/signals-core@1.14.0':
-    resolution: {integrity: sha512-AowtCcCU/33lFlh1zRFf/u+12rfrhtNakj7UpaGEsmMwUKpKWMVvcktOGcwBBNiB4lWrZWc01LhiyyzVklJyaQ==}
+  '@preact/signals-core@1.14.1':
+    resolution: {integrity: sha512-vxPpfXqrwUe9lpjqfYNjAF/0RF/eFGeLgdJzdmIIZjpOnTmGmAB4BjWone562mJGMRP4frU6iZ6ei3PDsu52Ng==}
 
   '@protobufjs/aspromise@1.1.2':
     resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
@@ -5255,7 +5255,7 @@ packages:
   ajv-draft-04@1.0.0:
     resolution: {integrity: sha512-mv00Te6nmYbRp5DCwclxtt7yV/joXJPGS7nM+97GdxvuttCOfgI3K4U25zboyeX0O+myI8ERluxQe5wljMmVIw==}
     peerDependencies:
-      ajv: '>=6.14.0'
+      ajv: 6.14.0
     peerDependenciesMeta:
       ajv:
         optional: true
@@ -5263,7 +5263,7 @@ packages:
   ajv-formats@2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
     peerDependencies:
-      ajv: '>=6.14.0'
+      ajv: 6.14.0
     peerDependenciesMeta:
       ajv:
         optional: true
@@ -5271,7 +5271,7 @@ packages:
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
     peerDependencies:
-      ajv: '>=6.14.0'
+      ajv: 6.14.0
     peerDependenciesMeta:
       ajv:
         optional: true
@@ -5279,18 +5279,15 @@ packages:
   ajv-keywords@3.5.2:
     resolution: {integrity: sha512-5p6WTN0DdTGVQk6VjcEju19IgaHudalcfabD7yhDGeA6bcQnmL+CpveLJq/3hvfwd1aof6L386Ougkx6RfyMIQ==}
     peerDependencies:
-      ajv: '>=6.14.0'
+      ajv: 6.14.0
 
   ajv-keywords@5.1.0:
     resolution: {integrity: sha512-YCS/JNFAUyr5vAuhk1DWm1CBxRHW9LbJ2ozWeemrIqpbsqKjHVxYPyi5GC0rjZIT5JxJ3virVTS8wk4i/Z+krw==}
     peerDependencies:
-      ajv: '>=6.14.0'
+      ajv: 6.14.0
 
   ajv@6.14.0:
     resolution: {integrity: sha512-IWrosm/yrn43eiKqkfkHis7QioDleaXQHdDVPKg0FSwwd/DuvyX79TZnFOnYpB7dcsFAMmtFztZuXPDvSePkFw==}
-
-  ajv@8.18.0:
-    resolution: {integrity: sha512-PlXPeEWMXMZ7sPYOHqmDyCJzcfNrUr3fGNKtezX14ykXOEIvyK81d+qydx89KY5O71FKMPaQ2vBfBFI5NHR63A==}
 
   algoliasearch-helper@3.27.1:
     resolution: {integrity: sha512-XXGr02Cz285vLbqM6vPfb39xqV1ptpFr1xn9mqaW+nUvYTvFTdKgYTC/Cg1VzgRTQqNkq9+LlUVv8cfCeOoKig==}
@@ -6781,9 +6778,6 @@ packages:
   fast-string-width@3.0.2:
     resolution: {integrity: sha512-gX8LrtNEI5hq8DVUfRQMbr5lpaS4nMIWV+7XEbXk2b8kiQIizgnlr12B4dA3ZEx3308ze0O4Q1R+cHts8kyUJg==}
 
-  fast-uri@3.1.0:
-    resolution: {integrity: sha512-iPeeDKJSWf4IEOasVVrknXpaBV0IApz/gp7S2bb7Z4Lljbl2MGJRqInZiUrQwV16cpzw/D3S5j5Julj/gT52AA==}
-
   fast-wrap-ansi@0.2.0:
     resolution: {integrity: sha512-rLV8JHxTyhVmFYhBJuMujcrHqOT2cnO5Zxj37qROj23CP39GXubJRBUFF0z8KFK77Uc0SukZUf7JZhsVEQ6n8w==}
 
@@ -7830,9 +7824,6 @@ packages:
 
   json-schema-traverse@0.4.1:
     resolution: {integrity: sha512-xbbCH5dCYU5T8LcEhhuh7HJ88HXuW3qsI3Y0zOZFKfZEHcpWiHU/Jxzk629Brsab/mMiHQti9wMP+845RPe3Vg==}
-
-  json-schema-traverse@1.0.0:
-    resolution: {integrity: sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==}
 
   json-schema@0.4.0:
     resolution: {integrity: sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA==}
@@ -12678,7 +12669,7 @@ snapshots:
 
   '@dnd-kit/state@0.1.21':
     dependencies:
-      '@preact/signals-core': 1.14.0
+      '@preact/signals-core': 1.14.1
       tslib: 2.8.1
 
   '@dnd-kit/utilities@3.2.2(react@19.2.3)':
@@ -14033,7 +14024,7 @@ snapshots:
   '@lexical/extension@0.38.2':
     dependencies:
       '@lexical/utils': 0.38.2
-      '@preact/signals-core': 1.14.0
+      '@preact/signals-core': 1.14.1
       lexical: 0.38.2
 
   '@lexical/hashtag@0.38.2':
@@ -14816,7 +14807,7 @@ snapshots:
 
   '@posthog/types@1.363.2': {}
 
-  '@preact/signals-core@1.14.0': {}
+  '@preact/signals-core@1.14.1': {}
 
   '@protobufjs/aspromise@1.1.2': {}
 
@@ -15257,9 +15248,9 @@ snapshots:
       '@scalar/json-magic': 0.12.4
       '@scalar/openapi-types': 0.6.1
       '@scalar/openapi-upgrader': 0.2.2
-      ajv: 8.18.0
-      ajv-draft-04: 1.0.0(ajv@8.18.0)
-      ajv-formats: 3.0.1(ajv@8.18.0)
+      ajv: 6.14.0
+      ajv-draft-04: 1.0.0(ajv@6.14.0)
+      ajv-formats: 3.0.1(ajv@6.14.0)
       jsonpointer: 5.0.1
       leven: 4.1.0
       yaml: 2.8.3
@@ -16578,25 +16569,25 @@ snapshots:
       '@opentelemetry/api': 1.9.0
       zod: 4.3.6
 
-  ajv-draft-04@1.0.0(ajv@8.18.0):
+  ajv-draft-04@1.0.0(ajv@6.14.0):
     optionalDependencies:
-      ajv: 8.18.0
+      ajv: 6.14.0
 
-  ajv-formats@2.1.1(ajv@8.18.0):
+  ajv-formats@2.1.1(ajv@6.14.0):
     optionalDependencies:
-      ajv: 8.18.0
+      ajv: 6.14.0
 
-  ajv-formats@3.0.1(ajv@8.18.0):
+  ajv-formats@3.0.1(ajv@6.14.0):
     optionalDependencies:
-      ajv: 8.18.0
+      ajv: 6.14.0
 
-  ajv-keywords@3.5.2(ajv@8.18.0):
+  ajv-keywords@3.5.2(ajv@6.14.0):
     dependencies:
-      ajv: 8.18.0
+      ajv: 6.14.0
 
-  ajv-keywords@5.1.0(ajv@8.18.0):
+  ajv-keywords@5.1.0(ajv@6.14.0):
     dependencies:
-      ajv: 8.18.0
+      ajv: 6.14.0
       fast-deep-equal: 3.1.3
 
   ajv@6.14.0:
@@ -16605,13 +16596,6 @@ snapshots:
       fast-json-stable-stringify: 2.1.0
       json-schema-traverse: 0.4.1
       uri-js: 4.4.1
-
-  ajv@8.18.0:
-    dependencies:
-      fast-deep-equal: 3.1.3
-      fast-uri: 3.1.0
-      json-schema-traverse: 1.0.0
-      require-from-string: 2.0.2
 
   algoliasearch-helper@3.27.1(algoliasearch@5.48.1):
     dependencies:
@@ -18388,8 +18372,6 @@ snapshots:
     dependencies:
       fast-string-truncated-width: 3.0.3
 
-  fast-uri@3.1.0: {}
-
   fast-wrap-ansi@0.2.0:
     dependencies:
       fast-string-width: 3.0.2
@@ -19575,8 +19557,6 @@ snapshots:
   json-parse-even-better-errors@2.3.1: {}
 
   json-schema-traverse@0.4.1: {}
-
-  json-schema-traverse@1.0.0: {}
 
   json-schema@0.4.0: {}
 
@@ -22183,15 +22163,15 @@ snapshots:
   schema-utils@3.3.0:
     dependencies:
       '@types/json-schema': 7.0.15
-      ajv: 8.18.0
-      ajv-keywords: 3.5.2(ajv@8.18.0)
+      ajv: 6.14.0
+      ajv-keywords: 3.5.2(ajv@6.14.0)
 
   schema-utils@4.3.3:
     dependencies:
       '@types/json-schema': 7.0.15
-      ajv: 8.18.0
-      ajv-formats: 2.1.1(ajv@8.18.0)
-      ajv-keywords: 5.1.0(ajv@8.18.0)
+      ajv: 6.14.0
+      ajv-formats: 2.1.1(ajv@6.14.0)
+      ajv-keywords: 5.1.0(ajv@6.14.0)
 
   search-insights@2.17.3: {}
 

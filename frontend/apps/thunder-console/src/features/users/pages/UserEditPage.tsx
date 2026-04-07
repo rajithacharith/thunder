@@ -17,7 +17,7 @@
  */
 
 import {useLogger} from '@thunder/logger/react';
-import {useResolveDisplayName} from '@thunder/shared-hooks';
+import {useResolveDisplayName} from '@thunder/hooks';
 import {
   Box,
   Stack,

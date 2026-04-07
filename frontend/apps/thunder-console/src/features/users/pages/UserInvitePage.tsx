@@ -28,7 +28,7 @@ import {
 } from '@asgardeo/react';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useLogger} from '@thunder/logger/react';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {useTemplateLiteralResolver} from '@thunder/hooks';
 import {
   Box,
   Stack,
