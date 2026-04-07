@@ -15,7 +15,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {useTemplateLiteralResolver} from '@thunder/hooks';
 import DOMPurify from 'dompurify';
 import parse from 'html-react-parser';
 import {useMemo, type ReactElement} from 'react';

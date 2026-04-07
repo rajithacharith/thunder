@@ -1,5 +1,5 @@
 {
-  "name": "@thunder/shared-hooks",
+  "name": "@thunder/hooks",
   "version": "0.0.0",
   "description": "Shared React hooks for ⚡️ Thunder applications",
   "keywords": [
@@ -9,7 +9,7 @@
     "shareable",
     "wso2"
   ],
-  "homepage": "https://github.com/asgardeo/thunder/tree/main/frontend/packages/thunder-shared-hooks#readme",
+  "homepage": "https://github.com/asgardeo/thunder/tree/main/frontend/packages/thunder-hooks#readme",
   "bugs": {
     "url": "https://github.com/asgardeo/thunder/issues"
   },
@@ -35,7 +35,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/asgardeo/thunder",
-    "directory": "frontend/packages/thunder-shared-hooks"
+    "directory": "frontend/packages/thunder-hooks"
   },
   "scripts": {
     "build": "pnpm clean:dist && rolldown -c rolldown.config.js && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",

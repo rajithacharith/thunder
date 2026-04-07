@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {useTemplateLiteralResolver} from '@thunder/hooks';
 import {FormControl, FormLabel, MenuItem, Select} from '@wso2/oxygen-ui';
 import {useMemo, type ReactElement} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
