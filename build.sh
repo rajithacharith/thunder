@@ -1081,6 +1081,11 @@ function run_backend() {
     echo "Initializing databases..."
     initialize_databases
 
+    if [ "$CONSENT_ENABLED" = "true" ] && [ "$WITHOUT_CONSENT" != "true" ] && [ -z "$CONSENT_PID" ]; then
+        echo "Running consent server..."
+        run_consent
+    fi
+
     start_backend "$show_final_output" "$debug"
 }
 
@@ -1115,7 +1120,7 @@ function start_backend() {
         echo "👉 Backend : $BASE_URL"
         echo "Press Ctrl+C to stop."
 
-        trap 'echo -e "\n🛑 Shutting down backend server..."; kill $BACKEND_PID 2>/dev/null; echo "✅ Backend server stopped successfully."; exit 0' SIGINT
+        trap 'echo -e "\n🛑 Shutting down servers..."; kill $BACKEND_PID 2>/dev/null; [ -n "$CONSENT_PID" ] && kill $CONSENT_PID 2>/dev/null; echo "✅ Servers stopped successfully."; exit 0' SIGINT
 
         wait $BACKEND_PID 2>/dev/null
     fi
