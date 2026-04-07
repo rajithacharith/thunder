@@ -49,6 +49,7 @@ type EntityServiceInterface interface {
 
 	// Identification
 	IdentifyEntity(ctx context.Context, filters map[string]interface{}) (*string, error)
+	SearchEntities(ctx context.Context, filters map[string]interface{}) ([]Entity, error)
 
 	// Lists (category-scoped)
 	GetEntityListCount(ctx context.Context, category EntityCategory,
@@ -72,6 +73,8 @@ type EntityServiceInterface interface {
 
 	// Authentication
 	AuthenticateEntity(ctx context.Context, identifiers map[string]interface{},
+		credentials map[string]interface{}) (*AuthenticateResult, error)
+	AuthenticateEntityByID(ctx context.Context, entityID string,
 		credentials map[string]interface{}) (*AuthenticateResult, error)
 
 	// Declarative
@@ -263,6 +266,12 @@ func (s *entityService) IdentifyEntity(ctx context.Context,
 	return id, nil
 }
 
+// SearchEntities searches for all entities matching the provided filters.
+func (s *entityService) SearchEntities(ctx context.Context,
+	filters map[string]interface{}) ([]Entity, error) {
+	return s.store.SearchEntities(ctx, filters)
+}
+
 // GetEntityListCount retrieves the total count of entities by category.
 func (s *entityService) GetEntityListCount(ctx context.Context, category EntityCategory,
 	filters map[string]interface{}) (int, error) {
@@ -338,7 +347,25 @@ func (s *entityService) AuthenticateEntity(
 		return nil, err
 	}
 
-	result, err := s.GetEntityWithCredentials(ctx, *entityID)
+	return s.AuthenticateEntityByID(ctx, *entityID, credentials)
+}
+
+// AuthenticateEntityByID authenticates an entity using its known primary key and the
+// provided credentials. This skips the identification step, which is useful when the
+// entity ID has already been resolved (e.g., after user disambiguation).
+func (s *entityService) AuthenticateEntityByID(
+	ctx context.Context,
+	entityID string,
+	credentials map[string]interface{},
+) (*AuthenticateResult, error) {
+	if entityID == "" {
+		return nil, ErrEntityNotFound
+	}
+	if len(credentials) == 0 {
+		return nil, ErrAuthenticationFailed
+	}
+
+	result, err := s.GetEntityWithCredentials(ctx, entityID)
 	if err != nil {
 		return nil, err
 	}

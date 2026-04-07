@@ -53,6 +53,8 @@ const (
 	ExecutorModeSend     = "send"
 	ExecutorModeGenerate = "generate"
 	ExecutorModeVerify   = "verify"
+	ExecutorModeIdentify = "identify"
+	ExecutorModeResolve  = "resolve"
 )
 
 // User attribute and input constants
@@ -111,7 +113,8 @@ var nonUserAttributes = []string{"userID", "code", "nonce", "state", "flowID",
 	common.RuntimeKeyInviteLink,
 	common.RuntimeKeyConsentID, common.RuntimeKeyStepTimeout, userInputConsentDecisions,
 	common.RuntimeKeyConsentedAttributes, common.RuntimeKeyConsentSessionToken,
-	"applicationId", "idpId", "senderId"}
+	"applicationId", "idpId", "senderId",
+	common.RuntimeKeyCandidateUsers}
 
 // Failure reason constants
 const (

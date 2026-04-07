@@ -127,6 +127,34 @@ func (c *entityCompositeStore) IdentifyEntity(ctx context.Context,
 	)
 }
 
+// SearchEntities searches for entities matching the given filters from both stores.
+func (c *entityCompositeStore) SearchEntities(ctx context.Context,
+	filters map[string]interface{}) ([]Entity, error) {
+	var allEntities []Entity
+
+	dbEntities, err := c.dbStore.SearchEntities(ctx, filters)
+	if err != nil && !errors.Is(err, ErrEntityNotFound) {
+		return nil, err
+	}
+	if len(dbEntities) > 0 {
+		allEntities = append(allEntities, dbEntities...)
+	}
+
+	fileEntities, err := c.fileStore.SearchEntities(ctx, filters)
+	if err != nil && !errors.Is(err, ErrEntityNotFound) {
+		return nil, err
+	}
+	if len(fileEntities) > 0 {
+		allEntities = append(allEntities, fileEntities...)
+	}
+
+	if len(allEntities) == 0 {
+		return nil, ErrEntityNotFound
+	}
+
+	return mergeAndDeduplicateEntities(dbEntities, fileEntities), nil
+}
+
 // GetEntityListCount retrieves the total count of entities from both stores.
 func (c *entityCompositeStore) GetEntityListCount(ctx context.Context, category string,
 	filters map[string]interface{}) (int, error) {

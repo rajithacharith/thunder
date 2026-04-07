@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -50,6 +51,7 @@ type entityStoreInterface interface {
 
 	// Query
 	IdentifyEntity(ctx context.Context, filters map[string]interface{}) (*string, error)
+	SearchEntities(ctx context.Context, filters map[string]interface{}) ([]Entity, error)
 	GetEntityListCount(ctx context.Context, category string,
 		filters map[string]interface{}) (int, error)
 	GetEntityList(ctx context.Context, category string,
@@ -515,7 +517,7 @@ func (es *entityDBStore) IdentifyEntity(ctx context.Context,
 				log.Int("result_count", len(results)),
 			)
 		}
-		return nil, fmt.Errorf("unexpected number of results: %d", len(results))
+		return nil, ErrAmbiguousEntity
 	}
 
 	row := results[0]
@@ -525,6 +527,35 @@ func (es *entityDBStore) IdentifyEntity(ctx context.Context,
 	}
 
 	return &entityID, nil
+}
+
+// SearchEntities searches for all entities matching the provided filters.
+// Unlike IdentifyEntity, this returns all matching entities instead of erroring on ambiguity.
+// Results are capped at MaxPageSize (100) entries; matches beyond that limit are not returned.
+// Column-level filters (category, ouId) should be handled at the service layer.
+func (es *entityDBStore) SearchEntities(ctx context.Context,
+	filters map[string]interface{}) ([]Entity, error) {
+	dbClient, err := es.dbProvider.GetUserDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	searchQuery, args, err := buildEntityListQuery(
+		string(EntityCategoryUser), filters, serverconst.MaxPageSize, 0, es.deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build search query: %w", err)
+	}
+
+	results, err := dbClient.QueryContext(ctx, searchQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute search query: %w", err)
+	}
+
+	if len(results) == 0 {
+		return nil, ErrEntityNotFound
+	}
+
+	return buildEntitiesFromResults(results)
 }
 
 // GetIndexedAttributes returns the set of configured indexed attributes.

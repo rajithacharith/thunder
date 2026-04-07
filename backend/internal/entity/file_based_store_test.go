@@ -340,3 +340,28 @@ func (s *FileBasedStoreTestSuite) TestValuesEqual() {
 	s.False(valuesEqual("x", 1))
 	s.False(valuesEqual(true, "true"))
 }
+
+func (s *FileBasedStoreTestSuite) TestSearchEntities_NoMatch() {
+	s.seedEntity(makeTestEntity("s1", "user", "ou1"))
+	_, err := s.store.SearchEntities(s.ctx, map[string]interface{}{"email": "nobody@nowhere.com"})
+	s.ErrorIs(err, ErrEntityNotFound)
+}
+
+func (s *FileBasedStoreTestSuite) TestSearchEntities_OneMatch() {
+	s.seedEntity(makeTestEntity("s2", "user", "ou1"))
+	got, err := s.store.SearchEntities(s.ctx, map[string]interface{}{"email": "s2@test.com"})
+	s.NoError(err)
+	s.Len(got, 1)
+	s.Equal("s2", got[0].ID)
+}
+
+func (s *FileBasedStoreTestSuite) TestSearchEntities_MultipleMatches() {
+	attrs, _ := json.Marshal(map[string]interface{}{"email": "shared@test.com"})
+	e1 := Entity{ID: "m1", Category: EntityCategoryUser, Attributes: json.RawMessage(attrs)}
+	e2 := Entity{ID: "m2", Category: EntityCategoryUser, Attributes: json.RawMessage(attrs)}
+	s.seedEntity(e1)
+	s.seedEntity(e2)
+	got, err := s.store.SearchEntities(s.ctx, map[string]interface{}{"email": "shared@test.com"})
+	s.NoError(err)
+	s.Len(got, 2)
+}

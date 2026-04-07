@@ -278,3 +278,51 @@ func (suite *DefaultUserProviderTestSuite) TestUpdateUserCredentials() {
 	suite.NotNil(err)
 	suite.Equal(ErrorCodeMissingCredentials, err.Code)
 }
+
+func (suite *DefaultUserProviderTestSuite) TestSearchUsers() {
+	filters := map[string]interface{}{"email": "test@example.com"}
+
+	// Test Success
+	attrs := json.RawMessage(`{"email":"test@example.com"}`)
+	suite.mockService.On("SearchUsers", mock.Anything, filters).Return(
+		[]user.User{
+			{ID: "u1", Type: "customer", OUID: "ou1", Attributes: attrs},
+			{ID: "u2", Type: "employee", OUID: "ou2", Attributes: attrs},
+		}, (*serviceerror.ServiceError)(nil)).Once()
+
+	users, err := suite.provider.SearchUsers(filters)
+	suite.Nil(err)
+	suite.Len(users, 2)
+	suite.Equal("u1", users[0].UserID)
+	suite.Equal("u2", users[1].UserID)
+
+	// Test Not Found
+	suite.mockService.On("SearchUsers", mock.Anything, filters).Return(
+		nil, &user.ErrorUserNotFound).Once()
+
+	users, err = suite.provider.SearchUsers(filters)
+	suite.Nil(users)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeUserNotFound, err.Code)
+
+	// Test System Error
+	sysErr := &serviceerror.ServiceError{Code: "SYS_ERR", Error: "System Error"}
+	suite.mockService.On("SearchUsers", mock.Anything, filters).Return(
+		nil, sysErr).Once()
+
+	users, err = suite.provider.SearchUsers(filters)
+	suite.Nil(users)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeSystemError, err.Code)
+}
+
+func (suite *DefaultUserProviderTestSuite) TestIdentifyUser_Ambiguous() {
+	filters := map[string]interface{}{"email": "test@example.com"}
+	suite.mockService.On("IdentifyUser", mock.Anything, filters).Return(
+		nil, &user.ErrorAmbiguousUser).Once()
+
+	userID, err := suite.provider.IdentifyUser(filters)
+	suite.Nil(userID)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeAmbiguousUser, err.Code)
+}

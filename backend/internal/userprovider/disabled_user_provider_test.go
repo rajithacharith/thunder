@@ -83,3 +83,9 @@ func (suite *DisabledUserProviderTestSuite) TestDeleteUser() {
 	err := suite.provider.DeleteUser("user-id")
 	suite.Equal(errNotImplemented, err)
 }
+
+func (suite *DisabledUserProviderTestSuite) TestSearchUsers() {
+	users, err := suite.provider.SearchUsers(map[string]interface{}{})
+	suite.Nil(users)
+	suite.Equal(errNotImplemented, err)
+}

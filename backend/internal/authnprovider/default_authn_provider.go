@@ -39,12 +39,22 @@ func newDefaultAuthnProvider(entitySvc entity.EntityServiceInterface) AuthnProvi
 }
 
 // Authenticate authenticates any entity type (user, app, agent) using the entity service.
+// When identifiers contain a pre-resolved entity ID (keyed by "userID"), authentication
+// is performed directly by ID, skipping the attribute-based identification step.
 func (p *defaultAuthnProvider) Authenticate(
 	ctx context.Context,
 	identifiers, credentials map[string]interface{},
 	metadata *AuthnMetadata,
 ) (*AuthnResult, *AuthnProviderError) {
-	authResult, err := p.entitySvc.AuthenticateEntity(ctx, identifiers, credentials)
+	var authResult *entity.AuthenticateResult
+	var err error
+
+	if idStr, ok := identifiers["userID"].(string); ok && idStr != "" {
+		authResult, err = p.entitySvc.AuthenticateEntityByID(ctx, idStr, credentials)
+	} else {
+		authResult, err = p.entitySvc.AuthenticateEntity(ctx, identifiers, credentials)
+	}
+
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
 			return nil, NewError(ErrorCodeUserNotFound, "Entity not found", err.Error())

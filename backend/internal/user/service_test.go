@@ -4203,3 +4203,200 @@ func (suite *ServiceGetTransitiveUserGroupsTestSuite) TestStoreError() {
 func TestServiceGetTransitiveUserGroupsTestSuite(t *testing.T) {
 	suite.Run(t, new(ServiceGetTransitiveUserGroupsTestSuite))
 }
+
+func searchEntity(
+	id, entityType, ouID string, attrs json.RawMessage,
+) entitypkg.Entity {
+	return entitypkg.Entity{
+		ID:                 id,
+		Category:           entitypkg.EntityCategoryUser,
+		State:              entitypkg.EntityStateActive,
+		Type:               entityType,
+		OrganizationUnitID: ouID,
+		Attributes:         attrs,
+	}
+}
+
+func TestUserService_SearchUsers(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("EmptyFilters", func(t *testing.T) {
+		service := &userService{}
+		_, err := service.SearchUsers(ctx, nil)
+		require.NotNil(t, err)
+		require.Equal(t, ErrorInvalidRequestFormat.Code, err.Code)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		storeMock := &entitymock.EntityServiceInterfaceMock{}
+		service := &userService{entityService: storeMock}
+		filters := map[string]interface{}{"email": "nobody@test.com"}
+		storeMock.On("SearchEntities", mock.Anything, filters).
+			Return(nil, entitypkg.ErrEntityNotFound)
+		_, err := service.SearchUsers(ctx, filters)
+		require.NotNil(t, err)
+		require.Equal(t, ErrorUserNotFound.Code, err.Code)
+	})
+
+	t.Run("StoreError", func(t *testing.T) {
+		storeMock := &entitymock.EntityServiceInterfaceMock{}
+		service := &userService{entityService: storeMock}
+		filters := map[string]interface{}{"email": "test@test.com"}
+		storeMock.On("SearchEntities", mock.Anything, filters).
+			Return(nil, errors.New("db error"))
+		_, err := service.SearchUsers(ctx, filters)
+		require.NotNil(t, err)
+		require.Equal(t, ErrorInternalServerError.Code, err.Code)
+	})
+
+	t.Run("FilterByUserType", func(t *testing.T) {
+		storeMock := &entitymock.EntityServiceInterfaceMock{}
+		ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+		service := &userService{
+			entityService: storeMock, ouService: ouServiceMock,
+		}
+		attrs, _ := json.Marshal(map[string]interface{}{
+			"email": "test@test.com",
+		})
+		entities := []entitypkg.Entity{
+			searchEntity("u1", "employee", "ou1", attrs),
+			searchEntity("u2", "contractor", "ou1", attrs),
+		}
+		storeMock.On(
+			"SearchEntities", mock.Anything,
+			map[string]interface{}{"email": "test@test.com"},
+		).Return(entities, nil)
+		ouServiceMock.On(
+			"GetOrganizationUnitHandlesByIDs",
+			mock.Anything, []string{"ou1"},
+		).Return(map[string]string{"ou1": "eng"}, nil)
+		users, err := service.SearchUsers(ctx, map[string]interface{}{
+			"email": "test@test.com", "userType": "employee",
+		})
+		require.Nil(t, err)
+		require.Len(t, users, 1)
+		require.Equal(t, "u1", users[0].ID)
+	})
+
+	t.Run("FilterByOUHandle", func(t *testing.T) {
+		storeMock := &entitymock.EntityServiceInterfaceMock{}
+		ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+		service := &userService{
+			entityService: storeMock, ouService: ouServiceMock,
+		}
+		attrs, _ := json.Marshal(map[string]interface{}{
+			"email": "test@test.com",
+		})
+		entities := []entitypkg.Entity{
+			searchEntity("u1", "employee", "ou1", attrs),
+			searchEntity("u2", "employee", "ou2", attrs),
+		}
+		storeMock.On(
+			"SearchEntities", mock.Anything,
+			map[string]interface{}{"email": "test@test.com"},
+		).Return(entities, nil)
+		ouServiceMock.On(
+			"GetOrganizationUnitByPath", mock.Anything, "/eng",
+		).Return(
+			oupkg.OrganizationUnit{ID: "ou1"},
+			(*serviceerror.ServiceError)(nil),
+		)
+		ouServiceMock.On(
+			"GetOrganizationUnitHandlesByIDs",
+			mock.Anything, []string{"ou1"},
+		).Return(map[string]string{"ou1": "/eng"}, nil)
+		users, err := service.SearchUsers(ctx, map[string]interface{}{
+			"email": "test@test.com", "ouHandle": "/eng",
+		})
+		require.Nil(t, err)
+		require.Len(t, users, 1)
+		require.Equal(t, "u1", users[0].ID)
+	})
+
+	t.Run("OUHandleResolutionFailure", func(t *testing.T) {
+		storeMock := &entitymock.EntityServiceInterfaceMock{}
+		ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+		service := &userService{
+			entityService: storeMock, ouService: ouServiceMock,
+		}
+		ouServiceMock.On(
+			"GetOrganizationUnitByPath", mock.Anything, "/invalid",
+		).Return(
+			oupkg.OrganizationUnit{},
+			&oupkg.ErrorOrganizationUnitNotFound,
+		)
+		_, err := service.SearchUsers(ctx, map[string]interface{}{
+			"email": "test@test.com", "ouHandle": "/invalid",
+		})
+		require.NotNil(t, err)
+		require.Equal(t, ErrorOrganizationUnitNotFound.Code, err.Code)
+	})
+
+	t.Run("ExcludesInactiveEntities", func(t *testing.T) {
+		storeMock := &entitymock.EntityServiceInterfaceMock{}
+		ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+		service := &userService{
+			entityService: storeMock, ouService: ouServiceMock,
+		}
+		attrs, _ := json.Marshal(map[string]interface{}{
+			"email": "test@test.com",
+		})
+		entities := []entitypkg.Entity{
+			searchEntity("u1", "employee", "ou1", attrs),
+			{
+				ID: "u2", Category: entitypkg.EntityCategoryUser,
+				State: "SUSPENDED", OrganizationUnitID: "ou1",
+				Attributes: attrs,
+			},
+		}
+		storeMock.On(
+			"SearchEntities", mock.Anything,
+			map[string]interface{}{"email": "test@test.com"},
+		).Return(entities, nil)
+		ouServiceMock.On(
+			"GetOrganizationUnitHandlesByIDs",
+			mock.Anything, []string{"ou1"},
+		).Return(map[string]string{"ou1": "eng"}, nil)
+		users, err := service.SearchUsers(ctx, map[string]interface{}{
+			"email": "test@test.com",
+		})
+		require.Nil(t, err)
+		require.Len(t, users, 1)
+		require.Equal(t, "u1", users[0].ID)
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		storeMock := &entitymock.EntityServiceInterfaceMock{}
+		ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+		service := &userService{
+			entityService: storeMock, ouService: ouServiceMock,
+		}
+		filters := map[string]interface{}{"email": "test@test.com"}
+		attrs, _ := json.Marshal(map[string]interface{}{
+			"email": "test@test.com",
+		})
+		entities := []entitypkg.Entity{
+			searchEntity("u1", "employee", "ou1", attrs),
+			searchEntity("u2", "employee", "ou1", attrs),
+		}
+		storeMock.On("SearchEntities", mock.Anything, filters).
+			Return(entities, nil)
+		ouServiceMock.On("GetOrganizationUnitHandlesByIDs", mock.Anything, []string{"ou1"}).
+			Return(map[string]string{"ou1": "engineering"}, nil)
+		users, err := service.SearchUsers(ctx, filters)
+		require.Nil(t, err)
+		require.Len(t, users, 2)
+		require.Equal(t, "engineering", users[0].OUHandle)
+	})
+}
+
+func TestUserService_IdentifyUser_AmbiguousEntity(t *testing.T) {
+	ctx := context.Background()
+	storeMock := &entitymock.EntityServiceInterfaceMock{}
+	service := &userService{entityService: storeMock}
+	filters := map[string]interface{}{"username": "john"}
+	storeMock.On("IdentifyEntity", mock.Anything, filters).Return((*string)(nil), entitypkg.ErrAmbiguousEntity)
+	_, err := service.IdentifyUser(ctx, filters)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorAmbiguousUser.Code, err.Code)
+}

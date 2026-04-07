@@ -37,6 +37,9 @@ var (
 	// ErrInvalidCredential is returned when a credential value is invalid.
 	ErrInvalidCredential = errors.New("invalid credential")
 
+	// ErrAmbiguousEntity is returned when multiple entities match the provided filters.
+	ErrAmbiguousEntity = errors.New("ambiguous entity")
+
 	// ErrBadAttributesInRequest is returned when the attributes in the request are invalid.
 	ErrBadAttributesInRequest = errors.New("failed to marshal attributes")
 
