@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
@@ -150,10 +149,33 @@ func (f *entityFileBasedStore) IdentifyEntity(ctx context.Context,
 		return nil, ErrEntityNotFound
 	}
 	if len(matches) > 1 {
-		return nil, fmt.Errorf("unexpected number of results: %d", len(matches))
+		return nil, ErrAmbiguousEntity
 	}
 
 	return &matches[0], nil
+}
+
+// SearchEntities searches for all entities matching the provided filters from the file store.
+func (f *entityFileBasedStore) SearchEntities(ctx context.Context,
+	filters map[string]interface{}) ([]Entity, error) {
+	resources, err := f.listEntityResources()
+	if err != nil {
+		return nil, err
+	}
+
+	var matched []Entity
+	for _, resource := range resources {
+		combined := mergeJSONObjects(resource.Entity.Attributes, resource.Entity.SystemAttributes)
+		if matchesFilters(combined, filters) {
+			matched = append(matched, resource.Entity)
+		}
+	}
+
+	if len(matched) == 0 {
+		return nil, ErrEntityNotFound
+	}
+
+	return matched, nil
 }
 
 // GetEntityListCount retrieves the total count of entities from the file store.

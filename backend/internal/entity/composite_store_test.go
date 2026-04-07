@@ -447,3 +447,58 @@ func (s *CompositeStoreTestSuite) TestMergeAndDeduplicateEntities() {
 	s.False(idMap["shared"].IsReadOnly)
 	s.True(idMap["file-only"].IsReadOnly)
 }
+
+func (s *CompositeStoreTestSuite) TestSearchEntities_DBOnly() {
+	filters := map[string]interface{}{"email": "a@b.com"}
+	entities := []Entity{compEntity("e1", "ou1"), compEntity("e2", "ou1")}
+	s.dbStore.On("SearchEntities", mock.Anything, filters).Return(entities, nil)
+	s.fileStore.On("SearchEntities", mock.Anything, filters).Return(nil, ErrEntityNotFound)
+	got, err := s.store.SearchEntities(s.ctx, filters)
+	s.NoError(err)
+	s.Len(got, 2)
+}
+
+func (s *CompositeStoreTestSuite) TestSearchEntities_FileOnly() {
+	filters := map[string]interface{}{"email": "a@b.com"}
+	entities := []Entity{compEntity("f1", "ou1")}
+	s.dbStore.On("SearchEntities", mock.Anything, filters).Return(nil, ErrEntityNotFound)
+	s.fileStore.On("SearchEntities", mock.Anything, filters).Return(entities, nil)
+	got, err := s.store.SearchEntities(s.ctx, filters)
+	s.NoError(err)
+	s.Len(got, 1)
+}
+
+func (s *CompositeStoreTestSuite) TestSearchEntities_BothStores() {
+	filters := map[string]interface{}{"email": "a@b.com"}
+	dbEntities := []Entity{compEntity("e1", "ou1")}
+	fileEntities := []Entity{compEntity("f1", "ou1")}
+	s.dbStore.On("SearchEntities", mock.Anything, filters).Return(dbEntities, nil)
+	s.fileStore.On("SearchEntities", mock.Anything, filters).Return(fileEntities, nil)
+	got, err := s.store.SearchEntities(s.ctx, filters)
+	s.NoError(err)
+	s.Len(got, 2)
+}
+
+func (s *CompositeStoreTestSuite) TestSearchEntities_BothNotFound() {
+	filters := map[string]interface{}{"email": "a@b.com"}
+	s.dbStore.On("SearchEntities", mock.Anything, filters).Return(nil, ErrEntityNotFound)
+	s.fileStore.On("SearchEntities", mock.Anything, filters).Return(nil, ErrEntityNotFound)
+	_, err := s.store.SearchEntities(s.ctx, filters)
+	s.ErrorIs(err, ErrEntityNotFound)
+}
+
+func (s *CompositeStoreTestSuite) TestSearchEntities_DBError() {
+	filters := map[string]interface{}{"email": "a@b.com"}
+	s.dbStore.On("SearchEntities", mock.Anything, filters).Return(nil, s.testErr)
+	_, err := s.store.SearchEntities(s.ctx, filters)
+	s.Error(err)
+}
+
+func (s *CompositeStoreTestSuite) TestSearchEntities_FileError() {
+	filters := map[string]interface{}{"email": "a@b.com"}
+	dbEntities := []Entity{compEntity("e1", "ou1")}
+	s.dbStore.On("SearchEntities", mock.Anything, filters).Return(dbEntities, nil)
+	s.fileStore.On("SearchEntities", mock.Anything, filters).Return(nil, s.testErr)
+	_, err := s.store.SearchEntities(s.ctx, filters)
+	s.Error(err)
+}

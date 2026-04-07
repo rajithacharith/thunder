@@ -1139,6 +1139,74 @@ func (_c *entityStoreInterfaceMock_LoadIndexedAttributes_Call) RunAndReturn(run 
 	return _c
 }
 
+// SearchEntities provides a mock function for the type entityStoreInterfaceMock
+func (_mock *entityStoreInterfaceMock) SearchEntities(ctx context.Context, filters map[string]interface{}) ([]Entity, error) {
+	ret := _mock.Called(ctx, filters)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SearchEntities")
+	}
+
+	var r0 []Entity
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}) ([]Entity, error)); ok {
+		return returnFunc(ctx, filters)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}) []Entity); ok {
+		r0 = returnFunc(ctx, filters)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]Entity)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, map[string]interface{}) error); ok {
+		r1 = returnFunc(ctx, filters)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// entityStoreInterfaceMock_SearchEntities_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SearchEntities'
+type entityStoreInterfaceMock_SearchEntities_Call struct {
+	*mock.Call
+}
+
+// SearchEntities is a helper method to define mock.On call
+//   - ctx context.Context
+//   - filters map[string]interface{}
+func (_e *entityStoreInterfaceMock_Expecter) SearchEntities(ctx interface{}, filters interface{}) *entityStoreInterfaceMock_SearchEntities_Call {
+	return &entityStoreInterfaceMock_SearchEntities_Call{Call: _e.mock.On("SearchEntities", ctx, filters)}
+}
+
+func (_c *entityStoreInterfaceMock_SearchEntities_Call) Run(run func(ctx context.Context, filters map[string]interface{})) *entityStoreInterfaceMock_SearchEntities_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 map[string]interface{}
+		if args[1] != nil {
+			arg1 = args[1].(map[string]interface{})
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *entityStoreInterfaceMock_SearchEntities_Call) Return(entitys []Entity, err error) *entityStoreInterfaceMock_SearchEntities_Call {
+	_c.Call.Return(entitys, err)
+	return _c
+}
+
+func (_c *entityStoreInterfaceMock_SearchEntities_Call) RunAndReturn(run func(ctx context.Context, filters map[string]interface{}) ([]Entity, error)) *entityStoreInterfaceMock_SearchEntities_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateAttributes provides a mock function for the type entityStoreInterfaceMock
 func (_mock *entityStoreInterfaceMock) UpdateAttributes(ctx context.Context, entityID string, attributes json.RawMessage) error {
 	ret := _mock.Called(ctx, entityID, attributes)

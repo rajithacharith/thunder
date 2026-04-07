@@ -136,6 +136,98 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_GetEntityNotFound()
 	suite.Equal(ErrorCodeUserNotFound, err.Code)
 }
 
+func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_ByPreResolvedUserID_Success() {
+	identifiers := map[string]interface{}{"userID": "resolved-user-123"}
+	credentials := map[string]interface{}{"password": "password123"}
+
+	authResult := &entity.AuthenticateResult{
+		EntityID:           "resolved-user-123",
+		EntityCategory:     entity.EntityCategoryUser,
+		EntityType:         "customer",
+		OrganizationUnitID: "ou1",
+	}
+
+	entityObj := &entity.Entity{
+		ID:                 "resolved-user-123",
+		Category:           entity.EntityCategoryUser,
+		Type:               "customer",
+		State:              entity.EntityStateActive,
+		OrganizationUnitID: "ou1",
+		Attributes:         json.RawMessage(`{"email":"test@example.com"}`),
+	}
+
+	suite.mockService.On("AuthenticateEntityByID", mock.Anything, "resolved-user-123", credentials).
+		Return(authResult, nil).Once()
+	suite.mockService.On("GetEntity", mock.Anything, "resolved-user-123").
+		Return(entityObj, nil).Once()
+
+	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
+
+	suite.Nil(err)
+	suite.Equal("resolved-user-123", result.EntityID)
+	suite.Equal("resolved-user-123", result.UserID)
+	suite.Equal("customer", result.UserType)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_ByPreResolvedUserID_EntityNotFound() {
+	identifiers := map[string]interface{}{"userID": "missing-user"}
+	credentials := map[string]interface{}{"password": "password123"}
+
+	suite.mockService.On("AuthenticateEntityByID", mock.Anything, "missing-user", credentials).
+		Return(nil, entity.ErrEntityNotFound).Once()
+
+	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeUserNotFound, err.Code)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_ByPreResolvedUserID_AuthFailed() {
+	identifiers := map[string]interface{}{"userID": "user-wrong-pw"}
+	credentials := map[string]interface{}{"password": "wrongpassword"}
+
+	suite.mockService.On("AuthenticateEntityByID", mock.Anything, "user-wrong-pw", credentials).
+		Return(nil, entity.ErrAuthenticationFailed).Once()
+
+	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeAuthenticationFailed, err.Code)
+}
+
+func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_EmptyUserID_FallsBackToIdentify() {
+	identifiers := map[string]interface{}{"userID": "", "username": "testuser"}
+	credentials := map[string]interface{}{"password": "password123"}
+
+	authResult := &entity.AuthenticateResult{
+		EntityID:           "user123",
+		EntityCategory:     entity.EntityCategoryUser,
+		EntityType:         "customer",
+		OrganizationUnitID: "ou1",
+	}
+
+	entityObj := &entity.Entity{
+		ID:                 "user123",
+		Category:           entity.EntityCategoryUser,
+		Type:               "customer",
+		State:              entity.EntityStateActive,
+		OrganizationUnitID: "ou1",
+		Attributes:         json.RawMessage(`{"email":"test@example.com"}`),
+	}
+
+	suite.mockService.On("AuthenticateEntity", mock.Anything, identifiers, credentials).
+		Return(authResult, nil).Once()
+	suite.mockService.On("GetEntity", mock.Anything, "user123").
+		Return(entityObj, nil).Once()
+
+	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
+
+	suite.Nil(err)
+	suite.Equal("user123", result.EntityID)
+}
+
 func (suite *DefaultAuthnProviderTestSuite) TestGetAttributes_Success_All() {
 	token := "user123"
 	entityObj := &entity.Entity{

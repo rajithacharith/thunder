@@ -240,8 +240,9 @@ func (n *promptNode) enrichInputsFromForwardedData(ctx *NodeContext, nodeResp *c
 	// Enrich each prompt input with data from matching forwarded input
 	for i := range nodeResp.Inputs {
 		if fwdInput, found := forwardedInputMap[nodeResp.Inputs[i].Identifier]; found {
-			// Only enrich Options - do not overwrite other fields like Ref, Type, Required
-			if len(fwdInput.Options) > 0 {
+			// Only enrich Options for SELECT-type inputs to avoid leaking
+			// candidate attribute values in free-text input responses.
+			if len(fwdInput.Options) > 0 && nodeResp.Inputs[i].Type == "SELECT" {
 				nodeResp.Inputs[i].Options = fwdInput.Options
 				n.logger.Debug("Enriched input with options from ForwardedData",
 					log.String("identifier", nodeResp.Inputs[i].Identifier),

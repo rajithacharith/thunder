@@ -932,3 +932,58 @@ func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithMixedInbound
 	assert.Contains(suite.T(), clientIDs, "valid-client")
 	assert.Contains(suite.T(), clientIDs, "another-valid-client")
 }
+
+func (suite *BasicAuthExecutorTestSuite) TestExecute_PreResolvedUser_RequestsPassword() {
+	ctx := &core.NodeContext{
+		FlowID:     "flow-123",
+		FlowType:   common.FlowTypeAuthentication,
+		UserInputs: map[string]string{},
+		RuntimeData: map[string]string{
+			userAttributeUserID: "pre-resolved-user-123",
+		},
+	}
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+	assert.Len(suite.T(), resp.Inputs, 1)
+	assert.Equal(suite.T(), userAttributePassword, resp.Inputs[0].Identifier)
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestExecute_PreResolvedUser_WithPassword() {
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeAuthentication,
+		UserInputs: map[string]string{
+			userAttributePassword: "password123",
+		},
+		RuntimeData: map[string]string{
+			userAttributeUserID: "pre-resolved-user-123",
+		},
+		Application: appmodel.Application{},
+	}
+
+	authenticateResult := &authnprovider.AuthnResult{
+		UserID:   "pre-resolved-user-123",
+		UserType: "person",
+		OUID:     "ou-123",
+		Token:    "test-token",
+	}
+
+	suite.mockCredsService.On("Authenticate", mock.Anything,
+		map[string]interface{}{userAttributeUserID: "pre-resolved-user-123"},
+		map[string]interface{}{userAttributePassword: "password123"},
+		mock.Anything).Return(authenticateResult, nil)
+
+	suite.mockUserProvider.On("GetUser", "pre-resolved-user-123").Return(nil,
+		userprovider.NewUserProviderError(userprovider.ErrorCodeNotImplemented, "", ""))
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.True(suite.T(), resp.AuthenticatedUser.IsAuthenticated)
+}

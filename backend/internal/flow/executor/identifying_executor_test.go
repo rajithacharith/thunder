@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -564,4 +565,233 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_UserInputsPriorityOverRun
 			suite.mockUserProvider.AssertExpectations(suite.T())
 		})
 	}
+}
+
+// --- Resolve mode tests ---
+
+// Test user attribute JSON helpers to keep lines under 120 chars.
+var (
+	attrsAlexJohnson = json.RawMessage(
+		`{"given_name":"Alex","family_name":"Johnson"}`)
+	attrsAlexSmith = json.RawMessage(
+		`{"given_name":"Alex","family_name":"Smith"}`)
+	attrsAlex = json.RawMessage(`{"given_name":"Alex"}`)
+)
+
+func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_UniqueUser() {
+	ctx := &core.NodeContext{
+		FlowID:       "flow-123",
+		ExecutorMode: ExecutorModeResolve,
+		UserInputs:   map[string]string{"given_name": "Alex"},
+		RuntimeData:  make(map[string]string),
+	}
+
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "given_name", Type: "TEXT_INPUT", Required: true},
+	})
+
+	suite.mockUserProvider.On("SearchUsers", map[string]interface{}{
+		"given_name": "Alex",
+	}).Return([]*userprovider.User{
+		{UserID: "user-1", UserType: "Person", Attributes: attrsAlex},
+	}, nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), "user-1", resp.RuntimeData[userAttributeUserID])
+}
+
+func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_AmbiguousUser() {
+	ctx := &core.NodeContext{
+		FlowID:       "flow-123",
+		ExecutorMode: ExecutorModeResolve,
+		UserInputs:   map[string]string{"given_name": "Alex"},
+		RuntimeData:  make(map[string]string),
+	}
+
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "given_name", Type: "TEXT_INPUT", Required: true},
+	})
+
+	suite.mockUserProvider.On("SearchUsers", map[string]interface{}{
+		"given_name": "Alex",
+	}).Return([]*userprovider.User{
+		{UserID: "user-1", UserType: "Person", Attributes: attrsAlexJohnson},
+		{UserID: "user-2", UserType: "Engineer", Attributes: attrsAlexSmith},
+	}, nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+	assert.NotEmpty(suite.T(), resp.RuntimeData[common.RuntimeKeyCandidateUsers])
+	assert.NotNil(suite.T(), resp.ForwardedData)
+}
+
+func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_FilteredToOne() {
+	candidates := []*userprovider.User{
+		{UserID: "user-1", UserType: "Person", Attributes: attrsAlexJohnson},
+		{UserID: "user-2", UserType: "Person", Attributes: attrsAlexSmith},
+	}
+	candidatesJSON, _ := json.Marshal(candidates)
+
+	ctx := &core.NodeContext{
+		FlowID:       "flow-123",
+		ExecutorMode: ExecutorModeResolve,
+		UserInputs:   map[string]string{"given_name": "Alex", "family_name": "Smith"},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyCandidateUsers: string(candidatesJSON),
+		},
+	}
+
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "given_name", Type: "TEXT_INPUT", Required: true},
+		{Identifier: "family_name", Type: "TEXT_INPUT", Required: true},
+	})
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), "user-2", resp.RuntimeData[userAttributeUserID])
+}
+
+func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_StillAmbiguous() {
+	candidates := []*userprovider.User{
+		{UserID: "user-1", UserType: "Person", Attributes: attrsAlexSmith},
+		{UserID: "user-2", UserType: "Engineer", Attributes: attrsAlexSmith},
+	}
+	candidatesJSON, _ := json.Marshal(candidates)
+
+	ctx := &core.NodeContext{
+		FlowID:       "flow-123",
+		ExecutorMode: ExecutorModeResolve,
+		UserInputs:   map[string]string{"given_name": "Alex", "family_name": "Smith"},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyCandidateUsers: string(candidatesJSON),
+		},
+	}
+
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "given_name", Type: "TEXT_INPUT", Required: true},
+		{Identifier: "family_name", Type: "TEXT_INPUT", Required: true},
+	})
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+	assert.NotEmpty(suite.T(), resp.RuntimeData[common.RuntimeKeyCandidateUsers])
+}
+
+func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_FilteredToNone() {
+	candidates := []*userprovider.User{
+		{UserID: "user-1", UserType: "Person", Attributes: attrsAlexJohnson},
+	}
+	candidatesJSON, _ := json.Marshal(candidates)
+
+	ctx := &core.NodeContext{
+		FlowID:       "flow-123",
+		ExecutorMode: ExecutorModeResolve,
+		UserInputs:   map[string]string{"given_name": "Alex", "family_name": "Williams"},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyCandidateUsers: string(candidatesJSON),
+		},
+	}
+
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "given_name", Type: "TEXT_INPUT", Required: true},
+		{Identifier: "family_name", Type: "TEXT_INPUT", Required: true},
+	})
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), failureReasonUserNotFound, resp.FailureReason)
+}
+
+func (suite *IdentifyingExecutorTestSuite) TestExecute_IdentifyMode_AmbiguousUser() {
+	ctx := &core.NodeContext{
+		FlowID:       "flow-123",
+		ExecutorMode: ExecutorModeIdentify,
+		UserInputs:   map[string]string{"given_name": "Alex"},
+		RuntimeData:  make(map[string]string),
+	}
+
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "given_name", Type: "TEXT_INPUT", Required: true},
+	})
+
+	suite.mockUserProvider.On("IdentifyUser", map[string]interface{}{
+		"given_name": "Alex",
+	}).Return(nil, userprovider.NewUserProviderError(userprovider.ErrorCodeAmbiguousUser, "Ambiguous user", ""))
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), failureReasonFailedToIdentifyUser, resp.FailureReason)
+}
+
+func TestFilterUsersByAttributes(t *testing.T) {
+	users := []*userprovider.User{
+		{UserID: "u1", UserType: "Person", Attributes: attrsAlexJohnson},
+		{UserID: "u2", UserType: "Person", Attributes: attrsAlexSmith},
+		{UserID: "u3", UserType: "Engineer", Attributes: attrsAlexSmith},
+	}
+
+	result := filterUsersByAttributes(users, map[string]interface{}{"family_name": "Smith"})
+	assert.Len(t, result, 2)
+
+	result = filterUsersByAttributes(users, map[string]interface{}{"userType": "Engineer"})
+	assert.Len(t, result, 1)
+	assert.Equal(t, "u3", result[0].UserID)
+
+	result = filterUsersByAttributes(users, map[string]interface{}{
+		"family_name": "Smith",
+		"userType":    "Person",
+	})
+	assert.Len(t, result, 1)
+	assert.Equal(t, "u2", result[0].UserID)
+
+	result = filterUsersByAttributes(users, map[string]interface{}{"family_name": "Doe"})
+	assert.Empty(t, result)
+}
+
+func TestExtractDisambiguationOptions(t *testing.T) {
+	candidates := []*userprovider.User{
+		{UserID: "u1", UserType: "Person", Attributes: attrsAlexJohnson},
+		{UserID: "u2", UserType: "Person", Attributes: attrsAlexSmith},
+		{UserID: "u3", UserType: "Engineer", Attributes: attrsAlexSmith},
+	}
+
+	inputs := extractDisambiguationOptions(candidates)
+
+	optionsByKey := make(map[string][]string)
+	for _, input := range inputs {
+		optionsByKey[input.Identifier] = input.Options
+	}
+
+	assert.Contains(t, optionsByKey, "userType")
+	assert.ElementsMatch(t, []string{"Person", "Engineer"}, optionsByKey["userType"])
+
+	assert.Contains(t, optionsByKey, "family_name")
+	assert.ElementsMatch(t, []string{"Johnson", "Smith"}, optionsByKey["family_name"])
+
+	assert.NotContains(t, optionsByKey, "given_name")
 }

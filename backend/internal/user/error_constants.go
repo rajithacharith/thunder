@@ -173,6 +173,13 @@ var (
 		Error:            "Cannot modify declarative resource",
 		ErrorDescription: "The user is declarative and cannot be modified or deleted",
 	}
+	// ErrorAmbiguousUser is the error returned when multiple users match the provided filters.
+	ErrorAmbiguousUser = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "USR-1026",
+		Error:            "Ambiguous user",
+		ErrorDescription: "Multiple users match the provided filters",
+	}
 )
 
 // Server errors for user management operations.

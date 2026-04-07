@@ -60,6 +60,7 @@ type UserServiceInterface interface {
 		credentials json.RawMessage) *serviceerror.ServiceError
 	DeleteUser(ctx context.Context, userID string) *serviceerror.ServiceError
 	IdentifyUser(ctx context.Context, filters map[string]interface{}) (*string, *serviceerror.ServiceError)
+	SearchUsers(ctx context.Context, filters map[string]interface{}) ([]User, *serviceerror.ServiceError)
 	ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, *serviceerror.ServiceError)
 	GetUsersByIDs(ctx context.Context, userIDs []string) (map[string]*User, *serviceerror.ServiceError)
 	ValidateUserIDsInOUs(ctx context.Context, userIDs []string,
@@ -894,10 +895,95 @@ func (us *userService) IdentifyUser(ctx context.Context,
 			logger.Debug("User not found with provided filters")
 			return nil, &ErrorUserNotFound
 		}
+		if errors.Is(err, entity.ErrAmbiguousEntity) {
+			logger.Debug("Multiple users found with provided filters")
+			return nil, &ErrorAmbiguousUser
+		}
 		return nil, logErrorAndReturnServerError(logger, "Failed to identify user", err)
 	}
 
 	return userID, nil
+}
+
+// SearchUsers searches for all users matching the provided filters.
+func (us *userService) SearchUsers(ctx context.Context,
+	filters map[string]interface{}) ([]User, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if len(filters) == 0 {
+		return nil, &ErrorInvalidRequestFormat
+	}
+
+	// Extract column-level filters before passing to store
+	attributeFilters := make(map[string]interface{})
+	var filterUserType string
+	var filterOUHandle string
+	for key, value := range filters {
+		switch key {
+		case "userType":
+			if v, ok := value.(string); ok {
+				filterUserType = v
+			}
+		case "ouHandle":
+			if v, ok := value.(string); ok {
+				filterOUHandle = v
+			}
+		default:
+			attributeFilters[key] = value
+		}
+	}
+
+	// Resolve ouHandle to ouId if provided
+	var filterOUID string
+	if filterOUHandle != "" {
+		ou, svcErr := us.ouService.GetOrganizationUnitByPath(ctx, filterOUHandle)
+		if svcErr != nil {
+			return nil, mapOUServiceError(
+				svcErr, logger, "resolving OU handle for search",
+				map[string]*serviceerror.ServiceError{
+					oupkg.ErrorOrganizationUnitNotFound.Code: &ErrorOrganizationUnitNotFound,
+					oupkg.ErrorInvalidHandlePath.Code:        &ErrorInvalidHandlePath,
+				},
+				log.String("ouHandle", filterOUHandle),
+			)
+		}
+		filterOUID = ou.ID
+	}
+
+	entities, err := us.entityService.SearchEntities(ctx, attributeFilters)
+	if err != nil {
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			logger.Debug("No users found with provided filters")
+			return nil, &ErrorUserNotFound
+		}
+		return nil, logErrorAndReturnServerError(logger, "Failed to search users", err)
+	}
+
+	// Filter to user-category entities and apply column-level filters
+	userEntities := make([]entity.Entity, 0, len(entities))
+	for _, e := range entities {
+		if e.Category != entity.EntityCategoryUser || e.State != entity.EntityStateActive {
+			continue
+		}
+		if filterUserType != "" && e.Type != filterUserType {
+			continue
+		}
+		if filterOUID != "" && e.OrganizationUnitID != filterOUID {
+			continue
+		}
+		userEntities = append(userEntities, e)
+	}
+
+	if len(userEntities) == 0 {
+		return nil, &ErrorUserNotFound
+	}
+
+	users := entitiesToUsers(userEntities)
+
+	// Populate OU handles on returned users
+	us.populateOUHandles(ctx, users, logger)
+
+	return users, nil
 }
 
 // ValidateUserIDs validates that all provided user IDs exist.

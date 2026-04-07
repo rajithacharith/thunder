@@ -310,3 +310,95 @@ func (s *ServiceTestSuite) TestUpdateEntity_Success_ViaOldPath() {
 	s.NoError(err)
 	s.Equal(e.ID, got.ID)
 }
+
+func (s *ServiceTestSuite) TestSearchEntities_Success() {
+	filters := map[string]interface{}{"email": "a@b.com"}
+	entities := []Entity{*testEntity("e1"), *testEntity("e2")}
+	s.store.On("SearchEntities", mock.Anything, filters).Return(entities, nil)
+	got, err := s.svc.SearchEntities(s.ctx, filters)
+	s.NoError(err)
+	s.Len(got, 2)
+}
+
+func (s *ServiceTestSuite) TestSearchEntities_Error() {
+	filters := map[string]interface{}{"email": "a@b.com"}
+	s.store.On("SearchEntities", mock.Anything, filters).Return(nil, s.testErr)
+	_, err := s.svc.SearchEntities(s.ctx, filters)
+	s.Error(err)
+}
+
+func testCredentialsJSON() json.RawMessage {
+	return json.RawMessage(`{"password":[{` +
+		`"value":"testhash","storageAlgo":"PBKDF2",` +
+		`"storageAlgoParams":{"salt":"testsalt","iterations":1,"keySize":32}}]}`)
+}
+
+func (s *ServiceTestSuite) TestAuthenticateEntityByID_Success() {
+	storedCreds := testCredentialsJSON()
+	e := testEntity("auth-id-1")
+	s.store.On("GetEntityWithCredentials", mock.Anything, e.ID).
+		Return(&EntityWithCredentials{Entity: e, SchemaCredentials: storedCreds}, nil)
+	s.hashService.On("Verify", []byte("password123"), mock.Anything).Return(true, nil)
+
+	result, err := s.svc.AuthenticateEntityByID(s.ctx, e.ID, map[string]interface{}{"password": "password123"})
+	s.NoError(err)
+	s.Equal(e.ID, result.EntityID)
+	s.Equal(e.Category, result.EntityCategory)
+	s.Equal(e.Type, result.EntityType)
+	s.Equal(e.OrganizationUnitID, result.OrganizationUnitID)
+}
+
+func (s *ServiceTestSuite) TestAuthenticateEntityByID_EmptyID() {
+	_, err := s.svc.AuthenticateEntityByID(s.ctx, "", map[string]interface{}{"password": "p"})
+	s.ErrorIs(err, ErrEntityNotFound)
+}
+
+func (s *ServiceTestSuite) TestAuthenticateEntityByID_EmptyCredentials() {
+	_, err := s.svc.AuthenticateEntityByID(s.ctx, "some-id", map[string]interface{}{})
+	s.ErrorIs(err, ErrAuthenticationFailed)
+}
+
+func (s *ServiceTestSuite) TestAuthenticateEntityByID_EntityNotFound() {
+	s.store.On("GetEntityWithCredentials", mock.Anything, "missing").
+		Return(nil, ErrEntityNotFound)
+
+	_, err := s.svc.AuthenticateEntityByID(s.ctx, "missing", map[string]interface{}{"password": "p"})
+	s.ErrorIs(err, ErrEntityNotFound)
+}
+
+func (s *ServiceTestSuite) TestAuthenticateEntityByID_InactiveEntity() {
+	e := testEntity("inactive-1")
+	e.State = EntityState("SUSPENDED")
+	s.store.On("GetEntityWithCredentials", mock.Anything, e.ID).
+		Return(&EntityWithCredentials{Entity: e, SchemaCredentials: testCredentialsJSON()}, nil)
+
+	_, err := s.svc.AuthenticateEntityByID(s.ctx, e.ID, map[string]interface{}{"password": "p"})
+	s.ErrorIs(err, ErrEntityNotFound)
+}
+
+func (s *ServiceTestSuite) TestAuthenticateEntityByID_WrongCredentials() {
+	storedCreds := testCredentialsJSON()
+	e := testEntity("auth-fail-1")
+	s.store.On("GetEntityWithCredentials", mock.Anything, e.ID).
+		Return(&EntityWithCredentials{Entity: e, SchemaCredentials: storedCreds}, nil)
+	s.hashService.On("Verify", []byte("wrong"), mock.Anything).Return(false, nil)
+
+	_, err := s.svc.AuthenticateEntityByID(s.ctx, e.ID, map[string]interface{}{"password": "wrong"})
+	s.ErrorIs(err, ErrAuthenticationFailed)
+}
+
+func (s *ServiceTestSuite) TestAuthenticateEntity_DelegatesToByID() {
+	id := "delegate-1"
+	filters := map[string]interface{}{"username": "user1"}
+	storedCreds := testCredentialsJSON()
+	e := testEntity(id)
+
+	s.store.On("IdentifyEntity", mock.Anything, filters).Return(&id, nil)
+	s.store.On("GetEntityWithCredentials", mock.Anything, id).
+		Return(&EntityWithCredentials{Entity: e, SchemaCredentials: storedCreds}, nil)
+	s.hashService.On("Verify", []byte("pass"), mock.Anything).Return(true, nil)
+
+	result, err := s.svc.AuthenticateEntity(s.ctx, filters, map[string]interface{}{"password": "pass"})
+	s.NoError(err)
+	s.Equal(id, result.EntityID)
+}

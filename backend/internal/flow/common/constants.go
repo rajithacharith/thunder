@@ -185,6 +185,8 @@ const (
 	RuntimeKeyUserAttributesCacheTTLSeconds = "user_attributes_cache_ttl_seconds"
 	// RuntimeKeyInviteLink holds the generated invite link for downstream executors (e.g., EmailExecutor).
 	RuntimeKeyInviteLink = "inviteLink"
+	// RuntimeKeyCandidateUsers holds serialized candidate users during disambiguation in resolve mode.
+	RuntimeKeyCandidateUsers = "candidateUsers"
 )
 
 // TODO: Define a go type for InputType when formalizing input types

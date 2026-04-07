@@ -1,7 +1,158 @@
 ---
 title: Flows
 sidebar_position: 15
+description: Learn how to create and configure authentication and registration flows in Thunder.
 ---
 
-# 🚧 WIP
-## This page is under construction. Please check back later.
+# Flows
+
+Flows are node-based graphs that control user interaction and backend processing during authentication and registration. Each flow consists of nodes (steps), edges (connections), and actions (user-triggered navigation).
+
+## User Disambiguation
+
+When an identifying attribute (such as `email` or `username`) matches more than one user, the **IdentifyingExecutor** in `resolve` mode enables interactive disambiguation. Instead of failing with an error, the flow presents the user with selectable options derived from the matching candidates, allowing them to narrow down to a single identity.
+
+### When to Use Disambiguation
+
+Use the `resolve` mode when your user base allows multiple users to share the same identifying attribute. Common scenarios include:
+
+- Multiple users with the same `email` across different organization units
+- Shared `username` values across different user types (e.g., `employee` vs `contractor`)
+- Any deployment where a single identifying attribute does not guarantee uniqueness
+
+### How It Works
+
+The disambiguation flow follows a multi-step process:
+
+1. **Initial identification** — The `IdentifyingExecutor` in `resolve` mode searches for all users matching the provided input (e.g., `email`).
+2. **Unique match** — If exactly one user matches, the executor completes immediately with the resolved `userID`.
+3. **Ambiguous match** — If multiple users match, the executor:
+   - Stores the candidate users in `RuntimeData` for later calls.
+   - Returns `ExecUserInputRequired` with `ForwardedData` containing distinct attribute values from the candidates (e.g., available `userType` or `department` values).
+   - The next prompt node can use these forwarded options to render a dropdown for the user to select from.
+4. **Refinement** — On the next submission, the executor filters the stored candidates in-memory using the newly provided attribute. This repeats until a single user remains or no candidates match.
+5. **Downstream authentication** — Once resolved, the `userID` is stored in `RuntimeData`. Downstream executors like `BasicAuthExecutor` detect the pre-resolved `userID` and skip the username input, requiring only the password.
+
+### Configuring a Disambiguation Flow
+
+To enable disambiguation, set the `IdentifyingExecutor` mode to `resolve` in the flow definition:
+
+```json
+{
+  "name": "Disambiguation Authentication Flow",
+  "handle": "disambig-auth-flow",
+  "flowType": "AUTHENTICATION",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "START",
+      "onSuccess": "prompt_email"
+    },
+    {
+      "id": "prompt_email",
+      "type": "PROMPT",
+      "inputs": [
+        {
+          "identifier": "email",
+          "type": "EMAIL_INPUT",
+          "required": true
+        }
+      ],
+      "actions": [
+        {
+          "ref": "action_001",
+          "nextNode": "identify_user"
+        }
+      ]
+    },
+    {
+      "id": "identify_user",
+      "type": "TASK_EXECUTION",
+      "executor": {
+        "name": "IdentifyingExecutor",
+        "mode": "resolve"
+      },
+      "onSuccess": "basic_auth",
+      "onIncomplete": "prompt_disambiguate"
+    },
+    {
+      "id": "prompt_disambiguate",
+      "type": "PROMPT",
+      "inputs": [
+        {
+          "identifier": "userType",
+          "type": "DROPDOWN",
+          "required": true
+        }
+      ],
+      "actions": [
+        {
+          "ref": "action_001",
+          "nextNode": "identify_user"
+        }
+      ]
+    },
+    {
+      "id": "basic_auth",
+      "type": "TASK_EXECUTION",
+      "executor": {
+        "name": "BasicAuthExecutor"
+      },
+      "onSuccess": "auth_assert"
+    },
+    {
+      "id": "auth_assert",
+      "type": "TASK_EXECUTION",
+      "executor": {
+        "name": "AuthAssertExecutor"
+      },
+      "onSuccess": "end"
+    },
+    {
+      "id": "end",
+      "type": "END"
+    }
+  ]
+}
+```
+
+### Executor Modes for IdentifyingExecutor
+
+| Mode | Description |
+|------|-------------|
+| `identify` | Default mode. Returns a single user or fails if multiple users match the provided attributes. |
+| `resolve` | Disambiguation mode. When multiple users match, stores candidates and returns selectable options via `ForwardedData` to enable interactive resolution. |
+
+### Runtime Data Behavior
+
+The disambiguation process uses `RuntimeData` to maintain state across multiple interactions:
+
+| Key | Description |
+|-----|-------------|
+| `userID` | Set when a unique user is resolved. Consumed by downstream executors (e.g., `BasicAuthExecutor`). |
+| `_candidateUsers` | Internal key storing serialized candidate users between disambiguation rounds. Automatically managed by the executor. |
+
+### ForwardedData and Dynamic Inputs
+
+When the executor returns an ambiguous result, it populates `ForwardedData` with disambiguation options:
+
+```json
+{
+  "inputs": [
+    {
+      "identifier": "userType",
+      "options": ["employee", "contractor"]
+    },
+    {
+      "identifier": "department",
+      "options": ["engineering", "marketing"]
+    }
+  ]
+}
+```
+
+The executor only includes attributes that have more than one distinct value across candidates, as single-value attributes do not help with disambiguation. The downstream prompt node can use these options to render dropdown inputs.
+
+### Pre-Resolved User in BasicAuthExecutor
+
+When a `userID` is already present in `RuntimeData` (set by the `IdentifyingExecutor`), the `BasicAuthExecutor` skips the username input and only requires the password. This enables a seamless transition from disambiguation to authentication without re-entering identifying attributes.
