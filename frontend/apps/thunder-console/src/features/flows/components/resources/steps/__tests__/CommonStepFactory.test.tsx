@@ -27,8 +27,21 @@ import CommonStepFactory from '../CommonStepFactory';
 
 // Mock step components
 vi.mock('../view/View', () => ({
-  default: ({resources, data}: {resources: Step[]; data: unknown}) => (
-    <div data-testid="view-step" data-resource-count={resources.length} data-has-data={!!data}>
+  default: ({
+    resources,
+    data,
+    enableSourceHandle,
+  }: {
+    resources: Step[];
+    data: unknown;
+    enableSourceHandle?: boolean;
+  }) => (
+    <div
+      data-testid="view-step"
+      data-resource-count={resources.length}
+      data-has-data={!!data}
+      data-enable-source-handle={String(enableSourceHandle ?? false)}
+    >
       View Step
     </div>
   ),
@@ -373,6 +386,91 @@ describe('CommonStepFactory', () => {
       );
 
       expect(screen.getByTestId('view-step')).toBeInTheDocument();
+    });
+  });
+
+  describe('Display-only enableSourceHandle behavior', () => {
+    it('should set enableSourceHandle=true when data has no components key', () => {
+      const viewStep = createMockStep({type: StepTypes.View});
+
+      render(<CommonStepFactory {...defaultNodeProps} resourceId="resource-1" resources={[viewStep]} data={{}} />, {
+        wrapper: createWrapper(),
+      });
+
+      expect(screen.getByTestId('view-step')).toHaveAttribute('data-enable-source-handle', 'true');
+    });
+
+    it('should set enableSourceHandle=true when components has only DISPLAY elements', () => {
+      const viewStep = createMockStep({type: StepTypes.View});
+
+      render(
+        <CommonStepFactory
+          {...defaultNodeProps}
+          resourceId="resource-1"
+          resources={[viewStep]}
+          data={{components: [{id: 'text-1', category: 'DISPLAY', type: 'TEXT'}]}}
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      expect(screen.getByTestId('view-step')).toHaveAttribute('data-enable-source-handle', 'true');
+    });
+
+    it('should set enableSourceHandle=false when components has a top-level ACTION element', () => {
+      const viewStep = createMockStep({type: StepTypes.View});
+
+      render(
+        <CommonStepFactory
+          {...defaultNodeProps}
+          resourceId="resource-1"
+          resources={[viewStep]}
+          data={{components: [{id: 'btn-1', category: 'ACTION', type: 'ACTION'}]}}
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      expect(screen.getByTestId('view-step')).toHaveAttribute('data-enable-source-handle', 'false');
+    });
+
+    it('should set enableSourceHandle=false when components has a RESEND element', () => {
+      const viewStep = createMockStep({type: StepTypes.View});
+
+      render(
+        <CommonStepFactory
+          {...defaultNodeProps}
+          resourceId="resource-1"
+          resources={[viewStep]}
+          data={{components: [{id: 'resend-1', category: 'DISPLAY', type: 'RESEND'}]}}
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      expect(screen.getByTestId('view-step')).toHaveAttribute('data-enable-source-handle', 'false');
+    });
+
+    it('should set enableSourceHandle=false when ACTION is nested inside a BLOCK component', () => {
+      const viewStep = createMockStep({type: StepTypes.View});
+
+      render(
+        <CommonStepFactory
+          {...defaultNodeProps}
+          resourceId="resource-1"
+          resources={[viewStep]}
+          data={{
+            components: [
+              {
+                id: 'block-1',
+                category: 'BLOCK',
+                type: 'BLOCK',
+                components: [{id: 'btn-1', category: 'ACTION', type: 'ACTION'}],
+              },
+            ],
+          }}
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      expect(screen.getByTestId('view-step')).toHaveAttribute('data-enable-source-handle', 'false');
     });
   });
 });

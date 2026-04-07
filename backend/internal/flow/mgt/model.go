@@ -133,6 +133,8 @@ type NodeDefinition struct {
 	Layout       *NodeLayout            `json:"layout,omitempty" yaml:"layout,omitempty" jsonschema:"Optional UI layout information for flow composer (position and size on canvas)"`
 	Meta         interface{}            `json:"meta,omitempty" yaml:"meta,omitempty" jsonschema:"Optional metadata. For PROMPT nodes, must include 'components' array for UI rendering. See existing flows for examples."`
 	Prompts      []PromptDefinition     `json:"prompts,omitempty" yaml:"prompts,omitempty" jsonschema:"For PROMPT nodes: defines user inputs and actions. Each prompt has inputs (form fields) and an action (what happens on submit)."`
+	Next         string                 `json:"next,omitempty" yaml:"next,omitempty" jsonschema:"For display-only PROMPT nodes: ID of the next node. Mutually exclusive with 'prompts'."`
+	Message      string                 `json:"message,omitempty" yaml:"message,omitempty" jsonschema:"For display-only PROMPT nodes: textual message for non-verbose mode."`
 	Properties   map[string]interface{} `json:"properties,omitempty" yaml:"properties,omitempty" jsonschema:"Optional node-specific properties for configuration"`
 	Executor     *ExecutorDefinition    `json:"executor,omitempty" yaml:"executor,omitempty" jsonschema:"For TASK_EXECUTION nodes: defines which executor to run (e.g., 'UsernamePasswordAuthenticator', 'OTPGenerator')"`
 	OnSuccess    string                 `json:"onSuccess,omitempty" yaml:"onSuccess,omitempty" jsonschema:"ID of the next node to execute on successful completion"`
@@ -152,6 +154,7 @@ type InputDefinition struct {
 // ActionDefinition represents an action to be executed by a node.
 type ActionDefinition struct {
 	Ref      string `json:"ref" yaml:"ref" jsonschema:"Reference ID for the action."`
+	Type     string `json:"type,omitempty" yaml:"type,omitempty" jsonschema:"Action type. Forwarded to next executor to determine the action to take."`
 	NextNode string `json:"nextNode" yaml:"nextNode" jsonschema:"ID of the node to transition to when this action is taken."`
 }
 

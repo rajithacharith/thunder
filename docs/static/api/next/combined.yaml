@@ -1780,7 +1780,7 @@ paths:
                 - $ref: "#/components/schemas/InitialFlowRequest"
                 - $ref: "#/components/schemas/SubSequentFlowRequest"
             examples:
-              initialRequestExample:
+              initialRequest:
                 summary: Initial request
                 value:
                   applicationId: 550e8400-e29b-41d4-a716-446655440000
@@ -1805,7 +1805,7 @@ paths:
                   - $ref: "#/components/schemas/ErrorFlowResponse"
               examples:
                 incompleteFlow:
-                  summary: Incomplete flow
+                  summary: Incomplete flow (prompt for user input)
                   value:
                     flowId: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
                     flowStatus: PROMPT_ONLY
@@ -1813,12 +1813,38 @@ paths:
                     type: VIEW
                     data:
                       inputs:
-                        - name: username
-                          type: string
+                        - ref: input_username
+                          identifier: username
+                          type: TEXT_INPUT
                           required: true
-                        - name: password
-                          type: string
+                        - ref: input_password
+                          identifier: password
+                          type: PASSWORD_INPUT
                           required: true
+                      actions:
+                        - ref: action_submit
+                          nextNode: node_bs12
+                displayOnlyFlow:
+                  summary: Incomplete flow (display-only prompt)
+                  value:
+                    flowId: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
+                    flowStatus: INCOMPLETE
+                    stepId: 3071b6c6-0119-465c-b00b-3a0e6f88a730
+                    type: VIEW
+                    data:
+                      meta:
+                        components:
+                          - id: heading_001
+                            type: TEXT
+                            category: DISPLAY
+                            variant: HEADING_3
+                            label: You're All Set
+                          - id: body_001
+                            type: TEXT
+                            category: DISPLAY
+                            variant: BODY_1
+                            label: You have successfully completed the registration.
+                      message: You have successfully completed the registration.
                 completeFlow:
                   summary: Complete flow
                   value:
@@ -10245,7 +10271,7 @@ components:
         inputs:
           type: array
           items:
-            $ref: "#/components/schemas/InputData"
+            $ref: "#/components/schemas/Input"
           description: Required input data for the next flow step
         redirectURL:
           type: string
@@ -10263,6 +10289,26 @@ components:
           items:
             $ref: "#/components/schemas/Action"
           description: Available actions for the current flow step
+        meta:
+          type: object
+          description: >
+            UI rendering metadata for display-only PROMPT nodes, returned when
+            executing in verbose mode. 
+
+            Contains a `components` array describing the elements to render
+            (headings, body text, images, etc.).
+          example:
+            components:
+              - id: heading_001
+                type: TEXT
+                category: DISPLAY
+                variant: HEADING_3
+                label: You're All Set
+              - id: body_001
+                type: TEXT
+                category: DISPLAY
+                variant: BODY_1
+                label: You have successfully completed the registration.
     Action:
       type: object
       required:
@@ -10289,25 +10335,22 @@ components:
         permission:
           type: string
           description: Derived permission string based on handle hierarchy
-    ExecutorModel:
+    Input:
       type: object
-      description: Executor configuration for the action
       properties:
-        name:
+        ref:
           type: string
-          description: Name of the executor
-          example: ""
-    InputData:
-      type: object
-      properties:
-        name:
+          description: Reference name of the input field, used for mapping user inputs to
+            the meta components
+          example: input_username
+        identifier:
           type: string
           description: Name of the input field
           example: username
         type:
           type: string
           description: Type of the input field
-          example: string
+          example: TEXT_INPUT
         required:
           type: boolean
           description: Whether the input is required
@@ -10893,6 +10936,34 @@ components:
           type: string
           description: Next node ID on failed execution (TASK_EXECUTION nodes)
           example: node_007
+        onIncomplete:
+          type: string
+          description: >
+            For TASK_EXECUTION nodes: ID of the PROMPT node to transition to
+            when user input
+
+            is required to complete the task.
+          example: node_003
+        next:
+          type: string
+          description: >
+            For display-only PROMPT nodes: ID of the next node to automatically
+            transition to
+
+            after the display content is rendered. Mutually exclusive with
+            `prompts`.
+          example: node_005
+        message:
+          type: string
+          description: >
+            For display-only PROMPT nodes: a plain-text message returned in
+            non-verbose mode
+
+            alongside the flow status, intended for lightweight clients that do
+            not process
+
+            the full meta/components payload.
+          example: Registration complete. You may now sign in.
     NodeLayout:
       type: object
       description: >
@@ -10986,6 +11057,18 @@ components:
           type: string
           description: Reference to the action component ID in meta.components
           example: action_001
+        type:
+          type: string
+          description: >
+            Optional action type forwarded to the next executor so it can
+            determine which
+
+            processing path to take. Predefined values are `SUBMIT`
+            (approve/confirm) and
+
+            `REJECT` (deny/cancel). If omitted, no action-type hint is
+            forwarded.
+          example: SUBMIT
         nextNode:
           type: string
           description: ID of the next node to navigate to when this action is triggered

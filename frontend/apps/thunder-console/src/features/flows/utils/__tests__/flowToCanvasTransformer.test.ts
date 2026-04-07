@@ -372,6 +372,69 @@ describe('flowToCanvasTransformer', () => {
 
         expect(result.edges).toHaveLength(0);
       });
+
+      it('should generate edge from display-only PROMPT node using next field', () => {
+        const flowData = createBaseFlowData([
+          {
+            id: 'display-node',
+            type: 'PROMPT',
+            next: 'end-node',
+            layout: {position: {x: 0, y: 0}, size: {width: 300, height: 200}},
+          },
+          {
+            id: 'end-node',
+            type: 'END',
+            layout: {position: {x: 400, y: 0}, size: {width: 100, height: 50}},
+          },
+        ]);
+
+        const result = transformFlowToCanvas(flowData);
+
+        expect(result.edges).toHaveLength(1);
+        const edge = result.edges[0];
+        expect(edge.source).toBe('display-node');
+        expect(edge.target).toBe('end-node');
+        expect(edge.sourceHandle).toBe(`display-node${VisualFlowConstants.FLOW_BUILDER_NEXT_HANDLE_SUFFIX}`);
+      });
+
+      it('should not generate edge when next field references non-existent node', () => {
+        const flowData = createBaseFlowData([
+          {
+            id: 'display-node',
+            type: 'PROMPT',
+            next: 'non-existent-node',
+            layout: {position: {x: 0, y: 0}, size: {width: 300, height: 200}},
+          },
+        ]);
+
+        const result = transformFlowToCanvas(flowData);
+
+        expect(result.edges).toHaveLength(0);
+      });
+
+      it('should prefer prompt action edges over next field when PROMPT node has both', () => {
+        const flowData = createBaseFlowData([
+          {
+            id: 'prompt-node',
+            type: 'PROMPT',
+            next: 'end-node',
+            prompts: [{action: {ref: 'submit-btn', nextNode: 'end-node'}}],
+            layout: {position: {x: 0, y: 0}, size: {width: 300, height: 200}},
+          },
+          {
+            id: 'end-node',
+            type: 'END',
+            layout: {position: {x: 400, y: 0}, size: {width: 100, height: 50}},
+          },
+        ]);
+
+        const result = transformFlowToCanvas(flowData);
+
+        expect(result.edges).toHaveLength(1);
+        // Should use action ref as edge ID (prompt source handle), not the node-level handle
+        expect(result.edges[0].id).toBe('submit-btn');
+        expect(result.edges[0].sourceHandle).toBe(`submit-btn${VisualFlowConstants.FLOW_BUILDER_NEXT_HANDLE_SUFFIX}`);
+      });
     });
 
     describe('Component Transformation', () => {

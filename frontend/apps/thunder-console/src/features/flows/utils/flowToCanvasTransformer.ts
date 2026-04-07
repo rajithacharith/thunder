@@ -331,6 +331,19 @@ function generateEdgesFromNodes(apiNodes: FlowNode[]): Edge[] {
             });
           }
         });
+      } else if (node.next && nodeIds.has(node.next)) {
+        // Display-only PROMPT node: uses the node-level source handle
+        edges.push({
+          id: `${node.id}${VisualFlowConstants.FLOW_BUILDER_NEXT_HANDLE_SUFFIX}`,
+          source: node.id,
+          sourceHandle: `${node.id}${VisualFlowConstants.FLOW_BUILDER_NEXT_HANDLE_SUFFIX}`,
+          target: node.next,
+          type: 'smoothstep',
+          animated: false,
+          markerEnd: {
+            type: MarkerType.Arrow,
+          },
+        });
       }
     }
 

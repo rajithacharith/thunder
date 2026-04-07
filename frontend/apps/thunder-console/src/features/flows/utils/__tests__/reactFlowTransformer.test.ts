@@ -1430,6 +1430,128 @@ describe('reactFlowTransformer', () => {
         expect(otherPrompt?.inputs).toBeUndefined();
       });
     });
+
+    describe('Display-only VIEW nodes', () => {
+      it('should set next field when VIEW node has only display components and an outgoing edge', () => {
+        const components: Element[] = [
+          {
+            id: 'heading-1',
+            type: ElementTypes.Text,
+            category: ElementCategories.Display,
+          } as Element,
+          {
+            id: 'body-1',
+            type: ElementTypes.Text,
+            category: ElementCategories.Display,
+          } as Element,
+        ];
+
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [
+            createNode('display-view-1', StepTypes.View, {x: 0, y: 0}, {components}),
+            createNode('end-1', StepTypes.End),
+          ],
+          edges: [createEdge('edge-1', 'display-view-1', 'end-1')],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const viewNode = result.nodes.find((n) => n.id === 'display-view-1');
+        expect(viewNode?.next).toBe('end-1');
+        expect(viewNode?.prompts).toBeUndefined();
+      });
+
+      it('should not set next when VIEW has only display components but no outgoing edge', () => {
+        const components: Element[] = [
+          {
+            id: 'text-1',
+            type: ElementTypes.Text,
+            category: ElementCategories.Display,
+          } as Element,
+        ];
+
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [createNode('display-view-1', StepTypes.View, {x: 0, y: 0}, {components})],
+          edges: [],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const viewNode = result.nodes[0];
+        expect(viewNode.next).toBeUndefined();
+        expect(viewNode.prompts).toBeUndefined();
+      });
+
+      it('should set prompts (not next) when VIEW node has a top-level ACTION component', () => {
+        const components: Element[] = [
+          {
+            id: 'text-1',
+            type: ElementTypes.Text,
+            category: ElementCategories.Display,
+          } as Element,
+          {
+            id: 'button-1',
+            type: ElementTypes.Action,
+            category: ElementCategories.Action,
+            action: {onSuccess: 'end-1'},
+          } as Element,
+        ];
+
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [createNode('view-1', StepTypes.View, {x: 0, y: 0}, {components})],
+          edges: [createEdge('edge-1', 'view-1', 'end-1', 'button-1_NEXT')],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const viewNode = result.nodes[0];
+        expect(viewNode.prompts).toHaveLength(1);
+        expect(viewNode.next).toBeUndefined();
+      });
+
+      it('should set prompts (not next) when ACTION is nested inside a BLOCK', () => {
+        const components: Element[] = [
+          {
+            id: 'block-1',
+            type: 'BLOCK',
+            category: ElementCategories.Block,
+            components: [
+              {
+                id: 'button-1',
+                type: ElementTypes.Action,
+                category: ElementCategories.Action,
+                action: {onSuccess: 'end-1'},
+              } as Element,
+            ],
+          } as unknown as Element,
+        ];
+
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [createNode('view-1', StepTypes.View, {x: 0, y: 0}, {components})],
+          edges: [createEdge('edge-1', 'view-1', 'end-1', 'button-1_NEXT')],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const viewNode = result.nodes[0];
+        expect(viewNode.prompts).toHaveLength(1);
+        expect(viewNode.next).toBeUndefined();
+      });
+
+      it('should not set next when VIEW components array is empty', () => {
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [createNode('view-1', StepTypes.View, {x: 0, y: 0}, {components: []})],
+          edges: [createEdge('edge-1', 'view-1', 'end-1')],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        // meta.components is set but empty; no prompts and next falls through
+        const viewNode = result.nodes[0];
+        expect(viewNode.prompts).toBeUndefined();
+        expect(viewNode.next).toBeUndefined();
+      });
+    });
   });
 
   describe('validateFlowGraph', () => {

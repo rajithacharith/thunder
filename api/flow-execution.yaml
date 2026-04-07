@@ -32,7 +32,7 @@ paths:
                 - $ref: '#/components/schemas/InitialFlowRequest'
                 - $ref: '#/components/schemas/SubSequentFlowRequest'
             examples:
-              initialRequestExample:
+              initialRequest:
                 summary: Initial request
                 value:
                   applicationId: "550e8400-e29b-41d4-a716-446655440000"
@@ -58,7 +58,7 @@ paths:
                   - $ref: '#/components/schemas/ErrorFlowResponse'
               examples:
                 incompleteFlow:
-                  summary: Incomplete flow
+                  summary: Incomplete flow (prompt for user input)
                   value:
                     flowId: "2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc"
                     flowStatus: "PROMPT_ONLY"
@@ -67,16 +67,45 @@ paths:
                     data:
                       inputs: [
                         {
-                          name: "username",
-                          type: "string",
+                          ref: "input_username",
+                          identifier: "username",
+                          type: "TEXT_INPUT",
                           required: true
                         },
                         {
-                          name: "password",
-                          type: "string",
+                          ref: "input_password",
+                          identifier: "password",
+                          type: "PASSWORD_INPUT",
                           required: true
                         }
                       ]
+                      actions: [
+                        {
+                          "ref": "action_submit",
+                          "nextNode": "node_bs12",
+                        }
+                      ]
+                displayOnlyFlow:
+                  summary: Incomplete flow (display-only prompt)
+                  value:
+                    flowId: "2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc"
+                    flowStatus: "INCOMPLETE"
+                    stepId: "3071b6c6-0119-465c-b00b-3a0e6f88a730"
+                    type: "VIEW"
+                    data:
+                      meta:
+                        components:
+                          - id: heading_001
+                            type: TEXT
+                            category: DISPLAY
+                            variant: HEADING_3
+                            label: "You're All Set"
+                          - id: body_001
+                            type: TEXT
+                            category: DISPLAY
+                            variant: BODY_1
+                            label: "You have successfully completed the registration."
+                      message: "You have successfully completed the registration."
                 completeFlow:
                   summary: Complete flow
                   value:
@@ -219,7 +248,7 @@ components:
         inputs:
           type: array
           items:
-            $ref: '#/components/schemas/InputData'
+            $ref: '#/components/schemas/Input'
           description: Required input data for the next flow step
         redirectURL:
           type: string
@@ -238,37 +267,58 @@ components:
           items:
             $ref: '#/components/schemas/Action'
           description: Available actions for the current flow step
+        meta:
+          type: object
+          description: |
+            UI rendering metadata for display-only PROMPT nodes, returned when executing in verbose mode. 
+            Contains a `components` array describing the elements to render (headings, body text, images, etc.).
+          example:
+            components:
+              - id: heading_001
+                type: TEXT
+                category: DISPLAY
+                variant: HEADING_3
+                label: "You're All Set"
+              - id: body_001
+                type: TEXT
+                category: DISPLAY
+                variant: BODY_1
+                label: "You have successfully completed the registration."
 
     Action:
       type: object
       properties:
+        ref:
+          type: string
+          description: Reference name of the action, used for mapping user actions to the flow definition
+          example: "action_credentials"
+        nextNode:
+          type: string
+          description: Identifier of the next node in the flow to execute when this action is taken
+          example: "node_bs12"
         type:
           type: string
-          description: Type of the action
-          example: ""
-        executor:
-          $ref: '#/components/schemas/ExecutorModel'
+          description: |
+            Action type forwarded from the PROMPT node definition. Predefined values are
+            `SUBMIT` (approve/confirm) and `REJECT` (deny/cancel). Custom strings are also
+            accepted for executor-specific routing.
+          example: "SUBMIT"
 
-    ExecutorModel:
+    Input:
       type: object
-      description: Executor configuration for the action
       properties:
-        name:
+        ref:
           type: string
-          description: Name of the executor
-          example: ""
-
-    InputData:
-      type: object
-      properties:
-        name:
+          description: Reference name of the input field, used for mapping user inputs to the meta components
+          example: "input_username"
+        identifier:
           type: string
           description: Name of the input field
           example: "username"
         type:
           type: string
           description: Type of the input field
-          example: "string"
+          example: "TEXT_INPUT"
         required:
           type: boolean
           description: Whether the input is required

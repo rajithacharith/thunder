@@ -41,6 +41,7 @@ func (i Input) IsSensitive() bool {
 // Action represents an action to be executed in a flow step
 type Action struct {
 	Ref      string `json:"ref,omitempty"`
+	Type     string `json:"type,omitempty"`
 	NextNode string `json:"nextNode,omitempty"`
 }
 

@@ -26,6 +26,7 @@ import (
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/observability/observabilitymock"
 )
@@ -1388,4 +1389,212 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_TokenSetButAvailable
 	// not retained from previous
 	s.Equal("new-token", ctx.AuthenticatedUser.Token)
 	s.Nil(ctx.AuthenticatedUser.AvailableAttributes)
+}
+
+// Tests for display-only prompt node handling
+
+func (s *EngineTestSuite) TestIsDisplayOnlyPromptNode_WithDisplayOnlyPrompt() {
+	t := s.T()
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+	mockPromptNode.On("IsDisplayOnly").Return(true)
+
+	fe := &flowEngine{}
+	result := fe.isDisplayOnlyPromptNode(mockPromptNode)
+
+	s.True(result)
+}
+
+func (s *EngineTestSuite) TestIsDisplayOnlyPromptNode_WithRegularPrompt() {
+	t := s.T()
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+	mockPromptNode.On("IsDisplayOnly").Return(false)
+
+	fe := &flowEngine{}
+	result := fe.isDisplayOnlyPromptNode(mockPromptNode)
+
+	s.False(result)
+}
+
+func (s *EngineTestSuite) TestIsDisplayOnlyPromptNode_WithNonPromptNode() {
+	t := s.T()
+	mockNode := coremock.NewNodeInterfaceMock(t)
+
+	fe := &flowEngine{}
+	result := fe.isDisplayOnlyPromptNode(mockNode)
+
+	s.False(result)
+}
+
+func (s *EngineTestSuite) TestHandleDisplayOnlyPromptResponse_ForwardToNextNode() {
+	t := s.T()
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+	mockPromptNode.On("GetNextNode").Return("next-node")
+
+	mockNextNode := coremock.NewNodeInterfaceMock(t)
+	mockNextNode.On("GetType").Return(common.NodeTypePrompt)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetNode", "next-node").Return(mockNextNode, true)
+
+	fe := &flowEngine{
+		observabilitySvc: mockObservability,
+	}
+
+	ctx := &EngineContext{
+		CurrentNode:    mockPromptNode,
+		Graph:          mockGraph,
+		AdditionalData: map[string]string{"ctx_key": "ctx_value"},
+	}
+
+	flowStep := &FlowStep{
+		Data: FlowData{},
+	}
+
+	nodeResp := &common.NodeResponse{
+		Status:         common.NodeStatusComplete,
+		Meta:           map[string]interface{}{"components": []interface{}{}},
+		AdditionalData: map[string]string{"msg_key": "msg_value"},
+	}
+
+	nextNode, complete, err := fe.handleDisplayOnlyPromptResponse(ctx, nodeResp, flowStep, nil)
+
+	s.Nil(err)
+	s.False(complete)
+	s.Nil(nextNode)
+	s.Equal(common.FlowStatusIncomplete, flowStep.Status)
+	s.Equal(common.StepTypeView, flowStep.Type)
+	s.Equal(map[string]interface{}{"components": []interface{}{}}, flowStep.Data.Meta)
+	s.Contains(flowStep.Data.AdditionalData, "ctx_key")
+	s.Contains(flowStep.Data.AdditionalData, "msg_key")
+	s.Equal(mockNextNode, ctx.CurrentNode)
+}
+
+func (s *EngineTestSuite) TestHandleDisplayOnlyPromptResponse_ForwardToEndNode() {
+	t := s.T()
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+	mockPromptNode.On("GetNextNode").Return("end-node")
+
+	mockEndNode := coremock.NewNodeInterfaceMock(t)
+	mockEndNode.On("GetType").Return(common.NodeTypeEnd)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetNode", "end-node").Return(mockEndNode, true)
+
+	fe := &flowEngine{
+		observabilitySvc: mockObservability,
+	}
+
+	ctx := &EngineContext{
+		CurrentNode:    mockPromptNode,
+		Graph:          mockGraph,
+		AdditionalData: map[string]string{"key": "value"},
+	}
+
+	flowStep := &FlowStep{
+		Data: FlowData{},
+	}
+
+	nodeResp := &common.NodeResponse{
+		Status:         common.NodeStatusComplete,
+		Meta:           map[string]interface{}{"meta_key": "meta_value"},
+		AdditionalData: map[string]string{"response_key": "response_value"},
+	}
+
+	nextNode, complete, err := fe.handleDisplayOnlyPromptResponse(ctx, nodeResp, flowStep, nil)
+
+	s.Nil(err)
+	s.True(complete, "Should complete flow when forwarding to END node")
+	s.Nil(nextNode)
+	s.Equal(common.FlowStatusComplete, flowStep.Status)
+	// Context AdditionalData is copied to flowStep
+	s.Contains(flowStep.Data.AdditionalData, "key")
+	s.Equal("value", flowStep.Data.AdditionalData["key"])
+	s.Equal(map[string]interface{}{"meta_key": "meta_value"}, flowStep.Data.Meta)
+	// Node response AdditionalData is also merged
+	s.Contains(flowStep.Data.AdditionalData, "response_key")
+	s.Equal("response_value", flowStep.Data.AdditionalData["response_key"])
+}
+
+func (s *EngineTestSuite) TestHandleDisplayOnlyPromptResponse_UnknownNextNode() {
+	t := s.T()
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+	mockPromptNode.On("GetNextNode").Return("unknown-node")
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetNode", "unknown-node").Return(nil, false)
+
+	fe := &flowEngine{
+		observabilitySvc: mockObservability,
+	}
+
+	ctx := &EngineContext{
+		CurrentNode: mockPromptNode,
+		Graph:       mockGraph,
+	}
+
+	nodeResp := &common.NodeResponse{
+		Status: common.NodeStatusComplete,
+	}
+
+	logger := log.GetLogger()
+	nextNode, complete, err := fe.handleDisplayOnlyPromptResponse(ctx, nodeResp, nil, logger)
+
+	s.NotNil(err)
+	s.False(complete)
+	s.Nil(nextNode)
+}
+
+func (s *EngineTestSuite) TestHandleDisplayOnlyPromptResponse_MergesAdditionalData() {
+	t := s.T()
+	mockObservability := observabilitymock.NewObservabilityServiceInterfaceMock(t)
+	mockObservability.On("IsEnabled").Return(false).Maybe()
+
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+	mockPromptNode.On("GetNextNode").Return("end-node")
+
+	mockEndNode := coremock.NewNodeInterfaceMock(t)
+	mockEndNode.On("GetType").Return(common.NodeTypeEnd)
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockGraph.On("GetNode", "end-node").Return(mockEndNode, true)
+
+	fe := &flowEngine{
+		observabilitySvc: mockObservability,
+	}
+
+	ctx := &EngineContext{
+		CurrentNode:    mockPromptNode,
+		Graph:          mockGraph,
+		AdditionalData: map[string]string{"existing_key": "existing_value"},
+	}
+
+	flowStep := &FlowStep{
+		Data: FlowData{
+			AdditionalData: map[string]string{"flow_key": "flow_value"},
+		},
+	}
+
+	nodeResp := &common.NodeResponse{
+		Status: common.NodeStatusComplete,
+		AdditionalData: map[string]string{
+			"response_key": "response_value",
+		},
+	}
+
+	nextNode, complete, err := fe.handleDisplayOnlyPromptResponse(ctx, nodeResp, flowStep, nil)
+
+	s.Nil(err)
+	s.True(complete)
+	s.Nil(nextNode)
+	// Verify merged data
+	s.Equal(common.FlowStatusComplete, flowStep.Status)
 }

@@ -252,6 +252,14 @@ export interface FlowNode {
    */
   onIncomplete?: string;
   /**
+   * For display-only PROMPT nodes: ID of the next node. Mutually exclusive with 'prompts'.
+   */
+  next?: string;
+  /**
+   * For display-only PROMPT nodes: textual message for non-verbose mode.
+   */
+  message?: string;
+  /**
    * Node-level condition for execution
    */
   condition?: {

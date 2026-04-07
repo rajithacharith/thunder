@@ -1123,3 +1123,217 @@ func (s *GraphBuilderTestSuite) TestConfigureNodeExecutor_EmptyExecutorNameInVal
 	s.NotNil(err)
 	s.Contains(err.Error(), "executor name cannot be empty")
 }
+
+// Tests for display-only prompt node properties
+
+func (s *GraphBuilderTestSuite) TestConfigureDisplayOnlyProperties_NoNextNodeDefined() {
+	t := s.T()
+	nodeDef := &NodeDefinition{
+		ID:   "prompt-1",
+		Type: "PROMPT",
+		Next: "", // No next node
+	}
+
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+
+	edges := map[string][]string{}
+
+	err := s.builder.configureDisplayOnlyProperties(nodeDef, mockPromptNode, edges)
+
+	s.Nil(err)
+	// SetNextNode should not be called
+}
+
+func (s *GraphBuilderTestSuite) TestConfigureDisplayOnlyProperties_WithNextNode() {
+	t := s.T()
+	nodeDef := &NodeDefinition{
+		ID:   "prompt-1",
+		Type: "PROMPT",
+		Next: "next-node",
+	}
+
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+	mockPromptNode.EXPECT().SetNextNode("next-node")
+
+	edges := map[string][]string{}
+
+	err := s.builder.configureDisplayOnlyProperties(nodeDef, mockPromptNode, edges)
+
+	s.Nil(err)
+	// Verify edge is added
+	s.Len(edges["prompt-1"], 1)
+	s.Equal("next-node", edges["prompt-1"][0])
+}
+
+func (s *GraphBuilderTestSuite) TestConfigureDisplayOnlyProperties_WithMessage() {
+	t := s.T()
+	nodeDef := &NodeDefinition{
+		ID:      "prompt-1",
+		Type:    "PROMPT",
+		Next:    "next-node",
+		Message: "Please wait...",
+	}
+
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+	mockPromptNode.EXPECT().SetNextNode("next-node")
+	mockPromptNode.EXPECT().SetMessage("Please wait...")
+
+	edges := map[string][]string{}
+
+	err := s.builder.configureDisplayOnlyProperties(nodeDef, mockPromptNode, edges)
+
+	s.Nil(err)
+	s.Len(edges["prompt-1"], 1)
+	s.Equal("next-node", edges["prompt-1"][0])
+}
+
+func (s *GraphBuilderTestSuite) TestConfigureDisplayOnlyProperties_OnNonPromptNode() {
+	t := s.T()
+	nodeDef := &NodeDefinition{
+		ID:   "task-1",
+		Type: "TASK_EXECUTION",
+		Next: "next-node", // Not allowed on non-prompt nodes
+	}
+
+	mockTaskNode := coremock.NewExecutorBackedNodeInterfaceMock(t)
+
+	edges := map[string][]string{}
+
+	err := s.builder.configureDisplayOnlyProperties(nodeDef, mockTaskNode, edges)
+
+	s.NotNil(err)
+	s.Contains(err.Error(), "'next' field is only valid on PROMPT nodes")
+}
+
+func (s *GraphBuilderTestSuite) TestConfigureDisplayOnlyProperties_WithPromptsConflict() {
+	t := s.T()
+	nodeDef := &NodeDefinition{
+		ID:   "prompt-1",
+		Type: "PROMPT",
+		Next: "next-node",
+		Prompts: []PromptDefinition{
+			{
+				Inputs: []InputDefinition{
+					{Identifier: "username"},
+				},
+			},
+		},
+	}
+
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+
+	edges := map[string][]string{}
+
+	err := s.builder.configureDisplayOnlyProperties(nodeDef, mockPromptNode, edges)
+
+	s.NotNil(err)
+	s.Contains(err.Error(), "has both 'prompts' and 'next'; these are mutually exclusive")
+}
+
+func (s *GraphBuilderTestSuite) TestProcessNode_IsFinalNode_WithNextField() {
+	t := s.T()
+	nodeDef := &NodeDefinition{
+		ID:        "node-1",
+		Type:      "PROMPT",
+		OnSuccess: "",
+		OnFailure: "",
+		Next:      "next-node", // Has next
+		Prompts:   []PromptDefinition{},
+	}
+
+	mockGraph := coremock.NewGraphInterfaceMock(t)
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+
+	// When Next is defined, isFinalNode should be false
+	s.mockFlowFactory.EXPECT().CreateNode(
+		"node-1", "PROMPT", nodeDef.Properties, false, false).
+		Return(mockPromptNode, nil)
+
+	mockPromptNode.EXPECT().SetNextNode("next-node")
+	mockGraph.EXPECT().AddNode(mockPromptNode).Return(nil)
+
+	allNodes := []NodeDefinition{*nodeDef}
+	edges := map[string][]string{}
+
+	err := s.builder.processNode(nodeDef, allNodes, mockGraph, edges)
+
+	s.Nil(err)
+}
+
+func (s *GraphBuilderTestSuite) TestConfigureNodePrompts_IncludesActionType() {
+	t := s.T()
+	nodeDef := &NodeDefinition{
+		ID:   "prompt-1",
+		Type: "PROMPT",
+		Prompts: []PromptDefinition{
+			{
+				Inputs: []InputDefinition{
+					{Identifier: "username"},
+				},
+				Action: &ActionDefinition{
+					Ref:      "login",
+					Type:     "password_auth",
+					NextNode: "auth-node",
+				},
+			},
+		},
+	}
+
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+	mockPromptNode.EXPECT().SetPrompts(mock.MatchedBy(func(prompts []common.Prompt) bool {
+		// Verify the action type is included
+		if len(prompts) != 1 {
+			return false
+		}
+		if prompts[0].Action == nil {
+			return false
+		}
+		return prompts[0].Action.Type == "password_auth"
+	}))
+
+	edges := map[string][]string{}
+
+	err := s.builder.configureNodePrompts(nodeDef, mockPromptNode, edges)
+
+	s.Nil(err)
+}
+
+func (s *GraphBuilderTestSuite) TestConfigureNodePrompts_WithMultipleActionsWithTypes() {
+	t := s.T()
+	nodeDef := &NodeDefinition{
+		ID:   "prompt-1",
+		Type: "PROMPT",
+		Prompts: []PromptDefinition{
+			{
+				Action: &ActionDefinition{
+					Ref:      "google",
+					Type:     "social_google",
+					NextNode: "google-auth",
+				},
+			},
+			{
+				Action: &ActionDefinition{
+					Ref:      "github",
+					Type:     "social_github",
+					NextNode: "github-auth",
+				},
+			},
+		},
+	}
+
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(t)
+	mockPromptNode.EXPECT().SetPrompts(mock.MatchedBy(func(prompts []common.Prompt) bool {
+		// Verify both actions have their types
+		if len(prompts) != 2 {
+			return false
+		}
+		return (prompts[0].Action.Type == "social_google" &&
+			prompts[1].Action.Type == "social_github")
+	}))
+
+	edges := map[string][]string{}
+
+	err := s.builder.configureNodePrompts(nodeDef, mockPromptNode, edges)
+
+	s.Nil(err)
+}
