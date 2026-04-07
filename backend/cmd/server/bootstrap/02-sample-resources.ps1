@@ -171,6 +171,7 @@ Log-Info "Creating Sample App application..."
 $appData = @{
     name = "Sample App"
     description = "Sample application for testing"
+    ouId = $CUSTOMER_OU_ID
     url = "https://localhost:3000"
     logoUrl = "emoji:🎁"
     tosUri = "https://localhost:3000/terms"
@@ -248,6 +249,7 @@ Log-Info "Creating React SDK Sample App application..."
 $reactSdkAppData = @{
     name = "React SDK Sample"
     description = "Sample React application using Thunder React SDK"
+    ouId = $CUSTOMER_OU_ID
     clientId = "REACT_SDK_SAMPLE"
     url = "https://localhost:3000"
     logoUrl = "emoji:🛍️"

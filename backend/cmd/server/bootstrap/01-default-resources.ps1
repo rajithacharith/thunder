@@ -1203,6 +1203,7 @@ if ($ConsoleRedirectUris) {
 $appData = @{
     name = "Console"
     description = "Management application for Thunder"
+    ouId = $DEFAULT_OU_ID
     url = "$PUBLIC_URL/console"
     logoUrl = "emoji:👨‍💻"
     authFlowId = $CONSOLE_AUTH_FLOW_ID
