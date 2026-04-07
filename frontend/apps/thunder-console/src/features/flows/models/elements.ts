@@ -50,6 +50,7 @@ export const ElementTypes = {
   OtpInput: 'OTP_INPUT',
   Checkbox: 'CHECKBOX',
   Dropdown: 'DROPDOWN',
+  Select: 'SELECT',
   Action: 'ACTION',
   Captcha: 'CAPTCHA',
   Divider: 'DIVIDER',

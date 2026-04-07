@@ -30,6 +30,7 @@ import CheckboxAdapter from './adapters/input/CheckboxAdapter';
 import DefaultInputAdapter from './adapters/input/DefaultInputAdapter';
 import OTPInputAdapter from './adapters/input/OTPInputAdapter';
 import PhoneNumberInputAdapter from './adapters/input/PhoneNumberInputAdapter';
+import SelectAdapter from './adapters/input/SelectAdapter';
 import ResendButtonAdapter from './adapters/ResendButtonAdapter';
 import RichTextAdapter from './adapters/RichTextAdapter';
 import StackAdapter from './adapters/StackAdapter';
@@ -120,6 +121,9 @@ function CommonElementFactory({
   }
   if (resource.type === ElementTypes.Dropdown) {
     return <ChoiceAdapter resource={resource} />;
+  }
+  if (resource.type === ElementTypes.Select) {
+    return <SelectAdapter resource={resource} />;
   }
   if (resource.type === ElementTypes.Action) {
     return <ButtonAdapter resource={resource} elementIndex={elementIndex} />;

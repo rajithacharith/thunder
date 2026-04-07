@@ -104,6 +104,7 @@ export const ExecutionTypes = {
   VerifyEmailOTP: 'VerifyEmailOTPExecutor',
   SMSOTPAuth: 'SMSOTPAuthExecutor',
   ConsentExecutor: 'ConsentExecutor',
+  IdentifyingExecutor: 'IdentifyingExecutor',
 } as const;
 
 export const ExecutionStepViewTypes = {
