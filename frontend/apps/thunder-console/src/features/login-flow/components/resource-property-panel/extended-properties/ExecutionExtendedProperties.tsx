@@ -44,6 +44,14 @@ const SMS_OTP_MODES = [
 ] as const;
 
 /**
+ * Available modes for Identifying executor.
+ */
+const IDENTIFYING_MODES = [
+  {value: 'identify', translationKey: 'flows:core.executions.identifying.mode.identify', displayLabel: 'Identify User'},
+  {value: 'resolve', translationKey: 'flows:core.executions.identifying.mode.resolve', displayLabel: 'Resolve User'},
+] as const;
+
+/**
  * Available modes for Passkey executor.
  */
 const PASSKEY_MODES = [
@@ -132,6 +140,9 @@ function ExecutionExtendedProperties({resource, onChange}: ExecutionExtendedProp
 
   // Check if this is a Consent executor
   const isConsentExecutor = executorName === ExecutionTypes.ConsentExecutor;
+
+  // Check if this is an Identifying executor
+  const isIdentifyingExecutor = executorName === ExecutionTypes.IdentifyingExecutor;
 
   // Get the current timeout for Consent executor
   const currentTimeout = useMemo(() => {
@@ -364,6 +375,57 @@ function ExecutionExtendedProperties({resource, onChange}: ExecutionExtendedProp
             inputProps={{min: 0}}
           />
           <FormHelperText>{t('flows:core.executions.consent.timeout.hint')}</FormHelperText>
+        </div>
+      </Stack>
+    );
+  }
+
+  // Render Identifying executor mode selector
+  if (isIdentifyingExecutor) {
+    const effectiveMode = currentMode || 'identify';
+
+    // Handle mode selection for Identifying executor
+    const handleIdentifyingModeChange = (selectedMode: string): void => {
+      const modeConfig = IDENTIFYING_MODES.find((mode) => mode.value === selectedMode);
+
+      const updatedData = {
+        ...((resource?.data as StepData) ?? {}),
+        action: {
+          ...((resource?.data as StepData)?.action ?? {}),
+          executor: {
+            ...((resource?.data as StepData)?.action?.executor ?? {}),
+            mode: selectedMode,
+          },
+        },
+        display: {
+          ...((resource?.data as StepData)?.display ?? {}),
+          label: modeConfig?.displayLabel ?? 'Identify User',
+        },
+      };
+
+      onChange('data', updatedData, resource);
+    };
+
+    return (
+      <Stack gap={2}>
+        <Typography variant="body2" color="text.secondary">
+          {t('flows:core.executions.identifying.description')}
+        </Typography>
+
+        <div>
+          <FormLabel htmlFor="identifying-mode-select">{t('flows:core.executions.identifying.mode.label')}</FormLabel>
+          <Select
+            id="identifying-mode-select"
+            value={effectiveMode}
+            onChange={(e) => handleIdentifyingModeChange(e.target.value)}
+            fullWidth
+          >
+            {IDENTIFYING_MODES.map((mode) => (
+              <MenuItem key={mode.value} value={mode.value}>
+                {t(mode.translationKey)}
+              </MenuItem>
+            ))}
+          </Select>
         </div>
       </Stack>
     );

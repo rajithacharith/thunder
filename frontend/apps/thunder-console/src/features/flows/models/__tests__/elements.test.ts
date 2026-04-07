@@ -78,8 +78,8 @@ describe('elements models', () => {
       expect(ElementTypes.Timer).toBe('TIMER');
     });
 
-    it('should have exactly 20 element types', () => {
-      expect(Object.keys(ElementTypes)).toHaveLength(20);
+    it('should have exactly 21 element types', () => {
+      expect(Object.keys(ElementTypes)).toHaveLength(21);
     });
   });
 

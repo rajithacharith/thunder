@@ -1656,6 +1656,14 @@ const translations = {
     'core.executions.consent.timeout.placeholder': '0',
     'core.executions.consent.timeout.hint': 'Time in seconds before the consent request expires. Use 0 for no timeout.',
 
+    // Identifying executor modes
+    'core.executions.identifying.mode.identify': 'Identify',
+    'core.executions.identifying.mode.resolve': 'Resolve (Disambiguation)',
+    'core.executions.identifying.mode.label': 'Mode',
+    'core.executions.identifying.mode.placeholder': 'Select a mode',
+    'core.executions.identifying.description':
+      'Configure the identifying executor mode. Use "Resolve" to enable user disambiguation when multiple users match.',
+
     // Passkey executor modes
     'core.executions.passkey.mode.challenge': 'Challenge',
     'core.executions.passkey.mode.verify': 'Verify',
