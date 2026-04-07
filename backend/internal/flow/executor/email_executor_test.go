@@ -79,6 +79,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UserInviteTemplate_Suc
 	suite.mockTemplateService.On("Render",
 		mock.Anything,
 		template.ScenarioUserInvite,
+		template.TemplateTypeEmail,
 		template.TemplateData{
 			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
 			"appName":    "",
@@ -124,6 +125,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_Invit
 	suite.mockTemplateService.On("Render",
 		mock.Anything,
 		template.ScenarioSelfRegistration,
+		template.TemplateTypeEmail,
 		template.TemplateData{
 			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
 			"appName":    "",
@@ -164,6 +166,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UsesUserInputOverRunti
 	suite.mockTemplateService.On("Render",
 		mock.Anything,
 		template.ScenarioUserInvite,
+		template.TemplateTypeEmail,
 		template.TemplateData{
 			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
 			"appName":    "",
@@ -203,6 +206,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmailFromRuntimeData()
 	suite.mockTemplateService.On("Render",
 		mock.Anything,
 		template.ScenarioUserInvite,
+		template.TemplateTypeEmail,
 		template.TemplateData{
 			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
 			"appName":    "",
@@ -306,6 +310,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingTemplatePropert
 	suite.mockTemplateService.On("Render",
 		mock.Anything,
 		template.ScenarioUserInvite,
+		template.TemplateTypeEmail,
 		template.TemplateData{
 			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
 			"appName":    "",
@@ -346,6 +351,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmptyTemplateString_De
 	suite.mockTemplateService.On("Render",
 		mock.Anything,
 		template.ScenarioUserInvite,
+		template.TemplateTypeEmail,
 		template.TemplateData{
 			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
 			"appName":    "",
@@ -408,6 +414,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_TemplateRenderError() 
 	suite.mockTemplateService.On("Render",
 		mock.Anything,
 		template.ScenarioUserInvite,
+		template.TemplateTypeEmail,
 		mock.Anything,
 	).Return(nil, &serviceerror.I18nServiceError{Code: "TMP-5000"})
 
@@ -472,6 +479,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ClientError() {
 	suite.mockTemplateService.On("Render",
 		mock.Anything,
 		template.ScenarioUserInvite,
+		template.TemplateTypeEmail,
 		mock.Anything,
 	).Return(&template.RenderedTemplate{
 		Subject: "You're Invited to Register",
@@ -506,6 +514,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ServerError() {
 	suite.mockTemplateService.On("Render",
 		mock.Anything,
 		template.ScenarioUserInvite,
+		template.TemplateTypeEmail,
 		mock.Anything,
 	).Return(&template.RenderedTemplate{
 		Subject: "You're Invited to Register",

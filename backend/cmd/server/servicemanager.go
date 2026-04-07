@@ -176,7 +176,13 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	}
 	exporters = append(exporters, idpExporter)
 
-	_, otpService, notifSenderSvc, notificationExporter, err := notification.Initialize(mux, jwtService)
+	templateService, err := template.Initialize()
+	if err != nil {
+		logger.Fatal("Failed to initialize template service", log.Error(err))
+	}
+
+	_, otpService, notifSenderSvc, notificationExporter, err := notification.Initialize(
+		mux, jwtService, templateService)
 	if err != nil {
 		logger.Fatal("Failed to initialize NotificationService", log.Error(err))
 	}
@@ -207,10 +213,6 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 		logger.Debug("Email client not configured. "+
 			"EmailExecutor will be registered but will not send emails.", log.Error(err))
 		emailClient = nil
-	}
-	templateService, err := template.Initialize()
-	if err != nil {
-		logger.Fatal("Failed to initialize template service", log.Error(err))
 	}
 	execRegistry := executor.Initialize(flowFactory, ouService,
 		idpService, otpService, notifSenderSvc, jwtService, authSvcRegistry, authZService, userSchemaService,

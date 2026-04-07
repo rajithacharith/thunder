@@ -29,22 +29,25 @@ import (
 	notifcm "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/template"
 )
 
 // phoneNumberRegex matches phone numbers in various formats including optional +, digits, spaces, dashes,
 // dots, and parentheses with a total length of 7 to 20 characters.
 var phoneNumberRegex = regexp.MustCompile(`^\+?[0-9\s\-().]{7,20}$`)
 
-// smsExecutor sends an SMS message using the configured sender from node properties and a default message body.
+// smsExecutor sends an SMS message using the configured sender from node properties and a template-based body.
 type smsExecutor struct {
 	core.ExecutorInterface
-	logger         *log.Logger
-	notifSenderSvc notification.NotificationSenderServiceInterface
+	logger          *log.Logger
+	notifSenderSvc  notification.NotificationSenderServiceInterface
+	templateService template.TemplateServiceInterface
 }
 
 // newSMSExecutor creates a new instance of smsExecutor.
 func newSMSExecutor(flowFactory core.FlowFactoryInterface,
-	notifSenderSvc notification.NotificationSenderServiceInterface) *smsExecutor {
+	notifSenderSvc notification.NotificationSenderServiceInterface,
+	templateService template.TemplateServiceInterface) *smsExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "SMSExecutor"))
 	base := flowFactory.CreateExecutor(
 		ExecutorNameSMSExecutor,
@@ -58,11 +61,12 @@ func newSMSExecutor(flowFactory core.FlowFactoryInterface,
 		ExecutorInterface: base,
 		logger:            logger,
 		notifSenderSvc:    notifSenderSvc,
+		templateService:   templateService,
 	}
 }
 
 // Execute resolves the recipient from user inputs or runtime data and the sender ID from node properties,
-// then sends the SMS with a default message body.
+// then renders the SMS body from a template and sends it.
 func (e *smsExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Executing SMS executor")
@@ -104,16 +108,43 @@ func (e *smsExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, 
 		return nil, fmt.Errorf("senderId is not configured in node properties: %w", err)
 	}
 
-	// TODO: Replace smsDefaultMessage with a proper template-based message body in a future PR.
-	svcErr := e.notifSenderSvc.Send(ctx.Context, notifcm.ChannelTypeSMS, senderID,
-		notifcm.NotificationData{Recipient: recipient, Body: smsDefaultMessage})
+	tmplProp, ok := ctx.NodeProperties[propertyKeySMSTemplate]
+	if !ok {
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = "SMS template is required"
+		return execResp, nil
+	}
+	tmplStr, ok := tmplProp.(string)
+	if !ok {
+		return nil, fmt.Errorf("invalid type for %s: expected string, got %T with value %v",
+			propertyKeySMSTemplate, tmplProp, tmplProp)
+	}
+	if tmplStr == "" {
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = "SMS template is required"
+		return execResp, nil
+	}
+	scenario := template.ScenarioType(tmplStr)
+
+	templateData := template.TemplateData{
+		"appName":    ctx.Application.Name,
+		"inviteLink": ctx.RuntimeData[common.RuntimeKeyInviteLink],
+	}
+
+	rendered, svcErr := e.templateService.Render(ctx.Context, scenario, template.TemplateTypeSMS, templateData)
 	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
+		return nil, fmt.Errorf("failed to render SMS template: %s", svcErr.Code)
+	}
+
+	notifSvcErr := e.notifSenderSvc.Send(ctx.Context, notifcm.ChannelTypeSMS, senderID,
+		notifcm.NotificationData{Recipient: recipient, Body: rendered.Body})
+	if notifSvcErr != nil {
+		if notifSvcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = svcErr.ErrorDescription
+			execResp.FailureReason = notifSvcErr.ErrorDescription
 			return execResp, nil
 		}
-		return nil, fmt.Errorf("SMS send failed: %s", svcErr.ErrorDescription)
+		return nil, fmt.Errorf("SMS send failed: %s", notifSvcErr.ErrorDescription)
 	}
 
 	logger.Debug("SMS sent successfully", log.String("recipient", log.MaskString(recipient)))
