@@ -11,15 +11,25 @@ on:
     - cron: '30 6 * * 5'
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Release version (e.g., X for v0.X.0, X.Y for v0.X.Y, or X.Y.Z for v0.Y.Z). Leave empty to use version.txt'
+      bump_type:
+        description: 'Version bump type to apply to version.txt (major, minor, or patch)'
         required: false
-        type: string
+        type: choice
+        options:
+          - minor
+          - patch
+          - major
+        default: minor
+      use_existing_version:
+        description: 'Use version as-is (no bump, no auto-commit)'
+        required: false
+        type: boolean
+        default: false
       prerelease:
         description: 'Set as a pre-release'
         required: false
         type: boolean
-        default: true
+        default: false
       run_performance_test:
         description: 'Run performance tests after release'
         required: false
@@ -33,7 +43,9 @@ permissions:
 
 env:
   GOFLAGS: "-mod=readonly"
-  RELEASE_MAJOR_VERSION: 0
+  RELEASE_BRANCH: "release"
+  RELEASE_GIT_USER_NAME: "thunder-automation-bot"
+  RELEASE_GIT_USER_EMAIL: "thunder-bot@wso2.com"
 
 jobs:
   build-thunder:
@@ -43,61 +55,75 @@ jobs:
       version: ${{ steps.get_version.outputs.version }}
       prerelease: ${{ steps.get_version.outputs.prerelease }}
       run_performance_test: ${{ steps.get_version.outputs.run_performance_test }}
+      use_existing_version: ${{ steps.get_version.outputs.use_existing_version }}
     steps:  
       - name: 📥 Checkout Code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.THUNDER_AUTOMATION_BOT }}
+          ref: ${{ env.RELEASE_BRANCH }}
 
       - name: 📝 Determine Release Version
         id: get_version
         run: |
+          # Read current version from version.txt
+          if [ ! -f version.txt ] || [ -z "$(cat version.txt | tr -d '[:space:]')" ]; then
+            echo "❌ Error: version.txt not found or empty"
+            exit 1
+          fi
+          CURRENT_VERSION=$(tr -d '[:space:]' < version.txt)
+          # Strip leading 'v' for semver parsing
+          SEMVER="${CURRENT_VERSION#v}"
+
+          if [[ $SEMVER =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+            CUR_MAJOR="${BASH_REMATCH[1]}"
+            CUR_MINOR="${BASH_REMATCH[2]}"
+            CUR_PATCH="${BASH_REMATCH[3]}"
+          else
+            echo "❌ Error: Could not parse version '$CURRENT_VERSION' from version.txt"
+            exit 1
+          fi
+
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            # Manual trigger - always use input values for flags
             PRERELEASE="${{ github.event.inputs.prerelease }}"
             RUN_PERF_TEST="${{ github.event.inputs.run_performance_test }}"
-            INPUT_VERSION="${{ github.event.inputs.version }}"
-            MAJOR="${{ env.RELEASE_MAJOR_VERSION }}"
-
-            if [ -n "$INPUT_VERSION" ]; then
-              # Handle manually provided version
-              if [[ $INPUT_VERSION =~ ^v?[0-9]+\.([0-9]+)\.([0-9]+) ]]; then
-                # Full format (vX.Y.Z) -> Parse and use MAJOR
-                MINOR="${BASH_REMATCH[1]}"
-                PATCH="${BASH_REMATCH[2]}"
-                VERSION="v${MAJOR}.${MINOR}.${PATCH}"
-              elif [[ $INPUT_VERSION =~ ^[0-9]+\.[0-9]+$ ]]; then
-                # minor.patch format (X.Y) -> v0.X.Y
-                VERSION="v${MAJOR}.${INPUT_VERSION}"
-              elif [[ $INPUT_VERSION =~ ^[0-9]+$ ]]; then
-                # minor format (X) -> v0.X.0
-                VERSION="v${MAJOR}.${INPUT_VERSION}.0"
-              else
-                echo "❌ Error: Invalid version format '$INPUT_VERSION'. Use 'X', 'X.Y', or 'vX.Y.Z'"
-                exit 1
-              fi
-            else
-              # Manual run without version - read from version.txt
-              if [ ! -f version.txt ] || [ -z "$(cat version.txt | tr -d '[:space:]')" ]; then
-                echo "❌ Error: version.txt not found or empty"
-                exit 1
-              fi
-              VERSION=$(tr -d '[:space:]' < version.txt)
-            fi
+            BUMP_TYPE="${{ github.event.inputs.bump_type }}"
+            USE_EXISTING_VERSION="${{ github.event.inputs.use_existing_version }}"
           else
-            # Scheduled run or manual run without version - read from version.txt
-            if [ ! -f version.txt ] || [ -z "$(cat version.txt | tr -d '[:space:]')" ]; then
-              echo "❌ Error: version.txt not found or empty"
-              exit 1
-            fi
-            VERSION=$(tr -d '[:space:]' < version.txt)
-            PRERELEASE="true"
+            # Scheduled run — default to minor bump
+            PRERELEASE="false"
             RUN_PERF_TEST="true"
+            BUMP_TYPE="minor"
+            USE_EXISTING_VERSION="false"
           fi
+
+          if [ "$USE_EXISTING_VERSION" == "true" ]; then
+            VERSION="$CURRENT_VERSION"
+            echo "✅ Using existing version from version.txt: $VERSION"
+          else
+            case "$BUMP_TYPE" in
+              major)
+                VERSION="v$((CUR_MAJOR + 1)).0.0"
+                ;;
+              minor)
+                VERSION="v${CUR_MAJOR}.$((CUR_MINOR + 1)).0"
+                ;;
+              patch)
+                VERSION="v${CUR_MAJOR}.${CUR_MINOR}.$((CUR_PATCH + 1))"
+                ;;
+              *)
+                echo "❌ Error: Invalid bump_type '$BUMP_TYPE'. Must be major, minor, or patch."
+                exit 1
+                ;;
+            esac
+          fi
+
+          echo "✅ Selected release version: $VERSION (use_existing_version: $USE_EXISTING_VERSION, bump: $BUMP_TYPE, Prerelease: $PRERELEASE, Perf Test: $RUN_PERF_TEST)"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "prerelease=$PRERELEASE" >> $GITHUB_OUTPUT
           echo "run_performance_test=$RUN_PERF_TEST" >> $GITHUB_OUTPUT
-          echo "✅ Using version: $VERSION (Prerelease: $PRERELEASE, Perf Test: $RUN_PERF_TEST)"
+          echo "use_existing_version=$USE_EXISTING_VERSION" >> $GITHUB_OUTPUT
 
       - name: ✅ Validate Release Version
         run: |
@@ -120,9 +146,79 @@ jobs:
           echo "✅ Version '$VERSION' does not exist yet - proceeding with release"
 
       - name: 🏷️ Update Product Version
+        if: ${{ steps.get_version.outputs.use_existing_version != 'true' }}
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
-          echo "$VERSION" > version.txt  
+          echo "$VERSION" > version.txt
+          echo "✅ Updated version.txt to $VERSION"
+
+      - name: 📝 Update README Version References
+        if: ${{ steps.get_version.outputs.use_existing_version != 'true' }}
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+
+          echo "📝 Updating README.md docker-compose curl URL to $VERSION"
+
+          # Update the docker-compose.yml curl URL in README.md
+          sed -i -E "s|(https://raw\.githubusercontent\.com/asgardeo/thunder/)v[0-9]+\.[0-9]+\.[0-9]+(/.+docker-compose\.yml)|\1${VERSION}\2|g" README.md
+
+          echo "✅ Updated README.md curl URL to $VERSION"
+          grep 'docker-compose.yml' README.md
+
+      - name: 📝 Update Helm and Sample App Versions
+        if: ${{ steps.get_version.outputs.use_existing_version != 'true' }}
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          SEMVER_VERSION="${VERSION#v}"
+
+          echo "📝 Updating install/helm/Chart.yaml to $SEMVER_VERSION"
+          sed -i -E "s/^version: .*/version: ${SEMVER_VERSION}/" install/helm/Chart.yaml
+          sed -i -E "s/^appVersion: .*/appVersion: \"${SEMVER_VERSION}\"/" install/helm/Chart.yaml
+
+          echo "📝 Updating sample app package versions to $SEMVER_VERSION"
+          cd samples/apps/react-api-based-sample
+          npm version "$SEMVER_VERSION" --no-git-tag-version --allow-same-version
+
+          cd "$GITHUB_WORKSPACE/samples/apps/react-sdk-sample"
+          npm version "$SEMVER_VERSION" --no-git-tag-version --allow-same-version
+
+          cd "$GITHUB_WORKSPACE/samples/apps/react-vanilla-sample"
+          npm version "$SEMVER_VERSION" --no-git-tag-version --allow-same-version
+
+          cd server
+          npm version "$SEMVER_VERSION" --no-git-tag-version --allow-same-version
+
+          cd "$GITHUB_WORKSPACE"
+          echo "✅ Updated Helm chart and sample app versions to $SEMVER_VERSION"
+
+      - name: 📤 Commit and Push Version Bump
+        if: ${{ steps.get_version.outputs.use_existing_version != 'true' }}
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+
+          git config --local user.name "${{ env.RELEASE_GIT_USER_NAME }}"
+          git config --local user.email "${{ env.RELEASE_GIT_USER_EMAIL }}"
+
+          git add \
+            version.txt \
+            README.md \
+            install/helm/Chart.yaml \
+            samples/apps/react-api-based-sample/package-lock.json \
+            samples/apps/react-api-based-sample/package.json \
+            samples/apps/react-sdk-sample/package-lock.json \
+            samples/apps/react-sdk-sample/package.json \
+            samples/apps/react-vanilla-sample/package-lock.json \
+            samples/apps/react-vanilla-sample/package.json \
+            samples/apps/react-vanilla-sample/server/package-lock.json \
+            samples/apps/react-vanilla-sample/server/package.json
+
+          if git diff --cached --quiet; then
+            echo "✅ No changes to commit (files already at $VERSION)"
+          else
+            git commit -m "[Release] Bump version to ${VERSION}"
+            git push origin HEAD:release
+            echo "✅ Pushed version bump commit to release branch"
+          fi
 
       - name: ⚙️ Set up Go Environment  
         uses: ./.github/actions/setup-go  
@@ -189,6 +285,8 @@ jobs:
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
 
       - name: ⚙️ Set up Go Environment
         uses: ./.github/actions/setup-go
@@ -238,6 +336,7 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
+          ref: ${{ env.RELEASE_BRANCH }}
 
       - name: 🏷️ Update Product Version
         run: |
@@ -436,10 +535,12 @@ jobs:
           # Parse version components (handle both X.Y and X.Y.Z formats)
           if [[ $RELEASE_VERSION =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
             # X.Y.Z format
+            MAJOR="${BASH_REMATCH[1]}"
             MINOR="${BASH_REMATCH[2]}"
             PATCH="${BASH_REMATCH[3]}"
           elif [[ $RELEASE_VERSION =~ ^([0-9]+)\.([0-9]+) ]]; then
             # X.Y format
+            MAJOR="${BASH_REMATCH[1]}"
             MINOR="${BASH_REMATCH[2]}"
             PATCH="0"
           else
@@ -447,10 +548,7 @@ jobs:
             exit 1
           fi
           
-          # Use fixed major version
-          MAJOR="${{ env.RELEASE_MAJOR_VERSION }}"
-          
-          # Bump minor version
+          # Bump minor version for next development cycle
           NEXT_MINOR=$((MINOR + 1))
           NEXT_VERSION="${MAJOR}.${NEXT_MINOR}.0"
           
@@ -503,23 +601,6 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           echo "✅ Updated sample apps version to $NEXT_VERSION"
 
-      # - name: 📈 Commit and Push Version Update
-      #   run: |
-      #     git config --local user.email "action@github.com"
-      #     git config --local user.name "GitHub Action"
-          
-      #     NEXT_VERSION="${{ steps.next_version.outputs.next_version }}"
-          
-      #     # Add and commit the version changes
-      #     git add version.txt samples/apps/react-vanilla-sample/package.json samples/apps/react-vanilla-sample/server/package.json
-
-      #     if ! git diff --cached --quiet; then
-      #         git commit -m "[Release] Update version to ${NEXT_VERSION} for the next development iteration"
-      #         git push origin HEAD:main
-      #         echo "✅ Pushed version update to main branch"
-      #     else
-      #       echo "✅ No changes to commit"
-      #     fi
 
   package-samples-linux:
     name: 📦 Package Linux & Windows Samples
@@ -530,6 +611,7 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
+          ref: ${{ env.RELEASE_BRANCH }}
 
       - name: ⚙️ Setup Samples Environment
         uses: ./.github/actions/setup-samples-environment
@@ -563,6 +645,7 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
+          ref: ${{ env.RELEASE_BRANCH }}
 
       - name: ⚙️ Setup Samples Environment
         uses: ./.github/actions/setup-samples-environment
@@ -595,6 +678,7 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
+          ref: ${{ env.RELEASE_BRANCH }}
 
       - name: 📥 Download Backend Artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
@@ -893,6 +977,8 @@ jobs:
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
 
       - name: ⚡ Trigger Performance Test Workflows
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
