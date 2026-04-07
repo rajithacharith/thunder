@@ -64,7 +64,7 @@ func Initialize(
 	tokenBuilder, tokenValidator := tokenservice.Initialize(jwtService)
 	grantHandlerProvider, err := granthandlers.Initialize(
 		mux, jwtService, applicationService, flowExecService, tokenBuilder, tokenValidator,
-		attributeCacheSvc)
+		attributeCacheSvc, ouService)
 	if err != nil {
 		return err
 	}

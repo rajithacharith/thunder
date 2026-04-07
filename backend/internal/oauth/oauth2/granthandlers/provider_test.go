@@ -29,6 +29,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/authzmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/tokenservicemock"
+	"github.com/asgardeo/thunder/tests/mocks/oumock"
 )
 
 type GrantHandlerProviderTestSuite struct {
@@ -39,6 +40,7 @@ type GrantHandlerProviderTestSuite struct {
 	mockTokenBuilder     *tokenservicemock.TokenBuilderInterfaceMock
 	mockTokenValidator   *tokenservicemock.TokenValidatorInterfaceMock
 	mockAttrCacheService *attributecachemock.AttributeCacheServiceInterfaceMock
+	mockOUService        *oumock.OrganizationUnitServiceInterfaceMock
 }
 
 func TestGrantHandlerProviderSuite(t *testing.T) {
@@ -51,12 +53,14 @@ func (suite *GrantHandlerProviderTestSuite) SetupTest() {
 	suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
 	suite.mockTokenValidator = tokenservicemock.NewTokenValidatorInterfaceMock(suite.T())
 	suite.mockAttrCacheService = attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
+	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	suite.provider = newGrantHandlerProvider(
 		suite.mockJWTService,
 		suite.authzService,
 		suite.mockTokenBuilder,
 		suite.mockTokenValidator,
 		suite.mockAttrCacheService,
+		suite.mockOUService,
 	)
 }
 
@@ -67,6 +71,7 @@ func (suite *GrantHandlerProviderTestSuite) TestNewGrantHandlerProvider() {
 		suite.mockTokenBuilder,
 		suite.mockTokenValidator,
 		suite.mockAttrCacheService,
+		suite.mockOUService,
 	)
 	assert.NotNil(suite.T(), provider)
 	assert.Implements(suite.T(), (*GrantHandlerProviderInterface)(nil), provider)

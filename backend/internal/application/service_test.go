@@ -1279,12 +1279,16 @@ func (suite *ServiceTestSuite) TestGetOAuthApplication_Success() {
 		Return(
 			&entityID, (*entityprovider.EntityProviderError)(nil))
 
-	// Only OAuth config is loaded — no GetApplicationByID or GetEntity calls.
 	mockStore.On("GetOAuthConfigByAppID", mock.Anything, testServiceAppID).
 		Return(&oauthConfigDAO{
 			AppID:       testServiceAppID,
 			OAuthConfig: &oAuthConfig{},
 		}, nil)
+
+	mockEP.On("GetEntity", testServiceAppID).Unset()
+	mockEP.On("GetEntity", testServiceAppID).Return(
+		&entityprovider.Entity{ID: testServiceAppID},
+		(*entityprovider.EntityProviderError)(nil))
 
 	mockCertService.EXPECT().GetCertificateByReference(mock.Anything,
 		cert.CertificateReferenceTypeOAuthApp, "client123").Return(&cert.Certificate{
@@ -1315,6 +1319,11 @@ func (suite *ServiceTestSuite) TestGetOAuthApplication_CertificateNotFound() {
 			OAuthConfig: &oAuthConfig{},
 		}, nil)
 
+	mockEP.On("GetEntity", testServiceAppID).Unset()
+	mockEP.On("GetEntity", testServiceAppID).Return(
+		&entityprovider.Entity{ID: testServiceAppID},
+		(*entityprovider.EntityProviderError)(nil))
+
 	mockCertService.EXPECT().GetCertificateByReference(mock.Anything,
 		cert.CertificateReferenceTypeOAuthApp, "client123").Return(nil, &cert.ErrorCertificateNotFound)
 
@@ -1343,6 +1352,11 @@ func (suite *ServiceTestSuite) TestGetOAuthApplication_CertificateServerError() 
 			AppID:       testServiceAppID,
 			OAuthConfig: &oAuthConfig{},
 		}, nil)
+
+	mockEP.On("GetEntity", testServiceAppID).Unset()
+	mockEP.On("GetEntity", testServiceAppID).Return(
+		&entityprovider.Entity{ID: testServiceAppID},
+		(*entityprovider.EntityProviderError)(nil))
 
 	mockCertService.EXPECT().GetCertificateByReference(mock.Anything,
 		cert.CertificateReferenceTypeOAuthApp, "client123").Return(nil, &serviceerror.InternalServerError)

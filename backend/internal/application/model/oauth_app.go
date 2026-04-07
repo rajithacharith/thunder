@@ -131,6 +131,7 @@ func (o *OAuthAppConfigDTO) ValidateRedirectURI(redirectURI string) error {
 // OAuthAppConfigProcessedDTO represents the processed data transfer object for OAuth application configuration.
 type OAuthAppConfigProcessedDTO struct {
 	AppID                   string                              `yaml:"app_id,omitempty"`
+	OUID                    string                              `yaml:"ou_id,omitempty"`
 	ClientID                string                              `yaml:"client_id,omitempty"`
 	RedirectURIs            []string                            `yaml:"redirect_uris,omitempty"`
 	GrantTypes              []oauth2const.GrantType             `yaml:"grant_types,omitempty"`

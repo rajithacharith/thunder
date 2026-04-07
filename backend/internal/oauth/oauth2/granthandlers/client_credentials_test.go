@@ -32,9 +32,12 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
+	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/tokenservicemock"
+	"github.com/asgardeo/thunder/tests/mocks/oumock"
 )
 
 // nolint:gosec // Test token, not a real credential
@@ -45,6 +48,7 @@ type ClientCredentialsGrantHandlerTestSuite struct {
 	suite.Suite
 	mockJWTService   *jwtmock.JWTServiceInterfaceMock
 	mockTokenBuilder *tokenservicemock.TokenBuilderInterfaceMock
+	mockOUService    *oumock.OrganizationUnitServiceInterfaceMock
 	handler          *clientCredentialsGrantHandler
 	oauthApp         *appmodel.OAuthAppConfigProcessedDTO
 }
@@ -66,8 +70,10 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) SetupTest() {
 
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
+	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	suite.handler = &clientCredentialsGrantHandler{
 		tokenBuilder: suite.mockTokenBuilder,
+		ouService:    suite.mockOUService,
 	}
 
 	suite.oauthApp = &appmodel.OAuthAppConfigProcessedDTO{
@@ -81,7 +87,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) SetupTest() {
 }
 
 func (suite *ClientCredentialsGrantHandlerTestSuite) TestNewClientCredentialsGrantHandler() {
-	handler := newClientCredentialsGrantHandler(suite.mockTokenBuilder)
+	handler := newClientCredentialsGrantHandler(suite.mockTokenBuilder, suite.mockOUService)
 	assert.NotNil(suite.T(), handler)
 	assert.Implements(suite.T(), (*GrantHandlerInterface)(nil), handler)
 }
@@ -276,6 +282,35 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_TokenTiming
 	assert.LessOrEqual(suite.T(), result.AccessToken.IssuedAt, endTime)
 
 	suite.mockTokenBuilder.AssertExpectations(suite.T())
+}
+
+func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_ClientAttributeError() {
+	tokenRequest := &model.TokenRequest{
+		GrantType:    "client_credentials",
+		ClientID:     testClientID,
+		ClientSecret: "secret123",
+		Scope:        "read",
+	}
+
+	oauthAppWithOU := &appmodel.OAuthAppConfigProcessedDTO{
+		AppID:                   "app123",
+		ClientID:                testClientID,
+		OUID:                    "ou-456",
+		GrantTypes:              []constants.GrantType{constants.GrantTypeClientCredentials},
+		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretBasic,
+	}
+
+	suite.mockOUService.On("GetOrganizationUnit", context.Background(), "ou-456").Return(
+		ou.OrganizationUnit{},
+		&serviceerror.ServiceError{Code: "OU-0001", Error: "not found"},
+	)
+
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, oauthAppWithOU)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), errResp)
+	assert.Equal(suite.T(), constants.ErrorServerError, errResp.Error)
+	assert.Equal(suite.T(), "Failed to generate token", errResp.ErrorDescription)
 }
 
 // Resource Parameter Tests (RFC 8707) for Client Credentials Grant

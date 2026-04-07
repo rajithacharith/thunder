@@ -29,10 +29,12 @@ import (
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/tests/mocks/attributecachemock"
+	"github.com/asgardeo/thunder/tests/mocks/oumock"
 )
 
 type UtilsTestSuite struct {
@@ -1062,4 +1064,76 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_WithTokenConfig_UsesThunderI
 
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "https://thunder.io", result.Issuer)
+}
+
+const (
+	testBCCAppID = "app-123"
+	testBCCOUID  = "ou-456"
+)
+
+func newOAuthAppForClientAttributes(ouID string) *appmodel.OAuthAppConfigProcessedDTO {
+	return &appmodel.OAuthAppConfigProcessedDTO{
+		AppID: testBCCAppID,
+		OUID:  ouID,
+	}
+}
+
+func (suite *UtilsTestSuite) TestBuildClientAttributes_NoOUID_ReturnsNil() {
+	ous := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+
+	app := newOAuthAppForClientAttributes("")
+	claims, err := BuildClientAttributes(context.Background(), app, ous)
+
+	assert.NoError(suite.T(), err)
+	assert.Nil(suite.T(), claims)
+}
+
+func (suite *UtilsTestSuite) TestBuildClientAttributes_NilOAuthApp_ReturnsNil() {
+	ous := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+
+	claims, err := BuildClientAttributes(context.Background(), nil, ous)
+
+	assert.NoError(suite.T(), err)
+	assert.Nil(suite.T(), claims)
+}
+
+func (suite *UtilsTestSuite) TestBuildClientAttributes_HappyPath() {
+	ous := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+
+	ous.On("GetOrganizationUnit", context.Background(), testBCCOUID).Return(ou.OrganizationUnit{
+		ID:     testBCCOUID,
+		Name:   "Engineering",
+		Handle: "eng",
+	}, (*serviceerror.ServiceError)(nil))
+
+	app := newOAuthAppForClientAttributes(testBCCOUID)
+	claims, err := BuildClientAttributes(context.Background(), app, ous)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), claims)
+	assert.Equal(suite.T(), testBCCOUID, claims[constants.ClaimClientOUID])
+	assert.Equal(suite.T(), "Engineering", claims[constants.ClaimClientOUName])
+	assert.Equal(suite.T(), "eng", claims[constants.ClaimClientOUHandle])
+}
+
+func (suite *UtilsTestSuite) TestBuildClientAttributes_OULookupError_ReturnsError() {
+	ous := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+
+	ous.On("GetOrganizationUnit", context.Background(), testBCCOUID).Return(
+		ou.OrganizationUnit{},
+		&serviceerror.ServiceError{Code: "OU-0001", Error: "not found"},
+	)
+
+	app := newOAuthAppForClientAttributes(testBCCOUID)
+	claims, err := BuildClientAttributes(context.Background(), app, ous)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), claims)
+}
+
+func (suite *UtilsTestSuite) TestBuildClientAttributes_NilOUService_ReturnsNil() {
+	app := newOAuthAppForClientAttributes(testBCCOUID)
+	claims, err := BuildClientAttributes(context.Background(), app, nil)
+	assert.NoError(suite.T(), err)
+	assert.Nil(suite.T(), claims)
 }

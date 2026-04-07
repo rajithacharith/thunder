@@ -393,7 +393,17 @@ func (as *applicationService) GetOAuthApplication(
 		return nil, &ErrorApplicationNotFound
 	}
 
-	oauthProcessed := toOAuthProcessedDTO(*entityID, clientID, oauthDAO)
+	// Resolve the application's organization unit
+	var ouID string
+	if entity, getErr := as.entityProvider.GetEntity(*entityID); getErr == nil && entity != nil {
+		ouID = entity.OrganizationUnitID
+	} else if getErr != nil {
+		as.logger.Error("Failed to fetch entity for OAuth app",
+			log.String("appId", *entityID), log.String("error", getErr.Error()))
+		return nil, &ErrorInternalServerError
+	}
+
+	oauthProcessed := toOAuthProcessedDTO(*entityID, clientID, ouID, oauthDAO)
 
 	certificate, certErr := as.getApplicationCertificate(ctx, clientID, cert.CertificateReferenceTypeOAuthApp)
 	if certErr != nil {
@@ -816,7 +826,11 @@ func toProcessedDTO(
 			}
 		}
 
-		oauthProcessed := toOAuthProcessedDTO(dao.ID, clientID, oauthDAO)
+		var ouID string
+		if e != nil {
+			ouID = e.OrganizationUnitID
+		}
+		oauthProcessed := toOAuthProcessedDTO(dao.ID, clientID, ouID, oauthDAO)
 		dto.InboundAuthConfig = []model.InboundAuthConfigProcessedDTO{
 			{Type: model.OAuthInboundAuthType, OAuthAppConfig: oauthProcessed},
 		}
@@ -835,10 +849,13 @@ func toOAuthConfigJSON(processedDTO *model.ApplicationProcessedDTO) (json.RawMes
 }
 
 // toOAuthProcessedDTO converts an oauthConfigDAO into an OAuthAppConfigProcessedDTO.
-func toOAuthProcessedDTO(appID, clientID string, oauthDAO *oauthConfigDAO) *model.OAuthAppConfigProcessedDTO {
+func toOAuthProcessedDTO(
+	appID, clientID, ouID string, oauthDAO *oauthConfigDAO,
+) *model.OAuthAppConfigProcessedDTO {
 	cfg := oauthDAO.OAuthConfig
 	dto := &model.OAuthAppConfigProcessedDTO{
 		AppID:                   appID,
+		OUID:                    ouID,
 		ClientID:                clientID,
 		RedirectURIs:            cfg.RedirectURIs,
 		TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethod(cfg.TokenEndpointAuthMethod),
