@@ -111,7 +111,7 @@ var nonUserAttributes = []string{"userID", "code", "nonce", "state", "flowID",
 	common.RuntimeKeyConsentID, common.RuntimeKeyStepTimeout, userInputConsentDecisions,
 	common.RuntimeKeyConsentedAttributes, common.RuntimeKeyConsentSessionToken,
 	"applicationId", "idpId", "senderId",
-	common.RuntimeKeyCandidateUsers}
+	common.RuntimeKeyCandidateUsers, common.RuntimeKeyClientID, common.RuntimeKeyUserAttributesCacheTTLSeconds}
 
 // Failure reason constants
 const (
