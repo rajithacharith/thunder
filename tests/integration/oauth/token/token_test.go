@@ -313,9 +313,9 @@ func (ts *TokenTestSuite) TestClientCredentialsGrantWithHeaderCredentials() {
 		ou, err := testutils.GetOrganizationUnit(ts.ouID)
 		ts.Require().NoError(err)
 
-		ts.Assert().Equal(ou.ID, claims.Additional["clientOuId"])
-		ts.Assert().Equal(ou.Name, claims.Additional["clientOuName"])
-		ts.Assert().Equal(ou.Handle, claims.Additional["clientOuHandle"])
+		ts.Assert().Equal(ou.ID, claims.Additional["ouId"])
+		ts.Assert().Equal(ou.Name, claims.Additional["ouName"])
+		ts.Assert().Equal(ou.Handle, claims.Additional["ouHandle"])
 	})
 }
 

@@ -411,7 +411,7 @@ func BuildClientAttributes(
 }
 
 // resolveClientOUAttributes returns the OAuth client/application's organization unit claims
-// (clientOuId, clientOuName, clientOuHandle) when the app has an associated OU.
+// (ouId, ouName, ouHandle) when the app has an associated OU.
 func resolveClientOUAttributes(
 	ctx context.Context,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
@@ -431,8 +431,8 @@ func resolveClientOUAttributes(
 	}
 
 	return map[string]interface{}{
-		constants.ClaimClientOUID:     orgUnit.ID,
-		constants.ClaimClientOUName:   orgUnit.Name,
-		constants.ClaimClientOUHandle: orgUnit.Handle,
+		constants.ClaimOUID:     orgUnit.ID,
+		constants.ClaimOUName:   orgUnit.Name,
+		constants.ClaimOUHandle: orgUnit.Handle,
 	}, nil
 }
