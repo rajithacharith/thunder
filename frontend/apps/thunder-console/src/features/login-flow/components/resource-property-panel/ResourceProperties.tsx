@@ -69,10 +69,7 @@ function ResourceProperties({
     if (!resource?.variants || resource.variants.length === 0) {
       return undefined;
     }
-    const currentVariant = resource.variants.find((v: Element) => v.variant === (resource as Element).variant) as
-      | Element
-      | undefined;
-    return currentVariant ?? (resource.variants[0] as Element);
+    return resource.variants.find((v: Element) => v.variant === (resource as Element).variant) as Element | undefined;
   }, [resource]);
 
   const renderElementId = (): ReactElement => (

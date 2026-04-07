@@ -197,7 +197,8 @@
           {
             "type": "TEXT",
             "id": "sms_sent_message",
-            "label": "{{ t(signup:forms.sms_sent.message) }}"
+            "label": "{{ t(signup:forms.sms_sent.message) }}",
+            "variant": "BODY"
           }
         ]
       },

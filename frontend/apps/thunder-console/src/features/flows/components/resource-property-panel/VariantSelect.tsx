@@ -16,8 +16,10 @@
  * under the License.
  */
 
-import {FormLabel, MenuItem, Select} from '@wso2/oxygen-ui';
-import {memo, type ReactElement} from 'react';
+import {FormControl, FormHelperText, FormLabel, MenuItem, Select} from '@wso2/oxygen-ui';
+import {memo, useMemo, type ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
+import useValidationStatus from '../../hooks/useValidationStatus';
 import type {Element} from '../../models/elements';
 import type {Resource} from '../../models/resources';
 
@@ -42,28 +44,45 @@ function VariantSelect({
   selectedVariant,
   onVariantChange = undefined,
 }: VariantSelectProps): ReactElement | null {
+  const {t} = useTranslation();
+  const {selectedNotification} = useValidationStatus();
+
+  const errorMessage: string = useMemo(() => {
+    const key = `${resource?.id}_variant`;
+
+    if (selectedNotification?.hasResourceFieldNotification(key)) {
+      return selectedNotification?.getResourceFieldNotification(key);
+    }
+
+    return '';
+  }, [resource?.id, selectedNotification]);
+
   if (!resource.variants || resource.variants.length === 0) {
     return null;
   }
 
   return (
     <div>
-      <FormLabel htmlFor="variant-select">Variant</FormLabel>
-      <Select
-        id="variant-select"
-        value={selectedVariant?.variant ?? ''}
-        onChange={(e) => {
-          const newVariant = resource.variants?.find((variant: Element) => variant.variant === e.target.value);
-          onVariantChange?.((newVariant?.variant as string) ?? '');
-        }}
-        fullWidth
-      >
-        {resource.variants.map((variant: Element) => (
-          <MenuItem key={variant.variant as string} value={variant.variant as string}>
-            {variant.variant as string}
-          </MenuItem>
-        ))}
-      </Select>
+      <FormControl fullWidth error={!!errorMessage}>
+        <FormLabel htmlFor="variant-select">{t('flows:core.elements.text.variant.label', 'Variant')}</FormLabel>
+        <Select
+          id="variant-select"
+          value={selectedVariant?.variant ?? ''}
+          error={!!errorMessage}
+          onChange={(e) => {
+            const newVariant = resource.variants?.find((variant: Element) => variant.variant === e.target.value);
+            onVariantChange?.((newVariant?.variant as string) ?? '');
+          }}
+          fullWidth
+        >
+          {resource.variants.map((variant: Element) => (
+            <MenuItem key={variant.variant as string} value={variant.variant as string}>
+              {variant.variant as string}
+            </MenuItem>
+          ))}
+        </Select>
+        {errorMessage && <FormHelperText>{errorMessage}</FormHelperText>}
+      </FormControl>
     </div>
   );
 }

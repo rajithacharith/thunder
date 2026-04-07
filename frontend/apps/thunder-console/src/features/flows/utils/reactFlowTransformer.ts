@@ -352,8 +352,6 @@ function extractPrompts(components: Element[], nodeId: string, edges: Edge[]): F
 
       if (connectedEdge) {
         action.nextNode = connectedEdge.target;
-      } else if (component.action?.onSuccess) {
-        action.nextNode = component.action.onSuccess;
       }
 
       if (component.action?.executor) {
@@ -439,11 +437,9 @@ function findNextNode(canvasNode: Node<StepData>, edges: Edge[]): string | undef
     return outgoingEdges[0].target;
   }
 
-  // Fall back to action.onSuccess only if no edges exist (should be rare)
-  if (canvasNode.data?.action?.onSuccess) {
-    return canvasNode.data.action.onSuccess;
-  }
-
+  // No fallback to action.onSuccess — edges are the single source of truth.
+  // Stale action.onSuccess values from the initial flow load may reference
+  // deleted nodes and cause validation failures on save.
   return undefined;
 }
 

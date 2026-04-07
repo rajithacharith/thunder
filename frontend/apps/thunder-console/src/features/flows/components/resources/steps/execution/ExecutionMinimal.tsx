@@ -17,8 +17,8 @@
  */
 
 import {Box, Card, IconButton, Tooltip, Typography} from '@wso2/oxygen-ui';
-import {CogIcon} from '@wso2/oxygen-ui-icons-react';
-import {Handle, Position, useNodeId} from '@xyflow/react';
+import {CogIcon, TrashIcon} from '@wso2/oxygen-ui-icons-react';
+import {Handle, Position, useNodeId, useReactFlow} from '@xyflow/react';
 import classNames from 'classnames';
 import type {ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -48,6 +48,7 @@ export interface ExecutionMinimalPropsInterface {
 function ExecutionMinimal({resource}: ExecutionMinimalPropsInterface): ReactElement {
   const {setLastInteractedResource, setLastInteractedStepId} = useInteractionState();
   const {setIsOpenResourcePropertiesPanel} = useUIPanelState();
+  const {deleteElements} = useReactFlow();
   const stepId: string | null = useNodeId();
 
   const {t} = useTranslation();
@@ -99,28 +100,59 @@ function ExecutionMinimal({resource}: ExecutionMinimalPropsInterface): ReactElem
         >
           {displayLabel}
         </Typography>
-        <Tooltip title={t('flows:core.executions.tooltip.configurationHint')}>
-          <IconButton
-            size="small"
-            onClick={handleConfigClick}
-            className="execution-minimal-step-action"
-            sx={(theme) => ({
-              color: 'text.secondary',
-              '&:hover': {
-                ...theme.applyStyles('dark', {
-                  backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                  color: 'common.white',
-                }),
-                ...theme.applyStyles('light', {
-                  backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                  color: 'text.primary',
-                }),
-              },
-            })}
-          >
-            <CogIcon size={18} />
-          </IconButton>
-        </Tooltip>
+        <Box display="flex" alignItems="center" gap={0.5}>
+          <Tooltip title={t('flows:core.executions.tooltip.configurationHint')}>
+            <IconButton
+              size="small"
+              onClick={handleConfigClick}
+              className="execution-minimal-step-action"
+              sx={(theme) => ({
+                color: 'text.secondary',
+                '&:hover': {
+                  ...theme.applyStyles('dark', {
+                    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                    color: 'common.white',
+                  }),
+                  ...theme.applyStyles('light', {
+                    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                    color: 'text.primary',
+                  }),
+                },
+              })}
+            >
+              <CogIcon size={18} />
+            </IconButton>
+          </Tooltip>
+          {resource.deletable !== false && (
+            <Tooltip title={t('flows:core.executions.tooltip.delete', 'Delete')}>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  if (stepId) {
+                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                    deleteElements({nodes: [{id: stepId}]});
+                  }
+                }}
+                className="execution-minimal-step-action"
+                sx={(theme) => ({
+                  color: 'text.secondary',
+                  '&:hover': {
+                    ...theme.applyStyles('dark', {
+                      backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                      color: 'common.white',
+                    }),
+                    ...theme.applyStyles('light', {
+                      backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                      color: 'text.primary',
+                    }),
+                  },
+                })}
+              >
+                <TrashIcon size={18} />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
       </Box>
       <Handle type="target" position={Position.Left} />
       <Card

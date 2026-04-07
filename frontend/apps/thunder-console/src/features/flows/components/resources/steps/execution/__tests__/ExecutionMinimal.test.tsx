@@ -26,6 +26,7 @@ const mockUseNodeId = vi.fn((): string | null => 'execution-node-id');
 
 vi.mock('@xyflow/react', () => ({
   useNodeId: () => mockUseNodeId(),
+  useReactFlow: vi.fn(() => ({deleteElements: vi.fn()})),
   Handle: ({
     type,
     position,
@@ -352,7 +353,7 @@ describe('ExecutionMinimal', () => {
       const resource = createMockResource();
       render(<ExecutionMinimal resource={resource} />);
 
-      const configButton = screen.getByRole('button');
+      const configButton = screen.getByRole('button', {name: 'flows:core.executions.tooltip.configurationHint'});
       fireEvent.click(configButton);
 
       expect(mockSetLastInteractedStepId).toHaveBeenCalledWith('execution-node-id');
@@ -368,7 +369,7 @@ describe('ExecutionMinimal', () => {
       });
       render(<ExecutionMinimal resource={resource} />);
 
-      const configButton = screen.getByRole('button');
+      const configButton = screen.getByRole('button', {name: 'flows:core.executions.tooltip.configurationHint'});
       fireEvent.click(configButton);
 
       expect(mockSetLastInteractedResource).toHaveBeenCalledWith(
@@ -384,7 +385,7 @@ describe('ExecutionMinimal', () => {
       const resource = createMockResource();
       render(<ExecutionMinimal resource={resource} />);
 
-      const configButton = screen.getByRole('button');
+      const configButton = screen.getByRole('button', {name: 'flows:core.executions.tooltip.configurationHint'});
       fireEvent.click(configButton);
 
       expect(mockSetIsOpenResourcePropertiesPanel).toHaveBeenCalledWith(true);
@@ -395,7 +396,7 @@ describe('ExecutionMinimal', () => {
       const resource = createMockResource();
       render(<ExecutionMinimal resource={resource} />);
 
-      const configButton = screen.getByRole('button');
+      const configButton = screen.getByRole('button', {name: 'flows:core.executions.tooltip.configurationHint'});
       fireEvent.click(configButton);
 
       // Empty string is not null, so setLastInteractedStepId IS called
@@ -407,7 +408,7 @@ describe('ExecutionMinimal', () => {
       const resource = createMockResource();
       render(<ExecutionMinimal resource={resource} />);
 
-      const configButton = screen.getByRole('button');
+      const configButton = screen.getByRole('button', {name: 'flows:core.executions.tooltip.configurationHint'});
       fireEvent.click(configButton);
 
       expect(mockSetLastInteractedStepId).not.toHaveBeenCalled();
@@ -453,7 +454,7 @@ describe('ExecutionMinimal', () => {
       });
       render(<ExecutionMinimal resource={resource} />);
 
-      const configButton = screen.getByRole('button');
+      const configButton = screen.getByRole('button', {name: 'flows:core.executions.tooltip.configurationHint'});
       fireEvent.click(configButton);
 
       expect(mockSetLastInteractedResource).toHaveBeenCalledWith(
@@ -474,7 +475,7 @@ describe('ExecutionMinimal', () => {
       });
       render(<ExecutionMinimal resource={resource} />);
 
-      const configButton = screen.getByRole('button');
+      const configButton = screen.getByRole('button', {name: 'flows:core.executions.tooltip.configurationHint'});
       fireEvent.click(configButton);
 
       expect(mockSetLastInteractedResource).toHaveBeenCalledWith(
@@ -496,7 +497,7 @@ describe('ExecutionMinimal', () => {
       });
       render(<ExecutionMinimal resource={resource} />);
 
-      const configButton = screen.getByRole('button');
+      const configButton = screen.getByRole('button', {name: 'flows:core.executions.tooltip.configurationHint'});
       fireEvent.click(configButton);
 
       expect(mockSetLastInteractedResource).toHaveBeenCalledWith(
@@ -515,7 +516,7 @@ describe('ExecutionMinimal', () => {
       render(<ExecutionMinimal resource={resource} />);
 
       // The tooltip title should be the translation key
-      const configButton = screen.getByRole('button');
+      const configButton = screen.getByRole('button', {name: 'flows:core.executions.tooltip.configurationHint'});
       expect(configButton).toBeInTheDocument();
     });
   });

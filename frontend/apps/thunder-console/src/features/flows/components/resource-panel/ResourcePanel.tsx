@@ -18,17 +18,15 @@
 
 import {BuilderLayout, BuilderPanelHeader} from '@thunder/components';
 import {Accordion, AccordionDetails, AccordionSummary, Box, Stack, Typography} from '@wso2/oxygen-ui';
-import {BoxesIcon, BoxIcon, ChevronDownIcon, CogIcon, LayoutTemplate, ZapIcon} from '@wso2/oxygen-ui-icons-react';
+import {BoxesIcon, BoxIcon, ChevronDownIcon, CogIcon, ZapIcon} from '@wso2/oxygen-ui-icons-react';
 import kebabCase from 'lodash-es/kebabCase';
 import {memo, useCallback, useMemo, type HTMLAttributes, type ReactElement, type ReactNode} from 'react';
 import {useTranslation} from 'react-i18next';
 import ResourcePanelDraggable from './ResourcePanelDraggable';
-import ResourcePanelStatic from './ResourcePanelStatic';
 import useUIPanelState from '../../hooks/useUIPanelState';
 import type {Element} from '../../models/elements';
 import type {Resource, Resources} from '../../models/resources';
 import type {Step} from '../../models/steps';
-import type {Template} from '../../models/templates';
 import type {Widget} from '../../models/widget';
 
 /**
@@ -101,7 +99,6 @@ function ResourcePanel({
     elements: unfilteredElements,
     widgets: unfilteredWidgets,
     steps: unfilteredSteps,
-    templates: unfilteredTemplates,
     executors: unfilteredExecutors,
   } = resources;
 
@@ -116,10 +113,6 @@ function ResourcePanel({
   const steps: Step[] = useMemo(
     () => unfilteredSteps?.filter((step: Step) => step.display?.showOnResourcePanel !== false),
     [unfilteredSteps],
-  );
-  const templates: Template[] = useMemo(
-    () => unfilteredTemplates?.filter((template: Template) => template.display?.showOnResourcePanel !== false),
-    [unfilteredTemplates],
   );
   const executors: Step[] = useMemo(
     () => unfilteredExecutors?.filter((executor: Step) => executor.display?.showOnResourcePanel !== false),
@@ -138,65 +131,6 @@ function ResourcePanel({
         saveTitleTooltip={t('flows:core.headerPanel.saveTitle')}
         cancelEditTooltip={t('flows:core.headerPanel.cancelEdit')}
       />
-
-      {/* Starter Templates */}
-      <Accordion
-        square
-        disableGutters
-        defaultExpanded
-        sx={{
-          backgroundColor: 'transparent',
-          '&:before': {
-            display: 'none',
-          },
-          overflow: 'hidden',
-          flexShrink: 0,
-        }}
-      >
-        <AccordionSummary
-          expandIcon={<ChevronDownIcon size={14} />}
-          aria-controls="panel1-content"
-          id="panel1-header"
-          sx={{
-            minHeight: 48,
-            '&.Mui-expanded': {
-              minHeight: 48,
-            },
-            '& .MuiAccordionSummary-content': {
-              margin: '12px 0',
-              gap: 1,
-            },
-          }}
-          slotProps={{
-            content: {
-              sx: {alignItems: 'center'},
-            },
-          }}
-        >
-          <Box component="span" display="inline-flex" alignItems="center">
-            <LayoutTemplate size={16} />
-          </Box>
-          <Typography variant="subtitle2" fontWeight={600}>
-            {t('flows:core.resourcePanel.starterTemplates.title')}
-          </Typography>
-        </AccordionSummary>
-        <AccordionDetails sx={{pt: 0, pb: 2, px: 2}}>
-          <Typography variant="body2" color="text.secondary" gutterBottom sx={{mb: 1.5}}>
-            {t('flows:core.resourcePanel.starterTemplates.description')}
-          </Typography>
-          <Stack direction="column" spacing={1}>
-            {templates?.map((template: Template, index: number) => (
-              <ResourcePanelStatic
-                id={`${template.resourceType}-${template.type}-${index}`}
-                key={template.type}
-                resource={template}
-                onAdd={onAdd}
-                disabled={disabled}
-              />
-            ))}
-          </Stack>
-        </AccordionDetails>
-      </Accordion>
 
       {/* Widgets */}
       <Accordion

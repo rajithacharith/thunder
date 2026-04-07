@@ -50,6 +50,8 @@ export interface UseFlowSaveProps {
   flowName: string;
   /** Flow handle. */
   flowHandle: string;
+  /** Flow type. */
+  flowType: string;
   /** Callback to show error notification. */
   showError: (message: string) => void;
   /** Callback to show success notification. */
@@ -81,6 +83,7 @@ const useFlowSave = (props: UseFlowSaveProps): UseFlowSaveReturn => {
     isFlowValid,
     flowName,
     flowHandle,
+    flowType,
     showError,
     showSuccess,
     setOpenValidationPanel,
@@ -102,7 +105,7 @@ const useFlowSave = (props: UseFlowSaveProps): UseFlowSaveReturn => {
         return;
       }
 
-      const flowConfig = createFlowConfiguration(canvasData, flowName, flowHandle, 'AUTHENTICATION');
+      const flowConfig = createFlowConfiguration(canvasData, flowName, flowHandle, flowType);
       const errors = validateFlowGraph({nodes: flowConfig.nodes});
 
       if (errors.length > 0) {
@@ -145,6 +148,7 @@ const useFlowSave = (props: UseFlowSaveProps): UseFlowSaveReturn => {
       flowId,
       flowName,
       flowHandle,
+      flowType,
       showError,
       showSuccess,
       setOpenValidationPanel,
