@@ -38,6 +38,7 @@ export default function ImageAdapter({
   maxHeight = '100%',
 }: ImageAdapterProps): JSX.Element | null {
   const resolvedSrc = resolve(component.src ?? '') ?? component.src ?? '';
+  const resolvedAlt = resolve(component.alt ?? '') ?? component.alt ?? '';
 
   if (!resolvedSrc) return null;
 
@@ -66,7 +67,7 @@ export default function ImageAdapter({
           width: cssWidth,
         }}
       >
-        <span aria-label={component.alt ?? ''} role="img" style={{fontSize: '100cqmin', lineHeight: 1}}>
+        <span aria-label={resolvedAlt} role="img" style={{fontSize: '100cqmin', lineHeight: 1}}>
           {extractEmojiFromUri(resolvedSrc)}
         </span>
       </span>
@@ -78,7 +79,7 @@ export default function ImageAdapter({
       component="img"
       className={cn('Flow--image')}
       src={resolvedSrc}
-      alt={component.alt ?? ''}
+      alt={resolvedAlt}
       sx={{
         width: component.width ? `${component.width}px` : 'auto',
         height: component.height ? `${component.height}px` : 'auto',
