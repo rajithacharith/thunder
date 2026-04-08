@@ -1,0 +1,76 @@
+# This workflow creates a sync PR from release to main after a successful release run,
+# and can also be started manually from the Actions tab.
+
+name: 🔁 Post-Release Sync
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["🚀 Release Builder"]
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  create-release-to-main-pr:
+    name: 🔀 Create PR release -> main
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📝 Create or Reuse Sync PR
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const base = 'main';
+            const headBranch = 'release';
+            const head = `${owner}:${headBranch}`;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const triggerLine = context.eventName === 'workflow_dispatch'
+              ? `Triggered manually from Actions: ${runUrl}`
+              : `Triggered after successful release workflow run: ${context.payload.workflow_run.html_url}`;
+
+            // Skip PR creation if there are no new commits in release compared to main.
+            const compare = await github.rest.repos.compareCommitsWithBasehead({
+              owner,
+              repo,
+              basehead: `${base}...${headBranch}`
+            });
+
+            if (compare.data.ahead_by === 0) {
+              core.info('No commits to sync from release to main. Skipping PR creation.');
+              return;
+            }
+
+            // Reuse any existing open PR for release -> main.
+            const existing = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
+              base,
+              head
+            });
+
+            if (existing.data.length > 0) {
+              const pr = existing.data[0];
+              core.info(`Existing sync PR found: #${pr.number} ${pr.html_url}`);
+              return;
+            }
+
+            const created = await github.rest.pulls.create({
+              owner,
+              repo,
+              title: 'Sync release branch back to main',
+              head: headBranch,
+              base,
+              body: [
+                'Automated post-release synchronization PR.',
+                '',
+                triggerLine
+              ].join('\n')
+            });
+
+            core.info(`Created sync PR: #${created.data.number} ${created.data.html_url}`);
