@@ -275,6 +275,10 @@ func (s *oAuthAuthnService) GetInternalUser(sub string) (*userprovider.User, *se
 			logger.Debug("No user found for the provided sub claim")
 			return nil, &common.ErrorUserNotFound
 		}
+		if upErr.Code == userprovider.ErrorCodeAmbiguousUser {
+			logger.Debug("Multiple users found for the provided sub claim")
+			return nil, &common.ErrorAmbiguousUser
+		}
 		logger.Error("Error while identifying user", log.String("errorCode", string(upErr.Code)),
 			log.String("description", upErr.Description))
 		return nil, &serviceerror.InternalServerError

@@ -21,6 +21,7 @@ package executor
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -134,9 +135,42 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 			}
 		}
 
-		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "User already exists"
-		return execResp, nil
+		// Check if cross-OU provisioning is explicitly enabled for this node.
+		allowCrossOUProvisioning := false
+		if val, ok := ctx.NodeProperties[common.NodePropertyAllowCrossOUProvisioning]; ok {
+			if boolVal, ok := val.(bool); ok {
+				allowCrossOUProvisioning = boolVal
+			}
+		}
+
+		if !allowCrossOUProvisioning {
+			execResp.Status = common.ExecFailure
+			execResp.FailureReason = "User already exists"
+			return execResp, nil
+		}
+
+		// Cross-OU provisioning: verify the existing user is in a different OU than the target.
+		targetOUID := p.getOUID(ctx)
+		if targetOUID == "" {
+			execResp.Status = common.ExecFailure
+			execResp.FailureReason = "Target OU is not set for cross-OU provisioning"
+			return execResp, nil
+		}
+
+		existingUser, getUserErr := p.userProvider.GetUser(*userID)
+		if getUserErr != nil {
+			return nil, errors.New("failed to retrieve existing user")
+		}
+
+		if existingUser.OUID == targetOUID {
+			execResp.Status = common.ExecFailure
+			execResp.FailureReason = "User already exists in the target organization"
+			return execResp, nil
+		}
+
+		logger.Debug("Existing user is in a different OU, proceeding with cross-OU provisioning",
+			log.String("existingOUID", existingUser.OUID),
+			log.String("targetOUID", targetOUID))
 	}
 
 	// Create the user in the store.

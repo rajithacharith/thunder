@@ -248,7 +248,7 @@ func (suite *CompositeModeSuite) TestFlowDeclarativeVisibility() {
 	json.NewDecoder(resp.Body).Decode(&flowResp)
 	suite.True(flowResp["isReadOnly"].(bool), "declarative flow should be marked as read-only")
 
-	items := suite.assertMergedCollectionContainsIDs("/flows", "flows", "decl-flow-1", "flow")
+	items := suite.assertMergedCollectionContainsIDs("/flows?limit=50", "flows", "decl-flow-1", "flow")
 	declFlow := suite.findCollectionItemByID(items, "decl-flow-1")
 	suite.Require().NotNil(declFlow, "declarative flow should be present in merged collection")
 	isReadOnly, ok := declFlow["isReadOnly"].(bool)

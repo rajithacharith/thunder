@@ -151,6 +151,10 @@ const (
 	NodePropertyAllowAuthenticationWithoutLocalUser = "allowAuthenticationWithoutLocalUser"
 	// NodePropertyAllowRegistrationWithExistingUser indicates whether registration is allowed with an existing user
 	NodePropertyAllowRegistrationWithExistingUser = "allowRegistrationWithExistingUser"
+	// NodePropertyAllowCrossOUProvisioning indicates whether an existing user should be provisioned to the
+	// target OU when they accept an invite. Used together with allowRegistrationWithExistingUser. When true,
+	// the user is created in the target OU; when false, provisioning is skipped entirely.
+	NodePropertyAllowCrossOUProvisioning = "allowCrossOUProvisioning"
 	// NodePropertyOUResolveFrom specifies the strategy for resolving the organization unit.
 	// Supported values: "caller" (use the caller's OU).
 	NodePropertyOUResolveFrom = "resolveFrom"
@@ -161,6 +165,8 @@ const (
 	RuntimeKeyUserAutoProvisioned = "userAutoProvisioned"
 	// RuntimeKeyUserEligibleForProvisioning indicates whether the user is eligible for auto provisioning
 	RuntimeKeyUserEligibleForProvisioning = "userEligibleForProvisioning"
+	// RuntimeKeyUserAmbiguous indicates the user exists in multiple OUs and requires disambiguation
+	RuntimeKeyUserAmbiguous = "userAmbiguous"
 	// RuntimeKeySkipProvisioning indicates whether to skip provisioning
 	RuntimeKeySkipProvisioning = "skipProvisioning"
 	// RuntimeKeyClientID holds the OAuth client ID for the current flow execution, if applicable.

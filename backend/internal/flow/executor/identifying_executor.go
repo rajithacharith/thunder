@@ -20,6 +20,7 @@ package executor
 
 import (
 	"encoding/json"
+	"errors"
 	"slices"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
@@ -28,16 +29,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/userprovider"
 )
-
-// isScalar returns true if v is a JSON primitive (string, number, bool).
-func isScalar(v interface{}) bool {
-	switch v.(type) {
-	case string, float64, bool:
-		return true
-	default:
-		return false
-	}
-}
 
 const (
 	idfExecLoggerComponentName = "IdentifyingExecutor"
@@ -142,27 +133,24 @@ func (i *identifyingExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRe
 		return execResp, nil
 	}
 
-	// Branch on executor mode: "resolve" enables disambiguation when multiple users match.
-	// All other modes (including "identify" and unset) use the default identify behavior
-	// which fails if zero or more than one user matches.
-	if ctx.ExecutorMode == ExecutorModeResolve {
+	switch ctx.ExecutorMode {
+	case ExecutorModeResolve:
 		return i.executeResolve(ctx, execResp)
+	default:
+		// Default identify behavior (including explicit "identify" mode and unset).
+		// Fails if zero or more than one user matches.
+		return i.executeIdentify(ctx, execResp)
 	}
+}
 
-	userSearchAttributes := map[string]interface{}{}
+// executeIdentify handles the default identify mode which expects exactly one user match.
+func (i *identifyingExecutor) executeIdentify(ctx *core.NodeContext,
+	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
+	logger := i.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
-	for _, inputData := range i.GetRequiredInputs(ctx) {
-		if value, ok := ctx.UserInputs[inputData.Identifier]; ok {
-			userSearchAttributes[inputData.Identifier] = value
-		} else if value, ok := ctx.RuntimeData[inputData.Identifier]; ok {
-			// Fallback to RuntimeData if not in UserInputs
-			userSearchAttributes[inputData.Identifier] = value
-		}
-	}
+	userSearchAttributes := i.buildSearchAttributes(ctx)
 
-	// Try to identify the user
 	userID, err := i.IdentifyUser(userSearchAttributes, execResp)
-
 	if err != nil {
 		logger.Debug("Failed to identify user due to error: " + err.Error())
 		execResp.Status = common.ExecFailure
@@ -182,7 +170,6 @@ func (i *identifyingExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRe
 		return execResp, nil
 	}
 
-	// Store the resolved userID in RuntimeData for subsequent executors
 	execResp.RuntimeData[userAttributeUserID] = *userID
 	execResp.Status = common.ExecComplete
 
@@ -198,59 +185,26 @@ func (i *identifyingExecutor) executeResolve(ctx *core.NodeContext,
 	logger := i.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Executing identifying executor in resolve mode")
 
-	// Build search attributes from inputs
-	userSearchAttributes := map[string]interface{}{}
-	for _, inputData := range i.GetRequiredInputs(ctx) {
-		if value, ok := ctx.UserInputs[inputData.Identifier]; ok {
-			userSearchAttributes[inputData.Identifier] = value
-		} else if value, ok := ctx.RuntimeData[inputData.Identifier]; ok {
-			userSearchAttributes[inputData.Identifier] = value
+	userSearchAttributes := i.buildSearchAttributes(ctx)
+
+	// Include dynamic user inputs from disambiguation prompts. The disambiguation step
+	// may generate inputs (e.g., ouHandle, userType) that are not defined in the node's
+	// required inputs, so we merge user inputs to ensure they are used for filtering.
+	// We exclude non-searchable inputs and internal identifiers to prevent injection.
+	for key, value := range ctx.UserInputs {
+		if _, exists := userSearchAttributes[key]; !exists && value != "" &&
+			!slices.Contains(nonSearchableInputs, key) && key != userAttributeUserID {
+			userSearchAttributes[key] = value
 		}
 	}
 
-	// Check if we have stored candidate users from a previous call
-	storedCandidates, hasCandidates := ctx.RuntimeData[common.RuntimeKeyCandidateUsers]
-
-	var candidates []*userprovider.User
-
-	if !hasCandidates {
-		// First call: search for users using the provider
-		searchableFilters := make(map[string]interface{})
-		for key, value := range userSearchAttributes {
-			if !slices.Contains(nonSearchableInputs, key) {
-				searchableFilters[key] = value
-			}
-		}
-
-		users, err := i.userProvider.SearchUsers(searchableFilters)
-		if err != nil {
-			if err.Code == userprovider.ErrorCodeUserNotFound {
-				logger.Debug("No users found for the provided filters")
-				execResp.Status = common.ExecFailure
-				execResp.FailureReason = failureReasonUserNotFound
-				return execResp, nil
-			}
-			logger.Debug("Failed to search users: " + err.Error())
-			execResp.Status = common.ExecFailure
-			execResp.FailureReason = failureReasonFailedToIdentifyUser
-			return execResp, nil
-		}
-
-		candidates = users
-	} else {
-		// Subsequent call: deserialize stored candidates and filter in-memory
-		if err := json.Unmarshal([]byte(storedCandidates), &candidates); err != nil {
-			logger.Debug("Failed to deserialize candidate users")
-			execResp.Status = common.ExecFailure
-			execResp.FailureReason = failureReasonFailedToIdentifyUser
-			return execResp, nil
-		}
-
-		// Filter candidates using all current search attributes
-		candidates = filterUsersByAttributes(candidates, userSearchAttributes)
+	candidates, err := i.getCandidates(ctx, userSearchAttributes, logger)
+	if err != nil {
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = err.Error()
+		return execResp, nil
 	}
 
-	// Evaluate filtered result
 	switch len(candidates) {
 	case 0:
 		logger.Debug("No matching users after filtering")
@@ -258,42 +212,108 @@ func (i *identifyingExecutor) executeResolve(ctx *core.NodeContext,
 		execResp.FailureReason = failureReasonUserNotFound
 		return execResp, nil
 	case 1:
-		// Unique user found
 		execResp.RuntimeData[userAttributeUserID] = candidates[0].UserID
 		execResp.Status = common.ExecComplete
 		logger.Debug("User resolved successfully",
 			log.String("userID", log.MaskString(candidates[0].UserID)))
 		return execResp, nil
 	default:
-		// Still ambiguous — check if disambiguation options exist before requesting more input.
-		options := extractDisambiguationOptions(candidates)
-		if len(options) == 0 {
-			logger.Debug("Candidates are indistinguishable, no disambiguation options available",
-				log.Int("candidateCount", len(candidates)))
-			execResp.Status = common.ExecFailure
-			execResp.FailureReason = failureReasonFailedToIdentifyUser
-			return execResp, nil
-		}
+		return i.handleAmbiguousCandidates(candidates, execResp, logger)
+	}
+}
 
-		// Serialize candidates and request more input
-		candidatesJSON, err := json.Marshal(candidates)
-		if err != nil {
-			logger.Debug("Failed to serialize candidate users")
-			execResp.Status = common.ExecFailure
-			execResp.FailureReason = failureReasonFailedToIdentifyUser
-			return execResp, nil
+// buildSearchAttributes collects search attributes from user inputs and runtime data.
+func (i *identifyingExecutor) buildSearchAttributes(ctx *core.NodeContext) map[string]interface{} {
+	attrs := map[string]interface{}{}
+	for _, inputData := range i.GetRequiredInputs(ctx) {
+		if value, ok := ctx.UserInputs[inputData.Identifier]; ok {
+			attrs[inputData.Identifier] = value
+		} else if value, ok := ctx.RuntimeData[inputData.Identifier]; ok {
+			attrs[inputData.Identifier] = value
 		}
-		execResp.RuntimeData[common.RuntimeKeyCandidateUsers] = string(candidatesJSON)
-		execResp.Status = common.ExecUserInputRequired
+	}
+	return attrs
+}
 
-		execResp.ForwardedData = map[string]interface{}{
-			common.ForwardedDataKeyInputs: options,
+// getCandidates retrieves candidate users either from the store (first call) or from
+// stored candidates in RuntimeData (subsequent calls), filtering in-memory.
+func (i *identifyingExecutor) getCandidates(ctx *core.NodeContext,
+	searchAttrs map[string]interface{}, logger *log.Logger) ([]*userprovider.User, error) {
+	storedCandidates, hasCandidates := ctx.RuntimeData[common.RuntimeKeyCandidateUsers]
+	if hasCandidates {
+		return i.getFilteredCandidates(storedCandidates, searchAttrs, logger)
+	}
+	return i.searchCandidates(searchAttrs, logger)
+}
+
+// searchCandidates performs the initial database search for matching users.
+func (i *identifyingExecutor) searchCandidates(
+	searchAttrs map[string]interface{}, logger *log.Logger) ([]*userprovider.User, error) {
+	searchableFilters := make(map[string]interface{})
+	for key, value := range searchAttrs {
+		if !slices.Contains(nonSearchableInputs, key) {
+			searchableFilters[key] = value
 		}
+	}
 
-		logger.Debug("Multiple users still match, requesting additional attributes",
+	users, err := i.userProvider.SearchUsers(searchableFilters)
+	if err != nil {
+		if err.Code == userprovider.ErrorCodeUserNotFound {
+			logger.Debug("No users found for the provided filters")
+			return []*userprovider.User{}, nil
+		}
+		logger.Debug("Failed to search users: " + err.Error())
+		return nil, errors.New(failureReasonFailedToIdentifyUser)
+	}
+
+	return users, nil
+}
+
+// getFilteredCandidates deserializes stored candidates and filters them in-memory.
+func (i *identifyingExecutor) getFilteredCandidates(
+	storedCandidates string, searchAttrs map[string]interface{},
+	logger *log.Logger) ([]*userprovider.User, error) {
+	var candidates []*userprovider.User
+	if err := json.Unmarshal([]byte(storedCandidates), &candidates); err != nil {
+		logger.Debug("Failed to deserialize candidate users")
+		return nil, errors.New(failureReasonFailedToIdentifyUser)
+	}
+
+	return filterUsersByAttributes(candidates, searchAttrs), nil
+}
+
+// handleAmbiguousCandidates processes the case where multiple candidates still match.
+// It extracts disambiguation options and either requests more input or fails if
+// candidates are indistinguishable.
+func (i *identifyingExecutor) handleAmbiguousCandidates(
+	candidates []*userprovider.User, execResp *common.ExecutorResponse,
+	logger *log.Logger) (*common.ExecutorResponse, error) {
+	options := extractDisambiguationOptions(candidates)
+	if len(options) == 0 {
+		logger.Debug("Candidates are indistinguishable, no disambiguation options available",
 			log.Int("candidateCount", len(candidates)))
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = failureReasonFailedToIdentifyUser
 		return execResp, nil
 	}
+
+	candidatesJSON, err := json.Marshal(candidates)
+	if err != nil {
+		logger.Debug("Failed to serialize candidate users")
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = failureReasonFailedToIdentifyUser
+		return execResp, nil
+	}
+
+	execResp.RuntimeData[common.RuntimeKeyCandidateUsers] = string(candidatesJSON)
+	execResp.Status = common.ExecUserInputRequired
+	execResp.ForwardedData = map[string]interface{}{
+		common.ForwardedDataKeyInputs: options,
+	}
+
+	logger.Debug("Multiple users still match, requesting additional attributes",
+		log.Int("candidateCount", len(candidates)))
+	return execResp, nil
 }
 
 // filterUsersByAttributes filters users by matching their attributes against the provided filters.
@@ -313,7 +333,7 @@ func filterUsersByAttributes(users []*userprovider.User, filters map[string]inte
 				continue
 			}
 
-			if !isScalar(expected) {
+			if !utils.IsScalar(expected) {
 				continue
 			}
 			expectedStr := utils.ConvertInterfaceValueToString(expected)
@@ -334,7 +354,7 @@ func filterUsersByAttributes(users []*userprovider.User, filters map[string]inte
 					allMatch = false
 				} else if value, ok := attrs[key]; !ok {
 					allMatch = false
-				} else if !isScalar(value) || utils.ConvertInterfaceValueToString(value) != expectedStr {
+				} else if !utils.IsScalar(value) || utils.ConvertInterfaceValueToString(value) != expectedStr {
 					allMatch = false
 				}
 			}
@@ -384,7 +404,7 @@ func extractDisambiguationOptions(candidates []*userprovider.User) []common.Inpu
 			if slices.Contains(nonSearchableInputs, key) {
 				continue
 			}
-			if isScalar(value) {
+			if utils.IsScalar(value) {
 				valueStr := utils.ConvertInterfaceValueToString(value)
 				if optionsMap[key] == nil {
 					optionsMap[key] = make(map[string]struct{})

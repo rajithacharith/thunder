@@ -46,6 +46,7 @@ const (
 	ExecutorNameOUResolver                   = "OUResolverExecutor"
 	ExecutorNameAttributeUniquenessValidator = "AttributeUniquenessValidator"
 	ExecutorNameSMSExecutor                  = "SMSExecutor"
+	ExecutorNameFederatedAuthResolver        = "FederatedAuthResolverExecutor"
 )
 
 // Executor mode constants
@@ -111,7 +112,8 @@ var nonUserAttributes = []string{"userID", "code", "nonce", "state", "flowID",
 	common.RuntimeKeyConsentID, common.RuntimeKeyStepTimeout, userInputConsentDecisions,
 	common.RuntimeKeyConsentedAttributes, common.RuntimeKeyConsentSessionToken,
 	"applicationId", "idpId", "senderId",
-	common.RuntimeKeyCandidateUsers, common.RuntimeKeyClientID, common.RuntimeKeyUserAttributesCacheTTLSeconds}
+	common.RuntimeKeyCandidateUsers, common.RuntimeKeyClientID, common.RuntimeKeyUserAttributesCacheTTLSeconds,
+	common.RuntimeKeyUserAmbiguous}
 
 // Failure reason constants
 const (
