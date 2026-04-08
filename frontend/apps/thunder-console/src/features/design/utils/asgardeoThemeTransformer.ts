@@ -17,7 +17,7 @@
  */
 
 import type {ThemeProviderProps} from '@asgardeo/react';
-import type {Theme} from '@thunder/shared-design';
+import type {Theme} from '@thunder/design';
 
 type AsgardeoTheme = NonNullable<ThemeProviderProps['theme']>;
 

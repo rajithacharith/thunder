@@ -17,7 +17,7 @@
  */
 
 import {render, screen} from '@testing-library/react';
-import type {Theme} from '@thunder/shared-design';
+import type {Theme} from '@thunder/design';
 import {type RecursivePartial} from '@thunder/types';
 import type {ReactNode} from 'react';
 import {describe, it, expect, beforeEach, vi} from 'vitest';

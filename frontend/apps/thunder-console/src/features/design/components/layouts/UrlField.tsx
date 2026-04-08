@@ -16,8 +16,7 @@
  * under the License.
  */
 
-import {isValidStylesheetUrl, isInsecureStylesheetUrl} from '@thunder/shared-design';
-import type {UrlStylesheet} from '@thunder/shared-design';
+import {isValidStylesheetUrl, isInsecureStylesheetUrl, type UrlStylesheet} from '@thunder/design';
 import {FormControl, FormLabel, TextField} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';

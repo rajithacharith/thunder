@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {ColorSchemeOption} from '@thunder/shared-design';
+import type {ColorSchemeOption} from '@thunder/design';
 import {Monitor, Moon, Sun} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 

@@ -31,8 +31,8 @@ vi.mock('../SignInSlogan', () => ({
 
 // Mock useDesign hook
 const mockUseDesign = vi.fn();
-vi.mock('@thunder/shared-design', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/shared-design')>();
+vi.mock('@thunder/design', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/design')>();
   return {
     ...actual,
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useGetTheme, type Theme} from '@thunder/shared-design';
+import {useGetTheme, type Theme} from '@thunder/design';
 import {useState, useMemo, useCallback, type PropsWithChildren} from 'react';
 import {useParams} from 'react-router';
 import ThemeBuilderContext, {type ThemeBuilderContextType} from './ThemeBuilderContext';

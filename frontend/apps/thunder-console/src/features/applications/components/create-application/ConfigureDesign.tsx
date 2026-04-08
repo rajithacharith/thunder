@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useGetThemes, useGetTheme, type ThemeListItem, type Theme} from '@thunder/shared-design';
+import {useGetThemes, useGetTheme, type ThemeListItem, type Theme} from '@thunder/design';
 import {
   Typography,
   Stack,

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {Stylesheet} from '@thunder/shared-design';
+import type {Stylesheet} from '@thunder/design';
 import {Accordion, AccordionDetails, AccordionSummary, Box, Chip, Stack, Tooltip} from '@wso2/oxygen-ui';
 import {Trash, ChevronUp, ChevronDown, Eye, EyeOff} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useCreateTheme, useGetTheme, useGetThemes, type Theme} from '@thunder/shared-design';
+import {useCreateTheme, useGetTheme, useGetThemes, type Theme} from '@thunder/design';
 import {kebabCase} from '@thunder/utils';
 import {
   Alert,

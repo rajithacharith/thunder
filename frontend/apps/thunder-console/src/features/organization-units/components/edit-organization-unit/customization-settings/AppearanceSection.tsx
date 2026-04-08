@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useGetThemes} from '@thunder/shared-design';
+import {useGetThemes} from '@thunder/design';
 import {Box, Typography, TextField, Autocomplete, CircularProgress} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';

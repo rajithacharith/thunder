@@ -19,8 +19,7 @@
 import type {UseQueryResult} from '@tanstack/react-query';
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {useGetThemes} from '@thunder/shared-design';
-import type {ThemeListResponse} from '@thunder/shared-design';
+import {useGetThemes, type ThemeListResponse} from '@thunder/design';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {Application} from '../../../../models/application';
 import AppearanceSection from '../AppearanceSection';
@@ -31,7 +30,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('@thunder/shared-design', () => ({
+vi.mock('@thunder/design', () => ({
   useGetThemes: vi.fn(),
   useGetLayouts: vi.fn(() => ({data: undefined, isLoading: false})),
 }));

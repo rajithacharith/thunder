@@ -39,8 +39,8 @@ vi.mock('@wso2/oxygen-ui', () => ({
   ),
 }));
 
-vi.mock('@thunder/shared-design', () => ({
-  useDesign: () => mockUseDesign(),
+vi.mock('../../../../contexts/Design/useDesign', () => ({
+  default: () => mockUseDesign(),
 }));
 
 const baseComponent: FlowComponent = {

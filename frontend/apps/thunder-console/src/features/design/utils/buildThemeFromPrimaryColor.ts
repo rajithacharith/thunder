@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {Theme} from '@thunder/shared-design';
+import type {Theme} from '@thunder/design';
 
 // Define the expected primary palette type (main, light, dark, contrastText, plus channels)
 interface PrimaryPalette {

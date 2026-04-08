@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {BROWSER_SAFE_FONTS, type Theme} from '@thunder/shared-design';
+import {BROWSER_SAFE_FONTS, type Theme} from '@thunder/design';
 import {
   Autocomplete,
   Box,

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useGetThemes, useGetLayouts, useCreateLayout} from '@thunder/shared-design';
+import {useGetThemes, useGetLayouts, useCreateLayout} from '@thunder/design';
 import {Box, Button, Card, Grid, PageContent, PageTitle, Skeleton, Typography} from '@wso2/oxygen-ui';
 import {ArrowUpRight, LayoutTemplate, Palette, Plus} from '@wso2/oxygen-ui-icons-react';
 import {useState, useCallback, type JSX} from 'react';

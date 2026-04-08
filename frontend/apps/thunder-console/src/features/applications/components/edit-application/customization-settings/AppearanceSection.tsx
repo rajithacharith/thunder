@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useGetThemes, useGetLayouts} from '@thunder/shared-design';
+import {useGetThemes, useGetLayouts} from '@thunder/design';
 import {Box, Typography, TextField, Autocomplete, CircularProgress} from '@wso2/oxygen-ui';
 import {useTranslation} from 'react-i18next';
 import SettingsCard from '../../../../../components/SettingsCard';
