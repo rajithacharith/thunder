@@ -28,7 +28,6 @@ import (
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
 const serviceLogger = "DesignResolveService"
@@ -72,7 +71,7 @@ func (drs *designResolveService) ResolveDesign(
 		return nil, &common.ErrorInvalidResolveType
 	}
 
-	if id == "" || !utils.IsValidUUID(id) {
+	if id == "" {
 		return nil, &common.ErrorMissingResolveID
 	}
 

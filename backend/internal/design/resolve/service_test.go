@@ -111,8 +111,11 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_ApplicationNotFound() {
 	assert.Equal(suite.T(), common.ErrorApplicationNotFound.Code, err.Code)
 }
 
-// Test ResolveDesign - Invalid application ID
+// Test ResolveDesign - Invalid application ID (passed through to app service)
 func (suite *ResolveServiceTestSuite) TestResolveDesign_InvalidApplicationID() {
+	suite.mockAppService.On("GetApplication", mock.Anything, "invalid").
+		Return(nil, &application.ErrorInvalidApplicationID)
+
 	result, err := suite.service.ResolveDesign(context.Background(), common.DesignResolveTypeAPP, "invalid")
 
 	assert.Nil(suite.T(), result)
