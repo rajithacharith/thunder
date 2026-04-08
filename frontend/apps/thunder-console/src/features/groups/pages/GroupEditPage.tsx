@@ -17,7 +17,7 @@
  */
 
 import {useLogger} from '@thunder/logger/react';
-import {useToast} from '@thunder/shared-contexts';
+import {useToast} from '@thunder/contexts';
 import {
   Box,
   Stack,

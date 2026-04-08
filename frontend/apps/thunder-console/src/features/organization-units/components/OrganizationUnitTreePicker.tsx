@@ -19,7 +19,7 @@
 import {useAsgardeo} from '@asgardeo/react';
 import {useQueryClient} from '@tanstack/react-query';
 import {useLogger} from '@thunder/logger/react';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig} from '@thunder/contexts';
 import {Box, Typography, CircularProgress, TreeView, useTheme} from '@wso2/oxygen-ui';
 import {useState, useCallback, useEffect, useRef, useMemo, type JSX, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';

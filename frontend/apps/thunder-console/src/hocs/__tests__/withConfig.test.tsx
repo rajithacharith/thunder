@@ -32,7 +32,7 @@ const mockGetServerUrl = vi.fn();
 const mockGetClientUrl = vi.fn();
 const mockGetScopes = vi.fn();
 
-vi.mock('@thunder/shared-contexts', () => ({
+vi.mock('@thunder/contexts', () => ({
   useConfig: () => ({
     getClientId: mockGetClientId,
     getServerUrl: mockGetServerUrl,

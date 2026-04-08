@@ -17,7 +17,7 @@
  */
 
 import {ProtectedRoute} from '@asgardeo/react-router';
-import {ToastProvider} from '@thunder/shared-contexts';
+import {ToastProvider} from '@thunder/contexts';
 import type {JSX} from 'react';
 import {BrowserRouter, Route, Routes} from 'react-router';
 import ApplicationCreateProvider from './features/applications/contexts/ApplicationCreate/ApplicationCreateProvider';

@@ -25,8 +25,8 @@ import useNotificationSenders from '../useNotificationSenders';
 // Mock useConfig
 const mockGetServerUrl = vi.fn(() => 'https://api.example.com');
 
-vi.mock('@thunder/shared-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+vi.mock('@thunder/contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/contexts')>();
   return {
     ...actual,
     useConfig: () => ({

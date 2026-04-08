@@ -19,7 +19,7 @@
 import {useAsgardeo} from '@asgardeo/react';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useLogger} from '@thunder/logger';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig} from '@thunder/contexts';
 import {Stack} from '@wso2/oxygen-ui';
 import {useState, useEffect, useMemo, useRef} from 'react';
 import {useForm} from 'react-hook-form';

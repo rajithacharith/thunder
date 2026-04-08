@@ -17,7 +17,7 @@
  */
 
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig} from '@thunder/contexts';
 import DesignQueryKeys from '../constants/design-query-keys';
 import type {DesignResolveResponse} from '../models/responses';
 

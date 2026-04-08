@@ -72,8 +72,8 @@ vi.mock('@thunder/i18n/locales/en-US', () => ({
   },
 }));
 
-// Mock @thunder/shared-contexts
-vi.mock('@thunder/shared-contexts', () => ({
+// Mock @thunder/contexts
+vi.mock('@thunder/contexts', () => ({
   ConfigProvider: ({children}: {children: React.ReactNode}) => children,
 }));
 

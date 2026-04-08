@@ -84,8 +84,8 @@ vi.mock('../../../organization-units/components/OrganizationUnitTreePicker', () 
 }));
 
 // Mock shared-contexts (useToast)
-vi.mock('@thunder/shared-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+vi.mock('@thunder/contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/contexts')>();
   return {
     ...actual,
     useToast: () => ({showToast: mockShowToast}),

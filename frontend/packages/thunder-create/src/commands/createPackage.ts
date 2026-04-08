@@ -39,7 +39,7 @@ async function createPackage(): Promise<void> {
     message: 'Package type:',
     options: [
       {value: 'javascript', label: 'JavaScript package (like thunder-logger)'},
-      {value: 'react', label: 'React package (like thunder-shared-contexts)'},
+      {value: 'react', label: 'React package (like thunder-contexts)'},
     ],
   });
 
