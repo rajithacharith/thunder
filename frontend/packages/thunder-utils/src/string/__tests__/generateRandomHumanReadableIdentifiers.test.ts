@@ -20,12 +20,12 @@ import humanId from 'human-id';
 import {describe, expect, it, vi, beforeEach, afterEach} from 'vitest';
 import generateRandomHumanReadableIdentifiers from '../generateRandomHumanReadableIdentifiers';
 
-// Mock the human-id library
-vi.mock('human-id');
+vi.mock('human-id', () => ({
+  default: vi.fn(() => 'blue falcon'),
+}));
 
 describe('generateRandomHumanReadableIdentifiers', () => {
   beforeEach(() => {
-    // Setup mock implementation for human-id
     vi.mocked(humanId).mockImplementation(() => 'blue falcon');
   });
 
@@ -34,11 +34,11 @@ describe('generateRandomHumanReadableIdentifiers', () => {
   });
 
   describe('Basic Functionality', () => {
-    it('should return an array of 10 suggestions', () => {
+    it('should return an array of 5 suggestions by default', () => {
       const suggestions = generateRandomHumanReadableIdentifiers();
 
       expect(Array.isArray(suggestions)).toBe(true);
-      expect(suggestions).toHaveLength(10);
+      expect(suggestions).toHaveLength(5);
     });
 
     it('should return an array of strings', () => {
@@ -65,51 +65,43 @@ describe('generateRandomHumanReadableIdentifiers', () => {
       expect(humanId).toHaveBeenCalledWith({
         separator: ' ',
         capitalize: true,
-        adjectiveCount: 0,
+        adjectiveCount: 1,
         addAdverb: false,
       });
     });
 
-    it('should call humanId 10 times', () => {
+    it('should call humanId 5 times by default', () => {
       generateRandomHumanReadableIdentifiers();
 
-      expect(humanId).toHaveBeenCalledTimes(10);
+      expect(humanId).toHaveBeenCalledTimes(5);
     });
 
     it('should call humanId with space separator', () => {
       generateRandomHumanReadableIdentifiers();
 
-      const callArgs = vi.mocked(humanId).mock.calls[0][0];
-      if (typeof callArgs === 'object' && callArgs !== null) {
-        expect(callArgs.separator).toBe(' ');
-      }
+      const callArgs = vi.mocked(humanId).mock.calls[0][0] as Record<string, unknown>;
+      expect(callArgs['separator']).toBe(' ');
     });
 
     it('should call humanId with capitalize enabled', () => {
       generateRandomHumanReadableIdentifiers();
 
-      const callArgs = vi.mocked(humanId).mock.calls[0][0];
-      if (typeof callArgs === 'object' && callArgs !== null) {
-        expect(callArgs.capitalize).toBe(true);
-      }
+      const callArgs = vi.mocked(humanId).mock.calls[0][0] as Record<string, unknown>;
+      expect(callArgs['capitalize']).toBe(true);
     });
 
-    it('should call humanId with no adjectives', () => {
+    it('should call humanId with one adjective', () => {
       generateRandomHumanReadableIdentifiers();
 
-      const callArgs = vi.mocked(humanId).mock.calls[0][0];
-      if (typeof callArgs === 'object' && callArgs !== null) {
-        expect(callArgs.adjectiveCount).toBe(0);
-      }
+      const callArgs = vi.mocked(humanId).mock.calls[0][0] as Record<string, unknown>;
+      expect(callArgs['adjectiveCount']).toBe(1);
     });
 
     it('should call humanId with no adverbs', () => {
       generateRandomHumanReadableIdentifiers();
 
-      const callArgs = vi.mocked(humanId).mock.calls[0][0];
-      if (typeof callArgs === 'object' && callArgs !== null) {
-        expect(callArgs.addAdverb).toBe(false);
-      }
+      const callArgs = vi.mocked(humanId).mock.calls[0][0] as Record<string, unknown>;
+      expect(callArgs['addAdverb']).toBe(false);
     });
   });
 
@@ -186,36 +178,19 @@ describe('generateRandomHumanReadableIdentifiers', () => {
         .mockReturnValueOnce('red dragon')
         .mockReturnValueOnce('green phoenix')
         .mockReturnValueOnce('yellow tiger')
-        .mockReturnValueOnce('purple wolf')
-        .mockReturnValueOnce('orange bear')
-        .mockReturnValueOnce('pink panther')
-        .mockReturnValueOnce('white shark')
-        .mockReturnValueOnce('black raven')
-        .mockReturnValueOnce('silver fox');
+        .mockReturnValueOnce('purple wolf');
 
       const suggestions = generateRandomHumanReadableIdentifiers();
 
-      expect(suggestions).toEqual([
-        'Blue Falcon',
-        'Red Dragon',
-        'Green Phoenix',
-        'Yellow Tiger',
-        'Purple Wolf',
-        'Orange Bear',
-        'Pink Panther',
-        'White Shark',
-        'Black Raven',
-        'Silver Fox',
-      ]);
+      expect(suggestions).toEqual(['Blue Falcon', 'Red Dragon', 'Green Phoenix', 'Yellow Tiger', 'Purple Wolf']);
     });
 
     it('should handle duplicate names from humanId', () => {
-      // If humanId returns the same name multiple times, we should still get 10 results
       vi.mocked(humanId).mockReturnValue('blue falcon');
 
       const suggestions = generateRandomHumanReadableIdentifiers();
 
-      expect(suggestions).toHaveLength(10);
+      expect(suggestions).toHaveLength(5);
       suggestions.forEach((suggestion) => {
         expect(suggestion).toBe('Blue Falcon');
       });
@@ -228,7 +203,7 @@ describe('generateRandomHumanReadableIdentifiers', () => {
 
       const suggestions = generateRandomHumanReadableIdentifiers();
 
-      expect(suggestions).toHaveLength(10);
+      expect(suggestions).toHaveLength(5);
       suggestions.forEach((suggestion) => {
         expect(suggestion).toBe('');
       });
@@ -239,7 +214,6 @@ describe('generateRandomHumanReadableIdentifiers', () => {
 
       const suggestions = generateRandomHumanReadableIdentifiers();
 
-      // Split by space will create an empty string for double spaces
       suggestions.forEach((suggestion) => {
         expect(suggestion).toContain('Blue');
         expect(suggestion).toContain('Falcon');
@@ -252,7 +226,6 @@ describe('generateRandomHumanReadableIdentifiers', () => {
       const suggestions = generateRandomHumanReadableIdentifiers();
 
       suggestions.forEach((suggestion) => {
-        // Leading space will create an empty first element
         expect(suggestion).toContain('Blue');
         expect(suggestion).toContain('Falcon');
       });
@@ -307,15 +280,26 @@ describe('generateRandomHumanReadableIdentifiers', () => {
       const suggestions = generateRandomHumanReadableIdentifiers();
 
       suggestions.forEach((suggestion) => {
-        const words = suggestion.split(' ');
+        const words = suggestion.split(' ').filter((word) => word.length > 0);
         words.forEach((word) => {
-          if (word.length > 0) {
-            expect(word[0]).toBe(word[0].toUpperCase());
-            if (word.length > 1) {
-              expect(word.slice(1)).toBe(word.slice(1).toLowerCase());
-            }
-          }
+          expect(word[0]).toBe(word[0].toUpperCase());
+          expect(word.slice(1)).toBe(word.slice(1).toLowerCase());
         });
+      });
+    });
+  });
+
+  describe('Integration', () => {
+    it('should work with the real human-id module', async () => {
+      const actual = await vi.importActual<typeof import('human-id')>('human-id');
+      vi.mocked(humanId).mockImplementation(actual.default);
+
+      const suggestions = generateRandomHumanReadableIdentifiers();
+
+      expect(suggestions).toHaveLength(5);
+      suggestions.forEach((suggestion) => {
+        expect(typeof suggestion).toBe('string');
+        expect(suggestion.length).toBeGreaterThan(0);
       });
     });
   });
