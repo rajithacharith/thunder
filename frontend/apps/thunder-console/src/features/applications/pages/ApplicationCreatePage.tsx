@@ -39,7 +39,7 @@ import generateFlowGraph from '../../flows/utils/generateFlowGraph';
 import useIdentityProviders from '../../integrations/api/useIdentityProviders';
 import {AuthenticatorTypes} from '../../integrations/models/authenticators';
 import {IdentityProviderTypes} from '../../integrations/models/identity-provider';
-import useGetOrganizationUnits from '../../organization-units/api/useGetOrganizationUnits';
+import useHasMultipleOUs from '../../organization-units/api/useHasMultipleOUs';
 import useGetUserTypes from '../../user-types/api/useGetUserTypes';
 import useCreateApplication from '../api/useCreateApplication';
 import ConfigureSignInOptions from '../components/create-application/configure-signin-options/ConfigureSignInOptions';
@@ -115,9 +115,7 @@ export default function ApplicationCreatePage(): JSX.Element {
   const logger = useLogger('ApplicationCreatePage');
   const createApplication = useCreateApplication();
   const {data: userTypesData} = useGetUserTypes();
-  const {data: ouData, isLoading: isOuLoading} = useGetOrganizationUnits({limit: 2, offset: 0});
-  const ouList = ouData?.organizationUnits ?? [];
-  const hasMultipleOUs = (ouData?.totalResults ?? 0) > 1;
+  const {hasMultipleOUs, isLoading: isOuLoading, ouList} = useHasMultipleOUs();
 
   const [selectedUserTypes, setSelectedUserTypes] = useState<string[]>([]);
   const [createdApplication, setCreatedApplication] = useState<Application | null>(null);

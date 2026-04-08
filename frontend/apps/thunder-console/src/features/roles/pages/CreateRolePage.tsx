@@ -33,7 +33,7 @@ import {useState, useCallback, useMemo} from 'react';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import useGetOrganizationUnits from '../../organization-units/api/useGetOrganizationUnits';
+import useHasMultipleOUs from '../../organization-units/api/useHasMultipleOUs';
 import useCreateRole from '../api/useCreateRole';
 import ConfigureBasicInfo from '../components/create-role/ConfigureBasicInfo';
 import ConfigureOrganizationUnit from '../components/create-role/ConfigureOrganizationUnit';
@@ -49,9 +49,7 @@ export default function CreateRolePage(): JSX.Element {
 
   const {currentStep, setCurrentStep, name, setName, ouId, setOuId, error, setError} = useRoleCreate();
 
-  const {data: ouData, isLoading: isOuLoading} = useGetOrganizationUnits({limit: 2, offset: 0});
-  const ouList = ouData?.organizationUnits ?? [];
-  const hasMultipleOUs = (ouData?.totalResults ?? 0) > 1;
+  const {hasMultipleOUs, isLoading: isOuLoading, ouList} = useHasMultipleOUs();
 
   const [validationError, setValidationError] = useState<string | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
