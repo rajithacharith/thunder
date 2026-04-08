@@ -18,7 +18,7 @@
 
 import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig} from '@thunder/contexts';
 import UserTypeQueryKeys from '../constants/userTypeQueryKeys';
 import type {ApiUserSchema} from '../types/user-types';
 

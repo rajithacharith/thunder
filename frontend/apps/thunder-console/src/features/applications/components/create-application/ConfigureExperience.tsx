@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig} from '@thunder/contexts';
 import {
   Box,
   Typography,

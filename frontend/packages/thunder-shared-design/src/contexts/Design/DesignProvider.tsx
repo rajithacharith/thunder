@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig} from '@thunder/contexts';
 import {isEmpty} from '@thunder/utils';
 import {useMemo, type PropsWithChildren} from 'react';
 import DesignContext, {type DesignContextType} from './DesignContext';

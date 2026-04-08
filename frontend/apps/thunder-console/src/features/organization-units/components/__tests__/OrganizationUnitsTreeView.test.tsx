@@ -77,8 +77,8 @@ vi.mock('../../contexts/useOrganizationUnit', async () => {
 
 // Mock config — stable reference to avoid useCallback churn
 const stableConfig = {getServerUrl: () => 'http://localhost:8080'};
-vi.mock('@thunder/shared-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+vi.mock('@thunder/contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/contexts')>();
   return {
     ...actual,
     useConfig: () => stableConfig,

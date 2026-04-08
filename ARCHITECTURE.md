@@ -22,7 +22,7 @@ backend/internal/
 frontend/apps/
   thunder-gate/         # login/registration SPA  (@asgardeo/react — app-native mode)
   thunder-console/      # admin SPA               (@asgardeo/react — redirect mode)
-frontend/packages/      # @thunder/shared-contexts · design · hooks · i18n · utils · types · logger
+frontend/packages/      # @thunder/contexts · design · hooks · i18n · utils · types · logger
 samples/apps/           # react-sdk-sample · react-api-based-sample · react-vanilla-sample
 ```
 

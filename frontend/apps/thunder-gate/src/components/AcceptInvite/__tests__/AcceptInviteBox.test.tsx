@@ -90,7 +90,7 @@ vi.mock('@thunder/hooks', () => ({
 }));
 
 // Mock useConfig
-vi.mock('@thunder/shared-contexts', () => ({
+vi.mock('@thunder/contexts', () => ({
   useConfig: () => ({
     getServerUrl: () => 'https://api.example.com',
   }),

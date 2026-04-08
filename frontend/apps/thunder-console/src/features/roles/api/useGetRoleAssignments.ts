@@ -18,7 +18,7 @@
 
 import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig} from '@thunder/contexts';
 import RoleQueryKeys from '../constants/role-query-keys';
 import type {RoleAssignmentListParams} from '../models/requests';
 import type {RoleAssignmentListResponse} from '../models/role';
