@@ -611,6 +611,37 @@ func (s *FlowInferenceServiceTestSuite) TestInsertPhoneInputPromptIfNeeded_Inser
 	s.NotNil(phonePrompt.Layout.Position)
 }
 
+func (s *FlowInferenceServiceTestSuite) TestInsertPhoneInputPromptIfNeeded_UsesExecutorInputIdentifier() {
+	service := s.service.(*flowInferenceService)
+	nodes := []NodeDefinition{
+		{ID: "start", Type: "START", OnSuccess: "sms"},
+		{
+			ID:   "sms",
+			Type: "TASK_EXECUTION",
+			Executor: &ExecutorDefinition{
+				Name: executor.ExecutorNameSMSAuth,
+				Mode: executor.ExecutorModeSend,
+				Inputs: []InputDefinition{
+					{Ref: "phone_input_dvq8", Identifier: "mobile", Type: common.InputTypePhone, Required: true},
+				},
+			},
+			OnSuccess: "end",
+		},
+		{ID: "end", Type: "END"},
+	}
+
+	service.insertPhoneInputPromptIfNeeded(&nodes, false)
+
+	s.Len(nodes, 4, "Phone prompt node should be inserted")
+
+	phonePrompt := s.getNode(nodes, phoneInputPromptNodeID)
+	s.Len(phonePrompt.Prompts[0].Inputs, 1)
+	s.Equal("mobile", phonePrompt.Prompts[0].Inputs[0].Identifier,
+		"Inserted prompt should use identifier from executor inputs")
+	s.Equal("phone_input_dvq8", phonePrompt.Prompts[0].Inputs[0].Ref,
+		"Inserted prompt should use ref from executor inputs")
+}
+
 // Test generateRegistrationFlowName
 
 func (s *FlowInferenceServiceTestSuite) TestGenerateRegistrationFlowName_Authentication() {

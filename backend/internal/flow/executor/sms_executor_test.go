@@ -55,7 +55,7 @@ func (suite *SMSExecutorTestSuite) SetupTest() {
 		ExecutorNameSMSExecutor,
 		common.ExecutorTypeUtility,
 		[]common.Input{
-			{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+			{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
 		},
 		[]common.Input{},
 	).Return(suite.mockBaseExecutor)
@@ -68,7 +68,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_Success() {
 		FlowID:       "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
-			userAttributeMobileNumber: "+94714627887",
+			common.AttributeMobileNumber: "+94714627887",
 		},
 		RuntimeData: make(map[string]string),
 		NodeProperties: map[string]interface{}{
@@ -78,8 +78,8 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_Success() {
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
-		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
-	})
+		{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+	}).Maybe()
 	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
 		template.TemplateTypeSMS, mock.Anything).
 		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
@@ -101,7 +101,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_RecipientFromRuntimeData
 		ExecutorMode: ExecutorModeSend,
 		UserInputs:   make(map[string]string),
 		RuntimeData: map[string]string{
-			userAttributeMobileNumber: "+94714627887",
+			common.AttributeMobileNumber: "+94714627887",
 		},
 		NodeProperties: map[string]interface{}{
 			propertyKeyNotificationSenderID: "sender-uuid-001",
@@ -110,8 +110,8 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_RecipientFromRuntimeData
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
-		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
-	})
+		{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+	}).Maybe()
 	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
 		template.TemplateTypeSMS, mock.Anything).
 		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
@@ -132,10 +132,10 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_UserInputOverridesRuntim
 		FlowID:       "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
-			userAttributeMobileNumber: "+94714627887",
+			common.AttributeMobileNumber: "+94714627887",
 		},
 		RuntimeData: map[string]string{
-			userAttributeMobileNumber: "+94771111111",
+			common.AttributeMobileNumber: "+94771111111",
 		},
 		NodeProperties: map[string]interface{}{
 			propertyKeyNotificationSenderID: "sender-uuid-001",
@@ -144,8 +144,8 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_UserInputOverridesRuntim
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
-		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
-	})
+		{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+	}).Maybe()
 	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
 		template.TemplateTypeSMS, mock.Anything).
 		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
@@ -180,7 +180,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_CustomPhoneAttribute() {
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
 		{Identifier: "phoneNumber", Type: common.InputTypePhone, Required: true},
-	})
+	}).Maybe()
 	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
 		template.TemplateTypeSMS, mock.Anything).
 		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
@@ -196,6 +196,27 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_CustomPhoneAttribute() {
 	suite.Equal(dataValueTrue, resp.AdditionalData[common.DataSMSSent])
 }
 
+func (suite *SMSExecutorTestSuite) TestExecute_PrerequisiteNotMet_ReturnsFailure() {
+	ctx := &core.NodeContext{
+		FlowID:       "test-flow-id",
+		ExecutorMode: ExecutorModeSend,
+		UserInputs:   make(map[string]string),
+		RuntimeData:  make(map[string]string),
+		NodeProperties: map[string]interface{}{
+			propertyKeyNotificationSenderID: "sender-uuid-001",
+			propertyKeySMSTemplate:          string(template.ScenarioSelfRegistration),
+		},
+	}
+
+	resp, err := suite.executor.Execute(ctx)
+
+	suite.NoError(err)
+	suite.Equal(common.ExecFailure, resp.Status)
+	suite.Equal("SMS recipient is required", resp.FailureReason)
+	suite.mockSMSSenderSvc.AssertNotCalled(suite.T(), "Send",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+}
+
 func (suite *SMSExecutorTestSuite) TestExecute_SendMode_MissingRecipient() {
 	ctx := &core.NodeContext{
 		FlowID:       "test-flow-id",
@@ -208,8 +229,8 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_MissingRecipient() {
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
-		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
-	})
+		{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+	}).Maybe()
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -225,15 +246,15 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_MissingSenderID() {
 		FlowID:       "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
-			userAttributeMobileNumber: "+94714627887",
+			common.AttributeMobileNumber: "+94714627887",
 		},
 		RuntimeData:    make(map[string]string),
 		NodeProperties: map[string]interface{}{},
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
-		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
-	})
+		{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+	}).Maybe()
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -249,7 +270,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_InvalidSenderIDType() {
 		FlowID:       "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
-			userAttributeMobileNumber: "+94714627887",
+			common.AttributeMobileNumber: "+94714627887",
 		},
 		RuntimeData: make(map[string]string),
 		NodeProperties: map[string]interface{}{
@@ -258,8 +279,8 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_InvalidSenderIDType() {
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
-		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
-	})
+		{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+	}).Maybe()
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -273,7 +294,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_InvalidPhoneNumber() {
 		FlowID:       "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
-			userAttributeMobileNumber: "not-a-phone",
+			common.AttributeMobileNumber: "not-a-phone",
 		},
 		RuntimeData: make(map[string]string),
 		NodeProperties: map[string]interface{}{
@@ -282,8 +303,8 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_InvalidPhoneNumber() {
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
-		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
-	})
+		{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+	}).Maybe()
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -301,7 +322,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_NilSMSSenderService_Retu
 		ExecutorNameSMSExecutor,
 		common.ExecutorTypeUtility,
 		[]common.Input{
-			{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+			{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
 		},
 		[]common.Input{},
 	).Return(mockBaseExecutor)
@@ -312,7 +333,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_NilSMSSenderService_Retu
 		FlowID:       "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
-			userAttributeMobileNumber: "+94714627887",
+			common.AttributeMobileNumber: "+94714627887",
 		},
 		RuntimeData: make(map[string]string),
 		NodeProperties: map[string]interface{}{
@@ -332,7 +353,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_ClientError() {
 		FlowID:       "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
-			userAttributeMobileNumber: "+94714627887",
+			common.AttributeMobileNumber: "+94714627887",
 		},
 		RuntimeData: make(map[string]string),
 		NodeProperties: map[string]interface{}{
@@ -342,8 +363,8 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_ClientError() {
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
-		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
-	})
+		{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+	}).Maybe()
 	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
 		template.TemplateTypeSMS, mock.Anything).
 		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
@@ -368,7 +389,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_ServerError() {
 		FlowID:       "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
-			userAttributeMobileNumber: "+94714627887",
+			common.AttributeMobileNumber: "+94714627887",
 		},
 		RuntimeData: make(map[string]string),
 		NodeProperties: map[string]interface{}{
@@ -378,8 +399,8 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_ServerError() {
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
-		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
-	})
+		{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+	}).Maybe()
 	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
 		template.TemplateTypeSMS, mock.Anything).
 		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
@@ -403,7 +424,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_NoSMSTemplateProperty_ReturnsFlow
 		FlowID:       "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
-			userAttributeMobileNumber: "+94714627887",
+			common.AttributeMobileNumber: "+94714627887",
 		},
 		RuntimeData: make(map[string]string),
 		NodeProperties: map[string]interface{}{
@@ -412,8 +433,8 @@ func (suite *SMSExecutorTestSuite) TestExecute_NoSMSTemplateProperty_ReturnsFlow
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
-		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
-	})
+		{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+	}).Maybe()
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -430,7 +451,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_EmptySMSTemplateProperty_ReturnsF
 		FlowID:       "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
-			userAttributeMobileNumber: "+94714627887",
+			common.AttributeMobileNumber: "+94714627887",
 		},
 		RuntimeData: make(map[string]string),
 		NodeProperties: map[string]interface{}{
@@ -440,8 +461,8 @@ func (suite *SMSExecutorTestSuite) TestExecute_EmptySMSTemplateProperty_ReturnsF
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
-		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
-	})
+		{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+	}).Maybe()
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -458,7 +479,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SMSTemplatePropertySet_UsesCustom
 		FlowID:       "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
-			userAttributeMobileNumber: "+94714627887",
+			common.AttributeMobileNumber: "+94714627887",
 		},
 		RuntimeData: make(map[string]string),
 		NodeProperties: map[string]interface{}{
@@ -468,8 +489,8 @@ func (suite *SMSExecutorTestSuite) TestExecute_SMSTemplatePropertySet_UsesCustom
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
-		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
-	})
+		{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+	}).Maybe()
 	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
 		template.TemplateTypeSMS, mock.Anything).
 		Return(&template.RenderedTemplate{Body: testRenderedSMSBody}, nil)
@@ -491,7 +512,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_TemplateRenderFailure_Re
 		FlowID:       "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
-			userAttributeMobileNumber: "+94714627887",
+			common.AttributeMobileNumber: "+94714627887",
 		},
 		RuntimeData: make(map[string]string),
 		NodeProperties: map[string]interface{}{
@@ -501,8 +522,8 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_TemplateRenderFailure_Re
 	}
 
 	suite.mockBaseExecutor.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
-		{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
-	})
+		{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+	}).Maybe()
 	renderErr := &serviceerror.I18nServiceError{Code: "TPL-5000"}
 	suite.mockTemplateService.On("Render", mock.Anything, template.ScenarioSelfRegistration,
 		template.TemplateTypeSMS, mock.Anything).
