@@ -25,7 +25,7 @@ import CreateRolePage from '../CreateRolePage';
 // Mock dependencies
 vi.mock('../../api/useCreateRole');
 vi.mock('../../contexts/RoleCreate/useRoleCreate');
-vi.mock('../../../organization-units/api/useGetOrganizationUnits');
+vi.mock('../../../organization-units/api/useHasMultipleOUs');
 
 vi.mock('../../components/create-role/ConfigureBasicInfo', () => ({
   default: () => <div data-testid="configure-basic-info">Configure Basic Info</div>,
@@ -54,7 +54,7 @@ vi.mock('@thunder/logger/react', () => ({
 
 const {default: useCreateRole} = await import('../../api/useCreateRole');
 const {default: useRoleCreate} = await import('../../contexts/RoleCreate/useRoleCreate');
-const {default: useGetOrganizationUnits} = await import('../../../organization-units/api/useGetOrganizationUnits');
+const {default: useHasMultipleOUs} = await import('../../../organization-units/api/useHasMultipleOUs');
 const {useNavigate} = await import('react-router');
 
 describe('CreateRolePage', () => {
@@ -104,14 +104,11 @@ describe('CreateRolePage', () => {
       variables: undefined,
     } as unknown as ReturnType<typeof useCreateRole>);
 
-    vi.mocked(useGetOrganizationUnits).mockReturnValue({
-      data: {
-        totalResults: 1,
-        organizationUnits: [{id: 'ou-1', name: 'Default OU'}],
-      },
+    vi.mocked(useHasMultipleOUs).mockReturnValue({
+      hasMultipleOUs: false,
       isLoading: false,
-      error: null,
-    } as unknown as ReturnType<typeof useGetOrganizationUnits>);
+      ouList: [{id: 'ou-1', handle: 'default-ou', name: 'Default OU'}],
+    });
   });
 
   afterEach(() => {
@@ -161,17 +158,14 @@ describe('CreateRolePage', () => {
       reset: vi.fn(),
     } as unknown as ReturnType<typeof useRoleCreate>);
 
-    vi.mocked(useGetOrganizationUnits).mockReturnValue({
-      data: {
-        totalResults: 2,
-        organizationUnits: [
-          {id: 'ou-1', name: 'OU 1'},
-          {id: 'ou-2', name: 'OU 2'},
-        ],
-      },
+    vi.mocked(useHasMultipleOUs).mockReturnValue({
+      hasMultipleOUs: true,
       isLoading: false,
-      error: null,
-    } as unknown as ReturnType<typeof useGetOrganizationUnits>);
+      ouList: [
+        {id: 'ou-1', handle: 'ou-1', name: 'OU 1'},
+        {id: 'ou-2', handle: 'ou-2', name: 'OU 2'},
+      ],
+    });
 
     render(<CreateRolePage />);
 
@@ -191,17 +185,14 @@ describe('CreateRolePage', () => {
       reset: vi.fn(),
     } as unknown as ReturnType<typeof useRoleCreate>);
 
-    vi.mocked(useGetOrganizationUnits).mockReturnValue({
-      data: {
-        totalResults: 2,
-        organizationUnits: [
-          {id: 'ou-1', name: 'OU 1'},
-          {id: 'ou-2', name: 'OU 2'},
-        ],
-      },
+    vi.mocked(useHasMultipleOUs).mockReturnValue({
+      hasMultipleOUs: true,
       isLoading: false,
-      error: null,
-    } as unknown as ReturnType<typeof useGetOrganizationUnits>);
+      ouList: [
+        {id: 'ou-1', handle: 'ou-1', name: 'OU 1'},
+        {id: 'ou-2', handle: 'ou-2', name: 'OU 2'},
+      ],
+    });
 
     render(<CreateRolePage />);
 

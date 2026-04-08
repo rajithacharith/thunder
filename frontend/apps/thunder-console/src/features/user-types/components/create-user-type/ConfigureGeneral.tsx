@@ -20,7 +20,7 @@ import {Typography, Stack, FormControl, FormLabel, Checkbox, FormControlLabel} f
 import type {JSX} from 'react';
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
-import useGetOrganizationUnits from '../../../organization-units/api/useGetOrganizationUnits';
+import useHasMultipleOUs from '../../../organization-units/api/useHasMultipleOUs';
 import OrganizationUnitTreePicker from '../../../organization-units/components/OrganizationUnitTreePicker';
 
 /**
@@ -49,14 +49,14 @@ export default function ConfigureGeneral({
   onReadyChange = undefined,
 }: ConfigureGeneralProps): JSX.Element {
   const {t} = useTranslation();
-  const {data} = useGetOrganizationUnits();
+  const {hasMultipleOUs, ouList} = useHasMultipleOUs();
 
-  // Auto-select first organization unit
+  // Auto-select first organization unit when none is selected
   useEffect(() => {
-    if (!ouId && data?.organizationUnits && data.organizationUnits.length > 0) {
-      onOuIdChange(data.organizationUnits[0].id);
+    if (!ouId && ouList.length > 0) {
+      onOuIdChange(ouList[0].id);
     }
-  }, [data, ouId, onOuIdChange]);
+  }, [ouList, ouId, onOuIdChange]);
 
   // Broadcast readiness
   useEffect((): void => {
@@ -76,10 +76,12 @@ export default function ConfigureGeneral({
         </Typography>
       </Stack>
 
-      <FormControl fullWidth required>
-        <FormLabel>{t('userTypes:organizationUnit')}</FormLabel>
-        <OrganizationUnitTreePicker id="user-type-ou-picker" value={ouId} onChange={onOuIdChange} />
-      </FormControl>
+      {hasMultipleOUs && (
+        <FormControl fullWidth required>
+          <FormLabel>{t('userTypes:organizationUnit')}</FormLabel>
+          <OrganizationUnitTreePicker id="user-type-ou-picker" value={ouId} onChange={onOuIdChange} />
+        </FormControl>
+      )}
 
       <FormControlLabel
         control={
