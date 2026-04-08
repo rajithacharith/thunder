@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {AuthPageLayout} from '@thunder/shared-design';
+import {AuthPageLayout} from '@thunder/design';
 import type {JSX} from 'react';
 import AcceptInviteBox from '../components/AcceptInvite/AcceptInviteBox';
 

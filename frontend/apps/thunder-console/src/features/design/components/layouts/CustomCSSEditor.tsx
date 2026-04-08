@@ -16,14 +16,12 @@
  * under the License.
  */
 
-import type {Stylesheet} from '@thunder/shared-design';
+import type {Stylesheet} from '@thunder/design';
 import {Box, Button, Stack, Typography, useColorScheme} from '@wso2/oxygen-ui';
 import {Plus} from '@wso2/oxygen-ui-icons-react';
 import {forwardRef, useImperativeHandle, useRef, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import StylesheetItem from './StylesheetItem';
-
-// ── Main component ──────────────────────────────────────────────────────────
 
 export interface CustomCSSEditorHandle {
   /** Flush all pending debounced edits synchronously. */

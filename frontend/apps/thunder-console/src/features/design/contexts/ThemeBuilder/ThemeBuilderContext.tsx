@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {Theme} from '@thunder/shared-design';
+import type {Theme} from '@thunder/design';
 import {createContext, type Context} from 'react';
 import type {ThemeSection, Viewport} from '../../models/theme-builder';
 

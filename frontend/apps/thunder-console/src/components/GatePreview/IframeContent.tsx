@@ -25,8 +25,10 @@ import {
   AuthPageLayout,
   AuthCardLayout,
   GoogleFontLoader,
-} from '@thunder/shared-design';
-import type {Theme, DesignResolveResponse, Stylesheet} from '@thunder/shared-design';
+  type Theme,
+  type DesignResolveResponse,
+  type Stylesheet,
+} from '@thunder/design';
 import {useTemplateLiteralResolver} from '@thunder/hooks';
 import {TemplateLiteralType} from '@thunder/utils';
 import {Box} from '@wso2/oxygen-ui';

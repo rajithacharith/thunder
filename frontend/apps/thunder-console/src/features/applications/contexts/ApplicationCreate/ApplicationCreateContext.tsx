@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {Theme} from '@thunder/shared-design';
+import type {Theme} from '@thunder/design';
 import type {Context} from 'react';
 import {createContext} from 'react';
 import type {BasicFlowDefinition} from '../../../flows/models/responses';

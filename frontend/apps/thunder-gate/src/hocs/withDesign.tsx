@@ -17,7 +17,7 @@
  */
 
 import {useAsgardeo} from '@asgardeo/react';
-import {DesignProvider, type DesignResolveResponse} from '@thunder/shared-design';
+import {DesignProvider, type DesignResolveResponse} from '@thunder/design';
 import type {JSX, ComponentType} from 'react';
 
 export default function withDesign<P extends object>(WrappedComponent: ComponentType<P>) {

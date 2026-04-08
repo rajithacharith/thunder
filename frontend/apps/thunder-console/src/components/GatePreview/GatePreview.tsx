@@ -17,7 +17,7 @@
  */
 
 import type {EmbeddedFlowComponent} from '@asgardeo/react';
-import type {ColorSchemeOption, Stylesheet, Theme} from '@thunder/shared-design';
+import type {ColorSchemeOption, Stylesheet, Theme} from '@thunder/design';
 import {Box, CircularProgress, Typography, useColorScheme} from '@wso2/oxygen-ui';
 import {useCallback, useLayoutEffect, useRef, useState, type JSX, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';

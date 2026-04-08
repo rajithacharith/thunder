@@ -41,7 +41,7 @@
     "@tanstack/react-query-devtools": "catalog:",
     "@thunder/contexts": "workspace:^",
     "@thunder/logger": "workspace:^",
-    "@thunder/shared-design": "workspace:^",
+    "@thunder/design": "workspace:^",
     "@thunder/i18n": "workspace:^",
     "@thunder/hooks": "workspace:^",
     "@thunder/utils": "workspace:^",

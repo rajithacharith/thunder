@@ -17,7 +17,7 @@
  */
 
 import userEvent from '@testing-library/user-event';
-import type {Theme} from '@thunder/shared-design';
+import type {Theme} from '@thunder/design';
 import {render, screen, waitFor} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import ApplicationCreateProvider from '../../contexts/ApplicationCreate/ApplicationCreateProvider';
@@ -49,7 +49,7 @@ vi.mock('react-router', async () => {
 });
 
 // Mock design hooks
-vi.mock('@thunder/shared-design', () => ({
+vi.mock('@thunder/design', () => ({
   useGetThemes: () => ({
     data: {themes: [{id: 'theme-1', displayName: 'Default Theme', theme: {}}]},
     isLoading: false,

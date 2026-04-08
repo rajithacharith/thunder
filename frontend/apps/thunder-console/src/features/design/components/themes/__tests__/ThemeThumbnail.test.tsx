@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {ThemeListItem} from '@thunder/shared-design';
+import type {ThemeListItem} from '@thunder/design';
 import {render} from '@thunder/test-utils';
 import {describe, it, expect} from 'vitest';
 import ThemeThumbnail from '../ThemeThumbnail';

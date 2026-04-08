@@ -56,7 +56,7 @@
     "@thunder/i18n": "workspace:^",
     "@thunder/logger": "workspace:^",
     "@thunder/contexts": "workspace:^",
-    "@thunder/shared-design": "workspace:^",
+    "@thunder/design": "workspace:^",
     "@thunder/hooks": "workspace:^",
     "@thunder/utils": "workspace:^",
     "@wso2/oxygen-ui": "catalog:",

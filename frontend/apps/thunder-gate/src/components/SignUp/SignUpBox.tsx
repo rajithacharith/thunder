@@ -22,7 +22,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 
 import {SignUp, useAsgardeo, type EmbeddedFlowComponent} from '@asgardeo/react';
-import {FlowComponentRenderer, AuthCardLayout, useDesign} from '@thunder/shared-design';
+import {FlowComponentRenderer, AuthCardLayout, useDesign} from '@thunder/design';
 import {Box, Button, Alert, Typography, AlertTitle, CircularProgress} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useState} from 'react';

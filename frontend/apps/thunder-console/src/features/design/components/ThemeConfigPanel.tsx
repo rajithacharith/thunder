@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useGetTheme, useUpdateTheme, type Theme} from '@thunder/shared-design';
+import {useGetTheme, useUpdateTheme, type Theme} from '@thunder/design';
 import {Box, CircularProgress, ToggleButton, ToggleButtonGroup, Typography, type CssVarsPalette} from '@wso2/oxygen-ui';
 import {useCallback, useEffect, useImperativeHandle, useRef, useState, type JSX, type RefObject} from 'react';
 import {useTranslation} from 'react-i18next';

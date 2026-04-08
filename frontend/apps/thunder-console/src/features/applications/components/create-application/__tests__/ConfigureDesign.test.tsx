@@ -28,10 +28,10 @@ vi.mock('../../../../../components/EmojiPicker/EmojiPicker', () => ({
 }));
 
 // Mock the themes API
-vi.mock('@thunder/shared-design');
+vi.mock('@thunder/design');
 
 const {default: generateIconSuggestions} = await import('../../../../../utils/generateIconSuggestions');
-const {useGetThemes, useGetTheme} = await import('@thunder/shared-design');
+const {useGetThemes, useGetTheme} = await import('@thunder/design');
 
 describe('ConfigureDesign', () => {
   const mockOnLogoSelect = vi.fn();

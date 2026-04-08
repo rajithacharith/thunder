@@ -18,7 +18,7 @@
 
 import {render, screen, fireEvent, act, cleanup, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type {Stylesheet} from '@thunder/shared-design';
+import type {Stylesheet} from '@thunder/design';
 import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
 import {createRef} from 'react';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
