@@ -47,6 +47,12 @@ var (
 		Query: "SELECT ID, OU_ID, CATEGORY, TYPE, STATE, ATTRIBUTES, SYSTEM_ATTRIBUTES FROM ENTITY " +
 			"WHERE CATEGORY = $4 AND DEPLOYMENT_ID = $3 ORDER BY ID LIMIT $1 OFFSET $2",
 	}
+	// QuerySearchEntityList is the query to search entities across all categories.
+	QuerySearchEntityList = model.DBQuery{
+		ID: "ASQ-ENTITY_MGT-31",
+		Query: "SELECT ID, OU_ID, CATEGORY, TYPE, STATE, ATTRIBUTES, SYSTEM_ATTRIBUTES FROM ENTITY " +
+			"WHERE DEPLOYMENT_ID = $3 ORDER BY ID LIMIT $1 OFFSET $2",
+	}
 	// QueryCreateEntity is the query to create a new entity.
 	QueryCreateEntity = model.DBQuery{
 		ID: "ASQ-ENTITY_MGT-03",
@@ -389,8 +395,15 @@ func buildEntityListQuery(
 	queryID := "ASQ-ENTITY_MGT-22"
 
 	if len(filters) > 0 {
-		baseWithCategory := baseQuery + " WHERE CATEGORY = $1"
-		args := []interface{}{category}
+		var baseWithCategory string
+		var args []interface{}
+		if category != "" {
+			baseWithCategory = baseQuery + " WHERE CATEGORY = $1"
+			args = []interface{}{category}
+		} else {
+			baseWithCategory = baseQuery + " WHERE 1=1"
+			args = []interface{}{}
+		}
 		fq, fArgs, err := buildFilterQueryWithOffset(queryID, baseWithCategory, filters, len(args))
 		if err != nil {
 			return model.DBQuery{}, nil, err
@@ -415,6 +428,10 @@ func buildEntityListQuery(
 			PostgresQuery: postgresQuery,
 			SQLiteQuery:   sqliteQuery,
 		}, args, nil
+	}
+
+	if category == "" {
+		return QuerySearchEntityList, []interface{}{limit, offset, deploymentID}, nil
 	}
 
 	// No filters, use the pre-defined query

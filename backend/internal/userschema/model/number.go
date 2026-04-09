@@ -71,20 +71,19 @@ func (p *number) validateValue(value interface{}, path string, logger *log.Logge
 func (p *number) validateUniqueness(
 	value interface{},
 	path string,
-	identifyUser func(map[string]interface{}) (*string, error),
+	exists func(map[string]interface{}) (bool, error),
 	logger *log.Logger,
 ) (bool, error) {
 	if !p.unique {
 		return true, nil
 	}
 
-	filter := map[string]interface{}{path: value}
-	existingUserID, err := identifyUser(filter)
+	found, err := exists(map[string]interface{}{path: value})
 	if err != nil {
 		return false, err
 	}
 
-	return existingUserID == nil, nil
+	return !found, nil
 }
 
 func compileNumberProperty(propMap map[string]json.RawMessage) (property, error) {

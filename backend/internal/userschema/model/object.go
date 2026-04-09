@@ -94,7 +94,7 @@ func (p *object) validateValue(value interface{}, path string, logger *log.Logge
 func (p *object) validateUniqueness(
 	value interface{},
 	path string,
-	identifyUser func(map[string]interface{}) (*string, error),
+	exists func(map[string]interface{}) (bool, error),
 	logger *log.Logger,
 ) (bool, error) {
 	valueMap, ok := value.(map[string]interface{})
@@ -105,13 +105,13 @@ func (p *object) validateUniqueness(
 	}
 
 	for nestedName, nestedProp := range p.properties {
-		nestedValue, exists := valueMap[nestedName]
-		if !exists {
+		nestedValue, ok := valueMap[nestedName]
+		if !ok {
 			continue
 		}
 
 		nestedPath := path + "." + nestedName
-		isValid, err := nestedProp.validateUniqueness(nestedValue, nestedPath, identifyUser, logger)
+		isValid, err := nestedProp.validateUniqueness(nestedValue, nestedPath, exists, logger)
 		if err != nil {
 			return false, err
 		}
