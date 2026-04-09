@@ -23,6 +23,7 @@ import AddAssignmentDialog from '../AddAssignmentDialog';
 
 vi.mock('../../../../../users/api/useGetUsers');
 vi.mock('../../../../../groups/api/useGetGroups');
+vi.mock('../../../../../applications/api/useGetApplications');
 vi.mock('../../../../api/useGetRoleAssignments');
 vi.mock('../../../../../../hooks/useDataGridLocaleText');
 
@@ -33,6 +34,7 @@ vi.mock('react-i18next', () => ({
         'roles:assignments.dialog.title': 'Add Assignments',
         'roles:assignments.dialog.tabs.users': 'Users',
         'roles:assignments.dialog.tabs.groups': 'Groups',
+        'roles:assignments.dialog.tabs.apps': 'Apps',
         'roles:assignments.dialog.columns.displayName': 'Display Name',
         'roles:assignments.dialog.columns.userType': 'User Type',
         'roles:assignments.dialog.columns.name': 'Name',
@@ -102,6 +104,7 @@ vi.mock('@wso2/oxygen-ui', async (importOriginal) => {
 
 const {default: useGetUsers} = await import('../../../../../users/api/useGetUsers');
 const {default: useGetGroups} = await import('../../../../../groups/api/useGetGroups');
+const {default: useGetApplications} = await import('../../../../../applications/api/useGetApplications');
 const {default: useGetRoleAssignments} = await import('../../../../api/useGetRoleAssignments');
 const {default: useDataGridLocaleText} = await import('../../../../../../hooks/useDataGridLocaleText');
 
@@ -149,6 +152,20 @@ describe('AddAssignmentDialog', () => {
     count: 0,
     assignments: [],
   };
+  const mockApplicationsData = {
+    totalResults: 2,
+    count: 2,
+    applications: [
+      {id: 'app-1', name: 'Orders API', description: 'Orders backend service'},
+      {id: 'app-2', name: 'Billing API', description: 'Billing backend service'},
+    ],
+  };
+  const mockExistingAppAssignments = {
+    totalResults: 1,
+    startIndex: 0,
+    count: 1,
+    assignments: [{id: 'app-2', type: 'app', display: 'Billing API'}],
+  };
 
   const renderComponent = (props = {}) => render(<AddAssignmentDialog {...defaultProps} {...props} />);
 
@@ -166,11 +183,21 @@ describe('AddAssignmentDialog', () => {
       isLoading: false,
       error: null,
     } as unknown as ReturnType<typeof useGetGroups>);
+    vi.mocked(useGetApplications).mockReturnValue({
+      data: mockApplicationsData,
+      isLoading: false,
+      error: null,
+    } as unknown as ReturnType<typeof useGetApplications>);
 
     vi.mocked(useGetRoleAssignments).mockImplementation(
       (params: {type?: string}) =>
         ({
-          data: params.type === 'user' ? mockExistingUserAssignments : mockExistingGroupAssignments,
+          data:
+            params.type === 'user'
+              ? mockExistingUserAssignments
+              : params.type === 'group'
+                ? mockExistingGroupAssignments
+                : mockExistingAppAssignments,
           isLoading: false,
           error: null,
         }) as unknown as ReturnType<typeof useGetRoleAssignments>,
@@ -200,6 +227,7 @@ describe('AddAssignmentDialog', () => {
 
       expect(screen.getByText('Users')).toBeInTheDocument();
       expect(screen.getByText('Groups')).toBeInTheDocument();
+      expect(screen.getByText('Apps')).toBeInTheDocument();
     });
 
     it('should filter out already-assigned users', () => {
@@ -237,6 +265,16 @@ describe('AddAssignmentDialog', () => {
       await user.click(screen.getByText('Groups'));
 
       expect(screen.getByText('Admins')).toBeInTheDocument();
+    });
+
+    it('should switch to Apps tab when clicked', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      await user.click(screen.getByText('Apps'));
+
+      expect(screen.getByText('Orders API')).toBeInTheDocument();
+      expect(screen.queryByText('Billing API')).not.toBeInTheDocument();
     });
 
     it('should call onClose when Cancel is clicked', async () => {
@@ -300,6 +338,20 @@ describe('AddAssignmentDialog', () => {
       await user.click(screen.getByText('Groups'));
 
       expect(screen.getByText('Group fetch failed')).toBeInTheDocument();
+    });
+
+    it('should show error alert when apps fetch fails', async () => {
+      const user = userEvent.setup();
+      vi.mocked(useGetApplications).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: new Error('App fetch failed'),
+      } as unknown as ReturnType<typeof useGetApplications>);
+
+      renderComponent();
+      await user.click(screen.getByText('Apps'));
+
+      expect(screen.getByText('App fetch failed')).toBeInTheDocument();
     });
 
     it('should not show error alert while loading', () => {

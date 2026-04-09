@@ -73,12 +73,13 @@ describe('ManageMembersSection', () => {
     vi.clearAllMocks();
     mockUseGetGroupMembers.mockReturnValue({
       data: {
-        totalResults: 2,
+        totalResults: 3,
         startIndex: 0,
-        count: 2,
+        count: 3,
         members: [
           {id: 'u1', type: 'user'},
           {id: 'g2', type: 'group'},
+          {id: 'a1', type: 'app'},
         ],
       },
       isLoading: false,
@@ -100,6 +101,7 @@ describe('ManageMembersSection', () => {
 
     expect(screen.getByTestId('member-u1')).toBeInTheDocument();
     expect(screen.getByTestId('member-g2')).toBeInTheDocument();
+    expect(screen.getByTestId('member-a1')).toBeInTheDocument();
   });
 
   it('should show loading state', () => {

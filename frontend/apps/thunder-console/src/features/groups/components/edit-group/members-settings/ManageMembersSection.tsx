@@ -17,7 +17,7 @@
  */
 
 import {Box, Avatar, DataGrid, IconButton} from '@wso2/oxygen-ui';
-import {Trash2} from '@wso2/oxygen-ui-icons-react';
+import {AppWindow, Trash2, User, Users} from '@wso2/oxygen-ui-icons-react';
 import {useState, useMemo, type JSX, type ReactNode} from 'react';
 import {useTranslation} from 'react-i18next';
 import useDataGridLocaleText from '../../../../../hooks/useDataGridLocaleText';
@@ -61,31 +61,30 @@ export default function ManageMembersSection({
         width: 70,
         sortable: false,
         filterable: false,
-        renderCell: (params: DataGrid.GridRenderCellParams<Member>): JSX.Element => {
-          const displayVal = params.row.display ?? params.row.id;
-
-          return (
-            <Box
+        renderCell: (params: DataGrid.GridRenderCellParams<Member>): JSX.Element => (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+            }}
+          >
+            <Avatar
               sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
+                width: 30,
+                height: 30,
+                bgcolor: 'primary.main',
+                fontSize: '0.875rem',
               }}
             >
-              <Avatar
-                sx={{
-                  width: 30,
-                  height: 30,
-                  bgcolor: 'primary.main',
-                  fontSize: '0.875rem',
-                }}
-              >
-                {getInitials(displayVal)}
-              </Avatar>
-            </Box>
-          );
-        },
+              {params.row.type === 'user' && <User size={14} />}
+              {params.row.type === 'group' && <Users size={14} />}
+              {params.row.type === 'app' && <AppWindow size={14} />}
+              {!['user', 'group', 'app'].includes(params.row.type) && getInitials(params.row.display ?? params.row.id)}
+            </Avatar>
+          </Box>
+        ),
       },
       {
         field: 'display',

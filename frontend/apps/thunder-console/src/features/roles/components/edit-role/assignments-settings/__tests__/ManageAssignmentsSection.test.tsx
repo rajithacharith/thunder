@@ -51,11 +51,12 @@ vi.mock('react-i18next', () => ({
     t: (key: string) => {
       const translations: Record<string, string> = {
         'roles:edit.assignments.sections.manage.title': 'Manage Assignments',
-        'roles:edit.assignments.sections.manage.description': 'Manage users and groups assigned to this role.',
+        'roles:edit.assignments.sections.manage.description': 'Manage users, groups, and apps assigned to this role.',
         'roles:edit.assignments.sections.manage.listing.columns.name': 'Name',
         'roles:edit.assignments.sections.manage.listing.columns.id': 'ID',
         'roles:edit.assignments.sections.manage.tabs.users': 'Users',
         'roles:edit.assignments.sections.manage.tabs.groups': 'Groups',
+        'roles:edit.assignments.sections.manage.tabs.apps': 'Apps',
         'common:actions.remove': 'Remove',
       };
       return translations[key] || key;
@@ -130,6 +131,12 @@ describe('ManageAssignmentsSection', () => {
     count: 1,
     assignments: [{id: 'group-1', type: 'group' as const, display: 'Engineering'}],
   };
+  const mockAppAssignments = {
+    totalResults: 1,
+    startIndex: 0,
+    count: 1,
+    assignments: [{id: 'app-1', type: 'app' as const, display: 'Orders API'}],
+  };
 
   const renderComponent = (props = {}) => render(<ManageAssignmentsSection {...defaultProps} {...props} />);
 
@@ -139,7 +146,12 @@ describe('ManageAssignmentsSection', () => {
     vi.mocked(useGetRoleAssignments).mockImplementation(
       (params: {type?: string}) =>
         ({
-          data: params.type === 'user' ? mockUserAssignments : mockGroupAssignments,
+          data:
+            params.type === 'user'
+              ? mockUserAssignments
+              : params.type === 'group'
+                ? mockGroupAssignments
+                : mockAppAssignments,
           isLoading: false,
           error: null,
         }) as unknown as ReturnType<typeof useGetRoleAssignments>,
@@ -155,7 +167,7 @@ describe('ManageAssignmentsSection', () => {
       renderComponent();
 
       expect(screen.getByRole('heading', {name: 'Manage Assignments'})).toBeInTheDocument();
-      expect(screen.getByText('Manage users and groups assigned to this role.')).toBeInTheDocument();
+      expect(screen.getByText('Manage users, groups, and apps assigned to this role.')).toBeInTheDocument();
     });
 
     it('should render Users tab showing user assignments', () => {
@@ -169,6 +181,12 @@ describe('ManageAssignmentsSection', () => {
       renderComponent({activeAssignmentTab: 1});
 
       expect(screen.getByText('Engineering')).toBeInTheDocument();
+    });
+
+    it('should render Apps tab content when activeAssignmentTab is 2', () => {
+      renderComponent({activeAssignmentTab: 2});
+
+      expect(screen.getByText('Orders API')).toBeInTheDocument();
     });
 
     it('should render headerAction when provided', () => {

@@ -17,7 +17,7 @@
  */
 
 import {Box, Avatar, DataGrid, IconButton, Tabs, Tab} from '@wso2/oxygen-ui';
-import {Trash2, User, Users} from '@wso2/oxygen-ui-icons-react';
+import {AppWindow, Trash2, User, Users} from '@wso2/oxygen-ui-icons-react';
 import {useState, useMemo, type JSX, type ReactNode, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
 import useDataGridLocaleText from '../../../../../hooks/useDataGridLocaleText';
@@ -52,6 +52,10 @@ export default function ManageAssignmentsSection({
     pageSize: 10,
     page: 0,
   });
+  const [appPaginationModel, setAppPaginationModel] = useState<DataGrid.GridPaginationModel>({
+    pageSize: 10,
+    page: 0,
+  });
 
   const userAssignmentsParams = useMemo(
     () => ({
@@ -74,9 +78,20 @@ export default function ManageAssignmentsSection({
     }),
     [roleId, groupPaginationModel],
   );
+  const appAssignmentsParams = useMemo(
+    () => ({
+      roleId,
+      limit: appPaginationModel.pageSize,
+      offset: appPaginationModel.page * appPaginationModel.pageSize,
+      include: 'display' as const,
+      type: 'app' as const,
+    }),
+    [roleId, appPaginationModel],
+  );
 
   const {data: userAssignmentsData, isLoading: isUsersLoading} = useGetRoleAssignments(userAssignmentsParams);
   const {data: groupAssignmentsData, isLoading: isGroupsLoading} = useGetRoleAssignments(groupAssignmentsParams);
+  const {data: appAssignmentsData, isLoading: isAppsLoading} = useGetRoleAssignments(appAssignmentsParams);
 
   const baseColumns: DataGrid.GridColDef<RoleAssignment>[] = useMemo(
     () => [
@@ -158,6 +173,26 @@ export default function ManageAssignmentsSection({
     ],
     [baseColumns],
   );
+  const appColumns: DataGrid.GridColDef<RoleAssignment>[] = useMemo(
+    () => [
+      {
+        field: 'avatar',
+        headerName: '',
+        width: 70,
+        sortable: false,
+        filterable: false,
+        renderCell: (): JSX.Element => (
+          <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%'}}>
+            <Avatar sx={{width: 30, height: 30, bgcolor: 'primary.main', fontSize: '0.875rem'}}>
+              <AppWindow size={14} />
+            </Avatar>
+          </Box>
+        ),
+      },
+      ...baseColumns,
+    ],
+    [baseColumns],
+  );
 
   const handleTabChange = (_event: SyntheticEvent, newValue: number): void => {
     onAssignmentTabChange(newValue);
@@ -182,6 +217,12 @@ export default function ManageAssignmentsSection({
             icon={<Users size={16} />}
             iconPosition="start"
             label={t('roles:edit.assignments.sections.manage.tabs.groups')}
+            sx={{textTransform: 'none'}}
+          />
+          <Tab
+            icon={<AppWindow size={16} />}
+            iconPosition="start"
+            label={t('roles:edit.assignments.sections.manage.tabs.apps')}
             sx={{textTransform: 'none'}}
           />
         </Tabs>
@@ -217,6 +258,25 @@ export default function ManageAssignmentsSection({
             rowCount={groupAssignmentsData?.totalResults ?? 0}
             paginationModel={groupPaginationModel}
             onPaginationModelChange={setGroupPaginationModel}
+            pageSizeOptions={[5, 10, 25]}
+            disableRowSelectionOnClick
+            localeText={dataGridLocaleText}
+            sx={{'--oxygen-shape-borderRadius': '0px', border: 'none'}}
+          />
+        </Box>
+      )}
+
+      {activeAssignmentTab === 2 && (
+        <Box sx={{height: 400, width: '100%'}}>
+          <DataGrid.DataGrid
+            rows={appAssignmentsData?.assignments ?? []}
+            columns={appColumns}
+            loading={isAppsLoading}
+            getRowId={(row): string => `app:${row.id}`}
+            paginationMode="server"
+            rowCount={appAssignmentsData?.totalResults ?? 0}
+            paginationModel={appPaginationModel}
+            onPaginationModelChange={setAppPaginationModel}
             pageSizeOptions={[5, 10, 25]}
             disableRowSelectionOnClick
             localeText={dataGridLocaleText}
