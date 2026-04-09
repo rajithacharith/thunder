@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useGetThemes, useGetTheme, type ThemeListItem, type Theme} from '@thunder/shared-design';
+import {useGetThemes, useGetTheme, type ThemeListItem, type Theme} from '@thunder/design';
 import {
   Typography,
   Stack,
@@ -334,7 +334,7 @@ export default function ConfigureDesign({
           {/* Button to open full picker — shows selected custom logo when one is active */}
           <ResourceAvatar
             value={isCustomLogo ? appLogo! : undefined}
-            fallbackIcon={<Plus size={20} />}
+            fallback={<Plus size={20} />}
             size={isCustomLogo ? 70 : 50}
             onSelect={handleLogoSelect}
             editAriaLabel={t('applications:onboarding.configure.design.logo.chooseLogo')}

@@ -19,7 +19,7 @@
 import {useAsgardeo} from '@asgardeo/react';
 import {useQueryClient} from '@tanstack/react-query';
 import {useLogger} from '@thunder/logger/react';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig} from '@thunder/contexts';
 import {
   Box,
   IconButton,
@@ -28,14 +28,11 @@ import {
   TreeView,
   Snackbar,
   Alert,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
   useTheme,
   Avatar,
+  Tooltip,
 } from '@wso2/oxygen-ui';
-import {Building, EllipsisVertical, Pencil, Plus, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {Pencil, Plus, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useState, useCallback, useEffect, useRef, useMemo} from 'react';
 import type {ReactNode, MouseEvent, KeyboardEvent, SyntheticEvent, JSX} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -106,7 +103,6 @@ function CustomTreeItem(allProps: CustomTreeItemProps): JSX.Element {
   const treeItemProps = {itemId, label, ...restProps};
   const theme = useTheme();
   const {t} = useTranslation();
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const labelStr = typeof label === 'string' ? label : '';
   const itemData = itemMapProp?.get(itemId);
   const isLoadMoreItem = itemId.endsWith(OrganizationUnitTreeConstants.LOAD_MORE_SUFFIX);
@@ -293,98 +289,83 @@ function CustomTreeItem(allProps: CustomTreeItemProps): JSX.Element {
   }
 
   return (
-    <>
-      <TreeView.TreeItem
-        {...treeItemProps}
-        {...(isItemLoading ? {slots: {collapseIcon: TreeViewLoadingIcon, expandIcon: TreeViewLoadingIcon}} : {})}
-        label={
-          <Box
+    <TreeView.TreeItem
+      {...treeItemProps}
+      {...(isItemLoading ? {slots: {collapseIcon: TreeViewLoadingIcon, expandIcon: TreeViewLoadingIcon}} : {})}
+      label={
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+          }}
+        >
+          <ResourceAvatar
+            value={itemData?.logoUrl}
+            size={30}
+            fallback="emoji:🏛️"
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.5,
+              backgroundColor: theme.vars?.palette.grey[500],
+              fontSize: '1rem',
+              ...theme.applyStyles('dark', {
+                backgroundColor: theme.vars?.palette.grey[900],
+              }),
             }}
-          >
-            <ResourceAvatar
-              value={itemData?.logoUrl}
-              size={32}
-              fallbackIcon={<Building size={14} />}
-              sx={{
-                p: 0.5,
-                backgroundColor: theme?.vars?.palette.primary.main,
-                fontSize: '1rem',
-              }}
-            />
-            <Box sx={{flexGrow: 1, minWidth: 0}}>
-              <Typography variant="body2" sx={{fontWeight: 500, lineHeight: 1.3}}>
-                {labelStr}
+          />
+          <Box sx={{flexGrow: 1, minWidth: 0}}>
+            <Typography variant="body2" sx={{fontWeight: 500, lineHeight: 1.3}}>
+              {labelStr}
+            </Typography>
+            {itemData?.handle && (
+              <Typography variant="caption" color="text.secondary" sx={{lineHeight: 1.2, display: 'block'}}>
+                {itemData.handle}
               </Typography>
-              {itemData?.handle && (
-                <Typography variant="caption" color="text.secondary" sx={{lineHeight: 1.2, display: 'block'}}>
-                  {itemData.handle}
-                </Typography>
-              )}
-            </Box>
+            )}
+          </Box>
+          <Tooltip title={addChildTooltip}>
             <IconButton
               size="small"
-              aria-label="Actions"
+              aria-label={addChildTooltip}
               onClick={(e: MouseEvent<HTMLButtonElement>) => {
                 e.stopPropagation();
-                setMenuAnchor(e.currentTarget);
-              }}
-              sx={{
-                color: theme.vars?.palette.text.secondary,
-                '&:hover': {color: theme.vars?.palette.text.primary},
+                onAddChild?.(e as unknown as MouseEvent<HTMLElement>, {
+                  id: itemId,
+                  name: labelStr,
+                  handle: itemData?.handle ?? '',
+                });
               }}
             >
-              <EllipsisVertical size={16} />
+              <Plus size={16} />
             </IconButton>
-          </Box>
-        }
-      />
-      <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
-        <MenuItem
-          onClick={(e: MouseEvent<HTMLLIElement>) => {
-            e.stopPropagation();
-            setMenuAnchor(null);
-            onAddChild?.(e as unknown as MouseEvent<HTMLElement>, {
-              id: itemId,
-              name: labelStr,
-              handle: itemData?.handle ?? '',
-            });
-          }}
-        >
-          <ListItemIcon>
-            <Plus size={16} />
-          </ListItemIcon>
-          <ListItemText>{addChildTooltip}</ListItemText>
-        </MenuItem>
-        <MenuItem
-          onClick={(e: MouseEvent<HTMLLIElement>) => {
-            e.stopPropagation();
-            setMenuAnchor(null);
-            onEdit?.(e as unknown as MouseEvent<HTMLElement>, {id: itemId, name: labelStr});
-          }}
-        >
-          <ListItemIcon>
-            <Pencil size={16} />
-          </ListItemIcon>
-          <ListItemText>{editTooltip}</ListItemText>
-        </MenuItem>
-        <MenuItem
-          onClick={(e: MouseEvent<HTMLLIElement>) => {
-            e.stopPropagation();
-            setMenuAnchor(null);
-            onDelete?.(e as unknown as MouseEvent<HTMLElement>, {id: itemId, name: labelStr});
-          }}
-        >
-          <ListItemIcon>
-            <Trash2 size={16} color="red" />
-          </ListItemIcon>
-          <ListItemText sx={{color: 'error.main'}}>{deleteTooltip}</ListItemText>
-        </MenuItem>
-      </Menu>
-    </>
+          </Tooltip>
+          <Tooltip title={editTooltip}>
+            <IconButton
+              size="small"
+              aria-label={editTooltip}
+              onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                onEdit?.(e as unknown as MouseEvent<HTMLElement>, {id: itemId, name: labelStr});
+              }}
+            >
+              <Pencil size={16} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={deleteTooltip}>
+            <IconButton
+              size="small"
+              color="error"
+              aria-label={deleteTooltip}
+              onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                onDelete?.(e as unknown as MouseEvent<HTMLElement>, {id: itemId, name: labelStr});
+              }}
+            >
+              <Trash2 size={16} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      }
+    />
   );
 }
 

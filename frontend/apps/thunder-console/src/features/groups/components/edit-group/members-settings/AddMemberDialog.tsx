@@ -35,7 +35,7 @@ import {useState, useMemo, useCallback, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import useDataGridLocaleText from '../../../../../hooks/useDataGridLocaleText';
 import useGetUsers from '../../../../users/api/useGetUsers';
-import type {ApiUser} from '../../../../users/types/users';
+import type {ApiUser} from '../../../../users/models/users';
 import type {Member} from '../../../models/group';
 
 interface AddMemberDialogProps {

@@ -1045,6 +1045,132 @@ describe('reactFlowTransformer', () => {
 
         expect(result.nodes[0].meta?.components?.[0].eventType).toBe(ActionEventTypes.Trigger);
       });
+
+      it('should set SUBMIT eventType for buttons inside a block with input fields', () => {
+        const components: Element[] = [
+          {
+            id: 'block-1',
+            type: 'BLOCK',
+            category: ElementCategories.Block,
+            components: [
+              {
+                id: 'field-phone',
+                type: ElementTypes.PhoneInput,
+                category: ElementCategories.Field,
+                inputType: 'tel',
+                label: 'Mobile Number',
+              },
+              {
+                id: 'action-1',
+                type: ElementTypes.Action,
+                category: ElementCategories.Action,
+                eventType: ActionEventTypes.Trigger,
+                label: 'Continue',
+                variant: 'PRIMARY',
+              },
+            ],
+          } as unknown as Element,
+        ];
+
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [createNode('view-1', StepTypes.View, {x: 0, y: 0}, {components})],
+          edges: [],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const block = result.nodes[0].meta?.components?.[0] ?? {};
+        const blockChildren = block.components as Record<string, unknown>[];
+        const actionButton = blockChildren.find((c) => c.type === ElementTypes.Action);
+        expect(actionButton?.eventType).toBe(ActionEventTypes.Submit);
+      });
+
+      it('should keep TRIGGER eventType for buttons inside a block without input fields', () => {
+        const components: Element[] = [
+          {
+            id: 'block-1',
+            type: 'BLOCK',
+            category: ElementCategories.Block,
+            components: [
+              {
+                id: 'text-1',
+                type: ElementTypes.Text,
+                category: ElementCategories.Display,
+                label: 'Hello',
+              },
+              {
+                id: 'action-1',
+                type: ElementTypes.Action,
+                category: ElementCategories.Action,
+                eventType: ActionEventTypes.Trigger,
+                label: 'Click me',
+                variant: 'PRIMARY',
+              },
+            ],
+          } as unknown as Element,
+        ];
+
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [createNode('view-1', StepTypes.View, {x: 0, y: 0}, {components})],
+          edges: [],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const block = result.nodes[0].meta?.components?.[0] ?? {};
+        const blockChildren = block.components as Record<string, unknown>[];
+        const actionButton = blockChildren.find((c) => c.type === ElementTypes.Action);
+        expect(actionButton?.eventType).toBe(ActionEventTypes.Trigger);
+      });
+
+      it('should not promote eventType when a block has inputs and multiple buttons', () => {
+        const components: Element[] = [
+          {
+            id: 'block-1',
+            type: 'BLOCK',
+            category: ElementCategories.Block,
+            components: [
+              {
+                id: 'field-phone',
+                type: ElementTypes.PhoneInput,
+                category: ElementCategories.Field,
+                inputType: 'tel',
+                label: 'Mobile Number',
+              },
+              {
+                id: 'action-submit',
+                type: ElementTypes.Action,
+                category: ElementCategories.Action,
+                eventType: ActionEventTypes.Trigger,
+                label: 'Submit',
+                variant: 'PRIMARY',
+              },
+              {
+                id: 'action-cancel',
+                type: ElementTypes.Action,
+                category: ElementCategories.Action,
+                eventType: ActionEventTypes.Trigger,
+                label: 'Cancel',
+                variant: 'SECONDARY',
+              },
+            ],
+          } as unknown as Element,
+        ];
+
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [createNode('view-1', StepTypes.View, {x: 0, y: 0}, {components})],
+          edges: [],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const block = result.nodes[0].meta?.components?.[0] ?? {};
+        const blockChildren = block.components as Record<string, unknown>[];
+        const actionButtons = blockChildren.filter((c) => c.type === ElementTypes.Action);
+        expect(actionButtons).toHaveLength(2);
+        expect(actionButtons[0].eventType).toBe(ActionEventTypes.Trigger);
+        expect(actionButtons[1].eventType).toBe(ActionEventTypes.Trigger);
+      });
     });
 
     describe('Input Field Processing', () => {
@@ -1302,6 +1428,128 @@ describe('reactFlowTransformer', () => {
         ]);
 
         expect(otherPrompt?.inputs).toBeUndefined();
+      });
+    });
+
+    describe('Display-only VIEW nodes', () => {
+      it('should set next field when VIEW node has only display components and an outgoing edge', () => {
+        const components: Element[] = [
+          {
+            id: 'heading-1',
+            type: ElementTypes.Text,
+            category: ElementCategories.Display,
+          } as Element,
+          {
+            id: 'body-1',
+            type: ElementTypes.Text,
+            category: ElementCategories.Display,
+          } as Element,
+        ];
+
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [
+            createNode('display-view-1', StepTypes.View, {x: 0, y: 0}, {components}),
+            createNode('end-1', StepTypes.End),
+          ],
+          edges: [createEdge('edge-1', 'display-view-1', 'end-1')],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const viewNode = result.nodes.find((n) => n.id === 'display-view-1');
+        expect(viewNode?.next).toBe('end-1');
+        expect(viewNode?.prompts).toBeUndefined();
+      });
+
+      it('should not set next when VIEW has only display components but no outgoing edge', () => {
+        const components: Element[] = [
+          {
+            id: 'text-1',
+            type: ElementTypes.Text,
+            category: ElementCategories.Display,
+          } as Element,
+        ];
+
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [createNode('display-view-1', StepTypes.View, {x: 0, y: 0}, {components})],
+          edges: [],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const viewNode = result.nodes[0];
+        expect(viewNode.next).toBeUndefined();
+        expect(viewNode.prompts).toBeUndefined();
+      });
+
+      it('should set prompts (not next) when VIEW node has a top-level ACTION component', () => {
+        const components: Element[] = [
+          {
+            id: 'text-1',
+            type: ElementTypes.Text,
+            category: ElementCategories.Display,
+          } as Element,
+          {
+            id: 'button-1',
+            type: ElementTypes.Action,
+            category: ElementCategories.Action,
+            action: {onSuccess: 'end-1'},
+          } as Element,
+        ];
+
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [createNode('view-1', StepTypes.View, {x: 0, y: 0}, {components})],
+          edges: [createEdge('edge-1', 'view-1', 'end-1', 'button-1_NEXT')],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const viewNode = result.nodes[0];
+        expect(viewNode.prompts).toHaveLength(1);
+        expect(viewNode.next).toBeUndefined();
+      });
+
+      it('should set prompts (not next) when ACTION is nested inside a BLOCK', () => {
+        const components: Element[] = [
+          {
+            id: 'block-1',
+            type: 'BLOCK',
+            category: ElementCategories.Block,
+            components: [
+              {
+                id: 'button-1',
+                type: ElementTypes.Action,
+                category: ElementCategories.Action,
+                action: {onSuccess: 'end-1'},
+              } as Element,
+            ],
+          } as unknown as Element,
+        ];
+
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [createNode('view-1', StepTypes.View, {x: 0, y: 0}, {components})],
+          edges: [createEdge('edge-1', 'view-1', 'end-1', 'button-1_NEXT')],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        const viewNode = result.nodes[0];
+        expect(viewNode.prompts).toHaveLength(1);
+        expect(viewNode.next).toBeUndefined();
+      });
+
+      it('should not set next when VIEW components array is empty', () => {
+        const canvasData: ReactFlowCanvasData = {
+          nodes: [createNode('view-1', StepTypes.View, {x: 0, y: 0}, {components: []})],
+          edges: [createEdge('edge-1', 'view-1', 'end-1')],
+        };
+
+        const result = transformReactFlow(canvasData);
+
+        // meta.components is set but empty; no prompts and next falls through
+        const viewNode = result.nodes[0];
+        expect(viewNode.prompts).toBeUndefined();
+        expect(viewNode.next).toBeUndefined();
       });
     });
   });

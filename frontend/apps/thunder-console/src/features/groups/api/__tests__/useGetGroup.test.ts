@@ -29,8 +29,8 @@ vi.mock('@asgardeo/react', () => ({
 }));
 
 const mockGetServerUrl = vi.fn<() => string>(() => 'https://localhost:8090');
-vi.mock('@thunder/shared-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+vi.mock('@thunder/contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/contexts')>();
   return {
     ...actual,
     useConfig: () => ({getServerUrl: mockGetServerUrl}),
@@ -67,7 +67,7 @@ describe('useGetGroup', () => {
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'https://localhost:8090/groups/g1',
+        url: 'https://localhost:8090/groups/g1?include=display',
         method: 'GET',
       }),
     );

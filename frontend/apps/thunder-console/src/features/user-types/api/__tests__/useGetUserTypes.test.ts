@@ -27,8 +27,8 @@ vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
 }));
 
-vi.mock('@thunder/shared-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+vi.mock('@thunder/contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/contexts')>();
   return {
     ...actual,
     useConfig: vi.fn(),
@@ -36,7 +36,7 @@ vi.mock('@thunder/shared-contexts', async (importOriginal) => {
 });
 
 const {useAsgardeo} = await import('@asgardeo/react');
-const {useConfig} = await import('@thunder/shared-contexts');
+const {useConfig} = await import('@thunder/contexts');
 
 describe('useGetUserTypes', () => {
   let mockHttpRequest: ReturnType<typeof vi.fn>;
@@ -113,7 +113,7 @@ describe('useGetUserTypes', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.url).toBe('https://api.test.com/user-schemas');
+    expect(callArgs.url).toBe('https://api.test.com/user-schemas?include=display');
   });
 
   it('should build URL with limit parameter only', async () => {
@@ -130,7 +130,7 @@ describe('useGetUserTypes', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.url).toBe('https://api.test.com/user-schemas?limit=10');
+    expect(callArgs.url).toBe('https://api.test.com/user-schemas?limit=10&include=display');
   });
 
   it('should build URL with offset parameter only', async () => {
@@ -147,7 +147,7 @@ describe('useGetUserTypes', () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const callArgs = mockHttpRequest.mock.calls[0][0];
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.url).toBe('https://api.test.com/user-schemas?offset=5');
+    expect(callArgs.url).toBe('https://api.test.com/user-schemas?offset=5&include=display');
   });
 
   it('should build URL with both limit and offset parameters', async () => {

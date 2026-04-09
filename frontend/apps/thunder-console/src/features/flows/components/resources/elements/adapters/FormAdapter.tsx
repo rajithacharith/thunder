@@ -19,13 +19,20 @@
 import {CollisionPriority} from '@dnd-kit/abstract';
 import {Badge, Box, Typography} from '@wso2/oxygen-ui';
 import classNames from 'classnames';
-import {useMemo, type ReactElement} from 'react';
-import {useTranslation} from 'react-i18next';
+import {useEffect, useMemo, type ReactElement} from 'react';
+import {Trans, useTranslation} from 'react-i18next';
 import Droppable from '../../../dnd/Droppable';
 import ReorderableFlowElement from '../../steps/view/ReorderableElement';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
-import {ElementCategories, type Element as FlowElement} from '@/features/flows/models/elements';
+import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
+import {
+  ActionEventTypes,
+  ElementCategories,
+  ElementTypes,
+  type Element as FlowElement,
+} from '@/features/flows/models/elements';
 import FlowEventTypes from '@/features/flows/models/extension';
+import Notification, {NotificationType} from '@/features/flows/models/notification';
 import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
 import generateResourceId from '@/features/flows/utils/generateResourceId';
 import './FormAdapter.scss';
@@ -73,8 +80,42 @@ function FormAdapter({
 }: FormAdapterPropsInterface): ReactElement {
   const {t} = useTranslation();
 
-  const shouldShowFormFieldsPlaceholder = !resource?.components?.some(
+  const {addNotification, removeNotification} = useValidationStatus();
+
+  const hasInputFields = resource?.components?.some(
     (element: FlowElement) => element.category === ElementCategories.Field,
+  );
+
+  const hasSubmitButton = resource?.components?.some(
+    (element: FlowElement) =>
+      element.type === ElementTypes.Action &&
+      (element as FlowElement & {eventType?: string}).eventType === ActionEventTypes.Submit,
+  );
+
+  const shouldShowFormFieldsPlaceholder = !hasInputFields;
+
+  const errorId = `${resource.id}_FORM_NO_SUBMIT_BUTTON`;
+
+  useEffect(() => {
+    if (hasInputFields && !hasSubmitButton) {
+      const message = (
+        <Trans i18nKey="flows:core.validation.fields.form.noSubmitButton" values={{id: resource.id}}>
+          Form <code>{resource.id}</code> has input fields but no submit button.
+        </Trans>
+      );
+      const notification = new Notification(errorId, message, NotificationType.ERROR);
+      notification.addResource(resource);
+      addNotification?.(notification);
+    } else {
+      removeNotification?.(errorId);
+    }
+  }, [hasInputFields, hasSubmitButton, resource, errorId, addNotification, removeNotification]);
+
+  useEffect(
+    () => () => {
+      removeNotification?.(errorId);
+    },
+    [errorId, removeNotification],
   );
 
   const filteredComponents = useMemo(() => {
@@ -91,7 +132,7 @@ function FormAdapter({
         vertical: 'top',
       }}
       badgeContent={t('flows:core.adapters.form.badgeLabel')}
-      className="adapter form-adapter"
+      className={classNames('adapter', 'form-adapter')}
     >
       <Box>
         <Droppable

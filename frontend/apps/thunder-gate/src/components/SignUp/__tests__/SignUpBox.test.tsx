@@ -16,16 +16,17 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render as testRender, screen, fireEvent, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
-import {DesignContext, type DesignContextType} from '@thunder/shared-design';
+import {DesignContext, type DesignContextType} from '@thunder/design';
+import {screen, fireEvent, waitFor, render as testRender} from '@thunder/test-utils';
+import {act} from 'react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import SignUpBox from '../SignUpBox';
 
 // Mock useDesign and FlowComponentRenderer
 const mockUseDesign = vi.fn();
-vi.mock('@thunder/shared-design', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/shared-design')>();
+vi.mock('@thunder/design', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/design')>();
   return {
     ...actual,
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -65,7 +66,7 @@ vi.mock('@thunder/shared-branding', () => ({
 }));
 
 // Mock useTemplateLiteralResolver
-vi.mock('@thunder/shared-hooks', () => ({
+vi.mock('@thunder/hooks', () => ({
   useTemplateLiteralResolver: () => ({
     resolve: (key: string) => key,
   }),
@@ -107,14 +108,22 @@ const createMockSignUpRenderProps = (overrides: Partial<MockSignUpRenderProps> =
 });
 
 let mockSignUpRenderProps: MockSignUpRenderProps = createMockSignUpRenderProps();
+let capturedOnFlowChange: ((response: unknown) => void) | undefined;
 
 vi.mock('@asgardeo/react', async () => {
   const actual = await vi.importActual('@asgardeo/react');
   return {
     ...actual,
-    SignUp: ({children}: {children: (props: typeof mockSignUpRenderProps) => React.ReactNode}) => (
-      <div data-testid="asgardeo-signup">{children(mockSignUpRenderProps)}</div>
-    ),
+    SignUp: ({
+      children,
+      onFlowChange = undefined,
+    }: {
+      children: (props: typeof mockSignUpRenderProps) => React.ReactNode;
+      onFlowChange?: (response: unknown) => void;
+    }) => {
+      capturedOnFlowChange = onFlowChange;
+      return <div data-testid="asgardeo-signup">{children(mockSignUpRenderProps)}</div>;
+    },
     EmbeddedFlowComponentType: {
       Text: 'TEXT',
       Block: 'BLOCK',
@@ -136,6 +145,7 @@ describe('SignUpBox', () => {
       isDesignEnabled: false,
     });
     mockSignUpRenderProps = createMockSignUpRenderProps();
+    capturedOnFlowChange = undefined;
   });
 
   it('renders without crashing', () => {
@@ -160,12 +170,90 @@ describe('SignUpBox', () => {
     expect(screen.getByText('Registration failed')).toBeInTheDocument();
   });
 
-  it('shows fallback error when no components available', () => {
+  it('shows fallback error when no components are available', () => {
     mockSignUpRenderProps = createMockSignUpRenderProps({
       components: [],
     });
     render(<SignUpBox />);
     expect(screen.getByText("Oops, that didn't work")).toBeInTheDocument();
+  });
+
+  it('always shows sign-in link regardless of flow state', () => {
+    mockSignUpRenderProps = createMockSignUpRenderProps({components: []});
+    render(<SignUpBox />);
+
+    expect(screen.getByText(/Already have an account/)).toBeInTheDocument();
+
+    expect(capturedOnFlowChange).toBeDefined();
+
+    act(() => {
+      capturedOnFlowChange!({data: {additionalData: {}}});
+    });
+
+    // Link remains visible after any flow change
+    expect(screen.getByText(/Already have an account/)).toBeInTheDocument();
+  });
+
+  it('shows flowError alert when onFlowChange reports failureReason', () => {
+    mockSignUpRenderProps = createMockSignUpRenderProps({
+      components: [{id: 'block', type: 'BLOCK', components: []}],
+    });
+    render(<SignUpBox />);
+
+    expect(capturedOnFlowChange).toBeDefined();
+
+    act(() => {
+      capturedOnFlowChange!({
+        failureReason: 'A user with this email already exists. Please use a different value.',
+        data: {additionalData: {}},
+      });
+    });
+
+    expect(
+      screen.getByText('A user with this email already exists. Please use a different value.'),
+    ).toBeInTheDocument();
+  });
+
+  it('clears flowError when submit is triggered', async () => {
+    mockSignUpRenderProps = createMockSignUpRenderProps({
+      components: [
+        {
+          id: 'block-1',
+          type: 'BLOCK',
+          components: [
+            {
+              id: 'submit-btn',
+              type: 'ACTION',
+              eventType: 'SUBMIT',
+              label: 'Register',
+              variant: 'PRIMARY',
+            },
+          ],
+        },
+      ],
+    });
+    render(<SignUpBox />);
+
+    expect(capturedOnFlowChange).toBeDefined();
+
+    act(() => {
+      capturedOnFlowChange!({
+        failureReason: 'A user with this email already exists. Please use a different value.',
+        data: {additionalData: {}},
+      });
+    });
+
+    expect(
+      screen.getByText('A user with this email already exists. Please use a different value.'),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Register'));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('A user with this email already exists. Please use a different value.'),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it('renders TEXT component as heading', () => {

@@ -16,13 +16,11 @@
  * under the License.
  */
 
-@use '../../styles/variables';
-
 :root {
   --flow-builder-background-color: #f6f7f9;
   --flow-builder-background-color-dark: #141414;
-  --flow-builder-background-pattern-color-props: var(--flow-builder-grey-200);
-  --flow-builder-handle-background-colors: var(--flow-builder-grey-200);
+  --flow-builder-background-pattern-color-props: var(--oxygen-palette-grey-200);
+  --flow-builder-handle-background-colors: var(--oxygen-palette-grey-200);
   --flow-builder-handle-size: 10px;
 }
 
@@ -44,8 +42,8 @@
     --xy-handle-top-default: 50%;
     --xy-handle-top-offset: var(--flow-builder-step-action-panel-height);
     --xy-handle-background-color: var(--flow-builder-handle-background-colors);
-    --xy-handle-background-color-default: var(--flow-builder-grey-200);
-    --xy-handle-border-color-default: var(--flow-builder-grey-400);
+    --xy-handle-background-color-default: var(--oxygen-palette-grey-200);
+    --xy-handle-border-color-default: var(--oxygen-palette-grey-400);
   }
 
   .react-flow {

@@ -52,7 +52,8 @@ log_info "Creating default organization unit..."
 RESPONSE=$(thunder_api_call POST "/organization-units" '{
   "handle": "default",
   "name": "Default",
-  "description": "Default organization unit"
+  "description": "Default organization unit",
+  "logoUrl": "emoji:🏛️"
 }')
 
 HTTP_CODE="${RESPONSE: -3}"
@@ -106,54 +107,66 @@ RESPONSE=$(thunder_api_call POST "/user-schemas" '{
   "schema": {
     "username": {
       "type": "string",
+      "displayName": "Username",
       "required": true,
       "unique": true
     },
     "email": {
       "type": "string",
+      "displayName": "Email",
       "required": true,
       "unique": true,
       "regex": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
     },
     "email_verified": {
       "type": "boolean",
+      "displayName": "Email Verified",
       "required": false
     },
     "given_name": {
       "type": "string",
+      "displayName": "First Name",
       "required": false
     },
     "family_name": {
       "type": "string",
+      "displayName": "Last Name",
       "required": false
     },
     "mobileNumber": {
       "type": "string",
+      "displayName": "Mobile Number",
       "required": false
     },
     "phone_number": {
       "type": "string",
+      "displayName": "Phone Number",
       "required": false
     },
     "phone_number_verified": {
       "type": "boolean",
+      "displayName": "Phone Number Verified",
       "required": false
     },
     "sub": {
       "type": "string",
+      "displayName": "Subject",
       "required": false
     },
     "name": {
       "type": "string",
+      "displayName": "Full Name",
       "required": false
     },
     "picture": {
       "type": "string",
+      "displayName": "Picture",
       "required": false
     },
     "password": {
       "type": "string",
-      "required": true,
+      "displayName": "Password",
+      "required": false,
       "credential": true
     }
   },
@@ -1147,6 +1160,7 @@ fi
 RESPONSE=$(thunder_api_call POST "/applications" "{
   \"name\": \"Console\",
   \"description\": \"Management application for Thunder\",
+  \"ouId\": \"${DEFAULT_OU_ID}\",
   \"url\": \"${PUBLIC_URL}/console\",
     \"logoUrl\": \"emoji:👨‍💻\",
     \"authFlowId\": \"${CONSOLE_AUTH_FLOW_ID}\",

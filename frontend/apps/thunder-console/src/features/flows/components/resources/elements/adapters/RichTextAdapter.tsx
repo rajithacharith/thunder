@@ -15,7 +15,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {useTemplateLiteralResolver} from '@thunder/hooks';
 import DOMPurify from 'dompurify';
 import parse from 'html-react-parser';
 import {useMemo, type ReactElement} from 'react';
@@ -26,7 +26,6 @@ import type {Element as FlowElement} from '@/features/flows/models/elements';
 import './RichTextAdapter.scss';
 
 // Register DOMPurify hook once at module level to handle anchor tags.
-// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access -- DOMPurify types issue
 (DOMPurify as unknown as {addHook: (name: string, fn: (node: globalThis.Element) => void) => void}).addHook(
   'afterSanitizeAttributes',
   (node: globalThis.Element) => {
@@ -106,12 +105,7 @@ function RichTextAdapter({resource}: RichTextAdapterPropsInterface): ReactElemen
     [textContent, t],
   );
 
-  return (
-    <div className="rich-text-content">
-      {/* eslint-disable-next-line @typescript-eslint/no-unsafe-call -- html-react-parser types issue */}
-      {parse(sanitizedHtml)}
-    </div>
-  );
+  return <div className="rich-text-content">{parse(sanitizedHtml)}</div>;
 }
 
 export default RichTextAdapter;

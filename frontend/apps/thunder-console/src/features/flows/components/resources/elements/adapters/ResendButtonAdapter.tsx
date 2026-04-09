@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {useTemplateLiteralResolver} from '@thunder/hooks';
 import {Button, type ButtonProps, type SxProps, type Theme} from '@wso2/oxygen-ui';
 import {Position} from '@xyflow/react';
 import {useMemo, type ReactElement} from 'react';
@@ -92,7 +92,6 @@ function ResendButtonAdapter({resource}: ResendButtonAdapterPropsInterface): Rea
     variant: 'contained',
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Config type is validated at runtime
   const resendConfig = resource.config as ResendButtonConfig | undefined;
   const resendElement = resource as ResendButtonElement;
 

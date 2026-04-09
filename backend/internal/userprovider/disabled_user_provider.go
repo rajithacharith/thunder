@@ -40,6 +40,11 @@ func (p *disabledUserProvider) IdentifyUser(filters map[string]interface{}) (*st
 	return nil, errNotImplemented
 }
 
+// SearchUsers returns a not implemented error.
+func (p *disabledUserProvider) SearchUsers(filters map[string]interface{}) ([]*User, *UserProviderError) {
+	return nil, errNotImplemented
+}
+
 // GetUser returns a not implemented error.
 func (p *disabledUserProvider) GetUser(userID string) (*User, *UserProviderError) {
 	return nil, errNotImplemented
@@ -48,6 +53,11 @@ func (p *disabledUserProvider) GetUser(userID string) (*User, *UserProviderError
 // GetUserGroups returns a not implemented error.
 func (p *disabledUserProvider) GetUserGroups(userID string, limit, offset int) (*UserGroupListResponse,
 	*UserProviderError) {
+	return nil, errNotImplemented
+}
+
+// GetTransitiveUserGroups returns a not implemented error.
+func (p *disabledUserProvider) GetTransitiveUserGroups(userID string) ([]UserGroup, *UserProviderError) {
 	return nil, errNotImplemented
 }
 

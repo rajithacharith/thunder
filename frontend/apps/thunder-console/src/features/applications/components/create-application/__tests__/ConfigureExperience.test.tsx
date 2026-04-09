@@ -29,7 +29,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('@thunder/shared-contexts', () => ({
+vi.mock('@thunder/contexts', () => ({
   useConfig: () => ({
     getFeatureConfig: () => ({}),
     config: {brand: {}},

@@ -30,6 +30,7 @@ await i18next.use(initReactI18next).init({
   lng: I18nDefaultConstants.FALLBACK_LANGUAGE,
   fallbackLng: I18nDefaultConstants.FALLBACK_LANGUAGE,
   defaultNS: 'common',
+  keySeparator: false,
   interpolation: {
     escapeValue: false,
   },

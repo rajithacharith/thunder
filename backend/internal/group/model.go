@@ -28,6 +28,8 @@ const (
 	MemberTypeUser MemberType = "user"
 	// MemberTypeGroup is the type for groups.
 	MemberTypeGroup MemberType = "group"
+	// MemberTypeApp is the type for applications.
+	MemberTypeApp MemberType = "app"
 )
 
 // Member represents a member of a group (either user or another group).
@@ -43,6 +45,7 @@ type GroupBasic struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	OUID        string `json:"ouId"`
+	OUHandle    string `json:"ouHandle,omitempty"`
 }
 
 // GroupBasicDAO represents a data access object for basic group information,
@@ -59,6 +62,7 @@ type Group struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description,omitempty"`
 	OUID        string   `json:"ouId"`
+	OUHandle    string   `json:"ouHandle,omitempty"`
 	Members     []Member `json:"members,omitempty"`
 }
 

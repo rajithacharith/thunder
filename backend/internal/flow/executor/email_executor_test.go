@@ -63,6 +63,7 @@ func (suite *EmailExecutorTestSuite) SetupTest() {
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UserInviteTemplate_Success() {
 	ctx := &core.NodeContext{
 		FlowID:       "test-flow-id",
+		FlowType:     common.FlowTypeUserOnboarding,
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
@@ -78,8 +79,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UserInviteTemplate_Suc
 	suite.mockTemplateService.On("Render",
 		mock.Anything,
 		template.ScenarioUserInvite,
+		template.TemplateTypeEmail,
 		template.TemplateData{
 			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			"appName":    "",
 		},
 	).Return(&template.RenderedTemplate{
 		Subject: "You're Invited to Register",
@@ -103,6 +106,47 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UserInviteTemplate_Suc
 	suite.Contains(sentEmail.Body, "Complete Registration")
 }
 
+func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_InviteLinkNotExposed() {
+	ctx := &core.NodeContext{
+		FlowID:       "test-flow-id",
+		FlowType:     common.FlowTypeRegistration,
+		ExecutorMode: ExecutorModeSend,
+		UserInputs: map[string]string{
+			"email": "user@example.com",
+		},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+		},
+		NodeProperties: map[string]interface{}{
+			"emailTemplate": "SELF_REGISTRATION",
+		},
+	}
+
+	suite.mockTemplateService.On("Render",
+		mock.Anything,
+		template.ScenarioSelfRegistration,
+		template.TemplateTypeEmail,
+		template.TemplateData{
+			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			"appName":    "",
+		},
+	).Return(&template.RenderedTemplate{
+		Subject: "Complete Your Registration",
+		Body:    "<html><body>Click to register</body></html>",
+		IsHTML:  true,
+	}, nil)
+
+	suite.mockEmailClient.On("Send", mock.Anything).Return(nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	suite.NoError(err)
+	suite.Equal(common.ExecComplete, resp.Status)
+	suite.Equal(dataValueTrue, resp.AdditionalData[common.DataEmailSent])
+	// For SELF_REGISTRATION, invite link must NOT be exposed in AdditionalData
+	suite.Empty(resp.AdditionalData[common.DataInviteLink])
+}
+
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UsesUserInputOverRuntimeRecipient() {
 	ctx := &core.NodeContext{
 		FlowID:       "test-flow-id",
@@ -122,8 +166,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UsesUserInputOverRunti
 	suite.mockTemplateService.On("Render",
 		mock.Anything,
 		template.ScenarioUserInvite,
+		template.TemplateTypeEmail,
 		template.TemplateData{
 			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			"appName":    "",
 		},
 	).Return(&template.RenderedTemplate{
 		Subject: "You're Invited to Register",
@@ -160,8 +206,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmailFromRuntimeData()
 	suite.mockTemplateService.On("Render",
 		mock.Anything,
 		template.ScenarioUserInvite,
+		template.TemplateTypeEmail,
 		template.TemplateData{
 			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			"appName":    "",
 		},
 	).Return(&template.RenderedTemplate{
 		Subject: "You're Invited to Register",
@@ -223,6 +271,28 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingInviteLink() {
 	suite.mockEmailClient.AssertNotCalled(suite.T(), "Send", mock.Anything)
 }
 
+func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_MissingInviteLink() {
+	ctx := &core.NodeContext{
+		FlowID:       "test-flow-id",
+		FlowType:     common.FlowTypeRegistration,
+		ExecutorMode: ExecutorModeSend,
+		UserInputs: map[string]string{
+			"email": "user@example.com",
+		},
+		RuntimeData: make(map[string]string),
+		NodeProperties: map[string]interface{}{
+			"emailTemplate": "SELF_REGISTRATION",
+		},
+	}
+
+	resp, err := suite.executor.Execute(ctx)
+
+	suite.Error(err)
+	suite.Nil(resp)
+	suite.Contains(err.Error(), "invite link not found")
+	suite.mockEmailClient.AssertNotCalled(suite.T(), "Send", mock.Anything)
+}
+
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingTemplateProperty_DefaultsToUserInvite() {
 	ctx := &core.NodeContext{
 		FlowID:       "test-flow-id",
@@ -240,8 +310,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingTemplatePropert
 	suite.mockTemplateService.On("Render",
 		mock.Anything,
 		template.ScenarioUserInvite,
+		template.TemplateTypeEmail,
 		template.TemplateData{
 			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			"appName":    "",
 		},
 	).Return(&template.RenderedTemplate{
 		Subject: "You're Invited to Register",
@@ -279,8 +351,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmptyTemplateString_De
 	suite.mockTemplateService.On("Render",
 		mock.Anything,
 		template.ScenarioUserInvite,
+		template.TemplateTypeEmail,
 		template.TemplateData{
 			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			"appName":    "",
 		},
 	).Return(&template.RenderedTemplate{
 		Subject: "You're Invited to Register",
@@ -340,6 +414,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_TemplateRenderError() 
 	suite.mockTemplateService.On("Render",
 		mock.Anything,
 		template.ScenarioUserInvite,
+		template.TemplateTypeEmail,
 		mock.Anything,
 	).Return(nil, &serviceerror.I18nServiceError{Code: "TMP-5000"})
 
@@ -404,6 +479,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ClientError() {
 	suite.mockTemplateService.On("Render",
 		mock.Anything,
 		template.ScenarioUserInvite,
+		template.TemplateTypeEmail,
 		mock.Anything,
 	).Return(&template.RenderedTemplate{
 		Subject: "You're Invited to Register",
@@ -438,6 +514,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ServerError() {
 	suite.mockTemplateService.On("Render",
 		mock.Anything,
 		template.ScenarioUserInvite,
+		template.TemplateTypeEmail,
 		mock.Anything,
 	).Return(&template.RenderedTemplate{
 		Subject: "You're Invited to Register",
@@ -470,6 +547,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_NoOp() 
 
 	ctx := &core.NodeContext{
 		FlowID:       "test-flow-id",
+		FlowType:     common.FlowTypeUserOnboarding,
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
@@ -486,8 +564,33 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_NoOp() 
 
 	suite.NoError(err)
 	suite.Equal(common.ExecComplete, resp.Status)
-	// emailSent should NOT be set when email client is not configured
-	suite.Empty(resp.AdditionalData[common.DataEmailSent])
+	suite.Equal(dataValueFalse, resp.AdditionalData[common.DataEmailSent])
+}
+
+func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_SelfRegistration_InviteLinkNotExposed() {
+	noEmailExecutor := newEmailExecutor(suite.mockFlowFactory, nil, suite.mockTemplateService)
+
+	ctx := &core.NodeContext{
+		FlowID:       "test-flow-id",
+		FlowType:     common.FlowTypeRegistration,
+		ExecutorMode: ExecutorModeSend,
+		UserInputs: map[string]string{
+			"email": "user@example.com",
+		},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+		},
+		NodeProperties: map[string]interface{}{
+			"emailTemplate": "SELF_REGISTRATION",
+		},
+	}
+
+	resp, err := noEmailExecutor.Execute(ctx)
+
+	suite.NoError(err)
+	suite.Equal(common.ExecComplete, resp.Status)
+	suite.Equal(dataValueFalse, resp.AdditionalData[common.DataEmailSent])
+	suite.Empty(resp.AdditionalData[common.DataInviteLink])
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_InvalidMode() {

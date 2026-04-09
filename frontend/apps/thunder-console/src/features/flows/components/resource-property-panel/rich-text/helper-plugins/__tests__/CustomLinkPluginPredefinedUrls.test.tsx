@@ -26,6 +26,7 @@
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import type React from 'react';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import CustomLinkPlugin from '../CustomLinkPlugin';
 
 // Use vi.hoisted for mock functions
 const {
@@ -115,9 +116,6 @@ vi.mock('../commands', () => ({
 vi.mock('react-dom', () => ({
   createPortal: (children: React.ReactNode) => children,
 }));
-
-// eslint-disable-next-line import/first -- Import after mocks are set up
-import CustomLinkPlugin from '../CustomLinkPlugin';
 
 describe('CustomLinkPlugin - URL Type Detection Functions', () => {
   beforeEach(() => {

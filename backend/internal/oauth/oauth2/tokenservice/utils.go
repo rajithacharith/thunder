@@ -28,6 +28,7 @@ import (
 	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
+	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
 )
 
@@ -384,4 +385,54 @@ func buildClaimsFromRequest(
 	}
 
 	return result
+}
+
+// BuildClientAttributes gathers all OAuth client/application-scoped attributes that should be added
+// to an access token for the given OAuth application.
+func BuildClientAttributes(
+	ctx context.Context,
+	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	ouService ou.OrganizationUnitServiceInterface,
+) (map[string]interface{}, error) {
+	claims := make(map[string]interface{})
+
+	ouClaims, err := resolveClientOUAttributes(ctx, oauthApp, ouService)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range ouClaims {
+		claims[k] = v
+	}
+
+	if len(claims) == 0 {
+		return nil, nil
+	}
+	return claims, nil
+}
+
+// resolveClientOUAttributes returns the OAuth client/application's organization unit claims
+// (ouId, ouName, ouHandle) when the app has an associated OU.
+func resolveClientOUAttributes(
+	ctx context.Context,
+	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	ouService ou.OrganizationUnitServiceInterface,
+) (map[string]interface{}, error) {
+	if oauthApp == nil || oauthApp.OUID == "" {
+		return nil, nil
+	}
+	if ouService == nil {
+		return nil, nil
+	}
+
+	orgUnit, svcErr := ouService.GetOrganizationUnit(ctx, oauthApp.OUID)
+	if svcErr != nil {
+		return nil, fmt.Errorf("failed to fetch organization unit %s for app %s: %s",
+			oauthApp.OUID, oauthApp.AppID, svcErr.Error)
+	}
+
+	return map[string]interface{}{
+		constants.ClaimOUID:     orgUnit.ID,
+		constants.ClaimOUName:   orgUnit.Name,
+		constants.ClaimOUHandle: orgUnit.Handle,
+	}, nil
 }

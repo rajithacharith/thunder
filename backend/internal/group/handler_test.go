@@ -191,7 +191,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_RegisterRoutesGroupIDDispat
 	registerRoutes(mux, handler)
 
 	serviceMock.
-		On("GetGroup", mock.Anything, "grp-001").
+		On("GetGroup", mock.Anything, "grp-001", false).
 		Return(&Group{ID: "grp-001"}, nil).
 		Once()
 
@@ -279,7 +279,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupListRequest() {
 			requestPath: "/groups?limit=3&offset=2",
 			setup: func(svc *GroupServiceInterfaceMock) {
 				svc.
-					On("GetGroupList", mock.Anything, 3, 2).
+					On("GetGroupList", mock.Anything, 3, 2, false).
 					Return(&GroupListResponse{
 						TotalResults: 5,
 						StartIndex:   3,
@@ -305,6 +305,28 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupListRequest() {
 			},
 		},
 		{
+			name:        "success with include display",
+			requestPath: "/groups?limit=3&offset=0&include=display",
+			setup: func(svc *GroupServiceInterfaceMock) {
+				svc.
+					On("GetGroupList", mock.Anything, 3, 0, true).
+					Return(&GroupListResponse{
+						TotalResults: 1,
+						Count:        1,
+						Groups: []GroupBasic{
+							{ID: "g1", Name: "group-1", OUHandle: "root"},
+						},
+					}, nil).
+					Once()
+			},
+			assertBody: func(recorder *httptest.ResponseRecorder) {
+				suite.Require().Equal(http.StatusOK, recorder.Code)
+				var body GroupListResponse
+				suite.Require().NoError(json.Unmarshal(recorder.Body.Bytes(), &body))
+				suite.Require().Equal("root", body.Groups[0].OUHandle)
+			},
+		},
+		{
 			name:        "invalid limit",
 			requestPath: "/groups?limit=invalid",
 			assertBody: func(recorder *httptest.ResponseRecorder) {
@@ -327,7 +349,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupListRequest() {
 			useFlaky:    true,
 			setup: func(svc *GroupServiceInterfaceMock) {
 				svc.
-					On("GetGroupList", mock.Anything, serverconst.DefaultPageSize, 0).
+					On("GetGroupList", mock.Anything, serverconst.DefaultPageSize, 0, false).
 					Return(&GroupListResponse{}, nil).
 					Once()
 			},
@@ -353,7 +375,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupListRequest() {
 			requestPath: "/groups",
 			setup: func(svc *GroupServiceInterfaceMock) {
 				svc.
-					On("GetGroupList", mock.Anything, serverconst.DefaultPageSize, 0).
+					On("GetGroupList", mock.Anything, serverconst.DefaultPageSize, 0, false).
 					Return((*GroupListResponse)(nil), &ErrorInternalServerError).
 					Once()
 			},
@@ -412,7 +434,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupListByPathReques
 			pathParamValue: "root",
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroupsByPath", mock.Anything, "root", serverconst.DefaultPageSize, 0).
+					On("GetGroupsByPath", mock.Anything, "root", serverconst.DefaultPageSize, 0, false).
 					Return(&GroupListResponse{
 						TotalResults: 1,
 						StartIndex:   1,
@@ -427,6 +449,33 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupListByPathReques
 				require.NoError(suite.T(), json.Unmarshal(rr.Body.Bytes(), &body))
 				require.Equal(suite.T(), 1, body.TotalResults)
 				require.Equal(suite.T(), "root-group", body.Groups[0].Name)
+			},
+		},
+		{
+			name:           "success with include display",
+			method:         http.MethodGet,
+			url:            "/ous/root/groups?include=display",
+			pathParamKey:   "path",
+			pathParamValue: "root",
+			setup: func(serviceMock *GroupServiceInterfaceMock) {
+				serviceMock.
+					On("GetGroupsByPath", mock.Anything, "root",
+						serverconst.DefaultPageSize, 0, true).
+					Return(&GroupListResponse{
+						TotalResults: 1,
+						StartIndex:   1,
+						Count:        1,
+						Groups: []GroupBasic{
+							{ID: "g1", Name: "root-group", OUHandle: "root"},
+						},
+					}, nil).
+					Once()
+			},
+			assert: func(rr *httptest.ResponseRecorder) {
+				require.Equal(suite.T(), http.StatusOK, rr.Code)
+				var body GroupListResponse
+				require.NoError(suite.T(), json.Unmarshal(rr.Body.Bytes(), &body))
+				require.Equal(suite.T(), "root", body.Groups[0].OUHandle)
 			},
 		},
 		{
@@ -452,7 +501,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupListByPathReques
 			pathParamValue: "root",
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroupsByPath", mock.Anything, "root", serverconst.DefaultPageSize, 0).
+					On("GetGroupsByPath", mock.Anything, "root", serverconst.DefaultPageSize, 0, false).
 					Return((*GroupListResponse)(nil), &ErrorInternalServerError).
 					Once()
 			},
@@ -487,7 +536,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupListByPathReques
 			useFlaky:       true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroupsByPath", mock.Anything, "root", serverconst.DefaultPageSize, 0).
+					On("GetGroupsByPath", mock.Anything, "root", serverconst.DefaultPageSize, 0, false).
 					Return(&GroupListResponse{}, nil).
 					Once()
 			},
@@ -800,6 +849,25 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostByPathReques
 func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupGetRequest() {
 	testCases := []handlerTestCase{
 		{
+			name:           "success with include display",
+			method:         http.MethodGet,
+			url:            "/groups/grp-001?include=display",
+			pathParamKey:   "id",
+			pathParamValue: "grp-001",
+			setup: func(serviceMock *GroupServiceInterfaceMock) {
+				serviceMock.
+					On("GetGroup", mock.Anything, "grp-001", true).
+					Return(&Group{ID: "grp-001", OUHandle: "root"}, nil).
+					Once()
+			},
+			assert: func(rr *httptest.ResponseRecorder) {
+				require.Equal(suite.T(), http.StatusOK, rr.Code)
+				var body Group
+				require.NoError(suite.T(), json.Unmarshal(rr.Body.Bytes(), &body))
+				require.Equal(suite.T(), "root", body.OUHandle)
+			},
+		},
+		{
 			name:           "not found",
 			method:         http.MethodGet,
 			url:            "/groups/grp-404",
@@ -807,7 +875,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupGetRequest() {
 			pathParamValue: "grp-404",
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroup", mock.Anything, "grp-404").
+					On("GetGroup", mock.Anything, "grp-404", false).
 					Return(nil, &ErrorGroupNotFound).
 					Once()
 			},
@@ -827,7 +895,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupGetRequest() {
 			pathParamValue: "grp-001",
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroup", mock.Anything, "grp-001").
+					On("GetGroup", mock.Anything, "grp-001", false).
 					Return((*Group)(nil), &ErrorInternalServerError).
 					Once()
 			},
@@ -845,7 +913,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupGetRequest() {
 			useFlaky:       true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroup", mock.Anything, "grp-001").
+					On("GetGroup", mock.Anything, "grp-001", false).
 					Return(&Group{ID: "grp-001"}, nil).
 					Once()
 			},

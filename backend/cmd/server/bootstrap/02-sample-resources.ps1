@@ -56,6 +56,7 @@ $customerOuData = @{
     handle = $customerOuHandle
     name = "Customers"
     description = "Organization unit for customer accounts"
+    logoUrl = "emoji:🏛️"
 } | ConvertTo-Json -Depth 5
 
 $response = Invoke-ThunderApi -Method POST -Endpoint "/organization-units" -Data $customerOuData
@@ -107,30 +108,36 @@ $customerUserTypeData = ([ordered]@{
     schema = [ordered]@{
         username = @{
             type = "string"
+            displayName = "Username"
             required = $true
             unique = $true
         }
         password = @{
             type = "string"
-            required = $true
+            displayName = "Password"
+            required = $false
             credential = $true
         }
         email = @{
             type = "string"
+            displayName = "Email"
             required = $true
             unique = $true
             regex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         }
         given_name = @{
             type = "string"
+            displayName = "First Name"
             required = $false
         }
         family_name = @{
             type = "string"
+            displayName = "Last Name"
             required = $false
         }
         mobileNumber = @{
             type = "string"
+            displayName = "Mobile Number"
             required = $false
         }
     }
@@ -164,8 +171,9 @@ Log-Info "Creating Sample App application..."
 $appData = @{
     name = "Sample App"
     description = "Sample application for testing"
+    ouId = $CUSTOMER_OU_ID
     url = "https://localhost:3000"
-    logoUrl = "https://localhost:3000/logo.png"
+    logoUrl = "emoji:🎁"
     tosUri = "https://localhost:3000/terms"
     policyUri = "https://localhost:3000/privacy"
     contacts = @("admin@example.com", "support@example.com")
@@ -241,9 +249,10 @@ Log-Info "Creating React SDK Sample App application..."
 $reactSdkAppData = @{
     name = "React SDK Sample"
     description = "Sample React application using Thunder React SDK"
+    ouId = $CUSTOMER_OU_ID
     clientId = "REACT_SDK_SAMPLE"
     url = "https://localhost:3000"
-    logoUrl = "https://localhost:3000/logo.png"
+    logoUrl = "emoji:🛍️"
     tosUri = "https://localhost:3000/terms"
     policyUri = "https://localhost:3000/privacy"
     contacts = @("admin@example.com")

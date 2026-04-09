@@ -16,8 +16,6 @@
  * under the License.
  */
 
-@use '../../../../styles/variables';
-
 :root {
   --flow-builder-execution-step-background-color: #252525;
   --flow-builder-execution-step-text-color: #ffffff;
@@ -225,7 +223,7 @@ html[data-color-scheme='dark'] {
 
             .execution-minimal-step-content-form-field-drag-handle {
               visibility: visible;
-              border-right: 2px dashed var(--flow-builder-grey-200);
+              border-right: 2px dashed var(--oxygen-palette-grey-200);
             }
           }
         }
@@ -234,7 +232,7 @@ html[data-color-scheme='dark'] {
           &.is-dragging {
             .execution-minimal-step-content-form-field {
               background-color: var(--mui-palette-background-paper);
-              border-right: 2px dashed var(--flow-builder-grey-200);
+              border-right: 2px dashed var(--oxygen-palette-grey-200);
             }
           }
         }

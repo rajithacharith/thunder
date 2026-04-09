@@ -28,7 +28,7 @@ interface LoggerConfig {
    * Minimum log level to process. Logs below this level will be ignored.
    * @default LogLevel.INFO
    */
-  level?: LogLevel;
+  level?: LogLevel | 'debug' | 'info' | 'warn' | 'error' | 'none';
 
   /**
    * Whether logging is enabled.

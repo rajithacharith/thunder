@@ -18,7 +18,7 @@
 
 import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig} from '@thunder/contexts';
 import GroupQueryKeys from '../constants/group-query-keys';
 import type {GroupListResponse} from '../models/group';
 import type {GroupListParams} from '../models/requests';
@@ -41,6 +41,7 @@ export default function useGetGroups(params?: GroupListParams): UseQueryResult<G
       const queryParams: URLSearchParams = new URLSearchParams({
         limit: limit.toString(),
         offset: offset.toString(),
+        include: 'display',
       });
 
       const response: {

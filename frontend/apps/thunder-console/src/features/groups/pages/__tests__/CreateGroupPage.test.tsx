@@ -53,9 +53,9 @@ vi.mock('../../../organization-units/components/OrganizationUnitTreePicker', () 
   ),
 }));
 
-const mockUseGetOrganizationUnits = vi.fn();
-vi.mock('../../../organization-units/api/useGetOrganizationUnits', () => ({
-  default: (...args: unknown[]): unknown => mockUseGetOrganizationUnits(...args),
+const mockUseHasMultipleOUs = vi.fn();
+vi.mock('../../../organization-units/api/useHasMultipleOUs', () => ({
+  default: (): unknown => mockUseHasMultipleOUs(),
 }));
 
 function renderPage() {
@@ -79,12 +79,10 @@ describe('CreateGroupPage', () => {
 
   describe('with single OU', () => {
     beforeEach(() => {
-      mockUseGetOrganizationUnits.mockReturnValue({
-        data: {
-          totalResults: 1,
-          organizationUnits: [{id: 'ou-single', name: 'Default OU'}],
-        },
+      mockUseHasMultipleOUs.mockReturnValue({
+        hasMultipleOUs: false,
         isLoading: false,
+        ouList: [{id: 'ou-single', name: 'Default OU'}],
       });
     });
 
@@ -159,15 +157,13 @@ describe('CreateGroupPage', () => {
 
   describe('with multiple OUs', () => {
     beforeEach(() => {
-      mockUseGetOrganizationUnits.mockReturnValue({
-        data: {
-          totalResults: 3,
-          organizationUnits: [
-            {id: 'ou-1', name: 'OU 1'},
-            {id: 'ou-2', name: 'OU 2'},
-          ],
-        },
+      mockUseHasMultipleOUs.mockReturnValue({
+        hasMultipleOUs: true,
         isLoading: false,
+        ouList: [
+          {id: 'ou-1', name: 'OU 1'},
+          {id: 'ou-2', name: 'OU 2'},
+        ],
       });
     });
 
@@ -316,9 +312,10 @@ describe('CreateGroupPage', () => {
   });
 
   it('should handle submission error gracefully', async () => {
-    mockUseGetOrganizationUnits.mockReturnValue({
-      data: {totalResults: 1, organizationUnits: [{id: 'ou-single', name: 'Default OU'}]},
+    mockUseHasMultipleOUs.mockReturnValue({
+      hasMultipleOUs: false,
       isLoading: false,
+      ouList: [{id: 'ou-single', name: 'Default OU'}],
     });
     mockMutateAsync.mockRejectedValue(new Error('Create failed'));
 
@@ -343,9 +340,10 @@ describe('CreateGroupPage', () => {
   });
 
   it('should disable continue button while OUs are loading', () => {
-    mockUseGetOrganizationUnits.mockReturnValue({
-      data: null,
+    mockUseHasMultipleOUs.mockReturnValue({
+      hasMultipleOUs: false,
       isLoading: true,
+      ouList: [],
     });
 
     renderPage();
@@ -355,9 +353,10 @@ describe('CreateGroupPage', () => {
   });
 
   it('should navigate back when close button is clicked', async () => {
-    mockUseGetOrganizationUnits.mockReturnValue({
-      data: {totalResults: 1, organizationUnits: [{id: 'ou-1', name: 'OU 1'}]},
+    mockUseHasMultipleOUs.mockReturnValue({
+      hasMultipleOUs: false,
       isLoading: false,
+      ouList: [{id: 'ou-1', name: 'OU 1'}],
     });
 
     const user = userEvent.setup();
@@ -372,9 +371,10 @@ describe('CreateGroupPage', () => {
   });
 
   it('should handle navigate rejection gracefully', async () => {
-    mockUseGetOrganizationUnits.mockReturnValue({
-      data: {totalResults: 1, organizationUnits: [{id: 'ou-1', name: 'OU 1'}]},
+    mockUseHasMultipleOUs.mockReturnValue({
+      hasMultipleOUs: false,
       isLoading: false,
+      ouList: [{id: 'ou-1', name: 'OU 1'}],
     });
     mockNavigate.mockRejectedValue(new Error('Nav failed'));
 

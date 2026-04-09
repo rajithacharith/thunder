@@ -27,7 +27,32 @@
       "forms.ou_selection.title": "Select an organization unit",
       "forms.ou_selection.subtitle": "Choose which organization unit this user should belong to.",
       "forms.ou_selection.fields.ou.label": "Organization Unit",
-      "forms.ou_selection.actions.continue.label": "Continue"
+      "forms.ou_selection.actions.continue.label": "Continue",
+      "forms.invite_status.title": "Invitation Sent",
+      "forms.invite_status.message": "An invitation has been sent to the user. The user can complete their registration using the link.",
+      "forms.invite_mode.title": "Invite User",
+      "forms.invite_mode.subtitle": "Choose how you'd like to invite this user.",
+      "forms.invite_mode.actions.email.label": "Send Invite Email",
+      "forms.invite_mode.actions.link.label": "Get Invite Link",
+      "forms.invite_email_sent.title": "Invitation Sent",
+      "forms.invite_email_sent.message": "An invitation email has been sent to the user. They can complete their registration using the link in the email.",
+      "forms.invite_link_status.title": "Invite Link Ready",
+      "forms.invite_link_status.message": "Share the invite link below with the user to complete their registration.",
+      "forms.invite_link_status.link_label": "Invite Link"
+    },
+    "invite": {
+      "validating": "Validating your invite link...",
+      "complete.title": "Welcome Aboard!",
+      "complete.description": "Your account has been successfully set up. You can now sign in.",
+      "complete.description.withApp": "Your account has been successfully set up for {{appName}}. You can now sign in.",
+      "complete.backToApp": "Back to Application",
+      "complete.backToApp.withApp": "Back to {{appName}}",
+      "errors.invalid.title": "Unable to verify invite",
+      "errors.invalid.description": "This invite link is invalid or has expired.",
+      "errors.failed.title": "Error",
+      "errors.failed.description": "An error occurred. Please try again.",
+      "goToSignIn": "Go to Sign In",
+      "signIn": "Sign In"
     },
     "signin": {
       "images.app_logo.alt": "Application logo",
@@ -145,7 +170,25 @@
       "forms.collect_user_info.fields.username.placeholder": "Enter your username",
       "forms.collect_user_info.fields.email.label": "Email",
       "forms.collect_user_info.fields.email.placeholder": "Enter your email",
-      "forms.collect_user_info.actions.submit.label": "Sign Up"
+      "forms.collect_user_info.actions.submit.label": "Sign Up",
+      "forms.email.title": "Sign Up",
+      "forms.email.fields.email.label": "Email",
+      "forms.email.fields.email.placeholder": "Enter your email",
+      "forms.email.actions.next.label": "Next",
+      "forms.user_details.title": "Sign Up",
+      "forms.user_details.fields.username.label": "Username",
+      "forms.user_details.fields.username.placeholder": "Enter your username",
+      "forms.user_details.fields.first_name.label": "First Name",
+      "forms.user_details.fields.first_name.placeholder": "Enter your first name",
+      "forms.user_details.fields.last_name.label": "Last Name",
+      "forms.user_details.fields.last_name.placeholder": "Enter your last name",
+      "forms.user_details.actions.next.label": "Next",
+      "forms.credential.title": "Create Password",
+      "forms.credential.fields.password.label": "Password",
+      "forms.credential.fields.password.placeholder": "Enter your password",
+      "forms.credential.actions.submit.label": "Sign Up",
+      "forms.email_sent.title": "Check Your Email",
+      "forms.email_sent.message": "We sent you a verification link. Please check your inbox and click the link to continue."
     }
   }
 }

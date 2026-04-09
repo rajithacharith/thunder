@@ -273,7 +273,7 @@
     "type": "TASK_EXECUTION",
     "display": {
       "header": "Identifying Executor",
-      "label": "Identifying",
+      "label": "Identify User",
       "image": "assets/images/icons/magnifying-glass.svg",
       "showOnResourcePanel": false
     },
@@ -281,7 +281,31 @@
       "action": {
         "type": "EXECUTOR",
         "executor": {
-          "name": "IdentifyingExecutor"
+          "name": "IdentifyingExecutor",
+          "mode": "identify"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Identity Resolver",
+      "label": "Resolve User",
+      "image": "assets/images/icons/magnifying-glass.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "IdentifyingExecutor",
+          "mode": "resolve"
         },
         "onSuccess": "",
         "onFailure": "",
@@ -610,7 +634,7 @@
     "type": "TASK_EXECUTION",
     "display": {
       "header": "Identity Resolver",
-      "label": "Identity Resolver",
+      "label": "Identify User",
       "image": "assets/images/icons/magnifying-glass.svg",
       "showOnResourcePanel": true
     },
@@ -618,7 +642,8 @@
       "action": {
         "type": "EXECUTOR",
         "executor": {
-          "name": "IdentifyingExecutor"
+          "name": "IdentifyingExecutor",
+          "mode": "identify"
         },
         "onSuccess": "",
         "onFailure": "",
@@ -648,6 +673,28 @@
       },
       "properties": {
         "timeout": "0"
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Federated Auth Resolver",
+      "label": "Resolve Federated User",
+      "image": "assets/images/icons/magnifying-glass.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "FederatedAuthResolverExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
       }
     }
   }

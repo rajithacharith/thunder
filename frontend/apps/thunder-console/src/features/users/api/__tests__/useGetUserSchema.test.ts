@@ -19,7 +19,7 @@
 import {waitFor, renderHook} from '@thunder/test-utils';
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import UserQueryKeys from '../../constants/user-query-keys';
-import type {ApiUserSchema} from '../../types/users';
+import type {ApiUserSchema} from '../../models/users';
 import useGetUserSchema from '../useGetUserSchema';
 
 // Mock the dependencies
@@ -27,8 +27,8 @@ vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
 }));
 
-vi.mock('@thunder/shared-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+vi.mock('@thunder/contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/contexts')>();
   return {
     ...actual,
     useConfig: vi.fn(),
@@ -36,7 +36,7 @@ vi.mock('@thunder/shared-contexts', async (importOriginal) => {
 });
 
 const {useAsgardeo} = await import('@asgardeo/react');
-const {useConfig} = await import('@thunder/shared-contexts');
+const {useConfig} = await import('@thunder/contexts');
 
 describe('useGetUserSchema', () => {
   let mockHttpRequest: ReturnType<typeof vi.fn>;

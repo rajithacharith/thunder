@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useCopyToClipboard} from '@thunder/shared-hooks';
+import {useCopyToClipboard} from '@thunder/hooks';
 import {Box, Typography, Stack, TextField, IconButton, InputAdornment, Alert, Button, Divider} from '@wso2/oxygen-ui';
 import {Copy, Eye, EyeOff, AlertTriangle} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {useTemplateLiteralResolver} from '@thunder/hooks';
 import {Typography, type TypographyProps} from '@wso2/oxygen-ui';
 import {useMemo, type CSSProperties, type ReactElement, type ReactNode} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
@@ -109,7 +109,6 @@ function TypographyAdapter({resource}: TypographyAdapterPropsInterface): ReactEl
 
   useRequiredFields(resource, generalMessage, validationFields);
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Config type is validated at runtime
   const typographyConfig = resource.config as TypographyConfig | undefined;
   const typographyElement = resource as TypographyElement;
   const variantStr = resource?.variant as string | undefined;

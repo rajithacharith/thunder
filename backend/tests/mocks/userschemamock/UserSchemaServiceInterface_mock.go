@@ -380,8 +380,8 @@ func (_c *UserSchemaServiceInterfaceMock_GetUniqueAttributes_Call) RunAndReturn(
 }
 
 // GetUserSchema provides a mock function for the type UserSchemaServiceInterfaceMock
-func (_mock *UserSchemaServiceInterfaceMock) GetUserSchema(ctx context.Context, schemaID string) (*userschema.UserSchema, *serviceerror.ServiceError) {
-	ret := _mock.Called(ctx, schemaID)
+func (_mock *UserSchemaServiceInterfaceMock) GetUserSchema(ctx context.Context, schemaID string, includeDisplay bool) (*userschema.UserSchema, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, schemaID, includeDisplay)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserSchema")
@@ -389,18 +389,18 @@ func (_mock *UserSchemaServiceInterfaceMock) GetUserSchema(ctx context.Context, 
 
 	var r0 *userschema.UserSchema
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*userschema.UserSchema, *serviceerror.ServiceError)); ok {
-		return returnFunc(ctx, schemaID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, bool) (*userschema.UserSchema, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, schemaID, includeDisplay)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *userschema.UserSchema); ok {
-		r0 = returnFunc(ctx, schemaID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, bool) *userschema.UserSchema); ok {
+		r0 = returnFunc(ctx, schemaID, includeDisplay)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*userschema.UserSchema)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(ctx, schemaID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, bool) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, schemaID, includeDisplay)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -417,11 +417,12 @@ type UserSchemaServiceInterfaceMock_GetUserSchema_Call struct {
 // GetUserSchema is a helper method to define mock.On call
 //   - ctx context.Context
 //   - schemaID string
-func (_e *UserSchemaServiceInterfaceMock_Expecter) GetUserSchema(ctx interface{}, schemaID interface{}) *UserSchemaServiceInterfaceMock_GetUserSchema_Call {
-	return &UserSchemaServiceInterfaceMock_GetUserSchema_Call{Call: _e.mock.On("GetUserSchema", ctx, schemaID)}
+//   - includeDisplay bool
+func (_e *UserSchemaServiceInterfaceMock_Expecter) GetUserSchema(ctx interface{}, schemaID interface{}, includeDisplay interface{}) *UserSchemaServiceInterfaceMock_GetUserSchema_Call {
+	return &UserSchemaServiceInterfaceMock_GetUserSchema_Call{Call: _e.mock.On("GetUserSchema", ctx, schemaID, includeDisplay)}
 }
 
-func (_c *UserSchemaServiceInterfaceMock_GetUserSchema_Call) Run(run func(ctx context.Context, schemaID string)) *UserSchemaServiceInterfaceMock_GetUserSchema_Call {
+func (_c *UserSchemaServiceInterfaceMock_GetUserSchema_Call) Run(run func(ctx context.Context, schemaID string, includeDisplay bool)) *UserSchemaServiceInterfaceMock_GetUserSchema_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -431,9 +432,14 @@ func (_c *UserSchemaServiceInterfaceMock_GetUserSchema_Call) Run(run func(ctx co
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
+		var arg2 bool
+		if args[2] != nil {
+			arg2 = args[2].(bool)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -444,7 +450,7 @@ func (_c *UserSchemaServiceInterfaceMock_GetUserSchema_Call) Return(userSchema *
 	return _c
 }
 
-func (_c *UserSchemaServiceInterfaceMock_GetUserSchema_Call) RunAndReturn(run func(ctx context.Context, schemaID string) (*userschema.UserSchema, *serviceerror.ServiceError)) *UserSchemaServiceInterfaceMock_GetUserSchema_Call {
+func (_c *UserSchemaServiceInterfaceMock_GetUserSchema_Call) RunAndReturn(run func(ctx context.Context, schemaID string, includeDisplay bool) (*userschema.UserSchema, *serviceerror.ServiceError)) *UserSchemaServiceInterfaceMock_GetUserSchema_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -520,8 +526,8 @@ func (_c *UserSchemaServiceInterfaceMock_GetUserSchemaByName_Call) RunAndReturn(
 }
 
 // GetUserSchemaList provides a mock function for the type UserSchemaServiceInterfaceMock
-func (_mock *UserSchemaServiceInterfaceMock) GetUserSchemaList(ctx context.Context, limit int, offset int) (*userschema.UserSchemaListResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(ctx, limit, offset)
+func (_mock *UserSchemaServiceInterfaceMock) GetUserSchemaList(ctx context.Context, limit int, offset int, includeDisplay bool) (*userschema.UserSchemaListResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, limit, offset, includeDisplay)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserSchemaList")
@@ -529,18 +535,18 @@ func (_mock *UserSchemaServiceInterfaceMock) GetUserSchemaList(ctx context.Conte
 
 	var r0 *userschema.UserSchemaListResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int) (*userschema.UserSchemaListResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(ctx, limit, offset)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, bool) (*userschema.UserSchemaListResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, limit, offset, includeDisplay)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int) *userschema.UserSchemaListResponse); ok {
-		r0 = returnFunc(ctx, limit, offset)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, bool) *userschema.UserSchemaListResponse); ok {
+		r0 = returnFunc(ctx, limit, offset, includeDisplay)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*userschema.UserSchemaListResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, int, int) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(ctx, limit, offset)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, int, int, bool) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, limit, offset, includeDisplay)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -558,11 +564,12 @@ type UserSchemaServiceInterfaceMock_GetUserSchemaList_Call struct {
 //   - ctx context.Context
 //   - limit int
 //   - offset int
-func (_e *UserSchemaServiceInterfaceMock_Expecter) GetUserSchemaList(ctx interface{}, limit interface{}, offset interface{}) *UserSchemaServiceInterfaceMock_GetUserSchemaList_Call {
-	return &UserSchemaServiceInterfaceMock_GetUserSchemaList_Call{Call: _e.mock.On("GetUserSchemaList", ctx, limit, offset)}
+//   - includeDisplay bool
+func (_e *UserSchemaServiceInterfaceMock_Expecter) GetUserSchemaList(ctx interface{}, limit interface{}, offset interface{}, includeDisplay interface{}) *UserSchemaServiceInterfaceMock_GetUserSchemaList_Call {
+	return &UserSchemaServiceInterfaceMock_GetUserSchemaList_Call{Call: _e.mock.On("GetUserSchemaList", ctx, limit, offset, includeDisplay)}
 }
 
-func (_c *UserSchemaServiceInterfaceMock_GetUserSchemaList_Call) Run(run func(ctx context.Context, limit int, offset int)) *UserSchemaServiceInterfaceMock_GetUserSchemaList_Call {
+func (_c *UserSchemaServiceInterfaceMock_GetUserSchemaList_Call) Run(run func(ctx context.Context, limit int, offset int, includeDisplay bool)) *UserSchemaServiceInterfaceMock_GetUserSchemaList_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -576,10 +583,15 @@ func (_c *UserSchemaServiceInterfaceMock_GetUserSchemaList_Call) Run(run func(ct
 		if args[2] != nil {
 			arg2 = args[2].(int)
 		}
+		var arg3 bool
+		if args[3] != nil {
+			arg3 = args[3].(bool)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -590,7 +602,7 @@ func (_c *UserSchemaServiceInterfaceMock_GetUserSchemaList_Call) Return(userSche
 	return _c
 }
 
-func (_c *UserSchemaServiceInterfaceMock_GetUserSchemaList_Call) RunAndReturn(run func(ctx context.Context, limit int, offset int) (*userschema.UserSchemaListResponse, *serviceerror.ServiceError)) *UserSchemaServiceInterfaceMock_GetUserSchemaList_Call {
+func (_c *UserSchemaServiceInterfaceMock_GetUserSchemaList_Call) RunAndReturn(run func(ctx context.Context, limit int, offset int, includeDisplay bool) (*userschema.UserSchemaListResponse, *serviceerror.ServiceError)) *UserSchemaServiceInterfaceMock_GetUserSchemaList_Call {
 	_c.Call.Return(run)
 	return _c
 }

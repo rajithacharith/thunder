@@ -16,20 +16,15 @@
  * under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
-
+import {AcceptInvite, useAsgardeo, type EmbeddedFlowComponent} from '@asgardeo/react';
+import {useConfig} from '@thunder/contexts';
+import {useDesign, FlowComponentRenderer, AuthCardLayout} from '@thunder/design';
+import {useLogger} from '@thunder/logger/react';
+import {Box, Alert, Typography, AlertTitle, CircularProgress} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useState} from 'react';
-import {Box, Alert, Typography, AlertTitle, CircularProgress} from '@wso2/oxygen-ui';
-import {AcceptInvite, useAsgardeo, type EmbeddedFlowComponent} from '@asgardeo/react';
-import {useNavigate} from 'react-router';
 import {useTranslation} from 'react-i18next';
-import {useConfig} from '@thunder/shared-contexts';
-import {FlowComponentRenderer, AuthCardLayout} from '@thunder/shared-design';
+import {useNavigate} from 'react-router';
 import ROUTES from '../../constants/routes';
 
 export default function AcceptInviteBox(): JSX.Element {
@@ -37,6 +32,9 @@ export default function AcceptInviteBox(): JSX.Element {
   const {resolveFlowTemplateLiterals} = useAsgardeo();
   const {t} = useTranslation();
   const {getServerUrl} = useConfig();
+  const logger = useLogger('AcceptInviteBox');
+
+  const {isDesignEnabled} = useDesign();
   const [flowError, setFlowError] = useState<string | null>(null);
 
   const baseUrl = getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string);
@@ -57,13 +55,14 @@ export default function AcceptInviteBox(): JSX.Element {
         },
         alt: {light: '', dark: ''},
       }}
+      showLogo={!isDesignEnabled}
+      logoDisplay={!isDesignEnabled ? {xs: 'flex', md: 'none'} : {display: 'none'}}
     >
       <AcceptInvite
         baseUrl={baseUrl}
         onGoToSignIn={handleGoToSignIn}
         onError={(error: Error) => {
-          // eslint-disable-next-line no-console
-          console.error('Invite acceptance error:', error);
+          logger.error('Invite acceptance error:', error);
         }}
         onFlowChange={(response: {failureReason?: string}) => {
           setFlowError(response?.failureReason ?? null);
@@ -78,7 +77,6 @@ export default function AcceptInviteBox(): JSX.Element {
           values,
           handleInputChange,
           handleSubmit,
-          isComplete,
           isValidatingToken,
           isTokenInvalid,
         }) => {
@@ -99,17 +97,6 @@ export default function AcceptInviteBox(): JSX.Element {
                 <AlertTitle>{t('invite:errors.invalid.title', 'Unable to verify invite')}</AlertTitle>
                 {t('invite:errors.invalid.description', 'This invite link is invalid or has expired.')}
               </Alert>
-            );
-          }
-
-          // Completed
-          if (isComplete) {
-            return (
-              <Box sx={{textAlign: 'center', py: 2}}>
-                <Alert severity="success">
-                  {t('invite:complete.description', 'Your account has been successfully set up.')}
-                </Alert>
-              </Box>
             );
           }
 

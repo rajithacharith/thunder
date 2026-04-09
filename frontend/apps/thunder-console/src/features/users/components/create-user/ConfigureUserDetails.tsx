@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import {useResolveDisplayName} from '@thunder/shared-hooks';
+import {useResolveDisplayName} from '@thunder/hooks';
 import {Box, Stack, Typography} from '@wso2/oxygen-ui';
 import {useEffect} from 'react';
 import type {JSX} from 'react';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
-import type {ApiUserSchema} from '../../types/users';
+import type {ApiUserSchema} from '../../models/users';
 import renderSchemaField from '../../utils/renderSchemaField';
 
 /**

@@ -19,7 +19,7 @@
 import userEvent from '@testing-library/user-event';
 import {render, screen, waitFor, within} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import type {SchemaInterface} from '../../../types/users';
+import type {SchemaInterface} from '../../../models/users';
 import ConfigureUserType, {type ConfigureUserTypeProps} from '../ConfigureUserType';
 
 vi.mock('react-i18next', () => ({

@@ -23,7 +23,7 @@ import AppearanceSection from '../AppearanceSection';
 
 // Mock useGetThemes hook
 const mockUseGetThemes = vi.fn();
-vi.mock('@thunder/shared-design', () => ({
+vi.mock('@thunder/design', () => ({
   useGetThemes: (): unknown => mockUseGetThemes(),
 }));
 

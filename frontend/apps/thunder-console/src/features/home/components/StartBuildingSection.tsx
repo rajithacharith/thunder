@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig} from '@thunder/contexts';
 import {Box, Button, Card, Chip, Stack, Typography} from '@wso2/oxygen-ui';
 import {motion} from 'framer-motion';
 import type {JSX} from 'react';
@@ -68,7 +68,7 @@ export default function StartBuildingSection(): JSX.Element {
                     variant="contained"
                     size="small"
                     onClick={() => {
-                      navigate('/applications')?.catch(() => undefined);
+                      navigate('/applications/create')?.catch(() => undefined);
                     }}
                     sx={{textTransform: 'none'}}
                   >

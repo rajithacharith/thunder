@@ -18,7 +18,7 @@
 
 import {waitFor, renderHook} from '@thunder/test-utils';
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import type {UserListResponse} from '../../../users/types/users';
+import type {UserListResponse} from '../../../users/models/users';
 import useGetOrganizationUnitUsers from '../useGetOrganizationUnitUsers';
 
 // Mock useAsgardeo
@@ -32,8 +32,8 @@ vi.mock('@asgardeo/react', () => ({
 }));
 
 // Mock useConfig
-vi.mock('@thunder/shared-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+vi.mock('@thunder/contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/contexts')>();
   return {
     ...actual,
     useConfig: () => ({

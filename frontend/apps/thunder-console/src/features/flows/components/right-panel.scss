@@ -21,8 +21,14 @@
 :root {
   --flow-builder-right-panel-background: #fafafa;
   --flow-builder-right-panel-width: 350px;
-  --flow-builder-right-panel-header-bg: var(--mui-palette-common-white);
+  --flow-builder-right-panel-header-bg: #fff;
   --flow-builder-right-panel-border: #e0e0e0;
+}
+
+[data-color-scheme='dark'] {
+  --flow-builder-right-panel-background: #1e1e1e;
+  --flow-builder-right-panel-header-bg: #1e1e1e;
+  --flow-builder-right-panel-border: #333;
 }
 
 .flow-builder-right-panel {

@@ -202,7 +202,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_UserAlreadyExists() {
 		NodeInputs: []common.Input{{Identifier: "username", Type: "string", Required: true}},
 	}
 
-	userID := "user-existing"
+	userID := testExistingUserID
 	suite.mockUserProvider.On("IdentifyUser", map[string]interface{}{
 		"username": "existinguser",
 	}).Return(&userID, nil)
@@ -1310,4 +1310,172 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success_WithGroupAndRole
 	suite.mockUserProvider.AssertExpectations(suite.T())
 	suite.mockGroupService.AssertExpectations(suite.T())
 	suite.mockRoleService.AssertExpectations(suite.T())
+}
+
+// Cross-OU provisioning tests
+
+func (suite *ProvisioningExecutorTestSuite) TestExecute_CrossOU_Success() {
+	attrs := map[string]interface{}{"sub": "user-sub-123"}
+	attrsJSON, _ := json.Marshal(attrs)
+
+	existingUserID := testExistingUserID
+	existingUser := &userprovider.User{
+		UserID: existingUserID,
+		OUID:   "ou-source",
+	}
+
+	createdUser := &userprovider.User{
+		UserID:     testNewUserID,
+		UserType:   testUserType,
+		OUID:       testOUID,
+		Attributes: attrsJSON,
+	}
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeRegistration,
+		UserInputs: map[string]string{
+			"sub": "user-sub-123",
+		},
+		RuntimeData: map[string]string{
+			ouIDKey:     testOUID,
+			userTypeKey: testUserType,
+		},
+		NodeProperties: map[string]interface{}{
+			common.NodePropertyAllowCrossOUProvisioning: true,
+		},
+	}
+
+	suite.mockUserProvider.On("IdentifyUser", attrs).Return(&existingUserID, nil)
+	suite.mockUserProvider.On("GetUser", existingUserID).Return(existingUser, nil)
+	suite.mockUserProvider.On("CreateUser", mock.MatchedBy(func(u *userprovider.User) bool {
+		return u.OUID == testOUID
+	})).Return(createdUser, nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), testNewUserID, resp.RuntimeData[userAttributeUserID])
+}
+
+func (suite *ProvisioningExecutorTestSuite) TestExecute_CrossOU_NotEnabled_Fails() {
+	attrs := map[string]interface{}{"sub": "user-sub-123"}
+
+	existingUserID := testExistingUserID
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeRegistration,
+		UserInputs: map[string]string{
+			"sub": "user-sub-123",
+		},
+		RuntimeData: map[string]string{
+			ouIDKey:     testOUID,
+			userTypeKey: testUserType,
+		},
+		NodeProperties: map[string]interface{}{},
+	}
+
+	suite.mockUserProvider.On("IdentifyUser", attrs).Return(&existingUserID, nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), "User already exists", resp.FailureReason)
+}
+
+func (suite *ProvisioningExecutorTestSuite) TestExecute_CrossOU_SameOU_Fails() {
+	attrs := map[string]interface{}{"sub": "user-sub-123"}
+
+	existingUserID := testExistingUserID
+	existingUser := &userprovider.User{
+		UserID: existingUserID,
+		OUID:   testOUID, // same as target
+	}
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeRegistration,
+		UserInputs: map[string]string{
+			"sub": "user-sub-123",
+		},
+		RuntimeData: map[string]string{
+			ouIDKey:     testOUID,
+			userTypeKey: testUserType,
+		},
+		NodeProperties: map[string]interface{}{
+			common.NodePropertyAllowCrossOUProvisioning: true,
+		},
+	}
+
+	suite.mockUserProvider.On("IdentifyUser", attrs).Return(&existingUserID, nil)
+	suite.mockUserProvider.On("GetUser", existingUserID).Return(existingUser, nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), "User already exists in the target organization", resp.FailureReason)
+}
+
+func (suite *ProvisioningExecutorTestSuite) TestExecute_CrossOU_NoTargetOU_Fails() {
+	attrs := map[string]interface{}{"sub": "user-sub-123"}
+
+	existingUserID := testExistingUserID
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeRegistration,
+		UserInputs: map[string]string{
+			"sub": "user-sub-123",
+		},
+		RuntimeData: map[string]string{
+			userTypeKey: testUserType,
+			// no ouIDKey — target OU not set
+		},
+		NodeProperties: map[string]interface{}{
+			common.NodePropertyAllowCrossOUProvisioning: true,
+		},
+	}
+
+	suite.mockUserProvider.On("IdentifyUser", attrs).Return(&existingUserID, nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), "Target OU is not set for cross-OU provisioning", resp.FailureReason)
+}
+
+func (suite *ProvisioningExecutorTestSuite) TestExecute_CrossOU_GetUserError() {
+	attrs := map[string]interface{}{"sub": "user-sub-123"}
+
+	existingUserID := testExistingUserID
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeRegistration,
+		UserInputs: map[string]string{
+			"sub": "user-sub-123",
+		},
+		RuntimeData: map[string]string{
+			ouIDKey:     testOUID,
+			userTypeKey: testUserType,
+		},
+		NodeProperties: map[string]interface{}{
+			common.NodePropertyAllowCrossOUProvisioning: true,
+		},
+	}
+
+	suite.mockUserProvider.On("IdentifyUser", attrs).Return(&existingUserID, nil)
+	suite.mockUserProvider.On("GetUser", existingUserID).Return(nil,
+		userprovider.NewUserProviderError(userprovider.ErrorCodeSystemError, "db error", ""))
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), resp)
 }

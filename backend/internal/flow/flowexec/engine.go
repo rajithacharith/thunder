@@ -21,6 +21,7 @@ package flowexec
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"time"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
@@ -446,6 +447,10 @@ func (fe *flowEngine) processNodeResponse(ctx *EngineContext, nodeResp *common.N
 
 	switch nodeResp.Status {
 	case common.NodeStatusComplete:
+		if fe.isDisplayOnlyPromptNode(ctx.CurrentNode) {
+			return fe.handleDisplayOnlyPromptResponse(ctx, nodeResp, flowStep, logger)
+		}
+
 		nextNode, svcErr := fe.handleCompletedResponse(ctx, nodeResp, logger)
 		if svcErr != nil {
 			return nil, false, svcErr
@@ -472,6 +477,59 @@ func (fe *flowEngine) processNodeResponse(ctx *EngineContext, nodeResp *common.N
 			log.String("status", string(nodeResp.Status)))
 		return nil, false, &serviceerror.InternalServerError
 	}
+}
+
+// isDisplayOnlyPromptNode checks if the current node is a display-only prompt node.
+func (fe *flowEngine) isDisplayOnlyPromptNode(node core.NodeInterface) bool {
+	promptNode, ok := node.(core.PromptNodeInterface)
+	return ok && promptNode.IsDisplayOnly()
+}
+
+// handleDisplayOnlyPromptResponse handles the response for display-only prompt nodes.
+// It checks the next node and updates the flow step accordingly.
+func (fe *flowEngine) handleDisplayOnlyPromptResponse(ctx *EngineContext,
+	nodeResp *common.NodeResponse, flowStep *FlowStep, logger *log.Logger) (
+	core.NodeInterface, bool, *serviceerror.ServiceError) {
+	promptNode := ctx.CurrentNode.(core.PromptNodeInterface)
+	nextNodeID := promptNode.GetNextNode()
+	continueExecution := false
+
+	nextNode, exists := ctx.Graph.GetNode(nextNodeID)
+	if !exists || nextNode == nil {
+		logger.Error("Display-only prompt references unknown next node", log.String("nextNodeID", nextNodeID))
+		return nil, continueExecution, &serviceerror.InternalServerError
+	}
+
+	// If the next node is END, complete the flow
+	if nextNode.GetType() == common.NodeTypeEnd {
+		flowStep.Status = common.FlowStatusComplete
+		continueExecution = true
+	} else {
+		// Set current node to the next node so that the flow can resume from there in the next execution
+		ctx.CurrentNode = nextNode
+		flowStep.Status = common.FlowStatusIncomplete
+		flowStep.Type = common.StepTypeView
+	}
+
+	// Copy additional data from context
+	if len(ctx.AdditionalData) > 0 {
+		flowStep.Data.AdditionalData = ctx.AdditionalData
+	}
+
+	// Include meta in the flow step if present
+	if nodeResp.Meta != nil {
+		flowStep.Data.Meta = nodeResp.Meta
+	}
+
+	// Include additionalData in the flow step if present
+	if len(nodeResp.AdditionalData) > 0 {
+		if flowStep.Data.AdditionalData == nil {
+			flowStep.Data.AdditionalData = make(map[string]string)
+		}
+		maps.Copy(flowStep.Data.AdditionalData, nodeResp.AdditionalData)
+	}
+
+	return nil, continueExecution, nil
 }
 
 // handleCompletedResponse handles the completed node and returns the next node to execute.

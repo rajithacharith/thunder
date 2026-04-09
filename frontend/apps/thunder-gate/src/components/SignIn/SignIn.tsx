@@ -16,8 +16,8 @@
  * under the License.
  */
 
+import {useDesign, AuthPageLayout} from '@thunder/design';
 import type {JSX} from 'react';
-import {useDesign, AuthPageLayout} from '@thunder/shared-design';
 import SignInBox from './SignInBox';
 import SignInSlogan from './SignInSlogan';
 

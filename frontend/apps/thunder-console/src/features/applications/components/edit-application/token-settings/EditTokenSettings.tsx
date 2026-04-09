@@ -19,7 +19,7 @@
 import {useAsgardeo} from '@asgardeo/react';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useLogger} from '@thunder/logger';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig} from '@thunder/contexts';
 import {Stack} from '@wso2/oxygen-ui';
 import {useState, useEffect, useMemo, useRef} from 'react';
 import {useForm} from 'react-hook-form';
@@ -297,6 +297,10 @@ export default function EditTokenSettings({
 
       Object.entries(schema).forEach(([key, value]) => {
         const fullKey = `${prefix}${key}`;
+
+        if ('credential' in value && value.credential) {
+          return;
+        }
 
         if (value.type === 'object' && 'properties' in value) {
           // Recursively flatten nested objects

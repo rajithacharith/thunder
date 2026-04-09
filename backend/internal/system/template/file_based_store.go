@@ -55,13 +55,14 @@ func (f *templateFileBasedStore) GetTemplate(_ context.Context, id string) (*Tem
 	return tmpl, nil
 }
 
-// GetTemplateByScenario retrieves a template by its scenario type.
+// GetTemplateByScenario retrieves a template by its scenario type and template type.
 func (f *templateFileBasedStore) GetTemplateByScenario(
-	_ context.Context, scenario ScenarioType,
+	_ context.Context, scenario ScenarioType, tmplType TemplateType,
 ) (*TemplateDTO, error) {
-	data, err := f.GenericFileBasedStore.GetByField(string(scenario), func(d interface{}) string {
+	compositeKey := string(scenario) + ":" + string(tmplType)
+	data, err := f.GenericFileBasedStore.GetByField(compositeKey, func(d interface{}) string {
 		if tmpl, ok := d.(*TemplateDTO); ok {
-			return string(tmpl.Scenario)
+			return string(tmpl.Scenario) + ":" + string(tmpl.Type)
 		}
 		return ""
 	})
@@ -70,7 +71,7 @@ func (f *templateFileBasedStore) GetTemplateByScenario(
 	}
 	tmpl, ok := data.(*TemplateDTO)
 	if !ok {
-		declarativeresource.LogTypeAssertionError("template", "scenario:"+string(scenario))
+		declarativeresource.LogTypeAssertionError("template", "scenario:"+string(scenario)+":"+string(tmplType))
 		return nil, errors.New("template data corrupted")
 	}
 	return tmpl, nil

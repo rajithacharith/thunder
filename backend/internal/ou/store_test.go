@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
 
@@ -281,12 +282,21 @@ func makeOUResultRow(id, handle, name, description string, parent *string) map[s
 		"handle":      handle,
 		"name":        name,
 		"description": description,
+		"metadata":    nil,
 	}
 	if parent != nil {
 		row["parent_id"] = *parent
 	} else {
 		row["parent_id"] = nil
 	}
+	return row
+}
+
+func makeOUResultRowWithLogoURL(
+	id, handle, name, description string, parent *string, logoURL string,
+) map[string]interface{} {
+	row := makeOUResultRow(id, handle, name, description, parent)
+	row["metadata"] = `{"logo_url":"` + logoURL + `"}`
 	return row
 }
 
@@ -306,15 +316,13 @@ func TestBuildOrganizationUnitBasicFromResultRow(t *testing.T) {
 		require.Equal(t, "desc", ou.Description)
 	})
 
-	t.Run("success with design fields", func(t *testing.T) {
+	t.Run("success with logo url in metadata", func(t *testing.T) {
 		row := map[string]interface{}{
 			"ou_id":       "ou1",
 			"handle":      "root",
 			"name":        "Root",
 			"description": "desc",
-			"theme_id":    "theme-123",
-			"layout_id":   "layout-456",
-			"logo_url":    "https://example.com/logo.png",
+			"metadata":    `{"logo_url":"https://example.com/logo.png"}`,
 		}
 
 		ou, err := buildOrganizationUnitBasicFromResultRow(row)
@@ -324,15 +332,13 @@ func TestBuildOrganizationUnitBasicFromResultRow(t *testing.T) {
 		require.Equal(t, "https://example.com/logo.png", ou.LogoURL)
 	})
 
-	t.Run("success with nil design fields", func(t *testing.T) {
+	t.Run("success with nil metadata", func(t *testing.T) {
 		row := map[string]interface{}{
 			"ou_id":       "ou1",
 			"handle":      "root",
 			"name":        "Root",
 			"description": "desc",
-			"theme_id":    nil,
-			"layout_id":   nil,
-			"logo_url":    nil,
+			"metadata":    nil,
 		}
 
 		ou, err := buildOrganizationUnitBasicFromResultRow(row)
@@ -340,6 +346,20 @@ func TestBuildOrganizationUnitBasicFromResultRow(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "ou1", ou.ID)
 		require.Equal(t, "", ou.LogoURL)
+	})
+
+	t.Run("error on invalid metadata", func(t *testing.T) {
+		row := map[string]interface{}{
+			"ou_id":    "ou1",
+			"handle":   "root",
+			"name":     "Root",
+			"metadata": 12345,
+		}
+
+		_, err := buildOrganizationUnitBasicFromResultRow(row)
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to parse OU Metadata")
 	})
 
 	tests := []struct {
@@ -1134,6 +1154,134 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnit() {
 	}
 }
 
+func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitByHandle() {
+	parentID := testParentID
+	tests := []struct {
+		name          string
+		handle        string
+		parent        *string
+		setup         func(handle string, parent *string)
+		assert        func(ou OrganizationUnit)
+		wantErr       error
+		wantErrString string
+	}{
+		{
+			name:   "success root ou (nil parent)",
+			handle: "root",
+			parent: nil,
+			setup: func(handle string, parent *string) {
+				row := makeOUResultRow("ou1", handle, "Root", "desc", nil)
+				suite.expectDBClient()
+				suite.dbClientMock.
+					On("QueryContext", mock.Anything, queryGetRootOrganizationUnitByHandle,
+						handle, testDeploymentID).
+					Return([]map[string]interface{}{row}, nil).
+					Once()
+			},
+			assert: func(ou OrganizationUnit) {
+				suite.Equal("ou1", ou.ID)
+				suite.Equal("root", ou.Handle)
+				suite.Nil(ou.Parent)
+			},
+		},
+		{
+			name:   "success child ou (non-nil parent)",
+			handle: "child",
+			parent: &parentID,
+			setup: func(handle string, parent *string) {
+				row := makeOUResultRow("ou2", handle, "Child", "desc", parent)
+				suite.expectDBClient()
+				suite.dbClientMock.
+					On("QueryContext", mock.Anything, queryGetOrganizationUnitByHandle,
+						handle, testParentID, testDeploymentID).
+					Return([]map[string]interface{}{row}, nil).
+					Once()
+			},
+			assert: func(ou OrganizationUnit) {
+				suite.Equal("ou2", ou.ID)
+				suite.Equal("child", ou.Handle)
+			},
+		},
+		{
+			name:   "not found",
+			handle: "missing",
+			parent: nil,
+			setup: func(handle string, parent *string) {
+				suite.expectDBClient()
+				suite.dbClientMock.
+					On("QueryContext", mock.Anything, queryGetRootOrganizationUnitByHandle,
+						handle, testDeploymentID).
+					Return([]map[string]interface{}{}, nil).
+					Once()
+			},
+			wantErr: ErrOrganizationUnitNotFound,
+		},
+		{
+			name:   "query error",
+			handle: "root",
+			parent: nil,
+			setup: func(handle string, parent *string) {
+				suite.expectDBClient()
+				suite.dbClientMock.
+					On("QueryContext", mock.Anything, queryGetRootOrganizationUnitByHandle,
+						handle, testDeploymentID).
+					Return(nil, errors.New("query err")).
+					Once()
+			},
+			wantErrString: "failed to execute query for handle",
+		},
+		{
+			name:   "builder error",
+			handle: "root",
+			parent: nil,
+			setup: func(handle string, parent *string) {
+				suite.expectDBClient()
+				suite.dbClientMock.
+					On("QueryContext", mock.Anything, queryGetRootOrganizationUnitByHandle,
+						handle, testDeploymentID).
+					Return([]map[string]interface{}{{"ou_id": 2}}, nil).
+					Once()
+			},
+			wantErrString: "failed to build organization unit for handle",
+		},
+		{
+			name:   "db client error",
+			handle: "root",
+			parent: nil,
+			setup: func(handle string, parent *string) {
+				suite.providerMock.
+					On("GetUserDBClient").
+					Return(nil, errors.New("db err")).
+					Once()
+			},
+			wantErrString: "failed to get database client",
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		suite.Run(tc.name, func() {
+			suite.SetupTest()
+			tc.setup(tc.handle, tc.parent)
+
+			ou, err := suite.store.GetOrganizationUnitByHandle(context.Background(), tc.handle, tc.parent)
+
+			switch {
+			case tc.wantErr != nil:
+				suite.Require().ErrorIs(err, tc.wantErr)
+			case tc.wantErrString != "":
+				suite.Require().Error(err)
+				suite.Contains(err.Error(), tc.wantErrString)
+			default:
+				suite.Require().NoError(err)
+				if tc.assert != nil {
+					tc.assert(ou)
+				}
+			}
+		})
+	}
+}
+
 func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit() {
 	tests := []struct {
 		name    string
@@ -1280,7 +1428,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitList
 			setup: func(limit, offset int) {
 				suite.expectDBClient()
 				rows := []map[string]interface{}{
-					makeOUResultRow("root", "root", "Root", "desc", nil),
+					makeOUResultRowWithLogoURL(
+						"root", "root", "Root", "desc", nil, "https://example.com/root-logo.png"),
 					makeOUResultRow("child", "child", "Child", "", nil),
 				}
 				suite.dbClientMock.
@@ -1293,7 +1442,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitList
 			assert: func(ous []OrganizationUnitBasic) {
 				suite.Len(ous, 2)
 				suite.Equal("root", ous[0].ID)
+				suite.Equal("https://example.com/root-logo.png", ous[0].LogoURL)
 				suite.Equal("child", ous[1].Handle)
+				suite.Equal("", ous[1].LogoURL)
 			},
 		},
 		{
@@ -1453,7 +1604,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitsByI
 			setup: func(ids []string) {
 				suite.expectDBClient()
 				rows := []map[string]interface{}{
-					makeOUResultRow("ou1", "root1", "Root1", "desc1", nil),
+					makeOUResultRowWithLogoURL(
+						"ou1", "root1", "Root1", "desc1", nil, "https://example.com/ou1-logo.png"),
 					makeOUResultRow("ou2", "root2", "Root2", "desc2", nil),
 				}
 				suite.dbClientMock.
@@ -1466,7 +1618,9 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitsByI
 			assert: func(ous []OrganizationUnitBasic) {
 				suite.Len(ous, 2)
 				suite.Equal("ou1", ous[0].ID)
+				suite.Equal("https://example.com/ou1-logo.png", ous[0].LogoURL)
 				suite.Equal("ou2", ous[1].ID)
+				suite.Equal("", ous[1].LogoURL)
 			},
 		},
 		{
@@ -1556,9 +1710,23 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_buildGetOrganizationUni
 		query := buildGetOrganizationUnitsByIDsQuery(ids)
 
 		suite.Require().Equal("OUQ-OU_MGT-21", query.ID)
+		suite.Require().Contains(query.PostgresQuery, "METADATA")
 		suite.Require().Contains(query.PostgresQuery, "$1, $2, $3")
 		suite.Require().Contains(query.PostgresQuery, "DEPLOYMENT_ID = $4")
+		suite.Require().Contains(query.SQLiteQuery, "METADATA")
 		suite.Require().Contains(query.SQLiteQuery, "?, ?, ?")
 		suite.Require().Contains(query.SQLiteQuery, "DEPLOYMENT_ID = ?")
 	})
+}
+
+func TestNewOrganizationUnitStore_TransactionerError(t *testing.T) {
+	mockProvider := providermock.NewDBProviderInterfaceMock(t)
+	mockProvider.On("GetUserDBTransactioner").Return(nil, errors.New("transactioner error"))
+
+	originalGetDBProvider := getDBProvider
+	getDBProvider = func() provider.DBProviderInterface { return mockProvider }
+	defer func() { getDBProvider = originalGetDBProvider }()
+
+	_, _, err := newOrganizationUnitStore()
+	require.Error(t, err)
 }

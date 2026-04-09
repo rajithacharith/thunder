@@ -19,9 +19,8 @@
 import {useAsgardeo} from '@asgardeo/react';
 import {useQueryClient} from '@tanstack/react-query';
 import {useLogger} from '@thunder/logger/react';
-import {useConfig} from '@thunder/shared-contexts';
-import {Box, Avatar, Typography, CircularProgress, TreeView, useTheme} from '@wso2/oxygen-ui';
-import {Building} from '@wso2/oxygen-ui-icons-react';
+import {useConfig} from '@thunder/contexts';
+import {Box, Typography, CircularProgress, TreeView, useTheme} from '@wso2/oxygen-ui';
 import {useState, useCallback, useEffect, useRef, useMemo, type JSX, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
 import fetchChildOrganizationUnits from '../api/fetchChildOrganizationUnits';
@@ -37,6 +36,7 @@ import appendTreeItemChildren from '../utils/appendTreeItemChildren';
 import buildItemMap from '../utils/buildItemMap';
 import buildTreeItems from '../utils/buildTreeItems';
 import updateTreeItemChildren from '../utils/updateTreeItemChildren';
+import ResourceAvatar from '@/components/ResourceAvatar';
 
 function PickerLoadingIcon(): JSX.Element {
   return <CircularProgress size={16} />;
@@ -177,18 +177,18 @@ function PickerTreeItem(allProps: PickerTreeItemProps): JSX.Element {
       {...(isItemLoading ? {slots: {collapseIcon: PickerLoadingIcon, expandIcon: PickerLoadingIcon}} : {})}
       label={
         <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
-          <Avatar
+          <ResourceAvatar
+            value={itemData?.logoUrl}
+            size={30}
+            fallback="emoji:🏛️"
             sx={{
-              p: 0.5,
-              backgroundColor: theme?.vars?.palette.primary.main,
-              width: 28,
-              height: 28,
-              fontSize: '0.75rem',
+              backgroundColor: theme.vars?.palette.grey[500],
+              fontSize: '1rem',
+              ...theme.applyStyles('dark', {
+                backgroundColor: theme.vars?.palette.grey[900],
+              }),
             }}
-            src={itemData?.logoUrl}
-          >
-            <Building size={12} />
-          </Avatar>
+          />
           <Box sx={{flexGrow: 1, minWidth: 0}}>
             <Typography variant="body2" sx={{fontWeight: 500, lineHeight: 1.3}}>
               {labelStr}

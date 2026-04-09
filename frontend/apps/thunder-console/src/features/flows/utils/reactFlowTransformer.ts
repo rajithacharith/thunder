@@ -72,6 +72,7 @@ interface FlowNode {
   onSuccess?: string;
   onFailure?: string;
   onIncomplete?: string;
+  next?: string;
 }
 
 /**
@@ -182,11 +183,25 @@ function deriveEventType(component?: Element & {buttonType?: string}): string {
 }
 
 /**
+ * Checks whether a block has input fields and exactly one ACTION button.
+ * When true, the single button is the form's submit button and its eventType
+ * should be promoted from TRIGGER to SUBMIT.
+ */
+function shouldPromoteToSubmit(components: Element[]): boolean {
+  const hasInputs = components.some((c) => INPUT_ELEMENT_TYPES.has(c.type));
+  const actionCount = components.filter((c) => c.type === ElementTypes.Action).length;
+  return hasInputs && actionCount === 1;
+}
+
+/**
  * Removes internal properties (variants, display, config, action) from components recursively.
  * These transformations prepare the component for the API payload.
  * Note: action is removed because actions are defined separately in the node's actions array.
+ *
+ * @param components - The components to clean.
+ * @param promoteSubmit - Whether to promote the sole ACTION button's eventType to SUBMIT.
  */
-function cleanComponents(components: Element[]): Record<string, unknown>[] {
+function cleanComponents(components: Element[], promoteSubmit = false): Record<string, unknown>[] {
   return components.map((component) => {
     // Extract and remove internal properties (including action which is defined in node.actions)
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- config is excluded from output
@@ -210,15 +225,19 @@ function cleanComponents(components: Element[]): Record<string, unknown>[] {
       cleanedComponent.ref = ref;
     }
 
-    // For ACTION category components, ensure eventType is set
-    if (component.category === ElementCategories.Action && !cleanedComponent.eventType) {
-      cleanedComponent.eventType = deriveEventType(component as Element & {buttonType?: string});
+    // For ACTION category components, derive eventType based on context.
+    // When a block has inputs and exactly one button, promote TRIGGER to SUBMIT.
+    if (component.category === ElementCategories.Action) {
+      cleanedComponent.eventType ??= deriveEventType(component as Element & {buttonType?: string});
+      if (promoteSubmit && cleanedComponent.eventType === ActionEventTypes.Trigger) {
+        cleanedComponent.eventType = ActionEventTypes.Submit;
+      }
     }
 
     // Recursively clean nested components if present
     const nestedComponents = cleanedComponent.components as Element[] | undefined;
     if (nestedComponents && nestedComponents.length > 0) {
-      cleanedComponent.components = cleanComponents(nestedComponents);
+      cleanedComponent.components = cleanComponents(nestedComponents, shouldPromoteToSubmit(nestedComponents));
     }
 
     return cleanedComponent;
@@ -465,6 +484,12 @@ function transformNode(canvasNode: Node<StepData>, edges: Edge[]): FlowNode {
     const prompts = extractPrompts(stepData.components, canvasNode.id, edges);
     if (prompts.length > 0) {
       flowNode.prompts = prompts;
+    } else if (stepData.components.length > 0) {
+      // Display-only node: has display components but no action buttons — use 'next' for the connection
+      const nextNodeId = findNextNode(canvasNode, edges);
+      if (nextNodeId) {
+        flowNode.next = nextNodeId;
+      }
     }
   }
 
@@ -810,6 +835,21 @@ export function validateFlowGraph(flowGraph: FlowGraph): string[] {
           );
         }
       });
+    }
+
+    // Validate next field for display-only PROMPT nodes
+    if (node.next !== undefined) {
+      if (!node.next) {
+        errors.push(`Node ${node.id}: next must be a non-empty string`);
+      } else if (!nodeIds.has(node.next)) {
+        errors.push(`Node ${node.id}: next references non-existent node ${node.next}`);
+      } else if (node.next === node.id) {
+        errors.push(`Node ${node.id}: next must not reference itself`);
+      }
+
+      if (node.prompts && node.prompts.length > 0) {
+        errors.push(`Node ${node.id}: next and prompts are mutually exclusive`);
+      }
     }
   });
 

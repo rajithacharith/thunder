@@ -43,6 +43,7 @@ type TokenTestSuite struct {
 	suite.Suite
 	applicationIDBasic string
 	applicationIDPost  string
+	ouID               string
 	client             *http.Client
 }
 
@@ -53,6 +54,17 @@ func TestTokenTestSuite(t *testing.T) {
 func (ts *TokenTestSuite) SetupSuite() {
 	// Create a client that skips TLS verification
 	ts.client = testutils.GetHTTPClient()
+
+	ouID, err := testutils.CreateOrganizationUnit(testutils.OrganizationUnit{
+		Handle:      "token-test-ou",
+		Name:        "Token Test OU",
+		Description: "Organization unit for token integration tests",
+		Parent:      nil,
+	})
+	if err != nil {
+		ts.T().Fatalf("Failed to create test organization unit: %v", err)
+	}
+	ts.ouID = ouID
 
 	// Create applications for different authentication methods
 	ts.applicationIDBasic = ts.createTestApplication("client_secret_basic")
@@ -66,8 +78,9 @@ func (ts *TokenTestSuite) createTestApplication(authMethod string) string {
 
 	// Create a new application for testing
 	app := map[string]interface{}{
-		"name":                         appName,
-		"description":                  "Application for token integration tests",
+		"name":                      appName,
+		"description":               "Application for token integration tests",
+		"ouId":                      ts.ouID,
 		"isRegistrationFlowEnabled": false,
 		"inboundAuthConfig": []map[string]interface{}{
 			{
@@ -128,6 +141,11 @@ func (ts *TokenTestSuite) TearDownSuite() {
 	}
 	if ts.applicationIDPost != "" {
 		ts.deleteApplication(ts.applicationIDPost)
+	}
+	if ts.ouID != "" {
+		if err := testutils.DeleteOrganizationUnit(ts.ouID); err != nil {
+			ts.T().Logf("Failed to delete test organization unit: %v", err)
+		}
 	}
 }
 
@@ -269,6 +287,36 @@ func (ts *TokenTestSuite) TestClientCredentialsGrantWithHeaderCredentials() {
 			ts.runClientCredentialsTestCase(request, tc.expectedStatus, tc.expectedScopes, "")
 		})
 	}
+
+	// Verify that client OU claims are included in the access token.
+	ts.Run("WithClientOUClaims", func() {
+		reqBody := strings.NewReader("grant_type=client_credentials")
+		request, err := http.NewRequest("POST", testServerURL+"/oauth2/token", reqBody)
+		ts.Require().NoError(err)
+		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		request.SetBasicAuth(clientId+"_client_secret_basic", clientSecret)
+
+		resp, err := ts.client.Do(request)
+		ts.Require().NoError(err)
+		defer resp.Body.Close()
+		ts.Require().Equal(http.StatusOK, resp.StatusCode)
+
+		var respBody map[string]interface{}
+		ts.Require().NoError(json.NewDecoder(resp.Body).Decode(&respBody))
+
+		accessToken, ok := respBody["access_token"].(string)
+		ts.Require().True(ok, "access_token not found in response")
+
+		claims, err := testutils.DecodeJWT(accessToken)
+		ts.Require().NoError(err)
+
+		ou, err := testutils.GetOrganizationUnit(ts.ouID)
+		ts.Require().NoError(err)
+
+		ts.Assert().Equal(ou.ID, claims.Additional["ouId"])
+		ts.Assert().Equal(ou.Name, claims.Additional["ouName"])
+		ts.Assert().Equal(ou.Handle, claims.Additional["ouHandle"])
+	})
 }
 
 func (ts *TokenTestSuite) TestClientCredentialsGrantWithBodyCredentials() {

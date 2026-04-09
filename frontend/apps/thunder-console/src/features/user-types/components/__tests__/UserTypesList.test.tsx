@@ -16,7 +16,7 @@
  * under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, no-underscore-dangle */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return */
 import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import type * as OxygenUI from '@wso2/oxygen-ui';
 import {type ReactElement, type ReactNode} from 'react';
@@ -169,7 +169,6 @@ vi.mock('../../api/useDeleteUserType', () => ({
 }));
 
 vi.mock('../../../organization-units/api/useGetOrganizationUnits', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   default: () => mockUseGetOrganizationUnits(),
 }));
 
@@ -179,8 +178,8 @@ describe('UserTypesList', () => {
     startIndex: 1,
     count: 2,
     schemas: [
-      {id: 'schema1', name: 'Employee Schema', ouId: 'root-ou', allowSelfRegistration: false},
-      {id: 'schema2', name: 'Contractor Schema', ouId: 'child-ou', allowSelfRegistration: true},
+      {id: 'schema1', name: 'Employee Schema', ouId: 'root-ou', ouHandle: 'root', allowSelfRegistration: false},
+      {id: 'schema2', name: 'Contractor Schema', ouId: 'child-ou', ouHandle: 'child', allowSelfRegistration: true},
     ],
   };
 
@@ -225,17 +224,19 @@ describe('UserTypesList', () => {
   it('shows organization unit names when available', () => {
     render(<UserTypesList />);
 
-    expect(screen.getByText('Root Organization')).toBeInTheDocument();
-    expect(screen.getByText('Child Organization')).toBeInTheDocument();
+    expect(screen.getByText('root')).toBeInTheDocument();
+    expect(screen.getByText('child')).toBeInTheDocument();
   });
 
-  it('falls back to organization unit id when lookup is missing', () => {
-    mockUseGetOrganizationUnits.mockReturnValueOnce({
-      data: {...mockOrganizationUnitsResponse, organizationUnits: []},
+  it('falls back to organization unit id when ouHandle is missing', () => {
+    mockUseGetUserTypes.mockReturnValueOnce({
+      data: {
+        ...mockUserTypesData,
+        schemas: [{...mockUserTypesData.schemas[0], ouHandle: undefined}],
+      },
       isLoading: false,
       error: null,
-      refetch: mockRefetchOrganizationUnits,
-    });
+    } as unknown as ReturnType<typeof useGetUserTypesHook>);
 
     render(<UserTypesList />);
 
@@ -246,7 +247,7 @@ describe('UserTypesList', () => {
     mockUseGetUserTypes.mockReturnValueOnce({
       data: {
         ...mockUserTypesData,
-        schemas: [{...mockUserTypesData.schemas[0], ouId: ''}],
+        schemas: [{...mockUserTypesData.schemas[0], ouId: undefined, ouHandle: undefined}],
       },
       isLoading: false,
       error: null,
@@ -474,21 +475,6 @@ describe('UserTypesList', () => {
       expect(mockMutateAsync).toHaveBeenCalledWith('schema1');
       // Dialog stays open so user can see error and retry
       expect(screen.getByText('Delete User Type')).toBeInTheDocument();
-    });
-  });
-
-  it('displays error from organization units in snackbar', async () => {
-    mockUseGetOrganizationUnits.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      error: new Error('Failed to load organization units'),
-      refetch: mockRefetchOrganizationUnits,
-    });
-
-    render(<UserTypesList />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Failed to load organization units')).toBeInTheDocument();
     });
   });
 

@@ -21,6 +21,8 @@ VERSION_FILE=version.txt
 VERSION=$(shell cat $(VERSION_FILE))
 BINARY_NAME=thunder
 
+export WITHOUT_CONSENT ?= false
+
 # Tools
 PROJECT_DIR := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))/backend
 PROJECT_BIN_DIR := $(PROJECT_DIR)/bin
@@ -46,7 +48,7 @@ prepare:
 clean:
 	./build.sh clean $(OS) $(ARCH)
 
-build: build_backend build_frontend build_docs build_samples
+build: build_backend build_frontend build_samples
 
 build_backend:
 	./build.sh build_backend $(OS) $(ARCH)
@@ -127,7 +129,7 @@ lint_backend: check_i18n golangci-lint
 	cd backend && $(GOLANGCI_LINT) run ./...
 
 lint_frontend:
-	cd frontend && pnpm install && pnpm build && pnpm lint
+	cd frontend && pnpm install --frozen-lockfile && pnpm build && pnpm lint
 
 generate_i18n: install-i18n-extractor
 	@echo "Extracting i18n messages from backend source code..."

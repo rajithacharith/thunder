@@ -31,14 +31,21 @@ type PromptNodeInterface interface {
 	SetPrompts(prompts []common.Prompt)
 	GetMeta() interface{}
 	SetMeta(meta interface{})
+	GetNextNode() string
+	SetNextNode(nextNode string)
+	GetMessage() string
+	SetMessage(message string)
+	IsDisplayOnly() bool
 }
 
 // promptNode represents a node that prompts for user input/ action in the flow execution.
 type promptNode struct {
 	*node
-	prompts []common.Prompt
-	meta    interface{}
-	logger  *log.Logger
+	prompts  []common.Prompt
+	meta     interface{}
+	nextNode string
+	message  string
+	logger   *log.Logger
 }
 
 // newPromptNode creates a new instance of PromptNode with the given details.
@@ -86,6 +93,26 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 		}
 	}
 
+	// Check if this is a display-only prompt node
+	if n.IsDisplayOnly() {
+		logger.Debug("Display-only prompt node, returning display content")
+
+		if ctx.Verbose && n.GetMeta() != nil {
+			nodeResp.Meta = n.GetMeta()
+		}
+
+		if n.message != "" {
+			if nodeResp.AdditionalData == nil {
+				nodeResp.AdditionalData = make(map[string]string)
+			}
+			nodeResp.AdditionalData[common.DataPromptMessage] = n.message
+		}
+
+		nodeResp.Status = common.NodeStatusComplete
+		nodeResp.Type = common.NodeResponseTypeView
+		return nodeResp, nil
+	}
+
 	if n.resolvePromptInputs(ctx, nodeResp) {
 		logger.Debug("All required inputs and action are available, returning complete status")
 
@@ -98,6 +125,14 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 				nodeResp.FailureReason = "Invalid action selected"
 				return nodeResp, nil
 			}
+		}
+
+		// Forward the action type to the next node
+		if actionType := n.getActionTypeForRef(ctx.CurrentAction); actionType != "" {
+			if nodeResp.ForwardedData == nil {
+				nodeResp.ForwardedData = make(map[string]interface{})
+			}
+			nodeResp.ForwardedData[common.ForwardedDataKeyActionType] = actionType
 		}
 
 		nodeResp.Status = common.NodeStatusComplete
@@ -137,6 +172,32 @@ func (n *promptNode) GetMeta() interface{} {
 // SetMeta sets the meta object for the prompt node
 func (n *promptNode) SetMeta(meta interface{}) {
 	n.meta = meta
+}
+
+// GetNextNode returns the next node ID for display-only prompt nodes.
+func (n *promptNode) GetNextNode() string {
+	return n.nextNode
+}
+
+// SetNextNode sets the next node ID for display-only prompt nodes.
+func (n *promptNode) SetNextNode(nextNode string) {
+	n.nextNode = nextNode
+}
+
+// GetMessage returns the display message for display-only prompt nodes.
+func (n *promptNode) GetMessage() string {
+	return n.message
+}
+
+// SetMessage sets the display message for display-only prompt nodes.
+func (n *promptNode) SetMessage(message string) {
+	n.message = message
+}
+
+// IsDisplayOnly returns true if this is a display-only prompt node.
+// A prompt node is considered display-only if it has a next node, but no prompts (inputs or actions).
+func (n *promptNode) IsDisplayOnly() bool {
+	return n.nextNode != "" && len(n.prompts) == 0
 }
 
 // resolvePromptInputs resolves the inputs and actions for the prompt node.
@@ -240,8 +301,9 @@ func (n *promptNode) enrichInputsFromForwardedData(ctx *NodeContext, nodeResp *c
 	// Enrich each prompt input with data from matching forwarded input
 	for i := range nodeResp.Inputs {
 		if fwdInput, found := forwardedInputMap[nodeResp.Inputs[i].Identifier]; found {
-			// Only enrich Options - do not overwrite other fields like Ref, Type, Required
-			if len(fwdInput.Options) > 0 {
+			// Only enrich Options for SELECT-type inputs to avoid leaking
+			// candidate attribute values in free-text input responses.
+			if len(fwdInput.Options) > 0 && nodeResp.Inputs[i].Type == "SELECT" {
 				nodeResp.Inputs[i].Options = fwdInput.Options
 				n.logger.Debug("Enriched input with options from ForwardedData",
 					log.String("identifier", nodeResp.Inputs[i].Identifier),
@@ -329,6 +391,16 @@ func (n *promptNode) getNextNodeForActionRef(actionRef string, logger *log.Logge
 			logger.Debug("Action selected successfully", log.String("actionRef", actions[i].Ref),
 				log.String("nextNode", actions[i].NextNode))
 			return actions[i].NextNode
+		}
+	}
+	return ""
+}
+
+// getActionTypeForRef finds the action type for the given action reference.
+func (n *promptNode) getActionTypeForRef(actionRef string) string {
+	for _, prompt := range n.prompts {
+		if prompt.Action != nil && prompt.Action.Ref == actionRef {
+			return prompt.Action.Type
 		}
 	}
 	return ""

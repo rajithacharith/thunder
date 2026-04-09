@@ -58,7 +58,9 @@ func (h *userSchemaHandler) HandleUserSchemaListRequest(w http.ResponseWriter, r
 		limit = serverconst.DefaultPageSize
 	}
 
-	userSchemaListResponse, svcErr := h.userSchemaService.GetUserSchemaList(ctx, limit, offset)
+	includeDisplay := r.URL.Query().Get(sysutils.QueryParamInclude) == sysutils.IncludeValueDisplay
+
+	userSchemaListResponse, svcErr := h.userSchemaService.GetUserSchemaList(ctx, limit, offset, includeDisplay)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -113,7 +115,9 @@ func (h *userSchemaHandler) HandleUserSchemaGetRequest(w http.ResponseWriter, r 
 		return
 	}
 
-	userSchema, svcErr := h.userSchemaService.GetUserSchema(ctx, schemaID)
+	includeDisplay := r.URL.Query().Get(sysutils.QueryParamInclude) == sysutils.IncludeValueDisplay
+
+	userSchema, svcErr := h.userSchemaService.GetUserSchema(ctx, schemaID, includeDisplay)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return

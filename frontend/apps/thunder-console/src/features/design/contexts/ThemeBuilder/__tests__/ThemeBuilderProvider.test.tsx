@@ -57,7 +57,7 @@ const mockTheme = {
 
 const mockUseGetTheme = vi.fn();
 
-vi.mock('@thunder/shared-design', () => ({
+vi.mock('@thunder/design', () => ({
   useGetTheme: (...args: unknown[]) => mockUseGetTheme(...args) as unknown,
 }));
 

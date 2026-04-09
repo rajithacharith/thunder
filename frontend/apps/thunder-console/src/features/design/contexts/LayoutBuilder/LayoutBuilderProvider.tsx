@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useGetLayout} from '@thunder/shared-design';
+import {useGetLayout} from '@thunder/design';
 import {useState, useMemo, useCallback, type PropsWithChildren} from 'react';
 import {useParams} from 'react-router';
 import LayoutBuilderContext, {type LayoutBuilderContextType, type LayoutConfig} from './LayoutBuilderContext';

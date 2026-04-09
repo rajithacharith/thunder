@@ -25,6 +25,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
@@ -43,6 +44,7 @@ type schemaWithOU struct {
 type userTypeResolver struct {
 	core.ExecutorInterface
 	userSchemaService userschema.UserSchemaServiceInterface
+	ouService         ou.OrganizationUnitServiceInterface
 	logger            *log.Logger
 }
 
@@ -52,6 +54,7 @@ var _ core.ExecutorInterface = (*userTypeResolver)(nil)
 func newUserTypeResolver(
 	flowFactory core.FlowFactoryInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
+	ouService ou.OrganizationUnitServiceInterface,
 ) *userTypeResolver {
 	logger := log.GetLogger().With(
 		log.String(log.LoggerKeyComponentName, userTypeResolverLoggerComponentName),
@@ -72,6 +75,7 @@ func newUserTypeResolver(
 	return &userTypeResolver{
 		ExecutorInterface: base,
 		userSchemaService: userSchemaService,
+		ouService:         ouService,
 		logger:            logger,
 	}
 }
@@ -203,6 +207,24 @@ func (u *userTypeResolver) handleUserOnboardingFlows(ctx *core.NodeContext,
 			return execResp, nil
 		}
 
+		// If an OU was already selected (OU-first onboarding flow), validate the user type is valid for that OU.
+		if selectedOUID, exists := ctx.RuntimeData[ouIDKey]; exists && selectedOUID != "" {
+			isValid, svcErr := u.ouService.IsParent(ctx.Context, ouID, selectedOUID)
+			if svcErr != nil {
+				logger.Error("Failed to validate user type against selected OU",
+					log.String(userTypeKey, userType), log.String(ouIDKey, selectedOUID),
+					log.String("error", svcErr.Error))
+				return nil, fmt.Errorf("failed to validate user type against selected OU: %s", svcErr.Error)
+			}
+			if !isValid {
+				logger.Debug("User type not valid for selected OU",
+					log.String(userTypeKey, userType), log.String(ouIDKey, selectedOUID))
+				execResp.Status = common.ExecFailure
+				execResp.FailureReason = "User type is not valid for the selected organization unit"
+				return execResp, nil
+			}
+		}
+
 		execResp.RuntimeData[userTypeKey] = userType
 		execResp.RuntimeData[defaultOUIDKey] = ouID
 		logger.Debug("User type resolved for user onboarding", log.String(userTypeKey, userType),
@@ -212,7 +234,7 @@ func (u *userTypeResolver) handleUserOnboardingFlows(ctx *core.NodeContext,
 	}
 
 	// List all available user schemas
-	schemas, svcErr := u.userSchemaService.GetUserSchemaList(ctx.Context, 100, 0)
+	schemas, svcErr := u.userSchemaService.GetUserSchemaList(ctx.Context, 100, 0, false)
 	if svcErr != nil {
 		logger.Debug("Failed to list user schemas", log.String("error", svcErr.Error))
 		execResp.Status = common.ExecFailure
@@ -230,8 +252,19 @@ func (u *userTypeResolver) handleUserOnboardingFlows(ctx *core.NodeContext,
 	// Build the list of available schema names, filtering by allowedUserTypes if configured
 	availableSchemas := u.filterSchemasByAllowedTypes(schemas.Schemas, allowedUserTypes)
 
+	// If an OU was already selected (OU-first onboarding flow), filter schemas to those valid for that OU.
+	// This only applies to USER_ONBOARDING flows where OUResolver with "promptAll" runs first.
+	// Registration flows derive the OU from the user type's schema, so ouId is never in RuntimeData.
+	if selectedOUID, exists := ctx.RuntimeData[ouIDKey]; exists && selectedOUID != "" {
+		var err error
+		availableSchemas, err = u.filterSchemasByOU(ctx, availableSchemas, selectedOUID, logger)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if len(availableSchemas) == 0 {
-		logger.Debug("No valid user types found after filtering with allowedUserTypes",
+		logger.Debug("No valid user types found after filtering",
 			log.Any("allowedUserTypes", allowedUserTypes))
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "No valid user types available for this flow"
@@ -308,6 +341,32 @@ func (u *userTypeResolver) filterSchemasByAllowedTypes(
 	}
 
 	return filtered
+}
+
+// filterSchemasByOU filters schemas to only those valid for the given OU.
+// A schema is valid if its OUID is an ancestor of (or equal to) the selected OU.
+func (u *userTypeResolver) filterSchemasByOU(ctx *core.NodeContext,
+	schemas []userschema.UserSchemaListItem, selectedOUID string, logger *log.Logger,
+) ([]userschema.UserSchemaListItem, error) {
+	filtered := make([]userschema.UserSchemaListItem, 0, len(schemas))
+	for _, schema := range schemas {
+		isValid, svcErr := u.ouService.IsParent(ctx.Context, schema.OUID, selectedOUID)
+		if svcErr != nil {
+			logger.Error("Failed to check OU ancestry for schema",
+				log.String("schema", schema.Name), log.String("error", svcErr.Error))
+			return nil, fmt.Errorf("failed to check OU ancestry for schema %s: %s", schema.Name, svcErr.Error)
+		}
+		if isValid {
+			filtered = append(filtered, schema)
+		}
+	}
+
+	logger.Debug("Filtered schemas by selected OU",
+		log.String(ouIDKey, selectedOUID),
+		log.Int("before", len(schemas)),
+		log.Int("after", len(filtered)))
+
+	return filtered, nil
 }
 
 // resolveUserTypeFromInput resolves the user type from input and updates the executor response.

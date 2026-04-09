@@ -413,7 +413,7 @@ func TestGetAllResourceIDs_WithReadOnlyFilter(t *testing.T) {
 		},
 	}
 
-	mockService.On("GetUserSchemaList", mock.Anything, 100, 0).Return(response, nil)
+	mockService.On("GetUserSchemaList", mock.Anything, 100, 0, false).Return(response, nil)
 
 	ids, err := exporter.GetAllResourceIDs(context.Background())
 

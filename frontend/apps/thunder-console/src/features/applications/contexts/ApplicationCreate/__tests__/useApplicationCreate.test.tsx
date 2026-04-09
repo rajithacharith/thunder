@@ -41,7 +41,7 @@ vi.mock('../../utils/generateAppPrimaryColorSuggestions', () => ({
 }));
 
 // Mock useConfig to avoid ConfigProvider requirement
-vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+vi.mock('@thunder/contexts', async (importOriginal) => {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
   const actual = (await importOriginal()) as Record<string, unknown>;
 
@@ -278,7 +278,7 @@ describe('useApplicationCreate', () => {
     errorSpy.mockRestore();
   });
 
-  it('has exactly 38 properties in the context interface', () => {
+  it('has exactly 40 properties in the context interface', () => {
     function TestContextProperties() {
       const context = useApplicationCreate();
 
@@ -297,6 +297,6 @@ describe('useApplicationCreate', () => {
       </TestWrapper>,
     );
 
-    expect(screen.getByTestId('property-count')).toHaveTextContent('38');
+    expect(screen.getByTestId('property-count')).toHaveTextContent('40');
   });
 });

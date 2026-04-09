@@ -54,20 +54,15 @@ vi.mock('../../api/useCreateUserType', () => ({
   default: () => mockUseCreateUserType(),
 }));
 
-// Mock useGetOrganizationUnits (used by ConfigureGeneral for auto-selecting the first OU)
-vi.mock('../../../organization-units/api/useGetOrganizationUnits', () => ({
+// Mock useHasMultipleOUs (used by ConfigureGeneral to decide whether to show the OU picker)
+vi.mock('../../../organization-units/api/useHasMultipleOUs', () => ({
   default: () => ({
-    data: {
-      totalResults: 2,
-      startIndex: 1,
-      count: 2,
-      organizationUnits: [
-        {id: 'root-ou', name: 'Root Organization', handle: 'root', description: null, parent: null},
-        {id: 'child-ou', name: 'Child Organization', handle: 'child', description: null, parent: 'root-ou'},
-      ],
-    },
+    hasMultipleOUs: true,
     isLoading: false,
-    error: null,
+    ouList: [
+      {id: 'root-ou', name: 'Root Organization', handle: 'root', description: null, parent: null},
+      {id: 'child-ou', name: 'Child Organization', handle: 'child', description: null, parent: 'root-ou'},
+    ],
   }),
 }));
 

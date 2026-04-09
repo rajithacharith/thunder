@@ -72,7 +72,7 @@ func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_Success() {
 		},
 	}
 
-	s.mockService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0).Return(expectedResponse, nil)
+	s.mockService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0, false).Return(expectedResponse, nil)
 
 	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
@@ -88,7 +88,7 @@ func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_Error() {
 		Error: "test error",
 	}
 
-	s.mockService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0).Return(nil, expectedError)
+	s.mockService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0, false).Return(nil, expectedError)
 
 	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
@@ -101,7 +101,7 @@ func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_EmptyList() {
 		Schemas: []userschema.UserSchemaListItem{},
 	}
 
-	s.mockService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0).Return(expectedResponse, nil)
+	s.mockService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0, false).Return(expectedResponse, nil)
 
 	ids, err := s.exporter.GetAllResourceIDs(context.Background())
 
@@ -115,7 +115,7 @@ func (s *UserSchemaExporterTestSuite) TestGetResourceByID_Success() {
 		Name: "Test Schema",
 	}
 
-	s.mockService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(expectedSchema, nil)
+	s.mockService.EXPECT().GetUserSchema(mock.Anything, "schema1", mock.Anything).Return(expectedSchema, nil)
 
 	resource, name, err := s.exporter.GetResourceByID(context.Background(), "schema1")
 
@@ -130,7 +130,7 @@ func (s *UserSchemaExporterTestSuite) TestGetResourceByID_Error() {
 		Error: "test error",
 	}
 
-	s.mockService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(nil, expectedError)
+	s.mockService.EXPECT().GetUserSchema(mock.Anything, "schema1", mock.Anything).Return(nil, expectedError)
 
 	resource, name, err := s.exporter.GetResourceByID(context.Background(), "schema1")
 

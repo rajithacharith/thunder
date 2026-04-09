@@ -18,18 +18,19 @@
 
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type {Theme} from '@thunder/shared-design';
+import type {Theme} from '@thunder/design';
 import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
 import {describe, it, expect, vi} from 'vitest';
 import GatePreview from '../GatePreview';
 
 // Mock shared-design to stub DesignProvider (which internally needs ConfigProvider)
-vi.mock('@thunder/shared-design', () => ({
+vi.mock('@thunder/design', () => ({
   DesignProvider: ({children}: {children: React.ReactNode}) => children,
   useDesign: () => ({isDesignEnabled: false, theme: undefined}),
   FlowComponentRenderer: () => <div data-testid="flow-component" />,
   AuthPageLayout: ({children}: {children: React.ReactNode}) => <div data-testid="auth-page-layout">{children}</div>,
   AuthCardLayout: ({children}: {children: React.ReactNode}) => <div data-testid="auth-card-layout">{children}</div>,
+  GoogleFontLoader: () => null,
   AcrylicOrangeTheme: {},
 }));
 

@@ -18,7 +18,7 @@
 
 import {useLogger} from '@thunder/logger/react';
 import {Box, Chip, IconButton, Tooltip, Typography, ListingTable, DataGrid, useTheme} from '@wso2/oxygen-ui';
-import {AppWindow, Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
@@ -75,7 +75,7 @@ export default function ApplicationsList(): JSX.Element {
               <ResourceAvatar
                 value={params.row.logoUrl}
                 size={30}
-                fallbackIcon={<AppWindow size={14} />}
+                fallback="emoji:🖥️"
                 sx={{
                   backgroundColor: theme.vars?.palette.grey[500],
                   fontSize: '1rem',
@@ -108,6 +108,7 @@ export default function ApplicationsList(): JSX.Element {
               size="small"
               variant="outlined"
               sx={{
+                px: 0.5,
                 fontSize: '0.75rem',
               }}
             />
@@ -123,20 +124,9 @@ export default function ApplicationsList(): JSX.Element {
         minWidth: 200,
         renderCell: (params: DataGrid.GridRenderCellParams<BasicApplication>): JSX.Element =>
           params.row.clientId ? (
-            <Chip
-              label={params.row.clientId}
-              size="small"
-              variant="outlined"
-              sx={{
-                fontFamily: 'monospace',
-                fontSize: '0.7rem',
-                maxWidth: '100%',
-                '& .MuiChip-label': {
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                },
-              }}
-            />
+            <Typography variant="body2" sx={{fontFamily: 'monospace', fontSize: '0.875rem'}}>
+              {params.row.clientId}
+            </Typography>
           ) : (
             <>-</>
           ),
@@ -151,7 +141,7 @@ export default function ApplicationsList(): JSX.Element {
         filterable: false,
         hideable: false,
         renderCell: (params: DataGrid.GridRenderCellParams<BasicApplication>): JSX.Element => (
-          <ListingTable.RowActions visibility="hover">
+          <ListingTable.RowActions>
             <Tooltip title={t('common:actions.edit')}>
               <IconButton
                 size="small"

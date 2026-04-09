@@ -18,7 +18,7 @@
 
 import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig} from '@thunder/contexts';
 import UserTypeQueryKeys from '../constants/userTypeQueryKeys';
 import type {UserSchemaListParams, UserSchemaListResponse} from '../types/user-types';
 
@@ -47,6 +47,7 @@ export default function useGetUserTypes(params?: UserSchemaListParams): UseQuery
       if (offset !== undefined) {
         queryParams.append('offset', offset.toString());
       }
+      queryParams.append('include', 'display');
 
       const queryString: string = queryParams.toString();
       const url = `${serverUrl}/user-schemas${queryString ? `?${queryString}` : ''}`;

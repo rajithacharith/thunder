@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {useTemplateLiteralResolver} from '@thunder/hooks';
 import {Button, type ButtonProps, type SxProps, type Theme} from '@wso2/oxygen-ui';
 import {Position} from '@xyflow/react';
 import {useMemo, type ReactElement, type ReactNode} from 'react';
@@ -104,7 +104,6 @@ function ButtonAdapter({resource, elementIndex = undefined}: ButtonAdapterPropsI
 
   useRequiredFields(resource, generalMessage, validationFields);
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Config type is validated at runtime
   const buttonConfig = resource.config as ButtonConfig | undefined;
 
   const {config, image} = useMemo(() => {

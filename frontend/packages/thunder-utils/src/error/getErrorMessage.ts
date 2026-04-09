@@ -45,12 +45,9 @@ type TranslateFn = (key: string, options?: {defaultValue: string}) => string;
  * @public
  */
 export default function getErrorMessage(error: Error, t: TranslateFn, fallbackKey: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const apiError = (error as {response?: {data?: ApiError}}).response?.data;
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   if (apiError?.code) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const specific = t(`errors.${apiError.code}`, {defaultValue: ''});
 
     if (specific) {

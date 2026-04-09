@@ -26,12 +26,15 @@ import (
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/asgardeo/thunder/internal/system/template"
 	"github.com/asgardeo/thunder/internal/system/transaction"
 )
 
 // Initialize creates and configures the notification service components.
-func Initialize(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) (
-	NotificationSenderMgtSvcInterface, OTPServiceInterface, declarativeresource.ResourceExporter, error) {
+func Initialize(mux *http.ServeMux, jwtService jwt.JWTServiceInterface,
+	templateService template.TemplateServiceInterface) (
+	NotificationSenderMgtSvcInterface, OTPServiceInterface, NotificationSenderServiceInterface,
+	declarativeresource.ResourceExporter, error) {
 	var notificationStore notificationStoreInterface
 	var tx transaction.Transactioner
 
@@ -42,7 +45,7 @@ func Initialize(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) (
 		notificationStore, tx, err = newNotificationStore()
 		if err != nil {
 			log.GetLogger().Error("Failed to initialize notification store", log.Error(err))
-			return nil, nil, nil, err
+			return nil, nil, nil, nil, err
 		}
 	}
 
@@ -50,17 +53,18 @@ func Initialize(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) (
 
 	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
 		if err := loadDeclarativeResources(notificationStore); err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, nil, err
 		}
 	}
 
-	otpService := newOTPService(mgtService, jwtService)
+	otpService := newOTPService(mgtService, jwtService, templateService)
+	notificationSenderService := newNotificationSenderService(mgtService)
 	handler := newMessageNotificationSenderHandler(mgtService, otpService)
 	registerRoutes(mux, handler)
 
 	// Create and return exporter
 	exporter := newNotificationSenderExporter(mgtService)
-	return mgtService, otpService, exporter, nil
+	return mgtService, otpService, notificationSenderService, exporter, nil
 }
 
 // registerRoutes registers the HTTP routes for notification services.

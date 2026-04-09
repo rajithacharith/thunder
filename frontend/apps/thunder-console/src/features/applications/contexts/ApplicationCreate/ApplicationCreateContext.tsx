@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {Theme} from '@thunder/shared-design';
+import type {Theme} from '@thunder/design';
 import type {Context} from 'react';
 import {createContext} from 'react';
 import type {BasicFlowDefinition} from '../../../flows/models/responses';
@@ -60,6 +60,18 @@ export interface ApplicationCreateContextType {
    * @remark Needed for step 01: Application Name collection.
    */
   setAppName: (name: string) => void;
+
+  /**
+   * The selected organization unit ID
+   * @remark Needed for step 02: Organization Unit selection.
+   */
+  ouId: string;
+
+  /**
+   * Sets the selected organization unit ID
+   * @remark Needed for step 02: Organization Unit selection.
+   */
+  setOuId: (ouId: string) => void;
 
   /**
    * The ID of the selected theme

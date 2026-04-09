@@ -33,7 +33,7 @@ import {useState, useCallback, useMemo} from 'react';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import useGetOrganizationUnits from '../../organization-units/api/useGetOrganizationUnits';
+import useHasMultipleOUs from '../../organization-units/api/useHasMultipleOUs';
 import useCreateGroup from '../api/useCreateGroup';
 import ConfigureName from '../components/create-group/ConfigureName';
 import ConfigureOrganizationUnit from '../components/create-group/ConfigureOrganizationUnit';
@@ -49,10 +49,7 @@ export default function CreateGroupPage(): JSX.Element {
 
   const {currentStep, setCurrentStep, name, setName, ouId, setOuId, error, setError} = useGroupCreate();
 
-  // Fetch OUs to determine if we need the OU step
-  const {data: ouData, isLoading: isOuLoading} = useGetOrganizationUnits({limit: 2, offset: 0});
-  const ouList = ouData?.organizationUnits ?? [];
-  const hasMultipleOUs = (ouData?.totalResults ?? 0) > 1;
+  const {hasMultipleOUs, isLoading: isOuLoading, ouList} = useHasMultipleOUs();
 
   const [validationError, setValidationError] = useState<string | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);

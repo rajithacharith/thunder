@@ -27,13 +27,18 @@ import (
 
 // TemplateServiceInterface defines the interface for template operations.
 type TemplateServiceInterface interface {
-	// GetTemplateByScenario retrieves a template by its scenario type.
-	GetTemplateByScenario(ctx context.Context, scenario ScenarioType) (*TemplateDTO, *serviceerror.I18nServiceError)
+	// GetTemplateByScenario retrieves a template by its scenario and template type.
+	GetTemplateByScenario(
+		ctx context.Context,
+		scenario ScenarioType,
+		tmplType TemplateType,
+	) (*TemplateDTO, *serviceerror.I18nServiceError)
 
 	// Render renders a template with the provided data.
 	Render(
 		ctx context.Context,
 		scenario ScenarioType,
+		tmplType TemplateType,
 		data TemplateData,
 	) (*RenderedTemplate, *serviceerror.I18nServiceError)
 }

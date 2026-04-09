@@ -1780,7 +1780,7 @@ paths:
                 - $ref: "#/components/schemas/InitialFlowRequest"
                 - $ref: "#/components/schemas/SubSequentFlowRequest"
             examples:
-              initialRequestExample:
+              initialRequest:
                 summary: Initial request
                 value:
                   applicationId: 550e8400-e29b-41d4-a716-446655440000
@@ -1805,7 +1805,7 @@ paths:
                   - $ref: "#/components/schemas/ErrorFlowResponse"
               examples:
                 incompleteFlow:
-                  summary: Incomplete flow
+                  summary: Incomplete flow (prompt for user input)
                   value:
                     flowId: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
                     flowStatus: PROMPT_ONLY
@@ -1813,12 +1813,38 @@ paths:
                     type: VIEW
                     data:
                       inputs:
-                        - name: username
-                          type: string
+                        - ref: input_username
+                          identifier: username
+                          type: TEXT_INPUT
                           required: true
-                        - name: password
-                          type: string
+                        - ref: input_password
+                          identifier: password
+                          type: PASSWORD_INPUT
                           required: true
+                      actions:
+                        - ref: action_submit
+                          nextNode: node_bs12
+                displayOnlyFlow:
+                  summary: Incomplete flow (display-only prompt)
+                  value:
+                    flowId: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
+                    flowStatus: INCOMPLETE
+                    stepId: 3071b6c6-0119-465c-b00b-3a0e6f88a730
+                    type: VIEW
+                    data:
+                      meta:
+                        components:
+                          - id: heading_001
+                            type: TEXT
+                            category: DISPLAY
+                            variant: HEADING_3
+                            label: You're All Set
+                          - id: body_001
+                            type: TEXT
+                            category: DISPLAY
+                            variant: BODY_1
+                            label: You have successfully completed the registration.
+                      message: You have successfully completed the registration.
                 completeFlow:
                   summary: Complete flow
                   value:
@@ -2286,6 +2312,7 @@ paths:
                     application:
                       id: 60a9b38b-6eba-9f9e-55f9-267067de4680
                       name: My Web Application
+                      description: My web application for managing resources
                       logoUrl: https://myapp.example.com/logo.png
                       url: https://myapp.example.com
                       tosUri: https://myapp.example.com/terms
@@ -2354,6 +2381,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
+        - $ref: "#/components/parameters/includeGroupQueryParam"
       responses:
         "200":
           description: List of groups
@@ -2496,6 +2524,7 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: "#/components/parameters/includeGroupQueryParam"
       responses:
         "200":
           description: Group details
@@ -2903,6 +2932,7 @@ paths:
           example: engineering/frontend
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
+        - $ref: "#/components/parameters/includeGroupQueryParam"
       responses:
         "200":
           description: List of groups in the organization unit
@@ -3935,10 +3965,12 @@ paths:
                     handle: engineering
                     name: Engineering
                     description: Engineering Unit
+                    logoUrl: https://example.com/logos/engineering.png
                   - id: b7c40de6-95cd-4c45-8725-9c7cb5b9cafd
                     handle: sales
                     name: Sales
                     description: Sales Unit
+                    logoUrl: https://example.com/logos/sales.png
                 links:
                   - href: organization-units?offset=2&limit=2
                     rel: next
@@ -4231,10 +4263,12 @@ paths:
                     name: Frontend Team
                     handle: frontend
                     description: Handles UI/UX work
+                    logoUrl: https://example.com/logos/frontend.png
                   - id: 2a8f9e1c-4d7b-4c8a-9f3e-1b2c3d4e5f6g
                     name: Backend Team
                     handle: backend
                     description: Handles server-side development
+                    logoUrl: null
                 links:
                   - href: organization-units/afc77cfd-620b-4cf0-a31c-7377b0ea8902/ous?offset=2&limit=2
                     rel: next
@@ -4348,6 +4382,7 @@ paths:
             format: uuid
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
+        - $ref: "#/components/parameters/includeGroupQueryParam"
       responses:
         "200":
           description: List of groups in the organization unit
@@ -4802,10 +4837,12 @@ paths:
                     name: Frontend Team
                     handle: frontend
                     description: Handles UI/UX work
+                    logoUrl: https://example.com/logos/frontend.png
                   - id: 2a8f9e1c-4d7b-4c8a-9f3e-1b2c3d4e5f6g
                     name: Backend Team
                     handle: backend
                     description: Handles server-side development
+                    logoUrl: null
                 links:
                   - href: organization-units/tree/engineering/ous?offset=2&limit=2
                     rel: next
@@ -4959,6 +4996,7 @@ paths:
           example: engineering/frontend
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
+        - $ref: "#/components/parameters/includeGroupQueryParam"
       responses:
         "200":
           description: List of groups in the organization unit
@@ -7188,8 +7226,8 @@ paths:
       tags:
         - roles
       summary: Get role assignments
-      description: Returns all user and group assignments for the role. Use
-        include=display to get display names.
+      description: Returns user and group assignments for the role. Use type to filter
+        by assignee type and include=display to get display names.
       parameters:
         - in: path
           name: id
@@ -7197,6 +7235,7 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: "#/components/parameters/assigneeTypeQueryParam"
         - $ref: "#/components/parameters/includeQueryParam"
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
@@ -7245,6 +7284,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
               examples:
+                invalid-type:
+                  summary: Invalid assignee type parameter
+                  value:
+                    code: ROL-1017
+                    message: Invalid assignee type
+                    description: The type parameter must be either 'user' or 'group'
                 invalid-limit:
                   summary: Invalid limit parameter
                   value:
@@ -7615,6 +7660,7 @@ paths:
             type: string
             format: uuid
           example: 9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3
+        - $ref: "#/components/parameters/includeQueryParam"
       responses:
         "200":
           description: User details
@@ -8308,11 +8354,12 @@ paths:
         - user-schemas
       summary: List user type schemas
       description: |
-        Retrieves a list of all user type schemas that define the structure 
+        Retrieves a list of all user type schemas that define the structure
         and attributes for different user types.
       parameters:
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
+        - $ref: "#/components/parameters/includeQueryParam"
       responses:
         "200":
           description: List of user type schemas
@@ -8495,6 +8542,7 @@ paths:
             type: string
             format: uuid
           example: 550e8400-e29b-41d4-a716-446655440000
+        - $ref: "#/components/parameters/includeQueryParam"
       responses:
         "200":
           description: User schema details
@@ -10223,7 +10271,7 @@ components:
         inputs:
           type: array
           items:
-            $ref: "#/components/schemas/InputData"
+            $ref: "#/components/schemas/Input"
           description: Required input data for the next flow step
         redirectURL:
           type: string
@@ -10241,6 +10289,26 @@ components:
           items:
             $ref: "#/components/schemas/Action"
           description: Available actions for the current flow step
+        meta:
+          type: object
+          description: >
+            UI rendering metadata for display-only PROMPT nodes, returned when
+            executing in verbose mode. 
+
+            Contains a `components` array describing the elements to render
+            (headings, body text, images, etc.).
+          example:
+            components:
+              - id: heading_001
+                type: TEXT
+                category: DISPLAY
+                variant: HEADING_3
+                label: You're All Set
+              - id: body_001
+                type: TEXT
+                category: DISPLAY
+                variant: BODY_1
+                label: You have successfully completed the registration.
     Action:
       type: object
       required:
@@ -10267,25 +10335,22 @@ components:
         permission:
           type: string
           description: Derived permission string based on handle hierarchy
-    ExecutorModel:
+    Input:
       type: object
-      description: Executor configuration for the action
       properties:
-        name:
+        ref:
           type: string
-          description: Name of the executor
-          example: ""
-    InputData:
-      type: object
-      properties:
-        name:
+          description: Reference name of the input field, used for mapping user inputs to
+            the meta components
+          example: input_username
+        identifier:
           type: string
           description: Name of the input field
           example: username
         type:
           type: string
           description: Type of the input field
-          example: string
+          example: TEXT_INPUT
         required:
           type: boolean
           description: Whether the input is required
@@ -10871,6 +10936,34 @@ components:
           type: string
           description: Next node ID on failed execution (TASK_EXECUTION nodes)
           example: node_007
+        onIncomplete:
+          type: string
+          description: >
+            For TASK_EXECUTION nodes: ID of the PROMPT node to transition to
+            when user input
+
+            is required to complete the task.
+          example: node_003
+        next:
+          type: string
+          description: >
+            For display-only PROMPT nodes: ID of the next node to automatically
+            transition to
+
+            after the display content is rendered. Mutually exclusive with
+            `prompts`.
+          example: node_005
+        message:
+          type: string
+          description: >
+            For display-only PROMPT nodes: a plain-text message returned in
+            non-verbose mode
+
+            alongside the flow status, intended for lightweight clients that do
+            not process
+
+            the full meta/components payload.
+          example: Registration complete. You may now sign in.
     NodeLayout:
       type: object
       description: >
@@ -10964,6 +11057,18 @@ components:
           type: string
           description: Reference to the action component ID in meta.components
           example: action_001
+        type:
+          type: string
+          description: >
+            Optional action type forwarded to the next executor so it can
+            determine which
+
+            processing path to take. Predefined values are `SUBMIT`
+            (approve/confirm) and
+
+            `REJECT` (deny/cancel). If omitted, no action-type hint is
+            forwarded.
+          example: SUBMIT
         nextNode:
           type: string
           description: ID of the next node to navigate to when this action is triggered
@@ -11087,6 +11192,10 @@ components:
           type: string
           description: Application name
           example: My Web Application
+        description:
+          type: string
+          description: Application description
+          example: My web application for managing resources
         logoUrl:
           type: string
           format: uri
@@ -11234,6 +11343,14 @@ components:
           format: uuid
         name:
           type: string
+        ouId:
+          type: string
+          format: uuid
+        ouHandle:
+          type: string
+          readOnly: true
+          description: Human-readable handle of the organization unit (only included when
+            include=display query parameter is used).
     CreateGroupRequest:
       type: object
       required:
@@ -11738,6 +11855,11 @@ components:
         ouId:
           type: string
           format: uuid
+        ouHandle:
+          type: string
+          readOnly: true
+          description: Human-readable handle of the organization unit (only included when
+            include=display query parameter is used).
         type:
           type: string
         attributes:
@@ -12818,6 +12940,11 @@ components:
           type: string
           format: uuid
           description: The root organization unit ID associated with this user type schema
+        ouHandle:
+          type: string
+          readOnly: true
+          description: Human-readable handle of the organization unit (only included when
+            include=display query parameter is used).
         allowSelfRegistration:
           type: boolean
           description: Indicates whether users of this type can perform self-registration
@@ -13043,6 +13170,11 @@ components:
                 type: string
                 format: uuid
                 description: The root organization unit ID associated with this user type schema
+              ouHandle:
+                type: string
+                readOnly: true
+                description: Human-readable handle of the organization unit (only included when
+                  include=display query parameter is used).
               allowSelfRegistration:
                 type: boolean
                 description: Indicates whether users of this type can perform self-registration
@@ -13269,13 +13401,22 @@ components:
         enum:
           - display
       description: >
-        Optional parameter to include additional information.
+        Optional parameter to include additional display information in the
+        response. The exact fields included depend on the endpoint. See each
+        endpoint's response schema for details on which fields are enriched.
+    includeGroupQueryParam:
+      in: query
+      name: include
+      required: false
+      description: >
+        Optional parameter to include additional display information.
 
-        - `display` - Include display names for users. The display value is
-        resolved from the schema-configured display attribute
-        (`systemAttributes.display`). Falls back to the user ID if no display
-        attribute is configured, the configured attribute path does not exist in
-        the user's data, or the attribute value is empty.
+        - `display` - Include `ouHandle`, the human-readable handle of the
+        organization unit, alongside the `ouId`.
+      schema:
+        type: string
+        enum:
+          - display
     languagePathParam:
       name: language
       in: path
@@ -13308,6 +13449,18 @@ components:
         minLength: 1
         maxLength: 256
         example: user.not_found
+    assigneeTypeQueryParam:
+      in: query
+      name: type
+      required: false
+      schema:
+        type: string
+        enum:
+          - user
+          - group
+      description: >
+        Filter assignments by assignee type. When omitted, assignments of all
+        types are returned.
     filterParam:
       in: query
       name: filter

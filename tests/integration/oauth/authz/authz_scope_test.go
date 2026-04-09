@@ -406,6 +406,7 @@ func (ts *OAuthAuthzScopeTestSuite) createOAuthApplication(authFlowID string) (s
 	app := map[string]interface{}{
 		"name":                      scopeTestAppName,
 		"description":               "OAuth application for scope authorization testing",
+		"ouId":                      scopeTestOUID,
 		"authFlowId":                authFlowID,
 		"isRegistrationFlowEnabled": false,
 		"allowedUserTypes":          []string{"authz-test-person"},
@@ -553,6 +554,7 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithRequiredAttributes() 
 	// Create OAuth app with IDToken and AccessToken configs
 	appConfig := map[string]interface{}{
 		"name":                    "RequiredAttributesTestApp",
+		"ouId":                    scopeTestOUID,
 		"clientId":                "required_attrs_test_client",
 		"redirectUris":            []string{scopeTestRedirectURI},
 		"grantTypes":              []string{"authorization_code", "refresh_token"},
@@ -591,7 +593,8 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithRequiredAttributes() 
 		_ = testutils.DeleteApplication(appID)
 	}()
 
-	// Create a user with attributes
+	// Create a user with attributes (roles and groups are computed from role/group assignments,
+	// not stored as user attributes)
 	userAttributesJSON := `{
 		"username": "requiredattrsuser",
 		"password": "TestPassword123!",
@@ -599,8 +602,6 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithRequiredAttributes() 
 		"given_name": "Required",
 		"family_name": "Attrs",
 		"name": "Required Attrs",
-		"groups": ["admin", "user"],
-		"roles": ["developer"],
 		"phone": "+1234567890",
 		"customAttr": "customValue"
 	}`
@@ -615,6 +616,51 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithRequiredAttributes() 
 	ts.Require().NoError(err, "Failed to create test user")
 	defer func() {
 		_ = testutils.DeleteUser(userID)
+	}()
+
+	// Create a role directly assigned to the user
+	directRole := testutils.Role{
+		Name:        "developer",
+		Description: "Developer role directly assigned to user",
+		OUID:        scopeTestOUID,
+		Assignments: []testutils.Assignment{
+			{ID: userID, Type: "user"},
+		},
+	}
+	directRoleID, err := testutils.CreateRole(directRole)
+	ts.Require().NoError(err, "Failed to create direct role")
+	defer func() {
+		_ = testutils.DeleteRole(directRoleID)
+	}()
+
+	// Create a group with the user as a member, then assign a second role to the group.
+	// This validates that roles inherited through group membership are included in the token.
+	reqAttrsGroup := testutils.Group{
+		Name:        "RequiredAttrs_Engineers",
+		Description: "Group for required attributes role inheritance test",
+		OUID:        scopeTestOUID,
+		Members: []testutils.Member{
+			{Id: userID, Type: "user"},
+		},
+	}
+	reqAttrsGroupID, err := testutils.CreateGroup(reqAttrsGroup)
+	ts.Require().NoError(err, "Failed to create test group")
+	defer func() {
+		_ = testutils.DeleteGroup(reqAttrsGroupID)
+	}()
+
+	groupRole := testutils.Role{
+		Name:        "reviewer",
+		Description: "Reviewer role assigned via group membership",
+		OUID:        scopeTestOUID,
+		Assignments: []testutils.Assignment{
+			{ID: reqAttrsGroupID, Type: "group"},
+		},
+	}
+	groupRoleID, err := testutils.CreateRole(groupRole)
+	ts.Require().NoError(err, "Failed to create group role")
+	defer func() {
+		_ = testutils.DeleteRole(groupRoleID)
 	}()
 
 	// Step 1: Initiate authorization flow with OIDC scopes
@@ -698,8 +744,18 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithRequiredAttributes() 
 	ts.Assert().Equal(cacheID, atClaims["aci"],
 		"Access token aci must match the one from the assertion JWT")
 
-	// Required attribute (roles) must be resolved and present — it was included in access_token.user_attributes
-	ts.Assert().NotNil(atClaims["roles"], "roles should be present in access token (required access_token attribute)")
+	// Required attribute (roles) must be resolved and present — it was included in access_token.user_attributes.
+	// The claim should contain both the directly assigned role ("developer") and the group-inherited role ("reviewer").
+	ts.Require().NotNil(atClaims["roles"], "roles should be present in access token (required access_token attribute)")
+	rolesRaw, ok := atClaims["roles"].([]interface{})
+	ts.Require().True(ok, "roles claim should be an array")
+	roleNames := make([]string, len(rolesRaw))
+	for i, r := range rolesRaw {
+		roleNames[i], ok = r.(string)
+		ts.Require().True(ok, "each role should be a string")
+	}
+	ts.Assert().Contains(roleNames, "developer", "roles should include directly assigned role")
+	ts.Assert().Contains(roleNames, "reviewer", "roles should include group-inherited role")
 
 	// Excluded attributes must NOT appear — they were never added to the attribute cache
 	ts.Assert().Nil(atClaims["name"], "name should NOT be in access token (not an access_token attribute)")

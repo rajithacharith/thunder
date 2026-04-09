@@ -16,16 +16,34 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render as testRender, screen, fireEvent, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
-import {DesignContext, type DesignContextType} from '@thunder/shared-design';
+import {DesignContext, type DesignContextType} from '@thunder/design';
+import {render as testRender, screen, fireEvent, waitFor} from '@thunder/test-utils';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import AcceptInviteBox from '../AcceptInviteBox';
+
+const {mockLogger} = vi.hoisted(() => ({
+  mockLogger: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
+vi.mock('@thunder/logger/react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/logger/react')>();
+
+  return {
+    ...actual,
+    useLogger: () => mockLogger,
+  };
+});
 
 // Mock useDesign
 const mockUseDesign = vi.fn();
-vi.mock('@thunder/shared-design', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/shared-design')>();
+vi.mock('@thunder/design', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/design')>();
   return {
     ...actual,
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -65,14 +83,14 @@ vi.mock('@thunder/shared-branding', () => ({
 }));
 
 // Mock useTemplateLiteralResolver
-vi.mock('@thunder/shared-hooks', () => ({
+vi.mock('@thunder/hooks', () => ({
   useTemplateLiteralResolver: () => ({
     resolve: (key: string) => key,
   }),
 }));
 
 // Mock useConfig
-vi.mock('@thunder/shared-contexts', () => ({
+vi.mock('@thunder/contexts', () => ({
   useConfig: () => ({
     getServerUrl: () => 'https://api.example.com',
   }),
@@ -126,22 +144,30 @@ let mockAcceptInviteRenderProps: MockAcceptInviteRenderProps = createMockAcceptI
 
 // Track props passed to AcceptInvite
 let capturedOnGoToSignIn: (() => void) | undefined;
+let capturedOnComplete: (() => void) | undefined;
 let capturedOnError: ((error: Error) => void) | undefined;
+const mockUseAsgardeo = vi.fn().mockReturnValue({
+  resolveFlowTemplateLiterals: (template: string) => template,
+});
 
 vi.mock('@asgardeo/react', async () => {
   const actual = await vi.importActual('@asgardeo/react');
   return {
     ...actual,
+    useAsgardeo: () => mockUseAsgardeo() as {resolveFlowTemplateLiterals: (t: string) => string; meta: unknown},
     AcceptInvite: ({
       children,
       onGoToSignIn = undefined,
+      onComplete = undefined,
       onError = undefined,
     }: {
       children: (props: typeof mockAcceptInviteRenderProps) => React.ReactNode;
       onGoToSignIn?: () => void;
+      onComplete?: () => void;
       onError?: (error: Error) => void;
     }) => {
       capturedOnGoToSignIn = onGoToSignIn;
+      capturedOnComplete = onComplete;
       capturedOnError = onError;
       return <div data-testid="asgardeo-accept-invite">{children(mockAcceptInviteRenderProps)}</div>;
     },
@@ -162,6 +188,9 @@ vi.mock('@asgardeo/react', async () => {
 describe('AcceptInviteBox', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseAsgardeo.mockReturnValue({
+      resolveFlowTemplateLiterals: (template: string) => template,
+    });
     mockUseDesign.mockReturnValue({
       isDesignEnabled: false,
     });
@@ -190,14 +219,6 @@ describe('AcceptInviteBox', () => {
     expect(screen.getByText(/This invite link is invalid or has expired/)).toBeInTheDocument();
   });
 
-  it('shows completion message', () => {
-    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
-      isComplete: true,
-    });
-    render(<AcceptInviteBox />);
-    expect(screen.getByText(/Your account has been successfully set up/)).toBeInTheDocument();
-  });
-
   it('shows loading spinner when loading and no components', () => {
     mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
       isLoading: true,
@@ -205,6 +226,34 @@ describe('AcceptInviteBox', () => {
     });
     render(<AcceptInviteBox />);
     expect(screen.getByTestId('asgardeo-accept-invite')).toBeInTheDocument();
+  });
+
+  it('renders without error when sdk has not produced a branch yet', () => {
+    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
+      isLoading: false,
+      components: [],
+      error: null,
+      isValidatingToken: false,
+      isTokenInvalid: false,
+    });
+    render(<AcceptInviteBox />);
+    expect(screen.getByTestId('asgardeo-accept-invite')).toBeInTheDocument();
+  });
+
+  it('does not pass onComplete to AcceptInvite', () => {
+    render(<AcceptInviteBox />);
+
+    expect(capturedOnComplete).toBeUndefined();
+  });
+
+  it('renders display components when isComplete', () => {
+    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
+      isComplete: true,
+      components: [{id: 'heading', type: 'TEXT', label: 'Welcome Aboard!', variant: 'HEADING_1'}],
+    });
+    render(<AcceptInviteBox />);
+
+    expect(screen.getByText('Welcome Aboard!')).toBeInTheDocument();
   });
 
   it('shows error alert when error is present', () => {
@@ -566,15 +615,13 @@ describe('AcceptInviteBox', () => {
     expect(mockHandleInputChange).toHaveBeenCalled();
   });
 
-  it('handles navigation to sign in via onGoToSignIn', () => {
-    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
-      isComplete: true,
-    });
+  it('passes onGoToSignIn to AcceptInvite', () => {
     render(<AcceptInviteBox />);
 
-    // The component passes onGoToSignIn to AcceptInvite
-    // Just verify component renders correctly
-    expect(screen.getByText(/Your account has been successfully set up/)).toBeInTheDocument();
+    expect(capturedOnGoToSignIn).toBeDefined();
+    capturedOnGoToSignIn?.();
+
+    expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/signin'));
   });
 
   it('renders SELECT component with string options', async () => {
@@ -1234,8 +1281,6 @@ describe('AcceptInviteBox', () => {
   });
 
   it('calls onError callback with error object', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => null);
-
     render(<AcceptInviteBox />);
 
     // Verify the callback was captured
@@ -1245,10 +1290,8 @@ describe('AcceptInviteBox', () => {
     const testError = new Error('Test error message');
     capturedOnError?.(testError);
 
-    // Verify console.error was called with the error
-    expect(consoleSpy).toHaveBeenCalledWith('Invite acceptance error:', testError);
-
-    consoleSpy.mockRestore();
+    // Verify logger.error was called with the error
+    expect(mockLogger.error).toHaveBeenCalledWith('Invite acceptance error:', testError);
   });
 
   it('uses fallback index keys when components have undefined id', () => {

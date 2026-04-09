@@ -44,6 +44,7 @@ func Initialize(
 	ouService ou.OrganizationUnitServiceInterface,
 	idpService idp.IDPServiceInterface,
 	otpService notification.OTPServiceInterface,
+	notifSenderSvc notification.NotificationSenderServiceInterface,
 	jwtService jwt.JWTServiceInterface,
 	authRegistry *authn.AuthServiceRegistry,
 	authZService authz.AuthorizationServiceInterface,
@@ -58,11 +59,11 @@ func Initialize(
 ) ExecutorRegistryInterface {
 	reg := newExecutorRegistry()
 	reg.RegisterExecutor(ExecutorNameBasicAuth, newBasicAuthExecutor(
-		flowFactory, userProvider, authRegistry.CredentialsAuthnService, observabilitySvc))
+		flowFactory, userProvider, authRegistry.CredentialsAuthnService))
 	reg.RegisterExecutor(ExecutorNameSMSAuth, newSMSOTPAuthExecutor(
-		flowFactory, otpService, observabilitySvc, userProvider))
+		flowFactory, otpService, userProvider))
 	reg.RegisterExecutor(ExecutorNamePasskeyAuth, newPasskeyAuthExecutor(
-		flowFactory, authRegistry.PasskeyService, observabilitySvc, userProvider))
+		flowFactory, authRegistry.PasskeyService, userProvider))
 
 	reg.RegisterExecutor(ExecutorNameOAuth, newOAuthExecutor(
 		"", []common.Input{}, []common.Input{}, flowFactory, idpService, userSchemaService,
@@ -82,10 +83,10 @@ func Initialize(
 	reg.RegisterExecutor(ExecutorNameAttributeCollect, newAttributeCollector(flowFactory, userProvider))
 	reg.RegisterExecutor(ExecutorNameAuthAssert, newAuthAssertExecutor(flowFactory, jwtService,
 		ouService, authRegistry.AuthAssertGenerator, authRegistry.CredentialsAuthnService, userProvider,
-		attributeCacheSvc))
+		attributeCacheSvc, roleService))
 	reg.RegisterExecutor(ExecutorNameAuthorization, newAuthorizationExecutor(flowFactory, authZService, userProvider))
 	reg.RegisterExecutor(ExecutorNameHTTPRequest, newHTTPRequestExecutor(flowFactory))
-	reg.RegisterExecutor(ExecutorNameUserTypeResolver, newUserTypeResolver(flowFactory, userSchemaService))
+	reg.RegisterExecutor(ExecutorNameUserTypeResolver, newUserTypeResolver(flowFactory, userSchemaService, ouService))
 	reg.RegisterExecutor(ExecutorNameInviteExecutor, newInviteExecutor(flowFactory))
 	reg.RegisterExecutor(ExecutorNameEmailExecutor, newEmailExecutor(flowFactory, emailClient, templateService))
 	reg.RegisterExecutor(ExecutorNameCredentialSetter, newCredentialSetter(flowFactory, userProvider))
@@ -97,6 +98,8 @@ func Initialize(
 	reg.RegisterExecutor(ExecutorNameOUResolver, newOUResolverExecutor(flowFactory, ouService))
 	reg.RegisterExecutor(ExecutorNameAttributeUniquenessValidator, newAttributeUniquenessValidator(
 		flowFactory, userSchemaService, userProvider))
+	reg.RegisterExecutor(ExecutorNameSMSExecutor, newSMSExecutor(flowFactory, notifSenderSvc, templateService))
+	reg.RegisterExecutor(ExecutorNameFederatedAuthResolver, newFederatedAuthResolverExecutor(flowFactory))
 
 	return reg
 }

@@ -49,7 +49,6 @@ function CaptchaAdapter({resource}: CaptchaAdapterPropsInterface): ReactElement 
 
   return (
     <Box display="flex" alignItems="center" justifyContent="center">
-      {/* eslint-disable max-len */}
       <svg width="276" height="80" viewBox="0 0 276 80" fill="none" xmlns="http://www.w3.org/2000/svg">
         <title>{captchaElement?.alt}</title>
         <g filter="url(#filter0_d_72_124)">
@@ -170,7 +169,6 @@ function CaptchaAdapter({resource}: CaptchaAdapterPropsInterface): ReactElement 
           </clipPath>
         </defs>
       </svg>
-      {/* eslint-enable max-len */}
     </Box>
   );
 }

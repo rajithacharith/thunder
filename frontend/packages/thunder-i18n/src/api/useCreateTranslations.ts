@@ -18,7 +18,7 @@
 
 import {useAsgardeo} from '@asgardeo/react';
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig} from '@thunder/contexts';
 import I18nQueryKeys from '../constants/i18n-query-keys';
 import type {CreateTranslationsVariables} from '../models/requests';
 import type {TranslationsResponse} from '../models/responses';

@@ -261,12 +261,14 @@ configuration:
     cleanupInterval: 300
     redis:
       address: "localhost:6379"
+      username: ""
       password: ""
       db: 0
       keyPrefix: "thunder"
 
   # Token Configuration
   jwt:
+    issuer: ""  # Optional. Derived from server's URL if not set.
     validityPeriod: 3600
     audience: "application"
     # This must match the key ID defined in the crypto.keys section

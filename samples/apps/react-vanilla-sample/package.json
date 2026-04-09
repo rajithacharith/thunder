@@ -1,7 +1,7 @@
 {
     "name": "react-vanilla-sample",
     "private": true,
-    "version": "0.30.0",
+    "version": "0.32.0",
     "type": "module",
     "scripts": {
         "dev": "vite",
@@ -37,7 +37,7 @@
         "globals": "16.0.0",
         "typescript": "5.8.3",
         "typescript-eslint": "8.57.2",
-        "vite": "6.4.1"
+        "vite": "6.4.2"
     },
     "overrides": {
         "flatted": ">=3.4.2",

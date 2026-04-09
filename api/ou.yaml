@@ -49,10 +49,12 @@ paths:
                     handle: "engineering"
                     name: "Engineering"
                     description: "Engineering Unit"
+                    logoUrl: "https://example.com/logos/engineering.png"
                   - id: "b7c40de6-95cd-4c45-8725-9c7cb5b9cafd"
                     handle: "sales"
                     name: "Sales"
                     description: "Sales Unit"
+                    logoUrl: "https://example.com/logos/sales.png"
                 links:
                   - href: "organization-units?offset=2&limit=2"
                     rel: "next"
@@ -346,10 +348,12 @@ paths:
                     name: "Frontend Team"
                     handle: "frontend"
                     description: "Handles UI/UX work"
+                    logoUrl: "https://example.com/logos/frontend.png"
                   - id: "2a8f9e1c-4d7b-4c8a-9f3e-1b2c3d4e5f6g"
                     name: "Backend Team"
                     handle: "backend"
                     description: "Handles server-side development"
+                    logoUrl: null
                 links:
                   - href: "organization-units/afc77cfd-620b-4cf0-a31c-7377b0ea8902/ous?offset=2&limit=2"
                     rel: "next"
@@ -465,6 +469,7 @@ paths:
             format: uuid
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/offsetQueryParam'
+        - $ref: '#/components/parameters/includeGroupQueryParam'
       responses:
         "200":
           description: List of groups in the organization unit
@@ -887,10 +892,12 @@ paths:
                     name: "Frontend Team"
                     handle: "frontend"
                     description: "Handles UI/UX work"
+                    logoUrl: "https://example.com/logos/frontend.png"
                   - id: "2a8f9e1c-4d7b-4c8a-9f3e-1b2c3d4e5f6g"
                     name: "Backend Team"
                     handle: "backend"
                     description: "Handles server-side development"
+                    logoUrl: null
                 links:
                   - href: "organization-units/tree/engineering/ous?offset=2&limit=2"
                     rel: "next"
@@ -1038,6 +1045,7 @@ paths:
           example: "engineering/frontend"
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/offsetQueryParam'
+        - $ref: '#/components/parameters/includeGroupQueryParam'
       responses:
         "200":
           description: List of groups in the organization unit
@@ -1143,6 +1151,17 @@ components:
         type: string
         enum:
           - display
+    includeGroupQueryParam:
+      in: query
+      name: include
+      required: false
+      description: |
+        Optional parameter to include additional display information.
+        - `display` - Include `ouHandle`, the human-readable handle of the organization unit, alongside the `ouId`.
+      schema:
+        type: string
+        enum:
+          - display
 
   schemas:
     OrganizationUnitBasic:
@@ -1196,6 +1215,13 @@ components:
           format: uuid
         name:
           type: string
+        ouId:
+          type: string
+          format: uuid
+        ouHandle:
+          type: string
+          readOnly: true
+          description: "Human-readable handle of the organization unit (only included when include=display query parameter is used)."
 
     Link:
       type: object

@@ -26,6 +26,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
+	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 )
 
@@ -38,12 +39,13 @@ func Initialize(
 	tokenBuilder tokenservice.TokenBuilderInterface,
 	tokenValidator tokenservice.TokenValidatorInterface,
 	attrCacheService attributecache.AttributeCacheServiceInterface,
+	ouService ou.OrganizationUnitServiceInterface,
 ) (GrantHandlerProviderInterface, error) {
 	authzService, err := authz.Initialize(mux, applicationService, jwtService, flowExecService)
 	if err != nil {
 		return nil, err
 	}
 	grantHandlerProvider := newGrantHandlerProvider(
-		jwtService, authzService, tokenBuilder, tokenValidator, attrCacheService)
+		jwtService, authzService, tokenBuilder, tokenValidator, attrCacheService, ouService)
 	return grantHandlerProvider, nil
 }

@@ -25,7 +25,7 @@ import {HistoryPlugin} from '@lexical/react/LexicalHistoryPlugin';
 import {LinkPlugin} from '@lexical/react/LexicalLinkPlugin';
 import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
 import {HeadingNode} from '@lexical/rich-text';
-import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
+import {useTemplateLiteralResolver} from '@thunder/hooks';
 import {Box, FormControl, FormLabel, Paper, TextField} from '@wso2/oxygen-ui';
 import {ParagraphNode, TextNode, type EditorThemeClasses} from 'lexical';
 import {useMemo, type ReactElement} from 'react';

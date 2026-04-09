@@ -35,11 +35,8 @@ OU
 SDKs
 Pardot
 Entra
-SDKs
 URIs
 Vue
-[Oo]nboarding
-JWTs
 [Uu]nexported
 [Mm]ux
 DTOs
@@ -48,3 +45,12 @@ DTOs
 ESLint
 templated
 OTPs
+[Bb]reakpoint[s]?
+DBeaver
+[Rr]ebase
+[Mm]onorepo
+[Cc]amelCase
+VSCode
+PascalCase
+Rolldown
+[Rr]edirect-?[Uu][Rr][Ii]s

@@ -45,10 +45,40 @@ func (p *defaultUserProvider) IdentifyUser(filters map[string]interface{}) (*str
 		if err.Code == user.ErrorUserNotFound.Code {
 			return nil, NewUserProviderError(ErrorCodeUserNotFound, err.Error, err.ErrorDescription)
 		}
+		if err.Code == user.ErrorAmbiguousUser.Code {
+			return nil, NewUserProviderError(ErrorCodeAmbiguousUser, err.Error, err.ErrorDescription)
+		}
 		return nil, NewUserProviderError(ErrorCodeSystemError, err.Error, err.ErrorDescription)
 	}
 
 	return userID, nil
+}
+
+// SearchUsers searches for all users matching the given filters.
+func (p *defaultUserProvider) SearchUsers(filters map[string]interface{}) ([]*User, *UserProviderError) {
+	users, err := p.userSvc.SearchUsers(security.WithRuntimeContext(context.Background()), filters)
+	if err != nil {
+		if err.Code == user.ErrorUserNotFound.Code {
+			return nil, NewUserProviderError(ErrorCodeUserNotFound, err.Error, err.ErrorDescription)
+		}
+		if err.Code == user.ErrorInvalidRequestFormat.Code {
+			return nil, NewUserProviderError(ErrorCodeInvalidRequestFormat, err.Error, err.ErrorDescription)
+		}
+		return nil, NewUserProviderError(ErrorCodeSystemError, err.Error, err.ErrorDescription)
+	}
+
+	result := make([]*User, 0, len(users))
+	for _, u := range users {
+		result = append(result, &User{
+			UserID:     u.ID,
+			UserType:   u.Type,
+			OUID:       u.OUID,
+			OUHandle:   u.OUHandle,
+			Attributes: u.Attributes,
+		})
+	}
+
+	return result, nil
 }
 
 // GetUser retrieves a user based on the given user ID.
@@ -105,6 +135,29 @@ func (p *defaultUserProvider) GetUserGroups(userID string, limit, offset int) (*
 		Groups:       groups,
 		Links:        links,
 	}, nil
+}
+
+// GetTransitiveUserGroups retrieves all groups a user belongs to, including nested group membership.
+func (p *defaultUserProvider) GetTransitiveUserGroups(userID string) ([]UserGroup, *UserProviderError) {
+	groups, err := p.userSvc.GetTransitiveUserGroups(
+		security.WithRuntimeContext(context.Background()), userID)
+	if err != nil {
+		if err.Code == user.ErrorUserNotFound.Code || err.Code == user.ErrorMissingUserID.Code {
+			return nil, NewUserProviderError(ErrorCodeUserNotFound, err.Error, err.ErrorDescription)
+		}
+		return nil, NewUserProviderError(ErrorCodeSystemError, err.Error, err.ErrorDescription)
+	}
+
+	result := make([]UserGroup, len(groups))
+	for i, g := range groups {
+		result[i] = UserGroup{
+			ID:   g.ID,
+			Name: g.Name,
+			OUID: g.OUID,
+		}
+	}
+
+	return result, nil
 }
 
 // UpdateUser updates a user based on the given user ID and user update configuration.

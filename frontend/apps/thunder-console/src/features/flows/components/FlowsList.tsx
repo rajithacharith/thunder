@@ -17,8 +17,8 @@
  */
 
 import {useLogger} from '@thunder/logger/react';
-import {Box, Avatar, Chip, IconButton, Tooltip, Typography, ListingTable, DataGrid, useTheme} from '@wso2/oxygen-ui';
-import {GitBranch, Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
+import {Box, Chip, IconButton, Tooltip, Typography, ListingTable, DataGrid} from '@wso2/oxygen-ui';
+import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
@@ -35,7 +35,6 @@ import type {BasicFlowDefinition} from '../models/responses';
 const HIDE_NON_EDITABLE_FLOWS = true;
 
 export default function FlowsList(): JSX.Element {
-  const theme = useTheme();
   const navigate = useNavigate();
   const {t} = useTranslation();
   const logger = useLogger('FlowsList');
@@ -74,27 +73,6 @@ export default function FlowsList(): JSX.Element {
         headerName: t('flows:listing.columns.name'),
         flex: 1,
         minWidth: 220,
-        renderCell: (params: DataGrid.GridRenderCellParams<BasicFlowDefinition>): JSX.Element => (
-          <ListingTable.CellIcon
-            sx={{width: '100%'}}
-            icon={
-              <Avatar
-                sx={{
-                  backgroundColor: theme.vars?.palette.grey[500],
-                  width: 30,
-                  height: 30,
-                  fontSize: '0.875rem',
-                  ...theme.applyStyles('dark', {
-                    backgroundColor: theme.vars?.palette.grey[900],
-                  }),
-                }}
-              >
-                <GitBranch size={14} />
-              </Avatar>
-            }
-            primary={params.row.name}
-          />
-        ),
       },
       {
         field: 'flowType',
@@ -155,7 +133,7 @@ export default function FlowsList(): JSX.Element {
         renderCell: (params: DataGrid.GridRenderCellParams<BasicFlowDefinition>): JSX.Element | null => {
           if (params.row.flowType !== 'AUTHENTICATION') return null;
           return (
-            <ListingTable.RowActions visibility="hover">
+            <ListingTable.RowActions>
               <Tooltip title={t('common:actions.edit')}>
                 <IconButton
                   size="small"
@@ -184,7 +162,7 @@ export default function FlowsList(): JSX.Element {
         },
       },
     ],
-    [handleDeleteClick, handleEditClick, t, theme],
+    [handleDeleteClick, handleEditClick, t],
   );
 
   if (error) {

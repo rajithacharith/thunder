@@ -117,6 +117,11 @@ func (tb *tokenBuilder) buildAccessTokenClaims(
 		claims[key] = value
 	}
 
+	// Merge OAuth client/application-scoped attributes.
+	for key, value := range ctx.ClientAttributes {
+		claims[key] = value
+	}
+
 	// Set after merging user attributes to prevent user attributes from overwriting this system claim.
 	if ctx.AttributeCacheID != "" {
 		claims["aci"] = ctx.AttributeCacheID

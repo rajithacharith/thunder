@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/asgardeo/thunder/internal/entity"
 	"github.com/asgardeo/thunder/internal/group"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	resourcepkg "github.com/asgardeo/thunder/internal/resource"
@@ -29,14 +30,13 @@ import (
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/transaction"
-	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 // Initialize initializes the role service and registers its routes.
 func Initialize(
 	mux *http.ServeMux,
-	userService user.UserServiceInterface,
+	entityService entity.EntityServiceInterface,
 	groupService group.GroupServiceInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	resourceService resourcepkg.ResourceServiceInterface,
@@ -50,7 +50,8 @@ func Initialize(
 
 	// Step 2: Create service with store
 	roleService := newRoleService(
-		roleStore, userService, groupService, ouService, resourceService, userSchemaService, transactioner,
+		roleStore, entityService, groupService, ouService, resourceService,
+		userSchemaService, transactioner,
 	)
 	roleHandler := newRoleHandler(roleService)
 	registerRoutes(mux, roleHandler)
@@ -150,6 +151,14 @@ func registerRoutes(mux *http.ServeMux, roleHandler *roleHandler) {
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /roles/{id}", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	}, opts2))
+	opts4 := middleware.CORSOptions{
+		AllowedMethods:   "GET",
+		AllowedHeaders:   "Content-Type, Authorization",
+		AllowCredentials: true,
+	}
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /roles/{id}/assignments", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}, opts4))
 
 	opts3 := middleware.CORSOptions{
 		AllowedMethods:   "POST",

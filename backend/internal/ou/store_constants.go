@@ -35,7 +35,7 @@ var (
 	// queryGetRootOrganizationUnitList is the query to get organization units with pagination.
 	queryGetRootOrganizationUnitList = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-02",
-		Query: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION, PARENT_ID FROM ORGANIZATION_UNIT ` +
+		Query: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION, PARENT_ID, METADATA FROM ORGANIZATION_UNIT ` +
 			`WHERE PARENT_ID IS NULL AND DEPLOYMENT_ID = $3 ORDER BY NAME LIMIT $1 OFFSET $2`,
 	}
 
@@ -101,7 +101,7 @@ var (
 	// queryGetOrganizationUnitChildrenList is the query to get child organization units with pagination.
 	queryGetOrganizationUnitChildrenList = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-11",
-		Query: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION FROM ORGANIZATION_UNIT ` +
+		Query: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION, METADATA FROM ORGANIZATION_UNIT ` +
 			`WHERE PARENT_ID = $1 AND DEPLOYMENT_ID = $4 ORDER BY NAME LIMIT $2 OFFSET $3`,
 	}
 
@@ -161,9 +161,9 @@ func buildGetOrganizationUnitsByIDsQuery(ids []string) dbmodel.DBQuery {
 
 	return dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-21",
-		PostgresQuery: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION FROM ORGANIZATION_UNIT ` +
+		PostgresQuery: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION, METADATA FROM ORGANIZATION_UNIT ` +
 			`WHERE OU_ID IN (` + pgInClause + `) AND DEPLOYMENT_ID = ` + deploymentIDParam + ` ORDER BY NAME`,
-		SQLiteQuery: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION FROM ORGANIZATION_UNIT ` +
+		SQLiteQuery: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION, METADATA FROM ORGANIZATION_UNIT ` +
 			`WHERE OU_ID IN (` + sqliteInClause + `) AND DEPLOYMENT_ID = ? ORDER BY NAME`,
 	}
 }

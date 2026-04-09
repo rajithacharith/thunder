@@ -145,29 +145,6 @@ func (suite *ResolveAPITestSuite) TestResolveDesign_ApplicationNotFound() {
 	suite.Contains(err.Error(), "DSR-1004")
 }
 
-// Test Resolve Design - Invalid ID Format
-func (suite *ResolveAPITestSuite) TestResolveDesign_InvalidIDFormat() {
-	url := fmt.Sprintf("%s%s?type=APP&id=invalid-uuid", testServerURL, resolveBasePath)
-
-	req, err := http.NewRequest("GET", url, nil)
-	suite.Require().NoError(err)
-
-	resp, err := suite.client.Do(req)
-	suite.Require().NoError(err)
-	defer resp.Body.Close()
-
-	// Should return bad request for invalid UUID format
-	suite.Equal(http.StatusBadRequest, resp.StatusCode)
-
-	bodyBytes, err := io.ReadAll(resp.Body)
-	suite.Require().NoError(err)
-
-	var errResp ErrorResponse
-	err = json.Unmarshal(bodyBytes, &errResp)
-	suite.Require().NoError(err)
-	suite.Equal("DSR-1002", errResp.Code)
-}
-
 // Test Resolve Design - Success Case
 // Note: This test requires an actual application with theme and layout configured
 // For a complete test, you would need to:

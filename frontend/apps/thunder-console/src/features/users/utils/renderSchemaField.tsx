@@ -31,7 +31,7 @@ import {Controller} from 'react-hook-form';
 import type {Control, FieldErrors, Path} from 'react-hook-form';
 import ArrayFieldInput from '../components/ArrayFieldInput';
 import CredentialFieldInput from '../components/CredentialFieldInput';
-import type {PropertyDefinition} from '../types/users';
+import type {PropertyDefinition} from '../models/users';
 
 /**
  * Helper function to render a form field based on the property definition

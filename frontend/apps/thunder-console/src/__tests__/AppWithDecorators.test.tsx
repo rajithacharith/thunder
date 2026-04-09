@@ -27,7 +27,7 @@ const mockGetClientUrl = vi.fn();
 const mockGetScopes = vi.fn();
 
 // Mock the useConfig hook
-vi.mock('@thunder/shared-contexts', () => ({
+vi.mock('@thunder/contexts', () => ({
   useConfig: () => ({
     getClientId: mockGetClientId,
     getServerUrl: mockGetServerUrl,

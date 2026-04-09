@@ -289,6 +289,11 @@ var StandardOIDCScopes = map[string]model.OIDCScope{
 		Description: "Requests access to address claim",
 		Claims:      []string{"address"},
 	},
+	"roles": {
+		Name:        "roles",
+		Description: "Requests access to user's assigned roles",
+		Claims:      []string{"roles"},
+	},
 }
 
 // Standard JWT claim names.
@@ -325,6 +330,8 @@ const (
 const (
 	// UserAttributeGroups is the constant for user's groups attribute.
 	UserAttributeGroups = "groups"
+	// UserAttributeRoles is the constant for user's roles attribute.
+	UserAttributeRoles = "roles"
 	// DefaultGroupListLimit is the default limit for group list retrieval.
 	DefaultGroupListLimit = 20
 )

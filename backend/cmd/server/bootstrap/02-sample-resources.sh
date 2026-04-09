@@ -41,7 +41,8 @@ read -r -d '' CUSTOMERS_OU_PAYLOAD <<JSON || true
 {
   "handle": "${CUSTOMER_OU_HANDLE}",
   "name": "Customers",
-  "description": "Organization unit for customer accounts"
+  "description": "Organization unit for customer accounts",
+  "logoUrl": "emoji:🏛️"
 }
 JSON
 
@@ -95,30 +96,36 @@ read -r -d '' CUSTOMER_USER_TYPE_PAYLOAD <<JSON || true
   "schema": {
     "username": {
       "type": "string",
+      "displayName": "Username",
       "required": true,
       "unique": true
     },
     "password": {
       "type": "string",
-      "required": true,
+      "displayName": "Password",
+      "required": false,
       "credential": true
     },
     "email": {
       "type": "string",
+      "displayName": "Email",
       "required": true,
       "unique": true,
       "regex": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}$"
     },
     "given_name": {
       "type": "string",
+      "displayName": "First Name",
       "required": false
     },
     "family_name": {
       "type": "string",
+      "displayName": "Last Name",
       "required": false
     },
     "mobileNumber": {
       "type": "string",
+      "displayName": "Mobile Number",
       "required": false
     }
   },
@@ -152,8 +159,9 @@ read -r -d '' SAMPLE_APP_PAYLOAD <<JSON || true
 {
   "name": "Sample App",
   "description": "Sample application for testing",
+  "ouId": "${CUSTOMER_OU_ID}",
   "url": "https://localhost:3000",
-  "logoUrl": "https://localhost:3000/logo.png",
+  "logoUrl": "emoji:🎁",
   "tosUri": "https://localhost:3000/terms",
   "policyUri": "https://localhost:3000/privacy",
   "contacts": ["admin@example.com", "support@example.com"],
@@ -226,9 +234,10 @@ read -r -d '' REACT_SDK_APP_PAYLOAD <<JSON || true
 {
   "name": "React SDK Sample",
   "description": "Sample React application using Thunder React SDK",
+  "ouId": "${CUSTOMER_OU_ID}",
   "clientId": "REACT_SDK_SAMPLE",
   "url": "https://localhost:3000",
-  "logoUrl": "https://localhost:3000/logo.png",
+  "logoUrl": "emoji:🛍️",
   "tosUri": "https://localhost:3000/terms",
   "policyUri": "https://localhost:3000/privacy",
   "contacts": ["admin@example.com"],

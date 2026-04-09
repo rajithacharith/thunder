@@ -205,6 +205,34 @@ describe('ButtonExtendedProperties', () => {
     });
   });
 
+  describe('Event Type', () => {
+    it('should render the event type label', () => {
+      const resource = createMockResource();
+
+      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+
+      expect(screen.getByText('flows:core.buttonExtendedProperties.type.label')).toBeInTheDocument();
+    });
+
+    it('should default to TRIGGER when eventType is not set', () => {
+      const resource = createMockResource();
+
+      const {container} = render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+
+      const select = container.querySelector('#event-type-select');
+      expect(select).toHaveTextContent('flows:core.buttonExtendedProperties.type.trigger');
+    });
+
+    it('should display SUBMIT when eventType is SUBMIT', () => {
+      const resource = createMockResource({eventType: 'SUBMIT'} as Partial<Resource>);
+
+      const {container} = render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+
+      const select = container.querySelector('#event-type-select');
+      expect(select).toHaveTextContent('flows:core.buttonExtendedProperties.type.submit');
+    });
+  });
+
   describe('Input Attributes', () => {
     it('should have correct id for start icon input', () => {
       const resource = createMockResource();

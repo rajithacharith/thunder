@@ -17,9 +17,8 @@
  */
 
 import {useLogger} from '@thunder/logger/react';
-import {useToast} from '@thunder/shared-contexts';
+import {useToast} from '@thunder/contexts';
 import {
-  Avatar,
   Box,
   Stack,
   Typography,
@@ -34,7 +33,7 @@ import {
   PageContent,
   PageTitle,
 } from '@wso2/oxygen-ui';
-import {ArrowLeft, Edit, Users} from '@wso2/oxygen-ui-icons-react';
+import {ArrowLeft, Edit} from '@wso2/oxygen-ui-icons-react';
 import {useState, useCallback, useMemo} from 'react';
 import type {ReactNode, SyntheticEvent, JSX} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -189,11 +188,6 @@ export default function GroupEditPage(): JSX.Element {
       {/* Header */}
       <PageTitle>
         <PageTitle.BackButton component={<Link to={listUrl} />}>{t('groups:edit.page.back')}</PageTitle.BackButton>
-        <PageTitle.Avatar>
-          <Avatar>
-            <Users size={32} />
-          </Avatar>
-        </PageTitle.Avatar>
         <PageTitle.Header>
           <Stack direction="row" alignItems="center" spacing={1} mb={1}>
             {isEditingName ? (

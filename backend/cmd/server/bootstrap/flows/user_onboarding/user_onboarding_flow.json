@@ -12,9 +12,7 @@
             "id": "permission_validator",
             "type": "TASK_EXECUTION",
             "properties": {
-                "requiredScopes": [
-                    "system"
-                ]
+                "requiredScopes": ["system"]
             },
             "executor": {
                 "name": "PermissionValidator"
@@ -224,19 +222,43 @@
                 "name": "InviteExecutor",
                 "mode": "generate"
             },
-            "onSuccess": "send_invite_email"
+            "onSuccess": "invite_link_status"
         },
         {
-            "id": "send_invite_email",
-            "type": "TASK_EXECUTION",
-            "properties": {
-                "emailTemplate": "USER_INVITE"
+            "id": "invite_link_status",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "link_status_icon",
+                        "label": "✅",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "link_status_heading",
+                        "label": "{{ t(onboarding:forms.invite_link_status.title) }}",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "link_status_message",
+                        "label": "{{ t(onboarding:forms.invite_link_status.message) }}"
+                    },
+                    {
+                        "type": "COPYABLE_TEXT",
+                        "id": "invite_link_copyable",
+                        "label": "{{ t(onboarding:forms.invite_link_status.link_label) }}",
+                        "source": "inviteLink"
+                    }
+                ]
             },
-            "executor": {
-                "name": "EmailExecutor",
-                "mode": "send"
-            },
-            "onSuccess": "invite_verify"
+            "message": "The invite link is ready to share",
+            "next": "invite_verify"
         },
         {
             "id": "invite_verify",
@@ -434,7 +456,37 @@
             "executor": {
                 "name": "ProvisioningExecutor"
             },
-            "onSuccess": "end"
+            "onSuccess": "registration_complete"
+        },
+        {
+            "id": "registration_complete",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "registration_complete_icon",
+                        "label": "✅",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "registration_complete_heading",
+                        "label": "{{ t(invite:complete.title) }}",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "registration_complete_message",
+                        "label": "{{ t(invite:complete.description) }}"
+                    }
+                ]
+            },
+            "message": "Registration complete",
+            "next": "end"
         },
         {
             "id": "end",

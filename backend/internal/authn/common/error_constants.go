@@ -105,4 +105,11 @@ var (
 		Error:            "Assertion subject mismatch",
 		ErrorDescription: "The subject in the assertion does not match the authenticated user",
 	}
+	// ErrorAmbiguousUser is the error when multiple users match the provided attributes.
+	ErrorAmbiguousUser = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "AUTHN-1011",
+		Error:            "Ambiguous user",
+		ErrorDescription: "Multiple users match the provided attributes",
+	}
 )

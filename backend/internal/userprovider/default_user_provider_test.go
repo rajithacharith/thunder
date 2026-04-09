@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/asgardeo/thunder/internal/entity"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/user"
@@ -113,7 +114,7 @@ func (suite *DefaultUserProviderTestSuite) TestGetUserGroups() {
 	offset := 0
 
 	groupListResponse := &user.UserGroupListResponse{
-		Groups: []user.UserGroup{
+		Groups: []entity.EntityGroup{
 			{ID: "g1", Name: "Group 1", OUID: "ou1"},
 		},
 		Links: []utils.Link{
@@ -139,6 +140,35 @@ func (suite *DefaultUserProviderTestSuite) TestGetUserGroups() {
 
 	resp, err = suite.provider.GetUserGroups(userID, limit, offset)
 	suite.Nil(resp)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeUserNotFound, err.Code)
+}
+
+func (suite *DefaultUserProviderTestSuite) TestGetTransitiveUserGroups() {
+	userID := testUserID
+
+	storeGroups := []user.UserGroup{
+		{ID: "g1", Name: "Group 1", OUID: "ou1"},
+		{ID: "g2", Name: "Group 2", OUID: "ou1"},
+	}
+
+	// Test Success
+	suite.mockService.On("GetTransitiveUserGroups", mock.Anything, userID).
+		Return(storeGroups, (*serviceerror.ServiceError)(nil)).Once()
+
+	groups, err := suite.provider.GetTransitiveUserGroups(userID)
+	suite.Nil(err)
+	suite.Len(groups, 2)
+	suite.Equal("g1", groups[0].ID)
+	suite.Equal("Group 1", groups[0].Name)
+	suite.Equal("g2", groups[1].ID)
+
+	// Test User Not Found
+	suite.mockService.On("GetTransitiveUserGroups", mock.Anything, userID).
+		Return(nil, &user.ErrorUserNotFound).Once()
+
+	groups, err = suite.provider.GetTransitiveUserGroups(userID)
+	suite.Nil(groups)
 	suite.NotNil(err)
 	suite.Equal(ErrorCodeUserNotFound, err.Code)
 }
@@ -247,4 +277,52 @@ func (suite *DefaultUserProviderTestSuite) TestUpdateUserCredentials() {
 	err = suite.provider.UpdateUserCredentials(userID, creds)
 	suite.NotNil(err)
 	suite.Equal(ErrorCodeMissingCredentials, err.Code)
+}
+
+func (suite *DefaultUserProviderTestSuite) TestSearchUsers() {
+	filters := map[string]interface{}{"email": "test@example.com"}
+
+	// Test Success
+	attrs := json.RawMessage(`{"email":"test@example.com"}`)
+	suite.mockService.On("SearchUsers", mock.Anything, filters).Return(
+		[]user.User{
+			{ID: "u1", Type: "customer", OUID: "ou1", Attributes: attrs},
+			{ID: "u2", Type: "employee", OUID: "ou2", Attributes: attrs},
+		}, (*serviceerror.ServiceError)(nil)).Once()
+
+	users, err := suite.provider.SearchUsers(filters)
+	suite.Nil(err)
+	suite.Len(users, 2)
+	suite.Equal("u1", users[0].UserID)
+	suite.Equal("u2", users[1].UserID)
+
+	// Test Not Found
+	suite.mockService.On("SearchUsers", mock.Anything, filters).Return(
+		nil, &user.ErrorUserNotFound).Once()
+
+	users, err = suite.provider.SearchUsers(filters)
+	suite.Nil(users)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeUserNotFound, err.Code)
+
+	// Test System Error
+	sysErr := &serviceerror.ServiceError{Code: "SYS_ERR", Error: "System Error"}
+	suite.mockService.On("SearchUsers", mock.Anything, filters).Return(
+		nil, sysErr).Once()
+
+	users, err = suite.provider.SearchUsers(filters)
+	suite.Nil(users)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeSystemError, err.Code)
+}
+
+func (suite *DefaultUserProviderTestSuite) TestIdentifyUser_Ambiguous() {
+	filters := map[string]interface{}{"email": "test@example.com"}
+	suite.mockService.On("IdentifyUser", mock.Anything, filters).Return(
+		nil, &user.ErrorAmbiguousUser).Once()
+
+	userID, err := suite.provider.IdentifyUser(filters)
+	suite.Nil(userID)
+	suite.NotNil(err)
+	suite.Equal(ErrorCodeAmbiguousUser, err.Code)
 }

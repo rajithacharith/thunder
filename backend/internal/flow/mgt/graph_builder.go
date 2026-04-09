@@ -131,7 +131,10 @@ func (b *graphBuilder) buildGraph(flow *CompleteFlowDefinition) (core.GraphInter
 // processNode processes a single node definition and adds it to the graph.
 func (b *graphBuilder) processNode(nodeDef *NodeDefinition, allNodes []NodeDefinition,
 	graph core.GraphInterface, edges map[string][]string) error {
-	isFinalNode := nodeDef.OnSuccess == "" && nodeDef.OnFailure == "" && len(nodeDef.Prompts) == 0
+	isFinalNode := nodeDef.OnSuccess == "" &&
+		nodeDef.OnFailure == "" &&
+		len(nodeDef.Prompts) == 0 &&
+		nodeDef.Next == ""
 
 	// Construct a new node. Here we set isStartNode to false by default
 	node, err := b.flowFactory.CreateNode(nodeDef.ID, nodeDef.Type, nodeDef.Properties,
@@ -149,6 +152,9 @@ func (b *graphBuilder) processNode(nodeDef *NodeDefinition, allNodes []NodeDefin
 	b.configureNodeCondition(nodeDef, node)
 
 	if err := b.configureNodePrompts(nodeDef, node, edges); err != nil {
+		return err
+	}
+	if err := b.configureDisplayOnlyProperties(nodeDef, node, edges); err != nil {
 		return err
 	}
 	if err := b.configureNodeExecutor(nodeDef, node); err != nil {
@@ -326,6 +332,7 @@ func (b *graphBuilder) configureNodePrompts(nodeDef *NodeDefinition, node core.N
 		if promptDef.Action != nil {
 			prompts[i].Action = &common.Action{
 				Ref:      promptDef.Action.Ref,
+				Type:     promptDef.Action.Type,
 				NextNode: promptDef.Action.NextNode,
 			}
 
@@ -338,6 +345,41 @@ func (b *graphBuilder) configureNodePrompts(nodeDef *NodeDefinition, node core.N
 	}
 
 	promptNode.SetPrompts(prompts)
+
+	return nil
+}
+
+// configureDisplayOnlyProperties configures the 'next' and 'message' fields for display-only prompt nodes.
+func (b *graphBuilder) configureDisplayOnlyProperties(nodeDef *NodeDefinition, node core.NodeInterface,
+	edges map[string][]string) error {
+	logger := b.logger.With(log.String("nodeID", nodeDef.ID))
+
+	if nodeDef.Next == "" {
+		return nil
+	}
+
+	promptNode, ok := node.(core.PromptNodeInterface)
+	if !ok {
+		return fmt.Errorf("'next' field is only valid on PROMPT nodes, but node %s is of type %s",
+			nodeDef.ID, nodeDef.Type)
+	}
+
+	if len(nodeDef.Prompts) > 0 {
+		return fmt.Errorf("node %s has both 'prompts' and 'next'; these are mutually exclusive",
+			nodeDef.ID)
+	}
+
+	logger.Debug("Configuring display-only next for prompt node", log.String("next", nodeDef.Next))
+	promptNode.SetNextNode(nodeDef.Next)
+
+	if nodeDef.Message != "" {
+		promptNode.SetMessage(nodeDef.Message)
+	}
+
+	if _, exists := edges[nodeDef.ID]; !exists {
+		edges[nodeDef.ID] = []string{}
+	}
+	edges[nodeDef.ID] = append(edges[nodeDef.ID], nodeDef.Next)
 
 	return nil
 }

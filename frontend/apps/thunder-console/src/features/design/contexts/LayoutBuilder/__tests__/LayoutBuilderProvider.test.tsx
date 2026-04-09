@@ -45,7 +45,7 @@ const mockLayout = {
 
 const mockUseGetLayout = vi.fn();
 
-vi.mock('@thunder/shared-design', () => ({
+vi.mock('@thunder/design', () => ({
   useGetLayout: (...args: unknown[]): unknown => mockUseGetLayout(...args),
 }));
 

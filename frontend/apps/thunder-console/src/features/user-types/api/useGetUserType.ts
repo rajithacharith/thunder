@@ -18,7 +18,7 @@
 
 import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig} from '@thunder/contexts';
 import UserTypeQueryKeys from '../constants/userTypeQueryKeys';
 import type {ApiUserSchema} from '../types/user-types';
 
@@ -40,7 +40,7 @@ export default function useGetUserType(id?: string): UseQueryResult<ApiUserSchem
       const response: {
         data: ApiUserSchema;
       } = await http.request({
-        url: `${serverUrl}/user-schemas/${id}`,
+        url: `${serverUrl}/user-schemas/${id}?include=display`,
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

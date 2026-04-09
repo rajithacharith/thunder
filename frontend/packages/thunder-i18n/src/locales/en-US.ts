@@ -318,6 +318,7 @@ const translations = {
     'pages.userTypes': 'User Types',
     'pages.organizationUnits': 'Organization Units',
     'pages.groups': 'Groups',
+    'pages.roles': 'Roles',
     'pages.integrations': 'Integrations',
     'pages.applications': 'Applications',
     'pages.dashboard': 'Dashboard',
@@ -354,7 +355,9 @@ const translations = {
     status: 'Status',
     createdAt: 'Created At',
     lastLogin: 'Last Login',
-    actions: 'Actions',
+    'listing.columns.name': 'Name',
+    'listing.columns.userId': 'User ID',
+    'listing.columns.actions': 'Actions',
     noUsers: 'No users found',
     searchUsers: 'Search users...',
     confirmDeleteUser: 'Are you sure you want to delete this user?',
@@ -450,6 +453,11 @@ const translations = {
     'validationErrors.duplicateProperties': 'Duplicate property names found: {{duplicates}}',
     'errors.organizationUnitsFailedTitle': 'Failed to load organization units',
     noUserTypes: 'No user types found',
+    'listing.columns.name': 'Name',
+    'listing.columns.id': 'User Type ID',
+    'listing.columns.organizationUnit': 'Organization Unit',
+    'listing.columns.allowSelfRegistration': 'Self Registration',
+    'listing.columns.actions': 'Actions',
     noOrganizationUnits: 'No organization units available',
     confirmDeleteUserType: 'Are you sure you want to delete this user type?',
 
@@ -735,6 +743,118 @@ const translations = {
   },
 
   // ============================================================================
+  // Roles namespace - Role management feature translations
+  // ============================================================================
+  roles: {
+    // List page
+    'listing.title': 'Roles',
+    'listing.subtitle': 'Manage roles and their permissions across organization units',
+    'listing.addRole': 'Add Role',
+    'listing.error': 'Failed to load roles',
+    'listing.search.placeholder': 'Search roles...',
+    'listing.columns.name': 'Name',
+    'listing.columns.description': 'Description',
+    'listing.columns.organizationUnit': 'Organization Unit',
+    'listing.columns.actions': 'Actions',
+
+    // Create page
+    'create.title': 'Create Role',
+    'create.error': 'Failed to create role. Please try again.',
+    'create.form.name.label': 'Role Name',
+    'create.form.name.placeholder': 'Enter role name',
+    'create.form.name.required': 'Role name is required',
+    'create.form.description.label': 'Description',
+    'create.form.description.placeholder': 'Enter role description',
+    'create.form.organizationUnit.label': 'Organization Unit',
+    'create.form.organizationUnit.required': 'Organization unit is required',
+
+    // Create wizard
+    'createWizard.steps.basicInfo': 'Create a Role',
+    'createWizard.steps.organizationUnit': 'Organization Unit',
+    'createWizard.basicInfo.title': "Let's give a name to your role",
+    'createWizard.basicInfo.suggestions.label': 'In a hurry? Pick a random name:',
+    'createWizard.organizationUnit.title': 'Select an organization unit',
+    'createWizard.organizationUnit.subtitle': 'Choose the organization unit this role will belong to.',
+
+    // Edit page
+    'edit.page.back': 'Back to Roles',
+    'edit.page.error': 'Failed to load role',
+    'edit.page.notFound': 'Role not found',
+    'edit.page.description.placeholder': 'Add a description...',
+    'edit.page.description.empty': 'No description',
+    'edit.page.editName': 'Edit role name',
+    'edit.page.editDescription': 'Edit role description',
+    'edit.page.settingsTabs': 'Role settings tabs',
+    'edit.page.tabs.general': 'General',
+    'edit.page.tabs.permissions': 'Permissions',
+    'edit.page.tabs.assignments': 'Assignments',
+    'edit.page.unsavedChanges': 'You have unsaved changes',
+    'edit.page.reset': 'Reset',
+    'edit.page.save': 'Save Changes',
+    'edit.page.saving': 'Saving...',
+    'edit.page.saveError': 'Failed to save role. Please try again.',
+
+    // General settings
+    'edit.general.sections.quickCopy.copyRoleId': 'Copy Role ID',
+    'edit.general.sections.organizationUnit.title': 'Organization Unit',
+    'edit.general.sections.organizationUnit.description': 'The organization unit this role belongs to.',
+    'edit.general.sections.organizationUnit.copyId': 'Copy Organization Unit ID',
+    'edit.general.sections.dangerZone.title': 'Danger Zone',
+    'edit.general.sections.dangerZone.description': 'Actions in this section are irreversible. Proceed with caution.',
+    'edit.general.sections.dangerZone.deleteRole': 'Delete this role',
+    'edit.general.sections.dangerZone.deleteRoleDescription': 'Deleting this role is permanent and cannot be undone.',
+
+    // Permissions settings
+    'edit.permissions.description':
+      'Select the permissions this role grants. Changes are saved when you click Save Changes.',
+    'edit.permissions.resourcesLabel': 'Resources',
+    'edit.permissions.actionsLabel': 'Actions',
+    'edit.permissions.noPermissions': 'No permissions defined for this resource server.',
+    'edit.permissions.noResourceServers': 'No resource servers found. Create a resource server first.',
+    'edit.permissions.loadError': 'Failed to load permissions for this resource server.',
+    'edit.permissions.loadResourceServersError': 'Failed to load resource servers.',
+    'edit.permissions.selectedCount': '{{count}} selected',
+
+    // Assignments settings
+    'edit.assignments.sections.manage.title': 'Assigned Users & Groups',
+    'edit.assignments.sections.manage.description': 'Manage users and groups assigned to this role',
+    'edit.assignments.sections.manage.tabs.users': 'Users',
+    'edit.assignments.sections.manage.tabs.groups': 'Groups',
+    'edit.assignments.sections.manage.listing.columns.name': 'Name',
+    'edit.assignments.sections.manage.listing.columns.id': 'ID',
+    'edit.assignments.sections.manage.listing.columns.type': 'Type',
+    'edit.assignments.sections.manage.addAssignment': 'Add',
+
+    // Add assignment dialog
+    'assignments.dialog.title': 'Add Assignment',
+    'assignments.dialog.tabs.users': 'Users',
+    'assignments.dialog.tabs.groups': 'Groups',
+    'assignments.dialog.columns.displayName': 'Display Name',
+    'assignments.dialog.columns.name': 'Name',
+    'assignments.dialog.columns.description': 'Description',
+    'assignments.dialog.columns.userType': 'User Type',
+    'assignments.dialog.add': 'Add Selected',
+    'assignments.dialog.fetchError': 'Failed to load data. Please try again.',
+    'assignments.add.error': 'Failed to add assignment. Please try again.',
+    'assignments.remove.error': 'Failed to remove assignment. Please try again.',
+
+    // Delete dialog
+    'delete.title': 'Delete Role',
+    'delete.message': 'Are you sure you want to delete this role?',
+    'delete.disclaimer':
+      'This action cannot be undone. All role assignments and permissions will be permanently removed.',
+    'delete.error': 'Failed to delete role. Please try again.',
+
+    // Success / error toasts
+    'create.success': 'Role created successfully.',
+    'update.success': 'Role updated successfully.',
+    'update.error': 'Failed to update role. Please try again.',
+    'delete.success': 'Role deleted successfully.',
+    'assignments.add.success': 'Assignment added successfully.',
+    'assignments.remove.success': 'Assignment removed successfully.',
+  },
+
+  // ============================================================================
   // Integrations namespace - Integrations feature translations
   // ============================================================================
   integrations: {
@@ -903,6 +1023,7 @@ const translations = {
     'onboarding.preview.dividerText': 'or',
     'onboarding.preview.continueWith': 'Continue with {{providerName}}',
     'onboarding.steps.name': 'Create an Application',
+    'onboarding.steps.organizationUnit': 'Organization Unit',
     'onboarding.steps.design': 'Design',
     'onboarding.steps.options': 'Sign In Options',
     'onboarding.steps.experience': 'Sign-In Experience',
@@ -910,6 +1031,9 @@ const translations = {
     'onboarding.steps.configure': 'Configuration',
     'onboarding.steps.complete': 'Setup Complete',
     'onboarding.steps.summary': 'Summary',
+    'onboarding.organizationUnit.title': 'Select an organization unit',
+    'onboarding.organizationUnit.subtitle': 'Choose the organization unit this application will belong to.',
+    'onboarding.organizationUnit.fieldLabel': 'Organization Unit',
     'onboarding.configure.name.title': "Let's give a name to your application",
     'onboarding.configure.name.fieldLabel': 'Application Name',
     'onboarding.configure.name.placeholder': 'Enter your application name',
@@ -979,8 +1103,8 @@ const translations = {
     'onboarding.configure.stack.dividerLabel': 'OR',
     'onboarding.configure.stack.platform.browser.title': 'Browser App',
     'onboarding.configure.stack.platform.browser.description': 'Single-page apps running in browsers',
-    'onboarding.configure.stack.platform.server.title': 'Full-Stack App',
-    'onboarding.configure.stack.platform.server.description': 'Apps with both server and client code',
+    'onboarding.configure.stack.platform.full_stack.title': 'Full-Stack App',
+    'onboarding.configure.stack.platform.full_stack.description': 'Apps with both server and client code',
     'onboarding.configure.stack.platform.mobile.title': 'Mobile App',
     'onboarding.configure.stack.platform.mobile.description': 'Native or hybrid mobile applications',
     'onboarding.configure.stack.platform.backend.title': 'Backend Service',
@@ -993,7 +1117,7 @@ const translations = {
     'onboarding.configure.details.hostingUrl.error.required': 'Application hosting URL is required',
     'onboarding.configure.details.hostingUrl.error.invalid':
       'Please enter a valid URL (must start with http:// or https://)',
-    'onboarding.configure.details.callbackUrl.label': 'After Sign-in URL (Optional)',
+    'onboarding.configure.details.callbackUrl.label': 'After Sign-in URL',
     'onboarding.configure.details.callbackUrl.placeholder': 'https://myapp.example.com/callback',
     'onboarding.configure.details.callbackUrl.helperText': 'The URL where users will be redirected after signing in',
     'onboarding.configure.details.callbackUrl.error.required': 'After sign-in URL is required',
@@ -1032,8 +1156,8 @@ const translations = {
     'onboarding.configure.setup.platform.label': 'What technology are you using?',
     'onboarding.configure.setup.platform.browser.title': 'Browser',
     'onboarding.configure.setup.platform.browser.description': 'Single page apps (React, Vue, Angular)',
-    'onboarding.configure.setup.platform.server.title': 'Server + Browser',
-    'onboarding.configure.setup.platform.server.description': 'Full-stack apps (Next.js, Remix)',
+    'onboarding.configure.setup.platform.full_stack.title': 'Server + Browser',
+    'onboarding.configure.setup.platform.full_stack.description': 'Full-stack apps (Next.js, Remix)',
     'onboarding.configure.setup.platform.mobile.title': 'Mobile Device',
     'onboarding.configure.setup.platform.mobile.description': 'iOS, Android, React Native',
     'onboarding.configure.setup.platform.desktop.title': 'Desktop',
@@ -1381,6 +1505,7 @@ const translations = {
   // Sign Up - Sign Up page translations
   // ============================================================================
   signup: {
+    'create_account.loading': 'Creating account...',
     'errors.signup.failed.message': 'Error',
     'errors.signup.failed.description': 'We are sorry, but we were unable to create your account. Please try again.',
     'redirect.to.signin': 'Already have an account? <1>Sign in</1>',
@@ -1391,21 +1516,6 @@ const translations = {
     'passkey.button.create': 'Create Passkey',
     'passkey.registering': 'Creating passkey...',
     'errors.passkey.failed': 'Failed to create passkey. Please try again.',
-  },
-
-  // ============================================================================
-  // Invite namespace - Invite acceptance feature translations (for Thunder Gate)
-  // ============================================================================
-  invite: {
-    validating: 'Validating your invite link...',
-    'complete.title': 'Welcome Aboard!',
-    'complete.description': 'Your account has been successfully set up.',
-    'errors.invalid.title': 'Unable to verify invite',
-    'errors.invalid.description': 'This invite link is invalid or has expired.',
-    'errors.failed.title': 'Error',
-    'errors.failed.description': 'An error occurred. Please try again.',
-    goToSignIn: 'Go to Sign In',
-    signIn: 'Sign In',
   },
 
   // ============================================================================
@@ -1546,6 +1656,14 @@ const translations = {
     'core.executions.consent.timeout.placeholder': '0',
     'core.executions.consent.timeout.hint': 'Time in seconds before the consent request expires. Use 0 for no timeout.',
 
+    // Identifying executor modes
+    'core.executions.identifying.mode.identify': 'Identify',
+    'core.executions.identifying.mode.resolve': 'Resolve (Disambiguation)',
+    'core.executions.identifying.mode.label': 'Mode',
+    'core.executions.identifying.mode.placeholder': 'Select a mode',
+    'core.executions.identifying.description':
+      'Configure the identifying executor mode. Use "Resolve" to enable user disambiguation when multiple users match.',
+
     // Passkey executor modes
     'core.executions.passkey.mode.challenge': 'Challenge',
     'core.executions.passkey.mode.verify': 'Verify',
@@ -1640,6 +1758,10 @@ const translations = {
     // Validation messages - phone number input
     'core.validation.fields.phoneNumberInput.label': 'Phone number label is required',
     'core.validation.fields.phoneNumberInput.ref': 'Phone number attribute is required',
+
+    // Validation messages - form
+    'core.validation.fields.form.noSubmitButton':
+      'Form <code>{{id}}</code> has input fields but no submit button. Add a button with type "Submit" so that users can submit the form.',
 
     // Elements - rich text
     'core.elements.richText.placeholder': 'Enter text here...',
@@ -1772,7 +1894,9 @@ const translations = {
     'core.fieldExtendedProperties.selectAttribute': 'Select an attribute',
 
     // Button extended properties
-    'core.buttonExtendedProperties.type': 'Type',
+    'core.buttonExtendedProperties.type.label': 'Type',
+    'core.buttonExtendedProperties.type.submit': 'Submit',
+    'core.buttonExtendedProperties.type.trigger': 'Trigger',
     'core.buttonExtendedProperties.startIcon.label': 'Start Icon',
     'core.buttonExtendedProperties.startIcon.placeholder': 'Enter icon path (e.g., assets/images/icons/icon.svg)',
     'core.buttonExtendedProperties.startIcon.hint': 'Optional icon displayed before the button label',
@@ -1915,8 +2039,12 @@ const translations = {
     'themes.show_more.label': 'Show {{count}} more',
     'themes.builder.actions.delete.label': 'Delete',
     'themes.builder.actions.save.label': 'Save',
+    'themes.builder.actions.revert.label': 'Revert',
     'themes.builder.tooltips.show_sections': 'Show sections',
     'themes.builder.tooltips.hide_sections': 'Hide sections',
+    'themes.builder.config.label': 'Config',
+    'themes.builder.preview.label': 'Preview',
+    'themes.builder.preview.iframe_title': 'Gate Preview',
     'themes.builder.actions.back_to_design.label': 'Back to Design',
     'themes.builder.sections.colors.label': 'Colors',
     'themes.builder.sections.colors.description': 'Light & dark color schemes',
@@ -1984,6 +2112,7 @@ const translations = {
     'themes.forms.typography_builder.fields.html_font_size.label': 'HTML Font Size',
     'themes.forms.typography_builder.type_scale.title': 'Type Scale',
     'themes.forms.typography_builder.fields.type_scale.placeholder': 'e.g. 1.5rem',
+    'themes.forms.typography_builder.actions.reset.label': 'Reset',
     'themes.forms.general_builder.internationalization.title': 'Internationalization',
     'themes.forms.general_builder.fields.text_direction.label': 'Text direction',
     'themes.forms.general_builder.fields.text_direction.options.ltr.label': 'LTR',
@@ -2025,6 +2154,21 @@ const translations = {
     'layouts.preview.errors.load.message': 'Failed to load layout',
     'layouts.preview.select_layout.message': 'Select a layout to preview',
     'layouts.builder.actions.back_to_design.tooltip': 'Back to Design',
+    'layouts.builder.actions.save.label': 'Save',
+    'layouts.config.custom_css.title': 'Custom CSS',
+    'layouts.config.custom_css.fields.url.label': 'URL',
+    'layouts.config.custom_css.fields.url.errors.invalid_url': 'URL must be a valid http:// or https:// address',
+    'layouts.config.custom_css.fields.url.warnings.insecure_protocol':
+      'Using HTTP is insecure. Consider using HTTPS instead.',
+    'layouts.config.custom_css.actions.open_full_editor.tooltip': 'Open in full editor',
+    'layouts.config.custom_css.actions.show_in_preview.tooltip': 'Show in preview',
+    'layouts.config.custom_css.actions.hide_from_preview.tooltip': 'Hide from preview',
+    'layouts.config.custom_css.actions.remove.tooltip': 'Remove stylesheet',
+    'layouts.config.custom_css.empty_state.message': 'No custom stylesheets yet.',
+    'layouts.config.custom_css.empty_state.description':
+      'Add an inline stylesheet or link an external CSS file to customize the appearance.',
+    'layouts.config.custom_css.actions.add_inline.label': 'Inline',
+    'layouts.config.custom_css.actions.add_url.label': 'External URL',
     'layouts.builder.screens.label': 'Screens',
     'layouts.builder.constraints.label': 'Constraints',
     'layouts.builder.screen_list.base_screen.description': 'base screen',

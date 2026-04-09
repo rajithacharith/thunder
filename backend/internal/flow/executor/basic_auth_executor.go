@@ -31,7 +31,6 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/system/observability"
 	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
@@ -39,10 +38,9 @@ import (
 type basicAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
-	userProvider     userprovider.UserProviderInterface
-	credsAuthSvc     authncreds.CredentialsAuthnServiceInterface
-	observabilitySvc observability.ObservabilityServiceInterface
-	logger           *log.Logger
+	userProvider userprovider.UserProviderInterface
+	credsAuthSvc authncreds.CredentialsAuthnServiceInterface
+	logger       *log.Logger
 }
 
 var _ core.ExecutorInterface = (*basicAuthExecutor)(nil)
@@ -53,7 +51,6 @@ func newBasicAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
 	userProvider userprovider.UserProviderInterface,
 	credsAuthSvc authncreds.CredentialsAuthnServiceInterface,
-	observabilitySvc observability.ObservabilityServiceInterface,
 ) *basicAuthExecutor {
 	defaultInputs := []common.Input{
 		{
@@ -81,7 +78,6 @@ func newBasicAuthExecutor(
 		identifyingExecutorInterface: identifyExec,
 		userProvider:                 userProvider,
 		credsAuthSvc:                 credsAuthSvc,
-		observabilitySvc:             observabilitySvc,
 		logger:                       logger,
 	}
 }
@@ -96,7 +92,24 @@ func (b *basicAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResp
 		RuntimeData:    make(map[string]string),
 	}
 
-	if !b.HasRequiredInputs(ctx, execResp) {
+	// When a userID is pre-resolved (e.g., by an IdentifyingExecutor in resolve mode),
+	// only credential inputs are required — skip the identifier input check.
+	hasPreResolvedUser := ctx.RuntimeData[userAttributeUserID] != ""
+	if hasPreResolvedUser {
+		credentialInputs := b.getCredentialInputs(ctx)
+		hasMissingCredentials := false
+		for _, input := range credentialInputs {
+			if ctx.UserInputs[input.Identifier] == "" {
+				hasMissingCredentials = true
+				break
+			}
+		}
+		if hasMissingCredentials {
+			execResp.Status = common.ExecUserInputRequired
+			execResp.Inputs = credentialInputs
+			return execResp, nil
+		}
+	} else if !b.HasRequiredInputs(ctx, execResp) {
 		logger.Debug("Required inputs for basic authentication executor is not provided")
 		execResp.Status = common.ExecUserInputRequired
 		return execResp, nil
@@ -121,7 +134,11 @@ func (b *basicAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResp
 	}
 	if !authenticatedUser.IsAuthenticated && ctx.FlowType != common.FlowTypeRegistration {
 		execResp.Status = common.ExecUserInputRequired
-		execResp.Inputs = b.GetRequiredInputs(ctx)
+		if hasPreResolvedUser {
+			execResp.Inputs = b.getCredentialInputs(ctx)
+		} else {
+			execResp.Inputs = b.GetRequiredInputs(ctx)
+		}
 		execResp.FailureReason = "User authentication failed."
 		return execResp, nil
 	}
@@ -136,6 +153,17 @@ func (b *basicAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResp
 	return execResp, nil
 }
 
+// getCredentialInputs returns the sensitive (credential) inputs from the node's required inputs.
+func (b *basicAuthExecutor) getCredentialInputs(ctx *core.NodeContext) []common.Input {
+	var credentials []common.Input
+	for _, input := range b.GetRequiredInputs(ctx) {
+		if input.IsSensitive() {
+			credentials = append(credentials, input)
+		}
+	}
+	return credentials
+}
+
 // getAuthenticatedUser perform authentication based on the provided identifying and
 // credential attributes and returns the authenticated user details.
 func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
@@ -144,6 +172,11 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 
 	userIdentifiers := map[string]interface{}{}
 	userCredentials := map[string]interface{}{}
+
+	// When a userID is pre-resolved, use it as the identifier for authentication.
+	if preResolvedUserID, ok := ctx.RuntimeData[userAttributeUserID]; ok {
+		userIdentifiers[userAttributeUserID] = preResolvedUserID
+	}
 
 	for _, inputData := range b.GetRequiredInputs(ctx) {
 		if value, ok := ctx.UserInputs[inputData.Identifier]; ok {

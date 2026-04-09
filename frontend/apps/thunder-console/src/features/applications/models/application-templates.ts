@@ -42,7 +42,7 @@ export const PlatformApplicationTemplate = {
   BACKEND: 'BACKEND',
   BROWSER: 'BROWSER',
   MOBILE: 'MOBILE',
-  SERVER: 'SERVER',
+  FULL_STACK: 'FULL_STACK',
 } as const;
 
 /**

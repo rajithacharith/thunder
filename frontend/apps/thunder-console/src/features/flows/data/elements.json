@@ -135,6 +135,20 @@
   {
     "resourceType": "ELEMENT",
     "category": "FIELD",
+    "type": "SELECT",
+    "display": {
+      "label": "Select",
+      "image": "assets/images/icons/boolean.svg"
+    },
+    "hint": "",
+    "label": "Select",
+    "required": false,
+    "placeholder": "Select an option",
+    "options": []
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "FIELD",
     "type": "DROPDOWN",
     "display": {
       "label": "Choice",

@@ -25,7 +25,6 @@ import (
 	authzsvc "github.com/asgardeo/thunder/internal/authz"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
-	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/userprovider"
@@ -182,23 +181,20 @@ func (a *authorizationExecutor) extractGroupIDs(ctx *core.NodeContext) ([]string
 		}
 	}
 
-	// If no groups found in context, fetch from user service
+	// If no groups found in context, fetch transitive groups from user service
 	if a.userProvider != nil && ctx.AuthenticatedUser.UserID != "" {
-		a.logger.Debug("Groups not found in context, fetching from user service",
+		a.logger.Debug("Groups not found in context, fetching transitive groups from user service",
 			log.String("userID", ctx.AuthenticatedUser.UserID))
 
-		groupsResp, err := a.userProvider.GetUserGroups(ctx.AuthenticatedUser.UserID,
-			oauth2const.DefaultGroupListLimit, 0)
+		groups, err := a.userProvider.GetTransitiveUserGroups(ctx.AuthenticatedUser.UserID)
 		if err != nil {
 			return nil, err
 		}
-		if groupsResp != nil {
-			groups := make([]string, 0, len(groupsResp.Groups))
-			for _, g := range groupsResp.Groups {
-				groups = append(groups, g.ID)
-			}
-			return groups, nil
+		groupIDs := make([]string, 0, len(groups))
+		for _, g := range groups {
+			groupIDs = append(groupIDs, g.ID)
 		}
+		return groupIDs, nil
 	}
 
 	// No groups found

@@ -37,6 +37,7 @@ type UserSchema struct {
 	ID                    string            `json:"id,omitempty" yaml:"id,omitempty"`
 	Name                  string            `json:"name,omitempty" yaml:"name"`
 	OUID                  string            `json:"ouId" yaml:"organization_unit_id"`
+	OUHandle              string            `json:"ouHandle,omitempty" yaml:"-"`
 	AllowSelfRegistration bool              `json:"allowSelfRegistration" yaml:"allow_self_registration,omitempty"`
 	SystemAttributes      *SystemAttributes `json:"systemAttributes,omitempty" yaml:"system_attributes,omitempty"`
 	Schema                json.RawMessage   `json:"schema,omitempty" yaml:"schema"`
@@ -47,6 +48,7 @@ type UserSchemaListItem struct {
 	ID                    string            `json:"id,omitempty"`
 	Name                  string            `json:"name,omitempty"`
 	OUID                  string            `json:"ouId"`
+	OUHandle              string            `json:"ouHandle,omitempty"`
 	AllowSelfRegistration bool              `json:"allowSelfRegistration"`
 	SystemAttributes      *SystemAttributes `json:"systemAttributes,omitempty"`
 	IsReadOnly            bool              `json:"isReadOnly"`

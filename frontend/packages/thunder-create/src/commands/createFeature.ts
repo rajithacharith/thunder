@@ -144,7 +144,7 @@ async function createFeature(): Promise<void> {
     const srcTargetDir = join(featureDir, 'src');
     copyTemplateFiles(srcTemplateDir, srcTargetDir, context);
 
-    // Create package.json (like thunder-shared-contexts but as feature)
+    // Create package.json (like thunder-contexts but as feature)
     createFileFromTemplate(
       join(getTemplateDir(), 'feature', 'package.json.hbs'),
       join(featureDir, 'package.json'),

@@ -36,17 +36,15 @@ import (
 	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/authn/credentialsmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
-	"github.com/asgardeo/thunder/tests/mocks/observability/observabilitymock"
 	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
 type BasicAuthExecutorTestSuite struct {
 	suite.Suite
-	mockUserProvider  *userprovidermock.UserProviderInterfaceMock
-	mockCredsService  *credentialsmock.CredentialsAuthnServiceInterfaceMock
-	mockFlowFactory   *coremock.FlowFactoryInterfaceMock
-	mockObservability *observabilitymock.ObservabilityServiceInterfaceMock
-	executor          *basicAuthExecutor
+	mockUserProvider *userprovidermock.UserProviderInterfaceMock
+	mockCredsService *credentialsmock.CredentialsAuthnServiceInterfaceMock
+	mockFlowFactory  *coremock.FlowFactoryInterfaceMock
+	executor         *basicAuthExecutor
 }
 
 func TestBasicAuthExecutorSuite(t *testing.T) {
@@ -57,7 +55,6 @@ func (suite *BasicAuthExecutorTestSuite) SetupTest() {
 	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
 	suite.mockCredsService = credentialsmock.NewCredentialsAuthnServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
-	suite.mockObservability = observabilitymock.NewObservabilityServiceInterfaceMock(suite.T())
 
 	defaultInputs := []common.Input{
 		{Identifier: userAttributeUsername, Type: common.InputTypeText, Required: true},
@@ -73,13 +70,7 @@ func (suite *BasicAuthExecutorTestSuite) SetupTest() {
 	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameBasicAuth, common.ExecutorTypeAuthentication,
 		defaultInputs, []common.Input{}).Return(mockExec)
 
-	suite.executor = newBasicAuthExecutor(suite.mockFlowFactory, suite.mockUserProvider, suite.mockCredsService,
-		suite.mockObservability)
-}
-
-func (suite *BasicAuthExecutorTestSuite) BeforeTest(suiteName, testName string) {
-	suite.mockObservability.ExpectedCalls = nil
-	suite.mockObservability.On("IsEnabled").Return(false).Maybe()
+	suite.executor = newBasicAuthExecutor(suite.mockFlowFactory, suite.mockUserProvider, suite.mockCredsService)
 }
 
 func createMockIdentifyingExecutor(t *testing.T) core.ExecutorInterface {
@@ -931,4 +922,59 @@ func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithMixedInbound
 	assert.Len(suite.T(), clientIDs, 2)
 	assert.Contains(suite.T(), clientIDs, "valid-client")
 	assert.Contains(suite.T(), clientIDs, "another-valid-client")
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestExecute_PreResolvedUser_RequestsPassword() {
+	ctx := &core.NodeContext{
+		FlowID:     "flow-123",
+		FlowType:   common.FlowTypeAuthentication,
+		UserInputs: map[string]string{},
+		RuntimeData: map[string]string{
+			userAttributeUserID: "pre-resolved-user-123",
+		},
+	}
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+	assert.Len(suite.T(), resp.Inputs, 1)
+	assert.Equal(suite.T(), userAttributePassword, resp.Inputs[0].Identifier)
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestExecute_PreResolvedUser_WithPassword() {
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeAuthentication,
+		UserInputs: map[string]string{
+			userAttributePassword: "password123",
+		},
+		RuntimeData: map[string]string{
+			userAttributeUserID: "pre-resolved-user-123",
+		},
+		Application: appmodel.Application{},
+	}
+
+	authenticateResult := &authnprovider.AuthnResult{
+		UserID:   "pre-resolved-user-123",
+		UserType: "person",
+		OUID:     "ou-123",
+		Token:    "test-token",
+	}
+
+	suite.mockCredsService.On("Authenticate", mock.Anything,
+		map[string]interface{}{userAttributeUserID: "pre-resolved-user-123"},
+		map[string]interface{}{userAttributePassword: "password123"},
+		mock.Anything).Return(authenticateResult, nil)
+
+	suite.mockUserProvider.On("GetUser", "pre-resolved-user-123").Return(nil,
+		userprovider.NewUserProviderError(userprovider.ErrorCodeNotImplemented, "", ""))
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.True(suite.T(), resp.AuthenticatedUser.IsAuthenticated)
 }

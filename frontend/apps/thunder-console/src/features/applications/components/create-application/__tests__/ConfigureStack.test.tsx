@@ -41,6 +41,8 @@ const renderWithContext = (
     setCurrentStep: vi.fn(),
     appName: 'Test App',
     setAppName: vi.fn(),
+    ouId: '',
+    setOuId: vi.fn(),
     themeId: null,
     setThemeId: vi.fn(),
     selectedTheme: null,
@@ -305,7 +307,7 @@ describe('ConfigureStack', () => {
     });
 
     expect(screen.getByText('applications:onboarding.configure.stack.platform.browser.title')).toBeInTheDocument();
-    expect(screen.getByText('applications:onboarding.configure.stack.platform.server.title')).toBeInTheDocument();
+    expect(screen.getByText('applications:onboarding.configure.stack.platform.full_stack.title')).toBeInTheDocument();
     expect(screen.getByText('applications:onboarding.configure.stack.platform.mobile.title')).toBeInTheDocument();
     expect(screen.getByText('applications:onboarding.configure.stack.platform.backend.title')).toBeInTheDocument();
   });
@@ -416,9 +418,9 @@ describe('ConfigureStack', () => {
       {setSelectedPlatform, setSelectedTechnology},
     );
 
-    await user.click(screen.getByText('applications:onboarding.configure.stack.platform.server.title'));
+    await user.click(screen.getByText('applications:onboarding.configure.stack.platform.full_stack.title'));
 
-    expect(setSelectedPlatform).toHaveBeenCalledWith(PlatformApplicationTemplate.SERVER);
+    expect(setSelectedPlatform).toHaveBeenCalledWith(PlatformApplicationTemplate.FULL_STACK);
     expect(setSelectedTechnology).toHaveBeenCalledWith(null);
   });
 
@@ -498,13 +500,13 @@ describe('ConfigureStack', () => {
       {
         setSelectedTemplateConfig,
         selectedTechnology: null,
-        selectedPlatform: PlatformApplicationTemplate.SERVER,
+        selectedPlatform: PlatformApplicationTemplate.FULL_STACK,
       },
     );
 
     expect(setSelectedTemplateConfig).toHaveBeenCalledWith(
       expect.objectContaining({
-        defaults: expect.objectContaining({name: 'Server Application'}) as unknown,
+        defaults: expect.objectContaining({name: 'Full-Stack Application'}) as unknown,
       }),
     );
   });
@@ -640,7 +642,7 @@ describe('ConfigureStack', () => {
     it('should render platform card with correct structure when not selected', () => {
       renderWithContext(
         {oauthConfig: null, onOAuthConfigChange: vi.fn(), onReadyChange: vi.fn()},
-        {selectedPlatform: PlatformApplicationTemplate.SERVER},
+        {selectedPlatform: PlatformApplicationTemplate.FULL_STACK},
       );
 
       const browserTitle = screen.getByText('applications:onboarding.configure.stack.platform.browser.title');

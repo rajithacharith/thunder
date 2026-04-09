@@ -366,6 +366,8 @@ func (o *oAuthExecutor) getIDPName(ctx context.Context, idpID string) (string, e
 	return idp.Name, nil
 }
 
+// GetInternalUser retrieves the internal user for the given sub claim. Returns the user if found,
+// nil if not found, or an error on failure.
 func (o *oAuthExecutor) GetInternalUser(sub string, execResp *common.ExecutorResponse) (*userprovider.User, error) {
 	logger := o.logger
 	logger.Debug("Resolving internal user with the given sub claim")
@@ -373,6 +375,17 @@ func (o *oAuthExecutor) GetInternalUser(sub string, execResp *common.ExecutorRes
 	user, svcErr := o.authService.GetInternalUser(sub)
 	if svcErr != nil {
 		if svcErr.Code == authncm.ErrorUserNotFound.Code {
+			return nil, nil
+		}
+		if svcErr.Code == authncm.ErrorAmbiguousUser.Code {
+			// Signal ambiguity via RuntimeData rather than a sentinel error. This follows the
+			// same pattern used for userEligibleForProvisioning and is consumed by
+			// getContextUserForAuthentication within the same executor call, so RuntimeData
+			// cannot be reset between the write and the read.
+			if execResp.RuntimeData == nil {
+				execResp.RuntimeData = make(map[string]string)
+			}
+			execResp.RuntimeData[common.RuntimeKeyUserAmbiguous] = dataValueTrue
 			return nil, nil
 		}
 		if svcErr.Type == serviceerror.ClientErrorType {
@@ -417,6 +430,26 @@ func (o *oAuthExecutor) getContextUserForAuthentication(ctx *core.NodeContext,
 		}
 
 		if allowAuthWithoutLocalUser {
+			if execResp.RuntimeData == nil {
+				execResp.RuntimeData = make(map[string]string)
+			}
+			isAmbiguous := execResp.RuntimeData[common.RuntimeKeyUserAmbiguous] == dataValueTrue
+
+			if isAmbiguous {
+				// Ambiguous user: exists in multiple OUs. Set sub for downstream
+				// disambiguation but do NOT mark as eligible for provisioning since
+				// the user already exists.
+				logger.Debug("Ambiguous user detected, deferring to flow for disambiguation")
+				execResp.Status = common.ExecComplete
+				execResp.FailureReason = ""
+				execResp.RuntimeData[userAttributeSub] = sub
+
+				return &authncm.AuthenticatedUser{
+					IsAuthenticated: false,
+				}, nil
+			}
+
+			// Genuinely new user: no local account exists
 			logger.Debug("User not found, but authentication is allowed without a local user")
 
 			err := o.resolveUserTypeForAutoProvisioning(ctx, execResp)
@@ -444,6 +477,10 @@ func (o *oAuthExecutor) getContextUserForAuthentication(ctx *core.NodeContext,
 
 	// User found, proceed with authentication
 	execResp.Status = common.ExecComplete
+	if execResp.RuntimeData == nil {
+		execResp.RuntimeData = make(map[string]string)
+	}
+	execResp.RuntimeData[userAttributeSub] = sub
 	authenticatedUser := authncm.AuthenticatedUser{
 		IsAuthenticated: true,
 		UserID:          internalUser.UserID,
@@ -481,6 +518,29 @@ func (o *oAuthExecutor) getContextUserForRegistration(ctx *core.NodeContext,
 	}
 
 	if allowRegistrationWithExistingUser {
+		// Check if cross-OU provisioning is enabled
+		allowCrossOUProvisioning := false
+		if val, ok := ctx.NodeProperties[common.NodePropertyAllowCrossOUProvisioning]; ok {
+			if boolVal, ok := val.(bool); ok {
+				allowCrossOUProvisioning = boolVal
+			}
+		}
+
+		if allowCrossOUProvisioning {
+			// Allow the flow to continue so the ProvisioningExecutor can create the user in
+			// the target OU. The same-OU duplicate guard is enforced by the ProvisioningExecutor
+			// itself, which has access to the target OU context. We intentionally do not set
+			// RuntimeKeySkipProvisioning here because we want provisioning to run.
+			logger.Debug("User already exists, proceeding with cross-OU provisioning to target OU")
+			execResp.Status = common.ExecComplete
+			execResp.FailureReason = ""
+			execResp.RuntimeData[userAttributeSub] = sub
+
+			return &authncm.AuthenticatedUser{
+				IsAuthenticated: false,
+			}, nil
+		}
+
 		logger.Debug("User already exists, but registration flow is allowed to continue")
 		execResp.Status = common.ExecComplete
 		execResp.FailureReason = ""

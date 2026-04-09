@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {render, screen} from '@thunder/test-utils';
+import {render, screen, waitFor} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import type {Application} from '../../../../models/application';
 import type {OAuth2Config} from '../../../../models/oauth';
@@ -62,11 +62,13 @@ vi.mock('../TokenUserAttributesSection', () => ({
     idTokenAttributes,
     isUserInfoCustomAttributes,
     onToggleUserInfo,
+    userAttributes,
   }: {
     accessTokenAttributes?: string[];
     idTokenAttributes?: string[];
     isUserInfoCustomAttributes?: boolean;
     onToggleUserInfo?: (checked: boolean) => void;
+    userAttributes?: string[];
   }) => {
     const isOAuthMode = accessTokenAttributes !== undefined || idTokenAttributes !== undefined;
     if (isOAuthMode) {
@@ -74,6 +76,7 @@ vi.mock('../TokenUserAttributesSection', () => ({
         <div>
           <div data-testid="token-user-attributes-section-access">Access Token Attributes</div>
           <div data-testid="token-user-attributes-section-id">ID Token Attributes</div>
+          {userAttributes && <div data-testid="user-attributes-list">{userAttributes.join(',')}</div>}
           <label>
             <input
               type="checkbox"
@@ -86,7 +89,12 @@ vi.mock('../TokenUserAttributesSection', () => ({
         </div>
       );
     }
-    return <div data-testid="token-user-attributes-section-shared">Shared Token Attributes</div>;
+    return (
+      <div data-testid="token-user-attributes-section-shared">
+        Shared Token Attributes
+        {userAttributes && <div data-testid="user-attributes-list">{userAttributes.join(',')}</div>}
+      </div>
+    );
   },
 }));
 
@@ -116,8 +124,8 @@ vi.mock('@asgardeo/react', () => ({
 }));
 
 // Mock useConfig — stable mockGetServerUrl reference (also in fetchSchemas deps).
-vi.mock('@thunder/shared-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+vi.mock('@thunder/contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/contexts')>();
   return {
     ...actual,
     useConfig: () => ({
@@ -378,6 +386,69 @@ describe('EditTokenSettings', () => {
 
       const checkbox = screen.getByRole('checkbox', {name: /Use same attributes as ID Token/i});
       expect(checkbox).not.toBeChecked();
+    });
+  });
+
+  describe('Credential Attribute Filtering', () => {
+    const mockSchemaRequest = (schema: Record<string, unknown>) => {
+      mockHttp.request.mockImplementation(({url}: {url: string}) => {
+        if (url.includes('/user-schemas/schema-1')) {
+          return Promise.resolve({
+            data: {
+              id: 'schema-1',
+              name: 'default',
+              ouId: 'org-1',
+              allowSelfRegistration: false,
+              schema,
+            },
+          });
+        }
+
+        return Promise.resolve({
+          data: {totalResults: 1, startIndex: 0, count: 1, schemas: [{id: 'schema-1', name: 'default'}]},
+        });
+      });
+    };
+
+    it.each([
+      {
+        name: 'top-level credential attributes (e.g., password)',
+        schema: {
+          email: {type: 'string', required: true, unique: true},
+          password: {type: 'string', required: true, credential: true},
+          username: {type: 'string', required: false},
+          pin: {type: 'number', credential: true},
+          age: {type: 'number', required: false},
+        },
+        included: ['email', 'username', 'age'],
+        excluded: ['password', 'pin'],
+      },
+      {
+        name: 'nested credential attributes inside objects',
+        schema: {
+          email: {type: 'string', required: true},
+          security: {
+            type: 'object',
+            properties: {
+              secret: {type: 'string', credential: true},
+              question: {type: 'string'},
+            },
+          },
+        },
+        included: ['email', 'security.question'],
+        excluded: ['security.secret'],
+      },
+    ])('should exclude $name', async ({schema, included, excluded}) => {
+      mockSchemaRequest(schema);
+
+      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
+
+      const el = await screen.findByTestId('user-attributes-list');
+      await waitFor(() => expect(el.textContent).not.toBe(''));
+      const attributesList = el.textContent;
+
+      excluded.forEach((attr) => expect(attributesList).not.toContain(attr));
+      included.forEach((attr) => expect(attributesList).toContain(attr));
     });
   });
 });

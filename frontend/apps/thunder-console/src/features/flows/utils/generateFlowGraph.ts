@@ -74,6 +74,17 @@ export default function generateFlowGraph(options: FlowGeneratorOptions): Create
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const metaComponents: any[] = [];
 
+  // Self Sign Up Link component — shared across auth blocks
+  const selfSignUpLink = {
+    category: 'DISPLAY',
+    type: 'RICH_TEXT',
+    id: 'self_sign_up_link',
+    label:
+      '<p class="rich-text-paragraph"><span class="rich-text-pre-wrap">Don\'t have an account? </span>' +
+      '<a href="{{meta(application.sign_up_url)}}" target="_blank" rel="noopener noreferrer" class="rich-text-link">' +
+      '<span class="rich-text-pre-wrap">Sign up</span></a></p>',
+  };
+
   // Header
   metaComponents.push({
     type: 'TEXT',
@@ -121,6 +132,7 @@ export default function generateFlowGraph(options: FlowGeneratorOptions): Create
           variant: 'PRIMARY',
           eventType: 'SUBMIT',
         },
+        selfSignUpLink,
       ],
     });
 
@@ -161,6 +173,7 @@ export default function generateFlowGraph(options: FlowGeneratorOptions): Create
           variant: hasBasicAuth ? 'SECONDARY' : 'PRIMARY',
           eventType: 'SUBMIT',
         },
+        ...(!hasBasicAuth ? [selfSignUpLink] : []),
       ],
     });
 

@@ -57,14 +57,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Step 3: Run the init script to create the SQLite database
+	// Step 3: Copy declarative resource fixtures for composite mode testing
+	err = testutils.CopyDeclarativeResources(zipFilePattern)
+	if err != nil {
+		fmt.Printf("Failed to copy declarative resources: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Step 4: Run the init script to create the SQLite database
 	err = testutils.RunInitScript(zipFilePattern)
 	if err != nil {
 		fmt.Printf("Failed to run init script: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Step 4: Run setup.sh
+	// Step 5: Run setup.sh
 	// This starts server without security, runs bootstrap scripts, and stops server
 	fmt.Println("Running bootstrap scripts...")
 	err = testutils.RunSetupScript()
@@ -73,7 +80,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Step 5: Start server
+	// Step 6: Start server
 	fmt.Println("Starting server with security enabled...")
 	err = testutils.StartServer(serverPort, zipFilePattern)
 	if err != nil {
@@ -86,7 +93,7 @@ func main() {
 	fmt.Println("Waiting for the server to start...")
 	time.Sleep(5 * time.Second)
 
-	// Step 6: Obtain admin access token once for all test packages
+	// Step 7: Obtain admin access token once for all test packages
 	fmt.Println("Obtaining admin access token...")
 	err = testutils.ObtainAdminAccessToken()
 	if err != nil {
@@ -95,7 +102,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Step 7: Run all tests
+	// Step 8: Run all tests
 	err = runTests()
 	if err != nil {
 		fmt.Printf("there are test failures: %v\n", err)

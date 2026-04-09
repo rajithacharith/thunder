@@ -133,6 +133,13 @@ var (
 		ErrorDescription: "Role creation is not allowed when running in declarative-only mode. " +
 			"Roles must be defined in declarative configuration files",
 	}
+	// ErrorInvalidAssigneeType is the error returned when the assignee type query parameter is invalid.
+	ErrorInvalidAssigneeType = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "ROL-1017",
+		Error:            "Invalid assignee type",
+		ErrorDescription: "The type parameter must be either 'user' or 'group'",
+	}
 )
 
 // Server errors for role management operations.
@@ -148,7 +155,7 @@ var (
 	// the maximum limit in composite mode (combining database and declarative resources).
 	ResultLimitExceededInCompositeMode = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
-		Code:             "ROL-1016",
+		Code:             "ROL-1017",
 		Error:            "Result limit exceeded in composite mode",
 		ErrorDescription: "The total number of records exceeds the maximum limit in composite mode",
 	}

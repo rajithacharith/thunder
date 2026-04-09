@@ -16,7 +16,6 @@
  * under the License.
  */
 
-// eslint-disable-next-line import/extensions
 import thunderPlugin from './dist/index.js';
 
 export default [

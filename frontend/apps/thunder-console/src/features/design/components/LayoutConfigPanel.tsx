@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useGetLayout, useUpdateLayout, type Stylesheet} from '@thunder/shared-design';
+import {useGetLayout, useUpdateLayout, type Stylesheet} from '@thunder/design';
 import {Box, CircularProgress, Typography} from '@wso2/oxygen-ui';
 import {useCallback, useEffect, useMemo, useRef, type JSX, type RefObject} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -37,8 +37,6 @@ interface LayoutConfigPanelProps {
   cssEditorRef?: RefObject<CustomCSSEditorHandle | null>;
 }
 
-// ── Immutable deep-set helper ───────────────────────────────────────────────
-
 function setIn(obj: Record<string, unknown>, path: string[], value: unknown): Record<string, unknown> {
   const [head, ...rest] = path;
   if (rest.length === 0) return {...obj, [head]: value};
@@ -47,8 +45,6 @@ function setIn(obj: Record<string, unknown>, path: string[], value: unknown): Re
     [head]: setIn((obj[head] ?? {}) as Record<string, unknown>, rest, value),
   };
 }
-
-// ── Main panel component ────────────────────────────────────────────────────
 
 export default function LayoutConfigPanel({
   layoutId,
@@ -69,14 +65,18 @@ export default function LayoutConfigPanel({
   const screens = useMemo(() => (layout?.layout?.screens ?? {}) as Record<string, Record<string, unknown>>, [layout]);
   const screenNames = Object.keys(screens);
 
-  // Pick first screen when layout loads and none is selected yet
+  /**
+   * Pick first screen when layout loads and none is selected yet
+   */
   useEffect(() => {
     if (screenNames.length > 0 && !selectedScreen) {
       onScreenChange(screenNames[0]);
     }
   }, [screenNames.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sync draft from server when selected screen or layout data changes
+  /**
+   * Sync draft from server when selected screen or layout data changes
+   */
   useEffect(() => {
     if (selectedScreen && screens[selectedScreen]) {
       onScreenDraftChange(JSON.parse(JSON.stringify(screens[selectedScreen])) as Record<string, unknown>);
@@ -126,12 +126,9 @@ export default function LayoutConfigPanel({
 
   useEffect(() => {
     if (saveHandlerRef) {
-      // eslint-disable-next-line no-param-reassign
       saveHandlerRef.current = () => handleSaveLatest.current();
     }
   }, [saveHandlerRef]);
-
-  // ── Early returns ────────────────────────────────────────────────────────
 
   if (!layoutId) {
     return (
@@ -160,8 +157,6 @@ export default function LayoutConfigPanel({
       </Box>
     );
   }
-
-  // ── Render ───────────────────────────────────────────────────────────────
 
   return (
     <>

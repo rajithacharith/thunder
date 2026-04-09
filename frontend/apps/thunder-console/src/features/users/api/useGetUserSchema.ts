@@ -18,9 +18,9 @@
 
 import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig} from '@thunder/contexts';
 import UserQueryKeys from '../constants/user-query-keys';
-import type {ApiUserSchema} from '../types/users';
+import type {ApiUserSchema} from '../models/users';
 
 /**
  * Custom hook to fetch a single user schema by ID.

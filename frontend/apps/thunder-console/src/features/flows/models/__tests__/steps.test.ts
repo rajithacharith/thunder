@@ -134,8 +134,12 @@ describe('steps models', () => {
       expect(ExecutionTypes.ConsentExecutor).toBe('ConsentExecutor');
     });
 
-    it('should have exactly 12 execution types', () => {
-      expect(Object.keys(ExecutionTypes)).toHaveLength(12);
+    it('should have IdentifyingExecutor type', () => {
+      expect(ExecutionTypes.IdentifyingExecutor).toBe('IdentifyingExecutor');
+    });
+
+    it('should have exactly 13 execution types', () => {
+      expect(Object.keys(ExecutionTypes)).toHaveLength(13);
     });
   });
 

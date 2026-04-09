@@ -29,7 +29,6 @@ import (
 	authzsvc "github.com/asgardeo/thunder/internal/authz"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
-	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/authzmock"
@@ -139,10 +138,8 @@ func TestAuthorizationExecutor_Execute_PartialPermissions(t *testing.T) {
 		},
 	}
 
-	mockUserProvider.On("GetUserGroups", "user123",
-		oauth2const.DefaultGroupListLimit, 0).Return(&userprovider.UserGroupListResponse{
-		Groups: []userprovider.UserGroup{},
-	}, nil).Maybe()
+	mockUserProvider.On("GetTransitiveUserGroups", "user123").Return(
+		[]userprovider.UserGroup{}, nil).Maybe()
 
 	// User only has read permission
 	mockAuthzService.On("GetAuthorizedPermissions", mock.Anything, mock.Anything).Return(
@@ -179,15 +176,8 @@ func TestAuthorizationExecutor_Execute_NoPermissions(t *testing.T) {
 		},
 	}
 
-	mockUserProvider.On("GetUserGroups", "user123",
-		oauth2const.DefaultGroupListLimit, 0).Return(&userprovider.UserGroupListResponse{
-		Groups: []userprovider.UserGroup{},
-	}, nil).Maybe()
-
-	mockUserProvider.On("GetUserGroups", "user123",
-		oauth2const.DefaultGroupListLimit, 0).Return(&userprovider.UserGroupListResponse{
-		Groups: []userprovider.UserGroup{},
-	}, nil).Maybe()
+	mockUserProvider.On("GetTransitiveUserGroups", "user123").Return(
+		[]userprovider.UserGroup{}, nil).Maybe()
 
 	mockAuthzService.On("GetAuthorizedPermissions", mock.Anything, mock.Anything).Return(
 		&authzsvc.GetAuthorizedPermissionsResponse{
@@ -250,15 +240,8 @@ func TestAuthorizationExecutor_Execute_ServiceError(t *testing.T) {
 		},
 	}
 
-	mockUserProvider.On("GetUserGroups", "user123",
-		oauth2const.DefaultGroupListLimit, 0).Return(&userprovider.UserGroupListResponse{
-		Groups: []userprovider.UserGroup{},
-	}, nil).Maybe()
-
-	mockUserProvider.On("GetUserGroups", "user123",
-		oauth2const.DefaultGroupListLimit, 0).Return(&userprovider.UserGroupListResponse{
-		Groups: []userprovider.UserGroup{},
-	}, nil).Maybe()
+	mockUserProvider.On("GetTransitiveUserGroups", "user123").Return(
+		[]userprovider.UserGroup{}, nil).Maybe()
 
 	mockAuthzService.On("GetAuthorizedPermissions", mock.Anything, mock.Anything).Return(
 		nil, &serviceerror.ServiceError{Error: "service error"})
@@ -292,7 +275,7 @@ func TestAuthorizationExecutor_Execute_GroupExtractionError(t *testing.T) {
 		},
 	}
 
-	mockUserProvider.On("GetUserGroups", "user123", oauth2const.DefaultGroupListLimit, 0).Return(
+	mockUserProvider.On("GetTransitiveUserGroups", "user123").Return(
 		nil, userprovider.NewUserProviderError(
 			userprovider.ErrorCodeSystemError,
 			"failed to retrieve groups",
@@ -492,10 +475,8 @@ func TestAuthorizationExecutor_ExtractGroupIDs_WithNoGroups(t *testing.T) {
 		RuntimeData: make(map[string]string),
 	}
 
-	mockUserProvider.On("GetUserGroups", "user123",
-		oauth2const.DefaultGroupListLimit, 0).Return(&userprovider.UserGroupListResponse{
-		Groups: []userprovider.UserGroup{},
-	}, nil).Maybe()
+	mockUserProvider.On("GetTransitiveUserGroups", "user123").Return(
+		[]userprovider.UserGroup{}, nil).Maybe()
 
 	groupIDs, err := executor.extractGroupIDs(ctx)
 	assert.NoError(t, err)
@@ -742,13 +723,11 @@ func TestAuthorizationExecutor_ExtractGroupIDs_FromUserService(t *testing.T) {
 		RuntimeData: make(map[string]string), // No groups in runtime data
 	}
 
-	mockUserProvider.On("GetUserGroups", "test-user-123",
-		oauth2const.DefaultGroupListLimit, 0).Return(&userprovider.UserGroupListResponse{
-		Groups: []userprovider.UserGroup{
+	mockUserProvider.On("GetTransitiveUserGroups", "test-user-123").Return(
+		[]userprovider.UserGroup{
 			{ID: "svc-group-1"},
 			{ID: "svc-group-2"},
-		},
-	}, nil)
+		}, nil)
 
 	groupIDs, err := executor.extractGroupIDs(ctx)
 	assert.NoError(t, err)
@@ -771,7 +750,7 @@ func TestAuthorizationExecutor_ExtractGroupIDs_FromUserService_Error(t *testing.
 		RuntimeData: make(map[string]string), // No groups in runtime data
 	}
 
-	mockUserProvider.On("GetUserGroups", "test-user-err", oauth2const.DefaultGroupListLimit, 0).Return(
+	mockUserProvider.On("GetTransitiveUserGroups", "test-user-err").Return(
 		nil, userprovider.NewUserProviderError(
 			userprovider.ErrorCodeSystemError,
 			"failed to retrieve groups",

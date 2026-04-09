@@ -16,23 +16,24 @@
  * under the License.
  */
 
-import type {Theme} from '@thunder/shared-design';
+import type {Theme} from '@thunder/design';
 import {
   Box,
   Divider,
   FormHelperText,
+  IconButton,
   ListItemIcon,
   ListItemText,
   MenuItem,
   Select,
   Stack,
+  Tooltip,
   Typography,
 } from '@wso2/oxygen-ui';
-import {Palette, Sliders, Type} from '@wso2/oxygen-ui-icons-react';
+import {ChevronLeftIcon, Palette, Sliders, Type} from '@wso2/oxygen-ui-icons-react';
 import {type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import SectionCard from './SectionCard';
-import BuilderPanelHeader from '../../../../components/BuilderLayout/BuilderPanelHeader';
 import ColorSchemeOptions from '../../constants/ColorSchemeOptions';
 import {type ThemeSection} from '../../models/theme-builder';
 
@@ -59,7 +60,6 @@ export {SECTIONS};
 export type {SectionDef};
 
 interface ThemeBuilderLeftPanelProps {
-  onBack: () => void;
   onPanelToggle: () => void;
   draftTheme: Theme | null | undefined;
   setDraftTheme: (theme: Theme) => void;
@@ -83,7 +83,6 @@ const SECTION_DESCRIPTION_KEYS: Record<ThemeSection, [string, string]> = {
 };
 
 export default function ThemeBuilderLeftPanel({
-  onBack,
   onPanelToggle,
   draftTheme,
   setDraftTheme,
@@ -94,104 +93,107 @@ export default function ThemeBuilderLeftPanel({
   const {t} = useTranslation('design');
 
   return (
-    <>
-      <BuilderPanelHeader
-        onBack={onBack}
-        backLabel={t('themes.builder.actions.back_to_design.label', 'Back to Design')}
-        onPanelToggle={onPanelToggle}
-        hidePanelTooltip={t('themes.builder.tooltips.hide_sections', 'Hide sections')}
-      />
-      <Stack gap={2}>
-        {/* Top-level global settings */}
-        {draftTheme && (
-          <>
-            <Box>
+    <Stack gap={2}>
+      {/* Top-level global settings */}
+      {draftTheme && (
+        <>
+          <Box>
+            <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
               <Typography variant="h6" gutterBottom>
                 {t('themes.forms.settings.fields.default_color_scheme.label', 'Default Color Scheme')}
               </Typography>
-              <Select
-                value={draftTheme.defaultColorScheme ?? 'light'}
-                onChange={(e) => {
-                  const next = JSON.parse(JSON.stringify(draftTheme)) as Theme;
-                  next.defaultColorScheme = String(e.target.value) as Theme['defaultColorScheme'];
-                  setDraftTheme(next);
-                  setIsDirty(true);
-                }}
-                fullWidth
-                renderValue={(value) => {
-                  const option = ColorSchemeOptions.find((o) => o.id === value);
-                  return (
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                      {option?.icon}
-                      {option && t(`common.color_scheme.options.${option.id}.label`, option.label)}
-                    </Box>
-                  );
-                }}
-              >
-                {ColorSchemeOptions.map((o) => (
-                  <MenuItem key={o.id} value={o.id}>
-                    <ListItemIcon>{o.icon}</ListItemIcon>
-                    <ListItemText>{t(`common.color_scheme.options.${o.id}.label`, o.label)}</ListItemText>
-                  </MenuItem>
-                ))}
-              </Select>
-              <FormHelperText>
-                {t(
-                  'themes.forms.settings.fields.default_color_scheme.helper_text',
-                  'Select whether you want a light, dark or system color scheme as the default.',
-                )}
-              </FormHelperText>
+              <Tooltip title={t('themes.builder.tooltips.hide_sections', 'Hide sections')} placement="right">
+                <IconButton
+                  onClick={onPanelToggle}
+                  size="small"
+                  aria-label={t('themes.builder.tooltips.hide_sections', 'Hide sections')}
+                >
+                  <ChevronLeftIcon size={16} />
+                </IconButton>
+              </Tooltip>
             </Box>
-            <Box>
-              <Typography variant="h6" gutterBottom>
-                {t('themes.forms.settings.fields.default_text_direction.label', 'Default Text Direction')}
-              </Typography>
-              <Select
-                value={draftTheme.direction ?? 'ltr'}
-                onChange={(e) => {
-                  const next = JSON.parse(JSON.stringify(draftTheme)) as Theme;
-                  next.direction = String(e.target.value) as Theme['direction'];
-                  setDraftTheme(next);
-                  setIsDirty(true);
-                }}
-                size="small"
-                fullWidth
-              >
-                <MenuItem value="ltr">
-                  {t('themes.forms.settings.fields.default_text_direction.options.ltr.label', 'Left-to-Right (LTR)')}
+            <Select
+              value={draftTheme.defaultColorScheme ?? 'light'}
+              onChange={(e) => {
+                const next = JSON.parse(JSON.stringify(draftTheme)) as Theme;
+                next.defaultColorScheme = String(e.target.value) as Theme['defaultColorScheme'];
+                setDraftTheme(next);
+                setIsDirty(true);
+              }}
+              fullWidth
+              renderValue={(value) => {
+                const option = ColorSchemeOptions.find((o) => o.id === value);
+                return (
+                  <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                    {option?.icon}
+                    {option && t(`common.color_scheme.options.${option.id}.label`, option.label)}
+                  </Box>
+                );
+              }}
+            >
+              {ColorSchemeOptions.map((o) => (
+                <MenuItem key={o.id} value={o.id}>
+                  <ListItemIcon>{o.icon}</ListItemIcon>
+                  <ListItemText>{t(`common.color_scheme.options.${o.id}.label`, o.label)}</ListItemText>
                 </MenuItem>
-                <MenuItem value="rtl">
-                  {t('themes.forms.settings.fields.default_text_direction.options.rtl.label', 'Right-to-Left (RTL)')}
-                </MenuItem>
-              </Select>
-              <FormHelperText>
-                {t(
-                  'themes.forms.settings.fields.default_text_direction.helper_text',
-                  'Select the default text direction for your theme. This will affect the layout and alignment of components.',
-                )}
-              </FormHelperText>
-            </Box>
-          </>
-        )}
-        <Divider />
-        <Box>
-          <Typography variant="h6" gutterBottom>
-            {t('themes.forms.settings.heading', 'Settings')}
-          </Typography>
-          <Stack gap={1}>
-            {SECTION_IDS.map((id) => (
-              <SectionCard
-                key={id}
-                label={t(...SECTION_LABEL_KEYS[id])}
-                description={t(...SECTION_DESCRIPTION_KEYS[id])}
-                icon={SECTION_ICONS[id]}
-                isSelected={activeSection === id}
-                onClick={() => setActiveSection(id)}
-              />
-            ))}
-          </Stack>
-        </Box>
-      </Stack>
-    </>
+              ))}
+            </Select>
+            <FormHelperText>
+              {t(
+                'themes.forms.settings.fields.default_color_scheme.helper_text',
+                'Select whether you want a light, dark or system color scheme as the default.',
+              )}
+            </FormHelperText>
+          </Box>
+          <Box>
+            <Typography variant="h6" gutterBottom>
+              {t('themes.forms.settings.fields.default_text_direction.label', 'Default Text Direction')}
+            </Typography>
+            <Select
+              value={draftTheme.direction ?? 'ltr'}
+              onChange={(e) => {
+                const next = JSON.parse(JSON.stringify(draftTheme)) as Theme;
+                next.direction = String(e.target.value) as Theme['direction'];
+                setDraftTheme(next);
+                setIsDirty(true);
+              }}
+              size="small"
+              fullWidth
+            >
+              <MenuItem value="ltr">
+                {t('themes.forms.settings.fields.default_text_direction.options.ltr.label', 'Left-to-Right (LTR)')}
+              </MenuItem>
+              <MenuItem value="rtl">
+                {t('themes.forms.settings.fields.default_text_direction.options.rtl.label', 'Right-to-Left (RTL)')}
+              </MenuItem>
+            </Select>
+            <FormHelperText>
+              {t(
+                'themes.forms.settings.fields.default_text_direction.helper_text',
+                'Select the default text direction for your theme. This will affect the layout and alignment of components.',
+              )}
+            </FormHelperText>
+          </Box>
+        </>
+      )}
+      <Divider />
+      <Box>
+        <Typography variant="h6" gutterBottom>
+          {t('themes.forms.settings.heading', 'Settings')}
+        </Typography>
+        <Stack gap={1}>
+          {SECTION_IDS.map((id) => (
+            <SectionCard
+              key={id}
+              label={t(...SECTION_LABEL_KEYS[id])}
+              description={t(...SECTION_DESCRIPTION_KEYS[id])}
+              icon={SECTION_ICONS[id]}
+              isSelected={activeSection === id}
+              onClick={() => setActiveSection(id)}
+            />
+          ))}
+        </Stack>
+      </Box>
+    </Stack>
   );
 }

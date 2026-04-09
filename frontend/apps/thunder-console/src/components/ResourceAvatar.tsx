@@ -40,8 +40,13 @@ function resolveDisplayValue(value: string): string {
  */
 export interface ResourceAvatarProps extends Omit<AvatarProps, 'onSelect'> {
   /**
+   * Whether the avatar is editable. When `true`, the edit button is shown and the dialog can be opened.
+   */
+  editable?: boolean;
+
+  /**
    * The icon value — an `emoji:`-prefixed string, a raw emoji character, or an image URL.
-   * When empty or undefined, renders the fallbackIcon.
+   * When empty or undefined, renders the fallback.
    */
   value?: string;
 
@@ -53,7 +58,7 @@ export interface ResourceAvatarProps extends Omit<AvatarProps, 'onSelect'> {
   /**
    * Fallback icon rendered when value is empty or when a URL fails to load.
    */
-  fallbackIcon?: ReactNode;
+  fallback?: ReactNode;
 
   /**
    * When provided, the avatar becomes editable: an overlay pencil button is
@@ -89,13 +94,14 @@ export interface ResourceAvatarProps extends Omit<AvatarProps, 'onSelect'> {
  * @example
  * ```tsx
  * // Read-only
- * <ResourceAvatar value="emoji:🐼" size={40} fallbackIcon={<AppWindow />} />
+ * <ResourceAvatar value="emoji:🐼" size={40} fallback={<AppWindow />} />
  *
  * // Editable
  * <ResourceAvatar
+ *   editable
  *   value={app.logoUrl}
  *   size={40}
- *   fallbackIcon={<AppWindow />}
+ *   fallback="emoji:🖥️"
  *   onSelect={(val) => setApp({...app, logoUrl: val})}
  * />
  * ```
@@ -103,9 +109,10 @@ export interface ResourceAvatarProps extends Omit<AvatarProps, 'onSelect'> {
  * @public
  */
 export default function ResourceAvatar({
+  editable = false,
   value = undefined,
   size = 40,
-  fallbackIcon = null,
+  fallback = null,
   sx,
   onSelect = undefined,
   editAriaLabel = 'Change logo',
@@ -119,6 +126,9 @@ export default function ResourceAvatar({
   const displayValue: string = hasValue ? resolveDisplayValue(value!) : '';
   const isUrlValue: boolean = Boolean(displayValue) && isUrl(displayValue);
   const imgError: boolean = imgErrorUrl === displayValue && Boolean(displayValue);
+
+  const resolvedFallbackIcon: ReactNode =
+    typeof fallback === 'string' && fallback.startsWith(EMOJI_SCHEME) ? fallback.slice(EMOJI_SCHEME.length) : fallback;
 
   const handleOpenDialog = useCallback((): void => {
     setIsDialogOpen(true);
@@ -152,11 +162,11 @@ export default function ResourceAvatar({
             imgError ? {display: 'none'} : {width: '100%', height: '100%', objectFit: 'cover', textAlign: 'center'}
           }
         />
-        {imgError && fallbackIcon}
+        {imgError && resolvedFallbackIcon}
       </>
     );
   } else {
-    avatarContent = displayValue || fallbackIcon;
+    avatarContent = displayValue || resolvedFallbackIcon;
   }
 
   const isInteractive = Boolean(onSelect ?? onClick);
@@ -200,7 +210,7 @@ export default function ResourceAvatar({
   return (
     <Box sx={{position: 'relative', display: 'inline-flex'}}>
       {avatar}
-      {hasValue && (
+      {editable && (
         <IconButton
           size="small"
           aria-label={editAriaLabel}

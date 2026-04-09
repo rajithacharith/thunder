@@ -33,8 +33,29 @@ param(
     [string]$TestRun,
     
     [Parameter(Position = 4)]
-    [string]$TestPackage
+    [string]$TestPackage,
+
+    [switch]$WithoutConsent
 )
+
+# Accept --without-consent anywhere in positional arguments.
+$positionalArgs = @($Command, $GO_OS, $GO_ARCH, $TestRun, $TestPackage)
+$withoutConsentFromArgs = $false
+
+for ($i = 0; $i -lt $positionalArgs.Count; $i++) {
+    if ($positionalArgs[$i] -ceq "--without-consent") {
+        $withoutConsentFromArgs = $true
+        $positionalArgs[$i] = $null
+    }
+}
+
+$Command = $positionalArgs[0]
+$GO_OS = $positionalArgs[1]
+$GO_ARCH = $positionalArgs[2]
+$TestRun = $positionalArgs[3]
+$TestPackage = $positionalArgs[4]
+
+$skipConsent = $WithoutConsent.IsPresent -or $withoutConsentFromArgs -or ($env:WITHOUT_CONSENT -eq "true")
 
 # Check for PowerShell Version Compatibility
 if ($PSVersionTable.PSVersion.Major -lt 7) {
@@ -617,12 +638,54 @@ function Package {
         Copy-Item -Path "setup.sh" -Destination $package_folder -Force
     }
 
-    Write-Host "Packaging consent server..."
-    $packageFolderAbs = (Resolve-Path -Path $package_folder).Path
-    & (Join-Path $SCRIPT_DIR "scripts/package-consent-server.ps1") `
-        -GoOS $GO_OS -GoArch $GO_ARCH -DistOutputPath $packageFolderAbs
-    if ($LASTEXITCODE -ne 0) {
-        throw "Consent server packaging failed with exit code $LASTEXITCODE"
+    if (-not $skipConsent) {
+        Write-Host "Packaging consent server..."
+        $packageFolderAbs = (Resolve-Path -Path $package_folder).Path
+        & (Join-Path $SCRIPT_DIR "scripts/package-consent-server.ps1") `
+            -GoOS $GO_OS -GoArch $GO_ARCH -DistOutputPath $packageFolderAbs
+        if ($LASTEXITCODE -ne 0) {
+            throw "Consent server packaging failed with exit code $LASTEXITCODE"
+        }
+    } else {
+        Write-Host "Skipping consent server packaging (--without-consent)..."
+        $targetYaml = Join-Path $package_folder "repository/conf/deployment.yaml"
+        $yqPatched = $false
+        if (Get-Command yq -ErrorAction SilentlyContinue) {
+            & yq eval '.consent.enabled = false' -i $targetYaml
+            if ($LASTEXITCODE -eq 0) {
+                $yqPatched = $true
+            }
+        }
+        if (-not $yqPatched) {
+            $content = Get-Content $targetYaml
+            $inConsent = $false
+            for ($i = 0; $i -lt $content.Length; $i++) {
+                if ($content[$i] -match '^consent:') {
+                    $inConsent = $true
+                } elseif ($inConsent -and $content[$i] -match '^\s*enabled:\s*true') {
+                    $content[$i] = $content[$i] -replace 'enabled:\s*true', 'enabled: false'
+                    $inConsent = $false
+                } elseif ($inConsent -and $content[$i] -match '^\S') {
+                    $inConsent = $false
+                }
+            }
+            $content | Set-Content $targetYaml
+        }
+        $consentDisabled = $false
+        $inConsentBlock = $false
+        foreach ($line in (Get-Content $targetYaml)) {
+            if ($line -match '^consent:') {
+                $inConsentBlock = $true
+            } elseif ($inConsentBlock -and $line -match '^\s+enabled:\s*false') {
+                $consentDisabled = $true
+                break
+            } elseif ($inConsentBlock -and $line -match '^\S') {
+                break
+            }
+        }
+        if (-not $consentDisabled) {
+            throw "Failed to disable consent in '$targetYaml' — packaging cannot continue with consent still enabled."
+        }
     }
 
     Write-Host "Creating zip file..."
@@ -653,9 +716,9 @@ function Build-Sample-App {
     Push-Location $VANILLA_SAMPLE_APP_DIR
     try {
         Write-Host "Installing React Vanilla sample dependencies..."
-        & npm install
+        & npm ci
         if ($LASTEXITCODE -ne 0) {
-            throw "npm install failed with exit code $LASTEXITCODE"
+            throw "npm ci failed with exit code $LASTEXITCODE"
         }
 
         Write-Host "Building React Vanilla sample app (TypeScript + Vite)..."
@@ -695,9 +758,9 @@ function Build-Sample-App {
         Push-Location $serverDir
         try {
             Write-Host " - Installing server dependencies..."
-            & npm install
+            & npm ci
             if ($LASTEXITCODE -ne 0) {
-                throw "npm install (server) failed with exit code $LASTEXITCODE"
+                throw "npm ci (server) failed with exit code $LASTEXITCODE"
             }
         }
         finally {
@@ -1500,7 +1563,7 @@ function Run {
     Write-Host "Running frontend apps..."
     Run-Frontend
 
-    if ($script:CONSENT_ENABLED) {
+    if ($script:CONSENT_ENABLED -and -not $skipConsent) {
         Write-Host "Running consent server..."
         Run-Consent
     }
@@ -1620,6 +1683,11 @@ function Run-Backend {
     Write-Host "Initializing databases..."
     Initialize-Databases
 
+    if ($script:CONSENT_ENABLED -and -not $skipConsent -and -not $script:CONSENT_PROCESS) {
+        Write-Host "Running consent server..."
+        Run-Consent
+    }
+
     Start-Backend -ShowFinalOutput $ShowFinalOutput
 }
 
@@ -1664,11 +1732,14 @@ function Start-Backend {
         }
         catch [System.Management.Automation.PipelineStoppedException] {
             Write-Host ""
-            Write-Host "🛑 Shutting down backend server..."
+            Write-Host "🛑 Shutting down servers..."
             if ($script:BACKEND_PID) { 
                 Stop-Process -Id $script:BACKEND_PID -Force -ErrorAction SilentlyContinue
             }
-            Write-Host "✅ Backend server stopped successfully."
+            if ($script:CONSENT_PROCESS -and -not $script:CONSENT_PROCESS.HasExited) {
+                Stop-Process -Id $script:CONSENT_PROCESS.Id -Force -ErrorAction SilentlyContinue
+            }
+            Write-Host "✅ Servers stopped successfully."
             exit 0
         }
 

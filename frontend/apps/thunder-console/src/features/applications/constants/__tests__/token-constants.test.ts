@@ -89,9 +89,11 @@ describe('TokenConstants', () => {
     });
 
     it('should contain expected attributes', () => {
+      expect(TokenConstants.ADDITIONAL_USER_ATTRIBUTES).toContain('groups');
       expect(TokenConstants.ADDITIONAL_USER_ATTRIBUTES).toContain('ouHandle');
       expect(TokenConstants.ADDITIONAL_USER_ATTRIBUTES).toContain('ouId');
       expect(TokenConstants.ADDITIONAL_USER_ATTRIBUTES).toContain('ouName');
+      expect(TokenConstants.ADDITIONAL_USER_ATTRIBUTES).toContain('roles');
       expect(TokenConstants.ADDITIONAL_USER_ATTRIBUTES).toContain('userType');
     });
   });

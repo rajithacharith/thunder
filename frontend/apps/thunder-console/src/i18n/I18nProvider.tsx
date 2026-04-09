@@ -19,7 +19,7 @@
 import {useAsgardeo} from '@asgardeo/react';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {I18nQueryKeys} from '@thunder/i18n';
-import {useConfig} from '@thunder/shared-contexts';
+import {useConfig} from '@thunder/contexts';
 import {type ReactElement, type ReactNode, useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {registerI18nCacheInvalidator, unregisterI18nCacheInvalidator} from './invalidate-i18n-cache';

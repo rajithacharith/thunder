@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {Theme} from '@thunder/shared-design';
+import type {Theme} from '@thunder/design';
 import {describe, it, expect} from 'vitest';
 import toAsgardeoTheme from '../asgardeoThemeTransformer';
 

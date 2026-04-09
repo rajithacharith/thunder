@@ -15,8 +15,16 @@ env:
   GOFLAGS: "-mod=readonly"
 
 jobs:
+  dependency-guard:
+    name: 🛡️ Dependency Guard
+    uses: ./.github/workflows/dependency-guard.yml
+    with:
+      detection-mode: commit
+
   build-windows:
     name: 🛠️ Build Product (Windows)
+    needs: dependency-guard
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') }}
     runs-on: windows-latest
     steps:
       - name: 📥 Checkout Code
@@ -129,6 +137,8 @@ jobs:
 
   build-samples-windows:
     name: 🛠️ Build Sample Apps (Windows)
+    needs: dependency-guard
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') }}
     runs-on: windows-latest
     steps:
       - name: 📥 Checkout Code
