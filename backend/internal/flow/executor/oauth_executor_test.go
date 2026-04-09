@@ -1148,14 +1148,16 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning() {
 
 func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Failures() {
 	tests := []struct {
-		name             string
-		allowedUserTypes []string
-		mockSetup        func()
+		name                  string
+		allowedUserTypes      []string
+		mockSetup             func()
+		expectedFailureReason string
 	}{
 		{
-			name:             "NoAllowedUserTypes",
-			allowedUserTypes: []string{},
-			mockSetup:        func() {},
+			name:                  "NoAllowedUserTypes",
+			allowedUserTypes:      []string{},
+			mockSetup:             func() {},
+			expectedFailureReason: errCannotProvisionUserAutomatically,
 		},
 		{
 			name:             "NoSelfRegistrationEnabled",
@@ -1168,6 +1170,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 						OUID:                  "ou-123",
 					}, nil).Once()
 			},
+			expectedFailureReason: errSelfRegistrationDisabled,
 		},
 		{
 			name:             "MultipleSelfRegistrationEnabled",
@@ -1186,6 +1189,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 						OUID:                  "ou-456",
 					}, nil).Once()
 			},
+			expectedFailureReason: errCannotProvisionUserAutomatically,
 		},
 	}
 
@@ -1210,7 +1214,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 
 			assert.NoError(suite.T(), err)
 			assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
-			assert.Equal(suite.T(), errCannotProvisionUserAutomatically, execResp.FailureReason)
+			assert.Equal(suite.T(), tt.expectedFailureReason, execResp.FailureReason)
 			suite.mockUserSchemaService.AssertExpectations(suite.T())
 		})
 	}
@@ -1377,14 +1381,16 @@ func (suite *OAuthExecutorTestSuite) TestGetContextUserForRegistration_WithExist
 
 func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_FailureScenarios() {
 	tests := []struct {
-		name             string
-		allowedUserTypes []string
-		userSchemas      map[string]*userschema.UserSchema
+		name                  string
+		allowedUserTypes      []string
+		userSchemas           map[string]*userschema.UserSchema
+		expectedFailureReason string
 	}{
 		{
-			name:             "NoAllowedUserTypes",
-			allowedUserTypes: []string{},
-			userSchemas:      nil,
+			name:                  "NoAllowedUserTypes",
+			allowedUserTypes:      []string{},
+			userSchemas:           nil,
+			expectedFailureReason: errCannotProvisionUserAutomatically,
 		},
 		{
 			name:             "NoSelfRegistrationEnabled",
@@ -1399,6 +1405,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 					AllowSelfRegistration: false,
 				},
 			},
+			expectedFailureReason: errSelfRegistrationDisabled,
 		},
 		{
 			name:             "MultipleEligibleTypes",
@@ -1415,6 +1422,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 					OUID:                  "ou-2",
 				},
 			},
+			expectedFailureReason: errCannotProvisionUserAutomatically,
 		},
 	}
 
@@ -1445,7 +1453,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 
 			assert.NoError(suite.T(), err)
 			assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
-			assert.Equal(suite.T(), errCannotProvisionUserAutomatically, execResp.FailureReason)
+			assert.Equal(suite.T(), tt.expectedFailureReason, execResp.FailureReason)
 
 			if tt.userSchemas != nil {
 				suite.mockUserSchemaService.AssertExpectations(suite.T())
