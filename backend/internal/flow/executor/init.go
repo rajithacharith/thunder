@@ -59,11 +59,11 @@ func Initialize(
 ) ExecutorRegistryInterface {
 	reg := newExecutorRegistry()
 	reg.RegisterExecutor(ExecutorNameBasicAuth, newBasicAuthExecutor(
-		flowFactory, userProvider, authRegistry.CredentialsAuthnService, observabilitySvc))
+		flowFactory, userProvider, authRegistry.CredentialsAuthnService))
 	reg.RegisterExecutor(ExecutorNameSMSAuth, newSMSOTPAuthExecutor(
-		flowFactory, otpService, observabilitySvc, userProvider))
+		flowFactory, otpService, userProvider))
 	reg.RegisterExecutor(ExecutorNamePasskeyAuth, newPasskeyAuthExecutor(
-		flowFactory, authRegistry.PasskeyService, observabilitySvc, userProvider))
+		flowFactory, authRegistry.PasskeyService, userProvider))
 
 	reg.RegisterExecutor(ExecutorNameOAuth, newOAuthExecutor(
 		"", []common.Input{}, []common.Input{}, flowFactory, idpService, userSchemaService,

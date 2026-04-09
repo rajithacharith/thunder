@@ -31,7 +31,6 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/system/observability"
 	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
@@ -39,10 +38,9 @@ import (
 type basicAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
-	userProvider     userprovider.UserProviderInterface
-	credsAuthSvc     authncreds.CredentialsAuthnServiceInterface
-	observabilitySvc observability.ObservabilityServiceInterface
-	logger           *log.Logger
+	userProvider userprovider.UserProviderInterface
+	credsAuthSvc authncreds.CredentialsAuthnServiceInterface
+	logger       *log.Logger
 }
 
 var _ core.ExecutorInterface = (*basicAuthExecutor)(nil)
@@ -53,7 +51,6 @@ func newBasicAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
 	userProvider userprovider.UserProviderInterface,
 	credsAuthSvc authncreds.CredentialsAuthnServiceInterface,
-	observabilitySvc observability.ObservabilityServiceInterface,
 ) *basicAuthExecutor {
 	defaultInputs := []common.Input{
 		{
@@ -81,7 +78,6 @@ func newBasicAuthExecutor(
 		identifyingExecutorInterface: identifyExec,
 		userProvider:                 userProvider,
 		credsAuthSvc:                 credsAuthSvc,
-		observabilitySvc:             observabilitySvc,
 		logger:                       logger,
 	}
 }

@@ -36,17 +36,15 @@ import (
 	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/authn/credentialsmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
-	"github.com/asgardeo/thunder/tests/mocks/observability/observabilitymock"
 	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
 type BasicAuthExecutorTestSuite struct {
 	suite.Suite
-	mockUserProvider  *userprovidermock.UserProviderInterfaceMock
-	mockCredsService  *credentialsmock.CredentialsAuthnServiceInterfaceMock
-	mockFlowFactory   *coremock.FlowFactoryInterfaceMock
-	mockObservability *observabilitymock.ObservabilityServiceInterfaceMock
-	executor          *basicAuthExecutor
+	mockUserProvider *userprovidermock.UserProviderInterfaceMock
+	mockCredsService *credentialsmock.CredentialsAuthnServiceInterfaceMock
+	mockFlowFactory  *coremock.FlowFactoryInterfaceMock
+	executor         *basicAuthExecutor
 }
 
 func TestBasicAuthExecutorSuite(t *testing.T) {
@@ -57,7 +55,6 @@ func (suite *BasicAuthExecutorTestSuite) SetupTest() {
 	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
 	suite.mockCredsService = credentialsmock.NewCredentialsAuthnServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
-	suite.mockObservability = observabilitymock.NewObservabilityServiceInterfaceMock(suite.T())
 
 	defaultInputs := []common.Input{
 		{Identifier: userAttributeUsername, Type: common.InputTypeText, Required: true},
@@ -73,13 +70,7 @@ func (suite *BasicAuthExecutorTestSuite) SetupTest() {
 	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameBasicAuth, common.ExecutorTypeAuthentication,
 		defaultInputs, []common.Input{}).Return(mockExec)
 
-	suite.executor = newBasicAuthExecutor(suite.mockFlowFactory, suite.mockUserProvider, suite.mockCredsService,
-		suite.mockObservability)
-}
-
-func (suite *BasicAuthExecutorTestSuite) BeforeTest(suiteName, testName string) {
-	suite.mockObservability.ExpectedCalls = nil
-	suite.mockObservability.On("IsEnabled").Return(false).Maybe()
+	suite.executor = newBasicAuthExecutor(suite.mockFlowFactory, suite.mockUserProvider, suite.mockCredsService)
 }
 
 func createMockIdentifyingExecutor(t *testing.T) core.ExecutorInterface {
