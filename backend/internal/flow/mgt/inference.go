@@ -513,16 +513,28 @@ func (s *flowInferenceService) createInputPromptNode(nodeID string, input common
 // is present but no PHONE_INPUT prompt exists, it inserts a phone input prompt before the SMS send node.
 func (s *flowInferenceService) insertPhoneInputPromptIfNeeded(nodes *[]NodeDefinition, includeLayout bool) {
 	var smsSendNodeID string
+	var phoneInput *common.Input
 	hasPhoneInputPrompt := false
 
 	// Scan all the existing nodes
 	for _, node := range *nodes {
-		// Check for SMS OTP send node
+		// Check for SMS OTP send node and capture phone input from executor inputs if defined
 		if node.Executor != nil &&
 			node.Executor.Name == executor.ExecutorNameSMSAuth &&
 			node.Executor.Mode == executor.ExecutorModeSend &&
 			smsSendNodeID == "" {
 			smsSendNodeID = node.ID
+			for _, input := range node.Executor.Inputs {
+				if input.Type == common.InputTypePhone {
+					phoneInput = &common.Input{
+						Ref:        input.Ref,
+						Identifier: input.Identifier,
+						Type:       common.InputTypePhone,
+						Required:   input.Required,
+					}
+					break
+				}
+			}
 		}
 
 		// Check if any prompt node collects a PHONE_INPUT
@@ -552,10 +564,17 @@ func (s *flowInferenceService) insertPhoneInputPromptIfNeeded(nodes *[]NodeDefin
 		return
 	}
 
-	// Create and insert a phone input prompt node before the SMS send node
+	if phoneInput == nil {
+		phoneInput = &common.Input{
+			Ref:        "mobile_number_input",
+			Identifier: common.AttributeMobileNumber,
+			Type:       common.InputTypePhone,
+			Required:   true,
+		}
+	}
 	phonePromptNode := s.createInputPromptNode(
 		phoneInputPromptNodeID,
-		executor.MobileNumberInput,
+		*phoneInput,
 		smsSendNodeID,
 		includeLayout,
 	)

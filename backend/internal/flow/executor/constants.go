@@ -60,13 +60,12 @@ const (
 
 // User attribute and input constants
 const (
-	userAttributeUsername     = "username"
-	userAttributePassword     = "password"
-	userAttributeUserID       = "userID"
-	userAttributeMobileNumber = "mobileNumber"
-	userAttributeEmail        = "email"
-	userAttributeGroups       = "groups"
-	userAttributeSub          = "sub"
+	userAttributeUsername = "username"
+	userAttributePassword = "password"
+	userAttributeUserID   = "userID"
+	userAttributeEmail    = "email"
+	userAttributeGroups   = "groups"
+	userAttributeSub      = "sub"
 
 	userInputCode             = "code"
 	userInputNonce            = "nonce"
@@ -80,6 +79,9 @@ const (
 	ouIDKey        = "ouId"
 	defaultOUIDKey = "defaultOUID"
 	userTypeKey    = "userType"
+	// TODO: Revisit when the generic OTP executor is implemented.
+	runtimeKeySMSOTPMobileNumber = "smsOTPMobileNumber"
+	runtimeKeySMSOTPPhoneAttr    = "smsOTPPhoneAttr"
 
 	dataValueTrue  = "true"
 	dataValueFalse = "false"
@@ -113,7 +115,7 @@ var nonUserAttributes = []string{"userID", "code", "nonce", "state", "flowID",
 	common.RuntimeKeyConsentedAttributes, common.RuntimeKeyConsentSessionToken,
 	"applicationId", "idpId", "senderId",
 	common.RuntimeKeyCandidateUsers, common.RuntimeKeyClientID, common.RuntimeKeyUserAttributesCacheTTLSeconds,
-	common.RuntimeKeyUserAmbiguous}
+	common.RuntimeKeyUserAmbiguous, runtimeKeySMSOTPMobileNumber, runtimeKeySMSOTPPhoneAttr}
 
 // Failure reason constants
 const (

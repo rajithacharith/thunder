@@ -219,6 +219,12 @@ const (
 	// - Invite tokens
 )
 
+// Attribute name constants for well-known user attributes used across flow executors.
+const (
+	// AttributeMobileNumber is the default attribute name for a user's mobile phone number.
+	AttributeMobileNumber = "mobileNumber"
+)
+
 // sensitiveInputTypes contains the list of input types that are considered sensitive.
 var sensitiveInputTypes = []string{
 	InputTypePassword,

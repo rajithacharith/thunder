@@ -60,10 +60,6 @@ func (suite *SMSAuthExecutorTestSuite) SetupTest() {
 			Required:   true,
 		},
 	}
-	prerequisites := []common.Input{
-		MobileNumberInput,
-	}
-
 	// Mock identifying executor
 	identifyingMock := createMockIdentifyingExecutor(suite.T())
 	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameIdentifying, common.ExecutorTypeUtility,
@@ -75,7 +71,7 @@ func (suite *SMSAuthExecutorTestSuite) SetupTest() {
 	mockExec.On("GetType").Return(common.ExecutorTypeAuthentication).Maybe()
 	mockExec.On("GetDefaultInputs").Return(defaultInputs).Maybe()
 	mockExec.On("GetRequiredInputs", mock.Anything).Return(defaultInputs).Maybe()
-	mockExec.On("GetPrerequisites").Return(prerequisites).Maybe()
+	mockExec.On("GetPrerequisites").Return([]common.Input{}).Maybe()
 	mockExec.On("ValidatePrerequisites", mock.Anything, mock.Anything).Return(true).Maybe()
 	mockExec.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(
 		func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
@@ -89,7 +85,7 @@ func (suite *SMSAuthExecutorTestSuite) SetupTest() {
 		}).Maybe()
 
 	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameSMSAuth, common.ExecutorTypeAuthentication,
-		defaultInputs, prerequisites).Return(mockExec)
+		defaultInputs, []common.Input(nil)).Return(mockExec)
 
 	suite.executor = newSMSOTPAuthExecutor(suite.mockFlowFactory,
 		suite.mockOTPService, suite.mockUserProvider)
@@ -98,11 +94,6 @@ func (suite *SMSAuthExecutorTestSuite) SetupTest() {
 }
 
 func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_RegistrationFlow_PromptsMobileNumber() {
-	// Create a mock that returns false for ValidatePrerequisites (prerequisites not met)
-	mockExec := coremock.NewExecutorInterfaceMock(suite.T())
-	mockExec.On("ValidatePrerequisites", mock.Anything, mock.Anything).Return(false)
-	suite.executor.ExecutorInterface = mockExec
-
 	ctx := &core.NodeContext{
 		FlowID:      "test-flow-123",
 		FlowType:    common.FlowTypeRegistration,
@@ -124,23 +115,43 @@ func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_RegistrationFlo
 
 	// Should return mobile number input
 	assert.Len(suite.T(), execResp.Inputs, 1)
-	assert.Equal(suite.T(), userAttributeMobileNumber, execResp.Inputs[0].Identifier)
-	assert.Equal(suite.T(), "PHONE_INPUT", execResp.Inputs[0].Type)
+	assert.Equal(suite.T(), common.AttributeMobileNumber, execResp.Inputs[0].Identifier)
+	assert.Equal(suite.T(), common.InputTypePhone, execResp.Inputs[0].Type)
 	assert.Equal(suite.T(), "mobile_number_input", execResp.Inputs[0].Ref)
 	assert.True(suite.T(), execResp.Inputs[0].Required)
 }
 
-func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_RegistrationFlow_PrerequisitesMet() {
-	// Create a mock that returns true for ValidatePrerequisites (prerequisites met)
-	mockExec := coremock.NewExecutorInterfaceMock(suite.T())
-	mockExec.On("ValidatePrerequisites", mock.Anything, mock.Anything).Return(true)
-	suite.executor.ExecutorInterface = mockExec
+func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_RegistrationFlow_CustomPhoneAttr() {
+	ctx := &core.NodeContext{
+		FlowID:   "test-flow-123",
+		FlowType: common.FlowTypeRegistration,
+		NodeInputs: []common.Input{
+			{Ref: "phone_input", Identifier: "phoneNumber", Type: common.InputTypePhone, Required: true},
+		},
+		UserInputs:  make(map[string]string),
+		RuntimeData: make(map[string]string),
+	}
+	execResp := &common.ExecutorResponse{
+		AdditionalData: make(map[string]string),
+		RuntimeData:    make(map[string]string),
+	}
 
+	result := suite.executor.ValidatePrerequisites(ctx, execResp)
+
+	assert.False(suite.T(), result)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, execResp.Status)
+	assert.Len(suite.T(), execResp.Inputs, 1)
+	assert.Equal(suite.T(), "phoneNumber", execResp.Inputs[0].Identifier)
+	assert.Equal(suite.T(), common.InputTypePhone, execResp.Inputs[0].Type)
+	assert.Equal(suite.T(), "phone_input", execResp.Inputs[0].Ref)
+}
+
+func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_RegistrationFlow_PrerequisitesMet() {
 	ctx := &core.NodeContext{
 		FlowID:   "test-flow-123",
 		FlowType: common.FlowTypeRegistration,
 		UserInputs: map[string]string{
-			userAttributeMobileNumber: "+1234567890",
+			common.AttributeMobileNumber: "+1234567890",
 		},
 		RuntimeData: make(map[string]string),
 	}
@@ -159,10 +170,8 @@ func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_RegistrationFlo
 }
 
 func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_AuthenticationFlow_DoesNotPromptMobile() {
-	// Create a mock that returns false initially (prerequisites not met)
-	// and also mock additional methods that satisfyPrerequisites might call
 	mockExec := coremock.NewExecutorInterfaceMock(suite.T())
-	mockExec.On("ValidatePrerequisites", mock.Anything, mock.Anything).Return(false)
+	mockExec.On("GetPrerequisites").Return([]common.Input{mobileNumberInput}).Maybe()
 	mockExec.On("GetUserIDFromContext", mock.Anything).Return("").Maybe()
 	suite.executor.ExecutorInterface = mockExec
 
@@ -190,7 +199,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_MFA_AddsMobileNu
 		FlowID:   "flow-123",
 		FlowType: common.FlowTypeAuthentication,
 		RuntimeData: map[string]string{
-			userAttributeMobileNumber: "+1234567890",
+			runtimeKeySMSOTPMobileNumber: "+1234567890",
 		},
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -215,7 +224,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_MFA_AddsMobileNu
 	assert.True(suite.T(), result.IsAuthenticated)
 	assert.Equal(suite.T(), "user-123", result.UserID)
 	// Verify mobile number was added to attributes
-	assert.Equal(suite.T(), "+1234567890", result.Attributes[userAttributeMobileNumber])
+	assert.Equal(suite.T(), "+1234567890", result.Attributes[common.AttributeMobileNumber])
 	assert.Equal(suite.T(), "test@example.com", result.Attributes["email"]) // Existing attributes preserved
 }
 
@@ -232,8 +241,8 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_A
 		FlowID:   "flow-123",
 		FlowType: common.FlowTypeAuthentication,
 		RuntimeData: map[string]string{
-			userAttributeUserID:       "user-123",
-			userAttributeMobileNumber: "+1234567890", // Mobile from RuntimeData
+			userAttributeUserID:          "user-123",
+			runtimeKeySMSOTPMobileNumber: "+1234567890", // Mobile from RuntimeData
 		},
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: false, // User not in context
@@ -260,7 +269,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_A
 	assert.True(suite.T(), result.IsAuthenticated)
 	assert.Equal(suite.T(), "user-123", result.UserID)
 	// Verify mobile number was added to attributes even though it wasn't in stored attributes
-	assert.Equal(suite.T(), "+1234567890", result.Attributes[userAttributeMobileNumber])
+	assert.Equal(suite.T(), "+1234567890", result.Attributes[common.AttributeMobileNumber])
 	assert.Equal(suite.T(), "test@example.com", result.Attributes["email"]) // Existing attributes preserved
 	suite.mockUserProvider.AssertExpectations(suite.T())
 }
@@ -269,8 +278,8 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_A
 // from store, if mobile number already exists in stored attributes, it is preserved.
 func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_PreservesExistingMobileNumber() {
 	attrs := map[string]interface{}{
-		"email":                   "test@example.com",
-		userAttributeMobileNumber: "+9876543210", // Mobile already in stored attributes
+		"email":                      "test@example.com",
+		common.AttributeMobileNumber: "+9876543210", // Mobile already in stored attributes
 	}
 	attrsJSON, _ := json.Marshal(attrs)
 
@@ -278,8 +287,8 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_P
 		FlowID:   "flow-123",
 		FlowType: common.FlowTypeAuthentication,
 		RuntimeData: map[string]string{
-			userAttributeUserID:       "user-123",
-			userAttributeMobileNumber: "+1234567890", // Different mobile in RuntimeData
+			userAttributeUserID:          "user-123",
+			runtimeKeySMSOTPMobileNumber: "+1234567890", // Different mobile in RuntimeData
 		},
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: false,
@@ -305,7 +314,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_P
 	assert.NotNil(suite.T(), result)
 	assert.True(suite.T(), result.IsAuthenticated)
 	// Verify stored mobile number is preserved (not overwritten by RuntimeData)
-	assert.Equal(suite.T(), "+9876543210", result.Attributes[userAttributeMobileNumber])
+	assert.Equal(suite.T(), "+9876543210", result.Attributes[common.AttributeMobileNumber])
 	suite.mockUserProvider.AssertExpectations(suite.T())
 }
 
@@ -349,6 +358,86 @@ func (suite *SMSAuthExecutorTestSuite) TestGetUserMobileNumber_NotFoundInAttribu
 	suite.mockUserProvider.AssertExpectations(suite.T())
 }
 
+// TestValidatePrerequisites_RegistrationFlow_EmptyPhoneInUserInputs verifies that an empty
+// phone value in UserInputs is not treated as a met prerequisite.
+func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_RegistrationFlow_EmptyPhoneInUserInputs() {
+	ctx := &core.NodeContext{
+		FlowID:   "test-flow-123",
+		FlowType: common.FlowTypeRegistration,
+		UserInputs: map[string]string{
+			common.AttributeMobileNumber: "",
+		},
+		RuntimeData: make(map[string]string),
+	}
+	execResp := &common.ExecutorResponse{
+		AdditionalData: make(map[string]string),
+		RuntimeData:    make(map[string]string),
+	}
+
+	result := suite.executor.ValidatePrerequisites(ctx, execResp)
+
+	assert.False(suite.T(), result)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, execResp.Status)
+}
+
+// TestValidatePrerequisites_RegistrationFlow_EmptyPhoneInRuntimeData verifies that an empty
+// phone value in RuntimeData is not treated as a met prerequisite.
+func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_RegistrationFlow_EmptyPhoneInRuntimeData() {
+	ctx := &core.NodeContext{
+		FlowID:     "test-flow-123",
+		FlowType:   common.FlowTypeRegistration,
+		UserInputs: make(map[string]string),
+		RuntimeData: map[string]string{
+			common.AttributeMobileNumber: "",
+		},
+	}
+	execResp := &common.ExecutorResponse{
+		AdditionalData: make(map[string]string),
+		RuntimeData:    make(map[string]string),
+	}
+
+	result := suite.executor.ValidatePrerequisites(ctx, execResp)
+
+	assert.False(suite.T(), result)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, execResp.Status)
+}
+
+// TestGetUserMobileNumber_NonStringAttributeValue verifies that a non-string phone attribute
+// value in user store does not panic and results in a failure response.
+func (suite *SMSAuthExecutorTestSuite) TestGetUserMobileNumber_NonStringAttributeValue() {
+	attrs := map[string]interface{}{
+		common.AttributeMobileNumber: 1234567890, // integer, not string
+	}
+	attrsJSON, _ := json.Marshal(attrs)
+
+	ctx := &core.NodeContext{
+		FlowID:      "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
+		UserInputs:  map[string]string{},
+		RuntimeData: map[string]string{},
+	}
+
+	execResp := &common.ExecutorResponse{
+		RuntimeData: make(map[string]string),
+	}
+
+	userFromStore := &userprovider.User{
+		UserID:     "user-123",
+		OUID:       "ou-123",
+		UserType:   "INTERNAL",
+		Attributes: attrsJSON,
+	}
+
+	suite.mockUserProvider.On("GetUser", "user-123").Return(userFromStore, nil)
+
+	mobileNumber, err := suite.executor.getUserMobileNumber("user-123", ctx, execResp)
+
+	assert.NoError(suite.T(), err)
+	assert.Empty(suite.T(), mobileNumber)
+	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
+	suite.mockUserProvider.AssertExpectations(suite.T())
+}
+
 // TestGetAuthenticatedUser_MFA_NilAttributes verifies that when the authenticated user
 // has nil Attributes map, it is initialized before adding mobile number.
 func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_MFA_NilAttributes() {
@@ -356,7 +445,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_MFA_NilAttribute
 		FlowID:   "flow-123",
 		FlowType: common.FlowTypeAuthentication,
 		RuntimeData: map[string]string{
-			userAttributeMobileNumber: "+1234567890",
+			runtimeKeySMSOTPMobileNumber: "+1234567890",
 		},
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -377,7 +466,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_MFA_NilAttribute
 	assert.NotNil(suite.T(), result)
 	assert.True(suite.T(), result.IsAuthenticated)
 	assert.NotNil(suite.T(), result.Attributes) // Attributes should be initialized
-	assert.Equal(suite.T(), "+1234567890", result.Attributes[userAttributeMobileNumber])
+	assert.Equal(suite.T(), "+1234567890", result.Attributes[common.AttributeMobileNumber])
 }
 
 // TestGetAuthenticatedUser_FetchFromStore_NilAttrsAfterUnmarshal verifies that when
@@ -390,8 +479,8 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_N
 		FlowID:   "flow-123",
 		FlowType: common.FlowTypeAuthentication,
 		RuntimeData: map[string]string{
-			userAttributeUserID:       "user-123",
-			userAttributeMobileNumber: "+1234567890",
+			userAttributeUserID:          "user-123",
+			runtimeKeySMSOTPMobileNumber: "+1234567890",
 		},
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: false, // Not authenticated, will fetch from store
@@ -417,6 +506,6 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_N
 	assert.NotNil(suite.T(), result)
 	assert.True(suite.T(), result.IsAuthenticated)
 	assert.NotNil(suite.T(), result.Attributes) // Attrs should be initialized from nil
-	assert.Equal(suite.T(), "+1234567890", result.Attributes[userAttributeMobileNumber])
+	assert.Equal(suite.T(), "+1234567890", result.Attributes[common.AttributeMobileNumber])
 	suite.mockUserProvider.AssertExpectations(suite.T())
 }

@@ -53,7 +53,7 @@ func newSMSExecutor(flowFactory core.FlowFactoryInterface,
 		ExecutorNameSMSExecutor,
 		common.ExecutorTypeUtility,
 		[]common.Input{
-			{Identifier: userAttributeMobileNumber, Type: common.InputTypePhone, Required: true},
+			{Identifier: common.AttributeMobileNumber, Type: common.InputTypePhone, Required: true},
 		},
 		[]common.Input{},
 	)
@@ -80,13 +80,7 @@ func (e *smsExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, 
 		return nil, errors.New("notification sender service is not configured")
 	}
 
-	phoneAttr := userAttributeMobileNumber
-	for _, input := range e.GetRequiredInputs(ctx) {
-		if input.Type == common.InputTypePhone {
-			phoneAttr = input.Identifier
-			break
-		}
-	}
+	phoneAttr := resolveInputIdentifierByType(ctx, common.InputTypePhone, common.AttributeMobileNumber)
 
 	recipient := resolveRecipientMobile(ctx, phoneAttr)
 	if recipient == "" {
@@ -164,6 +158,25 @@ func resolveRecipientMobile(ctx *core.NodeContext, phoneAttr string) string {
 		return mobile
 	}
 	return ""
+}
+
+// resolveInputIdentifierByType returns the identifier of the first input in ctx.NodeInputs
+// matching inputType, or fallback if none is found.
+func resolveInputIdentifierByType(ctx *core.NodeContext, inputType string, fallback string) string {
+	if input, ok := findInputByType(ctx.NodeInputs, inputType); ok {
+		return input.Identifier
+	}
+	return fallback
+}
+
+// findInputByType returns the first input in the given slice whose Type matches inputType.
+func findInputByType(inputs []common.Input, inputType string) (common.Input, bool) {
+	for _, input := range inputs {
+		if input.Type == inputType {
+			return input, true
+		}
+	}
+	return common.Input{}, false
 }
 
 // isValidPhoneNumber returns true if the given phone number matches an acceptable format.
