@@ -25,17 +25,28 @@ jobs:
     name: 🔀 Merge main -> release
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 Checkout Target Branch
+      - name: 📥 Checkout Source Branch
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
           token: ${{ secrets.THUNDER_AUTOMATION_BOT }}
-          ref: ${{ env.TARGET_BRANCH }}
+          ref: ${{ env.SOURCE_BRANCH }}
 
       - name: 🔧 Configure Git
         run: |
           git config --local user.name "${{ env.RELEASE_GIT_USER_NAME }}"
           git config --local user.email "${{ env.RELEASE_GIT_USER_EMAIL }}"
+
+      - name: 🌿 Create Release Branch if Missing
+        run: |
+          if git ls-remote --exit-code origin "${TARGET_BRANCH}" > /dev/null 2>&1; then
+            echo "✅ Branch '${TARGET_BRANCH}' already exists on remote."
+          else
+            echo "🌱 Branch '${TARGET_BRANCH}' not found. Creating from '${SOURCE_BRANCH}'..."
+            git checkout -b "${TARGET_BRANCH}"
+            git push origin "${TARGET_BRANCH}"
+            echo "✅ Created and pushed '${TARGET_BRANCH}' branch."
+          fi
 
       - name: 🔄 Merge Source Branch into Target Branch
         id: merge_sync

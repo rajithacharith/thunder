@@ -2,8 +2,8 @@ name: 🚨 Release Milestone Reminder
 
 on:
   schedule:
-    # This cron expression represents 12:00 PM IST/SLST (6:30 AM UTC) every Thursday
-    - cron: '30 6 * * 4'
+    # This cron expression represents 6:00 AM IST/SLST (12:30 AM UTC) every Thursday
+    - cron: '30 0 * * 4'
   workflow_dispatch: # Allows you to trigger it manually for testing
 
 jobs:

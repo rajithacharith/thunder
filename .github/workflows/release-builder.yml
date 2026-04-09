@@ -1010,3 +1010,30 @@ jobs:
             
             // Return success
             return {success: true};
+
+  trigger-deploy-docs:
+    name: 📚 Trigger Deploy Documentation
+    runs-on: ubuntu-latest
+    needs: [build-thunder, release]
+    steps:
+      - name: 📚 Trigger Deploy Documentation Workflow
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          github-token: ${{ secrets.THUNDER_AUTOMATION_BOT }}
+          script: |
+            try {
+              console.log('🔄 Triggering deploy-docs workflow...');
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'deploy-docs.yml',
+                ref: 'main',
+                inputs: {
+                  'use-artifact': ''
+                }
+              });
+              console.log('✅ deploy-docs workflow triggered successfully');
+            } catch (error) {
+              console.error('❌ Failed to trigger deploy-docs workflow:', error);
+              core.setFailed(error.message);
+            }
