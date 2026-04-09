@@ -33,7 +33,6 @@ const mockLoggerError = vi.fn();
 const mockHandleInputChange = vi.fn();
 const mockHandleInputBlur = vi.fn();
 const mockHandleSubmit = vi.fn().mockResolvedValue(undefined);
-const mockCopyInviteLink = vi.fn().mockResolvedValue(undefined);
 const mockResetFlow = vi.fn();
 
 let simulateInviteUserError = false;
@@ -52,11 +51,6 @@ const defaultRenderProps: InviteUserRenderProps = {
   handleInputChange: mockHandleInputChange,
   handleInputBlur: mockHandleInputBlur,
   handleSubmit: mockHandleSubmit,
-  isInviteGenerated: false,
-  isEmailSent: false,
-  inviteLink: undefined,
-  copyInviteLink: mockCopyInviteLink,
-  inviteLinkCopied: false,
   resetFlow: mockResetFlow,
   isValid: false,
   meta: null,
@@ -92,27 +86,16 @@ vi.mock('@asgardeo/react', async () => {
     ...actual,
     InviteUser: ({
       children,
-      onInviteLinkGenerated,
       onError,
       onFlowChange,
     }: {
       children: (props: InviteUserRenderProps) => JSX.Element;
-      onInviteLinkGenerated?: (link: string) => void;
       onError?: (error: Error) => void;
       onFlowChange?: (response: unknown) => void;
     }) => {
       // Capture onFlowChange so tests can invoke it
       capturedOnFlowChange = onFlowChange ?? null;
 
-      if (
-        mockInviteUserRenderProps.isInviteGenerated &&
-        mockInviteUserRenderProps.inviteLink &&
-        onInviteLinkGenerated
-      ) {
-        setTimeout(() => {
-          onInviteLinkGenerated(mockInviteUserRenderProps.inviteLink!);
-        }, 0);
-      }
       if (simulateInviteUserError && onError) {
         setTimeout(() => {
           onError(mockInviteUserError);
@@ -225,6 +208,19 @@ const block = (children: EmbeddedFlowComponent[], id?: string): EmbeddedFlowComp
     type: 'BLOCK',
     components: children,
     id: id ?? 'block-1',
+  }) as unknown as EmbeddedFlowComponent;
+
+/** Wrap actions in a STACK */
+const stack = (
+  children: EmbeddedFlowComponent[],
+  opts?: {direction?: string; justify?: string; id?: string},
+): EmbeddedFlowComponent =>
+  ({
+    type: 'STACK',
+    components: children,
+    direction: opts?.direction ?? 'row',
+    justify: opts?.justify ?? 'center',
+    id: opts?.id ?? 'stack-1',
   }) as unknown as EmbeddedFlowComponent;
 
 /* ------------------------------------------------------------------ */
@@ -388,96 +384,42 @@ describe('UserInvitePage', () => {
     });
   });
 
-  /* ----- Email sent success state ----- */
+  /* ----- Display-only prompt state ----- */
 
-  describe('email sent success state', () => {
-    it('should show success alert when invite email is sent', () => {
-      mockInviteUserRenderProps.isInviteGenerated = true;
-      mockInviteUserRenderProps.isEmailSent = true;
+  describe('display-only prompt state', () => {
+    /** Helper: build a COPYABLE_TEXT component */
+    const copyableText = (source: string, label?: string, id?: string): EmbeddedFlowComponent =>
+      ({
+        type: 'COPYABLE_TEXT',
+        source,
+        label,
+        id: id ?? `copyable-${source}`,
+      }) as unknown as EmbeddedFlowComponent;
+
+    it('should render TEXT components without a BLOCK (display-only prompt)', () => {
+      mockInviteUserRenderProps.components = [
+        heading('Invite Sent'),
+        {type: 'TEXT', label: 'Check your email.', id: 'msg'} as unknown as EmbeddedFlowComponent,
+      ];
 
       render(<UserInvitePage />);
 
-      expect(screen.getByText('Invite Email Sent!')).toBeInTheDocument();
-      expect(
-        screen.getByText('An invite email has been sent to the user to complete their registration.'),
-      ).toBeInTheDocument();
+      expect(screen.getAllByText('Invite Sent').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText('Check your email.')).toBeInTheDocument();
     });
 
-    it('should show close and invite another buttons on email sent', () => {
-      mockInviteUserRenderProps.isInviteGenerated = true;
-      mockInviteUserRenderProps.isEmailSent = true;
+    it('should show "Close" and "Invite Another User" buttons when no BLOCK components present', () => {
+      mockInviteUserRenderProps.components = [heading('Done')];
 
       render(<UserInvitePage />);
 
-      // There are multiple close buttons: header X + inner Close button
       const closeButtons = screen.getAllByRole('button', {name: /close/i});
-      expect(closeButtons.length).toBeGreaterThanOrEqual(2);
+      expect(closeButtons.length).toBeGreaterThanOrEqual(2); // header X + footer Close
       expect(screen.getByRole('button', {name: /invite another user/i})).toBeInTheDocument();
     });
 
-    it('should call resetFlow when "Invite Another User" is clicked in email sent state', async () => {
-      mockInviteUserRenderProps.isInviteGenerated = true;
-      mockInviteUserRenderProps.isEmailSent = true;
-
-      render(<UserInvitePage />);
-
-      await userEvent.click(screen.getByRole('button', {name: /invite another user/i}));
-
-      expect(mockResetFlow).toHaveBeenCalled();
-    });
-  });
-
-  /* ----- Invite link generated state ----- */
-
-  describe('invite link generated state', () => {
-    it('should show the invite link when generated', () => {
-      mockInviteUserRenderProps.isInviteGenerated = true;
-      mockInviteUserRenderProps.inviteLink = 'https://example.com/invite/abc123';
-
-      render(<UserInvitePage />);
-
-      expect(screen.getByText('Invite Link Generated!')).toBeInTheDocument();
-      expect(screen.getByText('https://example.com/invite/abc123')).toBeInTheDocument();
-    });
-
-    it('should call copyInviteLink when copy button is clicked', async () => {
-      mockInviteUserRenderProps.isInviteGenerated = true;
-      mockInviteUserRenderProps.inviteLink = 'https://example.com/invite/abc123';
-
-      render(<UserInvitePage />);
-
-      const copyButton = screen.getByRole('button', {name: /copy invite link/i});
-      await userEvent.click(copyButton);
-
-      expect(mockCopyInviteLink).toHaveBeenCalled();
-    });
-
-    it('should call onInviteLinkGenerated callback', async () => {
-      mockInviteUserRenderProps.isInviteGenerated = true;
-      mockInviteUserRenderProps.inviteLink = 'https://example.com/invite/abc123';
-
-      render(<UserInvitePage />);
-
-      await waitFor(() => {
-        expect(mockLoggerInfo).toHaveBeenCalledWith('Invite link generated');
-      });
-    });
-
-    it('should show close and invite another buttons on link generated', () => {
-      mockInviteUserRenderProps.isInviteGenerated = true;
-      mockInviteUserRenderProps.inviteLink = 'https://example.com/invite/abc123';
-
-      render(<UserInvitePage />);
-
-      // There are multiple close buttons: header X + inner Close button
-      const closeButtons = screen.getAllByRole('button', {name: /close/i});
-      expect(closeButtons.length).toBeGreaterThanOrEqual(2);
-      expect(screen.getByRole('button', {name: /invite another user/i})).toBeInTheDocument();
-    });
-
-    it('should call resetFlow when "Invite Another User" is clicked in link generated state', async () => {
-      mockInviteUserRenderProps.isInviteGenerated = true;
-      mockInviteUserRenderProps.inviteLink = 'https://example.com/invite/abc123';
+    it('should call resetFlow when "Invite Another User" is clicked in display-only state', async () => {
+      mockInviteUserRenderProps.components = [heading('Done')];
 
       render(<UserInvitePage />);
 
@@ -486,18 +428,48 @@ describe('UserInvitePage', () => {
       expect(mockResetFlow).toHaveBeenCalled();
     });
 
-    it('should navigate to /users when close button is clicked in link generated state', async () => {
-      mockInviteUserRenderProps.isInviteGenerated = true;
-      mockInviteUserRenderProps.inviteLink = 'https://example.com/invite/abc123';
+    it('should navigate to /users when footer Close button is clicked in display-only state', async () => {
+      mockInviteUserRenderProps.components = [heading('Done')];
 
       render(<UserInvitePage />);
 
-      // The inner close button (not the header X)
+      // Footer close button is the last close button
       const closeButtons = screen.getAllByRole('button', {name: /close/i});
-      // Click the one inside the content area (last one)
       await userEvent.click(closeButtons[closeButtons.length - 1]);
 
       expect(mockNavigate).toHaveBeenCalledWith('/users');
+    });
+
+    it('should render COPYABLE_TEXT component with value from additionalData', () => {
+      mockInviteUserRenderProps.components = [
+        heading('Invite Link Generated'),
+        copyableText('inviteLink', 'Invite Link'),
+      ];
+      mockInviteUserRenderProps.additionalData = {inviteLink: 'https://example.com/invite/abc123'};
+
+      render(<UserInvitePage />);
+
+      expect(screen.getByText('https://example.com/invite/abc123')).toBeInTheDocument();
+    });
+
+    it('should render COPYABLE_TEXT label from component when present', () => {
+      mockInviteUserRenderProps.components = [heading('Link Ready'), copyableText('inviteLink', 'Invite Link')];
+      mockInviteUserRenderProps.additionalData = {inviteLink: 'https://example.com/invite/xyz'};
+
+      render(<UserInvitePage />);
+
+      expect(screen.getByText('Invite Link')).toBeInTheDocument();
+    });
+
+    it('should not show "Invite Another User" button when BLOCK components are present', () => {
+      mockInviteUserRenderProps.components = [
+        heading('Step 1'),
+        block([textInput('name', 'Name'), submitAction('Next')]),
+      ];
+
+      render(<UserInvitePage />);
+
+      expect(screen.queryByRole('button', {name: /invite another user/i})).not.toBeInTheDocument();
     });
   });
 
@@ -769,6 +741,120 @@ describe('UserInvitePage', () => {
         // With OU detected, totalSteps=4, 1 breadcrumb -> 25%
         expect(progressBar).toHaveAttribute('aria-valuenow', '25');
       });
+    });
+  });
+
+  /* ----- STACK rendering ----- */
+
+  describe('STACK inside BLOCK', () => {
+    it('should render multiple action buttons from a STACK', () => {
+      mockInviteUserRenderProps.isValid = true;
+      mockInviteUserRenderProps.components = [
+        heading('Choose Delivery'),
+        block([stack([submitAction('Send Email', {id: 'act-email'}), submitAction('Get Link', {id: 'act-link'})])]),
+      ];
+
+      render(<UserInvitePage />);
+
+      expect(screen.getByRole('button', {name: /send email/i})).toBeInTheDocument();
+      expect(screen.getByRole('button', {name: /get link/i})).toBeInTheDocument();
+    });
+
+    it('should call handleSubmit with the clicked STACK action', async () => {
+      mockInviteUserRenderProps.isValid = true;
+      mockInviteUserRenderProps.components = [
+        heading('Choose Delivery'),
+        block([stack([submitAction('Send Email', {id: 'act-email'}), submitAction('Get Link', {id: 'act-link'})])]),
+      ];
+
+      render(<UserInvitePage />);
+
+      await userEvent.click(screen.getByRole('button', {name: /send email/i}));
+
+      expect(mockHandleSubmit).toHaveBeenCalled();
+    });
+
+    it('should use the first STACK action as the primary action for form submission', () => {
+      mockInviteUserRenderProps.isValid = true;
+      mockInviteUserRenderProps.components = [
+        heading('Choose Delivery'),
+        block([stack([submitAction('Send Email', {id: 'act-email'}), submitAction('Get Link', {id: 'act-link'})])]),
+      ];
+
+      render(<UserInvitePage />);
+
+      // Form submit (Enter key) should use the primary action derived from the nested STACK
+      const form = screen.getByRole('button', {name: /send email/i}).closest('form');
+      expect(form).not.toBeNull();
+    });
+
+    it('should disable all STACK buttons when isLoading is true', () => {
+      mockInviteUserRenderProps.isLoading = true;
+      mockInviteUserRenderProps.isValid = true;
+      mockInviteUserRenderProps.components = [
+        heading('Choose Delivery'),
+        block([stack([submitAction('Send Email', {id: 'act-email'}), submitAction('Get Link', {id: 'act-link'})])]),
+      ];
+
+      render(<UserInvitePage />);
+
+      expect(screen.getByRole('button', {name: /send email/i})).toBeDisabled();
+      expect(screen.getByRole('button', {name: /get link/i})).toBeDisabled();
+    });
+
+    it('should show spinner only on the clicked STACK action button while loading', async () => {
+      // Start not loading so we can click; mock will stay resolved
+      mockInviteUserRenderProps.isValid = true;
+
+      // Simulate in-flight loading state by making handleSubmit never resolve during this test
+      let resolveSubmit!: () => void;
+      mockHandleSubmit.mockImplementationOnce(
+        () =>
+          new Promise<void>((res) => {
+            resolveSubmit = res;
+          }),
+      );
+
+      mockInviteUserRenderProps.components = [
+        heading('Choose Delivery'),
+        block([stack([submitAction('Send Email', {id: 'act-email'}), submitAction('Get Link', {id: 'act-link'})])]),
+      ];
+
+      // Render with loading=false first so buttons are enabled
+      const {rerender} = render(<UserInvitePage />);
+
+      // After clicking, re-render with isLoading=true to simulate the SDK entering loading state
+      await userEvent.click(screen.getByRole('button', {name: /send email/i}));
+
+      mockInviteUserRenderProps = {...mockInviteUserRenderProps, isLoading: true};
+      rerender(<UserInvitePage />);
+
+      // Both buttons are disabled while loading
+      expect(screen.getByRole('button', {name: /get link/i})).toBeDisabled();
+      // "Get Link" (not clicked) still shows its label
+      expect(screen.getByRole('button', {name: /get link/i})).toHaveTextContent('Get Link');
+      // "Send Email" (clicked) is disabled and shows no visible label (spinner replaces it)
+      const sendEmailButtons = screen.getAllByRole('button');
+      const sendEmailButton = sendEmailButtons.find(
+        (btn) => btn.getAttribute('disabled') !== null && !btn.textContent?.includes('Get Link'),
+      );
+      expect(sendEmailButton).toBeDefined();
+      expect(sendEmailButton).toBeDisabled();
+
+      resolveSubmit();
+    });
+
+    it('should not render a BLOCK when STACK has no submit actions', () => {
+      mockInviteUserRenderProps.components = [
+        heading('Choose'),
+        // STACK contains non-submit components, no direct submit actions either
+        block([stack([{type: 'TEXT', label: 'info', id: 'txt-info'} as unknown as EmbeddedFlowComponent])]),
+      ];
+
+      render(<UserInvitePage />);
+
+      // Block should not render (no primary action found)
+      expect(screen.queryByRole('form')).not.toBeInTheDocument();
     });
   });
 

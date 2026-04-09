@@ -170,7 +170,38 @@
         "name": "EmailExecutor",
         "mode": "send"
       },
-      "onSuccess": "invite_verify"
+      "onSuccess": "registration_email_sent"
+    },
+    {
+      "id": "registration_email_sent",
+      "type": "PROMPT",
+      "meta": {
+        "components": [
+          {
+            "alt": "{{ t(signup:images.app_logo.alt) }}",
+            "category": "DISPLAY",
+            "height": "60",
+            "id": "image",
+            "src": "{{ meta(application.logoUrl) }}",
+            "type": "IMAGE",
+            "width": ""
+          },
+          {
+            "align": "center",
+            "type": "TEXT",
+            "id": "email_sent_heading",
+            "label": "{{ t(signup:forms.email_sent.title) }}",
+            "variant": "HEADING_1"
+          },
+          {
+            "type": "TEXT",
+            "id": "email_sent_message",
+            "label": "{{ t(signup:forms.email_sent.message) }}"
+          }
+        ]
+      },
+      "message": "Check your email for a verification link",
+      "next": "invite_verify"
     },
     {
       "id": "invite_verify",
@@ -340,7 +371,37 @@
       "executor": {
         "name": "ProvisioningExecutor"
       },
-      "onSuccess": "end"
+      "onSuccess": "registration_complete"
+    },
+    {
+      "id": "registration_complete",
+      "type": "PROMPT",
+      "meta": {
+        "components": [
+          {
+            "align": "center",
+            "type": "TEXT",
+            "id": "registration_complete_icon",
+            "label": "✅",
+            "variant": "HEADING_1"
+          },
+          {
+            "align": "center",
+            "type": "TEXT",
+            "id": "registration_complete_heading",
+            "label": "{{ t(invite:complete.title) }}",
+            "variant": "HEADING_1"
+          },
+          {
+            "align": "center",
+            "type": "TEXT",
+            "id": "registration_complete_message",
+            "label": "{{ t(invite:complete.description) }}"
+          }
+        ]
+      },
+      "message": "Registration complete",
+      "next": "end"
     },
     {
       "id": "end",

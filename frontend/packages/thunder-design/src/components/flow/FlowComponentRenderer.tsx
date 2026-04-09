@@ -20,6 +20,7 @@ import {EmbeddedFlowComponentType, EmbeddedFlowEventType, type ConsentPurpose} f
 import type {JSX} from 'react';
 import BlockAdapter from './adapters/BlockAdapter';
 import ConsentAdapter from './adapters/ConsentAdapter';
+import CopyableTextAdapter from './adapters/CopyableTextAdapter';
 import DividerAdapter from './adapters/DividerAdapter';
 import IconAdapter from './adapters/IconAdapter';
 import ImageAdapter from './adapters/ImageAdapter';
@@ -169,6 +170,11 @@ export default function FlowComponentRenderer({
         signUpFallbackUrl={signUpFallbackUrl}
       />
     );
+  }
+
+  // COPYABLE_TEXT
+  if (comp.type === 'COPYABLE_TEXT') {
+    return <CopyableTextAdapter component={comp} resolve={resolve} additionalData={additionalData} />;
   }
 
   // Standalone ACTION / TRIGGER (outside of a block)

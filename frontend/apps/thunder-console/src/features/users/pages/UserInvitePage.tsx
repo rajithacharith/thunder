@@ -23,12 +23,13 @@ import {
   EmbeddedFlowComponentType,
   EmbeddedFlowEventType,
   InviteUser,
+  useAsgardeo,
   type EmbeddedFlowComponent,
   type InviteUserRenderProps,
 } from '@asgardeo/react';
 import {zodResolver} from '@hookform/resolvers/zod';
+import {CopyableTextAdapter, type FlowComponent} from '@thunder/design';
 import {useLogger} from '@thunder/logger/react';
-import {useTemplateLiteralResolver} from '@thunder/hooks';
 import {
   Box,
   Stack,
@@ -46,7 +47,7 @@ import {
   LinearProgress,
   Breadcrumbs,
 } from '@wso2/oxygen-ui';
-import {X, Copy, Check, ChevronRight, CheckCircle, UserPlus} from '@wso2/oxygen-ui-icons-react';
+import {X, ChevronRight} from '@wso2/oxygen-ui-icons-react';
 import {useState, useEffect, useMemo, useCallback, useRef, type JSX} from 'react';
 import {useForm, Controller} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
@@ -56,12 +57,15 @@ import OrganizationUnitTreePicker from '../../organization-units/components/Orga
 
 /** Typed shape for flow sub-components */
 type FlowSubComponent = EmbeddedFlowComponent & {
+  align?: string;
+  direction?: string;
+  eventType?: string;
+  hint?: string;
+  justify?: string;
+  options?: unknown[];
   placeholder?: string;
   required?: boolean;
-  options?: unknown[];
-  hint?: string;
   variant?: string;
-  eventType?: string;
 };
 
 /**
@@ -70,7 +74,7 @@ type FlowSubComponent = EmbeddedFlowComponent & {
  */
 function deriveStepLabel(
   components: EmbeddedFlowComponent[],
-  resolve: (key: string) => string | undefined,
+  resolve: (key?: string) => string | undefined,
   t: ReturnType<typeof useTranslation>['t'],
 ): string {
   const heading = components.find(
@@ -97,6 +101,16 @@ const getOptionValue = (option: unknown): string => {
   return JSON.stringify(option);
 };
 
+/**
+ * Returns true if the component tree contains any action or user-input components.
+ * Inputs are identified by having a `ref` property, actions by having an `eventType` property.
+ */
+function hasActionsOrInputs(comps: EmbeddedFlowComponent[]): boolean {
+  return comps.some(
+    (c) => c.ref != null || c.eventType != null || (Array.isArray(c.components) && hasActionsOrInputs(c.components)),
+  );
+}
+
 const getOptionLabel = (option: unknown): string => {
   if (typeof option === 'string') return option;
   if (typeof option === 'object' && option !== null && 'label' in option) {
@@ -114,15 +128,11 @@ function InviteUserStepContent({
   renderProps,
   flowError,
   handleClose,
-  handleCopy,
-  copied,
   onResetLocalState,
 }: {
   renderProps: InviteUserRenderProps;
   flowError: string | null;
   handleClose: () => void;
-  handleCopy: () => void;
-  copied: boolean;
   onResetLocalState: () => void;
 }): JSX.Element {
   const {
@@ -133,16 +143,13 @@ function InviteUserStepContent({
     components,
     handleInputChange,
     handleSubmit,
-    isInviteGenerated,
-    isEmailSent,
-    inviteLink,
-    copyInviteLink,
-    inviteLinkCopied,
     resetFlow,
     isValid: propsIsValid,
   } = renderProps;
-  const {resolve} = useTemplateLiteralResolver();
+  const {resolveFlowTemplateLiterals: rawResolve} = useAsgardeo();
+  const resolve = useCallback((text?: string) => (text ? rawResolve(text) : undefined), [rawResolve]);
   const {t} = useTranslation();
+  const [activeActionId, setActiveActionId] = useState<string | null>(null);
 
   const buildFormSchema = useMemo(
     () =>
@@ -213,11 +220,11 @@ function InviteUserStepContent({
     if (String(type) === String(EmbeddedFlowComponentType.TextInput) || type === 'TEXT_INPUT') {
       return (
         <FormControl key={component.id ?? index} required={required}>
-          <FormLabel htmlFor={ref}>{t(resolve(labelText) ?? labelText)}</FormLabel>
+          <FormLabel htmlFor={ref}>{resolve(labelText) ?? labelText}</FormLabel>
           <Controller
             name={ref}
             control={formControl}
-            rules={{required: required ? `${t(resolve(labelText) ?? labelText)} is required` : false}}
+            rules={{required: required ? `${resolve(labelText) ?? labelText} is required` : false}}
             render={({field}) => (
               <TextField
                 {...field}
@@ -225,7 +232,7 @@ function InviteUserStepContent({
                 size="small"
                 id={ref}
                 type="text"
-                placeholder={t(resolve(placeholderText) ?? placeholderText)}
+                placeholder={resolve(placeholderText) ?? placeholderText}
                 autoComplete="off"
                 required={required}
                 variant="outlined"
@@ -247,12 +254,12 @@ function InviteUserStepContent({
     if (type === 'EMAIL_INPUT') {
       return (
         <FormControl key={component.id ?? index} required={required}>
-          <FormLabel htmlFor={ref}>{t(resolve(labelText) ?? labelText)}</FormLabel>
+          <FormLabel htmlFor={ref}>{resolve(labelText) ?? labelText}</FormLabel>
           <Controller
             name={ref}
             control={formControl}
             rules={{
-              required: required ? `${t(resolve(labelText) ?? labelText)} is required` : false,
+              required: required ? `${resolve(labelText) ?? labelText} is required` : false,
               pattern: {value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Please enter a valid email address'},
             }}
             render={({field}) => (
@@ -262,7 +269,7 @@ function InviteUserStepContent({
                 size="small"
                 id={ref}
                 type="email"
-                placeholder={t(resolve(placeholderText) ?? placeholderText)}
+                placeholder={resolve(placeholderText) ?? placeholderText}
                 autoComplete="email"
                 required={required}
                 variant="outlined"
@@ -284,11 +291,11 @@ function InviteUserStepContent({
     if (type === 'OU_SELECT') {
       return (
         <FormControl key={component.id ?? index} fullWidth required={required}>
-          <FormLabel htmlFor={ref}>{t(resolve(labelText) ?? labelText)}</FormLabel>
+          <FormLabel htmlFor={ref}>{resolve(labelText) ?? labelText}</FormLabel>
           <Controller
             name={ref}
             control={formControl}
-            rules={{required: required ? `${t(resolve(labelText) ?? labelText)} is required` : false}}
+            rules={{required: required ? `${resolve(labelText) ?? labelText} is required` : false}}
             render={({field}) => (
               <OrganizationUnitTreePicker
                 value={(field.value as string) ?? ''}
@@ -312,11 +319,11 @@ function InviteUserStepContent({
     if (type === 'SELECT' && options) {
       return (
         <FormControl key={component.id ?? index} fullWidth required={required}>
-          <FormLabel htmlFor={ref}>{t(resolve(labelText) ?? labelText)}</FormLabel>
+          <FormLabel htmlFor={ref}>{resolve(labelText) ?? labelText}</FormLabel>
           <Controller
             name={ref}
             control={formControl}
-            rules={{required: required ? `${t(resolve(labelText) ?? labelText)} is required` : false}}
+            rules={{required: required ? `${resolve(labelText) ?? labelText} is required` : false}}
             render={({field}) => (
               <>
                 <Select
@@ -337,7 +344,7 @@ function InviteUserStepContent({
                     if (!selected || selected === '') {
                       return (
                         <Typography sx={{color: 'text.secondary'}}>
-                          {t(resolve(placeholderText) ?? 'Select an option')}
+                          {resolve(placeholderText) ?? 'Select an option'}
                         </Typography>
                       );
                     }
@@ -346,7 +353,7 @@ function InviteUserStepContent({
                   }}
                 >
                   <MenuItem value="" disabled>
-                    {t(resolve(placeholderText) ?? 'Select an option')}
+                    {resolve(placeholderText) ?? 'Select an option'}
                   </MenuItem>
                   {options.map((option: unknown) => (
                     <MenuItem key={getOptionValue(option)} value={getOptionValue(option)}>
@@ -416,128 +423,11 @@ function InviteUserStepContent({
   }, [additionalData, components, values, setValue, handleInputChange]);
 
   // Loading
-  if (isLoading && !components?.length && !isInviteGenerated) {
+  if (isLoading && !components?.length) {
     return (
       <Box sx={{display: 'flex', justifyContent: 'center', p: 4}}>
         <CircularProgress />
       </Box>
-    );
-  }
-
-  // Email sent successfully
-  if (isInviteGenerated && isEmailSent) {
-    return (
-      <Box>
-        <Alert severity="success" sx={{mb: 3}}>
-          <AlertTitle>{t('users:inviteEmailSent', 'Invite Email Sent!')}</AlertTitle>
-          {t(
-            'users:inviteEmailSentDescription',
-            'An invite email has been sent to the user to complete their registration.',
-          )}
-        </Alert>
-        <Stack direction="row" spacing={2} justifyContent="flex-end">
-          <Button variant="outlined" onClick={handleClose}>
-            {t('common:actions.close', 'Close')}
-          </Button>
-          <Button
-            variant="contained"
-            onClick={() => {
-              resetFlow();
-              onResetLocalState();
-            }}
-          >
-            {t('users:inviteAnother', 'Invite Another User')}
-          </Button>
-        </Stack>
-      </Box>
-    );
-  }
-
-  // Invite link generated but email not sent
-  if (isInviteGenerated && inviteLink) {
-    return (
-      <Stack alignItems="center" spacing={3} sx={{py: 2, flex: 1, justifyContent: 'center'}}>
-        <Box
-          sx={{
-            width: 64,
-            height: 64,
-            borderRadius: '50%',
-            backgroundColor: 'success.main',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <CheckCircle size={32} color="white" />
-        </Box>
-        <Box sx={{textAlign: 'center'}}>
-          <Typography variant="h6" sx={{mb: 0.5}}>
-            {t('users:inviteLinkGenerated', 'Invite Link Generated!')}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {t('users:inviteLinkDescription', 'Share this link with the user to complete their registration.')}
-          </Typography>
-        </Box>
-        <Box sx={{width: '100%'}}>
-          <Typography variant="body2" color="text.secondary" sx={{mb: 0.5}}>
-            {t('users:inviteLink', 'Invite Link')}
-          </Typography>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              p: 1.5,
-              borderRadius: 1,
-              backgroundColor: 'background.default',
-              border: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <Typography
-              variant="body2"
-              sx={{
-                flex: 1,
-                fontFamily: 'monospace',
-                fontSize: '0.85rem',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {inviteLink}
-            </Typography>
-            <Button
-              variant={copied || inviteLinkCopied ? 'text' : 'outlined'}
-              size="small"
-              color={copied || inviteLinkCopied ? 'success' : 'primary'}
-              startIcon={copied || inviteLinkCopied ? <Check size={16} /> : <Copy size={16} />}
-              onClick={() => {
-                copyInviteLink().catch(() => undefined);
-                handleCopy();
-              }}
-              aria-label={t('users:copyInviteLink', 'Copy invite link')}
-            >
-              {copied || inviteLinkCopied ? t('common:actions.copied', 'Copied!') : t('common:actions.copy', 'Copy')}
-            </Button>
-          </Box>
-        </Box>
-        <Stack direction="row" spacing={2} sx={{width: '100%', justifyContent: 'flex-end', pt: 1}}>
-          <Button variant="outlined" onClick={handleClose}>
-            {t('common:actions.close', 'Close')}
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<UserPlus size={16} />}
-            onClick={() => {
-              resetFlow();
-              onResetLocalState();
-            }}
-          >
-            {t('users:inviteAnother', 'Invite Another User')}
-          </Button>
-        </Stack>
-      </Stack>
     );
   }
 
@@ -567,6 +457,8 @@ function InviteUserStepContent({
     );
   }
 
+  const hasInteractiveComponents = hasActionsOrInputs(components as EmbeddedFlowComponent[]);
+
   return (
     <>
       {(flowError ?? error) && (
@@ -581,11 +473,15 @@ function InviteUserStepContent({
           if (String(component.type) === String(EmbeddedFlowComponentType.Text) || component.type === 'TEXT') {
             const variant = typeof component.variant === 'string' ? component.variant : undefined;
             const label = typeof component.label === 'string' ? component.label : '';
+            const align =
+              typeof (component as FlowSubComponent).align === 'string'
+                ? ((component as FlowSubComponent).align as 'left' | 'center' | 'right')
+                : undefined;
 
             if (variant === 'HEADING_1') {
               return (
-                <Typography key={component.id ?? index} variant="h1" gutterBottom>
-                  {t(resolve(label) ?? label)}
+                <Typography key={component.id ?? index} variant="h1" gutterBottom textAlign={align}>
+                  {resolve(label) ?? label}
                 </Typography>
               );
             }
@@ -596,21 +492,40 @@ function InviteUserStepContent({
                 key={component.id ?? index}
                 variant={variant === 'HEADING_2' ? 'h2' : 'body1'}
                 color="text.secondary"
+                textAlign={align}
               >
-                {t(resolve(label) ?? label)}
+                {resolve(label) ?? label}
               </Typography>
+            );
+          }
+
+          // COPYABLE_TEXT - display text value with copy-to-clipboard button
+          if (component.type === 'COPYABLE_TEXT') {
+            return (
+              <CopyableTextAdapter
+                key={component.id ?? index}
+                component={component as FlowComponent}
+                resolve={resolve}
+                additionalData={additionalData as Record<string, unknown> | undefined}
+              />
             );
           }
 
           if (String(component.type) === String(EmbeddedFlowComponentType.Block) || component.type === 'BLOCK') {
             const blockComponents = (component.components ?? []) as FlowSubComponent[];
-            const submitAction = blockComponents.find(
-              (c) =>
-                (String(c.type) === String(EmbeddedFlowComponentType.Action) || c.type === 'ACTION') &&
-                (String(c.eventType) === String(EmbeddedFlowEventType.Submit) || c.eventType === 'SUBMIT'),
-            );
 
-            if (!submitAction) return null;
+            const isAction = (c: FlowSubComponent) =>
+              (String(c.type) === String(EmbeddedFlowComponentType.Action) || c.type === 'ACTION') &&
+              (String(c.eventType) === String(EmbeddedFlowEventType.Submit) || c.eventType === 'SUBMIT');
+
+            const submitActions = blockComponents.filter(isAction);
+            // Also collect actions nested inside STACK children
+            const nestedActions = blockComponents.flatMap((c) =>
+              c.type === 'STACK' ? ((c.components ?? []) as FlowSubComponent[]).filter(isAction) : [],
+            );
+            const primaryAction = submitActions[0] ?? nestedActions[0];
+
+            if (!primaryAction) return null;
 
             const isButtonDisabled = isLoading || !isValid || (propsIsValid !== undefined && !propsIsValid);
 
@@ -621,7 +536,7 @@ function InviteUserStepContent({
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (!isButtonDisabled) {
-                    handleSubmit(submitAction, values).catch(() => undefined);
+                    handleSubmit(primaryAction, values).catch(() => undefined);
                   }
                 }}
                 noValidate
@@ -631,39 +546,82 @@ function InviteUserStepContent({
                   const field = renderFormField(subComponent, compIndex, control, errors, isLoading, handleInputChange);
                   if (field) return field;
 
-                  // Submit button
-                  if (
-                    (String(subComponent.type) === String(EmbeddedFlowComponentType.Action) ||
-                      subComponent.type === 'ACTION') &&
-                    (String(subComponent.eventType) === String(EmbeddedFlowEventType.Submit) ||
-                      subComponent.eventType === 'SUBMIT')
-                  ) {
-                    const subLabel = typeof subComponent.label === 'string' ? subComponent.label : '';
+                  // STACK — render action children side by side
+                  if (subComponent.type === 'STACK') {
+                    const stackActions = (subComponent.components ?? []).filter(isAction) as FlowSubComponent[];
+                    const direction = (subComponent.direction ?? 'row') as
+                      | 'row'
+                      | 'row-reverse'
+                      | 'column'
+                      | 'column-reverse';
+                    const justify = subComponent.justify ?? 'center';
                     return (
                       <Stack
                         key={subComponent.id ?? compIndex}
-                        direction="row"
+                        direction={direction}
                         spacing={2}
-                        justifyContent="flex-end"
-                        sx={{mt: 4}}
+                        justifyContent={justify}
+                        flexWrap="wrap"
+                        sx={{mt: 2}}
                       >
-                        <Button
-                          type="submit"
-                          variant={subComponent.variant === 'PRIMARY' ? 'contained' : 'outlined'}
-                          disabled={isButtonDisabled}
-                          sx={{minWidth: 140}}
-                        >
-                          {isLoading ? (
-                            <CircularProgress size={20} color="inherit" />
-                          ) : (
-                            t(resolve(subLabel) ?? subLabel)
-                          )}
-                        </Button>
+                        {stackActions.map((action, actionIndex) => {
+                          const actionKey = action.id ?? String(actionIndex);
+                          const actionLabel = typeof action.label === 'string' ? action.label : '';
+                          const isThisActionLoading = isLoading && activeActionId === actionKey;
+                          return (
+                            <Button
+                              key={actionKey}
+                              type="button"
+                              variant={action.variant === 'PRIMARY' ? 'contained' : 'outlined'}
+                              disabled={isButtonDisabled}
+                              sx={{px: 4, py: 1.5}}
+                              onClick={() => {
+                                if (!isButtonDisabled) {
+                                  setActiveActionId(actionKey);
+                                  handleSubmit(action, values).catch(() => undefined);
+                                }
+                              }}
+                            >
+                              {isThisActionLoading ? (
+                                <CircularProgress size={16} color="inherit" />
+                              ) : (
+                                (resolve(actionLabel) ?? actionLabel)
+                              )}
+                            </Button>
+                          );
+                        })}
                       </Stack>
                     );
                   }
 
-                  return null;
+                  if (!isAction(subComponent)) return null;
+
+                  const subLabel = typeof subComponent.label === 'string' ? subComponent.label : '';
+
+                  // Standard single-submit layout — right-aligned
+                  return (
+                    <Stack
+                      key={subComponent.id ?? compIndex}
+                      direction="row"
+                      spacing={2}
+                      justifyContent="flex-end"
+                      sx={{mt: 4}}
+                    >
+                      <Button
+                        type="button"
+                        variant={subComponent.variant === 'PRIMARY' ? 'contained' : 'outlined'}
+                        disabled={isButtonDisabled}
+                        sx={{minWidth: 140}}
+                        onClick={() => {
+                          if (!isButtonDisabled) {
+                            handleSubmit(subComponent, values).catch(() => undefined);
+                          }
+                        }}
+                      >
+                        {isLoading ? <CircularProgress size={20} color="inherit" /> : (resolve(subLabel) ?? subLabel)}
+                      </Button>
+                    </Stack>
+                  );
                 })}
               </Box>
             );
@@ -672,6 +630,22 @@ function InviteUserStepContent({
           return null;
         })}
       </Stack>
+      {!hasInteractiveComponents && (
+        <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{mt: 4}}>
+          <Button variant="outlined" onClick={handleClose}>
+            {t('common:actions.close', 'Close')}
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              resetFlow();
+              onResetLocalState();
+            }}
+          >
+            {t('users:inviteAnother', 'Invite Another User')}
+          </Button>
+        </Stack>
+      )}
     </>
   );
 }
@@ -681,8 +655,6 @@ function InviteUserFlowBridge({
   renderProps,
   flowError,
   handleClose,
-  handleCopy,
-  copied,
   onStepLabelChange,
   onInviteComplete,
   onOuStepDetected,
@@ -691,20 +663,20 @@ function InviteUserFlowBridge({
   renderProps: InviteUserRenderProps;
   flowError: string | null;
   handleClose: () => void;
-  handleCopy: () => void;
-  copied: boolean;
   onStepLabelChange: (label: string) => void;
   onInviteComplete: () => void;
   onOuStepDetected: () => void;
   onResetLocalState: () => void;
 }): JSX.Element {
-  const {resolve} = useTemplateLiteralResolver();
+  const {resolveFlowTemplateLiterals: rawResolve} = useAsgardeo();
+  const resolve = useCallback((text?: string) => (text ? rawResolve(text) : undefined), [rawResolve]);
   const {t} = useTranslation();
-  const {isInviteGenerated} = renderProps;
   const components = renderProps.components as EmbeddedFlowComponent[] | undefined;
 
   // Derive current step label from the HEADING_1 component
   const currentStepLabel = components?.length ? deriveStepLabel(components, resolve, t) : '';
+
+  const isDisplayOnly = !!components?.length && !hasActionsOrInputs(components);
 
   // Detect OU step presence to adjust progress calculation
   const currentHasOu =
@@ -724,18 +696,16 @@ function InviteUserFlowBridge({
   }, [currentStepLabel, onStepLabelChange]);
 
   useEffect(() => {
-    if (isInviteGenerated) {
+    if (isDisplayOnly) {
       onInviteComplete();
     }
-  }, [isInviteGenerated, onInviteComplete]);
+  }, [isDisplayOnly, onInviteComplete]);
 
   return (
     <InviteUserStepContent
       renderProps={renderProps}
       flowError={flowError}
       handleClose={handleClose}
-      handleCopy={handleCopy}
-      copied={copied}
       onResetLocalState={onResetLocalState}
     />
   );
@@ -745,22 +715,14 @@ export default function UserInvitePage(): JSX.Element {
   const {t} = useTranslation();
   const navigate = useNavigate();
   const logger = useLogger('UserInvitePage');
-  const [copied, setCopied] = useState(false);
   const [flowError, setFlowError] = useState<string | null>(null);
-  const [isComplete, setIsComplete] = useState(false);
 
   // Track breadcrumb trail of visited step labels
   const [breadcrumbs, setBreadcrumbs] = useState<string[]>([]);
   const prevStepLabelRef = useRef<string>('');
   const [hasOuStep, setHasOuStep] = useState(false);
 
-  const handleCopy = () => {
-    setCopied(true);
-    setTimeout(() => setCopied(false), 3000);
-  };
-
   const handleClose = useCallback(() => {
-    setCopied(false);
     (async () => {
       await navigate('/users');
     })().catch((err: unknown) => {
@@ -788,7 +750,6 @@ export default function UserInvitePage(): JSX.Element {
     if (prevStepLabelRef.current !== 'complete') {
       prevStepLabelRef.current = 'complete';
       setBreadcrumbs((prev) => [...prev, t('users:invite.steps.complete', 'Complete')]);
-      setIsComplete(true);
     }
   }, [setBreadcrumbs, t]);
 
@@ -800,9 +761,7 @@ export default function UserInvitePage(): JSX.Element {
     setBreadcrumbs([]);
     prevStepLabelRef.current = '';
     setHasOuStep(false);
-    setIsComplete(false);
     setFlowError(null);
-    setCopied(false);
   }, []);
 
   // Compute progress from breadcrumb trail
@@ -858,8 +817,8 @@ export default function UserInvitePage(): JSX.Element {
               flexDirection: 'column',
               py: 8,
               px: 20,
-              mx: isComplete ? 'auto' : 0,
-              alignItems: isComplete ? 'center' : 'flex-start',
+              mx: 'auto',
+              alignItems: 'center',
             }}
           >
             <Box
@@ -872,9 +831,6 @@ export default function UserInvitePage(): JSX.Element {
               }}
             >
               <InviteUser
-                onInviteLinkGenerated={() => {
-                  logger.info('Invite link generated');
-                }}
                 onError={(err: Error) => {
                   logger.error('User onboarding error', {error: err});
                 }}
@@ -887,8 +843,6 @@ export default function UserInvitePage(): JSX.Element {
                     renderProps={renderProps}
                     flowError={flowError}
                     handleClose={handleClose}
-                    handleCopy={handleCopy}
-                    copied={copied}
                     onStepLabelChange={handleStepLabelChange}
                     onInviteComplete={handleInviteComplete}
                     onOuStepDetected={handleOuStepDetected}

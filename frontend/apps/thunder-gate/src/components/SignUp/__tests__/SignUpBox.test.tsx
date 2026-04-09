@@ -170,7 +170,7 @@ describe('SignUpBox', () => {
     expect(screen.getByText('Registration failed')).toBeInTheDocument();
   });
 
-  it('shows fallback error when no components available and emailSent is unknown', () => {
+  it('shows fallback error when no components are available', () => {
     mockSignUpRenderProps = createMockSignUpRenderProps({
       components: [],
     });
@@ -178,54 +178,20 @@ describe('SignUpBox', () => {
     expect(screen.getByText("Oops, that didn't work")).toBeInTheDocument();
   });
 
-  it('shows check your email alert when onFlowChange reports emailSent true', () => {
-    mockSignUpRenderProps = createMockSignUpRenderProps({components: []});
-    render(<SignUpBox />);
-
-    act(() => {
-      capturedOnFlowChange?.({data: {additionalData: {emailSent: 'true'}}});
-    });
-
-    expect(screen.getByText('Check your email')).toBeInTheDocument();
-    expect(screen.queryByText("Oops, that didn't work")).not.toBeInTheDocument();
-  });
-
-  it('hides sign-in link when emailSent is true', () => {
+  it('always shows sign-in link regardless of flow state', () => {
     mockSignUpRenderProps = createMockSignUpRenderProps({components: []});
     render(<SignUpBox />);
 
     expect(screen.getByText(/Already have an account/)).toBeInTheDocument();
 
-    act(() => {
-      capturedOnFlowChange?.({data: {additionalData: {emailSent: 'true'}}});
-    });
-
-    expect(screen.queryByText(/Already have an account/)).not.toBeInTheDocument();
-  });
-
-  it('shows email service unavailable warning when onFlowChange reports emailSent false', () => {
-    mockSignUpRenderProps = createMockSignUpRenderProps({components: []});
-    render(<SignUpBox />);
+    expect(capturedOnFlowChange).toBeDefined();
 
     act(() => {
-      capturedOnFlowChange?.({data: {additionalData: {emailSent: 'false'}}});
+      capturedOnFlowChange!({data: {additionalData: {}}});
     });
 
-    expect(screen.getByText('Email service unavailable')).toBeInTheDocument();
-    expect(screen.queryByText("Oops, that didn't work")).not.toBeInTheDocument();
-  });
-
-  it('does not update emailSent state when onFlowChange has no emailSent field', () => {
-    mockSignUpRenderProps = createMockSignUpRenderProps({components: []});
-    render(<SignUpBox />);
-
-    act(() => {
-      capturedOnFlowChange?.({data: {additionalData: {otherField: 'value'}}});
-    });
-
-    expect(screen.getByText("Oops, that didn't work")).toBeInTheDocument();
-    expect(screen.queryByText('Check your email')).not.toBeInTheDocument();
-    expect(screen.queryByText('Email service unavailable')).not.toBeInTheDocument();
+    // Link remains visible after any flow change
+    expect(screen.getByText(/Already have an account/)).toBeInTheDocument();
   });
 
   it('shows flowError alert when onFlowChange reports failureReason', () => {
@@ -234,8 +200,10 @@ describe('SignUpBox', () => {
     });
     render(<SignUpBox />);
 
+    expect(capturedOnFlowChange).toBeDefined();
+
     act(() => {
-      capturedOnFlowChange?.({
+      capturedOnFlowChange!({
         failureReason: 'A user with this email already exists. Please use a different value.',
         data: {additionalData: {}},
       });
@@ -266,8 +234,10 @@ describe('SignUpBox', () => {
     });
     render(<SignUpBox />);
 
+    expect(capturedOnFlowChange).toBeDefined();
+
     act(() => {
-      capturedOnFlowChange?.({
+      capturedOnFlowChange!({
         failureReason: 'A user with this email already exists. Please use a different value.',
         data: {additionalData: {}},
       });
