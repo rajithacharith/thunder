@@ -1793,7 +1793,7 @@ paths:
               subSequentRequestExample:
                 summary: Subsequent request
                 value:
-                  flowId: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
+                  executionId: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
                   actionId: basic_auth
                   inputs:
                     username: thor
@@ -1812,7 +1812,7 @@ paths:
                 incompleteFlow:
                   summary: Incomplete flow (prompt for user input)
                   value:
-                    flowId: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
+                    executionId: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
                     flowStatus: PROMPT_ONLY
                     stepId: 3071b6c6-0119-465c-b00b-3a0e6f88a730
                     type: VIEW
@@ -1832,7 +1832,7 @@ paths:
                 displayOnlyFlow:
                   summary: Incomplete flow (display-only prompt)
                   value:
-                    flowId: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
+                    executionId: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
                     flowStatus: INCOMPLETE
                     stepId: 3071b6c6-0119-465c-b00b-3a0e6f88a730
                     type: VIEW
@@ -1853,13 +1853,13 @@ paths:
                 completeFlow:
                   summary: Complete flow
                   value:
-                    flowId: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
+                    executionId: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
                     flowStatus: COMPLETE
                     assertion: <jwt_token>
                 errorFlow:
                   summary: Erroneous flow
                   value:
-                    flowId: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
+                    executionId: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
                     flowStatus: ERROR
                     failureReason: Invalid credentials
         "400":
@@ -10201,9 +10201,9 @@ components:
     SubSequentFlowRequest:
       type: object
       required:
-        - flowId
+        - executionId
       properties:
-        flowId:
+        executionId:
           type: string
           description: Identifier of an existing flow execution
           example: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
@@ -10220,12 +10220,12 @@ components:
     IncompleteFlowResponse:
       type: object
       required:
-        - flowId
+        - executionId
         - flowStatus
         - stepId
         - type
       properties:
-        flowId:
+        executionId:
           type: string
           description: Unique identifier of the flow execution
           example: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
@@ -10248,11 +10248,11 @@ components:
     CompleteFlowResponse:
       type: object
       required:
-        - flowId
+        - executionId
         - flowStatus
         - assertion
       properties:
-        flowId:
+        executionId:
           type: string
           description: Unique identifier of the flow execution
           example: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
@@ -10267,11 +10267,11 @@ components:
     ErrorFlowResponse:
       type: object
       required:
-        - flowId
+        - executionId
         - flowStatus
         - failureReason
       properties:
-        flowId:
+        executionId:
           type: string
           description: Unique identifier of the flow execution
           example: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
