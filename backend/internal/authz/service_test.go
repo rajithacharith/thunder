@@ -48,13 +48,13 @@ func (suite *AuthorizationServiceTestSuite) SetupTest() {
 
 func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_Success() {
 	request := GetAuthorizedPermissionsRequest{
-		UserID:               "user1",
+		EntityID:             "user1",
 		GroupIDs:             []string{"group1", "group2"},
 		RequestedPermissions: []string{"perm1", "perm2", "perm3"},
 	}
 	expectedPermissions := []string{"perm1", "perm3"}
 
-	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.UserID, request.GroupIDs,
+	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.EntityID, request.GroupIDs,
 		request.RequestedPermissions).
 		Return(expectedPermissions, nil)
 
@@ -67,13 +67,13 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_Success
 
 func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_MissingBothUserAndGroups() {
 	request := GetAuthorizedPermissionsRequest{
-		UserID:               "",
+		EntityID:             "",
 		GroupIDs:             []string{},
 		RequestedPermissions: []string{"perm1", "perm2"},
 	}
 
 	// Mock engine to return error (validation happens in underlying service)
-	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.UserID, request.GroupIDs,
+	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.EntityID, request.GroupIDs,
 		request.RequestedPermissions).
 		Return(nil, errors.New("role service error: Either userId or groups must be provided"))
 
@@ -86,13 +86,13 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_Missing
 
 func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_MissingBothUserAndNilGroups() {
 	request := GetAuthorizedPermissionsRequest{
-		UserID:               "",
+		EntityID:             "",
 		GroupIDs:             nil,
 		RequestedPermissions: []string{"perm1", "perm2"},
 	}
 
 	// Mock engine to return error (validation happens in underlying service)
-	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.UserID, []string{},
+	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.EntityID, []string{},
 		request.RequestedPermissions).
 		Return(nil, errors.New("role service error: Either userId or groups must be provided"))
 
@@ -105,7 +105,7 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_Missing
 
 func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_EmptyRequestedPermissions() {
 	request := GetAuthorizedPermissionsRequest{
-		UserID:               "user1",
+		EntityID:             "user1",
 		GroupIDs:             []string{"group1"},
 		RequestedPermissions: []string{},
 	}
@@ -119,7 +119,7 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_EmptyRe
 
 func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_NilRequestedPermissions() {
 	request := GetAuthorizedPermissionsRequest{
-		UserID:               "user1",
+		EntityID:             "user1",
 		GroupIDs:             []string{"group1"},
 		RequestedPermissions: nil,
 	}
@@ -133,13 +133,13 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_NilRequ
 
 func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_UserOnly() {
 	request := GetAuthorizedPermissionsRequest{
-		UserID:               "user1",
+		EntityID:             "user1",
 		GroupIDs:             []string{},
 		RequestedPermissions: []string{"perm1", "perm2"},
 	}
 	expectedPermissions := []string{"perm1"}
 
-	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.UserID, request.GroupIDs,
+	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.EntityID, request.GroupIDs,
 		request.RequestedPermissions).
 		Return(expectedPermissions, nil)
 
@@ -152,13 +152,13 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_UserOnl
 
 func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_GroupsOnly() {
 	request := GetAuthorizedPermissionsRequest{
-		UserID:               "",
+		EntityID:             "",
 		GroupIDs:             []string{"group1", "group2"},
 		RequestedPermissions: []string{"perm1", "perm2"},
 	}
 	expectedPermissions := []string{"perm2"}
 
-	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.UserID, request.GroupIDs,
+	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.EntityID, request.GroupIDs,
 		request.RequestedPermissions).
 		Return(expectedPermissions, nil)
 
@@ -171,13 +171,13 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_GroupsO
 
 func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_NilGroups() {
 	request := GetAuthorizedPermissionsRequest{
-		UserID:               "user1",
+		EntityID:             "user1",
 		GroupIDs:             nil,
 		RequestedPermissions: []string{"perm1", "perm2"},
 	}
 	expectedPermissions := []string{"perm1"}
 
-	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.UserID, []string{},
+	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.EntityID, []string{},
 		request.RequestedPermissions).
 		Return(expectedPermissions, nil)
 
@@ -190,12 +190,12 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_NilGrou
 
 func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_EngineError() {
 	request := GetAuthorizedPermissionsRequest{
-		UserID:               "user1",
+		EntityID:             "user1",
 		GroupIDs:             []string{"group1"},
 		RequestedPermissions: []string{"perm1", "perm2"},
 	}
 
-	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.UserID, request.GroupIDs,
+	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.EntityID, request.GroupIDs,
 		request.RequestedPermissions).
 		Return(nil, errors.New("engine failed"))
 
@@ -208,12 +208,12 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_EngineE
 
 func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_NoAuthorizedPermissions() {
 	request := GetAuthorizedPermissionsRequest{
-		UserID:               "user1",
+		EntityID:             "user1",
 		GroupIDs:             []string{"group1"},
 		RequestedPermissions: []string{"perm1", "perm2"},
 	}
 
-	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.UserID, request.GroupIDs,
+	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.EntityID, request.GroupIDs,
 		request.RequestedPermissions).
 		Return([]string{}, nil)
 
@@ -226,12 +226,12 @@ func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_NoAutho
 
 func (suite *AuthorizationServiceTestSuite) TestGetAuthorizedPermissions_AllPermissionsAuthorized() {
 	request := GetAuthorizedPermissionsRequest{
-		UserID:               "user1",
+		EntityID:             "user1",
 		GroupIDs:             []string{"group1"},
 		RequestedPermissions: []string{"perm1", "perm2"},
 	}
 
-	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.UserID, request.GroupIDs,
+	suite.mockEngine.On("GetAuthorizedPermissions", mock.Anything, request.EntityID, request.GroupIDs,
 		request.RequestedPermissions).
 		Return(request.RequestedPermissions, nil)
 

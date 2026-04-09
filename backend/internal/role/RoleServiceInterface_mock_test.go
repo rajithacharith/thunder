@@ -233,8 +233,8 @@ func (_c *RoleServiceInterfaceMock_DeleteRole_Call) RunAndReturn(run func(ctx co
 }
 
 // GetAuthorizedPermissions provides a mock function for the type RoleServiceInterfaceMock
-func (_mock *RoleServiceInterfaceMock) GetAuthorizedPermissions(ctx context.Context, userID string, groups []string, requestedPermissions []string) ([]string, *serviceerror.ServiceError) {
-	ret := _mock.Called(ctx, userID, groups, requestedPermissions)
+func (_mock *RoleServiceInterfaceMock) GetAuthorizedPermissions(ctx context.Context, entityID string, groups []string, requestedPermissions []string) ([]string, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, entityID, groups, requestedPermissions)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetAuthorizedPermissions")
@@ -243,17 +243,17 @@ func (_mock *RoleServiceInterfaceMock) GetAuthorizedPermissions(ctx context.Cont
 	var r0 []string
 	var r1 *serviceerror.ServiceError
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []string, []string) ([]string, *serviceerror.ServiceError)); ok {
-		return returnFunc(ctx, userID, groups, requestedPermissions)
+		return returnFunc(ctx, entityID, groups, requestedPermissions)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []string, []string) []string); ok {
-		r0 = returnFunc(ctx, userID, groups, requestedPermissions)
+		r0 = returnFunc(ctx, entityID, groups, requestedPermissions)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]string)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string, []string, []string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(ctx, userID, groups, requestedPermissions)
+		r1 = returnFunc(ctx, entityID, groups, requestedPermissions)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -269,14 +269,14 @@ type RoleServiceInterfaceMock_GetAuthorizedPermissions_Call struct {
 
 // GetAuthorizedPermissions is a helper method to define mock.On call
 //   - ctx context.Context
-//   - userID string
+//   - entityID string
 //   - groups []string
 //   - requestedPermissions []string
-func (_e *RoleServiceInterfaceMock_Expecter) GetAuthorizedPermissions(ctx interface{}, userID interface{}, groups interface{}, requestedPermissions interface{}) *RoleServiceInterfaceMock_GetAuthorizedPermissions_Call {
-	return &RoleServiceInterfaceMock_GetAuthorizedPermissions_Call{Call: _e.mock.On("GetAuthorizedPermissions", ctx, userID, groups, requestedPermissions)}
+func (_e *RoleServiceInterfaceMock_Expecter) GetAuthorizedPermissions(ctx interface{}, entityID interface{}, groups interface{}, requestedPermissions interface{}) *RoleServiceInterfaceMock_GetAuthorizedPermissions_Call {
+	return &RoleServiceInterfaceMock_GetAuthorizedPermissions_Call{Call: _e.mock.On("GetAuthorizedPermissions", ctx, entityID, groups, requestedPermissions)}
 }
 
-func (_c *RoleServiceInterfaceMock_GetAuthorizedPermissions_Call) Run(run func(ctx context.Context, userID string, groups []string, requestedPermissions []string)) *RoleServiceInterfaceMock_GetAuthorizedPermissions_Call {
+func (_c *RoleServiceInterfaceMock_GetAuthorizedPermissions_Call) Run(run func(ctx context.Context, entityID string, groups []string, requestedPermissions []string)) *RoleServiceInterfaceMock_GetAuthorizedPermissions_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -309,7 +309,7 @@ func (_c *RoleServiceInterfaceMock_GetAuthorizedPermissions_Call) Return(strings
 	return _c
 }
 
-func (_c *RoleServiceInterfaceMock_GetAuthorizedPermissions_Call) RunAndReturn(run func(ctx context.Context, userID string, groups []string, requestedPermissions []string) ([]string, *serviceerror.ServiceError)) *RoleServiceInterfaceMock_GetAuthorizedPermissions_Call {
+func (_c *RoleServiceInterfaceMock_GetAuthorizedPermissions_Call) RunAndReturn(run func(ctx context.Context, entityID string, groups []string, requestedPermissions []string) ([]string, *serviceerror.ServiceError)) *RoleServiceInterfaceMock_GetAuthorizedPermissions_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -643,8 +643,8 @@ func (_c *RoleServiceInterfaceMock_GetRoleWithPermissions_Call) RunAndReturn(run
 }
 
 // GetUserRoles provides a mock function for the type RoleServiceInterfaceMock
-func (_mock *RoleServiceInterfaceMock) GetUserRoles(ctx context.Context, userID string, groupIDs []string) ([]string, *serviceerror.ServiceError) {
-	ret := _mock.Called(ctx, userID, groupIDs)
+func (_mock *RoleServiceInterfaceMock) GetUserRoles(ctx context.Context, entityID string, groupIDs []string) ([]string, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, entityID, groupIDs)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserRoles")
@@ -653,17 +653,17 @@ func (_mock *RoleServiceInterfaceMock) GetUserRoles(ctx context.Context, userID 
 	var r0 []string
 	var r1 *serviceerror.ServiceError
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []string) ([]string, *serviceerror.ServiceError)); ok {
-		return returnFunc(ctx, userID, groupIDs)
+		return returnFunc(ctx, entityID, groupIDs)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []string) []string); ok {
-		r0 = returnFunc(ctx, userID, groupIDs)
+		r0 = returnFunc(ctx, entityID, groupIDs)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]string)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string, []string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(ctx, userID, groupIDs)
+		r1 = returnFunc(ctx, entityID, groupIDs)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -679,13 +679,13 @@ type RoleServiceInterfaceMock_GetUserRoles_Call struct {
 
 // GetUserRoles is a helper method to define mock.On call
 //   - ctx context.Context
-//   - userID string
+//   - entityID string
 //   - groupIDs []string
-func (_e *RoleServiceInterfaceMock_Expecter) GetUserRoles(ctx interface{}, userID interface{}, groupIDs interface{}) *RoleServiceInterfaceMock_GetUserRoles_Call {
-	return &RoleServiceInterfaceMock_GetUserRoles_Call{Call: _e.mock.On("GetUserRoles", ctx, userID, groupIDs)}
+func (_e *RoleServiceInterfaceMock_Expecter) GetUserRoles(ctx interface{}, entityID interface{}, groupIDs interface{}) *RoleServiceInterfaceMock_GetUserRoles_Call {
+	return &RoleServiceInterfaceMock_GetUserRoles_Call{Call: _e.mock.On("GetUserRoles", ctx, entityID, groupIDs)}
 }
 
-func (_c *RoleServiceInterfaceMock_GetUserRoles_Call) Run(run func(ctx context.Context, userID string, groupIDs []string)) *RoleServiceInterfaceMock_GetUserRoles_Call {
+func (_c *RoleServiceInterfaceMock_GetUserRoles_Call) Run(run func(ctx context.Context, entityID string, groupIDs []string)) *RoleServiceInterfaceMock_GetUserRoles_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -713,7 +713,7 @@ func (_c *RoleServiceInterfaceMock_GetUserRoles_Call) Return(strings []string, s
 	return _c
 }
 
-func (_c *RoleServiceInterfaceMock_GetUserRoles_Call) RunAndReturn(run func(ctx context.Context, userID string, groupIDs []string) ([]string, *serviceerror.ServiceError)) *RoleServiceInterfaceMock_GetUserRoles_Call {
+func (_c *RoleServiceInterfaceMock_GetUserRoles_Call) RunAndReturn(run func(ctx context.Context, entityID string, groupIDs []string) ([]string, *serviceerror.ServiceError)) *RoleServiceInterfaceMock_GetUserRoles_Call {
 	_c.Call.Return(run)
 	return _c
 }

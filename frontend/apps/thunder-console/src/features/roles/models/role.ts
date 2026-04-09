@@ -27,13 +27,13 @@ export interface ResourcePermissions {
 }
 
 /**
- * An assignment of a user or group to a role.
+ * An assignment of a user, group, or app to a role.
  */
 export interface RoleAssignment {
   /** Unique identifier of the user or group */
   id: string;
   /** Type of assignee */
-  type: 'user' | 'group';
+  type: 'user' | 'group' | 'app';
   /** Display name (resolved when include=display is used) */
   display?: string;
 }

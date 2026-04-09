@@ -234,7 +234,8 @@ func validateRoleWrapper(data interface{}, fileStore *fileBasedStore, dbStore ro
 		if assignment.ID == "" {
 			return fmt.Errorf("assignment ID is required")
 		}
-		if assignment.Type != AssigneeTypeUser && assignment.Type != AssigneeTypeGroup {
+		if assignment.Type != AssigneeTypeUser && assignment.Type != AssigneeTypeGroup &&
+			assignment.Type != AssigneeTypeApp {
 			return fmt.Errorf("invalid assignment type '%s'", assignment.Type)
 		}
 	}

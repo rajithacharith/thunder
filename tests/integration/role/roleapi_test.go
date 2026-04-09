@@ -93,6 +93,7 @@ var (
 	testUserID1  string
 	testUserID2  string
 	testGroupID  string
+	testAppID    string
 	sharedRoleID string // Shared role created in SetupSuite for tests that need a pre-existing role
 	userSchemaID string
 
@@ -149,6 +150,17 @@ func (suite *RoleAPITestSuite) SetupSuite() {
 	groupID, err := testutils.CreateGroup(groupToCreate)
 	suite.Require().NoError(err, "Failed to create test group")
 	testGroupID = groupID
+
+	// Create test application (app entity)
+	appID, err := testutils.CreateApplication(testutils.Application{
+		Name:         "Role Test App",
+		Description:  "Application for role assignment testing",
+		OUID:         testOUID,
+		ClientID:     "role-test-app-client",
+		ClientSecret: "role-test-app-secret",
+	})
+	suite.Require().NoError(err, "Failed to create test application")
+	testAppID = appID
 
 	// Create test resource servers
 	rs1 := testutils.ResourceServer{
@@ -213,6 +225,9 @@ func (suite *RoleAPITestSuite) TearDownSuite() {
 	// Then group and users
 	if testGroupID != "" {
 		_ = testutils.DeleteGroup(testGroupID)
+	}
+	if testAppID != "" {
+		_ = testutils.DeleteApplication(testAppID)
 	}
 	if testUserID2 != "" {
 		_ = testutils.DeleteUser(testUserID2)
@@ -1241,6 +1256,200 @@ func (suite *RoleAPITestSuite) TestGetRoleAssignments_InvalidType() {
 	_, err = suite.getRoleAssignmentsByType(role.ID, 0, 30, "invalid")
 	suite.Require().Error(err)
 	suite.Contains(err.Error(), "ROL-1017", "Should return invalid assignee type error")
+}
+
+// Test 34: Create Role with App Assignment
+func (suite *RoleAPITestSuite) TestCreateRole_WithAppAssignment() {
+	roleRequest := CreateRoleRequest{
+		Name: "Test Role With App Assignment",
+		OUID: testOUID,
+		Permissions: []ResourcePermissions{
+			{
+				ResourceServerID: testResourceServer1ID,
+				Permissions:      []string{testPermission1},
+			},
+		},
+		Assignments: []Assignment{
+			{ID: testAppID, Type: AssigneeTypeApp},
+		},
+	}
+
+	role, err := suite.createRole(roleRequest)
+	suite.Require().NoError(err)
+	suite.Require().NotNil(role)
+	defer suite.deleteRole(role.ID)
+
+	suite.Equal(1, len(role.Assignments))
+	suite.Equal(testAppID, role.Assignments[0].ID)
+	suite.Equal(AssigneeTypeApp, role.Assignments[0].Type)
+}
+
+// Test 35: Add App Assignment to Role
+func (suite *RoleAPITestSuite) TestAddAssignments_App() {
+	roleRequest := CreateRoleRequest{
+		Name: "Test Role for App Assignment",
+		OUID: testOUID,
+		Permissions: []ResourcePermissions{
+			{
+				ResourceServerID: testResourceServer1ID,
+				Permissions:      []string{testPermission1},
+			},
+		},
+	}
+	role, err := suite.createRole(roleRequest)
+	suite.Require().NoError(err)
+	defer suite.deleteRole(role.ID)
+
+	assignmentsRequest := AssignmentsRequest{
+		Assignments: []Assignment{
+			{ID: testAppID, Type: AssigneeTypeApp},
+		},
+	}
+
+	err = suite.addAssignments(role.ID, assignmentsRequest)
+	suite.Require().NoError(err)
+
+	// Verify assignments were added
+	assignments, err := suite.getRoleAssignments(role.ID, 0, 30)
+	suite.Require().NoError(err)
+	suite.Equal(1, assignments.TotalResults)
+	suite.Equal(testAppID, assignments.Assignments[0].ID)
+	suite.Equal(AssigneeTypeApp, assignments.Assignments[0].Type)
+}
+
+// Test 36: Mixed User, Group, and App Assignments
+func (suite *RoleAPITestSuite) TestAddAssignments_MixedUserGroupApp() {
+	roleRequest := CreateRoleRequest{
+		Name: "Mixed Assignment Role",
+		OUID: testOUID,
+		Permissions: []ResourcePermissions{
+			{
+				ResourceServerID: testResourceServer1ID,
+				Permissions:      []string{testPermission1},
+			},
+		},
+	}
+	role, err := suite.createRole(roleRequest)
+	suite.Require().NoError(err)
+	defer suite.deleteRole(role.ID)
+
+	assignmentsRequest := AssignmentsRequest{
+		Assignments: []Assignment{
+			{ID: testUserID1, Type: AssigneeTypeUser},
+			{ID: testGroupID, Type: AssigneeTypeGroup},
+			{ID: testAppID, Type: AssigneeTypeApp},
+		},
+	}
+
+	err = suite.addAssignments(role.ID, assignmentsRequest)
+	suite.Require().NoError(err)
+
+	// Verify all assignments
+	assignments, err := suite.getRoleAssignments(role.ID, 0, 30)
+	suite.Require().NoError(err)
+	suite.Equal(3, assignments.TotalResults)
+
+	// Verify each type exists
+	typeFound := map[AssigneeType]bool{}
+	for _, a := range assignments.Assignments {
+		typeFound[a.Type] = true
+	}
+	suite.True(typeFound[AssigneeTypeUser], "User assignment should exist")
+	suite.True(typeFound[AssigneeTypeGroup], "Group assignment should exist")
+	suite.True(typeFound[AssigneeTypeApp], "App assignment should exist")
+}
+
+// Test 37: Filter Assignments by App Type
+func (suite *RoleAPITestSuite) TestGetRoleAssignments_FilterByAppType() {
+	roleRequest := CreateRoleRequest{
+		Name: "Test Role for App Type Filter",
+		OUID: testOUID,
+		Permissions: []ResourcePermissions{
+			{
+				ResourceServerID: testResourceServer1ID,
+				Permissions:      []string{testPermission1},
+			},
+		},
+		Assignments: []Assignment{
+			{ID: testUserID1, Type: AssigneeTypeUser},
+			{ID: testAppID, Type: AssigneeTypeApp},
+		},
+	}
+	role, err := suite.createRole(roleRequest)
+	suite.Require().NoError(err)
+	defer suite.deleteRole(role.ID)
+
+	// Filter by app type
+	appAssignments, err := suite.getRoleAssignmentsByType(role.ID, 0, 30, "app")
+	suite.Require().NoError(err)
+	suite.Equal(1, appAssignments.TotalResults)
+	suite.Equal(AssigneeTypeApp, appAssignments.Assignments[0].Type)
+	suite.Equal(testAppID, appAssignments.Assignments[0].ID)
+}
+
+// Test 38: Remove App Assignment
+func (suite *RoleAPITestSuite) TestRemoveAssignments_App() {
+	roleRequest := CreateRoleRequest{
+		Name: "Test Role for App Removal",
+		OUID: testOUID,
+		Permissions: []ResourcePermissions{
+			{
+				ResourceServerID: testResourceServer1ID,
+				Permissions:      []string{testPermission1},
+			},
+		},
+		Assignments: []Assignment{
+			{ID: testAppID, Type: AssigneeTypeApp},
+		},
+	}
+	role, err := suite.createRole(roleRequest)
+	suite.Require().NoError(err)
+	defer suite.deleteRole(role.ID)
+
+	// Verify the assignment exists
+	assignments, err := suite.getRoleAssignments(role.ID, 0, 30)
+	suite.Require().NoError(err)
+	suite.Equal(1, assignments.TotalResults)
+
+	// Remove the app assignment
+	err = suite.removeAssignments(role.ID, AssignmentsRequest{
+		Assignments: []Assignment{
+			{ID: testAppID, Type: AssigneeTypeApp},
+		},
+	})
+	suite.Require().NoError(err)
+
+	// Verify it was removed
+	assignments, err = suite.getRoleAssignments(role.ID, 0, 30)
+	suite.Require().NoError(err)
+	suite.Equal(0, assignments.TotalResults)
+}
+
+// Test 39: Add App Assignment with Invalid App ID
+func (suite *RoleAPITestSuite) TestAddAssignments_InvalidApp() {
+	roleRequest := CreateRoleRequest{
+		Name: "Test Role for Invalid App Assignment",
+		OUID: testOUID,
+		Permissions: []ResourcePermissions{
+			{
+				ResourceServerID: testResourceServer1ID,
+				Permissions:      []string{testPermission1},
+			},
+		},
+	}
+	role, err := suite.createRole(roleRequest)
+	suite.Require().NoError(err)
+	defer suite.deleteRole(role.ID)
+
+	assignmentsRequest := AssignmentsRequest{
+		Assignments: []Assignment{
+			{ID: "nonexistent-app-id", Type: AssigneeTypeApp},
+		},
+	}
+
+	err = suite.addAssignments(role.ID, assignmentsRequest)
+	suite.Error(err)
+	suite.Contains(err.Error(), "ROL-1007")
 }
 
 // Helper methods

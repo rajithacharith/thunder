@@ -247,10 +247,10 @@ func (ts *TokenTestSuite) TestClientCredentialsGrantWithHeaderCredentials() {
 		expectedScopes  []string
 	}{
 		{
-			testName:        "WithAuthorizedScopes",
+			testName:        "WithUnauthorizedScopes",
 			requestedScopes: "internal_user_mgt_view internal_user_mgt_edit internal_group_mgt_view",
 			expectedStatus:  http.StatusOK,
-			expectedScopes:  []string{"internal_user_mgt_view", "internal_user_mgt_edit", "internal_group_mgt_view"},
+			expectedScopes:  nil,
 		},
 		{
 			testName:        "WithoutScopes",
@@ -262,13 +262,13 @@ func (ts *TokenTestSuite) TestClientCredentialsGrantWithHeaderCredentials() {
 			testName:        "WithUnknownScopes",
 			requestedScopes: "unknown_scope",
 			expectedStatus:  http.StatusOK,
-			expectedScopes:  []string{"unknown_scope"},
+			expectedScopes:  nil,
 		},
 		{
-			testName:        "WithAuthorizedAndUnknownScopes",
+			testName:        "WithMixedUnknownScopes",
 			requestedScopes: "internal_user_mgt_view unknown_scope",
 			expectedStatus:  http.StatusOK,
-			expectedScopes:  []string{"internal_user_mgt_view", "unknown_scope"},
+			expectedScopes:  nil,
 		},
 	}
 
@@ -328,10 +328,10 @@ func (ts *TokenTestSuite) TestClientCredentialsGrantWithBodyCredentials() {
 		expectedScopes  []string
 	}{
 		{
-			testName:        "WithAuthorizedScopes",
+			testName:        "WithUnauthorizedScopes",
 			requestedScopes: "internal_user_mgt_view internal_user_mgt_edit",
 			expectedStatus:  http.StatusOK,
-			expectedScopes:  []string{"internal_user_mgt_view", "internal_user_mgt_edit"},
+			expectedScopes:  nil,
 		},
 		{
 			testName:        "WithoutScopes",

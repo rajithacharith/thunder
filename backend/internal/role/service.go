@@ -57,9 +57,9 @@ type RoleServiceInterface interface {
 	RemoveAssignments(ctx context.Context, id string, assignments []RoleAssignment) *serviceerror.ServiceError
 	IsRoleDeclarative(ctx context.Context, id string) (bool, *serviceerror.ServiceError)
 	GetAuthorizedPermissions(
-		ctx context.Context, userID string, groups []string, requestedPermissions []string,
+		ctx context.Context, entityID string, groups []string, requestedPermissions []string,
 	) ([]string, *serviceerror.ServiceError)
-	GetUserRoles(ctx context.Context, userID string, groupIDs []string) ([]string, *serviceerror.ServiceError)
+	GetUserRoles(ctx context.Context, entityID string, groupIDs []string) ([]string, *serviceerror.ServiceError)
 }
 
 // roleService is the default implementation of the RoleServiceInterface.
@@ -542,21 +542,21 @@ func (rs *roleService) RemoveAssignments(
 	return nil
 }
 
-// GetAuthorizedPermissions checks which of the requested permissions are authorized for the user based on their roles.
+// GetAuthorizedPermissions checks which requested permissions are authorized for the entity based on roles.
 func (rs *roleService) GetAuthorizedPermissions(
-	ctx context.Context, userID string, groups []string, requestedPermissions []string,
+	ctx context.Context, entityID string, groups []string, requestedPermissions []string,
 ) ([]string, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Authorizing permissions", log.String("userID", userID), log.Int("groupCount", len(groups)))
+	logger.Debug("Authorizing permissions", log.String("entityID", entityID), log.Int("groupCount", len(groups)))
 
 	// Handle nil groups slice
 	if groups == nil {
 		groups = []string{}
 	}
 
-	// Validate that at least userID or groups is provided
-	if userID == "" && len(groups) == 0 {
-		return nil, &ErrorMissingUserOrGroups
+	// Validate that at least entityID or groups is provided
+	if entityID == "" && len(groups) == 0 {
+		return nil, &ErrorMissingEntityOrGroups
 	}
 
 	// Return empty list if no permissions requested
@@ -565,17 +565,17 @@ func (rs *roleService) GetAuthorizedPermissions(
 	}
 
 	// Get authorized permissions from store
-	authorizedPermissions, err := rs.roleStore.GetAuthorizedPermissions(ctx, userID, groups, requestedPermissions)
+	authorizedPermissions, err := rs.roleStore.GetAuthorizedPermissions(ctx, entityID, groups, requestedPermissions)
 	if err != nil {
 		logger.Error("Failed to get authorized permissions",
-			log.String("userID", userID),
+			log.String("entityID", entityID),
 			log.Int("groupCount", len(groups)),
 			log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
 
 	logger.Debug("Retrieved authorized permissions",
-		log.String("userID", userID),
+		log.String("entityID", entityID),
 		log.Int("groupCount", len(groups)),
 		log.Int("requestedCount", len(requestedPermissions)),
 		log.Int("authorizedCount", len(authorizedPermissions)))
@@ -583,25 +583,25 @@ func (rs *roleService) GetAuthorizedPermissions(
 	return authorizedPermissions, nil
 }
 
-// GetUserRoles retrieves the names of roles assigned to a user directly and/or through group membership.
+// GetUserRoles retrieves the names of roles assigned to an entity directly and/or through group membership.
 func (rs *roleService) GetUserRoles(
-	ctx context.Context, userID string, groupIDs []string,
+	ctx context.Context, entityID string, groupIDs []string,
 ) ([]string, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Getting user roles", log.String("userID", userID), log.Int("groupCount", len(groupIDs)))
+	logger.Debug("Getting entity roles", log.String("entityID", entityID), log.Int("groupCount", len(groupIDs)))
 
 	if groupIDs == nil {
 		groupIDs = []string{}
 	}
 
-	if userID == "" && len(groupIDs) == 0 {
+	if entityID == "" && len(groupIDs) == 0 {
 		return []string{}, nil
 	}
 
-	roles, err := rs.roleStore.GetUserRoles(ctx, userID, groupIDs)
+	roles, err := rs.roleStore.GetUserRoles(ctx, entityID, groupIDs)
 	if err != nil {
-		logger.Error("Failed to get user roles",
-			log.String("userID", userID), log.Error(err))
+		logger.Error("Failed to get entity roles",
+			log.String("entityID", entityID), log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
 
@@ -674,33 +674,31 @@ func (rs *roleService) validateAssignmentIDs(
 	ctx context.Context, assignments []RoleAssignment) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
-	var userIDs []string
+	var entityIDs []string
 	var groupIDs []string
 
-	// Collect user and group IDs
+	// Collect entity IDs and group IDs from assignments
 	for _, assignment := range assignments {
 		switch assignment.Type {
-		case AssigneeTypeUser:
-			userIDs = append(userIDs, assignment.ID)
+		case AssigneeTypeUser, AssigneeTypeApp:
+			entityIDs = append(entityIDs, assignment.ID)
 		case AssigneeTypeGroup:
 			groupIDs = append(groupIDs, assignment.ID)
 		}
 	}
 
-	// Deduplicate IDs
-	userIDs = utils.UniqueStrings(userIDs)
+	entityIDs = utils.UniqueStrings(entityIDs)
 	groupIDs = utils.UniqueStrings(groupIDs)
 
-	// Validate user IDs using entity service
-	if len(userIDs) > 0 {
-		invalidUserIDs, err := rs.entityService.ValidateEntityIDs(ctx, userIDs)
+	if len(entityIDs) > 0 {
+		invalidIDs, err := rs.entityService.ValidateEntityIDs(ctx, entityIDs)
 		if err != nil {
-			logger.Error("Failed to validate user IDs", log.Error(err))
+			logger.Error("Failed to validate entity IDs", log.Error(err))
 			return &ErrorInternalServerError
 		}
 
-		if len(invalidUserIDs) > 0 {
-			logger.Debug("Invalid user IDs found", log.Any("invalidUserIDs", invalidUserIDs))
+		if len(invalidIDs) > 0 {
+			logger.Debug("Invalid entity IDs found", log.Any("invalidIDs", invalidIDs))
 			return &ErrorInvalidAssignmentID
 		}
 	}

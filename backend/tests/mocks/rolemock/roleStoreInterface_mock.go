@@ -372,8 +372,8 @@ func (_c *roleStoreInterfaceMock_DeleteRole_Call) RunAndReturn(run func(ctx cont
 }
 
 // GetAuthorizedPermissions provides a mock function for the type roleStoreInterfaceMock
-func (_mock *roleStoreInterfaceMock) GetAuthorizedPermissions(ctx context.Context, userID string, groupIDs []string, requestedPermissions []string) ([]string, error) {
-	ret := _mock.Called(ctx, userID, groupIDs, requestedPermissions)
+func (_mock *roleStoreInterfaceMock) GetAuthorizedPermissions(ctx context.Context, entityID string, groupIDs []string, requestedPermissions []string) ([]string, error) {
+	ret := _mock.Called(ctx, entityID, groupIDs, requestedPermissions)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetAuthorizedPermissions")
@@ -382,17 +382,17 @@ func (_mock *roleStoreInterfaceMock) GetAuthorizedPermissions(ctx context.Contex
 	var r0 []string
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []string, []string) ([]string, error)); ok {
-		return returnFunc(ctx, userID, groupIDs, requestedPermissions)
+		return returnFunc(ctx, entityID, groupIDs, requestedPermissions)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []string, []string) []string); ok {
-		r0 = returnFunc(ctx, userID, groupIDs, requestedPermissions)
+		r0 = returnFunc(ctx, entityID, groupIDs, requestedPermissions)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]string)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string, []string, []string) error); ok {
-		r1 = returnFunc(ctx, userID, groupIDs, requestedPermissions)
+		r1 = returnFunc(ctx, entityID, groupIDs, requestedPermissions)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -406,14 +406,14 @@ type roleStoreInterfaceMock_GetAuthorizedPermissions_Call struct {
 
 // GetAuthorizedPermissions is a helper method to define mock.On call
 //   - ctx context.Context
-//   - userID string
+//   - entityID string
 //   - groupIDs []string
 //   - requestedPermissions []string
-func (_e *roleStoreInterfaceMock_Expecter) GetAuthorizedPermissions(ctx interface{}, userID interface{}, groupIDs interface{}, requestedPermissions interface{}) *roleStoreInterfaceMock_GetAuthorizedPermissions_Call {
-	return &roleStoreInterfaceMock_GetAuthorizedPermissions_Call{Call: _e.mock.On("GetAuthorizedPermissions", ctx, userID, groupIDs, requestedPermissions)}
+func (_e *roleStoreInterfaceMock_Expecter) GetAuthorizedPermissions(ctx interface{}, entityID interface{}, groupIDs interface{}, requestedPermissions interface{}) *roleStoreInterfaceMock_GetAuthorizedPermissions_Call {
+	return &roleStoreInterfaceMock_GetAuthorizedPermissions_Call{Call: _e.mock.On("GetAuthorizedPermissions", ctx, entityID, groupIDs, requestedPermissions)}
 }
 
-func (_c *roleStoreInterfaceMock_GetAuthorizedPermissions_Call) Run(run func(ctx context.Context, userID string, groupIDs []string, requestedPermissions []string)) *roleStoreInterfaceMock_GetAuthorizedPermissions_Call {
+func (_c *roleStoreInterfaceMock_GetAuthorizedPermissions_Call) Run(run func(ctx context.Context, entityID string, groupIDs []string, requestedPermissions []string)) *roleStoreInterfaceMock_GetAuthorizedPermissions_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -446,7 +446,7 @@ func (_c *roleStoreInterfaceMock_GetAuthorizedPermissions_Call) Return(strings [
 	return _c
 }
 
-func (_c *roleStoreInterfaceMock_GetAuthorizedPermissions_Call) RunAndReturn(run func(ctx context.Context, userID string, groupIDs []string, requestedPermissions []string) ([]string, error)) *roleStoreInterfaceMock_GetAuthorizedPermissions_Call {
+func (_c *roleStoreInterfaceMock_GetAuthorizedPermissions_Call) RunAndReturn(run func(ctx context.Context, entityID string, groupIDs []string, requestedPermissions []string) ([]string, error)) *roleStoreInterfaceMock_GetAuthorizedPermissions_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -956,8 +956,8 @@ func (_c *roleStoreInterfaceMock_GetRoleListCount_Call) RunAndReturn(run func(ct
 }
 
 // GetUserRoles provides a mock function for the type roleStoreInterfaceMock
-func (_mock *roleStoreInterfaceMock) GetUserRoles(ctx context.Context, userID string, groupIDs []string) ([]string, error) {
-	ret := _mock.Called(ctx, userID, groupIDs)
+func (_mock *roleStoreInterfaceMock) GetUserRoles(ctx context.Context, entityID string, groupIDs []string) ([]string, error) {
+	ret := _mock.Called(ctx, entityID, groupIDs)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserRoles")
@@ -966,17 +966,17 @@ func (_mock *roleStoreInterfaceMock) GetUserRoles(ctx context.Context, userID st
 	var r0 []string
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []string) ([]string, error)); ok {
-		return returnFunc(ctx, userID, groupIDs)
+		return returnFunc(ctx, entityID, groupIDs)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []string) []string); ok {
-		r0 = returnFunc(ctx, userID, groupIDs)
+		r0 = returnFunc(ctx, entityID, groupIDs)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]string)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string, []string) error); ok {
-		r1 = returnFunc(ctx, userID, groupIDs)
+		r1 = returnFunc(ctx, entityID, groupIDs)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -990,13 +990,13 @@ type roleStoreInterfaceMock_GetUserRoles_Call struct {
 
 // GetUserRoles is a helper method to define mock.On call
 //   - ctx context.Context
-//   - userID string
+//   - entityID string
 //   - groupIDs []string
-func (_e *roleStoreInterfaceMock_Expecter) GetUserRoles(ctx interface{}, userID interface{}, groupIDs interface{}) *roleStoreInterfaceMock_GetUserRoles_Call {
-	return &roleStoreInterfaceMock_GetUserRoles_Call{Call: _e.mock.On("GetUserRoles", ctx, userID, groupIDs)}
+func (_e *roleStoreInterfaceMock_Expecter) GetUserRoles(ctx interface{}, entityID interface{}, groupIDs interface{}) *roleStoreInterfaceMock_GetUserRoles_Call {
+	return &roleStoreInterfaceMock_GetUserRoles_Call{Call: _e.mock.On("GetUserRoles", ctx, entityID, groupIDs)}
 }
 
-func (_c *roleStoreInterfaceMock_GetUserRoles_Call) Run(run func(ctx context.Context, userID string, groupIDs []string)) *roleStoreInterfaceMock_GetUserRoles_Call {
+func (_c *roleStoreInterfaceMock_GetUserRoles_Call) Run(run func(ctx context.Context, entityID string, groupIDs []string)) *roleStoreInterfaceMock_GetUserRoles_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -1024,7 +1024,7 @@ func (_c *roleStoreInterfaceMock_GetUserRoles_Call) Return(strings []string, err
 	return _c
 }
 
-func (_c *roleStoreInterfaceMock_GetUserRoles_Call) RunAndReturn(run func(ctx context.Context, userID string, groupIDs []string) ([]string, error)) *roleStoreInterfaceMock_GetUserRoles_Call {
+func (_c *roleStoreInterfaceMock_GetUserRoles_Call) RunAndReturn(run func(ctx context.Context, entityID string, groupIDs []string) ([]string, error)) *roleStoreInterfaceMock_GetUserRoles_Call {
 	_c.Call.Return(run)
 	return _c
 }

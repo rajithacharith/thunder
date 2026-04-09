@@ -28,12 +28,16 @@ import {
   Avatar,
   Chip,
   Typography,
+  Tabs,
+  Tab,
   useTheme,
 } from '@wso2/oxygen-ui';
-import {User} from '@wso2/oxygen-ui-icons-react';
-import {useState, useMemo, useCallback, type JSX} from 'react';
+import {AppWindow, User} from '@wso2/oxygen-ui-icons-react';
+import {useState, useMemo, useCallback, type JSX, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
 import useDataGridLocaleText from '../../../../../hooks/useDataGridLocaleText';
+import useGetApplications from '../../../../applications/api/useGetApplications';
+import type {BasicApplication} from '../../../../applications/models/application';
 import useGetUsers from '../../../../users/api/useGetUsers';
 import type {ApiUser} from '../../../../users/models/users';
 import type {Member} from '../../../models/group';
@@ -45,31 +49,46 @@ interface AddMemberDialogProps {
 }
 
 /**
- * Dialog for searching and adding user members to a group.
+ * Dialog for searching and adding user or app members to a group.
  */
 export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogProps): JSX.Element {
   const {t} = useTranslation();
   const theme = useTheme();
   const dataGridLocaleText = useDataGridLocaleText();
 
-  const [selectionModel, setSelectionModel] = useState<DataGrid.GridRowSelectionModel>({
+  const [activeTab, setActiveTab] = useState(0);
+  const [userSelectionModel, setUserSelectionModel] = useState<DataGrid.GridRowSelectionModel>({
     type: 'include',
     ids: new Set(),
   });
-  const [paginationModel, setPaginationModel] = useState<DataGrid.GridPaginationModel>({pageSize: 10, page: 0});
+  const [appSelectionModel, setAppSelectionModel] = useState<DataGrid.GridRowSelectionModel>({
+    type: 'include',
+    ids: new Set(),
+  });
+  const [userPaginationModel, setUserPaginationModel] = useState<DataGrid.GridPaginationModel>({pageSize: 10, page: 0});
+  const [appPaginationModel, setAppPaginationModel] = useState<DataGrid.GridPaginationModel>({pageSize: 10, page: 0});
 
   const usersParams = useMemo(
     () => ({
-      limit: paginationModel.pageSize,
-      offset: paginationModel.page * paginationModel.pageSize,
+      limit: userPaginationModel.pageSize,
+      offset: userPaginationModel.page * userPaginationModel.pageSize,
     }),
-    [paginationModel],
+    [userPaginationModel],
+  );
+  const appsParams = useMemo(
+    () => ({
+      limit: appPaginationModel.pageSize,
+      offset: appPaginationModel.page * appPaginationModel.pageSize,
+    }),
+    [appPaginationModel],
   );
   const {data: usersData, isLoading: usersLoading, error: usersError} = useGetUsers(usersParams);
+  const {data: appsData, isLoading: appsLoading, error: appsError} = useGetApplications(appsParams);
 
   const users: ApiUser[] = useMemo(() => usersData?.users ?? [], [usersData]);
+  const applications: BasicApplication[] = useMemo(() => appsData?.applications ?? [], [appsData]);
 
-  const columns: DataGrid.GridColDef<ApiUser>[] = useMemo(
+  const userColumns: DataGrid.GridColDef<ApiUser>[] = useMemo(
     () => [
       {
         field: 'avatar',
@@ -144,56 +163,162 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
     [theme, t],
   );
 
+  const appColumns: DataGrid.GridColDef<BasicApplication>[] = useMemo(
+    () => [
+      {
+        field: 'avatar',
+        headerName: '',
+        width: 70,
+        sortable: false,
+        filterable: false,
+        renderCell: (): JSX.Element => (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+            }}
+          >
+            <Avatar
+              sx={{
+                p: 0.5,
+                backgroundColor: theme.vars?.palette.grey[500],
+                width: 30,
+                height: 30,
+                fontSize: '0.875rem',
+                ...theme.applyStyles('dark', {
+                  backgroundColor: theme.vars?.palette.grey[900],
+                }),
+              }}
+            >
+              <AppWindow size={14} />
+            </Avatar>
+          </Box>
+        ),
+      },
+      {
+        field: 'name',
+        headerName: t('groups:addMember.columns.displayName'),
+        flex: 1,
+        minWidth: 200,
+      },
+      {
+        field: 'id',
+        headerName: t('groups:edit.members.sections.manage.listing.columns.id'),
+        flex: 1,
+        minWidth: 250,
+      },
+    ],
+    [theme, t],
+  );
+
   const handleAdd = useCallback(() => {
-    const newMembers: Member[] = [...selectionModel.ids].map((id) => ({id: String(id), type: 'user' as const}));
+    const newMembers: Member[] = [
+      ...[...userSelectionModel.ids].map((id) => ({id: String(id), type: 'user' as const})),
+      ...[...appSelectionModel.ids].map((id) => ({id: String(id), type: 'app' as const})),
+    ];
     onAdd(newMembers);
-    setSelectionModel({type: 'include', ids: new Set()});
-  }, [selectionModel, onAdd]);
+    setUserSelectionModel({type: 'include', ids: new Set()});
+    setAppSelectionModel({type: 'include', ids: new Set()});
+  }, [userSelectionModel, appSelectionModel, onAdd]);
 
   const handleClose = (): void => {
-    setSelectionModel({type: 'include', ids: new Set()});
+    setUserSelectionModel({type: 'include', ids: new Set()});
+    setAppSelectionModel({type: 'include', ids: new Set()});
     onClose();
+  };
+
+  const totalSelected = userSelectionModel.ids.size + appSelectionModel.ids.size;
+
+  const handleTabChange = (_event: SyntheticEvent, tab: number): void => {
+    setActiveTab(tab);
   };
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>{t('groups:addMember.title')}</DialogTitle>
       <DialogContent>
-        {usersError && !usersLoading && (
-          <Alert severity="error" sx={{mb: 2}}>
-            {usersError.message ?? t('groups:addMember.fetchError')}
-          </Alert>
-        )}
-        {!usersError && users.length === 0 && !usersLoading && (
-          <Alert severity="info" sx={{mb: 2}}>
-            {t('groups:addMember.noResults')}
-          </Alert>
+        <Tabs value={activeTab} onChange={handleTabChange} sx={{mb: 2}}>
+          <Tab icon={<User size={16} />} iconPosition="start" label={t('groups:addMember.tabs.users')} />
+          <Tab icon={<AppWindow size={16} />} iconPosition="start" label={t('groups:addMember.tabs.apps')} />
+        </Tabs>
+
+        {activeTab === 0 && (
+          <>
+            {usersError && !usersLoading && (
+              <Alert severity="error" sx={{mb: 2}}>
+                {usersError.message ?? t('groups:addMember.fetchError')}
+              </Alert>
+            )}
+            {!usersError && users.length === 0 && !usersLoading && (
+              <Alert severity="info" sx={{mb: 2}}>
+                {t('groups:addMember.noResults')}
+              </Alert>
+            )}
+
+            <Box sx={{height: 400, width: '100%'}}>
+              <DataGrid.DataGrid
+                rows={users}
+                columns={userColumns}
+                loading={usersLoading}
+                getRowId={(row): string => row.id}
+                checkboxSelection
+                rowSelectionModel={userSelectionModel}
+                onRowSelectionModelChange={(newSelection) => {
+                  setUserSelectionModel(newSelection);
+                }}
+                paginationMode="server"
+                rowCount={usersData?.totalResults ?? 0}
+                paginationModel={userPaginationModel}
+                onPaginationModelChange={setUserPaginationModel}
+                pageSizeOptions={[5, 10]}
+                disableRowSelectionOnClick
+                localeText={dataGridLocaleText}
+              />
+            </Box>
+          </>
         )}
 
-        <Box sx={{height: 400, width: '100%'}}>
-          <DataGrid.DataGrid
-            rows={users}
-            columns={columns}
-            loading={usersLoading}
-            getRowId={(row): string => row.id}
-            checkboxSelection
-            rowSelectionModel={selectionModel}
-            onRowSelectionModelChange={(newSelection) => {
-              setSelectionModel(newSelection);
-            }}
-            paginationMode="server"
-            rowCount={usersData?.totalResults ?? 0}
-            paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
-            pageSizeOptions={[5, 10]}
-            disableRowSelectionOnClick
-            localeText={dataGridLocaleText}
-          />
-        </Box>
+        {activeTab === 1 && (
+          <>
+            {appsError && !appsLoading && (
+              <Alert severity="error" sx={{mb: 2}}>
+                {appsError.message ?? t('groups:addMember.fetchAppsError')}
+              </Alert>
+            )}
+            {!appsError && applications.length === 0 && !appsLoading && (
+              <Alert severity="info" sx={{mb: 2}}>
+                {t('groups:addMember.noResultsApps')}
+              </Alert>
+            )}
+
+            <Box sx={{height: 400, width: '100%'}}>
+              <DataGrid.DataGrid
+                rows={applications}
+                columns={appColumns}
+                loading={appsLoading}
+                getRowId={(row): string => row.id}
+                checkboxSelection
+                rowSelectionModel={appSelectionModel}
+                onRowSelectionModelChange={(newSelection) => {
+                  setAppSelectionModel(newSelection);
+                }}
+                paginationMode="server"
+                rowCount={appsData?.totalResults ?? 0}
+                paginationModel={appPaginationModel}
+                onPaginationModelChange={setAppPaginationModel}
+                pageSizeOptions={[5, 10]}
+                disableRowSelectionOnClick
+                localeText={dataGridLocaleText}
+              />
+            </Box>
+          </>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose}>{t('common:actions.cancel')}</Button>
-        <Button variant="contained" onClick={handleAdd} disabled={selectionModel.ids.size === 0}>
+        <Button variant="contained" onClick={handleAdd} disabled={totalSelected === 0}>
           {t('groups:addMember.add')}
         </Button>
       </DialogActions>

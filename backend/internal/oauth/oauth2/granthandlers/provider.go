@@ -20,6 +20,8 @@ package granthandlers
 
 import (
 	"github.com/asgardeo/thunder/internal/attributecache"
+	rbacauthz "github.com/asgardeo/thunder/internal/authz"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
@@ -48,9 +50,12 @@ func newGrantHandlerProvider(
 	tokenValidator tokenservice.TokenValidatorInterface,
 	attrCacheService attributecache.AttributeCacheServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
+	rbacAuthzService rbacauthz.AuthorizationServiceInterface,
+	entityProv entityprovider.EntityProviderInterface,
 ) GrantHandlerProviderInterface {
 	return &GrantHandlerProvider{
-		clientCredentialsGrantHandler: newClientCredentialsGrantHandler(tokenBuilder, ouService),
+		clientCredentialsGrantHandler: newClientCredentialsGrantHandler(
+			tokenBuilder, ouService, rbacAuthzService, entityProv),
 		authorizationCodeGrantHandler: newAuthorizationCodeGrantHandler(
 			authzService, tokenBuilder, attrCacheService),
 		refreshTokenGrantHandler: newRefreshTokenGrantHandler(

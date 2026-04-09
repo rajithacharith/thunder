@@ -96,7 +96,7 @@ func TestAuthorizationExecutor_Execute_Success(t *testing.T) {
 	mockAuthzService.On("GetAuthorizedPermissions",
 		mock.Anything,
 		mock.MatchedBy(func(req authzsvc.GetAuthorizedPermissionsRequest) bool {
-			return req.UserID == "user123" &&
+			return req.EntityID == "user123" &&
 				len(req.GroupIDs) == 2 &&
 				req.GroupIDs[0] == "group1" &&
 				req.GroupIDs[1] == "group2" &&
@@ -506,7 +506,7 @@ func TestAuthorizationExecutor_Execute_WithMultipleGroups(t *testing.T) {
 	mockAuthzService.On("GetAuthorizedPermissions",
 		mock.Anything,
 		mock.MatchedBy(func(req authzsvc.GetAuthorizedPermissionsRequest) bool {
-			return req.UserID == "user123" &&
+			return req.EntityID == "user123" &&
 				len(req.GroupIDs) == 3 &&
 				req.GroupIDs[0] == "admin" &&
 				req.GroupIDs[1] == "editor" &&
@@ -642,7 +642,7 @@ func TestAuthorizationExecutor_Execute_RegistrationFlow_AuthenticatedWithPermiss
 	mockAuthzService.On("GetAuthorizedPermissions",
 		mock.Anything,
 		mock.MatchedBy(func(req authzsvc.GetAuthorizedPermissionsRequest) bool {
-			return req.UserID == "existing-user-123" &&
+			return req.EntityID == "existing-user-123" &&
 				len(req.GroupIDs) == 1 &&
 				req.GroupIDs[0] == "new-users" &&
 				len(req.RequestedPermissions) == 2

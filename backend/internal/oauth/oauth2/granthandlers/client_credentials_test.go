@@ -29,12 +29,16 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	"github.com/asgardeo/thunder/internal/authz"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/tests/mocks/authzmock"
+	"github.com/asgardeo/thunder/tests/mocks/entityprovidermock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/tokenservicemock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
@@ -49,6 +53,8 @@ type ClientCredentialsGrantHandlerTestSuite struct {
 	mockJWTService   *jwtmock.JWTServiceInterfaceMock
 	mockTokenBuilder *tokenservicemock.TokenBuilderInterfaceMock
 	mockOUService    *oumock.OrganizationUnitServiceInterfaceMock
+	mockAuthzService *authzmock.AuthorizationServiceInterfaceMock
+	mockEntityProv   *entityprovidermock.EntityProviderInterfaceMock
 	handler          *clientCredentialsGrantHandler
 	oauthApp         *appmodel.OAuthAppConfigProcessedDTO
 }
@@ -71,10 +77,16 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) SetupTest() {
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+	suite.mockAuthzService = authzmock.NewAuthorizationServiceInterfaceMock(suite.T())
+	suite.mockEntityProv = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
 	suite.handler = &clientCredentialsGrantHandler{
 		tokenBuilder: suite.mockTokenBuilder,
 		ouService:    suite.mockOUService,
+		authzService: suite.mockAuthzService,
+		entityProv:   suite.mockEntityProv,
 	}
+	suite.mockEntityProv.On("GetTransitiveEntityGroups", mock.Anything).
+		Return([]entityprovider.EntityGroup{}, nil).Maybe()
 
 	suite.oauthApp = &appmodel.OAuthAppConfigProcessedDTO{
 		AppID:                   "app123",
@@ -87,7 +99,8 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) SetupTest() {
 }
 
 func (suite *ClientCredentialsGrantHandlerTestSuite) TestNewClientCredentialsGrantHandler() {
-	handler := newClientCredentialsGrantHandler(suite.mockTokenBuilder, suite.mockOUService)
+	handler := newClientCredentialsGrantHandler(
+		suite.mockTokenBuilder, suite.mockOUService, suite.mockAuthzService, suite.mockEntityProv)
 	assert.NotNil(suite.T(), handler)
 	assert.Implements(suite.T(), (*GrantHandlerInterface)(nil), handler)
 }
@@ -146,14 +159,26 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_Success() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			// Reset mock for each test case
+			// Reset mocks for each test case
 			suite.mockJWTService.Mock = mock.Mock{}
+			suite.mockAuthzService.Mock = mock.Mock{}
 
 			tokenRequest := &model.TokenRequest{
 				GrantType:    "client_credentials",
 				ClientID:     testClientID,
 				ClientSecret: "secret123",
 				Scope:        tc.scope,
+			}
+
+			// Mock authz service for non-OIDC scopes
+			if len(tc.expectedScopes) > 0 {
+				suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
+					authz.GetAuthorizedPermissionsRequest{
+						EntityID:             suite.oauthApp.AppID,
+						RequestedPermissions: tc.expectedScopes,
+					}).Return(&authz.GetAuthorizedPermissionsResponse{
+					AuthorizedPermissions: tc.expectedScopes,
+				}, nil)
 			}
 
 			expectedToken := testJWTToken
@@ -201,6 +226,14 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_JWTGenerati
 		Scope:        "read",
 	}
 
+	suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
+		authz.GetAuthorizedPermissionsRequest{
+			EntityID:             suite.oauthApp.AppID,
+			RequestedPermissions: []string{"read"},
+		}).Return(&authz.GetAuthorizedPermissionsResponse{
+		AuthorizedPermissions: []string{"read"},
+	}, nil)
+
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).
 		Return(nil, errors.New("JWT generation failed"))
 
@@ -221,6 +254,14 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_NilTokenAtt
 		ClientSecret: "secret123",
 		Scope:        "read",
 	}
+
+	suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
+		authz.GetAuthorizedPermissionsRequest{
+			EntityID:             suite.oauthApp.AppID,
+			RequestedPermissions: []string{"read"},
+		}).Return(&authz.GetAuthorizedPermissionsResponse{
+		AuthorizedPermissions: []string{"read"},
+	}, nil)
 
 	expectedToken := testJWTToken
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
@@ -257,6 +298,14 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_TokenTiming
 		ClientSecret: "secret123",
 		Scope:        "read",
 	}
+
+	suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
+		authz.GetAuthorizedPermissionsRequest{
+			EntityID:             suite.oauthApp.AppID,
+			RequestedPermissions: []string{"read"},
+		}).Return(&authz.GetAuthorizedPermissionsResponse{
+		AuthorizedPermissions: []string{"read"},
+	}, nil)
 
 	expectedToken := testJWTToken
 	now := time.Now().Unix()
@@ -300,6 +349,14 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_ClientAttri
 		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretBasic,
 	}
 
+	suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
+		authz.GetAuthorizedPermissionsRequest{
+			EntityID:             oauthAppWithOU.AppID,
+			RequestedPermissions: []string{"read"},
+		}).Return(&authz.GetAuthorizedPermissionsResponse{
+		AuthorizedPermissions: []string{"read"},
+	}, nil)
+
 	suite.mockOUService.On("GetOrganizationUnit", context.Background(), "ou-456").Return(
 		ou.OrganizationUnit{},
 		&serviceerror.ServiceError{Code: "OU-0001", Error: "not found"},
@@ -323,6 +380,14 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_WithResourc
 		Scope:        "read",
 		Resource:     "https://mcp.example.com/mcp",
 	}
+
+	suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
+		authz.GetAuthorizedPermissionsRequest{
+			EntityID:             suite.oauthApp.AppID,
+			RequestedPermissions: []string{"read"},
+		}).Return(&authz.GetAuthorizedPermissionsResponse{
+		AuthorizedPermissions: []string{"read"},
+	}, nil)
 
 	var capturedAudience string
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
@@ -359,6 +424,14 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_WithoutReso
 		Scope:        "read",
 	}
 
+	suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
+		authz.GetAuthorizedPermissionsRequest{
+			EntityID:             suite.oauthApp.AppID,
+			RequestedPermissions: []string{"read"},
+		}).Return(&authz.GetAuthorizedPermissionsResponse{
+		AuthorizedPermissions: []string{"read"},
+	}, nil)
+
 	var capturedAudience string
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 		capturedAudience = ctx.Audience
@@ -384,4 +457,131 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_WithoutReso
 
 	// Verify token attributes use client ID as audience when no resource
 	assert.Equal(suite.T(), testClientID, result.AccessToken.Audience)
+}
+
+// App Authorization Integration Tests — verify scope filtering via RBAC roles
+
+func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_PartialScopeAuthorization() {
+	tokenRequest := &model.TokenRequest{
+		GrantType:    "client_credentials",
+		ClientID:     testClientID,
+		ClientSecret: "secret123",
+		Scope:        "read write delete",
+	}
+
+	// App is only authorized for "read" and "write" via its role assignments.
+	suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
+		authz.GetAuthorizedPermissionsRequest{
+			EntityID:             suite.oauthApp.AppID,
+			RequestedPermissions: []string{"read", "write", "delete"},
+		}).Return(&authz.GetAuthorizedPermissionsResponse{
+		AuthorizedPermissions: []string{"read", "write"},
+	}, nil)
+
+	suite.mockTokenBuilder.On("BuildAccessToken",
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return tokenservice.JoinScopes(ctx.Scopes) == tokenservice.JoinScopes([]string{"read", "write"})
+		})).Return(&model.TokenDTO{
+		Token:     testJWTToken,
+		TokenType: constants.TokenTypeBearer,
+		IssuedAt:  int64(1234567890),
+		ExpiresIn: 3600,
+		Scopes:    []string{"read", "write"},
+		ClientID:  testClientID,
+	}, nil)
+
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
+
+	assert.Nil(suite.T(), errResp)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), []string{"read", "write"}, result.AccessToken.Scopes)
+}
+
+func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_NoAuthorizedScopes() {
+	tokenRequest := &model.TokenRequest{
+		GrantType:    "client_credentials",
+		ClientID:     testClientID,
+		ClientSecret: "secret123",
+		Scope:        "admin:full",
+	}
+
+	// App has no role granting "admin:full".
+	suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
+		authz.GetAuthorizedPermissionsRequest{
+			EntityID:             suite.oauthApp.AppID,
+			RequestedPermissions: []string{"admin:full"},
+		}).Return(&authz.GetAuthorizedPermissionsResponse{
+		AuthorizedPermissions: []string{},
+	}, nil)
+
+	suite.mockTokenBuilder.On("BuildAccessToken",
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return len(ctx.Scopes) == 0
+		})).Return(&model.TokenDTO{
+		Token:     testJWTToken,
+		TokenType: constants.TokenTypeBearer,
+		IssuedAt:  int64(1234567890),
+		ExpiresIn: 3600,
+		Scopes:    []string{},
+		ClientID:  testClientID,
+	}, nil)
+
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
+
+	assert.Nil(suite.T(), errResp)
+	assert.NotNil(suite.T(), result)
+	assert.Empty(suite.T(), result.AccessToken.Scopes)
+}
+
+func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_AuthzServiceError() {
+	tokenRequest := &model.TokenRequest{
+		GrantType:    "client_credentials",
+		ClientID:     testClientID,
+		ClientSecret: "secret123",
+		Scope:        "read",
+	}
+
+	suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
+		authz.GetAuthorizedPermissionsRequest{
+			EntityID:             suite.oauthApp.AppID,
+			RequestedPermissions: []string{"read"},
+		}).Return((*authz.GetAuthorizedPermissionsResponse)(nil),
+		&serviceerror.ServiceError{
+			Code:  "AUTHZ-0001",
+			Error: "authorization check failed",
+		})
+
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), errResp)
+	assert.Equal(suite.T(), constants.ErrorServerError, errResp.Error)
+}
+
+func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_EmptyScope_SkipsAuthzCall() {
+	tokenRequest := &model.TokenRequest{
+		GrantType:    "client_credentials",
+		ClientID:     testClientID,
+		ClientSecret: "secret123",
+		Scope:        "",
+	}
+
+	suite.mockTokenBuilder.On("BuildAccessToken",
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return len(ctx.Scopes) == 0
+		})).Return(&model.TokenDTO{
+		Token:     testJWTToken,
+		TokenType: constants.TokenTypeBearer,
+		IssuedAt:  int64(1234567890),
+		ExpiresIn: 3600,
+		Scopes:    []string{},
+		ClientID:  testClientID,
+	}, nil)
+
+	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
+
+	assert.Nil(suite.T(), errResp)
+	assert.NotNil(suite.T(), result)
+	// Verify authz service was NOT called when no scopes requested.
+	suite.mockAuthzService.AssertNotCalled(suite.T(), "GetAuthorizedPermissions", mock.Anything, mock.Anything)
 }

@@ -320,16 +320,16 @@ func (c *compositeRoleStore) CheckRoleNameExistsExcludingID(
 // GetAuthorizedPermissions retrieves authorized permissions from both stores.
 func (c *compositeRoleStore) GetAuthorizedPermissions(
 	ctx context.Context,
-	userID string,
+	entityID string,
 	groupIDs []string,
 	requestPermissions []string,
 ) ([]string, error) {
-	dbPerms, err := c.dbStore.GetAuthorizedPermissions(ctx, userID, groupIDs, requestPermissions)
+	dbPerms, err := c.dbStore.GetAuthorizedPermissions(ctx, entityID, groupIDs, requestPermissions)
 	if err != nil {
 		return nil, err
 	}
 
-	filePerms, err := c.fileStore.GetAuthorizedPermissions(ctx, userID, groupIDs, requestPermissions)
+	filePerms, err := c.fileStore.GetAuthorizedPermissions(ctx, entityID, groupIDs, requestPermissions)
 	if err != nil {
 		return nil, err
 	}
@@ -338,16 +338,16 @@ func (c *compositeRoleStore) GetAuthorizedPermissions(
 	return mergePermissions(dbPerms, filePerms), nil
 }
 
-// GetUserRoles retrieves role names assigned to a user from both stores.
+// GetUserRoles retrieves role names assigned to an entity from both stores.
 func (c *compositeRoleStore) GetUserRoles(
-	ctx context.Context, userID string, groupIDs []string,
+	ctx context.Context, entityID string, groupIDs []string,
 ) ([]string, error) {
-	dbRoleNames, err := c.dbStore.GetUserRoles(ctx, userID, groupIDs)
+	dbRoleNames, err := c.dbStore.GetUserRoles(ctx, entityID, groupIDs)
 	if err != nil {
 		return nil, err
 	}
 
-	fileRoleNames, err := c.fileStore.GetUserRoles(ctx, userID, groupIDs)
+	fileRoleNames, err := c.fileStore.GetUserRoles(ctx, entityID, groupIDs)
 	if err != nil {
 		return nil, err
 	}

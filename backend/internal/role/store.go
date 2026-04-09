@@ -52,8 +52,8 @@ type roleStoreInterface interface {
 	CheckRoleNameExists(ctx context.Context, ouID, name string) (bool, error)
 	CheckRoleNameExistsExcludingID(ctx context.Context, ouID, name, excludeRoleID string) (bool, error)
 	GetAuthorizedPermissions(
-		ctx context.Context, userID string, groupIDs []string, requestedPermissions []string) ([]string, error)
-	GetUserRoles(ctx context.Context, userID string, groupIDs []string) ([]string, error)
+		ctx context.Context, entityID string, groupIDs []string, requestedPermissions []string) ([]string, error)
+	GetUserRoles(ctx context.Context, entityID string, groupIDs []string) ([]string, error)
 	IsRoleDeclarative(ctx context.Context, roleID string) (bool, error)
 }
 
@@ -517,11 +517,11 @@ func (s *roleStore) CheckRoleNameExistsExcludingID(
 	return parseBoolFromCount(results)
 }
 
-// GetAuthorizedPermissions retrieves the permissions that a user is authorized for based on their
+// GetAuthorizedPermissions retrieves the permissions that an entity is authorized for based on their
 // direct role assignments and group memberships.
 func (s *roleStore) GetAuthorizedPermissions(
 	ctx context.Context,
-	userID string,
+	entityID string,
 	groupIDs []string,
 	requestedPermissions []string,
 ) ([]string, error) {
@@ -536,7 +536,7 @@ func (s *roleStore) GetAuthorizedPermissions(
 	}
 
 	// Build dynamic query based on provided parameters
-	query, args := buildAuthorizedPermissionsQuery(userID, groupIDs, requestedPermissions, s.deploymentID)
+	query, args := buildAuthorizedPermissionsQuery(entityID, groupIDs, requestedPermissions, s.deploymentID)
 
 	results, err := dbClient.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -553,9 +553,9 @@ func (s *roleStore) GetAuthorizedPermissions(
 	return permissions, nil
 }
 
-// GetUserRoles retrieves the names of roles assigned to a user directly and/or through group membership.
+// GetUserRoles retrieves the names of roles assigned to an entity directly and/or through group membership.
 func (s *roleStore) GetUserRoles(
-	ctx context.Context, userID string, groupIDs []string,
+	ctx context.Context, entityID string, groupIDs []string,
 ) ([]string, error) {
 	dbClient, err := s.getConfigDBClient()
 	if err != nil {
@@ -566,11 +566,11 @@ func (s *roleStore) GetUserRoles(
 		groupIDs = []string{}
 	}
 
-	query, args := buildUserRolesQuery(userID, groupIDs, s.deploymentID)
+	query, args := buildUserRolesQuery(entityID, groupIDs, s.deploymentID)
 
 	results, err := dbClient.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user roles: %w", err)
+		return nil, fmt.Errorf("failed to get entity roles: %w", err)
 	}
 
 	roles := make([]string, 0)

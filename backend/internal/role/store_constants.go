@@ -147,10 +147,10 @@ var (
 )
 
 // buildAuthorizedPermissionsQuery constructs a database-specific query to retrieve authorized permissions
-// for a user and/or groups from their assigned roles.
+// for an entity and/or groups from their assigned roles.
 // It builds separate queries for PostgreSQL and SQLite to handle array parameters correctly.
 func buildAuthorizedPermissionsQuery(
-	userID string,
+	entityID string,
 	groupIDs []string,
 	requestedPermissions []string,
 	deploymentID string,
@@ -166,20 +166,20 @@ func buildAuthorizedPermissionsQuery(
 
 	// Pre-allocate args slice with estimated capacity
 	argsCapacity := 1 + len(groupIDs) + len(requestedPermissions) // +1 for DEPLOYMENT_ID
-	if userID != "" {
+	if entityID != "" {
 		argsCapacity++
 	}
 	args := make([]interface{}, 0, argsCapacity)
 	args = append(args, deploymentID)
 	paramIndex := 2 // Start from $2 since $1 is DEPLOYMENT_ID
 
-	// Build user condition if userID is provided
-	if userID != "" {
+	// Build entity condition if entityID is provided
+	if entityID != "" {
 		postgresWhere = append(postgresWhere,
-			fmt.Sprintf("(ra.ASSIGNEE_TYPE = 'user' AND ra.ASSIGNEE_ID = $%d)", paramIndex))
+			fmt.Sprintf("(ra.ASSIGNEE_TYPE IN ('user', 'app') AND ra.ASSIGNEE_ID = $%d)", paramIndex))
 		sqliteWhere = append(sqliteWhere,
-			"(ra.ASSIGNEE_TYPE = 'user' AND ra.ASSIGNEE_ID = ?)")
-		args = append(args, userID)
+			"(ra.ASSIGNEE_TYPE IN ('user', 'app') AND ra.ASSIGNEE_ID = ?)")
+		args = append(args, entityID)
 		paramIndex++
 	}
 
@@ -236,9 +236,9 @@ func buildAuthorizedPermissionsQuery(
 }
 
 // buildUserRolesQuery constructs a database-specific query to retrieve role names
-// assigned to a user directly and/or through group membership.
+// assigned to an entity directly and/or through group membership.
 func buildUserRolesQuery(
-	userID string,
+	entityID string,
 	groupIDs []string,
 	deploymentID string,
 ) (dbmodel.DBQuery, []interface{}) {
@@ -251,20 +251,20 @@ func buildUserRolesQuery(
 	var sqliteWhere []string
 
 	argsCapacity := 1 + len(groupIDs) // +1 for DEPLOYMENT_ID
-	if userID != "" {
+	if entityID != "" {
 		argsCapacity++
 	}
 	args := make([]interface{}, 0, argsCapacity)
 	args = append(args, deploymentID)
 	paramIndex := 2 // Start from $2 since $1 is DEPLOYMENT_ID
 
-	// Build user condition if userID is provided
-	if userID != "" {
+	// Build entity condition if entityID is provided
+	if entityID != "" {
 		postgresWhere = append(postgresWhere,
-			fmt.Sprintf("(ra.ASSIGNEE_TYPE = 'user' AND ra.ASSIGNEE_ID = $%d)", paramIndex))
+			fmt.Sprintf("(ra.ASSIGNEE_TYPE IN ('user', 'app') AND ra.ASSIGNEE_ID = $%d)", paramIndex))
 		sqliteWhere = append(sqliteWhere,
-			"(ra.ASSIGNEE_TYPE = 'user' AND ra.ASSIGNEE_ID = ?)")
-		args = append(args, userID)
+			"(ra.ASSIGNEE_TYPE IN ('user', 'app') AND ra.ASSIGNEE_ID = ?)")
+		args = append(args, entityID)
 		paramIndex++
 	}
 

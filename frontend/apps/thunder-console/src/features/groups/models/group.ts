@@ -17,13 +17,13 @@
  */
 
 /**
- * Represents a member of a group, which can be either a user or another group.
+ * Represents a member of a group, which can be a user, group, or app.
  */
 export interface Member {
   /** Unique identifier of the member */
   id: string;
   /** Type of the member */
-  type: 'user' | 'group';
+  type: 'user' | 'group' | 'app';
   /** Display name of the member */
   display?: string;
 }

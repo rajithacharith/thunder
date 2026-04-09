@@ -64,8 +64,12 @@ vi.mock('@wso2/oxygen-ui', async () => {
 });
 
 const mockUseGetUsers = vi.fn();
+const mockUseGetApplications = vi.fn();
 vi.mock('../../../users/api/useGetUsers', () => ({
   default: (...args: unknown[]): unknown => mockUseGetUsers(...args),
+}));
+vi.mock('../../../applications/api/useGetApplications', () => ({
+  default: (...args: unknown[]): unknown => mockUseGetApplications(...args),
 }));
 
 describe('AddMemberDialog', () => {
@@ -85,6 +89,17 @@ describe('AddMemberDialog', () => {
         users: [
           {id: 'u1', ouId: 'ou1', type: 'Person'},
           {id: 'u2', ouId: 'ou2', type: 'Person'},
+        ],
+      },
+      isLoading: false,
+    });
+    mockUseGetApplications.mockReturnValue({
+      data: {
+        totalResults: 2,
+        count: 2,
+        applications: [
+          {id: 'a1', name: 'Orders API', description: 'Orders backend'},
+          {id: 'a2', name: 'Billing API', description: 'Billing backend'},
         ],
       },
       isLoading: false,
@@ -114,6 +129,16 @@ describe('AddMemberDialog', () => {
     expect(screen.getByTestId('user-u2')).toBeInTheDocument();
   });
 
+  it('should render apps in the grid when Apps tab is selected', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<AddMemberDialog {...defaultProps} />);
+
+    await user.click(screen.getByText('Apps'));
+
+    expect(screen.getByTestId('user-a1')).toBeInTheDocument();
+    expect(screen.getByTestId('user-a2')).toBeInTheDocument();
+  });
+
   it('should show loading state', () => {
     mockUseGetUsers.mockReturnValue({
       data: null,
@@ -132,6 +157,18 @@ describe('AddMemberDialog', () => {
     renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
     expect(screen.getByText('No users found')).toBeInTheDocument();
+  });
+
+  it('should show no results alert when no apps', async () => {
+    const user = userEvent.setup();
+    mockUseGetApplications.mockReturnValue({
+      data: {totalResults: 0, count: 0, applications: []},
+      isLoading: false,
+    });
+    renderWithProviders(<AddMemberDialog {...defaultProps} />);
+
+    await user.click(screen.getByText('Apps'));
+    expect(screen.getByText('No apps found')).toBeInTheDocument();
   });
 
   it('should disable add button when no selection', () => {
@@ -161,6 +198,17 @@ describe('AddMemberDialog', () => {
     expect(defaultProps.onAdd).toHaveBeenCalledWith([{id: 'u1', type: 'user'}]);
   });
 
+  it('should call onAdd with selected app members', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<AddMemberDialog {...defaultProps} />);
+
+    await user.click(screen.getByText('Apps'));
+    await user.click(screen.getByTestId('checkbox-a1'));
+    await user.click(screen.getByText('Add Selected'));
+
+    expect(defaultProps.onAdd).toHaveBeenCalledWith([{id: 'a1', type: 'app'}]);
+  });
+
   it('should call onClose when cancel is clicked', async () => {
     const user = userEvent.setup();
     renderWithProviders(<AddMemberDialog {...defaultProps} />);
@@ -174,6 +222,7 @@ describe('AddMemberDialog', () => {
     renderWithProviders(<AddMemberDialog {...defaultProps} />);
 
     expect(mockUseGetUsers).toHaveBeenCalledWith({limit: 10, offset: 0});
+    expect(mockUseGetApplications).toHaveBeenCalledWith({limit: 10, offset: 0});
   });
 
   it('should show error alert when users fetch fails', () => {

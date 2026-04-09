@@ -719,14 +719,18 @@ const translations = {
 
     // Add member dialog
     'addMember.title': 'Add Member',
+    'addMember.tabs.users': 'Users',
+    'addMember.tabs.apps': 'Apps',
     'addMember.search.placeholder': 'Search users...',
     'addMember.noResults': 'No users found',
+    'addMember.noResultsApps': 'No apps found',
     'addMember.add': 'Add Selected',
     'addMember.columns.displayName': 'Display Name',
     'addMember.columns.userType': 'User Type',
     'addMember.columns.userId': 'User ID',
     'addMember.error': 'Failed to add member. Please try again.',
     'addMember.fetchError': 'Failed to load users. Please try again.',
+    'addMember.fetchAppsError': 'Failed to load apps. Please try again.',
     'removeMember.error': 'Failed to remove member. Please try again.',
 
     // Delete dialog
@@ -816,10 +820,11 @@ const translations = {
     'edit.permissions.selectedCount': '{{count}} selected',
 
     // Assignments settings
-    'edit.assignments.sections.manage.title': 'Assigned Users & Groups',
-    'edit.assignments.sections.manage.description': 'Manage users and groups assigned to this role',
+    'edit.assignments.sections.manage.title': 'Assigned Users, Groups & Apps',
+    'edit.assignments.sections.manage.description': 'Manage users, groups, and apps assigned to this role',
     'edit.assignments.sections.manage.tabs.users': 'Users',
     'edit.assignments.sections.manage.tabs.groups': 'Groups',
+    'edit.assignments.sections.manage.tabs.apps': 'Apps',
     'edit.assignments.sections.manage.listing.columns.name': 'Name',
     'edit.assignments.sections.manage.listing.columns.id': 'ID',
     'edit.assignments.sections.manage.listing.columns.type': 'Type',
@@ -829,6 +834,7 @@ const translations = {
     'assignments.dialog.title': 'Add Assignment',
     'assignments.dialog.tabs.users': 'Users',
     'assignments.dialog.tabs.groups': 'Groups',
+    'assignments.dialog.tabs.apps': 'Apps',
     'assignments.dialog.columns.displayName': 'Display Name',
     'assignments.dialog.columns.name': 'Name',
     'assignments.dialog.columns.description': 'Description',
