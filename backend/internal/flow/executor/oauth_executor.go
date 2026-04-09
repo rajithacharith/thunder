@@ -39,6 +39,7 @@ import (
 const (
 	oAuthLoggerComponentName            = "OAuthExecutor"
 	errCannotProvisionUserAutomatically = "user not found and cannot provision automatically"
+	errSelfRegistrationDisabled         = "self registration is disabled for the user type"
 )
 
 // OAuthTokenResponse represents the response from a OAuth token endpoint.
@@ -597,7 +598,7 @@ func (o *oAuthExecutor) resolveUserTypeForAutoProvisioning(ctx *core.NodeContext
 	if len(selfRegEnabledSchemas) == 0 {
 		logger.Debug("No user types with self-registration enabled, cannot provision automatically")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = errCannotProvisionUserAutomatically
+		execResp.FailureReason = errSelfRegistrationDisabled
 		return nil
 	}
 
