@@ -1683,6 +1683,11 @@ function Run-Backend {
     Write-Host "Initializing databases..."
     Initialize-Databases
 
+    if ($script:CONSENT_ENABLED -and -not $skipConsent -and -not $script:CONSENT_PROCESS) {
+        Write-Host "Running consent server..."
+        Run-Consent
+    }
+
     Start-Backend -ShowFinalOutput $ShowFinalOutput
 }
 
@@ -1727,11 +1732,14 @@ function Start-Backend {
         }
         catch [System.Management.Automation.PipelineStoppedException] {
             Write-Host ""
-            Write-Host "🛑 Shutting down backend server..."
+            Write-Host "🛑 Shutting down servers..."
             if ($script:BACKEND_PID) { 
                 Stop-Process -Id $script:BACKEND_PID -Force -ErrorAction SilentlyContinue
             }
-            Write-Host "✅ Backend server stopped successfully."
+            if ($script:CONSENT_PROCESS -and -not $script:CONSENT_PROCESS.HasExited) {
+                Stop-Process -Id $script:CONSENT_PROCESS.Id -Force -ErrorAction SilentlyContinue
+            }
+            Write-Host "✅ Servers stopped successfully."
             exit 0
         }
 
