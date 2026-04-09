@@ -145,15 +145,95 @@ func (s *flowInferenceService) cloneNodes(nodes []NodeDefinition) ([]NodeDefinit
 func (s *flowInferenceService) cleanAuthenticationProperties(nodes []NodeDefinition) {
 	for i := range nodes {
 		node := &nodes[i]
-		if node.Properties == nil {
+
+		if node.Properties != nil {
+			// Remove authentication-specific properties that don't apply to registration
+			delete(node.Properties, common.NodePropertyAllowAuthenticationWithoutLocalUser)
+		}
+
+		// Clean up PROMPT node meta components for registration context
+		if node.Type == string(common.NodeTypePrompt) {
+			s.cleanPromptNodeMeta(node)
+		}
+	}
+}
+
+// replaceAuthLabel checks if label contains an auth-related term and returns the registration
+// equivalent. Returns (newLabel, true) if replaced, ("", false) if no match found.
+func replaceAuthLabel(label string) (string, bool) {
+	lowerLabel := strings.ToLower(label)
+	for _, pair := range authToRegLabelTerms {
+		lowerTerm := strings.ToLower(pair.auth)
+		if index := strings.Index(lowerLabel, lowerTerm); index != -1 {
+			return label[:index] + pair.reg + label[index+len(pair.auth):], true
+		}
+	}
+	return "", false
+}
+
+// cleanPromptNodeMeta removes auth-specific UI components from a PROMPT node's meta
+// and updates labels to be appropriate for a registration flow.
+func (s *flowInferenceService) cleanPromptNodeMeta(node *NodeDefinition) {
+	meta, ok := node.Meta.(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	components, ok := meta["components"].([]interface{})
+	if !ok {
+		return
+	}
+
+	for i, comp := range components {
+		c, ok := comp.(map[string]interface{})
+		if !ok {
 			continue
 		}
 
-		// Remove authentication-specific properties that don't apply to registration
-		delete(node.Properties, common.NodePropertyAllowAuthenticationWithoutLocalUser)
+		// Update auth heading labels to registration equivalents — match by type, not ID (IDs may be random)
+		if c["type"] == "TEXT" {
+			if label, ok := c["label"].(string); ok {
+				if newLabel, replaced := replaceAuthLabel(label); replaced {
+					c["label"] = newLabel
+					components[i] = c
+				}
+			}
+		}
 
-		// Ensure registration-specific properties have appropriate defaults if needed
+		// Remove sign-up link from inside BLOCK components — match by type and label content, not ID
+		if c["type"] == "BLOCK" {
+			blockComponents, ok := c["components"].([]interface{})
+			if !ok {
+				continue
+			}
+			filtered := make([]interface{}, 0, len(blockComponents))
+			for _, bc := range blockComponents {
+				bcMap, ok := bc.(map[string]interface{})
+				if !ok {
+					filtered = append(filtered, bc)
+					continue
+				}
+				if bcMap["type"] == "RICH_TEXT" {
+					if label, ok := bcMap["label"].(string); ok && strings.Contains(label, "sign_up_url") {
+						continue
+					}
+				}
+				// Rename auth submit action button labels to registration equivalents
+				if bcMap["type"] == "ACTION" && bcMap["eventType"] == "SUBMIT" {
+					if label, ok := bcMap["label"].(string); ok {
+						if newLabel, replaced := replaceAuthLabel(label); replaced {
+							bcMap["label"] = newLabel
+						}
+					}
+				}
+				filtered = append(filtered, bc)
+			}
+			c["components"] = filtered
+			components[i] = c
+		}
 	}
+
+	meta["components"] = components
 }
 
 // findStartNode finds the START node in the flow
