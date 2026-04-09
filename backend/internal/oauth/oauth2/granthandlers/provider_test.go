@@ -26,6 +26,8 @@ import (
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/tests/mocks/attributecachemock"
+	rbacauthzmock "github.com/asgardeo/thunder/tests/mocks/authzmock"
+	"github.com/asgardeo/thunder/tests/mocks/entityprovidermock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/authzmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/tokenservicemock"
@@ -41,6 +43,8 @@ type GrantHandlerProviderTestSuite struct {
 	mockTokenValidator   *tokenservicemock.TokenValidatorInterfaceMock
 	mockAttrCacheService *attributecachemock.AttributeCacheServiceInterfaceMock
 	mockOUService        *oumock.OrganizationUnitServiceInterfaceMock
+	mockRBACAuthzService *rbacauthzmock.AuthorizationServiceInterfaceMock
+	mockEntityProvider   *entityprovidermock.EntityProviderInterfaceMock
 }
 
 func TestGrantHandlerProviderSuite(t *testing.T) {
@@ -54,6 +58,8 @@ func (suite *GrantHandlerProviderTestSuite) SetupTest() {
 	suite.mockTokenValidator = tokenservicemock.NewTokenValidatorInterfaceMock(suite.T())
 	suite.mockAttrCacheService = attributecachemock.NewAttributeCacheServiceInterfaceMock(suite.T())
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+	suite.mockRBACAuthzService = rbacauthzmock.NewAuthorizationServiceInterfaceMock(suite.T())
+	suite.mockEntityProvider = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
 	suite.provider = newGrantHandlerProvider(
 		suite.mockJWTService,
 		suite.authzService,
@@ -61,6 +67,8 @@ func (suite *GrantHandlerProviderTestSuite) SetupTest() {
 		suite.mockTokenValidator,
 		suite.mockAttrCacheService,
 		suite.mockOUService,
+		suite.mockRBACAuthzService,
+		suite.mockEntityProvider,
 	)
 }
 
@@ -72,6 +80,8 @@ func (suite *GrantHandlerProviderTestSuite) TestNewGrantHandlerProvider() {
 		suite.mockTokenValidator,
 		suite.mockAttrCacheService,
 		suite.mockOUService,
+		suite.mockRBACAuthzService,
+		suite.mockEntityProvider,
 	)
 	assert.NotNil(suite.T(), provider)
 	assert.Implements(suite.T(), (*GrantHandlerProviderInterface)(nil), provider)
